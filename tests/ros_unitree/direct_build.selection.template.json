@@ -1,0 +1,25 @@
+{
+  "format_version": 1,
+  "kind": "unitree-direct-go2-standalone-build-selection-v1",
+  "tools": {
+    "cc": "wasi-clang",
+    "cxx": "wasi-clangxx",
+    "python": "host-python",
+    "validator": "wasm-tools",
+    "libc": "wasi-libc",
+    "libm": "wasi-libm",
+    "printscan": "wasi-full-printscan",
+    "builtins": "wasi-builtins",
+    "libcxx": "wasi-libcxx",
+    "libcxxabi": "wasi-libcxxabi"
+  },
+  "paths": {
+    "sysroot": null,
+    "resource_dir": null,
+    "wasm_ld_alias": null,
+    "quickjs": null
+  },
+  "typed_build": "typed-command-build",
+  "generated_go": null,
+  "restart_mappings": []
+}

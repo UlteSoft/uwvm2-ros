@@ -1,0 +1,27 @@
+#!/usr/bin/env python3
+"""A real Guest issues100 goals against an explicit two-operation burst."""
+from pathlib import Path
+import argparse
+import subprocess
+ROOT=Path(__file__).resolve().parents[2]
+p=argparse.ArgumentParser();p.add_argument('--wat2wasm',default='wat2wasm');args=p.parse_args()
+for version in (1,2):
+    text=f'''(module
+ (import "uwvm_ros{version}_v1" "capability_open" (func $open (param i32 i64 i64 i64) (result i32)))
+ (import "uwvm_ros{version}_v1" "action_send_goal" (func $send (param i64 i32 i64 i64 i64 i64 i64) (result i32)))
+ (import "wasi_snapshot_preview1" "proc_exit" (func $exit (param i32)))
+ (memory (export "memory") 1) (data (i32.const 0) "goal") (data (i32.const 8192) "\\05\\00\\00\\00")
+ (func (export "_start") (local $n i32) (local $error i32)
+  (if (call $open (i32.const 0) (i64.const 0) (i64.const 4) (i64.const 8)) (then (call $exit (i32.const 210))))
+  (loop $requests
+   (i64.store (i32.const 16) (i64.const -1)) (i64.store (i32.const 128) (i64.const -1))
+   (local.set $error (call $send (i64.load (i32.const 8)) (i32.const 0) (i64.const 8192) (i64.const 4) (i64.const 128) (i64.const 4096) (i64.const 16)))
+   (if (i32.lt_u (local.get $n) (i32.const 2))
+    (then (if (local.get $error) (then (call $exit (i32.const 211))))
+     (if (i32.or (i64.ne (i64.load (i32.const 16)) (i64.const 8)) (i64.eqz (i64.load (i32.const 128)))) (then (call $exit (i32.const 212)))))
+    (else (if (i32.ne (local.get $error) (i32.const 11)) (then (call $exit (i32.const 213))))
+     (if (i32.or (i64.ne (i64.load (i32.const 16)) (i64.const -1)) (i64.ne (i64.load (i32.const 128)) (i64.const -1))) (then (call $exit (i32.const 214))))))
+   (local.set $n (i32.add (local.get $n) (i32.const 1))) (br_if $requests (i32.lt_u (local.get $n) (i32.const 100))))))
+'''
+    path=ROOT/f'examples/ros{version}/action_flood.wat';path.write_text(text)
+    subprocess.run([args.wat2wasm,str(path),'-o',str(path.with_suffix('.wasm'))],check=True,timeout=30)

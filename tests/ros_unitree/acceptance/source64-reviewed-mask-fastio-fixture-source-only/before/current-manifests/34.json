@@ -1,0 +1,35 @@
+{
+  "kind": "source62-reviewed-genuine-management-active-segments-source-group",
+  "status": "CURRENT_SOURCE_INDEPENDENT_REVIEW_CLOSED_RETEST_PENDING",
+  "current_files": {
+    "tests/ros_debugger/management_runtime_contract.cc": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_runtime_contract.cc",
+      "bytes": 35869,
+      "sha256": "dda45eafba7fbf3c2fd3f77248f0f00b2b2a7c5a34278ee0d27f4cc6bb47f957"
+    }
+  },
+  "review_evidence": {
+    "original_package": {
+      "path": "/private/tmp/uwvm-source62-management-active-segments-fixture-source-only-20261017-r1/root-applied-source-ready.json",
+      "bytes": 1176,
+      "sha256": "d712ef5eb6e042b76c7d1b883b124ddf9db9d75d426a3dbdb594e901349cdddb"
+    },
+    "saved_package": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/review-evidence/source-ready.original.json",
+      "bytes": 1176,
+      "sha256": "d712ef5eb6e042b76c7d1b883b124ddf9db9d75d426a3dbdb594e901349cdddb"
+    },
+    "original_independent_peer": {
+      "path": "/private/tmp/uwvm-source62-management-active-segments-independent-source-peer-recovery-20261017-r1.json",
+      "bytes": 10596,
+      "sha256": "0c8cd7b67d69fc3d7244c8545a286d09acbe380cc042321d03e4d396752038d3"
+    },
+    "saved_independent_peer": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/review-evidence/independent-source-peer.json",
+      "bytes": 10596,
+      "sha256": "0c8cd7b67d69fc3d7244c8545a286d09acbe380cc042321d03e4d396752038d3"
+    }
+  },
+  "execution_performed": false,
+  "scope": "Real CLI active data and element segment initialization in the management fixture; no future execution credit."
+}

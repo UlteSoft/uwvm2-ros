@@ -1,0 +1,771 @@
+{
+  "Guest_executed": false,
+  "binding": null,
+  "compiler_executed": false,
+  "default_authority": [],
+  "generation": {
+    "compiler_execution": "NOT_RUN",
+    "declared_constants": {},
+    "declared_defaults": {
+      "geometry_msgs/msg/Quaternion": {
+        "w": "1.0",
+        "x": "0.0",
+        "y": "0.0",
+        "z": "0.0"
+      }
+    },
+    "declared_empty_default_native_binding": "REFUSED_UNTIL_INDEPENDENT_ORIGINAL_NATIVE_IDL_SOURCE_PROOF",
+    "default_authority": [],
+    "facade_template_inputs": [],
+    "format": "uwvm-ros-vendor-complete-bounded-v1",
+    "implemented_record_outputs": [
+      "c",
+      "cpp",
+      "rust",
+      "javascript",
+      "assemblyscript",
+      "tinygo"
+    ],
+    "implicit_permissions": [],
+    "member_map": {
+      "builtin_interfaces/msg/Time": {
+        "assemblyscript": {
+          "nanosec": "nanosec",
+          "sec": "sec"
+        },
+        "c": {
+          "nanosec": "nanosec",
+          "sec": "sec"
+        },
+        "cpp": {
+          "nanosec": "nanosec",
+          "sec": "sec"
+        },
+        "javascript": {
+          "nanosec": "nanosec",
+          "sec": "sec"
+        },
+        "rust": {
+          "nanosec": "nanosec",
+          "sec": "sec"
+        },
+        "tinygo": {
+          "nanosec": "Nanosec",
+          "sec": "Sec"
+        }
+      },
+      "geometry_msgs/msg/Point": {
+        "assemblyscript": {
+          "x": "x",
+          "y": "y",
+          "z": "z"
+        },
+        "c": {
+          "x": "x",
+          "y": "y",
+          "z": "z"
+        },
+        "cpp": {
+          "x": "x",
+          "y": "y",
+          "z": "z"
+        },
+        "javascript": {
+          "x": "x",
+          "y": "y",
+          "z": "z"
+        },
+        "rust": {
+          "x": "x",
+          "y": "y",
+          "z": "z"
+        },
+        "tinygo": {
+          "x": "X",
+          "y": "Y",
+          "z": "Z"
+        }
+      },
+      "geometry_msgs/msg/Pose": {
+        "assemblyscript": {
+          "orientation": "orientation",
+          "position": "position"
+        },
+        "c": {
+          "orientation": "orientation",
+          "position": "position"
+        },
+        "cpp": {
+          "orientation": "orientation",
+          "position": "position"
+        },
+        "javascript": {
+          "orientation": "orientation",
+          "position": "position"
+        },
+        "rust": {
+          "orientation": "orientation",
+          "position": "position"
+        },
+        "tinygo": {
+          "orientation": "Orientation",
+          "position": "Position"
+        }
+      },
+      "geometry_msgs/msg/PoseWithCovariance": {
+        "assemblyscript": {
+          "covariance": "covariance",
+          "pose": "pose"
+        },
+        "c": {
+          "covariance": "covariance",
+          "pose": "pose"
+        },
+        "cpp": {
+          "covariance": "covariance",
+          "pose": "pose"
+        },
+        "javascript": {
+          "covariance": "covariance",
+          "pose": "pose"
+        },
+        "rust": {
+          "covariance": "covariance",
+          "pose": "pose"
+        },
+        "tinygo": {
+          "covariance": "Covariance",
+          "pose": "Pose"
+        }
+      },
+      "geometry_msgs/msg/PoseWithCovarianceStamped": {
+        "assemblyscript": {
+          "header": "header",
+          "pose": "pose"
+        },
+        "c": {
+          "header": "header",
+          "pose": "pose"
+        },
+        "cpp": {
+          "header": "header",
+          "pose": "pose"
+        },
+        "javascript": {
+          "header": "header",
+          "pose": "pose"
+        },
+        "rust": {
+          "header": "header",
+          "pose": "pose"
+        },
+        "tinygo": {
+          "header": "Header",
+          "pose": "Pose"
+        }
+      },
+      "geometry_msgs/msg/Quaternion": {
+        "assemblyscript": {
+          "w": "w",
+          "x": "x",
+          "y": "y",
+          "z": "z"
+        },
+        "c": {
+          "w": "w",
+          "x": "x",
+          "y": "y",
+          "z": "z"
+        },
+        "cpp": {
+          "w": "w",
+          "x": "x",
+          "y": "y",
+          "z": "z"
+        },
+        "javascript": {
+          "w": "w",
+          "x": "x",
+          "y": "y",
+          "z": "z"
+        },
+        "rust": {
+          "w": "w",
+          "x": "x",
+          "y": "y",
+          "z": "z"
+        },
+        "tinygo": {
+          "w": "W",
+          "x": "X",
+          "y": "Y",
+          "z": "Z"
+        }
+      },
+      "isaac_ros_apriltag_interfaces/msg/AprilTagDetection": {
+        "assemblyscript": {
+          "center": "center",
+          "corners": "corners",
+          "family": "family",
+          "id": "id",
+          "pose": "pose"
+        },
+        "c": {
+          "center": "center",
+          "corners": "corners",
+          "family": "family",
+          "id": "id",
+          "pose": "pose"
+        },
+        "cpp": {
+          "center": "center",
+          "corners": "corners",
+          "family": "family",
+          "id": "id",
+          "pose": "pose"
+        },
+        "javascript": {
+          "center": "center",
+          "corners": "corners",
+          "family": "family",
+          "id": "id",
+          "pose": "pose"
+        },
+        "rust": {
+          "center": "center",
+          "corners": "corners",
+          "family": "family",
+          "id": "id",
+          "pose": "pose"
+        },
+        "tinygo": {
+          "center": "Center",
+          "corners": "Corners",
+          "family": "Family",
+          "id": "Id",
+          "pose": "Pose"
+        }
+      },
+      "isaac_ros_apriltag_interfaces/msg/AprilTagDetectionArray": {
+        "assemblyscript": {
+          "detections": "detections",
+          "header": "header"
+        },
+        "c": {
+          "detections": "detections",
+          "header": "header"
+        },
+        "cpp": {
+          "detections": "detections",
+          "header": "header"
+        },
+        "javascript": {
+          "detections": "detections",
+          "header": "header"
+        },
+        "rust": {
+          "detections": "detections",
+          "header": "header"
+        },
+        "tinygo": {
+          "detections": "Detections",
+          "header": "Header"
+        }
+      },
+      "std_msgs/msg/Header": {
+        "assemblyscript": {
+          "frame_id": "frame_id",
+          "stamp": "stamp"
+        },
+        "c": {
+          "frame_id": "frame_id",
+          "stamp": "stamp"
+        },
+        "cpp": {
+          "frame_id": "frame_id",
+          "stamp": "stamp"
+        },
+        "javascript": {
+          "frame_id": "frame_id",
+          "stamp": "stamp"
+        },
+        "rust": {
+          "frame_id": "frame_id",
+          "stamp": "stamp"
+        },
+        "tinygo": {
+          "frame_id": "Frame_id",
+          "stamp": "Stamp"
+        }
+      }
+    },
+    "native_execution": "NOT_RUN",
+    "native_exporter_helper_source": {
+      "bytes": 10784,
+      "sha256": "55c5e504a1d61a648f73dd732aa0561f4b4dc0adf54dbe631857edf1564f3ac6"
+    },
+    "native_registry_emitted": false,
+    "outputs": {
+      "bounded_interfaces.h": {
+        "bytes": 1332,
+        "sha256": "d9c8b1a22bd5c3877398d05fa5c545b331041cf1cd741ff356bbacda32f64150"
+      },
+      "bounded_interfaces.hpp": {
+        "bytes": 3923,
+        "sha256": "2ddbcf92699a416b8dab0a2264ba3dfba6a1dc786dbb476b881c77ee9e508842"
+      },
+      "bounded_records.go": {
+        "bytes": 32105,
+        "sha256": "5d22212bccc8e91c8a8a5750c7823058a43017f2031df2cad20ea8bcb9dc7a6c"
+      },
+      "bounded_records.h": {
+        "bytes": 49310,
+        "sha256": "64553b3b81b66d892bf48902248102e527b7f95798a7b7b40f23835c27601e23"
+      },
+      "bounded_records.hpp": {
+        "bytes": 13423,
+        "sha256": "2d7c1ba8bb97de5904f5b1830aff6dfcf605c7b5464fb99984eec10aea6c6452"
+      },
+      "bounded_records.mjs": {
+        "bytes": 24772,
+        "sha256": "3da3335968be67da6a25de315ee1d68317c75386dc6ac1d5baecbf80c181e73a"
+      },
+      "bounded_records.rs": {
+        "bytes": 25528,
+        "sha256": "7ffb911fe4c680985746e4b7d574c0edae64277a105eb7da3bcbda9591a5007c"
+      },
+      "bounded_records.ts": {
+        "bytes": 31235,
+        "sha256": "5b1a3eea0b966a65514bbb8461f96fec74f99941cb279ec4f036acaa12382f82"
+      },
+      "native_constants.hpp": {
+        "bytes": 267,
+        "sha256": "4700d3bdf5da49f6392540d0487fa661da6f06c15fc817f1cf6e73bd44134b7c"
+      },
+      "native_identity.cc": {
+        "bytes": 14815,
+        "sha256": "706916d005cdaec083132aa1bf5963a22d0836206ca1e987cf27095255a0a740"
+      }
+    },
+    "records": [
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 8,
+        "codec_identity": "UWVMROS1_0fd520c23fd8cb06e2c27292fdc20694732fa9332d452fc3fa31da90f7605fb7",
+        "expanded_nodes": 3,
+        "maximum_wire_bytes": 8,
+        "minimum_wire_bytes": 8,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "builtin_interfaces/msg/Time"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 76,
+        "codec_identity": "UWVMROS1_afba9e74be3c5e3321750c1c4c30ba2925269f75b9da43a6d5c1e93d293d7396",
+        "expanded_nodes": 5,
+        "maximum_wire_bytes": 76,
+        "minimum_wire_bytes": 12,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "std_msgs/msg/Header"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 24,
+        "codec_identity": "UWVMROS1_80f43d054abe333673c940c6d0fd88e8e26cea4a1cff53ff789cccaa38240616",
+        "expanded_nodes": 4,
+        "maximum_wire_bytes": 24,
+        "minimum_wire_bytes": 24,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "geometry_msgs/msg/Point"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 32,
+        "codec_identity": "UWVMROS1_34a32c3470cbfe2ff12340781a5bf22f6c370a8f5c06669f25a34321ade81672",
+        "expanded_nodes": 5,
+        "maximum_wire_bytes": 32,
+        "minimum_wire_bytes": 32,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "geometry_msgs/msg/Quaternion"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 56,
+        "codec_identity": "UWVMROS1_9468a10b8b2728fe71a370b4348ffe5e81b884ff957533f8700aa16e70b12777",
+        "expanded_nodes": 10,
+        "maximum_wire_bytes": 56,
+        "minimum_wire_bytes": 56,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "geometry_msgs/msg/Pose"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 344,
+        "codec_identity": "UWVMROS1_8eb3e25c45769eb29691011c05315ed50f2b97eff488f9e8ee2dc70bddab4dc2",
+        "expanded_nodes": 48,
+        "maximum_wire_bytes": 344,
+        "minimum_wire_bytes": 344,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "geometry_msgs/msg/PoseWithCovariance"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 420,
+        "codec_identity": "UWVMROS1_ea380172cde0ee5fef319aff50d92a80c314510e3d12efec45e9ae1f74974af3",
+        "expanded_nodes": 54,
+        "maximum_wire_bytes": 420,
+        "minimum_wire_bytes": 356,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 612,
+        "codec_identity": "UWVMROS1_5d840f0d9239a948ce5d17bbee6e248db8151ff31070667e506e9c1647ac6fe7",
+        "expanded_nodes": 78,
+        "maximum_wire_bytes": 612,
+        "minimum_wire_bytes": 484,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "isaac_ros_apriltag_interfaces/msg/AprilTagDetection"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 9872,
+        "codec_identity": "UWVMROS1_60359e405aedd2a627e60bc35e849989fe5ed1d426afb2a884036aef93bfe0a5",
+        "expanded_nodes": 1255,
+        "maximum_wire_bytes": 9872,
+        "minimum_wire_bytes": 16,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "isaac_ros_apriltag_interfaces/msg/AprilTagDetectionArray"
+      }
+    ],
+    "required_native_domain_provider": "paired complete_vendor descriptor/Native trait/source-metadata admission; requires actual Root implementation and full rebuild; old refusal is preserved",
+    "source_generator_pair": {
+      "bounded": {
+        "bytes": 239137,
+        "sha256": "3c40ed90910bde0ec15ae8976b0e34c37061c2eeacc121259604e7eaeba89f2d"
+      },
+      "industrial_adapter": {
+        "bytes": 73639,
+        "sha256": "e830acc0c4a1cb243cb50f28cbabb71299dcc692ecd9a0b42dd725f4a4f361b3"
+      },
+      "parent": {
+        "bytes": 61312,
+        "sha256": "1a73d6a87624e563bbb6be2624e77b51d7dba0f0f2fb524cda4079f493381826"
+      }
+    },
+    "source_inputs": {
+      "catalog": {
+        "bytes": 1969,
+        "sha256": "12db9d6940713f783c89c306a4595bd1e57ac9fb07866eacbd7a1ca67a401b20"
+      },
+      "definitions": [
+        {
+          "bytes": 421,
+          "file": "builtin_interfaces/msg/Time.msg",
+          "sha256": "dc5a01ddde3aecffee21eb24974fe77cc969f873218a2b1811aa0ac8a456b8bd"
+        },
+        {
+          "bytes": 322,
+          "file": "std_msgs/msg/Header.msg",
+          "sha256": "d2cea14630e39ed0fa5b432ba9160a7c38855b9427d3344f99e83e83facb53c2"
+        },
+        {
+          "bytes": 84,
+          "file": "geometry_msgs/msg/Point.msg",
+          "sha256": "eb4c07e591cf0269ccb17245dcd4f998162feb09cc8add85fa082c8a30bfc91d"
+        },
+        {
+          "bytes": 116,
+          "file": "geometry_msgs/msg/Quaternion.msg",
+          "sha256": "298495eb67a139642ffd37cc9029eae085e6c39a8789828b7517868a487939ed"
+        },
+        {
+          "bytes": 119,
+          "file": "geometry_msgs/msg/Pose.msg",
+          "sha256": "3eceb77c63ebbb544c11d7f991e475e9819e0cf534deb1a879392c1b3dc997de"
+        },
+        {
+          "bytes": 323,
+          "file": "geometry_msgs/msg/PoseWithCovariance.msg",
+          "sha256": "a22f234e91b9fcd4ba0c5b533496b43c62d7f6ade39082212ac9835679d29f94"
+        },
+        {
+          "bytes": 131,
+          "file": "geometry_msgs/msg/PoseWithCovarianceStamped.msg",
+          "sha256": "87b6851480902effb5232f87bf68e76f19bf7b26affa11001be9e515542c21fb"
+        },
+        {
+          "bytes": 207,
+          "file": "isaac_ros_apriltag_interfaces/msg/AprilTagDetection.msg",
+          "sha256": "ca1f15f12f565f9e8b0c9ed4b407ef99596424aaedbab3a0398140b6a771fc48"
+        },
+        {
+          "bytes": 54,
+          "file": "isaac_ros_apriltag_interfaces/msg/AprilTagDetectionArray.msg",
+          "sha256": "04265d730aef8b08214eeebf8f820b63954a655b53b464fd1d1a59b017d67ced"
+        }
+      ]
+    },
+    "source_template_inputs": {
+      "interface_templates/bounded_interfaces.go.in": {
+        "bytes": 9692,
+        "sha256": "c9e7893ccedc67b91a3aebc51c1e0c3c65263f03b2769aa07c34fcfb6befa1f7"
+      },
+      "interface_templates/bounded_interfaces.mjs.in": {
+        "bytes": 17046,
+        "sha256": "10986eddd766435dde89b0d3046ef7f48705e2c3e21301c99163c3a7d4ea62fe"
+      },
+      "interface_templates/bounded_interfaces.rs.in": {
+        "bytes": 15514,
+        "sha256": "063130e797684df0530aa1882f8082a10d5756ceb892677d8082e980c7b29b18"
+      },
+      "interface_templates/bounded_interfaces.ts.in": {
+        "bytes": 16626,
+        "sha256": "a61a7b7eb3b5464648577f3ab44629a5c6140d04effff6e4099509f68b204ac5"
+      }
+    },
+    "status": "GENERATED_SOURCE_ONLY_NOT_COMPILED_OR_EXECUTED",
+    "types": [
+      {
+        "adapter_codec_identity": "UWVMROS1_0fd520c23fd8cb06e2c27292fdc20694732fa9332d452fc3fa31da90f7605fb7",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_0fd520c23fd8cb06e2c27292fdc20694732fa9332d452fc3fa31da90f7605fb7",
+            "expanded_nodes": 3,
+            "maximum_wire_bytes": 8,
+            "minimum_wire_bytes": 8,
+            "native_identity": null,
+            "type": "builtin_interfaces/msg/Time"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "builtin_interfaces/msg/Time"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_afba9e74be3c5e3321750c1c4c30ba2925269f75b9da43a6d5c1e93d293d7396",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_afba9e74be3c5e3321750c1c4c30ba2925269f75b9da43a6d5c1e93d293d7396",
+            "expanded_nodes": 5,
+            "maximum_wire_bytes": 76,
+            "minimum_wire_bytes": 12,
+            "native_identity": null,
+            "type": "std_msgs/msg/Header"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "std_msgs/msg/Header"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_80f43d054abe333673c940c6d0fd88e8e26cea4a1cff53ff789cccaa38240616",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_80f43d054abe333673c940c6d0fd88e8e26cea4a1cff53ff789cccaa38240616",
+            "expanded_nodes": 4,
+            "maximum_wire_bytes": 24,
+            "minimum_wire_bytes": 24,
+            "native_identity": null,
+            "type": "geometry_msgs/msg/Point"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "geometry_msgs/msg/Point"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_34a32c3470cbfe2ff12340781a5bf22f6c370a8f5c06669f25a34321ade81672",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_34a32c3470cbfe2ff12340781a5bf22f6c370a8f5c06669f25a34321ade81672",
+            "expanded_nodes": 5,
+            "maximum_wire_bytes": 32,
+            "minimum_wire_bytes": 32,
+            "native_identity": null,
+            "type": "geometry_msgs/msg/Quaternion"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "geometry_msgs/msg/Quaternion"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_9468a10b8b2728fe71a370b4348ffe5e81b884ff957533f8700aa16e70b12777",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_9468a10b8b2728fe71a370b4348ffe5e81b884ff957533f8700aa16e70b12777",
+            "expanded_nodes": 10,
+            "maximum_wire_bytes": 56,
+            "minimum_wire_bytes": 56,
+            "native_identity": null,
+            "type": "geometry_msgs/msg/Pose"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "geometry_msgs/msg/Pose"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_8eb3e25c45769eb29691011c05315ed50f2b97eff488f9e8ee2dc70bddab4dc2",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_8eb3e25c45769eb29691011c05315ed50f2b97eff488f9e8ee2dc70bddab4dc2",
+            "expanded_nodes": 48,
+            "maximum_wire_bytes": 344,
+            "minimum_wire_bytes": 344,
+            "native_identity": null,
+            "type": "geometry_msgs/msg/PoseWithCovariance"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "geometry_msgs/msg/PoseWithCovariance"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_ea380172cde0ee5fef319aff50d92a80c314510e3d12efec45e9ae1f74974af3",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_ea380172cde0ee5fef319aff50d92a80c314510e3d12efec45e9ae1f74974af3",
+            "expanded_nodes": 54,
+            "maximum_wire_bytes": 420,
+            "minimum_wire_bytes": 356,
+            "native_identity": null,
+            "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_5d840f0d9239a948ce5d17bbee6e248db8151ff31070667e506e9c1647ac6fe7",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_5d840f0d9239a948ce5d17bbee6e248db8151ff31070667e506e9c1647ac6fe7",
+            "expanded_nodes": 78,
+            "maximum_wire_bytes": 612,
+            "minimum_wire_bytes": 484,
+            "native_identity": null,
+            "type": "isaac_ros_apriltag_interfaces/msg/AprilTagDetection"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "isaac_ros_apriltag_interfaces/msg/AprilTagDetection"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_60359e405aedd2a627e60bc35e849989fe5ed1d426afb2a884036aef93bfe0a5",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_60359e405aedd2a627e60bc35e849989fe5ed1d426afb2a884036aef93bfe0a5",
+            "expanded_nodes": 1255,
+            "maximum_wire_bytes": 9872,
+            "minimum_wire_bytes": 16,
+            "native_identity": null,
+            "type": "isaac_ros_apriltag_interfaces/msg/AprilTagDetectionArray"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "isaac_ros_apriltag_interfaces/msg/AprilTagDetectionArray"
+      }
+    ]
+  },
+  "hardware_qualified": false,
+  "kind": "industrial-complete-source-preparation-not-acceptance",
+  "mode": "prepare",
+  "native_delivery_qualified": false,
+  "native_metadata": null,
+  "native_owner_report": null,
+  "original_catalog": {
+    "bytes": 1969,
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/robots/nvidia/isaac_ros/source-definitions/ros2/catalog.preparation.json",
+    "sha256": "7d9aa5ff80d70a210d63aab787d4e490c29dbc94243c8d05a290c996f2e4b09c"
+  },
+  "original_definitions": {
+    "builtin_interfaces/msg/Time.msg": {
+      "bytes": 421,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/robots/nvidia/isaac_ros/source-definitions/ros2/builtin_interfaces/msg/Time.msg",
+      "sha256": "dc5a01ddde3aecffee21eb24974fe77cc969f873218a2b1811aa0ac8a456b8bd"
+    },
+    "geometry_msgs/msg/Point.msg": {
+      "bytes": 84,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/robots/nvidia/isaac_ros/source-definitions/ros2/geometry_msgs/msg/Point.msg",
+      "sha256": "eb4c07e591cf0269ccb17245dcd4f998162feb09cc8add85fa082c8a30bfc91d"
+    },
+    "geometry_msgs/msg/Pose.msg": {
+      "bytes": 119,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/robots/nvidia/isaac_ros/source-definitions/ros2/geometry_msgs/msg/Pose.msg",
+      "sha256": "3eceb77c63ebbb544c11d7f991e475e9819e0cf534deb1a879392c1b3dc997de"
+    },
+    "geometry_msgs/msg/PoseWithCovariance.msg": {
+      "bytes": 323,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/robots/nvidia/isaac_ros/source-definitions/ros2/geometry_msgs/msg/PoseWithCovariance.msg",
+      "sha256": "a22f234e91b9fcd4ba0c5b533496b43c62d7f6ade39082212ac9835679d29f94"
+    },
+    "geometry_msgs/msg/PoseWithCovarianceStamped.msg": {
+      "bytes": 131,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/robots/nvidia/isaac_ros/source-definitions/ros2/geometry_msgs/msg/PoseWithCovarianceStamped.msg",
+      "sha256": "87b6851480902effb5232f87bf68e76f19bf7b26affa11001be9e515542c21fb"
+    },
+    "geometry_msgs/msg/Quaternion.msg": {
+      "bytes": 116,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/robots/nvidia/isaac_ros/source-definitions/ros2/geometry_msgs/msg/Quaternion.msg",
+      "sha256": "298495eb67a139642ffd37cc9029eae085e6c39a8789828b7517868a487939ed"
+    },
+    "isaac_ros_apriltag_interfaces/msg/AprilTagDetection.msg": {
+      "bytes": 207,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/robots/nvidia/isaac_ros/source-definitions/ros2/isaac_ros_apriltag_interfaces/msg/AprilTagDetection.msg",
+      "sha256": "ca1f15f12f565f9e8b0c9ed4b407ef99596424aaedbab3a0398140b6a771fc48"
+    },
+    "isaac_ros_apriltag_interfaces/msg/AprilTagDetectionArray.msg": {
+      "bytes": 54,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/robots/nvidia/isaac_ros/source-definitions/ros2/isaac_ros_apriltag_interfaces/msg/AprilTagDetectionArray.msg",
+      "sha256": "04265d730aef8b08214eeebf8f820b63954a655b53b464fd1d1a59b017d67ced"
+    },
+    "std_msgs/msg/Header.msg": {
+      "bytes": 322,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/robots/nvidia/isaac_ros/source-definitions/ros2/std_msgs/msg/Header.msg",
+      "sha256": "d2cea14630e39ed0fa5b432ba9160a7c38855b9427d3344f99e83e83facb53c2"
+    }
+  },
+  "original_source_inputs": {
+    "adapter": {
+      "bytes": 73639,
+      "sha256": "e830acc0c4a1cb243cb50f28cbabb71299dcc692ecd9a0b42dd725f4a4f361b3"
+    },
+    "bounded": {
+      "bytes": 239137,
+      "sha256": "3c40ed90910bde0ec15ae8976b0e34c37061c2eeacc121259604e7eaeba89f2d"
+    },
+    "exporter": {
+      "bytes": 10784,
+      "sha256": "55c5e504a1d61a648f73dd732aa0561f4b4dc0adf54dbe631857edf1564f3ac6"
+    },
+    "parent": {
+      "bytes": 61312,
+      "sha256": "1a73d6a87624e563bbb6be2624e77b51d7dba0f0f2fb524cda4079f493381826"
+    }
+  },
+  "source_preparation_executed": true
+}

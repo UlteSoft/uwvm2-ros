@@ -1,0 +1,121 @@
+{
+  "format": "uwvm-ros-custom-fixed-v1",
+  "status": "GENERATED_GUEST_SOURCE_ONLY",
+  "native_registry_emitted": false,
+  "native_identity_provenance": "not required for guest-only source; otherwise caller-supplied official identities requiring native verification",
+  "native_execution": "NOT_RUN",
+  "compiler_execution": "NOT_RUN",
+  "source_inputs": {
+    "catalog": {
+      "bytes": 458,
+      "sha256": "75566dcb34b856304dd0b96bcb34c7ae2ea09e81b81cb628b51ac796aa7882b8"
+    },
+    "definitions": [
+      {
+        "file": "FixedSample.idl",
+        "bytes": 391,
+        "sha256": "d6a92dd435a498b2922dbfa37c7494ec9446ad8a1e3e8f189ce859e20f0a107d"
+      },
+      {
+        "file": "NestedRecord.msg",
+        "bytes": 186,
+        "sha256": "101507bd2d0a1921f52f05cb390df4a31c05066585f174a8967aa73c8bfc21c1"
+      },
+      {
+        "file": "Packet.msg",
+        "bytes": 302,
+        "sha256": "1a6bbaec46f19f2bc83f7321f2ead6b6505f15e9a15fef955c76adf9aebc6226"
+      },
+      {
+        "file": "ScalarRecord.msg",
+        "bytes": 358,
+        "sha256": "4ffea3a26e1f14c8a584e2db1f3fe71184585cd7737cf8b95f4307a9fc62380f"
+      }
+    ]
+  },
+  "generator_sha256": "4a0670d10b35d647d59dccf84809386edc03fc79cded955402e028e4d92e203e",
+  "types": [
+    {
+      "ros_version": 1,
+      "type": "example_interfaces_custom/Packet",
+      "native_identity": null,
+      "adapter_codec_identity": "UWVMROS1_e68d0934f545cd81105ac13682379dc84f023c860c070c046e69c7f70e94d407",
+      "wire_bytes": 23,
+      "scalar_cells": 10,
+      "native_operations": [
+        "topic.publish",
+        "topic.subscribe"
+      ]
+    },
+    {
+      "ros_version": 1,
+      "type": "example_interfaces_custom/ScalarRecord",
+      "native_identity": null,
+      "adapter_codec_identity": "UWVMROS1_dfab9988d24ce356a6a914d4ae6f6a7c8c44dc8118cfc768e41fa8bf47f386c6",
+      "wire_bytes": 43,
+      "scalar_cells": 11,
+      "native_operations": [
+        "topic.publish",
+        "topic.subscribe"
+      ]
+    },
+    {
+      "ros_version": 1,
+      "type": "example_interfaces_custom/NestedRecord",
+      "native_identity": null,
+      "adapter_codec_identity": "UWVMROS1_b0856889a47eb923055e44730a21c04d498472c373a1b9539a8f213a7c09ae5c",
+      "wire_bytes": 98,
+      "scalar_cells": 25,
+      "native_operations": [
+        "topic.publish",
+        "topic.subscribe"
+      ]
+    },
+    {
+      "ros_version": 2,
+      "type": "example_interfaces_custom/msg/FixedSample",
+      "native_identity": null,
+      "adapter_codec_identity": "UWVMROS1_b794a6eb1863626cf279af1fbad1f071fce945d6585f3fdb22979c8f24e32663",
+      "wire_bytes": 45,
+      "scalar_cells": 16,
+      "native_operations": [
+        "topic.publish",
+        "topic.subscribe"
+      ]
+    }
+  ],
+  "packages": {
+    "ros1": [
+      "example_interfaces_custom"
+    ],
+    "ros2": [
+      "example_interfaces_custom"
+    ]
+  },
+  "outputs": {
+    "fixed_records.h": {
+      "bytes": 23708,
+      "sha256": "0a7df74c4ded40d834a527c87f880908ef1aac45cfbee86793d6a829f75cac9e"
+    },
+    "fixed_records.hpp": {
+      "bytes": 4769,
+      "sha256": "c71587fd1b41e0a61f3093a55c1908dea424dcd4fb35c127baccf29e5a31ca74"
+    },
+    "fixed_records.rs": {
+      "bytes": 22154,
+      "sha256": "510e65a66f89039ebd0e269bfde19614e665cd259353eed5416577c8730590fc"
+    },
+    "fixed_records.mjs": {
+      "bytes": 14979,
+      "sha256": "9a922f365f1c5422df28032248f6dbdacf89344f4df97d5e1065062108c8010d"
+    },
+    "fixed_records.ts": {
+      "bytes": 14308,
+      "sha256": "96afd7e6592702677c5edbbf39890f3ef3d0eab3b22a87b3b33d4c2570dfcc8b"
+    },
+    "fixed_records.go": {
+      "bytes": 18020,
+      "sha256": "8965e583a02d5a68a6df994ac85a7ffbc8d73608e1a7524dc9cfdad4aa8468f9"
+    }
+  }
+}

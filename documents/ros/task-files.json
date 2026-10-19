@@ -1,0 +1,5503 @@
+{
+  "scope": "ROS extension owned paths; unrelated working-tree changes excluded",
+  "baseline_limitation": "Runtime core files were dirty at task start and have no saved pre-task copies. Their complete HEAD diffs must not be attributed to this task.",
+  "modified_count": 14,
+  "new_count": 900,
+  "files": [
+    {
+      "path": ".github/workflows/ros-extension.yml",
+      "kind": "new",
+      "sha256": "afaab1d3f72c3550c76cbacfd9cac6497ebb4f9d2f587381c9b3dc18eff33678",
+      "bytes": 2514
+    },
+    {
+      "path": "README.md",
+      "kind": "modified",
+      "sha256": "1c11f762212a698c6fc9e74afa168cc131426d9c4189d4e783968380046730fb",
+      "bytes": 6985,
+      "task_start_sha256": "20f6504d751a7d06f774d85f62c0f29475d8001ee02a66c436cf569e22fe9fbb"
+    },
+    {
+      "path": "documents/command-line/ros1.md",
+      "kind": "new",
+      "sha256": "ad76269615a5e6f0da0b3d6e96d97256d6979bd420b8053d937c7906efc3544d",
+      "bytes": 7846
+    },
+    {
+      "path": "documents/command-line/ros2.md",
+      "kind": "new",
+      "sha256": "b9c34536152a6265acd7c1a686926793ed68b70cbf0cb3c81dc8db7a016b7848",
+      "bytes": 9299
+    },
+    {
+      "path": "documents/ros/abi.md",
+      "kind": "new",
+      "sha256": "80d566a7c8ac6b0a449c1048194a809f51fa9869b52d0ae84b56ef2e755ed083",
+      "bytes": 14879
+    },
+    {
+      "path": "documents/ros/acceptance-matrix.md",
+      "kind": "new",
+      "sha256": "e5c8b2c4e313e3ea4468dd07f40344bb99171f1cd02e6d230edeaac2adebc533",
+      "bytes": 16273
+    },
+    {
+      "path": "documents/ros/architecture.md",
+      "kind": "new",
+      "sha256": "de67637b8aeb6531bffe1b622bdd02ba88a6667729da750c581409e91da515a9",
+      "bytes": 3480
+    },
+    {
+      "path": "documents/ros/build.md",
+      "kind": "new",
+      "sha256": "80fb30edf5eb4914a96c18e3bcdd9a82dc57fa56bcf2ddb0f08985819e8ce62c",
+      "bytes": 7018
+    },
+    {
+      "path": "documents/ros/capabilities.md",
+      "kind": "new",
+      "sha256": "0e5060c9bfbd5c568692df3bb15448d5c580619b5457a2cef9a8f06369e9a519",
+      "bytes": 61003
+    },
+    {
+      "path": "documents/ros/evidence-20261012-v4.tgz",
+      "kind": "new",
+      "sha256": "b5db703ee001713b0d28a4670a52993f1d514d6231fd3df462324b4295a79ee6",
+      "bytes": 2556448
+    },
+    {
+      "path": "documents/ros/evidence-20261012-v4.tgz.json",
+      "kind": "new",
+      "sha256": "4b2a138088e03727aae90696f9860e0f144881a3c2530de674ac2db02b875bd9",
+      "bytes": 273
+    },
+    {
+      "path": "documents/ros/evidence-20261012-v5.tgz",
+      "kind": "new",
+      "sha256": "1af96f9889eadc770a7e6c699f8626309877434d225a123c2c564348de070872",
+      "bytes": 4267372
+    },
+    {
+      "path": "documents/ros/evidence-20261012-v5.tgz.json",
+      "kind": "new",
+      "sha256": "3eaf0a8c5a70dd96d67065ad7b3baccc1d5eaa3aa01fdb0d552d353e02eb8d18",
+      "bytes": 265
+    },
+    {
+      "path": "documents/ros/evidence-20261012-v6.tgz",
+      "kind": "new",
+      "sha256": "3ffac48e6a004a0dd2753960138c5e96f52bd1bfb599a9c983534c488511ef6e",
+      "bytes": 6153437
+    },
+    {
+      "path": "documents/ros/evidence-20261012-v6.tgz.json",
+      "kind": "new",
+      "sha256": "68f30bee3220b583348b0c7679e7614d7ede6ae7e7ecc2b01aa0d1861b8b85d7",
+      "bytes": 265
+    },
+    {
+      "path": "documents/ros/evidence-20261012-v8.tgz",
+      "kind": "new",
+      "sha256": "fe8b37f3bb67c05cd0eff420f39214f7ffe7a46ae19ca19da39c9a612c88e114",
+      "bytes": 22335598
+    },
+    {
+      "path": "documents/ros/evidence-20261012-v8.tgz.json",
+      "kind": "new",
+      "sha256": "f15e4eecdf712d97e4016b4a231e902215f2c56b51c27d6f1550c56397450500",
+      "bytes": 308
+    },
+    {
+      "path": "documents/ros/evidence-20261012.tgz",
+      "kind": "new",
+      "sha256": "a92e3bd1902137fd80864bc03b271227e971c379e1624f40c13a3a42c04e42c4",
+      "bytes": 1626288
+    },
+    {
+      "path": "documents/ros/evidence-20261012.tgz.json",
+      "kind": "new",
+      "sha256": "1202fde15e1a1a15afb3eb7e3571c6435bffa2d016ecb68a3234dd3894a9b48c",
+      "bytes": 270
+    },
+    {
+      "path": "documents/ros/final-acceptance.json",
+      "kind": "new",
+      "sha256": "1a2cac42d0f6c3910b81455f16e03f6d48834e5348d326cd265a9460edc30948",
+      "bytes": 14012
+    },
+    {
+      "path": "documents/ros/final-checklist.md",
+      "kind": "new",
+      "sha256": "25bc8a91d0702eabd62e3f38f3cd5a6c42404a0aee6c275359b3137c9b0f1124",
+      "bytes": 16188
+    },
+    {
+      "path": "documents/ros/final-cleanup.json",
+      "kind": "new",
+      "sha256": "2dfc57496efc90a8bfef07521fb63de0fa3cd7f0150ea9443ad5fc6fbd8649ea",
+      "bytes": 650
+    },
+    {
+      "path": "documents/ros/final-delivery-bindings.json",
+      "kind": "new",
+      "sha256": "4437cf1b3f60b012a6079ea2e1838db7b4dc7837a361f9f0d8f720fa9022f7a4",
+      "bytes": 435521
+    },
+    {
+      "path": "documents/ros/final-evidence-index.json",
+      "kind": "new",
+      "sha256": "30396306dd37cd299d242452e794b691e91622b18e07f21f62ccc20059a0a2d0",
+      "bytes": 12361
+    },
+    {
+      "path": "documents/ros/final-v2-source-comparison.json",
+      "kind": "new",
+      "sha256": "6da6fd77823c3503ae213e7565a22012df570e16567f8fa8796998d2755bee77",
+      "bytes": 2081
+    },
+    {
+      "path": "documents/ros/final-v3-source-comparison.json",
+      "kind": "new",
+      "sha256": "ce41a1ae6a0fa6be3ceaf65388b6e1ffc29eae761979b374cda577ddf4d02c9b",
+      "bytes": 4112
+    },
+    {
+      "path": "documents/ros/final-v4-source-comparison.json",
+      "kind": "new",
+      "sha256": "bcac45e7bf3fdeba7847a5c511d3ae9abc6748f30cb60a83db496743107aed6e",
+      "bytes": 5167
+    },
+    {
+      "path": "documents/ros/final-v5-archive-verification.json",
+      "kind": "new",
+      "sha256": "21475ae901a10160dcd6074581fc3779592e26df1ab851d7fd741230ea6228c3",
+      "bytes": 310
+    },
+    {
+      "path": "documents/ros/final-v5-documentation-validation.json",
+      "kind": "new",
+      "sha256": "c8c2514ec70a1a7223e4f7131206ee56ede654c5db0ee4b42095ee91beeed57c",
+      "bytes": 24386
+    },
+    {
+      "path": "documents/ros/final-v5-scalar-fixtures.json",
+      "kind": "new",
+      "sha256": "793742700db3a0b8d5bd9fbd3071e822c6ec06dac6b426b7ac988d76e869f7f2",
+      "bytes": 22960
+    },
+    {
+      "path": "documents/ros/final-v5-source-comparison.json",
+      "kind": "new",
+      "sha256": "99abb8aa988b8f9e6b89f091994d575ec86735f99def9055df83971df460a343",
+      "bytes": 5494
+    },
+    {
+      "path": "documents/ros/final-v6-archive-verification.json",
+      "kind": "new",
+      "sha256": "3f5794284fcb5a1d61e852f9b9cf3e6f85283bba00576128f0f8fff02369fcfc",
+      "bytes": 310
+    },
+    {
+      "path": "documents/ros/final-v6-documentation-validation.json",
+      "kind": "new",
+      "sha256": "788d1150822ad55303fe094e078a41f210ca9474a6b7c1e037680e2a915ce145",
+      "bytes": 33452
+    },
+    {
+      "path": "documents/ros/final-v6-event-fixtures.json",
+      "kind": "new",
+      "sha256": "8850ea084bf77672be666da5efcc7df7209f9acca4e598180f1ea923287b2219",
+      "bytes": 98269
+    },
+    {
+      "path": "documents/ros/final-v6-scalar-fixtures.json",
+      "kind": "new",
+      "sha256": "8068509216fe7fd4966336133b09b7172c12bd6e1db89ec9374b6af27f69ac9f",
+      "bytes": 158069
+    },
+    {
+      "path": "documents/ros/final-v6-source-comparison.json",
+      "kind": "new",
+      "sha256": "2116fc483241a02c19c0ac5cea4850b13438bcfd127b5bd713b8a99d92210c5e",
+      "bytes": 8769
+    },
+    {
+      "path": "documents/ros/final-v7-source-comparison.json",
+      "kind": "new",
+      "sha256": "55b6f1ab037f18a59af3397118d339238ea55e9d5b2a0d050e7578c687fcaa58",
+      "bytes": 8769
+    },
+    {
+      "path": "documents/ros/final-v8-archive-verification.json",
+      "kind": "new",
+      "sha256": "00b92926fc65ad5a76cbdf487c3b18bde58884c4a99a74bac885a6cd478518c2",
+      "bytes": 311
+    },
+    {
+      "path": "documents/ros/final-v8-array-fixtures.json",
+      "kind": "new",
+      "sha256": "245348c004c117d10d0c29e7fd5bd5d715ed0211ea926afb90c310edae3ffb9f",
+      "bytes": 401653
+    },
+    {
+      "path": "documents/ros/final-v8-documentation-validation.json",
+      "kind": "new",
+      "sha256": "ff9a8af3caab7aaabc016d5eb8d7d75b431a98b85228ad9cadb8d35f9b7668bf",
+      "bytes": 645045
+    },
+    {
+      "path": "documents/ros/final-v8-event-fixtures.json",
+      "kind": "new",
+      "sha256": "dfe890ae137ab2cbe3afde28c957e95ce841944072967fb1dc5e433c62e57ed8",
+      "bytes": 98674
+    },
+    {
+      "path": "documents/ros/final-v8-scalar-fixtures.json",
+      "kind": "new",
+      "sha256": "52f617d60fe567c383c139952d22f46e17e4e503381db5ee2af77218c4d34358",
+      "bytes": 158754
+    },
+    {
+      "path": "documents/ros/final-v8-source-comparison.json",
+      "kind": "new",
+      "sha256": "5257cd36fb30c738b250577691992873ea1a232cef2c571eedd87f50e1a87e6e",
+      "bytes": 26794
+    },
+    {
+      "path": "documents/ros/ipc.md",
+      "kind": "new",
+      "sha256": "f319dd2f2b7d42fbda1f01b175d453d54b822b51f2119e651f3ef52ced8a4de8",
+      "bytes": 3113
+    },
+    {
+      "path": "documents/ros/multimodule.md",
+      "kind": "new",
+      "sha256": "6a28ff468f54021e023ce8c5302ac57af6568d78b667b52507d5e47f3a25cd9d",
+      "bytes": 1997
+    },
+    {
+      "path": "documents/ros/security.md",
+      "kind": "new",
+      "sha256": "9fb858bdaa9a38bcd3741435be912b374b537a82d0ec3506ed3101a4266762c8",
+      "bytes": 5354
+    },
+    {
+      "path": "documents/ros/test-report.md",
+      "kind": "new",
+      "sha256": "2f1bb20cb504550c8e84f9b7ba28da7e2f2f5dee04cdc671f6eff6997706afc8",
+      "bytes": 51843
+    },
+    {
+      "path": "documents/ros/testing.md",
+      "kind": "new",
+      "sha256": "6012bedb944413a2d908a360fdc0632926658b11ee03c042de896a30d359c9cd",
+      "bytes": 13677
+    },
+    {
+      "path": "examples/ros1/README.md",
+      "kind": "new",
+      "sha256": "c1172a411f97a79dbef0fb6c39e1b8fe0d9b775b61a59c32bf369fe49800a1e5",
+      "bytes": 1259
+    },
+    {
+      "path": "examples/ros1/action_cancel_denied.wasm",
+      "kind": "new",
+      "sha256": "b09ba6da32e5bfdb9b7d6527623e9d2c634dfcbe2a187106782fb680828eece0",
+      "bytes": 376
+    },
+    {
+      "path": "examples/ros1/action_cancel_denied.wat",
+      "kind": "new",
+      "sha256": "33eede55aecabcd43f49fd6201fe330177cf03d447a298bb39ae4739b6439d30",
+      "bytes": 1319
+    },
+    {
+      "path": "examples/ros1/action_client.wasm",
+      "kind": "new",
+      "sha256": "587085bcd30a78a88f6a76b784d1f86a3beee31172d1f33da6604e0b336e0446",
+      "bytes": 1219
+    },
+    {
+      "path": "examples/ros1/action_client.wat",
+      "kind": "new",
+      "sha256": "e9d1858b0b3ab91844147244007a88a4811c0f7e7a8353c30b20a70a6b3ced2a",
+      "bytes": 5900
+    },
+    {
+      "path": "examples/ros1/action_denied.wasm",
+      "kind": "new",
+      "sha256": "99ce770b983c1ea3737fcbb7c4b4ac594990e98e9d1af79a909e35c6d75929f7",
+      "bytes": 304
+    },
+    {
+      "path": "examples/ros1/action_denied.wat",
+      "kind": "new",
+      "sha256": "61150304a56253ad619ebcd1511d93a279c799e0e46ecfc311f079b874484b41",
+      "bytes": 1016
+    },
+    {
+      "path": "examples/ros1/action_flood.wasm",
+      "kind": "new",
+      "sha256": "24592edabab482ff5e304bdbaffd9ff36ebcdba44ead671da1b0e6f26cef127a",
+      "bytes": 359
+    },
+    {
+      "path": "examples/ros1/action_flood.wat",
+      "kind": "new",
+      "sha256": "72de01b5378ffd8643e2a3db54fd01e6a227f0b345d55b7f447bb5529d33e61f",
+      "bytes": 1437
+    },
+    {
+      "path": "examples/ros1/action_server.wasm",
+      "kind": "new",
+      "sha256": "13b146d0e49804280caeed342e7adb220c2c5de4835365bf56dad60a67aa57ce",
+      "bytes": 837
+    },
+    {
+      "path": "examples/ros1/action_server.wat",
+      "kind": "new",
+      "sha256": "68ca8ec85b0e410684c4bf8d44dc802b77ef0a855b8fef272681499ebcd53adc",
+      "bytes": 3583
+    },
+    {
+      "path": "examples/ros1/array_parameter_profiles.json",
+      "kind": "new",
+      "sha256": "579d58a4a0aef72fbd22450da02aec2a243b2eb14ee0b68077dac4d5fb005d77",
+      "bytes": 113860
+    },
+    {
+      "path": "examples/ros1/graph_denied.wasm",
+      "kind": "new",
+      "sha256": "5f319c21781a8aaa50e1ace57e831b8bb246e486a9d3b4a131dfaba630afc0b6",
+      "bytes": 303
+    },
+    {
+      "path": "examples/ros1/graph_denied.wat",
+      "kind": "new",
+      "sha256": "2903bb6fbd0d8dc9d409d858569b54ed4cc27b379943221f6c2566e4098d498d",
+      "bytes": 1015
+    },
+    {
+      "path": "examples/ros1/graph_flood.wasm",
+      "kind": "new",
+      "sha256": "0c14728f5ac458cae58d107fbd3dc79e41768f80b0e82295156224da52eae659",
+      "bytes": 492
+    },
+    {
+      "path": "examples/ros1/graph_flood.wat",
+      "kind": "new",
+      "sha256": "86678ce54d23b949dfb4e4bd1f2a1cf7c616eb1db763fbe0ae2f53a18d078705",
+      "bytes": 2148
+    },
+    {
+      "path": "examples/ros1/graph_inspect_node.wasm",
+      "kind": "new",
+      "sha256": "c09083a24baa9a7c55783705a0211febbb5843d8e87b041519c162ea865ba7c1",
+      "bytes": 585
+    },
+    {
+      "path": "examples/ros1/graph_inspect_node.wat",
+      "kind": "new",
+      "sha256": "6529b1d2c07ced050d7c57cce5e3099d208fe248518ec9991169928a152b15d4",
+      "bytes": 2755
+    },
+    {
+      "path": "examples/ros1/graph_inspect_service.wasm",
+      "kind": "new",
+      "sha256": "78383b827f042d4b17c45e3e359a63bde88bb4e506223413d3a27ec534ec935d",
+      "bytes": 589
+    },
+    {
+      "path": "examples/ros1/graph_inspect_service.wat",
+      "kind": "new",
+      "sha256": "08f211dee403bf5652d7664cf429727cc03549ab5fa012e53847ff7ee932ff80",
+      "bytes": 2761
+    },
+    {
+      "path": "examples/ros1/graph_inspect_topic.wasm",
+      "kind": "new",
+      "sha256": "3809fc4289194196bf1a5c0e53badd1b1d49676f7f2f48b03bf53cc1f256495c",
+      "bytes": 585
+    },
+    {
+      "path": "examples/ros1/graph_inspect_topic.wat",
+      "kind": "new",
+      "sha256": "087454843ad3bd572429c53c4758135f306258074175b0ad8ec0b7c75653966c",
+      "bytes": 2753
+    },
+    {
+      "path": "examples/ros1/graph_list_nodes.wasm",
+      "kind": "new",
+      "sha256": "cb244c9ca60e5252a4b7f1ccd3f9a5db403c90a40c335931d087182e6d0bd833",
+      "bytes": 583
+    },
+    {
+      "path": "examples/ros1/graph_list_nodes.wat",
+      "kind": "new",
+      "sha256": "2d5df5e67b1bc46a94ceb7fb859c24b2a33c41282212c89021019b32b9265654",
+      "bytes": 2753
+    },
+    {
+      "path": "examples/ros1/graph_list_services.wasm",
+      "kind": "new",
+      "sha256": "89b35bb48469a392122c9a31d23f51b3280070a4440b62dfd1759b3f0aed457d",
+      "bytes": 587
+    },
+    {
+      "path": "examples/ros1/graph_list_services.wat",
+      "kind": "new",
+      "sha256": "70119228c3c58c0498e2c7f26fce2ccb8927ae6ad9be1303dd2177c1761e49fb",
+      "bytes": 2759
+    },
+    {
+      "path": "examples/ros1/graph_list_topics.wasm",
+      "kind": "new",
+      "sha256": "5133bfa539ed3b58d384029053dcff5682e37cd7bbba7892a25520414e3a3547",
+      "bytes": 583
+    },
+    {
+      "path": "examples/ros1/graph_list_topics.wat",
+      "kind": "new",
+      "sha256": "0f15b433217831318dd7dd3ccc70809e0e8a67a23805c15bfc4efcb0b5cd8cf6",
+      "bytes": 2751
+    },
+    {
+      "path": "examples/ros1/handle_security.wasm",
+      "kind": "new",
+      "sha256": "8a1b48be0c04047a30c414444bd27f3fa4f6b32cfbe25b2d3d295e35396e47dc",
+      "bytes": 447
+    },
+    {
+      "path": "examples/ros1/handle_security.wat",
+      "kind": "new",
+      "sha256": "37210aec222bd3d3b2b1b5ab188db93d38e80f5426741917ca4b935307270071",
+      "bytes": 1636
+    },
+    {
+      "path": "examples/ros1/listener.c",
+      "kind": "new",
+      "sha256": "59f6619777f57a00d597408c18b780cada79ee3fcb54f93a81fd0146ea64bcaf",
+      "bytes": 1187
+    },
+    {
+      "path": "examples/ros1/listener.wasm",
+      "kind": "new",
+      "sha256": "aff73e039a4e3118c0fc8589cd302f2bfd5ac2e5f9473b5da592298235f616b2",
+      "bytes": 457
+    },
+    {
+      "path": "examples/ros1/listener.wat",
+      "kind": "new",
+      "sha256": "5bd49ce58a074bb986e073c0c47cc7754428e9068beee5e85dc60dd9a888e466",
+      "bytes": 1769
+    },
+    {
+      "path": "examples/ros1/listener_bool.wasm",
+      "kind": "new",
+      "sha256": "872b5e27e24c4f6ac842ae9587b079301b72dbe1fa51e30ce858340eb36ce49d",
+      "bytes": 479
+    },
+    {
+      "path": "examples/ros1/listener_bool.wat",
+      "kind": "new",
+      "sha256": "e9c1eddb79c76ab50c3e0658067ef53cb90b8a0506424cb4752924b71c450746",
+      "bytes": 1965
+    },
+    {
+      "path": "examples/ros1/listener_image.wasm",
+      "kind": "new",
+      "sha256": "081427544eb165d27e14c5c37d8859d4c6b1f85933270d6be18cd11b7b1af4e5",
+      "bytes": 545
+    },
+    {
+      "path": "examples/ros1/listener_image.wat",
+      "kind": "new",
+      "sha256": "8f911bef7297a155b5561e11eda7171aa7c4499f4b437f0adbe70727e91d247b",
+      "bytes": 2159
+    },
+    {
+      "path": "examples/ros1/listener_twist.wasm",
+      "kind": "new",
+      "sha256": "b41bfebb8494b717f9200e2ed16b399ddaafcdcd40214624c70ad8336cd9685f",
+      "bytes": 526
+    },
+    {
+      "path": "examples/ros1/listener_twist.wat",
+      "kind": "new",
+      "sha256": "9ab577d270b8c193cace3cd771ea80c26f6b5756a32b089613d655740670e0ed",
+      "bytes": 2108
+    },
+    {
+      "path": "examples/ros1/log_flood.wasm",
+      "kind": "new",
+      "sha256": "f662ca0f93591338a10c0d16de37e692f585fc0b687509ea6b1c1f1196d95f34",
+      "bytes": 371
+    },
+    {
+      "path": "examples/ros1/log_flood.wat",
+      "kind": "new",
+      "sha256": "8ce317deae73314b4f1d964ea4dc4b9e4ecb7697324aa24b2d35e04ff4e47838",
+      "bytes": 1436
+    },
+    {
+      "path": "examples/ros1/log_write.wasm",
+      "kind": "new",
+      "sha256": "5a2a64a628da2008fd961c7ecb34b0d713225674e9a89fb02e86c9b88af8515a",
+      "bytes": 229
+    },
+    {
+      "path": "examples/ros1/log_write.wat",
+      "kind": "new",
+      "sha256": "fea6b568d38316e5bb535625abf9db5a36a6bebc753f3113c8ff097021823cc4",
+      "bytes": 659
+    },
+    {
+      "path": "examples/ros1/memory64.wasm",
+      "kind": "new",
+      "sha256": "87ec8db186b694d1612339906006d343c9115319c8a92e8848693dbbc1a99048",
+      "bytes": 256
+    },
+    {
+      "path": "examples/ros1/memory64.wat",
+      "kind": "new",
+      "sha256": "2429f24dc5c9b40a41946f341e1c19ace5e78fd3c66cb230a478dcbbb81d4872",
+      "bytes": 815
+    },
+    {
+      "path": "examples/ros1/memory64_bounds.wasm",
+      "kind": "new",
+      "sha256": "30e66c7b4ba95dfbadad6d358e3074cc18774b56f7fd86b6e98bbbd1cce63f61",
+      "bytes": 343
+    },
+    {
+      "path": "examples/ros1/memory64_bounds.wat",
+      "kind": "new",
+      "sha256": "74463edcd48006c99450284c840c974410290f14b4eec29b0bf4e0dd30b898ab",
+      "bytes": 1304
+    },
+    {
+      "path": "examples/ros1/memory64_growth.wasm",
+      "kind": "new",
+      "sha256": "d2b45ed8c5de8ce4a943f7249c7eb3c14318a5db5d6251a042e6dba4af635a71",
+      "bytes": 411
+    },
+    {
+      "path": "examples/ros1/memory64_growth.wat",
+      "kind": "new",
+      "sha256": "18da8554fc8cb9e91b603be49746b07d82d4a9b4bd48c0faf033da2453f58283",
+      "bytes": 1487
+    },
+    {
+      "path": "examples/ros1/multi_memory.wasm",
+      "kind": "new",
+      "sha256": "c040a3ac448d214d75c5b5da5d605033bb9b72b39e830154e911034847faabe9",
+      "bytes": 237
+    },
+    {
+      "path": "examples/ros1/multi_memory.wat",
+      "kind": "new",
+      "sha256": "8a5d1c2f30ede257a8d3d8bf058200a6f509d79fca74b31174cbb6e0fad1777b",
+      "bytes": 694
+    },
+    {
+      "path": "examples/ros1/parameter_array_bool_byte_quota.wasm",
+      "kind": "new",
+      "sha256": "aa9d28bc5dafcaf15e326cdb669e05f1aba245c056095e668ae6f5aa07c97d71",
+      "bytes": 636
+    },
+    {
+      "path": "examples/ros1/parameter_array_bool_byte_quota.wat",
+      "kind": "new",
+      "sha256": "55f3abb2bd918947e230976de28eb3e67629c138b3a32cd52344fedbc29f1bd9",
+      "bytes": 2961
+    },
+    {
+      "path": "examples/ros1/parameter_array_bool_count_quota.wasm",
+      "kind": "new",
+      "sha256": "8910316d41d6878af0a8e1506dbfa40553fad8e57c02629b0aa42b03498aae44",
+      "bytes": 638
+    },
+    {
+      "path": "examples/ros1/parameter_array_bool_count_quota.wat",
+      "kind": "new",
+      "sha256": "0028aa738cc4b3d94b0d8a2070ceb7e3f17a1854039b854bbe20354eb7536d90",
+      "bytes": 2967
+    },
+    {
+      "path": "examples/ros1/parameter_array_bool_create.wasm",
+      "kind": "new",
+      "sha256": "1ad040f3b6d77568dbdce0792caa61fc862d724db9a34a9bc650dcc12207c738",
+      "bytes": 639
+    },
+    {
+      "path": "examples/ros1/parameter_array_bool_create.wat",
+      "kind": "new",
+      "sha256": "03b430b88212de42adb88a07daf2863b9e4b42b665225f80ed116888b5e577a3",
+      "bytes": 2970
+    },
+    {
+      "path": "examples/ros1/parameter_array_bool_empty_roundtrip.wasm",
+      "kind": "new",
+      "sha256": "96770fe3b4dbd07421a6edbeb4ccfc8cb64ed31906ee65bf6f0d997c8dd585ca",
+      "bytes": 692
+    },
+    {
+      "path": "examples/ros1/parameter_array_bool_empty_roundtrip.wat",
+      "kind": "new",
+      "sha256": "94cfaddf5d6862937303d2263dad7bd09c9cb1c78316d7d20cc79c84fd01af1c",
+      "bytes": 3252
+    },
+    {
+      "path": "examples/ros1/parameter_array_bool_get_byte_quota.wasm",
+      "kind": "new",
+      "sha256": "98644a6a9b489738a3aecc9189e4426cce2adb9e7bc11d40ad556d07c6970aac",
+      "bytes": 550
+    },
+    {
+      "path": "examples/ros1/parameter_array_bool_get_byte_quota.wat",
+      "kind": "new",
+      "sha256": "013154516b46d333b9ed643a8372913c0673a727bedca7426ab8c16f057855c6",
+      "bytes": 2530
+    },
+    {
+      "path": "examples/ros1/parameter_array_bool_get_count_quota.wasm",
+      "kind": "new",
+      "sha256": "98644a6a9b489738a3aecc9189e4426cce2adb9e7bc11d40ad556d07c6970aac",
+      "bytes": 550
+    },
+    {
+      "path": "examples/ros1/parameter_array_bool_get_count_quota.wat",
+      "kind": "new",
+      "sha256": "013154516b46d333b9ed643a8372913c0673a727bedca7426ab8c16f057855c6",
+      "bytes": 2530
+    },
+    {
+      "path": "examples/ros1/parameter_array_bool_get_mixed_native.wasm",
+      "kind": "new",
+      "sha256": "16ed2c2733949880bfe73511f1cddd780c2621b519115a8a94b54bdad36789fe",
+      "bytes": 550
+    },
+    {
+      "path": "examples/ros1/parameter_array_bool_get_mixed_native.wat",
+      "kind": "new",
+      "sha256": "7c63764192989fc7f9854b44e6ce3eebf754957f0ade50f841216d39e3ba23d2",
+      "bytes": 2530
+    },
+    {
+      "path": "examples/ros1/parameter_array_bool_malformed.wasm",
+      "kind": "new",
+      "sha256": "997f50d0ac699211611bfc07b6e4ace3494c44fe1015020cfa9ec5461a5d09ab",
+      "bytes": 789
+    },
+    {
+      "path": "examples/ros1/parameter_array_bool_malformed.wat",
+      "kind": "new",
+      "sha256": "bb0b3038d27e69ee82fc7a828c8736626f7bcb97ca58575ccc34efdbf5b2a5ec",
+      "bytes": 3807
+    },
+    {
+      "path": "examples/ros1/parameter_array_bool_operation_denied.wasm",
+      "kind": "new",
+      "sha256": "d0155c20067ded672d72bcaaf8da696719ecf2a5aeed7baeeb95c6eb12207456",
+      "bytes": 611
+    },
+    {
+      "path": "examples/ros1/parameter_array_bool_operation_denied.wat",
+      "kind": "new",
+      "sha256": "4c64a13bee81ca6082c97152764296d1384726cca918492f3efba73198c335f2",
+      "bytes": 2842
+    },
+    {
+      "path": "examples/ros1/parameter_array_bool_roundtrip.wasm",
+      "kind": "new",
+      "sha256": "ca886a08996a0d89b4e380926a600f5d475666aefbdb0bbd61a14f47ec1b6e68",
+      "bytes": 694
+    },
+    {
+      "path": "examples/ros1/parameter_array_bool_roundtrip.wat",
+      "kind": "new",
+      "sha256": "daf6c2ab935fcba1b572e121a8caa1297371dcf5073042d16400190e2abd5c60",
+      "bytes": 3258
+    },
+    {
+      "path": "examples/ros1/parameter_array_bool_wrong_kind.wasm",
+      "kind": "new",
+      "sha256": "a6eef46e8d0ce1879db709424492f72fdf0b570cce28b5642c370a03bb6f2712",
+      "bytes": 627
+    },
+    {
+      "path": "examples/ros1/parameter_array_bool_wrong_kind.wat",
+      "kind": "new",
+      "sha256": "57beabb1bf330b6b0f9e869be7b51b6d2b6f30692472bea42a145c3771ca0c0c",
+      "bytes": 2934
+    },
+    {
+      "path": "examples/ros1/parameter_array_float64_byte_quota.wasm",
+      "kind": "new",
+      "sha256": "3cb982e607fad2092fe88a6a6711ef70b3c459dd7014b88bf0b7b30f64e0162d",
+      "bytes": 680
+    },
+    {
+      "path": "examples/ros1/parameter_array_float64_byte_quota.wat",
+      "kind": "new",
+      "sha256": "892257d4764b68954aed6c40c39df37b5eab702089bf0bb6cb8d287ed791d199",
+      "bytes": 3095
+    },
+    {
+      "path": "examples/ros1/parameter_array_float64_count_quota.wasm",
+      "kind": "new",
+      "sha256": "34eb0e9eead2b0dec7a540a8728df41a723b19d3b9d680fad32249f70904ec70",
+      "bytes": 688
+    },
+    {
+      "path": "examples/ros1/parameter_array_float64_count_quota.wat",
+      "kind": "new",
+      "sha256": "d4878efcbee6c6543124a36a7f10271b1a21009887e9b4d88447060e2473c702",
+      "bytes": 3119
+    },
+    {
+      "path": "examples/ros1/parameter_array_float64_create.wasm",
+      "kind": "new",
+      "sha256": "a359521b4b92e412e8ca203c46513073505d24e127dddfaf22a6a2e1f055e69a",
+      "bytes": 683
+    },
+    {
+      "path": "examples/ros1/parameter_array_float64_create.wat",
+      "kind": "new",
+      "sha256": "3ac6f9e843df8fee6fa0a4c852fb5c81ed3fd0471700a715eceb6597294124d0",
+      "bytes": 3104
+    },
+    {
+      "path": "examples/ros1/parameter_array_float64_empty_roundtrip.wasm",
+      "kind": "new",
+      "sha256": "2a3116037b04945f76cea1feffc0c7195992f886697a29189cdea3595bd0781f",
+      "bytes": 714
+    },
+    {
+      "path": "examples/ros1/parameter_array_float64_empty_roundtrip.wat",
+      "kind": "new",
+      "sha256": "46079cb48ea560de9209aa46a33b973e5a0f154dc196753643e2966ec5fb17c7",
+      "bytes": 3319
+    },
+    {
+      "path": "examples/ros1/parameter_array_float64_get_bounds.wasm",
+      "kind": "new",
+      "sha256": "f04790d68eb25dce70609959bb56418d8171ac100dee14443693774c2d07addc",
+      "bytes": 549
+    },
+    {
+      "path": "examples/ros1/parameter_array_float64_get_bounds.wat",
+      "kind": "new",
+      "sha256": "04339dfc533f66727faf6795d354b22c5ef9aac0c0edd517566d49455c820c57",
+      "bytes": 2530
+    },
+    {
+      "path": "examples/ros1/parameter_array_float64_get_byte_quota.wasm",
+      "kind": "new",
+      "sha256": "98644a6a9b489738a3aecc9189e4426cce2adb9e7bc11d40ad556d07c6970aac",
+      "bytes": 550
+    },
+    {
+      "path": "examples/ros1/parameter_array_float64_get_byte_quota.wat",
+      "kind": "new",
+      "sha256": "013154516b46d333b9ed643a8372913c0673a727bedca7426ab8c16f057855c6",
+      "bytes": 2530
+    },
+    {
+      "path": "examples/ros1/parameter_array_float64_get_count_quota.wasm",
+      "kind": "new",
+      "sha256": "98644a6a9b489738a3aecc9189e4426cce2adb9e7bc11d40ad556d07c6970aac",
+      "bytes": 550
+    },
+    {
+      "path": "examples/ros1/parameter_array_float64_get_count_quota.wat",
+      "kind": "new",
+      "sha256": "013154516b46d333b9ed643a8372913c0673a727bedca7426ab8c16f057855c6",
+      "bytes": 2530
+    },
+    {
+      "path": "examples/ros1/parameter_array_float64_get_mixed_native.wasm",
+      "kind": "new",
+      "sha256": "16ed2c2733949880bfe73511f1cddd780c2621b519115a8a94b54bdad36789fe",
+      "bytes": 550
+    },
+    {
+      "path": "examples/ros1/parameter_array_float64_get_mixed_native.wat",
+      "kind": "new",
+      "sha256": "7c63764192989fc7f9854b44e6ce3eebf754957f0ade50f841216d39e3ba23d2",
+      "bytes": 2530
+    },
+    {
+      "path": "examples/ros1/parameter_array_float64_get_nonfinite.wasm",
+      "kind": "new",
+      "sha256": "2d8c6ee745e3fa2d71baab5b9aaf7729f692461a4a1b476c2484a18046777e0e",
+      "bytes": 549
+    },
+    {
+      "path": "examples/ros1/parameter_array_float64_get_nonfinite.wat",
+      "kind": "new",
+      "sha256": "f41ff3e0096f617cd1e7047afe10f360ec214bf551dee88cbb339e23bfce08f9",
+      "bytes": 2530
+    },
+    {
+      "path": "examples/ros1/parameter_array_float64_malformed.wasm",
+      "kind": "new",
+      "sha256": "80145e7edd45d64353e12632c4acc7d052e8f8a34f6af8b7e3c515633594a009",
+      "bytes": 979
+    },
+    {
+      "path": "examples/ros1/parameter_array_float64_malformed.wat",
+      "kind": "new",
+      "sha256": "8baa8bcb73733c33da5297f0dbb7f2c5a31c09868ced5eec7ae709ff3a9a6391",
+      "bytes": 4638
+    },
+    {
+      "path": "examples/ros1/parameter_array_float64_operation_denied.wasm",
+      "kind": "new",
+      "sha256": "482dea5aae9a906d980bd885ac17de38fd64d16a51a3da475fc11ae74984637b",
+      "bytes": 655
+    },
+    {
+      "path": "examples/ros1/parameter_array_float64_operation_denied.wat",
+      "kind": "new",
+      "sha256": "a65197af46649343adc28dc18eda78f846133d650eff8ac822c0ec156308c326",
+      "bytes": 2976
+    },
+    {
+      "path": "examples/ros1/parameter_array_float64_range.wasm",
+      "kind": "new",
+      "sha256": "42753fdc95029124097a22fe1a8884c0f3d6193ccb9ac5789073fb7e5ea67f35",
+      "bytes": 722
+    },
+    {
+      "path": "examples/ros1/parameter_array_float64_range.wat",
+      "kind": "new",
+      "sha256": "81fc49a4b717069979d8cbe0993e1b7eec5dcf8004b623d62fdbac89ef7c0c1d",
+      "bytes": 3351
+    },
+    {
+      "path": "examples/ros1/parameter_array_float64_roundtrip.wasm",
+      "kind": "new",
+      "sha256": "11fc91d7561cbb9832094df0d15d5c766456bc49d83e74f75a36016fe69bd117",
+      "bytes": 738
+    },
+    {
+      "path": "examples/ros1/parameter_array_float64_roundtrip.wat",
+      "kind": "new",
+      "sha256": "385c6329b3658e1cdacdd058649599a92f814226369c87888eb215c29b8b76bf",
+      "bytes": 3392
+    },
+    {
+      "path": "examples/ros1/parameter_array_float64_wrong_kind.wasm",
+      "kind": "new",
+      "sha256": "2ef43ece49580d1a47fa83abf50b82ffbd168fe2e9cbbc9f970d256a93414515",
+      "bytes": 649
+    },
+    {
+      "path": "examples/ros1/parameter_array_float64_wrong_kind.wat",
+      "kind": "new",
+      "sha256": "7d0b710cebb4cee9633e564885932d5274e391bcfef778ec1a690fb141db0ee5",
+      "bytes": 3001
+    },
+    {
+      "path": "examples/ros1/parameter_array_int32_byte_quota.wasm",
+      "kind": "new",
+      "sha256": "46c62b98fc9553f06b20d6a7fef84b735838a740e7f4a9511b018cb0c49e498a",
+      "bytes": 656
+    },
+    {
+      "path": "examples/ros1/parameter_array_int32_byte_quota.wat",
+      "kind": "new",
+      "sha256": "32ebce25b510b4395c1bde5283779aad77430497cdc3b25682f4b99c75d22307",
+      "bytes": 3023
+    },
+    {
+      "path": "examples/ros1/parameter_array_int32_count_quota.wasm",
+      "kind": "new",
+      "sha256": "4d5542eecfc76a8e2bd5f8e9748c0c00bf3ba17c2b66260d88dd441b4ef3c85c",
+      "bytes": 660
+    },
+    {
+      "path": "examples/ros1/parameter_array_int32_count_quota.wat",
+      "kind": "new",
+      "sha256": "2459a7b3179c545230ab20d6fbd723e4544d69fc01ceddd4cb01645df4d2a3b5",
+      "bytes": 3035
+    },
+    {
+      "path": "examples/ros1/parameter_array_int32_create.wasm",
+      "kind": "new",
+      "sha256": "3232c6f59d36b7ee6edf950008f7983837aa48f2bcc52a32f347c173cb50b090",
+      "bytes": 659
+    },
+    {
+      "path": "examples/ros1/parameter_array_int32_create.wat",
+      "kind": "new",
+      "sha256": "7f961a497a30606e969a3d3c76cf4e9640beec129bef82f9b511ceef882ab175",
+      "bytes": 3032
+    },
+    {
+      "path": "examples/ros1/parameter_array_int32_empty_roundtrip.wasm",
+      "kind": "new",
+      "sha256": "914b615c9991d4bc0ce0d02586ec402b3bbc992847c2b2ec3bea23c7b87f08a2",
+      "bytes": 702
+    },
+    {
+      "path": "examples/ros1/parameter_array_int32_empty_roundtrip.wat",
+      "kind": "new",
+      "sha256": "0a320ec46d9e2545871025868b4ff71cd5df12953f93c36f0ed2d87a822646b2",
+      "bytes": 3283
+    },
+    {
+      "path": "examples/ros1/parameter_array_int32_get_bounds.wasm",
+      "kind": "new",
+      "sha256": "f04790d68eb25dce70609959bb56418d8171ac100dee14443693774c2d07addc",
+      "bytes": 549
+    },
+    {
+      "path": "examples/ros1/parameter_array_int32_get_bounds.wat",
+      "kind": "new",
+      "sha256": "04339dfc533f66727faf6795d354b22c5ef9aac0c0edd517566d49455c820c57",
+      "bytes": 2530
+    },
+    {
+      "path": "examples/ros1/parameter_array_int32_get_byte_quota.wasm",
+      "kind": "new",
+      "sha256": "98644a6a9b489738a3aecc9189e4426cce2adb9e7bc11d40ad556d07c6970aac",
+      "bytes": 550
+    },
+    {
+      "path": "examples/ros1/parameter_array_int32_get_byte_quota.wat",
+      "kind": "new",
+      "sha256": "013154516b46d333b9ed643a8372913c0673a727bedca7426ab8c16f057855c6",
+      "bytes": 2530
+    },
+    {
+      "path": "examples/ros1/parameter_array_int32_get_count_quota.wasm",
+      "kind": "new",
+      "sha256": "98644a6a9b489738a3aecc9189e4426cce2adb9e7bc11d40ad556d07c6970aac",
+      "bytes": 550
+    },
+    {
+      "path": "examples/ros1/parameter_array_int32_get_count_quota.wat",
+      "kind": "new",
+      "sha256": "013154516b46d333b9ed643a8372913c0673a727bedca7426ab8c16f057855c6",
+      "bytes": 2530
+    },
+    {
+      "path": "examples/ros1/parameter_array_int32_get_mixed_native.wasm",
+      "kind": "new",
+      "sha256": "16ed2c2733949880bfe73511f1cddd780c2621b519115a8a94b54bdad36789fe",
+      "bytes": 550
+    },
+    {
+      "path": "examples/ros1/parameter_array_int32_get_mixed_native.wat",
+      "kind": "new",
+      "sha256": "7c63764192989fc7f9854b44e6ce3eebf754957f0ade50f841216d39e3ba23d2",
+      "bytes": 2530
+    },
+    {
+      "path": "examples/ros1/parameter_array_int32_malformed.wasm",
+      "kind": "new",
+      "sha256": "549f7a2fdcefe374a97c81f6f5e6a40e650bd2e6959156e6e17d33619fea5e60",
+      "bytes": 768
+    },
+    {
+      "path": "examples/ros1/parameter_array_int32_malformed.wat",
+      "kind": "new",
+      "sha256": "bc785c4c520f7eadaa34ba1b6c71f6c9a3a5f2c05040e709f697ec790a8199dd",
+      "bytes": 3618
+    },
+    {
+      "path": "examples/ros1/parameter_array_int32_operation_denied.wasm",
+      "kind": "new",
+      "sha256": "6ad6fd3412daf872ca16f51f7cae0beb148a308dddbf92ec8448d6ce73c7ccba",
+      "bytes": 631
+    },
+    {
+      "path": "examples/ros1/parameter_array_int32_operation_denied.wat",
+      "kind": "new",
+      "sha256": "0ac8ae1ba91079ad5bdcfe7b0e74d9f8d14ba1df0518242f071d0f18a7843e16",
+      "bytes": 2904
+    },
+    {
+      "path": "examples/ros1/parameter_array_int32_range.wasm",
+      "kind": "new",
+      "sha256": "9127f0ae3fcadfc8e3bd21ac983c575b1c03dd4bd3eed5b9653aa43325f02924",
+      "bytes": 702
+    },
+    {
+      "path": "examples/ros1/parameter_array_int32_range.wat",
+      "kind": "new",
+      "sha256": "529dd1fff51116f9ccc549ecc4f232b5e193464fade81e956afbefcf0e5e35e6",
+      "bytes": 3289
+    },
+    {
+      "path": "examples/ros1/parameter_array_int32_roundtrip.wasm",
+      "kind": "new",
+      "sha256": "950072b14e2e04af828113766d125ffdf28227cb8942a59832c559ec1e72a553",
+      "bytes": 714
+    },
+    {
+      "path": "examples/ros1/parameter_array_int32_roundtrip.wat",
+      "kind": "new",
+      "sha256": "ccaf0febe57fe843942c0e620bbe622a5b865ce88661d9f2c9c6a7c926a73eb9",
+      "bytes": 3320
+    },
+    {
+      "path": "examples/ros1/parameter_array_int32_wrong_kind.wasm",
+      "kind": "new",
+      "sha256": "6e7ab1ff288149a3304cb2073f8ea57cb03bf4f26104ffb56f5b04951f4232f2",
+      "bytes": 637
+    },
+    {
+      "path": "examples/ros1/parameter_array_int32_wrong_kind.wat",
+      "kind": "new",
+      "sha256": "03fc2c3c16dc2f6ac879df176551524bf0f897f2ee1b7d76bec4a7d48950c392",
+      "bytes": 2965
+    },
+    {
+      "path": "examples/ros1/parameter_array_string_byte_quota.wasm",
+      "kind": "new",
+      "sha256": "a1b40d8a3f14f51d033e017a438e22eea49ed4c8dcb002c1d158cd9e839938fb",
+      "bytes": 694
+    },
+    {
+      "path": "examples/ros1/parameter_array_string_byte_quota.wat",
+      "kind": "new",
+      "sha256": "e49049b8783741243cf40571ee6c91d6c27c742fb5e21148e1a6326876842167",
+      "bytes": 3137
+    },
+    {
+      "path": "examples/ros1/parameter_array_string_count_quota.wasm",
+      "kind": "new",
+      "sha256": "bf1c17da08175f8f0b74cb626357bd63fd2426e6365be39e2d427802e9c4b414",
+      "bytes": 683
+    },
+    {
+      "path": "examples/ros1/parameter_array_string_count_quota.wat",
+      "kind": "new",
+      "sha256": "439978187067f0da53dffd600b54c2ea4b117812343945c460104b2b177b1e25",
+      "bytes": 3104
+    },
+    {
+      "path": "examples/ros1/parameter_array_string_create.wasm",
+      "kind": "new",
+      "sha256": "a7e9c5c05e933e6f869eb397ceba3453840b6caab43d1b7000d497d2e0b94092",
+      "bytes": 697
+    },
+    {
+      "path": "examples/ros1/parameter_array_string_create.wat",
+      "kind": "new",
+      "sha256": "3deb3ca18aafd24c5fe13b3f68ac85e4b0a67efb04c0ae118e4b1b3e20c1dd06",
+      "bytes": 3146
+    },
+    {
+      "path": "examples/ros1/parameter_array_string_empty_roundtrip.wasm",
+      "kind": "new",
+      "sha256": "d6bcf374c9b7f7d3a1fe12a3626501b860f1799422e3bbf2be9132db8366519a",
+      "bytes": 721
+    },
+    {
+      "path": "examples/ros1/parameter_array_string_empty_roundtrip.wat",
+      "kind": "new",
+      "sha256": "c7aa8be8e6742b9b467515270229912255738849cc3f48305c6a2ff3e5c83c95",
+      "bytes": 3340
+    },
+    {
+      "path": "examples/ros1/parameter_array_string_get_byte_quota.wasm",
+      "kind": "new",
+      "sha256": "98644a6a9b489738a3aecc9189e4426cce2adb9e7bc11d40ad556d07c6970aac",
+      "bytes": 550
+    },
+    {
+      "path": "examples/ros1/parameter_array_string_get_byte_quota.wat",
+      "kind": "new",
+      "sha256": "013154516b46d333b9ed643a8372913c0673a727bedca7426ab8c16f057855c6",
+      "bytes": 2530
+    },
+    {
+      "path": "examples/ros1/parameter_array_string_get_count_quota.wasm",
+      "kind": "new",
+      "sha256": "98644a6a9b489738a3aecc9189e4426cce2adb9e7bc11d40ad556d07c6970aac",
+      "bytes": 550
+    },
+    {
+      "path": "examples/ros1/parameter_array_string_get_count_quota.wat",
+      "kind": "new",
+      "sha256": "013154516b46d333b9ed643a8372913c0673a727bedca7426ab8c16f057855c6",
+      "bytes": 2530
+    },
+    {
+      "path": "examples/ros1/parameter_array_string_get_mixed_native.wasm",
+      "kind": "new",
+      "sha256": "16ed2c2733949880bfe73511f1cddd780c2621b519115a8a94b54bdad36789fe",
+      "bytes": 550
+    },
+    {
+      "path": "examples/ros1/parameter_array_string_get_mixed_native.wat",
+      "kind": "new",
+      "sha256": "7c63764192989fc7f9854b44e6ce3eebf754957f0ade50f841216d39e3ba23d2",
+      "bytes": 2530
+    },
+    {
+      "path": "examples/ros1/parameter_array_string_malformed.wasm",
+      "kind": "new",
+      "sha256": "cc5e6332101b30f09b4565efaff783600d8cd286b9f659a606b5e96be1a90cc7",
+      "bytes": 1219
+    },
+    {
+      "path": "examples/ros1/parameter_array_string_malformed.wat",
+      "kind": "new",
+      "sha256": "39fb0bf1fe4ba8aab039bbc9e6393245784272224d681a88c7fc56e86254a7f5",
+      "bytes": 5876
+    },
+    {
+      "path": "examples/ros1/parameter_array_string_operation_denied.wasm",
+      "kind": "new",
+      "sha256": "b204f2885820bc1f73c9394be5a10f1d60fd3a866e0f7f0fb08c85512b65292f",
+      "bytes": 669
+    },
+    {
+      "path": "examples/ros1/parameter_array_string_operation_denied.wat",
+      "kind": "new",
+      "sha256": "67d8d99fad28ad55ab60ed718c4604a8168bc3e9a1e232cb3ba3593d066ca804",
+      "bytes": 3018
+    },
+    {
+      "path": "examples/ros1/parameter_array_string_roundtrip.wasm",
+      "kind": "new",
+      "sha256": "8f9b21ed8d0733042919f9305efa8ffc48874405eb564e3d4546eb4ee5f293fb",
+      "bytes": 753
+    },
+    {
+      "path": "examples/ros1/parameter_array_string_roundtrip.wat",
+      "kind": "new",
+      "sha256": "52f2b7246e9c2b4200ad3a39cd32fa41bdc5f578508e139a188579cbfdffab24",
+      "bytes": 3434
+    },
+    {
+      "path": "examples/ros1/parameter_array_string_wrong_kind.wasm",
+      "kind": "new",
+      "sha256": "a90c9019bcb8809a7b3ef452b37f0fbf64be3053f540545cb7f6f7c346a0b34e",
+      "bytes": 656
+    },
+    {
+      "path": "examples/ros1/parameter_array_string_wrong_kind.wat",
+      "kind": "new",
+      "sha256": "04411c35364fc50c62c4230cbf60a4f8ce5ba8bec6bdfbd56d0a5ce87b215ac5",
+      "bytes": 3022
+    },
+    {
+      "path": "examples/ros1/parameter_bool_create.wasm",
+      "kind": "new",
+      "sha256": "ef76c30e197b3d6b028a3f82cbbf1a75357032921512cfc240e1934d670247c6",
+      "bytes": 783
+    },
+    {
+      "path": "examples/ros1/parameter_bool_create.wat",
+      "kind": "new",
+      "sha256": "44292e9be934180142bbc59b3ba1a6b29824f5ac5874a7814d5c421d75824d78",
+      "bytes": 3178
+    },
+    {
+      "path": "examples/ros1/parameter_bool_malformed.wasm",
+      "kind": "new",
+      "sha256": "e564646daa67808036e6e2f3d87dc6ce603f7b64ce10badc1960147f653b1082",
+      "bytes": 774
+    },
+    {
+      "path": "examples/ros1/parameter_bool_malformed.wat",
+      "kind": "new",
+      "sha256": "3e0d55d063e25773bf4775da05b6f1a9197190d3ea214103d6c3dac5afd42853",
+      "bytes": 3128
+    },
+    {
+      "path": "examples/ros1/parameter_bool_operation_denied.wasm",
+      "kind": "new",
+      "sha256": "dfb25fa4649b12a278b3e172bfe324320b7dc6aa05e19c3f0ece5fe719b909dd",
+      "bytes": 774
+    },
+    {
+      "path": "examples/ros1/parameter_bool_operation_denied.wat",
+      "kind": "new",
+      "sha256": "0d8050bf9c81563cf918f630bb20bc53d5a92362d84dd6c238457e7ee442cdf0",
+      "bytes": 3128
+    },
+    {
+      "path": "examples/ros1/parameter_bool_roundtrip.wasm",
+      "kind": "new",
+      "sha256": "4b327ea54c856264b59e7f2322a29a8a93eb6ecfdd4fc1466c4cabc689c6207b",
+      "bytes": 850
+    },
+    {
+      "path": "examples/ros1/parameter_bool_roundtrip.wat",
+      "kind": "new",
+      "sha256": "90af99f1a43dbcecd6b13d891664c28a2288ed7945c3cd4eac79cdac63d05fd5",
+      "bytes": 3567
+    },
+    {
+      "path": "examples/ros1/parameter_bool_wrong_kind.wasm",
+      "kind": "new",
+      "sha256": "1a13047ca0449996d297f5d8a9d0b5734a66956f96e914c12c24091d16acdd30",
+      "bytes": 753
+    },
+    {
+      "path": "examples/ros1/parameter_bool_wrong_kind.wat",
+      "kind": "new",
+      "sha256": "3834c481d6332f0d65f7f7a67aa43bcd4c3af2432e88a7a3bc2b4cfef30180ee",
+      "bytes": 3009
+    },
+    {
+      "path": "examples/ros1/parameter_delete.wasm",
+      "kind": "new",
+      "sha256": "20a8853fd87b470f3f03af1d337cbdbf7fe14bfebdcc870ab8690d5f262dcc87",
+      "bytes": 258
+    },
+    {
+      "path": "examples/ros1/parameter_delete.wat",
+      "kind": "new",
+      "sha256": "4aea65c0c0cd7856a9675a1255e644681916656df5e772c74cad95b0fa70d5ef",
+      "bytes": 811
+    },
+    {
+      "path": "examples/ros1/parameter_exists.wasm",
+      "kind": "new",
+      "sha256": "4b2f4989e0f16072ff5a63373a30d92f4c97808d1c152ee832b4272a331889bb",
+      "bytes": 275
+    },
+    {
+      "path": "examples/ros1/parameter_exists.wat",
+      "kind": "new",
+      "sha256": "b96a46df0c2c46a0b5950ac2ee9e7b9d444270ba84a543d7379e6bbedd3ccb81",
+      "bytes": 909
+    },
+    {
+      "path": "examples/ros1/parameter_float64_create.wasm",
+      "kind": "new",
+      "sha256": "ef758981dfbbf6c101202a3c3c812721f94979f3c31e3373a76f56c0f0668bd6",
+      "bytes": 798
+    },
+    {
+      "path": "examples/ros1/parameter_float64_create.wat",
+      "kind": "new",
+      "sha256": "d1135a0570767ecb4290e4234a1fa028f5bd497aa9f6adb4b550124505288c11",
+      "bytes": 3214
+    },
+    {
+      "path": "examples/ros1/parameter_float64_get_bounds.wasm",
+      "kind": "new",
+      "sha256": "56e614bb8df2dbf904f69993f743d61cb38920142b4d54d424abc0521c88816e",
+      "bytes": 684
+    },
+    {
+      "path": "examples/ros1/parameter_float64_get_bounds.wat",
+      "kind": "new",
+      "sha256": "50c1ba54ad908a422ddbb7c79759afe9b5228f4f533ee492ad8972ee3b429710",
+      "bytes": 2614
+    },
+    {
+      "path": "examples/ros1/parameter_float64_malformed.wasm",
+      "kind": "new",
+      "sha256": "85dd5c3357e61eea8ed109c4730f0c646ff7330254ce0abae8af6896d1f7a332",
+      "bytes": 999
+    },
+    {
+      "path": "examples/ros1/parameter_float64_malformed.wat",
+      "kind": "new",
+      "sha256": "ef2bf285a873115a34a0c7db7f03dc58468c6c58e81817e7aa37b828af360b8f",
+      "bytes": 4341
+    },
+    {
+      "path": "examples/ros1/parameter_float64_operation_denied.wasm",
+      "kind": "new",
+      "sha256": "442c05c7baf0911cb15f042780a333d31dc7d4328a2dec347aa93c6b5b1552dd",
+      "bytes": 791
+    },
+    {
+      "path": "examples/ros1/parameter_float64_operation_denied.wat",
+      "kind": "new",
+      "sha256": "f770ce808f9e481963831177618d6103405751980187af06b69d7856f0ccca12",
+      "bytes": 3165
+    },
+    {
+      "path": "examples/ros1/parameter_float64_range.wasm",
+      "kind": "new",
+      "sha256": "dc3f0d829e60df1200e59a4e8008ef31eeeeaf4f55ab7c814206bffba3619df9",
+      "bytes": 843
+    },
+    {
+      "path": "examples/ros1/parameter_float64_range.wat",
+      "kind": "new",
+      "sha256": "a8ce56f83f71606a68d3afba5874a668efe2b7fd8967cb2ec3575eca5ac7bb15",
+      "bytes": 3459
+    },
+    {
+      "path": "examples/ros1/parameter_float64_roundtrip.wasm",
+      "kind": "new",
+      "sha256": "ee304f252e65e06fedd36cfd076d90fda5dba7d1fb723f0a99f4139870194ce9",
+      "bytes": 874
+    },
+    {
+      "path": "examples/ros1/parameter_float64_roundtrip.wat",
+      "kind": "new",
+      "sha256": "bdf732eface96b4447006f36d0f9e80b81a5e9bc3b4d9e378090f33ca6b5bc49",
+      "bytes": 3619
+    },
+    {
+      "path": "examples/ros1/parameter_float64_wrong_kind.wasm",
+      "kind": "new",
+      "sha256": "9a8327003d0090be90bc6305545a3deac6a2335ae0912b207e5f9f525128c81d",
+      "bytes": 760
+    },
+    {
+      "path": "examples/ros1/parameter_float64_wrong_kind.wat",
+      "kind": "new",
+      "sha256": "7a5f34c993a78e8480a647d3c3a2d23fc6f264edba0e4dd3fe137cad1f320529",
+      "bytes": 3030
+    },
+    {
+      "path": "examples/ros1/parameter_get.wasm",
+      "kind": "new",
+      "sha256": "d495c3b2eded48cba3f6f15e30dcce714aa28baba1d9d62440ceba5c9183747b",
+      "bytes": 336
+    },
+    {
+      "path": "examples/ros1/parameter_get.wat",
+      "kind": "new",
+      "sha256": "567764c4ff60e9d394801275d44e939841b441608ddbb014e598661c91d8e466",
+      "bytes": 1258
+    },
+    {
+      "path": "examples/ros1/parameter_get_denied.wasm",
+      "kind": "new",
+      "sha256": "91db4619a4ff3b44f25049aee2eda92b7a6f0f16709a8dabd3b90958d97874d8",
+      "bytes": 274
+    },
+    {
+      "path": "examples/ros1/parameter_get_denied.wat",
+      "kind": "new",
+      "sha256": "c9edb2bede25ab1d5058ed8d4bc603db0a2aca57f86cadb1b0fc595f6c096979",
+      "bytes": 907
+    },
+    {
+      "path": "examples/ros1/parameter_int32_create.wasm",
+      "kind": "new",
+      "sha256": "dddd0a1e39b65e61e858032cf90ba93f15d26f4b6648c2d7daf0988197e0e25b",
+      "bytes": 789
+    },
+    {
+      "path": "examples/ros1/parameter_int32_create.wat",
+      "kind": "new",
+      "sha256": "770146c90123efaf51f9ff4246515f0b04e4de54ec0b4e6d7c8ae984431b17d6",
+      "bytes": 3193
+    },
+    {
+      "path": "examples/ros1/parameter_int32_get_bounds.wasm",
+      "kind": "new",
+      "sha256": "56e614bb8df2dbf904f69993f743d61cb38920142b4d54d424abc0521c88816e",
+      "bytes": 684
+    },
+    {
+      "path": "examples/ros1/parameter_int32_get_bounds.wat",
+      "kind": "new",
+      "sha256": "50c1ba54ad908a422ddbb7c79759afe9b5228f4f533ee492ad8972ee3b429710",
+      "bytes": 2614
+    },
+    {
+      "path": "examples/ros1/parameter_int32_malformed.wasm",
+      "kind": "new",
+      "sha256": "7ba611397c4bb65ccb395ae2d3cd72b6f9a73bf63350342357ada02e2ce45b40",
+      "bytes": 826
+    },
+    {
+      "path": "examples/ros1/parameter_int32_malformed.wat",
+      "kind": "new",
+      "sha256": "0d72d2605716792d9e539e58eafcce6ce57f091a68d613bbeaaee8664d6018bf",
+      "bytes": 3417
+    },
+    {
+      "path": "examples/ros1/parameter_int32_operation_denied.wasm",
+      "kind": "new",
+      "sha256": "2777a1eb6d610390b8d61a64614c4e76526f3d158707ca15e7c31dd73a506c09",
+      "bytes": 777
+    },
+    {
+      "path": "examples/ros1/parameter_int32_operation_denied.wat",
+      "kind": "new",
+      "sha256": "f5a5dfabb673115b08bb80b15b1740d40a45e8b632b846103dc6a490cf0b3b8c",
+      "bytes": 3135
+    },
+    {
+      "path": "examples/ros1/parameter_int32_range.wasm",
+      "kind": "new",
+      "sha256": "13ab3ee09b294767ded5ce596f8c91c0a5789e196a9b363f60e5e988bca5a88e",
+      "bytes": 826
+    },
+    {
+      "path": "examples/ros1/parameter_int32_range.wat",
+      "kind": "new",
+      "sha256": "34cdccbc7ecff2395aeece38b7e00c9a16bce1d5d708e7b1587733de6c88498c",
+      "bytes": 3417
+    },
+    {
+      "path": "examples/ros1/parameter_int32_roundtrip.wasm",
+      "kind": "new",
+      "sha256": "900c3bbdedde0d9fc8287500f2435ef886b5f8d66c9a5ec611b2b774b99fbd2e",
+      "bytes": 856
+    },
+    {
+      "path": "examples/ros1/parameter_int32_roundtrip.wat",
+      "kind": "new",
+      "sha256": "69e725f17736e6bd9e3f2dfcea1050b4f6212a8262fc72853a3a8b71fa00f9e2",
+      "bytes": 3580
+    },
+    {
+      "path": "examples/ros1/parameter_int32_wrong_kind.wasm",
+      "kind": "new",
+      "sha256": "2e427de939031414c4fd44641ee80eb459b908db237c5e6fe2aaf50d766305d7",
+      "bytes": 756
+    },
+    {
+      "path": "examples/ros1/parameter_int32_wrong_kind.wat",
+      "kind": "new",
+      "sha256": "d0b6e533932682957feb7ebc247c6747b235a4b2a85d4271a36c0e661371dacc",
+      "bytes": 3018
+    },
+    {
+      "path": "examples/ros1/parameter_list.wasm",
+      "kind": "new",
+      "sha256": "b741d70e664d1d448e5c7af90c0ac11433f71940331e05872ab43841b6186b94",
+      "bytes": 413
+    },
+    {
+      "path": "examples/ros1/parameter_list.wat",
+      "kind": "new",
+      "sha256": "e6467aa085971000906518e61eba3ca187bc0e47c5a699396a7e6959978374e1",
+      "bytes": 1819
+    },
+    {
+      "path": "examples/ros1/parameter_search.wasm",
+      "kind": "new",
+      "sha256": "67abaf0729cceac2ada6a5de64c6057b7b28cb3022a33501341d8fd1bf53581b",
+      "bytes": 415
+    },
+    {
+      "path": "examples/ros1/parameter_search.wat",
+      "kind": "new",
+      "sha256": "82e25b54d02e002e8d27aaa33866919b33cc259980312bf9646118328941c9fe",
+      "bytes": 1821
+    },
+    {
+      "path": "examples/ros1/parameter_set.wasm",
+      "kind": "new",
+      "sha256": "c4189dbac969fae1cb5b8957704a3a1a8040ceb4c5cdfb6dfb8f0739d0cef931",
+      "bytes": 264
+    },
+    {
+      "path": "examples/ros1/parameter_set.wat",
+      "kind": "new",
+      "sha256": "cd3fedbd37d34e90eb64891c1ffe97833b32dab412571b302054426f5bb50def",
+      "bytes": 835
+    },
+    {
+      "path": "examples/ros1/parameter_set_denied.wasm",
+      "kind": "new",
+      "sha256": "c637cded2869eecd050af16f67297d4c6300a91ca483cebc2383bf246030dcaf",
+      "bytes": 257
+    },
+    {
+      "path": "examples/ros1/parameter_set_denied.wat",
+      "kind": "new",
+      "sha256": "95d0574a2dfa4b40fed1bdb6edaa127f29962747bdf5eeb294964eab9c3c94f1",
+      "bytes": 751
+    },
+    {
+      "path": "examples/ros1/publish_flood.wasm",
+      "kind": "new",
+      "sha256": "a9dde94f20ec094cef8d88dbb7c1c2eb92d8ae1b78de314d951416f3945cd0a9",
+      "bytes": 418
+    },
+    {
+      "path": "examples/ros1/publish_flood.wat",
+      "kind": "new",
+      "sha256": "ac8a63a67dba70a603dea2ddb5170ca32113e1901de1f550eeef0623c80113cc",
+      "bytes": 1709
+    },
+    {
+      "path": "examples/ros1/scalar_parameter_profiles.json",
+      "kind": "new",
+      "sha256": "2673e2eaa23631004afa54fa8e7009d506eb2b7e16ac2490634fe673dd75ccb4",
+      "bytes": 39341
+    },
+    {
+      "path": "examples/ros1/service_client.wasm",
+      "kind": "new",
+      "sha256": "dfa7bb8d1eba9f0ef51a06a91c76233b9fc4823800fa64cdf1b2c44dc9e99a6d",
+      "bytes": 248
+    },
+    {
+      "path": "examples/ros1/service_client.wat",
+      "kind": "new",
+      "sha256": "17e1fde19825620daaf2af275f2bc64eb9e1c3df303c4a5bd4518d9f32335cb1",
+      "bytes": 741
+    },
+    {
+      "path": "examples/ros1/service_client_setbool.wasm",
+      "kind": "new",
+      "sha256": "1daab125e7b020b45b00b87f364bef037004d27faef613939019aa6fbca5ad68",
+      "bytes": 333
+    },
+    {
+      "path": "examples/ros1/service_client_setbool.wat",
+      "kind": "new",
+      "sha256": "d7808ad4986508ab1265087e689d82e23eb88dbdf5b98ab30973a7f078fea064",
+      "bytes": 1191
+    },
+    {
+      "path": "examples/ros1/service_client_trigger.wasm",
+      "kind": "new",
+      "sha256": "398ea8d5efb65640d3f18fc84dde3c45194bd2aaae26b72e7d8f604df9274da5",
+      "bytes": 333
+    },
+    {
+      "path": "examples/ros1/service_client_trigger.wat",
+      "kind": "new",
+      "sha256": "16dc2ce1391f9fd85f79b582baf9537508e6cf252b9d877a409f790adee85d17",
+      "bytes": 1191
+    },
+    {
+      "path": "examples/ros1/service_denied.wasm",
+      "kind": "new",
+      "sha256": "c2c20e95e9389a70535240fa1e2f39522ec3154522a65bdac960c1d1222eb768",
+      "bytes": 300
+    },
+    {
+      "path": "examples/ros1/service_denied.wat",
+      "kind": "new",
+      "sha256": "52eb2d4f602247697ee0cf7f6f78f9968bb3defd7781b188bf5780a7b4480bb9",
+      "bytes": 1012
+    },
+    {
+      "path": "examples/ros1/service_flood.wasm",
+      "kind": "new",
+      "sha256": "aecb82282898c2aaa244fa7af46ce6fdd0d388eb805c13f2b5c71bd495b1cb91",
+      "bytes": 413
+    },
+    {
+      "path": "examples/ros1/service_flood.wat",
+      "kind": "new",
+      "sha256": "a5dad12496ba093498a4af415952257a092a3493c4134ca33144d2f8e13839bb",
+      "bytes": 1648
+    },
+    {
+      "path": "examples/ros1/service_server_setbool.wasm",
+      "kind": "new",
+      "sha256": "40f56ab5513fe3b0eb14d3ec9d93a9894bb8371d89565e5ff66203f6d712f7f3",
+      "bytes": 575
+    },
+    {
+      "path": "examples/ros1/service_server_setbool.wat",
+      "kind": "new",
+      "sha256": "36a7aafa708f699be730fca90c6aeaa2fbc71ad3e3a605f5b55d21ff21c6289a",
+      "bytes": 2235
+    },
+    {
+      "path": "examples/ros1/service_server_trigger.wasm",
+      "kind": "new",
+      "sha256": "d5aa1932a3051e3bf590d5696594e97e2745beb9ae07604998a7cd027511b0de",
+      "bytes": 558
+    },
+    {
+      "path": "examples/ros1/service_server_trigger.wat",
+      "kind": "new",
+      "sha256": "2379a662b8c61a70cda1e8bd03fc1716c72003f859b01bcc23a47299945eb98d",
+      "bytes": 2135
+    },
+    {
+      "path": "examples/ros1/talker.c",
+      "kind": "new",
+      "sha256": "b87ba22631077b515897ebf199944a077eb8f0f01eee7675c143e19abed10b5c",
+      "bytes": 958
+    },
+    {
+      "path": "examples/ros1/talker.cpp",
+      "kind": "new",
+      "sha256": "64370d198600bc39202fdac4f5523b828e4bcd1ae5e6a9ef7cd76348d58f882e",
+      "bytes": 963
+    },
+    {
+      "path": "examples/ros1/talker.wasm",
+      "kind": "new",
+      "sha256": "65274d5cfe9f04e1b6c039cf7ef82a8cce1d7d0a74058f892a8dff52a9c77afa",
+      "bytes": 369
+    },
+    {
+      "path": "examples/ros1/talker.wat",
+      "kind": "new",
+      "sha256": "a548039660e51a70fb367eaec4623308a2149cab1ed7816ebf3f7c085205b58d",
+      "bytes": 1330
+    },
+    {
+      "path": "examples/ros1/talker_bool.wasm",
+      "kind": "new",
+      "sha256": "5c3bd23cbfb5df61d628a21bb576db52587c6dcf4761f4e9bda3bd1e71e0b325",
+      "bytes": 368
+    },
+    {
+      "path": "examples/ros1/talker_bool.wat",
+      "kind": "new",
+      "sha256": "3ce043e6dc210af384d4032ed5d1eeafbb4bd7d584f459cb4ce850dae5e432d2",
+      "bytes": 1322
+    },
+    {
+      "path": "examples/ros1/talker_c.wasm",
+      "kind": "new",
+      "sha256": "e22f6d67b11aed59317d6e29df42aa6fcc20c9b3e94789e4dee8e615f8c8a8ae",
+      "bytes": 1195
+    },
+    {
+      "path": "examples/ros1/talker_cpp.wasm",
+      "kind": "new",
+      "sha256": "b3111098dd0ef734cfb85f09daae4d3ee93eaa100b58da2b23a9f5b48ae53f15",
+      "bytes": 1265
+    },
+    {
+      "path": "examples/ros1/talker_image.wasm",
+      "kind": "new",
+      "sha256": "ab931ff4c17252fb3e04e4d845b80124b7e96f985e28078a5c3d1056cfee0547",
+      "bytes": 434
+    },
+    {
+      "path": "examples/ros1/talker_image.wat",
+      "kind": "new",
+      "sha256": "4646315ec8e4c9da59102dea0a9eedf357cf68ab2f6b51047b1ee8dbe5948c04",
+      "bytes": 1516
+    },
+    {
+      "path": "examples/ros1/talker_twist.wasm",
+      "kind": "new",
+      "sha256": "e8f2a5bbf880b58073a570e7ae02fc7b187f6a5ccc15a87481b1d04cf7fa2993",
+      "bytes": 415
+    },
+    {
+      "path": "examples/ros1/talker_twist.wat",
+      "kind": "new",
+      "sha256": "6698e0e6dda4b4b22183f32fe0d9aa823f53874f0c7a0f8644f90120fa2e776b",
+      "bytes": 1465
+    },
+    {
+      "path": "examples/ros1/tf_broadcast.wasm",
+      "kind": "new",
+      "sha256": "a93d7e93b572c49d30a183851916e927c79f33bab08d593eeba2e4e68816de14",
+      "bytes": 474
+    },
+    {
+      "path": "examples/ros1/tf_broadcast.wat",
+      "kind": "new",
+      "sha256": "e9c2093a3219bb60c04e8dd5ef71fb94d3f9c11b08b7db1da65b8470d596bc4d",
+      "bytes": 1697
+    },
+    {
+      "path": "examples/ros1/tf_broadcast_denied.wasm",
+      "kind": "new",
+      "sha256": "f250b41213fed1d1c5f4bd9eee1830299f7554b37662ef52611b4a084624bade",
+      "bytes": 324
+    },
+    {
+      "path": "examples/ros1/tf_broadcast_denied.wat",
+      "kind": "new",
+      "sha256": "d7d3e75659a2728feefc761b6fb9a31c0a5eeb1ba53a2e334865350e03c3608d",
+      "bytes": 951
+    },
+    {
+      "path": "examples/ros1/tf_lookup.wasm",
+      "kind": "new",
+      "sha256": "fe197c73c6054438b8754179e29d40538c35fd4525a82f1e522cf9e0129643f1",
+      "bytes": 392
+    },
+    {
+      "path": "examples/ros1/tf_lookup.wat",
+      "kind": "new",
+      "sha256": "b9b9b5c5ab4c5bda7de6269a94e2573cf9c04c8f27e272e11226bd6dacc0e0f8",
+      "bytes": 1407
+    },
+    {
+      "path": "examples/ros1/tf_lookup_denied.wasm",
+      "kind": "new",
+      "sha256": "1f533fc8c2afaf04f759bad9e63150ae43bd6beee7701b0bb59a56cc0ca52654",
+      "bytes": 278
+    },
+    {
+      "path": "examples/ros1/tf_lookup_denied.wat",
+      "kind": "new",
+      "sha256": "02575dbbf8d8c0d159009984f3fa9156416eaf1f1b2dfb3bbd698c72e177a07e",
+      "bytes": 948
+    },
+    {
+      "path": "examples/ros1/time_read_ros.wasm",
+      "kind": "new",
+      "sha256": "96e62a8d8b9c038ebd2f55088ce7c075472dd6ba5d3fc6e67cea5a21152dfc5a",
+      "bytes": 270
+    },
+    {
+      "path": "examples/ros1/time_read_ros.wat",
+      "kind": "new",
+      "sha256": "f8dcba14e64fbcbae5c847a2f96891f38a21fc08d5ae475c6d3f00483a00c0ab",
+      "bytes": 890
+    },
+    {
+      "path": "examples/ros1/time_read_wall.wasm",
+      "kind": "new",
+      "sha256": "5fc09d6af28dcd7d5e38e253856665089165b9fe3910d3fd1f07c71e39a777dd",
+      "bytes": 271
+    },
+    {
+      "path": "examples/ros1/time_read_wall.wat",
+      "kind": "new",
+      "sha256": "5d5b11f67aa2669cc9454f5b9aab4ea813370ed0f09c8e701e934780a65a2c78",
+      "bytes": 891
+    },
+    {
+      "path": "examples/ros1/topic_denied.wasm",
+      "kind": "new",
+      "sha256": "ed1feba2dc44e729a459f7856faa08447e114fa90303387755ea67aa3efdb312",
+      "bytes": 287
+    },
+    {
+      "path": "examples/ros1/topic_denied.wat",
+      "kind": "new",
+      "sha256": "59a72fcdee82a5b368805b0f49cb013526bffab4238c2c48f99cbd2715012b7a",
+      "bytes": 960
+    },
+    {
+      "path": "examples/ros1/topic_subscribe_denied.wasm",
+      "kind": "new",
+      "sha256": "fefbbe759e1fe217eb5e7939b0dbdc4b10c1fec2b122323e77f1ccf813edb361",
+      "bytes": 255
+    },
+    {
+      "path": "examples/ros1/topic_subscribe_denied.wat",
+      "kind": "new",
+      "sha256": "4ef805f8ec7570125ac5c01f45a203b3745b64a0fc6015e281065da803c8f0ea",
+      "bytes": 806
+    },
+    {
+      "path": "examples/ros1/trap_cleanup.wasm",
+      "kind": "new",
+      "sha256": "a94f626a631d4c2098a58f982084c991459ffdd94660214d674146b0d283c63d",
+      "bytes": 598
+    },
+    {
+      "path": "examples/ros1/trap_cleanup.wat",
+      "kind": "new",
+      "sha256": "f3c4c45f325857c19a8db8d2ea915516083e719989fb9506d20a80822e748da2",
+      "bytes": 2208
+    },
+    {
+      "path": "examples/ros1/unauthorized.wasm",
+      "kind": "new",
+      "sha256": "3f7f97868d75ab818eee6f1745e0292a954c135e9af6bba51237548d2f7d0ba1",
+      "bytes": 163
+    },
+    {
+      "path": "examples/ros1/unauthorized.wat",
+      "kind": "new",
+      "sha256": "ebbebffc5401a33a2f613c57ffd6f04a69b64ae9b6c50b7e3ac275438065257c",
+      "bytes": 399
+    },
+    {
+      "path": "examples/ros2/README.md",
+      "kind": "new",
+      "sha256": "e988b249ad03f048f1c818256ed5b21ae7b81f00b35d4741f71b6371a5d9a5fb",
+      "bytes": 925
+    },
+    {
+      "path": "examples/ros2/action_cancel_denied.wasm",
+      "kind": "new",
+      "sha256": "efa92fb54c9e34aeba5e46c715bd6064c8a2b6706aaebcaf46959055545eaf7a",
+      "bytes": 376
+    },
+    {
+      "path": "examples/ros2/action_cancel_denied.wat",
+      "kind": "new",
+      "sha256": "d343fc6eeb4d80721cd46b31363f2cd7c0a0b17f9c020c9574a9e88fd964a6bb",
+      "bytes": 1319
+    },
+    {
+      "path": "examples/ros2/action_client.wasm",
+      "kind": "new",
+      "sha256": "f38798bdb3011dbb20db7afd4218301d805eeda2c27052f0ab49617cee6c9527",
+      "bytes": 1219
+    },
+    {
+      "path": "examples/ros2/action_client.wat",
+      "kind": "new",
+      "sha256": "89ee2a7db8a552f775e71e17db7a9346f5c916cd2aba1863d828b75c7f66def4",
+      "bytes": 5900
+    },
+    {
+      "path": "examples/ros2/action_denied.wasm",
+      "kind": "new",
+      "sha256": "1543ad69d08ced885d64b8a70d5845f9c9f8ca3f79ca7fd90074de341de01cd8",
+      "bytes": 304
+    },
+    {
+      "path": "examples/ros2/action_denied.wat",
+      "kind": "new",
+      "sha256": "b2d899802f8ae262811a11239e774f2701950487139da7da30e977c86fdc015e",
+      "bytes": 1016
+    },
+    {
+      "path": "examples/ros2/action_flood.wasm",
+      "kind": "new",
+      "sha256": "4c42a30cc453d7b052810ae7e80f85351df85fc6a7cbd4ce5b4358694ddfe6d3",
+      "bytes": 359
+    },
+    {
+      "path": "examples/ros2/action_flood.wat",
+      "kind": "new",
+      "sha256": "43eb15df6492e6a9b8a62bc75eeff8cccd08a0a8da9fb76074cbc6b1ee9c554d",
+      "bytes": 1437
+    },
+    {
+      "path": "examples/ros2/action_server.wasm",
+      "kind": "new",
+      "sha256": "b2531e4b9719e906971ecd50b82f5d1b14ff347b512a67b10a079372f2e858c0",
+      "bytes": 837
+    },
+    {
+      "path": "examples/ros2/action_server.wat",
+      "kind": "new",
+      "sha256": "648507b5c50063b17692d712082eb53da1453ad57df25def4efb19378e0eb390",
+      "bytes": 3583
+    },
+    {
+      "path": "examples/ros2/array_parameter_profiles.json",
+      "kind": "new",
+      "sha256": "f9636bc8c8d7f07f0fe58452ba9a549f0d1fdd6e13128b61cab31471b5c6a68c",
+      "bytes": 267062
+    },
+    {
+      "path": "examples/ros2/graph_denied.wasm",
+      "kind": "new",
+      "sha256": "2804f2898a18d2c677b250fd635ce1eee52c60fb49b5a24694d7bd20d25fd4a4",
+      "bytes": 303
+    },
+    {
+      "path": "examples/ros2/graph_denied.wat",
+      "kind": "new",
+      "sha256": "9f3f4ee1bf8a061ddc209468d13b908e27751e0d5ef2beb60d86424bf37c6764",
+      "bytes": 1015
+    },
+    {
+      "path": "examples/ros2/graph_flood.wasm",
+      "kind": "new",
+      "sha256": "fbabe146116290ba36548fbf441397d90e9aeda7bbd842f920707d6d2fcab07e",
+      "bytes": 492
+    },
+    {
+      "path": "examples/ros2/graph_flood.wat",
+      "kind": "new",
+      "sha256": "1d309f44448a88e90d6dbc0464d82033839f2c71bd55530803530389253fb29a",
+      "bytes": 2148
+    },
+    {
+      "path": "examples/ros2/graph_inspect_action.wasm",
+      "kind": "new",
+      "sha256": "ebfffa2c35d0b8ef5c78f656d49f1bbe982e66315d7acc0bae91ae9a27e8d741",
+      "bytes": 593
+    },
+    {
+      "path": "examples/ros2/graph_inspect_action.wat",
+      "kind": "new",
+      "sha256": "b0d928392d9a0a1240c478eb5d839c0902224292274d62f245efafd8be0eaf7f",
+      "bytes": 2775
+    },
+    {
+      "path": "examples/ros2/graph_inspect_node.wasm",
+      "kind": "new",
+      "sha256": "6ad81f29053433bb0cdea26dbdeb77adb9a333d52723b983272fb2aab65111f5",
+      "bytes": 585
+    },
+    {
+      "path": "examples/ros2/graph_inspect_node.wat",
+      "kind": "new",
+      "sha256": "2925f4671280717c450c10d3b381345867722d39345ebc460bbda9413b2f5aa5",
+      "bytes": 2755
+    },
+    {
+      "path": "examples/ros2/graph_inspect_service.wasm",
+      "kind": "new",
+      "sha256": "f3170b28b73d2efd862b883a29e1b9ec7ac822bdbe4570976d59721cbbb70e2b",
+      "bytes": 603
+    },
+    {
+      "path": "examples/ros2/graph_inspect_service.wat",
+      "kind": "new",
+      "sha256": "702aa6eb2fed650c22c6394083d8ecc10ec5e16898ca80fc2525f00179ca6d88",
+      "bytes": 2803
+    },
+    {
+      "path": "examples/ros2/graph_inspect_topic.wasm",
+      "kind": "new",
+      "sha256": "3dc1d6ce790767ce094f08a4636446235623abcc9c0adc9adfd6f366f525ee4d",
+      "bytes": 585
+    },
+    {
+      "path": "examples/ros2/graph_inspect_topic.wat",
+      "kind": "new",
+      "sha256": "4324c2cd0ac63004d6b61a6c149d1b2ff0aaad75bed6e607ca76114891a29d30",
+      "bytes": 2753
+    },
+    {
+      "path": "examples/ros2/graph_list_nodes.wasm",
+      "kind": "new",
+      "sha256": "1d4650ac85895731b9d9a42cb4ce2eb2ccdf76e3ba6a70d801347d2fc6c86fae",
+      "bytes": 583
+    },
+    {
+      "path": "examples/ros2/graph_list_nodes.wat",
+      "kind": "new",
+      "sha256": "470278ef19acbe3febe7460f9fbfe8a8954a48da2cfea2fcaf7b63c92df00731",
+      "bytes": 2753
+    },
+    {
+      "path": "examples/ros2/graph_list_services.wasm",
+      "kind": "new",
+      "sha256": "095530875a3d1e6897e69336133e811d05cc50a9fa7c5b260b4883bb7a067ae8",
+      "bytes": 601
+    },
+    {
+      "path": "examples/ros2/graph_list_services.wat",
+      "kind": "new",
+      "sha256": "db090667e5bf79e64c336ecbf653377902085b254a676dec47d5fc1058e96eec",
+      "bytes": 2801
+    },
+    {
+      "path": "examples/ros2/graph_list_topics.wasm",
+      "kind": "new",
+      "sha256": "6d2572e1afac3c56cab729cad4ddfaaf14850d829f062a03290c8b3d8fc0af78",
+      "bytes": 583
+    },
+    {
+      "path": "examples/ros2/graph_list_topics.wat",
+      "kind": "new",
+      "sha256": "9fbe796d946e7a2ec258ac642626552af7b8f0e2ef4117a12f93f5d415e2fa06",
+      "bytes": 2751
+    },
+    {
+      "path": "examples/ros2/handle_security.wasm",
+      "kind": "new",
+      "sha256": "ee332e47d1ef98588fd7768fa53bddf71ec3621ec2bff31cedc0768cbaf14891",
+      "bytes": 447
+    },
+    {
+      "path": "examples/ros2/handle_security.wat",
+      "kind": "new",
+      "sha256": "e462c1bda9eadf756b1e3fc963deac47af59b9da138209e2bf4cbd0d477e182c",
+      "bytes": 1636
+    },
+    {
+      "path": "examples/ros2/lifecycle_change_state.wasm",
+      "kind": "new",
+      "sha256": "c9697ba56b2b6e4f0a8f72a8c79adbcf5a187ec2ae72573e7fac28a9da3de3c4",
+      "bytes": 281
+    },
+    {
+      "path": "examples/ros2/lifecycle_change_state.wat",
+      "kind": "new",
+      "sha256": "36a7e03c65b44ed6c21a53091445d147d84c2eecd7f836ac0efcf826b65fd471",
+      "bytes": 915
+    },
+    {
+      "path": "examples/ros2/lifecycle_change_state_denied.wasm",
+      "kind": "new",
+      "sha256": "8c0dcbf63b309428afddacb3344f8ebc10d01cc7ea3109897d9cf56f13309aa7",
+      "bytes": 250
+    },
+    {
+      "path": "examples/ros2/lifecycle_change_state_denied.wat",
+      "kind": "new",
+      "sha256": "14a4242a374eb653d3dab4868c30ac8ac40ef9f6cd8595f2aaa99647a5c4bc65",
+      "bytes": 711
+    },
+    {
+      "path": "examples/ros2/lifecycle_get_state.wasm",
+      "kind": "new",
+      "sha256": "21bc3750288bb8ce9536f27219bb741818de22143a97c52e763b2f55d4a57c8e",
+      "bytes": 346
+    },
+    {
+      "path": "examples/ros2/lifecycle_get_state.wat",
+      "kind": "new",
+      "sha256": "43cc67b840d778668d6fbc0bb80ab04bc42dca4469573615fb2f026df330cd15",
+      "bytes": 1272
+    },
+    {
+      "path": "examples/ros2/listener.c",
+      "kind": "new",
+      "sha256": "b3011d6fe76f44261dc301ca7a8385ecfc1762b4a7dc53179d36d2cec8ae61e9",
+      "bytes": 1187
+    },
+    {
+      "path": "examples/ros2/listener.wasm",
+      "kind": "new",
+      "sha256": "8db3c9a02f8efa4c82c1ab81138828c8fddede661275e7f893a33a04a51c1ad7",
+      "bytes": 457
+    },
+    {
+      "path": "examples/ros2/listener.wat",
+      "kind": "new",
+      "sha256": "c6b7c53f5406afc13d98b18daab5214d972f5c04d737b2a8424a6d97b02a4999",
+      "bytes": 1769
+    },
+    {
+      "path": "examples/ros2/listener_bool.wasm",
+      "kind": "new",
+      "sha256": "2a249e5f1b2a6197da46877b81e56660ed5e2ec159aae43f5f3923fa0b2c2dda",
+      "bytes": 479
+    },
+    {
+      "path": "examples/ros2/listener_bool.wat",
+      "kind": "new",
+      "sha256": "3786833e3509ae4845797f4709e823ef0f1ac595433592509e92965ad2c41271",
+      "bytes": 1965
+    },
+    {
+      "path": "examples/ros2/listener_image.wasm",
+      "kind": "new",
+      "sha256": "9ef8ed2d1d6ab950a19635254d0562f731b8936c4a04c90bcb52019721416c6e",
+      "bytes": 545
+    },
+    {
+      "path": "examples/ros2/listener_image.wat",
+      "kind": "new",
+      "sha256": "578964ef2e0af2c7c64ebf806bc1349412dfe19cb1b44aef000ee570f4627889",
+      "bytes": 2159
+    },
+    {
+      "path": "examples/ros2/listener_twist.wasm",
+      "kind": "new",
+      "sha256": "beff7c88bf972bf361bf65731e512b742309a3f12482505d098a8331363fa3fe",
+      "bytes": 526
+    },
+    {
+      "path": "examples/ros2/listener_twist.wat",
+      "kind": "new",
+      "sha256": "3e8a8e119bca091ef8275d279f444e0155abcd5b4f2c946bce7158a4d6bbd853",
+      "bytes": 2108
+    },
+    {
+      "path": "examples/ros2/log_flood.wasm",
+      "kind": "new",
+      "sha256": "5e0eba03bacd8ac8bb6839a71638907a39cce063c8a4dbc467c90d1c8517db6e",
+      "bytes": 371
+    },
+    {
+      "path": "examples/ros2/log_flood.wat",
+      "kind": "new",
+      "sha256": "bba504f7940141814a790139f923e7051d603350916abccddb42617f7bc35654",
+      "bytes": 1436
+    },
+    {
+      "path": "examples/ros2/log_write.wasm",
+      "kind": "new",
+      "sha256": "e95ade9b457dac3d4f8b9c340bb268125ddec20d82ad954ee9bc5918daab7c87",
+      "bytes": 229
+    },
+    {
+      "path": "examples/ros2/log_write.wat",
+      "kind": "new",
+      "sha256": "60ac11fbb26b0bb656e41028cd114fba5b6d46fd5e271a50ad87981337a6d2c5",
+      "bytes": 659
+    },
+    {
+      "path": "examples/ros2/memory64_bounds.wasm",
+      "kind": "new",
+      "sha256": "73d3f5629979c637085d8bc88f7cbdfc4a38790716b60fc3a13efa3c536a7127",
+      "bytes": 343
+    },
+    {
+      "path": "examples/ros2/memory64_bounds.wat",
+      "kind": "new",
+      "sha256": "3d0c078fa75f7d26488ab8387955b6fb30f2489b923de9449a5eef4b1d035339",
+      "bytes": 1304
+    },
+    {
+      "path": "examples/ros2/memory64_growth.wasm",
+      "kind": "new",
+      "sha256": "7b227a3891ed7a494fdb50584a962b080425919b948e618d9630237e5592cdd4",
+      "bytes": 411
+    },
+    {
+      "path": "examples/ros2/memory64_growth.wat",
+      "kind": "new",
+      "sha256": "94f258f7a3c2929ef403e31b803fdd5f232fe244c62494cd96126ce47390881e",
+      "bytes": 1487
+    },
+    {
+      "path": "examples/ros2/parameter_array_bool_absent_denied.wasm",
+      "kind": "new",
+      "sha256": "1aaeea0a2edb2077991dadce2f57384b1673aecc67a033e4fcb66e3b26e31fc9",
+      "bytes": 626
+    },
+    {
+      "path": "examples/ros2/parameter_array_bool_absent_denied.wat",
+      "kind": "new",
+      "sha256": "907fa80c986958ee5782a06e4c25ca0a8fd15cf73815d3a420d740900e0034a6",
+      "bytes": 2933
+    },
+    {
+      "path": "examples/ros2/parameter_array_bool_byte_quota.wasm",
+      "kind": "new",
+      "sha256": "69ce24a75c7ad619614c91c527a0365fa510b01ceb15b6b710096ea97ef3f4c4",
+      "bytes": 636
+    },
+    {
+      "path": "examples/ros2/parameter_array_bool_byte_quota.wat",
+      "kind": "new",
+      "sha256": "407923bf7ff3f1fd997cf262f5c6d3b3868304d914f76026e71130495105ef8c",
+      "bytes": 2961
+    },
+    {
+      "path": "examples/ros2/parameter_array_bool_count_quota.wasm",
+      "kind": "new",
+      "sha256": "e3fe03c63ba5dd65b229a1ddd47cf18379f1af160eafa77a9845a91c8cd4d771",
+      "bytes": 638
+    },
+    {
+      "path": "examples/ros2/parameter_array_bool_count_quota.wat",
+      "kind": "new",
+      "sha256": "f45be840780471e6c7296580c75b7de425caa54f54cd913e2f6197eec7128066",
+      "bytes": 2967
+    },
+    {
+      "path": "examples/ros2/parameter_array_bool_dynamic_denied.wasm",
+      "kind": "new",
+      "sha256": "bc5fbb92db1e284488d593856a3859a6cd65f3006905b644c378f05529c4123a",
+      "bytes": 636
+    },
+    {
+      "path": "examples/ros2/parameter_array_bool_dynamic_denied.wat",
+      "kind": "new",
+      "sha256": "5a6df7da73d48def97c1804f175bf7e5232a78008d66a9b4faff784bbbc52623",
+      "bytes": 2961
+    },
+    {
+      "path": "examples/ros2/parameter_array_bool_empty_roundtrip.wasm",
+      "kind": "new",
+      "sha256": "2838039fb06a05e3c7af99a1082043d93ce0082e5fb5e0bfb5ad65ef9cd300be",
+      "bytes": 692
+    },
+    {
+      "path": "examples/ros2/parameter_array_bool_empty_roundtrip.wat",
+      "kind": "new",
+      "sha256": "3165058714ba363444567de1d188805c52ae2f5245ecb1da8d286db959531dc3",
+      "bytes": 3252
+    },
+    {
+      "path": "examples/ros2/parameter_array_bool_get_byte_quota.wasm",
+      "kind": "new",
+      "sha256": "848a4d307d832dfb81fc0bf3cbb79283c62312080d15899f3f9f7d8de12ed59d",
+      "bytes": 550
+    },
+    {
+      "path": "examples/ros2/parameter_array_bool_get_byte_quota.wat",
+      "kind": "new",
+      "sha256": "5c1bbf7f04d9a9d0d95e2a4bd5c53b8d5bba79a63ff51a8450c28c730ced9cc6",
+      "bytes": 2530
+    },
+    {
+      "path": "examples/ros2/parameter_array_bool_get_count_quota.wasm",
+      "kind": "new",
+      "sha256": "848a4d307d832dfb81fc0bf3cbb79283c62312080d15899f3f9f7d8de12ed59d",
+      "bytes": 550
+    },
+    {
+      "path": "examples/ros2/parameter_array_bool_get_count_quota.wat",
+      "kind": "new",
+      "sha256": "5c1bbf7f04d9a9d0d95e2a4bd5c53b8d5bba79a63ff51a8450c28c730ced9cc6",
+      "bytes": 2530
+    },
+    {
+      "path": "examples/ros2/parameter_array_bool_local_roundtrip.wasm",
+      "kind": "new",
+      "sha256": "594a022175a7f280d55529c0de23406df4e3b8eb7445a01022cf9a192e45bb59",
+      "bytes": 972
+    },
+    {
+      "path": "examples/ros2/parameter_array_bool_local_roundtrip.wat",
+      "kind": "new",
+      "sha256": "9aa4ae383a05768e5e65e790eeae0c5dd84b6440e80e8c98667fb7d225a834b1",
+      "bytes": 4574
+    },
+    {
+      "path": "examples/ros2/parameter_array_bool_malformed.wasm",
+      "kind": "new",
+      "sha256": "955750f86f001d921d86fc3bff0e91dc4de9148d3a061cdcf96226b6bd8b3d21",
+      "bytes": 789
+    },
+    {
+      "path": "examples/ros2/parameter_array_bool_malformed.wat",
+      "kind": "new",
+      "sha256": "f3de075801dd6b208af237d47d27b3f993c2ef8b6b0d4cf34f9cc15f999c6a67",
+      "bytes": 3807
+    },
+    {
+      "path": "examples/ros2/parameter_array_bool_operation_denied.wasm",
+      "kind": "new",
+      "sha256": "500ee8ee3581585d750590f646c4dca1e3dfaac43e00d04a208c69e3af3aac9d",
+      "bytes": 611
+    },
+    {
+      "path": "examples/ros2/parameter_array_bool_operation_denied.wat",
+      "kind": "new",
+      "sha256": "4ad7d57d3e19980ca88e424564d9926578e7842fd4bb323f00e510510ae8a78a",
+      "bytes": 2842
+    },
+    {
+      "path": "examples/ros2/parameter_array_bool_roundtrip.wasm",
+      "kind": "new",
+      "sha256": "121ae48814a10c1b91d1ad7e8a3884441b40de1cf7bf2bc2ffce074a7b45c5e2",
+      "bytes": 694
+    },
+    {
+      "path": "examples/ros2/parameter_array_bool_roundtrip.wat",
+      "kind": "new",
+      "sha256": "d93c91d3380dc611fdadff768ce3435dff617113e99b048ed590bf279a807530",
+      "bytes": 3258
+    },
+    {
+      "path": "examples/ros2/parameter_array_bool_undeclare_wrong_kind.wasm",
+      "kind": "new",
+      "sha256": "ba6ecce621576bc606c1de0a5abed488ebe4adfd5964bc2d5fb37fd2ea45824e",
+      "bytes": 971
+    },
+    {
+      "path": "examples/ros2/parameter_array_bool_undeclare_wrong_kind.wat",
+      "kind": "new",
+      "sha256": "9e8b3e650c2a0b5c061d5742d7693f6c76290f2f7bda46bffb4f392a409421cb",
+      "bytes": 4569
+    },
+    {
+      "path": "examples/ros2/parameter_array_bool_wrong_kind.wasm",
+      "kind": "new",
+      "sha256": "02a9b7db1fcb4d5eb00809b6b76588152e4cfbdc5ac9233bf1f4723b6f8d1ded",
+      "bytes": 627
+    },
+    {
+      "path": "examples/ros2/parameter_array_bool_wrong_kind.wat",
+      "kind": "new",
+      "sha256": "dd62ec31cf69e398a82862fad6e28906b64cbf4d9f73a04eabc387a3686506de",
+      "bytes": 2934
+    },
+    {
+      "path": "examples/ros2/parameter_array_byte_absent_denied.wasm",
+      "kind": "new",
+      "sha256": "22c8619d0ed58f2e3806d182718d209a1550b49f28844ec40335cab38777da48",
+      "bytes": 626
+    },
+    {
+      "path": "examples/ros2/parameter_array_byte_absent_denied.wat",
+      "kind": "new",
+      "sha256": "e76ded17a8d0e4229d1823454b5be7b0c7aeda0c736f91263a7e652988f74c45",
+      "bytes": 2933
+    },
+    {
+      "path": "examples/ros2/parameter_array_byte_byte_quota.wasm",
+      "kind": "new",
+      "sha256": "f5b5fb578e7fca30d8ea9b48c8e52f225ed947372cb8eef0eb2c1ade767a1473",
+      "bytes": 636
+    },
+    {
+      "path": "examples/ros2/parameter_array_byte_byte_quota.wat",
+      "kind": "new",
+      "sha256": "1b850d9c035b1883ade33566af083a74606e700b514927d2cbfc2d1762888f71",
+      "bytes": 2961
+    },
+    {
+      "path": "examples/ros2/parameter_array_byte_count_quota.wasm",
+      "kind": "new",
+      "sha256": "dab35720c22f8872a40534bd118d0119ef415633ab37b371762bba6fe0130665",
+      "bytes": 638
+    },
+    {
+      "path": "examples/ros2/parameter_array_byte_count_quota.wat",
+      "kind": "new",
+      "sha256": "16b50fa432a61fc733cfd9a8854c8c8670859b8a281a343a745d011871923ef3",
+      "bytes": 2967
+    },
+    {
+      "path": "examples/ros2/parameter_array_byte_dynamic_denied.wasm",
+      "kind": "new",
+      "sha256": "73973a2403613ee4c104110abd77a7c882ca2c9a8037facf98bcdb4923093967",
+      "bytes": 636
+    },
+    {
+      "path": "examples/ros2/parameter_array_byte_dynamic_denied.wat",
+      "kind": "new",
+      "sha256": "ebff447f52f792dca66d5c6420c984cdd00d99202f0b078851382bed694e26d0",
+      "bytes": 2961
+    },
+    {
+      "path": "examples/ros2/parameter_array_byte_empty_roundtrip.wasm",
+      "kind": "new",
+      "sha256": "6046176a6d58c94a27e21b6f63cfa917c9038d64ba01f660541fbd8ec94191b0",
+      "bytes": 692
+    },
+    {
+      "path": "examples/ros2/parameter_array_byte_empty_roundtrip.wat",
+      "kind": "new",
+      "sha256": "ded48de3740e3a99f96b7228ce17e6e159dfc119cf39b39fe21034dd48b0942f",
+      "bytes": 3252
+    },
+    {
+      "path": "examples/ros2/parameter_array_byte_get_byte_quota.wasm",
+      "kind": "new",
+      "sha256": "848a4d307d832dfb81fc0bf3cbb79283c62312080d15899f3f9f7d8de12ed59d",
+      "bytes": 550
+    },
+    {
+      "path": "examples/ros2/parameter_array_byte_get_byte_quota.wat",
+      "kind": "new",
+      "sha256": "5c1bbf7f04d9a9d0d95e2a4bd5c53b8d5bba79a63ff51a8450c28c730ced9cc6",
+      "bytes": 2530
+    },
+    {
+      "path": "examples/ros2/parameter_array_byte_get_count_quota.wasm",
+      "kind": "new",
+      "sha256": "848a4d307d832dfb81fc0bf3cbb79283c62312080d15899f3f9f7d8de12ed59d",
+      "bytes": 550
+    },
+    {
+      "path": "examples/ros2/parameter_array_byte_get_count_quota.wat",
+      "kind": "new",
+      "sha256": "5c1bbf7f04d9a9d0d95e2a4bd5c53b8d5bba79a63ff51a8450c28c730ced9cc6",
+      "bytes": 2530
+    },
+    {
+      "path": "examples/ros2/parameter_array_byte_local_roundtrip.wasm",
+      "kind": "new",
+      "sha256": "ec2318b2f2d302a080237937cdcb9e436e061f930374cf1dd9f2f937699adca4",
+      "bytes": 972
+    },
+    {
+      "path": "examples/ros2/parameter_array_byte_local_roundtrip.wat",
+      "kind": "new",
+      "sha256": "9eff04391c7af7eaf99543e9de47bcbab033f48c7fcea9d60510579c2f114a1c",
+      "bytes": 4574
+    },
+    {
+      "path": "examples/ros2/parameter_array_byte_malformed.wasm",
+      "kind": "new",
+      "sha256": "caa674a8cd31c17d702184906deda2f57eb60ef859b625367c622962c66f8a47",
+      "bytes": 738
+    },
+    {
+      "path": "examples/ros2/parameter_array_byte_malformed.wat",
+      "kind": "new",
+      "sha256": "ba851d589005e1805f28df5f5f620ff076ba992188b8db5f4bff1fcd6191a00e",
+      "bytes": 3525
+    },
+    {
+      "path": "examples/ros2/parameter_array_byte_operation_denied.wasm",
+      "kind": "new",
+      "sha256": "ca42cad085156eb0a7db44a08e89de9d7ed68b7c4344c32bd0dc362d0c2e9f0a",
+      "bytes": 611
+    },
+    {
+      "path": "examples/ros2/parameter_array_byte_operation_denied.wat",
+      "kind": "new",
+      "sha256": "df278ee32f05e00d0b3e93a89d0cb636a4acd05ba1a421ea22931abd4176994d",
+      "bytes": 2842
+    },
+    {
+      "path": "examples/ros2/parameter_array_byte_roundtrip.wasm",
+      "kind": "new",
+      "sha256": "3312cf4092848c66c20906acb0334adc501a052620ea535a3f0f899589cb133e",
+      "bytes": 694
+    },
+    {
+      "path": "examples/ros2/parameter_array_byte_roundtrip.wat",
+      "kind": "new",
+      "sha256": "f83896d9002a5e4e793b47fd19a03c2f7e4b23d6602f050ce0bc9ac168ee1210",
+      "bytes": 3258
+    },
+    {
+      "path": "examples/ros2/parameter_array_byte_undeclare_wrong_kind.wasm",
+      "kind": "new",
+      "sha256": "3ad7057d6f4e3c1368b7a2d57b268ca0c31b268a6128d9268705cedf84406a93",
+      "bytes": 971
+    },
+    {
+      "path": "examples/ros2/parameter_array_byte_undeclare_wrong_kind.wat",
+      "kind": "new",
+      "sha256": "93bccf603f0db6fd578d4ebf75df271df9ce30ec25ff23454e84b32e3dbeafe8",
+      "bytes": 4569
+    },
+    {
+      "path": "examples/ros2/parameter_array_byte_wrong_kind.wasm",
+      "kind": "new",
+      "sha256": "117e0569ec43b58d3fec93ae600f334ea4e133c683e27f792ee080cc1e3682ff",
+      "bytes": 627
+    },
+    {
+      "path": "examples/ros2/parameter_array_byte_wrong_kind.wat",
+      "kind": "new",
+      "sha256": "89dbba2c6fe28b3a168c8155d2812b538b10e69458f8b7386c6a7f9fb72f6f50",
+      "bytes": 2934
+    },
+    {
+      "path": "examples/ros2/parameter_array_float64_absent_denied.wasm",
+      "kind": "new",
+      "sha256": "6fba020026cfd4594753a30eba04946215e8bc74eb1d9aa7f28c612b29e20730",
+      "bytes": 648
+    },
+    {
+      "path": "examples/ros2/parameter_array_float64_absent_denied.wat",
+      "kind": "new",
+      "sha256": "2350298f2b9909eb042f2c04efe7fb7bd2efe6f15e9190dd7c1cc70a62edd15f",
+      "bytes": 3000
+    },
+    {
+      "path": "examples/ros2/parameter_array_float64_byte_quota.wasm",
+      "kind": "new",
+      "sha256": "bf1e491f58768ea1bbc6d47b3a7256c14a07ddf4a83022cc62ec32ad0a5bc674",
+      "bytes": 680
+    },
+    {
+      "path": "examples/ros2/parameter_array_float64_byte_quota.wat",
+      "kind": "new",
+      "sha256": "9bd83d976b76b407d0c666448ecdc2c0a5e7a0c1d7780738205e1373ee0526fb",
+      "bytes": 3095
+    },
+    {
+      "path": "examples/ros2/parameter_array_float64_count_quota.wasm",
+      "kind": "new",
+      "sha256": "050e8d0a4ebc65155d64d39b78bc84d132b8520b2d58b5c506088b23d4577dc4",
+      "bytes": 688
+    },
+    {
+      "path": "examples/ros2/parameter_array_float64_count_quota.wat",
+      "kind": "new",
+      "sha256": "dd636eebd8362e65bc25210a953e6e02a18fb7302d7cede8246ee4fd38bdaf89",
+      "bytes": 3119
+    },
+    {
+      "path": "examples/ros2/parameter_array_float64_dynamic_denied.wasm",
+      "kind": "new",
+      "sha256": "8da807b17367b82bd1200e0ff489bf13ab08aa6d8cabe95611b3e2f1737fc97e",
+      "bytes": 680
+    },
+    {
+      "path": "examples/ros2/parameter_array_float64_dynamic_denied.wat",
+      "kind": "new",
+      "sha256": "93a1d91979c0e02741e558ba574b93a85ec5c59257401b1e52da3221b79ce2e3",
+      "bytes": 3095
+    },
+    {
+      "path": "examples/ros2/parameter_array_float64_empty_roundtrip.wasm",
+      "kind": "new",
+      "sha256": "c03f7b43b8a8ee26026a8ec72b06cb421b117ad2f8ffe2090d93541bb65d65a6",
+      "bytes": 714
+    },
+    {
+      "path": "examples/ros2/parameter_array_float64_empty_roundtrip.wat",
+      "kind": "new",
+      "sha256": "3766d1f19e4ed340a65abf4744f9d8c02b1a160f860b3db45167fbed890e0245",
+      "bytes": 3319
+    },
+    {
+      "path": "examples/ros2/parameter_array_float64_get_bounds.wasm",
+      "kind": "new",
+      "sha256": "6e69d126b456d595f64fbcfbce1dadd914a22472eb262f2044d04e1568897c28",
+      "bytes": 549
+    },
+    {
+      "path": "examples/ros2/parameter_array_float64_get_bounds.wat",
+      "kind": "new",
+      "sha256": "b43c4532a560a81b7619519726ff1b41d00a3b098e156bb723cc14c5f01ecb66",
+      "bytes": 2530
+    },
+    {
+      "path": "examples/ros2/parameter_array_float64_get_byte_quota.wasm",
+      "kind": "new",
+      "sha256": "848a4d307d832dfb81fc0bf3cbb79283c62312080d15899f3f9f7d8de12ed59d",
+      "bytes": 550
+    },
+    {
+      "path": "examples/ros2/parameter_array_float64_get_byte_quota.wat",
+      "kind": "new",
+      "sha256": "5c1bbf7f04d9a9d0d95e2a4bd5c53b8d5bba79a63ff51a8450c28c730ced9cc6",
+      "bytes": 2530
+    },
+    {
+      "path": "examples/ros2/parameter_array_float64_get_count_quota.wasm",
+      "kind": "new",
+      "sha256": "848a4d307d832dfb81fc0bf3cbb79283c62312080d15899f3f9f7d8de12ed59d",
+      "bytes": 550
+    },
+    {
+      "path": "examples/ros2/parameter_array_float64_get_count_quota.wat",
+      "kind": "new",
+      "sha256": "5c1bbf7f04d9a9d0d95e2a4bd5c53b8d5bba79a63ff51a8450c28c730ced9cc6",
+      "bytes": 2530
+    },
+    {
+      "path": "examples/ros2/parameter_array_float64_get_nonfinite.wasm",
+      "kind": "new",
+      "sha256": "b503fef61b2932e6753ce554ef67b663474e4be5e6af2132c4f7d9b144560d75",
+      "bytes": 549
+    },
+    {
+      "path": "examples/ros2/parameter_array_float64_get_nonfinite.wat",
+      "kind": "new",
+      "sha256": "4a7f6431842cea4874cacdda9da1df240d819b5e714e23a539b8acb9197d3081",
+      "bytes": 2530
+    },
+    {
+      "path": "examples/ros2/parameter_array_float64_local_roundtrip.wasm",
+      "kind": "new",
+      "sha256": "f22d9260fed918fb29dd48243b406a320b3d20aa3a8ac29f9fa049d22b0fa677",
+      "bytes": 1016
+    },
+    {
+      "path": "examples/ros2/parameter_array_float64_local_roundtrip.wat",
+      "kind": "new",
+      "sha256": "d95f5bbdc37a9cba54aa7bcc871a6b073c31f797f132e58bc42afbb63097d071",
+      "bytes": 4708
+    },
+    {
+      "path": "examples/ros2/parameter_array_float64_malformed.wasm",
+      "kind": "new",
+      "sha256": "7bd3691b21ce5c3e82687b99e2805a6ca8ad5abcd526b3a48a2d45a37618cc2d",
+      "bytes": 979
+    },
+    {
+      "path": "examples/ros2/parameter_array_float64_malformed.wat",
+      "kind": "new",
+      "sha256": "9e966a205cbf2cfef24a8827daf008baef3b39682a8b367ed2a8640851ca8439",
+      "bytes": 4638
+    },
+    {
+      "path": "examples/ros2/parameter_array_float64_operation_denied.wasm",
+      "kind": "new",
+      "sha256": "36df625bc94bb72f1426b9f875e059108d50c47907c3b90b14c78b516114c483",
+      "bytes": 655
+    },
+    {
+      "path": "examples/ros2/parameter_array_float64_operation_denied.wat",
+      "kind": "new",
+      "sha256": "e81171d85367cb5491ffaa0039cfe49cf960d72d2e788389f370e1342d1b8422",
+      "bytes": 2976
+    },
+    {
+      "path": "examples/ros2/parameter_array_float64_range.wasm",
+      "kind": "new",
+      "sha256": "65e117082d814b73dec85bf72d83704c25bdfb695081748372fd23f007bd330b",
+      "bytes": 722
+    },
+    {
+      "path": "examples/ros2/parameter_array_float64_range.wat",
+      "kind": "new",
+      "sha256": "6467c153074c535b84267388b108e3889df616bb194772df08a68b6a0d12db35",
+      "bytes": 3351
+    },
+    {
+      "path": "examples/ros2/parameter_array_float64_roundtrip.wasm",
+      "kind": "new",
+      "sha256": "5093490c43765fc08e492255183118b5083dfee6c8904962aaaaab0d9b36ca2a",
+      "bytes": 738
+    },
+    {
+      "path": "examples/ros2/parameter_array_float64_roundtrip.wat",
+      "kind": "new",
+      "sha256": "8979af7405171673282f4ed59f42f00343d62059cf71d1d1fc59a6642cd70f67",
+      "bytes": 3392
+    },
+    {
+      "path": "examples/ros2/parameter_array_float64_undeclare_bounds.wasm",
+      "kind": "new",
+      "sha256": "e7df96efbd4366807fa15c720f3a1f899c04489cd550ae7aebdd9f26b1627bc6",
+      "bytes": 1156
+    },
+    {
+      "path": "examples/ros2/parameter_array_float64_undeclare_bounds.wat",
+      "kind": "new",
+      "sha256": "d7139b807644920120562fdd48fcd335c57108a735bc06c0d17d9ee825838f5d",
+      "bytes": 5393
+    },
+    {
+      "path": "examples/ros2/parameter_array_float64_undeclare_wrong_kind.wasm",
+      "kind": "new",
+      "sha256": "f1f6ead5822217564dd7480231937aa11a8fad3fdb5b05b3d5135b0dc60d9de6",
+      "bytes": 1037
+    },
+    {
+      "path": "examples/ros2/parameter_array_float64_undeclare_wrong_kind.wat",
+      "kind": "new",
+      "sha256": "0585555023edcadd39074eb4967e03d15f3c676e4782b9fda3dff80468f7993b",
+      "bytes": 4770
+    },
+    {
+      "path": "examples/ros2/parameter_array_float64_wrong_kind.wasm",
+      "kind": "new",
+      "sha256": "d63899722015a103d81535b19402afa86e45638e179d22092ba0690abb6ca041",
+      "bytes": 649
+    },
+    {
+      "path": "examples/ros2/parameter_array_float64_wrong_kind.wat",
+      "kind": "new",
+      "sha256": "55f13bbc80149a3aa423db4c2a584122a2afb303cd264d8937518cb5aa9aa16f",
+      "bytes": 3001
+    },
+    {
+      "path": "examples/ros2/parameter_array_int64_absent_denied.wasm",
+      "kind": "new",
+      "sha256": "84c496bfa1691983c79a8562e6b79ab5c3862dd447f13f43b91de9a6719e64c0",
+      "bytes": 648
+    },
+    {
+      "path": "examples/ros2/parameter_array_int64_absent_denied.wat",
+      "kind": "new",
+      "sha256": "d3ee86d071ab559aca1a8e11dbf624326d40e37c6a1dbdbdf536548cfd568574",
+      "bytes": 3000
+    },
+    {
+      "path": "examples/ros2/parameter_array_int64_byte_quota.wasm",
+      "kind": "new",
+      "sha256": "811490c88436300d79d12bf82474e98595ef8bb8fea35e661d6adf6525bb6e91",
+      "bytes": 680
+    },
+    {
+      "path": "examples/ros2/parameter_array_int64_byte_quota.wat",
+      "kind": "new",
+      "sha256": "da70fb36024b57767267ca063c1ebed3bba6389fe17920b8c6b3a79f67bd3886",
+      "bytes": 3095
+    },
+    {
+      "path": "examples/ros2/parameter_array_int64_count_quota.wasm",
+      "kind": "new",
+      "sha256": "7bb59ac6f43e1a1797ca2731912c0bbfff33061eb9f6004d37baec4c0f9fd4c1",
+      "bytes": 688
+    },
+    {
+      "path": "examples/ros2/parameter_array_int64_count_quota.wat",
+      "kind": "new",
+      "sha256": "ac57b8ed815540161cd32462ba0b3546520e68a9e952bec7ee4320d9fc00acd2",
+      "bytes": 3119
+    },
+    {
+      "path": "examples/ros2/parameter_array_int64_dynamic_denied.wasm",
+      "kind": "new",
+      "sha256": "5171807e28417f8a6029e722d2f8e14e0f62318cd712b931e35b36c7d3019dae",
+      "bytes": 680
+    },
+    {
+      "path": "examples/ros2/parameter_array_int64_dynamic_denied.wat",
+      "kind": "new",
+      "sha256": "b03b395ec99f7f895f18ef81f4890bba8b3c7eab1c2578eb70e86c35639c80e4",
+      "bytes": 3095
+    },
+    {
+      "path": "examples/ros2/parameter_array_int64_empty_roundtrip.wasm",
+      "kind": "new",
+      "sha256": "b47915fcb99801a397e7515b5e98828cc4edae62617b1eeb4f5f2a6059f8f2ec",
+      "bytes": 714
+    },
+    {
+      "path": "examples/ros2/parameter_array_int64_empty_roundtrip.wat",
+      "kind": "new",
+      "sha256": "e82d0cc671c65d0d07919bdc428b1e81a236cbc3912cd0eca1c0f795a68db347",
+      "bytes": 3319
+    },
+    {
+      "path": "examples/ros2/parameter_array_int64_get_bounds.wasm",
+      "kind": "new",
+      "sha256": "6e69d126b456d595f64fbcfbce1dadd914a22472eb262f2044d04e1568897c28",
+      "bytes": 549
+    },
+    {
+      "path": "examples/ros2/parameter_array_int64_get_bounds.wat",
+      "kind": "new",
+      "sha256": "b43c4532a560a81b7619519726ff1b41d00a3b098e156bb723cc14c5f01ecb66",
+      "bytes": 2530
+    },
+    {
+      "path": "examples/ros2/parameter_array_int64_get_byte_quota.wasm",
+      "kind": "new",
+      "sha256": "848a4d307d832dfb81fc0bf3cbb79283c62312080d15899f3f9f7d8de12ed59d",
+      "bytes": 550
+    },
+    {
+      "path": "examples/ros2/parameter_array_int64_get_byte_quota.wat",
+      "kind": "new",
+      "sha256": "5c1bbf7f04d9a9d0d95e2a4bd5c53b8d5bba79a63ff51a8450c28c730ced9cc6",
+      "bytes": 2530
+    },
+    {
+      "path": "examples/ros2/parameter_array_int64_get_count_quota.wasm",
+      "kind": "new",
+      "sha256": "848a4d307d832dfb81fc0bf3cbb79283c62312080d15899f3f9f7d8de12ed59d",
+      "bytes": 550
+    },
+    {
+      "path": "examples/ros2/parameter_array_int64_get_count_quota.wat",
+      "kind": "new",
+      "sha256": "5c1bbf7f04d9a9d0d95e2a4bd5c53b8d5bba79a63ff51a8450c28c730ced9cc6",
+      "bytes": 2530
+    },
+    {
+      "path": "examples/ros2/parameter_array_int64_local_roundtrip.wasm",
+      "kind": "new",
+      "sha256": "ca922caba92e5e40fc2879c962e1a49655fe5590a046c34e10eb1562cf2d5068",
+      "bytes": 1016
+    },
+    {
+      "path": "examples/ros2/parameter_array_int64_local_roundtrip.wat",
+      "kind": "new",
+      "sha256": "ac345ca794215f769c562a13ad259b889de1967cc958f1f524393e5c2d637820",
+      "bytes": 4708
+    },
+    {
+      "path": "examples/ros2/parameter_array_int64_malformed.wasm",
+      "kind": "new",
+      "sha256": "f05c87b8c7237f26e5d083657a890d21e55056ccd79c7337dca4c3a1dc77f2ca",
+      "bytes": 805
+    },
+    {
+      "path": "examples/ros2/parameter_array_int64_malformed.wat",
+      "kind": "new",
+      "sha256": "6ec59ef8792c10a8b57a5d06f9a6aefcc6a88e95cb38f55e39e7a9336fe6d3ee",
+      "bytes": 3726
+    },
+    {
+      "path": "examples/ros2/parameter_array_int64_operation_denied.wasm",
+      "kind": "new",
+      "sha256": "300b5b7ca347755b3817c79588ca135328978ebe775839e06ab6be057dd713e6",
+      "bytes": 655
+    },
+    {
+      "path": "examples/ros2/parameter_array_int64_operation_denied.wat",
+      "kind": "new",
+      "sha256": "82e9e1184b84287f9d9144d23d49a00d66f22998853fe1f6623b45ea33bae43b",
+      "bytes": 2976
+    },
+    {
+      "path": "examples/ros2/parameter_array_int64_range.wasm",
+      "kind": "new",
+      "sha256": "34ef6ae5fb51db0f2dc05761f78037194e9cb7b5b1987e8909466fa623547ca9",
+      "bytes": 722
+    },
+    {
+      "path": "examples/ros2/parameter_array_int64_range.wat",
+      "kind": "new",
+      "sha256": "c09bf0042e90bfbb65bf5774dbdd5381382908b69c34e15ac88293257a0de2f8",
+      "bytes": 3351
+    },
+    {
+      "path": "examples/ros2/parameter_array_int64_roundtrip.wasm",
+      "kind": "new",
+      "sha256": "6c6a100e7217b3700b8f323121196d6528c0f47408999186bbb4829a751aa78c",
+      "bytes": 738
+    },
+    {
+      "path": "examples/ros2/parameter_array_int64_roundtrip.wat",
+      "kind": "new",
+      "sha256": "27254fac5ef62cfb20f9f76d5ce9cdb3d8d7240863add8bba7975dff7c462f2b",
+      "bytes": 3392
+    },
+    {
+      "path": "examples/ros2/parameter_array_int64_undeclare_bounds.wasm",
+      "kind": "new",
+      "sha256": "b2b9a21cde05e8ffa4df30bc7dc663b5866992906c24dea32992fbf9234965a8",
+      "bytes": 1156
+    },
+    {
+      "path": "examples/ros2/parameter_array_int64_undeclare_bounds.wat",
+      "kind": "new",
+      "sha256": "690da296f73e3c855661aecea1c9986a11cd684b5f6186a7840f448616791998",
+      "bytes": 5393
+    },
+    {
+      "path": "examples/ros2/parameter_array_int64_undeclare_wrong_kind.wasm",
+      "kind": "new",
+      "sha256": "682c376b7007832971c2124dfe017145903ebaa93254e2f5f895b6c08ad93b45",
+      "bytes": 1037
+    },
+    {
+      "path": "examples/ros2/parameter_array_int64_undeclare_wrong_kind.wat",
+      "kind": "new",
+      "sha256": "d8076d19f1cdce1e562494546d1e72f8f93fe08d90ffa7c4716c5ef7509e6a73",
+      "bytes": 4770
+    },
+    {
+      "path": "examples/ros2/parameter_array_int64_wrong_kind.wasm",
+      "kind": "new",
+      "sha256": "2e7c6219332adc49d70ef19c91b9dedab52d879de16ed0f2d09c4c659f2c038e",
+      "bytes": 649
+    },
+    {
+      "path": "examples/ros2/parameter_array_int64_wrong_kind.wat",
+      "kind": "new",
+      "sha256": "314fc7f424c99fe927497c620d36ff926ba66d54491a0aeeebfcea06d9d39cf9",
+      "bytes": 3001
+    },
+    {
+      "path": "examples/ros2/parameter_array_string_absent_denied.wasm",
+      "kind": "new",
+      "sha256": "6519eca505a2649621ab25f2ec191d44368615920ffe687a99cdf86c25e154a3",
+      "bytes": 655
+    },
+    {
+      "path": "examples/ros2/parameter_array_string_absent_denied.wat",
+      "kind": "new",
+      "sha256": "421d76e2adb09ca00b5294f52ec6101c748886452ed932efc849ede990071ee2",
+      "bytes": 3021
+    },
+    {
+      "path": "examples/ros2/parameter_array_string_byte_quota.wasm",
+      "kind": "new",
+      "sha256": "6f0693f3644b4251725f33fd145e0c42392ea6cfbbabe2e502772aff78c93db7",
+      "bytes": 694
+    },
+    {
+      "path": "examples/ros2/parameter_array_string_byte_quota.wat",
+      "kind": "new",
+      "sha256": "95e69b455043335c5d0979f59a3000f6253d04c2084a98522509f25a3d88e012",
+      "bytes": 3137
+    },
+    {
+      "path": "examples/ros2/parameter_array_string_count_quota.wasm",
+      "kind": "new",
+      "sha256": "3c383a62aab0a4738789ca1bba3fe34846869a8eb7f9540db868081b61d85b75",
+      "bytes": 683
+    },
+    {
+      "path": "examples/ros2/parameter_array_string_count_quota.wat",
+      "kind": "new",
+      "sha256": "eaf62b4466ac9e9fe9f27c20ee7c4cc6c99117644629b38fd0e5b231a143109d",
+      "bytes": 3104
+    },
+    {
+      "path": "examples/ros2/parameter_array_string_dynamic_denied.wasm",
+      "kind": "new",
+      "sha256": "37f67fe87f2e6f608cdf3307cbb6a088cfdbc7f3042d2c2adb5e1ce1d1d863bc",
+      "bytes": 694
+    },
+    {
+      "path": "examples/ros2/parameter_array_string_dynamic_denied.wat",
+      "kind": "new",
+      "sha256": "46662fd76f49a10634adf33063d61baf4e0280cabbea276204b0bdd3d8f9a47c",
+      "bytes": 3137
+    },
+    {
+      "path": "examples/ros2/parameter_array_string_empty_roundtrip.wasm",
+      "kind": "new",
+      "sha256": "b80831f2a9ad85358da13f44752b1e2ded14971fcb2abd0d8a9e50ec05a6ccb3",
+      "bytes": 721
+    },
+    {
+      "path": "examples/ros2/parameter_array_string_empty_roundtrip.wat",
+      "kind": "new",
+      "sha256": "dda05dc43f44cb73595a29016049580343de766c0fd9003892e745a2264334a0",
+      "bytes": 3340
+    },
+    {
+      "path": "examples/ros2/parameter_array_string_get_byte_quota.wasm",
+      "kind": "new",
+      "sha256": "848a4d307d832dfb81fc0bf3cbb79283c62312080d15899f3f9f7d8de12ed59d",
+      "bytes": 550
+    },
+    {
+      "path": "examples/ros2/parameter_array_string_get_byte_quota.wat",
+      "kind": "new",
+      "sha256": "5c1bbf7f04d9a9d0d95e2a4bd5c53b8d5bba79a63ff51a8450c28c730ced9cc6",
+      "bytes": 2530
+    },
+    {
+      "path": "examples/ros2/parameter_array_string_get_count_quota.wasm",
+      "kind": "new",
+      "sha256": "848a4d307d832dfb81fc0bf3cbb79283c62312080d15899f3f9f7d8de12ed59d",
+      "bytes": 550
+    },
+    {
+      "path": "examples/ros2/parameter_array_string_get_count_quota.wat",
+      "kind": "new",
+      "sha256": "5c1bbf7f04d9a9d0d95e2a4bd5c53b8d5bba79a63ff51a8450c28c730ced9cc6",
+      "bytes": 2530
+    },
+    {
+      "path": "examples/ros2/parameter_array_string_local_roundtrip.wasm",
+      "kind": "new",
+      "sha256": "7c5b25e2c1c8ad6b94b1a798be30f1353fa58c77847ace8b12f75303a25a379c",
+      "bytes": 1030
+    },
+    {
+      "path": "examples/ros2/parameter_array_string_local_roundtrip.wat",
+      "kind": "new",
+      "sha256": "4aa815317f24530811696c4ce0ae4acd55ab53841c286eca5cd2a10d81ea91d4",
+      "bytes": 4750
+    },
+    {
+      "path": "examples/ros2/parameter_array_string_malformed.wasm",
+      "kind": "new",
+      "sha256": "09936e89959905ec3f1f936859f0060ef0dba0df96b05f388ed3b049f873f9e1",
+      "bytes": 1050
+    },
+    {
+      "path": "examples/ros2/parameter_array_string_malformed.wat",
+      "kind": "new",
+      "sha256": "137670a60fba9083145555af780c27dac312cf5473209ad6b6afc45ec61b25a1",
+      "bytes": 4980
+    },
+    {
+      "path": "examples/ros2/parameter_array_string_operation_denied.wasm",
+      "kind": "new",
+      "sha256": "e98c570575d60e7281fa71d4648fa0880b31e60b353ea11ba7605a013be56323",
+      "bytes": 669
+    },
+    {
+      "path": "examples/ros2/parameter_array_string_operation_denied.wat",
+      "kind": "new",
+      "sha256": "56f3bc985ca428d3b2d95e40265ef49870b93bd9cd78e4bca28a07e9cd3a2bb8",
+      "bytes": 3018
+    },
+    {
+      "path": "examples/ros2/parameter_array_string_roundtrip.wasm",
+      "kind": "new",
+      "sha256": "fc6647aebdbc2dc61fc5bf2c7ffa9857a7d054b25a64f3f4d2814a629e468950",
+      "bytes": 753
+    },
+    {
+      "path": "examples/ros2/parameter_array_string_roundtrip.wat",
+      "kind": "new",
+      "sha256": "e865851edb2df2b3488ca035549769c24efa3a36526f4c9b68e7c372a8af3b65",
+      "bytes": 3434
+    },
+    {
+      "path": "examples/ros2/parameter_array_string_undeclare_wrong_kind.wasm",
+      "kind": "new",
+      "sha256": "b0d0dc9dbed4c43944395d4d0e4379c2f5c1ac2207158c930e664bea0baf0b67",
+      "bytes": 1058
+    },
+    {
+      "path": "examples/ros2/parameter_array_string_undeclare_wrong_kind.wat",
+      "kind": "new",
+      "sha256": "8256cb7c7be1d7ee54bd20c05972f4ffe719a4eff2722b5a9eff6e038926ad0c",
+      "bytes": 4833
+    },
+    {
+      "path": "examples/ros2/parameter_array_string_wrong_kind.wasm",
+      "kind": "new",
+      "sha256": "8d87b6d95c2ddeab0a49df1e19f678c1cf80421eed161674abb407fda686afc3",
+      "bytes": 656
+    },
+    {
+      "path": "examples/ros2/parameter_array_string_wrong_kind.wat",
+      "kind": "new",
+      "sha256": "6e9a94a666da6cc303703ef40814b9e203fc5217584607a9d18d863a9db610f8",
+      "bytes": 3022
+    },
+    {
+      "path": "examples/ros2/parameter_bool_absent_denied.wasm",
+      "kind": "new",
+      "sha256": "3bb0b63a3590143a3ce4884ba527185f79ae8dd7fdc4727b7b5167efefc92cc7",
+      "bytes": 752
+    },
+    {
+      "path": "examples/ros2/parameter_bool_absent_denied.wat",
+      "kind": "new",
+      "sha256": "884a19d5dfc3ffbdc3182cc8e7c05adeff4a19dca37cf36ab9ed0a843301d805",
+      "bytes": 3008
+    },
+    {
+      "path": "examples/ros2/parameter_bool_dynamic_denied.wasm",
+      "kind": "new",
+      "sha256": "9c237d6bf3ce532f1cc1b0c1b4e083facf39b1512f170ae3be808b472d38c2f5",
+      "bytes": 776
+    },
+    {
+      "path": "examples/ros2/parameter_bool_dynamic_denied.wat",
+      "kind": "new",
+      "sha256": "f51bc64837aa1299e90354c57cc81aa880666639c8760e565a1e46773edd5211",
+      "bytes": 3128
+    },
+    {
+      "path": "examples/ros2/parameter_bool_local_roundtrip.wasm",
+      "kind": "new",
+      "sha256": "360735c44cf1efa0822323285c06e00a4e8444dce8e0846084e578a02487d159",
+      "bytes": 1122
+    },
+    {
+      "path": "examples/ros2/parameter_bool_local_roundtrip.wat",
+      "kind": "new",
+      "sha256": "d7ad515f68a9279997e29fb4c0833e039fc8200b1809f75d88e40df157d22a31",
+      "bytes": 4973
+    },
+    {
+      "path": "examples/ros2/parameter_bool_malformed.wasm",
+      "kind": "new",
+      "sha256": "86929e39afe9e1ce9af3e6f1d38032c2b2480f6c50ac2a3481ff4423dbf472ab",
+      "bytes": 774
+    },
+    {
+      "path": "examples/ros2/parameter_bool_malformed.wat",
+      "kind": "new",
+      "sha256": "581c00fc983e6502ba707e736403f12096a2abf02b71f53e8cbd1be0df45a093",
+      "bytes": 3128
+    },
+    {
+      "path": "examples/ros2/parameter_bool_operation_denied.wasm",
+      "kind": "new",
+      "sha256": "c7d7fc330e6d00f9f8d93c178e51ab9c31e2a8368ab9a5a0ee3d6dd9a14f2c64",
+      "bytes": 774
+    },
+    {
+      "path": "examples/ros2/parameter_bool_operation_denied.wat",
+      "kind": "new",
+      "sha256": "57e31b7250b0ab48c3340c6736da20ff442bfb5aeef2ddd16054c5bf8b6e31c4",
+      "bytes": 3128
+    },
+    {
+      "path": "examples/ros2/parameter_bool_roundtrip.wasm",
+      "kind": "new",
+      "sha256": "c257c98caed21ed2bd864fcbae1e0102352c408f55a2e72536be0109311869c0",
+      "bytes": 850
+    },
+    {
+      "path": "examples/ros2/parameter_bool_roundtrip.wat",
+      "kind": "new",
+      "sha256": "7a614fd8ce0fc6e398e41b4bbeb7b58c04e0b04e18b768da749224b17b75b5a0",
+      "bytes": 3567
+    },
+    {
+      "path": "examples/ros2/parameter_bool_undeclare_wrong_kind.wasm",
+      "kind": "new",
+      "sha256": "4e66775ff33818a42991c3349d8c1e14785144b72ad377a54541c0a53d294038",
+      "bytes": 1118
+    },
+    {
+      "path": "examples/ros2/parameter_bool_undeclare_wrong_kind.wat",
+      "kind": "new",
+      "sha256": "1c50c9c701015bffe4177acc54eb465a308a1250202f91b2b332e98d21da73aa",
+      "bytes": 4930
+    },
+    {
+      "path": "examples/ros2/parameter_bool_wrong_kind.wasm",
+      "kind": "new",
+      "sha256": "759fd21f772e23d1a4c9b00b48f9e5cc955bba0dba9f44614f9d6f8a11c48dfd",
+      "bytes": 753
+    },
+    {
+      "path": "examples/ros2/parameter_bool_wrong_kind.wat",
+      "kind": "new",
+      "sha256": "29f0a111a715862e8bfba3879db4fc34c72e4bd6cd3bce30211e6a0f081eca16",
+      "bytes": 3009
+    },
+    {
+      "path": "examples/ros2/parameter_declare.wasm",
+      "kind": "new",
+      "sha256": "6c65a918e74e7b9ae60fa14d0f0144fda473339a037a4f199b06e7d72602df03",
+      "bytes": 472
+    },
+    {
+      "path": "examples/ros2/parameter_declare.wat",
+      "kind": "new",
+      "sha256": "c88f9aba74a554a74a36f049ffadc705d5fe3598175578aa2e5369f725baed1f",
+      "bytes": 1842
+    },
+    {
+      "path": "examples/ros2/parameter_describe.wasm",
+      "kind": "new",
+      "sha256": "4e0c9d81b394aa60ae1a2ec8ad7bd299917cc8ebe2d01f85ee0591816b3cecdb",
+      "bytes": 406
+    },
+    {
+      "path": "examples/ros2/parameter_describe.wat",
+      "kind": "new",
+      "sha256": "c63a2789bb7975a5d2b7599653d54f9676c1a985046e19f14890f2419c22b895",
+      "bytes": 1790
+    },
+    {
+      "path": "examples/ros2/parameter_events.wasm",
+      "kind": "new",
+      "sha256": "5b74ba03f7a379b5bdb3d56cc78ff794483b80c9aee764f46bb1c91475fa176a",
+      "bytes": 611
+    },
+    {
+      "path": "examples/ros2/parameter_events.wat",
+      "kind": "new",
+      "sha256": "d82dab7ef9469299c8813f26f3208fa7cd19afe253e4000708a2f642f2b706b3",
+      "bytes": 2308
+    },
+    {
+      "path": "examples/ros2/parameter_float64_absent_denied.wasm",
+      "kind": "new",
+      "sha256": "7055dc398301b01f4bbe707baebf68170edc81aad8997382a9052a95b8e05ec8",
+      "bytes": 759
+    },
+    {
+      "path": "examples/ros2/parameter_float64_absent_denied.wat",
+      "kind": "new",
+      "sha256": "2cfd5b3f1f9598df805f6e53b06507d2bf8840f039ad1565c16ce0925d81f433",
+      "bytes": 3029
+    },
+    {
+      "path": "examples/ros2/parameter_float64_dynamic_denied.wasm",
+      "kind": "new",
+      "sha256": "c399a4b07104fda25f48f172bffa527b8aed1bc5b6fac0fc3406774390df839a",
+      "bytes": 792
+    },
+    {
+      "path": "examples/ros2/parameter_float64_dynamic_denied.wat",
+      "kind": "new",
+      "sha256": "19c5622162d27ed1d2e2a3005589cdbbe102024ea42d0062832c7821ec8f37ea",
+      "bytes": 3165
+    },
+    {
+      "path": "examples/ros2/parameter_float64_get_bounds.wasm",
+      "kind": "new",
+      "sha256": "2a40e8647523f07fd458ed330d81ec206874c4421ef2420cdc62167cd5e251bb",
+      "bytes": 684
+    },
+    {
+      "path": "examples/ros2/parameter_float64_get_bounds.wat",
+      "kind": "new",
+      "sha256": "e0969411bfea16f8f4f7a59e3118c6c720df24d96d6629332a21694cb9fbac82",
+      "bytes": 2614
+    },
+    {
+      "path": "examples/ros2/parameter_float64_local_roundtrip.wasm",
+      "kind": "new",
+      "sha256": "be1a8d7d42a81fc6a30a20e28ca84f50ca5403309a4e2695bdaba798872f57ef",
+      "bytes": 1153
+    },
+    {
+      "path": "examples/ros2/parameter_float64_local_roundtrip.wat",
+      "kind": "new",
+      "sha256": "4c0c159411670b28c6d3e72e43d65a4021a5fc8161f45bd106139df786da5d7b",
+      "bytes": 5046
+    },
+    {
+      "path": "examples/ros2/parameter_float64_malformed.wasm",
+      "kind": "new",
+      "sha256": "d8b22b3748ecd16929c39d926f168b06d0a68f808078a4993a3f76aa963ea900",
+      "bytes": 999
+    },
+    {
+      "path": "examples/ros2/parameter_float64_malformed.wat",
+      "kind": "new",
+      "sha256": "d7367893960befba1c6bb0d1d019f6ad15603742d16ebe3d8854907cbc228da7",
+      "bytes": 4341
+    },
+    {
+      "path": "examples/ros2/parameter_float64_operation_denied.wasm",
+      "kind": "new",
+      "sha256": "8f7c553bbb5bd13192992af00f7b44f38aff82670b8b5aa3b0795c6a8a0d0359",
+      "bytes": 791
+    },
+    {
+      "path": "examples/ros2/parameter_float64_operation_denied.wat",
+      "kind": "new",
+      "sha256": "de4387b0cd9fe30f6ad305063570af1bf997f69c444c1cf2411a6e13ed8494a0",
+      "bytes": 3165
+    },
+    {
+      "path": "examples/ros2/parameter_float64_range.wasm",
+      "kind": "new",
+      "sha256": "49a070978efc78433fe37a04b448801d77734776e8cf1db5c4cf24d7692bca67",
+      "bytes": 843
+    },
+    {
+      "path": "examples/ros2/parameter_float64_range.wat",
+      "kind": "new",
+      "sha256": "686fc63876e3a1edae4e7785336dbf2b714e31f9b830c3edbafcbf3e5b7964dc",
+      "bytes": 3459
+    },
+    {
+      "path": "examples/ros2/parameter_float64_roundtrip.wasm",
+      "kind": "new",
+      "sha256": "6be006df84d37e0d06a5f6e177c2236e533143c5bb3a76a41f557632fb64e731",
+      "bytes": 874
+    },
+    {
+      "path": "examples/ros2/parameter_float64_roundtrip.wat",
+      "kind": "new",
+      "sha256": "921ae96b8fa73187ec1d3b3fbbac8c53efdb13a9a15602ab50dedf7dc9eb01e2",
+      "bytes": 3619
+    },
+    {
+      "path": "examples/ros2/parameter_float64_undeclare_bounds.wasm",
+      "kind": "new",
+      "sha256": "e02a0b1bd793520946fb22f2b0b0492ad0dda5607a30b3c9ff7276870ca8624c",
+      "bytes": 1273
+    },
+    {
+      "path": "examples/ros2/parameter_float64_undeclare_bounds.wat",
+      "kind": "new",
+      "sha256": "df00e4d076422a8cf7b55111141cb8563f734215448690fc99215549aade19f6",
+      "bytes": 5728
+    },
+    {
+      "path": "examples/ros2/parameter_float64_undeclare_wrong_kind.wasm",
+      "kind": "new",
+      "sha256": "f53a6e1d3770c37b84be15aaa936e8655feccf21df5ad9cc3e961655047daf94",
+      "bytes": 1143
+    },
+    {
+      "path": "examples/ros2/parameter_float64_undeclare_wrong_kind.wat",
+      "kind": "new",
+      "sha256": "894a4f3c3312c25559c772673f3b47e4f545a9e8af80791a5132d96950e91541",
+      "bytes": 4983
+    },
+    {
+      "path": "examples/ros2/parameter_float64_wrong_kind.wasm",
+      "kind": "new",
+      "sha256": "16020325796b589db031aa5f73b8f277437dacd786c7f6e79f96facc90bf269b",
+      "bytes": 760
+    },
+    {
+      "path": "examples/ros2/parameter_float64_wrong_kind.wat",
+      "kind": "new",
+      "sha256": "ce28905577ab144c0fa62fde917aba47821811b094a0aef115a8ac0ded99bac6",
+      "bytes": 3030
+    },
+    {
+      "path": "examples/ros2/parameter_get.wasm",
+      "kind": "new",
+      "sha256": "95c2fbc18b6769c8f4ae5def4da1c096c9ec36909bef50def293d5aa51e6107e",
+      "bytes": 336
+    },
+    {
+      "path": "examples/ros2/parameter_get.wat",
+      "kind": "new",
+      "sha256": "d0b588c723ea9d65bf39446b54fc71d5c0994bc15874d6fafa2712072a667bbe",
+      "bytes": 1258
+    },
+    {
+      "path": "examples/ros2/parameter_get_denied.wasm",
+      "kind": "new",
+      "sha256": "f4a3e6d9384e7e5ebe4b6cede777a2ffdea6b0637b0e2efdf8b2d0ed520c5827",
+      "bytes": 274
+    },
+    {
+      "path": "examples/ros2/parameter_get_denied.wat",
+      "kind": "new",
+      "sha256": "ab96dfdab83fa469af04091c0ca407775184c49c9266243f2b7a636ef160e3df",
+      "bytes": 907
+    },
+    {
+      "path": "examples/ros2/parameter_int64_absent_denied.wasm",
+      "kind": "new",
+      "sha256": "d0a6cc8fb2f4ae486e56c335520b33ceaf93680472cd8e664a7c9084af8ab1b1",
+      "bytes": 759
+    },
+    {
+      "path": "examples/ros2/parameter_int64_absent_denied.wat",
+      "kind": "new",
+      "sha256": "00a73b4582cab8f61e18f2ea4ad51285f9072f080d18e66f6a9d41e35c742af2",
+      "bytes": 3029
+    },
+    {
+      "path": "examples/ros2/parameter_int64_dynamic_denied.wasm",
+      "kind": "new",
+      "sha256": "0577053d2fdcf027fc786929116f53086f19ce5f83d7eb7fdae8227025f94fef",
+      "bytes": 783
+    },
+    {
+      "path": "examples/ros2/parameter_int64_dynamic_denied.wat",
+      "kind": "new",
+      "sha256": "8b7f8ac6b3ac5646cdd1c76a8bec39d37f5e0adc792b0e27275e388a85be6935",
+      "bytes": 3147
+    },
+    {
+      "path": "examples/ros2/parameter_int64_get_bounds.wasm",
+      "kind": "new",
+      "sha256": "2a40e8647523f07fd458ed330d81ec206874c4421ef2420cdc62167cd5e251bb",
+      "bytes": 684
+    },
+    {
+      "path": "examples/ros2/parameter_int64_get_bounds.wat",
+      "kind": "new",
+      "sha256": "e0969411bfea16f8f4f7a59e3118c6c720df24d96d6629332a21694cb9fbac82",
+      "bytes": 2614
+    },
+    {
+      "path": "examples/ros2/parameter_int64_local_roundtrip.wasm",
+      "kind": "new",
+      "sha256": "a2f6a0b0d2a21c94ec087f179649e808d5d8a60521542a02206a32446560adc8",
+      "bytes": 1143
+    },
+    {
+      "path": "examples/ros2/parameter_int64_local_roundtrip.wat",
+      "kind": "new",
+      "sha256": "aadf6bf54c2306c27a50bd216aab6eeb9b61178f77c32330019ba68963702e38",
+      "bytes": 5025
+    },
+    {
+      "path": "examples/ros2/parameter_int64_malformed.wasm",
+      "kind": "new",
+      "sha256": "4213b6afcc677cd0547d5d2d986f01c87b749d30f8649b0c8b2971ec4f036106",
+      "bytes": 834
+    },
+    {
+      "path": "examples/ros2/parameter_int64_malformed.wat",
+      "kind": "new",
+      "sha256": "23c338152e37155915a3c7ad73f9f03bf73abd511ea9b618c319837e28e29a9e",
+      "bytes": 3441
+    },
+    {
+      "path": "examples/ros2/parameter_int64_operation_denied.wasm",
+      "kind": "new",
+      "sha256": "807c870565fc433296b4b428a79bf46c3b73284ab7268c4d1bae4771fa4b3ef9",
+      "bytes": 781
+    },
+    {
+      "path": "examples/ros2/parameter_int64_operation_denied.wat",
+      "kind": "new",
+      "sha256": "103f46579aefeace254aa84bf2a45f0b87133362a50561c9ef0e3ada0dc859b2",
+      "bytes": 3147
+    },
+    {
+      "path": "examples/ros2/parameter_int64_range.wasm",
+      "kind": "new",
+      "sha256": "d1d17878b240bd7bfa7777c1f4a73db28f75fadc4af092245423596f1c93fac1",
+      "bytes": 834
+    },
+    {
+      "path": "examples/ros2/parameter_int64_range.wat",
+      "kind": "new",
+      "sha256": "1713e818ef2499425b21b2ddb469b7ba47f723f09198996ae9786de7439ac378",
+      "bytes": 3441
+    },
+    {
+      "path": "examples/ros2/parameter_int64_roundtrip.wasm",
+      "kind": "new",
+      "sha256": "b838b8109470733a4e6e020892da3bb1a7493ada6e300bc2b9b96a0d09296f97",
+      "bytes": 864
+    },
+    {
+      "path": "examples/ros2/parameter_int64_roundtrip.wat",
+      "kind": "new",
+      "sha256": "59d84b54415d7c6b0fcabb223b93f7105e00d5a2f9223836f42affcadc30917a",
+      "bytes": 3598
+    },
+    {
+      "path": "examples/ros2/parameter_int64_undeclare_bounds.wasm",
+      "kind": "new",
+      "sha256": "0e88f4bc659d1cef65d645a924b4c2f28c7154346f4c66ab78aa5f6567d5973f",
+      "bytes": 1254
+    },
+    {
+      "path": "examples/ros2/parameter_int64_undeclare_bounds.wat",
+      "kind": "new",
+      "sha256": "2323ff29fb2ee35fb8324c85c9dfb07fa1ef3b604d3a82102d81694d356a0a8e",
+      "bytes": 5689
+    },
+    {
+      "path": "examples/ros2/parameter_int64_undeclare_wrong_kind.wasm",
+      "kind": "new",
+      "sha256": "d0564e2a111a9eb980716cf4d1137019cb6dfc92044fe8de6ec27f57551fce08",
+      "bytes": 1125
+    },
+    {
+      "path": "examples/ros2/parameter_int64_undeclare_wrong_kind.wat",
+      "kind": "new",
+      "sha256": "ff12c118197a2a51c55bad6c9c9450bbabc94e88db46259b3852fbf794b82512",
+      "bytes": 4947
+    },
+    {
+      "path": "examples/ros2/parameter_int64_wrong_kind.wasm",
+      "kind": "new",
+      "sha256": "b39c610d24f0962eb2fe643296e889a5768e7b974e6dbfa4910616c6d9ce2aef",
+      "bytes": 760
+    },
+    {
+      "path": "examples/ros2/parameter_int64_wrong_kind.wat",
+      "kind": "new",
+      "sha256": "8a854118048bf0bf90346af5593a4318d0c3e4db03e9462ce949e5f7f3cfea19",
+      "bytes": 3030
+    },
+    {
+      "path": "examples/ros2/parameter_list.wasm",
+      "kind": "new",
+      "sha256": "b3a589a5d9264001ca9945eb28a62a170f577b0338f094637fd0bdb8083735ad",
+      "bytes": 420
+    },
+    {
+      "path": "examples/ros2/parameter_list.wat",
+      "kind": "new",
+      "sha256": "abc3e61e9e6e90cfdfd2a7b9b5235f65aa727cbd461b846749c1b618fcf856da",
+      "bytes": 1840
+    },
+    {
+      "path": "examples/ros2/parameter_set.wasm",
+      "kind": "new",
+      "sha256": "39e55e4007465cc27faad55446373f6905116ecfb19ee388436b046ce4df676f",
+      "bytes": 264
+    },
+    {
+      "path": "examples/ros2/parameter_set.wat",
+      "kind": "new",
+      "sha256": "39722888efe9f0522bbe8007e800b920acb3f163198dcabfc1f80820ea70e60c",
+      "bytes": 835
+    },
+    {
+      "path": "examples/ros2/parameter_set_denied.wasm",
+      "kind": "new",
+      "sha256": "66424820a546c7964c275f7e909910a7ee3dbb2111567d45acc90b28da75a35d",
+      "bytes": 257
+    },
+    {
+      "path": "examples/ros2/parameter_set_denied.wat",
+      "kind": "new",
+      "sha256": "89f64b7c29d10773d1630312ae2eb3ae6652410c0ea3ca624f4805d27824ea73",
+      "bytes": 751
+    },
+    {
+      "path": "examples/ros2/parameter_undeclare.wasm",
+      "kind": "new",
+      "sha256": "9d18895c82ee05eb58f3821310879ba305de1cc931e8d068dcd5a1fc5117b8e9",
+      "bytes": 450
+    },
+    {
+      "path": "examples/ros2/parameter_undeclare.wat",
+      "kind": "new",
+      "sha256": "87a3b5b579481a5adbd4de5614205d5d277fae1cf208b5da636b823902adacc3",
+      "bytes": 1674
+    },
+    {
+      "path": "examples/ros2/publish_flood.wasm",
+      "kind": "new",
+      "sha256": "65966dac7362af0f6dc02816c5a6ac11c37d1aac67a05b2e4550e131f52beb57",
+      "bytes": 418
+    },
+    {
+      "path": "examples/ros2/publish_flood.wat",
+      "kind": "new",
+      "sha256": "633ba49303f2383c23f11afe5d67198c212d05b1f709ecab3f87e5cfdc66c29f",
+      "bytes": 1709
+    },
+    {
+      "path": "examples/ros2/scalar_parameter_profiles.json",
+      "kind": "new",
+      "sha256": "24edd3ff6aefaf656e1c8e49eebe9e766e633bc1b620b357f74d25fbcc4f6052",
+      "bytes": 108586
+    },
+    {
+      "path": "examples/ros2/service_client.wasm",
+      "kind": "new",
+      "sha256": "3d460959d4d252667f419073bd0b5fe6f7bf91e051d099d5c066fac986ed94ad",
+      "bytes": 248
+    },
+    {
+      "path": "examples/ros2/service_client.wat",
+      "kind": "new",
+      "sha256": "5f2c6a3a8f66a9a8d48e5558e968ac31e3ec4f8e81296c30ff566bf04c98e6d6",
+      "bytes": 741
+    },
+    {
+      "path": "examples/ros2/service_client_setbool.wasm",
+      "kind": "new",
+      "sha256": "9eb9ea3a5cfc096c04c3eb9f6518451d455c438bf865b203ce39e3d3aadfe991",
+      "bytes": 333
+    },
+    {
+      "path": "examples/ros2/service_client_setbool.wat",
+      "kind": "new",
+      "sha256": "2492517857b7aaca68a7122f66742dcbd2d5337d58e781226acd93f1d0667f5c",
+      "bytes": 1191
+    },
+    {
+      "path": "examples/ros2/service_client_trigger.wasm",
+      "kind": "new",
+      "sha256": "ed6c663eefd0b3df116f610682245750426dfb45d578c991b7d6a34edd88becd",
+      "bytes": 333
+    },
+    {
+      "path": "examples/ros2/service_client_trigger.wat",
+      "kind": "new",
+      "sha256": "0bba21c025ce59ab6be8683defce96f9aa7279aba14f6f743eebb6ee8d62603c",
+      "bytes": 1191
+    },
+    {
+      "path": "examples/ros2/service_denied.wasm",
+      "kind": "new",
+      "sha256": "246e861a26072550d9e0fb6840ab1241e58cf567077bb5674db8897c964659e2",
+      "bytes": 300
+    },
+    {
+      "path": "examples/ros2/service_denied.wat",
+      "kind": "new",
+      "sha256": "7eb001a0fc55ea0bc1d55e718b96a1aadb3242cc2a8b2816f1dad8bfc69f9157",
+      "bytes": 1012
+    },
+    {
+      "path": "examples/ros2/service_flood.wasm",
+      "kind": "new",
+      "sha256": "771b4e28623bb7b1c18b5ce6b667dddb0ef54a39cfbaeaa35ecae20b230d84fa",
+      "bytes": 413
+    },
+    {
+      "path": "examples/ros2/service_flood.wat",
+      "kind": "new",
+      "sha256": "66cc3be43e3216d82b616fda7af96d81dca46dfc14e7243bc54a66e5450fc6ab",
+      "bytes": 1648
+    },
+    {
+      "path": "examples/ros2/service_server_setbool.wasm",
+      "kind": "new",
+      "sha256": "38498e439eb98bb4fcd8fb8db6a307f43cc3c20193dbcc475d08b2ccc2aa3fe3",
+      "bytes": 575
+    },
+    {
+      "path": "examples/ros2/service_server_setbool.wat",
+      "kind": "new",
+      "sha256": "080d3db7b2b241ee7b08bd51312bf1112ea5f3e9b8c9ba67c1333af377b7d1d7",
+      "bytes": 2235
+    },
+    {
+      "path": "examples/ros2/service_server_trigger.wasm",
+      "kind": "new",
+      "sha256": "4589e59aa1d4847159f3e3e14c307b4be233618bc84674529a8c1f28b5da990b",
+      "bytes": 558
+    },
+    {
+      "path": "examples/ros2/service_server_trigger.wat",
+      "kind": "new",
+      "sha256": "dca6688dbac7e18b589da29a00b8e82a4b964864942ee2d1f74bb72c4d2a7d83",
+      "bytes": 2135
+    },
+    {
+      "path": "examples/ros2/talker.c",
+      "kind": "new",
+      "sha256": "6fb1802ceaee1f9b7f3e8bd7b67e87efc76d0086dbd502e532f7cd71194a1503",
+      "bytes": 958
+    },
+    {
+      "path": "examples/ros2/talker.cpp",
+      "kind": "new",
+      "sha256": "38f0d49ecbdf615d7662a794674f76a1ba6e19b8aa799a3ad8d8ff29b96d6081",
+      "bytes": 963
+    },
+    {
+      "path": "examples/ros2/talker.wasm",
+      "kind": "new",
+      "sha256": "a466055311bd27a267f8219f727bf2a8547ac98bb7979219923f40b635b611c2",
+      "bytes": 369
+    },
+    {
+      "path": "examples/ros2/talker.wat",
+      "kind": "new",
+      "sha256": "ad2c15e815d970f29a2e475aca26d6e142dda6a4dcecf18fd7e5c1b5b245249f",
+      "bytes": 1330
+    },
+    {
+      "path": "examples/ros2/talker_bool.wasm",
+      "kind": "new",
+      "sha256": "6f64d1567f96fb19c28a25cc724c7efa131dc1d77937a832bd0bd509eba1ce20",
+      "bytes": 368
+    },
+    {
+      "path": "examples/ros2/talker_bool.wat",
+      "kind": "new",
+      "sha256": "06c18894fd6b80f07cbe04f8d7da7fa5ef0c2fab7a7abf40fadb42a6bb652b60",
+      "bytes": 1322
+    },
+    {
+      "path": "examples/ros2/talker_c.wasm",
+      "kind": "new",
+      "sha256": "bdb8e2e15ef7feb3088627775faf0cca7d3d0278a7f8bd10eb088e284fd489be",
+      "bytes": 1195
+    },
+    {
+      "path": "examples/ros2/talker_cpp.wasm",
+      "kind": "new",
+      "sha256": "8fab559d1f75cb22a76dd35091e5da0b2d66557c98830fd855f2362f28268e43",
+      "bytes": 1265
+    },
+    {
+      "path": "examples/ros2/talker_image.wasm",
+      "kind": "new",
+      "sha256": "f5588bf85c5343635813ba0b9fa1e7e16b54040aff55626e9a3526653b1be948",
+      "bytes": 434
+    },
+    {
+      "path": "examples/ros2/talker_image.wat",
+      "kind": "new",
+      "sha256": "f8a7365a40141f236830c239f32b8344a928527dfebeef2345b1089a71b28876",
+      "bytes": 1516
+    },
+    {
+      "path": "examples/ros2/talker_twist.wasm",
+      "kind": "new",
+      "sha256": "ec94c369966d73a1739c8c4601e84d60f1e8a8ad67f5dd94f4732004492dfe04",
+      "bytes": 415
+    },
+    {
+      "path": "examples/ros2/talker_twist.wat",
+      "kind": "new",
+      "sha256": "c13c184d16743dfde5d56ec6c45b1feabc1988c04d15ce845d70c316c8bde6c8",
+      "bytes": 1465
+    },
+    {
+      "path": "examples/ros2/tf_broadcast.wasm",
+      "kind": "new",
+      "sha256": "2d47d13525b102bd8d23289a9ce23982a1852f2947e3f4c0d132d2dec3041c14",
+      "bytes": 474
+    },
+    {
+      "path": "examples/ros2/tf_broadcast.wat",
+      "kind": "new",
+      "sha256": "f7df0adca174825482e20f1f50cf28dfa5be77a9d9841ae3364b66fd4a0d9957",
+      "bytes": 1697
+    },
+    {
+      "path": "examples/ros2/tf_broadcast_denied.wasm",
+      "kind": "new",
+      "sha256": "128caf4cb4bcfdfd054a915885221f8827d10e9d9905a0cd742ac7ee28baf318",
+      "bytes": 324
+    },
+    {
+      "path": "examples/ros2/tf_broadcast_denied.wat",
+      "kind": "new",
+      "sha256": "7055abe4740b701e1dd473b4be663978772c721f4bd754ff1aed50d555e4ac72",
+      "bytes": 951
+    },
+    {
+      "path": "examples/ros2/tf_lookup.wasm",
+      "kind": "new",
+      "sha256": "b5a9d0b4f0c3111542e5dd14571101ea2d004a9eff5a40b6e04e3f097dc5f0e4",
+      "bytes": 392
+    },
+    {
+      "path": "examples/ros2/tf_lookup.wat",
+      "kind": "new",
+      "sha256": "ca293cc93a60a3481772b124e3c633f24b38c378e28368889aa7abd832d5e6d7",
+      "bytes": 1407
+    },
+    {
+      "path": "examples/ros2/tf_lookup_denied.wasm",
+      "kind": "new",
+      "sha256": "375a5814adf6cde93df0ff21d22a48bd80138420c6a9f9398680185de49317ec",
+      "bytes": 278
+    },
+    {
+      "path": "examples/ros2/tf_lookup_denied.wat",
+      "kind": "new",
+      "sha256": "3a1b652164843bd84288fab11dec8a391c9fe4ea902bd8fb39f97ba7e8283d5b",
+      "bytes": 948
+    },
+    {
+      "path": "examples/ros2/time_read_ros.wasm",
+      "kind": "new",
+      "sha256": "861f88b5aa8fd0d00218165d369b91545a68920621ed413c6ca3dac3e3f03481",
+      "bytes": 270
+    },
+    {
+      "path": "examples/ros2/time_read_ros.wat",
+      "kind": "new",
+      "sha256": "7941ca31cb8b3b4679f841c69e28d8e8a5cf311117548a6577c5be533b4d5b5e",
+      "bytes": 890
+    },
+    {
+      "path": "examples/ros2/time_read_steady.wasm",
+      "kind": "new",
+      "sha256": "0ae58755f75c1c7e4698aa94ade3cdf6c5a9d42bb54cab6a11a5b81ecb5b4fe1",
+      "bytes": 273
+    },
+    {
+      "path": "examples/ros2/time_read_steady.wat",
+      "kind": "new",
+      "sha256": "566f7d44d199dda70b5f968b63ec38cbe73d5c95abb2f2a303a02960cd011921",
+      "bytes": 893
+    },
+    {
+      "path": "examples/ros2/time_read_system.wasm",
+      "kind": "new",
+      "sha256": "a456b3093fd3e8df0aa84c931dd0f64df33a6bd98012fdf7a0a8bc7ecb83df7a",
+      "bytes": 273
+    },
+    {
+      "path": "examples/ros2/time_read_system.wat",
+      "kind": "new",
+      "sha256": "06f22981316549d924e4cfc2d114db357a8e2a61a30c22eb2498ba2f9551140e",
+      "bytes": 893
+    },
+    {
+      "path": "examples/ros2/topic_denied.wasm",
+      "kind": "new",
+      "sha256": "5fd14bc0ed07438a749ef517e6665bd9fafde590e21ba1797d0a408b1a45ba00",
+      "bytes": 287
+    },
+    {
+      "path": "examples/ros2/topic_denied.wat",
+      "kind": "new",
+      "sha256": "fabe489d57b033b7c7e54447c320eb4319297da38695df7492bd9571566c1db0",
+      "bytes": 960
+    },
+    {
+      "path": "examples/ros2/topic_subscribe_denied.wasm",
+      "kind": "new",
+      "sha256": "6f9fd71e3e6db19433228caa016f32b7fb486a5b3146374126eacd69952969ba",
+      "bytes": 255
+    },
+    {
+      "path": "examples/ros2/topic_subscribe_denied.wat",
+      "kind": "new",
+      "sha256": "bee9294b19894e65f1a355f40abdc6271b6bbe02c96cf3cb6179283ffbe97adf",
+      "bytes": 806
+    },
+    {
+      "path": "examples/ros2/trap_cleanup.wasm",
+      "kind": "new",
+      "sha256": "67d0c3bbe4d180290b8cdbdfcaf1330c2116059da9eaedb89b95c2d9949cfb75",
+      "bytes": 598
+    },
+    {
+      "path": "examples/ros2/trap_cleanup.wat",
+      "kind": "new",
+      "sha256": "76fc56051182264a4dc65c5b68f400a214eeb58eb2a8e8c9078743f16be7be4b",
+      "bytes": 2208
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_bool_bytes.wasm",
+      "kind": "new",
+      "sha256": "0e910d1e6ddac44354c7a476847e0f9fb6ec2ed55b0077f8987435d03709dd89",
+      "bytes": 969
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_bool_bytes.wat",
+      "kind": "new",
+      "sha256": "8552825f9d48aef311d46688ea6bc946e0c73b353c2c75cd0bf62108513bc7f5",
+      "bytes": 4591
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_bool_fields.wasm",
+      "kind": "new",
+      "sha256": "e816dd80f47da1a88834182d6d9c7dfbabab25d296649627328a297bb385f7c3",
+      "bytes": 927
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_bool_fields.wat",
+      "kind": "new",
+      "sha256": "450ebbc02d0be0ed60430a1b2e90b695e67513d41a8c6fc4337b93cc18da56bf",
+      "bytes": 4339
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_bool_malformed_stamp.wasm",
+      "kind": "new",
+      "sha256": "e816dd80f47da1a88834182d6d9c7dfbabab25d296649627328a297bb385f7c3",
+      "bytes": 927
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_bool_malformed_stamp.wat",
+      "kind": "new",
+      "sha256": "450ebbc02d0be0ed60430a1b2e90b695e67513d41a8c6fc4337b93cc18da56bf",
+      "bytes": 4339
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_bool_not_set_delete.wasm",
+      "kind": "new",
+      "sha256": "e816dd80f47da1a88834182d6d9c7dfbabab25d296649627328a297bb385f7c3",
+      "bytes": 927
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_bool_not_set_delete.wat",
+      "kind": "new",
+      "sha256": "450ebbc02d0be0ed60430a1b2e90b695e67513d41a8c6fc4337b93cc18da56bf",
+      "bytes": 4339
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_bool_roundtrip.wasm",
+      "kind": "new",
+      "sha256": "7d7e1a317666824285a39a4262f809f811852dd870b4fccdeca7146ba9be0514",
+      "bytes": 1062
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_bool_roundtrip.wat",
+      "kind": "new",
+      "sha256": "e39c243c8866c84741139d00fa1560d8c288222b7a6fff9f9a2d2844404376be",
+      "bytes": 4800
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_bool_wrong_kind.wasm",
+      "kind": "new",
+      "sha256": "e816dd80f47da1a88834182d6d9c7dfbabab25d296649627328a297bb385f7c3",
+      "bytes": 927
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_bool_wrong_kind.wat",
+      "kind": "new",
+      "sha256": "450ebbc02d0be0ed60430a1b2e90b695e67513d41a8c6fc4337b93cc18da56bf",
+      "bytes": 4339
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_bool_wrong_name.wasm",
+      "kind": "new",
+      "sha256": "e816dd80f47da1a88834182d6d9c7dfbabab25d296649627328a297bb385f7c3",
+      "bytes": 927
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_bool_wrong_name.wat",
+      "kind": "new",
+      "sha256": "450ebbc02d0be0ed60430a1b2e90b695e67513d41a8c6fc4337b93cc18da56bf",
+      "bytes": 4339
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_bool_wrong_node.wasm",
+      "kind": "new",
+      "sha256": "e816dd80f47da1a88834182d6d9c7dfbabab25d296649627328a297bb385f7c3",
+      "bytes": 927
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_bool_wrong_node.wat",
+      "kind": "new",
+      "sha256": "450ebbc02d0be0ed60430a1b2e90b695e67513d41a8c6fc4337b93cc18da56bf",
+      "bytes": 4339
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_float64_bounds.wasm",
+      "kind": "new",
+      "sha256": "a9a45f45f2fbe5fed456dc0353319785efd77decf36024796bde59804e24b69f",
+      "bytes": 934
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_float64_bounds.wat",
+      "kind": "new",
+      "sha256": "69ce674deeb07a621923c6b9192ab9a8a7b258e406f306a97739d1a9993c47a9",
+      "bytes": 4360
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_float64_bytes.wasm",
+      "kind": "new",
+      "sha256": "d463f8ff8a3b0d4cc7ce8ba48217dcbf6d31615234f1e98513d8de1c26341e39",
+      "bytes": 976
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_float64_bytes.wat",
+      "kind": "new",
+      "sha256": "334ed48e7d06a39e62f16ef2c824b7f924183a116e4cfc593452912c6f1433d2",
+      "bytes": 4612
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_float64_fields.wasm",
+      "kind": "new",
+      "sha256": "a9a45f45f2fbe5fed456dc0353319785efd77decf36024796bde59804e24b69f",
+      "bytes": 934
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_float64_fields.wat",
+      "kind": "new",
+      "sha256": "69ce674deeb07a621923c6b9192ab9a8a7b258e406f306a97739d1a9993c47a9",
+      "bytes": 4360
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_float64_malformed_stamp.wasm",
+      "kind": "new",
+      "sha256": "a9a45f45f2fbe5fed456dc0353319785efd77decf36024796bde59804e24b69f",
+      "bytes": 934
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_float64_malformed_stamp.wat",
+      "kind": "new",
+      "sha256": "69ce674deeb07a621923c6b9192ab9a8a7b258e406f306a97739d1a9993c47a9",
+      "bytes": 4360
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_float64_nonfinite.wasm",
+      "kind": "new",
+      "sha256": "a9a45f45f2fbe5fed456dc0353319785efd77decf36024796bde59804e24b69f",
+      "bytes": 934
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_float64_nonfinite.wat",
+      "kind": "new",
+      "sha256": "69ce674deeb07a621923c6b9192ab9a8a7b258e406f306a97739d1a9993c47a9",
+      "bytes": 4360
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_float64_not_set_delete.wasm",
+      "kind": "new",
+      "sha256": "a9a45f45f2fbe5fed456dc0353319785efd77decf36024796bde59804e24b69f",
+      "bytes": 934
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_float64_not_set_delete.wat",
+      "kind": "new",
+      "sha256": "69ce674deeb07a621923c6b9192ab9a8a7b258e406f306a97739d1a9993c47a9",
+      "bytes": 4360
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_float64_roundtrip.wasm",
+      "kind": "new",
+      "sha256": "3534bebf87ebc230e4f34347c8e1013b09a9bb086ea780a96f511a3bf1613351",
+      "bytes": 1076
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_float64_roundtrip.wat",
+      "kind": "new",
+      "sha256": "3761fb89f397f0c11804067cbb630d4908c8e112b86dce9d5c0561cf49369ff8",
+      "bytes": 4842
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_float64_wrong_kind.wasm",
+      "kind": "new",
+      "sha256": "a9a45f45f2fbe5fed456dc0353319785efd77decf36024796bde59804e24b69f",
+      "bytes": 934
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_float64_wrong_kind.wat",
+      "kind": "new",
+      "sha256": "69ce674deeb07a621923c6b9192ab9a8a7b258e406f306a97739d1a9993c47a9",
+      "bytes": 4360
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_float64_wrong_name.wasm",
+      "kind": "new",
+      "sha256": "a9a45f45f2fbe5fed456dc0353319785efd77decf36024796bde59804e24b69f",
+      "bytes": 934
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_float64_wrong_name.wat",
+      "kind": "new",
+      "sha256": "69ce674deeb07a621923c6b9192ab9a8a7b258e406f306a97739d1a9993c47a9",
+      "bytes": 4360
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_float64_wrong_node.wasm",
+      "kind": "new",
+      "sha256": "a9a45f45f2fbe5fed456dc0353319785efd77decf36024796bde59804e24b69f",
+      "bytes": 934
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_float64_wrong_node.wat",
+      "kind": "new",
+      "sha256": "69ce674deeb07a621923c6b9192ab9a8a7b258e406f306a97739d1a9993c47a9",
+      "bytes": 4360
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_int64_bounds.wasm",
+      "kind": "new",
+      "sha256": "19168fd18fb2bd82c00ed36ac6f0732a2a0daa06df42de0ca87a9b41626ba29d",
+      "bytes": 934
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_int64_bounds.wat",
+      "kind": "new",
+      "sha256": "dba459423825ba19d9afea531aa587e1d98469d4fda895544e1bcfff23d2a0ea",
+      "bytes": 4360
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_int64_bytes.wasm",
+      "kind": "new",
+      "sha256": "5be8c6e860d10022e1932dfb74067e8fee34f8c955900fa909b29c3980cb771c",
+      "bytes": 976
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_int64_bytes.wat",
+      "kind": "new",
+      "sha256": "0b5155adc0ca06ecc27af2f3a24e0a71a3ad9de870c7b08c24b536c5b3d2bc2a",
+      "bytes": 4612
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_int64_fields.wasm",
+      "kind": "new",
+      "sha256": "19168fd18fb2bd82c00ed36ac6f0732a2a0daa06df42de0ca87a9b41626ba29d",
+      "bytes": 934
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_int64_fields.wat",
+      "kind": "new",
+      "sha256": "dba459423825ba19d9afea531aa587e1d98469d4fda895544e1bcfff23d2a0ea",
+      "bytes": 4360
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_int64_malformed_stamp.wasm",
+      "kind": "new",
+      "sha256": "19168fd18fb2bd82c00ed36ac6f0732a2a0daa06df42de0ca87a9b41626ba29d",
+      "bytes": 934
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_int64_malformed_stamp.wat",
+      "kind": "new",
+      "sha256": "dba459423825ba19d9afea531aa587e1d98469d4fda895544e1bcfff23d2a0ea",
+      "bytes": 4360
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_int64_not_set_delete.wasm",
+      "kind": "new",
+      "sha256": "19168fd18fb2bd82c00ed36ac6f0732a2a0daa06df42de0ca87a9b41626ba29d",
+      "bytes": 934
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_int64_not_set_delete.wat",
+      "kind": "new",
+      "sha256": "dba459423825ba19d9afea531aa587e1d98469d4fda895544e1bcfff23d2a0ea",
+      "bytes": 4360
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_int64_roundtrip.wasm",
+      "kind": "new",
+      "sha256": "d333ef087ff680ce8e82848d210e38080a8c4298945d1636a5620b8c1a3fb4a7",
+      "bytes": 1154
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_int64_roundtrip.wat",
+      "kind": "new",
+      "sha256": "d68d8ddc1aa410a88b822ec09707e2d594832606285bb924156b17aebc61b361",
+      "bytes": 5119
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_int64_wrong_kind.wasm",
+      "kind": "new",
+      "sha256": "19168fd18fb2bd82c00ed36ac6f0732a2a0daa06df42de0ca87a9b41626ba29d",
+      "bytes": 934
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_int64_wrong_kind.wat",
+      "kind": "new",
+      "sha256": "dba459423825ba19d9afea531aa587e1d98469d4fda895544e1bcfff23d2a0ea",
+      "bytes": 4360
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_int64_wrong_name.wasm",
+      "kind": "new",
+      "sha256": "19168fd18fb2bd82c00ed36ac6f0732a2a0daa06df42de0ca87a9b41626ba29d",
+      "bytes": 934
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_int64_wrong_name.wat",
+      "kind": "new",
+      "sha256": "dba459423825ba19d9afea531aa587e1d98469d4fda895544e1bcfff23d2a0ea",
+      "bytes": 4360
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_int64_wrong_node.wasm",
+      "kind": "new",
+      "sha256": "19168fd18fb2bd82c00ed36ac6f0732a2a0daa06df42de0ca87a9b41626ba29d",
+      "bytes": 934
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_int64_wrong_node.wat",
+      "kind": "new",
+      "sha256": "dba459423825ba19d9afea531aa587e1d98469d4fda895544e1bcfff23d2a0ea",
+      "bytes": 4360
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_no_capability.wasm",
+      "kind": "new",
+      "sha256": "fe8ccff9b93d4ae86b34dd7d98f6b50a76e527babf88f99994c2f60b93e1cd6a",
+      "bytes": 846
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_no_capability.wat",
+      "kind": "new",
+      "sha256": "aa2bbfdb034d13ef0c0dc7f38d72b69c8eeaeff50dbee702315ac69cb3f64230",
+      "bytes": 3934
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_permission_denied.wasm",
+      "kind": "new",
+      "sha256": "ca90eec8d2e1c62f49318b27e12f22e79f41989bcae7acf27eb2187eda580e1d",
+      "bytes": 849
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_permission_denied.wat",
+      "kind": "new",
+      "sha256": "79bfb010f901428491cb3ae28006a235b603c4ed3fb0533540fd4b3a35c44061",
+      "bytes": 4031
+    },
+    {
+      "path": "examples/ros2/typed_parameter_event_profiles.json",
+      "kind": "new",
+      "sha256": "66d2dc80255f4bc68d5dbe297305962d16f122bfc2e5c3bbf9b41ce56f1a8578",
+      "bytes": 60962
+    },
+    {
+      "path": "examples/ros2/unauthorized.wasm",
+      "kind": "new",
+      "sha256": "0adb375fcdc9598e56a21bdbe5902d9b2267a69b5c2aa14581fb293f1959e57a",
+      "bytes": 163
+    },
+    {
+      "path": "examples/ros2/unauthorized.wat",
+      "kind": "new",
+      "sha256": "e5790505407cd49e51ebcade159f653c18e5a60ca3280ac3567f1f31452d9ae0",
+      "bytes": 399
+    },
+    {
+      "path": "examples/ros_dual/README.md",
+      "kind": "new",
+      "sha256": "47856bcc25dd189eb02c4750d61586919bc2ecfb4493c27738716a398d777940",
+      "bytes": 1176
+    },
+    {
+      "path": "examples/ros_dual/backend_group_confusion.wasm",
+      "kind": "new",
+      "sha256": "b21e76a7ac1086aa54e63e975625672e51d9b01d8f48f5350e55cd2b0401ad8c",
+      "bytes": 288
+    },
+    {
+      "path": "examples/ros_dual/backend_group_confusion.wat",
+      "kind": "new",
+      "sha256": "e7e7c08265fa708f4340398018ae2bba0e6713721114128d8fb28e6fe5fe8a07",
+      "bytes": 907
+    },
+    {
+      "path": "examples/ros_dual/cross_backend_handle.wasm",
+      "kind": "new",
+      "sha256": "a9f31b7468d968ae81338d3df78d5f3236594ca9bf4d3c2ba65a9a7fe381f533",
+      "bytes": 345
+    },
+    {
+      "path": "examples/ros_dual/cross_backend_handle.wat",
+      "kind": "new",
+      "sha256": "0d569cb0b81289fda447418cb199bb44c5afd70945bada93e468414586ae5029",
+      "bytes": 1151
+    },
+    {
+      "path": "examples/ros_dual/disconnect_2_recover.wasm",
+      "kind": "new",
+      "sha256": "567905baab1e55438df91a4bcacdd0eabc75ed68fce3a63591b8800233b623b8",
+      "bytes": 879
+    },
+    {
+      "path": "examples/ros_dual/disconnect_2_recover.wat",
+      "kind": "new",
+      "sha256": "a1534bb75d85efb4ee54d5217b3cc9ca02e7a929579740a9398c38e85bf3fb5b",
+      "bytes": 3639
+    },
+    {
+      "path": "examples/ros_dual/disconnect_2_survive.wasm",
+      "kind": "new",
+      "sha256": "759239d3f6adeb0541e2b93415d3e5b6bf9bdc97728dfab5b4e122e8c1fc1a1a",
+      "bytes": 721
+    },
+    {
+      "path": "examples/ros_dual/disconnect_2_survive.wat",
+      "kind": "new",
+      "sha256": "18d24caf060bec241449acd7a4ded00dfc9d00d3a1f8a23aeaf4191ac7d67168",
+      "bytes": 2703
+    },
+    {
+      "path": "examples/ros_dual/disconnect_recover.wasm",
+      "kind": "new",
+      "sha256": "c9e12a70c0c6b126443ebbb98e55edd37052d2f0f8a8da1d7f98cc206c19e83b",
+      "bytes": 879
+    },
+    {
+      "path": "examples/ros_dual/disconnect_recover.wat",
+      "kind": "new",
+      "sha256": "0951a30170d9cc703b185cfa0dcc2570876e2bb92217c6b6f67f75db26859b81",
+      "bytes": 3639
+    },
+    {
+      "path": "examples/ros_dual/disconnect_survive.wasm",
+      "kind": "new",
+      "sha256": "fc2c9359bf93a8109d3878ff6bde5d9901ad654e29546f764bcefc6868302829",
+      "bytes": 721
+    },
+    {
+      "path": "examples/ros_dual/disconnect_survive.wat",
+      "kind": "new",
+      "sha256": "6ea25d162dc0db7db456b6e2f115333d500aa7d218c8aaafc845c4721b433e4b",
+      "bytes": 2703
+    },
+    {
+      "path": "examples/ros_dual/group_dummy.wasm",
+      "kind": "new",
+      "sha256": "141fb0676550049e8aa784daad85ecd7e2b674d61cb97a334a4b8f23de487c80",
+      "bytes": 36
+    },
+    {
+      "path": "examples/ros_dual/group_dummy.wat",
+      "kind": "new",
+      "sha256": "804ab7ae5ca048052bd550b39db52eb6785a25f07775614e8f0c5baa36b9635a",
+      "bytes": 34
+    },
+    {
+      "path": "examples/ros_dual/handle_attack.wasm",
+      "kind": "new",
+      "sha256": "0fc6241a407cf3b9b30bdb5c6ead9781bbb1323c20e3567920b6419fcc484230",
+      "bytes": 189
+    },
+    {
+      "path": "examples/ros_dual/handle_attack.wat",
+      "kind": "new",
+      "sha256": "5996b71c655f9699700b139ab6fc397b74a9753ac3f602f5fd8091fe05dad8ef",
+      "bytes": 469
+    },
+    {
+      "path": "examples/ros_dual/handle_provider.wasm",
+      "kind": "new",
+      "sha256": "a986f9b9834ba6c7e62d0989185cbdac18ae074211316e24f549249ae8ef0b87",
+      "bytes": 176
+    },
+    {
+      "path": "examples/ros_dual/handle_provider.wat",
+      "kind": "new",
+      "sha256": "f041f6b9615f09c47770ed99e5f5377203c33d5224b9c75c8b85d3b2965fc42b",
+      "bytes": 434
+    },
+    {
+      "path": "examples/ros_dual/hybrid_1_to_2.wasm",
+      "kind": "new",
+      "sha256": "85f874817ba2e749c606e323a38d98d12e7e7fd9389ae772bd1893724cb41749",
+      "bytes": 653
+    },
+    {
+      "path": "examples/ros_dual/hybrid_1_to_2.wat",
+      "kind": "new",
+      "sha256": "6bbda498dfc55d910bc68675ff0e341aa580178976f76b5fcbeea364b3781214",
+      "bytes": 2772
+    },
+    {
+      "path": "examples/ros_dual/hybrid_1_to_2_bool.wasm",
+      "kind": "new",
+      "sha256": "12fc2f7f698e2d27c4487db8ec96d42b8bd13a96ffc6b6cac0a4fc9e519a9401",
+      "bytes": 662
+    },
+    {
+      "path": "examples/ros_dual/hybrid_1_to_2_bool.wat",
+      "kind": "new",
+      "sha256": "adfe51fb6bb5b87151385a2384bfd8bd66fe0bc21f34a1962f0c92fd29579ee9",
+      "bytes": 2912
+    },
+    {
+      "path": "examples/ros_dual/hybrid_1_to_2_image.wasm",
+      "kind": "new",
+      "sha256": "d10617cccbd4138ed3f49b6518b311c612b5997b3f13625efb23d04669d5fe0e",
+      "bytes": 730
+    },
+    {
+      "path": "examples/ros_dual/hybrid_1_to_2_image.wat",
+      "kind": "new",
+      "sha256": "cc645b6c0a36fe4dd2f0f85fb700b65858ed6499088333947a02f32164b5ec69",
+      "bytes": 3108
+    },
+    {
+      "path": "examples/ros_dual/hybrid_1_to_2_twist.wasm",
+      "kind": "new",
+      "sha256": "a96cf3e20c2dd1e4a9356c86c7858b3577beaf2b249e9ddd6bb291258afc2961",
+      "bytes": 709
+    },
+    {
+      "path": "examples/ros_dual/hybrid_1_to_2_twist.wat",
+      "kind": "new",
+      "sha256": "74f9d766b5badd7476c9d12ab7620661294c6404f9dc0db0a69a90e5adde0d7a",
+      "bytes": 3057
+    },
+    {
+      "path": "examples/ros_dual/hybrid_2_to_1.wasm",
+      "kind": "new",
+      "sha256": "be8d0217f8bb2c8fc53b35c57c99d3fa2a008bfdbc31e92d7ffd9250e5098eb2",
+      "bytes": 653
+    },
+    {
+      "path": "examples/ros_dual/hybrid_2_to_1.wat",
+      "kind": "new",
+      "sha256": "120913ef2ad62b604fb8d859335517b3fd0aee99a8f6680a1addca938c89d4e5",
+      "bytes": 2772
+    },
+    {
+      "path": "examples/ros_dual/hybrid_2_to_1_bool.wasm",
+      "kind": "new",
+      "sha256": "a5ce54784cc25ef61541f3a8ebe15f141c5270b86a7bd127e81af7ba0d53ac0d",
+      "bytes": 662
+    },
+    {
+      "path": "examples/ros_dual/hybrid_2_to_1_bool.wat",
+      "kind": "new",
+      "sha256": "f098bf6d236bc7416be3411373dc25099ababdd5b453762d8b3d6fc5261f300d",
+      "bytes": 2912
+    },
+    {
+      "path": "examples/ros_dual/hybrid_2_to_1_image.wasm",
+      "kind": "new",
+      "sha256": "fa43b80c33ac51efc0b941f50f25ba5c22ee4462da9589dfc5e06dd26ba7c7c5",
+      "bytes": 730
+    },
+    {
+      "path": "examples/ros_dual/hybrid_2_to_1_image.wat",
+      "kind": "new",
+      "sha256": "3461a27ebb496629e460cb8dd82ffec8595febadff8431e6aed90a483207cf1f",
+      "bytes": 3108
+    },
+    {
+      "path": "examples/ros_dual/hybrid_2_to_1_twist.wasm",
+      "kind": "new",
+      "sha256": "01302fbb90d7487e432ca70292f26b4019277de99b037437edc304faee2ff10a",
+      "bytes": 709
+    },
+    {
+      "path": "examples/ros_dual/hybrid_2_to_1_twist.wat",
+      "kind": "new",
+      "sha256": "747eff10bd5b7bda3259dd399b9279c147033631ac21d3809d24366f19033836",
+      "bytes": 3057
+    },
+    {
+      "path": "examples/ros_dual/plugin_ingress.wasm",
+      "kind": "new",
+      "sha256": "985214c7dca100a625860ec80b9fbdaa620c811c3bdbea78e9bf770978ae25a1",
+      "bytes": 122
+    },
+    {
+      "path": "examples/ros_dual/plugin_ingress.wat",
+      "kind": "new",
+      "sha256": "9186877a38173283797ff7cd0359c067d750e3719c5c9d077aa77ea2eae1a042",
+      "bytes": 279
+    },
+    {
+      "path": "examples/ros_dual/proxy_caller.wasm",
+      "kind": "new",
+      "sha256": "081a34436bd49f0476163af71da3ef326a942dd0067858e10aa5f58d6dab5552",
+      "bytes": 132
+    },
+    {
+      "path": "examples/ros_dual/proxy_caller.wat",
+      "kind": "new",
+      "sha256": "d662c12413bb831191b953b1f50e90c2662795b3f4cb4617deb771b3634fbb56",
+      "bytes": 316
+    },
+    {
+      "path": "examples/ros_dual/proxy_provider.wasm",
+      "kind": "new",
+      "sha256": "53f29850fed23c7efb8c0fdc9ddaf556e2d2a3711c643af36ca35ffb42130ea4",
+      "bytes": 113
+    },
+    {
+      "path": "examples/ros_dual/proxy_provider.wat",
+      "kind": "new",
+      "sha256": "187f730604497d8bd4104d3ded4f513ef336292cbd1265ad59322d64dba112d1",
+      "bytes": 266
+    },
+    {
+      "path": "examples/ros_dual/proxy_tail.wasm",
+      "kind": "new",
+      "sha256": "623bc49976f4a460d5ab7e9a9d9f0f7da3af454a79de7cedfb0f81ed6cc20e2d",
+      "bytes": 132
+    },
+    {
+      "path": "examples/ros_dual/proxy_tail.wat",
+      "kind": "new",
+      "sha256": "87b4606d5b64900c4f1886bc96e0153d2f97358dd5881d9edf310bacc09dee73",
+      "bytes": 323
+    },
+    {
+      "path": "examples/ros_dual/revoke_1_independent.wasm",
+      "kind": "new",
+      "sha256": "e397b72c06ae0d92d82b82f18ae449355235e237e72d1881de9f7edd0cc41a77",
+      "bytes": 782
+    },
+    {
+      "path": "examples/ros_dual/revoke_1_independent.wat",
+      "kind": "new",
+      "sha256": "2365141e981b958ae6167e750d83b22fe09d3591640adff7bf38a4f946930ebf",
+      "bytes": 3262
+    },
+    {
+      "path": "examples/ros_dual/revoke_2_independent.wasm",
+      "kind": "new",
+      "sha256": "30b09e7c4fcf5c95e53eeed8dac0da814de090be0ab0fbebe4809c81d29b178f",
+      "bytes": 782
+    },
+    {
+      "path": "examples/ros_dual/revoke_2_independent.wat",
+      "kind": "new",
+      "sha256": "23697aebe5733fd1c9d8bf2a008fb507df0ba3e328fdec90a27328cd2e1987a9",
+      "bytes": 3262
+    },
+    {
+      "path": "examples/ros_dual/socket_ingress.wasm",
+      "kind": "new",
+      "sha256": "929da1fe8a485b558c514a7f8216b5ffbad086c4d8affa65b7a2eaf25b793021",
+      "bytes": 224
+    },
+    {
+      "path": "examples/ros_dual/socket_ingress.wat",
+      "kind": "new",
+      "sha256": "4014506588866d47dc8c74d41e87ea4bb0f3d0ea3fe3a2591143ec0fece51d5d",
+      "bytes": 675
+    },
+    {
+      "path": "examples/ros_dual/startup_sentinel.wasm",
+      "kind": "new",
+      "sha256": "46bc49177888f7ddafda7380b45a508eb41abd5f85d88afac25e52c4fac7d02f",
+      "bytes": 97
+    },
+    {
+      "path": "examples/ros_dual/startup_sentinel.wat",
+      "kind": "new",
+      "sha256": "9ffde5a12d7d3e1253f0962f2f2a917909ec98c31a705a41ceb51095c4d7cbb1",
+      "bytes": 166
+    },
+    {
+      "path": "examples/ros_dual/wasi_group_confusion.wasm",
+      "kind": "new",
+      "sha256": "8261ca4432e711a23b622fdd14d9dda44ba1f0f8fd2136ac8d9fa0e67fe42a80",
+      "bytes": 190
+    },
+    {
+      "path": "examples/ros_dual/wasi_group_confusion.wat",
+      "kind": "new",
+      "sha256": "a0ce1a8caabab4c04f73f9b65c9fe73b1235ec426135b43a96d6f7df96303a19",
+      "bytes": 557
+    },
+    {
+      "path": "examples/ros_multimodule/camera_a.wasm",
+      "kind": "new",
+      "sha256": "5b2d02d658aee36774103a0c8625b83b4735d3faf5cb3dc0a6fe589ab5d8779c",
+      "bytes": 663
+    },
+    {
+      "path": "examples/ros_multimodule/camera_a.wat",
+      "kind": "new",
+      "sha256": "b0c777f633292ff57a987869e8b9581a68a18b0ecbe0b8f7704cd8ddd170a333",
+      "bytes": 2789
+    },
+    {
+      "path": "examples/ros_multimodule/camera_b.wasm",
+      "kind": "new",
+      "sha256": "7c1f00f78d3f8dbd2e60a24a81a9c3e0d391420ec62621a14104e51f5b3f9825",
+      "bytes": 633
+    },
+    {
+      "path": "examples/ros_multimodule/camera_b.wat",
+      "kind": "new",
+      "sha256": "1c673f3130ab3b262ba4e9356a7648477db8401d1ae9928334183354a7ff5fb9",
+      "bytes": 2628
+    },
+    {
+      "path": "examples/ros_multimodule/controller.wasm",
+      "kind": "new",
+      "sha256": "6f1aa70abad29e3ed59230e1f6f212f0d965b21c57759ab0e0d5e550a213f99c",
+      "bytes": 477
+    },
+    {
+      "path": "examples/ros_multimodule/controller.wat",
+      "kind": "new",
+      "sha256": "f07dec1388ee00ae867c1ee96d8fe3eb91eb483aefd0a9e6e407dff012a3984e",
+      "bytes": 1766
+    },
+    {
+      "path": "examples/ros_multimodule/hybrid.wasm",
+      "kind": "new",
+      "sha256": "b5aa1ae200b82e631f56f008099f159742f6fdbf700ff5aa4211e1a0f6a16ceb",
+      "bytes": 619
+    },
+    {
+      "path": "examples/ros_multimodule/hybrid.wat",
+      "kind": "new",
+      "sha256": "cc2ce0c974cd0bf83a73fda0a9029c1374b34f456b85efd24c3fa69f51395d2a",
+      "bytes": 2469
+    },
+    {
+      "path": "examples/ros_multimodule/planner.wasm",
+      "kind": "new",
+      "sha256": "1d9676aa1b44e4fd5a562269c4886a59e3b4502b93ff9358be914a12911e12c5",
+      "bytes": 474
+    },
+    {
+      "path": "examples/ros_multimodule/planner.wat",
+      "kind": "new",
+      "sha256": "09beedbfd53d47f8ec0100df55633c2a15db898b393969cd4208b98b617941c6",
+      "bytes": 1757
+    },
+    {
+      "path": "gateways/common/config.h",
+      "kind": "new",
+      "sha256": "1a05bb4816a09751d53cc8d28f1c3ca9974cb6311c7a166247a8c718a0a55ee2",
+      "bytes": 21938
+    },
+    {
+      "path": "gateways/common/native_io.h",
+      "kind": "new",
+      "sha256": "bbbd6e5caa6b11dd41522f64047c5b378ce7ca6dec61c689118669e00c89f09d",
+      "bytes": 5983
+    },
+    {
+      "path": "gateways/common/server.h",
+      "kind": "new",
+      "sha256": "3d0bc78c6ab9a1e2a061acd0f78e682e66e3eb3d24b0010e8c319522dd78b790",
+      "bytes": 22661
+    },
+    {
+      "path": "gateways/common/service.h",
+      "kind": "new",
+      "sha256": "c9a514c8cef3935334e07b433dbca2e0428b317bb2e1ac4fb8876d8dabef10e9",
+      "bytes": 4244
+    },
+    {
+      "path": "gateways/common/tf_state.h",
+      "kind": "new",
+      "sha256": "257efef043a6a0ced1ce3616155120cd62084e66318d5475553fd33478bd1859",
+      "bytes": 3694
+    },
+    {
+      "path": "gateways/ros1/CMakeLists.txt",
+      "kind": "new",
+      "sha256": "2be62878395beb356b4b730dc1caa541d6883801b8f015bd51771de75ffa401d",
+      "bytes": 2362
+    },
+    {
+      "path": "gateways/ros1/action.h",
+      "kind": "new",
+      "sha256": "9bdf75f7c296e86748b915ebe82807392ae5d0e19bdec6c5334516f4c5c2159d",
+      "bytes": 20959
+    },
+    {
+      "path": "gateways/ros1/main.cc",
+      "kind": "new",
+      "sha256": "139d202d6157c093db6b2e575f7eebcfe93da8da82505d08cbb42919cfda4c62",
+      "bytes": 14527
+    },
+    {
+      "path": "gateways/ros1/resources.h",
+      "kind": "new",
+      "sha256": "b95528d44e63018e3cbd0fb9bce25b882adf44ae69bd7bc6b96798bc6f8d3539",
+      "bytes": 18940
+    },
+    {
+      "path": "gateways/ros1/tf.h",
+      "kind": "new",
+      "sha256": "3c9376246b4e50b4a09cceadb1b51047381c91850063e785b854eff9133c1107",
+      "bytes": 6017
+    },
+    {
+      "path": "gateways/ros2/CMakeLists.txt",
+      "kind": "new",
+      "sha256": "323732bff80b5313903dd9a952d4187460f28f9b3a882a92a7d7221a0f4973c7",
+      "bytes": 3730
+    },
+    {
+      "path": "gateways/ros2/action.h",
+      "kind": "new",
+      "sha256": "8d1137a217745cb60e308e3d86a8304a546f623e40d1ef65a7eaa985c18131af",
+      "bytes": 24251
+    },
+    {
+      "path": "gateways/ros2/lifecycle.h",
+      "kind": "new",
+      "sha256": "b7ae1cb600b9837ca45c7cee3584a01814722e8b2a8506e8d27449fb10fe7ff2",
+      "bytes": 5587
+    },
+    {
+      "path": "gateways/ros2/main.cc",
+      "kind": "new",
+      "sha256": "a93249ce05bfb3192af2c7471d26b2ffb371dfdc423fe473f7526b4b0e66d90b",
+      "bytes": 21579
+    },
+    {
+      "path": "gateways/ros2/qos.h",
+      "kind": "new",
+      "sha256": "80cb53d21192c453f613e76e44696575ccdeff4c97fcd480887d4d53ce9c17fc",
+      "bytes": 2501
+    },
+    {
+      "path": "gateways/ros2/resources.h",
+      "kind": "new",
+      "sha256": "dec0fed582530692bf5e27b91888cb3ad1a1627cc7523a2d16ca3637f5e7939d",
+      "bytes": 29186
+    },
+    {
+      "path": "gateways/ros2/tf.h",
+      "kind": "new",
+      "sha256": "7b5ca902579e7c651730e0bb183c67f7e5ca3763f7d5e46a133ee08a132b66cd",
+      "bytes": 7849
+    },
+    {
+      "path": "sdk/README.md",
+      "kind": "new",
+      "sha256": "d3e6e9cfdd293d6d4a2838fe31738ec7faca794ed90c079e6dedeae9d2d8df17",
+      "bytes": 7930
+    },
+    {
+      "path": "sdk/common/abi.h",
+      "kind": "new",
+      "sha256": "0cca376b97626183b640c012e6b24dc92d1c9ebc8fa2076d600e053381b05ae7",
+      "bytes": 1100
+    },
+    {
+      "path": "sdk/common/codec.hpp",
+      "kind": "new",
+      "sha256": "f7f72d5d3335dbc085dd77778a90ae394d84fa3a1b362013115044e6e9a83b92",
+      "bytes": 20727
+    },
+    {
+      "path": "sdk/ros1/abi.h",
+      "kind": "new",
+      "sha256": "5d7f01d7e8b56b9c31c3c099a182e67ffe0a0dfa36965c17f9a0931b462c73e7",
+      "bytes": 8062
+    },
+    {
+      "path": "sdk/ros1/abi.hpp",
+      "kind": "new",
+      "sha256": "050be98bb4cc360336c2d92c627e97ac79842ce43738673886924175f19cf982",
+      "bytes": 6595
+    },
+    {
+      "path": "sdk/ros1/freestanding.hpp",
+      "kind": "new",
+      "sha256": "93d863eda3b9597275f9ba302811cbc5f8aa19108fc9903089a157bee205c03e",
+      "bytes": 7495
+    },
+    {
+      "path": "sdk/ros2/abi.h",
+      "kind": "new",
+      "sha256": "4c5a01ca1d328287c337eca5feceaef0be215a41592ec5fc96bf411986655dfa",
+      "bytes": 9139
+    },
+    {
+      "path": "sdk/ros2/abi.hpp",
+      "kind": "new",
+      "sha256": "496ba0b75946f83ade663224eaefc9ebac4cb56f5b1508dea844c6a0099932e6",
+      "bytes": 7481
+    },
+    {
+      "path": "sdk/ros2/freestanding.hpp",
+      "kind": "new",
+      "sha256": "c1e44883bb1a70a9438901d75434982400a8b46274d8cddcbdb049c48da9531e",
+      "bytes": 8477
+    },
+    {
+      "path": "src/uwvm2/imported/ros/capability/action.h",
+      "kind": "new",
+      "sha256": "0f7843cc1f66479ec5e7c6d1c92f375e18df385e9f8f62cbd95a08ca8f75a0db",
+      "bytes": 7353
+    },
+    {
+      "path": "src/uwvm2/imported/ros/capability/manager.h",
+      "kind": "new",
+      "sha256": "edb1fdc513a2206347acae6b2ce599a3c48c5e3b68951768e3bd5f8d06831cfe",
+      "bytes": 21188
+    },
+    {
+      "path": "src/uwvm2/imported/ros/common/audit.h",
+      "kind": "new",
+      "sha256": "3d5f48a0091fcca16c8abdb4add53477f4ccd1b6f3893b36e94579d8b45c5cea",
+      "bytes": 3356
+    },
+    {
+      "path": "src/uwvm2/imported/ros/common/format.h",
+      "kind": "new",
+      "sha256": "1d574047eb30572fd048b8790b95ea3517af746e0835a6e159e4f6e5d4c89a91",
+      "bytes": 1785
+    },
+    {
+      "path": "src/uwvm2/imported/ros/common/manifest.h",
+      "kind": "new",
+      "sha256": "c06e9a5a46f599473920e7bb3534d23f54ddbab2154be87902f6c2705f273543",
+      "bytes": 2353
+    },
+    {
+      "path": "src/uwvm2/imported/ros/common/message.h",
+      "kind": "new",
+      "sha256": "6f1ea9d90d94c3c8c4416bd5906af311aa1f1c411cb60f8df9114139bef29f23",
+      "bytes": 26259
+    },
+    {
+      "path": "src/uwvm2/imported/ros/common/types.h",
+      "kind": "new",
+      "sha256": "abc2c45a9cbdd502d33481a1cc7d2c13b881a901fb6d81286c5f97b51176b1e2",
+      "bytes": 2111
+    },
+    {
+      "path": "src/uwvm2/imported/ros/ipc/action.h",
+      "kind": "new",
+      "sha256": "24e067df7ce29aecd5dc93cb3e3b172f609791d761bc7c5a0860033b564b3af1",
+      "bytes": 2183
+    },
+    {
+      "path": "src/uwvm2/imported/ros/ipc/image.h",
+      "kind": "new",
+      "sha256": "5a9b156dbe2414a6a7d6b6ff7f313d95e811430231029a489848b9c04f34c5d6",
+      "bytes": 3017
+    },
+    {
+      "path": "src/uwvm2/imported/ros/ipc/parameter.h",
+      "kind": "new",
+      "sha256": "5c7a9ddeb2ccf8c09b65681c4145447736f4953d23202021d7940d73e56b51aa",
+      "bytes": 27377
+    },
+    {
+      "path": "src/uwvm2/imported/ros/ipc/parameter_event.h",
+      "kind": "new",
+      "sha256": "8ba28e7aa9a639755eaa958a50af489a307a9987e43275bc679cc2263ee77c23",
+      "bytes": 7979
+    },
+    {
+      "path": "src/uwvm2/imported/ros/ipc/protocol.h",
+      "kind": "new",
+      "sha256": "5af403494872f46c1a5ae482de4c3df42f488aad052cdad1d4cff724fef0cfc5",
+      "bytes": 4763
+    },
+    {
+      "path": "src/uwvm2/imported/ros/ipc/transform.h",
+      "kind": "new",
+      "sha256": "8c26113ca99f4fc26ea2de6fc2d385106db568944800665191599c225ac2b76f",
+      "bytes": 3258
+    },
+    {
+      "path": "src/uwvm2/imported/ros/ipc/unix.h",
+      "kind": "new",
+      "sha256": "0173d7913ba6892d55c48087cb1950ddff97ee103b54932b37c774abbb4fab06",
+      "bytes": 7435
+    },
+    {
+      "path": "src/uwvm2/imported/ros/policy/policy.h",
+      "kind": "new",
+      "sha256": "a2e1e3ae535cc463fdacb460ae7cc06c4feae43b32961113a511bca573d39327",
+      "bytes": 19480
+    },
+    {
+      "path": "src/uwvm2/imported/ros/policy/schema.h",
+      "kind": "new",
+      "sha256": "a0fc5b627ddfd59b71ebe0fab63af33551a2ecfb6668835398dd8e91959e130e",
+      "bytes": 25160
+    },
+    {
+      "path": "src/uwvm2/imported/ros/policy/transform.h",
+      "kind": "new",
+      "sha256": "14bd520efa55476f1c0029d727712fdf4b12539e71de9fa8904cd846de4f0f1a",
+      "bytes": 2846
+    },
+    {
+      "path": "src/uwvm2/runtime/lib/uwvm_runtime.default.cpp",
+      "kind": "modified",
+      "sha256": "f5f154daa19167c53e1beb393f822a9e00ca31a75b30177a543a30033d86f78b",
+      "bytes": 1032755
+    },
+    {
+      "path": "src/uwvm2/runtime/lib/uwvm_runtime.h",
+      "kind": "modified",
+      "sha256": "48753a338b0211b7bff5a98aa712dc041f4985f31539a67d2730c1e5d92b531d",
+      "bytes": 95652
+    },
+    {
+      "path": "src/uwvm2/runtime/lib/uwvm_stub_runtime.default.cpp",
+      "kind": "modified",
+      "sha256": "5c879fe18ac0450d42290c21d86493d6c0413c2fd3de5abbe85b70c992c16ecf",
+      "bytes": 3333
+    },
+    {
+      "path": "src/uwvm2/utils/cmdline/handle.h",
+      "kind": "modified",
+      "sha256": "6da115289785e887d0d42f5fb72340ef7474e78619557fdf6e261b8ac7e689f3",
+      "bytes": 21601,
+      "task_start_sha256": "76306dd9e78e650a93304accce55fcbb5600afd9c6fba1c28c9978b5bb58e47f"
+    },
+    {
+      "path": "src/uwvm2/uwvm/cmdline/callback/help.h",
+      "kind": "modified",
+      "sha256": "f9a4a5838eef694f1d7d556a2d508efa2d2414c074ff6832858257dfd643bd63",
+      "bytes": 22446,
+      "task_start_sha256": "f28d1239997696cdbdbfae589cb8c00e8faa42a5582a3bb8e142428b69312f5e"
+    },
+    {
+      "path": "src/uwvm2/uwvm/cmdline/callback/impl.h",
+      "kind": "modified",
+      "sha256": "8d0f846952e49ec2086db14613ca31ec5dd872901b10e273b3cbb805bcba8231",
+      "bytes": 4533,
+      "task_start_sha256": "8d0f846952e49ec2086db14613ca31ec5dd872901b10e273b3cbb805bcba8231"
+    },
+    {
+      "path": "src/uwvm2/uwvm/cmdline/callback/ros.h",
+      "kind": "new",
+      "sha256": "134f16d4c5ad78232fee6ebe67a47ffcdb41bc2e3091375418413601d434666d",
+      "bytes": 7608
+    },
+    {
+      "path": "src/uwvm2/uwvm/cmdline/params/help.h",
+      "kind": "modified",
+      "sha256": "3a3f26c2a4da810d762b294718e9330fee242d0be88d5f9aec3aec7a762642a8",
+      "bytes": 3412,
+      "task_start_sha256": "211935d346ff7c07e32295efbde27b8036adae36ac2499bdc980bea5a8f8e47c"
+    },
+    {
+      "path": "src/uwvm2/uwvm/cmdline/params/impl.h",
+      "kind": "modified",
+      "sha256": "cb8de7842055acc5c2addef4ee466a64a27e6ef7833024048878bc1f0a301976",
+      "bytes": 4928,
+      "task_start_sha256": "18c62685fd4cb4ffff900bf709b65fc7567da249981741fcb73bfef3ee7e1958"
+    },
+    {
+      "path": "src/uwvm2/uwvm/cmdline/params/ros1.h",
+      "kind": "new",
+      "sha256": "fe41744888871ae84fd1654e0ab27f8359f2f7e9f321c2e6936edd979f059bfb",
+      "bytes": 28490
+    },
+    {
+      "path": "src/uwvm2/uwvm/cmdline/params/ros2.h",
+      "kind": "new",
+      "sha256": "39b9e3e2b598ed1bf9f7320e7faa3f925425a6461022dd2b8c678ceff339bca0",
+      "bytes": 31586
+    },
+    {
+      "path": "src/uwvm2/uwvm/cmdline/params.h",
+      "kind": "modified",
+      "sha256": "160630c262cecc9980255ff1ee3a78743143faca5463e87d638094d950a9535d",
+      "bytes": 16827,
+      "task_start_sha256": "ec2cc1f506f7046ff4c222f157ee04a0a99b33f998b7d81f7395cde207c6148f"
+    },
+    {
+      "path": "src/uwvm2/uwvm/cmdline/parser.h",
+      "kind": "modified",
+      "sha256": "dea83c5a880511807f04fc065dd8672a628e8031c59028af39dc82eedc1beb87",
+      "bytes": 23224,
+      "task_start_sha256": "15ed8fef4b7f1b89f37be6e627b5f41536c4bead6ad40631f6798ff93cee672c"
+    },
+    {
+      "path": "src/uwvm2/uwvm/imported/ros/host.h",
+      "kind": "new",
+      "sha256": "5281e49610b96824ad3d5f7b52c65304a5511d93325b3631f6b0348edd3eb79c",
+      "bytes": 46343
+    },
+    {
+      "path": "src/uwvm2/uwvm/imported/ros/storage.h",
+      "kind": "new",
+      "sha256": "5cf74d86fac7f4a63094abf49836cda661afb8dd466099b6535a2b811d0cfc53",
+      "bytes": 885
+    },
+    {
+      "path": "src/uwvm2/uwvm/imported/ros/validation.h",
+      "kind": "new",
+      "sha256": "d08bf6e6f645dcb937ee73ef28fb1750d4f5283b74d0fa8c5516b412dd590f55",
+      "bytes": 7028
+    },
+    {
+      "path": "src/uwvm2/uwvm/run/run.h",
+      "kind": "modified",
+      "sha256": "123d9d96e45963f001b2f8a6a3e93888de8bca8c0678e8f99829851f52abccfe",
+      "bytes": 153074,
+      "task_start_sha256": "0bb596790e0d71190624f4eff059ec47a23e2f61989936c1b2cb93cb3942160f"
+    },
+    {
+      "path": "tests/ros/array_parameters.py",
+      "kind": "new",
+      "sha256": "7d499f7987456004add016e485f185d5391bd40a70c0cd4f31b56fd7b4220b66",
+      "bytes": 7245
+    },
+    {
+      "path": "tests/ros/benchmark_capability.py",
+      "kind": "new",
+      "sha256": "debfa2cfec3d81bf8c3a756ae176f91834a9cb636d4f1399d10347421e1b36ca",
+      "bytes": 5627
+    },
+    {
+      "path": "tests/ros/build_gateways.py",
+      "kind": "new",
+      "sha256": "2284e9ec622c83bfc02a267418ae3c0bad44bdf9c01c72be4e9b8025a4c15585",
+      "bytes": 8537
+    },
+    {
+      "path": "tests/ros/build_product.py",
+      "kind": "new",
+      "sha256": "bad2694bf0e7a111927df7de0fd5e7ee7db1eb0ced64636ad0c81527ff7cd725",
+      "bytes": 8396
+    },
+    {
+      "path": "tests/ros/build_sdk_guests.py",
+      "kind": "new",
+      "sha256": "398a6f9186802ee6b362c1dfbe6cd868ed0c9329242e777ff08c794a0fdeaea6",
+      "bytes": 874
+    },
+    {
+      "path": "tests/ros/export_evidence.py",
+      "kind": "new",
+      "sha256": "286fbc15b3b91a88d219ca37d74a4b2dfe178648a8a7b81c381ecb092a2eb227",
+      "bytes": 7773
+    },
+    {
+      "path": "tests/ros/generate_action_fixtures.py",
+      "kind": "new",
+      "sha256": "bae0756a007c12515a1647a3738c6d106c485be8ae571b09d75c4dee76e13673",
+      "bytes": 5650
+    },
+    {
+      "path": "tests/ros/generate_action_flood.py",
+      "kind": "new",
+      "sha256": "5b72a148971c52e772f7194f6c1ad6b5b1f61a65db61bf2d6a10e94829a25d5b",
+      "bytes": 1973
+    },
+    {
+      "path": "tests/ros/generate_additional_security_fixtures.py",
+      "kind": "new",
+      "sha256": "8b9e9c9ee0882703ea2c41b69c4d05a7398093ff80ed4258451af35d945ad345",
+      "bytes": 4051
+    },
+    {
+      "path": "tests/ros/generate_array_parameter_fixtures.py",
+      "kind": "new",
+      "sha256": "e11bd0741940861057b54766e34511fda3777d33fa07420b974d56d0f9ce31f0",
+      "bytes": 8943
+    },
+    {
+      "path": "tests/ros/generate_fixtures.py",
+      "kind": "new",
+      "sha256": "3b601fa2a007aa36ddebad42418606e01d5ce2a3e1fcb3d428ac893bbf81eb02",
+      "bytes": 3124
+    },
+    {
+      "path": "tests/ros/generate_flood_fixtures.py",
+      "kind": "new",
+      "sha256": "97e408c38cb96f4cde5ae192db4fc9221f05e93b74441c84c8a73d539a2fb60a",
+      "bytes": 3033
+    },
+    {
+      "path": "tests/ros/generate_ingress_fixtures.py",
+      "kind": "new",
+      "sha256": "12701bfcec5975b8767624a96ecd5d4955dc297bb1d9228908833e314743558a",
+      "bytes": 7040
+    },
+    {
+      "path": "tests/ros/generate_publish_flood.py",
+      "kind": "new",
+      "sha256": "5dc523c6e3bffe672027fba2b340f32cfaab6a62ae9dfb42864e3f84c0a0ff0c",
+      "bytes": 2282
+    },
+    {
+      "path": "tests/ros/generate_rpc_fixtures.py",
+      "kind": "new",
+      "sha256": "31103a4ace4f294b1d98209c8e84d2b56ca26cc8636d96785953a7001b02c398",
+      "bytes": 11548
+    },
+    {
+      "path": "tests/ros/generate_scalar_parameter_fixtures.py",
+      "kind": "new",
+      "sha256": "aee642051be41336ea81fd7b5fd49517d2087eb4e06bece23c093d0acce835ae",
+      "bytes": 7261
+    },
+    {
+      "path": "tests/ros/generate_security_fixtures.py",
+      "kind": "new",
+      "sha256": "3c89abdfbb3148a22616892b30386c709646fb9f04ab7b5252213a414c1fdc6b",
+      "bytes": 9513
+    },
+    {
+      "path": "tests/ros/generate_service_fixtures.py",
+      "kind": "new",
+      "sha256": "d4ca920e1a9484411f31d697d902d61563a0506cfe518c48c35f959b36a48c1e",
+      "bytes": 1592
+    },
+    {
+      "path": "tests/ros/generate_typed_parameter_event_fixtures.py",
+      "kind": "new",
+      "sha256": "d032a9cea2c615ffee5ac21cef7788b1a9ea41cae9d1d014b63842a264588a60",
+      "bytes": 8835
+    },
+    {
+      "path": "tests/ros/regression.py",
+      "kind": "new",
+      "sha256": "b3bb1b2f7678cda59309787e09f8d7bfae379365d297dfefb4823c3d9df7b432",
+      "bytes": 4709
+    },
+    {
+      "path": "tests/ros/run_additional_security.py",
+      "kind": "new",
+      "sha256": "d935be40a1300aca54e7ad5aa08f61690650020be574598819dacf633a89ff9e",
+      "bytes": 16399
+    },
+    {
+      "path": "tests/ros/run_all.py",
+      "kind": "new",
+      "sha256": "c06cafc6b6d0195fca521efc86c9b6fbb13973fe17a75ee2b67dd8a4de118500",
+      "bytes": 9208
+    },
+    {
+      "path": "tests/ros/run_flood.py",
+      "kind": "new",
+      "sha256": "c037d7d0ced3cdc99e5c6e7af4e6089d5e6e12f878b623444ce4785ce3f66da8",
+      "bytes": 5149
+    },
+    {
+      "path": "tests/ros/run_ingress.py",
+      "kind": "new",
+      "sha256": "789a7d2cab808616034121efe909ec8111b27e6fec97067e9b2a5c31c686165a",
+      "bytes": 15411
+    },
+    {
+      "path": "tests/ros/run_native.py",
+      "kind": "new",
+      "sha256": "916de86240a5a9e3d9e13b4d3d0a5efd4b22878b399a588c62e76684d940f660",
+      "bytes": 10111
+    },
+    {
+      "path": "tests/ros/run_network.py",
+      "kind": "new",
+      "sha256": "2565b40daa76a6cee5d3da1c8b8bd5230d7af389a42bda2ec9e413318c594696",
+      "bytes": 32926
+    },
+    {
+      "path": "tests/ros/run_payload_security.py",
+      "kind": "new",
+      "sha256": "1fdc39c7faa7ee7b38df1863eabc3813d7eece96404a6b61e056f96e5dd41439",
+      "bytes": 4664
+    },
+    {
+      "path": "tests/ros/run_revoke_race.py",
+      "kind": "new",
+      "sha256": "e2b814237848cc476abf04c20ba65ceff8c59e21811a0aa5b862373f71fb227d",
+      "bytes": 14185
+    },
+    {
+      "path": "tests/ros/run_rpc.py",
+      "kind": "new",
+      "sha256": "407943a7a4d20eb30f2ed79092c055c0985b7475a1d15ed5f8c28ed1057253c4",
+      "bytes": 33512
+    },
+    {
+      "path": "tests/ros/run_unit.py",
+      "kind": "new",
+      "sha256": "2a9184ce50605f6d42e37fd027d6e85cb3989c89b0e16c68ed88b75a72920a6c",
+      "bytes": 2181
+    },
+    {
+      "path": "tests/ros/scalar_parameters.py",
+      "kind": "new",
+      "sha256": "768b2e3f58cd175a05c969d098041ad53f584240862171117d7d96cc63cd94eb",
+      "bytes": 2320
+    },
+    {
+      "path": "tests/ros/sdk_codec.cpp",
+      "kind": "new",
+      "sha256": "4a1640b9acdfea326ea70dc91a04c41b2a4037d43ecce196b0b178a35d434ba2",
+      "bytes": 17104
+    },
+    {
+      "path": "tests/ros/task_manifest.py",
+      "kind": "new",
+      "sha256": "11a3dd5d2e3486f0cf34303dd345be5064f861ca74f906e00cdbd3caac979bfd",
+      "bytes": 3060
+    },
+    {
+      "path": "tests/ros/typed_parameter_events.py",
+      "kind": "new",
+      "sha256": "cbb9bbf4d1830e095fa8971fa69562e279fb9ba4979c7ab1178ab117a3648276",
+      "bytes": 4237
+    },
+    {
+      "path": "tests/ros1/native_probe.cc",
+      "kind": "new",
+      "sha256": "9fc3f60977d120968644e7a748817e4020e510242af808b387d59cd43d4cecec",
+      "bytes": 19466
+    },
+    {
+      "path": "tests/ros2/native_probe.cc",
+      "kind": "new",
+      "sha256": "cb5cc7b31c98e409875055b12c0dc6cf463a77c633c11539a5043d545fedb867",
+      "bytes": 22324
+    },
+    {
+      "path": "tests/ros_action/common_ros1.h",
+      "kind": "new",
+      "sha256": "b86a18b4ac200242150482ae2bfdd8996d2817048ff2f47738900a8fee66fbce",
+      "bytes": 3013
+    },
+    {
+      "path": "tests/ros_action/native_ros1.cc",
+      "kind": "new",
+      "sha256": "43b656615291686df84a8e96fd39c4517efd125e679e7db9f7ef2302e2c60884",
+      "bytes": 14241
+    },
+    {
+      "path": "tests/ros_action/native_ros2.cc",
+      "kind": "new",
+      "sha256": "a72eee235fbcb146d12292b04797fc5326ffaadef638e2c2667a97c4e046e520",
+      "bytes": 13510
+    },
+    {
+      "path": "tests/ros_action/ros2_common.h",
+      "kind": "new",
+      "sha256": "7278cfaf2420ab733958407b571b4a3354f021201992fb72ca02ae1ea7e721a8",
+      "bytes": 2245
+    },
+    {
+      "path": "tests/ros_action/witness_ros2.h",
+      "kind": "new",
+      "sha256": "5b8db2a5dc49de7aaa2d589efaafa77153367d58d4fb8e0f2ece86c56d94f67b",
+      "bytes": 20205
+    },
+    {
+      "path": "tests/ros_cgroup/probe.py",
+      "kind": "new",
+      "sha256": "d20d8f3b4a498a9de37f9fce1898c646b58659138af8e28144116671981d1de7",
+      "bytes": 3301
+    },
+    {
+      "path": "tests/ros_cli/parse.cpp",
+      "kind": "new",
+      "sha256": "4fa5a3f4ccea8aa1c6d7db3773d1a281d4678e377c9800a7bf3f73ad8412fbf9",
+      "bytes": 624
+    },
+    {
+      "path": "tests/ros_cli/run.py",
+      "kind": "new",
+      "sha256": "cac37d492c83f4573aeb5c0d77ce8ac98b915dff177f3dc7559b44be652794c0",
+      "bytes": 29817
+    },
+    {
+      "path": "tests/ros_ingress/cleanup_ros1.h",
+      "kind": "new",
+      "sha256": "ae10849eea294b721ac58bedce57a86e47a9be991755e03e95e486a9b1864265",
+      "bytes": 2339
+    },
+    {
+      "path": "tests/ros_ingress/cleanup_ros2.h",
+      "kind": "new",
+      "sha256": "464f5a4cf9c6caf355c74fb2da796c5c6d46118fe42a77128fd3528dab42280b",
+      "bytes": 2343
+    },
+    {
+      "path": "tests/ros_ingress/revoke_bridge.cpp",
+      "kind": "new",
+      "sha256": "f09b6154821ec820e22c90413e5caabaa5e29ddf2c926cb1a2a9fb8f1cbd299a",
+      "bytes": 8250
+    },
+    {
+      "path": "tests/ros_ingress/revoke_observer.h",
+      "kind": "new",
+      "sha256": "385781bfc6a09a72c90dfa60804248d1b1ec5b974cf79ea9d61aad5426037912",
+      "bytes": 1372
+    },
+    {
+      "path": "tests/ros_ingress/revoke_ros1.h",
+      "kind": "new",
+      "sha256": "2823091b56a3ab819e6b8042bcd2e893323c45c4373787201990fea0becd9e5d",
+      "bytes": 1357
+    },
+    {
+      "path": "tests/ros_ingress/revoke_ros2.h",
+      "kind": "new",
+      "sha256": "c928d59ad2b3b72eeed513ea842dd171ef28f7abbbd1cf0b05b90a6a07aa50a7",
+      "bytes": 1336
+    },
+    {
+      "path": "tests/ros_ipc/active_witness.h",
+      "kind": "new",
+      "sha256": "be6ea9c0afc0894bf27b08c5f99ad2eb68efc8b56b6d7e4b0133457e0357a485",
+      "bytes": 1302
+    },
+    {
+      "path": "tests/ros_ipc/callback_teardown.h",
+      "kind": "new",
+      "sha256": "d76e128ec40ee69ace770c20e4c4c52c3ce54a86b7b9456ee33b750e1bf70610",
+      "bytes": 2481
+    },
+    {
+      "path": "tests/ros_ipc/probe_common.h",
+      "kind": "new",
+      "sha256": "b09c84b3f50c6b76120d87068912ea3e1df77e658e9b6deed71e96a183243d43",
+      "bytes": 11434
+    },
+    {
+      "path": "tests/ros_ipc/protocol_test.cc",
+      "kind": "new",
+      "sha256": "123d01597b29a855194661f4e45a2b4ab586ecc99a6706e8166552ee538d902e",
+      "bytes": 2374
+    },
+    {
+      "path": "tests/ros_ipc/service_replay.h",
+      "kind": "new",
+      "sha256": "aeb243912028926334a7014dbfdb0e836e11c67510b900b82f0242f79be494b3",
+      "bytes": 4666
+    },
+    {
+      "path": "tests/ros_lifecycle/native_ros2.cc",
+      "kind": "new",
+      "sha256": "9261ffad396ef800923e657ebe52d25903b68a6a9cfa3bf0bcaa8f8967c921d8",
+      "bytes": 6199
+    },
+    {
+      "path": "tests/ros_multimodule/README.md",
+      "kind": "new",
+      "sha256": "98a81d1ebc74973581d61c7f21012f3078999b721e339f83bcd6243f6088fbec",
+      "bytes": 3665
+    },
+    {
+      "path": "tests/ros_multimodule/generate.py",
+      "kind": "new",
+      "sha256": "e4109b8d058d53e2cf181dbc269c08391549eb90bb28e9dc472ef0fadae84a26",
+      "bytes": 4684
+    },
+    {
+      "path": "tests/ros_multimodule/native_ros1.cc",
+      "kind": "new",
+      "sha256": "b8b8932ad7c5cc71c4beced4fcc8acced4fd19902bd6c97c2d5fa31d236f2d33",
+      "bytes": 2537
+    },
+    {
+      "path": "tests/ros_multimodule/native_ros2.cc",
+      "kind": "new",
+      "sha256": "57f7dc963af09ab98627bbf5d3eae172eafaba594fca4a2483f0656b1c905dc3",
+      "bytes": 2450
+    },
+    {
+      "path": "tests/ros_multimodule/run.py",
+      "kind": "new",
+      "sha256": "7e19c9e816d8fd438675663b5a728f6905d87fa1bee74f8d4adeeff3e488fc23",
+      "bytes": 19599
+    },
+    {
+      "path": "tests/ros_perf/common.h",
+      "kind": "new",
+      "sha256": "03d3fc0ae6f71e813fbc43ba1679d67f94c63a7d8227ee298299d3e1ab10c1af",
+      "bytes": 3023
+    },
+    {
+      "path": "tests/ros_perf/ipc_service.h",
+      "kind": "new",
+      "sha256": "0dc4626742fe602edf9db95621c1f4ce07343db46b6cf2e062048847d0b6e70d",
+      "bytes": 4962
+    },
+    {
+      "path": "tests/ros_perf/ipc_service_ros1.cc",
+      "kind": "new",
+      "sha256": "b662400896e6edce7ca156a6b0c115750c9de95b4a2c6fe3ae728b4cfe82a21b",
+      "bytes": 1341
+    },
+    {
+      "path": "tests/ros_perf/ipc_service_ros2.cc",
+      "kind": "new",
+      "sha256": "f9456801b53c9004fb89891eb6b2070905b355403c98e8fcf2f27ea55787ee26",
+      "bytes": 1681
+    },
+    {
+      "path": "tests/ros_perf/native_ros1.cc",
+      "kind": "new",
+      "sha256": "7316416abdbb533f6b81d848fb373a19f99e6cc77ffd9bdd09deb2bd54ec3629",
+      "bytes": 2333
+    },
+    {
+      "path": "tests/ros_perf/native_ros2.cc",
+      "kind": "new",
+      "sha256": "d6dc8bda7d9b78cb918363396bdb34cef02c8606826556a94bd349c95f3b7c62",
+      "bytes": 2356
+    },
+    {
+      "path": "tests/ros_perf/run.py",
+      "kind": "new",
+      "sha256": "aaf91bba3d3e0ee4b4096dee11085e6474bdb0418f725450bdad4dcb92c726b5",
+      "bytes": 17064
+    },
+    {
+      "path": "tests/ros_resources/array_common.h",
+      "kind": "new",
+      "sha256": "a1449d8d6294fe243be204821946c7ba771368b8a6387d22449698737f71b39b",
+      "bytes": 12899
+    },
+    {
+      "path": "tests/ros_resources/array_native_ros1.h",
+      "kind": "new",
+      "sha256": "d5a4d2075b18b0ffc075ca1e00287cc3f4a29fdd84c2642a11683fec628f1c65",
+      "bytes": 3217
+    },
+    {
+      "path": "tests/ros_resources/array_native_ros2.h",
+      "kind": "new",
+      "sha256": "c421dcc0741e28beabd93e8b5ab0d6a7c9139b8aac55cf337e85e59c96044215",
+      "bytes": 6775
+    },
+    {
+      "path": "tests/ros_resources/array_witness_ros1.h",
+      "kind": "new",
+      "sha256": "a61f015ca591de5e21e79a5a0a1e8521bfbbfb97c2c3300c4a67fde68044e05d",
+      "bytes": 5737
+    },
+    {
+      "path": "tests/ros_resources/array_witness_ros2.h",
+      "kind": "new",
+      "sha256": "35dc08921a915f29467d163f47dfb30991751be6bc078e5e55b36dbe11353d6c",
+      "bytes": 7521
+    },
+    {
+      "path": "tests/ros_resources/common.h",
+      "kind": "new",
+      "sha256": "26b3258f691112de2e4100fb1dbe71d7df5b024cea021169587c32c6c4d59b7d",
+      "bytes": 4188
+    },
+    {
+      "path": "tests/ros_resources/native_ros1.cc",
+      "kind": "new",
+      "sha256": "ef679fb7ed9511be97c3ee83051da3db3d9d35b9863e2d2cb7025f6dc9c35ef1",
+      "bytes": 5694
+    },
+    {
+      "path": "tests/ros_resources/native_ros2.cc",
+      "kind": "new",
+      "sha256": "ca066239da506d81099763e98ff9df139b4246837d6a659a2fac28a223e35407",
+      "bytes": 10726
+    },
+    {
+      "path": "tests/ros_resources/scalar_native_common.h",
+      "kind": "new",
+      "sha256": "b2792d21c2bf45aa4fb4ce558cc15ddf5599c17ffb7bbb01b4f1f3709000c6ac",
+      "bytes": 5155
+    },
+    {
+      "path": "tests/ros_resources/scalar_native_ros1.h",
+      "kind": "new",
+      "sha256": "daafa1c70b181492e4358661e331e1f5d26a9478456bba11f17b9f5262374442",
+      "bytes": 3674
+    },
+    {
+      "path": "tests/ros_resources/scalar_native_ros2.h",
+      "kind": "new",
+      "sha256": "0fb6d196f371346bc3c4dfa24fd3479f96954d63aeaf619b33db465299d9818e",
+      "bytes": 5735
+    },
+    {
+      "path": "tests/ros_resources/scalar_witness_ros1.h",
+      "kind": "new",
+      "sha256": "39445f6e36c21bc9f9e51d54bc6127d19e963fe031aaa604f5c1e4189ebd000a",
+      "bytes": 3395
+    },
+    {
+      "path": "tests/ros_resources/scalar_witness_ros2.h",
+      "kind": "new",
+      "sha256": "763c6581575bbc3b122188c3121ef6d329b8e115c7e6700f093fbf1a8ab13638",
+      "bytes": 5865
+    },
+    {
+      "path": "tests/ros_resources/typed_event_common_ros2.h",
+      "kind": "new",
+      "sha256": "f02eeb1072357c6bde475d4fa1e98da2fcced1e95ff6ba812973888c85a91f4b",
+      "bytes": 4162
+    },
+    {
+      "path": "tests/ros_resources/typed_event_native_ros2.h",
+      "kind": "new",
+      "sha256": "a6fb54d9d77099de94f8d397c44bf9d8a742ace1e80a03ec38d2bc72dfab9b0c",
+      "bytes": 9885
+    },
+    {
+      "path": "tests/ros_resources/typed_event_witness_ros2.h",
+      "kind": "new",
+      "sha256": "4f4f178769300b8c0f9dac6d00aa22c09ddb5988cae53bf843043196a31b9280",
+      "bytes": 14417
+    },
+    {
+      "path": "tests/ros_resources/witness_ros1.h",
+      "kind": "new",
+      "sha256": "ca5fc1aa1863a0e70fc909e4c10df39ee2a62781c353e8520452e62061845af8",
+      "bytes": 2243
+    },
+    {
+      "path": "tests/ros_resources/witness_ros2.h",
+      "kind": "new",
+      "sha256": "b82e782a9415e3e9db59a6d5f121db799c2861853ea7475a217d2370cca3d581",
+      "bytes": 3078
+    },
+    {
+      "path": "tests/ros_security/capability_benchmark.cc",
+      "kind": "new",
+      "sha256": "f2b00a92ba2f46a8359fe7ee7f3dd79f7719dd945a0a46c70174e6683161f57c",
+      "bytes": 2722
+    },
+    {
+      "path": "tests/ros_security/capability_policy_test.cc",
+      "kind": "new",
+      "sha256": "bc9c49d548672473ec59511e0d8789c2b3e178777f3a562889bfafe8f5cc481e",
+      "bytes": 77071
+    },
+    {
+      "path": "tests/ros_security/native_secure_ros2.cc",
+      "kind": "new",
+      "sha256": "6abeba320b500c4a61f1ec754a9a0e12ebb25c097bff1a6ab5034fba38d1ae33",
+      "bytes": 3534
+    },
+    {
+      "path": "tests/ros_security/schema_dump.cc",
+      "kind": "new",
+      "sha256": "ab26698babb65b55f19ff342ae695ee141043ac56e89b205d41cfef8cb58bdca",
+      "bytes": 1786
+    },
+    {
+      "path": "tests/ros_security/sros2-policy.xml",
+      "kind": "new",
+      "sha256": "123c89558f27d072b9fd66034d33d356295888e971134f53b743d469f1ec31a5",
+      "bytes": 804
+    },
+    {
+      "path": "tests/ros_tf/common.h",
+      "kind": "new",
+      "sha256": "f614fa3d5f151b742ef80f4937401e4f3714259f7a72f48f45cb2fc599f44a3a",
+      "bytes": 3157
+    },
+    {
+      "path": "tests/ros_tf/native_ros1.cc",
+      "kind": "new",
+      "sha256": "63e181fb0a62e9656f2f82090cb87d763f7da82606a2e84aea75bf8e2c0760eb",
+      "bytes": 6078
+    },
+    {
+      "path": "tests/ros_tf/native_ros2.cc",
+      "kind": "new",
+      "sha256": "c2444f0eef0479b797f2e756d0444b2b3330738551f9239b4a8965577c14c89c",
+      "bytes": 6607
+    },
+    {
+      "path": "tests/test_ros1.sh",
+      "kind": "new",
+      "sha256": "10e0c9e48285e28fbb9318c37e7a5ce392edb76fc5800829412ba7dce474191d",
+      "bytes": 85
+    },
+    {
+      "path": "tests/test_ros2.sh",
+      "kind": "new",
+      "sha256": "0638ce07d3801464c56b11c4f5c16ffcdfcf2e3ce971fd67095b21b3e909a55d",
+      "bytes": 85
+    },
+    {
+      "path": "tests/test_ros_all.sh",
+      "kind": "new",
+      "sha256": "0fc578c212530cd44719dda11a55d31cdd1756f106c8423c9fd375a6c737378c",
+      "bytes": 145
+    },
+    {
+      "path": "tests/test_ros_cgroup.sh",
+      "kind": "new",
+      "sha256": "e0b69671d75b619313c0daae33344342a72527bb1c8416f99b9647a6ce559ca8",
+      "bytes": 213
+    },
+    {
+      "path": "tests/test_ros_dual.sh",
+      "kind": "new",
+      "sha256": "7a4dc4d31117c9a97549b0bb312402a6f16a613d6fa84ee4108af256eba91005",
+      "bytes": 85
+    },
+    {
+      "path": "tests/test_ros_ipc.sh",
+      "kind": "new",
+      "sha256": "c62cf174e188d7c8c72d6f3df36afca6d94a38dc44c4bc0c22d60ad709f61d2d",
+      "bytes": 198
+    },
+    {
+      "path": "tests/test_ros_multimodule.sh",
+      "kind": "new",
+      "sha256": "c69c2fd545591d0d764488990bd1e56128a199cf26a863d3add6633017eff99f",
+      "bytes": 92
+    },
+    {
+      "path": "tests/test_ros_security.sh",
+      "kind": "new",
+      "sha256": "4faad2a4e153dc3347b844a3729e54a9858921289463a5ae3a821baee18ac7fe",
+      "bytes": 208
+    },
+    {
+      "path": "xmake/option.lua",
+      "kind": "modified",
+      "sha256": "231c5f8947afeadfbcd735acbe006e3a6fa41004c4ea8ef3e9482bfa83927ae1",
+      "bytes": 24031,
+      "task_start_sha256": "a0da0d7f034b2bbf9e1d696eb9b4c080be969bcbce7e0c75b0a0f232abbdae05"
+    },
+    {
+      "path": "xmake.lua",
+      "kind": "modified",
+      "sha256": "194b56173bbff400f321977362ff3b2e50eb7be4d4c4c80355f995466a65458c",
+      "bytes": 54495,
+      "task_start_sha256": "a948c33e8c038c1f294a83bf5aaea3bac0fc0368464b4f67a615e2a4e4f24966"
+    }
+  ]
+}

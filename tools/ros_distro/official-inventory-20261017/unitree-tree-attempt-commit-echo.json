@@ -1,0 +1,82 @@
+{
+  "scope": "OFFICIAL_REMOTE_METADATA_ONLY_NO_LOCAL_CHECKOUT_OR_TEST_RESULT",
+  "existing_lock": {
+    "path": "sdk/robots/unitree/upstream-lock.json",
+    "bytes": 48556,
+    "sha256": "416a53bebcf15f1d260426c85fc275d868fd34da6264ecd1cffa0a48ef94a48a"
+  },
+  "repositories": [
+    {
+      "repository": "unitreerobotics/unitree_ros",
+      "commit": "5994d4faef0a9cadd3287f8de0199a67eeb2a259",
+      "tree": "b77649d193953227aaf525cbaadbbaf31a638532",
+      "url": "https://api.github.com/repos/unitreerobotics/unitree_ros/git/trees/5994d4faef0a9cadd3287f8de0199a67eeb2a259?recursive=1",
+      "error": "ValueError: complete expected historical tree required",
+      "complete_tree": false
+    },
+    {
+      "repository": "unitreerobotics/unitree_ros2",
+      "commit": "668d1ec5a05d1c38d3306bdca7d59f2ba3581a88",
+      "tree": "a81126b7b94c9867e61b496fa8309d1cb7ac0c7f",
+      "url": "https://api.github.com/repos/unitreerobotics/unitree_ros2/git/trees/668d1ec5a05d1c38d3306bdca7d59f2ba3581a88?recursive=1",
+      "error": "ValueError: complete expected historical tree required",
+      "complete_tree": false
+    },
+    {
+      "repository": "unitreerobotics/unitree_sdk2",
+      "commit": "d1abf001220d3e5f59e00a0c4aaa595e00089a4a",
+      "tree": "268c90b5d453f5f2e9155de87fe7b52756eba33f",
+      "url": "https://api.github.com/repos/unitreerobotics/unitree_sdk2/git/trees/d1abf001220d3e5f59e00a0c4aaa595e00089a4a?recursive=1",
+      "error": "ValueError: complete expected historical tree required",
+      "complete_tree": false
+    },
+    {
+      "repository": "unitreerobotics/unitree_sdk2_python",
+      "commit": "814556d15970dd2ecf1c9984e845ca02ab07e206",
+      "tree": "ad1af066496d90ce91bd7fcd77afc34719439792",
+      "url": "https://api.github.com/repos/unitreerobotics/unitree_sdk2_python/git/trees/814556d15970dd2ecf1c9984e845ca02ab07e206?recursive=1",
+      "error": "ValueError: complete expected historical tree required",
+      "complete_tree": false
+    },
+    {
+      "repository": "unitreerobotics/unitree_mujoco",
+      "commit": "1eb6642e3f3fdfb7fb13a9794fd6a2dd93ea0e7d",
+      "tree": "dfc776d2eb6da2716c9e7ea830f6a1b461c3ba73",
+      "url": "https://api.github.com/repos/unitreerobotics/unitree_mujoco/git/trees/1eb6642e3f3fdfb7fb13a9794fd6a2dd93ea0e7d?recursive=1",
+      "error": "ValueError: complete expected historical tree required",
+      "complete_tree": false
+    },
+    {
+      "repository": "unitreerobotics/unitree_sim_isaaclab",
+      "commit": "e30c25b1dffdf92ada1d6c8c1fe9a47bdde0fecc",
+      "tree": "b167ce43f010dc1ebc3c3b2c6e82935575f0bb97",
+      "url": "https://api.github.com/repos/unitreerobotics/unitree_sim_isaaclab/git/trees/e30c25b1dffdf92ada1d6c8c1fe9a47bdde0fecc?recursive=1",
+      "error": "ValueError: complete expected historical tree required",
+      "complete_tree": false
+    },
+    {
+      "repository": "unitreerobotics/unitree_legged_sdk",
+      "commit": "4539a6c10dfbc9781cea6fcb7d51bc6ddc6f71e1",
+      "tree": "745c960236d1b98828b4492a69e9299cf53b4c55",
+      "url": "https://api.github.com/repos/unitreerobotics/unitree_legged_sdk/git/trees/4539a6c10dfbc9781cea6fcb7d51bc6ddc6f71e1?recursive=1",
+      "error": "ValueError: complete expected historical tree required",
+      "complete_tree": false
+    },
+    {
+      "repository": "unitreerobotics/unitree_ros_to_real",
+      "commit": "b989870124913091fbe75e0dcfb047eb4ca00a09",
+      "tree": "54e8ef3f0020962bf09d36f378c156c0f992aafc",
+      "url": "https://api.github.com/repos/unitreerobotics/unitree_ros_to_real/git/trees/b989870124913091fbe75e0dcfb047eb4ca00a09?recursive=1",
+      "error": "ValueError: complete expected historical tree required",
+      "complete_tree": false
+    },
+    {
+      "repository": "unitreerobotics/unitree_guide",
+      "commit": "fdf4d23de6affe8ee38fb4d892f61053fa1fcbcb",
+      "tree": "f5a5172d83b172acccab872b6fc6cb028d764ed4",
+      "url": "https://api.github.com/repos/unitreerobotics/unitree_guide/git/trees/fdf4d23de6affe8ee38fb4d892f61053fa1fcbcb?recursive=1",
+      "error": "ValueError: complete expected historical tree required",
+      "complete_tree": false
+    }
+  ]
+}

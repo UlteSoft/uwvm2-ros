@@ -1,0 +1,19 @@
+[package]
+name = "roswasm"
+version = "0.1.0"
+edition = "2021"
+license-file = "../LICENSE"
+description = "Capability-based ROS 1 and ROS 2 WebAssembly guest SDK for uwvm2"
+
+[features]
+default = []
+ros1 = []
+ros2 = []
+alloc = []
+
+[lib]
+path = "src/lib.rs"
+
+[package.metadata.roswasm]
+abi = "uwvm_ros1_v1 / uwvm_ros2_v1"
+validation = "prepared_not_compiled_or_executed_as_a_ros_guest"

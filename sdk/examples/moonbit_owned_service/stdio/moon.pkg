@@ -1,0 +1,1 @@
+// Bounded ASCII-only stdout; no ROS control or filesystem interface.

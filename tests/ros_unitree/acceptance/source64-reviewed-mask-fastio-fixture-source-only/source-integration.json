@@ -1,0 +1,907 @@
+{
+  "affected_existing_groups": [
+    6,
+    35
+  ],
+  "candidate_imports_tests_compilers_SSH": false,
+  "current_group_count": 37,
+  "current_unique_file_count": 247,
+  "format_version": 1,
+  "kind": "source64-current-declaration-integration",
+  "new_cross": {
+    "bytes": 280921,
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/current-batch-source-cross-seal.json",
+    "sha256": "40acd451c149a0a0ebffedfe0086650e22254e39889332889f508fd2be82d19d"
+  },
+  "old_cross": {
+    "bytes": 237710,
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/before/current-batch-source-cross-seal.json",
+    "sha256": "a2ae46e4494c0dde4d4d0df565973a8d8c0f3cb4441a83abac47a30aa2b99901"
+  },
+  "preserved_old_manifests": [
+    {
+      "group_index": 0,
+      "original": {
+        "bytes": 9661,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_ticket_lifetime/source-ready.json",
+        "sha256": "49eb2a401a0aafc522419ef460fb14f576f2c3f3a1aef18a1ecb4ac300808933"
+      },
+      "saved": {
+        "bytes": 9661,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/before/current-manifests/00.json",
+        "sha256": "49eb2a401a0aafc522419ef460fb14f576f2c3f3a1aef18a1ecb4ac300808933"
+      }
+    },
+    {
+      "group_index": 1,
+      "original": {
+        "bytes": 21844,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/noetic-native-source-ready.json",
+        "sha256": "42556147c441055791d893896836d5526ce6683efff3df53e773cdf1bbfeedf5"
+      },
+      "saved": {
+        "bytes": 21844,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/before/current-manifests/01.json",
+        "sha256": "42556147c441055791d893896836d5526ce6683efff3df53e773cdf1bbfeedf5"
+      }
+    },
+    {
+      "group_index": 2,
+      "original": {
+        "bytes": 5364,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/current-declarations/02-source-ready.json",
+        "sha256": "26053f07e840eea83f38050690cc4cc2117ca1eba9dc145388a5fb72f038848b"
+      },
+      "saved": {
+        "bytes": 5364,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/before/current-manifests/02.json",
+        "sha256": "26053f07e840eea83f38050690cc4cc2117ca1eba9dc145388a5fb72f038848b"
+      }
+    },
+    {
+      "group_index": 3,
+      "original": {
+        "bytes": 4979,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/legacy12/source-ready.json",
+        "sha256": "0631686fd793839a211b7a178e6899b6874e804850e145757b9294eda62c818b"
+      },
+      "saved": {
+        "bytes": 4979,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/before/current-manifests/03.json",
+        "sha256": "0631686fd793839a211b7a178e6899b6874e804850e145757b9294eda62c818b"
+      }
+    },
+    {
+      "group_index": 4,
+      "original": {
+        "bytes": 15685,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/core-regressions-source-ready.json",
+        "sha256": "a3dad17e3a77715e21b2d403326a36a9e1c48923c59459c97d6935e50421dbf2"
+      },
+      "saved": {
+        "bytes": 15685,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/before/current-manifests/04.json",
+        "sha256": "a3dad17e3a77715e21b2d403326a36a9e1c48923c59459c97d6935e50421dbf2"
+      }
+    },
+    {
+      "group_index": 5,
+      "original": {
+        "bytes": 6036,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros2_compat/acceptance/action-client-options-source-only/source-ready.json",
+        "sha256": "659f10aae24e17ef69ba7f60c24b4ae4f52990c9af3aa895f1401f99d23038a1"
+      },
+      "saved": {
+        "bytes": 6036,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/before/current-manifests/05.json",
+        "sha256": "659f10aae24e17ef69ba7f60c24b4ae4f52990c9af3aa895f1401f99d23038a1"
+      }
+    },
+    {
+      "group_index": 6,
+      "original": {
+        "bytes": 6356,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source63-reviewed-control-fast-io-arm-source-only/current-declarations/06-source-ready.json",
+        "sha256": "e8dee656881d34ee7dff120093c0335d911731291d68c733c525cbbf16a8154a"
+      },
+      "saved": {
+        "bytes": 6356,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/before/current-manifests/06.json",
+        "sha256": "e8dee656881d34ee7dff120093c0335d911731291d68c733c525cbbf16a8154a"
+      }
+    },
+    {
+      "group_index": 7,
+      "original": {
+        "bytes": 10507,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/current-declarations/07-source-ready.json",
+        "sha256": "d3bb556608c2cfb5a7a464f41a5b80cb3c55db4f4faefb60755307b89931505b"
+      },
+      "saved": {
+        "bytes": 10507,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/before/current-manifests/07.json",
+        "sha256": "d3bb556608c2cfb5a7a464f41a5b80cb3c55db4f4faefb60755307b89931505b"
+      }
+    },
+    {
+      "group_index": 8,
+      "original": {
+        "bytes": 4701,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/current-declarations/08-source-ready.json",
+        "sha256": "3c811770c4c38651beda02be01defa7a0e22802115fc3ea0aca266834d17f89c"
+      },
+      "saved": {
+        "bytes": 4701,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/before/current-manifests/08.json",
+        "sha256": "3c811770c4c38651beda02be01defa7a0e22802115fc3ea0aca266834d17f89c"
+      }
+    },
+    {
+      "group_index": 9,
+      "original": {
+        "bytes": 1683,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/actor-exit-race-source-only/source-ready.json",
+        "sha256": "f1fbc61f6ffaab357a235d3c3e0eb8ed47c4d42683b2fb13cd23836962a8c675"
+      },
+      "saved": {
+        "bytes": 1683,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/before/current-manifests/09.json",
+        "sha256": "f1fbc61f6ffaab357a235d3c3e0eb8ed47c4d42683b2fb13cd23836962a8c675"
+      }
+    },
+    {
+      "group_index": 10,
+      "original": {
+        "bytes": 1702,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/cpp-catalog-observations-source-only/source-integration.json",
+        "sha256": "497988de7acf108a6eb23dca2b02e96b7cde437db34f143ab8f36fd9e113df6d"
+      },
+      "saved": {
+        "bytes": 1702,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/before/current-manifests/10.json",
+        "sha256": "497988de7acf108a6eb23dca2b02e96b7cde437db34f143ab8f36fd9e113df6d"
+      }
+    },
+    {
+      "group_index": 11,
+      "original": {
+        "bytes": 8419,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/current-declarations/11-source-ready.json",
+        "sha256": "626a9e9eeaf2ff38bbeb413668d26eb94ed7fc7fd6f698a331a92d832e22475e"
+      },
+      "saved": {
+        "bytes": 8419,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/before/current-manifests/11.json",
+        "sha256": "626a9e9eeaf2ff38bbeb413668d26eb94ed7fc7fd6f698a331a92d832e22475e"
+      }
+    },
+    {
+      "group_index": 12,
+      "original": {
+        "bytes": 10513,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source56-event-model-wiring-source-only/prior-current-successors/12-source-ready.json",
+        "sha256": "dbd2d2e72fc7a50b855745a325e3e15d9b36ac4d8b600ec8d60701fd4fa2d0a8"
+      },
+      "saved": {
+        "bytes": 10513,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/before/current-manifests/12.json",
+        "sha256": "dbd2d2e72fc7a50b855745a325e3e15d9b36ac4d8b600ec8d60701fd4fa2d0a8"
+      }
+    },
+    {
+      "group_index": 13,
+      "original": {
+        "bytes": 5581,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source60-reviewed-linker-archive-statistics-source-only/current-declarations/13-source-ready.json",
+        "sha256": "c0f918f819b42ebd95cac399f095be18c2210199c10338f16301ec3241830233"
+      },
+      "saved": {
+        "bytes": 5581,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/before/current-manifests/13.json",
+        "sha256": "c0f918f819b42ebd95cac399f095be18c2210199c10338f16301ec3241830233"
+      }
+    },
+    {
+      "group_index": 14,
+      "original": {
+        "bytes": 6911,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source51-reviewed-source-batch/official/source-ready.json",
+        "sha256": "e8a75f279dd923ce0e2a7cc286f1efdd4a347767e7af8611ad0bd49f4673323d"
+      },
+      "saved": {
+        "bytes": 6911,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/before/current-manifests/14.json",
+        "sha256": "e8a75f279dd923ce0e2a7cc286f1efdd4a347767e7af8611ad0bd49f4673323d"
+      }
+    },
+    {
+      "group_index": 15,
+      "original": {
+        "bytes": 1402,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_ipc/acceptance/handshake-source-only/source-ready.json",
+        "sha256": "068f813cbb646d5182f2397f262c65e9d540e75f315846d4dfb85ae72d4aa0ed"
+      },
+      "saved": {
+        "bytes": 1402,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/before/current-manifests/15.json",
+        "sha256": "068f813cbb646d5182f2397f262c65e9d540e75f315846d4dfb85ae72d4aa0ed"
+      }
+    },
+    {
+      "group_index": 16,
+      "original": {
+        "bytes": 1996,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source53-management-and-sdk-source-only/host-retirement/source-ready.json",
+        "sha256": "5cff9208b49406eab8902a91dd2235100ec1798dc6101ab59a30d1773912f759"
+      },
+      "saved": {
+        "bytes": 1996,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/before/current-manifests/16.json",
+        "sha256": "5cff9208b49406eab8902a91dd2235100ec1798dc6101ab59a30d1773912f759"
+      }
+    },
+    {
+      "group_index": 17,
+      "original": {
+        "bytes": 1738,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source53-management-and-sdk-source-only/runtime-integration/source-ready.json",
+        "sha256": "ce354db4d3eece53caba9f6e5f293529972c838fee90ea4232e2ef093ce5ead3"
+      },
+      "saved": {
+        "bytes": 1738,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/before/current-manifests/17.json",
+        "sha256": "ce354db4d3eece53caba9f6e5f293529972c838fee90ea4232e2ef093ce5ead3"
+      }
+    },
+    {
+      "group_index": 18,
+      "original": {
+        "bytes": 5878,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source60-reviewed-linker-archive-statistics-source-only/current-declarations/18-source-ready.json",
+        "sha256": "ffd4ed8a77076a93085238b8db75c4e06a4319d30ee7066090a9937002f87b96"
+      },
+      "saved": {
+        "bytes": 5878,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/before/current-manifests/18.json",
+        "sha256": "ffd4ed8a77076a93085238b8db75c4e06a4319d30ee7066090a9937002f87b96"
+      }
+    },
+    {
+      "group_index": 19,
+      "original": {
+        "bytes": 3565,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source54-generated-input-and-management-fixtures-source-only/prior-current-successors/19-source-ready.json",
+        "sha256": "46395e9ff5fe0497b552c43a7e196a0e4e4a98b47a9bab16dfb72589bb6fd10d"
+      },
+      "saved": {
+        "bytes": 3565,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/before/current-manifests/19.json",
+        "sha256": "46395e9ff5fe0497b552c43a7e196a0e4e4a98b47a9bab16dfb72589bb6fd10d"
+      }
+    },
+    {
+      "group_index": 20,
+      "original": {
+        "bytes": 3500,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source54-generated-input-and-management-fixtures-source-only/sdk-generated-references/source-ready.json",
+        "sha256": "d08441d32256de94200b7cc21c88659efbc2be95c9abfb48d626c25f222630a0"
+      },
+      "saved": {
+        "bytes": 3500,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/before/current-manifests/20.json",
+        "sha256": "d08441d32256de94200b7cc21c88659efbc2be95c9abfb48d626c25f222630a0"
+      }
+    },
+    {
+      "group_index": 21,
+      "original": {
+        "bytes": 3851,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source54-generated-input-and-management-fixtures-source-only/runtime-reset-and-guest-management-negative-fixtures/source-ready.json",
+        "sha256": "b7d2107f0b13edf022583925b59a5dd0e277bcc0e0b9fa80abb7edf51b40eeeb"
+      },
+      "saved": {
+        "bytes": 3851,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/before/current-manifests/21.json",
+        "sha256": "b7d2107f0b13edf022583925b59a5dd0e277bcc0e0b9fa80abb7edf51b40eeeb"
+      }
+    },
+    {
+      "group_index": 22,
+      "original": {
+        "bytes": 1260,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source54-generated-input-and-management-fixtures-source-only/component-policy-fixture/source-ready.json",
+        "sha256": "d4a4fa7560c70872f787d0d2edf185f1601ded79ac498d7b202419ec70d020d0"
+      },
+      "saved": {
+        "bytes": 1260,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/before/current-manifests/22.json",
+        "sha256": "d4a4fa7560c70872f787d0d2edf185f1601ded79ac498d7b202419ec70d020d0"
+      }
+    },
+    {
+      "group_index": 23,
+      "original": {
+        "bytes": 1231,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source55-assemblyscript-constructor-source-only/assemblyscript-event-constructor/source-ready.json",
+        "sha256": "f2fd788c334ad3bc1967e040f604018c0253dc4f2c8c79cf22b101bd3b922099"
+      },
+      "saved": {
+        "bytes": 1231,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/before/current-manifests/23.json",
+        "sha256": "f2fd788c334ad3bc1967e040f604018c0253dc4f2c8c79cf22b101bd3b922099"
+      }
+    },
+    {
+      "group_index": 24,
+      "original": {
+        "bytes": 1445,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source56-event-model-wiring-source-only/event-model-wiring/source-ready.json",
+        "sha256": "204c12dbe02b463ceb27d25974539b74a0a72cd3a5c42f3110770af35cd5e57d"
+      },
+      "saved": {
+        "bytes": 1445,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/before/current-manifests/24.json",
+        "sha256": "204c12dbe02b463ceb27d25974539b74a0a72cd3a5c42f3110770af35cd5e57d"
+      }
+    },
+    {
+      "group_index": 25,
+      "original": {
+        "bytes": 1264,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source57-pure-wasm-option-fixture-list-source-only/pure-wasm-options-fixture-list/source-ready.json",
+        "sha256": "d136e292a1ce8c1c019163389a2b9ffb3615a68fd44dfd1bd59fdeef1b01cac0"
+      },
+      "saved": {
+        "bytes": 1264,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/before/current-manifests/25.json",
+        "sha256": "d136e292a1ce8c1c019163389a2b9ffb3615a68fd44dfd1bd59fdeef1b01cac0"
+      }
+    },
+    {
+      "group_index": 26,
+      "original": {
+        "bytes": 4091,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/current-declarations/26-source-ready.json",
+        "sha256": "3a5cefb716391c7f168c7fa8aaac765df78c5bd5f7542c4d9e8d8e226f0a063c"
+      },
+      "saved": {
+        "bytes": 4091,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/before/current-manifests/26.json",
+        "sha256": "3a5cefb716391c7f168c7fa8aaac765df78c5bd5f7542c4d9e8d8e226f0a063c"
+      }
+    },
+    {
+      "group_index": 27,
+      "original": {
+        "bytes": 5595,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/legacy-javascript-closed8/source-ready.json",
+        "sha256": "d44887493c0b004616ee7552c0ae90c774753911cff4759bd979b1415095eea1"
+      },
+      "saved": {
+        "bytes": 5595,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/before/current-manifests/27.json",
+        "sha256": "d44887493c0b004616ee7552c0ae90c774753911cff4759bd979b1415095eea1"
+      }
+    },
+    {
+      "group_index": 28,
+      "original": {
+        "bytes": 5062,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/direct-javascript-closed8-documentation/source-ready.json",
+        "sha256": "24944789159d796512848cb8b9a9d8b6d90dd5855857551e3644aaf48f3f5a84"
+      },
+      "saved": {
+        "bytes": 5062,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/before/current-manifests/28.json",
+        "sha256": "24944789159d796512848cb8b9a9d8b6d90dd5855857551e3644aaf48f3f5a84"
+      }
+    },
+    {
+      "group_index": 29,
+      "original": {
+        "bytes": 6523,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/direct-wasi-cpp-explicit-profile/source-ready.json",
+        "sha256": "bda967be42dda001ba84823326a2b3b3c08ceab8922b47f1c65b1a52a69dcf99"
+      },
+      "saved": {
+        "bytes": 6523,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/before/current-manifests/29.json",
+        "sha256": "bda967be42dda001ba84823326a2b3b3c08ceab8922b47f1c65b1a52a69dcf99"
+      }
+    },
+    {
+      "group_index": 30,
+      "original": {
+        "bytes": 4987,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/current64GiB-example-doc/source-ready.json",
+        "sha256": "7c5d299ac765e2d43b365b919e12672a7da5bcb3fc605cf03803f69c6806800c"
+      },
+      "saved": {
+        "bytes": 4987,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/before/current-manifests/30.json",
+        "sha256": "7c5d299ac765e2d43b365b919e12672a7da5bcb3fc605cf03803f69c6806800c"
+      }
+    },
+    {
+      "group_index": 31,
+      "original": {
+        "bytes": 4771,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source63-reviewed-control-fast-io-arm-source-only/current-declarations/31-source-ready.json",
+        "sha256": "c938198ef809de4f362f27eadd30a0d8dec872bc093f1e74de52287a99b6a2e3"
+      },
+      "saved": {
+        "bytes": 4771,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/before/current-manifests/31.json",
+        "sha256": "c938198ef809de4f362f27eadd30a0d8dec872bc093f1e74de52287a99b6a2e3"
+      }
+    },
+    {
+      "group_index": 32,
+      "original": {
+        "bytes": 3642,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source60-reviewed-linker-archive-statistics-source-only/linker-archive-statistics/source-ready.json",
+        "sha256": "275746af71b0007c2776a8d4777701e063b60b1b8e88505638167dba9f66b0a2"
+      },
+      "saved": {
+        "bytes": 3642,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/before/current-manifests/32.json",
+        "sha256": "275746af71b0007c2776a8d4777701e063b60b1b8e88505638167dba9f66b0a2"
+      }
+    },
+    {
+      "group_index": 33,
+      "original": {
+        "bytes": 3140,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/current-declarations/33-source-ready.json",
+        "sha256": "1872285cf58411c319e62d1bd5340045d945896f3d91b86d1d688e4bf9bb7763"
+      },
+      "saved": {
+        "bytes": 3140,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/before/current-manifests/33.json",
+        "sha256": "1872285cf58411c319e62d1bd5340045d945896f3d91b86d1d688e4bf9bb7763"
+      }
+    },
+    {
+      "group_index": 34,
+      "original": {
+        "bytes": 1877,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/genuine-management-fixture/source-ready.json",
+        "sha256": "1d9b5d2735e666fe2497562c71e9943e8549082cd8604196dca442c0176a7e66"
+      },
+      "saved": {
+        "bytes": 1877,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/before/current-manifests/34.json",
+        "sha256": "1d9b5d2735e666fe2497562c71e9943e8549082cd8604196dca442c0176a7e66"
+      }
+    },
+    {
+      "group_index": 35,
+      "original": {
+        "bytes": 5393,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source63-reviewed-control-fast-io-arm-source-only/reviewed-control-fast-io-arm/source-ready.json",
+        "sha256": "cbd99b9c0ea079d0453687a5160f0978fea67d1f2cffe7624bcc99578dae9036"
+      },
+      "saved": {
+        "bytes": 5393,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/before/current-manifests/35.json",
+        "sha256": "cbd99b9c0ea079d0453687a5160f0978fea67d1f2cffe7624bcc99578dae9036"
+      }
+    }
+  ],
+  "review_evidence": {
+    "actual_DATA_requalification": {
+      "bytes": 14504,
+      "ctime_ns": 1792217112795943073,
+      "device": 16777231,
+      "inode": 87028771,
+      "mtime_ns": 1792217112795931574,
+      "path": "/private/tmp/uwvm-source64-applied-five-paths-requalified-data-root-20261017-r1/requalification-report.json",
+      "sha256": "2e54a7e949b1cf91e463380e13a3034a15865c195bfb38440a80b22773f2d4e1"
+    },
+    "observed_metadata_transitions": [
+      {
+        "before": {
+          "bytes": 45094,
+          "ctime_ns": 1792216618223323221,
+          "device": 16777231,
+          "inode": 87028332,
+          "mtime_ns": 1792216618223108011,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_aarch64/binfmt_lease.py",
+          "sha256": "9e4373fc2b402235419eedf3d37283182b70dc86b0f868526e9442ebd67ab8dd"
+        },
+        "cause": "UNKNOWN_NOT_ATTRIBUTED",
+        "changed_fields": [
+          "ctime_ns"
+        ],
+        "from_role": "ORIGINAL_APPLY_RESULT",
+        "observed": {
+          "bytes": 45094,
+          "ctime_ns": 1792216633224560861,
+          "device": 16777231,
+          "inode": 87028332,
+          "mtime_ns": 1792216618223108011,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_aarch64/binfmt_lease.py",
+          "sha256": "9e4373fc2b402235419eedf3d37283182b70dc86b0f868526e9442ebd67ab8dd"
+        },
+        "observed_mode": 420,
+        "old_mode": 420,
+        "relative": "tests/ros_aarch64/binfmt_lease.py",
+        "to_role": "REQUALIFICATION_ROUND_1",
+        "unchanged_fields": [
+          "bytes",
+          "device",
+          "inode",
+          "mtime_ns",
+          "path",
+          "sha256"
+        ]
+      }
+    ],
+    "original_DATA_independent_peer": {
+      "bytes": 6538,
+      "path": "/private/tmp/uwvm-source64-ctime-requalification-rebinder-r3-independent-source-peer-root-20261017-r1.json",
+      "sha256": "f9f5d2ca03416c6afd6c000a44f6cfcf3734eb31cdb6618193fa56613a52b6a3"
+    },
+    "original_applied_package": {
+      "bytes": 15836,
+      "path": "/private/tmp/uwvm-source64-reviewed-five-paths-applied-data-root-20261017-r2/root-applied-source-ready.json",
+      "sha256": "dfdde5ef0370c9c5842de09d39ca41f61b0e5656b35e9af1925d5ffcacf2ac59"
+    },
+    "original_apply_result_identity": {
+      "bytes": 15836,
+      "ctime_ns": 1792216619353141452,
+      "device": 16777231,
+      "inode": 87028340,
+      "mtime_ns": 1792216619353131286,
+      "path": "/private/tmp/uwvm-source64-reviewed-five-paths-applied-data-root-20261017-r2/root-applied-source-ready.json",
+      "sha256": "dfdde5ef0370c9c5842de09d39ca41f61b0e5656b35e9af1925d5ffcacf2ac59"
+    },
+    "preserved_source_review_evidence": [
+      {
+        "cohort": "mask",
+        "copy": {
+          "bytes": 8833,
+          "ctime_ns": 1792216618221040331,
+          "device": 16777231,
+          "inode": 87028320,
+          "mtime_ns": 1792216618221027331,
+          "path": "/private/tmp/uwvm-source64-reviewed-five-paths-applied-data-root-20261017-r2/mask/final-source-ready.json",
+          "sha256": "65fa4dd1f9034a686cb3d600c1038c8eb5096d6fbedbfa04da6441a85197bd76"
+        },
+        "original": {
+          "bytes": 8833,
+          "ctime_ns": 1792216391962054427,
+          "device": 16777231,
+          "inode": 87028143,
+          "mtime_ns": 1792216391962054427,
+          "path": "/private/tmp/uwvm-arm-owned-command-mask-source64-source-only-20261017-r2/source-ready.json",
+          "sha256": "65fa4dd1f9034a686cb3d600c1038c8eb5096d6fbedbfa04da6441a85197bd76"
+        },
+        "role": "final-source-ready.json"
+      },
+      {
+        "cohort": "mask",
+        "copy": {
+          "bytes": 10156,
+          "ctime_ns": 1792216618221450376,
+          "device": 16777231,
+          "inode": 87028321,
+          "mtime_ns": 1792216618221444167,
+          "path": "/private/tmp/uwvm-source64-reviewed-five-paths-applied-data-root-20261017-r2/mask/independent-peer.json",
+          "sha256": "f6da446a5c6aea728427759365ecb29b90c744fc96fb7ab8360bcd5f68f21d79"
+        },
+        "original": {
+          "bytes": 10156,
+          "ctime_ns": 1792216366397527646,
+          "device": 16777231,
+          "inode": 87028095,
+          "mtime_ns": 1792216366397527646,
+          "path": "/private/tmp/uwvm-source64-owned-command-mask-r2-independent-source-peer-recovery-20261017-r1.json",
+          "sha256": "f6da446a5c6aea728427759365ecb29b90c744fc96fb7ab8360bcd5f68f21d79"
+        },
+        "role": "independent-peer.json"
+      },
+      {
+        "cohort": "mask",
+        "copy": {
+          "bytes": 29837,
+          "ctime_ns": 1792216618221835670,
+          "device": 16777231,
+          "inode": 87028322,
+          "mtime_ns": 1792216618221829836,
+          "path": "/private/tmp/uwvm-source64-reviewed-five-paths-applied-data-root-20261017-r2/mask/change.patch",
+          "sha256": "f7fe0e7c79a8126490c29f3fb40a686e957a23b53a2df7aed366c9e3854e2e06"
+        },
+        "original": {
+          "bytes": 29837,
+          "ctime_ns": 1792216287913287716,
+          "device": 16777231,
+          "inode": 87028005,
+          "mtime_ns": 1792216287913287716,
+          "path": "/private/tmp/uwvm-arm-owned-command-mask-source64-source-only-20261017-r2/change.patch",
+          "sha256": "f7fe0e7c79a8126490c29f3fb40a686e957a23b53a2df7aed366c9e3854e2e06"
+        },
+        "role": "change.patch"
+      },
+      {
+        "cohort": "fixture",
+        "copy": {
+          "bytes": 3250,
+          "ctime_ns": 1792216618222052629,
+          "device": 16777231,
+          "inode": 87028324,
+          "mtime_ns": 1792216618222047254,
+          "path": "/private/tmp/uwvm-source64-reviewed-five-paths-applied-data-root-20261017-r2/fixture/final-source-ready.json",
+          "sha256": "bd5c6d19ecc1ea35aa0d45531dbb29c87153c712916529a37291ad57123aa537"
+        },
+        "original": {
+          "bytes": 3250,
+          "ctime_ns": 1792215963094213770,
+          "device": 16777231,
+          "inode": 87027716,
+          "mtime_ns": 1792215963094213770,
+          "path": "/private/tmp/uwvm-source64-fastio-fixture-explicit-view-source-only-root-20261017-r1/source-ready.json",
+          "sha256": "bd5c6d19ecc1ea35aa0d45531dbb29c87153c712916529a37291ad57123aa537"
+        },
+        "role": "final-source-ready.json"
+      },
+      {
+        "cohort": "fixture",
+        "copy": {
+          "bytes": 4938,
+          "ctime_ns": 1792216618222208213,
+          "device": 16777231,
+          "inode": 87028325,
+          "mtime_ns": 1792216618222202714,
+          "path": "/private/tmp/uwvm-source64-reviewed-five-paths-applied-data-root-20261017-r2/fixture/independent-peer.json",
+          "sha256": "7b9d50d72af643a4402939843693d8a22d8edad037099b373d39208993a76a6e"
+        },
+        "original": {
+          "bytes": 4938,
+          "ctime_ns": 1792215932722927306,
+          "device": 16777231,
+          "inode": 87027685,
+          "mtime_ns": 1792215932722927306,
+          "path": "/private/tmp/uwvm-source64-fastio-explicit-view-fixture-independent-source-peer-recovery-20261017-r1.json",
+          "sha256": "7b9d50d72af643a4402939843693d8a22d8edad037099b373d39208993a76a6e"
+        },
+        "role": "independent-peer.json"
+      },
+      {
+        "cohort": "fixture",
+        "copy": {
+          "bytes": 806,
+          "ctime_ns": 1792216618222446715,
+          "device": 16777231,
+          "inode": 87028326,
+          "mtime_ns": 1792216618222441548,
+          "path": "/private/tmp/uwvm-source64-reviewed-five-paths-applied-data-root-20261017-r2/fixture/change.patch",
+          "sha256": "55ee235d5c655664afff269fd4e2d55459e78ae79f1571e0ae21e2c89b0fb18e"
+        },
+        "original": {
+          "bytes": 806,
+          "ctime_ns": 1792215879456160150,
+          "device": 16777231,
+          "inode": 87027657,
+          "mtime_ns": 1792215879456160150,
+          "path": "/private/tmp/uwvm-source64-fastio-fixture-explicit-view-source-only-root-20261017-r1/change.patch",
+          "sha256": "55ee235d5c655664afff269fd4e2d55459e78ae79f1571e0ae21e2c89b0fb18e"
+        },
+        "role": "change.patch"
+      }
+    ],
+    "requalification_catalogs": [
+      {
+        "bytes": 8387342,
+        "ctime_ns": 1792217110914046088,
+        "device": 16777231,
+        "inode": 87028769,
+        "mtime_ns": 1792217110914016383,
+        "path": "/private/tmp/uwvm-source64-applied-five-paths-requalified-data-root-20261017-r1/source-round-1.jsonl",
+        "sha256": "1dc90f317b44b7f029ff482e60f04c9f851181ec3ba04ac47280f46c620cf82f"
+      },
+      {
+        "bytes": 8387342,
+        "ctime_ns": 1792217112471051377,
+        "device": 16777231,
+        "inode": 87028770,
+        "mtime_ns": 1792217112471024962,
+        "path": "/private/tmp/uwvm-source64-applied-five-paths-requalified-data-root-20261017-r1/source-round-2.jsonl",
+        "sha256": "1dc90f317b44b7f029ff482e60f04c9f851181ec3ba04ac47280f46c620cf82f"
+      }
+    ],
+    "requalified_current_observations": {
+      "tests/ros_aarch64/README.owned-command-mask.md": {
+        "bytes": 6449,
+        "ctime_ns": 1792216618222594924,
+        "device": 16777231,
+        "inode": 87028327,
+        "mtime_ns": 1792216618222589549,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_aarch64/README.owned-command-mask.md",
+        "sha256": "f14acb67a5c6ff0074ad0b004eccb04615d12efa48b3a4fb6a3b6d01b76f142a"
+      },
+      "tests/ros_aarch64/binfmt_lease.py": {
+        "bytes": 45094,
+        "ctime_ns": 1792216633224560861,
+        "device": 16777231,
+        "inode": 87028332,
+        "mtime_ns": 1792216618223108011,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_aarch64/binfmt_lease.py",
+        "sha256": "9e4373fc2b402235419eedf3d37283182b70dc86b0f868526e9442ebd67ab8dd"
+      },
+      "tests/ros_aarch64/rebuild_affected.py": {
+        "bytes": 57407,
+        "ctime_ns": 1792216618224187393,
+        "device": 16777231,
+        "inode": 87028334,
+        "mtime_ns": 1792216618224017308,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_aarch64/rebuild_affected.py",
+        "sha256": "2714a8879c127c02533a4a918014a0fc85afd44cefcc72874b39ab9c054497b5"
+      },
+      "tests/ros_aarch64/test_owned_command_processes.py": {
+        "bytes": 13952,
+        "ctime_ns": 1792216618224934147,
+        "device": 16777231,
+        "inode": 87028336,
+        "mtime_ns": 1792216618224803105,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_aarch64/test_owned_command_processes.py",
+        "sha256": "0caa60380bcf2390da981378c472263d1493e447c12349b1c810e73b8621e2f0"
+      },
+      "tests/ros_debugger/fast_io_console_tf_contract.cc": {
+        "bytes": 10721,
+        "ctime_ns": 1792216618225534193,
+        "device": 16777231,
+        "inode": 87028339,
+        "mtime_ns": 1792216618225409109,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/fast_io_console_tf_contract.cc",
+        "sha256": "bf03e42c4106c2cfb5ae3faa312c721a33652143f778f48b01c38be2c0b3428a"
+      }
+    },
+    "saved_DATA_independent_peer": {
+      "bytes": 6538,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/review-evidence/DATA-independent-peer.original.json",
+      "sha256": "f9f5d2ca03416c6afd6c000a44f6cfcf3734eb31cdb6618193fa56613a52b6a3"
+    },
+    "saved_DATA_requalification": {
+      "bytes": 14504,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/review-evidence/requalification.original.json",
+      "sha256": "2e54a7e949b1cf91e463380e13a3034a15865c195bfb38440a80b22773f2d4e1"
+    },
+    "saved_applied_package": {
+      "bytes": 15836,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/review-evidence/applied-source-ready.original.json",
+      "sha256": "dfdde5ef0370c9c5842de09d39ca41f61b0e5656b35e9af1925d5ffcacf2ac59"
+    },
+    "saved_requalification_catalogs": [
+      {
+        "copy": {
+          "bytes": 8387342,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/review-evidence/qualification-round-1.jsonl",
+          "sha256": "1dc90f317b44b7f029ff482e60f04c9f851181ec3ba04ac47280f46c620cf82f"
+        },
+        "original": {
+          "bytes": 8387342,
+          "ctime_ns": 1792217110914046088,
+          "device": 16777231,
+          "inode": 87028769,
+          "mtime_ns": 1792217110914016383,
+          "path": "/private/tmp/uwvm-source64-applied-five-paths-requalified-data-root-20261017-r1/source-round-1.jsonl",
+          "sha256": "1dc90f317b44b7f029ff482e60f04c9f851181ec3ba04ac47280f46c620cf82f"
+        }
+      },
+      {
+        "copy": {
+          "bytes": 8387342,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source64-reviewed-mask-fastio-fixture-source-only/review-evidence/qualification-round-2.jsonl",
+          "sha256": "1dc90f317b44b7f029ff482e60f04c9f851181ec3ba04ac47280f46c620cf82f"
+        },
+        "original": {
+          "bytes": 8387342,
+          "ctime_ns": 1792217112471051377,
+          "device": 16777231,
+          "inode": 87028770,
+          "mtime_ns": 1792217112471024962,
+          "path": "/private/tmp/uwvm-source64-applied-five-paths-requalified-data-root-20261017-r1/source-round-2.jsonl",
+          "sha256": "1dc90f317b44b7f029ff482e60f04c9f851181ec3ba04ac47280f46c620cf82f"
+        }
+      }
+    ],
+    "source_cohorts": [
+      {
+        "actual_final_package": {
+          "bytes": 8833,
+          "ctime_ns": 1792216391962054427,
+          "device": 16777231,
+          "inode": 87028143,
+          "mtime_ns": 1792216391962054427,
+          "path": "/private/tmp/uwvm-arm-owned-command-mask-source64-source-only-20261017-r2/source-ready.json",
+          "sha256": "65fa4dd1f9034a686cb3d600c1038c8eb5096d6fbedbfa04da6441a85197bd76"
+        },
+        "actual_independent_peer": {
+          "bytes": 10156,
+          "ctime_ns": 1792216366397527646,
+          "device": 16777231,
+          "inode": 87028095,
+          "mtime_ns": 1792216366397527646,
+          "path": "/private/tmp/uwvm-source64-owned-command-mask-r2-independent-source-peer-recovery-20261017-r1.json",
+          "sha256": "f6da446a5c6aea728427759365ecb29b90c744fc96fb7ab8360bcd5f68f21d79"
+        },
+        "cohort": "mask",
+        "patch": {
+          "bytes": 29837,
+          "ctime_ns": 1792216287913287716,
+          "device": 16777231,
+          "inode": 87028005,
+          "mtime_ns": 1792216287913287716,
+          "path": "/private/tmp/uwvm-arm-owned-command-mask-source64-source-only-20261017-r2/change.patch",
+          "sha256": "f7fe0e7c79a8126490c29f3fb40a686e957a23b53a2df7aed366c9e3854e2e06"
+        }
+      },
+      {
+        "actual_final_package": {
+          "bytes": 3250,
+          "ctime_ns": 1792215963094213770,
+          "device": 16777231,
+          "inode": 87027716,
+          "mtime_ns": 1792215963094213770,
+          "path": "/private/tmp/uwvm-source64-fastio-fixture-explicit-view-source-only-root-20261017-r1/source-ready.json",
+          "sha256": "bd5c6d19ecc1ea35aa0d45531dbb29c87153c712916529a37291ad57123aa537"
+        },
+        "actual_independent_peer": {
+          "bytes": 4938,
+          "ctime_ns": 1792215932722927306,
+          "device": 16777231,
+          "inode": 87027685,
+          "mtime_ns": 1792215932722927306,
+          "path": "/private/tmp/uwvm-source64-fastio-explicit-view-fixture-independent-source-peer-recovery-20261017-r1.json",
+          "sha256": "7b9d50d72af643a4402939843693d8a22d8edad037099b373d39208993a76a6e"
+        },
+        "cohort": "fixture",
+        "patch": {
+          "bytes": 806,
+          "ctime_ns": 1792215879456160150,
+          "device": 16777231,
+          "inode": 87027657,
+          "mtime_ns": 1792215879456160150,
+          "path": "/private/tmp/uwvm-source64-fastio-fixture-explicit-view-source-only-root-20261017-r1/change.patch",
+          "sha256": "55ee235d5c655664afff269fd4e2d55459e78ae79f1571e0ae21e2c89b0fb18e"
+        }
+      }
+    ]
+  },
+  "reviewed_current_modes": {
+    "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_aarch64/README.owned-command-mask.md": 420,
+    "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_aarch64/binfmt_lease.py": 420,
+    "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_aarch64/rebuild_affected.py": 420,
+    "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_aarch64/test_owned_command_processes.py": 420,
+    "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/fast_io_console_tf_contract.cc": 420
+  },
+  "reviewed_current_source_files": [
+    {
+      "bytes": 6449,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_aarch64/README.owned-command-mask.md",
+      "sha256": "f14acb67a5c6ff0074ad0b004eccb04615d12efa48b3a4fb6a3b6d01b76f142a"
+    },
+    {
+      "bytes": 45094,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_aarch64/binfmt_lease.py",
+      "sha256": "9e4373fc2b402235419eedf3d37283182b70dc86b0f868526e9442ebd67ab8dd"
+    },
+    {
+      "bytes": 57407,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_aarch64/rebuild_affected.py",
+      "sha256": "2714a8879c127c02533a4a918014a0fc85afd44cefcc72874b39ab9c054497b5"
+    },
+    {
+      "bytes": 13952,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_aarch64/test_owned_command_processes.py",
+      "sha256": "0caa60380bcf2390da981378c472263d1493e447c12349b1c810e73b8621e2f0"
+    },
+    {
+      "bytes": 10721,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/fast_io_console_tf_contract.cc",
+      "sha256": "bf03e42c4106c2cfb5ae3faa312c721a33652143f778f48b01c38be2c0b3428a"
+    }
+  ],
+  "status": "APPLIED_REVIEWED_METADATA_ONLY_NOT_A_TEST_OR_BUILD"
+}

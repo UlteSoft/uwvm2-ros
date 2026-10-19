@@ -1,0 +1,193 @@
+{
+  "format": "uwvm-ros-vendor-complete-bounded-v1",
+  "types": [
+    {
+      "ros_version": 2,
+      "type": "builtin_interfaces/msg/Duration",
+      "file": "interfaces/upstream/rcl_humble/builtin_interfaces/msg/Duration.msg",
+      "registered": false
+    },
+    {
+      "ros_version": 2,
+      "type": "builtin_interfaces/msg/Time",
+      "file": "interfaces/upstream/rcl_humble/builtin_interfaces/msg/Time.msg",
+      "registered": false
+    },
+    {
+      "ros_version": 2,
+      "type": "control_msgs/action/FollowJointTrajectory",
+      "file": "interfaces/upstream/control_humble/control_msgs/action/FollowJointTrajectory.action",
+      "registered": true,
+      "bounds": {
+        "goal.path_tolerance": {
+          "sequence": 8
+        },
+        "goal.component_path_tolerance": {
+          "sequence": 8
+        },
+        "goal.goal_tolerance": {
+          "sequence": 8
+        },
+        "goal.component_goal_tolerance": {
+          "sequence": 8
+        },
+        "result.error_string": {
+          "string": 256
+        },
+        "feedback.joint_names": {
+          "string": 128,
+          "sequence": 8
+        },
+        "feedback.multi_dof_joint_names": {
+          "string": 128,
+          "sequence": 1
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "control_msgs/msg/JointComponentTolerance",
+      "file": "interfaces/upstream/control_humble/control_msgs/msg/JointComponentTolerance.msg",
+      "registered": false,
+      "bounds": {
+        "joint_name": {
+          "string": 128
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "control_msgs/msg/JointTolerance",
+      "file": "interfaces/upstream/control_humble/control_msgs/msg/JointTolerance.msg",
+      "registered": false,
+      "bounds": {
+        "name": {
+          "string": 128
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Quaternion",
+      "file": "interfaces/upstream/common_humble/geometry_msgs/msg/Quaternion.msg",
+      "registered": false
+    },
+    {
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Transform",
+      "file": "interfaces/upstream/common_humble/geometry_msgs/msg/Transform.msg",
+      "registered": false
+    },
+    {
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Twist",
+      "file": "interfaces/upstream/common_humble/geometry_msgs/msg/Twist.msg",
+      "registered": false
+    },
+    {
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Vector3",
+      "file": "interfaces/upstream/common_humble/geometry_msgs/msg/Vector3.msg",
+      "registered": false
+    },
+    {
+      "ros_version": 2,
+      "type": "sensor_msgs/msg/JointState",
+      "file": "interfaces/upstream/common_humble/sensor_msgs/msg/JointState.msg",
+      "registered": true,
+      "bounds": {
+        "name": {
+          "string": 128,
+          "sequence": 8
+        },
+        "position": {
+          "sequence": 8
+        },
+        "velocity": {
+          "sequence": 8
+        },
+        "effort": {
+          "sequence": 8
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "std_msgs/msg/Header",
+      "file": "interfaces/upstream/common_humble/std_msgs/msg/Header.msg",
+      "registered": false,
+      "bounds": {
+        "frame_id": {
+          "string": 128
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "trajectory_msgs/msg/JointTrajectory",
+      "file": "interfaces/upstream/common_humble/trajectory_msgs/msg/JointTrajectory.msg",
+      "registered": false,
+      "bounds": {
+        "joint_names": {
+          "string": 128,
+          "sequence": 8
+        },
+        "points": {
+          "sequence": 1
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "trajectory_msgs/msg/JointTrajectoryPoint",
+      "file": "interfaces/upstream/common_humble/trajectory_msgs/msg/JointTrajectoryPoint.msg",
+      "registered": false,
+      "bounds": {
+        "positions": {
+          "sequence": 8
+        },
+        "velocities": {
+          "sequence": 8
+        },
+        "accelerations": {
+          "sequence": 8
+        },
+        "effort": {
+          "sequence": 8
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "trajectory_msgs/msg/MultiDOFJointTrajectory",
+      "file": "interfaces/upstream/common_humble/trajectory_msgs/msg/MultiDOFJointTrajectory.msg",
+      "registered": false,
+      "bounds": {
+        "joint_names": {
+          "string": 128,
+          "sequence": 8
+        },
+        "points": {
+          "sequence": 1
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "trajectory_msgs/msg/MultiDOFJointTrajectoryPoint",
+      "file": "interfaces/upstream/common_humble/trajectory_msgs/msg/MultiDOFJointTrajectoryPoint.msg",
+      "registered": false,
+      "bounds": {
+        "transforms": {
+          "sequence": 1
+        },
+        "velocities": {
+          "sequence": 8
+        },
+        "accelerations": {
+          "sequence": 8
+        }
+      }
+    }
+  ]
+}

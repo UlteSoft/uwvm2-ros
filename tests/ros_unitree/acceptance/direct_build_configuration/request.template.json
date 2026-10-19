@@ -1,0 +1,42 @@
+{
+  "cgroup": null,
+  "format_version": 1,
+  "kind": "uwvm-unitree-direct-build-configuration-request-v1",
+  "limits": {
+    "command_seconds": 600,
+    "jobs": 1,
+    "log_bytes": 16777216,
+    "output_bytes": 4294967296,
+    "rss_bytes": 2147483648
+  },
+  "paths": {
+    "admission_out": null,
+    "build_out": null,
+    "controls": null
+  },
+  "restart_mappings": [],
+  "sdk_paths": {
+    "quickjs": null,
+    "resource_dir": null,
+    "sysroot": null,
+    "wasm_ld_alias": null
+  },
+  "shared_helper": null,
+  "source": {
+    "manifest": null,
+    "root": null
+  },
+  "tools": {
+    "builtins": null,
+    "cc": null,
+    "cxx": null,
+    "libc": null,
+    "libcxx": null,
+    "libcxxabi": null,
+    "libm": null,
+    "printscan": null,
+    "python": null,
+    "validator": null
+  },
+  "typed_build": null
+}

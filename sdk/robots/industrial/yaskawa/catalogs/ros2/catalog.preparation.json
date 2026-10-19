@@ -1,0 +1,590 @@
+{
+  "format": "uwvm-ros-vendor-complete-bounded-v1",
+  "types": [
+    {
+      "ros_version": 2,
+      "type": "builtin_interfaces/msg/Duration",
+      "file": "builtin_interfaces/msg/Duration.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "builtin_interfaces/msg/Time",
+      "file": "builtin_interfaces/msg/Time.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "control_msgs/action/FollowJointTrajectory",
+      "file": "control_msgs/action/FollowJointTrajectory.action",
+      "registered": true,
+      "bounds": {
+        "goal.path_tolerance": {
+          "sequence": 12
+        },
+        "goal.component_path_tolerance": {
+          "sequence": 12
+        },
+        "goal.goal_tolerance": {
+          "sequence": 12
+        },
+        "goal.component_goal_tolerance": {
+          "sequence": 12
+        },
+        "result.error_string": {
+          "string": 4096
+        },
+        "feedback.joint_names": {
+          "string": 64,
+          "sequence": 12
+        },
+        "feedback.multi_dof_joint_names": {
+          "string": 512,
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "control_msgs/msg/JointComponentTolerance",
+      "file": "control_msgs/msg/JointComponentTolerance.msg",
+      "registered": false,
+      "bounds": {
+        "joint_name": {
+          "string": 512
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "control_msgs/msg/JointTolerance",
+      "file": "control_msgs/msg/JointTolerance.msg",
+      "registered": false,
+      "bounds": {
+        "name": {
+          "string": 64
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Quaternion",
+      "file": "geometry_msgs/msg/Quaternion.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Transform",
+      "file": "geometry_msgs/msg/Transform.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/TransformStamped",
+      "file": "geometry_msgs/msg/TransformStamped.msg",
+      "registered": false,
+      "bounds": {
+        "child_frame_id": {
+          "string": 512
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Twist",
+      "file": "geometry_msgs/msg/Twist.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Vector3",
+      "file": "geometry_msgs/msg/Vector3.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "industrial_msgs/msg/DebugLevel",
+      "file": "industrial_msgs/msg/DebugLevel.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "industrial_msgs/msg/DeviceInfo",
+      "file": "industrial_msgs/msg/DeviceInfo.msg",
+      "registered": true,
+      "bounds": {
+        "model": {
+          "string": 512
+        },
+        "serial_number": {
+          "string": 512
+        },
+        "hw_version": {
+          "string": 512
+        },
+        "sw_version": {
+          "string": 512
+        },
+        "address": {
+          "string": 512
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "industrial_msgs/msg/RobotMode",
+      "file": "industrial_msgs/msg/RobotMode.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "industrial_msgs/msg/RobotStatus",
+      "file": "industrial_msgs/msg/RobotStatus.msg",
+      "registered": true,
+      "bounds": {
+        "error_codes": {
+          "sequence": 16
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "industrial_msgs/msg/ServiceReturnCode",
+      "file": "industrial_msgs/msg/ServiceReturnCode.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "industrial_msgs/msg/TriState",
+      "file": "industrial_msgs/msg/TriState.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "industrial_msgs/srv/CmdJointTrajectory",
+      "file": "industrial_msgs/srv/CmdJointTrajectory.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "industrial_msgs/srv/GetRobotInfo",
+      "file": "industrial_msgs/srv/GetRobotInfo.srv",
+      "registered": true,
+      "bounds": {
+        "response.robots": {
+          "sequence": 16
+        }
+      },
+      "wire_limits": {
+        "response": 32768
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "industrial_msgs/srv/SetDrivePower",
+      "file": "industrial_msgs/srv/SetDrivePower.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "industrial_msgs/srv/SetRemoteLoggerLevel",
+      "file": "industrial_msgs/srv/SetRemoteLoggerLevel.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "industrial_msgs/srv/StartMotion",
+      "file": "industrial_msgs/srv/StartMotion.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "industrial_msgs/srv/StopMotion",
+      "file": "industrial_msgs/srv/StopMotion.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "motoros2_interfaces/msg/AlarmCauseRemedy",
+      "file": "motoros2_interfaces/msg/AlarmCauseRemedy.msg",
+      "registered": true,
+      "bounds": {
+        "cause": {
+          "string": 512
+        },
+        "remedy": {
+          "string": 512
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "motoros2_interfaces/msg/AlarmInfo",
+      "file": "motoros2_interfaces/msg/AlarmInfo.msg",
+      "registered": true,
+      "bounds": {
+        "message": {
+          "string": 512
+        },
+        "contents": {
+          "string": 4096
+        },
+        "description": {
+          "string": 4096
+        },
+        "help": {
+          "sequence": 16
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "motoros2_interfaces/msg/ErrorInfo",
+      "file": "motoros2_interfaces/msg/ErrorInfo.msg",
+      "registered": true,
+      "bounds": {
+        "message": {
+          "string": 512
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "motoros2_interfaces/msg/InformJobCrudResultCodes",
+      "file": "motoros2_interfaces/msg/InformJobCrudResultCodes.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "motoros2_interfaces/msg/InitTrajEnum",
+      "file": "motoros2_interfaces/msg/InitTrajEnum.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "motoros2_interfaces/msg/IoResultCodes",
+      "file": "motoros2_interfaces/msg/IoResultCodes.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "motoros2_interfaces/msg/MotionReadyEnum",
+      "file": "motoros2_interfaces/msg/MotionReadyEnum.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "motoros2_interfaces/msg/QueueResultEnum",
+      "file": "motoros2_interfaces/msg/QueueResultEnum.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "motoros2_interfaces/msg/SelectionResultCodes",
+      "file": "motoros2_interfaces/msg/SelectionResultCodes.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "motoros2_interfaces/srv/GetActiveAlarmInfo",
+      "file": "motoros2_interfaces/srv/GetActiveAlarmInfo.srv",
+      "registered": true,
+      "bounds": {
+        "response.result_message": {
+          "string": 512
+        },
+        "response.alarms": {
+          "sequence": 16
+        },
+        "response.errors": {
+          "sequence": 16
+        }
+      },
+      "wire_limits": {
+        "response": 32768
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "motoros2_interfaces/srv/ListInformJobs",
+      "file": "motoros2_interfaces/srv/ListInformJobs.srv",
+      "registered": true,
+      "bounds": {
+        "response.message": {
+          "string": 512
+        },
+        "response.names": {
+          "string": 512,
+          "sequence": 16
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "motoros2_interfaces/srv/QueueTrajPoint",
+      "file": "motoros2_interfaces/srv/QueueTrajPoint.srv",
+      "registered": true,
+      "bounds": {
+        "request.joint_names": {
+          "string": 64,
+          "sequence": 12
+        },
+        "response.message": {
+          "string": 512
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "motoros2_interfaces/srv/ReadGroupIO",
+      "file": "motoros2_interfaces/srv/ReadGroupIO.srv",
+      "registered": true,
+      "bounds": {
+        "response.message": {
+          "string": 512
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "motoros2_interfaces/srv/ReadMRegister",
+      "file": "motoros2_interfaces/srv/ReadMRegister.srv",
+      "registered": true,
+      "bounds": {
+        "response.message": {
+          "string": 512
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "motoros2_interfaces/srv/ReadSingleIO",
+      "file": "motoros2_interfaces/srv/ReadSingleIO.srv",
+      "registered": true,
+      "bounds": {
+        "response.message": {
+          "string": 512
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "motoros2_interfaces/srv/ResetError",
+      "file": "motoros2_interfaces/srv/ResetError.srv",
+      "registered": true,
+      "bounds": {
+        "response.message": {
+          "string": 512
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "motoros2_interfaces/srv/SelectMotionTool",
+      "file": "motoros2_interfaces/srv/SelectMotionTool.srv",
+      "registered": true,
+      "bounds": {
+        "response.message": {
+          "string": 512
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "motoros2_interfaces/srv/StartPointQueueMode",
+      "file": "motoros2_interfaces/srv/StartPointQueueMode.srv",
+      "registered": true,
+      "bounds": {
+        "response.message": {
+          "string": 512
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "motoros2_interfaces/srv/StartTrajMode",
+      "file": "motoros2_interfaces/srv/StartTrajMode.srv",
+      "registered": true,
+      "bounds": {
+        "response.message": {
+          "string": 512
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "motoros2_interfaces/srv/WriteGroupIO",
+      "file": "motoros2_interfaces/srv/WriteGroupIO.srv",
+      "registered": true,
+      "bounds": {
+        "response.message": {
+          "string": 512
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "motoros2_interfaces/srv/WriteMRegister",
+      "file": "motoros2_interfaces/srv/WriteMRegister.srv",
+      "registered": true,
+      "bounds": {
+        "response.message": {
+          "string": 512
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "motoros2_interfaces/srv/WriteSingleIO",
+      "file": "motoros2_interfaces/srv/WriteSingleIO.srv",
+      "registered": true,
+      "bounds": {
+        "response.message": {
+          "string": 512
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "sensor_msgs/msg/JointState",
+      "file": "sensor_msgs/msg/JointState.msg",
+      "registered": true,
+      "bounds": {
+        "name": {
+          "string": 64,
+          "sequence": 12
+        },
+        "position": {
+          "sequence": 12
+        },
+        "velocity": {
+          "sequence": 12
+        },
+        "effort": {
+          "sequence": 12
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "std_msgs/msg/Header",
+      "file": "std_msgs/msg/Header.msg",
+      "registered": false,
+      "bounds": {
+        "frame_id": {
+          "string": 64
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "std_srvs/srv/Trigger",
+      "file": "std_srvs/srv/Trigger.srv",
+      "registered": false,
+      "bounds": {
+        "response.message": {
+          "string": 512
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "tf2_msgs/msg/TFMessage",
+      "file": "tf2_msgs/msg/TFMessage.msg",
+      "registered": true,
+      "bounds": {
+        "transforms": {
+          "sequence": 16
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "trajectory_msgs/msg/JointTrajectory",
+      "file": "trajectory_msgs/msg/JointTrajectory.msg",
+      "registered": false,
+      "bounds": {
+        "joint_names": {
+          "string": 64,
+          "sequence": 12
+        },
+        "points": {
+          "sequence": 8
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "trajectory_msgs/msg/JointTrajectoryPoint",
+      "file": "trajectory_msgs/msg/JointTrajectoryPoint.msg",
+      "registered": false,
+      "bounds": {
+        "positions": {
+          "sequence": 12
+        },
+        "velocities": {
+          "sequence": 12
+        },
+        "accelerations": {
+          "sequence": 12
+        },
+        "effort": {
+          "sequence": 12
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "trajectory_msgs/msg/MultiDOFJointTrajectory",
+      "file": "trajectory_msgs/msg/MultiDOFJointTrajectory.msg",
+      "registered": false,
+      "bounds": {
+        "joint_names": {
+          "string": 64,
+          "sequence": 2
+        },
+        "points": {
+          "sequence": 4
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "trajectory_msgs/msg/MultiDOFJointTrajectoryPoint",
+      "file": "trajectory_msgs/msg/MultiDOFJointTrajectoryPoint.msg",
+      "registered": false,
+      "bounds": {
+        "transforms": {
+          "sequence": 2
+        },
+        "velocities": {
+          "sequence": 2
+        },
+        "accelerations": {
+          "sequence": 2
+        }
+      }
+    }
+  ]
+}

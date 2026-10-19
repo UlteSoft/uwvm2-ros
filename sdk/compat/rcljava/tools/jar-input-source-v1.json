@@ -1,0 +1,590 @@
+{
+  "format_version": 1,
+  "kind": "rcljava-existing-jar-source-inputs-v1",
+  "source_only": true,
+  "default_authority": [],
+  "guest_management_imports": [],
+  "producer": {
+    "recommended_source_role": "test/0050.high_level_languages/java/jar-input/produce_jar.py",
+    "bytes": 32161,
+    "sha256": "fc4dbf08ecc936d0964097974028113ca669b1fde2c844cd9e3fa43ccd225f1e",
+    "explicit_external_absolute_path_required": true,
+    "optional_arguments": [
+      "--ros-client-abi",
+      "--ros-client-abi-sha256"
+    ],
+    "no_optional_namespace_without_pair": true,
+    "mode": 420,
+    "arguments_always_forwarded": [
+      "--ros-rmw-service-enabled",
+      "0"
+    ],
+    "optional_arguments_scope": "Compatibility-route optional-client3 flags; full producer owned12 options need the separate independently admitted route."
+  },
+  "sdk_sources": [
+    {
+      "relative": "sdk/java/src/main/java/org/uwvm/roswasm/Capability.java",
+      "bytes": 2808,
+      "sha256": "a17b4a38df33422fb96ccd276d16593fa27cf21d477624b7be3d5c806bc701fa",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/java/src/main/java/org/uwvm/roswasm/Codec.java",
+      "bytes": 201,
+      "sha256": "45ca2eff8bd31bf3f3a3d5494af558b52ed73163e965523284af3d31f0121ba2",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/java/src/main/java/org/uwvm/roswasm/Codecs.java",
+      "bytes": 11220,
+      "sha256": "01f1a7712c0d994b825d07f46c591710d8376bc0bd4dae928f9dfaf350558f4e",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/java/src/main/java/org/uwvm/roswasm/LinearMemory.java",
+      "bytes": 2996,
+      "sha256": "c223cb2d68475589efd4ba6d358aee0a712b2418ddc8051063f4c59f8a945e00",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/java/src/main/java/org/uwvm/roswasm/Node.java",
+      "bytes": 9750,
+      "sha256": "acab9bc5f904851ba5520c51af54e66f8732b8430b4fec3f26715e88cf7b4c21",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/java/src/main/java/org/uwvm/roswasm/OpenCleanup.java",
+      "bytes": 1681,
+      "sha256": "8d5dfc0eb82a5a61159d49821ad38a05230d22c179d8a042cbc1eb3f5f9ec8cf",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/java/src/main/java/org/uwvm/roswasm/OwnedApplicationFailure.java",
+      "bytes": 7960,
+      "sha256": "6518286caa7ea7e13344e024c6d83ac2da01d2e61c22fefbc7e0347cf96c3253",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/java/src/main/java/org/uwvm/roswasm/OwnedService.java",
+      "bytes": 28991,
+      "sha256": "9ce9240b37399ea4e6a8831f7b8f4af344ebbde3606f6f48f991697946a5df4d",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/java/src/main/java/org/uwvm/roswasm/OwnedServiceWire.java",
+      "bytes": 4758,
+      "sha256": "561286e9dc0f8ca6d568503000735f2573894a10e9dd49cbc6c80bd563043424",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/java/src/main/java/org/uwvm/roswasm/Result.java",
+      "bytes": 1091,
+      "sha256": "14404cfb015081ffdc9107740b8a4ee149b9b97d45daec80e0a0c45cb2430d2e",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/java/src/main/java/org/uwvm/roswasm/RetirementAttempt.java",
+      "bytes": 2040,
+      "sha256": "69434665a3ab057039dcdab47a2467929846dc3d90423f389e24e06112e3adff",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/java/src/main/java/org/uwvm/roswasm/RetirementTransport.java",
+      "bytes": 460,
+      "sha256": "5ff22a659a62c54b36964b34472dafa1b8e3225667aa0497c7c9d8cf7d339694",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/java/src/main/java/org/uwvm/roswasm/Ros1Raw.java",
+      "bytes": 14128,
+      "sha256": "052a945440a7ddf4752046037b517d5fe69292f00049bdab3085fd6923024c06",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/java/src/main/java/org/uwvm/roswasm/Ros1Transport.java",
+      "bytes": 10817,
+      "sha256": "8d0165580e8936877456f712c1e74203ee67f35cb44511d926d40486e4a32def",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/java/src/main/java/org/uwvm/roswasm/Ros2OwnedServiceRaw.java",
+      "bytes": 2186,
+      "sha256": "4c8fe2afbb6d6a0b438ae9bf10b210e6bcce636fb18d37e326d9de18753124b3",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/java/src/main/java/org/uwvm/roswasm/Ros2OwnedServiceTransport.java",
+      "bytes": 3483,
+      "sha256": "be9091a6bf1d8a3d197a1c591111f520a293e7032b1a08f64240596af18e13ca",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/java/src/main/java/org/uwvm/roswasm/Ros2Raw.java",
+      "bytes": 15745,
+      "sha256": "d0337b296dd6c04a53fa19bca17929f2bd28deb3fb45034caca95fd49aa62b39",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/java/src/main/java/org/uwvm/roswasm/Ros2ServiceClientRaw.java",
+      "bytes": 1097,
+      "sha256": "b5bfb5ffc2ba53834203ae0b20a29414e9cad64ab5134222a5531468f0a6af0e",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/java/src/main/java/org/uwvm/roswasm/Ros2ServiceClientTransport.java",
+      "bytes": 2184,
+      "sha256": "72180a348476953dab58cbe731069be75cc71378f0311e084d111c3de3131a9d",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/java/src/main/java/org/uwvm/roswasm/Ros2Transport.java",
+      "bytes": 11967,
+      "sha256": "a2dad1256ca77271969101e383b873f12ad4b10fca59202517f2f4a8a9e812c9",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/java/src/main/java/org/uwvm/roswasm/RosException.java",
+      "bytes": 361,
+      "sha256": "ee92a37f85c79c8843042519636c67481273fc66c191b7146a71ac5a30612acc",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/java/src/main/java/org/uwvm/roswasm/ServiceClient.java",
+      "bytes": 2851,
+      "sha256": "751202047b90159de92f61fa61ef0832a52555490aeb16560444c561809b56ef",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/java/src/main/java/org/uwvm/roswasm/ServiceClientTransport.java",
+      "bytes": 701,
+      "sha256": "e8bafdb89f9f66fb94f19f7bdce8ec610d9524e04a428aa473889896cc085f78",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/java/src/main/java/org/uwvm/roswasm/Session.java",
+      "bytes": 8771,
+      "sha256": "6b783bbf1e5a5ca7712023269fa12887212df608de7ee6ba89187fdce6a62e12",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/java/src/main/java/org/uwvm/roswasm/Transport.java",
+      "bytes": 720,
+      "sha256": "14cb254aa3b63a47a1e436ebc487a13ada925f3ebdb91600891f829cfcf00ac2",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java/example_interfaces/srv/AddTwoInts.java",
+      "bytes": 704,
+      "sha256": "64df8c1e2642a26dc48bb91b361c5ce61405adb86efa7325056b60afd2c3ecf2",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java/example_interfaces/srv/AddTwoInts_Request.java",
+      "bytes": 1541,
+      "sha256": "bb9f1ba97213da07893318a42fab00db4432cfedb7c97d6cbe3add59ceb8e483",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java/example_interfaces/srv/AddTwoInts_Response.java",
+      "bytes": 1436,
+      "sha256": "047b0c96be0cfa347184d7c7229249094d7afa147fa36bb3e6a962f9fb0833fa",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java/org/ros2/rcljava/RCLJava.java",
+      "bytes": 4122,
+      "sha256": "6a8f5e5c811f5c7873529b82039dba5f25c588e96a5909300acbc0797b68926c",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java/org/ros2/rcljava/client/Client.java",
+      "bytes": 2501,
+      "sha256": "e10cace78c94dfb5a92bbdfbae668464303bdcbd05200010a3be302339f8ecdf",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java/org/ros2/rcljava/concurrent/Callback.java",
+      "bytes": 704,
+      "sha256": "6b9cad1fcdd8a0dc8bb80f6e1770adc47e6b74aefcf69e8a2ed1661db4bbef75",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java/org/ros2/rcljava/consumers/Consumer.java",
+      "bytes": 1020,
+      "sha256": "074fc4cbe1a8467587f3d4b6b698c4c262d89b9e94703e528b3863b733a0608a",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java/org/ros2/rcljava/consumers/TriConsumer.java",
+      "bytes": 1200,
+      "sha256": "6e72204cb1c43ad96f6794c1d7c3e346c7e9e2e0e4dbf5cfd895b7a7ab8da0ff",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java/org/ros2/rcljava/contexts/Context.java",
+      "bytes": 1598,
+      "sha256": "e19220b5be2b5ac150680b6059b57188a6a622172a4e1f8d8732f52a62b0d10b",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java/org/ros2/rcljava/executors/Executor.java",
+      "bytes": 1033,
+      "sha256": "3d30d597e3f8a62cf25dc1ecd6d9237fde360563e3537edf9904ae5a4546cd13",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java/org/ros2/rcljava/executors/MultiThreadedExecutor.java",
+      "bytes": 1066,
+      "sha256": "882afec4facfd9f19af13451db9f60a7e852fae3c9f3777bd797b624e2caa8e4",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java/org/ros2/rcljava/executors/SingleThreadedExecutor.java",
+      "bytes": 3635,
+      "sha256": "adae4e65d4b55a10cbde5644d4cf81e8a0273f822a8cdec2feb0a07e8e613d7b",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java/org/ros2/rcljava/interfaces/Disposable.java",
+      "bytes": 888,
+      "sha256": "3ba7f5109c9e3d22bcaaced71496047088fcc5f5bfe2dee3dd53da9bb5224419",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java/org/ros2/rcljava/interfaces/MessageDefinition.java",
+      "bytes": 872,
+      "sha256": "b3d93729afb6d247744dc4a0fa29a02ee91743cac3f94f6e2dc4c1ef75ae23fa",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java/org/ros2/rcljava/interfaces/ServiceDefinition.java",
+      "bytes": 699,
+      "sha256": "6aa79e0914714d9057bb689fd2160e6f685921a4a0db4c3af99b5cb159e3ea95",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java/org/ros2/rcljava/migration/Deployment.java",
+      "bytes": 13079,
+      "sha256": "79f81b801182f1155f6bb3d185daae491e4f0fa50bc3e946ce5ea39ffffb3a9a",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java/org/ros2/rcljava/migration/MigrationContext.java",
+      "bytes": 48114,
+      "sha256": "8ce6835741d774548d61bee2569587bc5949f7a7fe14ca011510b2cbb73b78ab",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java/org/ros2/rcljava/migration/ServiceTypes.java",
+      "bytes": 4731,
+      "sha256": "270aff36561b3bd85830f40dbaae0b8bb7636e6f7eabbcbcbad205518a623cdd",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java/org/ros2/rcljava/node/BaseComposableNode.java",
+      "bytes": 970,
+      "sha256": "b11f2b8fdd1ec2a5599d4219057e93ca02e20486e6ce54fbfdbbd75a5e3dac6a",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java/org/ros2/rcljava/node/ComposableNode.java",
+      "bytes": 709,
+      "sha256": "459b5155a83f1a7743032af93d40d5b16665a8d7c02dc66152dbf263d87e311f",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java/org/ros2/rcljava/node/Node.java",
+      "bytes": 2870,
+      "sha256": "246bd2abca9ffde04bc11f635b7a611bc3c4ca0130fe9b4ca2a319e79cae6dfd",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java/org/ros2/rcljava/node/NodeOptions.java",
+      "bytes": 1875,
+      "sha256": "5d84d116f10887084cd010e390a0ff02a4e4d88d1142ee1261fcca377dd53c2f",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java/org/ros2/rcljava/publisher/Publisher.java",
+      "bytes": 525,
+      "sha256": "fa2f093d449ccbd94fc5a2a6b41a390c0611c79186e625a67a266b963ea1c692",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java/org/ros2/rcljava/qos/QoSProfile.java",
+      "bytes": 1644,
+      "sha256": "c86f4735afed50a31154371c13a6246bfe3caf6119734c39c7a5f57d597ad5c4",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java/org/ros2/rcljava/service/RMWRequestId.java",
+      "bytes": 761,
+      "sha256": "dc7b25727d25bbd964b4bd3c5391199181bb0814e02bac704787517dc210ff2b",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java/org/ros2/rcljava/service/Service.java",
+      "bytes": 1193,
+      "sha256": "e656b854177afcfad5a122fdd3d8c3bda041f92c7bbafc726b4491d011d7532d",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java/org/ros2/rcljava/subscription/Subscription.java",
+      "bytes": 482,
+      "sha256": "069c039330045c7d1124aa3737e20b94c545fb04af824d652a22f73da42a7d99",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java/org/ros2/rcljava/timer/Timer.java",
+      "bytes": 819,
+      "sha256": "0cad2b0a3ada0189e1b43166e8a04ebde5347fd37efdede85ee93b03669cbc8c",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java/org/ros2/rcljava/timer/WallTimer.java",
+      "bytes": 931,
+      "sha256": "569c80abf6bf2df2eea7a27321e0366e13176e2d45b6ffb96ef55e231bbcb5d0",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java/std_msgs/msg/String.java",
+      "bytes": 1112,
+      "sha256": "025e138cddfb0654a0acaa68f744f03cc211f20e01b9c456dbfcce3fb4a6e377",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java/std_srvs/srv/SetBool.java",
+      "bytes": 679,
+      "sha256": "a6d6b75ed40485e19b7df3458602c9398eaf29298ac26ddf621fa091dcbfaa98",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java/std_srvs/srv/SetBool_Request.java",
+      "bytes": 1422,
+      "sha256": "720ace5ed92a21635bce1483e0cfdcfda34004cf069ecebd100960842f8bc2e4",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java/std_srvs/srv/SetBool_Response.java",
+      "bytes": 1623,
+      "sha256": "f460b993b99799af15a255a2eb8dd7712e8efbc12ae4489b854bb575b3a021ea",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java/std_srvs/srv/Trigger.java",
+      "bytes": 679,
+      "sha256": "b9870b9c952b22f047a8328fcf713a75d94263a145d40f065512a8f9d31049ee",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java/std_srvs/srv/Trigger_Request.java",
+      "bytes": 1279,
+      "sha256": "f8260a4aaf5202d8b18e5c496bef36a40d06991f921f7e7852a45230a42e7dba",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java/std_srvs/srv/Trigger_Response.java",
+      "bytes": 1623,
+      "sha256": "b2200b13e732ada7871ebf05ccea48a777f74abbbf27b1fdaebc090728790dda",
+      "mode": 420
+    }
+  ],
+  "sdk_top_level_classes": [
+    "org/uwvm/roswasm/Capability.class",
+    "org/uwvm/roswasm/Codec.class",
+    "org/uwvm/roswasm/Codecs.class",
+    "org/uwvm/roswasm/LinearMemory.class",
+    "org/uwvm/roswasm/Node.class",
+    "org/uwvm/roswasm/OpenCleanup.class",
+    "org/uwvm/roswasm/OwnedApplicationFailure.class",
+    "org/uwvm/roswasm/OwnedService.class",
+    "org/uwvm/roswasm/OwnedServiceWire.class",
+    "org/uwvm/roswasm/Result.class",
+    "org/uwvm/roswasm/RetirementAttempt.class",
+    "org/uwvm/roswasm/RetirementTransport.class",
+    "org/uwvm/roswasm/Ros1Raw.class",
+    "org/uwvm/roswasm/Ros1Transport.class",
+    "org/uwvm/roswasm/Ros2OwnedServiceRaw.class",
+    "org/uwvm/roswasm/Ros2OwnedServiceTransport.class",
+    "org/uwvm/roswasm/Ros2Raw.class",
+    "org/uwvm/roswasm/Ros2ServiceClientRaw.class",
+    "org/uwvm/roswasm/Ros2ServiceClientTransport.class",
+    "org/uwvm/roswasm/Ros2Transport.class",
+    "org/uwvm/roswasm/RosException.class",
+    "org/uwvm/roswasm/ServiceClient.class",
+    "org/uwvm/roswasm/ServiceClientTransport.class",
+    "org/uwvm/roswasm/Session.class",
+    "org/uwvm/roswasm/Transport.class",
+    "example_interfaces/srv/AddTwoInts.class",
+    "example_interfaces/srv/AddTwoInts_Request.class",
+    "example_interfaces/srv/AddTwoInts_Response.class",
+    "org/ros2/rcljava/RCLJava.class",
+    "org/ros2/rcljava/client/Client.class",
+    "org/ros2/rcljava/concurrent/Callback.class",
+    "org/ros2/rcljava/consumers/Consumer.class",
+    "org/ros2/rcljava/consumers/TriConsumer.class",
+    "org/ros2/rcljava/contexts/Context.class",
+    "org/ros2/rcljava/executors/Executor.class",
+    "org/ros2/rcljava/executors/MultiThreadedExecutor.class",
+    "org/ros2/rcljava/executors/SingleThreadedExecutor.class",
+    "org/ros2/rcljava/interfaces/Disposable.class",
+    "org/ros2/rcljava/interfaces/MessageDefinition.class",
+    "org/ros2/rcljava/interfaces/ServiceDefinition.class",
+    "org/ros2/rcljava/migration/Deployment.class",
+    "org/ros2/rcljava/migration/MigrationContext.class",
+    "org/ros2/rcljava/migration/ServiceTypes.class",
+    "org/ros2/rcljava/node/BaseComposableNode.class",
+    "org/ros2/rcljava/node/ComposableNode.class",
+    "org/ros2/rcljava/node/Node.class",
+    "org/ros2/rcljava/node/NodeOptions.class",
+    "org/ros2/rcljava/publisher/Publisher.class",
+    "org/ros2/rcljava/qos/QoSProfile.class",
+    "org/ros2/rcljava/service/RMWRequestId.class",
+    "org/ros2/rcljava/service/Service.class",
+    "org/ros2/rcljava/subscription/Subscription.class",
+    "org/ros2/rcljava/timer/Timer.class",
+    "org/ros2/rcljava/timer/WallTimer.class",
+    "std_msgs/msg/String.class",
+    "std_srvs/srv/SetBool.class",
+    "std_srvs/srv/SetBool_Request.class",
+    "std_srvs/srv/SetBool_Response.class",
+    "std_srvs/srv/Trigger.class",
+    "std_srvs/srv/Trigger_Request.class",
+    "std_srvs/srv/Trigger_Response.class"
+  ],
+  "support_sources": [
+    {
+      "relative": "sdk/abi/abi-v1.json",
+      "bytes": 74230,
+      "sha256": "0a13f6c49100173c156eb76acfd35ebe103a40b2a90c752d3d1302c31f875ec0",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/tools/check_wasm_imports.py",
+      "bytes": 10655,
+      "sha256": "327fccbd6bdcfae0ae8da593014f4fb4451747b1ee1c9991996242b798c9bfa4",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/tools/plan_jar.py",
+      "bytes": 34471,
+      "sha256": "11220c1fac3a9a556518f73a450071d0cce680b95adc1f97c6ea5d8843bbf471",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/tools/check_jar_wasm.py",
+      "bytes": 26782,
+      "sha256": "b0419c04024c33ba5457e49ef0b6342b2652c5404d16074e39e8f158bf153fd0",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/abi/service-client-v1.json",
+      "bytes": 6031,
+      "sha256": "84c1f6ae15bda8a0f5fcc19148535b8fb6b131823165c52437e3bdc313bbd784",
+      "mode": 420
+    }
+  ],
+  "helper_sources": [
+    {
+      "relative": "python/linux_control.py",
+      "bytes": 9822,
+      "sha256": "22f0afab44698eb2d76d5634c4f7d6f2494eebc3be97cd391e778b959bb2571d",
+      "mode": 420
+    },
+    {
+      "relative": "owned_process.py",
+      "bytes": 13155,
+      "sha256": "09940a0f6395fdbb13563d533384af1edc85d87e5d8bd1ea0145b1157432e42d",
+      "mode": 420
+    }
+  ],
+  "bootstraps": {
+    "official-service": {
+      "relative": "sdk/compat/rcljava/services/examples/OfficialServiceBootstrap.java",
+      "main_class": "org.uwvm.rcljava.services.examples.OfficialServiceBootstrap",
+      "bytes": 1199,
+      "sha256": "465af6364e26951e50cac73efb0388257e02278186e745c925a73e43e17c0633",
+      "mode": 420
+    },
+    "default-denied": {
+      "relative": "sdk/compat/rcljava/examples/DefaultDeniedBootstrap.java",
+      "main_class": "org.uwvm.rcljava.DefaultDeniedBootstrap",
+      "bytes": 1876,
+      "sha256": "72d8dfa17c5a2bbd2ebd6bd2d30cf6f2ec4d616824cfc4dc373745167e8b0bd9",
+      "mode": 420
+    },
+    "official-client-availability": {
+      "relative": "sdk/compat/rcljava/availability/examples/OriginalClientAvailabilityBootstrap.java",
+      "bytes": 1645,
+      "sha256": "6e95f37391bbe9e557f346bdcb6b420cbf68620078489fea1ee393707ff11e0d",
+      "mode": 420,
+      "main_class": "org.uwvm.rcljava.availability.examples.OriginalClientAvailabilityBootstrap",
+      "requires_optional_client_pair": true,
+      "original_application_class": "org/ros2/rcljava/examples/client/AddTwoIntsClient.class"
+    }
+  },
+  "actual_execution_credit": 0,
+  "notes": [
+    "Revision4 current61 library Source inputs are25 core SDK plus36 facade; one selected fixed bootstrap is separately compiled (62 across those stages), not64 or reconstructed original JAR sources.",
+    "All five new owned-service library classes are explicitly included/protected. This compatibility route passes --ros-rmw-service-enabled 0 and rejects uwvm_ros2_rmw_srv_v1.",
+    "The actual32161-byte fc4dbf08 producer supports a separate explicit owned12 route, not enabled by the client3 pair. Use its independent Java owned-service policy/catalog/inspector/checker recipe.",
+    "Legacy81 and the fixed reader remain exact. Optional-client3 defaults off and needs actual current3cea catalog path/SHA; it grants no Host authority.",
+    "Source pins are observations, not interpreter/helper execution or compiler/JAR ancestry. Keeper must admit startup/stdlib, ordinary-import/PYC boundaries, physical processes and bounded output.",
+    "Old52 and revision3/56 Source contracts, JAR6/FIFO findings and prior receipts remain immutable; no compilation, DBG or Native credit is backfilled.",
+    "WSEA per-module opt-in is separate: freeze all final Wasm/debug/custom bytes, detached sign/verify, then explicitly admit each module under protected policy. Signature/import ceilings grant no Runtime ROS permission; no crypto/cache/runtime result is claimed."
+  ],
+  "source_contract_revision": 4,
+  "sdk_source_count": 61,
+  "optional_service_client": {
+    "default_enabled": false,
+    "catalog_role": "sdk/abi/service-client-v1.json",
+    "argument_pair": [
+      "--ros-client-abi",
+      "--ros-client-abi-sha256"
+    ],
+    "catalog_sha256": "84c1f6ae15bda8a0f5fcc19148535b8fb6b131823165c52437e3bdc313bbd784",
+    "functions": 3,
+    "selected_module_template": "uwvm_ros{backend}_client_v1",
+    "old_business_inventory": [
+      38,
+      43
+    ],
+    "default_authority": [],
+    "capability_or_same_native_client_qualification": false
+  },
+  "historical_source_contract": {
+    "source_set": 52,
+    "producer_bytes": 23130,
+    "producer_sha256": "7a2a67e8c1f947d1374bc1f4205e0c3e4804b78bea5aee16f24f208f0cb25dcb",
+    "retagged": false,
+    "original_JAR6_r1_r2_and_FIFO_finding": "Retained unchanged in private successor provenance; these are not current compilation credit."
+  },
+  "sdk_source_roots": [
+    {
+      "relative": "sdk/java/src/main/java",
+      "count": 25
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java",
+      "count": 36
+    }
+  ],
+  "sdk_role_set_sha256": "96f4df5ea668a05dad16104789d170ebf7dea0be9acaf734cbd0b0097cb5c1e9",
+  "owned_rmw_service": {
+    "enabled": false,
+    "supported_by_this_route": false,
+    "producer_arguments": [
+      "--ros-rmw-service-enabled",
+      "0"
+    ],
+    "forbidden_namespace": "uwvm_ros2_rmw_srv_v1",
+    "separate_route": "sdk/java/owned-service/README.md"
+  },
+  "previous_active_source_contract": {
+    "revision": 3,
+    "sdk_source_count": 56,
+    "bytes": 19997,
+    "sha256": "0659cabb9634de6a4b9116f1431373e439223567619a69c67588fbcd68715ecd",
+    "retagged": false
+  }
+}

@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../../Aot.props" />
+  <PropertyGroup><OutputType>Exe</OutputType><AssemblyName>uwvm-aot-csharp-nonros</AssemblyName></PropertyGroup>
+  <ItemGroup><Compile Include="NonRos.cs;../../AotWitness.cs" /></ItemGroup>
+  <Import Project="../../Aot.targets" />
+</Project>

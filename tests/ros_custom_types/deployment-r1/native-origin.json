@@ -1,0 +1,46 @@
+{
+  "scope": "Official package generation + compiled ARM trait/type-support identity probes. No custom ROS or Guest behavior claim.",
+  "official_report": "documents/ros/continuation-20261014-r4-evidence/official-packages-report.json",
+  "official_report_sha256": "99a7fc921943cbfa4517a5da9a107482677e5d9364edcab283afeb1822fc7d29",
+  "source_manifest_sha256": "ac0df4ef091d26d6b78107d7c4c2950d2cfa31d3dfd153f09840edfb8c40ed82",
+  "packages": [
+    {
+      "type": "uwvm_custom_ros1_fixture/Packet",
+      "native_identity": "f9f763c3e1630ff9c5652c744e59a68a",
+      "identity_status": "OFFICIAL_NATIVE_GENERATION_AND_COMPILED_ARM_PROBE_MATCH",
+      "official_identity_artifact": {
+        "path": "/home/macromodel/.local/share/uwvm-ros-extension/20261014-custom-packages-r1/official-packages-r1/ros1-install/include/uwvm_custom_ros1_fixture/Packet.h",
+        "sha256": "ad87e90b47c32f64368c87944b9b8bdfe6b063c79f88e3b233c7a24abf8e53cf"
+      },
+      "identity_probe": {
+        "path": "/home/macromodel/.local/share/uwvm-ros-extension/20261014-custom-packages-r1/official-packages-r1/ros1-rootfs/tmp/identity-build/identity_probe",
+        "sha256": "cb9915997afb58f014601ce53160a8d068a1b987b3569a2e4ea840e8410297bf",
+        "bytes": 14056,
+        "device": 66308,
+        "inode": 18485545,
+        "elf_class": 2,
+        "elf_data": 1,
+        "e_machine": 183
+      }
+    },
+    {
+      "type": "uwvm_ros_custom_test_msgs/msg/FixedSample",
+      "native_identity": "RIHS01_5026d3427fd5649d1cb11a7cf9e79429d2775096e9bec98669dde689b4d20fc2",
+      "identity_status": "OFFICIAL_NATIVE_GENERATION_AND_COMPILED_ARM_PROBE_MATCH",
+      "official_identity_artifact": {
+        "path": "/home/macromodel/.local/share/uwvm-ros-extension/20261014-custom-packages-r1/official-packages-r1/ros2-install/share/uwvm_ros_custom_test_msgs/msg/FixedSample.json",
+        "sha256": "0bf1ea9534138b9d03785b8daaf883e71a45e5af679d2f963628d98d60d0383b"
+      },
+      "identity_probe": {
+        "path": "/home/macromodel/.local/share/uwvm-ros-extension/20261014-custom-packages-r1/official-packages-r1/ros2-rootfs/tmp/identity-build/identity_probe",
+        "sha256": "1498c974279873e1a10c431c640d05689b6b2cd94ca813d71bcf4ece6568a45a",
+        "bytes": 73224,
+        "device": 66308,
+        "inode": 18487051,
+        "elf_class": 2,
+        "elf_data": 1,
+        "e_machine": 183
+      }
+    }
+  ]
+}

@@ -1,0 +1,148 @@
+{
+  "id": "jackal_noetic",
+  "url": "https://github.com/jackal/jackal",
+  "branch": "noetic-devel",
+  "commit": "4ddf9b578bb7abce1115c8dc59d8b7f86aa9268c",
+  "tree_git_sha1": "06e4c3872c919fd792a643fe4ff7882feed8c5aa",
+  "files": [
+    {
+      "path": "LICENSE",
+      "bytes": 1468,
+      "sha256": "1e72e132d03bf81cd784cafe84fd5e1bf3012f1bc9e0807b188fd98ec720014f",
+      "git_blob_sha1": "3fd3245a3b1409e83dc8e6d5073513cd3ec02977"
+    },
+    {
+      "path": "README.md",
+      "bytes": 203,
+      "sha256": "edcf43b96ff8e64dbc03cd153920b0b49f0c17ea64e24b272d2cf9a2c914de7a",
+      "git_blob_sha1": "405597f533c46794bc925937869f1ab0173289c5"
+    },
+    {
+      "path": "jackal_control/CHANGELOG.rst",
+      "bytes": 5096,
+      "sha256": "edacc31a021ac44d9d3a39c96124014deb4204262678ab0e2ec3b760ebe62165",
+      "git_blob_sha1": "458600ddb1711421a0e1f1536ce7c4ce91ef452c"
+    },
+    {
+      "path": "jackal_control/CMakeLists.txt",
+      "bytes": 313,
+      "sha256": "f05ffabdc125f50b0f4687ec58a5613e3203a8d56969aa806716f1039f9c6ded",
+      "git_blob_sha1": "ab58f74006248bd2ad41af6dd86ef5dd99a51452"
+    },
+    {
+      "path": "jackal_control/package.xml",
+      "bytes": 902,
+      "sha256": "5b95c9b3d48212e6c6906acf90ee9cdb6c8fd85fcd5e7916cff48f95a95e752b",
+      "git_blob_sha1": "ec4ad879fb7a719fcd35e5c1893f808bcea0c089"
+    },
+    {
+      "path": "jackal_description/CHANGELOG.rst",
+      "bytes": 5440,
+      "sha256": "07e51fc8e595b1cbd3b21e4429cba437adb78be89b29c4cf13fc258bfcf050fb",
+      "git_blob_sha1": "4b314b8c5595caa01ea4a83204665210ed1755a3"
+    },
+    {
+      "path": "jackal_description/CMakeLists.txt",
+      "bytes": 475,
+      "sha256": "4e20fd467d4f236c3b930c6c2d3871118e4ad377d616798891eeb4b781165911",
+      "git_blob_sha1": "1a34981a998828ff7a9f9384983be7dc617cbe5f"
+    },
+    {
+      "path": "jackal_description/README.md",
+      "bytes": 5259,
+      "sha256": "8d0a1e648cf29b896edfed4fdbba33ec3f9e683b8a34bb4c4c82fdd9e2cfa943",
+      "git_blob_sha1": "4785526553fb4b4106cabcf629035f7dd8523a46"
+    },
+    {
+      "path": "jackal_description/package.xml",
+      "bytes": 841,
+      "sha256": "f201f1247ab6283da563c41852519474a29b5e7d5e1a0b23381ce7132f622e7e",
+      "git_blob_sha1": "e4f9868ca5100630b9778e8694db355b2ff1ad67"
+    },
+    {
+      "path": "jackal_msgs/CHANGELOG.rst",
+      "bytes": 1672,
+      "sha256": "db359bf33463cbfb9bff52b54dd5581b1237ee9befed6c7b4c2e2d90ca9f9ba5",
+      "git_blob_sha1": "67ada8ac2acf61f62066f5d03aade67a427470b1"
+    },
+    {
+      "path": "jackal_msgs/CMakeLists.txt",
+      "bytes": 329,
+      "sha256": "0e787bafd1a8c8a91d55bba6f3c0221a415d78082ddac3b6856faadef338ef2e",
+      "git_blob_sha1": "a1718def64f148bb2559501f4ffd0cd13f9a50c2"
+    },
+    {
+      "path": "jackal_msgs/msg/Drive.msg",
+      "bytes": 469,
+      "sha256": "e2360f11c0918d706911e07ffd28bd4834f03f29ab815c8693ae8784e7e41704",
+      "git_blob_sha1": "75b9b4809d0ded549a590a2c13d755ce33e8c3df"
+    },
+    {
+      "path": "jackal_msgs/msg/DriveFeedback.msg",
+      "bytes": 523,
+      "sha256": "0fc22caa433a843651712d78c6a3d614384e4411c32b4de551a914b29ff15e81",
+      "git_blob_sha1": "22b8a489e02388a2df673a095b3e5425f2abb2f6"
+    },
+    {
+      "path": "jackal_msgs/msg/Feedback.msg",
+      "bytes": 527,
+      "sha256": "217e56ef6fc6e0904933545a8b2c64a2483c93ff82505215b879dfe7acf0f5c2",
+      "git_blob_sha1": "6c44bb50e6c739112478644c01567b2d2b9577f8"
+    },
+    {
+      "path": "jackal_msgs/msg/Status.msg",
+      "bytes": 1009,
+      "sha256": "fe8c79e7a59652a144caaca0d9f83c068e88050a58fd3d5c3328f32cbe72e2b3",
+      "git_blob_sha1": "417e314267a224a03f63f85131de79604ff87599"
+    },
+    {
+      "path": "jackal_msgs/package.xml",
+      "bytes": 696,
+      "sha256": "694fa4fa9d339f3352d9cd103b3f4b15884efec427dba54a8d66790ebfc8f6a0",
+      "git_blob_sha1": "cf74a12678ac01af25ac5d1a40150329faa67d14"
+    },
+    {
+      "path": "jackal_navigation/CHANGELOG.rst",
+      "bytes": 2642,
+      "sha256": "217df203c6f1f2a42f8a02f964214302631e983abbf890ccd57893286228e674",
+      "git_blob_sha1": "54bcc9aa188c5de1edd7a72fd115ca7f2801dd00"
+    },
+    {
+      "path": "jackal_navigation/CMakeLists.txt",
+      "bytes": 558,
+      "sha256": "4d8d6a883f0d23ceee8ab3d977be12186c876b55e3452e9aa4eb8f57a8c9b72a",
+      "git_blob_sha1": "66f40111e538a051eb90b9bccacce4b3007b127c"
+    },
+    {
+      "path": "jackal_navigation/package.xml",
+      "bytes": 697,
+      "sha256": "d017fba106905012b5fa77f658b92c799827b5427294b84631478172ea80f7e8",
+      "git_blob_sha1": "26b71db8294db14c5e6f1a3c75974461ae621487"
+    },
+    {
+      "path": "jackal_tutorials/CHANGELOG.rst",
+      "bytes": 1469,
+      "sha256": "e854d0fdbcbe847e7ec9aed0810275ed2d42705e1e2b92d207c8e12014914c24",
+      "git_blob_sha1": "d5492fe616e6e2e37f36ac859918fda45c120079"
+    },
+    {
+      "path": "jackal_tutorials/CMakeLists.txt",
+      "bytes": 112,
+      "sha256": "554cae0e1a55e65356f1d97c16b91f70328cdbaa0d8f077de8c88e92ee7d7edc",
+      "git_blob_sha1": "fb189b8b61c25ac1e669258e0eacfde100a2b56a"
+    },
+    {
+      "path": "jackal_tutorials/package.xml",
+      "bytes": 499,
+      "sha256": "f658669016f4c61d7a5859519e3533cad25eab461dfdbaf85994e28f7d34c126",
+      "git_blob_sha1": "7cb7ba189a389cbcd5a4b0e5a8a6a229a6ac2466"
+    }
+  ],
+  "archive": {
+    "url": "https://codeload.github.com/jackal/jackal/tar.gz/4ddf9b578bb7abce1115c8dc59d8b7f86aa9268c",
+    "bytes": 2391401,
+    "sha256": "b944c1b1f1039bff4d489c9a10297188da3d322efbb24baca1667a1176d7c028"
+  },
+  "default_authority": [],
+  "scope": "Original source and complete acquisition archive only; no compatibility, compiler, Guest, native or physical robot result."
+}

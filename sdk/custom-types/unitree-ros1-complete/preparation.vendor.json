@@ -1,0 +1,1414 @@
+{
+  "Guest_executed": false,
+  "binding": null,
+  "compiler_executed": false,
+  "default_authority": [],
+  "generation": {
+    "compiler_execution": "NOT_RUN",
+    "declared_constants": {},
+    "declared_defaults": {},
+    "declared_empty_default_native_binding": "REFUSED_UNTIL_INDEPENDENT_ORIGINAL_NATIVE_IDL_SOURCE_PROOF",
+    "default_authority": [],
+    "facade_template_inputs": [],
+    "format": "uwvm-ros-vendor-complete-bounded-v1",
+    "implemented_record_outputs": [
+      "c",
+      "cpp",
+      "rust",
+      "javascript",
+      "assemblyscript",
+      "tinygo"
+    ],
+    "implicit_permissions": [],
+    "member_map": {
+      "unitree_legged_msgs/BmsCmd": {
+        "assemblyscript": {
+          "off": "off",
+          "reserve": "reserve"
+        },
+        "c": {
+          "off": "off",
+          "reserve": "reserve"
+        },
+        "cpp": {
+          "off": "off",
+          "reserve": "reserve"
+        },
+        "javascript": {
+          "off": "off",
+          "reserve": "reserve"
+        },
+        "rust": {
+          "off": "off",
+          "reserve": "reserve"
+        },
+        "tinygo": {
+          "off": "Off",
+          "reserve": "Reserve"
+        }
+      },
+      "unitree_legged_msgs/BmsState": {
+        "assemblyscript": {
+          "BQ_NTC": "BQ_NTC",
+          "MCU_NTC": "MCU_NTC",
+          "SOC": "SOC",
+          "bms_status": "bms_status",
+          "cell_vol": "cell_vol",
+          "current": "current",
+          "cycle": "cycle",
+          "version_h": "version_h",
+          "version_l": "version_l"
+        },
+        "c": {
+          "BQ_NTC": "BQ_NTC",
+          "MCU_NTC": "MCU_NTC",
+          "SOC": "SOC",
+          "bms_status": "bms_status",
+          "cell_vol": "cell_vol",
+          "current": "current",
+          "cycle": "cycle",
+          "version_h": "version_h",
+          "version_l": "version_l"
+        },
+        "cpp": {
+          "BQ_NTC": "BQ_NTC",
+          "MCU_NTC": "MCU_NTC",
+          "SOC": "SOC",
+          "bms_status": "bms_status",
+          "cell_vol": "cell_vol",
+          "current": "current",
+          "cycle": "cycle",
+          "version_h": "version_h",
+          "version_l": "version_l"
+        },
+        "javascript": {
+          "BQ_NTC": "BQ_NTC",
+          "MCU_NTC": "MCU_NTC",
+          "SOC": "SOC",
+          "bms_status": "bms_status",
+          "cell_vol": "cell_vol",
+          "current": "current",
+          "cycle": "cycle",
+          "version_h": "version_h",
+          "version_l": "version_l"
+        },
+        "rust": {
+          "BQ_NTC": "BQ_NTC",
+          "MCU_NTC": "MCU_NTC",
+          "SOC": "SOC",
+          "bms_status": "bms_status",
+          "cell_vol": "cell_vol",
+          "current": "current",
+          "cycle": "cycle",
+          "version_h": "version_h",
+          "version_l": "version_l"
+        },
+        "tinygo": {
+          "BQ_NTC": "BQ_NTC",
+          "MCU_NTC": "MCU_NTC",
+          "SOC": "SOC",
+          "bms_status": "Bms_status",
+          "cell_vol": "Cell_vol",
+          "current": "Current",
+          "cycle": "Cycle",
+          "version_h": "Version_h",
+          "version_l": "Version_l"
+        }
+      },
+      "unitree_legged_msgs/Cartesian": {
+        "assemblyscript": {
+          "x": "x",
+          "y": "y",
+          "z": "z"
+        },
+        "c": {
+          "x": "x",
+          "y": "y",
+          "z": "z"
+        },
+        "cpp": {
+          "x": "x",
+          "y": "y",
+          "z": "z"
+        },
+        "javascript": {
+          "x": "x",
+          "y": "y",
+          "z": "z"
+        },
+        "rust": {
+          "x": "x",
+          "y": "y",
+          "z": "z"
+        },
+        "tinygo": {
+          "x": "X",
+          "y": "Y",
+          "z": "Z"
+        }
+      },
+      "unitree_legged_msgs/HighCmd": {
+        "assemblyscript": {
+          "SN": "SN",
+          "bandWidth": "bandWidth",
+          "bms": "bms",
+          "bodyHeight": "bodyHeight",
+          "crc": "crc",
+          "euler": "euler",
+          "footRaiseHeight": "footRaiseHeight",
+          "frameReserve": "frameReserve",
+          "gaitType": "gaitType",
+          "head": "head",
+          "led": "led",
+          "levelFlag": "levelFlag",
+          "mode": "mode",
+          "position": "position",
+          "reserve": "reserve",
+          "speedLevel": "speedLevel",
+          "velocity": "velocity",
+          "version": "version",
+          "wirelessRemote": "wirelessRemote",
+          "yawSpeed": "yawSpeed"
+        },
+        "c": {
+          "SN": "SN",
+          "bandWidth": "bandWidth",
+          "bms": "bms",
+          "bodyHeight": "bodyHeight",
+          "crc": "crc",
+          "euler": "euler",
+          "footRaiseHeight": "footRaiseHeight",
+          "frameReserve": "frameReserve",
+          "gaitType": "gaitType",
+          "head": "head",
+          "led": "led",
+          "levelFlag": "levelFlag",
+          "mode": "mode",
+          "position": "position",
+          "reserve": "reserve",
+          "speedLevel": "speedLevel",
+          "velocity": "velocity",
+          "version": "version",
+          "wirelessRemote": "wirelessRemote",
+          "yawSpeed": "yawSpeed"
+        },
+        "cpp": {
+          "SN": "SN",
+          "bandWidth": "bandWidth",
+          "bms": "bms",
+          "bodyHeight": "bodyHeight",
+          "crc": "crc",
+          "euler": "euler",
+          "footRaiseHeight": "footRaiseHeight",
+          "frameReserve": "frameReserve",
+          "gaitType": "gaitType",
+          "head": "head",
+          "led": "led",
+          "levelFlag": "levelFlag",
+          "mode": "mode",
+          "position": "position",
+          "reserve": "reserve",
+          "speedLevel": "speedLevel",
+          "velocity": "velocity",
+          "version": "version",
+          "wirelessRemote": "wirelessRemote",
+          "yawSpeed": "yawSpeed"
+        },
+        "javascript": {
+          "SN": "SN",
+          "bandWidth": "bandWidth",
+          "bms": "bms",
+          "bodyHeight": "bodyHeight",
+          "crc": "crc",
+          "euler": "euler",
+          "footRaiseHeight": "footRaiseHeight",
+          "frameReserve": "frameReserve",
+          "gaitType": "gaitType",
+          "head": "head",
+          "led": "led",
+          "levelFlag": "levelFlag",
+          "mode": "mode",
+          "position": "position",
+          "reserve": "reserve",
+          "speedLevel": "speedLevel",
+          "velocity": "velocity",
+          "version": "version",
+          "wirelessRemote": "wirelessRemote",
+          "yawSpeed": "yawSpeed"
+        },
+        "rust": {
+          "SN": "SN",
+          "bandWidth": "bandWidth",
+          "bms": "bms",
+          "bodyHeight": "bodyHeight",
+          "crc": "crc",
+          "euler": "euler",
+          "footRaiseHeight": "footRaiseHeight",
+          "frameReserve": "frameReserve",
+          "gaitType": "gaitType",
+          "head": "head",
+          "led": "led",
+          "levelFlag": "levelFlag",
+          "mode": "mode",
+          "position": "position",
+          "reserve": "reserve",
+          "speedLevel": "speedLevel",
+          "velocity": "velocity",
+          "version": "version",
+          "wirelessRemote": "wirelessRemote",
+          "yawSpeed": "yawSpeed"
+        },
+        "tinygo": {
+          "SN": "SN",
+          "bandWidth": "BandWidth",
+          "bms": "Bms",
+          "bodyHeight": "BodyHeight",
+          "crc": "Crc",
+          "euler": "Euler",
+          "footRaiseHeight": "FootRaiseHeight",
+          "frameReserve": "FrameReserve",
+          "gaitType": "GaitType",
+          "head": "Head",
+          "led": "Led",
+          "levelFlag": "LevelFlag",
+          "mode": "Mode",
+          "position": "Position",
+          "reserve": "Reserve",
+          "speedLevel": "SpeedLevel",
+          "velocity": "Velocity",
+          "version": "Version",
+          "wirelessRemote": "WirelessRemote",
+          "yawSpeed": "YawSpeed"
+        }
+      },
+      "unitree_legged_msgs/HighState": {
+        "assemblyscript": {
+          "SN": "SN",
+          "bandWidth": "bandWidth",
+          "bms": "bms",
+          "bodyHeight": "bodyHeight",
+          "crc": "crc",
+          "footForce": "footForce",
+          "footForceEst": "footForceEst",
+          "footPosition2Body": "footPosition2Body",
+          "footRaiseHeight": "footRaiseHeight",
+          "footSpeed2Body": "footSpeed2Body",
+          "frameReserve": "frameReserve",
+          "gaitType": "gaitType",
+          "head": "head",
+          "imu": "imu",
+          "levelFlag": "levelFlag",
+          "mode": "mode",
+          "motorState": "motorState",
+          "position": "position",
+          "progress": "progress",
+          "rangeObstacle": "rangeObstacle",
+          "reserve": "reserve",
+          "velocity": "velocity",
+          "version": "version",
+          "wirelessRemote": "wirelessRemote",
+          "yawSpeed": "yawSpeed"
+        },
+        "c": {
+          "SN": "SN",
+          "bandWidth": "bandWidth",
+          "bms": "bms",
+          "bodyHeight": "bodyHeight",
+          "crc": "crc",
+          "footForce": "footForce",
+          "footForceEst": "footForceEst",
+          "footPosition2Body": "footPosition2Body",
+          "footRaiseHeight": "footRaiseHeight",
+          "footSpeed2Body": "footSpeed2Body",
+          "frameReserve": "frameReserve",
+          "gaitType": "gaitType",
+          "head": "head",
+          "imu": "imu",
+          "levelFlag": "levelFlag",
+          "mode": "mode",
+          "motorState": "motorState",
+          "position": "position",
+          "progress": "progress",
+          "rangeObstacle": "rangeObstacle",
+          "reserve": "reserve",
+          "velocity": "velocity",
+          "version": "version",
+          "wirelessRemote": "wirelessRemote",
+          "yawSpeed": "yawSpeed"
+        },
+        "cpp": {
+          "SN": "SN",
+          "bandWidth": "bandWidth",
+          "bms": "bms",
+          "bodyHeight": "bodyHeight",
+          "crc": "crc",
+          "footForce": "footForce",
+          "footForceEst": "footForceEst",
+          "footPosition2Body": "footPosition2Body",
+          "footRaiseHeight": "footRaiseHeight",
+          "footSpeed2Body": "footSpeed2Body",
+          "frameReserve": "frameReserve",
+          "gaitType": "gaitType",
+          "head": "head",
+          "imu": "imu",
+          "levelFlag": "levelFlag",
+          "mode": "mode",
+          "motorState": "motorState",
+          "position": "position",
+          "progress": "progress",
+          "rangeObstacle": "rangeObstacle",
+          "reserve": "reserve",
+          "velocity": "velocity",
+          "version": "version",
+          "wirelessRemote": "wirelessRemote",
+          "yawSpeed": "yawSpeed"
+        },
+        "javascript": {
+          "SN": "SN",
+          "bandWidth": "bandWidth",
+          "bms": "bms",
+          "bodyHeight": "bodyHeight",
+          "crc": "crc",
+          "footForce": "footForce",
+          "footForceEst": "footForceEst",
+          "footPosition2Body": "footPosition2Body",
+          "footRaiseHeight": "footRaiseHeight",
+          "footSpeed2Body": "footSpeed2Body",
+          "frameReserve": "frameReserve",
+          "gaitType": "gaitType",
+          "head": "head",
+          "imu": "imu",
+          "levelFlag": "levelFlag",
+          "mode": "mode",
+          "motorState": "motorState",
+          "position": "position",
+          "progress": "progress",
+          "rangeObstacle": "rangeObstacle",
+          "reserve": "reserve",
+          "velocity": "velocity",
+          "version": "version",
+          "wirelessRemote": "wirelessRemote",
+          "yawSpeed": "yawSpeed"
+        },
+        "rust": {
+          "SN": "SN",
+          "bandWidth": "bandWidth",
+          "bms": "bms",
+          "bodyHeight": "bodyHeight",
+          "crc": "crc",
+          "footForce": "footForce",
+          "footForceEst": "footForceEst",
+          "footPosition2Body": "footPosition2Body",
+          "footRaiseHeight": "footRaiseHeight",
+          "footSpeed2Body": "footSpeed2Body",
+          "frameReserve": "frameReserve",
+          "gaitType": "gaitType",
+          "head": "head",
+          "imu": "imu",
+          "levelFlag": "levelFlag",
+          "mode": "mode",
+          "motorState": "motorState",
+          "position": "position",
+          "progress": "progress",
+          "rangeObstacle": "rangeObstacle",
+          "reserve": "reserve",
+          "velocity": "velocity",
+          "version": "version",
+          "wirelessRemote": "wirelessRemote",
+          "yawSpeed": "yawSpeed"
+        },
+        "tinygo": {
+          "SN": "SN",
+          "bandWidth": "BandWidth",
+          "bms": "Bms",
+          "bodyHeight": "BodyHeight",
+          "crc": "Crc",
+          "footForce": "FootForce",
+          "footForceEst": "FootForceEst",
+          "footPosition2Body": "FootPosition2Body",
+          "footRaiseHeight": "FootRaiseHeight",
+          "footSpeed2Body": "FootSpeed2Body",
+          "frameReserve": "FrameReserve",
+          "gaitType": "GaitType",
+          "head": "Head",
+          "imu": "Imu",
+          "levelFlag": "LevelFlag",
+          "mode": "Mode",
+          "motorState": "MotorState",
+          "position": "Position",
+          "progress": "Progress",
+          "rangeObstacle": "RangeObstacle",
+          "reserve": "Reserve",
+          "velocity": "Velocity",
+          "version": "Version",
+          "wirelessRemote": "WirelessRemote",
+          "yawSpeed": "YawSpeed"
+        }
+      },
+      "unitree_legged_msgs/IMU": {
+        "assemblyscript": {
+          "accelerometer": "accelerometer",
+          "gyroscope": "gyroscope",
+          "quaternion": "quaternion",
+          "rpy": "rpy",
+          "temperature": "temperature"
+        },
+        "c": {
+          "accelerometer": "accelerometer",
+          "gyroscope": "gyroscope",
+          "quaternion": "quaternion",
+          "rpy": "rpy",
+          "temperature": "temperature"
+        },
+        "cpp": {
+          "accelerometer": "accelerometer",
+          "gyroscope": "gyroscope",
+          "quaternion": "quaternion",
+          "rpy": "rpy",
+          "temperature": "temperature"
+        },
+        "javascript": {
+          "accelerometer": "accelerometer",
+          "gyroscope": "gyroscope",
+          "quaternion": "quaternion",
+          "rpy": "rpy",
+          "temperature": "temperature"
+        },
+        "rust": {
+          "accelerometer": "accelerometer",
+          "gyroscope": "gyroscope",
+          "quaternion": "quaternion",
+          "rpy": "rpy",
+          "temperature": "temperature"
+        },
+        "tinygo": {
+          "accelerometer": "Accelerometer",
+          "gyroscope": "Gyroscope",
+          "quaternion": "Quaternion",
+          "rpy": "Rpy",
+          "temperature": "Temperature"
+        }
+      },
+      "unitree_legged_msgs/LED": {
+        "assemblyscript": {
+          "b": "b",
+          "g": "g",
+          "r": "r"
+        },
+        "c": {
+          "b": "b",
+          "g": "g",
+          "r": "r"
+        },
+        "cpp": {
+          "b": "b",
+          "g": "g",
+          "r": "r"
+        },
+        "javascript": {
+          "b": "b",
+          "g": "g",
+          "r": "r"
+        },
+        "rust": {
+          "b": "b",
+          "g": "g",
+          "r": "r"
+        },
+        "tinygo": {
+          "b": "B",
+          "g": "G",
+          "r": "R"
+        }
+      },
+      "unitree_legged_msgs/LowCmd": {
+        "assemblyscript": {
+          "SN": "SN",
+          "bandWidth": "bandWidth",
+          "bms": "bms",
+          "crc": "crc",
+          "frameReserve": "frameReserve",
+          "head": "head",
+          "levelFlag": "levelFlag",
+          "motorCmd": "motorCmd",
+          "reserve": "reserve",
+          "version": "version",
+          "wirelessRemote": "wirelessRemote"
+        },
+        "c": {
+          "SN": "SN",
+          "bandWidth": "bandWidth",
+          "bms": "bms",
+          "crc": "crc",
+          "frameReserve": "frameReserve",
+          "head": "head",
+          "levelFlag": "levelFlag",
+          "motorCmd": "motorCmd",
+          "reserve": "reserve",
+          "version": "version",
+          "wirelessRemote": "wirelessRemote"
+        },
+        "cpp": {
+          "SN": "SN",
+          "bandWidth": "bandWidth",
+          "bms": "bms",
+          "crc": "crc",
+          "frameReserve": "frameReserve",
+          "head": "head",
+          "levelFlag": "levelFlag",
+          "motorCmd": "motorCmd",
+          "reserve": "reserve",
+          "version": "version",
+          "wirelessRemote": "wirelessRemote"
+        },
+        "javascript": {
+          "SN": "SN",
+          "bandWidth": "bandWidth",
+          "bms": "bms",
+          "crc": "crc",
+          "frameReserve": "frameReserve",
+          "head": "head",
+          "levelFlag": "levelFlag",
+          "motorCmd": "motorCmd",
+          "reserve": "reserve",
+          "version": "version",
+          "wirelessRemote": "wirelessRemote"
+        },
+        "rust": {
+          "SN": "SN",
+          "bandWidth": "bandWidth",
+          "bms": "bms",
+          "crc": "crc",
+          "frameReserve": "frameReserve",
+          "head": "head",
+          "levelFlag": "levelFlag",
+          "motorCmd": "motorCmd",
+          "reserve": "reserve",
+          "version": "version",
+          "wirelessRemote": "wirelessRemote"
+        },
+        "tinygo": {
+          "SN": "SN",
+          "bandWidth": "BandWidth",
+          "bms": "Bms",
+          "crc": "Crc",
+          "frameReserve": "FrameReserve",
+          "head": "Head",
+          "levelFlag": "LevelFlag",
+          "motorCmd": "MotorCmd",
+          "reserve": "Reserve",
+          "version": "Version",
+          "wirelessRemote": "WirelessRemote"
+        }
+      },
+      "unitree_legged_msgs/LowState": {
+        "assemblyscript": {
+          "SN": "SN",
+          "bandWidth": "bandWidth",
+          "bms": "bms",
+          "crc": "crc",
+          "eeForce": "eeForce",
+          "eeForceRaw": "eeForceRaw",
+          "footForce": "footForce",
+          "footForceEst": "footForceEst",
+          "frameReserve": "frameReserve",
+          "head": "head",
+          "imu": "imu",
+          "levelFlag": "levelFlag",
+          "motorState": "motorState",
+          "position": "position",
+          "reserve": "reserve",
+          "tick": "tick",
+          "velocity": "velocity",
+          "velocity_w": "velocity_w",
+          "version": "version",
+          "wirelessRemote": "wirelessRemote"
+        },
+        "c": {
+          "SN": "SN",
+          "bandWidth": "bandWidth",
+          "bms": "bms",
+          "crc": "crc",
+          "eeForce": "eeForce",
+          "eeForceRaw": "eeForceRaw",
+          "footForce": "footForce",
+          "footForceEst": "footForceEst",
+          "frameReserve": "frameReserve",
+          "head": "head",
+          "imu": "imu",
+          "levelFlag": "levelFlag",
+          "motorState": "motorState",
+          "position": "position",
+          "reserve": "reserve",
+          "tick": "tick",
+          "velocity": "velocity",
+          "velocity_w": "velocity_w",
+          "version": "version",
+          "wirelessRemote": "wirelessRemote"
+        },
+        "cpp": {
+          "SN": "SN",
+          "bandWidth": "bandWidth",
+          "bms": "bms",
+          "crc": "crc",
+          "eeForce": "eeForce",
+          "eeForceRaw": "eeForceRaw",
+          "footForce": "footForce",
+          "footForceEst": "footForceEst",
+          "frameReserve": "frameReserve",
+          "head": "head",
+          "imu": "imu",
+          "levelFlag": "levelFlag",
+          "motorState": "motorState",
+          "position": "position",
+          "reserve": "reserve",
+          "tick": "tick",
+          "velocity": "velocity",
+          "velocity_w": "velocity_w",
+          "version": "version",
+          "wirelessRemote": "wirelessRemote"
+        },
+        "javascript": {
+          "SN": "SN",
+          "bandWidth": "bandWidth",
+          "bms": "bms",
+          "crc": "crc",
+          "eeForce": "eeForce",
+          "eeForceRaw": "eeForceRaw",
+          "footForce": "footForce",
+          "footForceEst": "footForceEst",
+          "frameReserve": "frameReserve",
+          "head": "head",
+          "imu": "imu",
+          "levelFlag": "levelFlag",
+          "motorState": "motorState",
+          "position": "position",
+          "reserve": "reserve",
+          "tick": "tick",
+          "velocity": "velocity",
+          "velocity_w": "velocity_w",
+          "version": "version",
+          "wirelessRemote": "wirelessRemote"
+        },
+        "rust": {
+          "SN": "SN",
+          "bandWidth": "bandWidth",
+          "bms": "bms",
+          "crc": "crc",
+          "eeForce": "eeForce",
+          "eeForceRaw": "eeForceRaw",
+          "footForce": "footForce",
+          "footForceEst": "footForceEst",
+          "frameReserve": "frameReserve",
+          "head": "head",
+          "imu": "imu",
+          "levelFlag": "levelFlag",
+          "motorState": "motorState",
+          "position": "position",
+          "reserve": "reserve",
+          "tick": "tick",
+          "velocity": "velocity",
+          "velocity_w": "velocity_w",
+          "version": "version",
+          "wirelessRemote": "wirelessRemote"
+        },
+        "tinygo": {
+          "SN": "SN",
+          "bandWidth": "BandWidth",
+          "bms": "Bms",
+          "crc": "Crc",
+          "eeForce": "EeForce",
+          "eeForceRaw": "EeForceRaw",
+          "footForce": "FootForce",
+          "footForceEst": "FootForceEst",
+          "frameReserve": "FrameReserve",
+          "head": "Head",
+          "imu": "Imu",
+          "levelFlag": "LevelFlag",
+          "motorState": "MotorState",
+          "position": "Position",
+          "reserve": "Reserve",
+          "tick": "Tick",
+          "velocity": "Velocity",
+          "velocity_w": "Velocity_w",
+          "version": "Version",
+          "wirelessRemote": "WirelessRemote"
+        }
+      },
+      "unitree_legged_msgs/MotorCmd": {
+        "assemblyscript": {
+          "Kd": "Kd",
+          "Kp": "Kp",
+          "dq": "dq",
+          "mode": "mode",
+          "q": "q",
+          "reserve": "reserve",
+          "tau": "tau"
+        },
+        "c": {
+          "Kd": "Kd",
+          "Kp": "Kp",
+          "dq": "dq",
+          "mode": "mode",
+          "q": "q",
+          "reserve": "reserve",
+          "tau": "tau"
+        },
+        "cpp": {
+          "Kd": "Kd",
+          "Kp": "Kp",
+          "dq": "dq",
+          "mode": "mode",
+          "q": "q",
+          "reserve": "reserve",
+          "tau": "tau"
+        },
+        "javascript": {
+          "Kd": "Kd",
+          "Kp": "Kp",
+          "dq": "dq",
+          "mode": "mode",
+          "q": "q",
+          "reserve": "reserve",
+          "tau": "tau"
+        },
+        "rust": {
+          "Kd": "Kd",
+          "Kp": "Kp",
+          "dq": "dq",
+          "mode": "mode",
+          "q": "q",
+          "reserve": "reserve",
+          "tau": "tau"
+        },
+        "tinygo": {
+          "Kd": "Kd",
+          "Kp": "Kp",
+          "dq": "Dq",
+          "mode": "Mode",
+          "q": "Q",
+          "reserve": "Reserve",
+          "tau": "Tau"
+        }
+      },
+      "unitree_legged_msgs/MotorState": {
+        "assemblyscript": {
+          "ddq": "ddq",
+          "ddq_raw": "ddq_raw",
+          "dq": "dq",
+          "dq_raw": "dq_raw",
+          "mode": "mode",
+          "q": "q",
+          "q_raw": "q_raw",
+          "reserve": "reserve",
+          "tauEst": "tauEst",
+          "temperature": "temperature"
+        },
+        "c": {
+          "ddq": "ddq",
+          "ddq_raw": "ddq_raw",
+          "dq": "dq",
+          "dq_raw": "dq_raw",
+          "mode": "mode",
+          "q": "q",
+          "q_raw": "q_raw",
+          "reserve": "reserve",
+          "tauEst": "tauEst",
+          "temperature": "temperature"
+        },
+        "cpp": {
+          "ddq": "ddq",
+          "ddq_raw": "ddq_raw",
+          "dq": "dq",
+          "dq_raw": "dq_raw",
+          "mode": "mode",
+          "q": "q",
+          "q_raw": "q_raw",
+          "reserve": "reserve",
+          "tauEst": "tauEst",
+          "temperature": "temperature"
+        },
+        "javascript": {
+          "ddq": "ddq",
+          "ddq_raw": "ddq_raw",
+          "dq": "dq",
+          "dq_raw": "dq_raw",
+          "mode": "mode",
+          "q": "q",
+          "q_raw": "q_raw",
+          "reserve": "reserve",
+          "tauEst": "tauEst",
+          "temperature": "temperature"
+        },
+        "rust": {
+          "ddq": "ddq",
+          "ddq_raw": "ddq_raw",
+          "dq": "dq",
+          "dq_raw": "dq_raw",
+          "mode": "mode",
+          "q": "q",
+          "q_raw": "q_raw",
+          "reserve": "reserve",
+          "tauEst": "tauEst",
+          "temperature": "temperature"
+        },
+        "tinygo": {
+          "ddq": "Ddq",
+          "ddq_raw": "Ddq_raw",
+          "dq": "Dq",
+          "dq_raw": "Dq_raw",
+          "mode": "Mode",
+          "q": "Q",
+          "q_raw": "Q_raw",
+          "reserve": "Reserve",
+          "tauEst": "TauEst",
+          "temperature": "Temperature"
+        }
+      }
+    },
+    "native_execution": "NOT_RUN",
+    "native_exporter_helper_source": {
+      "bytes": 10784,
+      "sha256": "55c5e504a1d61a648f73dd732aa0561f4b4dc0adf54dbe631857edf1564f3ac6"
+    },
+    "native_registry_emitted": false,
+    "outputs": {
+      "bounded_interfaces.h": {
+        "bytes": 1332,
+        "sha256": "d9c8b1a22bd5c3877398d05fa5c545b331041cf1cd741ff356bbacda32f64150"
+      },
+      "bounded_interfaces.hpp": {
+        "bytes": 3923,
+        "sha256": "2ddbcf92699a416b8dab0a2264ba3dfba6a1dc786dbb476b881c77ee9e508842"
+      },
+      "bounded_records.go": {
+        "bytes": 76506,
+        "sha256": "f7a60230f2b88407ae58ff0c3c4b26ca1b9045ff87f9060d12a710b58340ba6e"
+      },
+      "bounded_records.h": {
+        "bytes": 88921,
+        "sha256": "138a12a638433844d78e275633d0ebf9fd34c1b06c7c68054272d0332811db98"
+      },
+      "bounded_records.hpp": {
+        "bytes": 12969,
+        "sha256": "b412e89a1579357f85d1271604cc4fb71d7025d923bcf37b619ae361da125d59"
+      },
+      "bounded_records.mjs": {
+        "bytes": 72460,
+        "sha256": "5d7846abdabff5e9c98613c760c42788d940a49ab2690defd28f72af6c373028"
+      },
+      "bounded_records.rs": {
+        "bytes": 63102,
+        "sha256": "7c6d157d7bda61f84a3034f81029b0491a605994d06ef6e33b7f372d79af7b83"
+      },
+      "bounded_records.ts": {
+        "bytes": 71616,
+        "sha256": "9a5b150a6878c216f5e1b8f92939e97de967edc364a9d9659825c3ad4b55ca85"
+      },
+      "native_constants.hpp": {
+        "bytes": 267,
+        "sha256": "4700d3bdf5da49f6392540d0487fa661da6f06c15fc817f1cf6e73bd44134b7c"
+      },
+      "native_identity.cc": {
+        "bytes": 12691,
+        "sha256": "432d59a4bf81745c87bb0f06aa98402b756ab7a90554fcefcc72e72a09ff4e57"
+      }
+    },
+    "records": [
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 4,
+        "codec_identity": "UWVMROS1_75732753b156fff8db3ba7e39541444bed2b71e139389a9b5bfbc49a4fa14928",
+        "expanded_nodes": 4,
+        "maximum_wire_bytes": 4,
+        "minimum_wire_bytes": 4,
+        "native_identity": null,
+        "ros_version": 1,
+        "type": "unitree_legged_msgs/BmsCmd"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 34,
+        "codec_identity": "UWVMROS1_ef0f93501f54d0ff760039d86bd1ba1739cb0c888b3a873611679484ccec094a",
+        "expanded_nodes": 24,
+        "maximum_wire_bytes": 34,
+        "minimum_wire_bytes": 34,
+        "native_identity": null,
+        "ros_version": 1,
+        "type": "unitree_legged_msgs/BmsState"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 12,
+        "codec_identity": "UWVMROS1_43c7c62ba2a689751a0a15e326c5c9690a9b1f166b6726a0f803b98d2b3fa722",
+        "expanded_nodes": 4,
+        "maximum_wire_bytes": 12,
+        "minimum_wire_bytes": 12,
+        "native_identity": null,
+        "ros_version": 1,
+        "type": "unitree_legged_msgs/Cartesian"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 3,
+        "codec_identity": "UWVMROS1_b4efac59eaf4d3f09c069e4833dd82b5422980f6a9f27db84950243a47164ea5",
+        "expanded_nodes": 4,
+        "maximum_wire_bytes": 3,
+        "minimum_wire_bytes": 3,
+        "native_identity": null,
+        "ros_version": 1,
+        "type": "unitree_legged_msgs/LED"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 129,
+        "codec_identity": "UWVMROS1_ec6ec8937b2629a4441adc4a21eed83fca940b18d46b970d96e05c957ac90b38",
+        "expanded_nodes": 53,
+        "maximum_wire_bytes": 129,
+        "minimum_wire_bytes": 129,
+        "native_identity": null,
+        "ros_version": 1,
+        "type": "unitree_legged_msgs/HighCmd"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 53,
+        "codec_identity": "UWVMROS1_29d9ec99e676fe8747665da588b78c8ab77a3197e281ba892ab389d2d81fa276",
+        "expanded_nodes": 19,
+        "maximum_wire_bytes": 53,
+        "minimum_wire_bytes": 53,
+        "native_identity": null,
+        "ros_version": 1,
+        "type": "unitree_legged_msgs/IMU"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 38,
+        "codec_identity": "UWVMROS1_be540cb22db5f08b6b9a8082777c76244e80f3148e9cfd63f510e4b2acdc0abf",
+        "expanded_nodes": 13,
+        "maximum_wire_bytes": 38,
+        "minimum_wire_bytes": 38,
+        "native_identity": null,
+        "ros_version": 1,
+        "type": "unitree_legged_msgs/MotorState"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 1087,
+        "codec_identity": "UWVMROS1_82ee0efaab21b5cb89e99f5c0f5daec583b48dd5feb2dd6a7e09ba9d9110b53d",
+        "expanded_nodes": 383,
+        "maximum_wire_bytes": 1087,
+        "minimum_wire_bytes": 1087,
+        "native_identity": null,
+        "ros_version": 1,
+        "type": "unitree_legged_msgs/HighState"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 33,
+        "codec_identity": "UWVMROS1_632b25f209e72857182d92752aa72e3ab47a45e895cc352ee6dc05f1c1168083",
+        "expanded_nodes": 11,
+        "maximum_wire_bytes": 33,
+        "minimum_wire_bytes": 33,
+        "native_identity": null,
+        "ros_version": 1,
+        "type": "unitree_legged_msgs/MotorCmd"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 734,
+        "codec_identity": "UWVMROS1_11d3ac7c497f01fbf6624c39ec71fa613c462cd62acb20c1f263cdde672e9181",
+        "expanded_nodes": 241,
+        "maximum_wire_bytes": 734,
+        "minimum_wire_bytes": 734,
+        "native_identity": null,
+        "ros_version": 1,
+        "type": "unitree_legged_msgs/LowCmd"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 1069,
+        "codec_identity": "UWVMROS1_37425ed49c0eebd762b6084ee413c7706fc43defc524414d3f50cdd2d25552c0",
+        "expanded_nodes": 377,
+        "maximum_wire_bytes": 1069,
+        "minimum_wire_bytes": 1069,
+        "native_identity": null,
+        "ros_version": 1,
+        "type": "unitree_legged_msgs/LowState"
+      }
+    ],
+    "required_native_domain_provider": "paired complete_vendor descriptor/Native trait/source-metadata admission; requires actual Root implementation and full rebuild; old refusal is preserved",
+    "source_generator_pair": {
+      "bounded": {
+        "bytes": 239137,
+        "sha256": "3c40ed90910bde0ec15ae8976b0e34c37061c2eeacc121259604e7eaeba89f2d"
+      },
+      "industrial_adapter": {
+        "bytes": 73639,
+        "sha256": "e830acc0c4a1cb243cb50f28cbabb71299dcc692ecd9a0b42dd725f4a4f361b3"
+      },
+      "parent": {
+        "bytes": 61312,
+        "sha256": "1a73d6a87624e563bbb6be2624e77b51d7dba0f0f2fb524cda4079f493381826"
+      }
+    },
+    "source_inputs": {
+      "catalog": {
+        "bytes": 1853,
+        "sha256": "1ffe8c6315ac3aa75767d72797dcd85479d35056b4173c2095acdeecb3f6f3ec"
+      },
+      "definitions": [
+        {
+          "bytes": 48,
+          "file": "definitions/unitree_legged_msgs/BmsCmd.msg",
+          "sha256": "27fb6f7506dea1bdb64f67428ac1b10471fe7b874066a6d0e6a45a272399ecd2"
+        },
+        {
+          "bytes": 280,
+          "file": "definitions/unitree_legged_msgs/BmsState.msg",
+          "sha256": "983f9f6b89aaa22f2bd276b0a47c4aae444efb59d645664c4b6673c805845bb2"
+        },
+        {
+          "bytes": 29,
+          "file": "definitions/unitree_legged_msgs/Cartesian.msg",
+          "sha256": "655ba746820eb8d51108feba96950738cfa9146b014344b2ca4b106f057779f6"
+        },
+        {
+          "bytes": 366,
+          "file": "definitions/unitree_legged_msgs/HighCmd.msg",
+          "sha256": "25c94f0f6e6d6c21eb7363c7fdc107f447633be8b4a613fee83f30f866cddee9"
+        },
+        {
+          "bytes": 490,
+          "file": "definitions/unitree_legged_msgs/HighState.msg",
+          "sha256": "65d43eafa99cffb22481dd78236309d8bbb55db090f61a96af8a20ec63a00d62"
+        },
+        {
+          "bytes": 99,
+          "file": "definitions/unitree_legged_msgs/IMU.msg",
+          "sha256": "8592dac6be50ed4dc06a1a601bb139e0d17e641b62c912c23fe0c7dc1193dd64"
+        },
+        {
+          "bytes": 23,
+          "file": "definitions/unitree_legged_msgs/LED.msg",
+          "sha256": "0123ebbfa35f57cba882f49119571774a51a838ba11dacef05f6e949835a3429"
+        },
+        {
+          "bytes": 183,
+          "file": "definitions/unitree_legged_msgs/LowCmd.msg",
+          "sha256": "d8cae6ff55e5f7f6f9915499f5fcf5ba6e4acdcc7d320e285c15b6570217652d"
+        },
+        {
+          "bytes": 560,
+          "file": "definitions/unitree_legged_msgs/LowState.msg",
+          "sha256": "a5fc3a6a7f54d05439f352b3dfc9e5078d25d04691abd1dd5264a51ee20c89e3"
+        },
+        {
+          "bytes": 322,
+          "file": "definitions/unitree_legged_msgs/MotorCmd.msg",
+          "sha256": "9a675cdb66ea59ff255bc3b59ccef4f953b6dc0148661e53829434cda5fc9fb4"
+        },
+        {
+          "bytes": 540,
+          "file": "definitions/unitree_legged_msgs/MotorState.msg",
+          "sha256": "0d94cb503bdfa1ee7fe38527fc8efa0aa7e2fc4c3361279615585caf9ec92f8e"
+        }
+      ]
+    },
+    "source_template_inputs": {
+      "interface_templates/bounded_interfaces.go.in": {
+        "bytes": 9692,
+        "sha256": "c9e7893ccedc67b91a3aebc51c1e0c3c65263f03b2769aa07c34fcfb6befa1f7"
+      },
+      "interface_templates/bounded_interfaces.mjs.in": {
+        "bytes": 17046,
+        "sha256": "10986eddd766435dde89b0d3046ef7f48705e2c3e21301c99163c3a7d4ea62fe"
+      },
+      "interface_templates/bounded_interfaces.rs.in": {
+        "bytes": 15514,
+        "sha256": "063130e797684df0530aa1882f8082a10d5756ceb892677d8082e980c7b29b18"
+      },
+      "interface_templates/bounded_interfaces.ts.in": {
+        "bytes": 16626,
+        "sha256": "a61a7b7eb3b5464648577f3ab44629a5c6140d04effff6e4099509f68b204ac5"
+      }
+    },
+    "status": "GENERATED_SOURCE_ONLY_NOT_COMPILED_OR_EXECUTED",
+    "types": [
+      {
+        "adapter_codec_identity": "UWVMROS1_75732753b156fff8db3ba7e39541444bed2b71e139389a9b5bfbc49a4fa14928",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_75732753b156fff8db3ba7e39541444bed2b71e139389a9b5bfbc49a4fa14928",
+            "expanded_nodes": 4,
+            "maximum_wire_bytes": 4,
+            "minimum_wire_bytes": 4,
+            "native_identity": null,
+            "type": "unitree_legged_msgs/BmsCmd"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 1,
+        "type": "unitree_legged_msgs/BmsCmd"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_ef0f93501f54d0ff760039d86bd1ba1739cb0c888b3a873611679484ccec094a",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_ef0f93501f54d0ff760039d86bd1ba1739cb0c888b3a873611679484ccec094a",
+            "expanded_nodes": 24,
+            "maximum_wire_bytes": 34,
+            "minimum_wire_bytes": 34,
+            "native_identity": null,
+            "type": "unitree_legged_msgs/BmsState"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 1,
+        "type": "unitree_legged_msgs/BmsState"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_43c7c62ba2a689751a0a15e326c5c9690a9b1f166b6726a0f803b98d2b3fa722",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_43c7c62ba2a689751a0a15e326c5c9690a9b1f166b6726a0f803b98d2b3fa722",
+            "expanded_nodes": 4,
+            "maximum_wire_bytes": 12,
+            "minimum_wire_bytes": 12,
+            "native_identity": null,
+            "type": "unitree_legged_msgs/Cartesian"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 1,
+        "type": "unitree_legged_msgs/Cartesian"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_ec6ec8937b2629a4441adc4a21eed83fca940b18d46b970d96e05c957ac90b38",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_ec6ec8937b2629a4441adc4a21eed83fca940b18d46b970d96e05c957ac90b38",
+            "expanded_nodes": 53,
+            "maximum_wire_bytes": 129,
+            "minimum_wire_bytes": 129,
+            "native_identity": null,
+            "type": "unitree_legged_msgs/HighCmd"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 1,
+        "type": "unitree_legged_msgs/HighCmd"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_82ee0efaab21b5cb89e99f5c0f5daec583b48dd5feb2dd6a7e09ba9d9110b53d",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_82ee0efaab21b5cb89e99f5c0f5daec583b48dd5feb2dd6a7e09ba9d9110b53d",
+            "expanded_nodes": 383,
+            "maximum_wire_bytes": 1087,
+            "minimum_wire_bytes": 1087,
+            "native_identity": null,
+            "type": "unitree_legged_msgs/HighState"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 1,
+        "type": "unitree_legged_msgs/HighState"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_29d9ec99e676fe8747665da588b78c8ab77a3197e281ba892ab389d2d81fa276",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_29d9ec99e676fe8747665da588b78c8ab77a3197e281ba892ab389d2d81fa276",
+            "expanded_nodes": 19,
+            "maximum_wire_bytes": 53,
+            "minimum_wire_bytes": 53,
+            "native_identity": null,
+            "type": "unitree_legged_msgs/IMU"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 1,
+        "type": "unitree_legged_msgs/IMU"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_b4efac59eaf4d3f09c069e4833dd82b5422980f6a9f27db84950243a47164ea5",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_b4efac59eaf4d3f09c069e4833dd82b5422980f6a9f27db84950243a47164ea5",
+            "expanded_nodes": 4,
+            "maximum_wire_bytes": 3,
+            "minimum_wire_bytes": 3,
+            "native_identity": null,
+            "type": "unitree_legged_msgs/LED"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 1,
+        "type": "unitree_legged_msgs/LED"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_11d3ac7c497f01fbf6624c39ec71fa613c462cd62acb20c1f263cdde672e9181",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_11d3ac7c497f01fbf6624c39ec71fa613c462cd62acb20c1f263cdde672e9181",
+            "expanded_nodes": 241,
+            "maximum_wire_bytes": 734,
+            "minimum_wire_bytes": 734,
+            "native_identity": null,
+            "type": "unitree_legged_msgs/LowCmd"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 1,
+        "type": "unitree_legged_msgs/LowCmd"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_37425ed49c0eebd762b6084ee413c7706fc43defc524414d3f50cdd2d25552c0",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_37425ed49c0eebd762b6084ee413c7706fc43defc524414d3f50cdd2d25552c0",
+            "expanded_nodes": 377,
+            "maximum_wire_bytes": 1069,
+            "minimum_wire_bytes": 1069,
+            "native_identity": null,
+            "type": "unitree_legged_msgs/LowState"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 1,
+        "type": "unitree_legged_msgs/LowState"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_632b25f209e72857182d92752aa72e3ab47a45e895cc352ee6dc05f1c1168083",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_632b25f209e72857182d92752aa72e3ab47a45e895cc352ee6dc05f1c1168083",
+            "expanded_nodes": 11,
+            "maximum_wire_bytes": 33,
+            "minimum_wire_bytes": 33,
+            "native_identity": null,
+            "type": "unitree_legged_msgs/MotorCmd"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 1,
+        "type": "unitree_legged_msgs/MotorCmd"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_be540cb22db5f08b6b9a8082777c76244e80f3148e9cfd63f510e4b2acdc0abf",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_be540cb22db5f08b6b9a8082777c76244e80f3148e9cfd63f510e4b2acdc0abf",
+            "expanded_nodes": 13,
+            "maximum_wire_bytes": 38,
+            "minimum_wire_bytes": 38,
+            "native_identity": null,
+            "type": "unitree_legged_msgs/MotorState"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 1,
+        "type": "unitree_legged_msgs/MotorState"
+      }
+    ]
+  },
+  "hardware_qualified": false,
+  "kind": "industrial-complete-source-preparation-not-acceptance",
+  "mode": "prepare",
+  "native_delivery_qualified": false,
+  "native_metadata": null,
+  "native_owner_report": null,
+  "original_catalog": {
+    "bytes": 1853,
+    "path": "/home/macromodel/Documents/uwvm-test-261018/build/unitree-complete-domain-20261018-r1/unitree_legged_msgs-materialized/catalog.preparation.json",
+    "sha256": "db4cd6f394df43b93d4ad82377c6eba36a03bbefc8230e145c8e2e218532934f"
+  },
+  "original_definitions": {
+    "definitions/unitree_legged_msgs/BmsCmd.msg": {
+      "bytes": 48,
+      "path": "/home/macromodel/Documents/uwvm-test-261018/build/unitree-complete-domain-20261018-r1/unitree_legged_msgs-materialized/definitions/unitree_legged_msgs/BmsCmd.msg",
+      "sha256": "27fb6f7506dea1bdb64f67428ac1b10471fe7b874066a6d0e6a45a272399ecd2"
+    },
+    "definitions/unitree_legged_msgs/BmsState.msg": {
+      "bytes": 280,
+      "path": "/home/macromodel/Documents/uwvm-test-261018/build/unitree-complete-domain-20261018-r1/unitree_legged_msgs-materialized/definitions/unitree_legged_msgs/BmsState.msg",
+      "sha256": "983f9f6b89aaa22f2bd276b0a47c4aae444efb59d645664c4b6673c805845bb2"
+    },
+    "definitions/unitree_legged_msgs/Cartesian.msg": {
+      "bytes": 29,
+      "path": "/home/macromodel/Documents/uwvm-test-261018/build/unitree-complete-domain-20261018-r1/unitree_legged_msgs-materialized/definitions/unitree_legged_msgs/Cartesian.msg",
+      "sha256": "655ba746820eb8d51108feba96950738cfa9146b014344b2ca4b106f057779f6"
+    },
+    "definitions/unitree_legged_msgs/HighCmd.msg": {
+      "bytes": 366,
+      "path": "/home/macromodel/Documents/uwvm-test-261018/build/unitree-complete-domain-20261018-r1/unitree_legged_msgs-materialized/definitions/unitree_legged_msgs/HighCmd.msg",
+      "sha256": "25c94f0f6e6d6c21eb7363c7fdc107f447633be8b4a613fee83f30f866cddee9"
+    },
+    "definitions/unitree_legged_msgs/HighState.msg": {
+      "bytes": 490,
+      "path": "/home/macromodel/Documents/uwvm-test-261018/build/unitree-complete-domain-20261018-r1/unitree_legged_msgs-materialized/definitions/unitree_legged_msgs/HighState.msg",
+      "sha256": "65d43eafa99cffb22481dd78236309d8bbb55db090f61a96af8a20ec63a00d62"
+    },
+    "definitions/unitree_legged_msgs/IMU.msg": {
+      "bytes": 99,
+      "path": "/home/macromodel/Documents/uwvm-test-261018/build/unitree-complete-domain-20261018-r1/unitree_legged_msgs-materialized/definitions/unitree_legged_msgs/IMU.msg",
+      "sha256": "8592dac6be50ed4dc06a1a601bb139e0d17e641b62c912c23fe0c7dc1193dd64"
+    },
+    "definitions/unitree_legged_msgs/LED.msg": {
+      "bytes": 23,
+      "path": "/home/macromodel/Documents/uwvm-test-261018/build/unitree-complete-domain-20261018-r1/unitree_legged_msgs-materialized/definitions/unitree_legged_msgs/LED.msg",
+      "sha256": "0123ebbfa35f57cba882f49119571774a51a838ba11dacef05f6e949835a3429"
+    },
+    "definitions/unitree_legged_msgs/LowCmd.msg": {
+      "bytes": 183,
+      "path": "/home/macromodel/Documents/uwvm-test-261018/build/unitree-complete-domain-20261018-r1/unitree_legged_msgs-materialized/definitions/unitree_legged_msgs/LowCmd.msg",
+      "sha256": "d8cae6ff55e5f7f6f9915499f5fcf5ba6e4acdcc7d320e285c15b6570217652d"
+    },
+    "definitions/unitree_legged_msgs/LowState.msg": {
+      "bytes": 560,
+      "path": "/home/macromodel/Documents/uwvm-test-261018/build/unitree-complete-domain-20261018-r1/unitree_legged_msgs-materialized/definitions/unitree_legged_msgs/LowState.msg",
+      "sha256": "a5fc3a6a7f54d05439f352b3dfc9e5078d25d04691abd1dd5264a51ee20c89e3"
+    },
+    "definitions/unitree_legged_msgs/MotorCmd.msg": {
+      "bytes": 322,
+      "path": "/home/macromodel/Documents/uwvm-test-261018/build/unitree-complete-domain-20261018-r1/unitree_legged_msgs-materialized/definitions/unitree_legged_msgs/MotorCmd.msg",
+      "sha256": "9a675cdb66ea59ff255bc3b59ccef4f953b6dc0148661e53829434cda5fc9fb4"
+    },
+    "definitions/unitree_legged_msgs/MotorState.msg": {
+      "bytes": 540,
+      "path": "/home/macromodel/Documents/uwvm-test-261018/build/unitree-complete-domain-20261018-r1/unitree_legged_msgs-materialized/definitions/unitree_legged_msgs/MotorState.msg",
+      "sha256": "0d94cb503bdfa1ee7fe38527fc8efa0aa7e2fc4c3361279615585caf9ec92f8e"
+    }
+  },
+  "original_source_inputs": {
+    "adapter": {
+      "bytes": 73639,
+      "sha256": "e830acc0c4a1cb243cb50f28cbabb71299dcc692ecd9a0b42dd725f4a4f361b3"
+    },
+    "bounded": {
+      "bytes": 239137,
+      "sha256": "3c40ed90910bde0ec15ae8976b0e34c37061c2eeacc121259604e7eaeba89f2d"
+    },
+    "exporter": {
+      "bytes": 10784,
+      "sha256": "55c5e504a1d61a648f73dd732aa0561f4b4dc0adf54dbe631857edf1564f3ac6"
+    },
+    "parent": {
+      "bytes": 61312,
+      "sha256": "1a73d6a87624e563bbb6be2624e77b51d7dba0f0f2fb524cda4079f493381826"
+    }
+  },
+  "source_preparation_executed": true
+}

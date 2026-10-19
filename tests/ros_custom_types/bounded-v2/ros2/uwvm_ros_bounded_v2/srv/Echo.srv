@@ -1,0 +1,7 @@
+# Complete native request; there is no hidden ticket field in this component.
+uwvm_ros_bounded_v2/Envelope sample
+uint32 limit
+---
+# Complete native response; the Runtime ticket remains an external envelope.
+bool accepted
+uwvm_ros_bounded_v2/Envelope echoed

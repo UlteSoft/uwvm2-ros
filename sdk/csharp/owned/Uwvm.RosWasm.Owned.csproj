@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework><Nullable>enable</Nullable><ImplicitUsings>disable</ImplicitUsings>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems><AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);UWVM_ROS2;UWVM_ROSWASM_OWNED_SERVICE</DefineConstants>
+    <AssemblyName>Uwvm.RosWasm.Owned</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../RosWasm/**/*.cs" />
+    <Compile Include="NativeOwned.cs;PreparedSession.cs;OwnedWire.cs;OwnedGroup.cs;ControlWire.cs" />
+    <Compile Include="$(RosOwnedGeneratedDir)/BoundedRecords.cs;$(RosOwnedGeneratedDir)/ControlRoots.cs" Condition="'$(RosOwnedService)' == '1'" />
+  </ItemGroup>
+  <Target Name="RequireExplicitOwnedSelection" BeforeTargets="CoreCompile">
+    <Error Condition="'$(RosOwnedService)' != '1' Or '$(RosBackend)' != '2'" Text="Explicit RosOwnedService=1 and RosBackend=2 required; ordinary SDK remains the default." />
+    <Error Condition="'$(RuntimeIdentifier)' != 'wasi-wasm' Or '$(RuntimeFrameworkVersion)' != '8.0.15'" Text="Only the pinned Mono/WASI recipe is admitted by this source variant." />
+    <Error Condition="'$(RosOwnedGeneratedDir)' == '' Or !Exists('$(RosOwnedGeneratedDir)/generation.control-csharp.json')" Text="Supply the fresh, paired complete32 C# generated-source revision." />
+  </Target>
+</Project>

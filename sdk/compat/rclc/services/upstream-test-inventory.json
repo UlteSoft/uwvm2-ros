@@ -1,0 +1,426 @@
+{
+  "format_version": 1,
+  "kind": "complete-acquired-original-rclc-test-source-inventory-not-execution",
+  "units": [
+    {
+      "path": "upstream/rclc/test/rclc/test_action_client.cpp",
+      "bytes": 30038,
+      "sha256": "5f0fc810f31066731ce70a2a08e93c61c247b848daae04a41fb31f1cc91ec96d",
+      "lexical_test_names": [
+        {
+          "fixture": "Test",
+          "case": "rclc_action_client"
+        },
+        {
+          "fixture": "ActionClientTest",
+          "case": "goal_accept"
+        },
+        {
+          "fixture": "ActionClientTest",
+          "case": "goal_reject"
+        },
+        {
+          "fixture": "ActionClientTest",
+          "case": "goal_accept_feedback_and_result"
+        },
+        {
+          "fixture": "ActionClientTest",
+          "case": "goal_accept_feedback_and_abort"
+        },
+        {
+          "fixture": "ActionClientTest",
+          "case": "goal_accept_cancel_success"
+        },
+        {
+          "fixture": "ActionClientTest",
+          "case": "goal_accept_cancel_reject"
+        },
+        {
+          "fixture": "ActionClientTest",
+          "case": "multi_goal_accept_feedback_and_result"
+        }
+      ],
+      "actual_compile": 0,
+      "actual_run": 0,
+      "status": "REQUIRED_ORIGINAL_SUITE_NOT_QUALIFIED",
+      "reason": "Complete official suite also requires broader test_msgs/Actions/native waitset/ABI semantics; source model groups are separate."
+    },
+    {
+      "path": "upstream/rclc/test/rclc/test_action_server.cpp",
+      "bytes": 23631,
+      "sha256": "3e18b0235900b9937e7ae71438c34464cd105be1d74d5393b91f265c8e10c1a9",
+      "lexical_test_names": [
+        {
+          "fixture": "Test",
+          "case": "rclc_action_server"
+        },
+        {
+          "fixture": "ActionServerTest",
+          "case": "goal_accept"
+        },
+        {
+          "fixture": "ActionServerTest",
+          "case": "goal_reject"
+        },
+        {
+          "fixture": "ActionServerTest",
+          "case": "goal_accept_feedback_and_result"
+        },
+        {
+          "fixture": "ActionServerTest",
+          "case": "goal_accept_feedback_and_abort"
+        },
+        {
+          "fixture": "ActionServerTest",
+          "case": "goal_accept_cancel_success"
+        },
+        {
+          "fixture": "ActionServerTest",
+          "case": "goal_accept_cancel_reject"
+        },
+        {
+          "fixture": "ActionServerTest",
+          "case": "multi_goal_accept_feedback_and_result"
+        },
+        {
+          "fixture": "Test",
+          "case": "rclc_action_server_regression_1"
+        }
+      ],
+      "actual_compile": 0,
+      "actual_run": 0,
+      "status": "REQUIRED_ORIGINAL_SUITE_NOT_QUALIFIED",
+      "reason": "Complete official suite also requires broader test_msgs/Actions/native waitset/ABI semantics; source model groups are separate."
+    },
+    {
+      "path": "upstream/rclc/test/rclc/test_client.cpp",
+      "bytes": 8108,
+      "sha256": "71c5b5a2f40828170dc514bd1c4462d8199a0053da54ab34b686c6004c446cfb",
+      "lexical_test_names": [
+        {
+          "fixture": "Test",
+          "case": "rclc_client_init_default"
+        },
+        {
+          "fixture": "Test",
+          "case": "rclc_client_init_best_effort"
+        },
+        {
+          "fixture": "Test",
+          "case": "rclc_client_init_qos"
+        }
+      ],
+      "actual_compile": 0,
+      "actual_run": 0,
+      "status": "REQUIRED_ORIGINAL_SUITE_NOT_QUALIFIED",
+      "reason": "Complete official suite also requires broader test_msgs/Actions/native waitset/ABI semantics; source model groups are separate."
+    },
+    {
+      "path": "upstream/rclc/test/rclc/test_executor.cpp",
+      "bytes": 107721,
+      "sha256": "8165eaabf267cd77f5f3fc8cbcb2a84a70dde9212365fc7e956875cc75bfa9a1",
+      "lexical_test_names": [
+        {
+          "fixture": "TestDefaultExecutor",
+          "case": "executor_init"
+        },
+        {
+          "fixture": "TestDefaultExecutor",
+          "case": "executor_fini"
+        },
+        {
+          "fixture": "TestDefaultExecutor",
+          "case": "executor_add_subscription"
+        },
+        {
+          "fixture": "TestDefaultExecutor",
+          "case": "executor_add_subscription_with_context"
+        },
+        {
+          "fixture": "TestDefaultExecutor",
+          "case": "executor_add_subscription_too_many"
+        },
+        {
+          "fixture": "TestDefaultExecutor",
+          "case": "executor_remove_subscription"
+        },
+        {
+          "fixture": "TestDefaultExecutor",
+          "case": "executor_add_timer"
+        },
+        {
+          "fixture": "TestDefaultExecutor",
+          "case": "executor_spin_timer"
+        },
+        {
+          "fixture": "TestDefaultExecutor",
+          "case": "executor_spin_publisher_timer_cancelled"
+        },
+        {
+          "fixture": "TestDefaultExecutor",
+          "case": "executor_spin_timer_cancelled"
+        },
+        {
+          "fixture": "TestDefaultExecutor",
+          "case": "executor_remove_timer"
+        },
+        {
+          "fixture": "TestDefaultExecutor",
+          "case": "executor_add_client"
+        },
+        {
+          "fixture": "TestDefaultExecutor",
+          "case": "executor_remove_client"
+        },
+        {
+          "fixture": "TestDefaultExecutor",
+          "case": "executor_add_service"
+        },
+        {
+          "fixture": "TestDefaultExecutor",
+          "case": "executor_remove_service"
+        },
+        {
+          "fixture": "TestDefaultExecutor",
+          "case": "executor_spin_some_API"
+        },
+        {
+          "fixture": "TestDefaultExecutor",
+          "case": "pub_sub_example"
+        },
+        {
+          "fixture": "TestDefaultExecutor",
+          "case": "spin_some_sequential_execution"
+        },
+        {
+          "fixture": "TestDefaultExecutor",
+          "case": "invocation_type"
+        },
+        {
+          "fixture": "TestDefaultExecutor",
+          "case": "update_wait_set"
+        },
+        {
+          "fixture": "TestDefaultExecutor",
+          "case": "spin_period"
+        },
+        {
+          "fixture": "TestDefaultExecutor",
+          "case": "semantics_RCLCPP"
+        },
+        {
+          "fixture": "TestDefaultExecutor",
+          "case": "semantics_LET"
+        },
+        {
+          "fixture": "TestDefaultExecutor",
+          "case": "trigger_one"
+        },
+        {
+          "fixture": "TestDefaultExecutor",
+          "case": "trigger_any"
+        },
+        {
+          "fixture": "TestDefaultExecutor",
+          "case": "trigger_all"
+        },
+        {
+          "fixture": "TestDefaultExecutor",
+          "case": "trigger_always"
+        },
+        {
+          "fixture": "TestDefaultExecutor",
+          "case": "executor_test_service"
+        },
+        {
+          "fixture": "TestDefaultExecutor",
+          "case": "executor_test_service_with_reqid"
+        },
+        {
+          "fixture": "TestDefaultExecutor",
+          "case": "executor_test_service_with_context"
+        },
+        {
+          "fixture": "TestDefaultExecutor",
+          "case": "executor_test_subscription_with_context"
+        },
+        {
+          "fixture": "TestDefaultExecutor",
+          "case": "executor_test_guard_condition"
+        },
+        {
+          "fixture": "TestDefaultExecutor",
+          "case": "prepare_executor_test"
+        },
+        {
+          "fixture": "TestDefaultExecutor",
+          "case": "executor_test_remove_guard_condition"
+        }
+      ],
+      "actual_compile": 0,
+      "actual_run": 0,
+      "status": "REQUIRED_ORIGINAL_SUITE_NOT_QUALIFIED",
+      "reason": "Complete official suite also requires broader test_msgs/Actions/native waitset/ABI semantics; source model groups are separate."
+    },
+    {
+      "path": "upstream/rclc/test/rclc/test_executor_handle.cpp",
+      "bytes": 5089,
+      "sha256": "46e6beb91064e3ea314e3d410ac3f72607298c344601db6dcea21bbaf2b59d3c",
+      "lexical_test_names": [
+        {
+          "fixture": "Test",
+          "case": "executor_handle_counters_zero_init"
+        },
+        {
+          "fixture": "Test",
+          "case": "executor_handle_init"
+        },
+        {
+          "fixture": "Test",
+          "case": "executor_handle_clear"
+        },
+        {
+          "fixture": "Test",
+          "case": "executor_handle_print"
+        },
+        {
+          "fixture": "Test",
+          "case": "executor_handle_get_ptr"
+        }
+      ],
+      "actual_compile": 0,
+      "actual_run": 0,
+      "status": "REQUIRED_ORIGINAL_SUITE_NOT_QUALIFIED",
+      "reason": "Complete official suite also requires broader test_msgs/Actions/native waitset/ABI semantics; source model groups are separate."
+    },
+    {
+      "path": "upstream/rclc/test/rclc/test_init.cpp",
+      "bytes": 3283,
+      "sha256": "3e59afd7a6aad71f7d9049dc5006ff67a56e3c3ce5a51dbf1ebfc2687c0745d3",
+      "lexical_test_names": [
+        {
+          "fixture": "Test",
+          "case": "rclc_support_init"
+        },
+        {
+          "fixture": "Test",
+          "case": "rclc_support_init_with_options"
+        },
+        {
+          "fixture": "Test",
+          "case": "rclc_support_fini"
+        }
+      ],
+      "actual_compile": 0,
+      "actual_run": 0,
+      "status": "REQUIRED_ORIGINAL_SUITE_NOT_QUALIFIED",
+      "reason": "Complete official suite also requires broader test_msgs/Actions/native waitset/ABI semantics; source model groups are separate."
+    },
+    {
+      "path": "upstream/rclc/test/rclc/test_node.cpp",
+      "bytes": 3843,
+      "sha256": "5006d24c8f85fec65e911f8c291e14fdfe413acefbf61ed7bfae99fdb797a1e6",
+      "lexical_test_names": [
+        {
+          "fixture": "Test",
+          "case": "rclc_node_init_default"
+        },
+        {
+          "fixture": "Test",
+          "case": "rclc_node_init_with_options"
+        }
+      ],
+      "actual_compile": 0,
+      "actual_run": 0,
+      "status": "REQUIRED_ORIGINAL_SUITE_NOT_QUALIFIED",
+      "reason": "Complete official suite also requires broader test_msgs/Actions/native waitset/ABI semantics; source model groups are separate."
+    },
+    {
+      "path": "upstream/rclc/test/rclc/test_publisher.cpp",
+      "bytes": 6312,
+      "sha256": "a530d74bb7c5f1204e1eba684a054d24427eaa189faacfa9553b8112b0e7566e",
+      "lexical_test_names": [
+        {
+          "fixture": "Test",
+          "case": "rclc_publisher_init_default"
+        },
+        {
+          "fixture": "Test",
+          "case": "rclc_publisher_init_best_effort"
+        },
+        {
+          "fixture": "Test",
+          "case": "rclc_publisher_init_qos"
+        }
+      ],
+      "actual_compile": 0,
+      "actual_run": 0,
+      "status": "REQUIRED_ORIGINAL_SUITE_NOT_QUALIFIED",
+      "reason": "Complete official suite also requires broader test_msgs/Actions/native waitset/ABI semantics; source model groups are separate."
+    },
+    {
+      "path": "upstream/rclc/test/rclc/test_service.cpp",
+      "bytes": 7196,
+      "sha256": "fa169cabcc1366c634207f456f4b487d8ce9f74c5ff38c52b5b696728c0d2e96",
+      "lexical_test_names": [
+        {
+          "fixture": "Test",
+          "case": "rclc_service_init_default"
+        },
+        {
+          "fixture": "Test",
+          "case": "rclc_service_init_best_effort"
+        },
+        {
+          "fixture": "Test",
+          "case": "rclc_service_init_qos"
+        }
+      ],
+      "actual_compile": 0,
+      "actual_run": 0,
+      "status": "REQUIRED_ORIGINAL_SUITE_NOT_QUALIFIED",
+      "reason": "Complete official suite also requires broader test_msgs/Actions/native waitset/ABI semantics; source model groups are separate."
+    },
+    {
+      "path": "upstream/rclc/test/rclc/test_subscription.cpp",
+      "bytes": 6362,
+      "sha256": "d526c9b560f5e169432f26411f58dd5f44b2ac2c3b30b84ebcdbed377142e049",
+      "lexical_test_names": [
+        {
+          "fixture": "Test",
+          "case": "rclc_subscription_init_default"
+        },
+        {
+          "fixture": "Test",
+          "case": "rclc_subscription_init_best_effort"
+        },
+        {
+          "fixture": "Test",
+          "case": "rclc_subscription_init_qos"
+        }
+      ],
+      "actual_compile": 0,
+      "actual_run": 0,
+      "status": "REQUIRED_ORIGINAL_SUITE_NOT_QUALIFIED",
+      "reason": "Complete official suite also requires broader test_msgs/Actions/native waitset/ABI semantics; source model groups are separate."
+    },
+    {
+      "path": "upstream/rclc/test/rclc/test_timer.cpp",
+      "bytes": 2125,
+      "sha256": "5e6cffbb53a1d8837f925c9990f579558f228cf7a449120a41a5618d3b83dff1",
+      "lexical_test_names": [
+        {
+          "fixture": "Test",
+          "case": "rclc_timer_init_default2"
+        }
+      ],
+      "actual_compile": 0,
+      "actual_run": 0,
+      "status": "REQUIRED_ORIGINAL_SUITE_NOT_QUALIFIED",
+      "reason": "Complete official suite also requires broader test_msgs/Actions/native waitset/ABI semantics; source model groups are separate."
+    }
+  ],
+  "unit_count": 11,
+  "actual_tests_run": 0,
+  "official_cases_passed": 0
+}

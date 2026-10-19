@@ -1,0 +1,6 @@
+# Relocatable source SDK package. Consumers select their own Wasm compiler and
+# explicit ROS backend header; importing this package does not contact ROS.
+@PACKAGE_INIT@
+set_and_check(ROSWASM_SDK_ROOT "@PACKAGE_ROSWASM_SDK_INSTALL_DIR@")
+include("${CMAKE_CURRENT_LIST_DIR}/roswasmTargets.cmake")
+check_required_components(roswasm)

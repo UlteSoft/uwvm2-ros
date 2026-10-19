@@ -1,0 +1,455 @@
+{
+  "additional_Root_owned_native_template": {
+    "bytes": 13937,
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/noetic-native-owned-preparation/owner-template.py",
+    "sha256": "234997cbcb9baeb5d731165a7bcb15c88e24c85e301cb8adabe4614c3eb00655"
+  },
+  "additional_Root_owned_native_template_scope": "Root provided maintained template; own narrower audit observes only exact current bytes. Root/Memory own its separately reported source peer and actual argument substitution, not a currently executed owner.",
+  "additional_current_source_files": [
+    {
+      "bytes": 36389,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/common.py",
+      "sha256": "370aad457a8571019d6b8829f95ed13aad494fdb0ffc33e0c0c6d71bfa35755b"
+    },
+    {
+      "bytes": 5181,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/test_output_budget_guard.py",
+      "sha256": "874bb5d5e51645fd82797f6375d311748c8890fd7a0745afe439ba397a7eb8b7"
+    },
+    {
+      "bytes": 4222,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/test_actor_retirement_ledgers.py",
+      "sha256": "7e0b046056b1af6b53facba204133a833416fcdc31447660dbf52cff764cdf2a"
+    },
+    {
+      "bytes": 59610,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/typed_transport_inputs.py",
+      "sha256": "f7248f790a1b8e75dddb029aa24401230e664eb61c4624a5cd7444c74944d949"
+    },
+    {
+      "bytes": 29554,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/run_direct_physics.py",
+      "sha256": "c06634af4458afaf2044fa3e8552b9fa97109caf0f807d643bb9f7e020720886"
+    },
+    {
+      "bytes": 7326,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/test_typed_transport_policy.py",
+      "sha256": "28fa8714d527576fcf6d0d97c8053f3766ec35e4d4829109250af317a84cf55d"
+    }
+  ],
+  "all_current_declared_file_count": 37,
+  "codec_final_current_scope": "Typedf724 retained; Directprepare/Hooks explicit hardware-profile successor source-reviewed501178c8; actual current codecpolicy/physics execution pending, Source44Core7 originalPASS unchanged.",
+  "common_source_peer_chain": {
+    "current": {
+      "bytes": 36389,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/common.py",
+      "sha256": "370aad457a8571019d6b8829f95ed13aad494fdb0ffc33e0c0c6d71bfa35755b"
+    },
+    "current_actor_peer": "45a0bc06e533110ab57933b814d0ffb5a03d8e4d80c801f5bd08eec5aaa91110",
+    "prior_guard_sha256": "508917d35e50ba18845bfb71dfaf1e04bb7557b66787cfa19f0e35565eab5ba3",
+    "reversing_only_reviewed_actor_init_delta_reconstructs_prior_guard_bytes": true
+  },
+  "core_scope": "Root original8 compile/link fullpeer + Memory38 explicitfactory peer + Root final45 narrow/fulladapter peer; all5+3+14+16+7 suites and9command/static contract bound. No actual policy/native execution.",
+  "current_manifest_checks": [
+    {
+      "all_declared_current_files_match": true,
+      "current_files": [
+        {
+          "bytes": 3682,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/gateways/common/nonreusing_ids.h",
+          "sha256": "3e0dc86c2cdad1d1dadf015c7548d5cbbac72f782e156da49f5a88725ba0fd2a"
+        },
+        {
+          "bytes": 7194,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/gateways/common/service.h",
+          "sha256": "991dc27ac6a24958628cc0e8e1db63fe2227d8070426d772abe327f4b6a9c0eb"
+        },
+        {
+          "bytes": 21502,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/gateways/ros1/action.h",
+          "sha256": "4fbe253cd340dacd4339e090bed7b3d3150b11d9e6040ed18dec0267d5985ac2"
+        },
+        {
+          "bytes": 28452,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/gateways/ros1/custom_actions.h",
+          "sha256": "b53179b270b7937ca2601d7304bffb90cbc1171d224e30c99263a3ce61853159"
+        },
+        {
+          "bytes": 43891,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/gateways/ros2/custom_actions.h",
+          "sha256": "ce584668525dcb1ffa50bc2b4b6807cf1b78dd696e1f0e96db19398fe8dbb77b"
+        },
+        {
+          "bytes": 15917,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_ticket_lifetime/contract.cc",
+          "sha256": "397b622916d46a8cba452860cb11c3fd452f21f37cf62771f5a7bc1b42012472"
+        },
+        {
+          "bytes": 2397,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_ticket_lifetime/action_contract.h",
+          "sha256": "602cb99d6e115d0f7e63f8e1c82c2be2e87b429c001b19a2689cecf80efbc7ee"
+        },
+        {
+          "bytes": 1311,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_ticket_lifetime/action_ros1.cc",
+          "sha256": "5f91b8ed704e4b97685e3437ae1787708ea7ff2ea5d57d5d4356955e9e1c5e9e"
+        },
+        {
+          "bytes": 1116,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_ticket_lifetime/action_ros2.cc",
+          "sha256": "7dec720f27e39a8332b2e55cfae13f2d005ae35b8801e59de9c04b0735c32434"
+        },
+        {
+          "bytes": 8831,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_ticket_lifetime/README.md",
+          "sha256": "e60c51c8a5695c29b3b74c32a35f104904525ca3ea7f6a77acbf0061860cd81a"
+        },
+        {
+          "bytes": 9576,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_ticket_lifetime/production-source-delta.patch",
+          "sha256": "5f369814a5e53b11538199f16579b25b07282c8a26f5caabb433eeae1794653b"
+        },
+        {
+          "bytes": 1945,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_ticket_lifetime/original-content-selection.json",
+          "sha256": "6cdfb1ed32c6272840057959e39eba7edb2ce520907b1a8f96cf54ea8eebae17"
+        }
+      ],
+      "manifest": {
+        "bytes": 5031,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_ticket_lifetime/source-ready.json",
+        "sha256": "902e9803fb197dbd135bf0df11ba220dd02e1c576ce6cacb57fe64c03c8dad10"
+      },
+      "status": "SOURCE_READY_INDEPENDENTLY_PEERED_LINUX_VALIDATION_PENDING"
+    },
+    {
+      "all_declared_current_files_match": true,
+      "current_files": [
+        {
+          "bytes": 15530,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/NATIVE_LEGACY_ROS1.md",
+          "sha256": "0c5b06c6207e9a3f8bcaea5d4f650638c7d03cab2fe6afd593ffb51e369c67cc"
+        },
+        {
+          "bytes": 17625,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/NOETIC_NATIVE.md",
+          "sha256": "4f806b83d6662fcd15490480aa55d6e93e8dba912962a97e64b76dd19eae4477"
+        },
+        {
+          "bytes": 14146,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/native_legacy_ros1_peer.cpp",
+          "sha256": "8c54832eb24d37d31419c596732afcaeb90d8f5db778bdbfa84295bbc1eb113d"
+        },
+        {
+          "bytes": 892,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/noetic_native.selection.template.json",
+          "sha256": "f191fe1842c0fb97db312eae3f52e5ee2672a3fe1d6d4857bbc97a5f3029f327"
+        },
+        {
+          "bytes": 31938,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/noetic_native_support.py",
+          "sha256": "f8c5dd3d7e3cd6ad7acce33771bcdd53b2f4781598b529d33b6bb2bfe77f71a4"
+        },
+        {
+          "bytes": 46083,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/prepare_noetic_native.py",
+          "sha256": "6f3528b5f5760b9b386f590149586fec3b0b324e6ebbd2c154d41783a056fca8"
+        },
+        {
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/test_noetic_elf.py",
+          "bytes": 11053,
+          "sha256": "1a6bb366f3c2c9d406fae84bf864e537fc4a0d2f214ac06bf33e1385c2d67bbf"
+        }
+      ],
+      "manifest": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/noetic-native-source-ready.json",
+        "bytes": 15986,
+        "sha256": "469bd83e77e8557d0fdcd05f85bdf8af29d1b4da10ee03fd00e678aaf23fde9c"
+      },
+      "status": "SOURCE_READY_WITNESS_POSIX_PAUSE_NAME_FIX_INDEPENDENTLY_REVIEWED_FRESH_REBUILD_PENDING"
+    },
+    {
+      "all_declared_current_files_match": true,
+      "current_files": [
+        {
+          "bytes": 49176,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/prepare_legacy_guests.py",
+          "sha256": "b8871c7bae7de3239baa59547b5ee74208e326283a5a09d028dc6fefc7531298"
+        },
+        {
+          "bytes": 32485,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/command_build_support.py",
+          "sha256": "f0f3bce594db95ea68b554f4f6a9ce18b092205af787d372d91299c8e09191f7"
+        },
+        {
+          "bytes": 7801,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/command-build-support-source-provenance.json",
+          "sha256": "c573f62781fe55cea5c5ca0eb73ffd42d2adaaa6d4538d35e0b3813adb148a0e"
+        },
+        {
+          "bytes": 16001,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/test_legacy_guest_build_policy.py",
+          "sha256": "4816af55a63da28a3e3abc260340d7b54a7b895dbad5ddb41a53966096e88278"
+        },
+        {
+          "bytes": 14974,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/LEGACY_GUEST_BUILDS.md",
+          "sha256": "af68d39d6eda3edfd1b738910a2d897bc0ede35a6f5dafdd77af109a2fcbbba7"
+        },
+        {
+          "bytes": 750,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/legacy_guest_builds/selection.template.json",
+          "sha256": "1afdbdeef52e0e7138f0fc08a7016b4005faa67829a44b6491f4d4ee354ef86c"
+        },
+        {
+          "bytes": 5467,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/legacy_guest_builds/initial-command-support-provenance.json",
+          "sha256": "d17095d232ee657cf087e0a8236883e7f8a5fbd09c670af55209f28b4a3cf6dc"
+        }
+      ],
+      "manifest": {
+        "bytes": 5360,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/legacy_guest_builds/source-ready.json",
+        "sha256": "143c0667ad586d21d2cbba87d3f153830cb7809346262dd96028bf23ac5e0698"
+      },
+      "status": "SOURCE_READY_INDEPENDENTLY_PEERED_PENDING_ROOT_LINUX_EXECUTION"
+    },
+    {
+      "all_declared_current_files_match": true,
+      "current_files": [
+        {
+          "bytes": 16329,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/run_legacy_transport.py",
+          "sha256": "85c5949b920a412c2e252f27b81778aff121d2d8996b710bd59d281124eb1ced"
+        },
+        {
+          "bytes": 46404,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/legacy_transport_inputs.py",
+          "sha256": "df136015852fba79c5ff4b38dee9a0466a631f08978adac77075f59ec85aaf8a"
+        },
+        {
+          "bytes": 23655,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/legacy_transport_session.py",
+          "sha256": "a8255fd4ac8732a052d3981b7f9391a4c33b16a5a94c1e151948356c128fd8b1"
+        },
+        {
+          "bytes": 16206,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/LEGACY_TRANSPORT.md",
+          "sha256": "3abf2f74cc260fc26bfaa8e2eb019aebe0126ebb223f66fc596fd6cdb75655d4"
+        },
+        {
+          "bytes": 1834,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/legacy-transport-selection.template.json",
+          "sha256": "7028495fd7bfaee3e986c0f4a90c5bbe58ff5cff102c05d5e1191b3f5af7c78c"
+        },
+        {
+          "bytes": 15540,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/test_legacy_transport_protocol.py",
+          "sha256": "1a58862bdf6746193e26a9891f2dfa1ecc3f608fd4177abfe64291cb583dc094"
+        },
+        {
+          "bytes": 6369,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/legacy-transport-independent-source-peer.json",
+          "sha256": "07c69ae882c5cd2fef4341212c2242ecb85362f43f733f1f6f418e7a60cf469b"
+        },
+        {
+          "bytes": 5541,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/legacy12/original-source-reuse-independent-source-peer.json",
+          "sha256": "055d75a005c1a8a7c3bc1372434eee5b56e31f9b8e628e5112dc4f6e3442f0a5"
+        }
+      ],
+      "manifest": {
+        "bytes": 4979,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/legacy12/source-ready.json",
+        "sha256": "0631686fd793839a211b7a178e6899b6874e804850e145757b9294eda62c818b"
+      },
+      "status": "SOURCE_READY_INDEPENDENTLY_REVIEWED_NOT_EXECUTED"
+    },
+    {
+      "all_declared_current_files_match": true,
+      "current_files": [
+        {
+          "bytes": 9238,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/CORE_REGRESSIONS.md",
+          "sha256": "1309209c192fe58f3aa6315d2ae8443a5eadd76715a6c65efdacd6b05758df67"
+        },
+        {
+          "bytes": 866,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/core-regressions-native-config.template.json",
+          "sha256": "3a2bc6b0611fa001581ee92f8c615caaec2e11a40713828246dd56ef94445a41"
+        },
+        {
+          "bytes": 34012,
+          "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/run_core_regressions.py",
+          "sha256": "4a5f0f0f95881e44ea3b5e66e8e54fa7fd28734ce380cf8a2524f3a0841956fe"
+        }
+      ],
+      "manifest": {
+        "bytes": 11979,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/core-regressions-source-ready.json",
+        "sha256": "b3f949cbe3cc06178d4395303f2929f00119950c0dacdfce1b94c23ef7bb3992"
+      },
+      "status": "SOURCE_READY_FINAL45_INDEPENDENT_SOURCE_PEER_CLOSED_REAL_LINUX_EXECUTION_PENDING"
+    }
+  ],
+  "execution_performed": false,
+  "format_version": 1,
+  "kind": "current-source-batch-cross-seal-audit",
+  "native_adaptation_peer_chain": {
+    "current_docs": {
+      "bytes": 17625,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/NOETIC_NATIVE.md",
+      "sha256": "4f806b83d6662fcd15490480aa55d6e93e8dba912962a97e64b76dd19eae4477"
+    },
+    "current_entry": {
+      "bytes": 46083,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/prepare_noetic_native.py",
+      "sha256": "6f3528b5f5760b9b386f590149586fec3b0b324e6ebbd2c154d41783a056fca8"
+    },
+    "current_narrow_independent_peer": {
+      "bytes": 5840,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/noetic-native-full-md-template-independent-source-peer.json",
+      "sha256": "14d2e83fd413c2abc5c6f87aaba334abf87354f86b7a4985965374f64c2e4cdb"
+    },
+    "full_md_rule_delta_source_review": {
+      "bytes": 5056,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/noetic-native-full-md-template-source-review.json",
+      "sha256": "cb8e4795784cb93b5362966f88aa64da59a0f87d2523d0745f74e9d1da1c465f"
+    },
+    "old_pre_adaptation_fullpeer": {
+      "bytes": 5031,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/noetic-native-pre-empty-include-adaptation/noetic-native-independent-source-peer-root.json",
+      "sha256": "399083df462292ea27733f1a43a1dfda672fc8ee73ecec209678b4f2817be4ec"
+    },
+    "preserved_before_explicit_full_md_rule": {
+      "bytes": 1572,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/noetic-native-pre-full-md-template/manifest.json",
+      "sha256": "668d42143d93d7d9f332aae86db4a097174dfa30ecc19c2563ff062a7129863b"
+    },
+    "preserved_original_package": {
+      "bytes": 2832,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/noetic-native-pre-empty-include-adaptation/manifest.json",
+      "sha256": "2ba4d314b256e8eded0ed570b74fd60458263162aa7a14bf27005646c4c86958"
+    },
+    "previous_empty_include_narrow_independent_peer": {
+      "bytes": 2942,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/noetic-native-empty-include-source-peer-root-r1.json",
+      "sha256": "339f0913ebdbb32104fdcb146d220eba4b49fa667293df38c97faca49fa3cbac"
+    },
+    "scope": "Historical568ce/399083 and b12/339f source peers remain separately preserved. Current fdc36dfd source delta changes only nested configure to pass explicit object-specific full-MD compile rule; d755 strict verifier/source/link/mapping/lifecycle unchanged. Independent14d2 peer closes current source-only delta; Source44 actual failed native batch remains FAIL; fresh actual source/native rebuild required.",
+    "unchanged_support": {
+      "bytes": 31938,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/noetic_native_support.py",
+      "sha256": "f8c5dd3d7e3cd6ad7acce33771bcdd53b2f4781598b529d33b6bb2bfe77f71a4"
+    }
+  },
+  "preserved_before_empty_include_adaptation_audit": {
+    "bytes": 17325,
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/noetic-native-pre-empty-include-adaptation/current-batch-source-cross-seal-before-empty-include.json",
+    "sha256": "ce5fbb2a1ddc888474ba2255837f5765ae1e6594bc6e1b27b847ea232fc95d27"
+  },
+  "preserved_before_explicit_full_md_rule_audit": {
+    "bytes": 19794,
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/noetic-native-pre-full-md-template/current-batch-source-cross-seal-before-full-md-template.json",
+    "sha256": "c4eebe2dd79e8292162b88cb7c096a3cf52dfc25b44022981e71f522bcc9b93c"
+  },
+  "preserved_before_witness_name_fix_audit": {
+    "bytes": 21475,
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/noetic-native-witness-pause-name/current-batch-source-cross-seal.before.json",
+    "sha256": "9ee411cc479cd7fdde29b3d2952bb06fce628f6c4847009000104dc2a8d97932"
+  },
+  "required_next": [
+    "Root new complete Source45 data freeze and actual current64 constructor/native3 rebuild; old Source44 source and failed report remain unchanged provenance.",
+    "Actual Guest6, registry-bound Workers,12TCPROS,28DDS,physics,performance and patched LLVM provider remain separately qualified; this file is source-only cross-seal, not an actual acceptance receipt."
+  ],
+  "source_peers": [
+    {
+      "bytes": 4812,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_ticket_lifetime/independent-source-peer-root.json",
+      "sha256": "685de416e915181aa31c387140934695d001832ed83c2d010d2f056eecb24e79"
+    },
+    {
+      "bytes": 3227,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/output-budget-guard-independent-source-peer-memory.json",
+      "sha256": "9c2bced125344bdec6da1c3b2d2b094af4dd5fad556f1ed5c956e1810238458b"
+    },
+    {
+      "bytes": 2635,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/actor-retirement-independent-source-peer.json",
+      "sha256": "45a0bc06e533110ab57933b814d0ffb5a03d8e4d80c801f5bd08eec5aaa91110"
+    },
+    {
+      "bytes": 9079,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/legacy_guest_builds/independent-source-peer-source-state.json",
+      "sha256": "5791c906d758d747d8e68b886c792546469b4ec03d646b4277195f5988ce4ea1"
+    },
+    {
+      "bytes": 5541,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/legacy12/original-source-reuse-independent-source-peer.json",
+      "sha256": "055d75a005c1a8a7c3bc1372434eee5b56e31f9b8e628e5112dc4f6e3442f0a5"
+    },
+    {
+      "bytes": 4698,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/core-regressions-eight-policy-baseline/core-regressions-independent-source-peer-root.json",
+      "sha256": "fc2806002eeca0feae502b80f6be4da2536a3aa59695e8f77a5ad91da424eec1"
+    },
+    {
+      "bytes": 4529,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/core-policy-factory-independent-source-peer-memory.json",
+      "sha256": "c87f4732b2e87464ad6317b8c61a1a46bb51aa0b0c273886045df5100ca19b38"
+    },
+    {
+      "bytes": 4431,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/typed-policy-codecs/independent-source-peer-source-state-r2.json",
+      "sha256": "2627db16889e6e58f056d2ba9e8717b39bd6b41307b14f7a4d3580005fc29ebe"
+    },
+    {
+      "bytes": 4232,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/core-regressions-final45-independent-source-peer-root.json",
+      "sha256": "5474dfd256ab11cbfe25de33a92ec9aeab1cb2e1a1ad566c971813cf7cbb1d8a"
+    },
+    {
+      "bytes": 2942,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/noetic-native-empty-include-source-peer-root-r1.json",
+      "sha256": "339f0913ebdbb32104fdcb146d220eba4b49fa667293df38c97faca49fa3cbac"
+    },
+    {
+      "bytes": 5840,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/noetic-native-full-md-template-independent-source-peer.json",
+      "sha256": "14d2e83fd413c2abc5c6f87aaba334abf87354f86b7a4985965374f64c2e4cdb"
+    }
+  ],
+  "status": "CURRENT_BATCH_RESEALED_AFTER_WITNESS_POSIX_NAME_FIX_READY_FOR_FRESH_ROOT_BUILD_NOT_EXECUTION",
+  "validation": "Standard-library JSON/byte SHA comparisons only; no candidate imports, invocations, tests, compiler or SSH.",
+  "witness_name_fix_peer": {
+    "bytes": 1218,
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/noetic-native-witness-pause-name/independent-source-peer.json",
+    "sha256": "9f96d0cae9853ab048603d9595ac8b862efb9e8df2696c48003d7a571a4da01b"
+  },
+  "streaming_elf_source_peer": {
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/noetic-native-streaming-elf/independent-source-peer.json",
+    "bytes": 2289,
+    "sha256": "5ea91ccd3f702d3c7562ff6d1b30ef848d038e265f4dafac50e08670525d83e9"
+  },
+  "preserved_before_streaming_elf": {
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/noetic-native-streaming-elf/current-batch-source-cross-seal.before.json",
+    "bytes": 22315,
+    "sha256": "66007006a002118743f0283b971f741fefccc3b6fc6778bda23824a89df1a91e"
+  },
+  "streaming_elf_scope": "Current producer/support/source readiness re-bound; oldnative74decoder preserved unchanged, only currentNoetic lane uses boundedstreamingread; actual newtests/builds not yet performed.",
+  "streaming_elf_guarded_test_factory_peer": {
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/noetic-native-streaming-elf/test-factory-root-source-peer.json",
+    "bytes": 1064,
+    "sha256": "d59de86045de80214c7880f8a12950550eb0c745bf6c328e3f7ba1ed3a87c947"
+  },
+  "direct3_hardware_profile_delta_source_peer": {
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/direct3-vtune-source-only/independent-source-peer.json",
+    "bytes": 8070,
+    "sha256": "501178c82664467276ca79986ec75e5034a257d04f131d731be98fade1f30b96"
+  },
+  "preserved_before_direct3_hardware_profile_delta": {
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/direct3-vtune-source-only/previous-current-cross-seal.json",
+    "bytes": 23678,
+    "sha256": "bb5469182cb170014d4448c78477961c7d7e09ca8ea300bd3d2ef0f6406abab0"
+  }
+}

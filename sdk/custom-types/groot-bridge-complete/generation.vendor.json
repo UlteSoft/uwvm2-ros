@@ -1,0 +1,474 @@
+{
+  "compiler_execution": "NOT_RUN",
+  "declared_constants": {},
+  "declared_defaults": {},
+  "declared_empty_default_native_binding": "REFUSED_UNTIL_INDEPENDENT_ORIGINAL_NATIVE_IDL_SOURCE_PROOF",
+  "default_authority": [],
+  "facade_template_inputs": [
+    {
+      "bytes": 15514,
+      "generator_relative": "interface_templates/bounded_interfaces.rs.in",
+      "sha256": "063130e797684df0530aa1882f8082a10d5756ceb892677d8082e980c7b29b18"
+    },
+    {
+      "bytes": 17046,
+      "generator_relative": "interface_templates/bounded_interfaces.mjs.in",
+      "sha256": "10986eddd766435dde89b0d3046ef7f48705e2c3e21301c99163c3a7d4ea62fe"
+    },
+    {
+      "bytes": 9692,
+      "generator_relative": "interface_templates/bounded_interfaces.go.in",
+      "sha256": "c9e7893ccedc67b91a3aebc51c1e0c3c65263f03b2769aa07c34fcfb6befa1f7"
+    },
+    {
+      "bytes": 16626,
+      "generator_relative": "interface_templates/bounded_interfaces.ts.in",
+      "sha256": "a61a7b7eb3b5464648577f3ab44629a5c6140d04effff6e4099509f68b204ac5"
+    }
+  ],
+  "format": "uwvm-ros-vendor-complete-bounded-v1",
+  "implemented_record_outputs": [
+    "c",
+    "cpp",
+    "rust",
+    "javascript",
+    "assemblyscript",
+    "tinygo"
+  ],
+  "implicit_permissions": [],
+  "member_map": {
+    "uwvm_groot_bridge/msg/FloatTensor": {
+      "assemblyscript": {
+        "key": "key",
+        "shape": "shape",
+        "values": "values"
+      },
+      "c": {
+        "key": "key",
+        "shape": "shape",
+        "values": "values"
+      },
+      "cpp": {
+        "key": "key",
+        "shape": "shape",
+        "values": "values"
+      },
+      "javascript": {
+        "key": "key",
+        "shape": "shape",
+        "values": "values"
+      },
+      "rust": {
+        "key": "key",
+        "shape": "shape",
+        "values": "values"
+      },
+      "tinygo": {
+        "key": "Key",
+        "shape": "Shape",
+        "values": "Values"
+      }
+    },
+    "uwvm_groot_bridge/msg/RGBFrame": {
+      "assemblyscript": {
+        "key": "key",
+        "pixels": "pixels",
+        "shape": "shape"
+      },
+      "c": {
+        "key": "key",
+        "pixels": "pixels",
+        "shape": "shape"
+      },
+      "cpp": {
+        "key": "key",
+        "pixels": "pixels",
+        "shape": "shape"
+      },
+      "javascript": {
+        "key": "key",
+        "pixels": "pixels",
+        "shape": "shape"
+      },
+      "rust": {
+        "key": "key",
+        "pixels": "pixels",
+        "shape": "shape"
+      },
+      "tinygo": {
+        "key": "Key",
+        "pixels": "Pixels",
+        "shape": "Shape"
+      }
+    },
+    "uwvm_groot_bridge/msg/TextSequence": {
+      "assemblyscript": {
+        "key": "key",
+        "shape": "shape",
+        "texts": "texts"
+      },
+      "c": {
+        "key": "key",
+        "shape": "shape",
+        "texts": "texts"
+      },
+      "cpp": {
+        "key": "key",
+        "shape": "shape",
+        "texts": "texts"
+      },
+      "javascript": {
+        "key": "key",
+        "shape": "shape",
+        "texts": "texts"
+      },
+      "rust": {
+        "key": "key",
+        "shape": "shape",
+        "texts": "texts"
+      },
+      "tinygo": {
+        "key": "Key",
+        "shape": "Shape",
+        "texts": "Texts"
+      }
+    },
+    "uwvm_groot_bridge/srv/InferAction_Request": {
+      "assemblyscript": {
+        "application_nonce": "application_nonce",
+        "language": "language",
+        "state": "state",
+        "video": "video"
+      },
+      "c": {
+        "application_nonce": "application_nonce",
+        "language": "language",
+        "state": "state",
+        "video": "video"
+      },
+      "cpp": {
+        "application_nonce": "application_nonce",
+        "language": "language",
+        "state": "state",
+        "video": "video"
+      },
+      "javascript": {
+        "application_nonce": "application_nonce",
+        "language": "language",
+        "state": "state",
+        "video": "video"
+      },
+      "rust": {
+        "application_nonce": "application_nonce",
+        "language": "language",
+        "state": "state",
+        "video": "video"
+      },
+      "tinygo": {
+        "application_nonce": "Application_nonce",
+        "language": "Language",
+        "state": "State",
+        "video": "Video"
+      }
+    },
+    "uwvm_groot_bridge/srv/InferAction_Response": {
+      "assemblyscript": {
+        "action": "action",
+        "application_nonce": "application_nonce",
+        "info_is_empty": "info_is_empty",
+        "status": "status"
+      },
+      "c": {
+        "action": "action",
+        "application_nonce": "application_nonce",
+        "info_is_empty": "info_is_empty",
+        "status": "status"
+      },
+      "cpp": {
+        "action": "action",
+        "application_nonce": "application_nonce",
+        "info_is_empty": "info_is_empty",
+        "status": "status"
+      },
+      "javascript": {
+        "action": "action",
+        "application_nonce": "application_nonce",
+        "info_is_empty": "info_is_empty",
+        "status": "status"
+      },
+      "rust": {
+        "action": "action",
+        "application_nonce": "application_nonce",
+        "info_is_empty": "info_is_empty",
+        "status": "status"
+      },
+      "tinygo": {
+        "action": "Action",
+        "application_nonce": "Application_nonce",
+        "info_is_empty": "Info_is_empty",
+        "status": "Status"
+      }
+    }
+  },
+  "native_execution": "NOT_RUN",
+  "native_exporter_helper_source": {
+    "bytes": 10784,
+    "sha256": "55c5e504a1d61a648f73dd732aa0561f4b4dc0adf54dbe631857edf1564f3ac6"
+  },
+  "native_registry_emitted": false,
+  "outputs": {
+    "bounded_interfaces.go": {
+      "bytes": 15817,
+      "sha256": "5b104b4745079415279850177bddefbee9e6a862c74b73967111e9707c46a3ee"
+    },
+    "bounded_interfaces.h": {
+      "bytes": 4013,
+      "sha256": "2590197a98f62243c71709412d0fc20265d5b7626d4abc4af7a53a87713c2780"
+    },
+    "bounded_interfaces.hpp": {
+      "bytes": 7594,
+      "sha256": "5e744d3bdbb7581f546e5b20d2ade027550390a116e241d535fcacb42231c904"
+    },
+    "bounded_interfaces.mjs": {
+      "bytes": 17842,
+      "sha256": "e72ac30e26ff5a70fa31847a5d0c7eb4785084ce647480257599655a23da993b"
+    },
+    "bounded_interfaces.rs": {
+      "bytes": 16403,
+      "sha256": "7802df0a4efccbf0b9163291071d96865e0ef5d06685f2e1113be20f878c5f0f"
+    },
+    "bounded_interfaces.ts": {
+      "bytes": 17959,
+      "sha256": "dd37e41d31228193676027d9b3ba7bb392d7774bc9a872e040b5db16d51c4def"
+    },
+    "bounded_records.go": {
+      "bytes": 22982,
+      "sha256": "3021e236db08dbd3a7e4265a22c78248f3cda1777cebf0631f0bca3efb05c559"
+    },
+    "bounded_records.h": {
+      "bytes": 34143,
+      "sha256": "9941ee777b345756f53d7f86f9da0f59a46e342db70cf72003d8127e39f4a1f5"
+    },
+    "bounded_records.hpp": {
+      "bytes": 6593,
+      "sha256": "a5632760aa9b091ef7cdfbc5337a43a62288e97bd544f4bc15fd0da379c9c636"
+    },
+    "bounded_records.mjs": {
+      "bytes": 19700,
+      "sha256": "5d90d5b06d1a35bb9a0306f120910657956c00af7dacf94c40685d8238c77d31"
+    },
+    "bounded_records.rs": {
+      "bytes": 18619,
+      "sha256": "239fd913bd9ee139a338889796ca13a1a0d46fc511044a63b2d15b611418185b"
+    },
+    "bounded_records.ts": {
+      "bytes": 22100,
+      "sha256": "3d13a536f19ac8e40afbf26a9298b506f61d445392bb420646b61c3bdfd367d0"
+    },
+    "native_constants.hpp": {
+      "bytes": 267,
+      "sha256": "4700d3bdf5da49f6392540d0487fa661da6f06c15fc817f1cf6e73bd44134b7c"
+    },
+    "native_identity.cc": {
+      "bytes": 11519,
+      "sha256": "1b11c5ad6f70341c6e9d482ea194a6ec192a6fbd80a6c6550b7e6acfce420e05"
+    }
+  },
+  "records": [
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 860,
+      "codec_identity": "UWVMROS1_db7172fe7a7f0672c907f31ca0b1cb6286b804246d62e0414ac4313ae1096364",
+      "expanded_nodes": 10,
+      "maximum_wire_bytes": 860,
+      "minimum_wire_bytes": 28,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "uwvm_groot_bridge/msg/RGBFrame"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 1364,
+      "codec_identity": "UWVMROS1_a091d322ab737d2a9415f889fb78a18df7aec6ce74cfab0dcd5bb2a61ae3abae",
+      "expanded_nodes": 327,
+      "maximum_wire_bytes": 1364,
+      "minimum_wire_bytes": 20,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "uwvm_groot_bridge/msg/FloatTensor"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 1120,
+      "codec_identity": "UWVMROS1_895be974f2560f0afff7614f5400ff7205e013cda269825a8443628621c8e80d",
+      "expanded_nodes": 10,
+      "maximum_wire_bytes": 1120,
+      "minimum_wire_bytes": 16,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "uwvm_groot_bridge/msg/TextSequence"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 10296,
+      "codec_identity": "UWVMROS1_78f85929fb8646e9a92f17cafa3e8296fde42aaf49a56b271531ebad869a0fa6",
+      "expanded_nodes": 1363,
+      "maximum_wire_bytes": 10296,
+      "minimum_wire_bytes": 20,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "uwvm_groot_bridge/srv/InferAction_Request"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 10929,
+      "codec_identity": "UWVMROS1_787281a2adea187ae43ff951a414dd7563b3e08318414e5199e1950b8143a3ce",
+      "expanded_nodes": 2621,
+      "maximum_wire_bytes": 10929,
+      "minimum_wire_bytes": 17,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "uwvm_groot_bridge/srv/InferAction_Response"
+    }
+  ],
+  "required_native_domain_provider": "paired complete_vendor descriptor/Native trait/source-metadata admission; requires actual Root implementation and full rebuild; old refusal is preserved",
+  "source_generator_pair": {
+    "bounded": {
+      "bytes": 239137,
+      "sha256": "3c40ed90910bde0ec15ae8976b0e34c37061c2eeacc121259604e7eaeba89f2d"
+    },
+    "industrial_adapter": {
+      "bytes": 73639,
+      "sha256": "e830acc0c4a1cb243cb50f28cbabb71299dcc692ecd9a0b42dd725f4a4f361b3"
+    },
+    "parent": {
+      "bytes": 61312,
+      "sha256": "1a73d6a87624e563bbb6be2624e77b51d7dba0f0f2fb524cda4079f493381826"
+    }
+  },
+  "source_inputs": {
+    "catalog": {
+      "bytes": 1442,
+      "sha256": "7b7dd670e533d6dd5604062e4a0d268e3f84823ff251f7b63433f3a3b8b31e0e"
+    },
+    "definitions": [
+      {
+        "bytes": 119,
+        "file": "uwvm_groot_bridge/msg/RGBFrame.msg",
+        "sha256": "8295b36559444c8028049c8e4e07388b66db4493074beffa2469929241337f7a"
+      },
+      {
+        "bytes": 112,
+        "file": "uwvm_groot_bridge/msg/FloatTensor.msg",
+        "sha256": "fe2b168bdd595d440f711147e3a060f109360677ac09e6fb9a023eb53b0da296"
+      },
+      {
+        "bytes": 108,
+        "file": "uwvm_groot_bridge/msg/TextSequence.msg",
+        "sha256": "34b9bfd6d7992a250b8346b9be395e03f356e1ee12ac5fdb2a66a2a90e555a4e"
+      },
+      {
+        "bytes": 252,
+        "file": "uwvm_groot_bridge/srv/InferAction.srv",
+        "sha256": "d0def3577dfe7acf8774eae33b71e9afc8c19006026efeb846379addb2ec2e6a"
+      }
+    ]
+  },
+  "source_template_inputs": {
+    "interface_templates/bounded_interfaces.go.in": {
+      "bytes": 9692,
+      "sha256": "c9e7893ccedc67b91a3aebc51c1e0c3c65263f03b2769aa07c34fcfb6befa1f7"
+    },
+    "interface_templates/bounded_interfaces.mjs.in": {
+      "bytes": 17046,
+      "sha256": "10986eddd766435dde89b0d3046ef7f48705e2c3e21301c99163c3a7d4ea62fe"
+    },
+    "interface_templates/bounded_interfaces.rs.in": {
+      "bytes": 15514,
+      "sha256": "063130e797684df0530aa1882f8082a10d5756ceb892677d8082e980c7b29b18"
+    },
+    "interface_templates/bounded_interfaces.ts.in": {
+      "bytes": 16626,
+      "sha256": "a61a7b7eb3b5464648577f3ab44629a5c6140d04effff6e4099509f68b204ac5"
+    }
+  },
+  "status": "GENERATED_SOURCE_ONLY_NOT_COMPILED_OR_EXECUTED",
+  "types": [
+    {
+      "adapter_codec_identity": "UWVMROS1_db7172fe7a7f0672c907f31ca0b1cb6286b804246d62e0414ac4313ae1096364",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_db7172fe7a7f0672c907f31ca0b1cb6286b804246d62e0414ac4313ae1096364",
+          "expanded_nodes": 10,
+          "maximum_wire_bytes": 860,
+          "minimum_wire_bytes": 28,
+          "native_identity": null,
+          "type": "uwvm_groot_bridge/msg/RGBFrame"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "uwvm_groot_bridge/msg/RGBFrame"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_a091d322ab737d2a9415f889fb78a18df7aec6ce74cfab0dcd5bb2a61ae3abae",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_a091d322ab737d2a9415f889fb78a18df7aec6ce74cfab0dcd5bb2a61ae3abae",
+          "expanded_nodes": 327,
+          "maximum_wire_bytes": 1364,
+          "minimum_wire_bytes": 20,
+          "native_identity": null,
+          "type": "uwvm_groot_bridge/msg/FloatTensor"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "uwvm_groot_bridge/msg/FloatTensor"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_895be974f2560f0afff7614f5400ff7205e013cda269825a8443628621c8e80d",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_895be974f2560f0afff7614f5400ff7205e013cda269825a8443628621c8e80d",
+          "expanded_nodes": 10,
+          "maximum_wire_bytes": 1120,
+          "minimum_wire_bytes": 16,
+          "native_identity": null,
+          "type": "uwvm_groot_bridge/msg/TextSequence"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "uwvm_groot_bridge/msg/TextSequence"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_d51c8bd1b755e066b6352be6cd43c9c26ad6fb46c74c1306dc450a13e5380acd",
+      "components": {
+        "request": {
+          "adapter_codec_identity": "UWVMROS1_78f85929fb8646e9a92f17cafa3e8296fde42aaf49a56b271531ebad869a0fa6",
+          "expanded_nodes": 1363,
+          "maximum_wire_bytes": 10296,
+          "minimum_wire_bytes": 20,
+          "native_identity": null,
+          "type": "uwvm_groot_bridge/srv/InferAction_Request"
+        },
+        "response": {
+          "adapter_codec_identity": "UWVMROS1_787281a2adea187ae43ff951a414dd7563b3e08318414e5199e1950b8143a3ce",
+          "expanded_nodes": 2621,
+          "maximum_wire_bytes": 10929,
+          "minimum_wire_bytes": 17,
+          "native_identity": null,
+          "type": "uwvm_groot_bridge/srv/InferAction_Response"
+        }
+      },
+      "kind": "service",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "uwvm_groot_bridge/srv/InferAction"
+    }
+  ]
+}

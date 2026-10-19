@@ -1,0 +1,100 @@
+{
+  "format_version": 1,
+  "status": "SOURCE_ONLY_MODEL_BINDING_REQUIRED_NOT_EXECUTED",
+  "languages": [
+    "c",
+    "cpp",
+    "rust",
+    "javascript",
+    "assemblyscript",
+    "tinygo"
+  ],
+  "java_and_csharp": "RESERVED_FOR_OTHER_OWNER_NOT_READ_OR_MODIFIED",
+  "default_authority": [],
+  "model_binding_required": {
+    "vendor": null,
+    "model": null,
+    "controller_sdk_major_revision": null,
+    "ros_version": null,
+    "immutable_upstream_revision": null,
+    "whole_message_service_action_dependency_closure": null,
+    "native_trait_identity_receipt": null,
+    "complete_generated_family_receipt": null,
+    "canonical_codec_identity": null,
+    "native_endpoint_and_qos": null,
+    "bounded_native_oracle": null,
+    "native_simulator_command_binding": null
+  },
+  "c": {
+    "required_model_header": "vendor_binding.h",
+    "required_symbols": [
+      "vendor_record",
+      "VENDOR_MAX_WIRE_BYTES",
+      "vendor_decode",
+      "vendor_observe_record"
+    ],
+    "contract": "The record and decoder must wrap the entire actual freshly generated bounded family. Observer is model-specific and returns an unchanged numeric status. No opaque native pointer, partial record, dummy decoder or fallback layout is allowed."
+  },
+  "cpp": {
+    "required_model_type": "Actual generated Message with roswasmcpp::Codec<Message>",
+    "observer": "uint32_t (*)(Message const&)",
+    "maximum": "Actual complete generator maximum_wire_bytes;1..32768"
+  },
+  "rust": {
+    "required_model_type": "Actual generated T:roswasm::typed::Canonical+'static",
+    "observer": "fn(&T)->Result<(),roswasm::Error>",
+    "build": "alloc plus exactly one real ROS feature, actual wasm32 target"
+  },
+  "javascript": {
+    "codec": "Actual complete generated encode/decode module",
+    "session": "Actual SDK Session over real QuickJS-in-Wasm copied transport",
+    "observer": "Complete value -> numeric status; no fake bridge/Memory/Instance"
+  },
+  "assemblyscript": {
+    "codec": "Actual generated complete Codec<T>",
+    "backend": "Explicit source reexport of current SDK ros1 OR ros2 NativeApi/Session/Node/Executor",
+    "callback": "Noncapturing concrete model handler, calls delivered only after full value checks"
+  },
+  "tinygo": {
+    "decoder": "Actual generated []byte -> (T,error)",
+    "observer": "func(T)error",
+    "build": "Exactly one ROS build tag; original current SDK module; explicit _initialize"
+  },
+  "external_acceptance": [
+    "actual binary validation and expected import/export set",
+    "current source/full dependency and actual target/toolchain/stdlib preservation",
+    "fresh default-denied instance with exact errno13 and unchanged sentinel",
+    "zero native endpoints/messages/queues during default-denied interval",
+    "positive real native peer and complete canonical-value oracle",
+    "finite callback polling and copied-buffer bounds",
+    "explicit close/revoke/disconnect/cancellation with actual owned cleanup",
+    "vendor official tests remain separately discovered and source-locked"
+  ],
+  "native_identity_modes": {
+    "omitted_or_original-native-metadata": "original exporter unchanged; no fallback on malformed or missing modern native hashes",
+    "legacy-introspection": "Explicit ROS2 Message/Service only. Actual ServiceMembers associates typed Request/Response and complete native payloads; derived root retains standard protocol provenance and separate actual Event introspection boolean. Modern hash-capable root/components unconditionally refused; no automatic fallback.",
+    "legacy_additional_current_source_roles": [
+      "sdk/robots/vendors/legacy_ros2_exporter.py",
+      "gateways/ros2/compat/metadata_export.h",
+      "gateways/ros2/compat/rihs.h",
+      "gateways/ros2/compat/identity.h",
+      "gateways/ros2/compat/features.h",
+      "src/uwvm2/imported/ros/ipc/custom_type.h",
+      "src/uwvm2/imported/ros/ipc/custom_wire.h",
+      "src/uwvm2/imported/ros/common/types.h"
+    ],
+    "native_execution_established_by_this_contract": false
+  },
+  "service_call_source_plan": {
+    "mode": "service-call",
+    "required_operation": "service.call",
+    "command_binding": null,
+    "authority": [],
+    "component_roles": [
+      "request",
+      "response"
+    ],
+    "protocol_event": "Complete standard declaration; installed Event metadata is claimed only when actually present and fully matched.",
+    "remaining_required": "Actual native exporter/owner and six generated compiles/native RPC witnesses remain mandatory."
+  }
+}

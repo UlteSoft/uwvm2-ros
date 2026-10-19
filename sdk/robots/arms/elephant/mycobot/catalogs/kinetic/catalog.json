@@ -1,0 +1,173 @@
+{
+  "format": "uwvm-ros-vendor-complete-bounded-v1",
+  "types": [
+    {
+      "ros_version": 1,
+      "type": "mycobot_communication/MycobotAngles",
+      "file": "mycobot_communication/msg/MycobotAngles.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "mycobot_communication/MycobotCoords",
+      "file": "mycobot_communication/msg/MycobotCoords.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "mycobot_communication/MycobotGripperStatus",
+      "file": "mycobot_communication/msg/MycobotGripperStatus.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "mycobot_communication/MycobotPumpStatus",
+      "file": "mycobot_communication/msg/MycobotPumpStatus.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "mycobot_communication/MycobotSetAngles",
+      "file": "mycobot_communication/msg/MycobotSetAngles.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "mycobot_communication/MycobotSetCoords",
+      "file": "mycobot_communication/msg/MycobotSetCoords.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "mycobot_communication/GetAngles",
+      "file": "mycobot_communication/srv/GetAngles.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "mycobot_communication/GetCoords",
+      "file": "mycobot_communication/srv/GetCoords.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "mycobot_communication/GripperStatus",
+      "file": "mycobot_communication/srv/GripperStatus.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "mycobot_communication/PumpStatus",
+      "file": "mycobot_communication/srv/PumpStatus.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "mycobot_communication/SetAngles",
+      "file": "mycobot_communication/srv/SetAngles.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "mycobot_communication/SetCoords",
+      "file": "mycobot_communication/srv/SetCoords.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "mypalletizer_communication/MypalAngles",
+      "file": "mypalletizer_communication/msg/MypalAngles.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "mypalletizer_communication/MypalCoords",
+      "file": "mypalletizer_communication/msg/MypalCoords.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "mypalletizer_communication/MypalGripperStatus",
+      "file": "mypalletizer_communication/msg/MypalGripperStatus.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "mypalletizer_communication/MypalPumpStatus",
+      "file": "mypalletizer_communication/msg/MypalPumpStatus.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "mypalletizer_communication/MypalSetAngles",
+      "file": "mypalletizer_communication/msg/MypalSetAngles.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "mypalletizer_communication/MypalSetCoords",
+      "file": "mypalletizer_communication/msg/MypalSetCoords.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "mypalletizer_communication/GetAngles",
+      "file": "mypalletizer_communication/srv/GetAngles.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "mypalletizer_communication/GetCoords",
+      "file": "mypalletizer_communication/srv/GetCoords.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "mypalletizer_communication/GripperStatus",
+      "file": "mypalletizer_communication/srv/GripperStatus.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "mypalletizer_communication/PumpStatus",
+      "file": "mypalletizer_communication/srv/PumpStatus.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "mypalletizer_communication/SetAngles",
+      "file": "mypalletizer_communication/srv/SetAngles.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "mypalletizer_communication/SetCoords",
+      "file": "mypalletizer_communication/srv/SetCoords.srv",
+      "registered": true,
+      "bounds": {}
+    }
+  ]
+}

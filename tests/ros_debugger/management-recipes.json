@@ -1,0 +1,327 @@
+{
+  "format_version": 1,
+  "status": "SOURCE_RECIPES_NOT_EXECUTED",
+  "execution_owner": "Root guarded serial runner only",
+  "default_jobs": 1,
+  "requirements": [
+    "Actual complete current source manifest and current tools/whole-input closure",
+    "Current 64 GiB swap-zero cgroup plus narrower per-job RSS/deadline/output limits",
+    "No Runtime identity/JIT/control linkage stubs; assertions enabled",
+    "Owned TMPDIR below selected output, bounded process ownership and terminal cleanup",
+    "The Host component must resolve genuine central reset and actual epoch-observation symbols from the same complete current Runtime closure; a direct-hook-only implementation or stub cannot satisfy it"
+  ],
+  "common_compile_argv": [
+    "{cxx}",
+    "-std=c++26",
+    "-O0",
+    "-UNDEBUG",
+    "-pthread",
+    "-I{source}/src",
+    "-I{source}/third-parties/fast_io/include",
+    "-I{source}/third-parties/bizwen/include",
+    "-I{source}/third-parties/boost_unordered/include"
+  ],
+  "standalone": [
+    {
+      "source": "tests/ros_debugger/management_contract.cc",
+      "fixture_header": "tests/ros_debugger/management_test_policy.h",
+      "append_argv": [
+        "{source}/tests/ros_debugger/management_contract.cc",
+        "-o",
+        "{out}/management-contract"
+      ],
+      "marker_prefix": "PASS_ROS_MANAGEMENT checks=",
+      "scope": "Actual capability manager/native atomic notification component, no Runtime/ROS execution"
+    }
+  ],
+  "runtime_closure_components": [
+    {
+      "source": "tests/ros_debugger/host_retirement_contract.cc",
+      "fixture_header": "tests/ros_debugger/management_test_policy.h",
+      "base_recipe": "Same actual current Runtime ROS header link closure as host_contract.cc",
+      "profiles": [
+        [
+          "UWVM_IMPORT_ROS1"
+        ],
+        [
+          "UWVM_IMPORT_ROS2"
+        ],
+        [
+          "UWVM_IMPORT_ROS1",
+          "UWVM_IMPORT_ROS2"
+        ]
+      ],
+      "marker_prefix": "PASS_ROS_HOST_RETIREMENT checks=",
+      "platform": "Linux SO_PEERCRED/Unix sockets; other platforms exit77",
+      "scope": "Actual native Host local retirement/queue/descriptor component plus two genuine empty-execution central Runtime resets with forwarded real Host cleanup and actual epoch order; explicit native fixture metadata, no active Runtime identity, fake provider, Guest or ROS Gateway",
+      "central_runtime_reset": {
+        "entrypoint": "uwvm2::runtime::lib::reset_runtime_state_host_api",
+        "epoch_observer": "uwvm2::runtime::lib::observe_compiler_runtime_generation_host_api",
+        "actual_calls_required": 2,
+        "first_call": "Static ownerless observer forwards production Host hook and requires notification/cleanup at old epoch, clear Host registry, then return at exactly old+1",
+        "second_call": "Exact original production hook restored; return at exactly old+2, no inherited registrations or handles",
+        "active_executions_in_fixture": 0,
+        "successful_replacement_or_active_worker_drain_claimed": false,
+        "observed_result": null
+      }
+    }
+  ],
+  "injected_data": {
+    "factory": "tests/ros_debugger/test_update_ros_boundary.py",
+    "entrypoint": "suite(dap, abi.extract)",
+    "case_count": 12,
+    "manifest_loaded_inputs": [
+      "tools/debug/dap_adapter.py",
+      "sdk/tools/abi_contract.py"
+    ],
+    "actual_authority_source": "src/uwvm2/uwvm/imported/ros/host.h",
+    "scope": "DAP/raw-registry DATA only, no Runtime or official ROS execution"
+  },
+  "actual_integration_source": "tests/ros_debugger/integration_runtime.py",
+  "runtime_commit_integration_required_separately": true,
+  "unknown_management_imports": {
+    "status": "SOURCE_FIXTURES_AND_CLOSED_RECIPES_NOT_EXECUTED",
+    "fixture_count": 6,
+    "required_actual_routes": 12,
+    "required_routes_by_profile": {
+      "ros1": 3,
+      "ros2": 3,
+      "dual": 6
+    },
+    "excluded_profile": {
+      "none": "Whole-module absence does not qualify missing-function refusal in an enabled ROS business registry"
+    },
+    "requirements": [
+      "Actual complete current source and genuine matching Worker profile/runtime closure, not a mock import resolver",
+      "Actual selected wat2wasm executable; retain source/tool/artifact full hashes and command receipts",
+      "Default ROS disabled with no grants; only basic WASI stdio enabled and no system environment inheritance",
+      "Owned serial process/cgroup/source/input/output preservation and normal pidfd cleanup"
+    ],
+    "compile_argv": [
+      "{wat2wasm}",
+      "{source}/{fixture.source}",
+      "-o",
+      "{artifact}"
+    ],
+    "compile_expected_returncode": 0,
+    "worker_argv_by_profile": {
+      "ros1": [
+        "{worker}",
+        "--runtime-int",
+        "-Rct",
+        "0",
+        "--wasm-set-main-module-name",
+        "main",
+        "--wasip1-global-disable",
+        "--wasip1-global-noinherit-system-environment",
+        "--wasip1-single-create",
+        "main",
+        "--wasip1-single-enable",
+        "main",
+        "--wasip1-single-noinherit-system-environment",
+        "main",
+        "--ros1-global-disable",
+        "--ros1-single-create",
+        "main",
+        "--ros1-single-disable",
+        "main",
+        "--run",
+        "{artifact}"
+      ],
+      "ros2": [
+        "{worker}",
+        "--runtime-int",
+        "-Rct",
+        "0",
+        "--wasm-set-main-module-name",
+        "main",
+        "--wasip1-global-disable",
+        "--wasip1-global-noinherit-system-environment",
+        "--wasip1-single-create",
+        "main",
+        "--wasip1-single-enable",
+        "main",
+        "--wasip1-single-noinherit-system-environment",
+        "main",
+        "--ros2-global-disable",
+        "--ros2-single-create",
+        "main",
+        "--ros2-single-disable",
+        "main",
+        "--run",
+        "{artifact}"
+      ],
+      "dual": [
+        "{worker}",
+        "--runtime-int",
+        "-Rct",
+        "0",
+        "--wasm-set-main-module-name",
+        "main",
+        "--wasip1-global-disable",
+        "--wasip1-global-noinherit-system-environment",
+        "--wasip1-single-create",
+        "main",
+        "--wasip1-single-enable",
+        "main",
+        "--wasip1-single-noinherit-system-environment",
+        "main",
+        "--ros1-global-disable",
+        "--ros1-single-create",
+        "main",
+        "--ros1-single-disable",
+        "main",
+        "--ros2-global-disable",
+        "--ros2-single-create",
+        "main",
+        "--ros2-single-disable",
+        "main",
+        "--run",
+        "{artifact}"
+      ]
+    },
+    "limits": {
+      "jobs": 1,
+      "command_seconds": 30,
+      "rss_bytes": 805306368,
+      "log_bytes": 16777216
+    },
+    "expected_outcome": {
+      "phase": "ACTUAL_IMPORT_LINKING_BEFORE_START",
+      "returncode": "Record actual nonzero; do not forecast a particular exit code",
+      "stderr": "Strip ANSI presentation escapes, then require the fixture exact missing-export/function/module text",
+      "stdout_and_stderr": "Fixture forbidden_marker absent from BOTH complete bounded logs",
+      "arbitrary_nonzero_or_timeout_or_signal_or_trap_qualifies": false,
+      "whole_module_absence_qualifies": false
+    },
+    "observed_results": null,
+    "fixtures": [
+      {
+        "id": "ros1-runtime_update",
+        "source": "tests/ros_debugger/management_negative_imports/ros1-runtime_update.wat",
+        "module": "uwvm_ros1_v1",
+        "function": "runtime_update",
+        "signature": {
+          "parameters": [],
+          "results": [
+            "i32"
+          ]
+        },
+        "profiles": [
+          "ros1",
+          "dual"
+        ],
+        "artifact": "{out}/ros1-runtime_update.wasm",
+        "forbidden_marker": "FORBIDDEN_MANAGEMENT_START ros1 runtime_update\n",
+        "required_ansi_stripped_stderr_substrings": [
+          "Missing export \"runtime_update\" in module \"uwvm_ros1_v1\" required by \"main\"."
+        ]
+      },
+      {
+        "id": "ros1-debug_configure",
+        "source": "tests/ros_debugger/management_negative_imports/ros1-debug_configure.wat",
+        "module": "uwvm_ros1_v1",
+        "function": "debug_configure",
+        "signature": {
+          "parameters": [],
+          "results": [
+            "i32"
+          ]
+        },
+        "profiles": [
+          "ros1",
+          "dual"
+        ],
+        "artifact": "{out}/ros1-debug_configure.wasm",
+        "forbidden_marker": "FORBIDDEN_MANAGEMENT_START ros1 debug_configure\n",
+        "required_ansi_stripped_stderr_substrings": [
+          "Missing export \"debug_configure\" in module \"uwvm_ros1_v1\" required by \"main\"."
+        ]
+      },
+      {
+        "id": "ros1-policy_set",
+        "source": "tests/ros_debugger/management_negative_imports/ros1-policy_set.wat",
+        "module": "uwvm_ros1_v1",
+        "function": "policy_set",
+        "signature": {
+          "parameters": [],
+          "results": [
+            "i32"
+          ]
+        },
+        "profiles": [
+          "ros1",
+          "dual"
+        ],
+        "artifact": "{out}/ros1-policy_set.wasm",
+        "forbidden_marker": "FORBIDDEN_MANAGEMENT_START ros1 policy_set\n",
+        "required_ansi_stripped_stderr_substrings": [
+          "Missing export \"policy_set\" in module \"uwvm_ros1_v1\" required by \"main\"."
+        ]
+      },
+      {
+        "id": "ros2-runtime_update",
+        "source": "tests/ros_debugger/management_negative_imports/ros2-runtime_update.wat",
+        "module": "uwvm_ros2_v1",
+        "function": "runtime_update",
+        "signature": {
+          "parameters": [],
+          "results": [
+            "i32"
+          ]
+        },
+        "profiles": [
+          "ros2",
+          "dual"
+        ],
+        "artifact": "{out}/ros2-runtime_update.wasm",
+        "forbidden_marker": "FORBIDDEN_MANAGEMENT_START ros2 runtime_update\n",
+        "required_ansi_stripped_stderr_substrings": [
+          "Missing export \"runtime_update\" in module \"uwvm_ros2_v1\" required by \"main\"."
+        ]
+      },
+      {
+        "id": "ros2-debug_configure",
+        "source": "tests/ros_debugger/management_negative_imports/ros2-debug_configure.wat",
+        "module": "uwvm_ros2_v1",
+        "function": "debug_configure",
+        "signature": {
+          "parameters": [],
+          "results": [
+            "i32"
+          ]
+        },
+        "profiles": [
+          "ros2",
+          "dual"
+        ],
+        "artifact": "{out}/ros2-debug_configure.wasm",
+        "forbidden_marker": "FORBIDDEN_MANAGEMENT_START ros2 debug_configure\n",
+        "required_ansi_stripped_stderr_substrings": [
+          "Missing export \"debug_configure\" in module \"uwvm_ros2_v1\" required by \"main\"."
+        ]
+      },
+      {
+        "id": "ros2-policy_set",
+        "source": "tests/ros_debugger/management_negative_imports/ros2-policy_set.wat",
+        "module": "uwvm_ros2_v1",
+        "function": "policy_set",
+        "signature": {
+          "parameters": [],
+          "results": [
+            "i32"
+          ]
+        },
+        "profiles": [
+          "ros2",
+          "dual"
+        ],
+        "artifact": "{out}/ros2-policy_set.wasm",
+        "forbidden_marker": "FORBIDDEN_MANAGEMENT_START ros2 policy_set\n",
+        "required_ansi_stripped_stderr_substrings": [
+          "Missing export \"policy_set\" in module \"uwvm_ros2_v1\" required by \"main\"."
+        ]
+      }
+    ]
+  }
+}

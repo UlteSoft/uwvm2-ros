@@ -1,0 +1,310 @@
+{
+  "format": "uwvm-dotnet-mono-wasi-aot-debug-cases-source-v1",
+  "status": "UNEXECUTED_SOURCE_CASES_NOT_DEBUGGER_QUALIFICATION",
+  "runtime_commit": "573461dc897731c11d6166574b77a8c3aabba220",
+  "candidate_execution_count": 0,
+  "cases": [
+    {
+      "id": "csharp-nonros-source-locals-argv-recursion",
+      "language": "csharp",
+      "ros": false,
+      "modes": [
+        "LLVMOnlyInterp",
+        "LLVMOnly"
+      ],
+      "status": "PENDING_ACTUAL_LINUX_DEBUGGER_DEVELOPMENT_AND_EXECUTION",
+      "entry": {
+        "path": "sdk/dotnet/mono-wasi-aot/apps/CSharp/NonRos.cs",
+        "bytes": 1831,
+        "sha256": "fabb3c48c6477948136b2be40de9aea2d80dca082737d4e72346bf25ea321ce6",
+        "line": 10,
+        "literal_marker": "DBG_STOP_CSHARP"
+      },
+      "argv_cases": [
+        [
+          "49",
+          "机器人-AOT"
+        ],
+        [
+          "49",
+          ""
+        ]
+      ],
+      "stdin_release": "One ASCII G only after actual breakpoint/inspection; no resume before assertions",
+      "ready_stderr": "UWVM_AOT_DBG_READY csharp",
+      "expected_exit": 0,
+      "expected_observations": {
+        "input_int64": "49",
+        "typedLocal_int64": "42",
+        "sample.Signed_int64": "-7",
+        "sample.FullId_uint64": "18446744073709551615",
+        "sample.Fraction_float64": "1.25"
+      },
+      "actual_frames": [
+        "FrameThree",
+        "FrameTwo",
+        "FrameOne depth0",
+        "FrameOne depth1",
+        "FrameOne depth2",
+        "Main"
+      ],
+      "required": [
+        "Breakpoint resolves exact captured Source document and line before Console.Read, not generated runtime main",
+        "Stop/next/step/finish and caller selection work on actual AOT instruction stream",
+        "Inspect typed signed/unsigned/floating/aggregate fields and real recursive depth values, not values reconstructed from this JSON",
+        "Main argv exactly preserves both arguments, Unicode and separately empty label with correct array count",
+        "Portable PDB document/checksum and LLVM/native map match final binary/current Source, not just DWARF section presence",
+        "Actually exercise GC/pinning-root case and inspect roots after collection using AotWitness in CSharp or ROS shared SDK; other languages do not inherit that result",
+        "Record concrete unsupported debugger capability as failure/pending, never PASS with waived locals"
+      ],
+      "not_claimed": [
+        "This DATA file does not implement a managed debugger adapter",
+        "A compiler emitting symbols is not a UWVM source/locals result",
+        "A marker stdout match alone is not debugger evidence"
+      ]
+    },
+    {
+      "id": "csharp-ros-submit-and-delivery",
+      "language": "csharp",
+      "ros": true,
+      "modes": [
+        "LLVMOnlyInterp",
+        "LLVMOnly"
+      ],
+      "status": "PENDING_GENUINE_NATIVE_PROVIDER_AND_LINUX_DEBUGGER",
+      "before_submit": {
+        "path": "sdk/dotnet/mono-wasi-aot/apps/CSharp/Program.cs",
+        "bytes": 4446,
+        "sha256": "cf53b7ecbab433edf17b7acc0353e620ec2b1f7e5389f60bc1523932c9e690c0",
+        "line": 18,
+        "literal_marker": "DBG_ROS_SUBMIT_CSHARP"
+      },
+      "after_delivery_ACK": {
+        "path": "sdk/dotnet/mono-wasi-aot/apps/CSharp/Program.cs",
+        "bytes": 4446,
+        "sha256": "cf53b7ecbab433edf17b7acc0353e620ec2b1f7e5389f60bc1523932c9e690c0",
+        "line": 22,
+        "literal_marker": "DBG_ROS_DELIVERY_CSHARP"
+      },
+      "actual_entry_mode": "type-query",
+      "argv_contract": "Actual independently granted call/observer/optionalavailability aliases, exact Native type and real RIHS, finite caller credits1..65536",
+      "required": [
+        "Break before actual Submit; inspect complete request and real full handles without effect replay",
+        "Step over exactly one genuine Submit; inspect returned full64 ticket and retained real attempt status",
+        "Pause/resume without a second submit/ACK or automatic background pump",
+        "Break at real full decoded delivery after one ACK; inspect matching ticket, successful full response, all type_sources raw bytes and complete description",
+        "Inspect actual signed NativeSequence/SourceTimestamp/ReceivedTimestamp and WriterGuid0/1 (16bytes) distinctly from receipt NativeGidBytes/Gid0..3 (up to32bytes)",
+        "Inspect ApplicationLifetime.Last primary/group/actual endpoint diagnostic, cleanup started/returned/errors/full remaining IDs",
+        "Independent Native peer witnesses exact corresponding request/response and operation count",
+        "Actual B1 Host-thread stop/pause/close/join compatibility and actual current warm-cache/debugger reload bindings; no inferred capability from this Source"
+      ]
+    },
+    {
+      "id": "fsharp-nonros-source-locals-argv-recursion",
+      "language": "fsharp",
+      "ros": false,
+      "modes": [
+        "LLVMOnlyInterp",
+        "LLVMOnly"
+      ],
+      "status": "PENDING_ACTUAL_LINUX_DEBUGGER_DEVELOPMENT_AND_EXECUTION",
+      "entry": {
+        "path": "sdk/dotnet/mono-wasi-aot/apps/FSharp/NonRos.fs",
+        "bytes": 1498,
+        "sha256": "bb23b05168ea7f4f06086759ba803520b867acc8ac1456f81e8da76ef199a075",
+        "line": 10,
+        "literal_marker": "DBG_STOP_FSHARP"
+      },
+      "argv_cases": [
+        [
+          "49",
+          "机器人-AOT"
+        ],
+        [
+          "49",
+          ""
+        ]
+      ],
+      "stdin_release": "One ASCII G only after actual breakpoint/inspection; no resume before assertions",
+      "ready_stderr": "UWVM_AOT_DBG_READY fsharp",
+      "expected_exit": 0,
+      "expected_observations": {
+        "input_int64": "49",
+        "typedLocal_int64": "42",
+        "sample.Signed_int64": "-7",
+        "sample.FullId_uint64": "18446744073709551615",
+        "sample.Fraction_float64": "1.25"
+      },
+      "actual_frames": [
+        "frameThree",
+        "frameTwo",
+        "frameOne depth0",
+        "frameOne depth1",
+        "frameOne depth2",
+        "main"
+      ],
+      "required": [
+        "Breakpoint resolves exact captured Source document and line before Console.Read, not generated runtime main",
+        "Stop/next/step/finish and caller selection work on actual AOT instruction stream",
+        "Inspect typed signed/unsigned/floating/aggregate fields and real recursive depth values, not values reconstructed from this JSON",
+        "Main argv exactly preserves both arguments, Unicode and separately empty label with correct array count",
+        "Portable PDB document/checksum and LLVM/native map match final binary/current Source, not just DWARF section presence",
+        "Actually exercise GC/pinning-root case and inspect roots after collection using AotWitness in CSharp or ROS shared SDK; other languages do not inherit that result",
+        "Record concrete unsupported debugger capability as failure/pending, never PASS with waived locals"
+      ],
+      "not_claimed": [
+        "This DATA file does not implement a managed debugger adapter",
+        "A compiler emitting symbols is not a UWVM source/locals result",
+        "A marker stdout match alone is not debugger evidence"
+      ]
+    },
+    {
+      "id": "fsharp-ros-submit-and-delivery",
+      "language": "fsharp",
+      "ros": true,
+      "modes": [
+        "LLVMOnlyInterp",
+        "LLVMOnly"
+      ],
+      "status": "PENDING_GENUINE_NATIVE_PROVIDER_AND_LINUX_DEBUGGER",
+      "before_submit": {
+        "path": "sdk/dotnet/mono-wasi-aot/apps/FSharp/Program.fs",
+        "bytes": 5051,
+        "sha256": "eac8844b4d3021d119fed8d16cddb21f09f1f74674794e56270b485390afceed",
+        "line": 23,
+        "literal_marker": "DBG_ROS_SUBMIT_FSHARP"
+      },
+      "after_delivery_ACK": {
+        "path": "sdk/dotnet/mono-wasi-aot/apps/FSharp/Program.fs",
+        "bytes": 5051,
+        "sha256": "eac8844b4d3021d119fed8d16cddb21f09f1f74674794e56270b485390afceed",
+        "line": 31,
+        "literal_marker": "DBG_ROS_DELIVERY_FSHARP"
+      },
+      "actual_entry_mode": "type-query",
+      "argv_contract": "Actual independently granted call/observer/optionalavailability aliases, exact Native type and real RIHS, finite caller credits1..65536",
+      "required": [
+        "Break before actual Submit; inspect complete request and real full handles without effect replay",
+        "Step over exactly one genuine Submit; inspect returned full64 ticket and retained real attempt status",
+        "Pause/resume without a second submit/ACK or automatic background pump",
+        "Break at real full decoded delivery after one ACK; inspect matching ticket, successful full response, all type_sources raw bytes and complete description",
+        "Inspect actual signed NativeSequence/SourceTimestamp/ReceivedTimestamp and WriterGuid0/1 (16bytes) distinctly from receipt NativeGidBytes/Gid0..3 (up to32bytes)",
+        "Inspect ApplicationLifetime.Last primary/group/actual endpoint diagnostic, cleanup started/returned/errors/full remaining IDs",
+        "Independent Native peer witnesses exact corresponding request/response and operation count",
+        "Actual B1 Host-thread stop/pause/close/join compatibility and actual current warm-cache/debugger reload bindings; no inferred capability from this Source"
+      ]
+    },
+    {
+      "id": "visualbasic-nonros-source-locals-argv-recursion",
+      "language": "visualbasic",
+      "ros": false,
+      "modes": [
+        "LLVMOnlyInterp",
+        "LLVMOnly"
+      ],
+      "status": "PENDING_ACTUAL_LINUX_DEBUGGER_DEVELOPMENT_AND_EXECUTION",
+      "entry": {
+        "path": "sdk/dotnet/mono-wasi-aot/apps/VisualBasic/NonRos.vb",
+        "bytes": 2022,
+        "sha256": "2ae9207bc6da7d4db5034d1aa8c5402bbb90fb4f24f3c6b2b9db427644e350be",
+        "line": 13,
+        "literal_marker": "DBG_STOP_VISUALBASIC"
+      },
+      "argv_cases": [
+        [
+          "49",
+          "机器人-AOT"
+        ],
+        [
+          "49",
+          ""
+        ]
+      ],
+      "stdin_release": "One ASCII G only after actual breakpoint/inspection; no resume before assertions",
+      "ready_stderr": "UWVM_AOT_DBG_READY visualbasic",
+      "expected_exit": 0,
+      "expected_observations": {
+        "input_int64": "49",
+        "typedLocal_int64": "42",
+        "sample.Signed_int64": "-7",
+        "sample.FullId_uint64": "18446744073709551615",
+        "sample.Fraction_float64": "1.25"
+      },
+      "actual_frames": [
+        "FrameThree",
+        "FrameTwo",
+        "FrameOne depth0",
+        "FrameOne depth1",
+        "FrameOne depth2",
+        "Main"
+      ],
+      "required": [
+        "Breakpoint resolves exact captured Source document and line before Console.Read, not generated runtime main",
+        "Stop/next/step/finish and caller selection work on actual AOT instruction stream",
+        "Inspect typed signed/unsigned/floating/aggregate fields and real recursive depth values, not values reconstructed from this JSON",
+        "Main argv exactly preserves both arguments, Unicode and separately empty label with correct array count",
+        "Portable PDB document/checksum and LLVM/native map match final binary/current Source, not just DWARF section presence",
+        "Actually exercise GC/pinning-root case and inspect roots after collection using AotWitness in CSharp or ROS shared SDK; other languages do not inherit that result",
+        "Record concrete unsupported debugger capability as failure/pending, never PASS with waived locals"
+      ],
+      "not_claimed": [
+        "This DATA file does not implement a managed debugger adapter",
+        "A compiler emitting symbols is not a UWVM source/locals result",
+        "A marker stdout match alone is not debugger evidence"
+      ]
+    },
+    {
+      "id": "visualbasic-ros-submit-and-delivery",
+      "language": "visualbasic",
+      "ros": true,
+      "modes": [
+        "LLVMOnlyInterp",
+        "LLVMOnly"
+      ],
+      "status": "PENDING_GENUINE_NATIVE_PROVIDER_AND_LINUX_DEBUGGER",
+      "before_submit": {
+        "path": "sdk/dotnet/mono-wasi-aot/apps/VisualBasic/Program.vb",
+        "bytes": 5684,
+        "sha256": "1f45ec6472091c0a77fef2658d73ba03e4ae922b81020a51b5218fe9f75736be",
+        "line": 15,
+        "literal_marker": "DBG_ROS_SUBMIT_VISUALBASIC"
+      },
+      "after_delivery_ACK": {
+        "path": "sdk/dotnet/mono-wasi-aot/apps/VisualBasic/Program.vb",
+        "bytes": 5684,
+        "sha256": "1f45ec6472091c0a77fef2658d73ba03e4ae922b81020a51b5218fe9f75736be",
+        "line": 21,
+        "literal_marker": "DBG_ROS_DELIVERY_VISUALBASIC"
+      },
+      "actual_entry_mode": "type-query",
+      "argv_contract": "Actual independently granted call/observer/optionalavailability aliases, exact Native type and real RIHS, finite caller credits1..65536",
+      "required": [
+        "Break before actual Submit; inspect complete request and real full handles without effect replay",
+        "Step over exactly one genuine Submit; inspect returned full64 ticket and retained real attempt status",
+        "Pause/resume without a second submit/ACK or automatic background pump",
+        "Break at real full decoded delivery after one ACK; inspect matching ticket, successful full response, all type_sources raw bytes and complete description",
+        "Inspect actual signed NativeSequence/SourceTimestamp/ReceivedTimestamp and WriterGuid0/1 (16bytes) distinctly from receipt NativeGidBytes/Gid0..3 (up to32bytes)",
+        "Inspect ApplicationLifetime.Last primary/group/actual endpoint diagnostic, cleanup started/returned/errors/full remaining IDs",
+        "Independent Native peer witnesses exact corresponding request/response and operation count",
+        "Actual B1 Host-thread stop/pause/close/join compatibility and actual current warm-cache/debugger reload bindings; no inferred capability from this Source"
+      ]
+    }
+  ],
+  "final_artifact_admission": {
+    "sign_after": "All link/strip/embed/custom-section operations; SHA over entire final Wasm",
+    "detached_files": [
+      ".sig.cose",
+      ".signer.pem",
+      ".crl.pem"
+    ],
+    "one_rule": "--secure module <wasm-path> <protected-policy-path> only when exactly one rule exists",
+    "multi_rule": "--secure named-module <wasm-path> <protected-policy-path> <expected-id>",
+    "required": [
+      "Actual selected expected ID matches rule and module identity; signature/path alone insufficient",
+      "Wrong expected ID/ambiguous single-module rule/changed bytes must refuse",
+      "Fresh trust/revocation/localpolicy and real ROS grants before debugger reload/cache/checkpoint/module-graph transition"
+    ],
+    "crypto_execution_count": 0
+  },
+  "authority": "Source pins and expected values are test inputs, never Host grants or observed debugger values"
+}

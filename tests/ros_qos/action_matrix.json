@@ -1,0 +1,366 @@
+{
+  "scope": "Independent explicit-contract expectations from G04 static review; fixture derivation only, no runtime result",
+  "review_sha256": "540c4c8f72976106d3100039e706b9d1569957d1f06e32cbb6ca64442cc95797",
+  "rows": [
+    {
+      "key": "qos.goal-service.reliability",
+      "baseline": "reliable",
+      "mutation": "best-effort",
+      "valid": true,
+      "enabled_error": 17,
+      "disabled_error": 17,
+      "gateway_error_fragment": "action response QoS differs from its explicit server contract"
+    },
+    {
+      "key": "qos.goal-service.durability",
+      "baseline": "volatile",
+      "mutation": "transient-local",
+      "valid": true,
+      "enabled_error": 17,
+      "disabled_error": 17,
+      "gateway_error_fragment": "action response QoS differs from its explicit server contract"
+    },
+    {
+      "key": "qos.goal-service.history",
+      "baseline": "keep-last",
+      "mutation": "keep-all",
+      "valid": false,
+      "enabled_error": 95,
+      "disabled_error": 17,
+      "gateway_error_fragment": "invalid explicit Action QoS"
+    },
+    {
+      "key": "qos.goal-service.depth",
+      "baseline": "8",
+      "mutation": "9",
+      "valid": true,
+      "enabled_error": 17,
+      "disabled_error": 17,
+      "gateway_error_fragment": "action response QoS differs from its explicit server contract"
+    },
+    {
+      "key": "qos.goal-service.deadline",
+      "baseline": "infinite",
+      "mutation": "1",
+      "valid": true,
+      "enabled_error": 17,
+      "disabled_error": 17,
+      "gateway_error_fragment": "action response QoS differs from its explicit server contract"
+    },
+    {
+      "key": "qos.goal-service.lifespan",
+      "baseline": "infinite",
+      "mutation": "1",
+      "valid": true,
+      "enabled_error": 17,
+      "disabled_error": 17,
+      "gateway_error_fragment": "action response QoS differs from its explicit server contract"
+    },
+    {
+      "key": "qos.goal-service.liveliness",
+      "baseline": "automatic",
+      "mutation": "manual-by-topic",
+      "valid": true,
+      "enabled_error": 17,
+      "disabled_error": 17,
+      "gateway_error_fragment": "action response QoS differs from its explicit server contract"
+    },
+    {
+      "key": "qos.goal-service.liveliness-lease-duration",
+      "baseline": "infinite",
+      "mutation": "1",
+      "valid": true,
+      "enabled_error": 17,
+      "disabled_error": 17,
+      "gateway_error_fragment": "action response QoS differs from its explicit server contract"
+    },
+    {
+      "key": "qos.cancel-service.reliability",
+      "baseline": "reliable",
+      "mutation": "best-effort",
+      "valid": true,
+      "enabled_error": 17,
+      "disabled_error": 17,
+      "gateway_error_fragment": "action response QoS differs from its explicit server contract"
+    },
+    {
+      "key": "qos.cancel-service.durability",
+      "baseline": "volatile",
+      "mutation": "transient-local",
+      "valid": true,
+      "enabled_error": 17,
+      "disabled_error": 17,
+      "gateway_error_fragment": "action response QoS differs from its explicit server contract"
+    },
+    {
+      "key": "qos.cancel-service.history",
+      "baseline": "keep-last",
+      "mutation": "keep-all",
+      "valid": false,
+      "enabled_error": 95,
+      "disabled_error": 17,
+      "gateway_error_fragment": "invalid explicit Action QoS"
+    },
+    {
+      "key": "qos.cancel-service.depth",
+      "baseline": "8",
+      "mutation": "9",
+      "valid": true,
+      "enabled_error": 17,
+      "disabled_error": 17,
+      "gateway_error_fragment": "action response QoS differs from its explicit server contract"
+    },
+    {
+      "key": "qos.cancel-service.deadline",
+      "baseline": "infinite",
+      "mutation": "1",
+      "valid": true,
+      "enabled_error": 17,
+      "disabled_error": 17,
+      "gateway_error_fragment": "action response QoS differs from its explicit server contract"
+    },
+    {
+      "key": "qos.cancel-service.lifespan",
+      "baseline": "infinite",
+      "mutation": "1",
+      "valid": true,
+      "enabled_error": 17,
+      "disabled_error": 17,
+      "gateway_error_fragment": "action response QoS differs from its explicit server contract"
+    },
+    {
+      "key": "qos.cancel-service.liveliness",
+      "baseline": "automatic",
+      "mutation": "manual-by-topic",
+      "valid": true,
+      "enabled_error": 17,
+      "disabled_error": 17,
+      "gateway_error_fragment": "action response QoS differs from its explicit server contract"
+    },
+    {
+      "key": "qos.cancel-service.liveliness-lease-duration",
+      "baseline": "infinite",
+      "mutation": "1",
+      "valid": true,
+      "enabled_error": 17,
+      "disabled_error": 17,
+      "gateway_error_fragment": "action response QoS differs from its explicit server contract"
+    },
+    {
+      "key": "qos.result-service.reliability",
+      "baseline": "reliable",
+      "mutation": "best-effort",
+      "valid": true,
+      "enabled_error": 17,
+      "disabled_error": 17,
+      "gateway_error_fragment": "action response QoS differs from its explicit server contract"
+    },
+    {
+      "key": "qos.result-service.durability",
+      "baseline": "volatile",
+      "mutation": "transient-local",
+      "valid": true,
+      "enabled_error": 17,
+      "disabled_error": 17,
+      "gateway_error_fragment": "action response QoS differs from its explicit server contract"
+    },
+    {
+      "key": "qos.result-service.history",
+      "baseline": "keep-last",
+      "mutation": "keep-all",
+      "valid": false,
+      "enabled_error": 95,
+      "disabled_error": 17,
+      "gateway_error_fragment": "invalid explicit Action QoS"
+    },
+    {
+      "key": "qos.result-service.depth",
+      "baseline": "8",
+      "mutation": "9",
+      "valid": true,
+      "enabled_error": 17,
+      "disabled_error": 17,
+      "gateway_error_fragment": "action response QoS differs from its explicit server contract"
+    },
+    {
+      "key": "qos.result-service.deadline",
+      "baseline": "infinite",
+      "mutation": "1",
+      "valid": true,
+      "enabled_error": 17,
+      "disabled_error": 17,
+      "gateway_error_fragment": "action response QoS differs from its explicit server contract"
+    },
+    {
+      "key": "qos.result-service.lifespan",
+      "baseline": "infinite",
+      "mutation": "1",
+      "valid": true,
+      "enabled_error": 17,
+      "disabled_error": 17,
+      "gateway_error_fragment": "action response QoS differs from its explicit server contract"
+    },
+    {
+      "key": "qos.result-service.liveliness",
+      "baseline": "automatic",
+      "mutation": "manual-by-topic",
+      "valid": true,
+      "enabled_error": 17,
+      "disabled_error": 17,
+      "gateway_error_fragment": "action response QoS differs from its explicit server contract"
+    },
+    {
+      "key": "qos.result-service.liveliness-lease-duration",
+      "baseline": "infinite",
+      "mutation": "1",
+      "valid": true,
+      "enabled_error": 17,
+      "disabled_error": 17,
+      "gateway_error_fragment": "action response QoS differs from its explicit server contract"
+    },
+    {
+      "key": "qos.feedback.reliability",
+      "baseline": "reliable",
+      "mutation": "best-effort",
+      "valid": true,
+      "enabled_error": 17,
+      "disabled_error": 17,
+      "gateway_error_fragment": "action response QoS differs from its explicit server contract"
+    },
+    {
+      "key": "qos.feedback.durability",
+      "baseline": "volatile",
+      "mutation": "transient-local",
+      "valid": true,
+      "enabled_error": 17,
+      "disabled_error": 17,
+      "gateway_error_fragment": "action response QoS differs from its explicit server contract"
+    },
+    {
+      "key": "qos.feedback.history",
+      "baseline": "keep-last",
+      "mutation": "keep-all",
+      "valid": false,
+      "enabled_error": 95,
+      "disabled_error": 17,
+      "gateway_error_fragment": "invalid explicit Action QoS"
+    },
+    {
+      "key": "qos.feedback.depth",
+      "baseline": "8",
+      "mutation": "9",
+      "valid": true,
+      "enabled_error": 17,
+      "disabled_error": 17,
+      "gateway_error_fragment": "action response QoS differs from its explicit server contract"
+    },
+    {
+      "key": "qos.feedback.deadline",
+      "baseline": "infinite",
+      "mutation": "1",
+      "valid": true,
+      "enabled_error": 17,
+      "disabled_error": 17,
+      "gateway_error_fragment": "action response QoS differs from its explicit server contract"
+    },
+    {
+      "key": "qos.feedback.lifespan",
+      "baseline": "infinite",
+      "mutation": "1",
+      "valid": true,
+      "enabled_error": 17,
+      "disabled_error": 17,
+      "gateway_error_fragment": "action response QoS differs from its explicit server contract"
+    },
+    {
+      "key": "qos.feedback.liveliness",
+      "baseline": "automatic",
+      "mutation": "manual-by-topic",
+      "valid": true,
+      "enabled_error": 17,
+      "disabled_error": 17,
+      "gateway_error_fragment": "action response QoS differs from its explicit server contract"
+    },
+    {
+      "key": "qos.feedback.liveliness-lease-duration",
+      "baseline": "infinite",
+      "mutation": "1",
+      "valid": true,
+      "enabled_error": 17,
+      "disabled_error": 17,
+      "gateway_error_fragment": "action response QoS differs from its explicit server contract"
+    },
+    {
+      "key": "qos.status.reliability",
+      "baseline": "reliable",
+      "mutation": "best-effort",
+      "valid": true,
+      "enabled_error": 17,
+      "disabled_error": 17,
+      "gateway_error_fragment": "action response QoS differs from its explicit server contract"
+    },
+    {
+      "key": "qos.status.durability",
+      "baseline": "transient-local",
+      "mutation": "volatile",
+      "valid": true,
+      "enabled_error": 17,
+      "disabled_error": 17,
+      "gateway_error_fragment": "action response QoS differs from its explicit server contract"
+    },
+    {
+      "key": "qos.status.history",
+      "baseline": "keep-last",
+      "mutation": "keep-all",
+      "valid": false,
+      "enabled_error": 95,
+      "disabled_error": 17,
+      "gateway_error_fragment": "invalid explicit Action QoS"
+    },
+    {
+      "key": "qos.status.depth",
+      "baseline": "8",
+      "mutation": "9",
+      "valid": true,
+      "enabled_error": 17,
+      "disabled_error": 17,
+      "gateway_error_fragment": "action response QoS differs from its explicit server contract"
+    },
+    {
+      "key": "qos.status.deadline",
+      "baseline": "infinite",
+      "mutation": "1",
+      "valid": true,
+      "enabled_error": 17,
+      "disabled_error": 17,
+      "gateway_error_fragment": "action response QoS differs from its explicit server contract"
+    },
+    {
+      "key": "qos.status.lifespan",
+      "baseline": "infinite",
+      "mutation": "1",
+      "valid": true,
+      "enabled_error": 17,
+      "disabled_error": 17,
+      "gateway_error_fragment": "action response QoS differs from its explicit server contract"
+    },
+    {
+      "key": "qos.status.liveliness",
+      "baseline": "automatic",
+      "mutation": "manual-by-topic",
+      "valid": true,
+      "enabled_error": 17,
+      "disabled_error": 17,
+      "gateway_error_fragment": "action response QoS differs from its explicit server contract"
+    },
+    {
+      "key": "qos.status.liveliness-lease-duration",
+      "baseline": "infinite",
+      "mutation": "1",
+      "valid": true,
+      "enabled_error": 17,
+      "disabled_error": 17,
+      "gateway_error_fragment": "action response QoS differs from its explicit server contract"
+    }
+  ]
+}

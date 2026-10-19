@@ -1,0 +1,10 @@
+{
+  "url": "https://raw.githubusercontent.com/ros2/rcl/18d96c9c2b98e616324ae9a2c7701dd0b0886ff0/rcl/src/rcl/timer.c",
+  "actual_commit": "18d96c9c2b98e616324ae9a2c7701dd0b0886ff0",
+  "actual_tree": "6f4e1510658cfbc69ccd8aba9b532d1463918bc5",
+  "git_blob": "7df2d68f0eab8ef15526bbf54655ec1c4e24d0f3",
+  "bytes": 19313,
+  "sha256": "a45140f6ef58578ff1d0bb0350bb65f94832b558e4850aef9ffc2b1560aec29f",
+  "earlier_ref_observation_equal": true,
+  "scope": "source algorithm research only, not installed/native SDK qualification"
+}

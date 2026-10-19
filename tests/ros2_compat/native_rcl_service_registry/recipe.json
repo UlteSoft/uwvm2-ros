@@ -1,0 +1,23 @@
+{
+  "format_version": 1,
+  "status": "SOURCE_ONLY_NOT_EXECUTED",
+  "implementation": "real retained direct-RCL Empty and AddTwoInts typed endpoints behind explicit shared native Registry",
+  "default_rights": [],
+  "raw_protocol": "UMRC-v1 header160 + exact UMRE256 or same-record URMI192/canonical body",
+  "actual_candidate_import_configure_compile_probe_models_Guest_native_ROS_SSH": 0,
+  "authored_value_groups": 8,
+  "authored_native_family_routes": 2,
+  "public_calls": ["execute(admitted,UMRCcontrol,body,length,deadline)", "delivery_failed(owner,incarnation,reason)", "close_owner(saved_domain,handle,alias,revoke,reason)", "retire_session(saved_session,reason)", "clear()"],
+  "limits": {"explicit_maximum_entries": "1..65536", "explicit_history_per_endpoint": "1..256", "actual_body_families": "Empty0/0; AddTwoInts16/8", "positive_availability_wait": "95 until real graph-event wait and production probe exist"},
+  "future_required": [
+    "independent full source peer and exact coherent integration",
+    "shared pair/history independent source peer and composed current source",
+    "real Empty/AddTwoInts Host/Gateway/native policy spelling and independent RIHS/canonical acceptance",
+    "explicit adapter-codec-identity proof instead of temporary95",
+    "all real production feature compile/link/full MD and actual SDK/RMW identity/metadata qualification",
+    "complete Host raw12/caller/quota/final-copy and authenticated Gateway action/paired-owner routing",
+    "concrete Guest RMW C provider and actual end-to-end default-denial/ownership/Native behavior",
+    "externally enforced whole-deadline/physical Native process/node/session cleanup",
+    "original upstream/distribution/vendor/multiarch and hardware-counter performance suites"
+  ]
+}

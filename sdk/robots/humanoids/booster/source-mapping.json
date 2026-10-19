@@ -1,0 +1,207 @@
+{
+  "format": "uwvm-authored-bridge-complete-sdk-value-mapping-v1",
+  "source_only": true,
+  "official_repository": "https://github.com/BoosterRobotics/booster_robotics_sdk",
+  "sdk_commit": "87a9a26d06a94ddd50968e7576f1170f6fa5a80f",
+  "actual_installed_header_and_library_qualification": false,
+  "native_ros2_bridge_identity_export_required": true,
+  "default_authority": [],
+  "types": [
+    {
+      "bridge_type": "uwvm_booster_sdk_bridge/msg/ImuState",
+      "source": "AUTHORED_BRIDGE",
+      "bridge_definition": "sdk_bridge_interfaces/msg/ImuState.msg",
+      "bytes": 153,
+      "sha256": "524085b74c19d69f4665cd03877aad3b223cf9f871d3d67c8d0edbded8840cfc",
+      "whole_ordered_declarations": [
+        {
+          "type": "float32[3]",
+          "declaration": "rpy"
+        },
+        {
+          "type": "float32[3]",
+          "declaration": "gyro"
+        },
+        {
+          "type": "float32[3]",
+          "declaration": "acc"
+        }
+      ],
+      "actual_native_identity": null,
+      "canonical_identity": null,
+      "actual_sdk_value_source": {
+        "repository": "https://github.com/BoosterRobotics/booster_robotics_sdk",
+        "commit": "87a9a26d06a94ddd50968e7576f1170f6fa5a80f",
+        "path": "include/booster/idl/b1/ImuState.h",
+        "git_blob_sha1": "e0a0001b9996d139e6a4caa132bf99b6f16cb249",
+        "bytes": 8964,
+        "sha256": "84f34fa9307c1482f8bc98bdcae13cab014c1890fc77d9c1f9f04349f9c14b67"
+      },
+      "copy_rule": "Every declared value field is copied in order via native/sdk_conversion.hpp; uint8 remains uint8 and CmdType known values are checked explicitly."
+    },
+    {
+      "bridge_type": "uwvm_booster_sdk_bridge/msg/LowCmd",
+      "source": "AUTHORED_BRIDGE",
+      "bridge_definition": "sdk_bridge_interfaces/msg/LowCmd.msg",
+      "bytes": 143,
+      "sha256": "463da602d1586dadcdc3a5f46bb63716095bb8443447fa216425f9ec9cff11c9",
+      "whole_ordered_declarations": [
+        {
+          "type": "int32",
+          "declaration": "cmd_type"
+        },
+        {
+          "type": "MotorCmd[]",
+          "declaration": "motor_cmd"
+        }
+      ],
+      "actual_native_identity": null,
+      "canonical_identity": null,
+      "actual_sdk_value_source": {
+        "repository": "https://github.com/BoosterRobotics/booster_robotics_sdk",
+        "commit": "87a9a26d06a94ddd50968e7576f1170f6fa5a80f",
+        "path": "include/booster/idl/b1/LowCmd.h",
+        "git_blob_sha1": "9df9af115ddbcac10b0c25f8ea30c596afac193f",
+        "bytes": 8438,
+        "sha256": "ae8ccc3e2bf8061c9a7f2359baf49c4f9de181113e3487d4f7265c2d3546d630"
+      },
+      "copy_rule": "Every declared value field is copied in order via native/sdk_conversion.hpp; uint8 remains uint8 and CmdType known values are checked explicitly."
+    },
+    {
+      "bridge_type": "uwvm_booster_sdk_bridge/msg/LowState",
+      "source": "AUTHORED_BRIDGE",
+      "bridge_definition": "sdk_bridge_interfaces/msg/LowState.msg",
+      "bytes": 192,
+      "sha256": "4165c2f4805e1c6aa014285542e879f3c024b5898ef6a0536f9ff8e71dd44330",
+      "whole_ordered_declarations": [
+        {
+          "type": "ImuState",
+          "declaration": "imu_state"
+        },
+        {
+          "type": "MotorState[]",
+          "declaration": "motor_state_parallel"
+        },
+        {
+          "type": "MotorState[]",
+          "declaration": "motor_state_serial"
+        }
+      ],
+      "actual_native_identity": null,
+      "canonical_identity": null,
+      "actual_sdk_value_source": {
+        "repository": "https://github.com/BoosterRobotics/booster_robotics_sdk",
+        "commit": "87a9a26d06a94ddd50968e7576f1170f6fa5a80f",
+        "path": "include/booster/idl/b1/LowState.h",
+        "git_blob_sha1": "528fb1be1fc547bd1b82696e7b3e22f37269dc7a",
+        "bytes": 10062,
+        "sha256": "488047b0686167dc03d9dfa834e6a9e940a76e2e465411b5c7618006cb4939fd"
+      },
+      "copy_rule": "Every declared value field is copied in order via native/sdk_conversion.hpp; uint8 remains uint8 and CmdType known values are checked explicitly."
+    },
+    {
+      "bridge_type": "uwvm_booster_sdk_bridge/msg/MotorCmd",
+      "source": "AUTHORED_BRIDGE",
+      "bridge_definition": "sdk_bridge_interfaces/msg/MotorCmd.msg",
+      "bytes": 188,
+      "sha256": "6b965ee3a4349c4a9e39fd5c2453f1ec2374939cef3589d55f170dedad4bb2d9",
+      "whole_ordered_declarations": [
+        {
+          "type": "uint8",
+          "declaration": "mode"
+        },
+        {
+          "type": "float32",
+          "declaration": "q"
+        },
+        {
+          "type": "float32",
+          "declaration": "dq"
+        },
+        {
+          "type": "float32",
+          "declaration": "tau"
+        },
+        {
+          "type": "float32",
+          "declaration": "kp"
+        },
+        {
+          "type": "float32",
+          "declaration": "kd"
+        },
+        {
+          "type": "float32",
+          "declaration": "weight"
+        }
+      ],
+      "actual_native_identity": null,
+      "canonical_identity": null,
+      "actual_sdk_value_source": {
+        "repository": "https://github.com/BoosterRobotics/booster_robotics_sdk",
+        "commit": "87a9a26d06a94ddd50968e7576f1170f6fa5a80f",
+        "path": "include/booster/idl/b1/MotorCmd.h",
+        "git_blob_sha1": "5692502783d579f91fe3778eb64f95c2fd60f740",
+        "bytes": 9938,
+        "sha256": "97799c464b1ba2623841a55db9f4ec4f07bf6e25f4f54117a4af774c3282f4b0"
+      },
+      "copy_rule": "Every declared value field is copied in order via native/sdk_conversion.hpp; uint8 remains uint8 and CmdType known values are checked explicitly."
+    },
+    {
+      "bridge_type": "uwvm_booster_sdk_bridge/msg/MotorState",
+      "source": "AUTHORED_BRIDGE",
+      "bridge_definition": "sdk_bridge_interfaces/msg/MotorState.msg",
+      "bytes": 215,
+      "sha256": "adbffcf5acfe4654b837b1abc157dc9664d119b042dddbec0e6c8dd235ed6078",
+      "whole_ordered_declarations": [
+        {
+          "type": "uint8",
+          "declaration": "mode"
+        },
+        {
+          "type": "float32",
+          "declaration": "q"
+        },
+        {
+          "type": "float32",
+          "declaration": "dq"
+        },
+        {
+          "type": "float32",
+          "declaration": "ddq"
+        },
+        {
+          "type": "float32",
+          "declaration": "tau_est"
+        },
+        {
+          "type": "uint8",
+          "declaration": "temperature"
+        },
+        {
+          "type": "uint32",
+          "declaration": "lost"
+        },
+        {
+          "type": "uint32[2]",
+          "declaration": "reserve"
+        }
+      ],
+      "actual_native_identity": null,
+      "canonical_identity": null,
+      "actual_sdk_value_source": {
+        "repository": "https://github.com/BoosterRobotics/booster_robotics_sdk",
+        "commit": "87a9a26d06a94ddd50968e7576f1170f6fa5a80f",
+        "path": "include/booster/idl/b1/MotorState.h",
+        "git_blob_sha1": "ebc4341beb2fe5707408580094cdc72b3ba85df8",
+        "bytes": 11021,
+        "sha256": "f607d7759169f9fb57b7ec1bce5886a5bb9943e1c8d445369206f3fcd6fde4e4"
+      },
+      "copy_rule": "Every declared value field is copied in order via native/sdk_conversion.hpp; uint8 remains uint8 and CmdType known values are checked explicitly."
+    }
+  ],
+  "separate_source_semantics": [
+    "Official ROS mode/temperature int8 is not this SDK uint8 bridge.",
+    "Original SDK LowCmd CmdType uint32 values0/1 become explicit int32 domain0/1; all other enum values are refused."
+  ]
+}

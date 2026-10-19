@@ -1,0 +1,47 @@
+{
+  "format": "uwvm-ros-custom-bounded-v2",
+  "types": [
+    {
+      "ros_version": 2,
+      "type": "xarm_msgs/srv/GetFloat32List",
+      "file": "xarm_msgs/srv/GetFloat32List.srv",
+      "bounds": {
+        "response.message": {
+          "string": 256
+        },
+        "response.datas": {
+          "sequence": 64
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "xarm_msgs/srv/SetInt16List",
+      "file": "xarm_msgs/srv/SetInt16List.srv",
+      "bounds": {
+        "request.datas": {
+          "sequence": 64
+        },
+        "response.message": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "xarm_msgs/srv/GetSetModbusData",
+      "file": "xarm_msgs/srv/GetSetModbusData.srv",
+      "bounds": {
+        "request.modbus_data": {
+          "sequence": 64
+        },
+        "response.message": {
+          "string": 128
+        },
+        "response.ret_data": {
+          "sequence": 64
+        }
+      }
+    }
+  ]
+}

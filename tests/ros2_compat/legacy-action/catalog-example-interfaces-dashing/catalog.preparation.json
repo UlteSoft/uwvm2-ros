@@ -1,0 +1,18 @@
+{
+  "format": "uwvm-ros-custom-bounded-v2",
+  "types": [
+    {
+      "ros_version": 2,
+      "type": "example_interfaces/action/Fibonacci",
+      "file": "example_interfaces/action/Fibonacci.action",
+      "bounds": {
+        "result.sequence": {
+          "sequence": 64
+        },
+        "feedback.sequence": {
+          "sequence": 64
+        }
+      }
+    }
+  ]
+}

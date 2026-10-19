@@ -1,0 +1,9 @@
+[package]
+name = "uwvm-control-record-contracts"
+version = "0.1.0"
+edition = "2021"
+publish = false
+[dependencies]
+roswasm = { path = "../../../sdk/rust", features = ["alloc", "ros2"] }
+[lib]
+path = "contract.rs"

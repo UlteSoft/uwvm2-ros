@@ -1,0 +1,121 @@
+{
+  "cgroup": {
+    "expected_boot_id": "501c54bd-af24-4d22-900c-8e24de274464",
+    "expected_cpus": "0-31",
+    "expected_device": 29,
+    "expected_inode": 18358,
+    "expected_leaf": "/sys/fs/cgroup/system.slice/docker-4dd58ad4560fde2ab9b539e4ef9cab1fac531654e99ad554aff1fce8ae0eae37.scope",
+    "memory_max": 68719476736,
+    "memory_swap_max": 0
+  },
+  "excluded_partial": {
+    "bytes": 87900,
+    "ctime_ns": 1792168275849680347,
+    "device": 81,
+    "inode": 778536,
+    "mtime_ns": 1586078011000000000,
+    "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r6c/model-DEBs/00371/libboost-graph1.71-dev_1.71.0-6ubuntu6_amd64.deb",
+    "sha256": "c8cf4f99beed03466a108ead46b2c0c559df4c6a37448b9dfa3c547cb6c0ff2e"
+  },
+  "format_version": 1,
+  "helpers": {
+    "restart": {
+      "bytes": 47606,
+      "ctime_ns": 1792167620679213935,
+      "device": 66312,
+      "inode": 30857166,
+      "mtime_ns": 1792167620679213935,
+      "path": "/var/tmp/uwvm-ros-unitree-20261016-r1/noetic-amd64-native-sdk-acquisition-controls-r6c/requalify_after_restart.py",
+      "sha256": "0f14a3e8b122286f5d934f385d8ca582aa14039cd0b97531dad19b528a1b3260"
+    },
+    "storage": {
+      "bytes": 10863,
+      "ctime_ns": 1792167620677890256,
+      "device": 66312,
+      "inode": 30857165,
+      "mtime_ns": 1792167620677890256,
+      "path": "/var/tmp/uwvm-ros-unitree-20261016-r1/noetic-amd64-native-sdk-acquisition-controls-r6c/owned_storage.py",
+      "sha256": "cdc84eb4b55c727d74a382b019d4faa6f7e65778ec1c07be082073d8c37e1d97"
+    }
+  },
+  "historical_signed_partial": {
+    "bytes": 317296,
+    "sha256": "c4c342d737ec15ca5b2e8f1e29a50f7c84b777b7634020b8127d08fab8899ac0"
+  },
+  "kind": "noetic-r6d-finite-CoW-DEB-candidate-view",
+  "manifest": "/var/tmp/uwvm-ros-complete-20261015-r1/inputs-r35/source-manifest.json",
+  "manifest_pin": {
+    "bytes": 3397553,
+    "ctime_ns": 1792107847810773084,
+    "device": 66312,
+    "inode": 2413939,
+    "mtime_ns": 1792107847810052432,
+    "path": "/var/tmp/uwvm-ros-complete-20261015-r1/inputs-r35/source-manifest.json",
+    "sha256": "eb7fd49e03325deffbe510e24be06d1c0e8274b0207f0a33bd335ea470ad2396"
+  },
+  "manifest_sha256": "eb7fd49e03325deffbe510e24be06d1c0e8274b0207f0a33bd335ea470ad2396",
+  "out": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-cacheview-r6d",
+  "owned_storage": {
+    "filesystem_uuid": "3fe7718a-8039-4f1c-b540-7c5cf05b65ca",
+    "fstrim": {
+      "bytes": 43544,
+      "ctime_ns": 1779281661595172813,
+      "device": 66312,
+      "inode": 12324147,
+      "mtime_ns": 1772812563000000000,
+      "path": "/usr/sbin/fstrim",
+      "sha256": "74f99afbf098df6701fdf4bda8d258ca03b1306d131f341f7ec9530681f55b1d"
+    },
+    "image": {
+      "device": 66312,
+      "inode": 30723291,
+      "logical_bytes": 274877906944,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/artifact-storage-r1.btrfs"
+    },
+    "loop_name": "loop29",
+    "mount": {
+      "filesystem_type": "btrfs",
+      "major_minor": "0:68",
+      "mount_options": "rw,nosuid,nodev,noatime",
+      "mountpoint": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1",
+      "root": "/",
+      "source": "/dev/loop29",
+      "super_options": "rw,compress=zstd:3,ssd,discard=async,space_cache=v2,commit=15,subvolid=5,subvol=/"
+    },
+    "mount_device": 81,
+    "mount_root": "/",
+    "mountpoint": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1",
+    "root_inode": 256,
+    "uuid_device_link": {
+      "resolved": "/sys/devices/virtual/block/loop29",
+      "target": "../../../../devices/virtual/block/loop29"
+    }
+  },
+  "source": "/var/tmp/uwvm-ros-complete-20261015-r1/inputs-r35/source",
+  "source_cache_root": {
+    "ctime_ns": 1792168272188621816,
+    "device": 81,
+    "inode": 773669,
+    "mode": 448,
+    "mtime_ns": 1792168272188621816,
+    "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r6c/model-DEBs"
+  },
+  "source_inner_report": {
+    "bytes": 1048328,
+    "ctime_ns": 1792168296159003175,
+    "device": 81,
+    "inode": 778858,
+    "mtime_ns": 1792168296126002654,
+    "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r6c/report.json",
+    "sha256": "dae93ed7054d73e483221317bd131de300dea7cbb1fa63d308835c1f74592940"
+  },
+  "source_outer_report": {
+    "bytes": 58936,
+    "ctime_ns": 1792168315846313178,
+    "device": 81,
+    "inode": 778860,
+    "mtime_ns": 1792168315821410638,
+    "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-root-supervisor-r6c/report.json",
+    "sha256": "23d3ab88e91faae9f9622f6246b54ad17865fd91fa6c20aaa345d2ea285160e9"
+  }
+}

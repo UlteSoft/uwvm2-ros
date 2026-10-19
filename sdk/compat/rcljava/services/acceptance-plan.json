@@ -1,0 +1,83 @@
+{
+  "format_version": 1,
+  "kind": "FUTURE_ACTUAL_RCLJAVA_SERVICES_ACCEPTANCE_PLAN_NOT_RESULTS",
+  "actual_source_manifest": null,
+  "actual_source_stage": null,
+  "actual_Wasm_artifacts": null,
+  "actual_native_artifacts": null,
+  "authority_default": [],
+  "required_preconditions": [
+    "independent source peer, coherent exact integration/current source freeze",
+    "actual fixed JDK/TeaVM0.13.1 linear-WASI/native SDK/tool identities; numeric-only actual backend import signatures",
+    "whole tree/cgroup/swap0/memory/output/backing/CPU/deadline admission and terminal owner cleanup",
+    "independent real native support hash/description/builtin adapter/QoS proof; held pidfd/birth/map/fullMD/link provenance",
+    "fresh Guest/native endpoints per case and current terminal result/raw logs; no retagged old receipts"
+  ],
+  "local_models": {
+    "groups": 28,
+    "status": "AUTHORED_UNEXECUTED"
+  },
+  "cases": [
+    {
+      "case": "Host-default-denial",
+      "main": "org.uwvm.rcljava.services.examples.DefaultDeniedServiceBootstrap",
+      "Host_grants": [],
+      "require": "present local server row + actual ABI1 + actual first capability_open13; no JNI/missing-map failure credit"
+    },
+    {
+      "case": "original-server-main",
+      "main": "org.uwvm.rcljava.services.examples.OfficialServiceBootstrap",
+      "Host_grants": [
+        "advertise",
+        "respond"
+      ],
+      "native_peer": [
+        "client",
+        "add"
+      ],
+      "require": "unchanged full original main/handler; actual complete41,1/42; real opaque ticket and both owner cleanup"
+    },
+    {
+      "case": "explicit-native-ready-client-three-families",
+      "main": "org.uwvm.rcljava.services.examples.SelectedServicesBootstrap",
+      "families": [
+        "add",
+        "trigger",
+        "setbool"
+      ],
+      "role": "client",
+      "Host_grants": [
+        "call",
+        "observe"
+      ],
+      "require": "independently established native server readiness; actual watch/submit/complete64B event/correlation, exactly one submit/no sync; full value/close"
+    },
+    {
+      "case": "server-three-families",
+      "main": "org.uwvm.rcljava.services.examples.SelectedServicesBootstrap",
+      "families": [
+        "add",
+        "trigger",
+        "setbool"
+      ],
+      "role": "server",
+      "Host_grants": [
+        "advertise",
+        "respond"
+      ],
+      "require": "native peer client actual availability thenone request; complete i64/empty/Bool/UTF8 values, no fake RMW header, terminal cleanup"
+    },
+    {
+      "case": "original-client-main",
+      "current_status": "REQUIRED_BLOCKED95_UNTIL_NATIVE_AVAILABILITY",
+      "require": "do not count explicit-native-ready lesson as unchanged original client main execution"
+    }
+  ],
+  "new_native_witness_protocol": {
+    "I": "actual endpoint creation; original process remains owned",
+    "M": "actual native client availability, server creation marker distinct",
+    "P": "one submit only and bounded progress; actual request/response fields checked",
+    "F": "complete values+actual native endpoint shutdown; external whole-lane qualification still required"
+  },
+  "all_actual_results": 0
+}

@@ -1,0 +1,17 @@
+{
+  "format_version": 1,
+  "source": "/var/tmp/uwvm-ros-complete-20261015-r1/inputs-r39/source",
+  "manifest": "/var/tmp/uwvm-ros-complete-20261015-r1/inputs-r39/source-manifest.json",
+  "manifest_sha256": "54d6c79978e36bd13fa37272d8dd5f2cc94a9d2e62ac437b51dfc4aa4f6ae5b9",
+  "worker": "/var/tmp/uwvm-ros-unitree-20261016-r1/source39-native-gateways-physics-peer-controls-r6/native-producer.py",
+  "native_configuration": "/var/tmp/uwvm-ros-unitree-20261016-r1/source39-native-gateways-physics-peer-controls-r6/native-config.json",
+  "native_configuration_sha256": null,
+  "host_metadata_report": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/unitree-rust-and-wheel-host-input-metadata-20261016-r1/report.json",
+  "unshare": {
+    "invocation": "/usr/bin/unshare",
+    "bytes": 47872,
+    "sha256": "3568cbd5652923d43a080e4e4edbd516edc1aa9978744f2b035c004a704de93c"
+  },
+  "out": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/source39-native-gateways-physics-peer-root-supervisor-r6",
+  "native_out": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/source39-native-gateways-physics-peer-r6"
+}

@@ -1,0 +1,241 @@
+{
+  "baseline_API_anchors": [
+    {
+      "actual_Source64_entry": {
+        "bytes": 130855,
+        "sha256": "49f1ac1430c205cba44df32316dc39baeee04f291269d8863ff9c69c6f9523a5"
+      },
+      "actual_Source64_line": 107,
+      "function": "parse_fields",
+      "relative": "sdk/custom-types/bounded_profile.py"
+    },
+    {
+      "actual_Source64_entry": {
+        "bytes": 130855,
+        "sha256": "49f1ac1430c205cba44df32316dc39baeee04f291269d8863ff9c69c6f9523a5"
+      },
+      "actual_Source64_line": 175,
+      "function": "load_catalog",
+      "relative": "sdk/custom-types/bounded_profile.py"
+    },
+    {
+      "actual_Source64_entry": {
+        "bytes": 130855,
+        "sha256": "49f1ac1430c205cba44df32316dc39baeee04f291269d8863ff9c69c6f9523a5"
+      },
+      "actual_Source64_line": 320,
+      "function": "emit_c",
+      "relative": "sdk/custom-types/bounded_profile.py"
+    },
+    {
+      "actual_Source64_entry": {
+        "bytes": 130855,
+        "sha256": "49f1ac1430c205cba44df32316dc39baeee04f291269d8863ff9c69c6f9523a5"
+      },
+      "actual_Source64_line": 452,
+      "function": "emit_js",
+      "relative": "sdk/custom-types/bounded_profile.py"
+    },
+    {
+      "actual_Source64_entry": {
+        "bytes": 130855,
+        "sha256": "49f1ac1430c205cba44df32316dc39baeee04f291269d8863ff9c69c6f9523a5"
+      },
+      "actual_Source64_line": 541,
+      "function": "emit_rust",
+      "relative": "sdk/custom-types/bounded_profile.py"
+    },
+    {
+      "actual_Source64_entry": {
+        "bytes": 130855,
+        "sha256": "49f1ac1430c205cba44df32316dc39baeee04f291269d8863ff9c69c6f9523a5"
+      },
+      "actual_Source64_line": 615,
+      "function": "emit_go",
+      "relative": "sdk/custom-types/bounded_profile.py"
+    },
+    {
+      "actual_Source64_entry": {
+        "bytes": 130855,
+        "sha256": "49f1ac1430c205cba44df32316dc39baeee04f291269d8863ff9c69c6f9523a5"
+      },
+      "actual_Source64_line": 690,
+      "function": "emit_as",
+      "relative": "sdk/custom-types/bounded_profile.py"
+    },
+    {
+      "actual_Source64_entry": {
+        "bytes": 130855,
+        "sha256": "49f1ac1430c205cba44df32316dc39baeee04f291269d8863ff9c69c6f9523a5"
+      },
+      "actual_Source64_line": 912,
+      "function": "emit_native",
+      "relative": "sdk/custom-types/bounded_profile.py"
+    },
+    {
+      "actual_Source64_entry": {
+        "bytes": 55864,
+        "sha256": "4a0670d10b35d647d59dccf84809386edc03fc79cded955402e028e4d92e203e"
+      },
+      "actual_Source64_line": 113,
+      "function": "native_name",
+      "relative": "sdk/tools/custom_types.py"
+    },
+    {
+      "actual_Source64_entry": {
+        "bytes": 55864,
+        "sha256": "4a0670d10b35d647d59dccf84809386edc03fc79cded955402e028e4d92e203e"
+      },
+      "actual_Source64_line": 242,
+      "function": "parse_idl",
+      "relative": "sdk/tools/custom_types.py"
+    }
+  ],
+  "execution_claims": {
+    "Runtime_or_ROS_delivery": false,
+    "generator_run": false,
+    "native_compiled": false,
+    "vendor_official_cases_run": 0
+  },
+  "format_version": 1,
+  "implemented_now": [
+    "explicit official-standard mode distinct from strict custom mode",
+    "complete ROS1 seq/time/frame_id Header plus JointState arrays",
+    "complete ROS2 Time/Header/JointState dependencies",
+    "actual native identity copy/binder and six-language/native converter emission",
+    "dependency-only Header/Time/Duration; only new JointState endpoint may opt in",
+    "normal native primitive range and complete optional-array length guards"
+  ],
+  "items": [
+    {
+      "completion_criteria": "A separate explicit field-aware canonical policy/wire schema, native conversion and complete six-language roundtrip vectors. Do not remove finite guards globally or relabel software-only values as native delivery.",
+      "current_source_refs": [
+        "sdk/custom-types/bounded_profile.py::emit_c/emit_js/emit_rust/emit_go/emit_as finite float guards",
+        "src/uwvm2/imported/ros/ipc/custom_wire.h::custom_wire scalar validation"
+      ],
+      "id": "NONFINITE_SENSOR_VALUES",
+      "problem": "Preserve actual sensor sentinel semantics, including LaserScan +inf/NaN where the official interface/device contract allows them.",
+      "status": "REQUIRED_FOLLOWUP_IMPLEMENTATION_NOT_COMPLETED"
+    },
+    {
+      "completion_criteria": "Complete original declaration/MD5/RIHS association, six-language constants/default initialization and negative schema mismatch tests. The legacy custom profile remains strict.",
+      "current_source_refs": [
+        "sdk/custom-types/bounded_profile.py::parse_fields",
+        "gateways/ros1/custom_topics.h::definition_details::field",
+        "gateways/ros2/compat/identity.h::declaration metadata",
+        "sdk/custom-types/scalar-defaults/README.md"
+      ],
+      "id": "CONSTANTS_AND_DEFAULTS",
+      "problem": "Parse and preserve official constants/defaults without pretending constants are transmitted record fields.",
+      "source_progress_20261018": {
+        "actual_current_native_acceptance": false,
+        "implemented": [
+          "Exact official ROS2 Quaternion float64 defaults x/y/z=0,w=1 in six language initialization paths",
+          "Independent full modern native default metadata comparison; RIHS alone is insufficient",
+          "ROS2 bool/integer/finitefloat scalar declarations preserve original normalized annotations and exact typed initialization in C/C++/Rust/JS/AS/TinyGo plus optional Python/Java/C#",
+          "Complete default-bearing Service/Action source records and modern protocol root/reference/default comparison; actual modern native proof required",
+          "Complete original xArm GetSetModbusData source/defaults/canonical-only capacities and authored Native value contracts; no execution"
+        ],
+        "remaining": "Declared string/array/nested-object defaults, constants/aliases/wide/recursive and broader IDL syntax; independently admitted owned-service default factories, all original native exports/transport, language builds and distro/vendor qualification"
+      },
+      "status": "PARTIAL_SOURCE_IMPLEMENTATION_REMAINDER_REQUIRED"
+    },
+    {
+      "completion_criteria": "Explicit bounded wide canonical representation, surrogate/invalid-text/empty/maximum vectors and exact native field traits in both backends. Never rename wstring to string.",
+      "current_source_refs": [
+        "sdk/custom-types/bounded_profile.py::parse_fields wstring refusal",
+        "sdk/custom-types/bounded_profile.py::parse_fields UTF-8 byte bounds",
+        "src/uwvm2/imported/ros/ipc/custom_wire.h"
+      ],
+      "id": "WSTRING_AND_TEXT_RULES",
+      "problem": "Support officially declared wide strings and their exact encoding/capacity rules.",
+      "status": "REQUIRED_FOLLOWUP_IMPLEMENTATION_NOT_COMPLETED"
+    },
+    {
+      "completion_criteria": "A bounded parser or independently owned official preprocessing lane with all original source/includes/fullMD, exact generated native types and exported type hashes. No arbitrary preprocessor/plugin execution inside the source generator.",
+      "current_source_refs": [
+        "sdk/custom-types/bounded_profile.py::load_catalog .msg/.srv/.action suffix gate",
+        "sdk/tools/custom_types.py::parse_idl fixed-profile subset"
+      ],
+      "id": "ROS2_IDL_DEPENDENCY_CLOSURE",
+      "problem": "Resolve complete ROS2 .idl import/type declarations, unions/enums/annotations where required, with original native generation provenance.",
+      "status": "REQUIRED_FOLLOWUP_IMPLEMENTATION_NOT_COMPLETED"
+    },
+    {
+      "completion_criteria": "Separate explicit capacity/profile extension and native resource budgets with full six-language streaming/copy/overflow witnesses. Existing builtin Image and its identity/adapter entry cannot be shadowed; no field projection or silent bound enlargement.",
+      "current_source_refs": [
+        "sdk/custom-types/bounded_profile.py::MAX_WIRE/MAX_NODES/MAX_TOTAL_NODES",
+        "sdk/custom-types/bounded_profile.py::native_name explicit standard whitelist",
+        "sdk/include/roswasm/codec.h builtin image path",
+        "src/uwvm2/imported/ros/common/message.h builtin Image identity"
+      ],
+      "id": "LARGE_IMAGE_AND_NESTED_STANDARD_RECORDS",
+      "problem": "Cover required complete Image/map/sensor payloads and nested standard dependencies beyond the first Header/JointState family.",
+      "source_progress_20261018": {
+        "actual_current_native_acceptance": false,
+        "implemented": [
+          "Complete admitted geometry/nav shapes, covariance36, Quaternion, nested Pose/Transform, Odometry and Path sources for both ROS versions"
+        ],
+        "remaining": "Large Image/map/sensor profiles and capacities beyond the existing finite standard catalog, plus actual native transport qualification"
+      },
+      "status": "REQUIRED_FOLLOWUP_IMPLEMENTATION_NOT_COMPLETED"
+    },
+    {
+      "completion_criteria": "Original official root/component/native protocol identities, exact typed six-language callbacks and actual native client/server/goal/cancel/cleanup tests. Topic codec availability is not service/action acceptance.",
+      "current_source_refs": [
+        "sdk/custom-types/bounded_profile.py::parse_fields",
+        "sdk/custom-types/bounded_profile.py::ros2_interface_schema",
+        "sdk/custom-types/interface_templates",
+        "gateways/ros1/custom_services.h",
+        "gateways/ros2/custom_actions.h"
+      ],
+      "id": "BROAD_SERVICE_ACTION_PAYLOADS",
+      "problem": "Complete JointTrajectory/FollowJointTrajectory and vendor service/action families, including Header, time/duration, constants and full nested payloads.",
+      "status": "REQUIRED_FOLLOWUP_IMPLEMENTATION_NOT_COMPLETED"
+    },
+    {
+      "completion_criteria": "Real per-distro original native metadata proof before any allowed RIHS recomputation, exact generated declarations/field traits and actual native exporter/library closure. Never manufacture a hash from an unverified catalog.",
+      "current_source_refs": [
+        "tests/ros_custom_types/bounded-v2/native_identity.cc::metadata",
+        "gateways/ros2/compat/identity.h",
+        "gateways/ros2/custom_topics.h::native_contract"
+      ],
+      "id": "PRE_RIHS_NATIVE_EXPORT",
+      "problem": "Extend the generic actual native exporter to older ROS2 SDKs using independently matched official introspection/description metadata.",
+      "source_progress_20261018": {
+        "actual_current_native_acceptance": false,
+        "implemented": [
+          "Explicit older-ROS2 Message introspection export and full native schema association",
+          "Complete ServiceMembers Request/Response and separately derived standard Event provenance",
+          "Complete five-pointer Action support, protocol/native graph association and prepare/bind/plan integration"
+        ],
+        "remaining": "Real installed-SDK/architecture exporter, mappings, native values, cleanup and distro/vendor official suites"
+      },
+      "status": "SOURCE_IMPLEMENTED_NATIVE_QUALIFICATION_PENDING"
+    },
+    {
+      "completion_criteria": "Complete actual per-model SDK source/license/definition closure, native command-mode/acknowledgement/unknown-outcome semantics and six-language bounded native-simulator witnesses. A generic zero Twist does not establish a robot stop operation.",
+      "current_source_refs": [
+        "sdk/robots/unitree/profiles",
+        "sdk/robots/unitree/upstream-lock.json",
+        "vendor19 foundation inventory.json",
+        "vendor19 foundation simulator-hold-stop.recipe.json"
+      ],
+      "id": "MODEL_COMMAND_AND_SIMULATOR_BINDINGS",
+      "problem": "Implement exact typed telemetry and safe simulator hold/stop for each acquired model/controller/RDK revision.",
+      "status": "REQUIRED_FOLLOWUP_IMPLEMENTATION_NOT_COMPLETED"
+    },
+    {
+      "completion_criteria": "Acquire actual complete SDK/protocol schema/version/license and native transport tests; a documented Zenoh/Python SDK or a ROS2 architecture page is not a completed ROS bridge or per-model type package.",
+      "current_source_refs": [
+        "https://fftai.github.io/fourier-grx-N1/",
+        "https://docs.ubtrobot.com/walker-tienkung/en/docs/sdk/7/"
+      ],
+      "id": "NON_ROS_VENDOR_TRANSPORT_BRIDGES",
+      "problem": "Implement separately source-bound transport bridges for vendor SDKs whose official transport is not a ROS driver.",
+      "status": "REQUIRED_FOLLOWUP_IMPLEMENTATION_NOT_COMPLETED"
+    }
+  ],
+  "kind": "required-standard-vendor-followup-implementation-ledger-v1",
+  "scope": "Complete Header/JointState and additive geometry/navigation/default/legacy identity sources are integrated. This ledger separates implemented source from remaining implementation and actual native acceptance; none of these rows certifies vendor or distro qualification."
+}

@@ -1,0 +1,53 @@
+{
+  "format_version": 1,
+  "source_only": true,
+  "not_executed": true,
+  "original_headers_only": [
+    "rmw",
+    "rcutils",
+    "rosidl_runtime_c",
+    "rosidl_typesupport_introspection_c",
+    "actual generated std_msgs C"
+  ],
+  "forbidden_include_prefix": "sdk/compat/rclc/include",
+  "B_sources": [
+    "src/context.c",
+    "src/selection.c",
+    "src/node.c",
+    "src/publisher.c",
+    "src/string_codec.c"
+  ],
+  "local_model_source": "tests/lifecycle_contract.c",
+  "local_authored_groups": 22,
+  "model_marker": "PASS_UPSTREAM_RMW_LOCAL groups=22 checks=<actual positive count> failures=0",
+  "original_utility_linkage": [
+    "actual rmw common utility library, including unmodified rmw/src/time.c and rmw_time_equal",
+    "actual rcutils",
+    "actual rosidl_runtime_c",
+    "actual generated std_msgs C functions/description/hash/introspection and one static typesupport dispatcher"
+  ],
+  "actual_build_entry": "A-owned cmake/CMakeLists.txt (must be independently admitted before use)",
+  "RMW_IMPLEMENTATION": "rmw_uwvm",
+  "RMW_IMPLEMENTATION_DISABLE_RUNTIME_SELECTION": true,
+  "actual_selected_source_or_artifact_pins": null,
+  "actual_native_identity_export": null,
+  "actual_grants": [],
+  "required_current_inputs": [
+    "Root actual immutable source/SDK/toolchain/header closure",
+    "real A platform and C graph/wait implementations",
+    "actual native counterpart/exported identity and complete endpoint QoS binding",
+    "caller-owned finite process/cgroup/deadline/disk/memory and terminal raw logs",
+    "actual reviewed Root-owned same-incarnation publisher activate/inspect/publish/retire provider; missing provider95-before-open",
+    "actual C guard/wait retained-context accounting and native metadata/GID composition",
+    "Actual selected original rmw/time.h and rmw/src/time.c; never a local duration-equality stub"
+  ],
+  "no_execution_credit": [
+    "models",
+    "Wasm",
+    "native ROS",
+    "whole upstream",
+    "official unchanged main"
+  ],
+  "local_model_only_provider": true,
+  "actual_real_publisher_provider": null
+}

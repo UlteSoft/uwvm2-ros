@@ -1,0 +1,27 @@
+{
+  "kind": "noetic5-small-regression-bootstrap-source-peer",
+  "status": "SOURCE_REVIEW_NO_CONCRETE_BLOCKER_TEN_TESTS_UNEXECUTED",
+  "reviewer": "/root/memory_parallel_builds",
+  "production_peer": {
+    "path": "/tmp/uwvm-noetic5-source-peer-memory-20261016-r1.json",
+    "bytes": 3741,
+    "sha256": "a2002f91a0fbe53399830b9e8251536872b428f4bb85186f305fb004717a87aa"
+  },
+  "test_source": {
+    "path": "tests/ros_unitree/acceptance/test_noetic_partial_resume.py",
+    "bytes": 16399,
+    "sha256": "46d417f9658b13a3ceffdbe9c17b1aee8e0eb39af03bed7c43a9d51e3554275b"
+  },
+  "authored_tests": 10,
+  "reviewed_scope": [
+    "Actual maintained SafeTree/VirtualTree alias and duplicate overlay equivalence fixture",
+    "Unresolved hardlinks remain absent until restored checkpoint calls actual finish exactly once",
+    "Partial EOF excludes next unrecorded member; changed ledger/content/name refuses without deleting fixtures",
+    "Real Linux no-replace transfer preserves old reports and ledger, refuses existing destination and leaves durable intent without invented confirmation on deliberate post-rename failure",
+    "Initial helpers and MF use size-first bounded ordinary O_NOFOLLOW/O_NONBLOCK stable fd reads before exec; exact helper/MF digests and CurrentGuard opened-file requalification required",
+    "Exact current hard64GiB/swap0 boot/leaf before helper import, finite300s guard,512MiB self-RSS, fresh owned fixtures and all source pins rechecked"
+  ],
+  "actual_tests_executed": 0,
+  "actual_SDK_requalification": false,
+  "no_project_imports_tests_compilers_SSH": true
+}

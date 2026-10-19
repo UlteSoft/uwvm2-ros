@@ -1,0 +1,2770 @@
+{
+  "status": "PASS_SOURCE_MODELS_ONLY",
+  "scope": "Pure source/handcrafted-binary models for SDK tooling peer review.\n\nNo guest, compiler, ROS import, network, Gateway or runtime is invoked. Positive\nbinaries are handcrafted import/type sections, not compiler-produced guests.",
+  "checks": [
+    {
+      "name": "complete-handcrafted-ros1",
+      "pass": true,
+      "detail": "34"
+    },
+    {
+      "name": "single-import/uwvm_ros1_v1/abi_version",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros1_v1/abi_version",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.abi_version"
+    },
+    {
+      "name": "single-import/uwvm_ros1_v1/capability_open",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros1_v1/capability_open",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.capability_open"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros1_v1/capability_open",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.capability_open"
+    },
+    {
+      "name": "single-import/uwvm_ros1_v1/capability_close",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros1_v1/capability_close",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.capability_close"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros1_v1/capability_close",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.capability_close"
+    },
+    {
+      "name": "single-import/uwvm_ros1_v1/capability_revoke",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros1_v1/capability_revoke",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.capability_revoke"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros1_v1/capability_revoke",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.capability_revoke"
+    },
+    {
+      "name": "single-import/uwvm_ros1_v1/topic_publish",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros1_v1/topic_publish",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.topic_publish"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros1_v1/topic_publish",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.topic_publish"
+    },
+    {
+      "name": "single-import/uwvm_ros1_v1/topic_subscribe",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros1_v1/topic_subscribe",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.topic_subscribe"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros1_v1/topic_subscribe",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.topic_subscribe"
+    },
+    {
+      "name": "single-import/uwvm_ros1_v1/event_poll",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros1_v1/event_poll",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.event_poll"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros1_v1/event_poll",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.event_poll"
+    },
+    {
+      "name": "single-import/uwvm_ros1_v1/service_call",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros1_v1/service_call",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.service_call"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros1_v1/service_call",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.service_call"
+    },
+    {
+      "name": "single-import/uwvm_ros1_v1/service_advertise",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros1_v1/service_advertise",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.service_advertise"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros1_v1/service_advertise",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.service_advertise"
+    },
+    {
+      "name": "single-import/uwvm_ros1_v1/service_respond",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros1_v1/service_respond",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.service_respond"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros1_v1/service_respond",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.service_respond"
+    },
+    {
+      "name": "single-import/uwvm_ros1_v1/action_send_goal",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros1_v1/action_send_goal",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.action_send_goal"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros1_v1/action_send_goal",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.action_send_goal"
+    },
+    {
+      "name": "single-import/uwvm_ros1_v1/action_cancel_own_goal",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros1_v1/action_cancel_own_goal",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.action_cancel_own_goal"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros1_v1/action_cancel_own_goal",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.action_cancel_own_goal"
+    },
+    {
+      "name": "single-import/uwvm_ros1_v1/action_cancel_any_goal",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros1_v1/action_cancel_any_goal",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.action_cancel_any_goal"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros1_v1/action_cancel_any_goal",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.action_cancel_any_goal"
+    },
+    {
+      "name": "single-import/uwvm_ros1_v1/action_receive_feedback",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros1_v1/action_receive_feedback",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.action_receive_feedback"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros1_v1/action_receive_feedback",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.action_receive_feedback"
+    },
+    {
+      "name": "single-import/uwvm_ros1_v1/action_receive_result",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros1_v1/action_receive_result",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.action_receive_result"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros1_v1/action_receive_result",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.action_receive_result"
+    },
+    {
+      "name": "single-import/uwvm_ros1_v1/action_advertise",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros1_v1/action_advertise",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.action_advertise"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros1_v1/action_advertise",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.action_advertise"
+    },
+    {
+      "name": "single-import/uwvm_ros1_v1/action_respond",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros1_v1/action_respond",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.action_respond"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros1_v1/action_respond",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.action_respond"
+    },
+    {
+      "name": "single-import/uwvm_ros1_v1/tf_lookup",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros1_v1/tf_lookup",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.tf_lookup"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros1_v1/tf_lookup",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.tf_lookup"
+    },
+    {
+      "name": "single-import/uwvm_ros1_v1/tf_broadcast",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros1_v1/tf_broadcast",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.tf_broadcast"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros1_v1/tf_broadcast",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.tf_broadcast"
+    },
+    {
+      "name": "single-import/uwvm_ros1_v1/parameter_get",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros1_v1/parameter_get",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.parameter_get"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros1_v1/parameter_get",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.parameter_get"
+    },
+    {
+      "name": "single-import/uwvm_ros1_v1/parameter_set",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros1_v1/parameter_set",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.parameter_set"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros1_v1/parameter_set",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.parameter_set"
+    },
+    {
+      "name": "single-import/uwvm_ros1_v1/parameter_delete",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros1_v1/parameter_delete",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.parameter_delete"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros1_v1/parameter_delete",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.parameter_delete"
+    },
+    {
+      "name": "single-import/uwvm_ros1_v1/parameter_exists",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros1_v1/parameter_exists",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.parameter_exists"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros1_v1/parameter_exists",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.parameter_exists"
+    },
+    {
+      "name": "single-import/uwvm_ros1_v1/parameter_list",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros1_v1/parameter_list",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.parameter_list"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros1_v1/parameter_list",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.parameter_list"
+    },
+    {
+      "name": "single-import/uwvm_ros1_v1/parameter_search",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros1_v1/parameter_search",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.parameter_search"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros1_v1/parameter_search",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.parameter_search"
+    },
+    {
+      "name": "single-import/uwvm_ros1_v1/graph_inspect_topic",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros1_v1/graph_inspect_topic",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.graph_inspect_topic"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros1_v1/graph_inspect_topic",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.graph_inspect_topic"
+    },
+    {
+      "name": "single-import/uwvm_ros1_v1/graph_inspect_node",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros1_v1/graph_inspect_node",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.graph_inspect_node"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros1_v1/graph_inspect_node",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.graph_inspect_node"
+    },
+    {
+      "name": "single-import/uwvm_ros1_v1/graph_inspect_service",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros1_v1/graph_inspect_service",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.graph_inspect_service"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros1_v1/graph_inspect_service",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.graph_inspect_service"
+    },
+    {
+      "name": "single-import/uwvm_ros1_v1/graph_list_topics",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros1_v1/graph_list_topics",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.graph_list_topics"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros1_v1/graph_list_topics",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.graph_list_topics"
+    },
+    {
+      "name": "single-import/uwvm_ros1_v1/graph_list_nodes",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros1_v1/graph_list_nodes",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.graph_list_nodes"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros1_v1/graph_list_nodes",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.graph_list_nodes"
+    },
+    {
+      "name": "single-import/uwvm_ros1_v1/graph_list_services",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros1_v1/graph_list_services",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.graph_list_services"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros1_v1/graph_list_services",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.graph_list_services"
+    },
+    {
+      "name": "single-import/uwvm_ros1_v1/time_read_ros",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros1_v1/time_read_ros",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.time_read_ros"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros1_v1/time_read_ros",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.time_read_ros"
+    },
+    {
+      "name": "single-import/uwvm_ros1_v1/time_read_wall",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros1_v1/time_read_wall",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.time_read_wall"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros1_v1/time_read_wall",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.time_read_wall"
+    },
+    {
+      "name": "single-import/uwvm_ros1_v1/log_write",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros1_v1/log_write",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.log_write"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros1_v1/log_write",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros1_v1.log_write"
+    },
+    {
+      "name": "complete-handcrafted-ros2",
+      "pass": true,
+      "detail": "39"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/abi_version",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/abi_version",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.abi_version"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/capability_open",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/capability_open",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.capability_open"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/capability_open",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.capability_open"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/capability_close",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/capability_close",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.capability_close"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/capability_close",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.capability_close"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/capability_revoke",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/capability_revoke",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.capability_revoke"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/capability_revoke",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.capability_revoke"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/topic_publish",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/topic_publish",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.topic_publish"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/topic_publish",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.topic_publish"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/topic_subscribe",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/topic_subscribe",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.topic_subscribe"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/topic_subscribe",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.topic_subscribe"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/event_poll",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/event_poll",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.event_poll"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/event_poll",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.event_poll"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/service_call",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/service_call",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.service_call"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/service_call",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.service_call"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/service_advertise",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/service_advertise",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.service_advertise"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/service_advertise",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.service_advertise"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/service_respond",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/service_respond",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.service_respond"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/service_respond",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.service_respond"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/action_send_goal",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/action_send_goal",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.action_send_goal"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/action_send_goal",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.action_send_goal"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/action_cancel_own_goal",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/action_cancel_own_goal",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.action_cancel_own_goal"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/action_cancel_own_goal",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.action_cancel_own_goal"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/action_cancel_any_goal",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/action_cancel_any_goal",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.action_cancel_any_goal"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/action_cancel_any_goal",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.action_cancel_any_goal"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/action_receive_feedback",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/action_receive_feedback",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.action_receive_feedback"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/action_receive_feedback",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.action_receive_feedback"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/action_receive_result",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/action_receive_result",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.action_receive_result"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/action_receive_result",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.action_receive_result"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/action_advertise",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/action_advertise",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.action_advertise"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/action_advertise",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.action_advertise"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/action_respond",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/action_respond",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.action_respond"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/action_respond",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.action_respond"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/tf_lookup",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/tf_lookup",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.tf_lookup"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/tf_lookup",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.tf_lookup"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/tf_broadcast",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/tf_broadcast",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.tf_broadcast"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/tf_broadcast",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.tf_broadcast"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/parameter_get",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/parameter_get",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.parameter_get"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/parameter_get",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.parameter_get"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/parameter_set",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/parameter_set",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.parameter_set"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/parameter_set",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.parameter_set"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/parameter_list",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/parameter_list",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.parameter_list"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/parameter_list",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.parameter_list"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/parameter_describe",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/parameter_describe",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.parameter_describe"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/parameter_describe",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.parameter_describe"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/parameter_declare",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/parameter_declare",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.parameter_declare"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/parameter_declare",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.parameter_declare"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/parameter_undeclare",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/parameter_undeclare",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.parameter_undeclare"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/parameter_undeclare",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.parameter_undeclare"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/graph_inspect_topic",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/graph_inspect_topic",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.graph_inspect_topic"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/graph_inspect_topic",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.graph_inspect_topic"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/graph_inspect_node",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/graph_inspect_node",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.graph_inspect_node"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/graph_inspect_node",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.graph_inspect_node"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/graph_inspect_service",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/graph_inspect_service",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.graph_inspect_service"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/graph_inspect_service",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.graph_inspect_service"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/graph_inspect_action",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/graph_inspect_action",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.graph_inspect_action"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/graph_inspect_action",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.graph_inspect_action"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/parameter_subscribe_events",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/parameter_subscribe_events",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.parameter_subscribe_events"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/parameter_subscribe_events",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.parameter_subscribe_events"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/graph_list_topics",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/graph_list_topics",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.graph_list_topics"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/graph_list_topics",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.graph_list_topics"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/graph_list_nodes",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/graph_list_nodes",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.graph_list_nodes"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/graph_list_nodes",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.graph_list_nodes"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/graph_list_services",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/graph_list_services",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.graph_list_services"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/graph_list_services",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.graph_list_services"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/lifecycle_get_state",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/lifecycle_get_state",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.lifecycle_get_state"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/lifecycle_get_state",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.lifecycle_get_state"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/lifecycle_change_state",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/lifecycle_change_state",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.lifecycle_change_state"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/lifecycle_change_state",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.lifecycle_change_state"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/time_read_ros",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/time_read_ros",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.time_read_ros"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/time_read_ros",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.time_read_ros"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/time_read_system",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/time_read_system",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.time_read_system"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/time_read_system",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.time_read_system"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/time_read_steady",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/time_read_steady",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.time_read_steady"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/time_read_steady",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.time_read_steady"
+    },
+    {
+      "name": "single-import/uwvm_ros2_v1/log_write",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "wrong-result/uwvm_ros2_v1/log_write",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.log_write"
+    },
+    {
+      "name": "wrong-first-param/uwvm_ros2_v1/log_write",
+      "pass": true,
+      "detail": "wrong actual Wasm signature: uwvm_ros2_v1.log_write"
+    },
+    {
+      "name": "complete-handcrafted-dual",
+      "pass": true,
+      "detail": "73"
+    },
+    {
+      "name": "backend-crossing",
+      "pass": true,
+      "detail": "unknown or wrong-backend ROS import: uwvm_ros2_v1.abi_version"
+    },
+    {
+      "name": "duplicate-ROS-import",
+      "pass": true,
+      "detail": "duplicate backend-qualified ROS import"
+    },
+    {
+      "name": "missing-complete-inventory",
+      "pass": true,
+      "detail": "complete ABI smoke fixture is missing imports"
+    },
+    {
+      "name": "zero-ROS-imports",
+      "pass": true,
+      "detail": "no ROS import; this is not a guest ABI coverage result"
+    },
+    {
+      "name": "unknown-ROS-module",
+      "pass": true,
+      "detail": "unknown or wrong-backend ROS import: uwvm_ros99_v1.abi_version"
+    },
+    {
+      "name": "unknown-ROS-name",
+      "pass": true,
+      "detail": "unknown or wrong-backend ROS import: uwvm_ros1_v1.unknown"
+    },
+    {
+      "name": "non-ROS-default-deny",
+      "pass": true,
+      "detail": "non-ROS import module needs explicit allowance: external"
+    },
+    {
+      "name": "non-ROS-explicit-module-allow",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "truncation/0",
+      "pass": true,
+      "detail": "truncated Wasm field"
+    },
+    {
+      "name": "truncation/1",
+      "pass": true,
+      "detail": "truncated Wasm field"
+    },
+    {
+      "name": "truncation/7",
+      "pass": true,
+      "detail": "truncated Wasm field"
+    },
+    {
+      "name": "truncation/8",
+      "pass": true,
+      "detail": "no ROS import; this is not a guest ABI coverage result"
+    },
+    {
+      "name": "truncation/9",
+      "pass": true,
+      "detail": "truncated Wasm field"
+    },
+    {
+      "name": "truncation/11",
+      "pass": true,
+      "detail": "truncated Wasm field"
+    },
+    {
+      "name": "truncation/1421",
+      "pass": true,
+      "detail": "truncated Wasm field"
+    },
+    {
+      "name": "duplicate-type-section",
+      "pass": true,
+      "detail": "duplicate type/import section"
+    },
+    {
+      "name": "GC-type-refuses",
+      "pass": true,
+      "detail": "recursive/GC types require a fuller Wasm inspector"
+    },
+    {
+      "name": "uleb-max/32",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "uleb-padded-zero/32",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "uleb-overwidth/32",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "uleb-max/64",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "uleb-padded-zero/64",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "uleb-overwidth/64",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/1/publish/exact-selected-grants",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/1/publish/WASI-no-environment-explicit",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/1/publish/only-selected-topic-rights",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/1/publish/resource/type/identity-explicit",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/1/publish/quota-complete",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/1/publish/worker-binding-explicit",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/1/publish/pub/one-native-resource-count",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/1/publish/pub/exact-generated-config-grants",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/1/subscribe/exact-selected-grants",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/1/subscribe/WASI-no-environment-explicit",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/1/subscribe/only-selected-topic-rights",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/1/subscribe/resource/type/identity-explicit",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/1/subscribe/quota-complete",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/1/subscribe/worker-binding-explicit",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/1/subscribe/sub/one-native-resource-count",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/1/subscribe/sub/exact-generated-config-grants",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/1/publish,subscribe/exact-selected-grants",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/1/publish,subscribe/WASI-no-environment-explicit",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/1/publish,subscribe/only-selected-topic-rights",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/1/publish,subscribe/resource/type/identity-explicit",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/1/publish,subscribe/quota-complete",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/1/publish,subscribe/worker-binding-explicit",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/1/publish,subscribe/pub/one-native-resource-count",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/1/publish,subscribe/pub/exact-generated-config-grants",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/1/publish,subscribe/sub/one-native-resource-count",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/1/publish,subscribe/sub/exact-generated-config-grants",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/2/publish/exact-selected-grants",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/2/publish/WASI-no-environment-explicit",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/2/publish/only-selected-topic-rights",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/2/publish/resource/type/identity-explicit",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/2/publish/quota-complete",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/2/publish/worker-binding-explicit",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/2/publish/pub/one-native-resource-count",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/2/publish/pub/exact-generated-config-grants",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/2/publish/security-test-explicit",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/2/publish/reject-implicit-security-disable",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/2/subscribe/exact-selected-grants",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/2/subscribe/WASI-no-environment-explicit",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/2/subscribe/only-selected-topic-rights",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/2/subscribe/resource/type/identity-explicit",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/2/subscribe/quota-complete",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/2/subscribe/worker-binding-explicit",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/2/subscribe/sub/one-native-resource-count",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/2/subscribe/sub/exact-generated-config-grants",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/2/subscribe/security-test-explicit",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/2/subscribe/reject-implicit-security-disable",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/2/publish,subscribe/exact-selected-grants",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/2/publish,subscribe/WASI-no-environment-explicit",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/2/publish,subscribe/only-selected-topic-rights",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/2/publish,subscribe/resource/type/identity-explicit",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/2/publish,subscribe/quota-complete",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/2/publish,subscribe/worker-binding-explicit",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/2/publish,subscribe/pub/one-native-resource-count",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/2/publish,subscribe/pub/exact-generated-config-grants",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/2/publish,subscribe/sub/one-native-resource-count",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/2/publish,subscribe/sub/exact-generated-config-grants",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/2/publish,subscribe/security-test-explicit",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/2/publish,subscribe/reject-implicit-security-disable",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "policy/CLI-required-operation",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/abi_version/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/abi_version/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/capability_open/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/capability_open/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/capability_close/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/capability_close/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/capability_revoke/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/capability_revoke/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/topic_publish/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/topic_publish/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/topic_subscribe/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/topic_subscribe/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/event_poll/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/event_poll/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/service_call/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/service_call/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/service_advertise/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/service_advertise/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/service_respond/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/service_respond/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/action_send_goal/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/action_send_goal/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/action_cancel_own_goal/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/action_cancel_own_goal/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/action_cancel_any_goal/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/action_cancel_any_goal/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/action_receive_feedback/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/action_receive_feedback/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/action_receive_result/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/action_receive_result/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/action_advertise/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/action_advertise/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/action_respond/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/action_respond/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/tf_lookup/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/tf_lookup/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/tf_broadcast/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/tf_broadcast/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/parameter_get/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/parameter_get/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/parameter_set/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/parameter_set/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/parameter_delete/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/parameter_delete/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/parameter_exists/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/parameter_exists/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/parameter_list/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/parameter_list/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/parameter_search/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/parameter_search/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/graph_inspect_topic/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/graph_inspect_topic/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/graph_inspect_node/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/graph_inspect_node/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/graph_inspect_service/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/graph_inspect_service/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/graph_list_topics/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/graph_list_topics/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/graph_list_nodes/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/graph_list_nodes/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/graph_list_services/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/graph_list_services/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/time_read_ros/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/time_read_ros/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/time_read_wall/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/time_read_wall/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/log_write/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/log_write/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/exact-function-set",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/abi_version/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/capability_open/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/capability_close/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/capability_revoke/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/topic_publish/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/topic_subscribe/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/event_poll/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/service_call/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/service_advertise/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/service_respond/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/action_send_goal/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/action_cancel_own_goal/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/action_cancel_any_goal/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/action_receive_feedback/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/action_receive_result/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/action_advertise/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/action_respond/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/tf_lookup/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/tf_broadcast/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/parameter_get/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/parameter_set/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/parameter_delete/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/parameter_exists/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/parameter_list/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/parameter_search/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/graph_inspect_topic/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/graph_inspect_node/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/graph_inspect_service/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/graph_list_topics/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/graph_list_nodes/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/graph_list_services/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/time_read_ros/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/time_read_wall/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/1/log_write/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/abi_version/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/abi_version/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/capability_open/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/capability_open/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/capability_close/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/capability_close/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/capability_revoke/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/capability_revoke/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/topic_publish/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/topic_publish/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/topic_subscribe/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/topic_subscribe/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/event_poll/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/event_poll/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/service_call/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/service_call/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/service_advertise/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/service_advertise/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/service_respond/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/service_respond/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/action_send_goal/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/action_send_goal/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/action_cancel_own_goal/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/action_cancel_own_goal/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/action_cancel_any_goal/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/action_cancel_any_goal/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/action_receive_feedback/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/action_receive_feedback/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/action_receive_result/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/action_receive_result/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/action_advertise/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/action_advertise/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/action_respond/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/action_respond/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/tf_lookup/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/tf_lookup/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/tf_broadcast/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/tf_broadcast/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/parameter_get/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/parameter_get/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/parameter_set/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/parameter_set/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/parameter_list/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/parameter_list/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/graph_inspect_topic/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/graph_inspect_topic/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/graph_inspect_node/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/graph_inspect_node/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/graph_inspect_service/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/graph_inspect_service/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/graph_list_topics/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/graph_list_topics/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/graph_list_nodes/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/graph_list_nodes/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/graph_list_services/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/graph_list_services/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/time_read_ros/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/time_read_ros/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/log_write/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/log_write/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/parameter_describe/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/parameter_describe/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/parameter_declare/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/parameter_declare/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/parameter_undeclare/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/parameter_undeclare/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/graph_inspect_action/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/graph_inspect_action/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/parameter_subscribe_events/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/parameter_subscribe_events/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/lifecycle_get_state/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/lifecycle_get_state/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/lifecycle_change_state/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/lifecycle_change_state/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/time_read_system/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/time_read_system/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/time_read_steady/identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/time_read_steady/argument-order",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/exact-function-set",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/abi_version/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/capability_open/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/capability_close/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/capability_revoke/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/topic_publish/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/topic_subscribe/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/event_poll/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/service_call/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/service_advertise/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/service_respond/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/action_send_goal/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/action_cancel_own_goal/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/action_cancel_any_goal/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/action_receive_feedback/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/action_receive_result/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/action_advertise/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/action_respond/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/tf_lookup/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/tf_broadcast/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/parameter_get/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/parameter_set/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/parameter_list/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/parameter_describe/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/parameter_declare/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/parameter_undeclare/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/graph_inspect_topic/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/graph_inspect_node/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/graph_inspect_service/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/graph_inspect_action/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/parameter_subscribe_events/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/graph_list_topics/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/graph_list_nodes/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/graph_list_services/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/lifecycle_get_state/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/lifecycle_change_state/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/time_read_ros/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/time_read_system/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/time_read_steady/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/2/log_write/widths",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/private-static-scratch",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/input-capacity-static-bound",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/output-capacity-static-bound",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/no-byte-offset-truncation",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/only-copy-free-forwarding-imports",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/JS-follows-selected-inventory",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/JS-i64-bit-preserving-offset",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "bridge/docs-uncompiled-scope",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "packaging/no-compiler-discovery",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "packaging/full-source-tree",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "packaging/include-relative-install-root",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "packaging/CPP-feature-is-interface",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "packaging/relocatable-path-variable",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "immutable-input/sdk/tools/check_wasm_imports.py",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "immutable-input/sdk/tools/example_policy.py",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "immutable-input/sdk/abi/abi-v1.json",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "immutable-input/sdk/CMakeLists.txt",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "immutable-input/sdk/cmake/roswasmConfig.cmake.in",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "immutable-input/sdk/javascript/bridge.c",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "immutable-input/sdk/javascript/bridge.mjs",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "immutable-input/sdk/javascript/BRIDGE.md",
+      "pass": true,
+      "detail": ""
+    }
+  ],
+  "check_count": 544,
+  "failed": [],
+  "inputs": [
+    {
+      "path": "sdk/tools/check_wasm_imports.py",
+      "bytes": 7391,
+      "sha256": "4f303fc91f2e5035b10c783d1bb7817fdd2d00c8e3691335cfcb59eef6ba1c0b"
+    },
+    {
+      "path": "sdk/tools/example_policy.py",
+      "bytes": 8169,
+      "sha256": "063b41b4cd1bf1afeac5223bf4bdab213466b43ac5266430750be3c62ed9fba7"
+    },
+    {
+      "path": "sdk/abi/abi-v1.json",
+      "bytes": 66927,
+      "sha256": "15b3f276df4fd2b4f2cbd51084e664431e579a7d5895592006c82273682de563"
+    },
+    {
+      "path": "sdk/CMakeLists.txt",
+      "bytes": 2347,
+      "sha256": "e6ee9fb8fc9499f22cbef2605102dfacf1436147701c33d459a0319d4a53ce97"
+    },
+    {
+      "path": "sdk/cmake/roswasmConfig.cmake.in",
+      "bytes": 331,
+      "sha256": "b1369e78fbd9a6fca540445e8fa5f8e57252cd208f66301cc1094bb76a329c29"
+    },
+    {
+      "path": "sdk/javascript/bridge.c",
+      "bytes": 50624,
+      "sha256": "67c735f0f7aea01f76f5d1fbb39b3abd83fd171834f395c3b3a66dc0f2858304"
+    },
+    {
+      "path": "sdk/javascript/bridge.mjs",
+      "bytes": 2224,
+      "sha256": "cd602e37cbd5ec4a9b227599a64a1d85b6780aac6c40032f7410ad97b93e5880"
+    },
+    {
+      "path": "sdk/javascript/BRIDGE.md",
+      "bytes": 2738,
+      "sha256": "db340ebebbbe9251556a8bc08a793d4caad027d742fdf37f8b391e6d9819b2c0"
+    }
+  ]
+}

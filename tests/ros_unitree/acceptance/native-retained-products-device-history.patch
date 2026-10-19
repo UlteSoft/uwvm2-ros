@@ -1,0 +1,31 @@
+--- prior-3172c52d/typed_transport_inputs.py
++++ current-9eab29e6/typed_transport_inputs.py
+@@ -64,10 +64,11 @@
+             require(root.is_absolute() and root.resolve(strict=True) == root and root.is_dir() and
+                     root.stat().st_dev == item['current_device'] and
+                     any(selected == root or selected.is_relative_to(root) for selected in frame.roots) and
+-                    item['root'] not in seen and type(item['historical_device']) is int and
+-                    type(item['current_device']) is int and item['historical_device'] != item['current_device'],
++                    type(item['historical_device']) is int and type(item['current_device']) is int and
++                    (item['root'], item['historical_device']) not in seen and
++                    item['historical_device'] != item['current_device'],
+                     'restart device scope must physically contain explicitly inventoried roots')
+-            seen.add(item['root'])
++            seen.add((item['root'], item['historical_device']))
+         self.restart = api.frozen_module(frame.source, frame.frozen,
+             'tests/ros_unitree/acceptance/requalify_after_restart.py', 'typed_transport_restart_bridge')
+         self.old_sources = {}
+@@ -90,10 +91,10 @@
+         require(len(self.cache) < 100000, 'bounded selected evidence file closure required')
+         actual = self.frame.pin(path)
+         if actual != old:
+-            matches = sorted((item for item in self.mappings if path.is_relative_to(Path(item['root']))),
++            matches = sorted((item for item in self.mappings if path.is_relative_to(Path(item['root'])) and
++                              item['historical_device'] == old['device'] and item['current_device'] == actual['device']),
+                              key=lambda item: len(Path(item['root']).parts), reverse=True)
+-            require(matches and old['device'] == matches[0]['historical_device'] and
+-                    actual['device'] == matches[0]['current_device'], 'no explicit device-only restart bridge for file')
++            require(matches, 'no explicit device-only restart bridge for file')
+             mapping = matches[0]
+             bridge = self.restart.requalify_persistent_pin(old, str(path), self.frame.guard,
+                 historical_device=mapping['historical_device'], current_device=mapping['current_device'],

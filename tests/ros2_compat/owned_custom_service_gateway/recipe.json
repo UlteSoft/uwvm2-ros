@@ -1,0 +1,70 @@
+{
+  "format_version": 1,
+  "status": "AUTHORED_SOURCE_NOT_EXECUTED",
+  "default_authority": [],
+  "storage_contract": {
+    "actual_production_header": "gateways/common/owned_service_storage.h",
+    "independent_expected_groups": 20,
+    "native_or_Guest_qualification": false,
+    "cxx_standard": 17
+  },
+  "actual_Gateway_contract": {
+    "source": "native_wire_contract.cc",
+    "services": [
+      "xarm_msgs/srv/GetFloat32List",
+      "xarm_msgs/srv/SetInt16List"
+    ],
+    "per_service_argv": [
+      "actual-trusted-config",
+      "actual-call-alias",
+      "actual-observer-alias",
+      "actual-advertise-alias",
+      "actual-respond-alias",
+      "actual-availability-alias"
+    ],
+    "root_owned_start_barrier": "G after actual witness PID admitted to trusted config and genuine Gateway launched",
+    "requires": [
+      "complete actual original installed SDK/provider/export/typed-layout proof and real fresh compile-link feature results",
+      "both explicit owned RCL and owned custom build options; all real service shard symbols linked",
+      "explicit 14-field trusted native codec/storage profile plus five original grants",
+      "same64GiB zero-swap cgroup, actual finite process owner/watchdog, physical storage headroom and terminal process retirement",
+      "capture actual original Native report/cleanup facts; no fabricated Guest manager lease or robot-simulator result"
+    ],
+    "expected_complete_payload_bytes": {
+      "GetFloat32List": [
+        0,
+        27
+      ],
+      "SetInt16List": [
+        10,
+        15
+      ]
+    },
+    "observations": [
+      "same retained RCL client readiness/positive actual graph wait",
+      "exact complete request and response bytes incl9B legal UTF8 message",
+      "real GID/request-sequence/correlation association from actual native takes",
+      "cancel borrow then reborrow with same sequence and fresh reservation",
+      "one submit and one response, explicit commit and public/private retirement distinctions"
+    ],
+    "cxx_standard": 20,
+    "actual_build_inputs": {
+      "UWVM_SOURCE": "actual reviewed checkout",
+      "UWVM_ROS_CUSTOM_REGISTRY_HEADER": "same actual complete generated common registry header as production Gateway; full bytes/dependencies retained"
+    }
+  },
+  "actual": {
+    "configure": 0,
+    "compilers": 0,
+    "Native": 0,
+    "Guest": 0,
+    "ROS": 0,
+    "tests": 0,
+    "SSH": 0
+  },
+  "remaining": [
+    "full Host/Guest/source lease/revocation/retirement tests",
+    "all vendor/model/native-opposite simulation and official suites",
+    "all26 ROS distributions, QEMU architecture qualification and matched Native/VTune hardware performance"
+  ]
+}

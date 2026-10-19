@@ -1,0 +1,35 @@
+{
+  "kind": "source61-reviewed-genuine-management-fixture-compile-source-group",
+  "status": "CURRENT_SOURCE_INDEPENDENT_REVIEW_CLOSED_RETEST_PENDING",
+  "current_files": {
+    "tests/ros_debugger/management_runtime_contract.cc": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_runtime_contract.cc",
+      "bytes": 35263,
+      "sha256": "f249b147d253574d6e88bc3e9b73bfa283b43e10065d72668f4034557abd85fb"
+    }
+  },
+  "review_evidence": {
+    "original_package": {
+      "path": "/private/tmp/uwvm-source61-genuine-management-fixture-build-fix-source-only-root-20261017-r1/source-ready.json",
+      "bytes": 2256,
+      "sha256": "00afc361277316ce0549936221aaa547cf4cd9a22494b42655f2668b9506fbc5"
+    },
+    "saved_package": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source61-reviewed-genuine-management-fixture-compile-source-only/review-evidence/source-ready.original.json",
+      "bytes": 2256,
+      "sha256": "00afc361277316ce0549936221aaa547cf4cd9a22494b42655f2668b9506fbc5"
+    },
+    "original_independent_peer": {
+      "path": "/private/tmp/uwvm-source61-management-fixture-and-rebinding-independent-source-peer-restart-20261017-r1.json",
+      "bytes": 6977,
+      "sha256": "c01cf083324b51616c1dff91225db895ba51456104b89e535e3b3a2729fc457c"
+    },
+    "saved_independent_peer": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source61-reviewed-genuine-management-fixture-compile-source-only/review-evidence/independent-source-peer.json",
+      "bytes": 6977,
+      "sha256": "c01cf083324b51616c1dff91225db895ba51456104b89e535e3b3a2729fc457c"
+    }
+  },
+  "execution_performed": false,
+  "scope": "Corrected test source requirements and balanced thread initializer; no future execution credit."
+}

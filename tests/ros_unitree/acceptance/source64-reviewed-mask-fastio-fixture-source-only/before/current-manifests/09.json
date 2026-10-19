@@ -1,0 +1,35 @@
+{
+  "kind": "source-reviewed-owned-actor-procfs-exit-race-correction-integration",
+  "status": "SOURCE_INTEGRATED_DETERMINISTIC_AND_ACTUAL_STRESS_EXECUTION_PENDING",
+  "manifest": {
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/actor-exit-race-source-only/original-final-manifest.json",
+    "bytes": 2356,
+    "sha256": "51822f6330a3b2d62e921d33dc7ce0292d68a2d949a1652a3502608fd12d5eda"
+  },
+  "independent_source_peer": {
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/actor-exit-race-source-only/independent-source-peer.json",
+    "bytes": 5835,
+    "sha256": "0bec0963a62a9fdd739b5f30f0297bf07454cad95cb27afa90ddbf430ee2a7a4"
+  },
+  "current_files": {
+    "tests/ros_unitree/actor_exit_stress.py": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/actor_exit_stress.py",
+      "bytes": 5763,
+      "sha256": "a45197052e9c0b359f65a1541bcc1aa77ab9dd11738fe00d5a95f39d8ec2a78d"
+    },
+    "tests/ros_unitree/common.py": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/common.py",
+      "bytes": 39144,
+      "sha256": "3771ac26b51756578bb8173dac694aec75d778d04729fa300d82ac5cb42455db"
+    },
+    "tests/ros_unitree/test_actor_procfs_races.py": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/test_actor_procfs_races.py",
+      "bytes": 9775,
+      "sha256": "ddea7d32a3dad2e856e093a7bfdb67d8364d93406d0bba509970e0411a661240"
+    }
+  },
+  "default_authority": [],
+  "historical_Source48_failure_unchanged": true,
+  "deterministic_cases_authored": 25,
+  "actual_children_started": 0
+}

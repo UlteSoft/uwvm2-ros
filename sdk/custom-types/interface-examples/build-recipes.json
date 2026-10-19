@@ -1,0 +1,161 @@
+{
+  "format": "uwvm-custom-rpc-example-build-recipes-v1",
+  "status": "SOURCE_BUILD_RECIPES_NOT_EXECUTED",
+  "default_authority": [],
+  "preparation": {
+    "producer": "sdk/custom-types/interface-examples/prepare.py",
+    "function": "prepare",
+    "catalog": "sdk/custom-types/interface-examples/catalog.preparation.json",
+    "generator": "sdk/tools/custom_types.py",
+    "generator_arguments": [
+      "{PYTHON}",
+      "-B",
+      "{SOURCE}/sdk/tools/custom_types.py",
+      "{SOURCE}/sdk/custom-types/interface-examples/catalog.preparation.json",
+      "--guest-only",
+      "--out",
+      "{GENERATED}"
+    ],
+    "generated_directory": "sdk/custom-types/generated-rpc",
+    "required_generated_outputs": [
+      "bounded_records.h",
+      "bounded_records.hpp",
+      "bounded_records.rs",
+      "bounded_records.mjs",
+      "bounded_records.go",
+      "bounded_records.ts",
+      "bounded_interfaces.h",
+      "bounded_interfaces.hpp",
+      "bounded_interfaces.rs",
+      "bounded_interfaces.mjs",
+      "bounded_interfaces.go",
+      "bounded_interfaces.ts"
+    ],
+    "staging": "Copy complete actual MF-selected SDK source tree preserving source-relative paths, then byte-identical complete generated guest-only modules into generated-rpc and the two Go modules into interface-examples/customtypes. No source stub or implicit generation."
+  },
+  "jobs": [
+    {
+      "id": "rust-library",
+      "language": "rust",
+      "artifact_kind": "WASM_TARGET_RLIB_NOT_EXECUTED",
+      "argv": [
+        "{CARGO}",
+        "build",
+        "--offline",
+        "-j1",
+        "--release",
+        "--manifest-path",
+        "{STAGE}/sdk/custom-types/interface-examples/Cargo.toml",
+        "--target",
+        "wasm32-unknown-unknown",
+        "--target-dir",
+        "{OUT}/rust-target"
+      ],
+      "cwd": "{STAGE}",
+      "environment": {
+        "RUSTC": "{RUSTC}",
+        "CARGO_HOME": "{OUT}/cargo-home",
+        "CARGO_NET_OFFLINE": "true",
+        "RUSTFLAGS": "--sysroot={RUST_SYSROOT} -Ccodegen-units=1 -Cpanic=abort"
+      },
+      "artifact": "{OUT}/rust-target/wasm32-unknown-unknown/release/libroswasm_custom_rpc_example.rlib"
+    },
+    {
+      "id": "assemblyscript-library",
+      "language": "assemblyscript",
+      "artifact_kind": "WASM_LIBRARY_NOT_EXECUTED",
+      "argv": [
+        "{NODE}",
+        "{ASC_JS}",
+        "sdk/custom-types/interface-examples/example.ts",
+        "--runtime",
+        "incremental",
+        "--exportRuntime",
+        "--use",
+        "abort=sdk/assemblyscript/api/abortGuest",
+        "--maximumMemory",
+        "1024",
+        "--outFile",
+        "{OUT}/assemblyscript.wasm"
+      ],
+      "cwd": "{STAGE}",
+      "environment": {},
+      "artifact": "{OUT}/assemblyscript.wasm"
+    },
+    {
+      "id": "tinygo-wire-example",
+      "language": "tinygo",
+      "artifact_kind": "WASM_COMMAND_NOT_EXECUTED_PURE_CANONICAL_VALUE_MAIN",
+      "argv": [
+        "{TINYGO}",
+        "build",
+        "-p",
+        "1",
+        "-target=wasi",
+        "-scheduler=none",
+        "-tags=ros2",
+        "-o",
+        "{OUT}/tinygo.wasm",
+        "./tinygo-main"
+      ],
+      "cwd": "{STAGE}/sdk/custom-types/interface-examples",
+      "environment": {
+        "TINYGOROOT": "{TINYGO_ROOT}",
+        "GOROOT": "{GO_ROOT}",
+        "GOPROXY": "off",
+        "GOSUMDB": "off",
+        "GOTOOLCHAIN": "local",
+        "GOCACHE": "{OUT}/go-cache",
+        "GOMODCACHE": "{OUT}/go-mod-cache",
+        "PATH": "{GO_ROOT}/bin:{TINYGO_ROOT}/bin"
+      },
+      "artifact": "{OUT}/tinygo.wasm"
+    },
+    {
+      "id": "embedded-javascript-preparation",
+      "language": "javascript",
+      "artifact_kind": "PREPARATION_ONLY_FOLLOW_REAL_JOBS_NOT_EXECUTED",
+      "argv": [
+        "{PYTHON}",
+        "-B",
+        "{STAGE}/sdk/javascript/guest/prepare.py",
+        "--source-root",
+        "{STAGE}",
+        "--quickjs",
+        "{QUICKJS}",
+        "--manifest",
+        "{OUT}/javascript-manifest.json",
+        "--out",
+        "{OUT}/javascript-prepared",
+        "--clang",
+        "{WASI_CLANG}",
+        "--linker",
+        "{WASM_LD_ALIAS}",
+        "--sysroot",
+        "{WASI_SYSROOT}",
+        "--resource-dir",
+        "{WASI_RESOURCE_DIR}",
+        "--libc",
+        "{WASI_LIBC}",
+        "--libm",
+        "{WASI_LIBM}",
+        "--printscan",
+        "{WASI_PRINTSCAN}",
+        "--builtins",
+        "{WASI_BUILTINS}",
+        "--validator",
+        "{WASM_TOOLS}"
+      ],
+      "cwd": "{STAGE}",
+      "environment": {},
+      "artifact": "{OUT}/javascript-prepared/report.json"
+    }
+  ],
+  "owner_requirements": [
+    "Execute only in explicit current cgroup under aggregate low-memory, disk-reserve, deadline and pidfd descendant guards. This producer starts no process.",
+    "Execute every emitted embedded-JS preparation job followed by all actual prepared compile/link/full-validator jobs. Do not count metadata as compilation.",
+    "Retain actual tool/source/generation/copy pins, actual compiler exits, full dependency files and linker traces; validate actual Wasm before any Runtime invocation.",
+    "No recipe starts ROS, opens an alias or grants optional filesystem/network/clock/process rights.",
+    "A Rust rlib is a Wasm-target source compilation, not a linked Wasm module. TinyGo command main only checks a generated canonical value; no RPC/native behavior is claimed."
+  ]
+}

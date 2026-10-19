@@ -69,14 +69,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_wasm64_t argv_ptrsz,
         ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_wasm64_t argv_buf_ptrsz) noexcept
     {
-# if (defined(_DEBUG) || defined(DEBUG)) && defined(UWVM_ENABLE_DETAILED_DEBUG_CHECK)
-        if(env.wasip1_memory == nullptr) [[unlikely]]
-        {
-            // Security issues inherent to virtual machines
-            ::uwvm2::utils::debug::trap_and_inform_bug_pos();
-        }
-# endif
-        auto& memory{*env.wasip1_memory};
+        auto const memory_pointer{env.get_memory()};
+        if(memory_pointer == nullptr) [[unlikely]] { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
+        auto& memory{*memory_pointer};
 
         check_wasip1_guest_pointer_alignment<8uz>(argv_ptrsz, u8"args_get_wasm64.argv (Pointer<Pointer<u8>>)");
 
@@ -93,15 +88,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         }
 
         auto const argv_vec_size{env.argv.size()};
-        if(argv_vec_size > ::std::numeric_limits<::std::size_t>::max() / sizeof(::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_wasm64_t) - 1uz)
+        if(argv_vec_size > ::std::numeric_limits<::std::size_t>::max() / sizeof(::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_wasm64_t))
             [[unlikely]]
         {
             // This is an error specific to env itself, which triggers a direct trap.
             ::fast_io::fast_terminate();
         }
 
-        // An additional null pointer check is required.
-        auto const argv_vec_size_bytes{(argv_vec_size + 1uz) * sizeof(::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_wasm64_t)};
+        // WASI authorizes exactly the count reported by the matching sizes_get call.
+        auto const argv_vec_size_bytes{argv_vec_size * sizeof(::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_wasm64_t)};
         ::uwvm2::imported::wasi::wasip1::memory::check_memory_bounds_wasm64(memory, argv_ptrsz, argv_vec_size_bytes);
 
         // Check only once to avoid excessive locking overhead.
@@ -137,12 +132,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             argv_buff_curr_size += sizeof(char8_t);
             static_assert(sizeof(char8_t) == 1uz);
         }
-
-        // write end nullptr
-        ::uwvm2::imported::wasi::wasip1::memory::store_basic_wasm_type_to_memory_wasm64_unchecked<::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_wasm64_t>(
-            memory,
-            argv_curr_size,
-            ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_wasm64_t{});
 
         return ::uwvm2::imported::wasi::wasip1::abi::errno_wasm64_t::esuccess;
     }

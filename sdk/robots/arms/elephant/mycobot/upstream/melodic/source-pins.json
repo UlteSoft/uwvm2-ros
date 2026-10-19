@@ -1,0 +1,502 @@
+{
+  "LICENSE": {
+    "bytes": 1497,
+    "sha256": "4f92a59ae8b059b11a4196d41b891bde0d4e29d472a47afe2886be9eee041efc",
+    "git_blob_sha1": "fab7c0f9775faae2c0164f8f599f97117bdaa91e"
+  },
+  "Mybuddy/mybuddy_communication/CMakeLists.txt": {
+    "bytes": 7427,
+    "sha256": "3c8bb1c533d2254c6838fd20c2bf4602d93b733f2fe8233f0680ca9861a542b0",
+    "git_blob_sha1": "5a205120b0b1f9c8e340d1164374984d80a74f69"
+  },
+  "Mybuddy/mybuddy_communication/msg/MybuddyAngles.msg": {
+    "bytes": 319,
+    "sha256": "b50fc80da0c98cd1af352569ca5e534885f3cd0cd892b10c8976aa8e54e9bef2",
+    "git_blob_sha1": "b3bd935cee423ce643292094c734197cc3216159"
+  },
+  "Mybuddy/mybuddy_communication/msg/MybuddyCoords.msg": {
+    "bytes": 62,
+    "sha256": "d26b24c7e3fefa05650405e9cc871bd8d1a30695012e01f1b90a671b9fb07731",
+    "git_blob_sha1": "08f6dbda3c15688247ed72b95f9c627c1f64f2fe"
+  },
+  "Mybuddy/mybuddy_communication/msg/MybuddyGripperStatus.msg": {
+    "bytes": 11,
+    "sha256": "f9963e6f4eb3df305946b0c062324a0f7edff8097df45fb3bce551e091a336d1",
+    "git_blob_sha1": "18d6277216b815bfff7e963ea48b637e04021dc7"
+  },
+  "Mybuddy/mybuddy_communication/msg/MybuddyPumpStatus.msg": {
+    "bytes": 32,
+    "sha256": "4126837fed94e7f5ef94f448706c02b225128a006b0780f748065fa9ed4f92bc",
+    "git_blob_sha1": "2373241cadb79efccec24b212bb5045c3d315373"
+  },
+  "Mybuddy/mybuddy_communication/msg/MybuddySetAngles.msg": {
+    "bytes": 331,
+    "sha256": "9dd66b8b36c397acd270c4824a77d8845eed6c15194165d12ae7319f558fec7c",
+    "git_blob_sha1": "b94cb1abf0cd256c6442f0fe3a729ccbf45ce8aa"
+  },
+  "Mybuddy/mybuddy_communication/msg/MybuddySetCoords.msg": {
+    "bytes": 86,
+    "sha256": "ea067f83de2d517ebd595cecbffd6badd9dc8beddc7da2e10e0bf45f2d0ae28b",
+    "git_blob_sha1": "d4c7e54652d98e7a7224358f74d3c08b202b345d"
+  },
+  "Mybuddy/mybuddy_communication/package.xml": {
+    "bytes": 3701,
+    "sha256": "95a2f9895ba7d347e1120b61d60110cd60eab15a0f5a09edea560bb59df1bcd4",
+    "git_blob_sha1": "24ede639ba1d1853167743bc7f56fd50ffd7eb22"
+  },
+  "Mybuddy/mybuddy_communication/srv/GetAngles.srv": {
+    "bytes": 326,
+    "sha256": "3a9ac34875706f286d62c31411579c15fc7affa53b4e80e9de79a4a30df22b01",
+    "git_blob_sha1": "ca5cc28d4277ccdf937ed0bdb44ff7a1c7ff4e32"
+  },
+  "Mybuddy/mybuddy_communication/srv/GetCoords.srv": {
+    "bytes": 69,
+    "sha256": "c16c972d411c6c5984a25ce1e828633b83545a958f9752c5bc2bed6c0abb9e0e",
+    "git_blob_sha1": "c1f9bbcc21e463b0621c2f7d71aa7e94403ea17c"
+  },
+  "Mybuddy/mybuddy_communication/srv/GripperStatus.srv": {
+    "bytes": 27,
+    "sha256": "d65e63ed96199574e633466bcec90714b09b749ec3fc55143f2a8cf1c01dbf21",
+    "git_blob_sha1": "3887d75b2f78418c77c4501e817771551801e783"
+  },
+  "Mybuddy/mybuddy_communication/srv/PumpStatus.srv": {
+    "bytes": 47,
+    "sha256": "1aecc454f14c36ebe21e047e91034784bc2a7a502d9d7c4bd9ff5b4c67667214",
+    "git_blob_sha1": "8bd4b530d3a170428af6e3faec909afb347fe1a6"
+  },
+  "Mybuddy/mybuddy_communication/srv/SetAngles.srv": {
+    "bytes": 347,
+    "sha256": "b987e1ee874aadbf105b9f35fe48fad8a40e9c465a3657ada78b2429914b2da0",
+    "git_blob_sha1": "da83243886df29a15e2335fc79ebd68c2f44e6f5"
+  },
+  "Mybuddy/mybuddy_communication/srv/SetCoords.srv": {
+    "bytes": 101,
+    "sha256": "1696a7aca007d82c9fb290fdbbe1de355b1781d4e834680f54b2df2e4a43487e",
+    "git_blob_sha1": "e5b1e528e1916226fd8548fc73146a3992376c28"
+  },
+  "README.md": {
+    "bytes": 11541,
+    "sha256": "4c2f7cec79f7bf8a7501608e942f871f7734ff053551804534ff9f791281be26",
+    "git_blob_sha1": "b848638012f982ed1d1ae0904de8a335d48bdc1c"
+  },
+  "mecharm/mecharm_communication/CMakeLists.txt": {
+    "bytes": 7425,
+    "sha256": "fdd3ac18f7d3cb730b2b48f8fb42aa9e1652ba494f627ff36c04b0af10538555",
+    "git_blob_sha1": "cdf01e29465e1379dce430733a240a66be7c2e87"
+  },
+  "mecharm/mecharm_communication/msg/MycobotAngles.msg": {
+    "bytes": 96,
+    "sha256": "c29c22f7c80460fcfcdb46c46c0c80e2490bdc4e4577713f3fbe8955577db8c5",
+    "git_blob_sha1": "9aa7d97bdca20c2ca6b7e10f53ec09a3b05a6565"
+  },
+  "mecharm/mecharm_communication/msg/MycobotCoords.msg": {
+    "bytes": 62,
+    "sha256": "d26b24c7e3fefa05650405e9cc871bd8d1a30695012e01f1b90a671b9fb07731",
+    "git_blob_sha1": "08f6dbda3c15688247ed72b95f9c627c1f64f2fe"
+  },
+  "mecharm/mecharm_communication/msg/MycobotGripperStatus.msg": {
+    "bytes": 11,
+    "sha256": "f9963e6f4eb3df305946b0c062324a0f7edff8097df45fb3bce551e091a336d1",
+    "git_blob_sha1": "18d6277216b815bfff7e963ea48b637e04021dc7"
+  },
+  "mecharm/mecharm_communication/msg/MycobotPumpStatus.msg": {
+    "bytes": 32,
+    "sha256": "4126837fed94e7f5ef94f448706c02b225128a006b0780f748065fa9ed4f92bc",
+    "git_blob_sha1": "2373241cadb79efccec24b212bb5045c3d315373"
+  },
+  "mecharm/mecharm_communication/msg/MycobotSetAngles.msg": {
+    "bytes": 108,
+    "sha256": "720c704e6bf934d2a751a481efa8f5a1dde5e3f1c04ad5a988e2b32001d7093d",
+    "git_blob_sha1": "3888b50f9e299ac601250ca6d21ba5ddcf6d116d"
+  },
+  "mecharm/mecharm_communication/msg/MycobotSetCoords.msg": {
+    "bytes": 86,
+    "sha256": "ea067f83de2d517ebd595cecbffd6badd9dc8beddc7da2e10e0bf45f2d0ae28b",
+    "git_blob_sha1": "d4c7e54652d98e7a7224358f74d3c08b202b345d"
+  },
+  "mecharm/mecharm_communication/package.xml": {
+    "bytes": 3637,
+    "sha256": "8ccbac35e009f6fc3d67929662d8a2234ef696e679d23ec7374e15ba5b76bb7f",
+    "git_blob_sha1": "9b464bde78992e4668cfa54ff0a19305b1caf74e"
+  },
+  "mecharm/mecharm_communication/srv/GetAngles.srv": {
+    "bytes": 102,
+    "sha256": "069eb5a5823aa347e444fca7396d74bb8b5d39caa06aad3c923f0cd0f51a0896",
+    "git_blob_sha1": "699269943dec272e8e6be5aaad9c5e4b3b658b81"
+  },
+  "mecharm/mecharm_communication/srv/GetCoords.srv": {
+    "bytes": 69,
+    "sha256": "c16c972d411c6c5984a25ce1e828633b83545a958f9752c5bc2bed6c0abb9e0e",
+    "git_blob_sha1": "c1f9bbcc21e463b0621c2f7d71aa7e94403ea17c"
+  },
+  "mecharm/mecharm_communication/srv/GripperStatus.srv": {
+    "bytes": 27,
+    "sha256": "d65e63ed96199574e633466bcec90714b09b749ec3fc55143f2a8cf1c01dbf21",
+    "git_blob_sha1": "3887d75b2f78418c77c4501e817771551801e783"
+  },
+  "mecharm/mecharm_communication/srv/PumpStatus.srv": {
+    "bytes": 47,
+    "sha256": "1aecc454f14c36ebe21e047e91034784bc2a7a502d9d7c4bd9ff5b4c67667214",
+    "git_blob_sha1": "8bd4b530d3a170428af6e3faec909afb347fe1a6"
+  },
+  "mecharm/mecharm_communication/srv/SetAngles.srv": {
+    "bytes": 123,
+    "sha256": "f0920895efcba6a086916f1e954671b52202c55f070cb20635e55724ff585061",
+    "git_blob_sha1": "6f8d8776e4f892a054e1d8765494da7e3471cac7"
+  },
+  "mecharm/mecharm_communication/srv/SetCoords.srv": {
+    "bytes": 101,
+    "sha256": "1696a7aca007d82c9fb290fdbbe1de355b1781d4e834680f54b2df2e4a43487e",
+    "git_blob_sha1": "e5b1e528e1916226fd8548fc73146a3992376c28"
+  },
+  "myArm/myarm_communication/CMakeLists.txt": {
+    "bytes": 7407,
+    "sha256": "b4d46961abd39ab574b34f3d5ad4ca6f5e2227d8de35c482ce6df40480f03241",
+    "git_blob_sha1": "370415bc97c6c54cd61467e879b5814c7d035dab"
+  },
+  "myArm/myarm_communication/msg/MyArmAngles.msg": {
+    "bytes": 112,
+    "sha256": "4503b7c776082e391d4989981ee9dc36aee1e9871734e08a12dfbf43558b051b",
+    "git_blob_sha1": "ded0d74eadb8b22b90862ccb4f3977fd79862822"
+  },
+  "myArm/myarm_communication/msg/MyArmCoords.msg": {
+    "bytes": 62,
+    "sha256": "d26b24c7e3fefa05650405e9cc871bd8d1a30695012e01f1b90a671b9fb07731",
+    "git_blob_sha1": "08f6dbda3c15688247ed72b95f9c627c1f64f2fe"
+  },
+  "myArm/myarm_communication/msg/MyArmGripperStatus.msg": {
+    "bytes": 11,
+    "sha256": "f9963e6f4eb3df305946b0c062324a0f7edff8097df45fb3bce551e091a336d1",
+    "git_blob_sha1": "18d6277216b815bfff7e963ea48b637e04021dc7"
+  },
+  "myArm/myarm_communication/msg/MyArmPumpStatus.msg": {
+    "bytes": 32,
+    "sha256": "4126837fed94e7f5ef94f448706c02b225128a006b0780f748065fa9ed4f92bc",
+    "git_blob_sha1": "2373241cadb79efccec24b212bb5045c3d315373"
+  },
+  "myArm/myarm_communication/msg/MyArmSetAngles.msg": {
+    "bytes": 124,
+    "sha256": "2a21cb76a1085fc219e9ea82ed5efffbd5481a62aad0fcab0523fb452df5cf7a",
+    "git_blob_sha1": "49d3ac3658d2df3c13e5e02d15e8ccb8725e42ac"
+  },
+  "myArm/myarm_communication/msg/MyArmSetCoords.msg": {
+    "bytes": 86,
+    "sha256": "ea067f83de2d517ebd595cecbffd6badd9dc8beddc7da2e10e0bf45f2d0ae28b",
+    "git_blob_sha1": "d4c7e54652d98e7a7224358f74d3c08b202b345d"
+  },
+  "myArm/myarm_communication/package.xml": {
+    "bytes": 2781,
+    "sha256": "507b0f2cacb49e1b2689add70cd2acdf532ec64cdd2f8c021fdbe2237c5d331c",
+    "git_blob_sha1": "4db4ebfc491e914c1d7c292d992c26a72ea3df3c"
+  },
+  "myArm/myarm_communication/srv/GetAngles.srv": {
+    "bytes": 118,
+    "sha256": "b2327598d4a02620cca2859da3cf086a2dd0e3c10b45946111d9ff797e91f0ef",
+    "git_blob_sha1": "b9767ef4399f72d9cc6e65a542713169f72a8a5c"
+  },
+  "myArm/myarm_communication/srv/GetCoords.srv": {
+    "bytes": 69,
+    "sha256": "c16c972d411c6c5984a25ce1e828633b83545a958f9752c5bc2bed6c0abb9e0e",
+    "git_blob_sha1": "c1f9bbcc21e463b0621c2f7d71aa7e94403ea17c"
+  },
+  "myArm/myarm_communication/srv/GripperStatus.srv": {
+    "bytes": 27,
+    "sha256": "d65e63ed96199574e633466bcec90714b09b749ec3fc55143f2a8cf1c01dbf21",
+    "git_blob_sha1": "3887d75b2f78418c77c4501e817771551801e783"
+  },
+  "myArm/myarm_communication/srv/PumpStatus.srv": {
+    "bytes": 47,
+    "sha256": "1aecc454f14c36ebe21e047e91034784bc2a7a502d9d7c4bd9ff5b4c67667214",
+    "git_blob_sha1": "8bd4b530d3a170428af6e3faec909afb347fe1a6"
+  },
+  "myArm/myarm_communication/srv/SetAngles.srv": {
+    "bytes": 140,
+    "sha256": "de2babbd060761649f4fc002d852b9fd9a4a0eec14d37bc817a9e9e518f5da5d",
+    "git_blob_sha1": "e5f4b42399ff745368bd137d6299dcb5d423e8b1"
+  },
+  "myArm/myarm_communication/srv/SetCoords.srv": {
+    "bytes": 101,
+    "sha256": "1696a7aca007d82c9fb290fdbbe1de355b1781d4e834680f54b2df2e4a43487e",
+    "git_blob_sha1": "e5b1e528e1916226fd8548fc73146a3992376c28"
+  },
+  "mycobot_320/mycobot_320_communication/CMakeLists.txt": {
+    "bytes": 7429,
+    "sha256": "40b6c41d30f6e8739099eae4b692c09d6852b647dc145eb5acf456e2cde8aaa4",
+    "git_blob_sha1": "0dc4835f79b4d0ca1847ec1efc2c50420383ace6"
+  },
+  "mycobot_320/mycobot_320_communication/msg/MycobotAngles.msg": {
+    "bytes": 96,
+    "sha256": "c29c22f7c80460fcfcdb46c46c0c80e2490bdc4e4577713f3fbe8955577db8c5",
+    "git_blob_sha1": "9aa7d97bdca20c2ca6b7e10f53ec09a3b05a6565"
+  },
+  "mycobot_320/mycobot_320_communication/msg/MycobotCoords.msg": {
+    "bytes": 62,
+    "sha256": "d26b24c7e3fefa05650405e9cc871bd8d1a30695012e01f1b90a671b9fb07731",
+    "git_blob_sha1": "08f6dbda3c15688247ed72b95f9c627c1f64f2fe"
+  },
+  "mycobot_320/mycobot_320_communication/msg/MycobotGripperStatus.msg": {
+    "bytes": 11,
+    "sha256": "f9963e6f4eb3df305946b0c062324a0f7edff8097df45fb3bce551e091a336d1",
+    "git_blob_sha1": "18d6277216b815bfff7e963ea48b637e04021dc7"
+  },
+  "mycobot_320/mycobot_320_communication/msg/MycobotPumpStatus.msg": {
+    "bytes": 32,
+    "sha256": "4126837fed94e7f5ef94f448706c02b225128a006b0780f748065fa9ed4f92bc",
+    "git_blob_sha1": "2373241cadb79efccec24b212bb5045c3d315373"
+  },
+  "mycobot_320/mycobot_320_communication/msg/MycobotSetAngles.msg": {
+    "bytes": 108,
+    "sha256": "720c704e6bf934d2a751a481efa8f5a1dde5e3f1c04ad5a988e2b32001d7093d",
+    "git_blob_sha1": "3888b50f9e299ac601250ca6d21ba5ddcf6d116d"
+  },
+  "mycobot_320/mycobot_320_communication/msg/MycobotSetCoords.msg": {
+    "bytes": 86,
+    "sha256": "ea067f83de2d517ebd595cecbffd6badd9dc8beddc7da2e10e0bf45f2d0ae28b",
+    "git_blob_sha1": "d4c7e54652d98e7a7224358f74d3c08b202b345d"
+  },
+  "mycobot_320/mycobot_320_communication/package.xml": {
+    "bytes": 2793,
+    "sha256": "db0085ab272453a8328ec8aedfd35ff1e15b291abb85a127b1e1507f053e77db",
+    "git_blob_sha1": "0ad10c28759be786ed079dfca3304a914afe008a"
+  },
+  "mycobot_320/mycobot_320_communication/srv/GetAngles.srv": {
+    "bytes": 102,
+    "sha256": "069eb5a5823aa347e444fca7396d74bb8b5d39caa06aad3c923f0cd0f51a0896",
+    "git_blob_sha1": "699269943dec272e8e6be5aaad9c5e4b3b658b81"
+  },
+  "mycobot_320/mycobot_320_communication/srv/GetCoords.srv": {
+    "bytes": 69,
+    "sha256": "c16c972d411c6c5984a25ce1e828633b83545a958f9752c5bc2bed6c0abb9e0e",
+    "git_blob_sha1": "c1f9bbcc21e463b0621c2f7d71aa7e94403ea17c"
+  },
+  "mycobot_320/mycobot_320_communication/srv/GripperStatus.srv": {
+    "bytes": 27,
+    "sha256": "d65e63ed96199574e633466bcec90714b09b749ec3fc55143f2a8cf1c01dbf21",
+    "git_blob_sha1": "3887d75b2f78418c77c4501e817771551801e783"
+  },
+  "mycobot_320/mycobot_320_communication/srv/PumpStatus.srv": {
+    "bytes": 47,
+    "sha256": "1aecc454f14c36ebe21e047e91034784bc2a7a502d9d7c4bd9ff5b4c67667214",
+    "git_blob_sha1": "8bd4b530d3a170428af6e3faec909afb347fe1a6"
+  },
+  "mycobot_320/mycobot_320_communication/srv/SetAngles.srv": {
+    "bytes": 123,
+    "sha256": "f0920895efcba6a086916f1e954671b52202c55f070cb20635e55724ff585061",
+    "git_blob_sha1": "6f8d8776e4f892a054e1d8765494da7e3471cac7"
+  },
+  "mycobot_320/mycobot_320_communication/srv/SetCoords.srv": {
+    "bytes": 101,
+    "sha256": "1696a7aca007d82c9fb290fdbbe1de355b1781d4e834680f54b2df2e4a43487e",
+    "git_blob_sha1": "e5b1e528e1916226fd8548fc73146a3992376c28"
+  },
+  "mycobot_communication/CMakeLists.txt": {
+    "bytes": 7425,
+    "sha256": "13d1c2295998f0b4c58a68707d4a3ab10809075a012abf8c90f2815cc5bcbc7d",
+    "git_blob_sha1": "bf1f28214a4145d94e58ac41accf6660d00a8a4f"
+  },
+  "mycobot_communication/msg/MycobotAngles.msg": {
+    "bytes": 96,
+    "sha256": "c29c22f7c80460fcfcdb46c46c0c80e2490bdc4e4577713f3fbe8955577db8c5",
+    "git_blob_sha1": "9aa7d97bdca20c2ca6b7e10f53ec09a3b05a6565"
+  },
+  "mycobot_communication/msg/MycobotCoords.msg": {
+    "bytes": 62,
+    "sha256": "d26b24c7e3fefa05650405e9cc871bd8d1a30695012e01f1b90a671b9fb07731",
+    "git_blob_sha1": "08f6dbda3c15688247ed72b95f9c627c1f64f2fe"
+  },
+  "mycobot_communication/msg/MycobotGripperStatus.msg": {
+    "bytes": 11,
+    "sha256": "f9963e6f4eb3df305946b0c062324a0f7edff8097df45fb3bce551e091a336d1",
+    "git_blob_sha1": "18d6277216b815bfff7e963ea48b637e04021dc7"
+  },
+  "mycobot_communication/msg/MycobotPumpStatus.msg": {
+    "bytes": 32,
+    "sha256": "4126837fed94e7f5ef94f448706c02b225128a006b0780f748065fa9ed4f92bc",
+    "git_blob_sha1": "2373241cadb79efccec24b212bb5045c3d315373"
+  },
+  "mycobot_communication/msg/MycobotSetAngles.msg": {
+    "bytes": 108,
+    "sha256": "720c704e6bf934d2a751a481efa8f5a1dde5e3f1c04ad5a988e2b32001d7093d",
+    "git_blob_sha1": "3888b50f9e299ac601250ca6d21ba5ddcf6d116d"
+  },
+  "mycobot_communication/msg/MycobotSetCoords.msg": {
+    "bytes": 86,
+    "sha256": "ea067f83de2d517ebd595cecbffd6badd9dc8beddc7da2e10e0bf45f2d0ae28b",
+    "git_blob_sha1": "d4c7e54652d98e7a7224358f74d3c08b202b345d"
+  },
+  "mycobot_communication/package.xml": {
+    "bytes": 2785,
+    "sha256": "a14ee5652e92f4c9cb7dffef516f31ede624bf8287b623cf8933a305d7d804a9",
+    "git_blob_sha1": "66feed49e7213f44e90d80d161920e6c015fb3d5"
+  },
+  "mycobot_communication/srv/GetAngles.srv": {
+    "bytes": 102,
+    "sha256": "069eb5a5823aa347e444fca7396d74bb8b5d39caa06aad3c923f0cd0f51a0896",
+    "git_blob_sha1": "699269943dec272e8e6be5aaad9c5e4b3b658b81"
+  },
+  "mycobot_communication/srv/GetCoords.srv": {
+    "bytes": 69,
+    "sha256": "c16c972d411c6c5984a25ce1e828633b83545a958f9752c5bc2bed6c0abb9e0e",
+    "git_blob_sha1": "c1f9bbcc21e463b0621c2f7d71aa7e94403ea17c"
+  },
+  "mycobot_communication/srv/GripperStatus.srv": {
+    "bytes": 27,
+    "sha256": "d65e63ed96199574e633466bcec90714b09b749ec3fc55143f2a8cf1c01dbf21",
+    "git_blob_sha1": "3887d75b2f78418c77c4501e817771551801e783"
+  },
+  "mycobot_communication/srv/PumpStatus.srv": {
+    "bytes": 47,
+    "sha256": "1aecc454f14c36ebe21e047e91034784bc2a7a502d9d7c4bd9ff5b4c67667214",
+    "git_blob_sha1": "8bd4b530d3a170428af6e3faec909afb347fe1a6"
+  },
+  "mycobot_communication/srv/SetAngles.srv": {
+    "bytes": 123,
+    "sha256": "f0920895efcba6a086916f1e954671b52202c55f070cb20635e55724ff585061",
+    "git_blob_sha1": "6f8d8776e4f892a054e1d8765494da7e3471cac7"
+  },
+  "mycobot_communication/srv/SetCoords.srv": {
+    "bytes": 101,
+    "sha256": "1696a7aca007d82c9fb290fdbbe1de355b1781d4e834680f54b2df2e4a43487e",
+    "git_blob_sha1": "e5b1e528e1916226fd8548fc73146a3992376c28"
+  },
+  "mypalletizer_260/mypalletizer_communication/CMakeLists.txt": {
+    "bytes": 7408,
+    "sha256": "cb16d9e6952594f764452a185d754d145ad4843cccc06a0914f8384d2e9e3d67",
+    "git_blob_sha1": "c501f28f45f49cb783cd2a63bddc79a46e43793d"
+  },
+  "mypalletizer_260/mypalletizer_communication/msg/MypalAngles.msg": {
+    "bytes": 115,
+    "sha256": "d1e1841d26c6261664b454eef4210a946367c3532a5cd8a80f35e7a66383560c",
+    "git_blob_sha1": "bba21813c864d3ead999a5130ba34a48648a8959"
+  },
+  "mypalletizer_260/mypalletizer_communication/msg/MypalCoords.msg": {
+    "bytes": 66,
+    "sha256": "7f3c4a5b4c83319461c9f962ea80ae2da58e64e466f6601a3137699feaf63d5e",
+    "git_blob_sha1": "f2e98b9b86b930e708f9828af0c740891a99e1ac"
+  },
+  "mypalletizer_260/mypalletizer_communication/msg/MypalGripperStatus.msg": {
+    "bytes": 11,
+    "sha256": "f9963e6f4eb3df305946b0c062324a0f7edff8097df45fb3bce551e091a336d1",
+    "git_blob_sha1": "18d6277216b815bfff7e963ea48b637e04021dc7"
+  },
+  "mypalletizer_260/mypalletizer_communication/msg/MypalPumpStatus.msg": {
+    "bytes": 32,
+    "sha256": "4126837fed94e7f5ef94f448706c02b225128a006b0780f748065fa9ed4f92bc",
+    "git_blob_sha1": "2373241cadb79efccec24b212bb5045c3d315373"
+  },
+  "mypalletizer_260/mypalletizer_communication/msg/MypalSetAngles.msg": {
+    "bytes": 127,
+    "sha256": "06d4b027264faa451d82001f92faabc338be205c2b2f59bae1959ac79e2589f3",
+    "git_blob_sha1": "3580a2e810c61cb6fce21d3caabb25e0c43dca86"
+  },
+  "mypalletizer_260/mypalletizer_communication/msg/MypalSetCoords.msg": {
+    "bytes": 90,
+    "sha256": "7bc5e279b197f78c381fbd8e4316ac379a0a9c990ae934032e9e6190f61b86a5",
+    "git_blob_sha1": "15c601fd9f4a4452a139886c69828006218ab103"
+  },
+  "mypalletizer_260/mypalletizer_communication/package.xml": {
+    "bytes": 3711,
+    "sha256": "d2465a13062c796fc0c0742bba3173ffb582bda9ee4954c2045dcd277def56b1",
+    "git_blob_sha1": "a7c96fc102df79c0cec1029b1904f51c4709cab5"
+  },
+  "mypalletizer_260/mypalletizer_communication/srv/GetAngles.srv": {
+    "bytes": 122,
+    "sha256": "02428e54cca2807177d0dc469cb03f94abcd6f2091218b324be8fe55571ff616",
+    "git_blob_sha1": "dcf5f2aab042fd8cea0cbb151d556aecc90d6486"
+  },
+  "mypalletizer_260/mypalletizer_communication/srv/GetCoords.srv": {
+    "bytes": 73,
+    "sha256": "15c267464c6c9b98fb802e80a5e4e25e0b777afa1cd45677219d7efed06e2c47",
+    "git_blob_sha1": "aabe929d05ddfb12f51d59ff21106eb33542962e"
+  },
+  "mypalletizer_260/mypalletizer_communication/srv/GripperStatus.srv": {
+    "bytes": 27,
+    "sha256": "d65e63ed96199574e633466bcec90714b09b749ec3fc55143f2a8cf1c01dbf21",
+    "git_blob_sha1": "3887d75b2f78418c77c4501e817771551801e783"
+  },
+  "mypalletizer_260/mypalletizer_communication/srv/PumpStatus.srv": {
+    "bytes": 47,
+    "sha256": "1aecc454f14c36ebe21e047e91034784bc2a7a502d9d7c4bd9ff5b4c67667214",
+    "git_blob_sha1": "8bd4b530d3a170428af6e3faec909afb347fe1a6"
+  },
+  "mypalletizer_260/mypalletizer_communication/srv/SetAngles.srv": {
+    "bytes": 144,
+    "sha256": "7f03b361a5d23ce3dc5a0afb6b95f81751b03b8b1338ea413122477e68b697d8",
+    "git_blob_sha1": "539dcc3b80d021471250509cf398f44beb5a0d20"
+  },
+  "mypalletizer_260/mypalletizer_communication/srv/SetCoords.srv": {
+    "bytes": 105,
+    "sha256": "4dff82d50aa8131ec5df072845fe7434402a4fb192a2b442c52e78b142b64609",
+    "git_blob_sha1": "39893737442c3f898b3a68749cce9503d4b20a53"
+  },
+  "ultraArm/ultraarm_communication/CMakeLists.txt": {
+    "bytes": 7428,
+    "sha256": "405846adf61a1d61decf69325da5f7623d943fc34cc40829d3fe566f18dfd613",
+    "git_blob_sha1": "3ca5973c4c0d759c61a759c87e284a2c821cf6fb"
+  },
+  "ultraArm/ultraarm_communication/msg/ultraArmAngles.msg": {
+    "bytes": 48,
+    "sha256": "809eef821049624290614d12fab863e53c98258a9f9080b1e93d4820ae4ff7d8",
+    "git_blob_sha1": "d8cf6878ba3e21ac745c5b8d2e8f83d3ea6d3522"
+  },
+  "ultraArm/ultraarm_communication/msg/ultraArmCoords.msg": {
+    "bytes": 29,
+    "sha256": "655ba746820eb8d51108feba96950738cfa9146b014344b2ca4b106f057779f6",
+    "git_blob_sha1": "0fb54292b9f36b9e41ca07b5f6c8ac7a966fcefb"
+  },
+  "ultraArm/ultraarm_communication/msg/ultraArmGripperStatus.msg": {
+    "bytes": 11,
+    "sha256": "f9963e6f4eb3df305946b0c062324a0f7edff8097df45fb3bce551e091a336d1",
+    "git_blob_sha1": "18d6277216b815bfff7e963ea48b637e04021dc7"
+  },
+  "ultraArm/ultraarm_communication/msg/ultraArmPumpStatus.msg": {
+    "bytes": 13,
+    "sha256": "5c8d2ee01e37dff1f40125bd92e39b8602d8f83ab40bbb00308432fadac0216f",
+    "git_blob_sha1": "2ac4e0203fa223f7521c745e4c43e483cd227fd2"
+  },
+  "ultraArm/ultraarm_communication/msg/ultraArmSetAngles.msg": {
+    "bytes": 60,
+    "sha256": "65ab3a57cd86b2f72ce1539200dacba1289db067f215f31af0404b7fbc8ceadb",
+    "git_blob_sha1": "e8c86f19a5070de8d9baf1b158a0aa62410ff903"
+  },
+  "ultraArm/ultraarm_communication/msg/ultraArmSetCoords.msg": {
+    "bytes": 43,
+    "sha256": "cc826fad9ee6d6f8d9c6384be1dc03b5cdc5f90bda781d6be0e42cdc9494f78e",
+    "git_blob_sha1": "3df33ec6482dca1db76c733ae6e4b78d7c7f4865"
+  },
+  "ultraArm/ultraarm_communication/package.xml": {
+    "bytes": 3704,
+    "sha256": "4076023425dd2e3fb0c13d569f1e65e22347e0ba411ee637f6ebaa14e3270c6e",
+    "git_blob_sha1": "02fd4e9821a9c8ecb0a97f7bf6e68d7300c96828"
+  },
+  "ultraArm/ultraarm_communication/srv/GetAngles.srv": {
+    "bytes": 57,
+    "sha256": "2278cd3ecc2c52cac6d303eb930e4d7f3d9a33b2031240d81344851e436a0a50",
+    "git_blob_sha1": "89a607dd0028b40138a5e0c534cf9d90f65b65cf"
+  },
+  "ultraArm/ultraarm_communication/srv/GetCoords.srv": {
+    "bytes": 37,
+    "sha256": "fc0ac32943665579b475229d7922aad71d1befe0a7ac91fb532f116dae4062cd",
+    "git_blob_sha1": "f0e6e5e25c6e52c32610743ca708f43a5c103fce"
+  },
+  "ultraArm/ultraarm_communication/srv/GripperStatus.srv": {
+    "bytes": 27,
+    "sha256": "d65e63ed96199574e633466bcec90714b09b749ec3fc55143f2a8cf1c01dbf21",
+    "git_blob_sha1": "3887d75b2f78418c77c4501e817771551801e783"
+  },
+  "ultraArm/ultraarm_communication/srv/PumpStatus.srv": {
+    "bytes": 27,
+    "sha256": "d65e63ed96199574e633466bcec90714b09b749ec3fc55143f2a8cf1c01dbf21",
+    "git_blob_sha1": "3887d75b2f78418c77c4501e817771551801e783"
+  },
+  "ultraArm/ultraarm_communication/srv/SetAngles.srv": {
+    "bytes": 75,
+    "sha256": "a3f1919032e2db1bdf33a96735b9abbe5938cd6d98d9e86992d41b75256af858",
+    "git_blob_sha1": "39c70745adb6597000c5f746085f23c3270247ff"
+  },
+  "ultraArm/ultraarm_communication/srv/SetCoords.srv": {
+    "bytes": 57,
+    "sha256": "6f946abc4d8e12d346a3321cd6595f0ad673a4e316bcc557b9dcccdb8b8772b6",
+    "git_blob_sha1": "3bb59ea3e5e976b4fd555151275b01db6855b878"
+  }
+}

@@ -29,6 +29,8 @@
 # include <memory>
 # include <bit>
 # include <utility>
+# include <string_view>
+# include <uwvm2/utils/security/wsea.h>
 // macro
 # include <uwvm2/utils/macro/push_macros.h>
 # include <uwvm2/uwvm/utils/ansies/uwvm_color_push_macro.h>
@@ -47,6 +49,11 @@
 #ifndef UWVM_MODULE_EXPORT
 # define UWVM_MODULE_EXPORT
 #endif
+#include "parser_state.h"
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+# include <uwvm2/uwvm/imported/ros/validation.h>
+#endif
+
 UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
 {
     enum class parsing_return_val : unsigned
@@ -55,11 +62,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
         return0,  // Instructs the main function to return 0
         returnm1  // Instructs the main function to return -1
     };
-
-    // globals: There is no data contention because command line parsing is always done when the main thread is created.
-    inline ::uwvm2::utils::container::vector<::uwvm2::utils::cmdline::parameter_parsing_results> parsing_result{};  // [global]
-    inline char8_t const* argv0_dir{};                                                                              // [global]
-    inline ::uwvm2::utils::cmdline::parameter_parsing_results* wasm_file_ppos{};                                    // [global]
 
     /// @brief parsing cmdline
     inline constexpr parsing_return_val parsing(::std::size_t argc, char8_t const* const* argv) noexcept
@@ -82,13 +84,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
         if(!argc) [[unlikely]]
         {
             ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
+                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
                                 u8"uwvm: ",
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RED),
+                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RED),
                                 u8"[error] ",
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                 u8"No Parameters.",
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL),
+                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL),
                                 u8"\n\n");
             return parsing_return_val::returnm1;
         }
@@ -155,11 +157,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
                     if(++curr_argv == argv_end) [[unlikely]]
                     {
                         ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
+                                            ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
                                             u8"uwvm: ",
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RED),
+                                            ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RED),
                                             u8"[error] ",
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                            ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                             u8"Usage: ",
                                             ::uwvm2::utils::cmdline::print_usage(*run_para),
                                             // print_usage comes with UWVM_COLOR_U8_RST_ALL
@@ -255,13 +257,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
                 {
                     shouldreturn = true;
                     ::fast_io::io::perr(u8log_output_ul,
-                                        ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
+                                        ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
                                         u8"uwvm: ",
-                                        ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RED),
+                                        ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RED),
                                         u8"[error] ",
-                                        ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                        ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                         u8"invalid parameter: ",
-                                        ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_CYAN),
+                                        ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_CYAN),
                                         curr_pr->str);
 
                     // Finding the most similar parameters
@@ -308,19 +310,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
                     if(f_test_str.empty())
                     {
                         // The most similar parameters were not found
-                        ::fast_io::io::perr(u8log_output_ul, ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL), u8"\n");
+                        ::fast_io::io::perr(u8log_output_ul, ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL), u8"\n");
                     }
                     else
                     {
                         // Output the most similar parameter
                         ::fast_io::io::perr(u8log_output_ul,
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                            ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                             u8" (did you mean: ",
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_GREEN),
+                                            ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_GREEN),
                                             f_test_str,
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                            ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                             u8")",
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL),
+                                            ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL),
                                             u8"\n");
                     }
                 }
@@ -328,15 +330,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
                 {
                     shouldreturn = true;
                     ::fast_io::io::perr(u8log_output_ul,
-                                        ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
+                                        ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
                                         u8"uwvm: ",
-                                        ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RED),
+                                        ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RED),
                                         u8"[error] ",
-                                        ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                        ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                         u8"duplicate parameter: ",
-                                        ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_CYAN),
+                                        ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_CYAN),
                                         curr_pr->str,
-                                        ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL),
+                                        ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL),
                                         u8"\n");
                 }
             }
@@ -348,6 +350,94 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
             }
 
             // Here, guard will perform destructors.
+        }
+
+        // Register all explicitly selected secure modules before ANY preload
+        // callback. Unselected modules retain their ordinary loading behavior.
+        bool secure_status_requested{};
+        bool secure_help_requested{};
+        for(auto current{pr.begin() + 1u}; current != end_pos; ++current)
+        {
+            if(current->para != ::std::addressof(::uwvm2::uwvm::cmdline::params::secure)) { continue; }
+            auto subcommand{current + 1u};
+            using kind = ::uwvm2::utils::cmdline::parameter_parsing_results_type;
+            if(subcommand == end_pos || subcommand->type != kind::arg)
+            {
+                ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                    u8"uwvm: --secure requires a subcommand; use --secure help.");
+                return parsing_return_val::returnm1;
+            }
+            subcommand->type = kind::occupied_arg;
+            if(subcommand->str == u8"help") { secure_help_requested = true; continue; }
+            if(subcommand->str == u8"status") { secure_status_requested = true; continue; }
+            bool const named_module{subcommand->str == u8"named-module"};
+            if(subcommand->str != u8"module" && !named_module)
+            {
+                ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                    u8"uwvm: unknown --secure subcommand; use --secure help.");
+                return parsing_return_val::returnm1;
+            }
+            auto module{subcommand + 1u};
+            if(module == end_pos || module->type != kind::arg || module->str.empty())
+            {
+                ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                    u8"uwvm: --secure module requires <wasm-path> <protected-policy-path>.");
+                return parsing_return_val::returnm1;
+            }
+            auto policy{module + 1u};
+            if(policy == end_pos || policy->type != kind::arg || policy->str.empty())
+            {
+                ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                    u8"uwvm: --secure module requires <wasm-path> <protected-policy-path>.");
+                return parsing_return_val::returnm1;
+            }
+            ::std::string_view expected_identity{};
+            if(named_module)
+            {
+                auto identity{policy + 1u};
+                if(identity == end_pos || identity->type != kind::arg || identity->str.empty())
+                {
+                    ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                        u8"uwvm: --secure named-module requires <wasm-path> <protected-policy-path> <expected-id>.");
+                    return parsing_return_val::returnm1;
+                }
+                identity->type = kind::occupied_arg;
+                expected_identity = ::std::string_view{reinterpret_cast<char const*>(identity->str.cbegin()), identity->str.size()};
+            }
+            module->type = kind::occupied_arg;
+            policy->type = kind::occupied_arg;
+            auto selected{::uwvm2::utils::security::wsea::select_module(
+                ::std::string_view{reinterpret_cast<char const*>(module->str.cbegin()), module->str.size()},
+                ::std::string_view{reinterpret_cast<char const*>(policy->str.cbegin()), policy->str.size()}, expected_identity)};
+            if(!selected)
+            {
+                ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                    u8"uwvm: [", ::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(selected.code)), u8"] DENIED: ",
+                    ::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(selected.message)));
+                return parsing_return_val::returnm1;
+            }
+        }
+        if(secure_help_requested)
+        {
+            ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                u8"--secure module <wasm-path> <protected-policy-path>\n"
+                u8"  Bind this path to the only module identity authorized by a single-rule policy. Repeat for more modules.\n"
+                u8"--secure named-module <wasm-path> <protected-policy-path> <expected-id>\n"
+                u8"  Bind this path to an explicit module identity when sharing a policy between publishers/modules.\n"
+                u8"  Relative paths are normalized against the current directory. Selected modules fail closed.\n"
+                u8"--secure status\n  Print the configured secure-module status and exit.\n"
+                u8"--secure help\n  Print this help and exit.\n"
+                u8"Unselected WASM modules retain ordinary loading behavior.");
+            return parsing_return_val::return0;
+        }
+        if(secure_status_requested)
+        {
+            ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                ::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(::uwvm2::utils::security::wsea::status_message())));
+            auto const details{::uwvm2::utils::security::wsea::status_details()};
+            ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                ::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(details.c_str())));
+            return parsing_return_val::return0;
         }
 
         // Call the function corresponding to each parameter
@@ -460,15 +550,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
                     shouldreturn = true;
 
                     ::fast_io::io::perr(u8log_output_ul,
-                                        ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
+                                        ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
                                         u8"uwvm: ",
-                                        ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RED),
+                                        ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RED),
                                         u8"[error] ",
-                                        ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                        ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                         u8"invalid option: ",
-                                        ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_CYAN),
+                                        ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_CYAN),
                                         curr_pr->str,
-                                        ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL),
+                                        ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL),
                                         u8"\n");
                 }
             }
@@ -480,6 +570,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
             }
         }
 
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+        if(::uwvm2::uwvm::imported::ros::policy_configured && wasm_file_ppos == nullptr)
+        {
+            if(auto result{::uwvm2::uwvm::imported::ros::validate_loaded_policy(false)}; !result)
+            { ::uwvm2::uwvm::imported::ros::print_policy_error(result); return parsing_return_val::returnm1; }
+            if(::uwvm2::uwvm::imported::ros::diagnostic_only())
+            {
+                return ::uwvm2::uwvm::imported::ros::dump_effective_policy() ? parsing_return_val::return0 : parsing_return_val::returnm1;
+            }
+        }
+#endif
         return parsing_return_val::def;
     }
 }

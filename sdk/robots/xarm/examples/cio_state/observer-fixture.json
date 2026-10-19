@@ -1,0 +1,77 @@
+{
+  "format_version": 1,
+  "kind": "complete-official-CIOState-synthetic-independent-telemetry-fixture-not-GPIO-command",
+  "source_only": true,
+  "actual_native_delivery_cases": 0,
+  "header": {
+    "ros1": {
+      "seq": 19,
+      "stamp": {
+        "sec": 42,
+        "nsec": 300000000
+      }
+    },
+    "ros2": {
+      "stamp": {
+        "sec": -2,
+        "nanosec": 300000000
+      }
+    },
+    "frame_id": "xarm-gpio"
+  },
+  "state": 1,
+  "code": 0,
+  "input_digitals": [
+    165,
+    32769
+  ],
+  "output_digitals": [
+    90,
+    16386
+  ],
+  "input_analogs": [
+    1.25,
+    2.5
+  ],
+  "output_analogs": [
+    3.75,
+    0.5
+  ],
+  "input_conf": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15
+  ],
+  "output_conf": [
+    15,
+    14,
+    13,
+    12,
+    11,
+    10,
+    9,
+    8,
+    7,
+    6,
+    5,
+    4,
+    3,
+    2,
+    1,
+    0
+  ],
+  "scope": "Complete fixed-array telemetry data only. No bit is used to write GPIO, infer controller firmware or certify an electrical/robot state."
+}

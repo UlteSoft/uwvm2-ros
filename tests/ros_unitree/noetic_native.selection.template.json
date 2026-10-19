@@ -1,0 +1,25 @@
+{
+  "format_version": 1,
+  "kind": "uwvm-unitree-noetic-native-selection-v1",
+  "acquisition": {
+    "inner": "noetic-acquisition",
+    "owner": "noetic-acquisition-owner",
+    "manifest": "noetic-acquisition-manifest"
+  },
+  "tools": {
+    "mount": "mount",
+    "umount": "umount",
+    "chroot": "chroot",
+    "python": "host-python"
+  },
+  "sdk_tools": {
+    "cxx": {"logical": "/usr/bin/g++", "input": "noetic-cxx"},
+    "cmake": {"logical": "/usr/bin/cmake", "input": "noetic-cmake"},
+    "make": {"logical": "/usr/bin/make", "input": "noetic-make"},
+    "env": {"logical": "/usr/bin/env", "input": "noetic-env"},
+    "python": {"logical": "/usr/bin/python3.8", "input": "noetic-python"},
+    "loader": {"logical": "/lib64/ld-linux-x86-64.so.2", "input": "noetic-loader"},
+    "master": {"logical": "/opt/ros/noetic/bin/rosmaster", "input": "noetic-master"}
+  },
+  "upstream": "legacy"
+}

@@ -1,0 +1,902 @@
+{
+  "always_keep_online_old_evidence": [
+    "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r1/report.json",
+    "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r1/payloads.jsonl",
+    "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r1/apt/state/status",
+    "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r2/report.json",
+    "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r2/payloads.jsonl",
+    "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r2/apt/state/status",
+    "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r3/report.json",
+    "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r3/payloads.jsonl",
+    "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r3/apt/state/status",
+    "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r4/report.json",
+    "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r4/payloads.jsonl",
+    "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r4/apt/state/status",
+    "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-root-supervisor-r1/report.json",
+    "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-root-supervisor-r2/report.json",
+    "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-root-supervisor-r3/report.json",
+    "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-root-supervisor-r4/report.json"
+  ],
+  "archive_then_retire_requirements": [
+    "New reviewed finite-file archival owner, exact Root current controls and same64GiB guard.",
+    "Ordinary opened nlink1 files with all-ancestor O_NOFOLLOW, complete stable source/full pin, complete metadata and exact finite membership.",
+    "Bounded complete tar/gzip stream, per-member byte SHA and size, actual complete-stream hash/count, durable catalog; all sources unchanged before/after emission.",
+    "Receiver independently verifies every header/member/byte/mode/uid/gid/mtime and catalog, compressed complete-stream SHA/count, fsyncs persistent archive and containing directory, and records actual physical pin.",
+    "Only a separately reviewed Root retirement step may reopen original exact current pins and recheck current/future protection closure before unlink; no glob or recursive actor-parent removal.",
+    "Observe actual backing/image allocation before/after and owned-image-only free-block trim barrier; inode/extent estimates are not a promise of reclaimed bytes.",
+    "Restore only content/metadata if later needed; original inode/ctime/execution continuity is never claimed or fabricated."
+  ],
+  "collection_limits": {
+    "active_backing_reserve_bytes": 8589934592,
+    "current_cgroup_memory_max": 68719476736,
+    "file_max_bytes": 2147483648,
+    "logical_batch_bytes": 536870912,
+    "no_deletion_or_rename": true,
+    "no_process_or_network": true,
+    "self_rss_bytes": 536870912,
+    "swap_max": 0
+  },
+  "current_cgroup": {
+    "expected_boot_id": "501c54bd-af24-4d22-900c-8e24de274464",
+    "expected_cpus": "0-31",
+    "expected_device": 29,
+    "expected_inode": 18358,
+    "expected_leaf": "/sys/fs/cgroup/system.slice/docker-4dd58ad4560fde2ab9b539e4ef9cab1fac531654e99ad554aff1fce8ae0eae37.scope",
+    "memory_max": 68719476736,
+    "memory_swap_max": 0
+  },
+  "current_root_control": {
+    "bytes": 8427,
+    "ctime_ns": 1792170790135343086,
+    "device": 66312,
+    "inode": 31247192,
+    "mtime_ns": 1792170790135343086,
+    "path": "/var/tmp/uwvm-ros-unitree-20261016-r1/noetic-amd64-native-sdk-acquisition-controls-r6d/root-control.json",
+    "sha256": "344eb5d9bd35436b5d30d9f817d46978110842dfdc22a3ea45bcf376b4cc8c9e"
+  },
+  "destination": {
+    "Root_reported_capacity": "Approximately8GB; not an actual statvfs observation and not an8GiB guarantee.",
+    "Root_selects_and_hash_binds_actual_destination": true,
+    "actual_free_before_each_batch_required": true,
+    "never_stage_a_second_archive_on_Linux_backing": true,
+    "observed_free_capacity_approx_bytes": null,
+    "persistent_mac_root": null
+  },
+  "first_priority_files": [
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 5826751,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r1/apt/state/lists/archive.ubuntu.com_ubuntu_dists_focal_main_binary-amd64_Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 5826751,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r1/apt/indices/ubuntu-base-0000-Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 50750067,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r1/apt/state/lists/archive.ubuntu.com_ubuntu_dists_focal_universe_binary-amd64_Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 50750067,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r1/apt/indices/ubuntu-base-0001-Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 22166515,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r1/apt/state/lists/archive.ubuntu.com_ubuntu_dists_focal-updates_main_binary-amd64_Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 22166515,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r1/apt/indices/ubuntu-updates-0002-Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 7142738,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r1/apt/state/lists/archive.ubuntu.com_ubuntu_dists_focal-updates_universe_binary-amd64_Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 7142738,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r1/apt/indices/ubuntu-updates-0003-Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 20100998,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r1/apt/state/lists/security.ubuntu.com_ubuntu_dists_focal-security_main_binary-amd64_Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 20100998,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r1/apt/indices/ubuntu-security-0004-Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 6081182,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r1/apt/state/lists/security.ubuntu.com_ubuntu_dists_focal-security_universe_binary-amd64_Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 6081182,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r1/apt/indices/ubuntu-security-0005-Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 3813110,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r1/apt/state/lists/snapshots.ros.org_noetic_final_ubuntu_dists_focal_main_binary-amd64_Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 3813110,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r1/apt/indices/ros-noetic-final-0006-Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 5826751,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r2/apt/state/lists/archive.ubuntu.com_ubuntu_dists_focal_main_binary-amd64_Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 5826751,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r2/apt/indices/ubuntu-base-0000-Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 50750067,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r2/apt/state/lists/archive.ubuntu.com_ubuntu_dists_focal_universe_binary-amd64_Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 50750067,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r2/apt/indices/ubuntu-base-0001-Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 22166515,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r2/apt/state/lists/archive.ubuntu.com_ubuntu_dists_focal-updates_main_binary-amd64_Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 22166515,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r2/apt/indices/ubuntu-updates-0002-Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 7142738,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r2/apt/state/lists/archive.ubuntu.com_ubuntu_dists_focal-updates_universe_binary-amd64_Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 7142738,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r2/apt/indices/ubuntu-updates-0003-Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 20100998,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r2/apt/state/lists/security.ubuntu.com_ubuntu_dists_focal-security_main_binary-amd64_Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 20100998,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r2/apt/indices/ubuntu-security-0004-Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 6081182,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r2/apt/state/lists/security.ubuntu.com_ubuntu_dists_focal-security_universe_binary-amd64_Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 6081182,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r2/apt/indices/ubuntu-security-0005-Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 3813110,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r2/apt/state/lists/snapshots.ros.org_noetic_final_ubuntu_dists_focal_main_binary-amd64_Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 3813110,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r2/apt/indices/ros-noetic-final-0006-Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 5826751,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r3/apt/state/lists/archive.ubuntu.com_ubuntu_dists_focal_main_binary-amd64_Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 5826751,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r3/apt/indices/ubuntu-base-0000-Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 50750067,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r3/apt/state/lists/archive.ubuntu.com_ubuntu_dists_focal_universe_binary-amd64_Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 50750067,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r3/apt/indices/ubuntu-base-0001-Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 22166515,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r3/apt/state/lists/archive.ubuntu.com_ubuntu_dists_focal-updates_main_binary-amd64_Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 22166515,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r3/apt/indices/ubuntu-updates-0002-Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 7142738,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r3/apt/state/lists/archive.ubuntu.com_ubuntu_dists_focal-updates_universe_binary-amd64_Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 7142738,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r3/apt/indices/ubuntu-updates-0003-Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 20100998,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r3/apt/state/lists/security.ubuntu.com_ubuntu_dists_focal-security_main_binary-amd64_Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 20100998,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r3/apt/indices/ubuntu-security-0004-Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 6081182,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r3/apt/state/lists/security.ubuntu.com_ubuntu_dists_focal-security_universe_binary-amd64_Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 6081182,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r3/apt/indices/ubuntu-security-0005-Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 3813110,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r3/apt/state/lists/snapshots.ros.org_noetic_final_ubuntu_dists_focal_main_binary-amd64_Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 3813110,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r3/apt/indices/ros-noetic-final-0006-Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 5826751,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r4/apt/state/lists/archive.ubuntu.com_ubuntu_dists_focal_main_binary-amd64_Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 5826751,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r4/apt/indices/ubuntu-base-0000-Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 50750067,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r4/apt/state/lists/archive.ubuntu.com_ubuntu_dists_focal_universe_binary-amd64_Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 50750067,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r4/apt/indices/ubuntu-base-0001-Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 22166515,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r4/apt/state/lists/archive.ubuntu.com_ubuntu_dists_focal-updates_main_binary-amd64_Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 22166515,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r4/apt/indices/ubuntu-updates-0002-Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 7142738,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r4/apt/state/lists/archive.ubuntu.com_ubuntu_dists_focal-updates_universe_binary-amd64_Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 7142738,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r4/apt/indices/ubuntu-updates-0003-Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 20100998,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r4/apt/state/lists/security.ubuntu.com_ubuntu_dists_focal-security_main_binary-amd64_Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 20100998,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r4/apt/indices/ubuntu-security-0004-Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 6081182,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r4/apt/state/lists/security.ubuntu.com_ubuntu_dists_focal-security_universe_binary-amd64_Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 6081182,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r4/apt/indices/ubuntu-security-0005-Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 3813110,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r4/apt/state/lists/snapshots.ros.org_noetic_final_ubuntu_dists_focal_main_binary-amd64_Packages",
+      "priority": 1
+    },
+    {
+      "action": "COLLECT_ONLY_NO_ARCHIVE_OR_RETIRE_AUTHORIZATION",
+      "class": "old-large-APT-Packages-file",
+      "current_allocated_blocks_512": null,
+      "current_full7": null,
+      "current_logical_bytes": null,
+      "current_mode_uid_gid_nlink": null,
+      "old_r4_reference_bytes_only_not_current_identity": 3813110,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r4/apt/indices/ros-noetic-final-0006-Packages",
+      "priority": 1
+    }
+  ],
+  "format_version": 1,
+  "kind": "noetic-old-content-cold-archive-passive-collection-request",
+  "must_be_absent_or_reinvestigated": [
+    {
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r4/sdk",
+      "reason": "The original r4 SDK was transferred into preserved r5/sdk; never follow a replacement alias or infer a second SDK."
+    }
+  ],
+  "old_report_statuses_promoted": false,
+  "protected_finite_pins": [
+    {
+      "bytes": 6283350,
+      "ctime_ns": 1792153523788867667,
+      "device": 81,
+      "inode": 770359,
+      "mtime_ns": 1792153523782867060,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r5/report.json",
+      "sha256": "fa300972b9639153446ac2005d31944b748f7d3de12cd2f799db5abcb668ceb1"
+    },
+    {
+      "bytes": 41860,
+      "ctime_ns": 1792153537763261368,
+      "device": 81,
+      "inode": 771690,
+      "mtime_ns": 1792153537757969719,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-root-supervisor-r5/report.json",
+      "sha256": "0c32ebee7563a3d8e25c0ad54a115850986beb40410debd36a4d63b18ba9901d"
+    },
+    {
+      "bytes": 1048328,
+      "ctime_ns": 1792168296159003175,
+      "device": 81,
+      "inode": 778858,
+      "mtime_ns": 1792168296126002654,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r6c/report.json",
+      "sha256": "dae93ed7054d73e483221317bd131de300dea7cbb1fa63d308835c1f74592940"
+    },
+    {
+      "bytes": 58936,
+      "ctime_ns": 1792168315846313178,
+      "device": 81,
+      "inode": 778860,
+      "mtime_ns": 1792168315821410638,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-root-supervisor-r6c/report.json",
+      "sha256": "23d3ab88e91faae9f9622f6246b54ad17865fd91fa6c20aaa345d2ea285160e9"
+    },
+    {
+      "bytes": 9988325,
+      "ctime_ns": 1792153532221713641,
+      "device": 81,
+      "inode": 762090,
+      "mtime_ns": 1792153532221713641,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r5/payloads.jsonl",
+      "sha256": "d4d6c432569455916b4fec9bfd1df2c63e7f98e6bb04975001b92526d403f021"
+    },
+    {
+      "bytes": 9397,
+      "ctime_ns": 1792120777257444787,
+      "device": 66312,
+      "inode": 30856836,
+      "mtime_ns": 1792120777255551383,
+      "path": "/var/tmp/uwvm-ros-unitree-20261016-r1/noetic-amd64-native-sdk-acquisition-controls-r4/noetic-amd64.spec.json",
+      "sha256": "9e725094c847cfbcd8b98d647de868597ac78c440d5a7cd4d7cc70e42a28be18"
+    },
+    {
+      "bytes": 85269,
+      "ctime_ns": 1792120777252444709,
+      "device": 66312,
+      "inode": 30856834,
+      "mtime_ns": 1792120777249318691,
+      "path": "/var/tmp/uwvm-ros-unitree-20261016-r1/noetic-amd64-native-sdk-acquisition-controls-r4/acquire-sdk.py",
+      "sha256": "17f7676328192a4e914dc82d8dfd65092959aff344426b46d78ad67522dc5c53"
+    },
+    {
+      "bytes": 246,
+      "ctime_ns": 1767104811669632872,
+      "device": 66312,
+      "inode": 14156170,
+      "mtime_ns": 1767104811669632872,
+      "path": "/etc/hosts",
+      "sha256": "6da2afd315836b079be1fc1aa9c7d7420ae684fdd0158e24333a7a77a52d1904"
+    },
+    {
+      "bytes": 936,
+      "ctime_ns": 1792163062325565669,
+      "device": 27,
+      "inode": 6227,
+      "mtime_ns": 1792163062325555825,
+      "path": "/run/systemd/resolve/stub-resolv.conf",
+      "sha256": "7b4d45022f47d4da0f1e78b1e3ae7b72f445002561395033698d684da83afd4b"
+    },
+    {
+      "bytes": 594,
+      "ctime_ns": 1779281785829008398,
+      "device": 66312,
+      "inode": 14156199,
+      "mtime_ns": 1779281785829008398,
+      "path": "/etc/nsswitch.conf",
+      "sha256": "f053e77f9d706a20cb52deecdf9602b1635ea64a3be77a4cb32205bfebb17d3e"
+    },
+    {
+      "bytes": 10001,
+      "ctime_ns": 1792170790131649087,
+      "device": 66312,
+      "inode": 31247189,
+      "mtime_ns": 1792170790131649087,
+      "path": "/var/tmp/uwvm-ros-unitree-20261016-r1/noetic-amd64-native-sdk-acquisition-controls-r6d/noetic-amd64.spec.json",
+      "sha256": "b5830ed0bc1eb4652e6a97d80dcf94785750602e35163c8410dc329aec57a0c1"
+    },
+    {
+      "bytes": 2158,
+      "ctime_ns": 1792170790132573083,
+      "device": 66312,
+      "inode": 31247190,
+      "mtime_ns": 1792170790132573083,
+      "path": "/var/tmp/uwvm-ros-unitree-20261016-r1/noetic-amd64-native-sdk-acquisition-controls-r6d/deb-cache-inputs.json",
+      "sha256": "885c27720a373e9e2e1bc1eebbebc124086be215945d58055b18ebc47d5bba47"
+    },
+    {
+      "bytes": 2903,
+      "ctime_ns": 1792170790133921090,
+      "device": 66312,
+      "inode": 31247191,
+      "mtime_ns": 1792170790133921090,
+      "path": "/var/tmp/uwvm-ros-unitree-20261016-r1/noetic-amd64-native-sdk-acquisition-controls-r6d/fresh-rebuild.json",
+      "sha256": "61eb2419a212886ecc3f7a482349e8d10dc50993f107aaf453e376eb34c059f1"
+    }
+  ],
+  "protected_path_policies": [
+    "Keep all source-manifest.json files, original raw reports, report status bodies, payload ledgers, source/control packages and official locks online.",
+    "Keep all selected cache whole roots, including ANY non-DEB or decoded tar beneath them.",
+    "Keep old r5 partial SDK and entire original42-file r6c model-DEBs tree including excluded partial.",
+    "Keep all current r6d actor/owner outputs; no evolving report is admitted as a frozen historical pin.",
+    "Keep Release/InRelease, GPG status and empty APT status metadata online; first-priority candidates are only explicit large Packages files.",
+    "Reject any candidate intersecting any Root-selected active or future whole root or finite file, lexically or by physical alias."
+  ],
+  "protected_whole_roots": [
+    "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/host-compiler-r1",
+    "/usr/bin",
+    "/usr/include",
+    "/usr/lib/x86_64-linux-gnu",
+    "/usr/lib/gcc/x86_64-linux-gnu/15",
+    "/usr/lib/python3.14",
+    "/usr/share/cmake-3.31",
+    "/usr/share/cmake",
+    "/usr/lib/locale",
+    "/usr/lib/llvm-20/include/c++/v1",
+    "/usr/lib/llvm-17/lib/clang/17/include",
+    "/usr/lib/llvm-18/lib/clang/18/include",
+    "/usr/lib/llvm-19/lib/clang/19/include",
+    "/usr/lib/llvm-20/lib/clang/20/include",
+    "/usr/lib/llvm-21/lib/clang/21/include",
+    "/usr/lib/llvm-22/lib/clang/22/include",
+    "/usr/lib/apt",
+    "/var/tmp/uwvm-ros-complete-20261015-r1/derived-sdk/gateway/jazzy-rootfs/usr/share/keyrings",
+    "/var/tmp/uwvm-ros-complete-20261015-r1/derived-sdk/gateway/noetic-rootfs/usr/share/keyrings",
+    "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-official-lock-and-spec-r1",
+    "/var/tmp/uwvm-ros-unitree-20261016-r1/noetic-amd64-native-sdk-acquisition-controls-r4",
+    "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r1/apt/downloads",
+    "/var/tmp/uwvm-ros-unitree-20261016-r1/noetic-amd64-native-sdk-acquisition-controls-r6d",
+    "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r4/apt/downloads",
+    "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r5/apt/downloads",
+    "/usr/sbin",
+    "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-cacheview-r6d/debs",
+    "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r5/sdk",
+    "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r6c/model-DEBs",
+    "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-cacheview-r6d",
+    "/var/tmp/uwvm-ros-complete-20261015-r1/inputs-r35",
+    "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r6d",
+    "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-root-supervisor-r6d",
+    "/var/tmp/uwvm-ros-complete-20261015-r1/derived-sdk/gateway/noetic-rootfs"
+  ],
+  "secondary_old_sdk_collection": [
+    {
+      "current_file_bytes": null,
+      "current_identity": null,
+      "external_hardlink_or_symlink_targets": null,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r1/sdk",
+      "priority": 2,
+      "status": "COLLECT_EXISTENCE_TYPE_SIZE_AND_CONSUMER_OVERLAP_ONLY"
+    },
+    {
+      "current_file_bytes": null,
+      "current_identity": null,
+      "external_hardlink_or_symlink_targets": null,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r2/sdk",
+      "priority": 2,
+      "status": "COLLECT_EXISTENCE_TYPE_SIZE_AND_CONSUMER_OVERLAP_ONLY"
+    },
+    {
+      "current_file_bytes": null,
+      "current_identity": null,
+      "external_hardlink_or_symlink_targets": null,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r3/sdk",
+      "priority": 2,
+      "status": "COLLECT_EXISTENCE_TYPE_SIZE_AND_CONSUMER_OVERLAP_ONLY"
+    }
+  ],
+  "secondary_tar_collection": [
+    {
+      "directory": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r2/apt/downloads",
+      "priority": 3,
+      "selection": "Only explicitly registered, currently regular nlink1 *.tar files outside every protected root/file; collect exact names/pins before any proposal.",
+      "status": "COLLECT_ONLY_NO_WILDCARD_RETIREMENT"
+    },
+    {
+      "directory": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r3/apt/downloads",
+      "priority": 3,
+      "selection": "Only explicitly registered, currently regular nlink1 *.tar files outside every protected root/file; collect exact names/pins before any proposal.",
+      "status": "COLLECT_ONLY_NO_WILDCARD_RETIREMENT"
+    }
+  ],
+  "static_selection_packet": {
+    "bytes": 16052,
+    "path": "tests/ros_unitree/acceptance/noetic_cold_storage/current-selected-roots.root-observed.json",
+    "sha256": "a5da919d289950db78d20139d853cd2806507940f266ddeb21aabdff780c9787"
+  },
+  "status": "PLAN_ONLY_NO_SOURCE_OR_REMOTE_MUTATION",
+  "tests_or_SSH_or_archive_or_retirement_executed_by_source_author": false
+}

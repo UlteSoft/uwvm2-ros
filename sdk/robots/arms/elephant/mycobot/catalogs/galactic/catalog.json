@@ -1,0 +1,334 @@
+{
+  "format": "uwvm-ros-vendor-complete-bounded-v1",
+  "types": [
+    {
+      "ros_version": 2,
+      "type": "mecharm_interfaces/msg/MecharmAngles",
+      "file": "mecharm_interfaces/msg/MecharmAngles.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mecharm_interfaces/msg/MecharmCoords",
+      "file": "mecharm_interfaces/msg/MecharmCoords.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mecharm_interfaces/msg/MecharmGripperStatus",
+      "file": "mecharm_interfaces/msg/MecharmGripperStatus.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mecharm_interfaces/msg/MecharmPumpStatus",
+      "file": "mecharm_interfaces/msg/MecharmPumpStatus.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mecharm_interfaces/msg/MecharmSetAngles",
+      "file": "mecharm_interfaces/msg/MecharmSetAngles.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mecharm_interfaces/msg/MecharmSetCoords",
+      "file": "mecharm_interfaces/msg/MecharmSetCoords.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mecharm_interfaces/srv/GetAngles",
+      "file": "mecharm_interfaces/srv/GetAngles.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mecharm_interfaces/srv/GetCoords",
+      "file": "mecharm_interfaces/srv/GetCoords.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mecharm_interfaces/srv/GripperStatus",
+      "file": "mecharm_interfaces/srv/GripperStatus.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mecharm_interfaces/srv/PumpStatus",
+      "file": "mecharm_interfaces/srv/PumpStatus.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mecharm_interfaces/srv/SetAngles",
+      "file": "mecharm_interfaces/srv/SetAngles.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mecharm_interfaces/srv/SetCoords",
+      "file": "mecharm_interfaces/srv/SetCoords.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mycobot_interfaces/msg/MycobotAngles",
+      "file": "mycobot_interfaces/msg/MycobotAngles.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mycobot_interfaces/msg/MycobotCoords",
+      "file": "mycobot_interfaces/msg/MycobotCoords.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mycobot_interfaces/msg/MycobotGripperStatus",
+      "file": "mycobot_interfaces/msg/MycobotGripperStatus.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mycobot_interfaces/msg/MycobotPumpStatus",
+      "file": "mycobot_interfaces/msg/MycobotPumpStatus.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mycobot_interfaces/msg/MycobotSetAngles",
+      "file": "mycobot_interfaces/msg/MycobotSetAngles.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mycobot_interfaces/msg/MycobotSetCoords",
+      "file": "mycobot_interfaces/msg/MycobotSetCoords.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mycobot_interfaces/srv/GetAngles",
+      "file": "mycobot_interfaces/srv/GetAngles.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mycobot_interfaces/srv/GetCoords",
+      "file": "mycobot_interfaces/srv/GetCoords.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mycobot_interfaces/srv/GripperStatus",
+      "file": "mycobot_interfaces/srv/GripperStatus.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mycobot_interfaces/srv/PumpStatus",
+      "file": "mycobot_interfaces/srv/PumpStatus.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mycobot_interfaces/srv/SetAngles",
+      "file": "mycobot_interfaces/srv/SetAngles.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mycobot_interfaces/srv/SetCoords",
+      "file": "mycobot_interfaces/srv/SetCoords.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mycobot_pro450_interfaces/msg/MycobotAngles",
+      "file": "mycobot_pro450_interfaces/msg/MycobotAngles.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mycobot_pro450_interfaces/msg/MycobotCoords",
+      "file": "mycobot_pro450_interfaces/msg/MycobotCoords.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mycobot_pro450_interfaces/msg/MycobotGripperStatus",
+      "file": "mycobot_pro450_interfaces/msg/MycobotGripperStatus.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mycobot_pro450_interfaces/msg/MycobotSetAngles",
+      "file": "mycobot_pro450_interfaces/msg/MycobotSetAngles.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mycobot_pro450_interfaces/msg/MycobotSetCoords",
+      "file": "mycobot_pro450_interfaces/msg/MycobotSetCoords.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mycobot_pro450_interfaces/srv/GetAngles",
+      "file": "mycobot_pro450_interfaces/srv/GetAngles.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mycobot_pro450_interfaces/srv/GetCoords",
+      "file": "mycobot_pro450_interfaces/srv/GetCoords.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mycobot_pro450_interfaces/srv/GetGripperValue",
+      "file": "mycobot_pro450_interfaces/srv/GetGripperValue.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mycobot_pro450_interfaces/srv/GripperStatus",
+      "file": "mycobot_pro450_interfaces/srv/GripperStatus.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mycobot_pro450_interfaces/srv/SetAngles",
+      "file": "mycobot_pro450_interfaces/srv/SetAngles.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mycobot_pro450_interfaces/srv/SetCoords",
+      "file": "mycobot_pro450_interfaces/srv/SetCoords.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mypalletizer_interfaces/msg/MypalAngles",
+      "file": "mypalletizer_interfaces/msg/MypalAngles.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mypalletizer_interfaces/msg/MypalCoords",
+      "file": "mypalletizer_interfaces/msg/MypalCoords.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mypalletizer_interfaces/msg/MypalGripperStatus",
+      "file": "mypalletizer_interfaces/msg/MypalGripperStatus.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mypalletizer_interfaces/msg/MypalPumpStatus",
+      "file": "mypalletizer_interfaces/msg/MypalPumpStatus.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mypalletizer_interfaces/msg/MypalSetAngles",
+      "file": "mypalletizer_interfaces/msg/MypalSetAngles.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mypalletizer_interfaces/msg/MypalSetCoords",
+      "file": "mypalletizer_interfaces/msg/MypalSetCoords.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mypalletizer_interfaces/srv/GetAngles",
+      "file": "mypalletizer_interfaces/srv/GetAngles.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mypalletizer_interfaces/srv/GetCoords",
+      "file": "mypalletizer_interfaces/srv/GetCoords.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mypalletizer_interfaces/srv/GripperStatus",
+      "file": "mypalletizer_interfaces/srv/GripperStatus.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mypalletizer_interfaces/srv/PumpStatus",
+      "file": "mypalletizer_interfaces/srv/PumpStatus.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mypalletizer_interfaces/srv/SetAngles",
+      "file": "mypalletizer_interfaces/srv/SetAngles.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "mypalletizer_interfaces/srv/SetCoords",
+      "file": "mypalletizer_interfaces/srv/SetCoords.srv",
+      "registered": true,
+      "bounds": {}
+    }
+  ]
+}

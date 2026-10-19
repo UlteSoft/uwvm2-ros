@@ -1,0 +1,7 @@
+# Set the speed slider on the teach pendant to the specified value.
+#
+# Value must be from [0; 1.0];
+
+float32 value
+---
+bool success

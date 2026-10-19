@@ -1,0 +1,36 @@
+{
+  "label": "wasmtime49-capi-oracle-reference-write-same-a1",
+  "argv": [
+    "/tmp/uwvm-gc-perf-20261011-r73/build/wasmtime-bench",
+    "/tmp/uwvm-gc-perf-20261011-r74/source/wasmtime-codegen-analysis-a1/fixtures/reference-write-same.wasm"
+  ],
+  "cpu": 6,
+  "pid": 1517998,
+  "pgid": 1517998,
+  "returncode": 0,
+  "seconds": 0.1365635010006372,
+  "guard": null,
+  "guard_error": null,
+  "pre": {
+    "boot": "e000195b-afa2-4a53-93ba-1fb8e28eac03",
+    "cgroup": "/system.slice/docker-4dd58ad4560fde2ab9b539e4ef9cab1fac531654e99ad554aff1fce8ae0eae37.scope",
+    "memory": 26445406208,
+    "host_available": 82334461952,
+    "unique64": [
+      "/sys/fs/cgroup/system.slice/docker-4dd58ad4560fde2ab9b539e4ef9cab1fac531654e99ad554aff1fce8ae0eae37.scope"
+    ],
+    "affinity": [
+      20
+    ],
+    "memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n"
+  },
+  "post_memory": 26445357056,
+  "peak_group_memory": 26446303232,
+  "peak_aggregate_rss": 0,
+  "min_host_available": 82332397568,
+  "stdout_sha": "3b207a4e58e666c092378f1461daf478c3f0eab07fc70f5b34953b093645b49f",
+  "stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "pmu": false,
+  "initial_perf_max_sample_rate": 32000,
+  "final_perf_max_sample_rate": 32000
+}

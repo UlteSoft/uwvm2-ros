@@ -1,0 +1,73 @@
+{
+  "format_version": 1,
+  "kind": "native-direct-rcl-service-component-source-only-recipe-v1",
+  "source_only": true,
+  "executed": false,
+  "actual_source_generation": null,
+  "actual_native_sdk_result": null,
+  "required_actual_inputs": [
+    "closed independent peer of this package",
+    "actual reviewed composed source root containing D4 helpers and CPP10 codec/state tail",
+    "actual complete selected native ROS SDK/tool/TypeSupport/header/library exports",
+    "physical fresh build/output roots",
+    "external Root-owned finite serial process/cgroup and isolated DDS envelope"
+  ],
+  "explicit_placeholders_not_ready_to_execute": true,
+  "configure_argv": [
+    "ACTUAL_CMAKE",
+    "-S",
+    "ACTUAL_COMPOSED_ROOT/tests/ros2_compat/native_rcl_service",
+    "-B",
+    "FRESH_BUILD_ROOT",
+    "-DUWVM_DIRECT_RCL_ROOT=ACTUAL_COMPOSED_ROOT",
+    "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
+  ],
+  "build_argv": [
+    "ACTUAL_CMAKE",
+    "--build",
+    "FRESH_BUILD_ROOT",
+    "--parallel",
+    "1",
+    "--target",
+    "native-direct-rcl-records",
+    "native-direct-rcl-contract"
+  ],
+  "records_argv": [
+    "FRESH_BUILD_ROOT/native-direct-rcl-records"
+  ],
+  "native_argv": [
+    "FRESH_BUILD_ROOT/native-direct-rcl-contract",
+    "--owned-native-component"
+  ],
+  "caller_required_finite_limits": {
+    "jobs": 1,
+    "configure_compile_link_seconds": "Root must select before execution",
+    "native_component_seconds": "Root must select before execution; individual component loops are5 seconds",
+    "tree_memory_bytes": "Root must admit before execution",
+    "output_bytes": "Root must admit before execution",
+    "normal_cleanup": "retain raw diagnostic report/stdout/stderr/exit plus actual pidfd tree retirement"
+  },
+  "records_scope": {
+    "groups": 15,
+    "native_api_calls": 0,
+    "values": "synthetic model values in original actual rmw POD types, not native provenance"
+  },
+  "native_scope": {
+    "families": [
+      "std_srvs/srv/Empty",
+      "example_interfaces/srv/AddTwoInts"
+    ],
+    "metadata": "same rcl_take_*_with_info record and canonical body",
+    "same_client_availability": "independent explicit paired availability grant; same rcl_client_t; no service send during observation",
+    "expected_marker": "PASS_DIRECT_RCL_NATIVE_COMPONENT families=2 checks=<actual-positive-count> failures=0"
+  },
+  "qualification_not_claimed": [
+    "candidate import/generator/compiler/probe/test/run",
+    "Host/IPC installation",
+    "Guest ROS/native interoperability",
+    "all distro/vendor support",
+    "upstream full compatibility",
+    "hardware performance"
+  ],
+  "default_grants": []
+}

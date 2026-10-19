@@ -1,0 +1,103 @@
+/* SPDX-License-Identifier: Apache-2.0
+ * UNEXECUTED local raw-protocol models. Native types/TypeSupport/complete object
+ * Registry are actual CPP10 and original SDK. Raw12 functions below are explicit
+ * synthetic effect/wire fixtures ONLY, never production/native/Host proof.
+ */
+#ifdef NDEBUG
+#error "All model operations and checks must remain active"
+#endif
+#include <uwvm_rmw/service_transport.h>
+#include <uwvm_rmw/subscription_transport.h>
+#include <uwvm_rmw/cpp_codecs.hpp>
+#include <roswasm/rmw_service_v1.h>
+#include <roswasm/rmw_subscription_v1.h>
+#include <std_srvs/srv/empty.hpp>
+#include <example_interfaces/srv/add_two_ints.hpp>
+#include <std_msgs/msg/string.hpp>
+#include "published_cpp_identity_fixture.hpp"
+#include <cstdio>
+#include <cstring>
+#include <climits>
+#include <initializer_list>
+namespace model {
+unsigned checks,failures;
+#define CHECK(v) do{++model::checks;if(!(v)){++model::failures;std::fprintf(stderr,"FAIL_SERVICE_TRANSPORT_MODEL line=%u\n",unsigned(__LINE__));}}while(false)
+void put(unsigned char*p,uint64_t n,size_t width){for(size_t i=0;i<width;++i)p[i]=static_cast<unsigned char>(n>>(8*i));}
+struct Host {
+ unsigned kind{3},body{8},control{},flags{},error{};uint32_t peek_error{},commit_error{},cancel_error{},retire_error{},submit_error{},respond_error{},available_error{};
+ unsigned activations{},inspections{},submits{},responses{},peeks{},commits{},cancels{},retires{},abandons{},available_calls{},sub_activations{},sub_inspections{},sub_retires{};
+ bool bad_envelope{},bad_metadata{},wrong_writer{},wrong_ticket{},duplicate{},invalid_boolean{};
+ uint64_t source{UINT64_C(0xa123000180000001)},peer{UINT64_C(0xa123000180000002)},subsource{UINT64_C(0xa123000180000003)},ticket{UINT64_MAX},sequence{1},nonce{},incarnation{71};
+};Host*host;
+void binding(unsigned char*p,uint64_t source,uint64_t inc){p[7]=2;put(p+16,source,8);put(p+24,7,8);put(p+32,11,8);put(p+40,13,8);put(p+48,inc,8);}
+void qos(unsigned char*p){put(p,1,4);put(p+4,1,4);put(p+8,2,4);put(p+12,1,4);put(p+16,4,8);}
+void receipt(unsigned char*p,unsigned command,bool subscription=false){std::memset(p,0,256);put(p,0x45524d55,4);put(p+4,1,2);p[6]=static_cast<unsigned char>(command);put(p+8,256,4);binding(p,subscription?host->subsource:host->source,subscription?73:host->incarnation);p[12]=static_cast<unsigned char>(subscription?2:host->kind);p[13]=subscription?1:2;qos(p+64);if(!subscription)qos(p+144);if(!subscription&&host->kind==3)p[14]=16;}
+void packet(unsigned char*p,size_t capacity){std::memset(p,0,capacity);put(p,0x43524d55,4);put(p+4,1,2);p[6]=5;put(p+8,160,4);binding(p,host->source,host->incarnation);p[12]=static_cast<unsigned char>(host->kind);p[13]=16;put(p+56,host->peer,8);put(p+64,host->wrong_ticket?17:host->ticket,8);put(p+72,host->sequence,8);put(p+80,++host->nonce,8);put(p+96,capacity,8);size_t n=host->control?0:host->body;put(p+104,192+n,8);
+ auto*m=p+160;put(m,0x494d5255,4);put(m+4,1,2);m[6]=static_cast<unsigned char>(host->control?host->control:(host->kind==3?3:2));put(m+8,192,4);binding(m,host->source,host->incarnation);put(m+56,host->sequence,8);put(m+64,host->wrong_ticket?17:host->ticket,8);put(m+88,UINT64_MAX,8);put(m+96,UINT64_MAX,8);put(m+112,n,8);
+ if(host->control){m[122]=static_cast<unsigned char>(host->flags);put(m+124,host->error,4);}else{put(m+12,35,4);put(m+72,UINT64_MAX-6,8);put(m+80,0,8);put(m+104,UINT64_C(0x8000000000000000),8);m[121]=16;}
+ if(n==16){put(p+352,17,8);put(p+360,UINT64_MAX-8,8);}else if(n==8)put(p+352,8,8);
+ if(host->bad_envelope)p[14]=1;if(host->bad_metadata)m[176]=1;if(host->wrong_writer)m[121]=15;
+}
+struct Fixture {
+ Host h;roswasmc_backend backend{};roswasmc_context context{};roswasmc_capability source{},peer{},availability{};
+ uwvm_rmw_service_transport*state{};uwvm_rmw_c_activation_provider activation{};uwvm_rmw_c_request_provider requests{};uwvm_rmw_c_native_metadata_provider metadata{};uwvm_rmw_c_native_endpoint native{};
+ Fixture(uwvm_rmw_codec const*codec,bool server=false,size_t transactions=4){host=&h;h.kind=server?4:3;h.body=static_cast<unsigned>(server?codec->request->maximum_wire_bytes:codec->response->maximum_wire_bytes);backend.version=2;context.backend=&backend;source={&context,h.source};peer={&context,h.peer};availability={&context,UINT64_C(0xa123000180000004)};
+ auto a=rcutils_get_default_allocator();CHECK(uwvm_rmw_service_transport_create(1,transactions,16,8,&a,&state)==0);CHECK(uwvm_rmw_service_transport_callbacks(state,&activation,&requests,&metadata)==0);rmw_qos_profile_t q{};CHECK(activation.activate(activation.state,server?UWVM_RMW_SERVICE:UWVM_RMW_CLIENT,&source,&peer,codec,&q,&native)==0);CHECK(native.qos_count==2);}
+ ~Fixture(){host=&h;CHECK(activation.retire(activation.state,&source,&peer,&native)==h.retire_error);CHECK(h.retires==1);CHECK(uwvm_rmw_service_transport_dispose_unpublished(&state)==17);}
+ uint32_t submit(void const*p,size_t n,uint64_t*out){host=&h;return requests.submit(requests.state,&native,&source,&peer,p,n,out);}
+ uint32_t response(void*p,size_t n,size_t*out,rmw_service_info_t*info,unsigned*present){host=&h;return metadata.take_response(metadata.state,&native,&peer,&source,p,n,out,info,present);}
+ uint32_t request(void*p,size_t n,size_t*out,uint64_t*t,rmw_service_info_t*info){host=&h;return metadata.take_request(metadata.state,&native,&source,p,n,out,t,info);}
+ uwvm_rmw_service_transport_diagnostic facts(){uwvm_rmw_service_transport_diagnostic d{};CHECK(!uwvm_rmw_service_transport_diagnostics(state,0,&d));return d;}
+ void admit(){unsigned char b[16]{};uint64_t value=0;CHECK(submit(b,16,&value)==0&&value==UINT64_MAX);}
+};
+struct FailingAllocator {rcutils_allocator_t original;unsigned fail,calls,live;};
+extern "C" {
+static void*failing_allocate(size_t n,void*state){auto*s=static_cast<FailingAllocator*>(state);if(++s->calls==s->fail)return nullptr;void*p=s->original.allocate(n,s->original.state);if(p)++s->live;return p;}
+static void*failing_zero(size_t a,size_t b,void*state){auto*s=static_cast<FailingAllocator*>(state);if(++s->calls==s->fail)return nullptr;void*p=s->original.zero_allocate(a,b,s->original.state);if(p)++s->live;return p;}
+static void failing_free(void*p,void*state){auto*s=static_cast<FailingAllocator*>(state);if(p){CHECK(s->live>0);--s->live;s->original.deallocate(p,s->original.state);}}
+static void*failing_resize(void*p,size_t n,void*state){auto*s=static_cast<FailingAllocator*>(state);return s->original.reallocate(p,n,s->original.state);}
+}
+void allocation_rollback(){for(unsigned fail=1;fail<=4;++fail){FailingAllocator f{rcutils_get_default_allocator(),fail,0,0};rcutils_allocator_t a{};a.allocate=failing_allocate;a.deallocate=failing_free;a.reallocate=failing_resize;a.zero_allocate=failing_zero;a.state=&f;uwvm_rmw_service_transport*s=nullptr;CHECK(uwvm_rmw_service_transport_create(1,1,16,8,&a,&s)==12&&!s&&f.live==0);}}
+void bootstrap(){auto a=rcutils_get_default_allocator();uwvm_rmw_service_transport*s=nullptr;CHECK(uwvm_rmw_service_transport_create(0,1,0,0,&a,&s)==22&&!s);CHECK(uwvm_rmw_service_transport_create(1,0,0,0,&a,&s)==22);CHECK(uwvm_rmw_service_transport_create(1,1,0,0,&a,&s)==0);CHECK(!uwvm_rmw_service_transport_dispose_unpublished(&s)&&!s);}
+void client_response(uwvm_rmw_codec const*c){Fixture f{c};f.admit();unsigned char b[72]{};size_t n=999;unsigned present=9;rmw_service_info_t i{};CHECK(!f.response(b,sizeof b,&n,&i,&present)&&n==72&&present==1&&i.source_timestamp==-7&&i.received_timestamp==0&&i.request_id.sequence_number==INT64_MIN);for(auto x:i.request_id.writer_guid)CHECK(x==0);roswasmc_event_header e{};CHECK(!roswasmc_event_decode(b,n,&e)&&e.kind==3&&e.correlation==UINT64_MAX&&e.sequence==1);example_interfaces::srv::AddTwoInts::Response value;CHECK(!c->response->decode(b+64,n-64,&value)&&value.sum==8&&f.h.commits==1);}
+void server_request_response(uwvm_rmw_codec const*c){Fixture f{c,true};unsigned char b[16]{};size_t n=999;uint64_t t=0;rmw_service_info_t i{};CHECK(!f.request(b,sizeof b,&n,&t,&i)&&n==16&&t==UINT64_MAX&&i.request_id.sequence_number==INT64_MIN);example_interfaces::srv::AddTwoInts::Request v;CHECK(!c->request->decode(b,n,&v)&&v.a==17&&v.b==-9);unsigned char response[8]{};CHECK(!f.requests.respond(f.requests.state,&f.native,&f.source,&f.peer,t,response,8)&&f.h.responses==1);CHECK(f.requests.respond(f.requests.state,&f.native,&f.source,&f.peer,t,response,8)==9&&f.h.responses==1);}
+void zero_empty(uwvm_rmw_codec const*c){Fixture f{c,true};size_t n=99;uint64_t t=0;rmw_service_info_t i{};CHECK(!f.request(nullptr,0,&n,&t,&i)&&n==0&&f.h.commits==1);std_srvs::srv::Empty::Request v;v.structure_needs_at_least_one_member=99;CHECK(!c->request->decode(nullptr,n,&v)&&v.structure_needs_at_least_one_member==0);CHECK(!f.requests.respond(f.requests.state,&f.native,&f.source,&f.peer,t,nullptr,0));}
+void zero_empty_response(uwvm_rmw_codec const*c){Fixture f{c};uint64_t ticket=0;CHECK(!f.submit(nullptr,0,&ticket)&&ticket==UINT64_MAX);unsigned char b[64]{};size_t n=999;unsigned present=9;rmw_service_info_t info{};CHECK(!f.response(b,sizeof b,&n,&info,&present)&&n==64&&present==1&&f.h.commits==1);std_srvs::srv::Empty::Response value;value.structure_needs_at_least_one_member=99;CHECK(!c->response->decode(nullptr,0,&value)&&value.structure_needs_at_least_one_member==0);}
+void idle_short_and_95(uwvm_rmw_codec const*c){Fixture f{c};f.admit();unsigned char b[72];std::memset(b,0x66,sizeof b);size_t n=999;unsigned present=9;rmw_service_info_t i{};i.source_timestamp=123;CHECK(f.response(b,71,&n,&i,&present)==90&&!f.h.peeks&&n==999);for(auto error:{11u,90u,95u}){f.h.peek_error=error;CHECK(f.response(b,sizeof b,&n,&i,&present)==error&&n==999&&present==9&&i.source_timestamp==123&&b[0]==0x66&&!f.h.commits&&!f.h.retires);}}
+void output_overlap_before_effect(uwvm_rmw_codec const*c){Fixture f{c};f.admit();struct Output {size_t length;unsigned char rest[72];} output{999,{}};unsigned present=9;rmw_service_info_t info{};CHECK(f.response(&output,72,&output.length,&info,&present)==22&&output.length==999&&present==9&&!f.h.peeks&&!f.h.commits);}
+void cancel_failures(uwvm_rmw_codec const*c){Fixture f{c};f.admit();f.h.bad_metadata=true;f.h.cancel_error=17;f.h.retire_error=5;unsigned char b[72]{};size_t n=999;unsigned present=9;rmw_service_info_t i{};CHECK(f.response(b,sizeof b,&n,&i,&present)==22&&n==999&&present==9);auto d=f.facts();CHECK(d.first_primary==22&&d.cancel_code==17&&d.retire_code==5&&d.cancel_attempted&&d.retire_attempted&&d.record_wire_present&&!d.commit_attempted);}
+void malformed_envelope(uwvm_rmw_codec const*c){Fixture f{c};f.admit();f.h.bad_envelope=true;unsigned char b[72]{};size_t n=999;unsigned p=9;rmw_service_info_t i{};CHECK(f.response(b,sizeof b,&n,&i,&p)==22&&f.h.retires==1&&!f.h.cancels&&!f.h.commits);CHECK(f.response(b,sizeof b,&n,&i,&p)==22&&f.h.peeks==1&&n==999);}
+void commit_ambiguity(uwvm_rmw_codec const*c){Fixture f{c};f.admit();f.h.commit_error=110;f.h.retire_error=5;unsigned char b[72]{};size_t n=999;unsigned p=9;rmw_service_info_t i{};CHECK(f.response(b,sizeof b,&n,&i,&p)==110&&n==999&&p==9&&f.h.commits==1&&!f.h.cancels&&f.h.retires==1);CHECK(f.response(b,sizeof b,&n,&i,&p)==110&&f.h.commits==1);auto d=f.facts();CHECK(d.commit_attempted&&!d.commit_succeeded&&d.commit_code==110&&d.retire_code==5);}
+void unknown_ticket(uwvm_rmw_codec const*c){Fixture f{c};f.admit();f.h.wrong_ticket=true;unsigned char b[72]{};size_t n=999;unsigned p=9;rmw_service_info_t i{};CHECK(f.response(b,sizeof b,&n,&i,&p)==13&&f.h.cancels==1&&!f.h.commits&&f.h.retires==1&&n==999);}
+void width_missing(uwvm_rmw_codec const*c){Fixture f{c};f.admit();f.h.wrong_writer=true;unsigned char b[72]{};size_t n=999;unsigned p=9;rmw_service_info_t i{};CHECK(f.response(b,sizeof b,&n,&i,&p)==95&&f.h.cancels==1&&!f.h.commits&&n==999);}
+void controls_preserved(uwvm_rmw_codec const*c){for(unsigned kind:{6u,7u}){Fixture f{c};f.admit();f.h.control=kind;f.h.error=kind==6?5:125;f.h.flags=kind==6?2:1;unsigned char b[72]{};size_t n=999;unsigned p=9;rmw_service_info_t i{};i.source_timestamp=123;CHECK(!f.response(b,sizeof b,&n,&i,&p)&&n==64&&p==0&&i.source_timestamp==123);roswasmc_event_header h{};CHECK(!roswasmc_event_decode(b,n,&h)&&h.kind==kind&&h.error==f.h.error&&h.flags==f.h.flags&&h.correlation==UINT64_MAX&&f.h.commits==1);}}
+void transaction_bound_and_submit11(uwvm_rmw_codec const*c){Fixture f{c,false,1};f.h.submit_error=11;unsigned char b[16]{};uint64_t t=123;CHECK(f.submit(b,16,&t)==11&&t==123&&!f.h.retires);f.h.submit_error=0;CHECK(f.submit(b,16,&t)==90&&f.h.submits==1);}
+void availability_and_abandon(uwvm_rmw_codec const*c){Fixture f{c};bool value=false;CHECK(!uwvm_rmw_service_transport_available(f.state,&f.native,&f.source,&f.availability,0,&value)&&value);CHECK(uwvm_rmw_service_transport_available(f.state,&f.native,&f.source,&f.availability,UINT64_C(60000000001),&value)==22&&f.h.available_calls==1);f.admit();CHECK(!uwvm_rmw_service_transport_abandon(f.state,&f.native,&f.source,UINT64_MAX)&&f.h.abandons==1);CHECK(uwvm_rmw_service_transport_abandon(f.state,&f.native,&f.source,UINT64_MAX)==9&&f.h.abandons==1);}
+void response_error_once(uwvm_rmw_codec const*c){Fixture f{c,true};unsigned char b[16]{};size_t n=999;uint64_t t=0;rmw_service_info_t i{};CHECK(!f.request(b,16,&n,&t,&i));f.h.respond_error=110;CHECK(f.requests.respond(f.requests.state,&f.native,&f.source,&f.peer,t,b,8)==110&&f.h.responses==1&&f.h.retires==1);CHECK(f.requests.respond(f.requests.state,&f.native,&f.source,&f.peer,t,b,8)==9&&f.h.responses==1);}
+void real_subscription_composite(uwvm_rmw_codec const*string,uwvm_rmw_codec const*service){Host h;host=&h;roswasmc_backend backend{};backend.version=2;roswasmc_context context{&backend};roswasmc_capability source{&context,h.subsource};auto a=rcutils_get_default_allocator();uwvm_rmw_subscription_transport*sub=nullptr;uwvm_rmw_service_transport*s=nullptr;uwvm_rmw_c_activation_provider sa{},combined{};uwvm_rmw_c_native_metadata_provider sm{},metadata{};uwvm_rmw_c_request_provider requests{};
+ CHECK(!uwvm_rmw_subscription_transport_create(1,128,&a,&sub));CHECK(!uwvm_rmw_subscription_transport_callbacks(sub,&sa,&sm));CHECK(!uwvm_rmw_service_transport_create(1,1,16,8,&a,&s));CHECK(!uwvm_rmw_service_transport_compose_subscription(s,&sa,&sm,&combined,&requests,&metadata));
+ rmw_qos_profile_t q{};uwvm_rmw_c_native_endpoint endpoint{};CHECK(!combined.activate(combined.state,UWVM_RMW_SUBSCRIPTION,&source,nullptr,string,&q,&endpoint)&&h.sub_activations==1&&!h.activations&&endpoint.qos_count==1);uwvm_rmw_c_native_endpoint observed{};CHECK(!combined.inspect(combined.state,&source,nullptr,&endpoint,&observed)&&h.sub_inspections==1);roswasmc_capability call{&context,h.source},observer{&context,h.peer};uwvm_rmw_c_native_endpoint client{};CHECK(!combined.activate(combined.state,UWVM_RMW_CLIENT,&call,&observer,service,&q,&client)&&h.activations==1&&client.qos_count==2);CHECK(!combined.inspect(combined.state,&call,&observer,&client,&observed)&&h.inspections==1);CHECK(!combined.retire(combined.state,&call,&observer,&client)&&h.retires==1);CHECK(!combined.retire(combined.state,&source,nullptr,&endpoint)&&h.sub_retires==1);CHECK(uwvm_rmw_service_transport_compose_subscription(s,&sa,&sm,&combined,&requests,&metadata)==17);CHECK(uwvm_rmw_service_transport_dispose_unpublished(&s)==17);CHECK(uwvm_rmw_subscription_transport_dispose_unpublished(&sub)==17);
+}
+}
+extern "C" uint32_t uwvm_ros2_rmw_srv_v1_abi_version(void){return 1;}
+extern "C" uint32_t uwvm_ros2_rmw_srv_v1_client_activate(uint64_t a,uint64_t b,uint32_t m,uint64_t out){CHECK(a==model::host->source&&b==model::host->peer&&!m);++model::host->activations;model::receipt((unsigned char*)(uintptr_t)out,1);return 0;}
+extern "C" uint32_t uwvm_ros2_rmw_srv_v1_service_activate(uint64_t a,uint64_t b,uint32_t m,uint64_t out){return uwvm_ros2_rmw_srv_v1_client_activate(a,b,m,out);}
+extern "C" uint32_t uwvm_ros2_rmw_srv_v1_endpoint_inspect(uint64_t a,uint64_t i,uint32_t m,uint64_t out){CHECK(a==model::host->source&&i==model::host->incarnation&&!m);++model::host->inspections;model::receipt((unsigned char*)(uintptr_t)out,2);return 0;}
+extern "C" uint32_t uwvm_ros2_rmw_srv_v1_client_submit(uint64_t a,uint64_t i,uint32_t m,uint64_t input,uint64_t length,uint64_t out){CHECK(a==model::host->source&&i==model::host->incarnation&&!m&&(input||!length));++model::host->submits;if(model::host->submit_error)return model::host->submit_error;model::put((unsigned char*)(uintptr_t)out,model::host->ticket,8);return 0;}
+extern "C" uint32_t uwvm_ros2_rmw_srv_v1_service_respond(uint64_t a,uint64_t i,uint64_t b,uint64_t t,uint32_t m,uint64_t input,uint64_t length){CHECK(a==model::host->source&&i==model::host->incarnation&&b==model::host->peer&&t==model::host->ticket&&!m&&(input||!length));++model::host->responses;return model::host->respond_error;}
+extern "C" uint32_t uwvm_ros2_rmw_srv_v1_endpoint_peek(uint64_t a,uint64_t i,uint32_t writer,uint32_t m,uint64_t out,uint64_t capacity){CHECK(a==model::host->source&&i==model::host->incarnation&&writer==16&&!m);++model::host->peeks;if(model::host->peek_error)return model::host->peek_error;model::packet((unsigned char*)(uintptr_t)out,(size_t)capacity);return 0;}
+extern "C" uint32_t uwvm_ros2_rmw_srv_v1_endpoint_commit(uint64_t a,uint64_t i,uint64_t seq,uint64_t nonce){CHECK(a==model::host->source&&i==model::host->incarnation&&seq==model::host->sequence&&nonce==model::host->nonce);++model::host->commits;return model::host->commit_error;}
+extern "C" uint32_t uwvm_ros2_rmw_srv_v1_endpoint_cancel(uint64_t a,uint64_t i,uint64_t seq,uint64_t nonce){CHECK(a==model::host->source&&i==model::host->incarnation&&seq==model::host->sequence&&nonce==model::host->nonce);++model::host->cancels;return model::host->cancel_error;}
+extern "C" uint32_t uwvm_ros2_rmw_srv_v1_endpoint_retire(uint64_t a,uint64_t i){CHECK(a==model::host->source&&i==model::host->incarnation);++model::host->retires;return model::host->retire_error;}
+extern "C" uint32_t uwvm_ros2_rmw_srv_v1_client_abandon(uint64_t a,uint64_t i,uint64_t t){CHECK(a==model::host->source&&i==model::host->incarnation&&t==model::host->ticket);++model::host->abandons;return 0;}
+extern "C" uint32_t uwvm_ros2_rmw_srv_v1_client_available(uint64_t a,uint64_t i,uint64_t availability,uint64_t wait,uint32_t m,uint64_t out){CHECK(a==model::host->source&&i==model::host->incarnation&&availability&&!wait&&!m);++model::host->available_calls;if(model::host->available_error)return model::host->available_error;*(unsigned char*)(uintptr_t)out=model::host->invalid_boolean?2:1;return 0;}
+extern "C" uint32_t uwvm_ros2_rmw_sub_v1_abi_version(void){return 1;}
+extern "C" uint32_t uwvm_ros2_rmw_sub_v1_subscription_activate(uint64_t a,uint32_t m,uint64_t out){CHECK(a==model::host->subsource&&!m);++model::host->sub_activations;model::receipt((unsigned char*)(uintptr_t)out,1,true);return 0;}
+extern "C" uint32_t uwvm_ros2_rmw_sub_v1_subscription_inspect(uint64_t a,uint64_t i,uint32_t m,uint64_t out){CHECK(a==model::host->subsource&&i==73&&!m);++model::host->sub_inspections;model::receipt((unsigned char*)(uintptr_t)out,2,true);return 0;}
+extern "C" uint32_t uwvm_ros2_rmw_sub_v1_subscription_retire(uint64_t a,uint64_t i){CHECK(a==model::host->subsource&&i==73);++model::host->sub_retires;return 0;}
+extern "C" uint32_t uwvm_ros2_rmw_sub_v1_subscription_peek(uint64_t,uint64_t,uint32_t,uint32_t,uint64_t,uint64_t){return 95;}
+extern "C" uint32_t uwvm_ros2_rmw_sub_v1_subscription_commit(uint64_t,uint64_t,uint64_t,uint64_t){return 95;}
+extern "C" uint32_t uwvm_ros2_rmw_sub_v1_subscription_cancel(uint64_t,uint64_t,uint64_t,uint64_t){return 95;}
+int main(){uwvm_rmw_cpp::Registry registry{cpp_fixture::published(),128};if(registry.error())return(int)registry.error();auto add=registry.codec(uwvm_rmw_cpp::Codec::add_service),empty=registry.codec(uwvm_rmw_cpp::Codec::empty_service),string=registry.codec(uwvm_rmw_cpp::Codec::string);CHECK(add&&empty&&string);if(!add||!empty||!string)return 1;
+ model::bootstrap();model::allocation_rollback();model::client_response(add);model::server_request_response(add);model::zero_empty(empty);model::zero_empty_response(empty);model::idle_short_and_95(add);model::output_overlap_before_effect(add);model::cancel_failures(add);model::malformed_envelope(add);model::commit_ambiguity(add);model::unknown_ticket(add);model::width_missing(add);model::controls_preserved(add);model::transaction_bound_and_submit11(add);model::availability_and_abandon(add);model::response_error_once(add);model::real_subscription_composite(string,add);
+ std::printf("%s_GUEST_SERVICE_TRANSPORT_MODELS groups=18 checks=%u failures=%u\n",model::failures?"FAIL":"PASS",model::checks,model::failures);return model::failures?1:0;}

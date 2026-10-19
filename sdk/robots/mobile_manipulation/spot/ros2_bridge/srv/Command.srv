@@ -1,0 +1,11 @@
+# Same schema, independent stand/sit/stop service names. No arbitrary operation field.
+uint64 token
+uint64 nonce
+uint64 budget_ns
+---
+uint64 token
+uint64 nonce
+uint32 error
+bool unknown
+bool native_accepted
+uint32 native_command_id

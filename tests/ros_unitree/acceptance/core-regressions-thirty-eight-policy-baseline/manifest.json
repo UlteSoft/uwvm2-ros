@@ -1,0 +1,36 @@
+{
+  "status": "PRESERVED_UNEXECUTED38_POLICY_REVISION_WITH_NARROW_FACTORY_SOURCE_PEER",
+  "files": [
+    {
+      "original": "tests/ros_unitree/run_core_regressions.py",
+      "preserved": "tests/ros_unitree/acceptance/core-regressions-thirty-eight-policy-baseline/run_core_regressions.py",
+      "bytes": 33922,
+      "sha256": "cb8fadeddefb9f1fc57c8402db8dc018a5c77a030cb0ff343b0c3aac82257407"
+    },
+    {
+      "original": "tests/ros_unitree/CORE_REGRESSIONS.md",
+      "preserved": "tests/ros_unitree/acceptance/core-regressions-thirty-eight-policy-baseline/CORE_REGRESSIONS.md",
+      "bytes": 8781,
+      "sha256": "4e7121ba53077740364726c80719dba3903fe1cd00f438ca754a12e6813155ef"
+    },
+    {
+      "original": "tests/ros_unitree/core-regressions-native-config.template.json",
+      "preserved": "tests/ros_unitree/acceptance/core-regressions-thirty-eight-policy-baseline/core-regressions-native-config.template.json",
+      "bytes": 866,
+      "sha256": "3a2bc6b0611fa001581ee92f8c615caaec2e11a40713828246dd56ef94445a41"
+    },
+    {
+      "original": "tests/ros_unitree/core-regressions-source-ready-before-peer.json",
+      "preserved": "tests/ros_unitree/acceptance/core-regressions-thirty-eight-policy-baseline/core-regressions-source-ready-before-peer.json",
+      "bytes": 9227,
+      "sha256": "d45535b99603154a6bf99a496942d52abdfa81e22df7d6352f3b8935c7d5e14a"
+    },
+    {
+      "original": "tests/ros_unitree/acceptance/core-policy-factory-independent-source-peer-memory.json",
+      "preserved": "tests/ros_unitree/acceptance/core-regressions-thirty-eight-policy-baseline/core-policy-factory-independent-source-peer-memory.json",
+      "bytes": 4529,
+      "sha256": "c87f4732b2e87464ad6317b8c61a1a46bb51aa0b0c273886045df5100ca19b38"
+    }
+  ],
+  "original_compile_link_baseline": "acceptance/core-regressions-eight-policy-baseline/manifest.json"
+}

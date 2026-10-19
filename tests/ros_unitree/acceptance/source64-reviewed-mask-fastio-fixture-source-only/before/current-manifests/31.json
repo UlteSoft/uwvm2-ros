@@ -1,0 +1,89 @@
+{
+  "kind": "source63-reviewed-current-declaration-successor",
+  "status": "CURRENT_SOURCE_INDEPENDENT_REVIEW_CLOSED_RETEST_PENDING",
+  "historical_manifest": {
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/current-declarations/31-source-ready.json",
+    "bytes": 4844,
+    "sha256": "996174f410afa1e780aa8c4f4a9e0b52660840bf668007143612b0968d7afed0"
+  },
+  "preserved_historical_manifest": {
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source63-reviewed-control-fast-io-arm-source-only/before/current-manifests/31.json",
+    "bytes": 4844,
+    "sha256": "996174f410afa1e780aa8c4f4a9e0b52660840bf668007143612b0968d7afed0"
+  },
+  "current_files": {
+    "tests/ros_debugger/management_runtime_contract.cc": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_runtime_contract.cc",
+      "bytes": 35869,
+      "sha256": "dda45eafba7fbf3c2fd3f77248f0f00b2b2a7c5a34278ee0d27f4cc6bb47f957"
+    },
+    "tests/ros_debugger/management_runtime_ros1.wat": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_runtime_ros1.wat",
+      "bytes": 3554,
+      "sha256": "6c268c720736d1ceb424f70730f58a2148ff18774cb0521ceffbc259ac476274"
+    },
+    "tests/ros_debugger/management_runtime_ros2.wat": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_runtime_ros2.wat",
+      "bytes": 3554,
+      "sha256": "e27ebcd40fa87c202c2e98b197a48fc00702f63743f83a88e1a114838efbaa19"
+    },
+    "tests/ros_debugger/management_runtime_replacement.wat": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_runtime_replacement.wat",
+      "bytes": 305,
+      "sha256": "40e4868bfaee0eb9a6db3ed40f8ecf72d2c27ca153fa7a085da8098c4fa22d27"
+    },
+    "tests/ros_debugger/management_runtime_dap.py": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_runtime_dap.py",
+      "bytes": 21220,
+      "sha256": "96fb9d89f9f0e03fcaf43248007165d7b7f261ffb3c810dde42a2d50cc3f2b0c"
+    },
+    "tests/ros_debugger/README.management-runtime.md": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/README.management-runtime.md",
+      "bytes": 11151,
+      "sha256": "1b472e40eda3f294b71585f761fb6d9cfa266933049b94b1dcfed34b0f4397db"
+    },
+    "tests/ros_debugger/management-runtime-recipes.json": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management-runtime-recipes.json",
+      "bytes": 7289,
+      "sha256": "c1d9d5e2098615575c297cb8377b4e09c965b995d4bca70a4cb774688538061c"
+    }
+  },
+  "changed_current_files": [
+    {
+      "previous": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_runtime_dap.py",
+        "bytes": 11544,
+        "sha256": "e951359d8479e5bde3bf589e675e7106c31355bee7d5c79e9a0e1042190eac2f"
+      },
+      "current": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_runtime_dap.py",
+        "bytes": 21220,
+        "sha256": "96fb9d89f9f0e03fcaf43248007165d7b7f261ffb3c810dde42a2d50cc3f2b0c"
+      }
+    }
+  ],
+  "review_evidence": {
+    "original_package": {
+      "path": "/private/tmp/uwvm-source63-reviewed-applied-cohorts-data-root-20261017-r1/root-applied-source-ready.json",
+      "bytes": 12817,
+      "sha256": "e2518f69081873c46af49c12a6fa5c8e4550e9dea4fa02e6b2a998c42f3ee26b"
+    },
+    "saved_package": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source63-reviewed-control-fast-io-arm-source-only/review-evidence/source-ready.original.json",
+      "bytes": 12817,
+      "sha256": "e2518f69081873c46af49c12a6fa5c8e4550e9dea4fa02e6b2a998c42f3ee26b"
+    },
+    "original_independent_peer": {
+      "path": "/private/tmp/uwvm-source63-declaration-helper-independent-source-peer-memory-20261017-r1.json",
+      "bytes": 22808,
+      "sha256": "67613a2dda578a03ac6c4cc29d41f7715e4645a6f2ccfd2f86e3414cd87816c0"
+    },
+    "saved_independent_peer": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source63-reviewed-control-fast-io-arm-source-only/review-evidence/independent-source-peer.json",
+      "bytes": 22808,
+      "sha256": "67613a2dda578a03ac6c4cc29d41f7715e4645a6f2ccfd2f86e3414cd87816c0"
+    }
+  },
+  "scope": "Trusted private-Control module metadata and genuine script/DAP exercise, fast_io and bounded ARM process ownership sources; original package/results stay historical.",
+  "execution_performed": false
+}

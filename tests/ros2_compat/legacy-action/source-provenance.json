@@ -1,0 +1,664 @@
+{
+  "format_version": 1,
+  "status": "IMMUTABLE_OFFICIAL_SOURCE_ACQUIRED_PENDING_INDEPENDENT_REVIEW_NOT_NATIVE_QUALIFICATION",
+  "original_Fibonacci_definitions": [
+    {
+      "repository": "https://github.com/ros2/demos",
+      "requested_ref": "humble",
+      "actual_commit": "1fc7a62ee591e4c4a7f84e72aa4b33de11f6fbf3",
+      "actual_tree_sha1": "52bb944b70d14e0abe3e2ac66eb432a38042851e",
+      "relative": "action_tutorials/action_tutorials_interfaces/action/Fibonacci.action",
+      "file": "ros2-demos-humble-action_tutorials__action_tutorials_interfaces__action__Fibonacci.action",
+      "immutable_url": "https://raw.githubusercontent.com/ros2/demos/1fc7a62ee591e4c4a7f84e72aa4b33de11f6fbf3/action_tutorials/action_tutorials_interfaces/action/Fibonacci.action",
+      "bytes": 62,
+      "sha256": "9689801bb899c817b4788ba53f444a859251c7022776dab8ff7ee8f90faa3fdd",
+      "git_blob_sha1": "9183d9e2c24e3909f01c1312222fa1544411e2b5",
+      "scope": "Official immutable source bytes; not an installed native SDK/availability or execution qualification."
+    },
+    {
+      "repository": "https://github.com/ros2/example_interfaces",
+      "requested_ref": "dashing",
+      "actual_commit": "5b118347114931620533aba142939b6a1db200bc",
+      "actual_tree_sha1": "c886d17a18f7a1db21d35bdf362ac38d85ade744",
+      "relative": "action/Fibonacci.action",
+      "file": "ros2-example_interfaces-dashing-action__Fibonacci.action",
+      "immutable_url": "https://raw.githubusercontent.com/ros2/example_interfaces/5b118347114931620533aba142939b6a1db200bc/action/Fibonacci.action",
+      "bytes": 81,
+      "sha256": "c4c59f0bba6fb0f8989582f492001cd65987b6bd34ddd00dd40f72136ba751d4",
+      "git_blob_sha1": "80b94e13645c79b60640c90f9dae7180badd874f",
+      "scope": "Official immutable source bytes; not an installed native SDK/availability or execution qualification."
+    }
+  ],
+  "Action_API_source_roles": [
+    {
+      "repository": "https://github.com/ros2/demos",
+      "requested_ref": "humble",
+      "actual_commit": "1fc7a62ee591e4c4a7f84e72aa4b33de11f6fbf3",
+      "actual_tree_sha1": "52bb944b70d14e0abe3e2ac66eb432a38042851e",
+      "relative": "action_tutorials/action_tutorials_interfaces/action/Fibonacci.action",
+      "file": "ros2-demos-humble-action_tutorials__action_tutorials_interfaces__action__Fibonacci.action",
+      "immutable_url": "https://raw.githubusercontent.com/ros2/demos/1fc7a62ee591e4c4a7f84e72aa4b33de11f6fbf3/action_tutorials/action_tutorials_interfaces/action/Fibonacci.action",
+      "bytes": 62,
+      "sha256": "9689801bb899c817b4788ba53f444a859251c7022776dab8ff7ee8f90faa3fdd",
+      "git_blob_sha1": "9183d9e2c24e3909f01c1312222fa1544411e2b5",
+      "scope": "Official immutable source bytes; not an installed native SDK/availability or execution qualification."
+    },
+    {
+      "repository": "https://github.com/ros2/example_interfaces",
+      "requested_ref": "dashing",
+      "actual_commit": "5b118347114931620533aba142939b6a1db200bc",
+      "actual_tree_sha1": "c886d17a18f7a1db21d35bdf362ac38d85ade744",
+      "relative": "action/Fibonacci.action",
+      "file": "ros2-example_interfaces-dashing-action__Fibonacci.action",
+      "immutable_url": "https://raw.githubusercontent.com/ros2/example_interfaces/5b118347114931620533aba142939b6a1db200bc/action/Fibonacci.action",
+      "bytes": 81,
+      "sha256": "c4c59f0bba6fb0f8989582f492001cd65987b6bd34ddd00dd40f72136ba751d4",
+      "git_blob_sha1": "80b94e13645c79b60640c90f9dae7180badd874f",
+      "scope": "Official immutable source bytes; not an installed native SDK/availability or execution qualification."
+    },
+    {
+      "repository": "https://github.com/ros2/rcl_interfaces",
+      "requested_ref": "dashing",
+      "actual_commit": "bfa9c43dd7d8cfc5c6fcba8a164d8ef317a386d7",
+      "actual_tree_sha1": "5c6398954df135498ad60146a23741563d99e29d",
+      "relative": "action_msgs/msg/GoalInfo.msg",
+      "file": "ros2-rcl_interfaces-dashing-action_msgs__msg__GoalInfo.msg",
+      "immutable_url": "https://raw.githubusercontent.com/ros2/rcl_interfaces/bfa9c43dd7d8cfc5c6fcba8a164d8ef317a386d7/action_msgs/msg/GoalInfo.msg",
+      "bytes": 111,
+      "sha256": "ed563b8e4955d78f1988851f62cbee14d7e25db05792f61fc91b470781bf0e5d",
+      "git_blob_sha1": "3f16d051f0e6afa70ded9d4b9dcfc49e1e13ee6a",
+      "scope": "Official immutable source bytes; not an installed native SDK/availability or execution qualification."
+    },
+    {
+      "repository": "https://github.com/ros2/rcl_interfaces",
+      "requested_ref": "dashing",
+      "actual_commit": "bfa9c43dd7d8cfc5c6fcba8a164d8ef317a386d7",
+      "actual_tree_sha1": "5c6398954df135498ad60146a23741563d99e29d",
+      "relative": "action_msgs/msg/GoalStatus.msg",
+      "file": "ros2-rcl_interfaces-dashing-action_msgs__msg__GoalStatus.msg",
+      "immutable_url": "https://raw.githubusercontent.com/ros2/rcl_interfaces/bfa9c43dd7d8cfc5c6fcba8a164d8ef317a386d7/action_msgs/msg/GoalStatus.msg",
+      "bytes": 431,
+      "sha256": "7f2e4cddb6004ce5fce9eb704d4ba6d7359e9ab18aeb6ab5dd56c49f7221046d",
+      "git_blob_sha1": "c6eaf58736b8c3c0f121f91c83fe6212f23b98d5",
+      "scope": "Official immutable source bytes; not an installed native SDK/availability or execution qualification."
+    },
+    {
+      "repository": "https://github.com/ros2/rcl_interfaces",
+      "requested_ref": "dashing",
+      "actual_commit": "bfa9c43dd7d8cfc5c6fcba8a164d8ef317a386d7",
+      "actual_tree_sha1": "5c6398954df135498ad60146a23741563d99e29d",
+      "relative": "action_msgs/msg/GoalStatusArray.msg",
+      "file": "ros2-rcl_interfaces-dashing-action_msgs__msg__GoalStatusArray.msg",
+      "immutable_url": "https://raw.githubusercontent.com/ros2/rcl_interfaces/bfa9c43dd7d8cfc5c6fcba8a164d8ef317a386d7/action_msgs/msg/GoalStatusArray.msg",
+      "bytes": 53,
+      "sha256": "24d07fc558d3fc558e9c884531771ed708acc7015f23acfa047c69760f706e79",
+      "git_blob_sha1": "e71023565a3ef6bfe052ec5907fbf9a0219660bb",
+      "scope": "Official immutable source bytes; not an installed native SDK/availability or execution qualification."
+    },
+    {
+      "repository": "https://github.com/ros2/rcl_interfaces",
+      "requested_ref": "dashing",
+      "actual_commit": "bfa9c43dd7d8cfc5c6fcba8a164d8ef317a386d7",
+      "actual_tree_sha1": "5c6398954df135498ad60146a23741563d99e29d",
+      "relative": "action_msgs/srv/CancelGoal.srv",
+      "file": "ros2-rcl_interfaces-dashing-action_msgs__srv__CancelGoal.srv",
+      "immutable_url": "https://raw.githubusercontent.com/ros2/rcl_interfaces/bfa9c43dd7d8cfc5c6fcba8a164d8ef317a386d7/action_msgs/srv/CancelGoal.srv",
+      "bytes": 1395,
+      "sha256": "7f8d05d43b9f57e8168cfd407c45920cf2c51a8a55880a80129baa76c5533f73",
+      "git_blob_sha1": "aed63448da1cb2531ec27a41c7ac1afe1dea1fa9",
+      "scope": "Official immutable source bytes; not an installed native SDK/availability or execution qualification."
+    },
+    {
+      "repository": "https://github.com/ros2/rcl_interfaces",
+      "requested_ref": "dashing",
+      "actual_commit": "bfa9c43dd7d8cfc5c6fcba8a164d8ef317a386d7",
+      "actual_tree_sha1": "5c6398954df135498ad60146a23741563d99e29d",
+      "relative": "builtin_interfaces/msg/Time.msg",
+      "file": "ros2-rcl_interfaces-dashing-builtin_interfaces__msg__Time.msg",
+      "immutable_url": "https://raw.githubusercontent.com/ros2/rcl_interfaces/bfa9c43dd7d8cfc5c6fcba8a164d8ef317a386d7/builtin_interfaces/msg/Time.msg",
+      "bytes": 25,
+      "sha256": "82b2ca3410fad5ba6c127315e0a554f7561f19c01883f0e58d7530bdd481e557",
+      "git_blob_sha1": "9eb444ccc09958e95c3cbd84265d7b808b464734",
+      "scope": "Official immutable source bytes; not an installed native SDK/availability or execution qualification."
+    },
+    {
+      "repository": "https://github.com/ros2/rcl_interfaces",
+      "requested_ref": "humble",
+      "actual_commit": "82776fc9068d1e0cd4af11c2e2700195994b2eb1",
+      "actual_tree_sha1": "6baa0af441f3f9b1a1c3f6d118373f3c92f5973e",
+      "relative": "action_msgs/msg/GoalInfo.msg",
+      "file": "ros2-rcl_interfaces-humble-action_msgs__msg__GoalInfo.msg",
+      "immutable_url": "https://raw.githubusercontent.com/ros2/rcl_interfaces/82776fc9068d1e0cd4af11c2e2700195994b2eb1/action_msgs/msg/GoalInfo.msg",
+      "bytes": 111,
+      "sha256": "ed563b8e4955d78f1988851f62cbee14d7e25db05792f61fc91b470781bf0e5d",
+      "git_blob_sha1": "3f16d051f0e6afa70ded9d4b9dcfc49e1e13ee6a",
+      "scope": "Official immutable source bytes; not an installed native SDK/availability or execution qualification."
+    },
+    {
+      "repository": "https://github.com/ros2/rcl_interfaces",
+      "requested_ref": "humble",
+      "actual_commit": "82776fc9068d1e0cd4af11c2e2700195994b2eb1",
+      "actual_tree_sha1": "6baa0af441f3f9b1a1c3f6d118373f3c92f5973e",
+      "relative": "action_msgs/msg/GoalStatus.msg",
+      "file": "ros2-rcl_interfaces-humble-action_msgs__msg__GoalStatus.msg",
+      "immutable_url": "https://raw.githubusercontent.com/ros2/rcl_interfaces/82776fc9068d1e0cd4af11c2e2700195994b2eb1/action_msgs/msg/GoalStatus.msg",
+      "bytes": 946,
+      "sha256": "ddb3235e748a10610150145746a2a51d05f1486a89636c86dec0c86c392332f9",
+      "git_blob_sha1": "6e84a9112c5791de4ec173871e7d86a8f6c50967",
+      "scope": "Official immutable source bytes; not an installed native SDK/availability or execution qualification."
+    },
+    {
+      "repository": "https://github.com/ros2/rcl_interfaces",
+      "requested_ref": "humble",
+      "actual_commit": "82776fc9068d1e0cd4af11c2e2700195994b2eb1",
+      "actual_tree_sha1": "6baa0af441f3f9b1a1c3f6d118373f3c92f5973e",
+      "relative": "action_msgs/msg/GoalStatusArray.msg",
+      "file": "ros2-rcl_interfaces-humble-action_msgs__msg__GoalStatusArray.msg",
+      "immutable_url": "https://raw.githubusercontent.com/ros2/rcl_interfaces/82776fc9068d1e0cd4af11c2e2700195994b2eb1/action_msgs/msg/GoalStatusArray.msg",
+      "bytes": 54,
+      "sha256": "8de5358cc8184f466a7681885cf21c61a6f19f7c2e9c5ec39deb3dbc20cbb31c",
+      "git_blob_sha1": "3b68b0e2c85d1e8c640617da9710afdd4c306e14",
+      "scope": "Official immutable source bytes; not an installed native SDK/availability or execution qualification."
+    },
+    {
+      "repository": "https://github.com/ros2/rcl_interfaces",
+      "requested_ref": "humble",
+      "actual_commit": "82776fc9068d1e0cd4af11c2e2700195994b2eb1",
+      "actual_tree_sha1": "6baa0af441f3f9b1a1c3f6d118373f3c92f5973e",
+      "relative": "action_msgs/srv/CancelGoal.srv",
+      "file": "ros2-rcl_interfaces-humble-action_msgs__srv__CancelGoal.srv",
+      "immutable_url": "https://raw.githubusercontent.com/ros2/rcl_interfaces/82776fc9068d1e0cd4af11c2e2700195994b2eb1/action_msgs/srv/CancelGoal.srv",
+      "bytes": 1453,
+      "sha256": "5f4dc57f41cab2fd1987a61d5821282ece5075e38e5044f90126ab62c98fac20",
+      "git_blob_sha1": "86afbdbf4eacb2c55c1faf8da3a17946c5f0fa9b",
+      "scope": "Official immutable source bytes; not an installed native SDK/availability or execution qualification."
+    },
+    {
+      "repository": "https://github.com/ros2/rcl_interfaces",
+      "requested_ref": "humble",
+      "actual_commit": "82776fc9068d1e0cd4af11c2e2700195994b2eb1",
+      "actual_tree_sha1": "6baa0af441f3f9b1a1c3f6d118373f3c92f5973e",
+      "relative": "builtin_interfaces/msg/Time.msg",
+      "file": "ros2-rcl_interfaces-humble-builtin_interfaces__msg__Time.msg",
+      "immutable_url": "https://raw.githubusercontent.com/ros2/rcl_interfaces/82776fc9068d1e0cd4af11c2e2700195994b2eb1/builtin_interfaces/msg/Time.msg",
+      "bytes": 420,
+      "sha256": "0e6f429967a29ba34b224c5c0236c938084e82ee1279deeaf0666768cba220ae",
+      "git_blob_sha1": "c61b0b5d40502bb17fce99e2736897bcbb94bee1",
+      "scope": "Official immutable source bytes; not an installed native SDK/availability or execution qualification."
+    },
+    {
+      "repository": "https://github.com/ros2/rcl_interfaces",
+      "requested_ref": "jazzy",
+      "actual_commit": "7aa3caf43377ea6ad615bc1040832e2c7566bfbe",
+      "actual_tree_sha1": "4515d6d00cf6209db404352534818e4199fe33c9",
+      "relative": "action_msgs/msg/GoalInfo.msg",
+      "file": "ros2-rcl_interfaces-jazzy-action_msgs__msg__GoalInfo.msg",
+      "immutable_url": "https://raw.githubusercontent.com/ros2/rcl_interfaces/7aa3caf43377ea6ad615bc1040832e2c7566bfbe/action_msgs/msg/GoalInfo.msg",
+      "bytes": 111,
+      "sha256": "ed563b8e4955d78f1988851f62cbee14d7e25db05792f61fc91b470781bf0e5d",
+      "git_blob_sha1": "3f16d051f0e6afa70ded9d4b9dcfc49e1e13ee6a",
+      "scope": "Official immutable source bytes; not an installed native SDK/availability or execution qualification."
+    },
+    {
+      "repository": "https://github.com/ros2/rcl_interfaces",
+      "requested_ref": "jazzy",
+      "actual_commit": "7aa3caf43377ea6ad615bc1040832e2c7566bfbe",
+      "actual_tree_sha1": "4515d6d00cf6209db404352534818e4199fe33c9",
+      "relative": "action_msgs/msg/GoalStatus.msg",
+      "file": "ros2-rcl_interfaces-jazzy-action_msgs__msg__GoalStatus.msg",
+      "immutable_url": "https://raw.githubusercontent.com/ros2/rcl_interfaces/7aa3caf43377ea6ad615bc1040832e2c7566bfbe/action_msgs/msg/GoalStatus.msg",
+      "bytes": 946,
+      "sha256": "ddb3235e748a10610150145746a2a51d05f1486a89636c86dec0c86c392332f9",
+      "git_blob_sha1": "6e84a9112c5791de4ec173871e7d86a8f6c50967",
+      "scope": "Official immutable source bytes; not an installed native SDK/availability or execution qualification."
+    },
+    {
+      "repository": "https://github.com/ros2/rcl_interfaces",
+      "requested_ref": "jazzy",
+      "actual_commit": "7aa3caf43377ea6ad615bc1040832e2c7566bfbe",
+      "actual_tree_sha1": "4515d6d00cf6209db404352534818e4199fe33c9",
+      "relative": "action_msgs/msg/GoalStatusArray.msg",
+      "file": "ros2-rcl_interfaces-jazzy-action_msgs__msg__GoalStatusArray.msg",
+      "immutable_url": "https://raw.githubusercontent.com/ros2/rcl_interfaces/7aa3caf43377ea6ad615bc1040832e2c7566bfbe/action_msgs/msg/GoalStatusArray.msg",
+      "bytes": 54,
+      "sha256": "8de5358cc8184f466a7681885cf21c61a6f19f7c2e9c5ec39deb3dbc20cbb31c",
+      "git_blob_sha1": "3b68b0e2c85d1e8c640617da9710afdd4c306e14",
+      "scope": "Official immutable source bytes; not an installed native SDK/availability or execution qualification."
+    },
+    {
+      "repository": "https://github.com/ros2/rcl_interfaces",
+      "requested_ref": "jazzy",
+      "actual_commit": "7aa3caf43377ea6ad615bc1040832e2c7566bfbe",
+      "actual_tree_sha1": "4515d6d00cf6209db404352534818e4199fe33c9",
+      "relative": "action_msgs/srv/CancelGoal.srv",
+      "file": "ros2-rcl_interfaces-jazzy-action_msgs__srv__CancelGoal.srv",
+      "immutable_url": "https://raw.githubusercontent.com/ros2/rcl_interfaces/7aa3caf43377ea6ad615bc1040832e2c7566bfbe/action_msgs/srv/CancelGoal.srv",
+      "bytes": 1453,
+      "sha256": "5f4dc57f41cab2fd1987a61d5821282ece5075e38e5044f90126ab62c98fac20",
+      "git_blob_sha1": "86afbdbf4eacb2c55c1faf8da3a17946c5f0fa9b",
+      "scope": "Official immutable source bytes; not an installed native SDK/availability or execution qualification."
+    },
+    {
+      "repository": "https://github.com/ros2/rcl_interfaces",
+      "requested_ref": "jazzy",
+      "actual_commit": "7aa3caf43377ea6ad615bc1040832e2c7566bfbe",
+      "actual_tree_sha1": "4515d6d00cf6209db404352534818e4199fe33c9",
+      "relative": "builtin_interfaces/msg/Time.msg",
+      "file": "ros2-rcl_interfaces-jazzy-builtin_interfaces__msg__Time.msg",
+      "immutable_url": "https://raw.githubusercontent.com/ros2/rcl_interfaces/7aa3caf43377ea6ad615bc1040832e2c7566bfbe/builtin_interfaces/msg/Time.msg",
+      "bytes": 421,
+      "sha256": "dc5a01ddde3aecffee21eb24974fe77cc969f873218a2b1811aa0ac8a456b8bd",
+      "git_blob_sha1": "03cc83f8622675b1ce70fcc5b6d260b1dd13d860",
+      "scope": "Official immutable source bytes; not an installed native SDK/availability or execution qualification."
+    },
+    {
+      "repository": "https://github.com/ros2/rosidl",
+      "requested_ref": "dashing",
+      "actual_commit": "407b652ac8ca23beea2f1f24575dd57f0c9b4401",
+      "actual_tree_sha1": "b804af0830ecf06a556196a52b4510f6c90edd9e",
+      "relative": "rosidl_generator_c/include/rosidl_generator_c/action_type_support_struct.h",
+      "file": "ros2-rosidl-dashing-rosidl_generator_c__include__rosidl_generator_c__action_type_support_struct.h",
+      "immutable_url": "https://raw.githubusercontent.com/ros2/rosidl/407b652ac8ca23beea2f1f24575dd57f0c9b4401/rosidl_generator_c/include/rosidl_generator_c/action_type_support_struct.h",
+      "bytes": 1707,
+      "sha256": "56c1c921d4cbd0a7f7b8c2a6ea7779c8142469e7d98e40f20dd26016913c5f24",
+      "git_blob_sha1": "6cf72ef2cd4dd318442ef5d559fda1d46e2884d1",
+      "scope": "Official immutable source bytes; not an installed native SDK/availability or execution qualification."
+    },
+    {
+      "repository": "https://github.com/ros2/rosidl",
+      "requested_ref": "dashing",
+      "actual_commit": "407b652ac8ca23beea2f1f24575dd57f0c9b4401",
+      "actual_tree_sha1": "b804af0830ecf06a556196a52b4510f6c90edd9e",
+      "relative": "rosidl_generator_cpp/resource/action__struct.hpp.em",
+      "file": "ros2-rosidl-dashing-rosidl_generator_cpp__resource__action__struct.hpp.em",
+      "immutable_url": "https://raw.githubusercontent.com/ros2/rosidl/407b652ac8ca23beea2f1f24575dd57f0c9b4401/rosidl_generator_cpp/resource/action__struct.hpp.em",
+      "bytes": 3314,
+      "sha256": "27b41dee04609eb876849b1a1b893f640962611a2243ea960936f97d0427e776",
+      "git_blob_sha1": "020455074daeacb37ab88fa76ebe8c9169d7af40",
+      "scope": "Official immutable source bytes; not an installed native SDK/availability or execution qualification."
+    },
+    {
+      "repository": "https://github.com/ros2/rosidl",
+      "requested_ref": "dashing",
+      "actual_commit": "407b652ac8ca23beea2f1f24575dd57f0c9b4401",
+      "actual_tree_sha1": "b804af0830ecf06a556196a52b4510f6c90edd9e",
+      "relative": "rosidl_parser/rosidl_parser/definition.py",
+      "file": "ros2-rosidl-dashing-rosidl_parser__rosidl_parser__definition.py",
+      "immutable_url": "https://raw.githubusercontent.com/ros2/rosidl/407b652ac8ca23beea2f1f24575dd57f0c9b4401/rosidl_parser/rosidl_parser/definition.py",
+      "bytes": 21715,
+      "sha256": "97a4fbadca1b46a262c5cb8eab079c7a5becb554d6bb74748e0fdb0568356ab4",
+      "git_blob_sha1": "76bea7d959bad97110b833a4156d9e5d2ce63e10",
+      "scope": "Official immutable source bytes; not an installed native SDK/availability or execution qualification."
+    },
+    {
+      "repository": "https://github.com/ros2/rosidl",
+      "requested_ref": "humble",
+      "actual_commit": "5621b26eff54596a356ad8abd72c06e7650d21f7",
+      "actual_tree_sha1": "601755bcec2cf110fee0069c4f4747e7a565f4bf",
+      "relative": "rosidl_generator_cpp/resource/action__struct.hpp.em",
+      "file": "ros2-rosidl-humble-rosidl_generator_cpp__resource__action__struct.hpp.em",
+      "immutable_url": "https://raw.githubusercontent.com/ros2/rosidl/5621b26eff54596a356ad8abd72c06e7650d21f7/rosidl_generator_cpp/resource/action__struct.hpp.em",
+      "bytes": 3314,
+      "sha256": "27b41dee04609eb876849b1a1b893f640962611a2243ea960936f97d0427e776",
+      "git_blob_sha1": "020455074daeacb37ab88fa76ebe8c9169d7af40",
+      "scope": "Official immutable source bytes; not an installed native SDK/availability or execution qualification."
+    },
+    {
+      "repository": "https://github.com/ros2/rosidl",
+      "requested_ref": "humble",
+      "actual_commit": "5621b26eff54596a356ad8abd72c06e7650d21f7",
+      "actual_tree_sha1": "601755bcec2cf110fee0069c4f4747e7a565f4bf",
+      "relative": "rosidl_parser/rosidl_parser/definition.py",
+      "file": "ros2-rosidl-humble-rosidl_parser__rosidl_parser__definition.py",
+      "immutable_url": "https://raw.githubusercontent.com/ros2/rosidl/5621b26eff54596a356ad8abd72c06e7650d21f7/rosidl_parser/rosidl_parser/definition.py",
+      "bytes": 22269,
+      "sha256": "788019c0288d48d342f50729baa0109b2c0b85e6b2fb1d645cf4c59dade5ab10",
+      "git_blob_sha1": "20b6f7af8df84f64a25c2eed08b0c405e75351c9",
+      "scope": "Official immutable source bytes; not an installed native SDK/availability or execution qualification."
+    },
+    {
+      "repository": "https://github.com/ros2/rosidl",
+      "requested_ref": "humble",
+      "actual_commit": "5621b26eff54596a356ad8abd72c06e7650d21f7",
+      "actual_tree_sha1": "601755bcec2cf110fee0069c4f4747e7a565f4bf",
+      "relative": "rosidl_runtime_c/include/rosidl_runtime_c/action_type_support_struct.h",
+      "file": "ros2-rosidl-humble-rosidl_runtime_c__include__rosidl_runtime_c__action_type_support_struct.h",
+      "immutable_url": "https://raw.githubusercontent.com/ros2/rosidl/5621b26eff54596a356ad8abd72c06e7650d21f7/rosidl_runtime_c/include/rosidl_runtime_c/action_type_support_struct.h",
+      "bytes": 2088,
+      "sha256": "d51d16821618724640574f52aa694ff1c0a5c679bdc85d440e374f47eeb4346c",
+      "git_blob_sha1": "801a771ed8235e5a9e4a3569fbbe615bc3e43516",
+      "scope": "Official immutable source bytes; not an installed native SDK/availability or execution qualification."
+    },
+    {
+      "repository": "https://github.com/ros2/rosidl",
+      "requested_ref": "jazzy",
+      "actual_commit": "85fa592b698b0f665e3120f48fac0d35e2f7d8a4",
+      "actual_tree_sha1": "0ee85ecefbda585d92ac5f09253f12d91989ce4d",
+      "relative": "rosidl_generator_cpp/resource/action__struct.hpp.em",
+      "file": "ros2-rosidl-jazzy-rosidl_generator_cpp__resource__action__struct.hpp.em",
+      "immutable_url": "https://raw.githubusercontent.com/ros2/rosidl/85fa592b698b0f665e3120f48fac0d35e2f7d8a4/rosidl_generator_cpp/resource/action__struct.hpp.em",
+      "bytes": 3314,
+      "sha256": "27b41dee04609eb876849b1a1b893f640962611a2243ea960936f97d0427e776",
+      "git_blob_sha1": "020455074daeacb37ab88fa76ebe8c9169d7af40",
+      "scope": "Official immutable source bytes; not an installed native SDK/availability or execution qualification."
+    },
+    {
+      "repository": "https://github.com/ros2/rosidl",
+      "requested_ref": "jazzy",
+      "actual_commit": "85fa592b698b0f665e3120f48fac0d35e2f7d8a4",
+      "actual_tree_sha1": "0ee85ecefbda585d92ac5f09253f12d91989ce4d",
+      "relative": "rosidl_parser/rosidl_parser/definition.py",
+      "file": "ros2-rosidl-jazzy-rosidl_parser__rosidl_parser__definition.py",
+      "immutable_url": "https://raw.githubusercontent.com/ros2/rosidl/85fa592b698b0f665e3120f48fac0d35e2f7d8a4/rosidl_parser/rosidl_parser/definition.py",
+      "bytes": 23342,
+      "sha256": "6d882e25ad6f59476839928e36b2ba05ab297ed24593af9654eba5ce9cfa1cd2",
+      "git_blob_sha1": "273c306b9d5d91fdac3b014aa45eec57a5ee243b",
+      "scope": "Official immutable source bytes; not an installed native SDK/availability or execution qualification."
+    },
+    {
+      "repository": "https://github.com/ros2/rosidl",
+      "requested_ref": "jazzy",
+      "actual_commit": "85fa592b698b0f665e3120f48fac0d35e2f7d8a4",
+      "actual_tree_sha1": "0ee85ecefbda585d92ac5f09253f12d91989ce4d",
+      "relative": "rosidl_runtime_c/include/rosidl_runtime_c/action_type_support_struct.h",
+      "file": "ros2-rosidl-jazzy-rosidl_runtime_c__include__rosidl_runtime_c__action_type_support_struct.h",
+      "immutable_url": "https://raw.githubusercontent.com/ros2/rosidl/85fa592b698b0f665e3120f48fac0d35e2f7d8a4/rosidl_runtime_c/include/rosidl_runtime_c/action_type_support_struct.h",
+      "bytes": 3019,
+      "sha256": "fe30030989b846e8a1f9f815e49c62e93b34e72b80efac670b0eab2579ff0bfc",
+      "git_blob_sha1": "62b45b036eea7509e999fd3c0634e9bdd2ade593",
+      "scope": "Official immutable source bytes; not an installed native SDK/availability or execution qualification."
+    },
+    {
+      "repository": "https://github.com/ros2/rosidl_typesupport",
+      "requested_ref": "dashing",
+      "actual_commit": "c61b305b9b43530e1394beb8677c17ddb450a451",
+      "actual_tree_sha1": "2eb7b1c99fea6792d13fe7d19ba73ad96688f187",
+      "relative": "rosidl_typesupport_cpp/resource/action__type_support.cpp.em",
+      "file": "ros2-rosidl_typesupport-dashing-rosidl_typesupport_cpp__resource__action__type_support.cpp.em",
+      "immutable_url": "https://raw.githubusercontent.com/ros2/rosidl_typesupport/c61b305b9b43530e1394beb8677c17ddb450a451/rosidl_typesupport_cpp/resource/action__type_support.cpp.em",
+      "bytes": 3102,
+      "sha256": "434d22d8e0317f647bbcf9a3e1853a501959bbe2847e8c72e7cc39c76d2c9ba8",
+      "git_blob_sha1": "fb5a86c7c055d022cb47c4cd2f44a2b2b114e5bd",
+      "scope": "Official immutable source bytes; not an installed native SDK/availability or execution qualification."
+    },
+    {
+      "repository": "https://github.com/ros2/rosidl_typesupport",
+      "requested_ref": "humble",
+      "actual_commit": "94c7b6d6db353cf26adc22cb7023833fd6cd18a1",
+      "actual_tree_sha1": "627b1b1dce0d09c4c77e6b8a911ea5a78c9499af",
+      "relative": "rosidl_typesupport_cpp/resource/action__type_support.cpp.em",
+      "file": "ros2-rosidl_typesupport-humble-rosidl_typesupport_cpp__resource__action__type_support.cpp.em",
+      "immutable_url": "https://raw.githubusercontent.com/ros2/rosidl_typesupport/94c7b6d6db353cf26adc22cb7023833fd6cd18a1/rosidl_typesupport_cpp/resource/action__type_support.cpp.em",
+      "bytes": 3582,
+      "sha256": "0734c49e24e479b6e3b172b3610ec2b2b04cdfbedd784dab5319ed70a4c0375e",
+      "git_blob_sha1": "56c88386db02098b9f9ddb84765215b3fc627f09",
+      "scope": "Official immutable source bytes; not an installed native SDK/availability or execution qualification."
+    },
+    {
+      "repository": "https://github.com/ros2/rosidl_typesupport",
+      "requested_ref": "jazzy",
+      "actual_commit": "9fcbb58b797b35a69dcc8ba111049a08eaa4aba1",
+      "actual_tree_sha1": "53b4834d6ae2238da2025b2b0cdcff8a1dabdb38",
+      "relative": "rosidl_typesupport_cpp/resource/action__type_support.cpp.em",
+      "file": "ros2-rosidl_typesupport-jazzy-rosidl_typesupport_cpp__resource__action__type_support.cpp.em",
+      "immutable_url": "https://raw.githubusercontent.com/ros2/rosidl_typesupport/9fcbb58b797b35a69dcc8ba111049a08eaa4aba1/rosidl_typesupport_cpp/resource/action__type_support.cpp.em",
+      "bytes": 4097,
+      "sha256": "5753581c3ebe10a894eb6f6104da1783fbe550449ad219c834379cf6e4ff00dc",
+      "git_blob_sha1": "afdc92651331bb84879480489a9635f0ba40a0e5",
+      "scope": "Official immutable source bytes; not an installed native SDK/availability or execution qualification."
+    },
+    {
+      "repository": "https://github.com/ros2/unique_identifier_msgs",
+      "requested_ref": "humble",
+      "actual_commit": "27767cefcf8a80da44641dc208c57722c28aa11c",
+      "actual_tree_sha1": "562f08169f54ff04a3d7319d23bc4fb7ed6e519e",
+      "relative": "msg/UUID.msg",
+      "file": "ros2-unique_identifier_msgs-humble-msg__UUID.msg",
+      "immutable_url": "https://raw.githubusercontent.com/ros2/unique_identifier_msgs/27767cefcf8a80da44641dc208c57722c28aa11c/msg/UUID.msg",
+      "bytes": 165,
+      "sha256": "2777f29769eb0958dfd86a6c1bd15af95ecb48a8b935513abefa6f1dd807e143",
+      "git_blob_sha1": "c77b6a706e0365a6fbcef50807ed1bc126d279c8",
+      "scope": "Official immutable source bytes; not an installed native SDK/availability or execution qualification."
+    }
+  ],
+  "old_mechanism_source_observations": [
+    {
+      "ref": "ardent",
+      "commit": "8a19b290a04b36136bcf931cb4a983ab587b4db6",
+      "actual_tree_sha1": "7cc1cddffdeee4d1fb858641060b8295bea9c4be",
+      "matching_action_mechanism_paths": [],
+      "scope": "Observed exact rosidl source tree only, not a fabricated installed SDK capability. No full Action qualification on an absent mechanism."
+    },
+    {
+      "ref": "bouncy",
+      "commit": "5cdd36e02e0ad66a7652feed03bede33466413cf",
+      "actual_tree_sha1": "a3f4ac878a3d25fb52f95e823b0f14cf5af22c07",
+      "matching_action_mechanism_paths": [],
+      "scope": "Observed exact rosidl source tree only, not a fabricated installed SDK capability. No full Action qualification on an absent mechanism."
+    }
+  ],
+  "actual_tree_blob_verification": {
+    "source_only": true,
+    "trees": [
+      {
+        "repository": "https://github.com/ros2/demos",
+        "requested_ref": "humble",
+        "actual_commit": "1fc7a62ee591e4c4a7f84e72aa4b33de11f6fbf3",
+        "actual_tree_sha1": "52bb944b70d14e0abe3e2ac66eb432a38042851e",
+        "tree_file": "ros2-demos-humble-tree.json",
+        "tree_bytes": 97914,
+        "tree_sha256": "edb8f3f052e50ce42f13cb260901005fafe5a0e0efef68c5c00fde951613dca0",
+        "blob_rows_verified": [
+          "action_tutorials/action_tutorials_interfaces/action/Fibonacci.action"
+        ]
+      },
+      {
+        "repository": "https://github.com/ros2/example_interfaces",
+        "requested_ref": "dashing",
+        "actual_commit": "5b118347114931620533aba142939b6a1db200bc",
+        "actual_tree_sha1": "c886d17a18f7a1db21d35bdf362ac38d85ade744",
+        "tree_file": "ros2-example_interfaces-dashing-tree.json",
+        "tree_bytes": 2881,
+        "tree_sha256": "177894f6a9fb646892814b2d036ff16131cb14a45ef7e4f08f5c1c45933df20d",
+        "blob_rows_verified": [
+          "action/Fibonacci.action"
+        ]
+      },
+      {
+        "repository": "https://github.com/ros2/rcl_interfaces",
+        "requested_ref": "dashing",
+        "actual_commit": "bfa9c43dd7d8cfc5c6fcba8a164d8ef317a386d7",
+        "actual_tree_sha1": "5c6398954df135498ad60146a23741563d99e29d",
+        "tree_file": "ros2-rcl_interfaces-dashing-tree.json",
+        "tree_bytes": 21424,
+        "tree_sha256": "f56e885bb066a0b1302e8232240e8ce7d2dbbcd46f6482bea690436e03b43c0e",
+        "blob_rows_verified": [
+          "action_msgs/msg/GoalInfo.msg",
+          "action_msgs/msg/GoalStatus.msg",
+          "action_msgs/msg/GoalStatusArray.msg",
+          "action_msgs/srv/CancelGoal.srv",
+          "builtin_interfaces/msg/Time.msg"
+        ]
+      },
+      {
+        "repository": "https://github.com/ros2/rcl_interfaces",
+        "requested_ref": "humble",
+        "actual_commit": "82776fc9068d1e0cd4af11c2e2700195994b2eb1",
+        "actual_tree_sha1": "6baa0af441f3f9b1a1c3f6d118373f3c92f5973e",
+        "tree_file": "ros2-rcl_interfaces-humble-tree.json",
+        "tree_bytes": 29838,
+        "tree_sha256": "e4e1c0df3862aedc6ff954267ab17459a289584a2023ff26111f4dcbb1c3cf0f",
+        "blob_rows_verified": [
+          "action_msgs/msg/GoalInfo.msg",
+          "action_msgs/msg/GoalStatus.msg",
+          "action_msgs/msg/GoalStatusArray.msg",
+          "action_msgs/srv/CancelGoal.srv",
+          "builtin_interfaces/msg/Time.msg"
+        ]
+      },
+      {
+        "repository": "https://github.com/ros2/rcl_interfaces",
+        "requested_ref": "jazzy",
+        "actual_commit": "7aa3caf43377ea6ad615bc1040832e2c7566bfbe",
+        "actual_tree_sha1": "4515d6d00cf6209db404352534818e4199fe33c9",
+        "tree_file": "ros2-rcl_interfaces-jazzy-tree.json",
+        "tree_bytes": 36456,
+        "tree_sha256": "9556f37b9332796a98fd5a83c04d353efa97fc4e256048e711c423867a6fcba8",
+        "blob_rows_verified": [
+          "action_msgs/msg/GoalInfo.msg",
+          "action_msgs/msg/GoalStatus.msg",
+          "action_msgs/msg/GoalStatusArray.msg",
+          "action_msgs/srv/CancelGoal.srv",
+          "builtin_interfaces/msg/Time.msg"
+        ]
+      },
+      {
+        "repository": "https://github.com/ros2/rosidl",
+        "requested_ref": "dashing",
+        "actual_commit": "407b652ac8ca23beea2f1f24575dd57f0c9b4401",
+        "actual_tree_sha1": "b804af0830ecf06a556196a52b4510f6c90edd9e",
+        "tree_file": "ros2-rosidl-dashing-tree.json",
+        "tree_bytes": 74411,
+        "tree_sha256": "47125df756eacc77062e4c74959a4eabee0695a46ccf71acd57e69b43f47da4b",
+        "blob_rows_verified": [
+          "rosidl_generator_c/include/rosidl_generator_c/action_type_support_struct.h",
+          "rosidl_generator_cpp/resource/action__struct.hpp.em",
+          "rosidl_parser/rosidl_parser/definition.py"
+        ]
+      },
+      {
+        "repository": "https://github.com/ros2/rosidl",
+        "requested_ref": "humble",
+        "actual_commit": "5621b26eff54596a356ad8abd72c06e7650d21f7",
+        "actual_tree_sha1": "601755bcec2cf110fee0069c4f4747e7a565f4bf",
+        "tree_file": "ros2-rosidl-humble-tree.json",
+        "tree_bytes": 101829,
+        "tree_sha256": "7d669ba3d9ab74454c2ee4696b4fc1c0f4e5be928e781f2dd5c618326de0366d",
+        "blob_rows_verified": [
+          "rosidl_generator_cpp/resource/action__struct.hpp.em",
+          "rosidl_parser/rosidl_parser/definition.py",
+          "rosidl_runtime_c/include/rosidl_runtime_c/action_type_support_struct.h"
+        ]
+      },
+      {
+        "repository": "https://github.com/ros2/rosidl",
+        "requested_ref": "jazzy",
+        "actual_commit": "85fa592b698b0f665e3120f48fac0d35e2f7d8a4",
+        "actual_tree_sha1": "0ee85ecefbda585d92ac5f09253f12d91989ce4d",
+        "tree_file": "ros2-rosidl-jazzy-tree.json",
+        "tree_bytes": 127663,
+        "tree_sha256": "aade52aeb0194f97d6b8bc6db4ef48d084dc30626776b5cb304e218834e137bd",
+        "blob_rows_verified": [
+          "rosidl_generator_cpp/resource/action__struct.hpp.em",
+          "rosidl_parser/rosidl_parser/definition.py",
+          "rosidl_runtime_c/include/rosidl_runtime_c/action_type_support_struct.h"
+        ]
+      },
+      {
+        "repository": "https://github.com/ros2/rosidl_typesupport",
+        "requested_ref": "dashing",
+        "actual_commit": "c61b305b9b43530e1394beb8677c17ddb450a451",
+        "actual_tree_sha1": "2eb7b1c99fea6792d13fe7d19ba73ad96688f187",
+        "tree_file": "ros2-rosidl_typesupport-dashing-tree.json",
+        "tree_bytes": 16764,
+        "tree_sha256": "0b2b1cd1e362ac41e84274c465683f9fc7e90d86881f3962e7c08340fd6f50f0",
+        "blob_rows_verified": [
+          "rosidl_typesupport_cpp/resource/action__type_support.cpp.em"
+        ]
+      },
+      {
+        "repository": "https://github.com/ros2/rosidl_typesupport",
+        "requested_ref": "humble",
+        "actual_commit": "94c7b6d6db353cf26adc22cb7023833fd6cd18a1",
+        "actual_tree_sha1": "627b1b1dce0d09c4c77e6b8a911ea5a78c9499af",
+        "tree_file": "ros2-rosidl_typesupport-humble-tree.json",
+        "tree_bytes": 25306,
+        "tree_sha256": "72b5a81aaf1dbad5252db04674f0d2cd17cf796557a631644573d484aee37efb",
+        "blob_rows_verified": [
+          "rosidl_typesupport_cpp/resource/action__type_support.cpp.em"
+        ]
+      },
+      {
+        "repository": "https://github.com/ros2/rosidl_typesupport",
+        "requested_ref": "jazzy",
+        "actual_commit": "9fcbb58b797b35a69dcc8ba111049a08eaa4aba1",
+        "actual_tree_sha1": "53b4834d6ae2238da2025b2b0cdcff8a1dabdb38",
+        "tree_file": "ros2-rosidl_typesupport-jazzy-tree.json",
+        "tree_bytes": 27623,
+        "tree_sha256": "29ea2f83957b5f054990fd0760accbf3f0373eb321bc9d145cb2336ea74ef71f",
+        "blob_rows_verified": [
+          "rosidl_typesupport_cpp/resource/action__type_support.cpp.em"
+        ]
+      },
+      {
+        "repository": "https://github.com/ros2/unique_identifier_msgs",
+        "requested_ref": "humble",
+        "actual_commit": "27767cefcf8a80da44641dc208c57722c28aa11c",
+        "actual_tree_sha1": "562f08169f54ff04a3d7319d23bc4fb7ed6e519e",
+        "tree_file": "ros2-unique_identifier_msgs-humble-tree.json",
+        "tree_bytes": 2489,
+        "tree_sha256": "878778d3cfae76af1bfb2ef3990b65211931cc3e241e172074217d72a6a37e3a",
+        "blob_rows_verified": [
+          "msg/UUID.msg"
+        ]
+      }
+    ],
+    "original_files": 30
+  },
+  "native_identity": null,
+  "whole_installed_SDK_tree_sha256": null,
+  "compiler_executed": false,
+  "actual_native_cases": 0,
+  "native_delivery_qualified": false,
+  "default_authority": [],
+  "original_fixture_license_and_package_context": [
+    {
+      "repository": "https://github.com/ros2/example_interfaces",
+      "actual_commit": "5b118347114931620533aba142939b6a1db200bc",
+      "actual_tree_sha1": "c886d17a18f7a1db21d35bdf362ac38d85ade744",
+      "relative": "LICENSE",
+      "immutable_url": "https://raw.githubusercontent.com/ros2/example_interfaces/5b118347114931620533aba142939b6a1db200bc/LICENSE",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "git_blob_sha1": "d645695673349e3947e8e5ae42332d0ac3164cd7",
+      "candidate_relative": "tests/ros2_compat/legacy-action/upstream/example-interfaces-dashing/LICENSE",
+      "source_only": true
+    },
+    {
+      "repository": "https://github.com/ros2/example_interfaces",
+      "actual_commit": "5b118347114931620533aba142939b6a1db200bc",
+      "actual_tree_sha1": "c886d17a18f7a1db21d35bdf362ac38d85ade744",
+      "relative": "package.xml",
+      "immutable_url": "https://raw.githubusercontent.com/ros2/example_interfaces/5b118347114931620533aba142939b6a1db200bc/package.xml",
+      "bytes": 826,
+      "sha256": "56070dd4a74167ef25441e543e6979557b0793c913b30d78f8d4b1200558c3cd",
+      "git_blob_sha1": "82898cc669c157517523aa4684786af35d66cf12",
+      "candidate_relative": "tests/ros2_compat/legacy-action/upstream/example-interfaces-dashing/package.xml",
+      "source_only": true
+    },
+    {
+      "repository": "https://github.com/ros2/demos",
+      "actual_commit": "1fc7a62ee591e4c4a7f84e72aa4b33de11f6fbf3",
+      "actual_tree_sha1": "52bb944b70d14e0abe3e2ac66eb432a38042851e",
+      "relative": "LICENSE",
+      "immutable_url": "https://raw.githubusercontent.com/ros2/demos/1fc7a62ee591e4c4a7f84e72aa4b33de11f6fbf3/LICENSE",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "git_blob_sha1": "d645695673349e3947e8e5ae42332d0ac3164cd7",
+      "candidate_relative": "tests/ros2_compat/legacy-action/upstream/action-tutorials-humble/LICENSE",
+      "source_only": true
+    },
+    {
+      "repository": "https://github.com/ros2/demos",
+      "actual_commit": "1fc7a62ee591e4c4a7f84e72aa4b33de11f6fbf3",
+      "actual_tree_sha1": "52bb944b70d14e0abe3e2ac66eb432a38042851e",
+      "relative": "action_tutorials/action_tutorials_interfaces/package.xml",
+      "immutable_url": "https://raw.githubusercontent.com/ros2/demos/1fc7a62ee591e4c4a7f84e72aa4b33de11f6fbf3/action_tutorials/action_tutorials_interfaces/package.xml",
+      "bytes": 1047,
+      "sha256": "cd4c81b18468086a142a1f07e12b1626561afd911195b422d263fe03230adbc9",
+      "git_blob_sha1": "8cdb4b904d50da3b4fb2249671ab8189ff17bdc4",
+      "candidate_relative": "tests/ros2_compat/legacy-action/upstream/action-tutorials-humble/package.xml",
+      "source_only": true
+    }
+  ]
+}

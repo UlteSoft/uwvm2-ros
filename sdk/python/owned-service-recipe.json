@@ -1,0 +1,219 @@
+{
+  "format": "python-owned-service-source-recipe-v1",
+  "status": "AUTHORED_NOT_EXECUTED",
+  "source_revision": "r3 immutable successor; original r1/r2 and both non-author HOLD reports remain unchanged",
+  "legacy_open_capture": {
+    "enabled_only_with_owned_service_1_backend2": true,
+    "C_header": "sdk/python/roswasm/_open_witness.h",
+    "actual_application_route": "Session.open(..., owned_capture=True) inside retained factory",
+    "ordinary_default_calls": "original generic dispatch and retirement witness contract",
+    "retention": "pending factory owner retains full C handle/open/fallback-close/primary facts",
+    "once_rule": "actual C close marks real owner retirement cell before entry; no replay",
+    "qualification": "Source only; C and Python VM OOM behavior require actual target tests",
+    "GC_ownership": "Private exact tracked C type with complete input/retirement/primary traverse and Guest-only clear/dealloc; no direct ROS calls; reachable primary/traceback unchanged",
+    "construction": "PyType_Ready during module init; DISALLOW_INSTANTIATION, no BASETYPE, private exact type check"
+  },
+  "backend_selection": {
+    "default_optional": 0,
+    "enabled_requires_backend": 2,
+    "legacy": {
+      "1": 38,
+      "2": 43
+    },
+    "optional": 12
+  },
+  "linux_policy": {
+    "existing_cgroup_memory_max": 68719476736,
+    "swap_max": 0,
+    "all_candidate_execution": 0,
+    "external_keeper_required": [
+      "current boot/group inode and membership",
+      "finite wall deadline",
+      "actual RSS limits",
+      "actual process identity/physical retirement",
+      "exclusive execution handoff"
+    ]
+  },
+  "stages": [
+    {
+      "name": "complete-control-source",
+      "entry": "sdk/python/tools/generate_control_python.py",
+      "requires": [
+        "actual parent/bounded/emitter/operator full SHA pair",
+        "same-source canonical C/C++ proof and all seven product pins",
+        "catalog and every definition captured before actual parser"
+      ]
+    },
+    {
+      "name": "source-stage-and-command-plan",
+      "entry": "sdk/python/tools/prepare_owned_service.py",
+      "requires": [
+        "actual retained CPython3.14.8/SDK24 receipt/native interpreter/compiler/libpython",
+        "external complete Source closure and SHA",
+        "generated complete32/seven-root package",
+        "entry source and SHA",
+        "closed startup signature manifest and SHA"
+      ],
+      "executes_compiler": false
+    },
+    {
+      "name": "owned-keeper-executes-plan",
+      "requires": [
+        "real existing Linux cgroup/owner guards",
+        "freeze matching native Python",
+        "compile/link exact target pyconfig",
+        "closed final import multiset",
+        "independent full Wasm validator"
+      ]
+    },
+    {
+      "name": "default-off",
+      "entries": [
+        "sdk/python/tests/owned_service_disabled.py"
+      ],
+      "builds": [
+        {
+          "backend": 1,
+          "optional": 0
+        },
+        {
+          "backend": 2,
+          "optional": 0
+        }
+      ]
+    },
+    {
+      "name": "real-Guest-empty-grants",
+      "entry": "sdk/python/tests/owned_service_guest.py",
+      "builtin": "PRODUCTION",
+      "scope": "actual numeric/default denial only; no Native success credit"
+    },
+    {
+      "name": "complete-value-models",
+      "entry": "sdk/python/tests/owned_service_values.py",
+      "scope": "DATA only; locally built receipts are not Native proof"
+    },
+    {
+      "name": "actual-C-OOM-boundary",
+      "entry": "sdk/python/tests/owned_service_boundary.py",
+      "fixture": "sdk/python/tests/owned_service_boundary_fixture.c",
+      "scope": "actual CPython Obj allocator hook/real bridge result path; selected C callees are counted doubles, not Native qualification"
+    },
+    {
+      "name": "actual-legacy-open-result-and-attribute-OOM",
+      "entry": "sdk/python/tests/owned_service_open_boundary.py",
+      "fixture_instead_of_legacy_native_C": "sdk/python/tests/owned_service_open_boundary_fixture.c",
+      "requires": [
+        "actual matching target CPython with owned1/backend2",
+        "actual post-open OBJ allocator failure at full-u64 value construction",
+        "actual primary-attribute failure must be observed, not assumed from errno caching",
+        "later real generic invoke clears old global but retained witness fullid/90/primary survives",
+        "exact once-close counter and actual owner retirement cell"
+      ],
+      "scope": "counted open/close doubles only; actual C/CPython path, not Native qualification"
+    },
+    {
+      "name": "actual-C-Python-traceback-GC-lifetime",
+      "entry": "sdk/python/tests/owned_service_open_gc.py",
+      "fixture_instead_of_legacy_native_C": "sdk/python/tests/owned_service_open_boundary_fixture.c",
+      "requires": [
+        "fresh matching target with actual gc module; no DEBUG_SAVEALL",
+        "real Backend capture and C post-open allocator failure propagated as exact MemoryError to Python frame",
+        "actual GC referents/input/retirement/primary and reachable exact traceback",
+        "drop all test roots then actual gc.collect across three failed lifetimes",
+        "tracked witness count returns to baseline; raw close counter never grows during GC",
+        "direct construction and subclassing are genuinely rejected"
+      ],
+      "scope": "Actual CPython/C lifecycle contract with explicit counted open/close doubles; no Native/GC measurement has executed"
+    },
+    {
+      "name": "real-frozen-main-failure",
+      "entry": "sdk/python/tests/owned_service_main_failure.py",
+      "requires": [
+        "real selected builtin and actual caller plans/commands/Native peer",
+        "the expected operation must really be reached with exact nonzero errno",
+        "exact evidence marker AND actual process exit1; generic exception/nonzero alone fails"
+      ]
+    },
+    {
+      "name": "local-sticky-carrier-model",
+      "entry": "sdk/python/tests/owned_service_command_failure.py",
+      "scope": "Source local status/control/empty11/falsy-exception cases, not real main or Native proof"
+    },
+    {
+      "name": "real-TypeQuery-and-six-parameter-services",
+      "entries": [
+        "sdk/examples/python_owned_service/type_query.py",
+        "sdk/examples/python_owned_service/parameters.py"
+      ],
+      "requires": [
+        "genuine independently observed Native peer",
+        "all seven full original request/response fields",
+        "both expected QoS80",
+        "distinct call/observer or advertise/respond owners",
+        "independent availability third grant",
+        "Native identity/source proof separate from Guest codecs"
+      ]
+    }
+  ],
+  "remaining_actual_qualification": [
+    "all compiler/generator/fixture executions",
+    "retained CPython target builtin and stdlib closure",
+    "first/second writer signed sequence/timestamps/GID32 vs GUID16",
+    "full-u64 max tickets and lifetime exhaustion",
+    "late ABANDONED full decode/disposal and once-only abandon",
+    "native-ID duplicate and fresh per-attempt nonce",
+    "wrong pair/session/source/revocation/foreign caller",
+    "all metadata/extent/codec negatives before ACK",
+    "actual commit/cancel send-loss ambiguity without retry",
+    "raw cleanup returned failure/raised exception/reentry and all reverse owners",
+    "real pre/post interpreter allocation failures/trap lifecycle",
+    "C DWARF vs Python source/trace distinction and actual UWVM DBG",
+    "code-cache/debug compatibility actual language runs",
+    "VTune hardware timing/hotspot/microarchitecture before/after",
+    "Wasmtime/WAVM/WasmEdge compatible comparisons",
+    "actual QEMU x86_64/aarch64 ROS target execution"
+  ],
+  "authority": "No local object, Source hash, codec identity, CRC or receipt model is a Host grant or Native certificate",
+  "actual_runs": 0,
+  "final_artifact_signature_admission": {
+    "status": "CURRENT_WSEA_CONTRACT_NOT_EXECUTED_FOR_THIS_PYTHON_COHORT",
+    "contract": "documents/security/wsea.md; admit actual selected product/tool, platform and protected-storage policy",
+    "order": [
+      "compile/link",
+      "strip and all embedded/custom-section changes",
+      "hash the exact final whole Wasm",
+      "sign and retain detached .sig.cose/.signer.pem/.crl.pem",
+      "verify each selected module against protected and local policy",
+      "repeat verification/admission for changed debugger reload"
+    ],
+    "proposed_tools": [
+      "cosign wasm secure policy-init",
+      "cosign wasm secure policy-update",
+      "cosign wasm secure sign",
+      "cosign wasm secure verify",
+      "cosign wasm secure fetch"
+    ],
+    "runtime_selection": "--secure module <wasm-path> <protected-policy-path> (exactly one policy rule; binds its unique identity)",
+    "shared_policy_selection": "--secure named-module <wasm-path> <protected-policy-path> <expected-id> (required for a policy with several module rules)",
+    "identity_binding": "Repeat explicit selections with the intended path identity; a valid signature for a different authorized module does not admit this application",
+    "replacement": "Secure function replacement and compiled-source replacement currently return unsupported_mode; use a fresh admitted load",
+    "running_revocation": "No automatic background revocation or stop for an already running instance in this increment",
+    "policy_bits": {
+      "WASI": 1,
+      "fd_path_including_stdio": 2,
+      "sockets": 4,
+      "ROS1": 8,
+      "ROS2": 16,
+      "other_native_imports": 32
+    },
+    "authority": "Signed mask must fit selected local rule; wider signed mask is refused, not silently reduced. Actual imports and import-reset destinations must fit signed ceiling; fd/path/poll and socket bits additionally require basic WASI bit. Actual ROS/vendor grants and instance/session/generation remain independent",
+    "remaining": [
+      "actual selected WSEA product/tool/target admission for this Python application",
+      "per-module rejection and changed-byte debug reload refusal",
+      "actual Python frames/locals/source-map/argv/ROS DBG",
+      "complete non-ROS and vendor deployment qualification"
+    ],
+    "actual_runs": 0
+  }
+}

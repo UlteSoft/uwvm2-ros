@@ -1,0 +1,55 @@
+{
+  "format_version": 1,
+  "kind": "full-official-xarm-RobotMsg-seven-slot-telemetry-fixture-not-robot-state-claim",
+  "source_only": true,
+  "actual_native_delivery_cases": 0,
+  "header": {
+    "ros1": {
+      "seq": 19,
+      "stamp": {
+        "sec": 42,
+        "nsec": 300000000
+      }
+    },
+    "ros2": {
+      "stamp": {
+        "sec": -2,
+        "nanosec": 300000000
+      }
+    },
+    "frame_id": "xarm-base"
+  },
+  "state": 4,
+  "mode": 0,
+  "cmdnum": 3,
+  "mt_brake": 85,
+  "mt_able": 42,
+  "err": 7,
+  "warn": 9,
+  "angle": [
+    0.0,
+    0.25,
+    -0.5,
+    1.0,
+    -1.25,
+    1.5,
+    -1.75
+  ],
+  "pose": [
+    125.5,
+    -250.25,
+    375.0,
+    0.25,
+    -0.5,
+    0.75
+  ],
+  "offset": [
+    1.0,
+    2.0,
+    3.0,
+    -0.125,
+    0.25,
+    -0.5
+  ],
+  "scope": "Synthetic independent native-publisher/oracle value over the complete official schema. Seven angles do not identify hardware, prove controller/model compatibility, issue motion or certify safety."
+}

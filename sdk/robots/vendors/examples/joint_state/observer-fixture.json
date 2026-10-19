@@ -1,0 +1,54 @@
+{
+  "format_version": 1,
+  "kind": "complete-JointState-independent-observer-value-fixture-not-delivery-receipt",
+  "ros1": {
+    "header": {
+      "seq": 19,
+      "stamp": {
+        "sec": 42,
+        "nsec": 300000000
+      },
+      "frame_id": "base"
+    },
+    "name": [
+      "left",
+      "right"
+    ],
+    "position": [
+      1.25,
+      -2.5
+    ],
+    "velocity": [],
+    "effort": [
+      0.5,
+      -0.25
+    ]
+  },
+  "ros2": {
+    "header": {
+      "stamp": {
+        "sec": -2,
+        "nanosec": 300000000
+      },
+      "frame_id": "base"
+    },
+    "name": [
+      "left",
+      "right"
+    ],
+    "position": [
+      1.25,
+      -2.5
+    ],
+    "velocity": [],
+    "effort": [
+      0.5,
+      -0.25
+    ]
+  },
+  "native_identity": null,
+  "actual_generated_MAX": null,
+  "actual_codec_identity": null,
+  "actual_native_publish": false,
+  "all_values_must_be_checked": true
+}

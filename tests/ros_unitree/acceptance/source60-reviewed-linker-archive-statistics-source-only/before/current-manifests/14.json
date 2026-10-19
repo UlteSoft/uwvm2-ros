@@ -1,0 +1,119 @@
+{
+  "actual_current_tests_executed": 0,
+  "author_source_ready": {
+    "bytes": 6911,
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source51-reviewed-source-batch/official/author-source-ready.json",
+    "sha256": "03644a194b1ef3d389d3f069a98ed28bfb1ac7f9310ef978a3ba60a077a7c730"
+  },
+  "current_files": {
+    "tools/ros_distro/official_suites/README.md": {
+      "bytes": 27273,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/README.md",
+      "sha256": "0309fabe17982f4b00a5f1575a1c10acfcfc4618c7ce90bb7d7109e80c3ea001"
+    },
+    "tools/ros_distro/official_suites/differential.py": {
+      "bytes": 46193,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/differential.py",
+      "sha256": "16da5b3e2c2f38d1151f25bd1e2868357b268cd3cc3429b00ab055ab2be7a682"
+    },
+    "tools/ros_distro/official_suites/formats.py": {
+      "bytes": 16290,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/formats.py",
+      "sha256": "8aab9cca8d6a198774967bda50ab7b361c34884dd1b64490f1266edd6b292e47"
+    },
+    "tools/ros_distro/official_suites/mapping.template.json": {
+      "bytes": 208,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/mapping.template.json",
+      "sha256": "df0b53850790f478f0746a85d399787c3fea3a5108a905c40e7be0b99857fb36"
+    },
+    "tools/ros_distro/official_suites/plan.template.json": {
+      "bytes": 643,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/plan.template.json",
+      "sha256": "821ccd19dcd1f91c65e6747da04f8744c27c0eb663c9af4d44d1c22dede88157"
+    },
+    "tools/ros_distro/official_suites/ports/README.md": {
+      "bytes": 8719,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/ports/README.md",
+      "sha256": "82e8a1bab5326f1faddb0a0890f765f1caa17f10a50535338c151f375566b173"
+    },
+    "tools/ros_distro/official_suites/ports/build_rospy_pubsub_guest.py": {
+      "bytes": 7404,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/ports/build_rospy_pubsub_guest.py",
+      "sha256": "b82ef7d0908fb4a7fbaafa1b1d1affcc767835c5d04709b87842b871a43f6799"
+    },
+    "tools/ros_distro/official_suites/ports/rospy_pubsub_order.py": {
+      "bytes": 28613,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/ports/rospy_pubsub_order.py",
+      "sha256": "943c7d0eae76a7ea6222eba912cf6d9699b2bdcd1b7c372ff80e478afac0227f"
+    },
+    "tools/ros_distro/official_suites/ports/rospy_pubsub_order.source.json": {
+      "bytes": 1754,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/ports/rospy_pubsub_order.source.json",
+      "sha256": "d75b17147af13af90ac5ccb06c5634c3e1de6c4f2740cc38664e4dfe825c0275"
+    },
+    "tools/ros_distro/official_suites/ports/rospy_pubsub_order_guest.c": {
+      "bytes": 4944,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/ports/rospy_pubsub_order_guest.c",
+      "sha256": "d83baecf2046184b19488871b0e51e44ae275d4aac152785f857ab3104b99447"
+    },
+    "tools/ros_distro/official_suites/ports/rospy_pubsub_order_peer.py": {
+      "bytes": 4362,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/ports/rospy_pubsub_order_peer.py",
+      "sha256": "ea3fb2c9172aa0fa07f3f8df1394e91e3ffbead7a83a98a01d28bdd87a514f70"
+    },
+    "tools/ros_distro/official_suites/ports/test_rospy_pubsub_port.py": {
+      "bytes": 6847,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/ports/test_rospy_pubsub_port.py",
+      "sha256": "596ae44c1edfafa880a7a39681ee82894519ad8d946bcf7bd5159adb1c79e8ca"
+    },
+    "tools/ros_distro/official_suites/runner.py": {
+      "bytes": 49865,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/runner.py",
+      "sha256": "3edde9d032e56a7af1c901124902bd1118d63b84ef9a91457903c9a95f03f309"
+    },
+    "tools/ros_distro/official_suites/source-lock.template.json": {
+      "bytes": 134,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/source-lock.template.json",
+      "sha256": "0e019065c427a57d239956133e8ecd88d7ea9356afab9e983ccb602cfbe6f1d0"
+    },
+    "tools/ros_distro/official_suites/test_formats.py": {
+      "bytes": 9730,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/test_formats.py",
+      "sha256": "25f381d49a9760c3d46abaae0d415a239059586e6b5926303174528ef0471719"
+    },
+    "tools/ros_distro/official_suites/test_unittest_events.py": {
+      "bytes": 4096,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/test_unittest_events.py",
+      "sha256": "f51c333769aa8e03fbe2405bca2f78252ca47650a8c95da76e861d55ab562034"
+    },
+    "tools/ros_distro/official_suites/unittest-suite.template.json": {
+      "bytes": 648,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/unittest-suite.template.json",
+      "sha256": "bd0050137ca76a0bebab5ba91579b1977837f481e3b1b283af521cc9c2a28723"
+    },
+    "tools/ros_distro/official_suites/unittest_fixture.py": {
+      "bytes": 860,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/unittest_fixture.py",
+      "sha256": "5933e7fa99cf45bd2f86cc9698ee0302278c396f0b5c6481e76b1226ac4d7f71"
+    },
+    "tools/ros_distro/official_suites/uwvm_official_pytest.py": {
+      "bytes": 1786,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/uwvm_official_pytest.py",
+      "sha256": "8dc49685d21530e5eb5c870ce353531c0a6855c1e6d3a2703bc6a89da495563c"
+    },
+    "tools/ros_distro/official_suites/uwvm_official_unittest.py": {
+      "bytes": 8389,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/uwvm_official_unittest.py",
+      "sha256": "b83d8a22ee44c2785c2417bbcef23a915fff8ce9555530777f274287886c1474"
+    }
+  },
+  "independent_source_peer": {
+    "bytes": 16758,
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source51-reviewed-source-batch/official/independent-source-peer.json",
+    "sha256": "751c0c78b893ced69c7a16c9772a94b9a68470b96809b360d1176d45e4315cd9"
+  },
+  "kind": "reviewed-current-source51-official-integration",
+  "official_tests_executed": 0,
+  "scope": "Exact current source declaration only; no historical execution result is inherited.",
+  "status": "SOURCE_INTEGRATED_INDEPENDENT_REVIEW_CLOSED_NOT_EXECUTED"
+}

@@ -1,0 +1,47 @@
+{
+  "status": "PRESERVED_INITIAL_SAME_FREEZE_SOURCE_AND_SOURCE_PEER_ONLY_NOT_EXECUTED",
+  "files": [
+    {
+      "original": "tests/ros_unitree/run_legacy_transport.py",
+      "preserved_source": "tests/ros_unitree/acceptance/legacy12/baseline-source-only/run_legacy_transport.py",
+      "bytes": 16067,
+      "sha256": "94a9141edbe67c4aa9e28c5c5f438b9ca0450bbdcb90265e47323f15d0a79b39"
+    },
+    {
+      "original": "tests/ros_unitree/legacy_transport_inputs.py",
+      "preserved_source": "tests/ros_unitree/acceptance/legacy12/baseline-source-only/legacy_transport_inputs.py",
+      "bytes": 40775,
+      "sha256": "57aa156b8cf518d6b860383a6bab30dd0643cb210809885383d43085a146a689"
+    },
+    {
+      "original": "tests/ros_unitree/legacy_transport_session.py",
+      "preserved_source": "tests/ros_unitree/acceptance/legacy12/baseline-source-only/legacy_transport_session.py",
+      "bytes": 23655,
+      "sha256": "a8255fd4ac8732a052d3981b7f9391a4c33b16a5a94c1e151948356c128fd8b1"
+    },
+    {
+      "original": "tests/ros_unitree/LEGACY_TRANSPORT.md",
+      "preserved_source": "tests/ros_unitree/acceptance/legacy12/baseline-source-only/LEGACY_TRANSPORT.md",
+      "bytes": 14174,
+      "sha256": "c1f16968a046673793841e4913980c1607b887ccc397b1c3a8207dbc7d2e9fb6"
+    },
+    {
+      "original": "tests/ros_unitree/legacy-transport-selection.template.json",
+      "preserved_source": "tests/ros_unitree/acceptance/legacy12/baseline-source-only/legacy-transport-selection.template.json",
+      "bytes": 1834,
+      "sha256": "7028495fd7bfaee3e986c0f4a90c5bbe58ff5cff102c05d5e1191b3f5af7c78c"
+    },
+    {
+      "original": "tests/ros_unitree/test_legacy_transport_protocol.py",
+      "preserved_source": "tests/ros_unitree/acceptance/legacy12/baseline-source-only/test_legacy_transport_protocol.py",
+      "bytes": 15540,
+      "sha256": "1a58862bdf6746193e26a9891f2dfa1ecc3f608fd4177abfe64291cb583dc094"
+    },
+    {
+      "original": "tests/ros_unitree/legacy-transport-independent-source-peer.json",
+      "preserved_source": "tests/ros_unitree/acceptance/legacy12/baseline-source-only/legacy-transport-independent-source-peer.json",
+      "bytes": 6369,
+      "sha256": "07c69ae882c5cd2fef4341212c2242ecb85362f43f733f1f6f418e7a60cf469b"
+    }
+  ]
+}

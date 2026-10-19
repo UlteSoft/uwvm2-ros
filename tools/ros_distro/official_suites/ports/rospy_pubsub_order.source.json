@@ -1,0 +1,41 @@
+{
+  "repository": "https://github.com/ros/ros_comm.git",
+  "commit": "30483a9f218f1545eec16d3934bf3cb042e2cb5b",
+  "files": [
+    {
+      "path": "test/test_rospy/test/rostest/test_pubsub_order.py",
+      "url": "https://raw.githubusercontent.com/ros/ros_comm/30483a9f218f1545eec16d3934bf3cb042e2cb5b/test/test_rospy/test/rostest/test_pubsub_order.py",
+      "bytes": 3786,
+      "sha256": "c0f44510807ba74fafb1e3a64c57b1b3ca8d93eccabc1cca5b77ca1a49c9027e",
+      "git_blob": "96aa7cede8fe5f6764e2c8b8c63676a9353e5fc6"
+    },
+    {
+      "path": "test/test_rospy/test/rostest/pubsub-order.test",
+      "url": "https://raw.githubusercontent.com/ros/ros_comm/30483a9f218f1545eec16d3934bf3cb042e2cb5b/test/test_rospy/test/rostest/pubsub-order.test",
+      "bytes": 298,
+      "sha256": "20109aa4ebc61becbd5cb3600e735245cf5134be8f43a78879cfffda0a39a7d6",
+      "git_blob": "809fd142801567feaace4b33b4a536dd6dc24ffc"
+    },
+    {
+      "path": "test/test_rospy/nodes/listenerpublisher.py",
+      "url": "https://raw.githubusercontent.com/ros/ros_comm/30483a9f218f1545eec16d3934bf3cb042e2cb5b/test/test_rospy/nodes/listenerpublisher.py",
+      "bytes": 2500,
+      "sha256": "5a8bd018338f0290a33de9a1cc7accc3a6335a13c0bbea3753d8dd3679ba22be",
+      "git_blob": "c4487cea365c09a63c196f247e8d3653654693a3"
+    }
+  ],
+  "kind": "observed-official-API-port-source-identity-v1",
+  "scope": "Exact remote Git data only. No local checkout, SDK, official case execution or Wasm qualification implied.",
+  "case": {
+    "class": "TestPubSubOrder",
+    "method": "test_subscriber_first",
+    "module": "test_pubsub_order",
+    "value_domain": [
+      0,
+      109812312
+    ],
+    "selected_value": 42,
+    "publish_count": 10,
+    "publish_interval_seconds": 0.1
+  }
+}

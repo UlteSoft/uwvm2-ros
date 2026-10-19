@@ -27,23 +27,816 @@
 # include <cstdint>
 # include <limits>
 # include <memory>
+# include <atomic>
+# include <string>
+# include <type_traits>
+# include <utility>
+# include <vector>
 // macro
 # include <uwvm2/utils/macro/push_macros.h>
 // import
 # include <fast_io.h>
 # include <uwvm2/utils/container/impl.h>
+# include <uwvm2/utils/control/owned_file_image.h>
 # include <uwvm2/parser/wasm/standard/wasm1/type/impl.h>
 # include <uwvm2/parser/wasm/standard/wasm1p1/type/impl.h>
 # include <uwvm2/parser/wasm/standard/wasm3/type/impl.h>
 # include <uwvm2/object/impl.h>
-# include <uwvm2/uwvm/wasm/impl.h>
+# include <uwvm2/uwvm/wasm/type/impl.h>
+# include <uwvm2/uwvm/wasm/feature/impl.h>
+# include <uwvm2/uwvm/wasm/storage/impl.h>
+# include <uwvm2/runtime/gc/instance_phase.h>
+# include "storage.h"
+# include "builtin_wasip1_loader.h"
+# include "builtin_ros_loader.h"
 #endif
 
 #ifndef UWVM_MODULE_EXPORT
 # define UWVM_MODULE_EXPORT
 #endif
 
-UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full {}
+namespace uwvm2::uwvm::runtime::initializer
+{
+    extern "C++" { class restoration_context; }
+}
+namespace uwvm2::runtime::lib
+{
+    extern "C++" { class runtime_checkpoint_world_transaction; }
+}
+
+#if !defined(UWVM_MODULE)
+namespace uwvm2::uwvm::run
+{
+    extern "C++" { inline int prepare_owned_full_cli_source(bool, bool) noexcept; }
+}
+#endif
+
+UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
+{
+
+    // Native storage owner. It exists before load_wasm_file constructs parser
+    // objects; neither the file nor its inline Core3 context is ever moved.
+    // Mutable metadata access is restricted to serialized, drained native setup.
+    // This is not a guest handle, a numeric admission certificate or an epoch pin.
+    // Pure typed weak-lifetime edge. This class supplies no plan authentication,
+    // module pointer or optimization authority. Its real derived admitted_plan
+    // remains owned and checked by the backend, avoiding storage/outer module
+    // import cycles and avoiding a shared_ptr<void> admission credential.
+    class numeric_plan_lifetime
+    {
+    protected:
+        numeric_plan_lifetime() noexcept = default;
+    public:
+        virtual ~numeric_plan_lifetime() = default;
+        numeric_plan_lifetime(numeric_plan_lifetime const&) = delete;
+        numeric_plan_lifetime& operator=(numeric_plan_lifetime const&) = delete;
+    };
+
+    // Cold native loader INPUT only; no parsed pointers/IDs/epochs supplied.
+    // Names, exact per-module feature policy and private immutable image all
+    // move into the final source owner BEFORE any new parser view is created.
+    struct full_preload_input
+    {
+        ::std::u8string file_name{}, module_name{};
+        ::uwvm2::uwvm::wasm::type::wasm_parameter_t parameters{};
+        ::uwvm2::utils::control::owned_file_image::owner image{};
+    };
+
+    class full_source_instance;
+    // Native lifetime observation only. The real canonical factory captures
+    // this record in its shared_ptr deleter. A zero strong count/expired weak
+    // owner is NOT proof that Source/registry/NativeMemory destruction finished.
+    class full_source_destruction_completion final
+    {
+        friend class full_source_instance;
+        ::std::atomic<bool> complete_{};
+        full_source_destruction_completion() noexcept = default;
+    public:
+        using owner = ::std::shared_ptr<full_source_destruction_completion const>;
+        [[nodiscard]] bool completed() const noexcept
+        { return complete_.load(::std::memory_order_acquire); }
+    };
+
+    class full_source_instance final
+    {
+#if !defined(UWVM_MODULE)
+        friend int ::uwvm2::uwvm::run::prepare_owned_full_cli_source(bool, bool) noexcept;
+#endif
+        enum class cache_cli_origin { unknown, ordinary_full_cli };
+        cache_cli_origin cache_cli_origin_{cache_cli_origin::unknown};
+
+        friend class ::uwvm2::uwvm::runtime::initializer::restoration_context;
+        friend class ::uwvm2::runtime::lib::runtime_checkpoint_world_transaction;
+        ::std::shared_ptr<full_source_destruction_completion> destruction_completion_;
+        struct delete_and_publish_completion
+        {
+            ::std::shared_ptr<full_source_destruction_completion> actual;
+            void operator()(full_source_instance* instance) const noexcept
+            {
+                delete instance; // ALL members, including registry/mmap owners, finish here.
+                actual->complete_.store(true, ::std::memory_order_release);
+            }
+        };
+        ::std::u8string file_name_storage_;
+        ::std::u8string rename_storage_;
+        ::uwvm2::uwvm::wasm::type::wasm_file_t file_{};
+        // These arrays reach their FINAL extent before parsing. No later growth,
+        // relocation, reassignment of names or parser files is allowed. An old
+        // prepared code owner therefore retains its original parser/store graph
+        // even after the selected source is retired and replaced.
+        ::std::vector<full_preload_input> preload_inputs_{};
+        ::uwvm2::utils::container::vector<::uwvm2::uwvm::wasm::type::wasm_file_t> preload_files_{};
+        struct preload_binding
+        {
+            ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const* module{};
+            ::std::size_t id{(::std::numeric_limits<::std::size_t>::max)()};
+            ::std::uint_least64_t validation_epoch{};
+        };
+        mutable ::std::vector<preload_binding> preload_bindings_{};
+        // Actual final source owns isolated declaration/export and rewritten-name
+        // buffers beyond context teardown; maps are not global-selector credentials.
+        decltype(::uwvm2::uwvm::wasm::storage::all_module) checkpoint_declarations_{};
+        decltype(::uwvm2::uwvm::wasm::storage::all_module_export) checkpoint_exports_{};
+        ::uwvm2::uwvm::wasm::storage::configured_module_import_reset_map_t checkpoint_import_resets_{};
+        ::uwvm2::uwvm::wasm::storage::configured_module_memory_limit_map_t checkpoint_memory_limits_{};
+        ::uwvm2::uwvm::runtime::storage::runtime_registry_type registry_{};
+        ::std::weak_ptr<full_source_instance const> canonical_owner_{};
+        // Strong provenance identity ONLY. The native implementation remains
+        // unique-owned by preload_local_imported; every read below is lexical
+        // under genuine maintenance/closed-host/source admission, not lifetime
+        // permission granted by this identity or a saved checkpoint record.
+        ::std::shared_ptr<builtin_wasip1_loader_identity const> builtin_wasip1_identity_{};
+        ::uwvm2::uwvm::wasm::type::local_imported_t const* builtin_wasip1_member_{};
+        ::uwvm2::uwvm::wasm::type::local_imported_t const* builtin_wasip1_vector_begin_{};
+        ::std::size_t builtin_wasip1_vector_extent_{};
+        // Separate read-only debug closure. Never feeds generic mutation,
+        // cache, checkpoint initializers/capsules or an external restorer.
+        builtin_ros_loader_identity::census debug_ros_identities_{};
+        ::uwvm2::uwvm::wasm::type::local_imported_t const* debug_native_vector_begin_{};
+        ::std::size_t debug_native_vector_extent_{};
+        bool debug_native_vector_sealed_{};
+        bool debug_foreign_native_present_at_seal_{};
+
+        ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const* main_module_{};
+        ::std::uint_least64_t initializer_serial_{};
+        mutable ::std::size_t main_module_id_{(::std::numeric_limits<::std::size_t>::max)()};
+        bool initialized_{};
+        bool numeric_full_requested_{};
+#if defined(UWVM_EXPERIMENTAL_NATIVE_EH_PRIVATE_LEAF) && UWVM_EXPERIMENTAL_NATIVE_EH_PRIVATE_LEAF == 1
+        bool native_eh_private_leaf_requested_{};
+#endif
+        mutable bool full_validation_complete_{};
+        mutable ::std::uint_least64_t validation_epoch_{};
+        mutable ::std::weak_ptr<numeric_plan_lifetime const> numeric_plan_{};
+
+        explicit full_source_instance(::std::u8string file_name, ::std::u8string rename,
+            ::std::vector<full_preload_input> inputs, ::std::shared_ptr<full_source_destruction_completion> completion)
+            : destruction_completion_{::std::move(completion)}, file_name_storage_{::std::move(file_name)},
+              rename_storage_{::std::move(rename)}, preload_inputs_{::std::move(inputs)}
+        {
+            // [this nonmoving owner: terminated filename and rename buffers]
+            // [safe] file_ borrows these final object buffers before parsing.
+            file_.file_name = owned_file_name();
+            file_.module_name = owned_rename();
+            if(preload_inputs_.size() > 4095u) { ::fast_io::fast_terminate(); }
+            preload_files_.resize(preload_inputs_.size()); preload_bindings_.resize(preload_inputs_.size());
+            // FINAL array extents established BEFORE any filename borrow or parse.
+            for(::std::size_t index{}; index != preload_files_.size(); ++index)
+            {
+                auto const& input{preload_inputs_[index]}; auto& file{preload_files_.index_unchecked(index)};
+                file.file_name = decltype(file.file_name){::fast_io::containers::null_terminated, input.file_name.c_str(), input.file_name.size()};
+                file.module_name = decltype(file.module_name){input.module_name.data(), input.module_name.size()};
+                file.wasm_parameter = input.parameters;
+            }
+        }
+
+    public:
+        using mutable_owner = ::std::shared_ptr<full_source_instance>;
+        using owner = ::std::shared_ptr<full_source_instance const>;
+        full_source_instance(full_source_instance const&) = delete;
+        full_source_instance& operator=(full_source_instance const&) = delete;
+        full_source_instance(full_source_instance&&) = delete;
+        full_source_instance& operator=(full_source_instance&&) = delete;
+        ~full_source_instance() = default;
+
+        [[nodiscard]] static mutable_owner create_unparsed(::std::u8string file_name, ::std::u8string rename = {},
+            ::std::vector<full_preload_input> inputs = {})
+        {
+            // Real nonconst allocation, including both file/map objects. Bind the
+            // weak control-block identity before any const owner is published.
+            auto completion{::std::shared_ptr<full_source_destruction_completion>{new full_source_destruction_completion{}}};
+            mutable_owner result{new full_source_instance{::std::move(file_name), ::std::move(rename), ::std::move(inputs), completion},
+                delete_and_publish_completion{completion}};
+            result->canonical_owner_ = result;
+            return result;
+        }
+
+        [[nodiscard]] full_source_destruction_completion::owner destruction_completion() const noexcept
+        { return destruction_completion_; }
+
+        [[nodiscard]] ::uwvm2::utils::container::u8cstring_view owned_file_name() const noexcept
+        {
+            return ::uwvm2::utils::container::u8cstring_view{
+                ::fast_io::containers::null_terminated, file_name_storage_.c_str(), file_name_storage_.size()};
+        }
+        [[nodiscard]] ::uwvm2::utils::container::u8string_view owned_rename() const noexcept
+        {
+            // [safe] The storage owns exactly [data(), data() + size()).
+            // This view borrows that range while this source owner lives;
+            // no pointer is advanced and no byte outside the range is read.
+            return ::uwvm2::utils::container::u8string_view{rename_storage_.data(), rename_storage_.size()};
+        }
+
+        // These native borrows cannot outlive the owner and must not escape setup.
+        // The actual runtime maintenance callback excludes entries/metadata workers.
+        [[nodiscard]] ::uwvm2::uwvm::wasm::type::wasm_file_t& file_for_native_initialization() noexcept
+        {
+            if(initialized_) { ::fast_io::fast_terminate(); }
+            return file_;
+        }
+        [[nodiscard]] auto& preloaded_files_for_native_initialization() noexcept
+        {
+            if(initialized_) { ::fast_io::fast_terminate(); }
+            return preload_files_;
+        }
+        [[nodiscard]] ::std::size_t preloaded_file_count() const noexcept { return preload_files_.size(); }
+        [[nodiscard]] ::uwvm2::utils::control::owned_file_image::owner take_preloaded_image_for_native_initialization(
+            ::std::size_t index) noexcept
+        {
+            if(initialized_ || index >= preload_inputs_.size() || index >= preload_files_.size() ||
+               preload_files_.index_unchecked(index).binfmt_ver != 0u) { ::fast_io::fast_terminate(); }
+            return ::std::move(preload_inputs_[index].image); // Before any parser borrows; no owner/file relocation.
+        }
+        [[nodiscard]] ::uwvm2::uwvm::runtime::storage::runtime_registry_type& registry_for_native_initialization() noexcept
+        {
+            if(initialized_) { ::fast_io::fast_terminate(); }
+            return registry_;
+        }
+        [[nodiscard]] ::uwvm2::uwvm::wasm::type::wasm_file_t const& file() const noexcept { return file_; }
+        [[nodiscard]] ::uwvm2::uwvm::runtime::storage::runtime_registry_type const& registry() const noexcept { return registry_; }
+
+        [[nodiscard]] static bool has_canonical_owner(owner const& candidate) noexcept
+        {
+            if(!candidate) { return false; }
+            auto const& weak{candidate->canonical_owner_};
+            return !weak.owner_before(candidate) && !candidate.owner_before(weak);
+        }
+
+        // Called only after the actual initializer completed globals/tables and
+        // published its real per-module phase. No caller supplied ready/serial bool.
+        [[nodiscard]] bool seal_actual_initializer() noexcept
+        {
+            if(initialized_ || file_.binfmt_ver != 1u ||
+               ::uwvm2::uwvm::wasm::storage::details::selected_execute_wasm != ::std::addressof(file_) ||
+               ::uwvm2::uwvm::runtime::storage::details::selected_runtime_registry != ::std::addressof(registry_))
+            { return false; }
+            auto const serial{::uwvm2::runtime::gc::published_initializer_serial.load(::std::memory_order_acquire)};
+            auto const found{registry_.find(file_.module_name)};
+            if(found == registry_.end() || !found->second.gc_collection_phase.initialized_for(serial)) { return false; }
+            // [actual initialized member of this owned registry]
+            // [safe] found is not end; main_module_ never names an external module.
+            if(registry_.size() != preload_files_.size() + 1u || preload_files_.size() != preload_bindings_.size() ||
+               ::uwvm2::uwvm::wasm::storage::details::selected_preloaded_wasm != ::std::addressof(preload_files_)) { return false; }
+            for(::std::size_t index{}; index != preload_files_.size(); ++index)
+            {
+                // [final owned parser files][actual owned registry] end
+                // [safe] full actual extent BEFORE indexed WF/type/phase read.
+                auto const& file{preload_files_.index_unchecked(index)};
+                auto const member{registry_.find(file.module_name)};
+                auto const declared{::uwvm2::uwvm::wasm::storage::all_module.find(file.module_name)};
+                if(file.binfmt_ver != 1u || member == registry_.end() || member == found ||
+                   !member->second.gc_collection_phase.initialized_for(serial) ||
+                   declared == ::uwvm2::uwvm::wasm::storage::all_module.end() ||
+                   declared->second.type != ::uwvm2::uwvm::wasm::type::module_type_t::preloaded_wasm ||
+                   declared->second.module_storage_ptr.wf != ::std::addressof(file)) { return false; }
+                for(::std::size_t earlier{}; earlier != index; ++earlier)
+                { if(preload_bindings_[earlier].module == ::std::addressof(member->second)) { return false; } }
+                preload_bindings_[index].module = ::std::addressof(member->second);
+            }
+            // Real initializer owns this drained native setup. The factory
+            // identity must be current and bound to the FINAL native vector
+            // and typed unified registry, before any source epoch is sealed.
+            auto const builtin_identity{builtin_wasip1_loader_identity::selected_};
+            if(builtin_identity)
+            {
+                if(!builtin_wasip1_loader_identity::canonical(builtin_identity)) { return false; }
+                auto const* member{builtin_identity->current_member()};
+                if(member == nullptr) { return false; }
+                builtin_wasip1_identity_=builtin_identity;builtin_wasip1_member_=member;
+                auto const& providers{::uwvm2::uwvm::wasm::storage::preload_local_imported};
+                builtin_wasip1_vector_begin_=providers.cbegin();builtin_wasip1_vector_extent_=providers.size();
+            }
+            // Capture final extent and actual factory owner control blocks,
+            // not a supplied namespace/signature or a provider-ready flag.
+            debug_ros_identities_=builtin_ros_loader_identity::snapshot_current();
+            auto const& debug_providers{::uwvm2::uwvm::wasm::storage::preload_local_imported};
+            debug_native_vector_begin_=debug_providers.cbegin();debug_native_vector_extent_=debug_providers.size();
+#if defined(UWVM_SUPPORT_PRELOAD_DL)
+            debug_foreign_native_present_at_seal_=debug_foreign_native_present_at_seal_ ||
+                !::uwvm2::uwvm::wasm::storage::preloaded_dl.empty();
+#endif
+#if defined(UWVM_SUPPORT_WEAK_SYMBOL)
+            debug_foreign_native_present_at_seal_=debug_foreign_native_present_at_seal_ ||
+                !::uwvm2::uwvm::wasm::storage::weak_symbol.empty();
+#endif
+            debug_native_vector_sealed_=true;
+            main_module_ = ::std::addressof(found->second);
+            initializer_serial_ = serial;
+            initialized_ = true;
+            // Native source loading is finished; normal CLI reload cannot mutate
+            // the selected parser file in place after Core3 addresses escaped.
+            ::uwvm2::uwvm::wasm::storage::details::selected_execute_wasm_initialized = true;
+            return true;
+        }
+        [[nodiscard]] bool initialized_from_actual_state() const noexcept
+        {
+            return initialized_ && main_module_ != nullptr &&
+                main_module_->gc_collection_phase.initialized_for(initializer_serial_);
+        }
+
+        // Cold actual dense-record builder only, under the runtime publication lock.
+        // The integer is an observed assigned ID; it retains no resource by itself.
+        [[nodiscard]] bool bind_actual_compiled_main(::std::size_t assigned_id,
+            ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const* actual_module) const noexcept
+        {
+            if(!initialized_from_actual_state() || actual_module != main_module_ ||
+                assigned_id == (::std::numeric_limits<::std::size_t>::max)()) { return false; }
+            main_module_id_ = assigned_id;
+            return true;
+        }
+        [[nodiscard]] bool bind_actual_compiled_module(::std::size_t assigned_id,
+            ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const* actual_module) const noexcept
+        {
+            if(!initialized_from_actual_state() || assigned_id == (::std::numeric_limits<::std::size_t>::max)()) { return false; }
+            if(actual_module == main_module_) { return bind_actual_compiled_main(assigned_id, actual_module); }
+            for(auto& binding : preload_bindings_)
+            {
+                // Supplied address is only compared until it matches our actual
+                // initializer-sealed member, never dereferenced as caller authority.
+                if(binding.module == actual_module) { binding.id = assigned_id; return true; }
+            }
+            return false;
+        }
+        [[nodiscard]] ::std::size_t bound_initialized_module_id(
+            ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const* actual_module) const noexcept
+        {
+            if(!initialized_from_actual_state()) { return (::std::numeric_limits<::std::size_t>::max)(); }
+            if(actual_module == main_module_) { return main_module_id_; }
+            for(auto const& binding : preload_bindings_)
+            { if(binding.module == actual_module) { return binding.id; } }
+            return (::std::numeric_limits<::std::size_t>::max)();
+        }
+        [[nodiscard]] ::uwvm2::uwvm::wasm::type::wasm_file_t const* bound_initialized_file(::std::size_t actual_id,
+            ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const* actual_module) const noexcept
+        {
+            if(actual_id == (::std::numeric_limits<::std::size_t>::max)() || !initialized_from_actual_state()) { return nullptr; }
+            if(actual_module == main_module_)
+            { return actual_id == main_module_id_ && file_.binfmt_ver == 1u ? ::std::addressof(file_) : nullptr; }
+            if(preload_bindings_.size() != preload_files_.size()) { return nullptr; }
+            for(::std::size_t index{}; index != preload_bindings_.size(); ++index)
+            {
+                auto const& binding{preload_bindings_[index]};
+                if(binding.module != actual_module || binding.id != actual_id) { continue; }
+                // Genuine initializer-sealed module address + actual dense ID
+                // matched BEFORE any module/owned WF pointee is dereferenced.
+                if(!binding.module->gc_collection_phase.initialized_for(initializer_serial_)) { return nullptr; }
+                auto const& file{preload_files_.index_unchecked(index)};
+                return file.binfmt_ver == 1u ? ::std::addressof(file) : nullptr;
+            }
+            return nullptr;
+        }
+        [[nodiscard]] ::uwvm2::uwvm::wasm::type::wasm_file_t const* actual_validated_file(::std::size_t actual_id,
+            ::std::uint_least64_t actual_epoch,
+            ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const* actual_module) const noexcept
+        {
+            if(actual_epoch == 0u) { return nullptr; }
+            auto const file{bound_initialized_file(actual_id, actual_module)};
+            if(file == nullptr) { return nullptr; }
+            if(actual_module == main_module_) { return full_validation_complete_ && validation_epoch_ == actual_epoch ? file : nullptr; }
+            for(auto const& binding : preload_bindings_)
+            { if(binding.module == actual_module && binding.id == actual_id) { return binding.validation_epoch == actual_epoch ? file : nullptr; } }
+            return nullptr;
+        }
+        // This private provenance is written only after the real owning CLI
+        // parser + original initializer succeeded. It is NOT a body-validation
+        // epoch, an embedding registration or a serialized restore property.
+        [[nodiscard]] bool has_actual_ordinary_cli_cache_origin() const noexcept
+        {
+#if !defined(UWVM_MODULE)
+            return cache_cli_origin_ == cache_cli_origin::ordinary_full_cli && initialized_from_actual_state();
+#else
+            return false;
+#endif
+        }
+        enum class cache_native_provider_census { unsafe, no_native, builtin_wasip1 };
+        // Initializer-sealed provider identity only. Unlike the debugger's method
+        // below this does NOT claim a code-validation epoch: the first ordinary
+        // materializer may perform its cache query before that publication.
+        [[nodiscard]] cache_native_provider_census actual_cache_native_provider_census() const noexcept
+        {
+            if(!has_actual_ordinary_cli_cache_origin()) { return cache_native_provider_census::unsafe; }
+#if defined(UWVM_SUPPORT_PRELOAD_DL)
+            // Previously delivered C ABI tables/descriptors cannot be revoked
+            // by the current exposure flag or an empty counted host gate.
+            if(!::uwvm2::uwvm::wasm::storage::preloaded_dl.empty()) { return cache_native_provider_census::unsafe; }
+#endif
+#if defined(UWVM_SUPPORT_WEAK_SYMBOL)
+            if(!::uwvm2::uwvm::wasm::storage::weak_symbol.empty()) { return cache_native_provider_census::unsafe; }
+#endif
+            auto const& providers{::uwvm2::uwvm::wasm::storage::preload_local_imported};
+            if(!builtin_wasip1_identity_) { return providers.empty() ? cache_native_provider_census::no_native : cache_native_provider_census::unsafe; }
+            if(!builtin_wasip1_loader_identity::canonical(builtin_wasip1_identity_)) { return cache_native_provider_census::unsafe; }
+            auto const& selected{builtin_wasip1_loader_identity::selected_};
+            if(!selected || selected.get()!=builtin_wasip1_identity_.get() ||
+               selected.owner_before(builtin_wasip1_identity_) || builtin_wasip1_identity_.owner_before(selected) ||
+               providers.size()!=builtin_wasip1_vector_extent_ || providers.cbegin()!=builtin_wasip1_vector_begin_ ||
+               builtin_wasip1_identity_->current_member()!=builtin_wasip1_member_) { return cache_native_provider_census::unsafe; }
+            for(::std::size_t i{};i!=providers.size();++i)
+            {
+                // [actual unchanged FINAL native vector][i<count] end
+                // [safe] compare its OWN member address, not a name/count or
+                // caller pointer. Only the original factory-certified builtin
+                // wrapper is exempt; actual host-import cache still refuses
+                // its byte operations without an independent real adapter.
+                if(::std::addressof(providers.index_unchecked(i))!=builtin_wasip1_member_) { return cache_native_provider_census::unsafe; }
+            }
+            return cache_native_provider_census::builtin_wasip1;
+        }
+        // Cold debug-byte exclusivity qualification ONLY. This authenticates
+        // the actual finalized native provider census for this current source;
+        // no copied boolean supplies pause/host/N/publication or byte rights.
+        [[nodiscard]] bool actual_no_unadapted_native_memory_provider(::std::size_t actual_id,
+            ::std::uint_least64_t actual_epoch,
+            ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const* actual_module) const noexcept
+        {
+            if(actual_validated_file(actual_id,actual_epoch,actual_module)==nullptr) { return false; }
+#if defined(UWVM_SUPPORT_PRELOAD_DL)
+            // Previously delivered C ABI tables/descriptors cannot be revoked
+            // by the current exposure flag or an empty counted host gate.
+            if(!::uwvm2::uwvm::wasm::storage::preloaded_dl.empty()) { return false; }
+#endif
+#if defined(UWVM_SUPPORT_WEAK_SYMBOL)
+            if(!::uwvm2::uwvm::wasm::storage::weak_symbol.empty()) { return false; }
+#endif
+            auto const& providers{::uwvm2::uwvm::wasm::storage::preload_local_imported};
+            if(!builtin_wasip1_identity_) { return providers.empty(); }
+            if(!builtin_wasip1_loader_identity::canonical(builtin_wasip1_identity_)) { return false; }
+            auto const& selected{builtin_wasip1_loader_identity::selected_};
+            if(!selected || selected.get()!=builtin_wasip1_identity_.get() ||
+               selected.owner_before(builtin_wasip1_identity_) || builtin_wasip1_identity_.owner_before(selected) ||
+               providers.size()!=builtin_wasip1_vector_extent_ || providers.cbegin()!=builtin_wasip1_vector_begin_ ||
+               builtin_wasip1_identity_->current_member()!=builtin_wasip1_member_) { return false; }
+            for(::std::size_t i{};i!=providers.size();++i)
+            {
+                // [actual unchanged FINAL native vector][i<count] end
+                // [safe] compare its OWN member address, not a name/count or
+                // caller pointer. Only the original factory-certified builtin
+                // wrapper is exempt; actual host-import cache still refuses
+                // its byte operations without an independent real adapter.
+                if(::std::addressof(providers.index_unchecked(i))!=builtin_wasip1_member_) { return false; }
+            }
+            return true;
+        }
+        // Cold lexical builtin binding, not an external-resource restorer.
+        // The caller must retain genuine maintenance/ONE-hostclose/N/epoch
+        // protection. Only DATA is returned; no host pointer survives here.
+        // Passing labels, pointers or a detached descriptor grants no rights.
+        [[nodiscard]] bool actual_builtin_wasip1_function(::std::size_t actual_id,
+            ::std::uint_least64_t actual_epoch,
+            ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const* actual_module,
+            ::std::size_t actual_import_index, builtin_wasip1_function_data& output) const noexcept
+        {
+            if(actual_validated_file(actual_id, actual_epoch, actual_module) == nullptr ||
+               !builtin_wasip1_loader_identity::canonical(builtin_wasip1_identity_)) { return false; }
+            auto const& current{builtin_wasip1_loader_identity::selected_};
+            if(!current || current.get() != builtin_wasip1_identity_.get() ||
+               current.owner_before(builtin_wasip1_identity_) || builtin_wasip1_identity_.owner_before(current)) { return false; }
+            auto const& providers{::uwvm2::uwvm::wasm::storage::preload_local_imported};
+            if(providers.size() != builtin_wasip1_vector_extent_ || providers.cbegin() != builtin_wasip1_vector_begin_ ||
+               builtin_wasip1_identity_->current_member() != builtin_wasip1_member_) { return false; }
+            // actual_validated_file authenticated this real owned registry
+            // member BEFORE any module dereference. Bound the import ordinal
+            // BEFORE its record read; an opaque supplied host pointer is never
+            // used as source authority or called through a virtual table.
+            auto const& imports{actual_module->imported_function_vec_storage};
+            if(actual_import_index >= imports.size()) { return false; }
+            auto const& native{imports.index_unchecked(actual_import_index)};
+            if(native.link_kind != ::uwvm2::uwvm::runtime::storage::imported_function_link_kind::local_imported ||
+               native.target.local_imported.module_ptr != builtin_wasip1_member_) { return false; }
+            return builtin_wasip1_identity_->copy_function(builtin_wasip1_member_,native.target.local_imported.index,output);
+        }
+        // Read-only source-byte census ONLY. The synchronous DBG caller must
+        // own actual maintenance/closed-host/N/all-stop/publication/source pins.
+        // No checkpoint/mutation/cache code may substitute this for its older
+        // stricter no-unadapted-provider query. Unknown Native means refusal.
+        [[nodiscard]] bool actual_debug_memory_provider_census(::std::size_t actual_id,
+            ::std::uint_least64_t actual_epoch,
+            ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const* actual_module) const noexcept
+        {
+            if(!debug_native_vector_sealed_ || debug_foreign_native_present_at_seal_ ||
+               actual_validated_file(actual_id,actual_epoch,actual_module)==nullptr) {return false;}
+#if defined(UWVM_SUPPORT_PRELOAD_DL)
+            if(!::uwvm2::uwvm::wasm::storage::preloaded_dl.empty()) {return false;}
+#endif
+#if defined(UWVM_SUPPORT_WEAK_SYMBOL)
+            if(!::uwvm2::uwvm::wasm::storage::weak_symbol.empty()) {return false;}
+#endif
+            auto const& providers{::uwvm2::uwvm::wasm::storage::preload_local_imported};
+            if(providers.size()!=debug_native_vector_extent_ || providers.cbegin()!=debug_native_vector_begin_) {return false;}
+            ::uwvm2::uwvm::wasm::type::local_imported_t const* wasi{};
+            if(builtin_wasip1_identity_)
+            {
+                if(!builtin_wasip1_loader_identity::canonical(builtin_wasip1_identity_)) {return false;}
+                auto const& selected{builtin_wasip1_loader_identity::selected_};
+                if(!selected || selected.get()!=builtin_wasip1_identity_.get() ||
+                   selected.owner_before(builtin_wasip1_identity_) || builtin_wasip1_identity_.owner_before(selected) ||
+                   providers.size()!=builtin_wasip1_vector_extent_ || providers.cbegin()!=builtin_wasip1_vector_begin_ ||
+                   builtin_wasip1_identity_->current_member()!=builtin_wasip1_member_) {return false;}
+                wasi=builtin_wasip1_member_;
+            }
+            ::std::array<::uwvm2::uwvm::wasm::type::local_imported_t const*,7u> ros{};
+            for(::std::size_t i{};i!=debug_ros_identities_.size();++i)
+            {
+                auto const& identity{debug_ros_identities_[i]};if(!identity) {continue;}
+                if(!builtin_ros_loader_identity::still_selected(identity)) {return false;}
+                ros[i]=identity->current_member();if(ros[i]==nullptr || ros[i]==wasi) {return false;}
+                for(::std::size_t j{};j!=i;++j)if(ros[j]==ros[i]) {return false;}
+            }
+            for(::std::size_t i{};i!=providers.size();++i)
+            {
+                auto const* member{::std::addressof(providers.index_unchecked(i))};bool known=member==wasi;
+                for(auto actual:ros)if(actual!=nullptr && actual==member) {known=true;}
+                if(!known) {return false;} // Includes foreign, threads, copied or name-only wrappers.
+            }
+            return true;
+        }
+        [[nodiscard]] bool actual_builtin_ros_function(::std::size_t actual_id,
+            ::std::uint_least64_t actual_epoch,
+            ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const* actual_module,
+            ::std::size_t actual_import_index,builtin_ros_function_data& output) const noexcept
+        {
+            if(!actual_debug_memory_provider_census(actual_id,actual_epoch,actual_module)) {return false;}
+            auto const* file{actual_validated_file(actual_id,actual_epoch,actual_module)};
+            if(file==nullptr || file->binfmt_ver!=1u) {return false;}
+            auto const& imports{actual_module->imported_function_vec_storage};if(actual_import_index>=imports.size()) {return false;}
+            auto const& native{imports.index_unchecked(actual_import_index)};
+            if(native.link_kind!=::uwvm2::uwvm::runtime::storage::imported_function_link_kind::local_imported) {return false;}
+            builtin_ros_function_data candidate{};bool captured{};
+            for(auto const& identity:debug_ros_identities_)
+            {
+                if(!identity) {continue;}auto actual=identity->current_member();
+                if(actual!=nullptr && native.target.local_imported.module_ptr==actual)
+                {captured=identity->copy_function(actual,native.target.local_imported.index,candidate);break;}
+            }
+            if(!captured) {return false;}
+            // Authenticate original source import ordinal -> owned declaration
+            // -> exact actual type index BEFORE reading ANY supplied pointer.
+            // The initializer's linked-type match remains necessary but does
+            // not substitute for this synchronous query's own complete proof.
+            auto declared=[&]<::uwvm2::parser::wasm::concepts::wasm_feature... Fs>(
+                ::uwvm2::uwvm::wasm::type::feature_list<Fs...>) noexcept -> bool
+            {
+                auto const& parsed{file->wasm_module_storage.wasm_binfmt_ver1_storage};
+                auto const& importsec{::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<
+                    ::uwvm2::parser::wasm::standard::wasm1::features::import_section_storage_t<Fs...>>(parsed.sections)};
+                auto const& types{::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<
+                    ::uwvm2::parser::wasm::standard::wasm1::features::type_section_storage_t<Fs...>>(parsed.sections)};
+                auto const& functions{importsec.importdesc.index_unchecked(0u)};
+                if(functions.size()!=imports.size() || actual_import_index>=functions.size()) {return false;}
+                // Compare integer addresses only, then reconstitute the exact
+                // element through the owned vector AFTER checked alignment and
+                // ordinal bounds. Never subtract unrelated native pointers.
+                auto element=[](auto const& vector,auto pointer,::std::size_t& index) noexcept {
+                    using T=::std::remove_cvref_t<decltype(vector.index_unchecked(0u))>;
+                    auto count=vector.size();if(pointer==nullptr || count==0u || vector.cbegin()==nullptr ||
+                        count>(::std::numeric_limits<::std::uintptr_t>::max)()/sizeof(T))return false;
+                    auto begin=reinterpret_cast<::std::uintptr_t>(vector.cbegin());auto address=reinterpret_cast<::std::uintptr_t>(pointer);
+                    if(address<begin)return false;auto difference=address-begin;
+                    if(difference%sizeof(T)!=0u || difference/sizeof(T)>=count)return false;
+                    index=static_cast<::std::size_t>(difference/sizeof(T));
+                    return ::std::addressof(vector.index_unchecked(index))==pointer;
+                };
+                ::std::size_t import_slot{};
+                if(!element(importsec.imports,functions.index_unchecked(actual_import_index),import_slot)) {return false;}
+                auto const& original{importsec.imports.index_unchecked(import_slot)};
+                using external=::uwvm2::parser::wasm::standard::wasm1::type::external_types;
+                if(original.imports.type!=external::func) {return false;}
+                auto declaration=::std::addressof(original);
+                if(native.import_type_ptr!=declaration)
+                {
+                    ::std::size_t rewritten{};
+                    if(!element(actual_module->rewritten_import_vec_storage,native.import_type_ptr,rewritten)) {return false;}
+                    declaration=::std::addressof(actual_module->rewritten_import_vec_storage.index_unchecked(rewritten));
+                    // Actual import-reset copies only names; it must retain
+                    // this original declaration's real function type pointer.
+                    if(declaration->imports.type!=external::func ||
+                       declaration->imports.storage.function!=original.imports.storage.function) {return false;}
+                }
+                ::std::size_t type_index{};
+                if(!element(types.types,declaration->imports.storage.function,type_index)) {return false;}
+                auto const& shape{types.types.index_unchecked(type_index)};
+                auto const& runtime_types{actual_module->type_section_storage};
+                if(runtime_types.type_section_begin!=types.types.cbegin() || runtime_types.type_section_end!=types.types.cend() ||
+                   runtime_types.type_section_count!=types.types.size()) {return false;}
+                if(!types.core3_type_kinds.empty() && (types.core3_type_kinds.size()!=types.types.size() ||
+                    types.core3_type_kinds.index_unchecked(type_index)!=::uwvm2::parser::wasm::standard::wasm3::type::composite_kind::function)) {return false;}
+                if(candidate.parameter_count>candidate.parameters.size() || candidate.result_count>candidate.results.size()) {return false;}
+                if(!types.owned_signatures.empty())
+                {
+                    if(types.owned_signatures.size()!=types.types.size() ||
+                       runtime_types.owned_signature_begin!=types.owned_signatures.cbegin() ||
+                       runtime_types.owned_signature_end!=types.owned_signatures.cend()) {return false;}
+                    auto const& exact{types.owned_signatures.index_unchecked(type_index)};
+                    auto p=candidate.parameter_count,r=candidate.result_count;
+                    if(exact.type_index!=type_index || exact.parameters.size()!=p || exact.results.size()!=r ||
+                       exact.carriers.size()!=static_cast<::std::size_t>(p)+r+1u || exact.carriers.cbegin()==nullptr) {return false;}
+                    auto begin=exact.carriers.cbegin();
+                    if(shape.parameter.begin!=begin || shape.parameter.end!=begin+p || shape.result.begin!=begin+p ||
+                       shape.result.end!=begin+p+r) {return false;}
+                    using kind=::uwvm2::parser::wasm::standard::wasm3::type::value_kind;
+                    for(unsigned i{};i!=p;++i)
+                    {
+                        auto code=candidate.parameters[i];if(code!=0x7fu && code!=0x7eu)return false;
+                        if(exact.parameters.index_unchecked(i).kind!=(code==0x7fu?kind::i32:kind::i64) || static_cast<unsigned>(begin[i])!=code)return false;
+                    }
+                    for(unsigned i{};i!=r;++i)
+                    {
+                        auto code=candidate.results[i];if(code!=0x7fu && code!=0x7eu)return false;
+                        if(exact.results.index_unchecked(i).kind!=(code==0x7fu?kind::i32:kind::i64) || static_cast<unsigned>(begin[p+i])!=code)return false;
+                    }
+                    return true;
+                }
+                if(runtime_types.owned_signature_begin!=nullptr || runtime_types.owned_signature_end!=nullptr) {return false;}
+                // Legacy carriers borrow the genuine immutable source image.
+                // Prove their complete byte range before any element read.
+                auto scalar_range=[&](auto const& range,auto const& expected,unsigned count) noexcept {
+                    using T=::std::remove_cvref_t<decltype(*range.begin)>;
+                    if(count>expected.size() || sizeof(T)!=1u)return false;
+                    if(range.begin==nullptr || range.end==nullptr)return count==0u && range.begin==nullptr && range.end==nullptr;
+                    auto base=reinterpret_cast<::std::uintptr_t>(file->source_cbegin());auto bytes=file->source_size();
+                    if(base==0u || bytes>(::std::numeric_limits<::std::uintptr_t>::max)()-base)return false;
+                    auto first=reinterpret_cast<::std::uintptr_t>(range.begin),last=reinterpret_cast<::std::uintptr_t>(range.end);
+                    if(first<base || last<first || last-base>bytes || last-first!=count)return false;
+                    for(unsigned i{};i!=count;++i){auto code=expected[i];if((code!=0x7fu && code!=0x7eu)||static_cast<unsigned>(range.begin[i])!=code)return false;}
+                    return true;
+                };
+                return scalar_range(shape.parameter,candidate.parameters,candidate.parameter_count) &&
+                       scalar_range(shape.result,candidate.results,candidate.result_count);
+            };
+            if(!declared(::uwvm2::uwvm::wasm::type::binfmt_ver1_feature_list_t{})) {return false;}
+            output=candidate;return true; // sole detached result publication after every full-type/provenance check.
+        }
+        [[nodiscard]] ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const* initialized_main_module() const noexcept
+        { return initialized_from_actual_state() ? main_module_ : nullptr; }
+        // Concrete initialized_native_generation implementation. The caller is
+        // the real full registry/validator publisher under its existing lock.
+        // A request bit/epoch alone proves neither module identity nor lifetime.
+        [[nodiscard]] static bool pending_numeric_has_canonical_owner(owner const& candidate) noexcept
+        { return has_canonical_owner(candidate); }
+        [[nodiscard]] ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const*
+            pending_numeric_initialized_module() const noexcept
+        { return full_validation_complete_ && initialized_from_actual_state() ? main_module_ : nullptr; }
+        [[nodiscard]] ::std::size_t pending_numeric_module_id() const noexcept
+        { return full_validation_complete_ ? main_module_id_ : (::std::numeric_limits<::std::size_t>::max)(); }
+        // Compiler declaration identity from the actual initializer and bound
+        // dense record. This accessor supplies no function-validation proof.
+        [[nodiscard]] ::std::size_t bound_initialized_main_module_id() const noexcept
+        {
+            return initialized_from_actual_state() ? main_module_id_ :
+                (::std::numeric_limits<::std::size_t>::max)();
+        }
+        [[nodiscard]] ::std::uint_least64_t actual_full_validation_epoch() const noexcept
+        { return full_validation_complete_ ? validation_epoch_ : 0u; }
+
+        // Only the real validated full-record publisher invokes this method.
+        // It cannot accept a foreign descriptor, caller bool or guessed ID.
+        [[nodiscard]] bool record_actual_full_validation(::std::size_t actual_id,
+            ::std::uint_least64_t actual_epoch,
+            ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const* actual_module) const noexcept
+        {
+            if(actual_epoch == 0u || bound_initialized_file(actual_id, actual_module) == nullptr) { return false; }
+            if(actual_module == main_module_)
+            {
+                validation_epoch_ = actual_epoch; full_validation_complete_ = true; return true;
+            }
+            for(auto& binding : preload_bindings_)
+            {
+                if(binding.module == actual_module && binding.id == actual_id)
+                { binding.validation_epoch = actual_epoch; return true; }
+            }
+            return false;
+        }
+        [[nodiscard]] bool pending_numeric_requested() const noexcept { return numeric_full_requested_; }
+#if defined(UWVM_EXPERIMENTAL_NATIVE_EH_PRIVATE_LEAF) && UWVM_EXPERIMENTAL_NATIVE_EH_PRIVATE_LEAF == 1
+        [[nodiscard]] bool native_eh_private_leaf_requested() const noexcept { return native_eh_private_leaf_requested_; }
+        [[nodiscard]] bool request_native_eh_private_leaf_after_actual_initializer() noexcept
+        {
+            // Administrative request only, before compiler workers/code exist.
+            // An actual initialized source remains necessary; this bit supplies
+            // no fused-validation, native CFI or executable permission.
+            if(!initialized_from_actual_state() || full_validation_complete_) { return false; }
+            native_eh_private_leaf_requested_ = true;
+            return true;
+        }
+#endif
+        void request_numeric_full_after_actual_initializer() noexcept
+        {
+            if(!initialized_from_actual_state()) { ::fast_io::fast_terminate(); }
+            // Optimization request only, never an admission/owner certificate.
+            numeric_full_requested_ = true;
+        }
+        void bind_numeric_plan_lifetime_after_actual_validation(
+            ::std::shared_ptr<numeric_plan_lifetime const> const& actual_plan) const noexcept
+        {
+            if(!full_validation_complete_ || !actual_plan) { ::fast_io::fast_terminate(); }
+            numeric_plan_ = actual_plan; // weak only: no source->plan->source cycle
+        }
+        void clear_numeric_plan_lifetime_after_drain() const noexcept { numeric_plan_.reset(); }
+        [[nodiscard]] bool has_numeric_plan_lifetime() const noexcept { return !numeric_plan_.expired(); }
+        [[nodiscard]] bool numeric_plan_lifetime_matches(
+            ::std::shared_ptr<numeric_plan_lifetime const> const& actual_plan) const noexcept
+        {
+            // Cold publication observer only: this edge is lifetime evidence,
+            // not admission. The caller separately checks the actual typed
+            // admitted_plan and its concrete canonical owning-source pin.
+            return actual_plan && !numeric_plan_.owner_before(actual_plan) && !actual_plan.owner_before(numeric_plan_);
+        }
+        void retire_actual_full_code_after_drain() const noexcept
+        {
+            numeric_plan_.reset();
+            full_validation_complete_ = false;
+            validation_epoch_ = 0u;
+            for(auto& binding : preload_bindings_) { binding.validation_epoch = 0u; }
+        }
+        [[nodiscard]] ::std::size_t assigned_main_module_id() const noexcept { return main_module_id_; }
+    };
+
+    static_assert(!::std::is_copy_constructible_v<full_source_instance>);
+    static_assert(!::std::is_move_constructible_v<full_source_instance>);
+    static_assert(!::std::is_move_assignable_v<full_source_instance>);
+
+    namespace details
+    {
+        // Strong native publication root. The two lower-layer selectors are mere
+        // borrows into this object; they are never evidence of ownership/admission.
+        inline full_source_instance::owner selected_full_source{};
+    }
+
+    // Caller holds native maintenance/publication ownership or the existing
+    // externally serialized administration contract. This is not an atomic
+    // getter for a host observer racing replacement without an execution lease.
+    [[nodiscard]] inline full_source_instance::owner selected_full_source_owner_pin() noexcept
+    { return details::selected_full_source; } // cold native setup/materialization only
+
+    // Lexical identity comparison under the SAME maintenance/publication or
+    // execution lease that protects the selected owner. No owner is returned
+    // or retained, and this result grants no independent lifetime/admission.
+    // Compare both pointer and control block without dereferencing a candidate;
+    // an alias, old source or non-owning pointer cannot substitute for the root.
+    [[nodiscard]] inline bool selected_full_source_matches_owner(full_source_instance::owner const& candidate) noexcept
+    {
+        auto const& selected{details::selected_full_source};
+        return candidate && selected && candidate.get() == selected.get() &&
+            !candidate.owner_before(selected) && !selected.owner_before(candidate);
+    }
+
+    [[nodiscard]] inline bool select_unparsed_full_source_after_drain(
+        full_source_instance::mutable_owner const& candidate) noexcept
+    {
+        full_source_instance::owner const owner{candidate};
+        if(!full_source_instance::has_canonical_owner(owner) || candidate->initialized_from_actual_state()) { return false; }
+        if(details::selected_full_source) { return false; }
+        details::selected_full_source = owner;
+        // [strong selected_full_source -> nonmoving actual file/map]
+        // [safe] selectors are native borrows retained until drained replacement.
+        ::uwvm2::uwvm::wasm::storage::details::selected_execute_wasm =
+            ::std::addressof(candidate->file_for_native_initialization());
+        ::uwvm2::uwvm::wasm::storage::details::selected_preloaded_wasm =
+            ::std::addressof(candidate->preloaded_files_for_native_initialization());
+        ::uwvm2::uwvm::runtime::storage::details::selected_runtime_registry =
+            ::std::addressof(candidate->registry_for_native_initialization());
+        return true;
+    }
+
+    inline void retire_selected_full_source_after_drain() noexcept
+    {
+        if(!details::selected_full_source) { return; }
+        // Actual engines/readers/workers have already drained. Drop every loader
+        // view before releasing the last selected source pin. Prepared debugger
+        // tokens may independently retain their old source; epoch checks forbid
+        // publishing that token into a replacement runtime generation.
+        ::uwvm2::uwvm::wasm::storage::all_module_export.clear();
+        ::uwvm2::uwvm::wasm::storage::all_module.clear();
+        // [old strong selected source, all dependent views already erased]
+        // [safe] no reader remains; reset borrowed selectors before ownership drops.
+        ::uwvm2::uwvm::wasm::storage::details::selected_preloaded_wasm = nullptr;
+        ::uwvm2::uwvm::wasm::storage::details::selected_execute_wasm = nullptr;
+        ::uwvm2::uwvm::wasm::storage::details::selected_execute_wasm_initialized = false;
+        ::uwvm2::uwvm::runtime::storage::details::selected_runtime_registry = nullptr;
+        details::selected_full_source.reset();
+    }
+}
+
 
 #ifndef UWVM_MODULE
 // macro

@@ -1,0 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+if(@UWVM_C_LIFECYCLE_LINK_ADMITTED@)
+ include(CMakeFindDependencyMacro)
+ find_dependency(type_description_interfaces)
+ find_dependency(rosidl_runtime_c)
+endif()

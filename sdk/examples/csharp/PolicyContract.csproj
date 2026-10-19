@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net8.0</TargetFramework><OutputType>Exe</OutputType><Nullable>enable</Nullable><EnableDefaultCompileItems>false</EnableDefaultCompileItems><AssemblyName>ros-csharp-local-policy-only</AssemblyName></PropertyGroup>
+  <ItemGroup><Compile Include="PolicyContract.cs" /><ProjectReference Include="../../csharp/Uwvm.RosWasm.csproj" AdditionalProperties="RosBackend=2" /></ItemGroup>
+</Project>

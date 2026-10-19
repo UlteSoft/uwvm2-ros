@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>uwvm_rmw_platform</name><version>0.1.0</version>
+  <description>Explicitly prepared clock/log capability platform for original ROS client libraries.</description>
+  <maintainer email="maintainers@uwvm.invalid">UWVM contributors</maintainer>
+  <license>Apache-2.0</license><buildtool_depend>ament_cmake</buildtool_depend>
+  <export><build_type>ament_cmake</build_type></export>
+</package>

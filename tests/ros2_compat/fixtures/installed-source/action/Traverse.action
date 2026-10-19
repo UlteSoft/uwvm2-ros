@@ -1,0 +1,12 @@
+# Owned Action fixture. The real SDK generates all implicit protocol types.
+# It is not a robot command, simulator model, or official upstream test.
+Child command
+int32 steps 3
+string label "test"
+---
+bool completed false
+Child final_state
+string message ""
+---
+float64 fraction 0.0
+Child state

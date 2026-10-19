@@ -1,0 +1,69 @@
+{
+  "kind": "byte-exact-installation-of-existing-generated-Spot-bridge-not-new-generation",
+  "original_generation": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/robots/mobile_manipulation/spot/protobuf/bridge-generated/generation.vendor.json",
+  "generation_sha256": "6ffc30864d12276bb4e266b057f77bacac023d76dc8adb87de804ca4e9a732f2",
+  "copied_outputs": {
+    "bounded_interfaces.go": {
+      "bytes": 39079,
+      "sha256": "4e5055202791edb834923a4243160fbd01caedb8a34dccaa7f381bc12f63e741"
+    },
+    "bounded_interfaces.h": {
+      "bytes": 14296,
+      "sha256": "958d2edbd9bd797d0050ceb0bb8273d3b115507a9317d40c788e91156b8bac55"
+    },
+    "bounded_interfaces.hpp": {
+      "bytes": 21630,
+      "sha256": "1a300e6c2765006c91affda9cca88f50cedb9725307213e1f9919ae1556e80fc"
+    },
+    "bounded_interfaces.mjs": {
+      "bytes": 20874,
+      "sha256": "a9354b1ffdab56a7c54de8d30b3137f533aea982753a658177f531927303d7d9"
+    },
+    "bounded_interfaces.rs": {
+      "bytes": 19675,
+      "sha256": "52aed95f392840370843f67f85b0066a3ac0e65bfcfedb9edf596f3d271a6ed6"
+    },
+    "bounded_interfaces.ts": {
+      "bytes": 22753,
+      "sha256": "b7216e1da59a1c3f97650dbb974e1f17bd6003bf1c9679901ffbc0590d03e54c"
+    },
+    "bounded_records.go": {
+      "bytes": 48220,
+      "sha256": "0434dc96c82febc9403f62a6dfdfad5b82b2131baea36dc9c80b04632f365368"
+    },
+    "bounded_records.h": {
+      "bytes": 70865,
+      "sha256": "d8304e32da10c2262649164236b3ab485f302b48d97628cd988c5a0731e37a4e"
+    },
+    "bounded_records.hpp": {
+      "bytes": 12789,
+      "sha256": "02d8b72070e5f753283e55f72383b6a14466e16b10fb7108e31f82a5e95dc1f7"
+    },
+    "bounded_records.mjs": {
+      "bytes": 37983,
+      "sha256": "d27e42141dd451d8d82e182dea3f23274e2fc0dc5481ba8649ce7e1d4c3f137d"
+    },
+    "bounded_records.rs": {
+      "bytes": 39640,
+      "sha256": "8b76fada73bdf5caa772c6e7d1610473c249c816c62d2358e1711f79ef920523"
+    },
+    "bounded_records.ts": {
+      "bytes": 41631,
+      "sha256": "6333d61cbaf9774bcf49f03217fcabd312fafa70ba411ec57e33f951e81d5f60"
+    },
+    "native_constants.hpp": {
+      "bytes": 267,
+      "sha256": "4700d3bdf5da49f6392540d0487fa661da6f06c15fc817f1cf6e73bd44134b7c"
+    },
+    "native_identity.cc": {
+      "bytes": 12881,
+      "sha256": "cd9970967432ea8271837123ef0427edaec28c2aee6d5aa8979f880a61b14878"
+    }
+  },
+  "default_authority": [],
+  "native_registry_emitted": false,
+  "original_generated_products_retained": true,
+  "actual_new_generation_or_compiler_or_guest_runs": 0,
+  "layout": "Exactly sdk/custom-types/spot-bridge-complete so existing ../../assemblyscript imports resolve to the genuine SDK.",
+  "qualification": "Install existing generated Source only. No whole Spot SDK, native identity, controller or performance acceptance."
+}

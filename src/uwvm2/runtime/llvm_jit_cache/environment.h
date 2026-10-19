@@ -30,6 +30,7 @@
 # include <cstdint>
 # include <cstring>
 # include <memory>
+# include <type_traits>
 # include <uwvm2/runtime/compiler/shared/strict_float.h>
 // macro
 # include <uwvm2/utils/macro/push_macros.h>
@@ -38,6 +39,7 @@
 #  include <unistd.h>
 # endif
 # if defined(UWVM_RUNTIME_LLVM_JIT)
+#  include <uwvm2/runtime/compiler/llvm_jit/pinned_version.h>
 #  include <llvm/Config/llvm-config.h>
 #  include <llvm/ADT/StringMap.h>
 #  include <llvm/ADT/StringRef.h>
@@ -50,6 +52,8 @@
 # include <uwvm2/utils/container/impl.h>
 # include <uwvm2/uwvm/runtime/runtime_mode/impl.h>
 # include "format.h"
+# include "self_executable.h"
+# include "kernel_origin.h"
 #endif
 
 #ifndef UWVM_MODULE_EXPORT
@@ -58,12 +62,25 @@
 
 #include "source_provenance_policy.h"
 
+#if defined(__linux__) && (defined(__GNUC__) || defined(__clang__))
+# pragma GCC visibility push(hidden)
+#endif
+
 UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
 {
     namespace details
     {
         namespace posix
         {
+#if defined(__unix__) || defined(__APPLE__) || defined(__linux__) || defined(__linux)
+            // Bind the real libc ABI as noexcept so cache identity setup does
+            // not gain a spurious C++ exception edge around the POSIX query.
+# if defined(__APPLE__) || defined(__DARWIN_C_LEVEL)
+            extern "C" ::uid_t libc_getuid() noexcept __asm__("_getuid");
+# else
+            extern "C" ::uid_t libc_getuid() noexcept __asm__("getuid");
+# endif
+#endif
 #if !(defined(_WIN32) && !defined(__CYGWIN__) && !defined(__WINE__))
             // The direct libc symbol keeps environment lookup available inside the header-only/module-shared implementation.
 # if defined(__APPLE__) || defined(__DARWIN_C_LEVEL)
@@ -436,10 +453,124 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
     {
         auto out{details::make_cache_key(u8"uwvm-runtime-abi")};
         // The schema version separates intentional ABI-fingerprint changes from ordinary project version changes.
-        details::append_cache_key_value(out, u8"schema", u8"uwvm2ros-runtime-abi-v12");
+        details::append_cache_key_value(out, u8"schema", u8"uwvm2ros-runtime-abi-v27");
+        // Core 3 call_ref/return_call_ref now share the authoritative rich-type
+        // matcher in the pure validator and both fused compilers. Keep this
+        // validation-policy identity independent of project/source IDs: an
+        // embedder may reuse them, and unchanged emitted IR alone cannot name
+        // the admission rules under which an older object was compiled. Full,
+        // parallel-full, lazy-single/group and tiered materialization all derive
+        // their actual uwvm_abi from this common fingerprint before disk lookup.
+        // The checkpoint publisher hashes these exact context bytes as well.
+        details::append_cache_key_value(out, u8"wasm-core3-validation", u8"fused-rich-call-reference-v1");
+        //         // Typed scalar entries use LLVM tailcc on the qualified backend family;
+        // raw C++ entry pointers retain their old convention. Old native objects
+        // must not mix these private typed ABIs even with an identical source ID.
+        details::append_cache_key_value(out, u8"typed-call-abi", u8"qualified-tailcc-explicit-tuple-buffer-v3");
+        // X86 admission follows the actual aligned-frame repair capability,
+        // never LLVM version alone. Record both outcomes and the explicit
+        // backport opt-in in every cache/checkpoint context.
+        details::append_cache_key_value(out, u8"x86-tailcc-admission", u8"aligned-frame-capability-v1");
+#if (defined(LLVM_UWVM_X86_TAILCC_ALIGNED_FRAME_FIXED) && LLVM_UWVM_X86_TAILCC_ALIGNED_FRAME_FIXED == 1) || \
+    (defined(UWVM_LLVM_X86_TAILCC_ALIGNED_FRAME_FIXED) && UWVM_LLVM_X86_TAILCC_ALIGNED_FRAME_FIXED == 1)
+        details::append_cache_key_value(out, u8"x86-tailcc-aligned-frame", u8"fixed");
+#else
+        details::append_cache_key_value(out, u8"x86-tailcc-aligned-frame", u8"unfixed");
+#endif
+#if defined(UWVM_LLVM_X86_TAILCC_ALIGNED_FRAME_FIXED) && UWVM_LLVM_X86_TAILCC_ALIGNED_FRAME_FIXED == 1
+        details::append_cache_key_value(out, u8"x86-tailcc-aligned-frame-backport", u8"qualified");
+#else
+        details::append_cache_key_value(out, u8"x86-tailcc-aligned-frame-backport", u8"unqualified");
+#endif
+#if defined(UWVM_LLVM_X86_TAILCC_FIXED)
+        details::append_cache_key_value(out, u8"x86-tailcc-backport", u8"qualified");
+#else
+        details::append_cache_key_value(out, u8"x86-tailcc-backport", u8"version-policy");
+#endif
+#if defined(__riscv)
+        // Match the capability selected by the exact pinned provider, including
+        // module builds. A cache entry from a different TailCC policy must never
+        // be loaded as a typed native target with an incompatible calling ABI.
+# if defined(UWVM_LLVM_RISCV_TAILCC_FIXED) && UWVM_LLVM_RISCV_TAILCC_FIXED == 1
+        details::append_cache_key_value(out, u8"riscv-tailcc-backport", u8"qualified");
+# else
+        details::append_cache_key_value(out, u8"riscv-tailcc-backport", u8"unqualified");
+# endif
+#endif
+#if defined(__loongarch_grlen) && __loongarch_grlen == 64
+        // The repaired provider has a different private typed ABI even if its
+        // version/source labels match an older C-ABI provider. Cache both
+        // configurations normally, but never reuse objects across them.
+# if (defined(UWVM_LLVM_LOONGARCH64_TAILCC_FIXED) && UWVM_LLVM_LOONGARCH64_TAILCC_FIXED == 1) || \
+     (defined(LLVM_UWVM_ROS_LOONGARCH64_TAILCC) && LLVM_UWVM_ROS_LOONGARCH64_TAILCC == 1)
+        details::append_cache_key_value(out, u8"loongarch64-tailcc-backport", u8"qualified-v1");
+# else
+        details::append_cache_key_value(out, u8"loongarch64-tailcc-backport", u8"unqualified");
+# endif
+#endif
+        // TailCC and the legacy C typed ABI both support authenticated caches.
+        // Their parameter-area ownership differs even with identical SDK labels.
+#if (defined(__linux__) && defined(__mips__) && defined(__mips64) && defined(__MIPSEL__) && __SIZEOF_POINTER__ == 8 && \
+     defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips) && \
+     ((defined(UWVM_LLVM_MIPS_N64EL_R2_TAILCC_FIXED) && UWVM_LLVM_MIPS_N64EL_R2_TAILCC_FIXED == 1) || \
+      (defined(LLVM_UWVM_ROS_MIPS_N64EL_R2_TAILCC) && LLVM_UWVM_ROS_MIPS_N64EL_R2_TAILCC == 1)))
+        details::append_cache_key_value(out, u8"mips-n64el-r2-tailcc", u8"callee-pop-v1");
+#else
+        details::append_cache_key_value(out, u8"mips-n64el-r2-tailcc", u8"producer-default");
+#endif
+        // A limited Memory64 reservation uses software bounds instead of the
+        // fixed partial-guard threshold. Retire older generated address checks.
+        details::append_cache_key_value(out, u8"memory64-reservation-bounds", u8"declared-maximum-v1");
+        // Version the SIMD sign lowering uniformly across cache configurations and native targets.
+        details::append_cache_key_value(out, u8"simd-sign-lowering", u8"mips64-scalar-mask-v1");
+        details::append_cache_key_value(out, u8"simd-phi-lowering", u8"mips64-no-msa-word-vector-o0-v1");
+        details::append_cache_key_value(out, u8"mips-debug-long-branch", u8"static-pcrel-range-and-contained-absolute-v1");
+        details::append_cache_key_value(out, u8"simd-round-lowering", u8"mips-n64-no-msa-bounded-native-v1");
+        // Explicit table initializers add a borrowed expression pointer to local table records. Cached native
+        // code must never use the previous record stride/owner offset, even with an unchanged embedder source ID.
+        details::append_cache_key_value(out, u8"local-table-layout", u8"typed-u64-limits-initializer-expression-v2");
+        // ref.func objects now relocate directly to stable VM function records. Older emitters do not bind these symbols.
+        details::append_cache_key_value(out, u8"function-reference-emission", u8"relocated-record-ssa-v1");
+        // Native indirect/reference calls admit declared Core 3 function
+        // subtypes through a caller-local preorder interval. Old exact-ID
+        // objects must not be replayed against these new target encodings.
+        details::append_cache_key_value(out, u8"function-call-type-check", u8"caller-forest-interval-v1");
+        details::append_cache_key_value(out, u8"tag-instance-storage", u8"local-and-imported-v1");
+        // Typed native catches use relocatable typeinfo/personality declarations and cleanup edges.
+        // Reject pre-native-EH objects even when an embedder reuses the same source identifier.
+        details::append_cache_key_value(out, u8"exception-control", u8"numeric-itanium-dwarf-native-v2");
+        details::append_cache_key_value(out, u8"exception-cleanup", u8"typed-guest-invoke-v1");
+        details::append_cache_key_value(out,u8"pending-numeric-memory",u8"validated-owned-scalar-preserve-native-unwind-v1");
+#if defined(UWVM_EXPERIMENTAL_PENDING_NUMERIC_FUSED_CATCH) && UWVM_EXPERIMENTAL_PENDING_NUMERIC_FUSED_CATCH == 1
+        details::append_cache_key_value(out,u8"pending-numeric-payload",u8"immutable-schema-packed-tuple-fused-catch-v6-256");
+#endif
+        // COFF partitions must retain an executable local SEH personality;
+        // reject objects emitted by the earlier declaration-only partitioner.
+        details::append_cache_key_value(out, u8"seh-personality-partition", u8"local-definition-v1");
+#if defined(UWVM2_ENABLE_NATIVE_EH_WINDOWS_ARM64_GNU_PRODUCT) && UWVM2_ENABLE_NATIVE_EH_WINDOWS_ARM64_GNU_PRODUCT == 1
+        // The candidate may emit typed invoke/landingpad and local SEH personality
+        // relocations where the old A64 build rejected native guest EH. An identical
+        // embedder source ID must not let either profile load the other's objects.
+        // This identity separates the opt-in; it is not proof of provider support.
+        details::append_cache_key_value(out, u8"windows-arm64-gnu-native-eh", u8"qualified-provider-itanium-seh-v1");
+#endif
+        // mmap records now carry a per-instance reservation extent. Small 32-bit memories require
+        // software checks; old fixed-window objects must not survive an unchanged embedder source ID.
+        details::append_cache_key_value(out, u8"native-memory-layout", u8"bounded-reservation-aligned64-owner-ordered-size-v4");
+        // mmap emits direct accesses; moving allocations use pinning bridges.
+        // Source/version strings can be identical across these build configurations.
+#if defined(UWVM_SUPPORT_MMAP)
+        details::append_cache_key_value(out, u8"native-memory-backend", u8"mmap");
+#elif defined(UWVM_USE_MULTITHREAD_ALLOCATOR)
+        details::append_cache_key_value(out, u8"native-memory-backend", u8"allocator-concurrent");
+#else
+        details::append_cache_key_value(out, u8"native-memory-backend", u8"allocator-single");
+#endif
         // Do not rely on git/source ids to distinguish products: both builds
         // may deliberately receive the same id from an embedding application.
         details::append_cache_key_value(out, u8"product", cache_product_name);
+        // Declaration limits and compiled memory64 immediates preserve all address bits.
+        details::append_cache_key_value(out, u8"wasm-memory-addresses", u8"typed-u64-limits-and-memarg-v1");
         details::append_cache_key_value(out, u8"llvm-wasm-v128-abi", u8"ssa-byte-vector16-v1");
         // Reject objects emitted before the no-NEON AArch64 bitmask, i386
         // no-x87/PPC32 minmax, and SPARC demotion repairs. Identical Wasm,
@@ -463,6 +594,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
         // embedders reuse source IDs. v2 adds noabicalls: O32/N32 ignored v1's
         // long-calls alone, so a successful new probe cannot admit v1 objects.
         details::append_cache_key_value(out, u8"llvm-mips-call-relocations", u8"full-width-noabicalls-c-abi-v2");
+        // A new successful probe must not admit objects whose async epilogue
+        // rows leaked into a later live block, even with a reused source ID.
+        details::append_cache_key_value(out, u8"llvm-native-unwind-cfi", u8"cfg-epilogue-state-v1");
+        // Same-source-id embedders must reject earlier preemptible MIPS tail targets.
+        details::append_cache_key_value(out, u8"llvm-owned-tail-targets", u8"mips-n64-r2-dso-local-v1");
+#if defined(__linux__) && __SIZEOF_POINTER__ == 8 && defined(__mips__) && defined(__mips64) && \
+    defined(__mips_isa_rev) && __mips_isa_rev == 2 && \
+    !defined(__mips16) && !defined(__mips_micromips) && defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && \
+    UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1 && defined(LLVM_VERSION_MAJOR) && LLVM_VERSION_MAJOR >= 23
+        details::append_cache_key_value(out, u8"llvm-mips-n64-cfi-fixup", u8"enabled");
+#else
+        details::append_cache_key_value(out, u8"llvm-mips-n64-cfi-fixup", u8"producer-default");
+#endif
 #if defined(UWVM_VERSION_X)
         details::append_cache_key_value_u64(out, u8"version-x", static_cast<::std::uint_least64_t>(UWVM_VERSION_X));
 #else
@@ -515,15 +659,75 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
         // v3 also makes generated raw-call operands and status values register-wide, avoiding target-specific narrow
         // integer extension attributes at the handwritten LLVM/C++ ABI boundary.
         details::append_cache_key_value(out, u8"llvm-jit-bridge-symbol-abi", u8"generated-register-wide-internal-entry-v3");
+        // Generated status CFG changes in every GC profile. Native bridge ABI
+        // is unchanged, but old multi-guard objects cannot bypass this version.
+        details::append_cache_key_value(out, u8"llvm-gc-status-dispatch", u8"zero-fast-cold-v1");
+#if defined(UWVM_EXPERIMENTAL_INLINE_ARRAY_AUTH) && UWVM_EXPERIMENTAL_INLINE_ARRAY_AUTH == 1
+        // The native domain getter ABI and published-index lifetime contract
+        // must also distinguish caches without an embedded build/source ID.
+        details::append_cache_key_value(out, u8"llvm-gc-inline-array-auth",
+            u8"entry-u128-index-domain-acquire-xorshift17-9-bound8-owner-type-kind-static-packed32-v3");
+#endif
+#if defined(UWVM_EXPERIMENTAL_ARRAY_LENGTH_VALUES) && UWVM_EXPERIMENTAL_ARRAY_LENGTH_VALUES == 1 && \
+    ((defined(UWVM_EXPERIMENTAL_TYPED_ARRAY_LOAD) && UWVM_EXPERIMENTAL_TYPED_ARRAY_LOAD == 1) || \
+     (defined(UWVM_EXPERIMENTAL_TYPED_ARRAY_STORE) && UWVM_EXPERIMENTAL_TYPED_ARRAY_STORE == 1))
+        // Typed element bounds now consume the existing logical length fact.
+        // Invalidate old code even for source-ID-free signed cache builds.
+        details::append_cache_key_value(out, u8"llvm-gc-typed-array-bounds",
+            u8"logical-length-after-auth-unknown-retains-header-v1");
+#endif
+#if defined(UWVM_EXPERIMENTAL_PRIVATE_NUMERIC_ARRAY_LOCK) && UWVM_EXPERIMENTAL_PRIVATE_NUMERIC_ARRAY_LOCK == 1
+        details::append_cache_key_value(out, u8"llvm-gc-private-numeric-array-lock",
+            u8"whole-function-no-publication-local-constructor-fact-v1");
+#endif
+        details::append_cache_key_value(out,u8"gc-field-classification",u8"immutable-any-reference-bit-v1");
+#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
+        details::append_cache_key_value(out,u8"gc-array-construction-fill",u8"hybrid-native-seed512-libc-copy-v2");
+#endif
+#if defined(UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE) && UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE == 1
+        details::append_cache_key_value(out,u8"gc-array-pressure",u8"count4096-wide-numeric-carrier-1mib-actual-entry-v2");
+#endif
+#if defined(UWVM_EXPERIMENTAL_GENERAL_GC_SLAB) && UWVM_EXPERIMENTAL_GENERAL_GC_SLAB == 1
+        details::append_cache_key_value(out,u8"gc-general-slab",u8"pow2-carrier-units-reference-and-packed-one-lock-v1");
+#endif
+#if defined(UWVM_EXPERIMENTAL_PRECISE_GC_TRACE_METADATA) && UWVM_EXPERIMENTAL_PRECISE_GC_TRACE_METADATA == 1
+        // Host-owned type-layout/tracing profiles differ even when an embedder
+        // deliberately reuses its source ID; never share native cache context.
+        // This identity does not authorize mixing differently built C++ objects.
+        details::append_cache_key_value(out, u8"gc-precise-trace-metadata", u8"owned-canonical-reference-plan-v1");
+#endif
+#if defined(UWVM_EXPERIMENTAL_INLINE_GC_TRACE_METADATA) && UWVM_EXPERIMENTAL_INLINE_GC_TRACE_METADATA == 1
+        details::append_cache_key_value(out, u8"gc-inline-trace-metadata", u8"owned-small-struct-bitmap64-v1");
+#endif
+#if defined(UWVM_EXPERIMENTAL_SINGLE_LOCK_NUMERIC_SLAB) && UWVM_EXPERIMENTAL_SINGLE_LOCK_NUMERIC_SLAB == 1
+        // Conservative native allocator profile identity; no IR or ABI change.
+        details::append_cache_key_value(out, u8"gc-numeric-slab-locking", u8"reserve-construct-commit-one-lock-v1");
+#endif
+#if defined(UWVM_EXPERIMENTAL_SINGLE_CAS_GC_PUBLICATION) && UWVM_EXPERIMENTAL_SINGLE_CAS_GC_PUBLICATION == 1
+        details::append_cache_key_value(out, u8"gc-header-publication", u8"global-stripe-local-store-single-list-cas-v1");
+#endif
+#if defined(UWVM_EXPERIMENTAL_COLLECTION_LOCAL_MEMBERSHIP) && UWVM_EXPERIMENTAL_COLLECTION_LOCAL_MEMBERSHIP == 1
+        details::append_cache_key_value(out, u8"gc-collection-local-membership", u8"closed-canonical-local-v1");
+#endif
+#if defined(UWVM_EXPERIMENTAL_GC_ARRAY_SET_RAW_CARRIER_ABI) && UWVM_EXPERIMENTAL_GC_ARRAY_SET_RAW_CARRIER_ABI == 1 && !defined(UWVM_EXPERIMENTAL_MANAGED_NUMERIC_PAGE)
+        details::append_cache_key_value(out, u8"gc-array-set-raw-carrier-abi", u8"six-scalars-u64-index-status-native-byte-chunks-v3-inline-checked-store-and-payload");
+#endif
+#if defined(UWVM_EXPERIMENTAL_ARRAY_SET_LOCAL_REF_AUTH) && UWVM_EXPERIMENTAL_ARRAY_SET_LOCAL_REF_AUTH == 1
+        details::append_cache_key_value(out, u8"gc-array-set-reference-auth", u8"ordinary-local-same-operation-v8-fused-local-type-check-subtree-intervals-scalar-bypass-inline-membership-scalar-no-lease");
+#endif
+#if defined(UWVM_EXPERIMENTAL_NUMERIC_STRUCT_SET32) && UWVM_EXPERIMENTAL_NUMERIC_STRUCT_SET32 == 1
+        // Independent default-off candidate: two-carrier generic setters and
+        // five-uintptr_t/status-only setters must not share native cache context.
+        // Symbol names additionally bind actual C++ function, FunctionType and
+        // gc_struct_set32_registerwide_v1; no experimental six-switch profile implies it.
+        details::append_cache_key_value(out, u8"llvm-gc-struct-set32-abi", u8"registerwide-status0-cold-v2");
+#endif
         details::append_cache_key_value(out, u8"llvm-wasm-typed-result-abi", u8"void-scalar-tuple-struct-v1");
         details::append_cache_key_value(out, u8"llvm-wasm-nan-arithmetic", u8"native-constrained-v1");
         details::append_cache_key_value(out, u8"llvm-native-stack-probes", u8"inline-supported-targets-riscv-half-page-v2");
-#if defined(__riscv) && defined(__riscv_xlen) && (__riscv_xlen == 64)
-        // Reject the old volatile-stack address workaround even without a git
-        // revision: optimization could reintroduce unsafe literal-pool fixups.
-        // Do not add this RISC-V-only revision on other ISAs.
-        details::append_cache_key_value(out, u8"llvm-riscv64-host-address", u8"inline-li-no-data-relocation-v2");
-#endif
+        // Reject objects emitted with process-address immediates/carriers,
+        // even in builds without a git revision or verified source identity.
+        details::append_cache_key_value(out, u8"llvm-host-symbol-address", u8"relocatable-pointer-carrier-v1");
         // These keys invalidate machine code, not merely diagnostics. A build can
         // lack an embedded git revision yet load old objects with ST0 returns,
         // double rounding or unnormalized native NaNs. Keep independent ABI and
@@ -551,16 +755,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
         cache_context const& ctx) noexcept
     {
         ::fast_io::sha256_context sha{};
-        // Separate the deterministic integrity domains as well as disk paths.
+        // Public context domain separation only; mandatory kernel-origin HMAC is added at final persistent I/O.
         // This is not a secret-key boundary against a same-account attacker.
         details::seed_sha256_update_literal(sha, u8"uwvm2ros-llvm-jit-cache-ed25519-seed-v2");
 #if defined(__unix__) || defined(__APPLE__) || defined(__linux__) || defined(__linux)
         // Bind the deterministic integrity identity to the target user id. This is context separation, not a secret:
         // an attacker who can act as the same OS account is outside the cache-signature trust boundary.
         details::seed_sha256_update_literal(sha, u8"posix-user");
-        details::seed_sha256_update_le(sha, static_cast<::std::uint_least64_t>(::getuid()));
+        details::seed_sha256_update_le(sha, static_cast<::std::uint_least64_t>(details::posix::libc_getuid()));
 #elif defined(_WIN32) && !defined(__CYGWIN__) && !defined(__WINE__)
-        // The Windows user name is the available per-user identity for the deterministic cache signature seed.
+        // Legacy public context data only; this implementation disables persistent I/O on Windows.
         details::seed_sha256_update_literal(sha, u8"win32-user");
 # ifndef _WIN32_WINDOWS
         details::seed_sha256_update(sha, details::win32_environment_variable(u"USERNAME"));
@@ -570,7 +774,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
 #else
         details::seed_sha256_update_literal(sha, u8"unknown-user");
 #endif
-        // The seed includes the same compatibility inputs as the object key so signatures cannot be replayed across contexts.
+        // This public seed covers selected compatibility inputs; the signed message binds the full header, ISA/context metadata and object payload.
         details::seed_sha256_update_literal(sha, u8"target");
         details::seed_sha256_update(sha, ctx.target_triple);
         details::seed_sha256_update_literal(sha, u8"cpu");
@@ -579,6 +783,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
         details::seed_sha256_update(sha, ctx.cpu_features);
         details::seed_sha256_update_literal(sha, u8"codegen");
         details::seed_sha256_update(sha, ctx.codegen_policy);
+        details::seed_sha256_update_literal(sha, u8"self-executable-sha256");
+        sha.update(ctx.self_executable_sha256.cbegin(), ctx.self_executable_sha256.cend());
         sha.do_final();
 
         ::uwvm2::utils::container::array<::std::byte, cache_ed25519_seed_size> out{};
@@ -586,45 +792,48 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
         return out;
     }
 
+    // Low-level embedders constructing their own context must also bind the
+    // genuine process executable; a public key/seed alone never authorizes I/O.
+    [[nodiscard]] inline bool bind_self_executable_identity(cache_context& ctx) noexcept
+    {
+        self_executable::digest_type digest{};
+        if(!self_executable::current_digest(digest)) { return false; }
+        for(::std::size_t i{}; i != digest.size(); ++i) { ctx.self_executable_sha256.index_unchecked(i) = digest[i]; }
+        ctx.has_self_executable_sha256 = true;
+        return true;
+    }
+
     [[nodiscard]] inline constexpr cache_policy default_cache_policy() noexcept
     {
         cache_policy policy{};
+        policy.enable = false;
+        if consteval { return policy; }
 #if defined(UWVM_RUNTIME_LLVM_JIT)
         // Native object caching may be disabled, but an enabled cache always requires the reduced runtime's
-        // deterministic context-integrity signature. This must not be presented as a same-user secret-key boundary.
+        // mandatory origin signature. The public context seed below is not its private key.
         policy.enable = ::uwvm2::uwvm::runtime::runtime_mode::global_runtime_llvm_jit_cache_path_mode !=
                         ::uwvm2::uwvm::runtime::runtime_mode::runtime_llvm_jit_cache_path_mode_t::disabled;
         policy.generate_signature = true;
         policy.verify_signature = true;
 #endif
-        constexpr source_provenance_policy_inputs provenance_policy{
-#if defined(UWVM_GIT_COMMIT_ID)
-            .has_git_commit = true,
+#if defined(UWVM_RUNTIME_LLVM_JIT)
+        // Actual explicit-bootstrap failure is a one-way process latch. A later
+        // cache-path mode cannot erase it; it is not a Source authorization.
+        if(::uwvm2::uwvm::runtime::runtime_mode::global_runtime_llvm_jit_cache_seal_process_failed)
+        { policy.enable = false; policy.disabled_reason = cache_disable_reason::process_not_sealed; }
 #endif
-#if defined(UWVM2_BUILD_SOURCE_ID)
-            .has_verified_build_source_id = true,
-#endif
-#if defined(UWVM_GIT_HAS_UNCOMMITTED_MODIFICATIONS)
-            .git_worktree_is_dirty = true,
-#endif
-#if defined(UWVM2_ALLOW_UNSAFE_DIRTY_LLVM_JIT_CACHE)
-            .allow_unsafe_dirty_cache = true,
-#endif
-#if defined(UWVM2_ALLOW_UNSAFE_UNPROVENANCED_LLVM_JIT_CACHE)
-            .allow_unsafe_unprovenanced_cache = true,
-#endif
-        };
-        // The generated module hash does not cover host bridge/runtime/unwind semantics. Likewise, a deterministic
-        // signature provides integrity and context binding, not source provenance. Therefore dirty or unidentified
-        // source builds cannot publish or reuse persistent native objects unless their distinct developer-only
-        // escape hatch was explicitly selected at build time.
-        if(!source_provenance_allows_persistent_cache(provenance_policy)) { policy.enable = false; }
+        if(policy.enable && !kernel_origin::dumping_disabled())
+        { policy.enable = false; policy.disabled_reason = cache_disable_reason::process_not_sealed; }
+        // Persistent identity is the real executable, not a manually maintained
+        // git/version/source string. Dirty-build escape macros cannot bypass it.
+        self_executable::digest_type digest{};
+        if(policy.enable && !self_executable::current_digest(digest)) { policy.enable = false; }
         // If signing support is missing, disabling the whole cache is safer than silently accepting unsigned native code.
         if(policy.enable && !cache_ed25519_identity_signature_available) { policy.enable = false; }
         return policy;
     }
 
-    [[nodiscard]] inline constexpr cache_context default_cache_context(::uwvm2::utils::container::u8string_view cache_key,
+    [[nodiscard]] inline cache_context default_cache_context(::uwvm2::utils::container::u8string_view cache_key,
                                                                        ::uwvm2::utils::container::u8string_view codegen_policy = {}) noexcept
     {
         cache_context ctx{};
@@ -643,6 +852,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
             ::uwvm2::utils::container::u8string_ref_uwvm codegen_policy_ref{::std::addressof(ctx.codegen_policy)};
             ::fast_io::io::print(codegen_policy_ref, codegen_policy);
         }
+        if(default_cache_policy().enable) { (void)bind_self_executable_identity(ctx); }
+        ctx.origin = runtime_origin::capture();
         ctx.signature_seed = collect_signature_seed(ctx);
         // A generated seed is marked explicitly so store/load code can fail closed if future constructors omit it.
         ctx.has_signature_seed = true;
@@ -650,7 +861,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
     }
 
 #if defined(UWVM_RUNTIME_LLVM_JIT)
-    [[nodiscard]] inline constexpr cache_context default_cache_context(::uwvm2::utils::container::u8string_view cache_key,
+    [[nodiscard]] inline cache_context default_cache_context(::uwvm2::utils::container::u8string_view cache_key,
                                                                        ::uwvm2::utils::container::u8string_view codegen_policy,
                                                                        ::llvm::TargetMachine const& target_machine) noexcept
     {
@@ -662,6 +873,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
         ctx.target_triple = collect_target_triple(target_machine);
         ctx.cpu_name = collect_cpu_name(target_machine);
         ctx.cpu_features = collect_cpu_features(target_machine);
+        auto const layout{target_machine.createDataLayout().getStringRepresentation()};
+        ::fast_io::io::print(::uwvm2::utils::container::u8string_ref_uwvm{::std::addressof(ctx.data_layout)},
+                            ::uwvm2::utils::container::u8string_view{reinterpret_cast<char8_t const*>(layout.data()), layout.size()});
         ctx.llvm_version = details::llvm_version_string();
         ctx.uwvm_abi = uwvm_runtime_abi_fingerprint();
         if(codegen_policy.empty()) { ctx.codegen_policy = default_codegen_policy_name(); }
@@ -670,6 +884,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
             ::uwvm2::utils::container::u8string_ref_uwvm codegen_policy_ref{::std::addressof(ctx.codegen_policy)};
             ::fast_io::io::print(codegen_policy_ref, codegen_policy);
         }
+        if(default_cache_policy().enable) { (void)bind_self_executable_identity(ctx); }
+        ctx.origin = runtime_origin::capture();
         ctx.signature_seed = collect_signature_seed(ctx);
         // The signature seed is recomputed after TargetMachine fields so cross-target JITs do not share identities.
         ctx.has_signature_seed = true;
@@ -677,6 +893,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
     }
 #endif
 }  // namespace uwvm2::runtime::llvm_jit_cache
+
+#if defined(__linux__) && (defined(__GNUC__) || defined(__clang__))
+# pragma GCC visibility pop
+#endif
 
 #ifndef UWVM_MODULE
 // macro

@@ -133,6 +133,13 @@ int main()
     fp_control::snapshot hostile_control{};
     if(!restore_initial.valid || !fp_control::prepare_hostile(hostile_control)) { return 1; }
 
+#if !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1) && defined(UWVM_IMPORT_WASI_WASIP1)
+    // This fixture deliberately queries the native monotonic clock to test its
+    // floating-point control preservation. Import visibility alone grants no
+    // clock authority; grant only the facility exercised by this test process.
+    ::uwvm2::uwvm::imported::wasi::wasip1::storage::default_wasip1_env.non_fd_permissions =
+        ::uwvm2::imported::wasi::wasip1::environment::permission_t::clock_monotonic;
+#endif
     auto wasm{build_clock_fp_module()};
     auto prepared{strict::prepare_runtime_from_wasm(wasm, u8"llvm_jit_clock_fp_control")};
     if(prepared.mod == nullptr) { return 2; }

@@ -1,0 +1,3 @@
+# Empty request is complete zero-byte canonical data, never a fake request byte.
+---
+Scalars response

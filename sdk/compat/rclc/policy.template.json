@@ -1,0 +1,54 @@
+{
+  "format_version": 1,
+  "status": "UNEXECUTED_POLICY_ASSOCIATION_TEMPLATE_NOT_A_GRANT",
+  "default_authority": [],
+  "native_backend": "ROS2 only",
+  "native_type": "std_msgs/msg/String",
+  "native_identity": "REQUIRED_FROM_ACTUAL_CURRENT_RUNTIME_GATEWAY_NOT_A_GUEST_TOKEN",
+  "node": "node_0",
+  "namespace": "executor_examples",
+  "qos": {
+    "history": "keep_last",
+    "depth": 10,
+    "reliability": "reliable",
+    "durability": "volatile",
+    "deadline": "system_default_unspecified",
+    "lifespan": "system_default_unspecified",
+    "liveliness": "system_default",
+    "lease_duration": "system_default_unspecified",
+    "avoid_ros_namespace_conventions": false
+  },
+  "topic_roles": [
+    {
+      "source_topic": "topic_0",
+      "resolved_native_topic": "/executor_examples/topic_0",
+      "publish_alias": "rclc-pub-0",
+      "subscribe_alias": "rclc-sub-0",
+      "maximum_wire_bytes": 1028
+    },
+    {
+      "source_topic": "topic_foo",
+      "resolved_native_topic": "/executor_examples/topic_foo",
+      "publish_alias": "rclc-pub-foo",
+      "subscribe_alias": "rclc-sub-foo",
+      "maximum_wire_bytes": 1028
+    },
+    {
+      "source_topic": "topic_bar",
+      "resolved_native_topic": "/executor_examples/topic_bar",
+      "publish_alias": "rclc-pub-bar",
+      "subscribe_alias": "rclc-sub-bar",
+      "maximum_wire_bytes": 1028
+    },
+    {
+      "source_topic": "topic_baz",
+      "resolved_native_topic": "/executor_examples/topic_baz",
+      "publish_alias": "rclc-pub-baz",
+      "subscribe_alias": "rclc-sub-baz",
+      "maximum_wire_bytes": 1028
+    }
+  ],
+  "steady_clock_alias": "rclc-steady",
+  "Host_CLI_configuration": "MUST_BE_ACTUAL_REVIEWED_CURRENT_POLICY_NOT_THIS_DATA",
+  "control_or_debug_permissions": []
+}

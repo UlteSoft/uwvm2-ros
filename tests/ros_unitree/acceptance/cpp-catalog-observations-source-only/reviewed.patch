@@ -1,0 +1,309 @@
+--- /dev/null
++++ b/tests/ros_unitree/CPP_CATALOG_OBSERVATIONS.md
+@@ -0,0 +1,19 @@
++# Original C++ SDK catalog observations outside selected compiler roots
++
++The complete original `tools/ros_distro/common.catalog` contract records literal symlinks without following directory links. A directory target must remain within the explicit whole-root set. An external **regular file** target is separately opened and pinned in that exact symlink row. An unused regular target observation is not automatically a selected compiler input or authority to use its parent directory.
++
++The independently completed C++ abort object's original 58 catalogs include such observations. Root's actual bounded metadata observation scanned 178188 original rows and found 358 distinct external regular target names, all preserved with the explicit historical host-device transition 66307 to 66312. This observation does not make the files compiler inputs and does not justify selecting `/usr`, `/etc`, `/opt` or any arbitrary ancestor. It is not official ROS, Guest or Runtime acceptance. The original Source49 reports and frozen source remain unchanged.
++
++The narrow successor keeps ordinary `Evidence.pin` unchanged. The consumed compiler, full-MD headers, object/depfile/log products, official LLVM source/lock files and complete original source must still satisfy the existing selected whole-root/source boundary. There is no fallback from that accessor into the catalog-only ledger, and the ledger never populates `Evidence.cache`, `Frame.inputs`, `Frame.roots` or `Frame.pins`.
++
++Only the complete `catalog_pair` stream can invoke `_observe_catalog_target`. It retains the original/current catalog full pins and the exact original/current literal source rows. Both complete catalog file descriptors and their names are bracketed and fully hashed by the existing comparison. Row order, relative names, kind, source literal target/resolution, inode, timestamps, size and SHA remain exact. An external target's distinct device is accepted only under the selected **source catalog root's explicit restart transition**; it grants no authority over the target's directory. Both old and new target full7 values remain separately recorded.
++
++Each newly observed target is reopened through the existing restart helper: every ancestor uses held directory descriptors and `O_NOFOLLOW`, the final descriptor uses `O_NOFOLLOW|O_NONBLOCK`, only ordinary regular files are accepted, and the full byte stream, stable before/after fstat and named-entry identity must agree. A device change uses the strict persistent-file bridge, permitting only the explicit device field difference while preserving path, inode, mtime, ctime, size and SHA. The actual current pin must equal the current Frame catalog's `target_file`. Same-device observations require the two exact full pins and an independent current full read. The original source symlink itself is separately rechecked before and after observation, including its literal text, resolved target and physical identity. Neither a directory, FIFO, source-alias replacement nor changed target bytes can use this role.
++
++The separate `whole_catalog_observed_external_regular_targets` sidecar ledger has at most 4096 names and 512 MiB per target. Repeated identical names are recorded once with every exact source-row/catalog witness. This is finite memoization of the original selected catalog rows, not a directory scan for permission or a recursive report projection. Every admitted external file and every source alias is reopened after the ordinary full-MD and official-source checks, before qualification sidecar publication.
++
++The actual Legacy producer's normal `Frame.finish` remains mandatory after compilation. It repeats all complete current input catalogs and compares their original `target_file` rows, independently covering these same observations after the actor cleanup. A metadata sidecar is not a terminal Guest build success. Old raw statuses and historical cgroup facts are never rewritten, and a same numeric filesystem device does not establish process or cgroup continuity.
++
++`test_cpp_catalog_observations.py` provides fourteen authored real-filesystem/DATA cases through `cases(helper, restart, *, temporary_parent, guard)`. Root must supply both complete-manifest-bound helpers, an owned temporary directory parent and the actual current64 guard. The tests import no project module, create no compiler/ROS/Runtime actor and do not qualify synthetic catalogs as authentic SDK receipts. The author did not import or execute the candidate or tests. The existing eleven independent-CPP policy cases remain unchanged.
++
++The change intentionally retains the native producer's current-source equality rule. Root must select a newly completed native report from the actual new complete source freeze before executing the later Guest producer; no old Source49 report is relabelled as a new compilation.
+--- a/tests/ros_unitree/independent_cpp_object.py
++++ b/tests/ros_unitree/independent_cpp_object.py
+@@ -263,7 +263,7 @@
+     require(matches,'catalog device differs without explicit finite restart mapping')
+ 
+ 
+-def compare_row(old,now,root,mappings):
++def compare_row(old,now,root,mappings,*,observed_external_regular=False):
+     """Compare the entire original catalog row; no generic JSON projection."""
+     require(type(old) is dict and type(now) is dict and set(old)==set(now) and
+             old.get('kind') in ('file','symlink') and old.get('kind')==now.get('kind') and
+@@ -281,11 +281,100 @@
+                 'literal symlink target-file association changed')
+         require(all(old['target_file'][k]==now['target_file'][k] for k in PIN_KEYS-{'device'}),
+                 'original regular symlink target changed')
+-        same_device(old['target_file']['device'],now['target_file']['device'],old['resolved'],mappings)
++        require(type(observed_external_regular) is bool,'explicit catalog target observation role required')
++        # An observed external regular target is a finite name in this exact
++        # original/current catalog pair, not an added selected compiler root.
++        # Only the catalog source root's explicit device transition may apply.
++        device_scope=Path(root)/rel if observed_external_regular else old['resolved']
++        same_device(old['target_file']['device'],now['target_file']['device'],device_scope,mappings)
+     return old.get('target_file'),now.get('target_file')
+ 
+ 
+-def catalog_pair(frame,evidence,previous,current):
++def _current_catalog_link(restart,root,row):
++    """Recheck the literal source alias without opening an external parent root."""
++    path=str(Path(root)/row['relative']);parent,name=restart._parent(path)
++    try:
++        before=os.stat(name,dir_fd=parent,follow_symlinks=False)
++        require(stat.S_ISLNK(before.st_mode) and os.readlink(name,dir_fd=parent)==row['target'] and
++                all(getattr(before,attr)==row[key] for attr,key in (('st_dev','device'),('st_ino','inode'),
++                    ('st_mtime_ns','mtime_ns'),('st_ctime_ns','ctime_ns'))) and
++                str(Path(path).resolve(strict=True))==row['resolved'],
++                'actual catalog source alias changed')
++        require(restart._same_stat(before,os.stat(name,dir_fd=parent,follow_symlinks=False)),
++                'catalog source alias changed during observation')
++        restart._verify_named_file(path,parent,name,before)
++    finally:os.close(parent)
++
++
++def _observe_catalog_target(frame,evidence,previous,current,old_catalog_current,old,now,ledger):
++    """Hash one exact external REGULAR observation, never an Evidence input.
++
++    Only catalog_pair calls this role, inside its complete two-catalog digest
++    and held-descriptor comparison. Both raw rows and both actual catalog pins
++    remain attached to the separate observation. This is no generic pathname
++    admission fallback and supplies no parent-directory/provider authority.
++    """
++    require(type(ledger) is dict and len(ledger)<=4096,'finite separate external catalog observation ledger required')
++    root=previous['root'];require(root==current['root'] and Path(root) in frame.roots and
++        current in frame.catalogs and old.get('kind')==now.get('kind')=='symlink' and
++        'target_file' in old and 'target_file' in now,'same complete selected catalog symlink source required')
++    a,b=compare_row(old,now,root,evidence.mappings,observed_external_regular=True)
++    evidence.restart.historical_pin(a);evidence.restart.historical_pin(b)
++    path=Path(a['path'])
++    require(path.is_absolute() and path.resolve(strict=True)==path and
++        not (path==frame.source or path.is_relative_to(frame.source) or
++             any(path==selected or path.is_relative_to(selected) for selected in frame.roots)),
++        'dedicated role accepts only external canonical catalog regular targets')
++    require(a['bytes']<=512*MIB,'external observed catalog regular target exceeds512MiB')
++    witness={'source_root':root,'relative':old['relative'],'original_catalog_historical':previous['catalog'],
++        'original_catalog_current':old_catalog_current,'current_catalog':current['catalog'],
++        'original_source_row':old,'current_source_row':now}
++    _current_catalog_link(evidence.restart,root,now)
++    prior=ledger.get(str(path))
++    if prior is None:
++        require(len(ledger)<4096,'external catalog target count exceeds finite4096 bound')
++        if a['device']!=b['device']:
++            # compare_row already requires the explicit selected source-root
++            # transition. The strict bridge reopens the actual external file
++            # through held nofollow descriptors and verifies every full7 field.
++            bridge=evidence.restart.requalify_persistent_pin(a,str(path),frame.guard,
++                historical_device=a['device'],current_device=b['device'],observed_current=b)
++            actual=bridge['current_pin']
++        else:
++            actual=evidence.restart.opened_file(str(path),a['bytes'],frame.guard)
++            require(actual==a==b,'same-device external catalog regular target changed')
++            bridge=None
++        ledger[str(path)]={'historical_pin':a,'current_pin':actual,'device_bridge':bridge,
++            'scope':'COMPLETE_CATALOG_OBSERVED_EXTERNAL_REGULAR_TARGET_ONLY_NOT_SELECTED_COMPILER_INPUT',
++            'parent_directory_authority_granted':False,'source_witnesses':[witness]}
++    else:
++        require(prior['historical_pin']==a and prior['current_pin']==b,
++            'repeated external catalog target identity differs')
++        if witness not in prior['source_witnesses']:prior['source_witnesses'].append(witness)
++    _current_catalog_link(evidence.restart,root,now)
++    # Deliberately do not call Evidence.pin, fill Evidence.cache, add Frame
++    # roots/inputs/pins or rewrite original rows. Consumed MD/official source
++    # dependencies must still pass the unchanged selected-input accessor.
++    return ledger[str(path)]
++
++
++def preserve_catalog_observations(frame,evidence,ledger):
++    """Reopen all finite observations after MD/official proof, before sidecar.
++
++    Normal Frame.finish separately repeats its whole before/after catalogs,
++    whose actual target_file rows cover these same external observations after
++    Guest compilation. Nothing here replaces that terminal preservation.
++    """
++    require(type(ledger) is dict and len(ledger)<=4096,'finite separate catalog observations required')
++    for path,row in ledger.items():
++        frame.guard();actual=evidence.restart.opened_file(path,row['current_pin']['bytes'],frame.guard)
++        require(actual==row['current_pin'],'observed external catalog target changed before qualification publication')
++        for witness in row['source_witnesses']:
++            _current_catalog_link(evidence.restart,witness['source_root'],witness['current_source_row'])
++    return [ledger[path] for path in sorted(ledger)]
++
++
++def catalog_pair(frame,evidence,previous,current,*,observed_targets=None):
+     """Stream both complete authentic JSONL files with independent held fds.
+ 
+     Common's original catalog scope contains files and literal symlinks, not
+@@ -321,8 +410,16 @@
+                 frame.guard();require(number<262144 and all(v is not None and len(v)<=65536 and v.endswith(b'\n') for v in pair),
+                     'bounded identical complete CPP prerequisite catalog row sets required')
+                 for i,line in enumerate(pair):digests[i].update(line);sizes[i]+=len(line)
+-                old,now=map(decode,pair);a,b=compare_row(old,now,previous['root'],evidence.mappings)
+-                if a is not None:
++                old,now=map(decode,pair)
++                external=False
++                if old.get('kind')=='symlink' and 'target_file' in old:
++                    path=Path(old['target_file']['path'])
++                    external=not (path==frame.source or path.is_relative_to(frame.source) or
++                        any(path==selected or path.is_relative_to(selected) for selected in frame.roots))
++                a,b=compare_row(old,now,previous['root'],evidence.mappings,observed_external_regular=external)
++                if a is not None and external:
++                    _observe_catalog_target(frame,evidence,previous,current,oldpin,old,now,observed_targets)
++                elif a is not None:
+                     actual=evidence.pin(a);require(actual==b,'current symlink regular-file target differs');targets.append(actual)
+         finally:
+             for stream in streams:stream.close()
+@@ -360,12 +457,12 @@
+     require(type(roots) is list and len(roots)<=64 and len(set(roots))==len(roots) and
+             type(inventories) is list and len(inventories)==len(roots) and
+             {v['root'] for v in inventories}==set(roots),'complete original object prerequisite inventories required')
+-    root_proofs=[]
++    root_proofs=[];observed_targets={}
+     for ordinal,old in enumerate(inventories):
+         path=Path(old['root']);require(path in frame.roots,'all original CPP prerequisite roots must be whole current Frame inputs')
+         matches=[r for r in frame.catalogs if r['root']==str(path)]
+         require(len(matches)==1,'one actual current whole CPP prerequisite root catalog required')
+-        root_proofs.append(catalog_pair(frame,evidence,old,matches[0]))
++        root_proofs.append(catalog_pair(frame,evidence,old,matches[0],observed_targets=observed_targets))
+     for expected in report['input_pins']:evidence.pin(expected)
+     producer=evidence.pin(report['producer'])
+     require(producer['bytes']==27601 and producer['sha256']==PRODUCER_SHA,'unchanged original31340 object producer required')
+@@ -386,6 +483,7 @@
+     require(set(official)==set(proof['official']) and all(official[k]==proof['official'][k] for k in official if k not in ('lock','transport_report')) and
+             all(evidence.pin(official[k])==evidence.pin(proof['official'][k]) for k in ('lock','transport_report')),
+             'same unchanged official Git/source qualification required')
++    catalog_observations=preserve_catalog_observations(frame,evidence,observed_targets)
+     qualification={'format_version':1,'kind':'independent-official-cpp-object-current-qualification','status':STATUS,
+         'current_source':str(frame.source),'current_manifest':frame.pin(frame.manifest),
+         'current_consumer_helper':frame.pin(frame.source/'tests/ros_unitree/independent_cpp_object.py'),
+@@ -395,7 +493,8 @@
+         'original_cgroup_configuration':historical_cg,'original_object_producer':report['producer'],
+         'original_overlay':proof,'actual_object':obj,'actual_producer':producer,'actual_full_MD':actual,
+         'whole_current_root_proofs':root_proofs,'current_input_pins':list(evidence.cache.values()),
+-        'device_bridges':list(evidence.bridges),'original_status_unchanged':True,
++        'device_bridges':list(evidence.bridges),'whole_catalog_observed_external_regular_targets':catalog_observations,
++        'catalog_observations_are_selected_compiler_inputs':False,'original_status_unchanged':True,
+         'historical_actor_or_cgroup_continuity_claimed':False,'Typed14_main_required_or_promoted':False,
+         'SDK_modified':False,'runtime_executed':False,'Guest_authority':[],
+         'scope':'INDEPENDENT_OFFICIAL_LIBRARY_INPUT_ONLY_NOT_GUEST_OR_TYPED14_ACCEPTANCE'}
+--- /dev/null
++++ b/tests/ros_unitree/test_cpp_catalog_observations.py
+@@ -0,0 +1,118 @@
++"""Small real-filesystem/DATA factory for Root's manifest-bound test owner.
++
++No test or project module is imported or executed here. Root supplies both
++actual helpers, an owned temporary parent and its current64 guard. These
++synthetic catalogs are deliberately not authentic producer/SDK receipts; the
++cases exercise ordinary-file/link/pin policy and never qualify a real SDK.
++"""
++import copy
++import json
++import os
++from pathlib import Path
++import tempfile
++import types
++import unittest
++
++
++def cases(helper,restart,*,temporary_parent,guard):
++    """Return fourteen authored cases; only Root may invoke the test factory."""
++    class CatalogObservedTargets(unittest.TestCase):
++        def setUp(self):
++            guard();self.temp=tempfile.TemporaryDirectory(prefix='cpp-catalog-observed-',dir=temporary_parent)
++            self.addCleanup(self.temp.cleanup);self.base=Path(self.temp.name).resolve(strict=True)
++            self.selected=self.base/'selected';self.catalogs=self.base/'catalogs';self.source=self.base/'source'
++            self.outside=self.base/'outside'
++            for directory in (self.selected,self.catalogs,self.source,self.outside):directory.mkdir()
++            self.target=self.outside/'value';self.target.write_bytes(b'original complete bytes\n')
++            self.link=self.selected/'link';self.link.symlink_to('../outside/value')
++            self.old_device=self.selected.stat().st_dev+10000
++            self.frame=types.SimpleNamespace(source=self.source,roots=[self.selected,self.catalogs],catalogs=[],guard=guard)
++            self.frame.pin=lambda p:restart.opened_file(str(Path(p)),1024**2,guard)
++            self.evidence=types.SimpleNamespace(restart=restart,mappings=[{'root':str(self.selected),
++                'historical_device':self.old_device,'current_device':self.selected.stat().st_dev}],cache={},bridges=[])
++            def pin(old):
++                path=Path(old['path'])
++                if not any(path.is_relative_to(root) for root in self.frame.roots):
++                    raise ValueError('ordinary selected Evidence refuses external compiler input')
++                actual=self.frame.pin(path)
++                if actual!=old:
++                    actual=restart.requalify_persistent_pin(old,str(path),guard,
++                        historical_device=old['device'],current_device=actual['device'],observed_current=actual)['current_pin']
++                self.evidence.cache[path.as_posix()]=actual;return actual
++            self.evidence.pin=pin
++        def inventory(self,name,row):
++            path=self.catalogs/name;path.write_bytes((json.dumps(row,sort_keys=True,separators=(',',':'))+'\n').encode())
++            pin=self.frame.pin(path)
++            return {'root':str(self.selected),'files':0,'bytes':0,'symlinks':1,'catalog':pin,'content_sha256':pin['sha256']}
++        def rows(self,same_device=False):
++            pin=self.frame.pin(self.target);info=self.link.lstat()
++            now={'relative':'link','kind':'symlink','target':os.readlink(self.link),'resolved':str(self.target),
++                'device':info.st_dev,'inode':info.st_ino,'mtime_ns':info.st_mtime_ns,'ctime_ns':info.st_ctime_ns,'target_file':pin}
++            old=copy.deepcopy(now)
++            if not same_device:old['device']=old['target_file']['device']=self.old_device
++            return old,now
++        def pair(self,old,now,ledger):
++            a=self.inventory('old.jsonl',old);b=self.inventory('new.jsonl',now);self.frame.catalogs=[b]
++            return helper.catalog_pair(self.frame,self.evidence,a,b,observed_targets=ledger)
++        def test_exact_external_regular_device_bridge_has_separate_ledger(self):
++            old,now=self.rows();ledger={};result=self.pair(old,now,ledger)
++            self.assertEqual(result['regular_link_targets_current'],[])
++            self.assertEqual(set(ledger),{str(self.target)})
++            row=ledger[str(self.target)];self.assertEqual(row['historical_pin'],old['target_file'])
++            self.assertEqual(row['current_pin'],now['target_file']);self.assertIsNotNone(row['device_bridge'])
++            self.assertFalse(row['parent_directory_authority_granted'])
++            self.assertNotIn(str(self.target),self.evidence.cache)
++            self.assertEqual(helper.preserve_catalog_observations(self.frame,self.evidence,ledger),[row])
++            with self.assertRaisesRegex(ValueError,'external compiler input'):self.evidence.pin(old['target_file'])
++        def test_same_device_observation_keeps_actual_pin_without_bridge(self):
++            old,now=self.rows(True);ledger={};self.pair(old,now,ledger)
++            self.assertIsNone(ledger[str(self.target)]['device_bridge'])
++            self.assertEqual(ledger[str(self.target)]['current_pin'],now['target_file'])
++        def test_selected_regular_target_retains_ordinary_evidence_accessor(self):
++            self.link.unlink();self.target=self.selected/'value';self.target.write_bytes(b'selected')
++            self.link.symlink_to('value');old,now=self.rows();ledger={};result=self.pair(old,now,ledger)
++            self.assertEqual(ledger,{});self.assertIn(str(self.target),self.evidence.cache)
++            self.assertEqual(result['regular_link_targets_current'],[now['target_file']])
++        def test_external_observation_requires_explicit_separate_ledger(self):
++            old,now=self.rows()
++            with self.assertRaisesRegex(ValueError,'separate external catalog observation ledger'):self.pair(old,now,None)
++        def test_source_root_device_transition_must_be_explicit(self):
++            old,now=self.rows();self.evidence.mappings=[]
++            with self.assertRaisesRegex(ValueError,'finite restart mapping'):self.pair(old,now,{})
++        def test_changed_catalog_target_hash_is_not_renormalized(self):
++            old,now=self.rows();now['target_file']['sha256']='1'*64
++            with self.assertRaisesRegex(ValueError,'regular symlink target changed'):self.pair(old,now,{})
++        def test_changed_catalog_target_inode_and_times_are_refused(self):
++            for key in ('inode','mtime_ns','ctime_ns'):
++                old,now=self.rows();now['target_file'][key]+=1
++                with self.assertRaisesRegex(ValueError,'regular symlink target changed'):self.pair(old,now,{})
++                for p in self.catalogs.iterdir():p.unlink()
++        def test_literal_alias_spelling_and_resolved_name_cannot_change(self):
++            old,now=self.rows();now['target']='../outside/./value'
++            with self.assertRaisesRegex(ValueError,'catalog names'):self.pair(old,now,{})
++        def test_actual_target_mutation_after_catalog_is_refused(self):
++            old,now=self.rows();self.target.write_bytes(b'changed complete bytes\n')
++            with self.assertRaises(ValueError):self.pair(old,now,{})
++        def test_actual_source_alias_replacement_is_refused(self):
++            old,now=self.rows();self.link.unlink();self.link.symlink_to('../outside/./value')
++            with self.assertRaisesRegex(ValueError,'source alias changed'):self.pair(old,now,{})
++        def test_directory_cannot_be_observed_as_external_regular_file(self):
++            self.target.unlink();self.target.mkdir();facts=self.target.stat();info=self.link.lstat()
++            pin={'path':str(self.target),'bytes':facts.st_size,'sha256':'0'*64,'device':facts.st_dev,
++                'inode':facts.st_ino,'mtime_ns':facts.st_mtime_ns,'ctime_ns':facts.st_ctime_ns}
++            now={'relative':'link','kind':'symlink','target':os.readlink(self.link),'resolved':str(self.target),
++                'device':info.st_dev,'inode':info.st_ino,'mtime_ns':info.st_mtime_ns,'ctime_ns':info.st_ctime_ns,'target_file':pin}
++            old=copy.deepcopy(now);old['device']=old['target_file']['device']=self.old_device
++            with self.assertRaisesRegex(ValueError,'bounded ordinary file'):self.pair(old,now,{})
++        def test_external_parent_symlink_cannot_redirect_opened_target(self):
++            old,now=self.rows();renamed=self.base/'renamed';self.outside.rename(renamed);self.outside.symlink_to('renamed')
++            with self.assertRaisesRegex(ValueError,'external canonical'):self.pair(old,now,{})
++        def test_observation_preservation_reopens_content_after_admission(self):
++            old,now=self.rows();ledger={};self.pair(old,now,ledger);self.target.write_bytes(b'changed')
++            with self.assertRaises(ValueError):helper.preserve_catalog_observations(self.frame,self.evidence,ledger)
++        def test_observation_preservation_rechecks_original_source_alias(self):
++            old,now=self.rows();ledger={};self.pair(old,now,ledger)
++            self.link.unlink();self.link.symlink_to('../outside/./value')
++            with self.assertRaisesRegex(ValueError,'source alias changed'):
++                helper.preserve_catalog_observations(self.frame,self.evidence,ledger)
++    return CatalogObservedTargets

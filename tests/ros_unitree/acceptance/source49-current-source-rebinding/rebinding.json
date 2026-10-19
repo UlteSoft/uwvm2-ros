@@ -1,0 +1,87 @@
+{
+  "kind": "current-source49-declared-source-rebinding",
+  "status": "ALL_CURRENT_SOURCE_DECLARATIONS_REBOUND_NOT_EXECUTED",
+  "readiness": [
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_ticket_lifetime/source-ready.json",
+      "bytes": 8327,
+      "sha256": "892eff218ca3bb6e8c92b7016fe14aefb0e241fc09bb32827bb5139e49f6ea05"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/core-regressions-source-ready.json",
+      "bytes": 14341,
+      "sha256": "79a62d1b2e3b3c4cfd91e19c3e962af93c1984847e07e9f7cf7e14f59043c60b"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/legacy_guest_builds/source-ready.json",
+      "bytes": 8705,
+      "sha256": "27b26a543cddbf8777042ee0f61c6bb4090f0032183c4d60a96e6856e75c369e"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/noetic-native-source-ready.json",
+      "bytes": 20503,
+      "sha256": "69bc5bacc5835171f99d80a03c3eb7cced254e29558d198e7a867ff31b299213"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/typed-policy-codecs/source-ready.json",
+      "bytes": 6259,
+      "sha256": "6cf7f6cf796c530c28168a7295d310e6a0f1f6501e900c28203d7501ac9cd0fd"
+    }
+  ],
+  "cross": {
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/current-batch-source-cross-seal.json",
+    "bytes": 47059,
+    "sha256": "56db3f1d2890cca36a942af2474698ac139747a2453d96139957cfc88a3a51c1"
+  },
+  "superseded_predecessor_source_files": [
+    {
+      "previous": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/gateways/ros2/CMakeLists.txt",
+        "bytes": 9899,
+        "sha256": "6d35af95918fc095436874e78af01872c12df582699d2d74f430e7623eb21df9"
+      },
+      "current": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/gateways/ros2/CMakeLists.txt",
+        "bytes": 10528,
+        "sha256": "da783405d56f10380c07ed48ad7c39c5a1a275a4b85b0f2bf17fa54eeb13461a"
+      }
+    },
+    {
+      "previous": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/gateways/ros2/compat/Probe.cmake",
+        "bytes": 12614,
+        "sha256": "fcadff7cc4eb9f6aea69111ba66057034ad8d9948cdb2bc9e1e10c4236020383"
+      },
+      "current": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/gateways/ros2/compat/Probe.cmake",
+        "bytes": 15832,
+        "sha256": "8b988a6077cf71f29f96a31966488e9d2953aa3d6e0c922bcc650146018728ea"
+      }
+    },
+    {
+      "previous": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/gateways/ros2/compat/README.md",
+        "bytes": 13745,
+        "sha256": "9e196387d5c7f1f3e4f83300acaf685b591b41009c3c5d19804856bf8fc9ff17"
+      },
+      "current": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/gateways/ros2/compat/README.md",
+        "bytes": 15691,
+        "sha256": "8babc9d78d1f68d5bcc0e011d13d70c8cb8d1b840b725032a3a883d0b9922676"
+      }
+    },
+    {
+      "previous": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/gateways/ros2/custom_actions.h",
+        "bytes": 43922,
+        "sha256": "e70dead04289739f0744e45e261e67ad6b3541b9d756339d5469f9eb95167c84"
+      },
+      "current": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/gateways/ros2/custom_actions.h",
+        "bytes": 44188,
+        "sha256": "ddeb44051992a6f2eba71eb2699abcdd940b64edade8605bf8775399e5eaf97f"
+      }
+    }
+  ],
+  "all_current_declared_file_count": 97
+}

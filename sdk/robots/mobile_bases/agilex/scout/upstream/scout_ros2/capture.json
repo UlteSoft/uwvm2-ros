@@ -1,0 +1,149 @@
+{
+  "repository": "agilexrobotics/scout_ros2",
+  "url": "https://github.com/agilexrobotics/scout_ros2",
+  "branch": "humble",
+  "commit": "bf0110ff44cc70cdda2931d69f0e2669a3e26b9d",
+  "tree_git_sha1": "ac870ba02fa28eccfb13c95820780e54a570b47c",
+  "files": [
+    {
+      "path": ".gitlab-ci.yml",
+      "bytes": 5199,
+      "sha256": "666994894130539cda360e2cd9127d6379a0694a33cf159185454d5f518609cf",
+      "git_blob_sha1": "3de227804dfccb00a48f1599016f944069652d56"
+    },
+    {
+      "path": "LICENSE",
+      "bytes": 11357,
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "git_blob_sha1": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64"
+    },
+    {
+      "path": "README.md",
+      "bytes": 1407,
+      "sha256": "20ee7884bf8fffbc06ba6d301284495767d6d187f43b5d9e03e093b76d8076fa",
+      "git_blob_sha1": "d0f266a482ac52f72c62e1e63d24821fa1537e14"
+    },
+    {
+      "path": "scout_base/CMakeLists.txt",
+      "bytes": 2117,
+      "sha256": "af968a0d743b94d14618176cd2eabe616bfb6b5ad4d944ab118299904aa2070b",
+      "git_blob_sha1": "24ea7c6103711b3af081ef6f5e0905ce20edff59"
+    },
+    {
+      "path": "scout_base/README.md",
+      "bytes": 221,
+      "sha256": "7dcc5c77984419ec665f4893f373b66fc9cd3eaef4b64cb5f86e31a35246f758",
+      "git_blob_sha1": "e40127a47f3d441fd63f0c266e25d481096bf90f"
+    },
+    {
+      "path": "scout_base/include/scout_base/scout_base_ros.hpp",
+      "bytes": 959,
+      "sha256": "f12a2a92f97ae1ebf4d958ac88a0c4b2659eee9c82e1a17efa2928626cbce4e1",
+      "git_blob_sha1": "09b627ea0b5d0d493a7ef742c83e47feb56a66c5"
+    },
+    {
+      "path": "scout_base/include/scout_base/scout_messenger.hpp",
+      "bytes": 10125,
+      "sha256": "b57ad4f47f88c1e2d699a2b137c7a232ad52412df321510648cbf633357fe9a8",
+      "git_blob_sha1": "5b1c7234747b18fab2d89f270cd044476109fd2a"
+    },
+    {
+      "path": "scout_base/launch/scout_base.launch.py",
+      "bytes": 3215,
+      "sha256": "534dba0039db40a6d186468c72b86d5d9bf5c50df62bd8addfc5c269413a4449",
+      "git_blob_sha1": "70e4f024f80092fe208a1c3db1596e0685c4d2a8"
+    },
+    {
+      "path": "scout_base/launch/scout_mini_base.launch.py",
+      "bytes": 3214,
+      "sha256": "451c9d74298e1f35dccc07f860c8d7a2b539a4a7ca78542a6599329bf9a708ff",
+      "git_blob_sha1": "ed019ce0e385db2ce1b1df89faf2ee132b419257"
+    },
+    {
+      "path": "scout_base/launch/scout_mini_omni_base.launch.py",
+      "bytes": 3263,
+      "sha256": "c0833e79df52aef07fd95580087752c1f7441af931b2f8752d2dea8454da7e08",
+      "git_blob_sha1": "2f9c71404ce21f7fdf316c0ec6a3f93d04985201"
+    },
+    {
+      "path": "scout_base/package.xml",
+      "bytes": 936,
+      "sha256": "5e88f1a701dd04cc0da901664cf22e358b4fef80bd5b6bb373a2ca655b902ba6",
+      "git_blob_sha1": "b6dba98e2eaf1fb86133e89490a786f27e905745"
+    },
+    {
+      "path": "scout_base/src/scout_base_node.cpp",
+      "bytes": 822,
+      "sha256": "fa5767581c256c1d47a5cc2f199e16530c19213ea21f533746dc828e60210679",
+      "git_blob_sha1": "86d05a7b02f3bfa2c2a6d4cbe7bea543144d1eff"
+    },
+    {
+      "path": "scout_base/src/scout_base_ros.cpp",
+      "bytes": 7073,
+      "sha256": "75334fa3675d45904199bf43fb264c2a57ecf3ff7ea2210b6fcd8b3ce1228a26",
+      "git_blob_sha1": "0d89d0f63b2258ced701d45f2832de15b821d0a5"
+    },
+    {
+      "path": "scout_description/CMakeLists.txt",
+      "bytes": 480,
+      "sha256": "543248857e5f2bd7ad7d807492b22d254ea3db0baa481e3d1e763f6d229c51cd",
+      "git_blob_sha1": "37ee66d07846c74e6b506ac3a97df52c5de87018"
+    },
+    {
+      "path": "scout_description/launch/scout_base_description.launch.py",
+      "bytes": 1583,
+      "sha256": "a562f0845f6617b1a6e0087aa6afbf216a1821faf34a03c74e41931bbc5088b8",
+      "git_blob_sha1": "abaac4e1bbf0ef7482b703ee8889792f50fc1e12"
+    },
+    {
+      "path": "scout_description/package.xml",
+      "bytes": 644,
+      "sha256": "42c1e90f10746f5f13d068fc7154455350bda1f715b36196989d1f83e2c6850e",
+      "git_blob_sha1": "846ad364e431de85e82dc2a9e3dcf10fc271d17a"
+    },
+    {
+      "path": "scout_msgs/CMakeLists.txt",
+      "bytes": 1023,
+      "sha256": "de2c764e21e6bfc9032bc0000b0d68a623fb0a40077498a22ed8987a3dce03d3",
+      "git_blob_sha1": "5f8d1c3c1cc40db7f42502780370e14cb07b385b"
+    },
+    {
+      "path": "scout_msgs/msg/ScoutActuatorState.msg",
+      "bytes": 611,
+      "sha256": "9cf3fd50d46433647dd02e8e0f012ea1f5b3fe8e04aec43fe914fca2f5e4332b",
+      "git_blob_sha1": "a3c024ed916f73e063885a11d19cf32abca93abc"
+    },
+    {
+      "path": "scout_msgs/msg/ScoutLightCmd.msg",
+      "bytes": 202,
+      "sha256": "09b1a206b99b7eb101fcf79fe6b61d1cd60ac4a3f90a231f44dbed88cdd6b860",
+      "git_blob_sha1": "74440c984c1e81fe9616d8de79c153567d35233a"
+    },
+    {
+      "path": "scout_msgs/msg/ScoutLightState.msg",
+      "bytes": 29,
+      "sha256": "f5fc087bf0be8333c6e57baa633152667a60d3167819cef79c7e505a32c68d5f",
+      "git_blob_sha1": "cf6738943d53012f529bd5a9954a481dbdc79e6e"
+    },
+    {
+      "path": "scout_msgs/msg/ScoutRCState.msg",
+      "bytes": 125,
+      "sha256": "f20789a77f045981274fef30b63e60e2a7d8c6294cc741f407c16c6cef95dded",
+      "git_blob_sha1": "250f16d58ae89da78b0d2585e72f6a5c95ab6738"
+    },
+    {
+      "path": "scout_msgs/msg/ScoutStatus.msg",
+      "bytes": 510,
+      "sha256": "d3ad630a13178396c8f29c0a86a838cc8d5310246b1f4eee52e1ee1e7d51f923",
+      "git_blob_sha1": "8aa8b309e442db6d20763b3092f4cd9932320358"
+    },
+    {
+      "path": "scout_msgs/package.xml",
+      "bytes": 875,
+      "sha256": "3be8687e06f8e5bf5f5ade9b1c03bae7af169524198cea95a1d680738248024f",
+      "git_blob_sha1": "f2df4b2e06202c81d9904cc91d44392e5aabbabd"
+    }
+  ],
+  "default_authority": [],
+  "qualification": "Actual immutable original source capture, not a build or native/robot result."
+}

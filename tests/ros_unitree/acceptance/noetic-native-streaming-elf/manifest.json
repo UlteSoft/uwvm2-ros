@@ -1,0 +1,42 @@
+{
+  "kind": "preserved-source46-before-streaming-elf-layout-reader",
+  "status": "ACTUAL_27_COMMANDS_PASS_BUT_FINAL_ELF_CATALOG_FAIL_NOT_NATIVE_BATCH_PASS",
+  "files": {
+    "prepare_noetic_native.before.py": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/noetic-native-streaming-elf/prepare_noetic_native.before.py",
+      "bytes": 46330,
+      "sha256": "fdc36dfd28dd5f238a9a6794cdf3cf6784c2ccdc655d2e45c3e662f7c2938fc6"
+    },
+    "noetic-native-source-ready.before.json": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/noetic-native-streaming-elf/noetic-native-source-ready.before.json",
+      "bytes": 13907,
+      "sha256": "5a8adafdb949cbc0087a3b69fca13186228e461db03c30bce63c7b66e6ed12aa"
+    },
+    "current-batch-source-cross-seal.before.json": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/noetic-native-streaming-elf/current-batch-source-cross-seal.before.json",
+      "bytes": 22315,
+      "sha256": "66007006a002118743f0283b971f741fefccc3b6fc6778bda23824a89df1a91e"
+    },
+    "independent-source-peer.json": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/noetic-native-streaming-elf/independent-source-peer.json",
+      "bytes": 2289,
+      "sha256": "5ea91ccd3f702d3c7562ff6d1b30ef848d038e265f4dafac50e08670525d83e9"
+    },
+    "NOETIC_NATIVE.before.md": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/noetic-native-streaming-elf/NOETIC_NATIVE.before.md",
+      "bytes": 16864,
+      "sha256": "3b7e94737b8d81d2941630efbb915e6c7ab17927ff118c8925d53f7a0b2ff0a2"
+    },
+    "noetic_native_support.before.py": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/noetic-native-streaming-elf/noetic_native_support.before.py",
+      "bytes": 25774,
+      "sha256": "d75507ba3bd25fbc19455fc8948625566c0152c331f3ff58b7b765ee4555ce2c"
+    }
+  },
+  "actual_failed_report": {
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/documents/ros/continuation-20261016-boot3-evidence/source46-noetic-native3-r1-failed/inner.json",
+    "bytes": 1790062,
+    "sha256": "6a9cb0cabaa4f7997747328e3ff6d66dc1be681d819823e97647325e12ec59a3"
+  },
+  "actual_failure": "SDK libLLVM-18.so.1 123305304 bytes exceeds historical decoder64MiB whole-file buffer; ordinary complete SDK bytes are valid, no Runtime/JIT provider claim."
+}

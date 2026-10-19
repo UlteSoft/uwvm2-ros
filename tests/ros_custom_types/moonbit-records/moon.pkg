@@ -1,0 +1,1 @@
+import { "uwvm/moonbit_record_contract/records", "moonbitlang/core/float" }

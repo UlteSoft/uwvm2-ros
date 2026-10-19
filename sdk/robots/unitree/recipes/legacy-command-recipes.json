@@ -1,0 +1,590 @@
+{
+  "kind": "uwvm-unitree-legacy-same-main-command-recipes-v1",
+  "status": "SOURCE_RECIPES_NOT_EXECUTED",
+  "scope": "Six genuine ROS1 same-main Guest commands; twelve future fresh denied/positive cases. No build, MD5, native transport, hardware CRC or robot qualification is claimed.",
+  "default_authority": [],
+  "products": [
+    {
+      "id": "c-legacy-lowlevel-command",
+      "language": "c",
+      "backend": 1,
+      "family": "unitree_legged_msgs",
+      "family_code": 4,
+      "complete_record_count": 11,
+      "actual_example": "sdk/robots/unitree/examples/legacy/lowlevel.c",
+      "observed_entry_execution": "NOT_EXECUTED",
+      "entry_export": "_start",
+      "cases": [
+        "fresh-default-denied",
+        "fresh-explicit-native-transport"
+      ],
+      "ROS_authority": [],
+      "optional_WASI": [],
+      "poll_limit": 4096,
+      "maximum_memory_pages": 1024,
+      "own_memory": true,
+      "implicit_start": false,
+      "staging": "Full newly Noetic-bound bounded_records.h beside source/values_c.h; never a hand-written replacement.",
+      "commands": [
+        {
+          "id": "entry",
+          "argv": [
+            "{WASI_CLANG}",
+            "--driver-mode=gcc",
+            "--target=wasm32-wasip1",
+            "--sysroot={WASI_SYSROOT}",
+            "-resource-dir={WASI_RESOURCE_DIR}",
+            "-std=gnu11",
+            "-O1",
+            "-UNDEBUG",
+            "-fno-fast-math",
+            "-ffp-contract=off",
+            "-MD",
+            "-MF",
+            "{DEP}",
+            "-MT",
+            "{OBJECT}",
+            "-c",
+            "{SOURCE}/tests/ros_unitree/legacy_command/entry.c",
+            "-o",
+            "{OBJECT}"
+          ]
+        },
+        {
+          "id": "example",
+          "argv": [
+            "{WASI_CLANG}",
+            "--driver-mode=gcc",
+            "--target=wasm32-wasip1",
+            "--sysroot={WASI_SYSROOT}",
+            "-resource-dir={WASI_RESOURCE_DIR}",
+            "-std=gnu11",
+            "-O1",
+            "-UNDEBUG",
+            "-fno-fast-math",
+            "-ffp-contract=off",
+            "-I",
+            "{SOURCE}/sdk/include",
+            "-I",
+            "{SOURCE}/sdk/include",
+            "-I",
+            "{GENERATED}",
+            "-MD",
+            "-MF",
+            "{DEP}",
+            "-MT",
+            "{OBJECT}",
+            "-c",
+            "{STAGE}/sdk/robots/unitree/examples/legacy/lowlevel.c",
+            "-o",
+            "{OBJECT}"
+          ]
+        },
+        {
+          "id": "link",
+          "argv": [
+            "{WASI_CLANG}",
+            "--driver-mode=gcc",
+            "--target=wasm32-wasip1",
+            "--sysroot={WASI_SYSROOT}",
+            "-resource-dir={WASI_RESOURCE_DIR}",
+            "-UNDEBUG",
+            "-fno-fast-math",
+            "-ffp-contract=off",
+            "-fuse-ld={WASM_LD_ALIAS}",
+            "-nostartfiles",
+            "-Wl,--threads=1",
+            "-Wl,--trace",
+            "-Wl,--no-entry",
+            "-Wl,--export=_start",
+            "-Wl,--max-memory=67108864",
+            "-Wl,--export-memory",
+            "{EXAMPLE_OBJECT}",
+            "{ENTRY_OBJECT}",
+            "-o",
+            "{OUT}/guest.wasm"
+          ]
+        }
+      ],
+      "validation": [
+        "{WASM_TOOLS}",
+        "validate",
+        "{OUT}/guest.wasm"
+      ]
+    },
+    {
+      "id": "cpp-legacy-lowlevel-command",
+      "language": "cpp",
+      "backend": 1,
+      "family": "unitree_legged_msgs",
+      "family_code": 4,
+      "complete_record_count": 11,
+      "actual_example": "sdk/robots/unitree/examples/legacy/lowlevel.cpp",
+      "observed_entry_execution": "NOT_EXECUTED",
+      "entry_export": "_start",
+      "cases": [
+        "fresh-default-denied",
+        "fresh-explicit-native-transport"
+      ],
+      "ROS_authority": [],
+      "optional_WASI": [],
+      "poll_limit": 4096,
+      "maximum_memory_pages": 1024,
+      "own_memory": true,
+      "implicit_start": false,
+      "staging": "Full newly Noetic-bound bounded_records.h/bounded_records.hpp beside source/values_c.h; never a hand-written replacement.",
+      "commands": [
+        {
+          "id": "entry",
+          "argv": [
+            "{WASI_CLANG}",
+            "--driver-mode=gcc",
+            "--target=wasm32-wasip1",
+            "--sysroot={WASI_SYSROOT}",
+            "-resource-dir={WASI_RESOURCE_DIR}",
+            "-std=gnu11",
+            "-O1",
+            "-UNDEBUG",
+            "-fno-fast-math",
+            "-ffp-contract=off",
+            "-MD",
+            "-MF",
+            "{DEP}",
+            "-MT",
+            "{OBJECT}",
+            "-c",
+            "{SOURCE}/tests/ros_unitree/legacy_command/entry.c",
+            "-o",
+            "{OBJECT}"
+          ]
+        },
+        {
+          "id": "example",
+          "argv": [
+            "{WASI_CLANGXX}",
+            "--driver-mode=g++",
+            "--target=wasm32-wasip1",
+            "--sysroot={WASI_SYSROOT}",
+            "-resource-dir={WASI_RESOURCE_DIR}",
+            "-std=c++20",
+            "-O1",
+            "-UNDEBUG",
+            "-fno-fast-math",
+            "-ffp-contract=off",
+            "-D_LIBCPP_VERBOSE_ABORT(...)=__builtin_trap()",
+            "-I",
+            "{SOURCE}/sdk/include",
+            "-I",
+            "{SOURCE}/sdk/include",
+            "-I",
+            "{GENERATED}",
+            "-MD",
+            "-MF",
+            "{DEP}",
+            "-MT",
+            "{OBJECT}",
+            "-c",
+            "{STAGE}/sdk/robots/unitree/examples/legacy/lowlevel.cpp",
+            "-o",
+            "{OBJECT}"
+          ]
+        },
+        {
+          "id": "link",
+          "argv": [
+            "{WASI_CLANGXX}",
+            "--driver-mode=g++",
+            "--target=wasm32-wasip1",
+            "--sysroot={WASI_SYSROOT}",
+            "-resource-dir={WASI_RESOURCE_DIR}",
+            "-UNDEBUG",
+            "-fno-fast-math",
+            "-ffp-contract=off",
+            "-fuse-ld={WASM_LD_ALIAS}",
+            "-nostartfiles",
+            "-Wl,--threads=1",
+            "-Wl,--trace",
+            "-Wl,--no-entry",
+            "-Wl,--export=_start",
+            "-Wl,--max-memory=67108864",
+            "-Wl,--export-memory",
+            "{EXAMPLE_OBJECT}",
+            "{ENTRY_OBJECT}",
+            "{OFFICIAL_CPP_ABORT_OBJECT}",
+            "-Wl,--why-extract={WHY_EXTRACT}",
+            "-o",
+            "{OUT}/guest.wasm"
+          ]
+        }
+      ],
+      "official_termination_profile": "sdk/examples/robotics_modular/cpp_termination/README.md; prepare.py requires operator-pinned compiler/alias, trusted SDK VERSION and exact official-source lock. Only unchanged official abort TU NDEBUG+_LIBCXXABI_BAREMETAL; every Guest TU UNDEBUG/header trap; actual trace/why rejects default abort_message/verbose_abort members.",
+      "validation": [
+        "{WASM_TOOLS}",
+        "validate",
+        "{OUT}/guest.wasm"
+      ]
+    },
+    {
+      "id": "rust-legacy-lowlevel-command",
+      "language": "rust",
+      "backend": 1,
+      "family": "unitree_legged_msgs",
+      "family_code": 4,
+      "complete_record_count": 11,
+      "actual_example": "sdk/robots/unitree/examples/legacy/lowlevel.rs",
+      "observed_entry_execution": "NOT_EXECUTED",
+      "entry_export": "_start",
+      "cases": [
+        "fresh-default-denied",
+        "fresh-explicit-native-transport"
+      ],
+      "ROS_authority": [],
+      "optional_WASI": [],
+      "poll_limit": 4096,
+      "maximum_memory_pages": 1024,
+      "own_memory": true,
+      "implicit_start": false,
+      "staging": "Entire new bounded_records.rs and values.rs beside lowlevel.rs; preserve inner docs via #[path]. Compile real SDK rlib with ros1+alloc.",
+      "commands": [
+        {
+          "id": "sdk",
+          "argv": [
+            "{RUSTC}",
+            "--sysroot",
+            "{RUST_SYSROOT}",
+            "--edition=2021",
+            "--target=wasm32-unknown-unknown",
+            "-C",
+            "panic=abort",
+            "-C",
+            "opt-level=1",
+            "-C",
+            "codegen-units=1",
+            "--crate-name",
+            "roswasm",
+            "--crate-type=rlib",
+            "--cfg",
+            "feature=\"alloc\"",
+            "--cfg",
+            "feature=\"ros1\"",
+            "--emit=link,dep-info={OUT}/sdk.d",
+            "{SOURCE}/sdk/rust/src/lib.rs",
+            "-o",
+            "{OUT}/libroswasm.rlib"
+          ]
+        },
+        {
+          "id": "command",
+          "argv": [
+            "{RUSTC}",
+            "--sysroot",
+            "{RUST_SYSROOT}",
+            "--edition=2021",
+            "--target=wasm32-unknown-unknown",
+            "-C",
+            "panic=abort",
+            "-C",
+            "opt-level=1",
+            "-C",
+            "codegen-units=1",
+            "--crate-type=cdylib",
+            "--extern",
+            "roswasm={OUT}/libroswasm.rlib",
+            "--emit=link,dep-info={OUT}/command.d",
+            "-C",
+            "linker={OWNED_REAL_LINKER_TRACE_WRAPPER}",
+            "-C",
+            "link-arg={ENTRY_OBJECT}",
+            "-C",
+            "link-arg=--export=_start",
+            "-C",
+            "link-arg=--threads=1",
+            "-C",
+            "link-arg=--trace",
+            "-C",
+            "link-arg=--max-memory=67108864",
+            "{STAGE}/sdk/robots/unitree/examples/legacy/lowlevel.rs",
+            "-o",
+            "{OUT}/guest.wasm"
+          ]
+        }
+      ],
+      "entry_compile": "Compile entry.c with the exact C11 full-MD command above. Actual successful real-linker stdout and every retired Rust object require genuine pre-exec full7 capture and complete raw trace accounting, as the existing reviewed generic command builder; no missing-file skip.",
+      "validation": [
+        "{WASM_TOOLS}",
+        "validate",
+        "{OUT}/guest.wasm"
+      ]
+    },
+    {
+      "id": "tinygo-legacy-lowlevel-command",
+      "language": "tinygo",
+      "backend": 1,
+      "family": "unitree_legged_msgs",
+      "family_code": 4,
+      "complete_record_count": 11,
+      "actual_example": "sdk/robots/unitree/examples/legacy/lowlevel.go",
+      "observed_entry_execution": "NOT_EXECUTED",
+      "entry_export": "_start",
+      "cases": [
+        "fresh-default-denied",
+        "fresh-explicit-native-transport"
+      ],
+      "ROS_authority": [],
+      "optional_WASI": [],
+      "poll_limit": 4096,
+      "maximum_memory_pages": 1024,
+      "own_memory": true,
+      "implicit_start": false,
+      "staging": "Full sdk/tinygo module at original source-relative path; new lowlevel.go/values.go/go.mod plus command.go and protocol.go in one owned main package; full new generated bounded_records.go in customtypes/. No reactor or empty-main rewrite.",
+      "commands": [
+        {
+          "id": "command",
+          "cwd": "{STAGE}/sdk/robots/unitree/examples/legacy",
+          "argv": [
+            "{TINYGO}",
+            "build",
+            "-target={OWNED_BOUNDED_WASM_UNKNOWN_TARGET}",
+            "-buildmode=default",
+            "-scheduler=none",
+            "-opt=1",
+            "-p",
+            "1",
+            "-tags=ros1",
+            "-o",
+            "{OUT}/guest.wasm",
+            "."
+          ]
+        }
+      ],
+      "target_contract": {
+        "version_scope": "TinyGo v0.43.0 selected operator-pinned complete package",
+        "upstream_relative": "targets/wasm-unknown.json",
+        "upstream_bytes": 790,
+        "upstream_sha256": "63531e39ab6c1a3bcd0c1a78d7a68bdae917a530c0b64fe80541b163a1b037f3",
+        "derivation": "Fresh owned complete JSON copy; append exactly --max-memory=67108864 to ldflags, preserve all other fields. Selected SDK stays unchanged. Command uses default startup, not c-shared."
+      },
+      "environment": {
+        "GOTOOLCHAIN": "local",
+        "GOPROXY": "off",
+        "GOSUMDB": "off",
+        "GOENV": "off",
+        "GOWORK": "off",
+        "GOFLAGS": "-mod=readonly",
+        "GOMAXPROCS": "1",
+        "GOMEMLIMIT": "192MiB",
+        "GOROOT": "{ACTUAL_GO_ROOT}",
+        "TINYGOROOT": "{ACTUAL_TINYGO_ROOT}",
+        "BINARYEN_CORES": "1",
+        "PATH": "{CLOSED_PINNED_GO_AND_TOOL_PATH}",
+        "GOCACHE": "{OWNED_CACHE}",
+        "GOPATH": "{OWNED_GOPATH}",
+        "GOTMPDIR": "{OWNED_TMP}"
+      },
+      "validation": [
+        "{WASM_TOOLS}",
+        "validate",
+        "{OUT}/guest.wasm"
+      ]
+    },
+    {
+      "id": "assemblyscript-legacy-lowlevel-command",
+      "language": "assemblyscript",
+      "backend": 1,
+      "family": "unitree_legged_msgs",
+      "family_code": 4,
+      "complete_record_count": 11,
+      "actual_example": "sdk/robots/unitree/examples/legacy/lowlevel.ts",
+      "observed_entry_execution": "NOT_EXECUTED",
+      "entry_export": "legacy_command_entry",
+      "cases": [
+        "fresh-default-denied",
+        "fresh-explicit-native-transport"
+      ],
+      "ROS_authority": [],
+      "optional_WASI": [],
+      "poll_limit": 4096,
+      "maximum_memory_pages": 1024,
+      "own_memory": true,
+      "implicit_start": false,
+      "staging": "Full sdk/assemblyscript tree plus original relative app/values/command/protocol paths; full new bounded_records.ts at sdk/custom-types/legacy-family/ so unchanged generated ../../assemblyscript/codecs resolves. No @external ROS adapter replacement.",
+      "commands": [
+        {
+          "id": "command",
+          "argv": [
+            "{NODE}",
+            "{ASC_JS}",
+            "{STAGE}/tests/ros_unitree/legacy_command/command.ts",
+            "--runtime",
+            "incremental",
+            "--initialMemory",
+            "256",
+            "--maximumMemory",
+            "1024",
+            "--exportStart",
+            "legacy_command_entry",
+            "--use",
+            "abort=sdk/assemblyscript/api/abortGuest",
+            "--outFile",
+            "{OUT}/guest.wasm"
+          ]
+        }
+      ],
+      "validation": [
+        "{WASM_TOOLS}",
+        "validate",
+        "{OUT}/guest.wasm"
+      ]
+    },
+    {
+      "id": "javascript-legacy-lowlevel-command",
+      "language": "javascript",
+      "backend": 1,
+      "family": "unitree_legged_msgs",
+      "family_code": 4,
+      "complete_record_count": 11,
+      "actual_example": "sdk/robots/unitree/examples/legacy/lowlevel.mjs",
+      "observed_entry_execution": "NOT_EXECUTED",
+      "entry_export": "_start",
+      "cases": [
+        "fresh-default-denied",
+        "fresh-explicit-native-transport"
+      ],
+      "ROS_authority": [],
+      "optional_WASI": [],
+      "poll_limit": 4096,
+      "maximum_memory_pages": 1024,
+      "own_memory": true,
+      "implicit_start": false,
+      "staging": "Full sdk/javascript source tree and original relative legacy app/values; full new bounded_records.mjs beside actual entry. Closed manifest lists all15 modules; actual JS export main() is command body. No Node, preload, or scalar FFI substitutes.",
+      "commands": [
+        {
+          "id": "prepare",
+          "argv": [
+            "{PYTHON}",
+            "-B",
+            "{SOURCE}/sdk/javascript/guest/prepare.py",
+            "--source-root",
+            "{STAGE}",
+            "--quickjs",
+            "{QUICKJS}",
+            "--manifest",
+            "{SOURCE}/tests/ros_unitree/legacy_command/javascript-manifest.json",
+            "--out",
+            "{OUT}/prepared",
+            "--clang",
+            "{WASI_CLANG}",
+            "--linker",
+            "{WASM_LD_ALIAS}",
+            "--sysroot",
+            "{WASI_SYSROOT}",
+            "--resource-dir",
+            "{WASI_RESOURCE_DIR}",
+            "--libc",
+            "{WASI_LIBC}",
+            "--libm",
+            "{WASI_LIBM}",
+            "--printscan",
+            "{WASI_FULL_PRINTSCAN}",
+            "--builtins",
+            "{WASI_BUILTINS}",
+            "--validator",
+            "{WASM_TOOLS}"
+          ]
+        }
+      ],
+      "actual_jobs": "Execute only the genuine prepared exact backend1 command 13 compile jobs (5 QuickJS + engine/scalars/utf8 + native_ros/stdio + command.c + 2 generated TUs), link and validate; full actual -MD/-MF/-MT, object/header/whole-root pins, real trace. Actual full printscan before libc, not a stdio stub.",
+      "validation": [
+        "{WASM_TOOLS}",
+        "validate",
+        "{OUT}/guest.wasm"
+      ]
+    }
+  ],
+  "protocol": "ULG1/family4/mode/reserved then R/S/C/F; native counterpart ULN1/M/P/A/Z-or-Q/F. Commands run as main with exact main grants; never a privileged library called by a WAT main.",
+  "required_input_chain": [
+    "Actual complete Noetic SDK acquisition PASS/current whole-root catalog, unchanged official upstream unitree_ros_to_real b989870124913091fbe75e0dcfb047eb4ca00a09 full checkout/provenance and eleven raw .msg bodies",
+    "Fresh unmodified catkin generated/devel/installed11 headers equality and genuine stopped exporter all11 DataType/MD5/Definition; definitions compared to actual official inputs",
+    "Fresh bounded-v2 generation using those eleven actual native identities; all six complete module bodies/shape locks/generator/current source pins retained; N/A identity Source33 guest-only output is never native proof",
+    "Fresh builtin/legacy ROS1 Gateway and native_legacy_ros1_peer actual full-MD/link/ELF/SDK/map_files/pidfd/CG evidence, exact source/MF labels; no ROS2 report relabel",
+    "Full source and tool/sysroot/package roots before/after, physical compiler/linker invocation aliases, finite serial per-job guards, zero actors at cleanup; no old object reuse"
+  ],
+  "placeholder_policy": "This closed declarative compiler recipe is not an executable producer. Operator supplies actual absolute paths/full pins; a generic producer must bind each token, complete source staging, fresh output, exact full-MD/trace and binary inspection. Never shell-expand a token or infer tool versions from paths.",
+  "binary_contract": {
+    "ROS_module": "uwvm_ros1_v1",
+    "ROS_signature_source": "sdk/abi/abi-v1.json original38-function ROS1 ABI; used function subset only, exact signatures",
+    "WASI_function_allowlist": {
+      "fd_read": {
+        "parameters": [
+          "i32",
+          "i32",
+          "i32",
+          "i32"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      "fd_write": {
+        "parameters": [
+          "i32",
+          "i32",
+          "i32",
+          "i32"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      "proc_exit": {
+        "parameters": [
+          "i32"
+        ],
+        "results": []
+      }
+    },
+    "WASI_required": [
+      "fd_read",
+      "fd_write",
+      "proc_exit"
+    ],
+    "other_imports": [],
+    "nonfunction_imports": [],
+    "implicit_start": false,
+    "owned_memory_count": 1,
+    "maximum_memory_pages": 1024,
+    "entry_export": "_start except AS legacy_command_entry; exact ()->() signature. No case invoked before actual language initialization.",
+    "unexpected_import_action": "Retain actual table and FAIL; no extra grant, fake ABI, stdio shim or allowance expansion."
+  },
+  "positive_policy": {
+    "main_only": true,
+    "legacy-lowcmd": {
+      "operation": "topic.publish",
+      "type": "unitree_legged_msgs/LowCmd",
+      "topic": "/uwvm_unitree_legacy/lowcmd",
+      "queue-depth": 1,
+      "burst": 1,
+      "latch": true
+    },
+    "legacy-lowstate": {
+      "operation": "topic.subscribe",
+      "type": "unitree_legged_msgs/LowState",
+      "topic": "/uwvm_unitree_legacy/lowstate",
+      "queue-depth": 1,
+      "burst": 1
+    },
+    "identity": "Exact actual new native MD5/DataType/Definition and adapter-codec-identity from the selected provider; no literal invented hashes. All mandatory quota/audit/schema fields supplied by isolated owner."
+  },
+  "negative_policy": {
+    "ROS_grants": [],
+    "expected_denied_aliases": [
+      "legacy-lowcmd",
+      "legacy-lowstate"
+    ],
+    "expected_status": 13,
+    "expected_denial_count": 2,
+    "fresh_instance": true
+  },
+  "native_protocol": "tests/ros_unitree/NATIVE_LEGACY_ROS1.md",
+  "assertion_mode": "Every normal Guest C/C++ TU -UNDEBUG; only exact official termination TU has separately audited NDEBUG scope."
+}

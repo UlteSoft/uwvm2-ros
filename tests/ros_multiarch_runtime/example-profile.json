@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "id": "loongarch64-runtime-ros2-aarch64-native",
+  "backend": 2,
+  "runtime": {
+    "architecture": "loongarch64",
+    "execution": {"mode": "qemu", "qemu": "/reviewed/qemu/bin/qemu-loongarch64", "sysroot": "/reviewed/loongarch64/sysroot", "loader": "/reviewed/loongarch64/sysroot/lib64/ld-linux-loongarch-lp64d.so.1", "environment": {}}
+  },
+  "native": {
+    "architecture": "aarch64",
+    "execution": {"mode": "qemu", "qemu": "/reviewed/qemu/bin/qemu-aarch64", "sysroot": "/reviewed/jazzy/sysroot", "loader": "/reviewed/jazzy/sysroot/lib/ld-linux-aarch64.so.1", "environment": {"LD_LIBRARY_PATH": "/reviewed/jazzy/sysroot/opt/ros/jazzy/lib:/reviewed/jazzy/sysroot/usr/lib/aarch64-linux-gnu", "CMAKE_PREFIX_PATH": "/reviewed/jazzy/sysroot/opt/ros/jazzy"}}
+  },
+  "compiler": "/reviewed/clang/bin/clang++",
+  "cmake": "/usr/bin/cmake",
+  "make": "/usr/bin/make",
+  "compile_flags": ["--target=loongarch64-linux-gnu", "--sysroot=/reviewed/loongarch64/sysroot"],
+  "link_flags": ["--target=loongarch64-linux-gnu", "--sysroot=/reviewed/loongarch64/sysroot", "-fuse-ld=lld", "-Wl,--threads=1"],
+  "compiler_environment": {"LD_LIBRARY_PATH": "/reviewed/clang/lib"},
+  "native_cmake_flags": ["-DCMAKE_TOOLCHAIN_FILE=/reviewed/jazzy/toolchain.cmake", "-DCMAKE_CXX_COMPILER=/reviewed/cross/bin/aarch64-linux-gnu-g++"],
+  "roots": ["/reviewed/clang", "/reviewed/cross", "/reviewed/qemu", "/reviewed/loongarch64/sysroot", "/reviewed/jazzy", "/reviewed/guest-tools"],
+  "source_lock": "/reviewed/SDK-source-and-tool-provenance.json",
+  "cgroup": {"memory_max": 68719476736, "memory_swap_max": 0, "expected_boot_id": "00000000-0000-0000-0000-000000000000", "expected_leaf": "/sys/fs/cgroup/REPLACE_WITH_ORIGINAL_LEAF", "expected_device": 0, "expected_inode": 1, "expected_cpus": "0-31"},
+  "limits": {"jobs": 1, "compile_seconds": 3600, "actor_seconds": 300, "compiler_rss": 8589934592, "worker_rss": 8589934592, "native_rss": 2147483648, "log_bytes": 16777216},
+  "cases": ["sdk-c-positive", "sdk-c-absent", "sdk-cpp-positive", "sdk-cpp-absent", "sdk-rust-positive", "sdk-rust-absent", "sdk-tinygo-positive", "sdk-tinygo-absent", "sdk-assemblyscript-positive", "sdk-assemblyscript-absent", "sdk-javascript-positive", "sdk-javascript-absent", "seven-events"],
+  "guests": "/reviewed/current-source-delivery-products/report.json",
+  "wat2wasm": "/reviewed/guest-tools/bin/wat2wasm",
+  "wasm_validate": "/reviewed/guest-tools/bin/wasm-validate",
+  "node": "/reviewed/guest-tools/bin/node",
+  "master": null
+}

@@ -1,0 +1,373 @@
+--- /Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/typed40_boot3_r4/typed-command-postboot.py
++++ /Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/typed40_boot3_r5/typed-command-postboot.py
+@@ -22,6 +22,7 @@
+ 
+ RESTART_SHA256 = "0f14a3e8b122286f5d934f385d8ca582aa14039cd0b97531dad19b528a1b3260"
+ UNION_SHA256 = "8fbc2d1da44ef07bd8e6f69f4b174df70d802c471e989c1e752073cc95627d61"
++EXACT_ALIAS_SHA256 = "bd82f8a058b887462018102aa0f9d8a794e7196ee197e31c1a8661c7b4da07b9"
+ PIN = frozenset(("path", "bytes", "sha256", "device", "inode", "mtime_ns", "ctime_ns"))
+ OLD_CG = {"memory_max": 68719476736, "memory_swap_max": 0, "expected_device": 29,
+     "expected_inode": 18151, "expected_boot_id": "af121220-8c6e-4302-9853-f08bf4c50dbb",
+@@ -51,16 +52,44 @@
+ ARM_CURRENT_ONLY = {"root": "/usr/lib/arm-none-eabi/bin", "historical_anchors": [
+     {"device": 66307, "inode": value} for value in (12327242, 12327243, 12327247,
+         12327248, 12327249, 12327250, 12327251, 12327252, 12327255)]}
+-# These two exact build-ID leaves were discovered by Root after the real r3
+-# refusal. Only current names are added; their anchors already exist in the
+-# original library catalog. A broad /root/.debug input root is never admitted.
+-LIBRARY_CURRENT_ONLY = [
+-    {"root": "/root/.debug/usr/lib/x86_64-linux-gnu/libc.so.6/90ebd03ae9d9f42b23b4eb82fdf70352cf744198", "historical_anchors": [{"device": 66307, "inode": 12359710}]},
+-    {"root": "/root/.debug/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.35/3a7a8c6bd922e6314edb7a710fdc0293265c2c42", "historical_anchors": [{"device": 66307, "inode": 12322103}]}]
+-CURRENT_AUXILIARY = [ARM_CURRENT_ONLY, *LIBRARY_CURRENT_ONLY]
++# Root fully streamed these two exact CURRENT elf names after the real r3
++# mismatch. The r4 attempt safely refused unrelated debug/probes siblings;
++# no complete debug-directory inventory is selected or claimed here.
++EXACT_CURRENT_ALIASES = [
++    {
++        "current_pin": {
++            "bytes": 2186512,
++            "ctime_ns": 1791893890224829563,
++            "device": 66312,
++            "inode": 12359710,
++            "mtime_ns": 1774989310000000000,
++            "path": "/root/.debug/usr/lib/x86_64-linux-gnu/libc.so.6/90ebd03ae9d9f42b23b4eb82fdf70352cf744198/elf",
++            "sha256": "d763925433ff9b757390549e1b20c085f5e6de27ae700fe89194178d96a8a2b0"
++        },
++        "historical_anchor": {
++            "device": 66307,
++            "inode": 12359710
++        }
++    },
++    {
++        "current_pin": {
++            "bytes": 2735712,
++            "ctime_ns": 1791893890225590691,
++            "device": 66312,
++            "inode": 12322103,
++            "mtime_ns": 1774168304000000000,
++            "path": "/root/.debug/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.35/3a7a8c6bd922e6314edb7a710fdc0293265c2c42/elf",
++            "sha256": "5bb0d21308f123b6ad46c6f35b42cedfcb8d6d439a53aa3dae04d880aaffdde3"
++        },
++        "historical_anchor": {
++            "device": 66307,
++            "inode": 12322103
++        }
++    }
++]
++CURRENT_AUXILIARY = [ARM_CURRENT_ONLY]
+ CURRENT_AUXILIARY_NAMES = {
+-    ARM_CURRENT_ONLY["root"]: {"ar", "as", "ld", "ld.bfd", "nm", "objcopy", "objdump", "ranlib", "readelf", "strip"},
+-    **{item["root"]: {"elf"} for item in LIBRARY_CURRENT_ONLY}}
++    ARM_CURRENT_ONLY["root"]: {"ar", "as", "ld", "ld.bfd", "nm", "objcopy", "objdump", "ranlib", "readelf", "strip"}}
+ LIMITS = {"catalog_bytes": 256 * 1024**2, "catalog_entries": 1048576,
+           "file_bytes": 2 * 1024**3, "total_bytes": 64 * 1024**3}
+ 
+@@ -113,6 +142,7 @@
+         self.frame, self.frozen, self.namespace = frame, frozen, namespace
+         self.restart = _module(frame, Path(__file__).with_name("requalify_after_restart.py"), RESTART_SHA256)
+         self.union_module = _module(frame, Path(__file__).with_name("requalify_hardlink_union.py"), UNION_SHA256)
++        self.exact_alias_module = _module(frame, Path(__file__).with_name("requalify_exact_aliases.py"), EXACT_ALIAS_SHA256)
+         self.aliases, self.trees, self.symlink_targets = {}, {}, {}
+         self.external_metadata = {}
+         self.output = frame.out / "postboot-input-requalification"
+@@ -222,20 +252,19 @@
+              CARGO_ROOT not in {item["root"] for item in original} and Path(CARGO_ROOT) in frame.roots,
+              "original59 plus exactly one newly explicit cargo complete Frame root required")
+         inventories = [*original, cargo]
+-        self.union = self.union_module.HistoricalUnion(self.restart,
++        self.union = self.exact_alias_module.ExactAliasUnion(self.restart, self.union_module,
+             [{"root": item["root"], "catalog": item["catalog"]} for item in inventories],
+             frame.guard, LIMITS, device_transitions={81: 81, 66307: 66312},
+-            auxiliary_roots=CURRENT_AUXILIARY)
+-        # Every auxiliary root is a CURRENT complete inventory, bound only to
+-        # genuine old inode classes. Old names/nlink remain NOT_RECORDED. The
+-        # two discovered build-ID leaves supplement ARM without expanding the
+-        # Frame root list or admitting their surrounding debug directories.
++            auxiliary_roots=CURRENT_AUXILIARY, exact_aliases=EXACT_CURRENT_ALIASES)
++        # The ARM directory remains a complete CURRENT inventory. Only two
++        # exact additional elf files are selected through the separate wrapper;
++        # no surrounding debug directory, sibling or historical name is added.
+         auxiliary_output = self.output / "current-only-auxiliary"
+         auxiliary_output.mkdir(mode=0o700)
+         auxiliary = self.union.qualify_auxiliary(auxiliary_output)
+         selected_auxiliary = {item["root"]: item for item in CURRENT_AUXILIARY}
+-        need(len(auxiliary) == 3 and {item["current_root"] for item in auxiliary} == set(selected_auxiliary),
+-             "exact ARM directory and two observed one-file build-ID leaves required")
++        need(len(auxiliary) == 1 and {item["current_root"] for item in auxiliary} == set(selected_auxiliary),
++             "exact complete ten-name ARM directory required")
+         for sidecar in auxiliary:
+             root = sidecar["current_root"]
+             names = CURRENT_AUXILIARY_NAMES[root]
+@@ -263,6 +292,24 @@
+                 actual = matches[0]
+             self.tree_matches(item, actual)
+         self.union.finish()
++        exact_proof = self.union.evidence
++        exact_rows = exact_proof.get("exact_current_aliases", [])
++        expected_exact = {item["current_pin"]["path"]: item for item in EXACT_CURRENT_ALIASES}
++        need(exact_proof.get("exact_current_alias_policy") == "current-exact-files-bound-to-old-anchors" and
++             exact_proof.get("exact_aliases_qualified") is True and len(exact_rows) == 2 and
++             {item.get("current_pin", {}).get("path") for item in exact_rows} == set(expected_exact),
++             "only two separately qualified actual current elf aliases may supplement the union")
++        for item in exact_rows:
++            selected = expected_exact[item["current_pin"]["path"]]
++            need(set(item) == {"policy", "historical_anchor", "current_pin", "current_mode", "current_nlink",
++                 "historical_auxiliary_names", "historical_auxiliary_nlink", "sibling_directories", "execution_qualification"} and
++                 item["policy"] == "current-exact-files-bound-to-old-anchors" and
++                 item["current_pin"] == selected["current_pin"] and item["historical_anchor"] == selected["historical_anchor"] and
++                 item["current_nlink"] == 2 and item["current_mode"] ==
++                 (33261 if selected["historical_anchor"]["inode"] == 12359710 else 33188) and
++                 item["historical_auxiliary_names"] == item["historical_auxiliary_nlink"] == "NOT_RECORDED" and
++                 item["sibling_directories"] == "NOT_SELECTED" and item["execution_qualification"] == "NOT_PERFORMED",
++                 "exact current alias receipt changed or claimed historical/sibling execution coverage")
+         self.sync()
+ 
+     def pin(self, previous, current=None):
+--- /Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/typed40_boot3_r4/root_owner.py
++++ /Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/typed40_boot3_r5/root_owner.py
+@@ -32,12 +32,49 @@
+ SOURCE = P / "inputs-r40/source"
+ MANIFEST = SOURCE.parent / "source-manifest.json"
+ MANIFEST_SHA = "a1c302c830b9965c73d3a9f1fa775056ff60cb7b252ec2af15c8c73ee0969afd"
+-CODE = B / "source40-unitree-command14-boot3-controls-r4"
+-META = M / "source40-unitree-command14-boot3-inputs-r4"
+-ACTOR = M / "source40-unitree-command14-boot3-build-r4"
+-OWNER = M / "source40-unitree-command14-boot3-owner-r4"
++CODE = B / "source40-unitree-command14-boot3-controls-r5"
++META = M / "source40-unitree-command14-boot3-inputs-r5"
++ACTOR = M / "source40-unitree-command14-boot3-build-r5"
++OWNER = M / "source40-unitree-command14-boot3-owner-r5"
+ ORIGINAL = M / "source40-unitree-command14-build-r1/report.json"
+ ORIGINAL_SHA = "b7c07cc7b83bf5996d85e1e812c7e4bc5221358d6dafcb69c3601d261af86747"
++# Exact current observations supplied by Root; no debug parent/sibling is an input.
++EXACT_CURRENT_ALIASES = [
++    {
++        "current_pin": {
++            "bytes": 2186512,
++            "ctime_ns": 1791893890224829563,
++            "device": 66312,
++            "inode": 12359710,
++            "mtime_ns": 1774989310000000000,
++            "path": "/root/.debug/usr/lib/x86_64-linux-gnu/libc.so.6/90ebd03ae9d9f42b23b4eb82fdf70352cf744198/elf",
++            "sha256": "d763925433ff9b757390549e1b20c085f5e6de27ae700fe89194178d96a8a2b0"
++        },
++        "historical_anchor": {
++            "device": 66307,
++            "inode": 12359710
++        }
++    },
++    {
++        "current_pin": {
++            "bytes": 2735712,
++            "ctime_ns": 1791893890225590691,
++            "device": 66312,
++            "inode": 12322103,
++            "mtime_ns": 1774168304000000000,
++            "path": "/root/.debug/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.35/3a7a8c6bd922e6314edb7a710fdc0293265c2c42/elf",
++            "sha256": "5bb0d21308f123b6ad46c6f35b42cedfcb8d6d439a53aa3dae04d880aaffdde3"
++        },
++        "historical_anchor": {
++            "device": 66307,
++            "inode": 12322103
++        }
++    }
++]
++EXACT_CURRENT_MODES = {
++    "/root/.debug/usr/lib/x86_64-linux-gnu/libc.so.6/90ebd03ae9d9f42b23b4eb82fdf70352cf744198/elf": 33261,
++    "/root/.debug/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.35/3a7a8c6bd922e6314edb7a710fdc0293265c2c42/elf": 33188
++}
+ CG = {"memory_max": 64 * GIB, "memory_swap_max": 0, "expected_device": 29,
+       "expected_inode": 18358, "expected_boot_id": "501c54bd-af24-4d22-900c-8e24de274464",
+       "expected_leaf": "/sys/fs/cgroup/system.slice/docker-4dd58ad4560fde2ab9b539e4ef9cab1fac531654e99ad554aff1fce8ae0eae37.scope",
+@@ -46,6 +83,7 @@
+ NAMES = {"maker": "command14-input-maker.py", "builder": "command14-builder.py",
+          "adapter": "typed-command-postboot.py", "restart": "requalify_after_restart.py",
+          "union": "requalify_hardlink_union.py",
++         "exact_aliases": "requalify_exact_aliases.py",
+          "cpp_qualifier": "official-cpp-qualifier.py", "utilities": "command14-utilities.py"}
+ OUTER = {"self_rss_bytes": 512 * MIB, "tree_rss_bytes": 1536 * MIB,
+          "prepare_command_seconds": 3600, "build_command_seconds": 19800,
+@@ -194,26 +232,32 @@
+          qualification.get("raw_reports_rewritten") is False and qualification.get("old_execution_promoted_to_current") is False,
+          "complete original59/cargo historical hardlink union must finish before any compiler result")
+     auxiliary = union.get("current_auxiliary_complete_roots", [])
+-    # Repeat the adapter's finite contract independently. These are current
+-    # sidecars, not added historical names, Frame roots or execution evidence.
+-    expected_auxiliary = {
+-        "/usr/lib/arm-none-eabi/bin": {"files": 10, "anchors": [
+-            {"device": 66307, "inode": value} for value in (12327242, 12327243, 12327247,
+-                12327248, 12327249, 12327250, 12327251, 12327252, 12327255)]},
+-        "/root/.debug/usr/lib/x86_64-linux-gnu/libc.so.6/90ebd03ae9d9f42b23b4eb82fdf70352cf744198": {"files": 1, "anchors": [{"device": 66307, "inode": 12359710}]},
+-        "/root/.debug/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.35/3a7a8c6bd922e6314edb7a710fdc0293265c2c42": {"files": 1, "anchors": [{"device": 66307, "inode": 12322103}]}}
+-    need(len(auxiliary) == 3 and {item.get("current_root") for item in auxiliary} == set(expected_auxiliary) and
+-         union.get("current_auxiliary_policy") == "current-complete-root-bound-to-old-anchors",
+-         "exact three finite current auxiliary complete roots required")
+-    for item in auxiliary:
+-        expected = expected_auxiliary[item["current_root"]]
+-        need(item.get("historical_anchor_classes") == expected["anchors"] and
+-             item["totals"]["files"] == expected["files"] and item["totals"]["symlinks"] == 0 and
+-             item["totals"]["entries"] == expected["files"] and item["totals"]["directories"] == 1 and
+-             item.get("historical_auxiliary_names") == "NOT_RECORDED" and
+-             item.get("historical_auxiliary_nlink") == "NOT_RECORDED" and
+-             item.get("execution_qualification") == "NOT_PERFORMED",
+-             "only complete ARM ten-name/nine-anchor and two one-file library leaves may supplement the union")
++    anchors = [{"device": 66307, "inode": value} for value in (12327242, 12327243, 12327247,
++        12327248, 12327249, 12327250, 12327251, 12327252, 12327255)]
++    need(len(auxiliary) == 1 and union.get("current_auxiliary_policy") == "current-complete-root-bound-to-old-anchors" and
++         auxiliary[0].get("current_root") == "/usr/lib/arm-none-eabi/bin" and
++         auxiliary[0].get("historical_anchor_classes") == anchors and auxiliary[0]["totals"]["files"] == 10 and
++         auxiliary[0]["totals"]["entries"] == 10 and auxiliary[0]["totals"]["directories"] == 1 and
++         auxiliary[0]["totals"]["symlinks"] == 0 and auxiliary[0].get("historical_auxiliary_names") == "NOT_RECORDED" and
++         auxiliary[0].get("historical_auxiliary_nlink") == "NOT_RECORDED" and
++         auxiliary[0].get("execution_qualification") == "NOT_PERFORMED",
++         "only the complete current ARM ten-name/nine-anchor root may supplement the historical union")
++    exact_rows = union.get("exact_current_aliases", [])
++    expected_exact = {item["current_pin"]["path"]: item for item in EXACT_CURRENT_ALIASES}
++    need(union.get("exact_current_alias_policy") == "current-exact-files-bound-to-old-anchors" and
++         union.get("exact_aliases_qualified") is True and len(exact_rows) == 2 and
++         {item.get("current_pin", {}).get("path") for item in exact_rows} == set(expected_exact),
++         "exact two current elf aliases required without a complete debug directory claim")
++    for item in exact_rows:
++        selected = expected_exact[item["current_pin"]["path"]]
++        need(set(item) == {"policy", "historical_anchor", "current_pin", "current_mode", "current_nlink",
++             "historical_auxiliary_names", "historical_auxiliary_nlink", "sibling_directories", "execution_qualification"} and
++             item["policy"] == "current-exact-files-bound-to-old-anchors" and
++             item["current_pin"] == selected["current_pin"] and item["historical_anchor"] == selected["historical_anchor"] and
++             item["current_nlink"] == 2 and item["current_mode"] == EXACT_CURRENT_MODES[item["current_pin"]["path"]] and
++             item["historical_auxiliary_names"] == item["historical_auxiliary_nlink"] == "NOT_RECORDED" and
++             item["sibling_directories"] == "NOT_SELECTED" and item["execution_qualification"] == "NOT_PERFORMED",
++             "exact-file alias sidecar differs from independently selected current physical observations")
+     retained, fresh = [], []
+     for row in value["products"]:
+         need(row.get("status") == "COMPILED_COMMAND_AND_FULL_BINARY_VALIDATED_NOT_EXECUTED" and
+@@ -350,7 +394,7 @@
+     for name in ("home", "tmp"):
+         (out / name).mkdir(mode=0o700)
+     runner, source_before, before = None, None, initial_cgroup
+-    catalogs, pins, products, external_union_pins = [], {}, {}, {}
++    catalogs, pins, products, external_union_pins, exact_alias_pins = [], {}, {}, {}, {}
+     finalizing = False
+     report = {"format_version": 1, "kind": "typed-command-postboot-root-phase-supervisor", "status": "RUNNING",
+         "phase": args.phase, "source": str(SOURCE), "source_manifest_sha256": MANIFEST_SHA,
+@@ -403,7 +447,8 @@
+     def save():
+         report.update(commands=runner.commands if runner else [], input_pins=list(pins.values()),
+                       product_pins=list(products.values()),
+-                      separately_selected_union_metadata_current_pins=list(external_union_pins.values()))
++                      separately_selected_union_metadata_current_pins=list(external_union_pins.values()),
++                      separately_selected_exact_alias_current_pins=list(exact_alias_pins.values()))
+         common.atomic_json(out / "report.json", report)
+ 
+     environment = {"PATH": "/usr/bin:/bin", "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8",
+@@ -463,6 +508,18 @@
+             OUTER["prepare_command_seconds" if args.phase == "prepare" else "build_command_seconds"], "log_bytes": 16 * MIB}, guard)
+         report.update(selected_argv=command, compiler_phase_started=args.phase == "build", phase_launch_requested=True)
+         save()
++        if args.phase == "build":
++            # Select only the two genuine current elf files before launching
++            # the builder. Their sibling debug/probes names are not inventoried.
++            for selected in EXACT_CURRENT_ALIASES:
++                pin = selected["current_pin"]
++                need(common.opened(Path(pin["path"]), 8 * MIB) == pin,
++                     "exact current alias changed before child launch")
++                info = Path(pin["path"]).stat(follow_symlinks=False)
++                need(info.st_nlink == 2 and info.st_mode == EXACT_CURRENT_MODES[pin["path"]],
++                     "exact current alias mode/link count changed before child launch")
++                exact_alias_pins[pin["path"]] = pin
++            save()
+         row = runner.run("typed-command-" + args.phase, command, out, environment)
+         runner.discover()
+         need(all(common.pidfd_terminal(item["fd"]) for item in runner.owned.values()), "owned phase descendants remain live")
+@@ -475,6 +532,9 @@
+             metadata_success(result, helpers, selections["original_batch"])
+         else:
+             retained, fresh = build_success(result, configuration, original)
++            exact_bindings = result["postboot_retained_input_qualification"]["historical_hardlink_union"]["exact_alias_helper_bindings"]
++            need(exact_bindings == {"base": helpers["restart"], "union": helpers["union"]},
++                 "exact alias wrapper must bind these independently sealed current base/union helpers")
+             # These two metadata files are outside every complete Frame root.
+             # Select their exact old/full content facts independently; do not
+             # enlarge Frame.pin or inventory either surrounding directory.
+@@ -596,6 +656,11 @@
+                  "current opened input changed before finalization")
+             need(all(common.opened(Path(pin["path"]), 16 * MIB) == pin for pin in external_union_pins.values()),
+                  "exact separately selected external union metadata changed before finish")
++            need(all(common.opened(Path(pin["path"]), 8 * MIB) == pin and
++                     Path(pin["path"]).stat(follow_symlinks=False).st_nlink == 2 and
++                     Path(pin["path"]).stat(follow_symlinks=False).st_mode == EXACT_CURRENT_MODES[pin["path"]]
++                     for pin in exact_alias_pins.values()),
++                 "two exact current alias files changed before terminal preservation")
+             need(all(common.opened(Path(pin["path"]), max(64 * MIB, pin["bytes"])) == pin for pin in products.values()),
+                  "current retained product changed before finalization")
+             report.update(inventories_before=catalogs, inventories_after=after, source_preserved=True,
+--- /Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/typed40_boot3_r4/stage.py
++++ /Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/typed40_boot3_r5/stage.py
+@@ -1,11 +1,11 @@
+ #!/usr/bin/env python3
+ """Stage one reviewed Typed40 post-restart source package, without starting it.
+ 
+-Root supplies a SHA256-bound JSON payload containing the exact eight reviewed
++Root supplies a SHA256-bound JSON payload containing the exact nine reviewed
+ source files. The program independently admits the current complete Source40
+ freeze, current host Python, retained seed configuration and unchanged failed
+ batch. It fills current seven-field control observations from actual opened
+-files, writes a fresh sealed ten-file control directory, and emits separate
++files, writes a fresh sealed eleven-file control directory, and emits separate
+ prepare/build commands as metadata. It starts no child and grants no rights.
+ """
+ from __future__ import annotations
+@@ -31,11 +31,11 @@
+ SOURCE = P / "inputs-r40/source"
+ MANIFEST = SOURCE.parent / "source-manifest.json"
+ MANIFEST_SHA = "a1c302c830b9965c73d3a9f1fa775056ff60cb7b252ec2af15c8c73ee0969afd"
+-CODE = B / "source40-unitree-command14-boot3-controls-r4"
+-META = M / "source40-unitree-command14-boot3-inputs-r4"
+-ACTOR = M / "source40-unitree-command14-boot3-build-r4"
+-OWNER = M / "source40-unitree-command14-boot3-owner-r4"
+-RECEIPT = B / "source40-unitree-command14-boot3-stage-r4.json"
++CODE = B / "source40-unitree-command14-boot3-controls-r5"
++META = M / "source40-unitree-command14-boot3-inputs-r5"
++ACTOR = M / "source40-unitree-command14-boot3-build-r5"
++OWNER = M / "source40-unitree-command14-boot3-owner-r5"
++RECEIPT = B / "source40-unitree-command14-boot3-stage-r5.json"
+ SEED = M / "source40-unitree-command14-input-admission-r2/controls/frame-config.json"
+ SEED_SHA = "ed31e25026685a3e18f760c28dbc713468d66555c0984cdb306683ca1d86a8bd"
+ ORIGINAL = M / "source40-unitree-command14-build-r1/report.json"
+@@ -45,6 +45,7 @@
+ NAMES = {"maker": "command14-input-maker.py", "builder": "command14-builder.py",
+          "adapter": "typed-command-postboot.py", "restart": "requalify_after_restart.py",
+          "union": "requalify_hardlink_union.py",
++         "exact_aliases": "requalify_exact_aliases.py",
+          "cpp_qualifier": "official-cpp-qualifier.py", "utilities": "command14-utilities.py",
+          "outer": "root-launch.py"}
+ CG = {"memory_max": 64 * GIB, "memory_swap_max": 0, "expected_device": 29,
+@@ -122,7 +123,7 @@
+     need(type(payload) is dict and set(payload) == {"format_version", "kind", "files"} and
+          type(payload["format_version"]) is int and payload["format_version"] == 1 and
+          payload["kind"] == "typed-command-postboot-reviewed-source-package" and type(payload["files"]) is dict and
+-         set(payload["files"]) == set(NAMES), "closed eight-file reviewed source package required")
++         set(payload["files"]) == set(NAMES), "closed nine-file reviewed source package required")
+     decoded = {}
+     for role, name in NAMES.items():
+         row = payload["files"][role]
+--- /Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/typed40_boot3_r4/command14-input-maker.py
++++ /Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/typed40_boot3_r5/command14-input-maker.py
+@@ -37,6 +37,7 @@
+ ROLE_FILES = {"maker": "command14-input-maker.py", "builder": "command14-builder.py",
+     "adapter": "typed-command-postboot.py", "restart": "requalify_after_restart.py",
+     "union": "requalify_hardlink_union.py",
++    "exact_aliases": "requalify_exact_aliases.py",
+     "cpp_qualifier": "official-cpp-qualifier.py", "utilities": "command14-utilities.py"}
+ 
+ 
+--- /Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/typed40_boot3_r4/command14-builder.py
++++ /Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/typed40_boot3_r5/command14-builder.py
+@@ -1127,7 +1127,7 @@
+         need(any(Path(own_pin['path']).is_relative_to(root) for root in frame.roots),'new private worker must have a complete explicit control root')
+         utilities,_=load(args.utilities.resolve(strict=True),'typed14_reviewed_serial_and_binary_utilities',UTILITIES,frame)
+         need(any(args.utilities.resolve(strict=True).is_relative_to(root) for root in frame.roots),'actual reviewed helper needs full control-root inventory')
+-        postboot_module,_=load(Path(__file__).with_name('typed-command-postboot.py'),'typed40_current_postboot','c947375658a570ac03df3f5c37ae76c2354f187b6c7f40ea1f37bda4608afc1b',frame)
++        postboot_module,_=load(Path(__file__).with_name('typed-command-postboot.py'),'typed40_current_postboot','6edd9fc11c1b03a75d51145d0f117aaf1f757dd04623ee41aabcf0d109e5bcfd',frame)
+         frame.postboot=postboot_module.attach(frame,frozen,globals(),utilities)
+         status=build(frame,frozen,args,utilities);frame.guard()
+     except BaseException as caught:

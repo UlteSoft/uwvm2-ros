@@ -1,0 +1,40 @@
+<Project>
+  <!-- This actual Preview6 route fills _WasmNativeFileForLinking only at
+       _WasiWriteRspForLinking, AFTER _GenerateManagedToNative. Select scanner
+       module names explicitly now; add each .o through NativeFileReference ONCE. -->
+  <ItemGroup Condition="'$(RosAotRos)' == '1'">
+    <NativeFileReference Include="$(RosNativeBridgeObject)" />
+    <NativeFileReference Include="$(RosOwnedBridgeObject)" />
+  </ItemGroup>
+  <ItemGroup><_WasiClangXLinkerFlags Include="-Map=$(RosAotEvidenceDir)/native-link.map" /></ItemGroup>
+  <Target Name="UwvmAotSelectPInvokeModules" BeforeTargets="_GenerateManagedToNative">
+    <Error Condition="'$(RosAotOptIn)' != '1' Or '$(_WasmShouldAOT)' != 'true' Or '$(RunAOTCompilation)' != 'true' Or '$(WasmBuildNative)' != 'true'" Text="Actual AOT native chain was not selected." />
+    <Error Condition="'$(RosAotEvidenceDir)' == ''" Text="Fresh actual evidence directory required." />
+    <Error Condition="'$(RosAotRos)' == '1' And (!Exists('$(RosNativeBridgeObject)') Or !Exists('$(RosOwnedBridgeObject)'))" Text="Actual admitted two bridge objects required for ROS." />
+    <Error Condition="'$(RosAotRos)' == '1' And ('$([System.IO.Path]::GetFileNameWithoutExtension('$(RosNativeBridgeObject)'))' != 'roswasm_bridge' Or '$([System.IO.Path]::GetFileNameWithoutExtension('$(RosOwnedBridgeObject)'))' != 'roswasm_owned_bridge')" Text="Actual object basenames must match existing DllImport module names." />
+    <ItemGroup Condition="'$(RosAotRos)' == '1'"><_WasmPInvokeModules Include="roswasm_bridge;roswasm_owned_bridge" /></ItemGroup>
+    <MakeDir Directories="$(RosAotEvidenceDir)" />
+    <WriteLinesToFile File="$(RosAotEvidenceDir)/selected-tools.tsv" Overwrite="true" Lines="cross|$(_MonoAotCrossCompilerPath);clang|$(WasmClang);llvm|$(_WasmLLVMPathForAOT);pack|$(MicrosoftNetCoreAppRuntimePackDir);mode|$(AOTMode);runtime|$(RuntimeFrameworkVersion);should-aot|$(_WasmShouldAOT);single-file|$(WasmSingleFileBundle)" />
+  </Target>
+  <Target Name="UwvmCaptureActualAot" AfterTargets="_WasmAotCompileApp" Condition="'$(_WasmShouldAOT)' == 'true'">
+    <MakeDir Directories="$(RosAotEvidenceDir)" />
+    <WriteLinesToFile File="$(RosAotEvidenceDir)/aot-assemblies.tsv" Overwrite="true" Lines="@(_WasmAssembliesInternal->'%(Identity)|%(LlvmBitcodeFile)|%(AOT_InternalForceToInterpret)')" />
+    <WriteLinesToFile File="$(RosAotEvidenceDir)/bitcode-objects.tsv" Overwrite="true" Lines="@(_BitcodeFile->'%(Identity)|%(ObjectFile)')" />
+    <Copy SourceFiles="$(_DriverGenCPath)" DestinationFiles="$(RosAotEvidenceDir)/driver-gen.c" />
+  </Target>
+  <Target Name="UwvmCaptureActualPInvoke" AfterTargets="_GenerateManagedToNative">
+    <Copy SourceFiles="$(_WasmPInvokeTablePath)" DestinationFiles="$(RosAotEvidenceDir)/pinvoke-table.h" />
+    <Copy SourceFiles="$(_WasmICallTablePath)" DestinationFiles="$(RosAotEvidenceDir)/icall-table.h" />
+    <WriteLinesToFile File="$(RosAotEvidenceDir)/pinvoke-modules.txt" Overwrite="true" Lines="@(_WasmPInvokeModules)" />
+  </Target>
+  <Target Name="UwvmCaptureActualLinkedItems" AfterTargets="_WasiLinkDotNet">
+    <WriteLinesToFile File="$(RosAotEvidenceDir)/linked-items.tsv" Overwrite="true" Lines="@(_WasmNativeFileForLinking->'%(Identity)')" />
+    <WriteLinesToFile File="$(RosAotEvidenceDir)/runtime-source-objects.tsv" Overwrite="true" Lines="@(_WasmRuntimePackSrcFile->'%(Identity)|%(ObjectFile)')" />
+    <Copy SourceFiles="$(_WasmLinkRsp)" DestinationFiles="$(RosAotEvidenceDir)/clang-link.rsp" />
+    <Copy SourceFiles="$(_WasmCompileBitcodeRsp)" DestinationFiles="$(RosAotEvidenceDir)/wasi-compile-bc.rsp" />
+    <Copy SourceFiles="$(_WasmCompileRsp)" DestinationFiles="$(RosAotEvidenceDir)/wasi-compile.rsp" />
+    <Copy SourceFiles="$(_WasmDefaultFlagsRsp)" DestinationFiles="$(RosAotEvidenceDir)/wasi-default.rsp" />
+    <Copy SourceFiles="$(_WasmDefaultLinkFlagsRsp)" DestinationFiles="$(RosAotEvidenceDir)/wasi-default-link.rsp" />
+    <Copy SourceFiles="$(_WasiOutputFileName)" DestinationFiles="$(RosAotEvidenceDir)/final.wasm" />
+  </Target>
+</Project>

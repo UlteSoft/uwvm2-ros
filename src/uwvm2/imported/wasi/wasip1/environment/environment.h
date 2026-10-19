@@ -53,6 +53,46 @@
 
 UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::environment
 {
+    /// @brief Explicit non-descriptor authority for one concrete WASI environment.
+    /// @details Import visibility does not grant these operations. Empty authority
+    ///          is the default, including for environments constructed by embedders.
+    ///          Each clock domain is independent. stdio_full_rights affects only
+    ///          initialization and deliberately opts into the former broad masks.
+    enum class permission_t : ::std::uint32_t
+    {
+        clock_realtime = 1u,
+        clock_monotonic = 2u,
+        clock_process_cputime = 4u,
+        clock_thread_cputime = 8u,
+        random = 16u,
+        proc_raise = 32u,
+        sched_yield = 64u,
+        stdio_full_rights = 128u
+    };
+
+    [[nodiscard]] inline constexpr permission_t operator|(permission_t left, permission_t right) noexcept
+    { return static_cast<permission_t>(static_cast<::std::uint32_t>(left) | static_cast<::std::uint32_t>(right)); }
+    [[nodiscard]] inline constexpr permission_t operator&(permission_t left, permission_t right) noexcept
+    { return static_cast<permission_t>(static_cast<::std::uint32_t>(left) & static_cast<::std::uint32_t>(right)); }
+    [[nodiscard]] inline constexpr permission_t operator~(permission_t value) noexcept
+    { return static_cast<permission_t>(~static_cast<::std::uint32_t>(value)); }
+
+    /// @brief Map a recognized WASI clock ID to its independently granted bit.
+    /// @return The corresponding bit, or zero for an invalid clock ID. Callers
+    ///         retain their invalid-ID diagnostic before checking authority.
+    [[nodiscard]] inline constexpr permission_t clock_permission(::uwvm2::imported::wasi::wasip1::abi::clockid_t id) noexcept
+    {
+        using clockid = ::uwvm2::imported::wasi::wasip1::abi::clockid_t;
+        switch(id)
+        {
+            case clockid::clock_realtime: return permission_t::clock_realtime;
+            case clockid::clock_monotonic: return permission_t::clock_monotonic;
+            case clockid::clock_process_cputime_id: return permission_t::clock_process_cputime;
+            case clockid::clock_thread_cputime_id: return permission_t::clock_thread_cputime;
+            default: return permission_t{};
+        }
+    }
+
     template <typename memory_type>
     concept wasip1_memory = requires(memory_type& mem, ::std::size_t offset, ::std::byte* begin, ::std::byte* end) {
         { ::uwvm2::imported::wasi::wasip1::memory::check_memory_bounds(mem, offset, 0uz) };
@@ -194,12 +234,52 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::environment
         wasip1_sched_yield_ptr_t wasip1_sched_yield_func_ptr{};
 
         bool trace_wasip1_call{};
+        // Optional host console observer; installed only by the debug launcher.
+        // true means the validated write was consumed by its bounded IO pane.
+        bool (*debug_console_write)(int, ::fast_io::io_scatter_t const*, ::std::size_t) noexcept{};
+        ::std::uint64_t debug_trace_identity{};
+        void (*debug_fd_created)(::std::uint64_t) noexcept{};
+        bool (*debug_console_read)(int, ::fast_io::io_scatter_t const*, ::std::size_t, ::std::size_t&) noexcept{};
         trace_wasip1_output_target_t trace_wasip1_output_target{};
         ::uwvm2::utils::container::u8string trace_wasip1_output_file_path_storage{};
         ::fast_io::u8native_file trace_wasip1_output_file{};
         trace_wasip1_group_kind_t trace_wasip1_group_kind{trace_wasip1_group_kind_t::global};
         ::uwvm2::utils::container::u8string trace_wasip1_group_name_storage{};
         bool disable_utf8_check{};
+
+        /// @brief Authority installed by trusted configuration, never by Guest input.
+        /// @note Checkpoint data must not elevate this live policy. A zero request
+        ///       is rejected so an unknown clock ID cannot accidentally authorize.
+        permission_t non_fd_permissions{};
+
+        [[nodiscard]] inline constexpr bool permits(permission_t requested) const noexcept
+        { return requested != permission_t{} && (non_fd_permissions & requested) == requested; }
+
+        /// @brief Project trusted policy to the rights installed on a standard stream.
+        /// @param input True for stdin; false for stdout/stderr. Descriptor labels
+        ///        do not override native access modes or create another resource.
+        [[nodiscard]] inline constexpr ::uwvm2::imported::wasi::wasip1::abi::rights_t stdio_base_rights(bool input) const noexcept
+        {
+            using rights = ::uwvm2::imported::wasi::wasip1::abi::rights_t;
+            return permits(permission_t::stdio_full_rights) ? static_cast<rights>(-1) :
+                rights::right_fd_filestat_get | rights::right_poll_fd_readwrite |
+                (input ? rights::right_fd_read : rights::right_fd_write);
+        }
+        [[nodiscard]] inline constexpr ::uwvm2::imported::wasi::wasip1::abi::rights_t stdio_inheriting_rights() const noexcept
+        {
+            using rights = ::uwvm2::imported::wasi::wasip1::abi::rights_t;
+            return permits(permission_t::stdio_full_rights) ? static_cast<rights>(-1) : rights{};
+        }
+
+        // Native callers retain the ordinary field. Runtime-managed environments
+        // resolve immediate-caller memory without mutating shared resource policy.
+        memory_type* (*wasip1_memory_resolver)(wasip1_environment const*) noexcept{};
+
+        [[nodiscard]] inline constexpr memory_type* get_memory() const noexcept
+        {
+            return wasip1_memory_resolver == nullptr ? wasip1_memory : wasip1_memory_resolver(this);
+        }
+
     };
 
 }  // namespace uwvm2::imported::wasi::wasip1::environment

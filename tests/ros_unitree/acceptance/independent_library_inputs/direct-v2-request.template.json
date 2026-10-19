@@ -1,0 +1,26 @@
+{
+  "format_version": 2,
+  "kind": "uwvm-direct-independent-build-configuration-request-v2",
+  "composition": "standalone",
+  "tools": {
+    "cc": "actual-wasi-cc",
+    "cxx": "actual-wasi-cxx",
+    "python": "actual-python",
+    "validator": "actual-validator",
+    "libc": "actual-wasi-libc",
+    "libm": "actual-wasi-libm",
+    "printscan": "actual-wasi-printscan",
+    "builtins": "actual-wasi-builtins",
+    "libcxx": "actual-wasi-libcxx",
+    "libcxxabi": "actual-wasi-libcxxabi"
+  },
+  "paths": {
+    "sysroot": null,
+    "resource_dir": null,
+    "wasm_ld_alias": null,
+    "quickjs": null
+  },
+  "cpp_library": "actual-terminal-A1",
+  "native_family_library": "actual-terminal-A2",
+  "build_out": null
+}

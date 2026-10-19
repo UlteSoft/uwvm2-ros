@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
+# v7 SOURCE successor; raw fixture signatures are not kernel-origin authentication.
 """Check separately compiled ordinary/ROS cache_product_isolation fixtures.
 
 Uses a fresh directory and identical embedder contexts, not CLI defaults.
-Objects are inert test bytes. A signed cache is an integrity check, not an
-access-control boundary against an attacker who can replace files as this user.
+All positives are bounded inert memory DATA; paths compare namespaces only.
+Public fixture signatures are not kernel-origin authentication. Real persistent
+sync/async/load APIs are exercised separately and must refuse absent admission.
 """
 import argparse
 import hashlib
@@ -16,6 +18,7 @@ parser.add_argument('--full', type=Path, required=True)
 parser.add_argument('--ros', type=Path, required=True)
 parser.add_argument('--out', type=Path, required=True)
 args = parser.parse_args()
+subprocess.run(['bash', str(Path(__file__).resolve().parents[2] / 'tools/ci/require_wasm3_test_cgroup.sh')], check=True)
 args.out.mkdir(parents=True, exist_ok=False)
 binaries = {'uwvm2': args.full.resolve(), 'uwvm2ros': args.ros.resolve()}
 rows = []
@@ -29,14 +32,24 @@ def run(product, *arguments):
     (args.out/'results.json').write_text(json.dumps(rows, indent=2)+'\n')
     if result.returncode:
         raise RuntimeError(row)
-    return dict(line.split('=', 1) for line in result.stdout.splitlines() if '=' in line)
+    fields = dict(line.split('=', 1) for line in result.stdout.splitlines() if '=' in line)
+    assert fields.get('codec_data_only') == '1' and fields.get('native_cache_replay') == '0'
+    if arguments:
+        assert fields.get('standalone_persistent_refused') == '1'
+    return fields
 
 defaults = {p: run(p) for p in binaries}
 for product, values in defaults.items():
-    assert values['product'] == product and values['version'] == '5'
+    assert values['product'] == product and values['version'] == '7'
     assert product in values['default']
     abi = bytes.fromhex(values['abi-hex'])
-    assert (product+'-runtime-abi-v12').encode() in abi
+    assert (product+'-runtime-abi-v27').encode() in abi
+    assert b'function-call-type-check' in abi and b'caller-forest-interval-v1' in abi
+    assert b'local-table-layout' in abi and b'typed-u64-limits-initializer-expression-v2' in abi
+    assert b'typed-call-abi' in abi and b'qualified-tailcc-explicit-tuple-buffer-v3' in abi
+    assert b'wasm-memory-addresses' in abi and b'typed-u64-limits-and-memarg-v1' in abi
+    assert b'native-memory-backend' in abi
+    assert b'native-memory-layout' in abi and b'bounded-reservation-aligned64-owner-ordered-size-v4' in abi
     policy = 'unique-temporary-labels-v1' if product == 'uwvm2' else 'symbol-entry-identity-v1'
     assert b'llvm-elf-local-symbols' in abi and policy.encode() in abi
     assert b'llvm-mips-call-relocations' in abi and b'full-width-noabicalls-c-abi-v2' in abi
@@ -46,25 +59,41 @@ for mode in ('signed', 'unsigned'):
     # The caller-supplied root/key/ABI are identical: storage must namespace
     # itself, including callers that bypass environment/CLI context creation.
     shared = args.out/mode/'shared'
-    own = {p: Path(run(p, 'write', shared, mode)['path']) for p in binaries}
+    models = {p: run(p, 'write', shared, mode) for p in binaries}
+    own = {p: Path(model['path']) for p,model in models.items()}
     assert own['uwvm2'] != own['uwvm2ros']
     for product, path in own.items():
         assert run(product, 'policy-v1', args.out/mode/product/'policy-v1', mode)['status'] == 'context-mismatch'
+        assert run(product, 'table-layout-v12', args.out/mode/product/'table-layout-v12', mode)['status'] == 'context-mismatch'
+        assert run(product, 'memory-layout-v13', args.out/mode/product/'memory-layout-v13', mode)['status'] == 'context-mismatch'
+        assert run(product, 'memory-layout-v14', args.out/mode/product/'memory-layout-v14', mode)['status'] == 'context-mismatch'
+        assert run(product, 'memory-layout-v15', args.out/mode/product/'memory-layout-v15', mode)['status'] == 'context-mismatch'
+        assert run(product, 'memory-layout-v16', args.out/mode/product/'memory-layout-v16', mode)['status'] == 'context-mismatch'
+        assert run(product, 'memory-layout-v17', args.out/mode/product/'memory-layout-v17', mode)['status'] == 'context-mismatch'
+        assert run(product, 'memory-layout-v18', args.out/mode/product/'memory-layout-v18', mode)['status'] == 'context-mismatch'
+        assert run(product, 'atomic-scalars-v19', args.out/mode/product/'atomic-scalars-v19', mode)['status'] == 'context-mismatch'
+        assert run(product, 'typed-calls-v20', args.out/mode/product/'typed-calls-v20', mode)['status'] == 'context-mismatch'
+        assert run(product, 'typed-calls-v21', args.out/mode/product/'typed-calls-v21', mode)['status'] == 'context-mismatch'
+        assert run(product, 'typed-calls-v22', args.out/mode/product/'typed-calls-v22', mode)['status'] == 'context-mismatch'
+        assert run(product, 'memory64-v23', args.out/mode/product/'memory64-v23', mode)['status'] == 'context-mismatch'
+        assert run(product, 'table64-v24', args.out/mode/product/'table64-v24', mode)['status'] == 'context-mismatch'
+        assert run(product, 'function-calls-v26', args.out/mode/product/'function-calls-v26', mode)['status'] == 'context-mismatch'
         assert path.relative_to(shared).parts[0] == product
         assert path.name.startswith(product+'-') and path.suffix == '.uwvm-ljc'
-        assert path.is_file()
-        foreign = own['uwvm2ros' if product == 'uwvm2' else 'uwvm2']
+        assert not path.exists(), 'inert DATA must not publish a persistent object'
+        foreign = models['uwvm2ros' if product == 'uwvm2' else 'uwvm2']['blob-hex']
         for mutation, status in (('none', 'invalid-magic'), ('own-magic', 'context-mismatch')):
             root = args.out/mode/product/mutation
             run(product, 'load-foreign', root, mode, foreign, mutation, status)
-        run(product, 'load-foreign', args.out/mode/product/'v4', mode,
-            path, 'version4', 'unsupported-version')
+        for old in (4, 5, 6):
+            run(product, 'load-foreign', args.out/mode/product/f'v{old}', mode,
+                models[product]['blob-hex'], f'version{old}', 'unsupported-version')
         if mode == 'signed':
             run(product, 'load-foreign', args.out/mode/product/'payload', mode,
-                path, 'payload', 'signature-mismatch')
+                models[product]['blob-hex'], 'payload', 'signature-mismatch')
 
-summary = dict(passed=True, invocations=len(rows), format_version=5,
+summary = dict(passed=True, invocations=len(rows), format_version=7, codec_data_only=True, native_cache_replay=False,
                binary_sha256={p: hashlib.sha256(b.read_bytes()).hexdigest() for p, b in binaries.items()},
-               scope='serializer, path, context and signature; no native object execution')
+               scope='memory DATA serializer/parser/context/raw fixture signature plus standalone persistent refusal; no authenticated production CLI cache hit')
 (args.out/'summary.json').write_text(json.dumps(summary, indent=2)+'\n')
 print(json.dumps(summary))

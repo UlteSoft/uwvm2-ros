@@ -1,0 +1,42 @@
+{
+  "kind": "original-rmw-preview1-wait-source-only-recipe-v1",
+  "status": "RETEST_PENDING_NOT_EXECUTED",
+  "existing_files_changed": 0,
+  "required_actual_inputs": [
+    "Original wasm32 Preview1 wasi-libc/toolchain; api.h must select real wasip1.h",
+    "Actual static original rmw/rcutils/generated C packages with complete original TypeDescription/RIHS/Event metadata",
+    "Source-recompiled A platform, B/C revision with actual availability tail and validation_state, pure-C Registry and raw5/7/12 providers",
+    "Root-owned coherent full source manifest/dependency closure and independently exported eleven actual native RIHS01 values",
+    "Explicit real poll_oneoff import admission plus monotonic-clock permission; independent system/steady A aliases and all actual endpoint grants",
+    "Independent actual native String counterpart, Empty client and AddTwoInts server; no automatic peer launch",
+    "Actual Runtime whole-Guest-group cancellation/deadline and physical import retirement before memory release"
+  ],
+  "build": {
+    "entry": "sdk/rmw_wasm/wasi_wait/CMakeLists.txt",
+    "explicit_modes": ["STATIC_WASI", "NATIVE_UNSUPPORTED"],
+    "feature_probe": "cmake/Probe.cmake: real original poll_oneoff volatile address; fresh compile AND executable link; no run",
+    "inputs": ["UWVM_RMW_INCLUDE_DIR absolute current sdk/rmw_wasm/include", "UWVM_ROS_SDK_INCLUDE_DIR absolute current sdk/include", "UWVM_RMW_WASI_WAIT_MODE"],
+    "contracts_opt_in": "UWVM_RMW_WASI_WAIT_BUILD_CONTRACTS=ON",
+    "composite_opt_in": "UWVM_RMW_WASI_WAIT_BUILD_COMPOSITE=ON after actual rmw_uwvm, uwvm_rmw_c_codecs, publisher/subscription/service transport and A platform targets exist",
+    "all_actual_builds_pending": true
+  },
+  "authored_contracts": {
+    "wasi_wait_values": "18 actual-WASI-type DATA/lifecycle groups; no imported syscall replaced or executed by this source review",
+    "wasi_wait_native_unsupported": "Actual non-WASI producer returns95 with pointer/provider/diagnostic output preservation",
+    "wasi_wait_guest --explicit-clock-denied": "Fresh Guest import admitted but monotonic-clock absent: actual WASI NOTCAPABLE76 mapped13, no accepted event",
+    "wasi_wait_guest --explicit-clock-granted": "Fresh Guest explicitly admitted monotonic timer: two genuine single-event transactions, exact types/errno/count/nonreused userdata; no elapsed-time inference",
+    "wasi_wait_original_rmw": "Actual original waitset plus independent A clock: empty20ms timeout and full String/sub/Empty server/Add client against independent real native peers, true5s application deadline"
+  },
+  "composite_argv": ["pub-alias", "sub-alias", "advertise-alias", "respond-alias", "call-alias", "observe-alias", "/topic", "/empty", "/add", "domain-id", "system-clock-alias", "steady-clock-alias", "query-alias-or--", "11 separately exported actual RIHS01 hex64 values in UWVM_RMW_C_ID_COUNT order"],
+  "required_future_negative_cases": [
+    "Actual import omitted: loader refusal; no fake numeric wait result",
+    "monotonic permission denied and A steady alias independently denied",
+    "Original rmw_wait zero timeout performs actual readiness observation without calling timer or A clock",
+    "Actual A clock rollback, unavailable clock, finite driver budget and real deadline remain distinct errors",
+    "Actual unknown/full uint16 WASI call and event errors; wrong count/type/full64 association preserve full observations",
+    "Native cleanup failures, Guest trap/reset/stop and actual Host import physical retirement; never reuse unknown-live provider state",
+    "No fake Header/ROS types, clock values, native identity, graph readiness, peer actor or elapsed loop count"
+  ],
+  "actual_execution_counts": {"candidate_imports": 0, "generators": 0, "configure_or_probe_runs": 0, "compilers": 0, "models_or_tests": 0, "guest_or_native_actors": 0, "ssh": 0},
+  "pending_acceptance": ["full coherent source peer", "Root-owned real SDK producer/probe/link/MD/import validation", "actual granted/denied Guest matrix", "actual original-RMW/native peer end-to-end and metadata validation", "physical cancellation/join/cleanup evidence", "official upstream RMW suites and wider families"]
+}

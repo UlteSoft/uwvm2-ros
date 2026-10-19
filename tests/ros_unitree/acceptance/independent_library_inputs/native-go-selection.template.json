@@ -1,0 +1,7 @@
+{
+  "format_version": 1,
+  "kind": "uwvm-native-go24-library-selection-v1",
+  "native_report": "actual-terminal-c52",
+  "upstream": "unitree_ros2",
+  "restart_mappings": []
+}

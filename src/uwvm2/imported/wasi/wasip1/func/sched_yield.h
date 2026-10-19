@@ -88,6 +88,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
     inline constexpr ::uwvm2::imported::wasi::wasip1::abi::errno_t sched_yield_impl(
         ::uwvm2::imported::wasi::wasip1::environment::wasip1_environment<::uwvm2::object::memory::linear::native_memory_t> & env) noexcept
     {
+        // Check inside the shared implementation so both pointer-width wrappers
+        // and direct native host callers enforce the same authority before callbacks.
+        if(!env.permits(::uwvm2::imported::wasi::wasip1::environment::permission_t::sched_yield)) [[unlikely]]
+        {
+            return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable;
+        }
+
         if(env.wasip1_sched_yield_func_ptr != nullptr) { return env.wasip1_sched_yield_func_ptr(); }
         else
         {

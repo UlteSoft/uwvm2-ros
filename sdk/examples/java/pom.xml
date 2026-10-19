@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copy the SDK tree below /tmp before task tests. Select fixture.main for the
+     annotated application. The include set prevents Maven from compiling SDK
+     test models or unrelated applications. Backend reachability is explicit. -->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.uwvm</groupId><artifactId>roswasm-java-examples</artifactId><version>1.0.0</version>
+  <properties>
+    <maven.compiler.release>17</maven.compiler.release><project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <teavm.version>0.13.1</teavm.version><fixture.main>org.uwvm.roswasm.examples.DefaultDenied</fixture.main>
+    <fixture.file>roswasm-java-default-denied.wasm</fixture.file>
+  </properties>
+  <dependencies>
+    <dependency><groupId>org.teavm</groupId><artifactId>teavm-classlib</artifactId><version>${teavm.version}</version></dependency>
+    <dependency><groupId>org.teavm</groupId><artifactId>teavm-core</artifactId><version>${teavm.version}</version><scope>provided</scope></dependency>
+    <dependency><groupId>org.teavm</groupId><artifactId>teavm-interop</artifactId><version>${teavm.version}</version><scope>provided</scope></dependency>
+  </dependencies>
+  <build>
+    <sourceDirectory>${project.basedir}/../..</sourceDirectory>
+    <plugins>
+      <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-resources-plugin</artifactId><version>3.3.1</version></plugin>
+      <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><version>3.14.1</version>
+        <configuration><includes><include>java/src/main/java/**/*.java</include><include>examples/java/*.java</include></includes></configuration>
+      </plugin>
+      <plugin><groupId>org.teavm</groupId><artifactId>teavm-maven-plugin</artifactId><version>${teavm.version}</version>
+        <executions><execution><phase>process-classes</phase><goals><goal>compile</goal></goals></execution></executions>
+        <configuration>
+          <mainClass>${fixture.main}</mainClass><targetType>WEBASSEMBLY_WASI</targetType>
+          <targetDirectory>${project.build.directory}/wasm</targetDirectory><targetFileName>${fixture.file}</targetFileName>
+          <optimizationLevel>FULL</optimizationLevel><strict>true</strict><minifying>false</minifying>
+          <debugInformationGenerated>true</debugInformationGenerated><wasmDebugInfoLocation>EMBEDDED</wasmDebugInfoLocation>
+          <sourceMapsGenerated>true</sourceMapsGenerated><sourceFilesCopied>true</sourceFilesCopied>
+          <minHeapSize>1</minHeapSize><maxHeapSize>32</maxHeapSize>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

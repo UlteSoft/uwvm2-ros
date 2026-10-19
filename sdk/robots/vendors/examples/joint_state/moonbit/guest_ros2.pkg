@@ -1,0 +1,5 @@
+import { "uwvm/ros/ros2" @ros, "uwvm/vendor_joint_state/records", "uwvm/vendor_joint_state/stdio" }
+options("is-main": true, link: {
+  "wasm": { "export-memory-name": "memory", "heap-start-address": 8519680, "memory-limits": { "min": 256, "max": 1024 } },
+  "wasm-gc": { "export-memory-name": "memory", "use-js-builtin-string": false, "memory-limits": { "min": 256, "max": 1024 } },
+},)

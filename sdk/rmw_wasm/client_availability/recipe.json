@@ -1,0 +1,43 @@
+{
+  "format_version": 1,
+  "kind": "original_RMW_same_owned_client_availability_source_recipe",
+  "source_only": true,
+  "executions": 0,
+  "production_existing_paths": 9,
+  "old81_Raw12_Host_Gateway_changed": false,
+  "query": "one immediate true native helper;wait_ns=0",
+  "selection": "CLIENT-only explicit distinct trailing availability_alias;old aliases2 unchanged",
+  "lifetime": "same B resource/Context/Session,3 fixed indices,Native retire before reverse query/observe/call closes;all component source-recompiled",
+  "authored_C_groups_original": 35,
+  "authored_C_groups_added": 17,
+  "C_groups_added": [
+    "availability-default95",
+    "availability-provider95",
+    "availability-immediate-true",
+    "availability-immediate-false",
+    "availability-query-denied",
+    "availability-query-revoked",
+    "availability-invalid-bool",
+    "availability-unwritten",
+    "availability-foreign-node",
+    "availability-context-busy",
+    "availability-source-drift",
+    "availability-capacity-before-open",
+    "availability-third-open-denied",
+    "availability-activation-failure",
+    "availability-shutdown-once",
+    "availability-close-errors",
+    "availability-table-uniqueness"
+  ],
+  "model_scope": "LOCAL synthetic provider/wire only, actual original C/CPP object APIs;not Native/Host acceptance",
+  "actual_native_examples": "existing complete original C14 native_services.cc as separately owned counterpart",
+  "required": [
+    "independent complete source peer",
+    "exact current B/C/C14 source-recompile",
+    "actual whole pure-C14 integration for C main",
+    "complete same SDK11 independent NativeIdentities",
+    "actual linked metadata feature checks/system-inclusive MD/imports/ELF",
+    "default13/granted Root-owned original-RMW plus actual original native opposite values/availability/revoke/cleanup",
+    "real finite wait provider and remaining complete RMW/SDK APIs"
+  ]
+}

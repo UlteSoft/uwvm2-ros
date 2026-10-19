@@ -1,0 +1,262 @@
+#!/usr/bin/env python3
+"""Consumer-only qualifier for the actual retained Source34 termination object.
+
+The producer remains the exact original31340 source and aa500 actual report.
+This distinct consumer admits only the current Frame's exact manifest outside
+ordinary inventoried roots, validating its actual full pin and current MF SHA.
+It does not rebuild, modify the SDK, invent historical facts or start an actor.
+"""
+from __future__ import annotations
+import argparse
+import base64
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import stat
+import sys
+import traceback
+import types
+
+sys.dont_write_bytecode = True
+MIB = 1024**2
+COMMIT = "4434dabb69916856b824f68a64b029c67175e532"
+HELPER_SHA = "a7e89266486dba5ada416a31841b12646482001089b45765b3e05ec7b24c050f"
+POLICY = "OFFICIAL_LIBCXXABI_BAREMETAL_ABORT_TU_AND_HEADER_VERBOSE_TRAP_V1"
+TRAP = "-D_LIBCPP_VERBOSE_ABORT(...)=__builtin_trap()"
+FILES = ("libcxxabi/src/abort_message.cpp", "libcxxabi/src/abort_message.h",
+         "libcxxabi/include/cxxabi.h", "libcxxabi/include/__cxxabi_config.h")
+TREES = ("", "libcxxabi", "libcxxabi/src", "libcxxabi/include")
+PIN_KEYS = {"path", "device", "inode", "bytes", "mtime_ns", "ctime_ns", "sha256"}
+
+
+def require(ok, message):
+    if not ok:
+        raise ValueError(message)
+
+
+def exact(value, keys, name):
+    require(type(value) is dict and set(value) == set(keys), "closed " + name + " required")
+
+
+def read(path, limit=16*MIB):
+    path = Path(path)
+    require(path.is_absolute(), "absolute input required")
+    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    try:
+        first = os.fstat(fd)
+        require(stat.S_ISREG(first.st_mode) and 0 <= first.st_size <= limit, "bounded regular input required")
+        body = bytearray()
+        while True:
+            part = os.read(fd, min(65536, limit+1-len(body)))
+            if not part:
+                break
+            body.extend(part)
+            require(len(body) <= limit, "input grew past explicit bound")
+        last, named = os.fstat(fd), path.stat(follow_symlinks=False)
+        require(len(body) == first.st_size and all(getattr(first, key) == getattr(last, key) == getattr(named, key)
+                for key in ("st_dev", "st_ino", "st_size", "st_mtime_ns", "st_ctime_ns")), "opened input changed")
+        return bytes(body)
+    finally:
+        os.close(fd)
+
+
+def decode(body):
+    def pairs(rows):
+        result = {}
+        for key, value in rows:
+            require(key not in result, "duplicate JSON key")
+            result[key] = value
+        return result
+    return json.loads(body, object_pairs_hook=pairs,
+                      parse_constant=lambda _: require(False, "nonfinite JSON"))
+
+
+def bootstrap(args):
+    own = read(Path(__file__).resolve(), MIB)
+    require(hashlib.sha256(own).hexdigest() == args.runner_sha256, "reviewed overlay producer differs")
+    body = read(args.manifest)
+    require(hashlib.sha256(body).hexdigest() == args.manifest_sha256, "complete frozen manifest differs")
+    frozen = decode(body)
+    path = args.source / "tests/ros_unitree/common.py"
+    helper = read(path, MIB)
+    require(frozen.get("tests/ros_unitree/common.py") ==
+            {"bytes": len(helper), "sha256": hashlib.sha256(helper).hexdigest()}, "MF-bound Frame required")
+    module = types.ModuleType("official_cpp_overlay_frame")
+    module.__file__ = str(path)
+    sys.modules[module.__name__] = module
+    exec(compile(helper, str(path), "exec"), module.__dict__)
+    return module
+
+
+# Explicit post-reboot reference comparisons; raw documents remain unchanged.
+def reopen_pin(frame, expected):
+    exact(expected, PIN_KEYS, 'physical seven-field pin')
+    actual = frame.pin(expected['path'])
+    require(POSTBOOT.same(actual, expected), 'retained physical control/product changed')
+    if POSTBOOT.same(Path(actual['path']), frame.manifest):
+        require(POSTBOOT.same(actual['sha256'], frame.report['source_manifest_sha256']), 'the single current manifest exception must match the actual Frame MF')
+    else:
+        require(any((Path(actual['path']).is_relative_to(root) for root in frame.roots)) or Path(actual['path']).is_relative_to(frame.source), 'retained pin outside full input inventories')
+    return actual
+
+
+def reopen(frame, expected, limit=16*MIB):
+    actual = reopen_pin(frame, expected)
+    body = read(Path(actual["path"]), limit)
+    require(hashlib.sha256(body).hexdigest() == actual["sha256"] and frame.pin(actual["path"]) == actual,
+            "retained opened bytes changed")
+    return body
+
+
+# Explicit post-reboot reference comparisons; raw documents remain unchanged.
+def official_sources(frame, selected):
+    lock, lock_pin = frame.common.document(frame.input(selected))
+    require(POSTBOOT.same(lock_pin, frame.inputs[selected]), 'first selected official source lock physical pin changed')
+    acquisition_scope = None
+    if POSTBOOT.same(lock.get('kind'), 'wasi-sdk33-official-libcxxabi-source-inputs'):
+        require(POSTBOOT.same(lock.get('status'), 'PREPARED_OFFICIAL_SDK_MATCHED_SOURCE_ONLY') and POSTBOOT.same(lock.get('upstream'), 'https://github.com/llvm/llvm-project') and POSTBOOT.same(lock.get('commit'), COMMIT) and (lock.get('official_source_complete') is True) and (not lock.get('errors')) and all((lock.get(key) is True for key in ('source_preserved', 'inputs_preserved', 'products_preserved'))) and POSTBOOT.same(lock.get('cleanup', {}).get('status'), 'PASS') and (not lock['cleanup']['remaining']), 'actual completed preserved official source acquisition required')
+        ledger, selected_artifacts = ({}, {})
+        for category in ('input_pins', 'product_pins'):
+            rows = lock.get(category)
+            require(type(rows) is list and len(rows) <= 4096, 'bounded acquisition pin ledger required')
+            for pin in rows:
+                exact(pin, PIN_KEYS, 'historical acquisition ledger pin')
+                require(type(pin['path']) is str and Path(pin['path']).is_absolute() and re.fullmatch('[0-9a-f]{64}', pin['sha256']) and all((type(pin[key]) is int and pin[key] >= 0 for key in ('device', 'inode', 'bytes', 'mtime_ns', 'ctime_ns'))) and (pin['path'] not in ledger), 'unique valid historical acquisition pin required')
+                ledger[pin['path']] = pin
+
+        def artifact(pin, limit=16 * MIB):
+            exact(pin, PIN_KEYS, 'selected current official artifact')
+            require(POSTBOOT.same(ledger.get(pin['path']), pin), 'selected current artifact missing from actual acquisition ledger')
+            body = reopen(frame, pin, limit)
+            selected_artifacts[pin['path']] = pin
+            return body
+        metadata = lock['metadata_provenance']
+        require(type(metadata) is list and POSTBOOT.same(len(metadata), 5), 'five retained actual Git API documents required')
+        names = {}
+        for row in metadata:
+            exact(row, ('pin', 'actual_original_url'), 'retained API JSON document')
+            pin, data = (row['pin'], decode(artifact(row['pin'])))
+            name = Path(pin['path']).name
+            require(name not in names, 'duplicate actual API document')
+            suffix = 'commits/' + COMMIT if POSTBOOT.same(name, 'actual-commit.json') else 'git/trees/' + data['sha']
+            require(POSTBOOT.same(row['actual_original_url'], 'https://api.github.com/repos/llvm/llvm-project/' + suffix), 'actual metadata acquisition URL differs from selected official object')
+            names[name] = (pin, data)
+        expected = ('actual-commit.json', 'actual-root-tree.json', 'actual-libcxxabi-tree.json', 'actual-libcxxabi-src-tree.json', 'actual-libcxxabi-include-tree.json')
+        exact(names, expected, 'actual nonrecursive Git API documents')
+        files = {}
+        require(type(lock.get('files')) is list and POSTBOOT.same(len(lock['files']), 5), 'four official compile files and license required')
+        for row in lock['files']:
+            exact(row, ('relative', 'input', 'git_blob_sha1', 'git_mode', 'git_tree_size', 'blob_document'), 'actual acquired source')
+            require(row['relative'] in (*FILES, 'LICENSE.TXT') and row['relative'] not in files and POSTBOOT.same(row['git_mode'], '100644') and POSTBOOT.same(row['input']['bytes'], row['git_tree_size']), 'closed actual source/license inventory differs')
+            body = artifact(row['input'], 128 * 1024)
+            blob = decode(artifact(row['blob_document'], 256 * 1024))
+            require(POSTBOOT.same(blob['encoding'], 'base64') and POSTBOOT.same(blob['sha'], row['git_blob_sha1']) and POSTBOOT.same(blob['size'], len(body)) and (type(blob['content']) is str) and POSTBOOT.same(base64.b64decode(blob['content'].replace('\n', ''), validate=True), body), 'actual official raw blob document does not decode to the selected source')
+            require(POSTBOOT.same(hashlib.sha1(b'blob ' + str(len(body)).encode() + b'\x00' + body, usedforsecurity=False).hexdigest(), row['git_blob_sha1']), 'actual acquired source/license blob changed')
+            files[row['relative']] = {'pin': row['input'], 'git_blob_oid': row['git_blob_sha1']}
+        license_entry = next((entry for entry in names['actual-root-tree.json'][1]['tree'] if POSTBOOT.same(entry['path'], 'LICENSE.TXT')))
+        require(POSTBOOT.same(license_entry['type'], 'blob') and POSTBOOT.same(license_entry['mode'], '100644') and POSTBOOT.same(license_entry['sha'], files['LICENSE.TXT']['git_blob_oid']) and POSTBOOT.same(license_entry['size'], files['LICENSE.TXT']['pin']['bytes']), 'official license/tree differs')
+        original_lock = decode(artifact(lock['source_lock']))
+        require(POSTBOOT.same(original_lock.get('kind'), 'SDK33-official-libcxxabi-source-lock') and POSTBOOT.same(original_lock.get('commit'), COMMIT) and POSTBOOT.same(original_lock.get('metadata_provenance'), metadata) and POSTBOOT.same(original_lock.get('files'), lock['files']), 'actual source-lock/producer association differs')
+        version = artifact(original_lock['sdk_version'], 4096)
+        require(b'llvm: 4434dabb6991\n' in version and b'llvm-version: 22.1.0\n' in version, 'acquisition SDK VERSION does not match the selected official source revision')
+        require(POSTBOOT.same(len(selected_artifacts), 17), 'exact five API/five blob/five source/lock/VERSION artifacts required')
+        acquisition_scope = {'current_source_artifacts': [selected_artifacts[name] for name in sorted(selected_artifacts)], 'historical_input_pin_count': len(lock['input_pins']), 'historical_product_pin_count': len(lock['product_pins']), 'unselected_historical_pin_count': len(ledger) - len(selected_artifacts), 'unselected_historical_pins_reopened': False, 'historical_network_state_current_match_claimed': False, 'history_location': 'Original complete SHA-bound transport_report; not a current compiler input ledger'}
+        lock = {'format_version': 1, 'kind': 'official-llvm-termination-source-lock', 'repository': lock['upstream'], 'commit': COMMIT, 'tree': names['actual-commit.json'][1]['commit']['tree']['sha'], 'commit_document': names[expected[0]][0], 'tree_documents': dict(zip(TREES, [names[name][0] for name in expected[1:]])), 'files': {key: files[key] for key in FILES}, 'transport_report': lock_pin}
+    exact(lock, ('format_version', 'kind', 'repository', 'commit', 'tree', 'commit_document', 'tree_documents', 'files', 'transport_report'), 'official LLVM source lock')
+    require(POSTBOOT.same(lock['format_version'], 1) and POSTBOOT.same(lock['kind'], 'official-llvm-termination-source-lock') and POSTBOOT.same(lock['repository'], 'https://github.com/llvm/llvm-project') and POSTBOOT.same(lock['commit'], COMMIT) and re.fullmatch('[0-9a-f]{40}', lock['tree']), 'exact SDK LLVM revision required')
+    commit = decode(reopen(frame, lock['commit_document']))
+    require(POSTBOOT.same(commit['sha'], COMMIT) and POSTBOOT.same(commit['commit']['tree']['sha'], lock['tree']), 'official commit/tree association differs')
+    exact(lock['tree_documents'], TREES, 'nonrecursive official tree documents')
+    trees = {}
+    for name in TREES:
+        document = decode(reopen(frame, lock['tree_documents'][name]))
+        require(document.get('truncated') is False and type(document.get('tree')) is list and (len(document['tree']) <= 4096) and re.fullmatch('[0-9a-f]{40}', document['sha']), 'complete nonrecursive Git tree required')
+        entries = {}
+        for entry in document['tree']:
+            require(type(entry.get('path')) is str and POSTBOOT.same(Path(entry['path']).name, entry['path']) and (entry['path'] not in ('.', '..')) and (entry['path'] not in entries), 'safe unique nonrecursive Git-tree entry required')
+            entries[entry['path']] = entry
+        if not name:
+            require(POSTBOOT.same(document['sha'], lock['tree']), 'root tree differs from commit')
+        else:
+            parent, leaf = (str(Path(name).parent), Path(name).name)
+            parent = '' if POSTBOOT.same(parent, '.') else parent
+            entry = trees[parent]['entries'][leaf]
+            require(POSTBOOT.same(entry['type'], 'tree') and POSTBOOT.same(entry['mode'], '040000') and POSTBOOT.same(entry['sha'], document['sha']), 'official parent/child tree differs')
+        trees[name] = {'sha': document['sha'], 'entries': entries}
+    exact(lock['files'], FILES, 'four exact official source files')
+    files, bodies = ({}, {})
+    for name in FILES:
+        row = lock['files'][name]
+        exact(row, ('pin', 'git_blob_oid'), 'official Git blob')
+        entry = trees[str(Path(name).parent)]['entries'][Path(name).name]
+        require(POSTBOOT.same(entry['type'], 'blob') and POSTBOOT.same(entry['mode'], '100644') and POSTBOOT.same(entry['sha'], row['git_blob_oid']), 'selected source is not the recorded regular official tree blob')
+        body = reopen(frame, row['pin'], 128 * 1024)
+        require(POSTBOOT.same(entry['size'], len(body)) and POSTBOOT.same(hashlib.sha1(b'blob ' + str(len(body)).encode() + b'\x00' + body, usedforsecurity=False).hexdigest(), row['git_blob_oid']), 'official Git blob/body differs')
+        files[name], bodies[name] = (row['pin'], body)
+    source = Path(files[FILES[0]]['path'])
+    root = source.parents[2]
+    require(all((POSTBOOT.same(Path(files[name]['path']), root / name) for name in FILES)), 'original upstream file layout required')
+    cpp = bodies[FILES[0]].decode('utf-8', 'strict')
+    require(POSTBOOT.same(cpp.count('#if !defined(NDEBUG) || !defined(LIBCXXABI_BAREMETAL)'), 1) and POSTBOOT.same(len(re.findall('\\bNDEBUG\\b', cpp)), 1) and (not re.search('\\b(?:assert|static_assert|_LIBCXXABI_ASSERT|_LIBCPP_ASSERT\\w*)\\s*\\(', cpp)) and POSTBOOT.same(len(re.findall('\\babort\\s*\\(\\s*\\)\\s*;', cpp)), 1) and re.search('\\babort\\s*\\(\\s*\\)\\s*;\\s*}\\s*$', cpp), 'one local diagnostics guard, no assertion invocation and unconditional final abort required')
+    transport = decode(reopen(frame, lock['transport_report']))
+    require(type(transport) is dict, 'actual retained TLS/acquisition metadata required')
+    return ({'lock': lock_pin, 'repository': lock['repository'], 'commit': COMMIT, 'tree': lock['tree'], 'files': files, 'transport_report': lock['transport_report'], 'acquisition_scope': acquisition_scope, 'no_assertion_site_in_compiled_TU': True}, root)
+
+
+def preserved_products(frame, products):
+    for pin in products:
+        require(frame.common.opened(Path(pin["path"])) == pin, "fresh overlay product changed")
+    return True
+
+
+# Explicit post-reboot reference comparisons; raw documents remain unchanged.
+def qualify_overlay(frame, report_path, report_sha, values):
+    """Consumer admission used by the fresh r4 example producer, no actor here."""
+    report, report_pin = frame.common.document(report_path)
+    require(POSTBOOT.same(report_pin['sha256'], report_sha) and POSTBOOT.same(report.get('kind'), 'wasi-cpp-official-termination-overlay') and POSTBOOT.same(report.get('status'), 'PASS_OFFICIAL_CPP_TERMINATION_OBJECT_PREPARATION_ONLY') and POSTBOOT.same(report.get('source'), str(frame.source)) and POSTBOOT.same(report.get('source_manifest_sha256'), frame.report['source_manifest_sha256']) and all((report.get(key) is True for key in ('source_preserved', 'input_pins_preserved', 'whole_roots_preserved', 'overlay_products_preserved'))) and report.get('cleanup') and all((POSTBOOT.same(row.get('status'), 'PASS') and (not row.get('remaining')) for row in report['cleanup'])) and (not report.get('finalization_errors')), 'complete current preserved overlay producer report required')
+    original_producer = reopen(frame, report['producer'], MIB)
+    require(POSTBOOT.same(len(original_producer), 27601) and POSTBOOT.same(hashlib.sha256(original_producer).hexdigest(), '31340e874df8848a9e7710d824483ae4588fbb9c320fe79ca12f056a33407981'), 'retained object must bind the unchanged original31340 producer, not this consumer qualifier')
+    qualifier_pin = frame.pin(Path(__file__).resolve())
+    require(any((Path(qualifier_pin['path']).is_relative_to(root) for root in frame.roots)), 'this distinct qualifier must be an explicit complete control-root input')
+    config_raw = reopen(frame, report['configuration'])
+    config = decode(config_raw)
+    require(POSTBOOT.same(config['cgroup'], POSTBOOT.namespace['HISTORICAL_CG']) and POSTBOOT.same(frame.config['cgroup'], POSTBOOT.namespace['CG']) and all((Path(root) in frame.roots for root in config['input_roots'])), 'overlay original cgroup and all complete producer input roots must be selected')
+    catalogs = report['inventories_after']
+    require(POSTBOOT.same(len(catalogs), len(config['input_roots'])), 'complete overlay input catalogs required')
+    for row in catalogs:
+        reopen_pin(frame, row['catalog'])
+        actual = frame.common.catalog(Path(row['root']), frame.out / ('overlay-current-root-%02d.jsonl' % catalogs.index(row)), frame.roots)
+        require(POSTBOOT.tree_matches(row, actual), 'overlay original whole input root changed')
+    for pin in report['input_pins']:
+        reopen_pin(frame, pin)
+    proof = report['overlay']
+    require(POSTBOOT.same(proof['policy'], POLICY) and POSTBOOT.same(proof['Guest_compile_flags'], ['-UNDEBUG', TRAP]) and POSTBOOT.same(proof['official']['commit'], COMMIT) and (proof['official']['no_assertion_site_in_compiled_TU'] is True) and (proof['runtime_executed'] is False) and (proof['SDK_modified'] is False), 'exact official per-TU termination policy required')
+    require(POSTBOOT.same(proof['compiler']['physical'], str(Path(values['WASI_CLANGXX']).resolve(strict=True))) and POSTBOOT.same(proof['sysroot'], values['WASI_SYSROOT']), 'overlay must use the actual same SDK compiler and sysroot')
+    for pin in proof['products']:
+        reopen_pin(frame, pin)
+    command = proof['compile']
+    obj, dep = (proof['object'], proof['dependency_file'])
+    argv = command['argv']
+    require(POSTBOOT.same(command['returncode'], 0) and (POSTBOOT.same(argv.count('-c'), argv.count('-MD')) and POSTBOOT.same(argv.count('-MD'), argv.count('-MF')) and POSTBOOT.same(argv.count('-MF'), argv.count('-MT')) and POSTBOOT.same(argv.count('-MT'), 1)) and ('-DLIBCXXABI_BAREMETAL' in argv) and ('-DNDEBUG' in argv) and ('-UNDEBUG' not in argv) and POSTBOOT.same(argv[argv.index('-MF') + 1], dep['path']) and POSTBOOT.same(argv[argv.index('-MT') + 1], obj['path']) and POSTBOOT.same(argv[argv.index('-o') + 1], obj['path']) and (proof['official']['files'][FILES[0]]['path'] in argv), 'actual exact isolated official compile/full-MD association required')
+    helper_path = Path(proof['build_helper']['path'])
+    reopen(frame, proof['build_helper'], MIB)
+    helper = types.ModuleType('cpp_overlay_retained_md_helper')
+    helper.__file__ = str(helper_path)
+    raw = read(helper_path, MIB)
+    require(POSTBOOT.same(hashlib.sha256(raw).hexdigest(), HELPER_SHA), 'original reviewed MD helper differs')
+    exec(compile(raw, str(helper_path), 'exec'), helper.__dict__)
+    actual = helper.full_md(frame, Path(dep['path']), Path(obj['path']), Path(proof['official']['files'][FILES[0]]['path']), Path(command['cwd']))
+    require(POSTBOOT.same(actual, command['dependencies']), 'actual retained full-MD closure differs')
+    lock_path = proof['official']['lock']['path']
+    labels = [key for key, pin in frame.inputs.items() if POSTBOOT.same(pin['path'], lock_path)]
+    require(POSTBOOT.same(len(labels), 1), 'overlay source-lock must be an explicit selected input')
+    official, _ = official_sources(frame, labels[0])
+    require(POSTBOOT.same(official, proof['official']), 'official source proof changed')
+    return {'report': report_pin, 'producer': POSTBOOT.pin(report['producer']), 'object': POSTBOOT.pin(obj), 'policy': POLICY, 'Guest_compile_flags': ['-UNDEBUG', TRAP], 'official': official, 'consumer_qualifier': qualifier_pin, 'manifest_exception': frame.pin(frame.manifest), 'scope': 'Actual original31340 object provenance; distinct consumer-only current-manifest admission'}
+
+
+
+if __name__ == "__main__":
+    raise SystemExit("Consumer-only module: Root must invoke the reviewed fresh example runner")

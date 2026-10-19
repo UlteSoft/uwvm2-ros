@@ -1,0 +1,41 @@
+{
+  "label": "wasmtime49-cli-O0-oracle-f32-immutable-a1",
+  "argv": [
+    "/tmp/uwvm-gc-perf-20261011-r74/source/wasmtime-codegen-analysis-a1/wasmtime-v49.0.2-x86_64-linux/wasmtime",
+    "run",
+    "-C",
+    "collector=drc,cache=n,parallel-compilation=n",
+    "-O",
+    "opt-level=0",
+    "/tmp/uwvm-gc-perf-20261011-r74/source/read-lock-isolation-c20/f32-immutable.wasm"
+  ],
+  "cpu": 6,
+  "pid": 1553257,
+  "pgid": 1553257,
+  "returncode": 0,
+  "seconds": 0.13543634000234306,
+  "guard": null,
+  "guard_error": null,
+  "pre": {
+    "boot": "e000195b-afa2-4a53-93ba-1fb8e28eac03",
+    "cgroup": "/system.slice/docker-4dd58ad4560fde2ab9b539e4ef9cab1fac531654e99ad554aff1fce8ae0eae37.scope",
+    "memory": 27069308928,
+    "host_available": 82578280448,
+    "unique64": [
+      "/sys/fs/cgroup/system.slice/docker-4dd58ad4560fde2ab9b539e4ef9cab1fac531654e99ad554aff1fce8ae0eae37.scope"
+    ],
+    "affinity": [
+      20
+    ],
+    "memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n"
+  },
+  "post_memory": 27069620224,
+  "peak_group_memory": 27071676416,
+  "peak_aggregate_rss": 0,
+  "min_host_available": 82577248256,
+  "stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "pmu": false,
+  "initial_perf_max_sample_rate": 32000,
+  "final_perf_max_sample_rate": 32000
+}

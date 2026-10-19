@@ -1,0 +1,115 @@
+{
+  "format_version": 1,
+  "status": "SOURCE_ONLY_PASSIVE_COLLECTION_REQUEST_NOT_EXECUTED",
+  "purpose": "Recover only genuine existing LLVM13 source/tool admission evidence and finite ownership metadata; no provider or execution qualification.",
+  "execution_authority": "Root only, under the actual original64GiB/swap0 cgroup and live8GiB backing reserve; do not import candidate modules or start build/test/network actors.",
+  "known_paths": {
+    "source_sdk": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/llvm-source13-r1",
+    "host_compiler": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/host-compiler-r1",
+    "supervisor_roots": [
+      "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/llvmros13-input-admission-root-supervisor-20261016-r1",
+      "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/llvmros13-input-admission-root-supervisor-20261016-r2"
+    ],
+    "cross_input_roots": [
+      "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/extra-cross-sdk-inputs-r1",
+      "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/extra-cross-sdk-inputs-r3"
+    ],
+    "worker_report": {
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/source37-native-four-runtime-build-r2/workers/report.json",
+      "bytes": 10438490,
+      "sha256": "18932cb8abc7d9998eb7431f751d6d1feea687cb380f1b247eef12750de0fb64",
+      "device": 81,
+      "inode": 578812,
+      "mtime_ns": 1792113898049082283,
+      "ctime_ns": 1792113898059082436
+    }
+  },
+  "operations": [
+    {
+      "operation": "ENUMERATE_ONLY_SELECTED_SUPERVISOR_ROOTS",
+      "roots": [
+        "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/llvmros13-input-admission-root-supervisor-20261016-r1",
+        "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/llvmros13-input-admission-root-supervisor-20261016-r2"
+      ],
+      "maximum_depth": 2,
+      "maximum_entries_per_root": 32,
+      "follow_symlinks": false,
+      "regular_metadata_limit_bytes": 2097152,
+      "rule": "Record exact relative names and lstat facts; read ordinary JSON/source-control files only. Preserve missing/error facts. Never search another root on failure."
+    },
+    {
+      "operation": "READ_ONLY_EXACT_WORKER_REPORT",
+      "pin": {
+        "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/source37-native-four-runtime-build-r2/workers/report.json",
+        "bytes": 10438490,
+        "sha256": "18932cb8abc7d9998eb7431f751d6d1feea687cb380f1b247eef12750de0fb64",
+        "device": 81,
+        "inode": 578812,
+        "mtime_ns": 1792113898049082283,
+        "ctime_ns": 1792113898059082436
+      },
+      "maximum_bytes": 16777216,
+      "export_fields": [
+        "status",
+        "configuration",
+        "tools",
+        "compiler_pass_workaround",
+        "source",
+        "source_manifest_sha256",
+        "source_before.manifest",
+        "input_roots_before matching source_sdk or host_compiler",
+        "input_roots_after matching source_sdk or host_compiler",
+        "input_pins matching selected actual tool physical paths"
+      ],
+      "rule": "Verify current whole report pin first, preserve raw document unchanged, export old observations and fresh physical pins separately."
+    },
+    {
+      "operation": "FOLLOW_FINITE_RECEIPT_METADATA_REFERENCES",
+      "maximum_documents": 16,
+      "maximum_document_bytes": 2097152,
+      "maximum_total_bytes": 8388608,
+      "rule": "Only exact current configuration/report/source-transfer/catalog pins directly named by the two opened supervisor receipts. Bound and reopen each before/after; do not recursively chase provenance or invent default report/control basenames."
+    },
+    {
+      "operation": "CURRENT_FIXED_SOURCE_LOCK",
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/llvm-source13-r1/sources.sha256",
+      "maximum_bytes": 2097152,
+      "expected_bytes": 1446549,
+      "expected_sha256": "a685b608fd38e86d034ba4ce96d89801bfc69c57b84d514ba1954777b9fa8790",
+      "rule": "Report genuine current full7. Whole source SDK admission still must stream every one of12874 lock-selected bodies before any compiler."
+    },
+    {
+      "operation": "ENUMERATE_EXACT_CROSS_PACKAGE_ROOT_TOPLEVEL",
+      "roots": [
+        "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/extra-cross-sdk-inputs-r1",
+        "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/extra-cross-sdk-inputs-r3"
+      ],
+      "maximum_depth": 0,
+      "maximum_entries_per_root": 64,
+      "follow_symlinks": false,
+      "rule": "Only identify explicitly retained source-lock/acquisition reports and top-level package layout; no current SDK availability/ABI claim from a directory name."
+    }
+  ],
+  "forbidden": [
+    "SSH or execution by implementing agents",
+    "candidate imports",
+    "CMake/Ninja/compiler/QEMU execution",
+    "broad host/package scan",
+    "deletion or trim",
+    "cross-boot identity or execution continuity inference",
+    "version-label provider substitution"
+  ],
+  "known_configuration_warning": "The local worker configuration recovered from the actual report is a four-Worker extension of the old preparer config, includes profile_compile_flags and an obsolete boot1 cgroup. It is provenance only and cannot be passed unchanged to prepare_llvm.py.",
+  "local_sources": [
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/prepare_llvm.py",
+      "bytes": 30436,
+      "sha256": "41b97b9afbbeaeb94cf6b208582dbb18eb6d231b678413b4ea16a430c088a0a4"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/build_runtime.py",
+      "bytes": 45340,
+      "sha256": "d6a954231e58b1c1283a391e598cb0efdc6755e92516936a6f4f27d545977973"
+    }
+  ]
+}

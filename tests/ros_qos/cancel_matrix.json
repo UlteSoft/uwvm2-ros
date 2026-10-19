@@ -1,0 +1,13 @@
+{
+  "scope": "Independent cancellation endpoint expectations; prepared fixtures, not a native execution report.",
+  "fields": [
+    {"key": "qos.cancel-service.reliability", "baseline": "reliable", "mutation": "best-effort", "individually_valid": true},
+    {"key": "qos.cancel-service.durability", "baseline": "volatile", "mutation": "transient-local", "individually_valid": true},
+    {"key": "qos.cancel-service.history", "baseline": "keep-last", "mutation": "keep-all", "individually_valid": false},
+    {"key": "qos.cancel-service.depth", "baseline": "8", "mutation": "9", "individually_valid": true},
+    {"key": "qos.cancel-service.deadline", "baseline": "infinite", "mutation": "1000000000", "individually_valid": true},
+    {"key": "qos.cancel-service.lifespan", "baseline": "infinite", "mutation": "1000000000", "individually_valid": true},
+    {"key": "qos.cancel-service.liveliness", "baseline": "automatic", "mutation": "manual-by-topic", "individually_valid": true},
+    {"key": "qos.cancel-service.liveliness-lease-duration", "baseline": "infinite", "mutation": "1000000000", "individually_valid": true}
+  ]
+}

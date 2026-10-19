@@ -1,0 +1,1349 @@
+[
+  {
+    "kind": "bool",
+    "scenario": "roundtrip",
+    "name": "ros1-parameter_bool_roundtrip",
+    "grants": [
+      {
+        "alias": "get",
+        "operation": "param.get",
+        "resource": "/uwvm_resources/value",
+        "type": "builtin/bool-v1",
+        "identity": "builtin:param-bool-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "20",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "64",
+          "validator": "none"
+        }
+      },
+      {
+        "alias": "set",
+        "operation": "param.set",
+        "resource": "/uwvm_resources/value",
+        "type": "builtin/bool-v1",
+        "identity": "builtin:param-bool-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "20",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "64",
+          "validator": "none"
+        }
+      }
+    ],
+    "guest_assertions": [
+      {
+        "operation": "param.get",
+        "alias": "get",
+        "request_hex": "",
+        "expected_error": 0,
+        "expected_response_hex": "00",
+        "preserves_output_buffer_and_length": false
+      },
+      {
+        "operation": "param.set",
+        "alias": "set",
+        "request_hex": "01",
+        "expected_error": 0,
+        "expected_response_hex": "",
+        "preserves_output_buffer_and_length": false
+      },
+      {
+        "operation": "param.get",
+        "alias": "get",
+        "request_hex": "",
+        "expected_error": 0,
+        "expected_response_hex": "01",
+        "preserves_output_buffer_and_length": false
+      }
+    ]
+  },
+  {
+    "kind": "bool",
+    "scenario": "malformed",
+    "name": "ros1-parameter_bool_malformed",
+    "grants": [
+      {
+        "alias": "get",
+        "operation": "param.get",
+        "resource": "/uwvm_resources/value",
+        "type": "builtin/bool-v1",
+        "identity": "builtin:param-bool-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "20",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "64",
+          "validator": "none"
+        }
+      },
+      {
+        "alias": "set",
+        "operation": "param.set",
+        "resource": "/uwvm_resources/value",
+        "type": "builtin/bool-v1",
+        "identity": "builtin:param-bool-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "20",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "64",
+          "validator": "none"
+        }
+      }
+    ],
+    "guest_assertions": [
+      {
+        "operation": "param.set",
+        "alias": "set",
+        "request_hex": "02",
+        "expected_error": 22,
+        "expected_response_hex": null,
+        "preserves_output_buffer_and_length": true
+      },
+      {
+        "operation": "param.get",
+        "alias": "get",
+        "request_hex": "",
+        "expected_error": 0,
+        "expected_response_hex": "00",
+        "preserves_output_buffer_and_length": false
+      }
+    ]
+  },
+  {
+    "kind": "bool",
+    "scenario": "wrong_kind",
+    "name": "ros1-parameter_bool_wrong_kind",
+    "grants": [
+      {
+        "alias": "get",
+        "operation": "param.get",
+        "resource": "/uwvm_resources/value",
+        "type": "builtin/bool-v1",
+        "identity": "builtin:param-bool-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "20",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "64",
+          "validator": "none"
+        }
+      },
+      {
+        "alias": "set",
+        "operation": "param.set",
+        "resource": "/uwvm_resources/value",
+        "type": "builtin/bool-v1",
+        "identity": "builtin:param-bool-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "20",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "64",
+          "validator": "none"
+        }
+      }
+    ],
+    "guest_assertions": [
+      {
+        "operation": "param.get",
+        "alias": "get",
+        "request_hex": "",
+        "expected_error": 95,
+        "expected_response_hex": null,
+        "preserves_output_buffer_and_length": true
+      },
+      {
+        "operation": "param.set",
+        "alias": "set",
+        "request_hex": "01",
+        "expected_error": 95,
+        "expected_response_hex": null,
+        "preserves_output_buffer_and_length": true
+      }
+    ]
+  },
+  {
+    "kind": "bool",
+    "scenario": "operation_denied",
+    "name": "ros1-parameter_bool_operation_denied",
+    "grants": [
+      {
+        "alias": "get",
+        "operation": "param.get",
+        "resource": "/uwvm_resources/value",
+        "type": "builtin/bool-v1",
+        "identity": "builtin:param-bool-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "20",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "64",
+          "validator": "none"
+        }
+      },
+      {
+        "alias": "set",
+        "operation": "param.set",
+        "resource": "/uwvm_resources/value",
+        "type": "builtin/bool-v1",
+        "identity": "builtin:param-bool-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "20",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "64",
+          "validator": "none"
+        }
+      }
+    ],
+    "guest_assertions": [
+      {
+        "operation": "param.set",
+        "alias": "get",
+        "request_hex": "01",
+        "expected_error": 13,
+        "expected_response_hex": null,
+        "preserves_output_buffer_and_length": true
+      },
+      {
+        "operation": "param.get",
+        "alias": "get",
+        "request_hex": "",
+        "expected_error": 0,
+        "expected_response_hex": "00",
+        "preserves_output_buffer_and_length": false
+      }
+    ]
+  },
+  {
+    "kind": "bool",
+    "scenario": "create",
+    "name": "ros1-parameter_bool_create",
+    "grants": [
+      {
+        "alias": "get",
+        "operation": "param.get",
+        "resource": "/uwvm_resources/value",
+        "type": "builtin/bool-v1",
+        "identity": "builtin:param-bool-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "20",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "64",
+          "validator": "none"
+        }
+      },
+      {
+        "alias": "set",
+        "operation": "param.set",
+        "resource": "/uwvm_resources/value",
+        "type": "builtin/bool-v1",
+        "identity": "builtin:param-bool-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "20",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "64",
+          "validator": "none"
+        }
+      }
+    ],
+    "guest_assertions": [
+      {
+        "operation": "param.set",
+        "alias": "set",
+        "request_hex": "01",
+        "expected_error": 0,
+        "expected_response_hex": "",
+        "preserves_output_buffer_and_length": false
+      },
+      {
+        "operation": "param.get",
+        "alias": "get",
+        "request_hex": "",
+        "expected_error": 0,
+        "expected_response_hex": "01",
+        "preserves_output_buffer_and_length": false
+      }
+    ]
+  },
+  {
+    "kind": "int32",
+    "scenario": "roundtrip",
+    "name": "ros1-parameter_int32_roundtrip",
+    "grants": [
+      {
+        "alias": "get",
+        "operation": "param.get",
+        "resource": "/uwvm_resources/value",
+        "type": "builtin/int32-v1",
+        "identity": "builtin:param-int32-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "20",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "64",
+          "validator": "none",
+          "parameter-min-value": "-200000000",
+          "parameter-max-value": "200000000"
+        }
+      },
+      {
+        "alias": "set",
+        "operation": "param.set",
+        "resource": "/uwvm_resources/value",
+        "type": "builtin/int32-v1",
+        "identity": "builtin:param-int32-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "20",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "64",
+          "validator": "none",
+          "parameter-min-value": "-200000000",
+          "parameter-max-value": "200000000"
+        }
+      }
+    ],
+    "guest_assertions": [
+      {
+        "operation": "param.get",
+        "alias": "get",
+        "request_hex": "",
+        "expected_error": 0,
+        "expected_response_hex": "f9ffffff",
+        "preserves_output_buffer_and_length": false
+      },
+      {
+        "operation": "param.set",
+        "alias": "set",
+        "request_hex": "eb32a4f8",
+        "expected_error": 0,
+        "expected_response_hex": "",
+        "preserves_output_buffer_and_length": false
+      },
+      {
+        "operation": "param.get",
+        "alias": "get",
+        "request_hex": "",
+        "expected_error": 0,
+        "expected_response_hex": "eb32a4f8",
+        "preserves_output_buffer_and_length": false
+      }
+    ]
+  },
+  {
+    "kind": "int32",
+    "scenario": "malformed",
+    "name": "ros1-parameter_int32_malformed",
+    "grants": [
+      {
+        "alias": "get",
+        "operation": "param.get",
+        "resource": "/uwvm_resources/value",
+        "type": "builtin/int32-v1",
+        "identity": "builtin:param-int32-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "20",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "64",
+          "validator": "none",
+          "parameter-min-value": "-200000000",
+          "parameter-max-value": "200000000"
+        }
+      },
+      {
+        "alias": "set",
+        "operation": "param.set",
+        "resource": "/uwvm_resources/value",
+        "type": "builtin/int32-v1",
+        "identity": "builtin:param-int32-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "20",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "64",
+          "validator": "none",
+          "parameter-min-value": "-200000000",
+          "parameter-max-value": "200000000"
+        }
+      }
+    ],
+    "guest_assertions": [
+      {
+        "operation": "param.set",
+        "alias": "set",
+        "request_hex": "eb32a4",
+        "expected_error": 22,
+        "expected_response_hex": null,
+        "preserves_output_buffer_and_length": true
+      },
+      {
+        "operation": "param.set",
+        "alias": "set",
+        "request_hex": "eb32a4f800",
+        "expected_error": 22,
+        "expected_response_hex": null,
+        "preserves_output_buffer_and_length": true
+      },
+      {
+        "operation": "param.get",
+        "alias": "get",
+        "request_hex": "",
+        "expected_error": 0,
+        "expected_response_hex": "f9ffffff",
+        "preserves_output_buffer_and_length": false
+      }
+    ]
+  },
+  {
+    "kind": "int32",
+    "scenario": "wrong_kind",
+    "name": "ros1-parameter_int32_wrong_kind",
+    "grants": [
+      {
+        "alias": "get",
+        "operation": "param.get",
+        "resource": "/uwvm_resources/value",
+        "type": "builtin/int32-v1",
+        "identity": "builtin:param-int32-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "20",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "64",
+          "validator": "none",
+          "parameter-min-value": "-200000000",
+          "parameter-max-value": "200000000"
+        }
+      },
+      {
+        "alias": "set",
+        "operation": "param.set",
+        "resource": "/uwvm_resources/value",
+        "type": "builtin/int32-v1",
+        "identity": "builtin:param-int32-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "20",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "64",
+          "validator": "none",
+          "parameter-min-value": "-200000000",
+          "parameter-max-value": "200000000"
+        }
+      }
+    ],
+    "guest_assertions": [
+      {
+        "operation": "param.get",
+        "alias": "get",
+        "request_hex": "",
+        "expected_error": 95,
+        "expected_response_hex": null,
+        "preserves_output_buffer_and_length": true
+      },
+      {
+        "operation": "param.set",
+        "alias": "set",
+        "request_hex": "eb32a4f8",
+        "expected_error": 95,
+        "expected_response_hex": null,
+        "preserves_output_buffer_and_length": true
+      }
+    ]
+  },
+  {
+    "kind": "int32",
+    "scenario": "operation_denied",
+    "name": "ros1-parameter_int32_operation_denied",
+    "grants": [
+      {
+        "alias": "get",
+        "operation": "param.get",
+        "resource": "/uwvm_resources/value",
+        "type": "builtin/int32-v1",
+        "identity": "builtin:param-int32-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "20",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "64",
+          "validator": "none",
+          "parameter-min-value": "-200000000",
+          "parameter-max-value": "200000000"
+        }
+      },
+      {
+        "alias": "set",
+        "operation": "param.set",
+        "resource": "/uwvm_resources/value",
+        "type": "builtin/int32-v1",
+        "identity": "builtin:param-int32-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "20",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "64",
+          "validator": "none",
+          "parameter-min-value": "-200000000",
+          "parameter-max-value": "200000000"
+        }
+      }
+    ],
+    "guest_assertions": [
+      {
+        "operation": "param.set",
+        "alias": "get",
+        "request_hex": "eb32a4f8",
+        "expected_error": 13,
+        "expected_response_hex": null,
+        "preserves_output_buffer_and_length": true
+      },
+      {
+        "operation": "param.get",
+        "alias": "get",
+        "request_hex": "",
+        "expected_error": 0,
+        "expected_response_hex": "f9ffffff",
+        "preserves_output_buffer_and_length": false
+      }
+    ]
+  },
+  {
+    "kind": "int32",
+    "scenario": "range",
+    "name": "ros1-parameter_int32_range",
+    "grants": [
+      {
+        "alias": "get",
+        "operation": "param.get",
+        "resource": "/uwvm_resources/value",
+        "type": "builtin/int32-v1",
+        "identity": "builtin:param-int32-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "20",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "64",
+          "validator": "none",
+          "parameter-min-value": "-200000000",
+          "parameter-max-value": "200000000"
+        }
+      },
+      {
+        "alias": "set",
+        "operation": "param.set",
+        "resource": "/uwvm_resources/value",
+        "type": "builtin/int32-v1",
+        "identity": "builtin:param-int32-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "20",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "64",
+          "validator": "none",
+          "parameter-min-value": "-200000000",
+          "parameter-max-value": "200000000"
+        }
+      }
+    ],
+    "guest_assertions": [
+      {
+        "operation": "param.set",
+        "alias": "set",
+        "request_hex": "ff3d14f4",
+        "expected_error": 13,
+        "expected_response_hex": null,
+        "preserves_output_buffer_and_length": true
+      },
+      {
+        "operation": "param.set",
+        "alias": "set",
+        "request_hex": "01c2eb0b",
+        "expected_error": 13,
+        "expected_response_hex": null,
+        "preserves_output_buffer_and_length": true
+      },
+      {
+        "operation": "param.get",
+        "alias": "get",
+        "request_hex": "",
+        "expected_error": 0,
+        "expected_response_hex": "f9ffffff",
+        "preserves_output_buffer_and_length": false
+      }
+    ]
+  },
+  {
+    "kind": "int32",
+    "scenario": "get_bounds",
+    "name": "ros1-parameter_int32_get_bounds",
+    "grants": [
+      {
+        "alias": "get",
+        "operation": "param.get",
+        "resource": "/uwvm_resources/value",
+        "type": "builtin/int32-v1",
+        "identity": "builtin:param-int32-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "20",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "64",
+          "validator": "none",
+          "parameter-min-value": "0",
+          "parameter-max-value": "200000000"
+        }
+      }
+    ],
+    "guest_assertions": [
+      {
+        "operation": "param.get",
+        "alias": "get",
+        "request_hex": "",
+        "expected_error": 13,
+        "expected_response_hex": null,
+        "preserves_output_buffer_and_length": true
+      }
+    ]
+  },
+  {
+    "kind": "int32",
+    "scenario": "create",
+    "name": "ros1-parameter_int32_create",
+    "grants": [
+      {
+        "alias": "get",
+        "operation": "param.get",
+        "resource": "/uwvm_resources/value",
+        "type": "builtin/int32-v1",
+        "identity": "builtin:param-int32-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "20",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "64",
+          "validator": "none",
+          "parameter-min-value": "-200000000",
+          "parameter-max-value": "200000000"
+        }
+      },
+      {
+        "alias": "set",
+        "operation": "param.set",
+        "resource": "/uwvm_resources/value",
+        "type": "builtin/int32-v1",
+        "identity": "builtin:param-int32-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "20",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "64",
+          "validator": "none",
+          "parameter-min-value": "-200000000",
+          "parameter-max-value": "200000000"
+        }
+      }
+    ],
+    "guest_assertions": [
+      {
+        "operation": "param.set",
+        "alias": "set",
+        "request_hex": "eb32a4f8",
+        "expected_error": 0,
+        "expected_response_hex": "",
+        "preserves_output_buffer_and_length": false
+      },
+      {
+        "operation": "param.get",
+        "alias": "get",
+        "request_hex": "",
+        "expected_error": 0,
+        "expected_response_hex": "eb32a4f8",
+        "preserves_output_buffer_and_length": false
+      }
+    ]
+  },
+  {
+    "kind": "float64",
+    "scenario": "roundtrip",
+    "name": "ros1-parameter_float64_roundtrip",
+    "grants": [
+      {
+        "alias": "get",
+        "operation": "param.get",
+        "resource": "/uwvm_resources/value",
+        "type": "builtin/float64-v1",
+        "identity": "builtin:param-float64-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "20",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "64",
+          "validator": "finite",
+          "parameter-min-value": "-2",
+          "parameter-max-value": "2"
+        }
+      },
+      {
+        "alias": "set",
+        "operation": "param.set",
+        "resource": "/uwvm_resources/value",
+        "type": "builtin/float64-v1",
+        "identity": "builtin:param-float64-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "20",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "64",
+          "validator": "finite",
+          "parameter-min-value": "-2",
+          "parameter-max-value": "2"
+        }
+      }
+    ],
+    "guest_assertions": [
+      {
+        "operation": "param.get",
+        "alias": "get",
+        "request_hex": "",
+        "expected_error": 0,
+        "expected_response_hex": "000000000000e0bf",
+        "preserves_output_buffer_and_length": false
+      },
+      {
+        "operation": "param.set",
+        "alias": "set",
+        "request_hex": "000000000000f43f",
+        "expected_error": 0,
+        "expected_response_hex": "",
+        "preserves_output_buffer_and_length": false
+      },
+      {
+        "operation": "param.get",
+        "alias": "get",
+        "request_hex": "",
+        "expected_error": 0,
+        "expected_response_hex": "000000000000f43f",
+        "preserves_output_buffer_and_length": false
+      }
+    ]
+  },
+  {
+    "kind": "float64",
+    "scenario": "malformed",
+    "name": "ros1-parameter_float64_malformed",
+    "grants": [
+      {
+        "alias": "get",
+        "operation": "param.get",
+        "resource": "/uwvm_resources/value",
+        "type": "builtin/float64-v1",
+        "identity": "builtin:param-float64-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "20",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "64",
+          "validator": "finite",
+          "parameter-min-value": "-2",
+          "parameter-max-value": "2"
+        }
+      },
+      {
+        "alias": "set",
+        "operation": "param.set",
+        "resource": "/uwvm_resources/value",
+        "type": "builtin/float64-v1",
+        "identity": "builtin:param-float64-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "20",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "64",
+          "validator": "finite",
+          "parameter-min-value": "-2",
+          "parameter-max-value": "2"
+        }
+      }
+    ],
+    "guest_assertions": [
+      {
+        "operation": "param.set",
+        "alias": "set",
+        "request_hex": "000000000000f4",
+        "expected_error": 22,
+        "expected_response_hex": null,
+        "preserves_output_buffer_and_length": true
+      },
+      {
+        "operation": "param.set",
+        "alias": "set",
+        "request_hex": "000000000000f43f00",
+        "expected_error": 22,
+        "expected_response_hex": null,
+        "preserves_output_buffer_and_length": true
+      },
+      {
+        "operation": "param.set",
+        "alias": "set",
+        "request_hex": "010000000000f87f",
+        "expected_error": 22,
+        "expected_response_hex": null,
+        "preserves_output_buffer_and_length": true
+      },
+      {
+        "operation": "param.set",
+        "alias": "set",
+        "request_hex": "000000000000f07f",
+        "expected_error": 22,
+        "expected_response_hex": null,
+        "preserves_output_buffer_and_length": true
+      },
+      {
+        "operation": "param.set",
+        "alias": "set",
+        "request_hex": "000000000000f0ff",
+        "expected_error": 22,
+        "expected_response_hex": null,
+        "preserves_output_buffer_and_length": true
+      },
+      {
+        "operation": "param.get",
+        "alias": "get",
+        "request_hex": "",
+        "expected_error": 0,
+        "expected_response_hex": "000000000000e0bf",
+        "preserves_output_buffer_and_length": false
+      }
+    ]
+  },
+  {
+    "kind": "float64",
+    "scenario": "wrong_kind",
+    "name": "ros1-parameter_float64_wrong_kind",
+    "grants": [
+      {
+        "alias": "get",
+        "operation": "param.get",
+        "resource": "/uwvm_resources/value",
+        "type": "builtin/float64-v1",
+        "identity": "builtin:param-float64-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "20",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "64",
+          "validator": "finite",
+          "parameter-min-value": "-2",
+          "parameter-max-value": "2"
+        }
+      },
+      {
+        "alias": "set",
+        "operation": "param.set",
+        "resource": "/uwvm_resources/value",
+        "type": "builtin/float64-v1",
+        "identity": "builtin:param-float64-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "20",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "64",
+          "validator": "finite",
+          "parameter-min-value": "-2",
+          "parameter-max-value": "2"
+        }
+      }
+    ],
+    "guest_assertions": [
+      {
+        "operation": "param.get",
+        "alias": "get",
+        "request_hex": "",
+        "expected_error": 95,
+        "expected_response_hex": null,
+        "preserves_output_buffer_and_length": true
+      },
+      {
+        "operation": "param.set",
+        "alias": "set",
+        "request_hex": "000000000000f43f",
+        "expected_error": 95,
+        "expected_response_hex": null,
+        "preserves_output_buffer_and_length": true
+      }
+    ]
+  },
+  {
+    "kind": "float64",
+    "scenario": "operation_denied",
+    "name": "ros1-parameter_float64_operation_denied",
+    "grants": [
+      {
+        "alias": "get",
+        "operation": "param.get",
+        "resource": "/uwvm_resources/value",
+        "type": "builtin/float64-v1",
+        "identity": "builtin:param-float64-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "20",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "64",
+          "validator": "finite",
+          "parameter-min-value": "-2",
+          "parameter-max-value": "2"
+        }
+      },
+      {
+        "alias": "set",
+        "operation": "param.set",
+        "resource": "/uwvm_resources/value",
+        "type": "builtin/float64-v1",
+        "identity": "builtin:param-float64-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "20",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "64",
+          "validator": "finite",
+          "parameter-min-value": "-2",
+          "parameter-max-value": "2"
+        }
+      }
+    ],
+    "guest_assertions": [
+      {
+        "operation": "param.set",
+        "alias": "get",
+        "request_hex": "000000000000f43f",
+        "expected_error": 13,
+        "expected_response_hex": null,
+        "preserves_output_buffer_and_length": true
+      },
+      {
+        "operation": "param.get",
+        "alias": "get",
+        "request_hex": "",
+        "expected_error": 0,
+        "expected_response_hex": "000000000000e0bf",
+        "preserves_output_buffer_and_length": false
+      }
+    ]
+  },
+  {
+    "kind": "float64",
+    "scenario": "range",
+    "name": "ros1-parameter_float64_range",
+    "grants": [
+      {
+        "alias": "get",
+        "operation": "param.get",
+        "resource": "/uwvm_resources/value",
+        "type": "builtin/float64-v1",
+        "identity": "builtin:param-float64-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "20",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "64",
+          "validator": "finite",
+          "parameter-min-value": "-2",
+          "parameter-max-value": "2"
+        }
+      },
+      {
+        "alias": "set",
+        "operation": "param.set",
+        "resource": "/uwvm_resources/value",
+        "type": "builtin/float64-v1",
+        "identity": "builtin:param-float64-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "20",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "64",
+          "validator": "finite",
+          "parameter-min-value": "-2",
+          "parameter-max-value": "2"
+        }
+      }
+    ],
+    "guest_assertions": [
+      {
+        "operation": "param.set",
+        "alias": "set",
+        "request_hex": "00000000000008c0",
+        "expected_error": 13,
+        "expected_response_hex": null,
+        "preserves_output_buffer_and_length": true
+      },
+      {
+        "operation": "param.set",
+        "alias": "set",
+        "request_hex": "0000000000000840",
+        "expected_error": 13,
+        "expected_response_hex": null,
+        "preserves_output_buffer_and_length": true
+      },
+      {
+        "operation": "param.get",
+        "alias": "get",
+        "request_hex": "",
+        "expected_error": 0,
+        "expected_response_hex": "000000000000e0bf",
+        "preserves_output_buffer_and_length": false
+      }
+    ]
+  },
+  {
+    "kind": "float64",
+    "scenario": "get_bounds",
+    "name": "ros1-parameter_float64_get_bounds",
+    "grants": [
+      {
+        "alias": "get",
+        "operation": "param.get",
+        "resource": "/uwvm_resources/value",
+        "type": "builtin/float64-v1",
+        "identity": "builtin:param-float64-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "20",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "64",
+          "validator": "finite",
+          "parameter-min-value": "0",
+          "parameter-max-value": "2"
+        }
+      }
+    ],
+    "guest_assertions": [
+      {
+        "operation": "param.get",
+        "alias": "get",
+        "request_hex": "",
+        "expected_error": 13,
+        "expected_response_hex": null,
+        "preserves_output_buffer_and_length": true
+      }
+    ]
+  },
+  {
+    "kind": "float64",
+    "scenario": "create",
+    "name": "ros1-parameter_float64_create",
+    "grants": [
+      {
+        "alias": "get",
+        "operation": "param.get",
+        "resource": "/uwvm_resources/value",
+        "type": "builtin/float64-v1",
+        "identity": "builtin:param-float64-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "20",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "64",
+          "validator": "finite",
+          "parameter-min-value": "-2",
+          "parameter-max-value": "2"
+        }
+      },
+      {
+        "alias": "set",
+        "operation": "param.set",
+        "resource": "/uwvm_resources/value",
+        "type": "builtin/float64-v1",
+        "identity": "builtin:param-float64-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "20",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "64",
+          "validator": "finite",
+          "parameter-min-value": "-2",
+          "parameter-max-value": "2"
+        }
+      }
+    ],
+    "guest_assertions": [
+      {
+        "operation": "param.set",
+        "alias": "set",
+        "request_hex": "000000000000f43f",
+        "expected_error": 0,
+        "expected_response_hex": "",
+        "preserves_output_buffer_and_length": false
+      },
+      {
+        "operation": "param.get",
+        "alias": "get",
+        "request_hex": "",
+        "expected_error": 0,
+        "expected_response_hex": "000000000000f43f",
+        "preserves_output_buffer_and_length": false
+      }
+    ]
+  }
+]

@@ -91,6 +91,10 @@ int main()
                                             .wasip1_proc_exit_func_ptr = nullptr,
                                             .trace_wasip1_call = false};
 
+    // This positive native API fixture explicitly grants only the facility it tests.
+    // New environments intentionally start without non-FD authority.
+    env.non_fd_permissions = ::uwvm2::imported::wasi::wasip1::environment::permission_t::proc_raise;
+
     env.wasip1_proc_raise_func_ptr = &test_proc_raise_callback;
 
     constexpr signal_t signal_code{signal_t::sigterm};

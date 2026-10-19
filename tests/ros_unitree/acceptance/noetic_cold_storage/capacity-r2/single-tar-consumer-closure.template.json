@@ -1,0 +1,361 @@
+{
+  "SSH_or_archive_or_retirement_executed_by_source_author": false,
+  "active_process_admission": {
+    "actual_two_scan_receipts": [],
+    "capture": "Repeated complete PID set, pidfd/same-birth identities, membership, process-root and mount namespace identity.",
+    "compare_opened_dev_inode_not_display_name_only": true,
+    "complete_absence_proven": false,
+    "fields": [
+      "cmdline",
+      "cwd",
+      "root",
+      "exe",
+      "maps",
+      "map_files",
+      "fd"
+    ],
+    "foreign_target_parent_directory_fd_or_cwd_refused": true,
+    "inspection_failures_or_unbounded_sets_refuse_admission": true,
+    "new_unreviewed_consumer_or_mount_launches_frozen_between_final_scan_and_unlink": true,
+    "only_owned_archive_or_retirement_same_birth_descriptor_exception": {
+      "exact_fd_numbers": [],
+      "pidfd_identity": null,
+      "purpose": "Explicit source read/hash descriptors owned by this operation only; close for global absence scan or individually bind/revalidate them. No foreign exception."
+    },
+    "process_scope": "All live processes in the original owned cgroup plus its descendants; inspect the full visible task namespace if Root can provide complete access. Any unclosed target-using process outside the owned scope also blocks.",
+    "racing_exits_only_accepted_after_pidfd_proves_same_birth_exit": true,
+    "reviewed_owner_child_churn": "Existing reviewed owners may continue only under the exact already closed controls; repeated pidfd/birth scans must cover all current children and any unclassified new PID blocks unlink. Never signal or suspend another owner to manufacture a quiet scan.",
+    "root_sensitive_path_translation_required": true,
+    "target_absence_required_for_all_foreign_live_processes": true
+  },
+  "additional_active_or_future_consumers_must_be_explicitly_closed": true,
+  "additional_protected_whole_roots": [
+    "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r5/sdk",
+    "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r6c/model-DEBs",
+    "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-cacheview-r6d",
+    "/var/tmp/uwvm-ros-complete-20261015-r1/inputs-r35",
+    "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r6d",
+    "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-root-supervisor-r6d",
+    "/var/tmp/uwvm-ros-complete-20261015-r1/derived-sdk/gateway/noetic-rootfs"
+  ],
+  "all_five_role_closures_required_before_retirement": true,
+  "archive_source_plan_only": true,
+  "budgets": {
+    "active_linux_backing_reserve_bytes": 8589934592,
+    "chunk_bytes": 1048576,
+    "linux_second_archive_or_source_copy": false,
+    "max_source_body_bytes": 1073741824,
+    "self_rss_bytes": 536870912,
+    "single_file_logical_input_override_of_prior512MiB_batch_is_explicit": true
+  },
+  "current_cgroup": {
+    "expected_boot_id": "501c54bd-af24-4d22-900c-8e24de274464",
+    "expected_cpus": "0-31",
+    "expected_device": 29,
+    "expected_inode": 18358,
+    "expected_leaf": "/sys/fs/cgroup/system.slice/docker-4dd58ad4560fde2ab9b539e4ef9cab1fac531654e99ad554aff1fce8ae0eae37.scope",
+    "memory_max": 68719476736,
+    "memory_swap_max": 0
+  },
+  "fixed_consumer_role_count": 5,
+  "fixed_consumer_roles": {
+    "cp3": {
+      "Root_complete_current_role_closure_verified": false,
+      "actual_control_or_config_pins": [],
+      "actual_product_receipt_pins": [],
+      "historical_paths_are_not_current_without_schema_selection": true,
+      "resolved_alias_evidence": [],
+      "schema_selected_finite_file_pins": [],
+      "schema_selected_whole_roots": [],
+      "source_and_consumer_implementation_pins": []
+    },
+    "native74": {
+      "Root_complete_current_role_closure_verified": false,
+      "actual_control_or_config_pins": [],
+      "actual_product_receipt_pins": [],
+      "historical_paths_are_not_current_without_schema_selection": true,
+      "resolved_alias_evidence": [],
+      "schema_selected_finite_file_pins": [],
+      "schema_selected_whole_roots": [],
+      "source_and_consumer_implementation_pins": []
+    },
+    "noetic_r6d": {
+      "Root_complete_current_role_closure_verified": false,
+      "actual_control_or_config_pins": [
+        {
+          "bytes": 8427,
+          "ctime_ns": 1792170790135343086,
+          "device": 66312,
+          "inode": 31247192,
+          "mtime_ns": 1792170790135343086,
+          "path": "/var/tmp/uwvm-ros-unitree-20261016-r1/noetic-amd64-native-sdk-acquisition-controls-r6d/root-control.json",
+          "sha256": "344eb5d9bd35436b5d30d9f817d46978110842dfdc22a3ea45bcf376b4cc8c9e"
+        },
+        {
+          "bytes": 10001,
+          "ctime_ns": 1792170790131649087,
+          "device": 66312,
+          "inode": 31247189,
+          "mtime_ns": 1792170790131649087,
+          "path": "/var/tmp/uwvm-ros-unitree-20261016-r1/noetic-amd64-native-sdk-acquisition-controls-r6d/noetic-amd64.spec.json",
+          "sha256": "b5830ed0bc1eb4652e6a97d80dcf94785750602e35163c8410dc329aec57a0c1"
+        },
+        {
+          "bytes": 2158,
+          "ctime_ns": 1792170790132573083,
+          "device": 66312,
+          "inode": 31247190,
+          "mtime_ns": 1792170790132573083,
+          "path": "/var/tmp/uwvm-ros-unitree-20261016-r1/noetic-amd64-native-sdk-acquisition-controls-r6d/deb-cache-inputs.json",
+          "sha256": "885c27720a373e9e2e1bc1eebbebc124086be215945d58055b18ebc47d5bba47"
+        },
+        {
+          "bytes": 2903,
+          "ctime_ns": 1792170790133921090,
+          "device": 66312,
+          "inode": 31247191,
+          "mtime_ns": 1792170790133921090,
+          "path": "/var/tmp/uwvm-ros-unitree-20261016-r1/noetic-amd64-native-sdk-acquisition-controls-r6d/fresh-rebuild.json",
+          "sha256": "61eb2419a212886ecc3f7a482349e8d10dc50993f107aaf453e376eb34c059f1"
+        }
+      ],
+      "actual_product_receipt_pins": [],
+      "historical_paths_are_not_current_without_schema_selection": true,
+      "resolved_alias_evidence": [],
+      "schema_selected_finite_file_pins": [
+        {
+          "bytes": 6283350,
+          "ctime_ns": 1792153523788867667,
+          "device": 81,
+          "inode": 770359,
+          "mtime_ns": 1792153523782867060,
+          "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r5/report.json",
+          "sha256": "fa300972b9639153446ac2005d31944b748f7d3de12cd2f799db5abcb668ceb1"
+        },
+        {
+          "bytes": 41860,
+          "ctime_ns": 1792153537763261368,
+          "device": 81,
+          "inode": 771690,
+          "mtime_ns": 1792153537757969719,
+          "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-root-supervisor-r5/report.json",
+          "sha256": "0c32ebee7563a3d8e25c0ad54a115850986beb40410debd36a4d63b18ba9901d"
+        },
+        {
+          "bytes": 1048328,
+          "ctime_ns": 1792168296159003175,
+          "device": 81,
+          "inode": 778858,
+          "mtime_ns": 1792168296126002654,
+          "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r6c/report.json",
+          "sha256": "dae93ed7054d73e483221317bd131de300dea7cbb1fa63d308835c1f74592940"
+        },
+        {
+          "bytes": 58936,
+          "ctime_ns": 1792168315846313178,
+          "device": 81,
+          "inode": 778860,
+          "mtime_ns": 1792168315821410638,
+          "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-root-supervisor-r6c/report.json",
+          "sha256": "23d3ab88e91faae9f9622f6246b54ad17865fd91fa6c20aaa345d2ea285160e9"
+        },
+        {
+          "bytes": 9988325,
+          "ctime_ns": 1792153532221713641,
+          "device": 81,
+          "inode": 762090,
+          "mtime_ns": 1792153532221713641,
+          "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r5/payloads.jsonl",
+          "sha256": "d4d6c432569455916b4fec9bfd1df2c63e7f98e6bb04975001b92526d403f021"
+        },
+        {
+          "bytes": 9397,
+          "ctime_ns": 1792120777257444787,
+          "device": 66312,
+          "inode": 30856836,
+          "mtime_ns": 1792120777255551383,
+          "path": "/var/tmp/uwvm-ros-unitree-20261016-r1/noetic-amd64-native-sdk-acquisition-controls-r4/noetic-amd64.spec.json",
+          "sha256": "9e725094c847cfbcd8b98d647de868597ac78c440d5a7cd4d7cc70e42a28be18"
+        },
+        {
+          "bytes": 85269,
+          "ctime_ns": 1792120777252444709,
+          "device": 66312,
+          "inode": 30856834,
+          "mtime_ns": 1792120777249318691,
+          "path": "/var/tmp/uwvm-ros-unitree-20261016-r1/noetic-amd64-native-sdk-acquisition-controls-r4/acquire-sdk.py",
+          "sha256": "17f7676328192a4e914dc82d8dfd65092959aff344426b46d78ad67522dc5c53"
+        },
+        {
+          "bytes": 246,
+          "ctime_ns": 1767104811669632872,
+          "device": 66312,
+          "inode": 14156170,
+          "mtime_ns": 1767104811669632872,
+          "path": "/etc/hosts",
+          "sha256": "6da2afd315836b079be1fc1aa9c7d7420ae684fdd0158e24333a7a77a52d1904"
+        },
+        {
+          "bytes": 936,
+          "ctime_ns": 1792163062325565669,
+          "device": 27,
+          "inode": 6227,
+          "mtime_ns": 1792163062325555825,
+          "path": "/run/systemd/resolve/stub-resolv.conf",
+          "sha256": "7b4d45022f47d4da0f1e78b1e3ae7b72f445002561395033698d684da83afd4b"
+        },
+        {
+          "bytes": 594,
+          "ctime_ns": 1779281785829008398,
+          "device": 66312,
+          "inode": 14156199,
+          "mtime_ns": 1779281785829008398,
+          "path": "/etc/nsswitch.conf",
+          "sha256": "f053e77f9d706a20cb52deecdf9602b1635ea64a3be77a4cb32205bfebb17d3e"
+        },
+        {
+          "bytes": 10001,
+          "ctime_ns": 1792170790131649087,
+          "device": 66312,
+          "inode": 31247189,
+          "mtime_ns": 1792170790131649087,
+          "path": "/var/tmp/uwvm-ros-unitree-20261016-r1/noetic-amd64-native-sdk-acquisition-controls-r6d/noetic-amd64.spec.json",
+          "sha256": "b5830ed0bc1eb4652e6a97d80dcf94785750602e35163c8410dc329aec57a0c1"
+        },
+        {
+          "bytes": 2158,
+          "ctime_ns": 1792170790132573083,
+          "device": 66312,
+          "inode": 31247190,
+          "mtime_ns": 1792170790132573083,
+          "path": "/var/tmp/uwvm-ros-unitree-20261016-r1/noetic-amd64-native-sdk-acquisition-controls-r6d/deb-cache-inputs.json",
+          "sha256": "885c27720a373e9e2e1bc1eebbebc124086be215945d58055b18ebc47d5bba47"
+        },
+        {
+          "bytes": 2903,
+          "ctime_ns": 1792170790133921090,
+          "device": 66312,
+          "inode": 31247191,
+          "mtime_ns": 1792170790133921090,
+          "path": "/var/tmp/uwvm-ros-unitree-20261016-r1/noetic-amd64-native-sdk-acquisition-controls-r6d/fresh-rebuild.json",
+          "sha256": "61eb2419a212886ecc3f7a482349e8d10dc50993f107aaf453e376eb34c059f1"
+        }
+      ],
+      "schema_selected_whole_roots": [
+        "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/host-compiler-r1",
+        "/usr/bin",
+        "/usr/include",
+        "/usr/lib/x86_64-linux-gnu",
+        "/usr/lib/gcc/x86_64-linux-gnu/15",
+        "/usr/lib/python3.14",
+        "/usr/share/cmake-3.31",
+        "/usr/share/cmake",
+        "/usr/lib/locale",
+        "/usr/lib/llvm-20/include/c++/v1",
+        "/usr/lib/llvm-17/lib/clang/17/include",
+        "/usr/lib/llvm-18/lib/clang/18/include",
+        "/usr/lib/llvm-19/lib/clang/19/include",
+        "/usr/lib/llvm-20/lib/clang/20/include",
+        "/usr/lib/llvm-21/lib/clang/21/include",
+        "/usr/lib/llvm-22/lib/clang/22/include",
+        "/usr/lib/apt",
+        "/var/tmp/uwvm-ros-complete-20261015-r1/derived-sdk/gateway/jazzy-rootfs/usr/share/keyrings",
+        "/var/tmp/uwvm-ros-complete-20261015-r1/derived-sdk/gateway/noetic-rootfs/usr/share/keyrings",
+        "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-official-lock-and-spec-r1",
+        "/var/tmp/uwvm-ros-unitree-20261016-r1/noetic-amd64-native-sdk-acquisition-controls-r4",
+        "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r1/apt/downloads",
+        "/var/tmp/uwvm-ros-unitree-20261016-r1/noetic-amd64-native-sdk-acquisition-controls-r6d",
+        "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r4/apt/downloads",
+        "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r5/apt/downloads",
+        "/usr/sbin",
+        "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-cacheview-r6d/debs"
+      ],
+      "source_and_consumer_implementation_pins": []
+    },
+    "typed_r6": {
+      "Root_complete_current_role_closure_verified": false,
+      "actual_control_or_config_pins": [],
+      "actual_product_receipt_pins": [],
+      "historical_paths_are_not_current_without_schema_selection": true,
+      "resolved_alias_evidence": [],
+      "schema_selected_finite_file_pins": [],
+      "schema_selected_whole_roots": [],
+      "source_and_consumer_implementation_pins": []
+    },
+    "worker37": {
+      "Root_complete_current_role_closure_verified": false,
+      "actual_control_or_config_pins": [],
+      "actual_product_receipt_pins": [],
+      "historical_paths_are_not_current_without_schema_selection": true,
+      "resolved_alias_evidence": [],
+      "schema_selected_finite_file_pins": [],
+      "schema_selected_whole_roots": [],
+      "source_and_consumer_implementation_pins": []
+    }
+  },
+  "format_version": 1,
+  "genuine_small_report_current_full7": {
+    "bytes": 9132,
+    "ctime_ns": 1792112249123827156,
+    "device": 81,
+    "inode": 576862,
+    "mtime_ns": 1792112249118394389,
+    "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-deb297-single-thread-decompression-diagnostic-r1/report.json",
+    "sha256": "eacb6d758b7f7108364078349973de2af0b31c67b69c5a678643367161f684e8"
+  },
+  "held_parent_retirement": {
+    "current_full7_and_report_and_ledger_preservation_receipts": [],
+    "entry_literal": "data.tar",
+    "file_type_permission_uid_gid_nlink_rechecked": true,
+    "fresh_actual_source_full7_must_match_verified_archive_source": true,
+    "old_parent_directory_and_all_reports_logs_commands_ledgers_kept": true,
+    "parent_current_identity": null,
+    "parent_fsync_required_after_unlink": true,
+    "parent_literal": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-deb297-single-thread-decompression-diagnostic-r1",
+    "post_unlink_name_absence_and_archive_reopen_and_protected_closure_recheck_required": true,
+    "same_filesystem_ordinary_parent_nofollow_required": true,
+    "unlinkat_only_named_entry_after_all_proofs": false
+  },
+  "kind": "single-obsolete-decoded-diagnostic-cold-archive-and-separate-retirement-control-template",
+  "old_status_or_physical_identity_or_execution_continuity_promoted": false,
+  "receiver": {
+    "complete_compressed_bytes": null,
+    "complete_compressed_sha256": null,
+    "ephemeral_actual_pin": null,
+    "ephemeral_stream_destination": "Root-selected fresh /tmp pathname on Mac; no forecast physical identity.",
+    "exact_tar_member_names": [
+      "noetic-deb297-single-thread-decompression-diagnostic-r1/data.tar"
+    ],
+    "independent_all_member_hash_and_metadata_audit_complete": false,
+    "persistent_actual_pin": null,
+    "persistent_archive_fsync_and_parent_fsync_complete": false,
+    "persistent_reopen_complete_byte_pin_verified": false,
+    "separate_persistent_destination": null
+  },
+  "retirement_explicit_Root_review_pending": true,
+  "role_omission_or_automatic_root_expansion_allowed": false,
+  "status": "SOURCE_TEMPLATE_ONLY_INCOMPLETE_NO_MUTATION_AUTHORIZED",
+  "target_actual_full7": null,
+  "target_current_full_byte_hash_required": true,
+  "target_current_metadata_only": {
+    "bytes": 829286400,
+    "ctime_ns": 1792112248581819171,
+    "device": 81,
+    "inode": 576860,
+    "kind": "regular",
+    "mode": 384,
+    "mtime_ns": 1792112248581819171,
+    "nlink": 1,
+    "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-deb297-single-thread-decompression-diagnostic-r1/data.tar"
+  },
+  "target_historical_full7_expected": {
+    "bytes": 829286400,
+    "ctime_ns": 1792112248581819171,
+    "device": 81,
+    "inode": 576860,
+    "mtime_ns": 1792112248581819171,
+    "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-deb297-single-thread-decompression-diagnostic-r1/data.tar",
+    "sha256": "62d549d5b32f81804d50c1ba98bca414ce72333a76aa285dd51dc0c0569d2c81"
+  },
+  "target_literal": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-deb297-single-thread-decompression-diagnostic-r1/data.tar"
+}

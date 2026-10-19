@@ -1,0 +1,192 @@
+{
+  "format": "uwvm-unitree-profile-v1",
+  "family": "unitree_go",
+  "repository": "unitreerobotics/unitree_ros2",
+  "commit": "668d1ec5a05d1c38d3306bdca7d59f2ba3581a88",
+  "ros_version": 2,
+  "protocol": "bounded-complete-topic-values",
+  "native_identity": "REQUIRES_OFFICIAL_EXPORT",
+  "default_authority": [],
+  "sim_defaults": {
+    "domain_id": 1,
+    "interface": "lo"
+  },
+  "definitions": [
+    {
+      "type": "unitree_go/msg/AudioData",
+      "path": "cyclonedds_ws/src/unitree/unitree_go/msg/AudioData.msg",
+      "bounds": {
+        "data": {
+          "sequence": 2048
+        }
+      }
+    },
+    {
+      "type": "unitree_go/msg/BmsCmd",
+      "path": "cyclonedds_ws/src/unitree/unitree_go/msg/BmsCmd.msg",
+      "bounds": {}
+    },
+    {
+      "type": "unitree_go/msg/BmsState",
+      "path": "cyclonedds_ws/src/unitree/unitree_go/msg/BmsState.msg",
+      "bounds": {}
+    },
+    {
+      "type": "unitree_go/msg/Error",
+      "path": "cyclonedds_ws/src/unitree/unitree_go/msg/Error.msg",
+      "bounds": {}
+    },
+    {
+      "type": "unitree_go/msg/Go2FrontVideoData",
+      "path": "cyclonedds_ws/src/unitree/unitree_go/msg/Go2FrontVideoData.msg",
+      "bounds": {
+        "video720p": {
+          "sequence": 1024
+        },
+        "video360p": {
+          "sequence": 1024
+        },
+        "video180p": {
+          "sequence": 1024
+        }
+      }
+    },
+    {
+      "type": "unitree_go/msg/HeightMap",
+      "path": "cyclonedds_ws/src/unitree/unitree_go/msg/HeightMap.msg",
+      "bounds": {
+        "frame_id": {
+          "string": 128
+        },
+        "data": {
+          "sequence": 2048
+        }
+      }
+    },
+    {
+      "type": "unitree_go/msg/IMUState",
+      "path": "cyclonedds_ws/src/unitree/unitree_go/msg/IMUState.msg",
+      "bounds": {}
+    },
+    {
+      "type": "unitree_go/msg/InterfaceConfig",
+      "path": "cyclonedds_ws/src/unitree/unitree_go/msg/InterfaceConfig.msg",
+      "bounds": {}
+    },
+    {
+      "type": "unitree_go/msg/LidarState",
+      "path": "cyclonedds_ws/src/unitree/unitree_go/msg/LidarState.msg",
+      "bounds": {
+        "firmware_version": {
+          "string": 128
+        },
+        "software_version": {
+          "string": 128
+        },
+        "sdk_version": {
+          "string": 128
+        }
+      }
+    },
+    {
+      "type": "unitree_go/msg/LowCmd",
+      "path": "cyclonedds_ws/src/unitree/unitree_go/msg/LowCmd.msg",
+      "bounds": {}
+    },
+    {
+      "type": "unitree_go/msg/LowState",
+      "path": "cyclonedds_ws/src/unitree/unitree_go/msg/LowState.msg",
+      "bounds": {}
+    },
+    {
+      "type": "unitree_go/msg/MotorCmd",
+      "path": "cyclonedds_ws/src/unitree/unitree_go/msg/MotorCmd.msg",
+      "bounds": {}
+    },
+    {
+      "type": "unitree_go/msg/MotorCmds",
+      "path": "cyclonedds_ws/src/unitree/unitree_go/msg/MotorCmds.msg",
+      "bounds": {
+        "cmds": {
+          "sequence": 20
+        }
+      }
+    },
+    {
+      "type": "unitree_go/msg/MotorState",
+      "path": "cyclonedds_ws/src/unitree/unitree_go/msg/MotorState.msg",
+      "bounds": {}
+    },
+    {
+      "type": "unitree_go/msg/MotorStates",
+      "path": "cyclonedds_ws/src/unitree/unitree_go/msg/MotorStates.msg",
+      "bounds": {
+        "states": {
+          "sequence": 20
+        }
+      }
+    },
+    {
+      "type": "unitree_go/msg/PathPoint",
+      "path": "cyclonedds_ws/src/unitree/unitree_go/msg/PathPoint.msg",
+      "bounds": {}
+    },
+    {
+      "type": "unitree_go/msg/Req",
+      "path": "cyclonedds_ws/src/unitree/unitree_go/msg/Req.msg",
+      "bounds": {
+        "uuid": {
+          "string": 128
+        },
+        "body": {
+          "string": 4096
+        }
+      }
+    },
+    {
+      "type": "unitree_go/msg/Res",
+      "path": "cyclonedds_ws/src/unitree/unitree_go/msg/Res.msg",
+      "bounds": {
+        "uuid": {
+          "string": 128
+        },
+        "body": {
+          "string": 4096
+        },
+        "data": {
+          "sequence": 1024
+        }
+      }
+    },
+    {
+      "type": "unitree_go/msg/SportModeCmd",
+      "path": "cyclonedds_ws/src/unitree/unitree_go/msg/SportModeCmd.msg",
+      "bounds": {}
+    },
+    {
+      "type": "unitree_go/msg/SportModeState",
+      "path": "cyclonedds_ws/src/unitree/unitree_go/msg/SportModeState.msg",
+      "bounds": {}
+    },
+    {
+      "type": "unitree_go/msg/TimeSpec",
+      "path": "cyclonedds_ws/src/unitree/unitree_go/msg/TimeSpec.msg",
+      "bounds": {}
+    },
+    {
+      "type": "unitree_go/msg/UwbState",
+      "path": "cyclonedds_ws/src/unitree/unitree_go/msg/UwbState.msg",
+      "bounds": {}
+    },
+    {
+      "type": "unitree_go/msg/UwbSwitch",
+      "path": "cyclonedds_ws/src/unitree/unitree_go/msg/UwbSwitch.msg",
+      "bounds": {}
+    },
+    {
+      "type": "unitree_go/msg/WirelessController",
+      "path": "cyclonedds_ws/src/unitree/unitree_go/msg/WirelessController.msg",
+      "bounds": {}
+    }
+  ]
+}

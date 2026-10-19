@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "id": "jazzy-x86_64-explicit-sdk",
+  "backend": 2,
+  "distro": "jazzy",
+  "legacy_description": "",
+  "target": {"architecture": "x86_64", "triple": "x86_64-linux-gnu", "elf_machine": 62, "bits": 64, "endian": "little"},
+  "execution": {"kind": "host", "engine": null, "image": null, "rootfs": null, "python": "/usr/bin/python3", "network": "none", "user": "1000:1000", "mounts": [], "platform": "linux/amd64"},
+  "sdk": {
+    "roots": ["/opt/ros/jazzy"],
+    "ros_prefix": "/opt/ros/jazzy",
+    "setup": "/opt/ros/jazzy/setup.bash",
+    "distribution_index": "/absolute/reviewed/rosdistro/index-v4.yaml",
+    "source_lock": null
+  },
+  "tools": {
+    "cxx": "/usr/bin/g++", "cmake": "/usr/bin/cmake", "make": "/usr/bin/make", "bash": "/bin/bash",
+    "host_python": "/usr/bin/python3", "generator_python": "/usr/bin/python3",
+    "toolchain_file": null, "sysroot": null,
+    "roots": ["/usr/lib/gcc", "/usr/include/c++"]
+  },
+  "cxx": {"standard": 17, "flags": [], "link_flags": [], "stdlib_abi": "libstdc++: actual selected SDK/compiler ABI; verify the build and dependency report"},
+  "runtime": {
+    "mode": "native", "qemu": null, "loader": null, "rmw": "rmw_fastrtps_cpp", "master_uri": "", "domain_id": 221,
+    "memory_max": 68719476736, "memory_swap_max": 0, "behavior": "native-sdk-topic",
+    "expected_boot_id": "00000000-0000-0000-0000-000000000000",
+    "expected_leaf": "/sys/fs/cgroup/REPLACE_WITH_CURRENT_ORIGINAL_LEAF",
+    "expected_device": 0, "expected_inode": 1, "expected_cpus": "0-31"
+  },
+  "limits": {"jobs": 1, "rss_bytes": 2147483648, "command_seconds": 1800, "log_bytes": 33554432},
+  "custom": {"registry": null, "native": null, "packages": []},
+  "features": ["qos_class", "node_options"],
+  "cmake_options": {}
+}

@@ -1,0 +1,207 @@
+--- tests/ros_unitree/acceptance/typed28_owned_net/owner.py
++++ tests/ros_unitree/acceptance/ownedtyped28_current/owner.py
+@@ -32,9 +32,9 @@
+            'expected_boot_id', 'expected_leaf', 'expected_cpus'}
+ LEAF = '/sys/fs/cgroup/system.slice/docker-4dd58ad4560fde2ab9b539e4ef9cab1fac531654e99ad554aff1fce8ae0eae37.scope'
+ SOURCE35_SHA = 'eb7fd49e03325deffbe510e24be06d1c0e8274b0207f0a33bd335ea470ad2396'
+-SOURCE43_SHA = '9a01f114e4091d4329392b291b5785952e99b22d8e2a48be52b7e02a7d8f0178'
+-HELPER_SHA = {'deriver': 'cecc4f80ef68d3c9e7c6f48325b0d427e59e3f68d035a1dfc9d59ef0d70f28b9',
+-              'maker': '86d87f16cde0ddcdb91d893a2520a73d3851f4ef0cf13aeda6c6409ddf8262fb'}
++HELPER_SOURCE = {'owner': 'tests/ros_unitree/acceptance/ownedtyped28_current/owner.py',
++    'deriver': 'tests/ros_unitree/acceptance/ownedtyped28_current/derive_request.py',
++    'maker': 'tests/ros_unitree/acceptance/make_typed_transport_configuration.py'}
+ PATHS = {'code_root', 'owner_out', 'namespace_out', 'request_directory', 'metadata_controls',
+          'admission_out', 'transport_out'}
+ LIMITS = {'self_rss_bytes': 1536 * MIB, 'tree_rss_bytes': 4 * GIB,
+@@ -165,7 +165,7 @@
+          control['kind'] == 'uwvm-unitree-typed28-owned-net-control-v1' and control['limits'] == LIMITS and
+          type(control['helpers']) is dict and set(control['helpers']) == {'owner', 'deriver', 'maker'} and
+          type(control['tools']) is dict and set(control['tools']) == {'unshare', 'ip'} and
+-         type(control['inputs']) is dict and set(control['inputs']) == {'typed_build', 'workers', 'native_retained', 'cyclonedds_xml'} and
++         type(control['inputs']) is dict and set(control['inputs']) == {'typed_build', 'workers', 'native_retained', 'cp310_receipt', 'cyclonedds_xml'} and
+          type(control['paths']) is dict and set(control['paths']) == PATHS, 'closed explicit Typed28 owner control required')
+     for selected in [control['python'], *control['helpers'].values(), *control['tools'].values(), *control['inputs'].values()]:
+         full(selected)
+@@ -186,7 +186,10 @@
+     xml_path = Path(control['inputs']['cyclonedds_xml']['path'])
+     if xml_path.parent == paths['code_root']:
+         allowed_code.add(xml_path)
+-    need(set(paths['code_root'].iterdir()) == allowed_code, 'closed static code root file set required')
++    need(set(paths['code_root'].iterdir()) == allowed_code and stat.S_IMODE(paths['code_root'].stat().st_mode) == 0o500 and
++         all(stat.S_ISREG(path.lstat().st_mode) and stat.S_IMODE(path.lstat().st_mode) == 0o400 and
++             path.lstat().st_nlink == 1 for path in allowed_code),
++         'closed readonly independent static code root file set required')
+     handoff_pin, handoff, selected_ns = None, None, None
+     if args.phase == 'namespace':
+         need(args.handoff is not None and args.handoff_sha256 is not None and args.handoff.parent == paths['owner_out'],
+@@ -200,12 +203,12 @@
+     # The Source35 bootstrap guard is an explicit historical SOURCE ROLE, not
+     # an old cgroup observation. All file pins and the current control are new.
+     source_roles, source_bodies, initial_inputs = {}, {}, {control_pin['path']: control_pin, owner_pin['path']: owner_pin}
+-    for role, wanted in (('bootstrap_source', SOURCE35_SHA), ('source', SOURCE43_SHA)):
++    for role, wanted in (('bootstrap_source', SOURCE35_SHA), ('source', None)):
+         section = control[role]
+         need(type(section) is dict and set(section) == {'root', 'manifest'}, 'closed complete source role required')
+         root, mf = Path(section['root']), full(section['manifest'])
+         need(root.is_absolute() and root.resolve(strict=True) == root and mf['path'] == str(root.parent / 'source-manifest.json') and
+-             mf['sha256'] == wanted and all(root != path and root not in path.parents and path not in root.parents
++             (wanted is None or mf['sha256'] == wanted) and all(root != path and root not in path.parents and path not in root.parents
+              for path in paths.values()), 'exact complete source/manifest role and disjoint outputs required')
+         body, actual = read(mf['path'], 16 * MIB)
+         need(actual == mf, 'current complete source manifest pin differs')
+@@ -218,7 +221,11 @@
+             body, pin = read(root / relative, 2 * MIB)
+             need(frozen.get(relative) == {key: pin[key] for key in ('bytes', 'sha256')}, 'complete manifest helper binding differs')
+             source_bodies[role, relative] = body; initial_inputs[pin['path']] = pin
+-    need(source_roles['bootstrap_source'][0] != source_roles['source'][0], 'separate Source35/43 source roles required')
++    need(source_roles['bootstrap_source'][0] != source_roles['source'][0], 'separate retained bootstrap and actual current source roles required')
++    for role, pin in control['helpers'].items():
++        selected = source_roles['source'][2].get(HELPER_SOURCE[role])
++        need(selected == {key: pin[key] for key in ('bytes', 'sha256')},
++             'every actual prestaged helper must equal its current complete-manifest source entry')
+ 
+     def module(name, path, body):
+         result = types.ModuleType(name); result.__file__ = str(path); sys.modules[name] = result
+@@ -232,9 +239,9 @@
+     initial_cg = common35.cgroup_state(cg)
+     need(all(row['events'].get(key, 0) == 0 for row in initial_cg['ancestors']
+          for key in ('oom', 'oom_kill', 'oom_group_kill')), 'all actual ancestor OOM counters must start at zero')
+-    common = module('typed28_net_common43', source_roles['source'][0] / 'tools/ros_distro/common.py',
++    common = module('typed28_net_common_current', source_roles['source'][0] / 'tools/ros_distro/common.py',
+                     source_bodies['source', 'tools/ros_distro/common.py'])
+-    common._CGROUP_PROBE = module('typed28_net_probe43', source_roles['source'][0] / 'tests/ros_cgroup/probe.py',
++    common._CGROUP_PROBE = module('typed28_net_probe_current', source_roles['source'][0] / 'tests/ros_cgroup/probe.py',
+                                 source_bodies['source', 'tests/ros_cgroup/probe.py'])
+     common.install_interrupts(); common.cgroup_preserved(initial_cg, common.cgroup_state(cg))
+     out = paths['owner_out'] if args.phase == 'outer' else paths['namespace_out']
+@@ -331,7 +338,7 @@
+ 
+     def load_helper(role):
+         pin = remember(control['helpers'][role]); body, actual = read(pin['path'])
+-        need(actual == pin and pin['sha256'] == HELPER_SHA[role], 'exact reviewed external helper bytes required')
++        need(actual == pin and source_roles['source'][2].get(HELPER_SOURCE[role]) == {key: pin[key] for key in ('bytes', 'sha256')}, 'exact reviewed external helper bytes required')
+         return module('typed28_net_external_' + role, pin['path'], body)
+ 
+     def snapshots(roots, prefix):
+@@ -347,9 +354,9 @@
+ 
+     def check_frame_result(result, expected, namespace):
+         need(result.get('status') == expected and result.get('source') == control['source']['root'] and
+-             result.get('source_manifest_sha256') == SOURCE43_SHA and all(result.get(key) is True for key in
++             result.get('source_manifest_sha256') == control['source']['manifest']['sha256'] and all(result.get(key) is True for key in
+              ('source_preserved', 'input_pins_preserved', 'whole_roots_preserved')) and
+-             not result.get('finalization_errors'), 'actual complete preserved source43 Frame result required')
++             not result.get('finalization_errors'), 'actual complete preserved selected source Frame result required')
+         for cleanup in result.get('cleanup', []):
+             need(cleanup['status'] == 'PASS' and not cleanup.get('remaining'), 'actual Frame owned cleanup failed')
+         if expected == METADATA_STATUS:
+@@ -371,6 +378,19 @@
+         guard(True)
+         for selected in [control['python'], *control['helpers'].values(), *control['tools'].values(), *control['inputs'].values()]:
+             remember(selected)
++        # CP3 remains a content-only tool-provenance role. Its old source,
++        # namespace and cgroup do not select this run's current authority.
++        cp310 = document(control['inputs']['cp310_receipt'])
++        need(cp310.get('status') == 'PREPARED_CONTENT_ONLY_NOT_EXECUTED',
++             'actual retained CP3 content-only provenance required')
++        cp310_control = document(cp310['control'])
++        need(all(cp310_control['host_tools'][name]['pin'] == pin for name, pin in
++                 {**control['tools'], 'python': control['python']}.items()),
++             'actual current tool selection differs from retained CP3 provenance')
++        report['retained_cp310_tool_provenance'] = {'report': control['inputs']['cp310_receipt'],
++            'control': cp310['control'], 'original_source': cp310.get('source'),
++            'original_source_manifest_sha256': cp310.get('source_manifest_sha256'),
++            'scope': 'CONTENT_ONLY_HOST_TOOLS_NOT_PHYSICS_EXECUTION_OR_CURRENT_CGROUP_AUTHORITY'}
+         need(str(Path(sys.executable).resolve(strict=True)) == control['python']['path'] and
+              all(os.access(pin['path'], os.X_OK) for pin in [control['python'], *control['tools'].values()]),
+              'actual current executing Python and executable unshare/ip selections required')
+@@ -410,10 +430,10 @@
+             runner.limits = {'rss_bytes': 512 * MIB, 'command_seconds': 30, 'log_bytes': LIMITS['log_bytes']}
+             runner.run('bring-only-owned-private-loopback-up', [control['tools']['ip']['path'], 'link', 'set', 'dev', 'lo', 'up'],
+                        paths['code_root'], environment)
+-            unitree = module('typed28_net_unitree43', source_roles['source'][0] / 'tests/ros_unitree/common.py',
++            unitree = module('typed28_net_unitree_current', source_roles['source'][0] / 'tests/ros_unitree/common.py',
+                              source_bodies['source', 'tests/ros_unitree/common.py'])
+             report['actual_loopback_before'] = unitree.current_loopback(selected_ns)
+-            native = module('typed28_net_elf_decoder43', source_roles['source'][0] / 'tests/ros_unitree/acceptance/native74_r6/native_producer.py',
++            native = module('typed28_net_elf_decoder_current', source_roles['source'][0] / 'tests/ros_unitree/acceptance/native74_r6/native_producer.py',
+                             source_bodies['source', 'tests/ros_unitree/acceptance/native74_r6/native_producer.py'])
+             metadata, deriver = load_helper('maker'), load_helper('deriver')
+             request, provenance = deriver.derive_typed28_request(common, metadata, unitree, native.elf, guard,
+@@ -432,7 +452,7 @@
+             report['actual_request'] = request_pin
+             runner.limits = {'rss_bytes': 2 * GIB, 'command_seconds': LIMITS['metadata_seconds'], 'log_bytes': LIMITS['log_bytes']}
+             argv = [control['python']['path'], '-B', control['helpers']['maker']['path'], '--request', request_pin['path'],
+-                '--request-sha256', request_pin['sha256'], '--maker-sha256', HELPER_SHA['maker']]
++                '--request-sha256', request_pin['sha256'], '--maker-sha256', control['helpers']['maker']['sha256']]
+             save(); runner.run('actual-typed28-metadata-and-real-input-admission', argv, paths['code_root'], environment)
+             admission_pin = product(paths['admission_out'] / 'report.json')
+             admission = document(admission_pin); check_frame_result(admission, METADATA_STATUS, selected_ns)
+@@ -442,13 +462,13 @@
+             invocation_pin = admission['future_invocation']; invocation = document(invocation_pin, MIB)
+             expected = [control['python']['path'], '-B', str(source_roles['source'][0] / 'tests/ros_unitree/run_typed_transport.py'),
+                 '--source', control['source']['root'], '--manifest', control['source']['manifest']['path'],
+-                '--manifest-sha256', SOURCE43_SHA, '--config', config_pin['path'], '--config-sha256', config_pin['sha256'],
++                '--manifest-sha256', control['source']['manifest']['sha256'], '--config', config_pin['path'], '--config-sha256', config_pin['sha256'],
+                 '--selection-input', 'typed-transport-selection', '--out', str(paths['transport_out'])]
+             need(type(invocation) is dict and set(invocation) == {'argv', 'execution_performed'} and
+                  invocation['execution_performed'] is False and invocation['argv'] == expected and config['cgroup'] == cg and
+                  set(config['environment']) == {'ROS_DOMAIN_ID', 'RMW_IMPLEMENTATION', 'ROS_SECURITY_ENABLE', 'CYCLONEDDS_URI'} and
+                  all(config[key] is None for key in ('simulation', 'benchmark', 'profiler')),
+-                 'only exact actual maker-published source43 Typed28 invocation may execute')
++                 'only exact actual maker-published selected source Typed28 invocation may execute')
+             runtime_roots = [Path(root) for root in config['input_roots']]
+             need(1 <= len(runtime_roots) <= 64 and len(set(runtime_roots)) == len(runtime_roots) and
+                  all(root.resolve(strict=True) == root and root.is_dir() for root in runtime_roots), 'complete actual Frame root closure required')
+--- tests/ros_unitree/acceptance/typed28_owned_net/derive_request.py
++++ tests/ros_unitree/acceptance/ownedtyped28_current/derive_request.py
+@@ -12,8 +12,7 @@
+ 
+ 
+ PIN = {'path', 'bytes', 'sha256', 'device', 'inode', 'mtime_ns', 'ctime_ns'}
+-SOURCE43_SHA = '9a01f114e4091d4329392b291b5785952e99b22d8e2a48be52b7e02a7d8f0178'
+-MAKER_SHA = '86d87f16cde0ddcdb91d893a2520a73d3851f4ef0cf13aeda6c6409ddf8262fb'
++MAKER_SOURCE = 'tests/ros_unitree/acceptance/make_typed_transport_configuration.py'
+ WORKER_SHA = '18932cb8abc7d9998eb7431f751d6d1feea687cb380f1b247eef12750de0fb64'
+ MIB, GIB = 1024**2, 1024**3
+ 
+@@ -25,8 +24,8 @@
+         cyclonedds_current, fresh_paths, restart_mappings):
+     """Return a closed request and a separate, honest derivation sidecar.
+ 
+-    ``common``, ``unitree`` and ``elf_reader`` must come from the selected complete
+-    Source43. ``metadata`` is the exact reviewed external Typed28 maker. Root's
++    ``common``, ``unitree`` and ``elf_reader`` must come from the actual selected
++    complete source. ``metadata`` is its manifest-bound external Typed28 maker. Root's
+     live guard is mandatory throughout. The outer Root owner must independently
+     own this SAME process birth by a live pidfd; this callable checks the actual
+     direct-parent handoff and live birth but does not pretend JSON proves pidfd
+@@ -77,12 +76,15 @@
+          cgroup['memory_max'] == 64 * GIB and cgroup['memory_swap_max'] == 0 and cgroup['expected_cpus'] == '0-31',
+          'actual closed current64/zero-swap/cpus context required')
+     before_cgroup = common.cgroup_state(cgroup)
+-    need(metadata.__file__ == metadata_maker_current['path'] and metadata_maker_current['sha256'] == MAKER_SHA,
+-         'exact previously reviewed external metadata maker required')
++    need(metadata.__file__ == metadata_maker_current['path'], 'actual prestaged metadata maker location differs')
+     now(metadata_maker_current, MIB)
+-    need(manifest_current['sha256'] == SOURCE43_SHA and Path(source).resolve(strict=True) == Path(source) and
+-         manifest_current['path'] == str(Path(source).parent / 'source-manifest.json'), 'actual complete Source43 selection required')
++    need(Path(source).resolve(strict=True) == Path(source) and
++         manifest_current['path'] == str(Path(source).parent / 'source-manifest.json'), 'actual complete selected source required')
+     frozen = doc(manifest_current, 16 * MIB)
++    need(type(frozen) is dict and frozen.get(MAKER_SOURCE) == {key: metadata_maker_current[key] for key in ('bytes', 'sha256')},
++         'actual metadata maker must equal its selected complete-manifest source entry')
++    original_source_state = common.source_state(Path(source), Path(manifest_current['path']))
++    need(original_source_state['manifest'] == manifest_current, 'actual complete current source changed')
+     source_module('tools/ros_distro/common.py', common.__file__)
+     source_module('tests/ros_unitree/common.py', unitree.__file__)
+     source_module('tests/ros_unitree/acceptance/native74_r6/native_producer.py', elf_reader.__code__.co_filename)
+@@ -262,6 +264,8 @@
+                    'log_bytes': 16 * MIB, 'output_bytes': 4 * GIB}}
+     for pin in [*current_inputs.values(), *discovery.pins.values()]:
+         now(pin, max(64 * MIB, pin['bytes']))
++    need(common.source_state(Path(source), Path(manifest_current['path'])) == original_source_state,
++         'complete selected source changed during request derivation')
+     common.cgroup_preserved(before_cgroup, common.cgroup_state(cgroup))
+     need(common.birth(common.identity(os.getppid())) == common.birth(handoff['outer_identity']) and
+          common.birth(common.identity(os.getpid())) == common.birth(owned_namespace_identity) and

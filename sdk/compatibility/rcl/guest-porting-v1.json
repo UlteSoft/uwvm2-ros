@@ -1,0 +1,1647 @@
+{
+  "format_version": 1,
+  "kind": "guest-source-client-library-porting-contract-v1",
+  "status": "SOURCE_REVIEW_AND_BUILD_HANDOFF_CONTRACT_NOT_FULL_COMPATIBILITY",
+  "source_only": true,
+  "default_authority": [],
+  "guest_management_imports": [],
+  "guest_native_ROS_binary_ABI": false,
+  "claim_full_compatibility": false,
+  "build_recipes": "sdk/compatibility/rcl/guest-build-recipes-v1.json",
+  "business_import_inventory": {
+    "uwvm_ros1_v1": [
+      {
+        "name": "abi_version",
+        "params": [],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "capability_open",
+        "params": [
+          "i32",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "capability_close",
+        "params": [
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "capability_revoke",
+        "params": [
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "topic_publish",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "topic_subscribe",
+        "params": [
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "event_poll",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "event_watch",
+        "params": [
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "event_poll_v1",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "event_ready",
+        "params": [
+          "i64",
+          "i32",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "service_submit",
+        "params": [
+          "i64",
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "service_call",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "service_advertise",
+        "params": [
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "service_respond",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "action_send_goal",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "action_cancel_own_goal",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "action_cancel_any_goal",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "action_receive_feedback",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "action_receive_result",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "action_advertise",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "action_respond",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "tf_lookup",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "tf_broadcast",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "parameter_get",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "parameter_set",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "parameter_delete",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "parameter_exists",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "parameter_list",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "parameter_search",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "graph_inspect_topic",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "graph_inspect_node",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "graph_inspect_service",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "graph_list_topics",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "graph_list_nodes",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "graph_list_services",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "time_read_ros",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "time_read_wall",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "log_write",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      }
+    ],
+    "uwvm_ros2_v1": [
+      {
+        "name": "abi_version",
+        "params": [],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "capability_open",
+        "params": [
+          "i32",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "capability_close",
+        "params": [
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "capability_revoke",
+        "params": [
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "topic_publish",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "topic_subscribe",
+        "params": [
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "event_poll",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "event_watch",
+        "params": [
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "event_poll_v1",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "event_ready",
+        "params": [
+          "i64",
+          "i32",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "service_submit",
+        "params": [
+          "i64",
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "service_call",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "service_advertise",
+        "params": [
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "service_respond",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "action_send_goal",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "action_cancel_own_goal",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "action_cancel_any_goal",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "action_receive_feedback",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "action_receive_result",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "action_advertise",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "action_respond",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "tf_lookup",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "tf_broadcast",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "parameter_get",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "parameter_set",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "parameter_list",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "parameter_describe",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "parameter_declare",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "parameter_undeclare",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "graph_inspect_topic",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "graph_inspect_node",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "graph_inspect_service",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "graph_inspect_action",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "parameter_subscribe_events",
+        "params": [
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "graph_list_topics",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "graph_list_nodes",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "graph_list_services",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "lifecycle_get_state",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "lifecycle_change_state",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "time_read_ros",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "time_read_system",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "time_read_steady",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64",
+          "i64",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      },
+      {
+        "name": "log_write",
+        "params": [
+          "i64",
+          "i32",
+          "i64",
+          "i64"
+        ],
+        "results": [
+          "i32"
+        ]
+      }
+    ]
+  },
+  "source_references": [
+    {
+      "relative": "sdk/abi/abi-v1.json",
+      "bytes": 74230,
+      "sha256": "0a13f6c49100173c156eb76acfd35ebe103a40b2a90c752d3d1302c31f875ec0",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/README.md",
+      "bytes": 20084,
+      "sha256": "5b456510209a1189ce817a52c0146f2fe5ff9c17cc29ff90d813df3c08ee2973",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compatibility/rcl/README.md",
+      "bytes": 6847,
+      "sha256": "f214211b1b485c9db8f18b80ab4d2e6b72bbbe431e4a79320d7377f4524c8b44",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rclcpp/README.md",
+      "bytes": 15062,
+      "sha256": "80fd595462639632dd2c82ce34472dd0501f32f6c3e1fb171c76eb8374e12a05",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rclcpp/include/rclcpp/rclcpp.hpp",
+      "bytes": 17747,
+      "sha256": "61818f2196585b9585d4275e4b0575efc917094b538b9a382f9be787a7a840b8",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rclcpp/include/rclcpp/service_profile.hpp",
+      "bytes": 22227,
+      "sha256": "40bb9aac5186f17a0d718b6b0acc6b74b9e555bf99fe3ed5928dbf199719e441",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rclcpp/include/roswasm_rclcpp/selection.hpp",
+      "bytes": 2429,
+      "sha256": "3f204719851e7849bfd7fada17fd5e1bc204876b3e803e4dbf82836969202436",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rclcpp/examples/selected_stdio_binding.hpp",
+      "bytes": 1181,
+      "sha256": "49e039ae1f5f9db168317f5023760db8171081cf9eee8e4b93f8c17874c4b0f5",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rclcpp/services/recipe.json",
+      "bytes": 4306,
+      "sha256": "4b5fb0e7112f1cf35c69809f600bf5e359c2d20232f34ab812cf486573c28f3e",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rclc/README.md",
+      "bytes": 14666,
+      "sha256": "147c05665eaecad77f5b18ed31fee9cb5d4c6179bada6278334b2fffbb595bf6",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rclc/recipes.json",
+      "bytes": 2284,
+      "sha256": "68ee96c8f095e59f10e99c517a9eaaeff81d9a1d8ec96911e4833748e7db5b21",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rclc/src/compat.c",
+      "bytes": 45234,
+      "sha256": "e246bc03f8122f59d958f64be2b60d3e9c5bfd834dfff71b225f6e7881f8104b",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rclc/include/roswasm_rclc/compat.h",
+      "bytes": 24338,
+      "sha256": "a45dbc75d4343b0e92d36cf6049114fab9e489f49cacd21bff480df2c33e604e",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rclc/services/README.md",
+      "bytes": 18011,
+      "sha256": "46fb005c08a24f3b67a8f9830aad7f98b41f446bcdb388192987c1d1a60a72dd",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rclc/examples/selected_stdio_binding.h",
+      "bytes": 3036,
+      "sha256": "006f516d6ad95cb2be54b36e62ded603d1d1820c71e61f14d5905dba1d862839",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/python/README.md",
+      "bytes": 7738,
+      "sha256": "efbfe327da33add558690b87f23d2d47d8a426f49334d2faff1b456e5fa6afa2",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/python/tools/freeze.py",
+      "bytes": 5699,
+      "sha256": "5220bf39735b6b7771caeb48c2db6998a3122a0c88cbbf2a207c597aaedff33d",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/python/embedding/main.c",
+      "bytes": 2951,
+      "sha256": "e5a48180fb99f0c45b040ec4f70a86a6357aa335a23d795381c8bf631ab30a06",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/python/roswasm/_native.c",
+      "bytes": 29877,
+      "sha256": "eb16f6ade0e120f9dcdcdc560e6305446437a5ea58fff8e14cb2067ec1874e58",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/python/roswasm/raw.py",
+      "bytes": 5292,
+      "sha256": "2e9675e1e1a497ad4831ce3d86ad2f67d513e892a5219129cd1e1370b964ec75",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/python/compat/rclpy/SERVICES.md",
+      "bytes": 15787,
+      "sha256": "79ed405151b5db406b0155be4e20a75a0d06efc2065f6a888af256835d27798f",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/python/compat/rclpy/rclpy/client.py",
+      "bytes": 12641,
+      "sha256": "7681bf88a7718b0596dd0b51a39a5f205a8860da57dd884b266a8a4bc2648c0d",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/python/compat/rclpy/examples/official_service_bootstrap.py",
+      "bytes": 1931,
+      "sha256": "060c668d34f60a2d8bdc133a52006ae26f95ff8243046437c97cc3d541cbd60f",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/java/README.md",
+      "bytes": 5289,
+      "sha256": "e3e8f09fc0bd379f8116330cb84db7dc696627aa84be6d01207f10ee46972905",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/java/src/main/java/org/uwvm/roswasm/Ros1Raw.java",
+      "bytes": 14128,
+      "sha256": "052a945440a7ddf4752046037b517d5fe69292f00049bdab3085fd6923024c06",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/java/src/main/java/org/uwvm/roswasm/Ros2Raw.java",
+      "bytes": 15745,
+      "sha256": "d0337b296dd6c04a53fa19bca17929f2bd28deb3fb45034caca95fd49aa62b39",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/java/src/main/java/org/uwvm/roswasm/LinearMemory.java",
+      "bytes": 2996,
+      "sha256": "c223cb2d68475589efd4ba6d358aee0a712b2418ddc8051063f4c59f8a945e00",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/README.md",
+      "bytes": 14491,
+      "sha256": "de9e564602ab466325d28df95b42f348eec242fe30a34c064f654ac91ce6e059",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/pom.xml",
+      "bytes": 4049,
+      "sha256": "dd215c8b9f400abc5f96a5458abf11c8cd50c5b7a4e0a703c7e3347ae45c0964",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/services/README.md",
+      "bytes": 17816,
+      "sha256": "e54f789e7271f912be92b4ecfd8090f94cbf6bd86dbe91418421c03074a4465b",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/services/examples/OfficialServiceBootstrap.java",
+      "bytes": 1199,
+      "sha256": "465af6364e26951e50cac73efb0388257e02278186e745c925a73e43e17c0633",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/src/main/java/org/ros2/rcljava/migration/MigrationContext.java",
+      "bytes": 48114,
+      "sha256": "8ce6835741d774548d61bee2569587bc5949f7a7fe14ca011510b2cbb73b78ab",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/rmw_wasm/README.md",
+      "bytes": 23119,
+      "sha256": "9e1d43a5f6f2ac52475a6b3997b743b19ef7fbb4f236411752f42299e583a389",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/rmw_wasm/cmake/BUILD.md",
+      "bytes": 10110,
+      "sha256": "2444e9117c40bd8ba92b5350c49575c96bc52b730896c0c6f9ed5dd083ad848e",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/tools/check_wasm_imports.py",
+      "bytes": 10655,
+      "sha256": "327fccbd6bdcfae0ae8da593014f4fb4451747b1ee1c9991996242b798c9bfa4",
+      "mode": 420
+    },
+    {
+      "relative": "test/0050.high_level_languages/python/versions.json",
+      "bytes": 988,
+      "sha256": "ab477cac4ed6dc84c23ec38dde0085da96d649d2fdaa1011368c66e4c99182be",
+      "mode": 420
+    },
+    {
+      "relative": "test/0050.high_level_languages/python/build.py",
+      "bytes": 11724,
+      "sha256": "c15b192b95ea56fdd4a8cf6b43c669a37ad0b476b04ec5afde33934b732498d9",
+      "mode": 420
+    },
+    {
+      "relative": "test/0050.high_level_languages/java/build.sh",
+      "bytes": 954,
+      "sha256": "2be382fd317d5b030f9da036e22b29278bfe86014ccfdd45061aa8dfd7ea351b",
+      "mode": 420
+    },
+    {
+      "relative": "test/0050.high_level_languages/java/pom.xml",
+      "bytes": 2744,
+      "sha256": "a648cb5ef2df33864dc9c85f7fbed28d7767929143ced7bcbb9c42ec124b3404",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compatibility/rcl/GUEST_PORTING.md",
+      "bytes": 12964,
+      "sha256": "122806b994f947bc18ef23b19bdce2c8bb17f4432c9c554738bb748376297734",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compatibility/rcl/guest-build-recipes-v1.json",
+      "bytes": 16631,
+      "sha256": "c04c807a476b5c5d087c45177a4b19a58886a06aa35c4eacc5fbc74e2419443a",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/tools/plan_jar.py",
+      "bytes": 24486,
+      "sha256": "781e0da8161c19b02aedc5876aa40e2c90ff08127b143f211dc67afc6a10fe59",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/tools/check_jar_wasm.py",
+      "bytes": 17162,
+      "sha256": "96e897edb756cf0300c298d12faca6b7fc1681621a58fbfb46bc3eca6669f064",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/tools/jar-input-source-v1.json",
+      "bytes": 19997,
+      "sha256": "0659cabb9634de6a4b9116f1431373e439223567619a69c67588fbcd68715ecd",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/tools/JAR_INPUT.md",
+      "bytes": 20058,
+      "sha256": "1317c5e1e18cb43cd4b960c3a54b9969b12f10ac841dfdc4db751471552d3e7f",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/compat/rcljava/availability/README.md",
+      "bytes": 10675,
+      "sha256": "c83be407b206d8f48d9ae2a38d96c596da1bef5ece47310c33d4591b8d77327c",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/rmw_wasm/original_build/README.md",
+      "bytes": 5539,
+      "sha256": "d215a40b79d62e7d82cf82cf90c5fd935bec1f33ce56c517dc0dffe3ff8b2a38",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/rmw_wasm/original_build/prepare_rclcpp.py",
+      "bytes": 15328,
+      "sha256": "67c3c585c4e6cd88a4a9a513d196ae75d560e0f6d90d1e758061d7f1cd9de1cf",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/rmw_wasm/original_build/CompositeOriginal.cmake",
+      "bytes": 5098,
+      "sha256": "dda2c0c96e3fb21e1a8aacfa2137a264dda843fe3349737bc928b3bcf10c2d33",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/rmw_wasm/default_control/README.md",
+      "bytes": 11207,
+      "sha256": "da0c00d2f8242ab690ca984702636dbc4c9caf52fd7c4a73cb0eeb7e458d71e3",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/rmw_wasm/default_control/native/include/uwvm_rmw/default_control.h",
+      "bytes": 2039,
+      "sha256": "1ccb22788a32c7931f6da2401ccb31cddc7a12969023377f157d43c0cfe254ee",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/rmw_wasm/default_control/native/generate_native.py",
+      "bytes": 30315,
+      "sha256": "63df5ed83b660d06d1fcdc09264e23de6db348fdd42209154640c48339dec340",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/rmw_wasm/default_control/native/examples/original_default_node.cpp",
+      "bytes": 15183,
+      "sha256": "e80237ee9e91c3ef1718b5a6515b22be8e6cdddb8bea26036c3b371fa238684b",
+      "mode": 420
+    },
+    {
+      "relative": "gateways/ros2/default_control/include/default_control_gateway.h",
+      "bytes": 3192,
+      "sha256": "3a725b7741cf00c5bb062fb5f1c6b477d1625bc1feae0961295c2df434439ea2",
+      "mode": 420
+    },
+    {
+      "relative": "gateways/ros2/default_control/generate_gateway.py",
+      "bytes": 35938,
+      "sha256": "a3312b623317a6b7008f8786850708a44c198d0835216f2f0e805022b5caf5c5",
+      "mode": 420
+    },
+    {
+      "relative": "gateways/ros2/default-control-profile.h",
+      "bytes": 7639,
+      "sha256": "4da19331ea509ff1237dd6020ac7d4e1730493971e2bf6a131eef7baca49c8a9",
+      "mode": 420
+    },
+    {
+      "relative": "gateways/ros2/README.default_control_profile.md",
+      "bytes": 10058,
+      "sha256": "455b163296551a518b7e80908c10599634b44f8045df2c4554f32a30f9f63d02",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/rmw_wasm/threaded/README.md",
+      "bytes": 13758,
+      "sha256": "35a99c2cf6c8d77ab9c27307a23b350c2d4bc5d984c0e6a09b2ab90571e04a5c",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/rmw_wasm/threaded_platform/README.md",
+      "bytes": 11552,
+      "sha256": "6469090ba6ffd4a9ce3e88fcfedd2b2fa6286f39870d3023a221196a3d0543fc",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/docs/threaded-debug-control.md",
+      "bytes": 9545,
+      "sha256": "c11b050477d85ae6d78aafab8c53dab5b34b9688c7c7f6b339583b7e3963d759",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/tools/custom_types.py",
+      "bytes": 61312,
+      "sha256": "1a73d6a87624e563bbb6be2624e77b51d7dba0f0f2fb524cda4079f493381826",
+      "mode": 420
+    },
+    {
+      "relative": "sdk/custom-types/bounded_profile.py",
+      "bytes": 238722,
+      "sha256": "40e30d542283cecad4ca210599dbc6d96259f774a1c778050920b32dbe4a0bf4",
+      "mode": 420
+    }
+  ],
+  "counts": {
+    "source_roles": 62,
+    "business_imports": 81,
+    "candidate_executions_by_this_cohort": 0,
+    "compiler_generator_probe_tests_SSH_repo_writes": 0
+  },
+  "memory_contract": {
+    "memory_index": "i32",
+    "offset_length_handle": "i64",
+    "output_slot_bytes": 8,
+    "wasm32_address_conversion": "zero-extension",
+    "GC_reference_as_linear_offset": false
+  },
+  "routes": [
+    {
+      "family": "C/rcl/rclc finite source profile",
+      "source": "sdk/compat/rclc",
+      "path": [
+        "original C application source",
+        "opt-in include + compat.c + explicit selected configuration",
+        "real C capability backend",
+        "uwvm_ros2_v1 imports",
+        "actual Runtime policy and Gateway",
+        "separate real native endpoint"
+      ],
+      "binary_ABI_goal": false,
+      "full_legacy_API_complete": false,
+      "recipe_ids": [
+        "c-rclc-executor",
+        "c-rclc-sub-context"
+      ]
+    },
+    {
+      "family": "C++/rclcpp finite source profile",
+      "source": "sdk/compat/rclcpp",
+      "path": [
+        "original C++ application TU",
+        "opt-in source headers + explicit selection",
+        "real capability C++ SDK/canonical bytes",
+        "uwvm_ros2_v1 imports",
+        "actual Runtime policy and Gateway",
+        "separate native endpoint"
+      ],
+      "binary_ABI_goal": false,
+      "full_legacy_API_complete": false,
+      "recipe_ids": [
+        "cpp-string-publisher",
+        "cpp-string-subscriber"
+      ]
+    },
+    {
+      "family": "original upstream C/C++ libraries",
+      "source": "sdk/rmw_wasm",
+      "path": [
+        "complete immutable original rcutils/rcl/rclc/rclcpp+generated target support",
+        "actual WASI static build/platform",
+        "Guest RMW codec/provider selected by actual aliases",
+        "separate optional admitted ROS RMW transport imports",
+        "actual retained Native Gateway endpoint"
+      ],
+      "binary_ABI_goal": false,
+      "full_legacy_API_complete": false,
+      "required": "Complete actual cross-package build/default endpoints/OS APIs and original suites; never mix finite facade/native installed libraries into target closure."
+    },
+    {
+      "family": "rclpy",
+      "source": "sdk/python/compat/rclpy",
+      "path": [
+        "existing Python source/frozen exact official main package",
+        "real CPython.wasm Guest",
+        "built-in _roswasm_native target C extension",
+        "owned bytes and exact numeric ROS imports",
+        "actual Runtime/Gateway/native counterpart"
+      ],
+      "binary_ABI_goal": false,
+      "full_legacy_API_complete": false,
+      "recipe_ids": [
+        "python-in-guest-rclpy"
+      ]
+    },
+    {
+      "family": "rcljava/Java/JAR",
+      "source": "sdk/compat/rcljava",
+      "path": [
+        "existing source/classes or actual application JAR",
+        "compatible rcljava API classes",
+        "HLL Java bytecode/IR\u2192Wasm producer",
+        "producer-specific exact numeric imports and rooted linear buffers",
+        "actual Runtime/Gateway/native counterpart"
+      ],
+      "current_concrete_producer": "TeaVM0.13.1 WEBASSEMBLY_WASI in actual POM and Ros*Raw/LinearMemory sources",
+      "alternate_JavaIR_bridge": "REQUIRED_ACTUAL_IMPORT_AND_LINEAR_BUFFER_INTERFACE_NO_GUESSED_COMPILER",
+      "binary_ABI_goal": false,
+      "full_legacy_API_complete": false,
+      "recipe_ids": [
+        "java-current-ir-wasi-profile",
+        "javair-existing-application-jar"
+      ]
+    }
+  ],
+  "forbidden_success_substitutes": [
+    "native ROS library linked as a Guest ABI",
+    "host Python/native rclpy wheel/ctypes/socket relay",
+    "JNI native rcljava library as Guest backend",
+    "GC object/header address as linear offset",
+    "Native peer marker or local model result as Guest/native interop qualification",
+    "edited business main skipping unsupported waits recorded as unchanged upstream main",
+    "implicit clock/env/graph/log/update/debug/policy grants"
+  ],
+  "required_work": [
+    {
+      "id": "P01",
+      "scope": "complete legacy API source semantics",
+      "state": "REQUIRED_IMPLEMENTATION",
+      "detail": "Expand pinned releases/messages/options/parameters/actions/executors/callbacks/timers/allocator/error/wait contracts and official test inventories; no permanent exclusion."
+    },
+    {
+      "id": "P02",
+      "scope": "arbitrary Java application JAR/HLL bridge",
+      "state": "SOURCE_IMPLEMENTED_REQUIRES_ACTUAL_PRODUCER_AND_TARGET_QUALIFICATION",
+      "detail": "Actual SDK plan_jar.py/check_jar_wasm.py and external HLL producer accept explicit application/dependency JARs, selected compatible classes and one actual bootstrap/main. Complete original API and Native/Guest/DBG/ROS/performance qualification remain required; no JNI or GC-address substitution."
+    },
+    {
+      "id": "P03",
+      "scope": "complete CPython target link/stdlib closure",
+      "state": "REQUIRED_ACTUAL_PRODUCER_ARTIFACTS_AND_REGRESSION",
+      "detail": "Matching native freeze bytecode, actual target pyconfig/libpython/ordered link flags, installed builtin closure and ROS startup/denied/granted tests. Source templates are not product hashes."
+    },
+    {
+      "id": "P04",
+      "scope": "finite service original clients availability/timed waits",
+      "state": "PARTIAL_SOURCE_IMPLEMENTATION_REQUIRES_REMAINING_APIS_AND_QUALIFICATION",
+      "detail": "The explicit rcljava availability/source pair and finite clock policy are source-integrated. Existing constructors without that selection retain documented unsupported behavior. Complete Python/C++ finite facade semantics and all current-source target/native waits still require their own source and execution evidence."
+    },
+    {
+      "id": "P05",
+      "scope": "real upstream static Guest dependency/default-endpoint closure",
+      "state": "SOURCE_CLOSURES_IMPLEMENTED_REQUIRES_COMPLETE_BUILD_AND_REMAINING_APIS",
+      "detail": "Static threaded core/platform/signal, exact original-source composite, genuine C Service lifetime, full raw/aggregate control codecs, unconditional TimeSource subscription, real Native factories and explicit Host catalog/profile composition have separate source implementation identities. Their exact integration status is in required-work.json. Complete cross-package SDK/link/default Node/physical-retirement qualification and remaining original APIs are still required."
+    },
+    {
+      "id": "P06",
+      "scope": "original application + target Runtime/native qualification",
+      "state": "REQUIRED_ACTUAL_EXECUTION",
+      "detail": "Retain exact sources/tools/artifacts, whole validator/import types, real default13 and full values/current native endpoint/metadata/QoS plus cleanup; separate local/JVM/native/Guest evidence."
+    },
+    {
+      "id": "P07",
+      "scope": "ROS1 legacy clients and broader versions/vendors",
+      "state": "REQUIRED_IMPLEMENTATION",
+      "detail": "The ROS1 raw backend is not roscpp/rospy/rosjava compatibility. Complete corresponding source APIs and all requested version/vendor/native paths separately."
+    }
+  ],
+  "source_status_refresh": "Selected62 source-reference DATA re-frozen after exact independently reviewed managed-records12 source integration6684a866. The bounded source238722/40e30 preserves the complete original193156-byte source and appends13 four-language control emitter/fact functions; the original declaration2fee and old Source receipts are preserved separately. No actual generation, compiler dependency closure, Native certificate, full compatibility or historical execution identity is inferred. Candidate executions remain0.; subsequent Native12 current-bundle selector/link-probe source integration separately updates the actual rcljava service guide full-body pin. Original earlier ledgers/receipts remain historical; no new compiler/model/Native acceptance.",
+  "counts_scope": "These counters describe candidate generator/compiler/probe/test/SSH invocations by this source contract, all0. They do not deny the separately recorded Root source-integration writes. Source-reference DATA is not a build or execution receipt."
+}

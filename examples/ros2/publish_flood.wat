@@ -1,0 +1,25 @@
+(module
+ (import "uwvm_ros2_v1" "capability_open" (func $open (param i32 i64 i64 i64) (result i32)))
+ (import "uwvm_ros2_v1" "topic_publish" (func $publish (param i64 i32 i64 i64) (result i32)))
+ (import "wasi_snapshot_preview1" "proc_exit" (func $exit (param i32)))
+ (import "wasi_snapshot_preview1" "clock_time_get" (func $clock (param i32 i64 i32) (result i32)))
+ (memory (export "memory") 1)
+ (data (i32.const 0) "pub") (data (i32.const 32) "\05\00\00\00hello")
+ (func $delay (param $duration i64) (local $start i64)
+  (if (call $clock (i32.const 1) (i64.const 1) (i32.const 64)) (then (call $exit (i32.const 210))))
+  (local.set $start (i64.load (i32.const 64)))
+  (loop $wait
+   (if (call $clock (i32.const 1) (i64.const 1) (i32.const 72)) (then (call $exit (i32.const 210))))
+   (br_if $wait (i64.lt_u (i64.sub (i64.load (i32.const 72)) (local.get $start)) (local.get $duration)))))
+ (func (export "_start") (local $n i32) (local $error i32)
+  (if (call $open (i32.const 0) (i64.const 0) (i64.const 3) (i64.const 8)) (then (call $exit (i32.const 211))))
+  (loop $requests
+   (local.set $error (call $publish (i64.load (i32.const 8)) (i32.const 0) (i64.const 32) (i64.const 9)))
+   (if (i32.lt_u (local.get $n) (i32.const 2))
+    (then (if (local.get $error) (then (call $exit (i32.const 212)))))
+    (else (if (i32.ne (local.get $error) (i32.const 11)) (then (call $exit (i32.const 213))))))
+   ;; The first latched/durable sample survives real network discovery.
+   (if (i32.eqz (local.get $n)) (then (call $delay (i64.const 500000000))))
+   (local.set $n (i32.add (local.get $n) (i32.const 1)))
+   (br_if $requests (i32.lt_u (local.get $n) (i32.const 100))))
+  (call $delay (i64.const 2000000000))))

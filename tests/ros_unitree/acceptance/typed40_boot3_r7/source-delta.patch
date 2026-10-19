@@ -1,0 +1,52 @@
+--- typed40_boot3_r6/root_owner.py
++++ typed40_boot3_r7/root_owner.py
+@@ -32,10 +32,10 @@
+ SOURCE = P / "inputs-r40/source"
+ MANIFEST = SOURCE.parent / "source-manifest.json"
+ MANIFEST_SHA = "a1c302c830b9965c73d3a9f1fa775056ff60cb7b252ec2af15c8c73ee0969afd"
+-CODE = B / "source40-unitree-command14-boot3-controls-r6"
+-META = M / "source40-unitree-command14-boot3-inputs-r6"
+-ACTOR = M / "source40-unitree-command14-boot3-build-r6"
+-OWNER = M / "source40-unitree-command14-boot3-owner-r6"
++CODE = B / "source40-unitree-command14-boot3-controls-r7"
++META = M / "source40-unitree-command14-boot3-inputs-r7"
++ACTOR = M / "source40-unitree-command14-boot3-build-r7"
++OWNER = M / "source40-unitree-command14-boot3-owner-r7"
+ ORIGINAL = M / "source40-unitree-command14-build-r1/report.json"
+ ORIGINAL_SHA = "b7c07cc7b83bf5996d85e1e812c7e4bc5221358d6dafcb69c3601d261af86747"
+ # Exact current observations supplied by Root; no debug parent/sibling is an input.
+@@ -415,9 +415,12 @@
+         common.cgroup_preserved(before, current)
+         need(alias(python["path"]) == python_alias, "selected Python alias changed")
+         need(runner is None or runner.rss() + self_rss <= OUTER["tree_rss_bytes"], "aggregate owned Root tree RSS exceeded")
+-        for folder in (out, *out.parents, ACTOR.parent, META.parent):
+-            space = os.statvfs(folder)
+-            need(space.f_bavail * space.f_frsize >= OUTER["reserve_bytes"], "eight-GiB backing reserve exhausted")
++        # Low disk must not prevent owned cleanup or input preservation.
++        # Finalization keeps the cgroup, aggregate RSS, alias and time guards.
++        if not finalizing:
++            for folder in (out, *out.parents, ACTOR.parent, META.parent):
++                space = os.statvfs(folder)
++                need(space.f_bavail * space.f_frsize >= OUTER["reserve_bytes"], "eight-GiB backing reserve exhausted")
+         return current
+ 
+     def remember(pin):
+--- typed40_boot3_r6/stage.py
++++ typed40_boot3_r7/stage.py
+@@ -31,11 +31,11 @@
+ SOURCE = P / "inputs-r40/source"
+ MANIFEST = SOURCE.parent / "source-manifest.json"
+ MANIFEST_SHA = "a1c302c830b9965c73d3a9f1fa775056ff60cb7b252ec2af15c8c73ee0969afd"
+-CODE = B / "source40-unitree-command14-boot3-controls-r6"
+-META = M / "source40-unitree-command14-boot3-inputs-r6"
+-ACTOR = M / "source40-unitree-command14-boot3-build-r6"
+-OWNER = M / "source40-unitree-command14-boot3-owner-r6"
+-RECEIPT = B / "source40-unitree-command14-boot3-stage-r6.json"
++CODE = B / "source40-unitree-command14-boot3-controls-r7"
++META = M / "source40-unitree-command14-boot3-inputs-r7"
++ACTOR = M / "source40-unitree-command14-boot3-build-r7"
++OWNER = M / "source40-unitree-command14-boot3-owner-r7"
++RECEIPT = B / "source40-unitree-command14-boot3-stage-r7.json"
+ SEED = M / "source40-unitree-command14-input-admission-r2/controls/frame-config.json"
+ SEED_SHA = "ed31e25026685a3e18f760c28dbc713468d66555c0984cdb306683ca1d86a8bd"
+ ORIGINAL = M / "source40-unitree-command14-build-r1/report.json"

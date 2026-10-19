@@ -1,0 +1,86 @@
+[
+  {
+    "destination": "/Users/liyinan/Documents/MacroModel/uwvm2-ros-recovery-archives/20261018/source-work/restart-default-control/nvidia-adapters-r1/after/sdk/robots/nvidia/isaac_ros/source-definitions/ros2/builtin_interfaces/msg/Time.msg",
+    "source": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/rmw_wasm/default_control/original/builtin_interfaces/msg/Time.msg",
+    "bytes": 421,
+    "sha256": "dc5a01ddde3aecffee21eb24974fe77cc969f873218a2b1811aa0ac8a456b8bd",
+    "role": "actual public original614f3c C source closure; copied whole, not generated"
+  },
+  {
+    "destination": "/Users/liyinan/Documents/MacroModel/uwvm2-ros-recovery-archives/20261018/source-work/restart-default-control/nvidia-adapters-r1/after/sdk/robots/nvidia/isaac_ros/source-definitions/ros2/std_msgs/msg/Header.msg",
+    "source": "/Users/liyinan/Documents/MacroModel/uwvm2-ros-recovery-archives/20261018/source-work/restart-default-control/nvidia-adapters-r1/primary/common-interfaces/std_msgs/msg/Header.msg",
+    "bytes": 322,
+    "sha256": "d2cea14630e39ed0fa5b432ba9160a7c38855b9427d3344f99e83e83facb53c2",
+    "role": "fixed official common_interfaces commit56be9f33"
+  },
+  {
+    "destination": "/Users/liyinan/Documents/MacroModel/uwvm2-ros-recovery-archives/20261018/source-work/restart-default-control/nvidia-adapters-r1/after/sdk/robots/nvidia/isaac_ros/source-definitions/ros2/geometry_msgs/msg/Point.msg",
+    "source": "/Users/liyinan/Documents/MacroModel/uwvm2-ros-recovery-archives/20261018/source-work/restart-default-control/nvidia-adapters-r1/primary/common-interfaces/geometry_msgs/msg/Point.msg",
+    "bytes": 84,
+    "sha256": "eb4c07e591cf0269ccb17245dcd4f998162feb09cc8add85fa082c8a30bfc91d",
+    "role": "fixed official common_interfaces commit56be9f33"
+  },
+  {
+    "destination": "/Users/liyinan/Documents/MacroModel/uwvm2-ros-recovery-archives/20261018/source-work/restart-default-control/nvidia-adapters-r1/after/sdk/robots/nvidia/isaac_ros/source-definitions/ros2/geometry_msgs/msg/Quaternion.msg",
+    "source": "/Users/liyinan/Documents/MacroModel/uwvm2-ros-recovery-archives/20261018/source-work/restart-default-control/nvidia-adapters-r1/primary/common-interfaces/geometry_msgs/msg/Quaternion.msg",
+    "bytes": 116,
+    "sha256": "298495eb67a139642ffd37cc9029eae085e6c39a8789828b7517868a487939ed",
+    "role": "fixed official common_interfaces commit56be9f33"
+  },
+  {
+    "destination": "/Users/liyinan/Documents/MacroModel/uwvm2-ros-recovery-archives/20261018/source-work/restart-default-control/nvidia-adapters-r1/after/sdk/robots/nvidia/isaac_ros/source-definitions/ros2/geometry_msgs/msg/Pose.msg",
+    "source": "/Users/liyinan/Documents/MacroModel/uwvm2-ros-recovery-archives/20261018/source-work/restart-default-control/nvidia-adapters-r1/primary/common-interfaces/geometry_msgs/msg/Pose.msg",
+    "bytes": 119,
+    "sha256": "3eceb77c63ebbb544c11d7f991e475e9819e0cf534deb1a879392c1b3dc997de",
+    "role": "fixed official common_interfaces commit56be9f33"
+  },
+  {
+    "destination": "/Users/liyinan/Documents/MacroModel/uwvm2-ros-recovery-archives/20261018/source-work/restart-default-control/nvidia-adapters-r1/after/sdk/robots/nvidia/isaac_ros/source-definitions/ros2/geometry_msgs/msg/PoseWithCovariance.msg",
+    "source": "/Users/liyinan/Documents/MacroModel/uwvm2-ros-recovery-archives/20261018/source-work/restart-default-control/nvidia-adapters-r1/primary/common-interfaces/geometry_msgs/msg/PoseWithCovariance.msg",
+    "bytes": 323,
+    "sha256": "a22f234e91b9fcd4ba0c5b533496b43c62d7f6ade39082212ac9835679d29f94",
+    "role": "fixed official common_interfaces commit56be9f33"
+  },
+  {
+    "destination": "/Users/liyinan/Documents/MacroModel/uwvm2-ros-recovery-archives/20261018/source-work/restart-default-control/nvidia-adapters-r1/after/sdk/robots/nvidia/isaac_ros/source-definitions/ros2/geometry_msgs/msg/PoseWithCovarianceStamped.msg",
+    "source": "/Users/liyinan/Documents/MacroModel/uwvm2-ros-recovery-archives/20261018/source-work/restart-default-control/nvidia-adapters-r1/primary/common-interfaces/geometry_msgs/msg/PoseWithCovarianceStamped.msg",
+    "bytes": 131,
+    "sha256": "87b6851480902effb5232f87bf68e76f19bf7b26affa11001be9e515542c21fb",
+    "role": "fixed official common_interfaces commit56be9f33"
+  },
+  {
+    "destination": "/Users/liyinan/Documents/MacroModel/uwvm2-ros-recovery-archives/20261018/source-work/restart-default-control/nvidia-adapters-r1/after/sdk/robots/nvidia/isaac_ros/source-definitions/ros2/isaac_ros_apriltag_interfaces/msg/AprilTagDetection.msg",
+    "source": "/Users/liyinan/Documents/MacroModel/uwvm2-ros-recovery-archives/20261018/source-work/restart-default-control/nvidia-adapters-r1/primary/isaac-ros-common/isaac_ros_apriltag_interfaces/msg/AprilTagDetection.msg",
+    "bytes": 207,
+    "sha256": "ca1f15f12f565f9e8b0c9ed4b407ef99596424aaedbab3a0398140b6a771fc48",
+    "role": "fixed official NVIDIA Git commit7bec6ae5"
+  },
+  {
+    "destination": "/Users/liyinan/Documents/MacroModel/uwvm2-ros-recovery-archives/20261018/source-work/restart-default-control/nvidia-adapters-r1/after/sdk/robots/nvidia/isaac_ros/source-definitions/ros2/isaac_ros_apriltag_interfaces/msg/AprilTagDetectionArray.msg",
+    "source": "/Users/liyinan/Documents/MacroModel/uwvm2-ros-recovery-archives/20261018/source-work/restart-default-control/nvidia-adapters-r1/primary/isaac-ros-common/isaac_ros_apriltag_interfaces/msg/AprilTagDetectionArray.msg",
+    "bytes": 54,
+    "sha256": "04265d730aef8b08214eeebf8f820b63954a655b53b464fd1d1a59b017d67ced",
+    "role": "fixed official NVIDIA Git commit7bec6ae5"
+  },
+  {
+    "destination": "/Users/liyinan/Documents/MacroModel/uwvm2-ros-recovery-archives/20261018/source-work/restart-default-control/nvidia-adapters-r1/after/sdk/robots/nvidia/isaac_sim/source-definitions/ros2/builtin_interfaces/msg/Time.msg",
+    "source": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/rmw_wasm/default_control/original/builtin_interfaces/msg/Time.msg",
+    "bytes": 421,
+    "sha256": "dc5a01ddde3aecffee21eb24974fe77cc969f873218a2b1811aa0ac8a456b8bd",
+    "role": "actual public original614f3c C source closure; copied whole, not generated"
+  },
+  {
+    "destination": "/Users/liyinan/Documents/MacroModel/uwvm2-ros-recovery-archives/20261018/source-work/restart-default-control/nvidia-adapters-r1/after/sdk/robots/nvidia/isaac_sim/source-definitions/ros2/std_msgs/msg/Header.msg",
+    "source": "/Users/liyinan/Documents/MacroModel/uwvm2-ros-recovery-archives/20261018/source-work/restart-default-control/nvidia-adapters-r1/primary/common-interfaces/std_msgs/msg/Header.msg",
+    "bytes": 322,
+    "sha256": "d2cea14630e39ed0fa5b432ba9160a7c38855b9427d3344f99e83e83facb53c2",
+    "role": "fixed official common_interfaces commit56be9f33"
+  },
+  {
+    "destination": "/Users/liyinan/Documents/MacroModel/uwvm2-ros-recovery-archives/20261018/source-work/restart-default-control/nvidia-adapters-r1/after/sdk/robots/nvidia/isaac_sim/source-definitions/ros2/sensor_msgs/msg/JointState.msg",
+    "source": "/Users/liyinan/Documents/MacroModel/uwvm2-ros-recovery-archives/20261018/source-work/restart-default-control/nvidia-adapters-r1/primary/common-interfaces/sensor_msgs/msg/JointState.msg",
+    "bytes": 999,
+    "sha256": "711d1771a002c7190e5bbe746a163a67477c1e2a45482a64f1fe339815ca6f5d",
+    "role": "fixed official common_interfaces commit56be9f33"
+  }
+]

@@ -1,0 +1,11 @@
+{
+  "format": "uwvm-ros-custom-bounded-v2",
+  "types": [
+    {
+      "ros_version": 2,
+      "type": "example_interfaces/srv/AddTwoInts",
+      "file": "example_interfaces/srv/AddTwoInts.srv",
+      "bounds": {}
+    }
+  ]
+}

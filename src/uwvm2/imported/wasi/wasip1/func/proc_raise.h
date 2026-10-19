@@ -91,6 +91,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         ::uwvm2::imported::wasi::wasip1::environment::wasip1_environment<::uwvm2::object::memory::linear::native_memory_t> & env,
         ::uwvm2::imported::wasi::wasip1::abi::signal_t code) noexcept
     {
+        // Check inside the shared implementation so both pointer-width wrappers
+        // and direct native host callers enforce the same authority before callbacks.
+        if(!env.permits(::uwvm2::imported::wasi::wasip1::environment::permission_t::proc_raise)) [[unlikely]]
+        {
+            return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable;
+        }
+
         if(env.wasip1_proc_raise_func_ptr != nullptr)
         {
             return env.wasip1_proc_raise_func_ptr(static_cast<::uwvm2::parser::wasm::standard::wasm1::type::wasm_i32>(code));

@@ -1,0 +1,1748 @@
+{
+  "compiler_execution": "NOT_RUN",
+  "declared_constants": {
+    "booster_interface/msg/ButtonEventMsg": [
+      {
+        "literal": "0",
+        "name": "PRESS_DOWN",
+        "native_type": "int8",
+        "type": "int8",
+        "value": "0"
+      },
+      {
+        "literal": "1",
+        "name": "PRESS_UP",
+        "native_type": "int8",
+        "type": "int8",
+        "value": "1"
+      },
+      {
+        "literal": "0",
+        "name": "SINGLE_CLICK",
+        "native_type": "int8",
+        "type": "int8",
+        "value": "0"
+      },
+      {
+        "literal": "1",
+        "name": "DOUBLE_CLICK",
+        "native_type": "int8",
+        "type": "int8",
+        "value": "1"
+      },
+      {
+        "literal": "0",
+        "name": "TRIPLE_CLICK",
+        "native_type": "int8",
+        "type": "int8",
+        "value": "0"
+      },
+      {
+        "literal": "1",
+        "name": "LONG_PRESS_START",
+        "native_type": "int8",
+        "type": "int8",
+        "value": "1"
+      },
+      {
+        "literal": "0",
+        "name": "LONG_PRESS_HOLD",
+        "native_type": "int8",
+        "type": "int8",
+        "value": "0"
+      },
+      {
+        "literal": "1",
+        "name": "LONG_PRESS_END",
+        "native_type": "int8",
+        "type": "int8",
+        "value": "1"
+      }
+    ],
+    "booster_interface/msg/FallDownState": [
+      {
+        "literal": "0",
+        "name": "IS_READY",
+        "native_type": "uint32",
+        "type": "uint32",
+        "value": "0"
+      },
+      {
+        "literal": "1",
+        "name": "IS_FALLING",
+        "native_type": "uint32",
+        "type": "uint32",
+        "value": "1"
+      },
+      {
+        "literal": "2",
+        "name": "HAS_FALLEN",
+        "native_type": "uint32",
+        "type": "uint32",
+        "value": "2"
+      },
+      {
+        "literal": "3",
+        "name": "IS_GETTING_UP",
+        "native_type": "uint32",
+        "type": "uint32",
+        "value": "3"
+      }
+    ],
+    "booster_interface/msg/LowCmd": [
+      {
+        "literal": "0",
+        "name": "CMD_TYPE_PARALLEL",
+        "native_type": "int8",
+        "type": "int8",
+        "value": "0"
+      },
+      {
+        "literal": "1",
+        "name": "CMD_TYPE_SERIAL",
+        "native_type": "int8",
+        "type": "int8",
+        "value": "1"
+      }
+    ]
+  },
+  "declared_defaults": {},
+  "declared_empty_default_native_binding": "REFUSED_UNTIL_INDEPENDENT_ORIGINAL_NATIVE_IDL_SOURCE_PROOF",
+  "default_authority": [],
+  "facade_template_inputs": [
+    {
+      "bytes": 15514,
+      "generator_relative": "interface_templates/bounded_interfaces.rs.in",
+      "sha256": "063130e797684df0530aa1882f8082a10d5756ceb892677d8082e980c7b29b18"
+    },
+    {
+      "bytes": 17046,
+      "generator_relative": "interface_templates/bounded_interfaces.mjs.in",
+      "sha256": "10986eddd766435dde89b0d3046ef7f48705e2c3e21301c99163c3a7d4ea62fe"
+    },
+    {
+      "bytes": 9692,
+      "generator_relative": "interface_templates/bounded_interfaces.go.in",
+      "sha256": "c9e7893ccedc67b91a3aebc51c1e0c3c65263f03b2769aa07c34fcfb6befa1f7"
+    },
+    {
+      "bytes": 16626,
+      "generator_relative": "interface_templates/bounded_interfaces.ts.in",
+      "sha256": "a61a7b7eb3b5464648577f3ab44629a5c6140d04effff6e4099509f68b204ac5"
+    }
+  ],
+  "format": "uwvm-ros-vendor-complete-bounded-v1",
+  "implemented_record_outputs": [
+    "c",
+    "cpp",
+    "rust",
+    "javascript",
+    "assemblyscript",
+    "tinygo"
+  ],
+  "implicit_permissions": [],
+  "member_map": {
+    "booster_interface/msg/BoosterApiReqMsg": {
+      "assemblyscript": {
+        "api_id": "api_id",
+        "body": "body"
+      },
+      "c": {
+        "api_id": "api_id",
+        "body": "body"
+      },
+      "cpp": {
+        "api_id": "api_id",
+        "body": "body"
+      },
+      "javascript": {
+        "api_id": "api_id",
+        "body": "body"
+      },
+      "rust": {
+        "api_id": "api_id",
+        "body": "body"
+      },
+      "tinygo": {
+        "api_id": "Api_id",
+        "body": "Body"
+      }
+    },
+    "booster_interface/msg/BoosterApiRespMsg": {
+      "assemblyscript": {
+        "body": "body",
+        "status": "status"
+      },
+      "c": {
+        "body": "body",
+        "status": "status"
+      },
+      "cpp": {
+        "body": "body",
+        "status": "status"
+      },
+      "javascript": {
+        "body": "body",
+        "status": "status"
+      },
+      "rust": {
+        "body": "body",
+        "status": "status"
+      },
+      "tinygo": {
+        "body": "Body",
+        "status": "Status"
+      }
+    },
+    "booster_interface/msg/ButtonEventMsg": {
+      "assemblyscript": {
+        "button": "button",
+        "event": "event"
+      },
+      "c": {
+        "button": "button",
+        "event": "event"
+      },
+      "cpp": {
+        "button": "button",
+        "event": "event"
+      },
+      "javascript": {
+        "button": "button",
+        "event": "event"
+      },
+      "rust": {
+        "button": "button",
+        "event": "event"
+      },
+      "tinygo": {
+        "button": "Button",
+        "event": "Event"
+      }
+    },
+    "booster_interface/msg/FallDownState": {
+      "assemblyscript": {
+        "fall_down_state": "fall_down_state",
+        "is_recovery_available": "is_recovery_available"
+      },
+      "c": {
+        "fall_down_state": "fall_down_state",
+        "is_recovery_available": "is_recovery_available"
+      },
+      "cpp": {
+        "fall_down_state": "fall_down_state",
+        "is_recovery_available": "is_recovery_available"
+      },
+      "javascript": {
+        "fall_down_state": "fall_down_state",
+        "is_recovery_available": "is_recovery_available"
+      },
+      "rust": {
+        "fall_down_state": "fall_down_state",
+        "is_recovery_available": "is_recovery_available"
+      },
+      "tinygo": {
+        "fall_down_state": "Fall_down_state",
+        "is_recovery_available": "Is_recovery_available"
+      }
+    },
+    "booster_interface/msg/HandCommand": {
+      "assemblyscript": {
+        "force_mode": "force_mode",
+        "hand_index": "hand_index",
+        "hand_param": "hand_param",
+        "hand_type": "hand_type"
+      },
+      "c": {
+        "force_mode": "force_mode",
+        "hand_index": "hand_index",
+        "hand_param": "hand_param",
+        "hand_type": "hand_type"
+      },
+      "cpp": {
+        "force_mode": "force_mode",
+        "hand_index": "hand_index",
+        "hand_param": "hand_param",
+        "hand_type": "hand_type"
+      },
+      "javascript": {
+        "force_mode": "force_mode",
+        "hand_index": "hand_index",
+        "hand_param": "hand_param",
+        "hand_type": "hand_type"
+      },
+      "rust": {
+        "force_mode": "force_mode",
+        "hand_index": "hand_index",
+        "hand_param": "hand_param",
+        "hand_type": "hand_type"
+      },
+      "tinygo": {
+        "force_mode": "Force_mode",
+        "hand_index": "Hand_index",
+        "hand_param": "Hand_param",
+        "hand_type": "Hand_type"
+      }
+    },
+    "booster_interface/msg/HandDdsMsg": {
+      "assemblyscript": {
+        "hands_vec": "hands_vec"
+      },
+      "c": {
+        "hands_vec": "hands_vec"
+      },
+      "cpp": {
+        "hands_vec": "hands_vec"
+      },
+      "javascript": {
+        "hands_vec": "hands_vec"
+      },
+      "rust": {
+        "hands_vec": "hands_vec"
+      },
+      "tinygo": {
+        "hands_vec": "Hands_vec"
+      }
+    },
+    "booster_interface/msg/HandParam": {
+      "assemblyscript": {
+        "angle": "angle",
+        "force": "force",
+        "seq": "seq",
+        "speed": "speed"
+      },
+      "c": {
+        "angle": "angle",
+        "force": "force",
+        "seq": "seq",
+        "speed": "speed"
+      },
+      "cpp": {
+        "angle": "angle",
+        "force": "force",
+        "seq": "seq",
+        "speed": "speed"
+      },
+      "javascript": {
+        "angle": "angle",
+        "force": "force",
+        "seq": "seq",
+        "speed": "speed"
+      },
+      "rust": {
+        "angle": "angle",
+        "force": "force",
+        "seq": "seq",
+        "speed": "speed"
+      },
+      "tinygo": {
+        "angle": "Angle",
+        "force": "Force",
+        "seq": "Seq",
+        "speed": "Speed"
+      }
+    },
+    "booster_interface/msg/ImuState": {
+      "assemblyscript": {
+        "acc": "acc",
+        "gyro": "gyro",
+        "rpy": "rpy"
+      },
+      "c": {
+        "acc": "acc",
+        "gyro": "gyro",
+        "rpy": "rpy"
+      },
+      "cpp": {
+        "acc": "acc",
+        "gyro": "gyro",
+        "rpy": "rpy"
+      },
+      "javascript": {
+        "acc": "acc",
+        "gyro": "gyro",
+        "rpy": "rpy"
+      },
+      "rust": {
+        "acc": "acc",
+        "gyro": "gyro",
+        "rpy": "rpy"
+      },
+      "tinygo": {
+        "acc": "Acc",
+        "gyro": "Gyro",
+        "rpy": "Rpy"
+      }
+    },
+    "booster_interface/msg/LowCmd": {
+      "assemblyscript": {
+        "cmd_type": "cmd_type",
+        "motor_cmd": "motor_cmd"
+      },
+      "c": {
+        "cmd_type": "cmd_type",
+        "motor_cmd": "motor_cmd"
+      },
+      "cpp": {
+        "cmd_type": "cmd_type",
+        "motor_cmd": "motor_cmd"
+      },
+      "javascript": {
+        "cmd_type": "cmd_type",
+        "motor_cmd": "motor_cmd"
+      },
+      "rust": {
+        "cmd_type": "cmd_type",
+        "motor_cmd": "motor_cmd"
+      },
+      "tinygo": {
+        "cmd_type": "Cmd_type",
+        "motor_cmd": "Motor_cmd"
+      }
+    },
+    "booster_interface/msg/LowState": {
+      "assemblyscript": {
+        "imu_state": "imu_state",
+        "motor_state_parallel": "motor_state_parallel",
+        "motor_state_serial": "motor_state_serial"
+      },
+      "c": {
+        "imu_state": "imu_state",
+        "motor_state_parallel": "motor_state_parallel",
+        "motor_state_serial": "motor_state_serial"
+      },
+      "cpp": {
+        "imu_state": "imu_state",
+        "motor_state_parallel": "motor_state_parallel",
+        "motor_state_serial": "motor_state_serial"
+      },
+      "javascript": {
+        "imu_state": "imu_state",
+        "motor_state_parallel": "motor_state_parallel",
+        "motor_state_serial": "motor_state_serial"
+      },
+      "rust": {
+        "imu_state": "imu_state",
+        "motor_state_parallel": "motor_state_parallel",
+        "motor_state_serial": "motor_state_serial"
+      },
+      "tinygo": {
+        "imu_state": "Imu_state",
+        "motor_state_parallel": "Motor_state_parallel",
+        "motor_state_serial": "Motor_state_serial"
+      }
+    },
+    "booster_interface/msg/MotorCmd": {
+      "assemblyscript": {
+        "dq": "dq",
+        "kd": "kd",
+        "kp": "kp",
+        "mode": "mode",
+        "q": "q",
+        "tau": "tau",
+        "weight": "weight"
+      },
+      "c": {
+        "dq": "dq",
+        "kd": "kd",
+        "kp": "kp",
+        "mode": "mode",
+        "q": "q",
+        "tau": "tau",
+        "weight": "weight"
+      },
+      "cpp": {
+        "dq": "dq",
+        "kd": "kd",
+        "kp": "kp",
+        "mode": "mode",
+        "q": "q",
+        "tau": "tau",
+        "weight": "weight"
+      },
+      "javascript": {
+        "dq": "dq",
+        "kd": "kd",
+        "kp": "kp",
+        "mode": "mode",
+        "q": "q",
+        "tau": "tau",
+        "weight": "weight"
+      },
+      "rust": {
+        "dq": "dq",
+        "kd": "kd",
+        "kp": "kp",
+        "mode": "mode",
+        "q": "q",
+        "tau": "tau",
+        "weight": "weight"
+      },
+      "tinygo": {
+        "dq": "Dq",
+        "kd": "Kd",
+        "kp": "Kp",
+        "mode": "Mode",
+        "q": "Q",
+        "tau": "Tau",
+        "weight": "Weight"
+      }
+    },
+    "booster_interface/msg/MotorState": {
+      "assemblyscript": {
+        "ddq": "ddq",
+        "dq": "dq",
+        "lost": "lost",
+        "mode": "mode",
+        "q": "q",
+        "reserve": "reserve",
+        "tau_est": "tau_est",
+        "temperature": "temperature"
+      },
+      "c": {
+        "ddq": "ddq",
+        "dq": "dq",
+        "lost": "lost",
+        "mode": "mode",
+        "q": "q",
+        "reserve": "reserve",
+        "tau_est": "tau_est",
+        "temperature": "temperature"
+      },
+      "cpp": {
+        "ddq": "ddq",
+        "dq": "dq",
+        "lost": "lost",
+        "mode": "mode",
+        "q": "q",
+        "reserve": "reserve",
+        "tau_est": "tau_est",
+        "temperature": "temperature"
+      },
+      "javascript": {
+        "ddq": "ddq",
+        "dq": "dq",
+        "lost": "lost",
+        "mode": "mode",
+        "q": "q",
+        "reserve": "reserve",
+        "tau_est": "tau_est",
+        "temperature": "temperature"
+      },
+      "rust": {
+        "ddq": "ddq",
+        "dq": "dq",
+        "lost": "lost",
+        "mode": "mode",
+        "q": "q",
+        "reserve": "reserve",
+        "tau_est": "tau_est",
+        "temperature": "temperature"
+      },
+      "tinygo": {
+        "ddq": "Ddq",
+        "dq": "Dq",
+        "lost": "Lost",
+        "mode": "Mode",
+        "q": "Q",
+        "reserve": "Reserve",
+        "tau_est": "Tau_est",
+        "temperature": "Temperature"
+      }
+    },
+    "booster_interface/msg/Odometer": {
+      "assemblyscript": {
+        "theta": "theta",
+        "x": "x",
+        "y": "y"
+      },
+      "c": {
+        "theta": "theta",
+        "x": "x",
+        "y": "y"
+      },
+      "cpp": {
+        "theta": "theta",
+        "x": "x",
+        "y": "y"
+      },
+      "javascript": {
+        "theta": "theta",
+        "x": "x",
+        "y": "y"
+      },
+      "rust": {
+        "theta": "theta",
+        "x": "x",
+        "y": "y"
+      },
+      "tinygo": {
+        "theta": "Theta",
+        "x": "X",
+        "y": "Y"
+      }
+    },
+    "booster_interface/msg/RawBytesMsg": {
+      "assemblyscript": {
+        "msg": "msg"
+      },
+      "c": {
+        "msg": "msg"
+      },
+      "cpp": {
+        "msg": "msg"
+      },
+      "javascript": {
+        "msg": "msg"
+      },
+      "rust": {
+        "msg": "msg"
+      },
+      "tinygo": {
+        "msg": "Msg"
+      }
+    },
+    "booster_interface/msg/RawBytesStamped": {
+      "assemblyscript": {
+        "header": "header",
+        "msg": "msg"
+      },
+      "c": {
+        "header": "header",
+        "msg": "msg"
+      },
+      "cpp": {
+        "header": "header",
+        "msg": "msg"
+      },
+      "javascript": {
+        "header": "header",
+        "msg": "msg"
+      },
+      "rust": {
+        "header": "header",
+        "msg": "msg"
+      },
+      "tinygo": {
+        "header": "Header",
+        "msg": "Msg"
+      }
+    },
+    "booster_interface/msg/RemoteControllerState": {
+      "assemblyscript": {
+        "a": "a",
+        "b": "b",
+        "back": "back",
+        "event": "event",
+        "hat_c": "hat_c",
+        "hat_d": "hat_d",
+        "hat_l": "hat_l",
+        "hat_ld": "hat_ld",
+        "hat_lu": "hat_lu",
+        "hat_pos": "hat_pos",
+        "hat_r": "hat_r",
+        "hat_rd": "hat_rd",
+        "hat_ru": "hat_ru",
+        "hat_u": "hat_u",
+        "lb": "lb",
+        "ls": "ls",
+        "lt": "lt",
+        "lx": "lx",
+        "ly": "ly",
+        "rb": "rb",
+        "rs": "rs",
+        "rt": "rt",
+        "rx": "rx",
+        "ry": "ry",
+        "start": "start",
+        "x": "x",
+        "y": "y"
+      },
+      "c": {
+        "a": "a",
+        "b": "b",
+        "back": "back",
+        "event": "event",
+        "hat_c": "hat_c",
+        "hat_d": "hat_d",
+        "hat_l": "hat_l",
+        "hat_ld": "hat_ld",
+        "hat_lu": "hat_lu",
+        "hat_pos": "hat_pos",
+        "hat_r": "hat_r",
+        "hat_rd": "hat_rd",
+        "hat_ru": "hat_ru",
+        "hat_u": "hat_u",
+        "lb": "lb",
+        "ls": "ls",
+        "lt": "lt",
+        "lx": "lx",
+        "ly": "ly",
+        "rb": "rb",
+        "rs": "rs",
+        "rt": "rt",
+        "rx": "rx",
+        "ry": "ry",
+        "start": "start",
+        "x": "x",
+        "y": "y"
+      },
+      "cpp": {
+        "a": "a",
+        "b": "b",
+        "back": "back",
+        "event": "event",
+        "hat_c": "hat_c",
+        "hat_d": "hat_d",
+        "hat_l": "hat_l",
+        "hat_ld": "hat_ld",
+        "hat_lu": "hat_lu",
+        "hat_pos": "hat_pos",
+        "hat_r": "hat_r",
+        "hat_rd": "hat_rd",
+        "hat_ru": "hat_ru",
+        "hat_u": "hat_u",
+        "lb": "lb",
+        "ls": "ls",
+        "lt": "lt",
+        "lx": "lx",
+        "ly": "ly",
+        "rb": "rb",
+        "rs": "rs",
+        "rt": "rt",
+        "rx": "rx",
+        "ry": "ry",
+        "start": "start",
+        "x": "x",
+        "y": "y"
+      },
+      "javascript": {
+        "a": "a",
+        "b": "b",
+        "back": "back",
+        "event": "event",
+        "hat_c": "hat_c",
+        "hat_d": "hat_d",
+        "hat_l": "hat_l",
+        "hat_ld": "hat_ld",
+        "hat_lu": "hat_lu",
+        "hat_pos": "hat_pos",
+        "hat_r": "hat_r",
+        "hat_rd": "hat_rd",
+        "hat_ru": "hat_ru",
+        "hat_u": "hat_u",
+        "lb": "lb",
+        "ls": "ls",
+        "lt": "lt",
+        "lx": "lx",
+        "ly": "ly",
+        "rb": "rb",
+        "rs": "rs",
+        "rt": "rt",
+        "rx": "rx",
+        "ry": "ry",
+        "start": "start",
+        "x": "x",
+        "y": "y"
+      },
+      "rust": {
+        "a": "a",
+        "b": "b",
+        "back": "back",
+        "event": "event",
+        "hat_c": "hat_c",
+        "hat_d": "hat_d",
+        "hat_l": "hat_l",
+        "hat_ld": "hat_ld",
+        "hat_lu": "hat_lu",
+        "hat_pos": "hat_pos",
+        "hat_r": "hat_r",
+        "hat_rd": "hat_rd",
+        "hat_ru": "hat_ru",
+        "hat_u": "hat_u",
+        "lb": "lb",
+        "ls": "ls",
+        "lt": "lt",
+        "lx": "lx",
+        "ly": "ly",
+        "rb": "rb",
+        "rs": "rs",
+        "rt": "rt",
+        "rx": "rx",
+        "ry": "ry",
+        "start": "start",
+        "x": "x",
+        "y": "y"
+      },
+      "tinygo": {
+        "a": "A",
+        "b": "B",
+        "back": "Back",
+        "event": "Event",
+        "hat_c": "Hat_c",
+        "hat_d": "Hat_d",
+        "hat_l": "Hat_l",
+        "hat_ld": "Hat_ld",
+        "hat_lu": "Hat_lu",
+        "hat_pos": "Hat_pos",
+        "hat_r": "Hat_r",
+        "hat_rd": "Hat_rd",
+        "hat_ru": "Hat_ru",
+        "hat_u": "Hat_u",
+        "lb": "Lb",
+        "ls": "Ls",
+        "lt": "Lt",
+        "lx": "Lx",
+        "ly": "Ly",
+        "rb": "Rb",
+        "rs": "Rs",
+        "rt": "Rt",
+        "rx": "Rx",
+        "ry": "Ry",
+        "start": "Start",
+        "x": "X",
+        "y": "Y"
+      }
+    },
+    "booster_interface/srv/AgentService_Request": {
+      "assemblyscript": {
+        "body": "body"
+      },
+      "c": {
+        "body": "body"
+      },
+      "cpp": {
+        "body": "body"
+      },
+      "javascript": {
+        "body": "body"
+      },
+      "rust": {
+        "body": "body"
+      },
+      "tinygo": {
+        "body": "Body"
+      }
+    },
+    "booster_interface/srv/AgentService_Response": {
+      "assemblyscript": {
+        "body": "body"
+      },
+      "c": {
+        "body": "body"
+      },
+      "cpp": {
+        "body": "body"
+      },
+      "javascript": {
+        "body": "body"
+      },
+      "rust": {
+        "body": "body"
+      },
+      "tinygo": {
+        "body": "Body"
+      }
+    },
+    "booster_interface/srv/RpcService_Request": {
+      "assemblyscript": {
+        "msg": "msg"
+      },
+      "c": {
+        "msg": "msg"
+      },
+      "cpp": {
+        "msg": "msg"
+      },
+      "javascript": {
+        "msg": "msg"
+      },
+      "rust": {
+        "msg": "msg"
+      },
+      "tinygo": {
+        "msg": "Msg"
+      }
+    },
+    "booster_interface/srv/RpcService_Response": {
+      "assemblyscript": {
+        "msg": "msg"
+      },
+      "c": {
+        "msg": "msg"
+      },
+      "cpp": {
+        "msg": "msg"
+      },
+      "javascript": {
+        "msg": "msg"
+      },
+      "rust": {
+        "msg": "msg"
+      },
+      "tinygo": {
+        "msg": "Msg"
+      }
+    },
+    "builtin_interfaces/msg/Time": {
+      "assemblyscript": {
+        "nanosec": "nanosec",
+        "sec": "sec"
+      },
+      "c": {
+        "nanosec": "nanosec",
+        "sec": "sec"
+      },
+      "cpp": {
+        "nanosec": "nanosec",
+        "sec": "sec"
+      },
+      "javascript": {
+        "nanosec": "nanosec",
+        "sec": "sec"
+      },
+      "rust": {
+        "nanosec": "nanosec",
+        "sec": "sec"
+      },
+      "tinygo": {
+        "nanosec": "Nanosec",
+        "sec": "Sec"
+      }
+    },
+    "std_msgs/msg/Header": {
+      "assemblyscript": {
+        "frame_id": "frame_id",
+        "stamp": "stamp"
+      },
+      "c": {
+        "frame_id": "frame_id",
+        "stamp": "stamp"
+      },
+      "cpp": {
+        "frame_id": "frame_id",
+        "stamp": "stamp"
+      },
+      "javascript": {
+        "frame_id": "frame_id",
+        "stamp": "stamp"
+      },
+      "rust": {
+        "frame_id": "frame_id",
+        "stamp": "stamp"
+      },
+      "tinygo": {
+        "frame_id": "Frame_id",
+        "stamp": "Stamp"
+      }
+    }
+  },
+  "native_execution": "NOT_RUN",
+  "native_exporter_helper_source": {
+    "bytes": 10784,
+    "sha256": "55c5e504a1d61a648f73dd732aa0561f4b4dc0adf54dbe631857edf1564f3ac6"
+  },
+  "native_registry_emitted": false,
+  "outputs": {
+    "bounded_interfaces.go": {
+      "bytes": 21952,
+      "sha256": "2a9c22a440c71101b80b010fa6400f15445dac1b6225768561184f069fb5e388"
+    },
+    "bounded_interfaces.h": {
+      "bytes": 6678,
+      "sha256": "2dd4c3e40c0370cbd62953e1ee6682e56671d3ea232caa3f9ecfcca9173249ae"
+    },
+    "bounded_interfaces.hpp": {
+      "bytes": 11265,
+      "sha256": "f71b44b5e7d69e64ae2a2220f71f30f11a1aacedb000ac0e7e4da1b31d3f2d0e"
+    },
+    "bounded_interfaces.mjs": {
+      "bytes": 18654,
+      "sha256": "b8121b8dacba0150faafb8c60926e6ca05cb8965740e47e6c99fa308f53d8a1c"
+    },
+    "bounded_interfaces.rs": {
+      "bytes": 17304,
+      "sha256": "b00f95dae1e49a21f2361846fb661fcce8c522bccd77b3ff21b4c6ebbd415219"
+    },
+    "bounded_interfaces.ts": {
+      "bytes": 19281,
+      "sha256": "057f16b46f719eb8286c9837cddf162dbf99b39bd0fb575b36b96c4e5f38dd20"
+    },
+    "bounded_records.go": {
+      "bytes": 83042,
+      "sha256": "d74883904b87dacd4ddf651afd734743216f5d819bbd30e17596c9496d5d6093"
+    },
+    "bounded_records.h": {
+      "bytes": 118139,
+      "sha256": "fc8fa4f40ccdf1c33bcbb6d09805a1ac7ce77548110cd94c91d97e9b4a1c38ea"
+    },
+    "bounded_records.hpp": {
+      "bytes": 27175,
+      "sha256": "c4a01a7fca34707b4cbc908925be3b05e5cc821da719f135dc6226fdc73f2898"
+    },
+    "bounded_records.mjs": {
+      "bytes": 63664,
+      "sha256": "2463cff93d951b7bfc0233f825faa68940a57d6e0cea0da674d987a87c954212"
+    },
+    "bounded_records.rs": {
+      "bytes": 68346,
+      "sha256": "b02475731d0da2b61d93de8724d9880d60b9dcdb3ad41452f858aaf7ea8615bf"
+    },
+    "bounded_records.ts": {
+      "bytes": 77891,
+      "sha256": "5246aa73447ef70322db86e0e33888aec1c76dff11acda1edaa6fcf2cbcf97b8"
+    },
+    "native_constants.hpp": {
+      "bytes": 1431,
+      "sha256": "918500fd1145b415a68cb9d83e40b5258e940a5b044b649f1e814bb3d206a7d1"
+    },
+    "native_identity.cc": {
+      "bytes": 22748,
+      "sha256": "6d8ec347bcbc4af71c475389bdd416a53d462c6dc640fb5518f9759d037c45ef"
+    }
+  },
+  "records": [
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 4108,
+      "codec_identity": "UWVMROS1_e2f9b66467bcb40a8194c744694f314e7fca56061f1cf3121eed565f724edd40",
+      "expanded_nodes": 3,
+      "maximum_wire_bytes": 4108,
+      "minimum_wire_bytes": 12,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/msg/BoosterApiReqMsg"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 4108,
+      "codec_identity": "UWVMROS1_21ce208a51f60843eecb72edbc408e926353b1a6f178424c0b691ac237fed11f",
+      "expanded_nodes": 3,
+      "maximum_wire_bytes": 4108,
+      "minimum_wire_bytes": 12,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/msg/BoosterApiRespMsg"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 5,
+      "codec_identity": "UWVMROS1_b61682fd9c35bd54c52000224411f4373b8620e16587b31d8a683076e0d14fe4",
+      "expanded_nodes": 3,
+      "maximum_wire_bytes": 5,
+      "minimum_wire_bytes": 5,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/msg/ButtonEventMsg"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 5,
+      "codec_identity": "UWVMROS1_8bf168ccefac72eda6070704c70e12e62776d29ad3db908095cc01220f4b533f",
+      "expanded_nodes": 3,
+      "maximum_wire_bytes": 5,
+      "minimum_wire_bytes": 5,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/msg/FallDownState"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 16,
+      "codec_identity": "UWVMROS1_3b91722e751e7c00c773335bb42af34850190ecc26a029e8792c49d912def158",
+      "expanded_nodes": 5,
+      "maximum_wire_bytes": 16,
+      "minimum_wire_bytes": 16,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/msg/HandParam"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 528,
+      "codec_identity": "UWVMROS1_06f3d6c0e9bef1da409330038aadbfacfe60b02e099f2ae0c4dcb92a632b20a0",
+      "expanded_nodes": 165,
+      "maximum_wire_bytes": 528,
+      "minimum_wire_bytes": 16,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/msg/HandCommand"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 1060,
+      "codec_identity": "UWVMROS1_55af9d6f272a72e75e86e1a6164d235aca5f2ce99c2529749c0d5e33d6091397",
+      "expanded_nodes": 332,
+      "maximum_wire_bytes": 1060,
+      "minimum_wire_bytes": 4,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/msg/HandDdsMsg"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 36,
+      "codec_identity": "UWVMROS1_838ee8d4b93b0c3673e0b535fd3905913e94be24d6d21a01504dedaaaaa81092",
+      "expanded_nodes": 13,
+      "maximum_wire_bytes": 36,
+      "minimum_wire_bytes": 36,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/msg/ImuState"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 25,
+      "codec_identity": "UWVMROS1_69d814e13595d53dcf44f2a5ccb19df0f8f2be0908c310c3b60cec33bcf27392",
+      "expanded_nodes": 8,
+      "maximum_wire_bytes": 25,
+      "minimum_wire_bytes": 25,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/msg/MotorCmd"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 730,
+      "codec_identity": "UWVMROS1_845726a14e61d211b493041f4dda56e1556b76b9d30337a2ee5f6319a3d1e870",
+      "expanded_nodes": 235,
+      "maximum_wire_bytes": 730,
+      "minimum_wire_bytes": 5,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/msg/LowCmd"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 30,
+      "codec_identity": "UWVMROS1_6b19c0e8865e796fff5a498cff731ba268fa92ea2944e6c2c5869009b3aa066b",
+      "expanded_nodes": 11,
+      "maximum_wire_bytes": 30,
+      "minimum_wire_bytes": 30,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/msg/MotorState"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 1784,
+      "codec_identity": "UWVMROS1_811db19cab7b790ed48506bca3e3ef512c1a661dc3ac99cbce6234efb6de631f",
+      "expanded_nodes": 654,
+      "maximum_wire_bytes": 1784,
+      "minimum_wire_bytes": 44,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/msg/LowState"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 12,
+      "codec_identity": "UWVMROS1_4fea33e3e2ae186dbeaf49c6068019b702e742266541087a5d280b9ce42c671a",
+      "expanded_nodes": 4,
+      "maximum_wire_bytes": 12,
+      "minimum_wire_bytes": 12,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/msg/Odometer"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 2052,
+      "codec_identity": "UWVMROS1_557e8e79f206c9cc8b820ed7c2ad8cc01e9b01327197b745709993d958b4578c",
+      "expanded_nodes": 3,
+      "maximum_wire_bytes": 2052,
+      "minimum_wire_bytes": 4,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/msg/RawBytesMsg"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 8,
+      "codec_identity": "UWVMROS1_0fd520c23fd8cb06e2c27292fdc20694732fa9332d452fc3fa31da90f7605fb7",
+      "expanded_nodes": 3,
+      "maximum_wire_bytes": 8,
+      "minimum_wire_bytes": 8,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "builtin_interfaces/msg/Time"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 140,
+      "codec_identity": "UWVMROS1_ce081e9caac05e464c4cff0da5e94cad44014652c0ddf244ee6c35ac3b0d1e96",
+      "expanded_nodes": 5,
+      "maximum_wire_bytes": 140,
+      "minimum_wire_bytes": 12,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "std_msgs/msg/Header"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 2192,
+      "codec_identity": "UWVMROS1_27cddd472b2d8c41c39effb87a8a53261aff309500dbb68df6ebd69a19c7720e",
+      "expanded_nodes": 8,
+      "maximum_wire_bytes": 2192,
+      "minimum_wire_bytes": 16,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/msg/RawBytesStamped"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 42,
+      "codec_identity": "UWVMROS1_f8a21705728862632c27b71d98c044a12bf1f9f9e0c1729fec27afe2c60c48a7",
+      "expanded_nodes": 28,
+      "maximum_wire_bytes": 42,
+      "minimum_wire_bytes": 42,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/msg/RemoteControllerState"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 4100,
+      "codec_identity": "UWVMROS1_d8b972ee6c7f82ee948c03b22354d1073f120ad2616a9e833b578348775404e8",
+      "expanded_nodes": 2,
+      "maximum_wire_bytes": 4100,
+      "minimum_wire_bytes": 4,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/srv/AgentService_Request"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 4100,
+      "codec_identity": "UWVMROS1_86aecf9ee8652016b5c74e30d2dd4100e8b547542a81a98e7795942b47b87520",
+      "expanded_nodes": 2,
+      "maximum_wire_bytes": 4100,
+      "minimum_wire_bytes": 4,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/srv/AgentService_Response"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 4108,
+      "codec_identity": "UWVMROS1_cc8eb67d80bdf131f1878a1be998d68560e235ffef6a539876410dfcd6c00150",
+      "expanded_nodes": 4,
+      "maximum_wire_bytes": 4108,
+      "minimum_wire_bytes": 12,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/srv/RpcService_Request"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 4108,
+      "codec_identity": "UWVMROS1_7aeb7b45542f9f594e1f61be2f715abcde54b1e55efdde15100b0c553ae96322",
+      "expanded_nodes": 4,
+      "maximum_wire_bytes": 4108,
+      "minimum_wire_bytes": 12,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/srv/RpcService_Response"
+    }
+  ],
+  "required_native_domain_provider": "paired complete_vendor descriptor/Native trait/source-metadata admission; requires actual Root implementation and full rebuild; old refusal is preserved",
+  "source_generator_pair": {
+    "bounded": {
+      "bytes": 239137,
+      "sha256": "3c40ed90910bde0ec15ae8976b0e34c37061c2eeacc121259604e7eaeba89f2d"
+    },
+    "industrial_adapter": {
+      "bytes": 73639,
+      "sha256": "e830acc0c4a1cb243cb50f28cbabb71299dcc692ecd9a0b42dd725f4a4f361b3"
+    },
+    "parent": {
+      "bytes": 61312,
+      "sha256": "1a73d6a87624e563bbb6be2624e77b51d7dba0f0f2fb524cda4079f493381826"
+    }
+  },
+  "source_inputs": {
+    "catalog": {
+      "bytes": 4586,
+      "sha256": "bb5aa9e22e78963fb1f7215d7d4b3fd0f30699205e5e6e79ef80b6231ce06034"
+    },
+    "definitions": [
+      {
+        "bytes": 24,
+        "file": "booster_interface/msg/BoosterApiReqMsg.msg",
+        "sha256": "bf5a63bf482c32ec4c9d933727a7e27ab2e4a774cf2c496ed32568544ed204a3"
+      },
+      {
+        "bytes": 24,
+        "file": "booster_interface/msg/BoosterApiRespMsg.msg",
+        "sha256": "8027a61dbaea29ab5f4744fbd74e1859244d741e330729a2533ec276bc3edcbc"
+      },
+      {
+        "bytes": 209,
+        "file": "booster_interface/msg/ButtonEventMsg.msg",
+        "sha256": "e3adc5a8527112149ac79f95b42963b487fc07d100d9ff8ed1e89dc9f01884a2"
+      },
+      {
+        "bytes": 131,
+        "file": "booster_interface/msg/FallDownState.msg",
+        "sha256": "0636d77c3e4cd500a4b69c79a762d12755da1788ba79b3196e525d416c2182d9"
+      },
+      {
+        "bytes": 72,
+        "file": "booster_interface/msg/HandCommand.msg",
+        "sha256": "05c8dfb8939429f36b3db859ac5975669533a29992aab406bc3ce2a47cd62017"
+      },
+      {
+        "bytes": 23,
+        "file": "booster_interface/msg/HandDdsMsg.msg",
+        "sha256": "44f8779000296c7383bb4e16b15fa692de691925f4853f5cafdf1b61c0b00d0d"
+      },
+      {
+        "bytes": 45,
+        "file": "booster_interface/msg/HandParam.msg",
+        "sha256": "8ddb515b8d97e9a19f3fdbf5e476e5a5b2431a21823015dbc170bc1bc7af1500"
+      },
+      {
+        "bytes": 147,
+        "file": "booster_interface/msg/ImuState.msg",
+        "sha256": "aab374da59a0ad77db57eb3d55bed5a5ba2080a100a592e88dcf2d9866dfa00a"
+      },
+      {
+        "bytes": 147,
+        "file": "booster_interface/msg/LowCmd.msg",
+        "sha256": "975a2ef70dfc4156cd0529d05c23afa8612e47d12d1d51b06cea5513130d6883"
+      },
+      {
+        "bytes": 84,
+        "file": "booster_interface/msg/LowState.msg",
+        "sha256": "0ada3e9ed1da3a0ea1a280854d1c845abcd502f89465b680fac6263bad8c3dda"
+      },
+      {
+        "bytes": 79,
+        "file": "booster_interface/msg/MotorCmd.msg",
+        "sha256": "d44c3e5e31451cab66c73212f58482f831e23878c2c745e4feac1dd33f4fdf06"
+      },
+      {
+        "bytes": 367,
+        "file": "booster_interface/msg/MotorState.msg",
+        "sha256": "0a2e5a6438911eb6a920fec0661ac678f71a4bedc6ec037e66d14277eada9a5c"
+      },
+      {
+        "bytes": 33,
+        "file": "booster_interface/msg/Odometer.msg",
+        "sha256": "b89064fa0e79c23dcc2533dbc2021e844214cc6a1cac66f2eac8532d8da2e73d"
+      },
+      {
+        "bytes": 10,
+        "file": "booster_interface/msg/RawBytesMsg.msg",
+        "sha256": "eb336916401c98875b6ad0951ed07646f5b58cd3804d4735d2ef041a46c0b80b"
+      },
+      {
+        "bytes": 34,
+        "file": "booster_interface/msg/RawBytesStamped.msg",
+        "sha256": "b3a39ce57a443512402e9a13511532432142675449ad04dcb1f940dd0f4b0bf9"
+      },
+      {
+        "bytes": 775,
+        "file": "booster_interface/msg/RemoteControllerState.msg",
+        "sha256": "225935fa2a752dbb51fdcbae579fa1cc4bd2822b2d45094e82359f73680fec42"
+      },
+      {
+        "bytes": 27,
+        "file": "booster_interface/srv/AgentService.srv",
+        "sha256": "be56b80fe7d977a71de37109a89f127931be5c4217cf3d30973672e6b25aaf7b"
+      },
+      {
+        "bytes": 84,
+        "file": "booster_interface/srv/RpcService.srv",
+        "sha256": "41c795277cb0d48de5fa389da029899c6d22b61aac858ea4812ccef80f1201c4"
+      },
+      {
+        "bytes": 322,
+        "file": "std_msgs/msg/Header.msg",
+        "sha256": "d2cea14630e39ed0fa5b432ba9160a7c38855b9427d3344f99e83e83facb53c2"
+      },
+      {
+        "bytes": 421,
+        "file": "builtin_interfaces/msg/Time.msg",
+        "sha256": "dc5a01ddde3aecffee21eb24974fe77cc969f873218a2b1811aa0ac8a456b8bd"
+      }
+    ]
+  },
+  "source_template_inputs": {
+    "interface_templates/bounded_interfaces.go.in": {
+      "bytes": 9692,
+      "sha256": "c9e7893ccedc67b91a3aebc51c1e0c3c65263f03b2769aa07c34fcfb6befa1f7"
+    },
+    "interface_templates/bounded_interfaces.mjs.in": {
+      "bytes": 17046,
+      "sha256": "10986eddd766435dde89b0d3046ef7f48705e2c3e21301c99163c3a7d4ea62fe"
+    },
+    "interface_templates/bounded_interfaces.rs.in": {
+      "bytes": 15514,
+      "sha256": "063130e797684df0530aa1882f8082a10d5756ceb892677d8082e980c7b29b18"
+    },
+    "interface_templates/bounded_interfaces.ts.in": {
+      "bytes": 16626,
+      "sha256": "a61a7b7eb3b5464648577f3ab44629a5c6140d04effff6e4099509f68b204ac5"
+    }
+  },
+  "status": "GENERATED_SOURCE_ONLY_NOT_COMPILED_OR_EXECUTED",
+  "types": [
+    {
+      "adapter_codec_identity": "UWVMROS1_e2f9b66467bcb40a8194c744694f314e7fca56061f1cf3121eed565f724edd40",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_e2f9b66467bcb40a8194c744694f314e7fca56061f1cf3121eed565f724edd40",
+          "expanded_nodes": 3,
+          "maximum_wire_bytes": 4108,
+          "minimum_wire_bytes": 12,
+          "native_identity": null,
+          "type": "booster_interface/msg/BoosterApiReqMsg"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/msg/BoosterApiReqMsg"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_21ce208a51f60843eecb72edbc408e926353b1a6f178424c0b691ac237fed11f",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_21ce208a51f60843eecb72edbc408e926353b1a6f178424c0b691ac237fed11f",
+          "expanded_nodes": 3,
+          "maximum_wire_bytes": 4108,
+          "minimum_wire_bytes": 12,
+          "native_identity": null,
+          "type": "booster_interface/msg/BoosterApiRespMsg"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/msg/BoosterApiRespMsg"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_b61682fd9c35bd54c52000224411f4373b8620e16587b31d8a683076e0d14fe4",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_b61682fd9c35bd54c52000224411f4373b8620e16587b31d8a683076e0d14fe4",
+          "expanded_nodes": 3,
+          "maximum_wire_bytes": 5,
+          "minimum_wire_bytes": 5,
+          "native_identity": null,
+          "type": "booster_interface/msg/ButtonEventMsg"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/msg/ButtonEventMsg"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_8bf168ccefac72eda6070704c70e12e62776d29ad3db908095cc01220f4b533f",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_8bf168ccefac72eda6070704c70e12e62776d29ad3db908095cc01220f4b533f",
+          "expanded_nodes": 3,
+          "maximum_wire_bytes": 5,
+          "minimum_wire_bytes": 5,
+          "native_identity": null,
+          "type": "booster_interface/msg/FallDownState"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/msg/FallDownState"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_06f3d6c0e9bef1da409330038aadbfacfe60b02e099f2ae0c4dcb92a632b20a0",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_06f3d6c0e9bef1da409330038aadbfacfe60b02e099f2ae0c4dcb92a632b20a0",
+          "expanded_nodes": 165,
+          "maximum_wire_bytes": 528,
+          "minimum_wire_bytes": 16,
+          "native_identity": null,
+          "type": "booster_interface/msg/HandCommand"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/msg/HandCommand"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_55af9d6f272a72e75e86e1a6164d235aca5f2ce99c2529749c0d5e33d6091397",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_55af9d6f272a72e75e86e1a6164d235aca5f2ce99c2529749c0d5e33d6091397",
+          "expanded_nodes": 332,
+          "maximum_wire_bytes": 1060,
+          "minimum_wire_bytes": 4,
+          "native_identity": null,
+          "type": "booster_interface/msg/HandDdsMsg"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/msg/HandDdsMsg"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_3b91722e751e7c00c773335bb42af34850190ecc26a029e8792c49d912def158",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_3b91722e751e7c00c773335bb42af34850190ecc26a029e8792c49d912def158",
+          "expanded_nodes": 5,
+          "maximum_wire_bytes": 16,
+          "minimum_wire_bytes": 16,
+          "native_identity": null,
+          "type": "booster_interface/msg/HandParam"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/msg/HandParam"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_838ee8d4b93b0c3673e0b535fd3905913e94be24d6d21a01504dedaaaaa81092",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_838ee8d4b93b0c3673e0b535fd3905913e94be24d6d21a01504dedaaaaa81092",
+          "expanded_nodes": 13,
+          "maximum_wire_bytes": 36,
+          "minimum_wire_bytes": 36,
+          "native_identity": null,
+          "type": "booster_interface/msg/ImuState"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/msg/ImuState"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_845726a14e61d211b493041f4dda56e1556b76b9d30337a2ee5f6319a3d1e870",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_845726a14e61d211b493041f4dda56e1556b76b9d30337a2ee5f6319a3d1e870",
+          "expanded_nodes": 235,
+          "maximum_wire_bytes": 730,
+          "minimum_wire_bytes": 5,
+          "native_identity": null,
+          "type": "booster_interface/msg/LowCmd"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/msg/LowCmd"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_811db19cab7b790ed48506bca3e3ef512c1a661dc3ac99cbce6234efb6de631f",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_811db19cab7b790ed48506bca3e3ef512c1a661dc3ac99cbce6234efb6de631f",
+          "expanded_nodes": 654,
+          "maximum_wire_bytes": 1784,
+          "minimum_wire_bytes": 44,
+          "native_identity": null,
+          "type": "booster_interface/msg/LowState"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/msg/LowState"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_69d814e13595d53dcf44f2a5ccb19df0f8f2be0908c310c3b60cec33bcf27392",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_69d814e13595d53dcf44f2a5ccb19df0f8f2be0908c310c3b60cec33bcf27392",
+          "expanded_nodes": 8,
+          "maximum_wire_bytes": 25,
+          "minimum_wire_bytes": 25,
+          "native_identity": null,
+          "type": "booster_interface/msg/MotorCmd"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/msg/MotorCmd"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_6b19c0e8865e796fff5a498cff731ba268fa92ea2944e6c2c5869009b3aa066b",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_6b19c0e8865e796fff5a498cff731ba268fa92ea2944e6c2c5869009b3aa066b",
+          "expanded_nodes": 11,
+          "maximum_wire_bytes": 30,
+          "minimum_wire_bytes": 30,
+          "native_identity": null,
+          "type": "booster_interface/msg/MotorState"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/msg/MotorState"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_4fea33e3e2ae186dbeaf49c6068019b702e742266541087a5d280b9ce42c671a",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_4fea33e3e2ae186dbeaf49c6068019b702e742266541087a5d280b9ce42c671a",
+          "expanded_nodes": 4,
+          "maximum_wire_bytes": 12,
+          "minimum_wire_bytes": 12,
+          "native_identity": null,
+          "type": "booster_interface/msg/Odometer"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/msg/Odometer"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_557e8e79f206c9cc8b820ed7c2ad8cc01e9b01327197b745709993d958b4578c",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_557e8e79f206c9cc8b820ed7c2ad8cc01e9b01327197b745709993d958b4578c",
+          "expanded_nodes": 3,
+          "maximum_wire_bytes": 2052,
+          "minimum_wire_bytes": 4,
+          "native_identity": null,
+          "type": "booster_interface/msg/RawBytesMsg"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/msg/RawBytesMsg"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_27cddd472b2d8c41c39effb87a8a53261aff309500dbb68df6ebd69a19c7720e",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_27cddd472b2d8c41c39effb87a8a53261aff309500dbb68df6ebd69a19c7720e",
+          "expanded_nodes": 8,
+          "maximum_wire_bytes": 2192,
+          "minimum_wire_bytes": 16,
+          "native_identity": null,
+          "type": "booster_interface/msg/RawBytesStamped"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/msg/RawBytesStamped"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_f8a21705728862632c27b71d98c044a12bf1f9f9e0c1729fec27afe2c60c48a7",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_f8a21705728862632c27b71d98c044a12bf1f9f9e0c1729fec27afe2c60c48a7",
+          "expanded_nodes": 28,
+          "maximum_wire_bytes": 42,
+          "minimum_wire_bytes": 42,
+          "native_identity": null,
+          "type": "booster_interface/msg/RemoteControllerState"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/msg/RemoteControllerState"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_3a612d975894437a954b8d197895c1dc07d1cab3a35b8912d63b0308a0fd9bd3",
+      "components": {
+        "request": {
+          "adapter_codec_identity": "UWVMROS1_d8b972ee6c7f82ee948c03b22354d1073f120ad2616a9e833b578348775404e8",
+          "expanded_nodes": 2,
+          "maximum_wire_bytes": 4100,
+          "minimum_wire_bytes": 4,
+          "native_identity": null,
+          "type": "booster_interface/srv/AgentService_Request"
+        },
+        "response": {
+          "adapter_codec_identity": "UWVMROS1_86aecf9ee8652016b5c74e30d2dd4100e8b547542a81a98e7795942b47b87520",
+          "expanded_nodes": 2,
+          "maximum_wire_bytes": 4100,
+          "minimum_wire_bytes": 4,
+          "native_identity": null,
+          "type": "booster_interface/srv/AgentService_Response"
+        }
+      },
+      "kind": "service",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/srv/AgentService"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_08c19ac1f3b5280e9d1fc4662e19a56d3c2512e8b63127e92c4676cd7b32b04f",
+      "components": {
+        "request": {
+          "adapter_codec_identity": "UWVMROS1_cc8eb67d80bdf131f1878a1be998d68560e235ffef6a539876410dfcd6c00150",
+          "expanded_nodes": 4,
+          "maximum_wire_bytes": 4108,
+          "minimum_wire_bytes": 12,
+          "native_identity": null,
+          "type": "booster_interface/srv/RpcService_Request"
+        },
+        "response": {
+          "adapter_codec_identity": "UWVMROS1_7aeb7b45542f9f594e1f61be2f715abcde54b1e55efdde15100b0c553ae96322",
+          "expanded_nodes": 4,
+          "maximum_wire_bytes": 4108,
+          "minimum_wire_bytes": 12,
+          "native_identity": null,
+          "type": "booster_interface/srv/RpcService_Response"
+        }
+      },
+      "kind": "service",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "booster_interface/srv/RpcService"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_ce081e9caac05e464c4cff0da5e94cad44014652c0ddf244ee6c35ac3b0d1e96",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_ce081e9caac05e464c4cff0da5e94cad44014652c0ddf244ee6c35ac3b0d1e96",
+          "expanded_nodes": 5,
+          "maximum_wire_bytes": 140,
+          "minimum_wire_bytes": 12,
+          "native_identity": null,
+          "type": "std_msgs/msg/Header"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "std_msgs/msg/Header"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_0fd520c23fd8cb06e2c27292fdc20694732fa9332d452fc3fa31da90f7605fb7",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_0fd520c23fd8cb06e2c27292fdc20694732fa9332d452fc3fa31da90f7605fb7",
+          "expanded_nodes": 3,
+          "maximum_wire_bytes": 8,
+          "minimum_wire_bytes": 8,
+          "native_identity": null,
+          "type": "builtin_interfaces/msg/Time"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "builtin_interfaces/msg/Time"
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "kind": "actual-unix-client-handshake-source-integration",
+  "status": "SOURCE_REVIEW_CLOSED_NOT_COMPILED_OR_EXECUTED",
+  "files": [
+    {
+      "relative": "src/uwvm2/imported/ros/ipc/unix.h",
+      "bytes": 8874,
+      "sha256": "3415c54a1302802a9732d64672cae6e4518f200912f68a8d79a02afddba1cfe8"
+    },
+    {
+      "relative": "tests/ros_ipc/client_handshake_contract.cc",
+      "bytes": 4588,
+      "sha256": "48757f74fbcd15e8c90b79424d1cdb55b60664394f7545dd4667a6a793f3661c"
+    },
+    {
+      "relative": "tests/ros_ipc/owned_handshake.py",
+      "bytes": 24815,
+      "sha256": "facee096b24a25e21a879c574d654c7de0e7fd18fd2315fe4690422c69d7a921"
+    },
+    {
+      "relative": "tests/ros/run_unit.py",
+      "bytes": 3553,
+      "sha256": "ae0042a3f1aeb31d1d0da7b5ee62d5d735faddac597eb5cb62c92dfc315b701f"
+    },
+    {
+      "relative": "documents/ros/ipc.md",
+      "bytes": 4502,
+      "sha256": "c4fe06210b40cacc8dfeb6b307d84726f8240e55cb9e5b05b6ab22b72f204f1b"
+    }
+  ],
+  "independent_source_peer": {
+    "relative": "tests/ros_ipc/acceptance/handshake-source-only/independent-source-peer.json",
+    "bytes": 7211,
+    "sha256": "c78d918a5a486fa76280ad4b3d117dbd25a829c33b961b0acb9c0679f054b80d"
+  },
+  "authored_socket_cases_per_standard": 3,
+  "standards": [
+    "c++17",
+    "c++26"
+  ],
+  "actual_tests_executed": 0,
+  "Guest_rights_changed": false,
+  "official_cases_executed": 0
+}

@@ -1,0 +1,60 @@
+{
+  "bootstrap_source": {
+    "manifest": null,
+    "root": null
+  },
+  "cgroup": {
+    "expected_boot_id": null,
+    "expected_cpus": "0-31",
+    "expected_device": null,
+    "expected_inode": null,
+    "expected_leaf": "/sys/fs/cgroup/system.slice/docker-4dd58ad4560fde2ab9b539e4ef9cab1fac531654e99ad554aff1fce8ae0eae37.scope",
+    "memory_max": 68719476736,
+    "memory_swap_max": 0
+  },
+  "format_version": 1,
+  "helpers": {
+    "deriver": null,
+    "maker": null,
+    "owner": null
+  },
+  "inputs": {
+    "cp310_receipt": null,
+    "cyclonedds_xml": null,
+    "native_retained": null,
+    "typed_build": null,
+    "workers": null
+  },
+  "kind": "uwvm-unitree-typed28-owned-net-control-v1",
+  "limits": {
+    "active_seconds": 43200,
+    "cleanup_seconds": 600,
+    "log_bytes": 16777216,
+    "metadata_seconds": 10800,
+    "output_bytes": 8589934592,
+    "reserve_bytes": 8589934592,
+    "self_rss_bytes": 1610612736,
+    "transport_seconds": 31200,
+    "tree_rss_bytes": 4294967296,
+    "whole_seconds": 43800
+  },
+  "paths": {
+    "admission_out": null,
+    "code_root": null,
+    "metadata_controls": null,
+    "namespace_out": null,
+    "owner_out": null,
+    "request_directory": null,
+    "transport_out": null
+  },
+  "python": null,
+  "restart_mappings": [],
+  "source": {
+    "manifest": null,
+    "root": null
+  },
+  "tools": {
+    "ip": null,
+    "unshare": null
+  }
+}

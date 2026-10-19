@@ -1,0 +1,109 @@
+{
+  "kind": "source59-reviewed-current-source-group",
+  "status": "CURRENT_SOURCE_INDEPENDENT_REVIEW_CLOSED_RETEST_PENDING",
+  "group": "direct-wasi-cpp-explicit-profile",
+  "current_files": {
+    "tests/ros_unitree/prepare_direct_guests.py": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/prepare_direct_guests.py",
+      "bytes": 49660,
+      "sha256": "c7b58d3aedf85138993ad29d01366a47716c86ea410cdf9fc50e73b63adf47f6"
+    },
+    "tests/ros_unitree/direct_independent_inputs.py": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/direct_independent_inputs.py",
+      "bytes": 18122,
+      "sha256": "1b19681668c0120f37d5bf59a3bc054fb87d2535acef9e78e5a352aba56a56dc"
+    },
+    "tests/ros_unitree/acceptance/make_direct_build_configuration.py": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/make_direct_build_configuration.py",
+      "bytes": 20209,
+      "sha256": "9b454ac15e51c032aff55a5ab291207e18ecb07f11748e06668c94f16bd7198b"
+    },
+    "tests/ros_unitree/acceptance/direct_build_configuration/README.md": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/direct_build_configuration/README.md",
+      "bytes": 6360,
+      "sha256": "a273be13077200600748424352cda34515c8e213d74c49999e145ef5e1afc70a"
+    },
+    "tests/ros_unitree/test_direct_cpp_archive_layout.py": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/test_direct_cpp_archive_layout.py",
+      "bytes": 6388,
+      "sha256": "21bfa87f33dfc17ffe4ac13fdde154153e60b04f5c8b78e42f1b399e2a747e2b"
+    },
+    "tests/ros_unitree/DIRECT_WASI_CPP_ARCHIVES.md": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/DIRECT_WASI_CPP_ARCHIVES.md",
+      "bytes": 3980,
+      "sha256": "ade69e1be50cd4ceb28b7f2e69cab57ddbbba800cc82bbd8a28188c69fa9caa6"
+    }
+  },
+  "review_evidence": [
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/review-evidence/legacy-js8/independent-source-peer.json",
+      "bytes": 5305,
+      "sha256": "a41dafe25e53c4a6d0225e4932ce9dcbd0fa4bac6f2a6de642efa4a0ca0e6d31"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/review-evidence/direct-js8-historical/independent-source-peer.json",
+      "bytes": 5699,
+      "sha256": "9153a07e66ba955df5e0096137304b18c7826be8c400bc86fca653a74582a608"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/review-evidence/direct-wasi-cpp/independent-source-peer.json",
+      "bytes": 4476,
+      "sha256": "c3ee1575b338a25023a0d941e7a6aea03aaa79727b520e15b3f1943820288e6d"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/review-evidence/llvm-management-r2/independent-source-peer.json",
+      "bytes": 5711,
+      "sha256": "680b970878c354f31d77476dfff637e664c06d276603ff8620d8c142b555b107"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/review-evidence/root64doc/source-review.json",
+      "bytes": 537,
+      "sha256": "ec706705bee5484733c0f5f2fe1302d1b870713812a6215e1de7e080ff7b29c2"
+    }
+  ],
+  "original_reviewed_package_seals": {
+    "legacy-js8": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/review-evidence/legacy-js8/source-ready.original.json",
+      "bytes": 4101,
+      "sha256": "efbef48f46b072fdea69264e925a0a07cfabf571cb85543c8043b152776bb9ce"
+    },
+    "direct-js8-historical": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/review-evidence/direct-js8-historical/source-ready.original.json",
+      "bytes": 3729,
+      "sha256": "e229ea1e59b537504314b7e99e46e143b0afc188a28c03ed125dfa12cd94a5f5"
+    },
+    "direct-wasi-cpp": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/review-evidence/direct-wasi-cpp/source-ready.original.json",
+      "bytes": 7107,
+      "sha256": "e209f8fa3f73ab9da57be3dd00174583d7573f1370bdbbd180c5044e3d56fa2b"
+    },
+    "llvm-management-r2": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/review-evidence/llvm-management-r2/source-ready.original.json",
+      "bytes": 13203,
+      "sha256": "ce74072deb353fc6a17a447f9f0938c55e17d603d4a7ca020c911a36e3333cab"
+    }
+  },
+  "direct_producer_supersession_lineage": [
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/prepare_direct_guests.py",
+      "original_JS8_reviewed_body": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/prepare_direct_guests.py",
+        "bytes": 47760,
+        "sha256": "8beb100993022d41d0135792be7823eb5b8a03c6f2a0b57c17bbb6d6e6d8850c"
+      },
+      "preserved_body": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/review-evidence/direct-js8-historical/prepare_direct_guests.8beb1009.predecessor.py",
+        "bytes": 47760,
+        "sha256": "8beb100993022d41d0135792be7823eb5b8a03c6f2a0b57c17bbb6d6e6d8850c"
+      },
+      "original_JS8_peer": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/review-evidence/direct-js8-historical/independent-source-peer.json",
+        "bytes": 5699,
+        "sha256": "9153a07e66ba955df5e0096137304b18c7826be8c400bc86fca653a74582a608"
+      },
+      "disposition": "HISTORICAL_ONLY_SUPERSEDED_BY_REVIEWED_DIRECT_SDK33_C7B58_NOT_CURRENT"
+    }
+  ],
+  "scope": "Source review/current bytes only; no model/native/Guest/JIT/official execution inferred.",
+  "execution_performed": false
+}

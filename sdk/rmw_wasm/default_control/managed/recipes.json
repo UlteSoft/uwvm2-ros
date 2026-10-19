@@ -1,0 +1,55 @@
+{
+  "format": "uwvm-original-control-managed-source-recipe-v1",
+  "status": "SOURCE_ONLY_RECORDS_CONTRACTS_AUTHORED_NOT_EXECUTED",
+  "implicit_authority": [],
+  "canonical_command": [
+    "${PYTHON}",
+    "${SOURCE_ROOT}/sdk/tools/custom_types.py",
+    "${CATALOG}",
+    "--guest-only",
+    "--out",
+    "${FRESH_CANONICAL}"
+  ],
+  "managed_command": [
+    "${PYTHON}",
+    "${SOURCE_ROOT}/sdk/rmw_wasm/default_control/managed/generate_managed.py",
+    "--source-root",
+    "${SOURCE_ROOT}",
+    "--catalog",
+    "${CATALOG}",
+    "--canonical",
+    "${FRESH_CANONICAL}",
+    "--parent-sha256",
+    "${ACTUAL_PARENT_SHA}",
+    "--bounded-sha256",
+    "${ACTUAL_BOUNDED_SHA}",
+    "--out",
+    "${STAGED_ROOT}/sdk/custom-types/generated-control-managed",
+    "--records-only"
+  ],
+  "policy_command": [
+    "${PYTHON}",
+    "${SOURCE_ROOT}/tests/ros_original_control_managed/test_source_policy.py",
+    "--source-root",
+    "${SOURCE_ROOT}",
+    "--baseline-bounded",
+    "${EXACT_PRESERVED_BASELINE_BOUNDED}",
+    "--catalog",
+    "${CATALOG}",
+    "--scratch",
+    "${PRIVATE_TMP_SCRATCH}",
+    "--parent-sha256",
+    "${ACTUAL_PARENT_SHA}",
+    "--bounded-sha256",
+    "${ACTUAL_BOUNDED_SHA}"
+  ],
+  "codecs": {
+    "rust": "rust/contract.rs with actual roswasm alloc,ros2; generated bounded_records module",
+    "javascript": "codec_contract.mjs uses actual modules and Node assert only in local test, no Native bridge",
+    "assemblyscript": "codec_contract.ts exports runContracts, requires real compiler/module harness and abortGuest route; no automatic invocation",
+    "tinygo": "go/codec_contract.go uses actual generated customtypes plus sdk/tinygo, genuine TinyGo ROS2 selection"
+  },
+  "producer_policy": "Use actual existing pinned SDK producer; no compiler executable/IR backend is invented here. All source generation, language compilation, artifact/import gates and Guest/Native tests are unexecuted.",
+  "physical_budget": "One serial generation command in caller-owned cgroup/process; output and caches private under/tmp. No global cache/SDK/toolchain mutation. Real physical memory/Native allocations require their own measured bound.",
+  "qualification": "All32 record sources implemented. No Service facade emitted until real owned raw12 layer; canonical/native root facts only."
+}

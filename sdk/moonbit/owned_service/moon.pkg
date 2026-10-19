@@ -1,0 +1,5 @@
+// Explicit opt-in package. Old ros1/ros2 packages do not depend on this package.
+import { "uwvm/ros/ros2", "uwvm/ros/linear", "uwvm/ros/wire" }
+
+// Test-producer-only reservation; SDK implementation/test bodies remain exact.
+options(link: { "wasm": { "export-memory-name": "memory", "heap-start-address": 8519680, "memory-limits": { "min": 256, "max": 1024 } }, "wasm-gc": { "export-memory-name": "memory", "use-js-builtin-string": false, "memory-limits": { "min": 256, "max": 1024 } }, },)

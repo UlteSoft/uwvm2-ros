@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "extension_version": 1,
+  "kind": "optional-owned-rmw-subscription-v1",
+  "source_status": "SOURCE_ONLY_HELD_UNEXECUTED",
+  "authority_source": {
+    "path": "src/uwvm2/uwvm/imported/ros/host.h",
+    "sha256": "af98d37878e4e34e7e2e0ea8a5b099faccbd05bd51cfe066c4083dcf0c14959b"
+  },
+  "implementation_source": {
+    "path": "src/uwvm2/uwvm/imported/ros/rmw_subscription_host.h",
+    "sha256": "db8ad1319d92293cb9dc96d4006de66b1ab70ca28b4622b3bd062fa425ffc441"
+  },
+  "raw_header": {
+    "path": "sdk/include/roswasm/rmw_subscription_v1.h",
+    "sha256": "1f23d1adc23131a96f9ff1f47c7679695be4c27900d2ec9aca21b1e8a0821ca2"
+  },
+  "original_business_modules_unchanged": true,
+  "authority_contract": "Only an existing live full64 topic.subscribe source; default rights empty; no update/debug/management authority.",
+  "modules": {
+    "uwvm_ros2_rmw_sub_v1": {
+      "backend": 2,
+      "function_count": 7,
+      "functions": [
+        {
+          "name": "abi_version",
+          "params": [],
+          "results": [
+            "i32"
+          ]
+        },
+        {
+          "name": "subscription_activate",
+          "params": [
+            "i64",
+            "i32",
+            "i64"
+          ],
+          "results": [
+            "i32"
+          ]
+        },
+        {
+          "name": "subscription_inspect",
+          "params": [
+            "i64",
+            "i64",
+            "i32",
+            "i64"
+          ],
+          "results": [
+            "i32"
+          ]
+        },
+        {
+          "name": "subscription_peek",
+          "params": [
+            "i64",
+            "i64",
+            "i32",
+            "i32",
+            "i64",
+            "i64"
+          ],
+          "results": [
+            "i32"
+          ]
+        },
+        {
+          "name": "subscription_commit",
+          "params": [
+            "i64",
+            "i64",
+            "i64",
+            "i64"
+          ],
+          "results": [
+            "i32"
+          ]
+        },
+        {
+          "name": "subscription_cancel",
+          "params": [
+            "i64",
+            "i64",
+            "i64",
+            "i64"
+          ],
+          "results": [
+            "i32"
+          ]
+        },
+        {
+          "name": "subscription_retire",
+          "params": [
+            "i64",
+            "i64"
+          ],
+          "results": [
+            "i32"
+          ]
+        }
+      ]
+    }
+  },
+  "output_contract": {
+    "activation_inspection_bytes": 256,
+    "peek": "one UMRS96+URMI192+canonical body copy; record_bytes is internal, no separate output length",
+    "minimum_peek_capacity": 288,
+    "maximum_peek_capacity": 4194304,
+    "nonzero_error_preserves_output": true,
+    "commit_cancel_retire_no_output": true
+  },
+  "transaction_contract": {
+    "peek": "non-consuming reservation of exactly one complete associated native record",
+    "commit": "exact positive native stream sequence plus independent positive per-attempt nonce",
+    "cancel": "same exact attempt, preserves record and stream sequence; next borrow uses a new nonce",
+    "unknown_ack": "no replay; session retirement, no invented rollback",
+    "host_rejected_borrow": "explicit cancel under original deadline, independently retain primary/cancel/retire outcomes"
+  },
+  "quota_contract": "Only canonical body charged per admitted peek; UMRS/URMI/ACK/control excluded; cancellation does not refund traffic",
+  "legacy_preservation": {
+    "catalog_path": "sdk/abi/abi-v1.json",
+    "catalog_sha256": "0a13f6c49100173c156eb76acfd35ebe103a40b2a90c752d3d1302c31f875ec0"
+  },
+  "actual_compilers_models_Guest_native_ROS": 0
+}

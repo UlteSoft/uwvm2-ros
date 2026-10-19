@@ -1,0 +1,773 @@
+{
+  "wire_version": 1,
+  "scope": "Language-neutral positive and structural negative specification fixtures; no Runtime, ROS or language implementation verdict",
+  "integer_JSON_contract": "All i64/u64 values are decimal strings; never parse them through IEEE754 Number.",
+  "positive": [
+    {
+      "name": "string-empty",
+      "codec": "string",
+      "value": "",
+      "hex": "00000000",
+      "bytes": 4
+    },
+    {
+      "name": "string-ascii",
+      "codec": "string",
+      "value": "hello",
+      "hex": "0500000068656c6c6f",
+      "bytes": 9
+    },
+    {
+      "name": "string-utf8",
+      "codec": "string",
+      "value": "robot 🌍",
+      "hex": "0a000000726f626f7420f09f8c8d",
+      "bytes": 14
+    },
+    {
+      "name": "bool-false",
+      "codec": "bool",
+      "value": false,
+      "hex": "00",
+      "bytes": 1
+    },
+    {
+      "name": "bool-true",
+      "codec": "bool",
+      "value": true,
+      "hex": "01",
+      "bytes": 1
+    },
+    {
+      "name": "int32--2147483648",
+      "codec": "parameter-int32",
+      "value": "-2147483648",
+      "hex": "00000080",
+      "bytes": 4,
+      "backend": 1
+    },
+    {
+      "name": "int32--1",
+      "codec": "parameter-int32",
+      "value": "-1",
+      "hex": "ffffffff",
+      "bytes": 4,
+      "backend": 1
+    },
+    {
+      "name": "int32-2147483647",
+      "codec": "parameter-int32",
+      "value": "2147483647",
+      "hex": "ffffff7f",
+      "bytes": 4,
+      "backend": 1
+    },
+    {
+      "name": "int64--9223372036854775808",
+      "codec": "parameter-int64",
+      "value": "-9223372036854775808",
+      "hex": "0000000000000080",
+      "bytes": 8,
+      "backend": 2
+    },
+    {
+      "name": "int64--1",
+      "codec": "parameter-int64",
+      "value": "-1",
+      "hex": "ffffffffffffffff",
+      "bytes": 8,
+      "backend": 2
+    },
+    {
+      "name": "int64-9223372036854775807",
+      "codec": "parameter-int64",
+      "value": "9223372036854775807",
+      "hex": "ffffffffffffff7f",
+      "bytes": 8,
+      "backend": 2
+    },
+    {
+      "name": "float64-zero",
+      "codec": "parameter-float64",
+      "value": 0.0,
+      "hex": "0000000000000000",
+      "bytes": 8
+    },
+    {
+      "name": "float64-negative-zero",
+      "codec": "parameter-float64",
+      "value": "negative-zero",
+      "hex": "0000000000000080",
+      "bytes": 8
+    },
+    {
+      "name": "float64-fraction",
+      "codec": "parameter-float64",
+      "value": 1.25,
+      "hex": "000000000000f43f",
+      "bytes": 8
+    },
+    {
+      "name": "twist",
+      "codec": "twist",
+      "value": [
+        1,
+        -2,
+        3,
+        0,
+        "negative-zero",
+        0.5
+      ],
+      "hex": "000000000000f03f00000000000000c0000000000000084000000000000000000000000000000080000000000000e03f",
+      "bytes": 48
+    },
+    {
+      "name": "array-bool",
+      "codec": "parameter-bool-array",
+      "value": [
+        false,
+        true,
+        false
+      ],
+      "hex": "03000000000100",
+      "bytes": 7
+    },
+    {
+      "name": "array-byte",
+      "codec": "parameter-byte-array",
+      "value": [
+        0,
+        127,
+        255
+      ],
+      "hex": "03000000007fff",
+      "bytes": 7,
+      "backend": 2
+    },
+    {
+      "name": "array-int32",
+      "codec": "parameter-int32-array",
+      "value": [
+        "-1",
+        "2147483647"
+      ],
+      "hex": "02000000ffffffffffffff7f",
+      "bytes": 12,
+      "backend": 1
+    },
+    {
+      "name": "array-int64",
+      "codec": "parameter-int64-array",
+      "value": [
+        "-9223372036854775808",
+        "9223372036854775807"
+      ],
+      "hex": "020000000000000000000080ffffffffffffff7f",
+      "bytes": 20,
+      "backend": 2
+    },
+    {
+      "name": "array-float64",
+      "codec": "parameter-float64-array",
+      "value": [
+        1.25,
+        "negative-zero"
+      ],
+      "hex": "02000000000000000000f43f0000000000000080",
+      "bytes": 20
+    },
+    {
+      "name": "array-string",
+      "codec": "parameter-string-array",
+      "value": [
+        "",
+        "hello",
+        "λ"
+      ],
+      "hex": "03000000000000000500000068656c6c6f02000000cebb",
+      "bytes": 23
+    },
+    {
+      "name": "array-empty",
+      "codec": "parameter-string-array",
+      "value": [],
+      "hex": "00000000",
+      "bytes": 4
+    },
+    {
+      "name": "image-rgb8",
+      "codec": "image",
+      "value": {
+        "sequence": 0,
+        "seconds": 1,
+        "nanoseconds": 2,
+        "frame_id": "camera",
+        "height": 1,
+        "width": 1,
+        "encoding": "rgb8",
+        "bigendian": false,
+        "step": 3,
+        "data": [
+          255,
+          0,
+          7
+        ]
+      },
+      "hex": "0000000001000000020000000600000063616d65726101000000010000000400000072676238000300000003000000ff0007",
+      "bytes": 50
+    },
+    {
+      "name": "transform",
+      "codec": "transform",
+      "value": {
+        "sequence": 0,
+        "seconds": 1,
+        "nanoseconds": 2,
+        "parent_frame": "map",
+        "child_frame": "base",
+        "translation": [
+          1,
+          2,
+          3
+        ],
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ]
+      },
+      "hex": "000000000100000002000000030000006d61700400000062617365000000000000f03f00000000000000400000000000000840000000000000000000000000000000000000000000000000000000000000f03f",
+      "bytes": 83
+    },
+    {
+      "name": "trigger-request",
+      "codec": "trigger-request",
+      "value": null,
+      "hex": "",
+      "bytes": 0
+    },
+    {
+      "name": "set-bool-request",
+      "codec": "set-bool-request",
+      "value": true,
+      "hex": "01",
+      "bytes": 1
+    },
+    {
+      "name": "service-response",
+      "codec": "service-response",
+      "value": {
+        "success": true,
+        "message": "ok"
+      },
+      "hex": "01020000006f6b",
+      "bytes": 7
+    },
+    {
+      "name": "service-request-event",
+      "codec": "service-request-event",
+      "value": {
+        "request_id": "9223372036854775813",
+        "request_hex": "01"
+      },
+      "hex": "050000000000008001",
+      "bytes": 9
+    },
+    {
+      "name": "service-response-envelope",
+      "codec": "service-response-envelope",
+      "value": {
+        "request_id": "9223372036854775813",
+        "response_hex": "01020000006f6b"
+      },
+      "hex": "050000000000008001020000006f6b",
+      "bytes": 15
+    },
+    {
+      "name": "fibonacci-order",
+      "codec": "fibonacci-goal",
+      "value": 5,
+      "hex": "05000000",
+      "bytes": 4
+    },
+    {
+      "name": "goal-id",
+      "codec": "goal-id",
+      "value": "9223372036854775813",
+      "hex": "0500000000000080",
+      "bytes": 8
+    },
+    {
+      "name": "incoming-goal",
+      "codec": "incoming-goal",
+      "value": {
+        "goal_id": "9223372036854775813",
+        "order": 5
+      },
+      "hex": "050000000000008005000000",
+      "bytes": 12
+    },
+    {
+      "name": "feedback",
+      "codec": "action-feedback",
+      "value": {
+        "goal_id": "9223372036854775813",
+        "values": [
+          0,
+          1,
+          1,
+          2,
+          3,
+          5
+        ]
+      },
+      "hex": "050000000000008006000000000000000100000001000000020000000300000005000000",
+      "bytes": 36
+    },
+    {
+      "name": "success",
+      "codec": "action-result",
+      "value": {
+        "goal_id": "9223372036854775813",
+        "kind": 2,
+        "values": [
+          0,
+          1,
+          1,
+          2,
+          3,
+          5
+        ]
+      },
+      "hex": "05000000000000800206000000000000000100000001000000020000000300000005000000",
+      "bytes": 37
+    },
+    {
+      "name": "server-feedback",
+      "codec": "action-response",
+      "value": {
+        "goal_id": "9223372036854775813",
+        "kind": 1,
+        "values": [
+          0,
+          1,
+          1,
+          2,
+          3,
+          5
+        ]
+      },
+      "hex": "05000000000000800106000000000000000100000001000000020000000300000005000000",
+      "bytes": 37
+    },
+    {
+      "name": "lifecycle-state",
+      "codec": "lifecycle-state",
+      "value": {
+        "id": 3,
+        "label": "active"
+      },
+      "hex": "0306000000616374697665",
+      "bytes": 11,
+      "backend": 2
+    },
+    {
+      "name": "time-nanoseconds",
+      "codec": "time",
+      "value": "9223372036854775813",
+      "hex": "0500000000000080",
+      "bytes": 8
+    },
+    {
+      "name": "legacy-parameter-event",
+      "codec": "parameter-event",
+      "value": {
+        "seconds": 1,
+        "nanoseconds": 2,
+        "kind": 2,
+        "node": "/demo",
+        "name": "value",
+        "value": "true"
+      },
+      "hex": "010000000200000002050000002f64656d6f0500000076616c75650400000074727565",
+      "bytes": 35,
+      "backend": 2
+    },
+    {
+      "name": "typed-event-bool",
+      "codec": "typed-parameter-event",
+      "value": {
+        "seconds": 1,
+        "nanoseconds": 2,
+        "kind": 2,
+        "tag": 1,
+        "node": "/demo",
+        "name": "value",
+        "value": true
+      },
+      "hex": "0100000002000000020201050000002f64656d6f0500000076616c75650100000001",
+      "bytes": 34,
+      "backend": 2
+    },
+    {
+      "name": "typed-event-int64",
+      "codec": "typed-parameter-event",
+      "value": {
+        "seconds": 1,
+        "nanoseconds": 2,
+        "kind": 2,
+        "tag": 2,
+        "node": "/demo",
+        "name": "value",
+        "value": "9223372036854775807"
+      },
+      "hex": "0100000002000000020202050000002f64656d6f0500000076616c756508000000ffffffffffffff7f",
+      "bytes": 41,
+      "backend": 2
+    },
+    {
+      "name": "typed-event-float64",
+      "codec": "typed-parameter-event",
+      "value": {
+        "seconds": 1,
+        "nanoseconds": 2,
+        "kind": 2,
+        "tag": 3,
+        "node": "/demo",
+        "name": "value",
+        "value": 1.25
+      },
+      "hex": "0100000002000000020203050000002f64656d6f0500000076616c756508000000000000000000f43f",
+      "bytes": 41,
+      "backend": 2
+    },
+    {
+      "name": "typed-event-string",
+      "codec": "typed-parameter-event",
+      "value": {
+        "seconds": 1,
+        "nanoseconds": 2,
+        "kind": 2,
+        "tag": 4,
+        "node": "/demo",
+        "name": "value",
+        "value": "hello"
+      },
+      "hex": "0100000002000000020204050000002f64656d6f0500000076616c7565090000000500000068656c6c6f",
+      "bytes": 42,
+      "backend": 2
+    },
+    {
+      "name": "typed-event-byte-array",
+      "codec": "typed-parameter-event",
+      "value": {
+        "seconds": 1,
+        "nanoseconds": 2,
+        "kind": 2,
+        "tag": 5,
+        "node": "/demo",
+        "name": "value",
+        "value": [
+          0,
+          255
+        ]
+      },
+      "hex": "0100000002000000020205050000002f64656d6f0500000076616c7565060000000200000000ff",
+      "bytes": 39,
+      "backend": 2
+    },
+    {
+      "name": "typed-event-bool-array",
+      "codec": "typed-parameter-event",
+      "value": {
+        "seconds": 1,
+        "nanoseconds": 2,
+        "kind": 2,
+        "tag": 6,
+        "node": "/demo",
+        "name": "value",
+        "value": [
+          false,
+          true
+        ]
+      },
+      "hex": "0100000002000000020206050000002f64656d6f0500000076616c756506000000020000000001",
+      "bytes": 39,
+      "backend": 2
+    },
+    {
+      "name": "typed-event-int64-array",
+      "codec": "typed-parameter-event",
+      "value": {
+        "seconds": 1,
+        "nanoseconds": 2,
+        "kind": 2,
+        "tag": 7,
+        "node": "/demo",
+        "name": "value",
+        "value": [
+          "-1",
+          "9223372036854775807"
+        ]
+      },
+      "hex": "0100000002000000020207050000002f64656d6f0500000076616c75651400000002000000ffffffffffffffffffffffffffffff7f",
+      "bytes": 53,
+      "backend": 2
+    },
+    {
+      "name": "typed-event-float64-array",
+      "codec": "typed-parameter-event",
+      "value": {
+        "seconds": 1,
+        "nanoseconds": 2,
+        "kind": 2,
+        "tag": 8,
+        "node": "/demo",
+        "name": "value",
+        "value": [
+          1.25
+        ]
+      },
+      "hex": "0100000002000000020208050000002f64656d6f0500000076616c75650c00000001000000000000000000f43f",
+      "bytes": 45,
+      "backend": 2
+    },
+    {
+      "name": "typed-event-string-array",
+      "codec": "typed-parameter-event",
+      "value": {
+        "seconds": 1,
+        "nanoseconds": 2,
+        "kind": 2,
+        "tag": 9,
+        "node": "/demo",
+        "name": "value",
+        "value": [
+          "hello",
+          ""
+        ]
+      },
+      "hex": "0100000002000000020209050000002f64656d6f0500000076616c756511000000020000000500000068656c6c6f00000000",
+      "bytes": 50,
+      "backend": 2
+    },
+    {
+      "name": "typed-deletion-tag-0",
+      "codec": "typed-parameter-event",
+      "value": {
+        "seconds": 1,
+        "nanoseconds": 2,
+        "kind": 3,
+        "tag": 0,
+        "node": "/demo",
+        "name": "value",
+        "value": null
+      },
+      "hex": "0100000002000000030200050000002f64656d6f0500000076616c756500000000",
+      "bytes": 33,
+      "backend": 2
+    },
+    {
+      "name": "typed-deletion-tag-1",
+      "codec": "typed-parameter-event",
+      "value": {
+        "seconds": 1,
+        "nanoseconds": 2,
+        "kind": 3,
+        "tag": 1,
+        "node": "/demo",
+        "name": "value",
+        "value": null
+      },
+      "hex": "0100000002000000030201050000002f64656d6f0500000076616c756500000000",
+      "bytes": 33,
+      "backend": 2
+    },
+    {
+      "name": "typed-deletion-tag-2",
+      "codec": "typed-parameter-event",
+      "value": {
+        "seconds": 1,
+        "nanoseconds": 2,
+        "kind": 3,
+        "tag": 2,
+        "node": "/demo",
+        "name": "value",
+        "value": null
+      },
+      "hex": "0100000002000000030202050000002f64656d6f0500000076616c756500000000",
+      "bytes": 33,
+      "backend": 2
+    },
+    {
+      "name": "typed-deletion-tag-3",
+      "codec": "typed-parameter-event",
+      "value": {
+        "seconds": 1,
+        "nanoseconds": 2,
+        "kind": 3,
+        "tag": 3,
+        "node": "/demo",
+        "name": "value",
+        "value": null
+      },
+      "hex": "0100000002000000030203050000002f64656d6f0500000076616c756500000000",
+      "bytes": 33,
+      "backend": 2
+    },
+    {
+      "name": "typed-deletion-tag-4",
+      "codec": "typed-parameter-event",
+      "value": {
+        "seconds": 1,
+        "nanoseconds": 2,
+        "kind": 3,
+        "tag": 4,
+        "node": "/demo",
+        "name": "value",
+        "value": null
+      },
+      "hex": "0100000002000000030204050000002f64656d6f0500000076616c756500000000",
+      "bytes": 33,
+      "backend": 2
+    },
+    {
+      "name": "typed-deletion-tag-5",
+      "codec": "typed-parameter-event",
+      "value": {
+        "seconds": 1,
+        "nanoseconds": 2,
+        "kind": 3,
+        "tag": 5,
+        "node": "/demo",
+        "name": "value",
+        "value": null
+      },
+      "hex": "0100000002000000030205050000002f64656d6f0500000076616c756500000000",
+      "bytes": 33,
+      "backend": 2
+    },
+    {
+      "name": "typed-deletion-tag-6",
+      "codec": "typed-parameter-event",
+      "value": {
+        "seconds": 1,
+        "nanoseconds": 2,
+        "kind": 3,
+        "tag": 6,
+        "node": "/demo",
+        "name": "value",
+        "value": null
+      },
+      "hex": "0100000002000000030206050000002f64656d6f0500000076616c756500000000",
+      "bytes": 33,
+      "backend": 2
+    },
+    {
+      "name": "typed-deletion-tag-7",
+      "codec": "typed-parameter-event",
+      "value": {
+        "seconds": 1,
+        "nanoseconds": 2,
+        "kind": 3,
+        "tag": 7,
+        "node": "/demo",
+        "name": "value",
+        "value": null
+      },
+      "hex": "0100000002000000030207050000002f64656d6f0500000076616c756500000000",
+      "bytes": 33,
+      "backend": 2
+    },
+    {
+      "name": "typed-deletion-tag-8",
+      "codec": "typed-parameter-event",
+      "value": {
+        "seconds": 1,
+        "nanoseconds": 2,
+        "kind": 3,
+        "tag": 8,
+        "node": "/demo",
+        "name": "value",
+        "value": null
+      },
+      "hex": "0100000002000000030208050000002f64656d6f0500000076616c756500000000",
+      "bytes": 33,
+      "backend": 2
+    },
+    {
+      "name": "typed-deletion-tag-9",
+      "codec": "typed-parameter-event",
+      "value": {
+        "seconds": 1,
+        "nanoseconds": 2,
+        "kind": 3,
+        "tag": 9,
+        "node": "/demo",
+        "name": "value",
+        "value": null
+      },
+      "hex": "0100000002000000030209050000002f64656d6f0500000076616c756500000000",
+      "bytes": 33,
+      "backend": 2
+    }
+  ],
+  "negative": [
+    {
+      "codec": "bool",
+      "hex": "02",
+      "reason": "Bool must be exactly 0 or 1."
+    },
+    {
+      "codec": "bool",
+      "hex": "0100",
+      "reason": "Reject trailing bytes."
+    },
+    {
+      "codec": "string",
+      "hex": "050000006869",
+      "reason": "Declared UTF-8 byte length exceeds the remaining buffer."
+    },
+    {
+      "codec": "string",
+      "hex": "02000000c0af",
+      "reason": "Overlong UTF-8 is invalid."
+    },
+    {
+      "codec": "parameter-float64",
+      "hex": "000000000000f07f",
+      "reason": "Float64 must be finite."
+    },
+    {
+      "codec": "parameter-float64-array",
+      "hex": "01000000000000000000f87f",
+      "reason": "Every Float64 array element must be finite."
+    },
+    {
+      "codec": "parameter-bool-array",
+      "hex": "0100000002",
+      "reason": "Every Bool array element must be 0 or 1."
+    },
+    {
+      "codec": "parameter-string-array",
+      "hex": "0100000003000000610062",
+      "reason": "String-array elements are NUL-free."
+    },
+    {
+      "codec": "action-result",
+      "hex": "00000000000000000200000000",
+      "reason": "An owned Goal ID is nonzero."
+    },
+    {
+      "codec": "typed-parameter-event",
+      "hex": "0100000002000000010200050000002f64656d6f0500000076616c756500000000",
+      "reason": "Deletion-only tag 0 requires deleted kind 3."
+    },
+    {
+      "codec": "typed-parameter-event",
+      "hex": "0100000002000000030201050000002f64656d6f0500000076616c75650100000001",
+      "reason": "Deleted events have an empty selected payload."
+    }
+  ]
+}

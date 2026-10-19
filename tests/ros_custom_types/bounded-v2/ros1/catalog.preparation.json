@@ -1,0 +1,52 @@
+{
+  "format": "uwvm-ros-custom-bounded-v2",
+  "types": [
+    {
+      "ros_version": 1,
+      "type": "uwvm_ros_bounded_v2/Point",
+      "file": "uwvm_ros_bounded_v2/msg/Point.msg"
+    },
+    {
+      "ros_version": 1,
+      "type": "uwvm_ros_bounded_v2/Envelope",
+      "file": "uwvm_ros_bounded_v2/msg/Envelope.msg",
+      "bounds": {
+        "label": {
+          "string": 32
+        },
+        "samples": {
+          "sequence": 8
+        },
+        "points": {
+          "sequence": 4
+        },
+        "labels": {
+          "string": 16
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "uwvm_ros_bounded_v2/Echo",
+      "file": "uwvm_ros_bounded_v2/srv/Echo.srv"
+    },
+    {
+      "ros_version": 1,
+      "type": "uwvm_ros_bounded_v2/Empty",
+      "file": "uwvm_ros_bounded_v2/srv/Empty.srv"
+    },
+    {
+      "ros_version": 1,
+      "type": "uwvm_ros_bounded_v2/Digest",
+      "file": "uwvm_ros_bounded_v2/action/Digest.action",
+      "bounds": {
+        "result.note": {
+          "string": 32
+        },
+        "feedback.phase": {
+          "string": 16
+        }
+      }
+    }
+  ]
+}

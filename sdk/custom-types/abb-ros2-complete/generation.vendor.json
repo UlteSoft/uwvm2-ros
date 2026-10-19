@@ -1,0 +1,5994 @@
+{
+  "compiler_execution": "NOT_RUN",
+  "declared_constants": {
+    "abb_egm_msgs/msg/EGMChannelState": [
+      {
+        "literal": "1",
+        "name": "EGM_UNDEFINED",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "1"
+      },
+      {
+        "literal": "2",
+        "name": "EGM_ERROR",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "2"
+      },
+      {
+        "literal": "3",
+        "name": "EGM_STOPPED",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "3"
+      },
+      {
+        "literal": "4",
+        "name": "EGM_RUNNING",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "4"
+      },
+      {
+        "literal": "1",
+        "name": "MOTORS_UNDEFINED",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "1"
+      },
+      {
+        "literal": "2",
+        "name": "MOTORS_ON",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "2"
+      },
+      {
+        "literal": "3",
+        "name": "MOTORS_OFF",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "3"
+      },
+      {
+        "literal": "1",
+        "name": "RAPID_UNDEFINED",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "1"
+      },
+      {
+        "literal": "2",
+        "name": "RAPID_STOPPED",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "2"
+      },
+      {
+        "literal": "3",
+        "name": "RAPID_RUNNING",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "3"
+      }
+    ],
+    "abb_rapid_sm_addin_msgs/msg/StateMachineState": [
+      {
+        "literal": "1",
+        "name": "SM_STATE_UNKNOWN",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "1"
+      },
+      {
+        "literal": "2",
+        "name": "SM_STATE_IDLE",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "2"
+      },
+      {
+        "literal": "3",
+        "name": "SM_STATE_INITIALIZE",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "3"
+      },
+      {
+        "literal": "4",
+        "name": "SM_STATE_RUN_RAPID_ROUTINE",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "4"
+      },
+      {
+        "literal": "5",
+        "name": "SM_STATE_RUN_EGM_ROUTINE",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "5"
+      },
+      {
+        "literal": "1",
+        "name": "EGM_ACTION_UNKNOWN",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "1"
+      },
+      {
+        "literal": "2",
+        "name": "EGM_ACTION_NONE",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "2"
+      },
+      {
+        "literal": "3",
+        "name": "EGM_ACTION_RUN_JOINT",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "3"
+      },
+      {
+        "literal": "4",
+        "name": "EGM_ACTION_RUN_POSE",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "4"
+      },
+      {
+        "literal": "5",
+        "name": "EGM_ACTION_STOP",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "5"
+      },
+      {
+        "literal": "6",
+        "name": "EGM_ACTION_START_STREAM",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "6"
+      },
+      {
+        "literal": "7",
+        "name": "EGM_ACTION_STOP_STREAM",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "7"
+      }
+    ],
+    "abb_rapid_sm_addin_msgs/srv/SetSGCommand_Request": [
+      {
+        "literal": "1",
+        "name": "SG_COMMAND_UNKNOWN",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "1"
+      },
+      {
+        "literal": "2",
+        "name": "SG_COMMAND_NONE",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "2"
+      },
+      {
+        "literal": "3",
+        "name": "SG_COMMAND_INITIALIZE",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "3"
+      },
+      {
+        "literal": "4",
+        "name": "SG_COMMAND_CALIBRATE",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "4"
+      },
+      {
+        "literal": "5",
+        "name": "SG_COMMAND_MOVE_TO",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "5"
+      },
+      {
+        "literal": "6",
+        "name": "SG_COMMAND_GRIP_IN",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "6"
+      },
+      {
+        "literal": "7",
+        "name": "SG_COMMAND_GRIP_OUT",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "7"
+      },
+      {
+        "literal": "8",
+        "name": "SG_COMMAND_BLOW_ON_1",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "8"
+      },
+      {
+        "literal": "9",
+        "name": "SG_COMMAND_BLOW_ON_2",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "9"
+      },
+      {
+        "literal": "10",
+        "name": "SG_COMMAND_BLOW_OFF_1",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "10"
+      },
+      {
+        "literal": "11",
+        "name": "SG_COMMAND_BLOW_OFF_2",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "11"
+      },
+      {
+        "literal": "12",
+        "name": "SG_COMMAND_VACUUM_ON_1",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "12"
+      },
+      {
+        "literal": "13",
+        "name": "SG_COMMAND_VACUUM_ON_2",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "13"
+      },
+      {
+        "literal": "14",
+        "name": "SG_COMMAND_VACUUM_OFF_1",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "14"
+      },
+      {
+        "literal": "15",
+        "name": "SG_COMMAND_VACUUM_OFF_2",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "15"
+      }
+    ],
+    "abb_robot_msgs/msg/RAPIDTaskState": [
+      {
+        "literal": "1",
+        "name": "EXECUTION_STATE_UNKNOWN",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "1"
+      },
+      {
+        "literal": "2",
+        "name": "EXECUTION_STATE_READY",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "2"
+      },
+      {
+        "literal": "3",
+        "name": "EXECUTION_STATE_STOPPED",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "3"
+      },
+      {
+        "literal": "4",
+        "name": "EXECUTION_STATE_STARTED",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "4"
+      },
+      {
+        "literal": "5",
+        "name": "EXECUTION_STATE_UNINITIALIZED",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "5"
+      }
+    ],
+    "abb_robot_msgs/msg/ServiceResponses": [
+      {
+        "literal": "\"\"",
+        "name": "SUCCESS",
+        "native_type": "string",
+        "type": "string",
+        "value": ""
+      },
+      {
+        "literal": "1",
+        "name": "RC_SUCCESS",
+        "native_type": "uint16",
+        "type": "uint16",
+        "value": "1"
+      },
+      {
+        "literal": "\"Service failed (e.g. timeout or resource not found, see the DEBUG log for details)\"",
+        "name": "FAILED",
+        "native_type": "string",
+        "type": "string",
+        "value": "Service failed (e.g. timeout or resource not found, see the DEBUG log for details)"
+      },
+      {
+        "literal": "2",
+        "name": "RC_FAILED",
+        "native_type": "uint16",
+        "type": "uint16",
+        "value": "2"
+      },
+      {
+        "literal": "\"Server is busy\"",
+        "name": "SERVER_IS_BUSY",
+        "native_type": "string",
+        "type": "string",
+        "value": "Server is busy"
+      },
+      {
+        "literal": "1001",
+        "name": "RC_SERVER_IS_BUSY",
+        "native_type": "uint16",
+        "type": "uint16",
+        "value": "1001"
+      },
+      {
+        "literal": "\"Filename is empty\"",
+        "name": "EMPTY_FILENAME",
+        "native_type": "string",
+        "type": "string",
+        "value": "Filename is empty"
+      },
+      {
+        "literal": "2001",
+        "name": "RC_EMPTY_FILENAME",
+        "native_type": "uint16",
+        "type": "uint16",
+        "value": "2001"
+      },
+      {
+        "literal": "\"Signal name is empty\"",
+        "name": "EMPTY_SIGNAL_NAME",
+        "native_type": "string",
+        "type": "string",
+        "value": "Signal name is empty"
+      },
+      {
+        "literal": "2002",
+        "name": "RC_EMPTY_SIGNAL_NAME",
+        "native_type": "uint16",
+        "type": "uint16",
+        "value": "2002"
+      },
+      {
+        "literal": "\"RAPID task name is empty\"",
+        "name": "EMPTY_RAPID_TASK_NAME",
+        "native_type": "string",
+        "type": "string",
+        "value": "RAPID task name is empty"
+      },
+      {
+        "literal": "2003",
+        "name": "RC_EMPTY_RAPID_TASK_NAME",
+        "native_type": "uint16",
+        "type": "uint16",
+        "value": "2003"
+      },
+      {
+        "literal": "\"RAPID module name is empty\"",
+        "name": "EMPTY_RAPID_MODULE_NAME",
+        "native_type": "string",
+        "type": "string",
+        "value": "RAPID module name is empty"
+      },
+      {
+        "literal": "2004",
+        "name": "RC_EMPTY_RAPID_MODULE_NAME",
+        "native_type": "uint16",
+        "type": "uint16",
+        "value": "2004"
+      },
+      {
+        "literal": "\"RAPID symbol name is empty\"",
+        "name": "EMPTY_RAPID_SYMBOL_NAME",
+        "native_type": "string",
+        "type": "string",
+        "value": "RAPID symbol name is empty"
+      },
+      {
+        "literal": "2005",
+        "name": "RC_EMPTY_RAPID_SYMBOL_NAME",
+        "native_type": "uint16",
+        "type": "uint16",
+        "value": "2005"
+      },
+      {
+        "literal": "\"Robot controller is not in AUTO mode\"",
+        "name": "NOT_IN_AUTO_MODE",
+        "native_type": "string",
+        "type": "string",
+        "value": "Robot controller is not in AUTO mode"
+      },
+      {
+        "literal": "3001",
+        "name": "RC_NOT_IN_AUTO_MODE",
+        "native_type": "uint16",
+        "type": "uint16",
+        "value": "3001"
+      },
+      {
+        "literal": "\"Motors are off\"",
+        "name": "MOTORS_ARE_OFF",
+        "native_type": "string",
+        "type": "string",
+        "value": "Motors are off"
+      },
+      {
+        "literal": "3002",
+        "name": "RC_MOTORS_ARE_OFF",
+        "native_type": "uint16",
+        "type": "uint16",
+        "value": "3002"
+      },
+      {
+        "literal": "\"Motors are on\"",
+        "name": "MOTORS_ARE_ON",
+        "native_type": "string",
+        "type": "string",
+        "value": "Motors are on"
+      },
+      {
+        "literal": "3003",
+        "name": "RC_MOTORS_ARE_ON",
+        "native_type": "uint16",
+        "type": "uint16",
+        "value": "3003"
+      },
+      {
+        "literal": "\"RAPID has not been stopped\"",
+        "name": "RAPID_NOT_STOPPED",
+        "native_type": "string",
+        "type": "string",
+        "value": "RAPID has not been stopped"
+      },
+      {
+        "literal": "3004",
+        "name": "RC_RAPID_NOT_STOPPED",
+        "native_type": "uint16",
+        "type": "uint16",
+        "value": "3004"
+      },
+      {
+        "literal": "\"RAPID is not running\"",
+        "name": "RAPID_NOT_RUNNING",
+        "native_type": "string",
+        "type": "string",
+        "value": "RAPID is not running"
+      },
+      {
+        "literal": "3005",
+        "name": "RC_RAPID_NOT_RUNNING",
+        "native_type": "uint16",
+        "type": "uint16",
+        "value": "3005"
+      },
+      {
+        "literal": "\"No runtime states received for any StateMachine Add-In instance\"",
+        "name": "SM_RUNTIME_STATES_MISSING",
+        "native_type": "string",
+        "type": "string",
+        "value": "No runtime states received for any StateMachine Add-In instance"
+      },
+      {
+        "literal": "4001",
+        "name": "RC_SM_RUNTIME_STATES_MISSING",
+        "native_type": "uint16",
+        "type": "uint16",
+        "value": "4001"
+      },
+      {
+        "literal": "\"RAPID task not found among known StateMachine Add-In instances\"",
+        "name": "SM_UNKNOWN_RAPID_TASK",
+        "native_type": "string",
+        "type": "string",
+        "value": "RAPID task not found among known StateMachine Add-In instances"
+      },
+      {
+        "literal": "4002",
+        "name": "RC_SM_UNKNOWN_RAPID_TASK",
+        "native_type": "uint16",
+        "type": "uint16",
+        "value": "4002"
+      },
+      {
+        "literal": "\"StateMachine Add-In instance has not been initialized\"",
+        "name": "SM_UNINITIALIZED",
+        "native_type": "string",
+        "type": "string",
+        "value": "StateMachine Add-In instance has not been initialized"
+      },
+      {
+        "literal": "4003",
+        "name": "RC_SM_UNINITIALIZED",
+        "native_type": "uint16",
+        "type": "uint16",
+        "value": "4003"
+      }
+    ],
+    "control_msgs/action/FollowJointTrajectory_Result": [
+      {
+        "literal": "0",
+        "name": "SUCCESSFUL",
+        "native_type": "int32",
+        "type": "int32",
+        "value": "0"
+      },
+      {
+        "literal": "-1",
+        "name": "INVALID_GOAL",
+        "native_type": "int32",
+        "type": "int32",
+        "value": "-1"
+      },
+      {
+        "literal": "-2",
+        "name": "INVALID_JOINTS",
+        "native_type": "int32",
+        "type": "int32",
+        "value": "-2"
+      },
+      {
+        "literal": "-3",
+        "name": "OLD_HEADER_TIMESTAMP",
+        "native_type": "int32",
+        "type": "int32",
+        "value": "-3"
+      },
+      {
+        "literal": "-4",
+        "name": "PATH_TOLERANCE_VIOLATED",
+        "native_type": "int32",
+        "type": "int32",
+        "value": "-4"
+      },
+      {
+        "literal": "-5",
+        "name": "GOAL_TOLERANCE_VIOLATED",
+        "native_type": "int32",
+        "type": "int32",
+        "value": "-5"
+      }
+    ],
+    "control_msgs/msg/JointComponentTolerance": [
+      {
+        "literal": "1",
+        "name": "X_AXIS",
+        "native_type": "uint16",
+        "type": "uint16",
+        "value": "1"
+      },
+      {
+        "literal": "2",
+        "name": "Y_AXIS",
+        "native_type": "uint16",
+        "type": "uint16",
+        "value": "2"
+      },
+      {
+        "literal": "3",
+        "name": "Z_AXIS",
+        "native_type": "uint16",
+        "type": "uint16",
+        "value": "3"
+      },
+      {
+        "literal": "4",
+        "name": "TRANSLATION",
+        "native_type": "uint16",
+        "type": "uint16",
+        "value": "4"
+      },
+      {
+        "literal": "5",
+        "name": "ROTATION",
+        "native_type": "uint16",
+        "type": "uint16",
+        "value": "5"
+      }
+    ]
+  },
+  "declared_defaults": {
+    "geometry_msgs/msg/Quaternion": {
+      "w": "1.0",
+      "x": "0.0",
+      "y": "0.0",
+      "z": "0.0"
+    }
+  },
+  "declared_empty_default_native_binding": "REFUSED_UNTIL_INDEPENDENT_ORIGINAL_NATIVE_IDL_SOURCE_PROOF",
+  "default_authority": [],
+  "facade_template_inputs": [
+    {
+      "bytes": 15514,
+      "generator_relative": "interface_templates/bounded_interfaces.rs.in",
+      "sha256": "063130e797684df0530aa1882f8082a10d5756ceb892677d8082e980c7b29b18"
+    },
+    {
+      "bytes": 17046,
+      "generator_relative": "interface_templates/bounded_interfaces.mjs.in",
+      "sha256": "10986eddd766435dde89b0d3046ef7f48705e2c3e21301c99163c3a7d4ea62fe"
+    },
+    {
+      "bytes": 9692,
+      "generator_relative": "interface_templates/bounded_interfaces.go.in",
+      "sha256": "c9e7893ccedc67b91a3aebc51c1e0c3c65263f03b2769aa07c34fcfb6befa1f7"
+    },
+    {
+      "bytes": 16626,
+      "generator_relative": "interface_templates/bounded_interfaces.ts.in",
+      "sha256": "a61a7b7eb3b5464648577f3ab44629a5c6140d04effff6e4099509f68b204ac5"
+    }
+  ],
+  "format": "uwvm-ros-vendor-complete-bounded-v1",
+  "implemented_record_outputs": [
+    "c",
+    "cpp",
+    "rust",
+    "javascript",
+    "assemblyscript",
+    "tinygo"
+  ],
+  "implicit_permissions": [],
+  "member_map": {
+    "abb_egm_msgs/msg/EGMChannelState": {
+      "assemblyscript": {
+        "active": "active",
+        "egm_client_state": "egm_client_state",
+        "egm_convergence_met": "egm_convergence_met",
+        "motor_state": "motor_state",
+        "name": "name",
+        "rapid_execution_state": "rapid_execution_state",
+        "utilization_rate": "utilization_rate"
+      },
+      "c": {
+        "active": "active",
+        "egm_client_state": "egm_client_state",
+        "egm_convergence_met": "egm_convergence_met",
+        "motor_state": "motor_state",
+        "name": "name",
+        "rapid_execution_state": "rapid_execution_state",
+        "utilization_rate": "utilization_rate"
+      },
+      "cpp": {
+        "active": "active",
+        "egm_client_state": "egm_client_state",
+        "egm_convergence_met": "egm_convergence_met",
+        "motor_state": "motor_state",
+        "name": "name",
+        "rapid_execution_state": "rapid_execution_state",
+        "utilization_rate": "utilization_rate"
+      },
+      "javascript": {
+        "active": "active",
+        "egm_client_state": "egm_client_state",
+        "egm_convergence_met": "egm_convergence_met",
+        "motor_state": "motor_state",
+        "name": "name",
+        "rapid_execution_state": "rapid_execution_state",
+        "utilization_rate": "utilization_rate"
+      },
+      "rust": {
+        "active": "active",
+        "egm_client_state": "egm_client_state",
+        "egm_convergence_met": "egm_convergence_met",
+        "motor_state": "motor_state",
+        "name": "name",
+        "rapid_execution_state": "rapid_execution_state",
+        "utilization_rate": "utilization_rate"
+      },
+      "tinygo": {
+        "active": "Active",
+        "egm_client_state": "Egm_client_state",
+        "egm_convergence_met": "Egm_convergence_met",
+        "motor_state": "Motor_state",
+        "name": "Name",
+        "rapid_execution_state": "Rapid_execution_state",
+        "utilization_rate": "Utilization_rate"
+      }
+    },
+    "abb_egm_msgs/msg/EGMState": {
+      "assemblyscript": {
+        "egm_channels": "egm_channels",
+        "header": "header"
+      },
+      "c": {
+        "egm_channels": "egm_channels",
+        "header": "header"
+      },
+      "cpp": {
+        "egm_channels": "egm_channels",
+        "header": "header"
+      },
+      "javascript": {
+        "egm_channels": "egm_channels",
+        "header": "header"
+      },
+      "rust": {
+        "egm_channels": "egm_channels",
+        "header": "header"
+      },
+      "tinygo": {
+        "egm_channels": "Egm_channels",
+        "header": "Header"
+      }
+    },
+    "abb_rapid_msgs/msg/ConfData": {
+      "assemblyscript": {
+        "cf1": "cf1",
+        "cf4": "cf4",
+        "cf6": "cf6",
+        "cfx": "cfx"
+      },
+      "c": {
+        "cf1": "cf1",
+        "cf4": "cf4",
+        "cf6": "cf6",
+        "cfx": "cfx"
+      },
+      "cpp": {
+        "cf1": "cf1",
+        "cf4": "cf4",
+        "cf6": "cf6",
+        "cfx": "cfx"
+      },
+      "javascript": {
+        "cf1": "cf1",
+        "cf4": "cf4",
+        "cf6": "cf6",
+        "cfx": "cfx"
+      },
+      "rust": {
+        "cf1": "cf1",
+        "cf4": "cf4",
+        "cf6": "cf6",
+        "cfx": "cfx"
+      },
+      "tinygo": {
+        "cf1": "Cf1",
+        "cf4": "Cf4",
+        "cf6": "Cf6",
+        "cfx": "Cfx"
+      }
+    },
+    "abb_rapid_msgs/msg/ExtJoint": {
+      "assemblyscript": {
+        "eax_a": "eax_a",
+        "eax_b": "eax_b",
+        "eax_c": "eax_c",
+        "eax_d": "eax_d",
+        "eax_e": "eax_e",
+        "eax_f": "eax_f"
+      },
+      "c": {
+        "eax_a": "eax_a",
+        "eax_b": "eax_b",
+        "eax_c": "eax_c",
+        "eax_d": "eax_d",
+        "eax_e": "eax_e",
+        "eax_f": "eax_f"
+      },
+      "cpp": {
+        "eax_a": "eax_a",
+        "eax_b": "eax_b",
+        "eax_c": "eax_c",
+        "eax_d": "eax_d",
+        "eax_e": "eax_e",
+        "eax_f": "eax_f"
+      },
+      "javascript": {
+        "eax_a": "eax_a",
+        "eax_b": "eax_b",
+        "eax_c": "eax_c",
+        "eax_d": "eax_d",
+        "eax_e": "eax_e",
+        "eax_f": "eax_f"
+      },
+      "rust": {
+        "eax_a": "eax_a",
+        "eax_b": "eax_b",
+        "eax_c": "eax_c",
+        "eax_d": "eax_d",
+        "eax_e": "eax_e",
+        "eax_f": "eax_f"
+      },
+      "tinygo": {
+        "eax_a": "Eax_a",
+        "eax_b": "Eax_b",
+        "eax_c": "Eax_c",
+        "eax_d": "Eax_d",
+        "eax_e": "Eax_e",
+        "eax_f": "Eax_f"
+      }
+    },
+    "abb_rapid_msgs/msg/JointTarget": {
+      "assemblyscript": {
+        "extax": "extax",
+        "robax": "robax"
+      },
+      "c": {
+        "extax": "extax",
+        "robax": "robax"
+      },
+      "cpp": {
+        "extax": "extax",
+        "robax": "robax"
+      },
+      "javascript": {
+        "extax": "extax",
+        "robax": "robax"
+      },
+      "rust": {
+        "extax": "extax",
+        "robax": "robax"
+      },
+      "tinygo": {
+        "extax": "Extax",
+        "robax": "Robax"
+      }
+    },
+    "abb_rapid_msgs/msg/LoadData": {
+      "assemblyscript": {
+        "aom": "aom",
+        "cog": "cog",
+        "ix": "ix",
+        "iy": "iy",
+        "iz": "iz",
+        "mass": "mass"
+      },
+      "c": {
+        "aom": "aom",
+        "cog": "cog",
+        "ix": "ix",
+        "iy": "iy",
+        "iz": "iz",
+        "mass": "mass"
+      },
+      "cpp": {
+        "aom": "aom",
+        "cog": "cog",
+        "ix": "ix",
+        "iy": "iy",
+        "iz": "iz",
+        "mass": "mass"
+      },
+      "javascript": {
+        "aom": "aom",
+        "cog": "cog",
+        "ix": "ix",
+        "iy": "iy",
+        "iz": "iz",
+        "mass": "mass"
+      },
+      "rust": {
+        "aom": "aom",
+        "cog": "cog",
+        "ix": "ix",
+        "iy": "iy",
+        "iz": "iz",
+        "mass": "mass"
+      },
+      "tinygo": {
+        "aom": "Aom",
+        "cog": "Cog",
+        "ix": "Ix",
+        "iy": "Iy",
+        "iz": "Iz",
+        "mass": "Mass"
+      }
+    },
+    "abb_rapid_msgs/msg/Orient": {
+      "assemblyscript": {
+        "q1": "q1",
+        "q2": "q2",
+        "q3": "q3",
+        "q4": "q4"
+      },
+      "c": {
+        "q1": "q1",
+        "q2": "q2",
+        "q3": "q3",
+        "q4": "q4"
+      },
+      "cpp": {
+        "q1": "q1",
+        "q2": "q2",
+        "q3": "q3",
+        "q4": "q4"
+      },
+      "javascript": {
+        "q1": "q1",
+        "q2": "q2",
+        "q3": "q3",
+        "q4": "q4"
+      },
+      "rust": {
+        "q1": "q1",
+        "q2": "q2",
+        "q3": "q3",
+        "q4": "q4"
+      },
+      "tinygo": {
+        "q1": "Q1",
+        "q2": "Q2",
+        "q3": "Q3",
+        "q4": "Q4"
+      }
+    },
+    "abb_rapid_msgs/msg/Pos": {
+      "assemblyscript": {
+        "x": "x",
+        "y": "y",
+        "z": "z"
+      },
+      "c": {
+        "x": "x",
+        "y": "y",
+        "z": "z"
+      },
+      "cpp": {
+        "x": "x",
+        "y": "y",
+        "z": "z"
+      },
+      "javascript": {
+        "x": "x",
+        "y": "y",
+        "z": "z"
+      },
+      "rust": {
+        "x": "x",
+        "y": "y",
+        "z": "z"
+      },
+      "tinygo": {
+        "x": "X",
+        "y": "Y",
+        "z": "Z"
+      }
+    },
+    "abb_rapid_msgs/msg/Pose": {
+      "assemblyscript": {
+        "rot": "rot",
+        "trans": "trans"
+      },
+      "c": {
+        "rot": "rot",
+        "trans": "trans"
+      },
+      "cpp": {
+        "rot": "rot",
+        "trans": "trans"
+      },
+      "javascript": {
+        "rot": "rot",
+        "trans": "trans"
+      },
+      "rust": {
+        "rot": "rot",
+        "trans": "trans"
+      },
+      "tinygo": {
+        "rot": "Rot",
+        "trans": "Trans"
+      }
+    },
+    "abb_rapid_msgs/msg/RobJoint": {
+      "assemblyscript": {
+        "rax_1": "rax_1",
+        "rax_2": "rax_2",
+        "rax_3": "rax_3",
+        "rax_4": "rax_4",
+        "rax_5": "rax_5",
+        "rax_6": "rax_6"
+      },
+      "c": {
+        "rax_1": "rax_1",
+        "rax_2": "rax_2",
+        "rax_3": "rax_3",
+        "rax_4": "rax_4",
+        "rax_5": "rax_5",
+        "rax_6": "rax_6"
+      },
+      "cpp": {
+        "rax_1": "rax_1",
+        "rax_2": "rax_2",
+        "rax_3": "rax_3",
+        "rax_4": "rax_4",
+        "rax_5": "rax_5",
+        "rax_6": "rax_6"
+      },
+      "javascript": {
+        "rax_1": "rax_1",
+        "rax_2": "rax_2",
+        "rax_3": "rax_3",
+        "rax_4": "rax_4",
+        "rax_5": "rax_5",
+        "rax_6": "rax_6"
+      },
+      "rust": {
+        "rax_1": "rax_1",
+        "rax_2": "rax_2",
+        "rax_3": "rax_3",
+        "rax_4": "rax_4",
+        "rax_5": "rax_5",
+        "rax_6": "rax_6"
+      },
+      "tinygo": {
+        "rax_1": "Rax_1",
+        "rax_2": "Rax_2",
+        "rax_3": "Rax_3",
+        "rax_4": "Rax_4",
+        "rax_5": "Rax_5",
+        "rax_6": "Rax_6"
+      }
+    },
+    "abb_rapid_msgs/msg/RobTarget": {
+      "assemblyscript": {
+        "extax": "extax",
+        "robconf": "robconf",
+        "rot": "rot",
+        "trans": "trans"
+      },
+      "c": {
+        "extax": "extax",
+        "robconf": "robconf",
+        "rot": "rot",
+        "trans": "trans"
+      },
+      "cpp": {
+        "extax": "extax",
+        "robconf": "robconf",
+        "rot": "rot",
+        "trans": "trans"
+      },
+      "javascript": {
+        "extax": "extax",
+        "robconf": "robconf",
+        "rot": "rot",
+        "trans": "trans"
+      },
+      "rust": {
+        "extax": "extax",
+        "robconf": "robconf",
+        "rot": "rot",
+        "trans": "trans"
+      },
+      "tinygo": {
+        "extax": "Extax",
+        "robconf": "Robconf",
+        "rot": "Rot",
+        "trans": "Trans"
+      }
+    },
+    "abb_rapid_msgs/msg/ToolData": {
+      "assemblyscript": {
+        "robhold": "robhold",
+        "tframe": "tframe",
+        "tload": "tload"
+      },
+      "c": {
+        "robhold": "robhold",
+        "tframe": "tframe",
+        "tload": "tload"
+      },
+      "cpp": {
+        "robhold": "robhold",
+        "tframe": "tframe",
+        "tload": "tload"
+      },
+      "javascript": {
+        "robhold": "robhold",
+        "tframe": "tframe",
+        "tload": "tload"
+      },
+      "rust": {
+        "robhold": "robhold",
+        "tframe": "tframe",
+        "tload": "tload"
+      },
+      "tinygo": {
+        "robhold": "Robhold",
+        "tframe": "Tframe",
+        "tload": "Tload"
+      }
+    },
+    "abb_rapid_msgs/msg/WObjData": {
+      "assemblyscript": {
+        "oframe": "oframe",
+        "robhold": "robhold",
+        "ufmec": "ufmec",
+        "ufprog": "ufprog",
+        "uframe": "uframe"
+      },
+      "c": {
+        "oframe": "oframe",
+        "robhold": "robhold",
+        "ufmec": "ufmec",
+        "ufprog": "ufprog",
+        "uframe": "uframe"
+      },
+      "cpp": {
+        "oframe": "oframe",
+        "robhold": "robhold",
+        "ufmec": "ufmec",
+        "ufprog": "ufprog",
+        "uframe": "uframe"
+      },
+      "javascript": {
+        "oframe": "oframe",
+        "robhold": "robhold",
+        "ufmec": "ufmec",
+        "ufprog": "ufprog",
+        "uframe": "uframe"
+      },
+      "rust": {
+        "oframe": "oframe",
+        "robhold": "robhold",
+        "ufmec": "ufmec",
+        "ufprog": "ufprog",
+        "uframe": "uframe"
+      },
+      "tinygo": {
+        "oframe": "Oframe",
+        "robhold": "Robhold",
+        "ufmec": "Ufmec",
+        "ufprog": "Ufprog",
+        "uframe": "Uframe"
+      }
+    },
+    "abb_rapid_sm_addin_msgs/msg/EGMActivateSettings": {
+      "assemblyscript": {
+        "cond_min_max": "cond_min_max",
+        "correction_frame": "correction_frame",
+        "lp_filter": "lp_filter",
+        "max_speed_deviation": "max_speed_deviation",
+        "sample_rate": "sample_rate",
+        "sensor_frame": "sensor_frame",
+        "tool": "tool",
+        "wobj": "wobj"
+      },
+      "c": {
+        "cond_min_max": "cond_min_max",
+        "correction_frame": "correction_frame",
+        "lp_filter": "lp_filter",
+        "max_speed_deviation": "max_speed_deviation",
+        "sample_rate": "sample_rate",
+        "sensor_frame": "sensor_frame",
+        "tool": "tool",
+        "wobj": "wobj"
+      },
+      "cpp": {
+        "cond_min_max": "cond_min_max",
+        "correction_frame": "correction_frame",
+        "lp_filter": "lp_filter",
+        "max_speed_deviation": "max_speed_deviation",
+        "sample_rate": "sample_rate",
+        "sensor_frame": "sensor_frame",
+        "tool": "tool",
+        "wobj": "wobj"
+      },
+      "javascript": {
+        "cond_min_max": "cond_min_max",
+        "correction_frame": "correction_frame",
+        "lp_filter": "lp_filter",
+        "max_speed_deviation": "max_speed_deviation",
+        "sample_rate": "sample_rate",
+        "sensor_frame": "sensor_frame",
+        "tool": "tool",
+        "wobj": "wobj"
+      },
+      "rust": {
+        "cond_min_max": "cond_min_max",
+        "correction_frame": "correction_frame",
+        "lp_filter": "lp_filter",
+        "max_speed_deviation": "max_speed_deviation",
+        "sample_rate": "sample_rate",
+        "sensor_frame": "sensor_frame",
+        "tool": "tool",
+        "wobj": "wobj"
+      },
+      "tinygo": {
+        "cond_min_max": "Cond_min_max",
+        "correction_frame": "Correction_frame",
+        "lp_filter": "Lp_filter",
+        "max_speed_deviation": "Max_speed_deviation",
+        "sample_rate": "Sample_rate",
+        "sensor_frame": "Sensor_frame",
+        "tool": "Tool",
+        "wobj": "Wobj"
+      }
+    },
+    "abb_rapid_sm_addin_msgs/msg/EGMRunSettings": {
+      "assemblyscript": {
+        "cond_time": "cond_time",
+        "offset": "offset",
+        "pos_corr_gain": "pos_corr_gain",
+        "ramp_in_time": "ramp_in_time"
+      },
+      "c": {
+        "cond_time": "cond_time",
+        "offset": "offset",
+        "pos_corr_gain": "pos_corr_gain",
+        "ramp_in_time": "ramp_in_time"
+      },
+      "cpp": {
+        "cond_time": "cond_time",
+        "offset": "offset",
+        "pos_corr_gain": "pos_corr_gain",
+        "ramp_in_time": "ramp_in_time"
+      },
+      "javascript": {
+        "cond_time": "cond_time",
+        "offset": "offset",
+        "pos_corr_gain": "pos_corr_gain",
+        "ramp_in_time": "ramp_in_time"
+      },
+      "rust": {
+        "cond_time": "cond_time",
+        "offset": "offset",
+        "pos_corr_gain": "pos_corr_gain",
+        "ramp_in_time": "ramp_in_time"
+      },
+      "tinygo": {
+        "cond_time": "Cond_time",
+        "offset": "Offset",
+        "pos_corr_gain": "Pos_corr_gain",
+        "ramp_in_time": "Ramp_in_time"
+      }
+    },
+    "abb_rapid_sm_addin_msgs/msg/EGMSettings": {
+      "assemblyscript": {
+        "activate": "activate",
+        "allow_egm_motions": "allow_egm_motions",
+        "run": "run",
+        "setup_uc": "setup_uc",
+        "stop": "stop",
+        "use_presync": "use_presync"
+      },
+      "c": {
+        "activate": "activate",
+        "allow_egm_motions": "allow_egm_motions",
+        "run": "run",
+        "setup_uc": "setup_uc",
+        "stop": "stop",
+        "use_presync": "use_presync"
+      },
+      "cpp": {
+        "activate": "activate",
+        "allow_egm_motions": "allow_egm_motions",
+        "run": "run",
+        "setup_uc": "setup_uc",
+        "stop": "stop",
+        "use_presync": "use_presync"
+      },
+      "javascript": {
+        "activate": "activate",
+        "allow_egm_motions": "allow_egm_motions",
+        "run": "run",
+        "setup_uc": "setup_uc",
+        "stop": "stop",
+        "use_presync": "use_presync"
+      },
+      "rust": {
+        "activate": "activate",
+        "allow_egm_motions": "allow_egm_motions",
+        "run": "run",
+        "setup_uc": "setup_uc",
+        "stop": "stop",
+        "use_presync": "use_presync"
+      },
+      "tinygo": {
+        "activate": "Activate",
+        "allow_egm_motions": "Allow_egm_motions",
+        "run": "Run",
+        "setup_uc": "Setup_uc",
+        "stop": "Stop",
+        "use_presync": "Use_presync"
+      }
+    },
+    "abb_rapid_sm_addin_msgs/msg/EGMSetupSettings": {
+      "assemblyscript": {
+        "comm_timeout": "comm_timeout",
+        "use_filtering": "use_filtering"
+      },
+      "c": {
+        "comm_timeout": "comm_timeout",
+        "use_filtering": "use_filtering"
+      },
+      "cpp": {
+        "comm_timeout": "comm_timeout",
+        "use_filtering": "use_filtering"
+      },
+      "javascript": {
+        "comm_timeout": "comm_timeout",
+        "use_filtering": "use_filtering"
+      },
+      "rust": {
+        "comm_timeout": "comm_timeout",
+        "use_filtering": "use_filtering"
+      },
+      "tinygo": {
+        "comm_timeout": "Comm_timeout",
+        "use_filtering": "Use_filtering"
+      }
+    },
+    "abb_rapid_sm_addin_msgs/msg/EGMStopSettings": {
+      "assemblyscript": {
+        "ramp_out_time": "ramp_out_time"
+      },
+      "c": {
+        "ramp_out_time": "ramp_out_time"
+      },
+      "cpp": {
+        "ramp_out_time": "ramp_out_time"
+      },
+      "javascript": {
+        "ramp_out_time": "ramp_out_time"
+      },
+      "rust": {
+        "ramp_out_time": "ramp_out_time"
+      },
+      "tinygo": {
+        "ramp_out_time": "Ramp_out_time"
+      }
+    },
+    "abb_rapid_sm_addin_msgs/msg/RuntimeState": {
+      "assemblyscript": {
+        "header": "header",
+        "state_machines": "state_machines"
+      },
+      "c": {
+        "header": "header",
+        "state_machines": "state_machines"
+      },
+      "cpp": {
+        "header": "header",
+        "state_machines": "state_machines"
+      },
+      "javascript": {
+        "header": "header",
+        "state_machines": "state_machines"
+      },
+      "rust": {
+        "header": "header",
+        "state_machines": "state_machines"
+      },
+      "tinygo": {
+        "header": "Header",
+        "state_machines": "State_machines"
+      }
+    },
+    "abb_rapid_sm_addin_msgs/msg/StateMachineState": {
+      "assemblyscript": {
+        "egm_action": "egm_action",
+        "rapid_task": "rapid_task",
+        "sm_state": "sm_state"
+      },
+      "c": {
+        "egm_action": "egm_action",
+        "rapid_task": "rapid_task",
+        "sm_state": "sm_state"
+      },
+      "cpp": {
+        "egm_action": "egm_action",
+        "rapid_task": "rapid_task",
+        "sm_state": "sm_state"
+      },
+      "javascript": {
+        "egm_action": "egm_action",
+        "rapid_task": "rapid_task",
+        "sm_state": "sm_state"
+      },
+      "rust": {
+        "egm_action": "egm_action",
+        "rapid_task": "rapid_task",
+        "sm_state": "sm_state"
+      },
+      "tinygo": {
+        "egm_action": "Egm_action",
+        "rapid_task": "Rapid_task",
+        "sm_state": "Sm_state"
+      }
+    },
+    "abb_rapid_sm_addin_msgs/srv/GetEGMSettings_Request": {
+      "assemblyscript": {
+        "task": "task"
+      },
+      "c": {
+        "task": "task"
+      },
+      "cpp": {
+        "task": "task"
+      },
+      "javascript": {
+        "task": "task"
+      },
+      "rust": {
+        "task": "task"
+      },
+      "tinygo": {
+        "task": "Task"
+      }
+    },
+    "abb_rapid_sm_addin_msgs/srv/GetEGMSettings_Response": {
+      "assemblyscript": {
+        "message": "message",
+        "result_code": "result_code",
+        "settings": "settings"
+      },
+      "c": {
+        "message": "message",
+        "result_code": "result_code",
+        "settings": "settings"
+      },
+      "cpp": {
+        "message": "message",
+        "result_code": "result_code",
+        "settings": "settings"
+      },
+      "javascript": {
+        "message": "message",
+        "result_code": "result_code",
+        "settings": "settings"
+      },
+      "rust": {
+        "message": "message",
+        "result_code": "result_code",
+        "settings": "settings"
+      },
+      "tinygo": {
+        "message": "Message",
+        "result_code": "Result_code",
+        "settings": "Settings"
+      }
+    },
+    "abb_rapid_sm_addin_msgs/srv/SetEGMSettings_Request": {
+      "assemblyscript": {
+        "settings": "settings",
+        "task": "task"
+      },
+      "c": {
+        "settings": "settings",
+        "task": "task"
+      },
+      "cpp": {
+        "settings": "settings",
+        "task": "task"
+      },
+      "javascript": {
+        "settings": "settings",
+        "task": "task"
+      },
+      "rust": {
+        "settings": "settings",
+        "task": "task"
+      },
+      "tinygo": {
+        "settings": "Settings",
+        "task": "Task"
+      }
+    },
+    "abb_rapid_sm_addin_msgs/srv/SetEGMSettings_Response": {
+      "assemblyscript": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "c": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "cpp": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "javascript": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "rust": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "tinygo": {
+        "message": "Message",
+        "result_code": "Result_code"
+      }
+    },
+    "abb_rapid_sm_addin_msgs/srv/SetRAPIDRoutine_Request": {
+      "assemblyscript": {
+        "routine": "routine",
+        "task": "task"
+      },
+      "c": {
+        "routine": "routine",
+        "task": "task"
+      },
+      "cpp": {
+        "routine": "routine",
+        "task": "task"
+      },
+      "javascript": {
+        "routine": "routine",
+        "task": "task"
+      },
+      "rust": {
+        "routine": "routine",
+        "task": "task"
+      },
+      "tinygo": {
+        "routine": "Routine",
+        "task": "Task"
+      }
+    },
+    "abb_rapid_sm_addin_msgs/srv/SetRAPIDRoutine_Response": {
+      "assemblyscript": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "c": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "cpp": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "javascript": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "rust": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "tinygo": {
+        "message": "Message",
+        "result_code": "Result_code"
+      }
+    },
+    "abb_rapid_sm_addin_msgs/srv/SetSGCommand_Request": {
+      "assemblyscript": {
+        "command": "command",
+        "target_position": "target_position",
+        "task": "task"
+      },
+      "c": {
+        "command": "command",
+        "target_position": "target_position",
+        "task": "task"
+      },
+      "cpp": {
+        "command": "command",
+        "target_position": "target_position",
+        "task": "task"
+      },
+      "javascript": {
+        "command": "command",
+        "target_position": "target_position",
+        "task": "task"
+      },
+      "rust": {
+        "command": "command",
+        "target_position": "target_position",
+        "task": "task"
+      },
+      "tinygo": {
+        "command": "Command",
+        "target_position": "Target_position",
+        "task": "Task"
+      }
+    },
+    "abb_rapid_sm_addin_msgs/srv/SetSGCommand_Response": {
+      "assemblyscript": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "c": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "cpp": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "javascript": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "rust": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "tinygo": {
+        "message": "Message",
+        "result_code": "Result_code"
+      }
+    },
+    "abb_robot_msgs/msg/MechanicalUnitState": {
+      "assemblyscript": {
+        "activated": "activated",
+        "name": "name"
+      },
+      "c": {
+        "activated": "activated",
+        "name": "name"
+      },
+      "cpp": {
+        "activated": "activated",
+        "name": "name"
+      },
+      "javascript": {
+        "activated": "activated",
+        "name": "name"
+      },
+      "rust": {
+        "activated": "activated",
+        "name": "name"
+      },
+      "tinygo": {
+        "activated": "Activated",
+        "name": "Name"
+      }
+    },
+    "abb_robot_msgs/msg/RAPIDSymbolPath": {
+      "assemblyscript": {
+        "module": "module",
+        "symbol": "symbol",
+        "task": "task"
+      },
+      "c": {
+        "module": "module",
+        "symbol": "symbol",
+        "task": "task"
+      },
+      "cpp": {
+        "module": "module",
+        "symbol": "symbol",
+        "task": "task"
+      },
+      "javascript": {
+        "module": "module",
+        "symbol": "symbol",
+        "task": "task"
+      },
+      "rust": {
+        "module": "module",
+        "symbol": "symbol",
+        "task": "task"
+      },
+      "tinygo": {
+        "module": "Module",
+        "symbol": "Symbol",
+        "task": "Task"
+      }
+    },
+    "abb_robot_msgs/msg/RAPIDTaskState": {
+      "assemblyscript": {
+        "activated": "activated",
+        "execution_state": "execution_state",
+        "motion_task": "motion_task",
+        "name": "name"
+      },
+      "c": {
+        "activated": "activated",
+        "execution_state": "execution_state",
+        "motion_task": "motion_task",
+        "name": "name"
+      },
+      "cpp": {
+        "activated": "activated",
+        "execution_state": "execution_state",
+        "motion_task": "motion_task",
+        "name": "name"
+      },
+      "javascript": {
+        "activated": "activated",
+        "execution_state": "execution_state",
+        "motion_task": "motion_task",
+        "name": "name"
+      },
+      "rust": {
+        "activated": "activated",
+        "execution_state": "execution_state",
+        "motion_task": "motion_task",
+        "name": "name"
+      },
+      "tinygo": {
+        "activated": "Activated",
+        "execution_state": "Execution_state",
+        "motion_task": "Motion_task",
+        "name": "Name"
+      }
+    },
+    "abb_robot_msgs/msg/ServiceResponses": {
+      "assemblyscript": {},
+      "c": {},
+      "cpp": {},
+      "javascript": {},
+      "rust": {},
+      "tinygo": {}
+    },
+    "abb_robot_msgs/msg/SystemState": {
+      "assemblyscript": {
+        "auto_mode": "auto_mode",
+        "header": "header",
+        "mechanical_units": "mechanical_units",
+        "motors_on": "motors_on",
+        "rapid_running": "rapid_running",
+        "rapid_tasks": "rapid_tasks"
+      },
+      "c": {
+        "auto_mode": "auto_mode",
+        "header": "header",
+        "mechanical_units": "mechanical_units",
+        "motors_on": "motors_on",
+        "rapid_running": "rapid_running",
+        "rapid_tasks": "rapid_tasks"
+      },
+      "cpp": {
+        "auto_mode": "auto_mode",
+        "header": "header",
+        "mechanical_units": "mechanical_units",
+        "motors_on": "motors_on",
+        "rapid_running": "rapid_running",
+        "rapid_tasks": "rapid_tasks"
+      },
+      "javascript": {
+        "auto_mode": "auto_mode",
+        "header": "header",
+        "mechanical_units": "mechanical_units",
+        "motors_on": "motors_on",
+        "rapid_running": "rapid_running",
+        "rapid_tasks": "rapid_tasks"
+      },
+      "rust": {
+        "auto_mode": "auto_mode",
+        "header": "header",
+        "mechanical_units": "mechanical_units",
+        "motors_on": "motors_on",
+        "rapid_running": "rapid_running",
+        "rapid_tasks": "rapid_tasks"
+      },
+      "tinygo": {
+        "auto_mode": "Auto_mode",
+        "header": "Header",
+        "mechanical_units": "Mechanical_units",
+        "motors_on": "Motors_on",
+        "rapid_running": "Rapid_running",
+        "rapid_tasks": "Rapid_tasks"
+      }
+    },
+    "abb_robot_msgs/srv/GetFileContents_Request": {
+      "assemblyscript": {
+        "filename": "filename"
+      },
+      "c": {
+        "filename": "filename"
+      },
+      "cpp": {
+        "filename": "filename"
+      },
+      "javascript": {
+        "filename": "filename"
+      },
+      "rust": {
+        "filename": "filename"
+      },
+      "tinygo": {
+        "filename": "Filename"
+      }
+    },
+    "abb_robot_msgs/srv/GetFileContents_Response": {
+      "assemblyscript": {
+        "contents": "contents",
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "c": {
+        "contents": "contents",
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "cpp": {
+        "contents": "contents",
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "javascript": {
+        "contents": "contents",
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "rust": {
+        "contents": "contents",
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "tinygo": {
+        "contents": "Contents",
+        "message": "Message",
+        "result_code": "Result_code"
+      }
+    },
+    "abb_robot_msgs/srv/GetIOSignal_Request": {
+      "assemblyscript": {
+        "signal": "signal"
+      },
+      "c": {
+        "signal": "signal"
+      },
+      "cpp": {
+        "signal": "signal"
+      },
+      "javascript": {
+        "signal": "signal"
+      },
+      "rust": {
+        "signal": "signal"
+      },
+      "tinygo": {
+        "signal": "Signal"
+      }
+    },
+    "abb_robot_msgs/srv/GetIOSignal_Response": {
+      "assemblyscript": {
+        "message": "message",
+        "result_code": "result_code",
+        "value": "value"
+      },
+      "c": {
+        "message": "message",
+        "result_code": "result_code",
+        "value": "value"
+      },
+      "cpp": {
+        "message": "message",
+        "result_code": "result_code",
+        "value": "value"
+      },
+      "javascript": {
+        "message": "message",
+        "result_code": "result_code",
+        "value": "value"
+      },
+      "rust": {
+        "message": "message",
+        "result_code": "result_code",
+        "value": "value"
+      },
+      "tinygo": {
+        "message": "Message",
+        "result_code": "Result_code",
+        "value": "Value"
+      }
+    },
+    "abb_robot_msgs/srv/GetRAPIDBool_Request": {
+      "assemblyscript": {
+        "path": "path"
+      },
+      "c": {
+        "path": "path"
+      },
+      "cpp": {
+        "path": "path"
+      },
+      "javascript": {
+        "path": "path"
+      },
+      "rust": {
+        "path": "path"
+      },
+      "tinygo": {
+        "path": "Path"
+      }
+    },
+    "abb_robot_msgs/srv/GetRAPIDBool_Response": {
+      "assemblyscript": {
+        "message": "message",
+        "result_code": "result_code",
+        "value": "value"
+      },
+      "c": {
+        "message": "message",
+        "result_code": "result_code",
+        "value": "value"
+      },
+      "cpp": {
+        "message": "message",
+        "result_code": "result_code",
+        "value": "value"
+      },
+      "javascript": {
+        "message": "message",
+        "result_code": "result_code",
+        "value": "value"
+      },
+      "rust": {
+        "message": "message",
+        "result_code": "result_code",
+        "value": "value"
+      },
+      "tinygo": {
+        "message": "Message",
+        "result_code": "Result_code",
+        "value": "Value"
+      }
+    },
+    "abb_robot_msgs/srv/GetRAPIDDnum_Request": {
+      "assemblyscript": {
+        "path": "path"
+      },
+      "c": {
+        "path": "path"
+      },
+      "cpp": {
+        "path": "path"
+      },
+      "javascript": {
+        "path": "path"
+      },
+      "rust": {
+        "path": "path"
+      },
+      "tinygo": {
+        "path": "Path"
+      }
+    },
+    "abb_robot_msgs/srv/GetRAPIDDnum_Response": {
+      "assemblyscript": {
+        "message": "message",
+        "result_code": "result_code",
+        "value": "value"
+      },
+      "c": {
+        "message": "message",
+        "result_code": "result_code",
+        "value": "value"
+      },
+      "cpp": {
+        "message": "message",
+        "result_code": "result_code",
+        "value": "value"
+      },
+      "javascript": {
+        "message": "message",
+        "result_code": "result_code",
+        "value": "value"
+      },
+      "rust": {
+        "message": "message",
+        "result_code": "result_code",
+        "value": "value"
+      },
+      "tinygo": {
+        "message": "Message",
+        "result_code": "Result_code",
+        "value": "Value"
+      }
+    },
+    "abb_robot_msgs/srv/GetRAPIDNum_Request": {
+      "assemblyscript": {
+        "path": "path"
+      },
+      "c": {
+        "path": "path"
+      },
+      "cpp": {
+        "path": "path"
+      },
+      "javascript": {
+        "path": "path"
+      },
+      "rust": {
+        "path": "path"
+      },
+      "tinygo": {
+        "path": "Path"
+      }
+    },
+    "abb_robot_msgs/srv/GetRAPIDNum_Response": {
+      "assemblyscript": {
+        "message": "message",
+        "result_code": "result_code",
+        "value": "value"
+      },
+      "c": {
+        "message": "message",
+        "result_code": "result_code",
+        "value": "value"
+      },
+      "cpp": {
+        "message": "message",
+        "result_code": "result_code",
+        "value": "value"
+      },
+      "javascript": {
+        "message": "message",
+        "result_code": "result_code",
+        "value": "value"
+      },
+      "rust": {
+        "message": "message",
+        "result_code": "result_code",
+        "value": "value"
+      },
+      "tinygo": {
+        "message": "Message",
+        "result_code": "Result_code",
+        "value": "Value"
+      }
+    },
+    "abb_robot_msgs/srv/GetRAPIDString_Request": {
+      "assemblyscript": {
+        "path": "path"
+      },
+      "c": {
+        "path": "path"
+      },
+      "cpp": {
+        "path": "path"
+      },
+      "javascript": {
+        "path": "path"
+      },
+      "rust": {
+        "path": "path"
+      },
+      "tinygo": {
+        "path": "Path"
+      }
+    },
+    "abb_robot_msgs/srv/GetRAPIDString_Response": {
+      "assemblyscript": {
+        "message": "message",
+        "result_code": "result_code",
+        "value": "value"
+      },
+      "c": {
+        "message": "message",
+        "result_code": "result_code",
+        "value": "value"
+      },
+      "cpp": {
+        "message": "message",
+        "result_code": "result_code",
+        "value": "value"
+      },
+      "javascript": {
+        "message": "message",
+        "result_code": "result_code",
+        "value": "value"
+      },
+      "rust": {
+        "message": "message",
+        "result_code": "result_code",
+        "value": "value"
+      },
+      "tinygo": {
+        "message": "Message",
+        "result_code": "Result_code",
+        "value": "Value"
+      }
+    },
+    "abb_robot_msgs/srv/GetRAPIDSymbol_Request": {
+      "assemblyscript": {
+        "path": "path"
+      },
+      "c": {
+        "path": "path"
+      },
+      "cpp": {
+        "path": "path"
+      },
+      "javascript": {
+        "path": "path"
+      },
+      "rust": {
+        "path": "path"
+      },
+      "tinygo": {
+        "path": "Path"
+      }
+    },
+    "abb_robot_msgs/srv/GetRAPIDSymbol_Response": {
+      "assemblyscript": {
+        "message": "message",
+        "result_code": "result_code",
+        "value": "value"
+      },
+      "c": {
+        "message": "message",
+        "result_code": "result_code",
+        "value": "value"
+      },
+      "cpp": {
+        "message": "message",
+        "result_code": "result_code",
+        "value": "value"
+      },
+      "javascript": {
+        "message": "message",
+        "result_code": "result_code",
+        "value": "value"
+      },
+      "rust": {
+        "message": "message",
+        "result_code": "result_code",
+        "value": "value"
+      },
+      "tinygo": {
+        "message": "Message",
+        "result_code": "Result_code",
+        "value": "Value"
+      }
+    },
+    "abb_robot_msgs/srv/GetRobotControllerDescription_Request": {
+      "assemblyscript": {},
+      "c": {},
+      "cpp": {},
+      "javascript": {},
+      "rust": {},
+      "tinygo": {}
+    },
+    "abb_robot_msgs/srv/GetRobotControllerDescription_Response": {
+      "assemblyscript": {
+        "description": "description",
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "c": {
+        "description": "description",
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "cpp": {
+        "description": "description",
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "javascript": {
+        "description": "description",
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "rust": {
+        "description": "description",
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "tinygo": {
+        "description": "Description",
+        "message": "Message",
+        "result_code": "Result_code"
+      }
+    },
+    "abb_robot_msgs/srv/GetSpeedRatio_Request": {
+      "assemblyscript": {},
+      "c": {},
+      "cpp": {},
+      "javascript": {},
+      "rust": {},
+      "tinygo": {}
+    },
+    "abb_robot_msgs/srv/GetSpeedRatio_Response": {
+      "assemblyscript": {
+        "message": "message",
+        "result_code": "result_code",
+        "speed_ratio": "speed_ratio"
+      },
+      "c": {
+        "message": "message",
+        "result_code": "result_code",
+        "speed_ratio": "speed_ratio"
+      },
+      "cpp": {
+        "message": "message",
+        "result_code": "result_code",
+        "speed_ratio": "speed_ratio"
+      },
+      "javascript": {
+        "message": "message",
+        "result_code": "result_code",
+        "speed_ratio": "speed_ratio"
+      },
+      "rust": {
+        "message": "message",
+        "result_code": "result_code",
+        "speed_ratio": "speed_ratio"
+      },
+      "tinygo": {
+        "message": "Message",
+        "result_code": "Result_code",
+        "speed_ratio": "Speed_ratio"
+      }
+    },
+    "abb_robot_msgs/srv/SetFileContents_Request": {
+      "assemblyscript": {
+        "contents": "contents",
+        "filename": "filename"
+      },
+      "c": {
+        "contents": "contents",
+        "filename": "filename"
+      },
+      "cpp": {
+        "contents": "contents",
+        "filename": "filename"
+      },
+      "javascript": {
+        "contents": "contents",
+        "filename": "filename"
+      },
+      "rust": {
+        "contents": "contents",
+        "filename": "filename"
+      },
+      "tinygo": {
+        "contents": "Contents",
+        "filename": "Filename"
+      }
+    },
+    "abb_robot_msgs/srv/SetFileContents_Response": {
+      "assemblyscript": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "c": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "cpp": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "javascript": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "rust": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "tinygo": {
+        "message": "Message",
+        "result_code": "Result_code"
+      }
+    },
+    "abb_robot_msgs/srv/SetIOSignal_Request": {
+      "assemblyscript": {
+        "signal": "signal",
+        "value": "value"
+      },
+      "c": {
+        "signal": "signal",
+        "value": "value"
+      },
+      "cpp": {
+        "signal": "signal",
+        "value": "value"
+      },
+      "javascript": {
+        "signal": "signal",
+        "value": "value"
+      },
+      "rust": {
+        "signal": "signal",
+        "value": "value"
+      },
+      "tinygo": {
+        "signal": "Signal",
+        "value": "Value"
+      }
+    },
+    "abb_robot_msgs/srv/SetIOSignal_Response": {
+      "assemblyscript": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "c": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "cpp": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "javascript": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "rust": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "tinygo": {
+        "message": "Message",
+        "result_code": "Result_code"
+      }
+    },
+    "abb_robot_msgs/srv/SetRAPIDBool_Request": {
+      "assemblyscript": {
+        "path": "path",
+        "value": "value"
+      },
+      "c": {
+        "path": "path",
+        "value": "value"
+      },
+      "cpp": {
+        "path": "path",
+        "value": "value"
+      },
+      "javascript": {
+        "path": "path",
+        "value": "value"
+      },
+      "rust": {
+        "path": "path",
+        "value": "value"
+      },
+      "tinygo": {
+        "path": "Path",
+        "value": "Value"
+      }
+    },
+    "abb_robot_msgs/srv/SetRAPIDBool_Response": {
+      "assemblyscript": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "c": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "cpp": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "javascript": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "rust": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "tinygo": {
+        "message": "Message",
+        "result_code": "Result_code"
+      }
+    },
+    "abb_robot_msgs/srv/SetRAPIDDnum_Request": {
+      "assemblyscript": {
+        "path": "path",
+        "value": "value"
+      },
+      "c": {
+        "path": "path",
+        "value": "value"
+      },
+      "cpp": {
+        "path": "path",
+        "value": "value"
+      },
+      "javascript": {
+        "path": "path",
+        "value": "value"
+      },
+      "rust": {
+        "path": "path",
+        "value": "value"
+      },
+      "tinygo": {
+        "path": "Path",
+        "value": "Value"
+      }
+    },
+    "abb_robot_msgs/srv/SetRAPIDDnum_Response": {
+      "assemblyscript": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "c": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "cpp": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "javascript": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "rust": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "tinygo": {
+        "message": "Message",
+        "result_code": "Result_code"
+      }
+    },
+    "abb_robot_msgs/srv/SetRAPIDNum_Request": {
+      "assemblyscript": {
+        "path": "path",
+        "value": "value"
+      },
+      "c": {
+        "path": "path",
+        "value": "value"
+      },
+      "cpp": {
+        "path": "path",
+        "value": "value"
+      },
+      "javascript": {
+        "path": "path",
+        "value": "value"
+      },
+      "rust": {
+        "path": "path",
+        "value": "value"
+      },
+      "tinygo": {
+        "path": "Path",
+        "value": "Value"
+      }
+    },
+    "abb_robot_msgs/srv/SetRAPIDNum_Response": {
+      "assemblyscript": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "c": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "cpp": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "javascript": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "rust": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "tinygo": {
+        "message": "Message",
+        "result_code": "Result_code"
+      }
+    },
+    "abb_robot_msgs/srv/SetRAPIDString_Request": {
+      "assemblyscript": {
+        "path": "path",
+        "value": "value"
+      },
+      "c": {
+        "path": "path",
+        "value": "value"
+      },
+      "cpp": {
+        "path": "path",
+        "value": "value"
+      },
+      "javascript": {
+        "path": "path",
+        "value": "value"
+      },
+      "rust": {
+        "path": "path",
+        "value": "value"
+      },
+      "tinygo": {
+        "path": "Path",
+        "value": "Value"
+      }
+    },
+    "abb_robot_msgs/srv/SetRAPIDString_Response": {
+      "assemblyscript": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "c": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "cpp": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "javascript": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "rust": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "tinygo": {
+        "message": "Message",
+        "result_code": "Result_code"
+      }
+    },
+    "abb_robot_msgs/srv/SetRAPIDSymbol_Request": {
+      "assemblyscript": {
+        "path": "path",
+        "value": "value"
+      },
+      "c": {
+        "path": "path",
+        "value": "value"
+      },
+      "cpp": {
+        "path": "path",
+        "value": "value"
+      },
+      "javascript": {
+        "path": "path",
+        "value": "value"
+      },
+      "rust": {
+        "path": "path",
+        "value": "value"
+      },
+      "tinygo": {
+        "path": "Path",
+        "value": "Value"
+      }
+    },
+    "abb_robot_msgs/srv/SetRAPIDSymbol_Response": {
+      "assemblyscript": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "c": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "cpp": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "javascript": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "rust": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "tinygo": {
+        "message": "Message",
+        "result_code": "Result_code"
+      }
+    },
+    "abb_robot_msgs/srv/SetSpeedRatio_Request": {
+      "assemblyscript": {
+        "speed_ratio": "speed_ratio"
+      },
+      "c": {
+        "speed_ratio": "speed_ratio"
+      },
+      "cpp": {
+        "speed_ratio": "speed_ratio"
+      },
+      "javascript": {
+        "speed_ratio": "speed_ratio"
+      },
+      "rust": {
+        "speed_ratio": "speed_ratio"
+      },
+      "tinygo": {
+        "speed_ratio": "Speed_ratio"
+      }
+    },
+    "abb_robot_msgs/srv/SetSpeedRatio_Response": {
+      "assemblyscript": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "c": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "cpp": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "javascript": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "rust": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "tinygo": {
+        "message": "Message",
+        "result_code": "Result_code"
+      }
+    },
+    "abb_robot_msgs/srv/TriggerWithResultCode_Request": {
+      "assemblyscript": {},
+      "c": {},
+      "cpp": {},
+      "javascript": {},
+      "rust": {},
+      "tinygo": {}
+    },
+    "abb_robot_msgs/srv/TriggerWithResultCode_Response": {
+      "assemblyscript": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "c": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "cpp": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "javascript": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "rust": {
+        "message": "message",
+        "result_code": "result_code"
+      },
+      "tinygo": {
+        "message": "Message",
+        "result_code": "Result_code"
+      }
+    },
+    "builtin_interfaces/msg/Duration": {
+      "assemblyscript": {
+        "nanosec": "nanosec",
+        "sec": "sec"
+      },
+      "c": {
+        "nanosec": "nanosec",
+        "sec": "sec"
+      },
+      "cpp": {
+        "nanosec": "nanosec",
+        "sec": "sec"
+      },
+      "javascript": {
+        "nanosec": "nanosec",
+        "sec": "sec"
+      },
+      "rust": {
+        "nanosec": "nanosec",
+        "sec": "sec"
+      },
+      "tinygo": {
+        "nanosec": "Nanosec",
+        "sec": "Sec"
+      }
+    },
+    "builtin_interfaces/msg/Time": {
+      "assemblyscript": {
+        "nanosec": "nanosec",
+        "sec": "sec"
+      },
+      "c": {
+        "nanosec": "nanosec",
+        "sec": "sec"
+      },
+      "cpp": {
+        "nanosec": "nanosec",
+        "sec": "sec"
+      },
+      "javascript": {
+        "nanosec": "nanosec",
+        "sec": "sec"
+      },
+      "rust": {
+        "nanosec": "nanosec",
+        "sec": "sec"
+      },
+      "tinygo": {
+        "nanosec": "Nanosec",
+        "sec": "Sec"
+      }
+    },
+    "control_msgs/action/FollowJointTrajectory_Feedback": {
+      "assemblyscript": {
+        "actual": "actual",
+        "desired": "desired",
+        "error": "error",
+        "header": "header",
+        "joint_names": "joint_names",
+        "multi_dof_actual": "multi_dof_actual",
+        "multi_dof_desired": "multi_dof_desired",
+        "multi_dof_error": "multi_dof_error",
+        "multi_dof_joint_names": "multi_dof_joint_names"
+      },
+      "c": {
+        "actual": "actual",
+        "desired": "desired",
+        "error": "error",
+        "header": "header",
+        "joint_names": "joint_names",
+        "multi_dof_actual": "multi_dof_actual",
+        "multi_dof_desired": "multi_dof_desired",
+        "multi_dof_error": "multi_dof_error",
+        "multi_dof_joint_names": "multi_dof_joint_names"
+      },
+      "cpp": {
+        "actual": "actual",
+        "desired": "desired",
+        "error": "error",
+        "header": "header",
+        "joint_names": "joint_names",
+        "multi_dof_actual": "multi_dof_actual",
+        "multi_dof_desired": "multi_dof_desired",
+        "multi_dof_error": "multi_dof_error",
+        "multi_dof_joint_names": "multi_dof_joint_names"
+      },
+      "javascript": {
+        "actual": "actual",
+        "desired": "desired",
+        "error": "error",
+        "header": "header",
+        "joint_names": "joint_names",
+        "multi_dof_actual": "multi_dof_actual",
+        "multi_dof_desired": "multi_dof_desired",
+        "multi_dof_error": "multi_dof_error",
+        "multi_dof_joint_names": "multi_dof_joint_names"
+      },
+      "rust": {
+        "actual": "actual",
+        "desired": "desired",
+        "error": "error",
+        "header": "header",
+        "joint_names": "joint_names",
+        "multi_dof_actual": "multi_dof_actual",
+        "multi_dof_desired": "multi_dof_desired",
+        "multi_dof_error": "multi_dof_error",
+        "multi_dof_joint_names": "multi_dof_joint_names"
+      },
+      "tinygo": {
+        "actual": "Actual",
+        "desired": "Desired",
+        "error": "Error",
+        "header": "Header",
+        "joint_names": "Joint_names",
+        "multi_dof_actual": "Multi_dof_actual",
+        "multi_dof_desired": "Multi_dof_desired",
+        "multi_dof_error": "Multi_dof_error",
+        "multi_dof_joint_names": "Multi_dof_joint_names"
+      }
+    },
+    "control_msgs/action/FollowJointTrajectory_Goal": {
+      "assemblyscript": {
+        "component_goal_tolerance": "component_goal_tolerance",
+        "component_path_tolerance": "component_path_tolerance",
+        "goal_time_tolerance": "goal_time_tolerance",
+        "goal_tolerance": "goal_tolerance",
+        "multi_dof_trajectory": "multi_dof_trajectory",
+        "path_tolerance": "path_tolerance",
+        "trajectory": "trajectory"
+      },
+      "c": {
+        "component_goal_tolerance": "component_goal_tolerance",
+        "component_path_tolerance": "component_path_tolerance",
+        "goal_time_tolerance": "goal_time_tolerance",
+        "goal_tolerance": "goal_tolerance",
+        "multi_dof_trajectory": "multi_dof_trajectory",
+        "path_tolerance": "path_tolerance",
+        "trajectory": "trajectory"
+      },
+      "cpp": {
+        "component_goal_tolerance": "component_goal_tolerance",
+        "component_path_tolerance": "component_path_tolerance",
+        "goal_time_tolerance": "goal_time_tolerance",
+        "goal_tolerance": "goal_tolerance",
+        "multi_dof_trajectory": "multi_dof_trajectory",
+        "path_tolerance": "path_tolerance",
+        "trajectory": "trajectory"
+      },
+      "javascript": {
+        "component_goal_tolerance": "component_goal_tolerance",
+        "component_path_tolerance": "component_path_tolerance",
+        "goal_time_tolerance": "goal_time_tolerance",
+        "goal_tolerance": "goal_tolerance",
+        "multi_dof_trajectory": "multi_dof_trajectory",
+        "path_tolerance": "path_tolerance",
+        "trajectory": "trajectory"
+      },
+      "rust": {
+        "component_goal_tolerance": "component_goal_tolerance",
+        "component_path_tolerance": "component_path_tolerance",
+        "goal_time_tolerance": "goal_time_tolerance",
+        "goal_tolerance": "goal_tolerance",
+        "multi_dof_trajectory": "multi_dof_trajectory",
+        "path_tolerance": "path_tolerance",
+        "trajectory": "trajectory"
+      },
+      "tinygo": {
+        "component_goal_tolerance": "Component_goal_tolerance",
+        "component_path_tolerance": "Component_path_tolerance",
+        "goal_time_tolerance": "Goal_time_tolerance",
+        "goal_tolerance": "Goal_tolerance",
+        "multi_dof_trajectory": "Multi_dof_trajectory",
+        "path_tolerance": "Path_tolerance",
+        "trajectory": "Trajectory"
+      }
+    },
+    "control_msgs/action/FollowJointTrajectory_Result": {
+      "assemblyscript": {
+        "error_code": "error_code",
+        "error_string": "error_string"
+      },
+      "c": {
+        "error_code": "error_code",
+        "error_string": "error_string"
+      },
+      "cpp": {
+        "error_code": "error_code",
+        "error_string": "error_string"
+      },
+      "javascript": {
+        "error_code": "error_code",
+        "error_string": "error_string"
+      },
+      "rust": {
+        "error_code": "error_code",
+        "error_string": "error_string"
+      },
+      "tinygo": {
+        "error_code": "Error_code",
+        "error_string": "Error_string"
+      }
+    },
+    "control_msgs/msg/JointComponentTolerance": {
+      "assemblyscript": {
+        "acceleration": "acceleration",
+        "component": "component",
+        "joint_name": "joint_name",
+        "position": "position",
+        "velocity": "velocity"
+      },
+      "c": {
+        "acceleration": "acceleration",
+        "component": "component",
+        "joint_name": "joint_name",
+        "position": "position",
+        "velocity": "velocity"
+      },
+      "cpp": {
+        "acceleration": "acceleration",
+        "component": "component",
+        "joint_name": "joint_name",
+        "position": "position",
+        "velocity": "velocity"
+      },
+      "javascript": {
+        "acceleration": "acceleration",
+        "component": "component",
+        "joint_name": "joint_name",
+        "position": "position",
+        "velocity": "velocity"
+      },
+      "rust": {
+        "acceleration": "acceleration",
+        "component": "component",
+        "joint_name": "joint_name",
+        "position": "position",
+        "velocity": "velocity"
+      },
+      "tinygo": {
+        "acceleration": "Acceleration",
+        "component": "Component",
+        "joint_name": "Joint_name",
+        "position": "Position",
+        "velocity": "Velocity"
+      }
+    },
+    "control_msgs/msg/JointTolerance": {
+      "assemblyscript": {
+        "acceleration": "acceleration",
+        "name": "name",
+        "position": "position",
+        "velocity": "velocity"
+      },
+      "c": {
+        "acceleration": "acceleration",
+        "name": "name",
+        "position": "position",
+        "velocity": "velocity"
+      },
+      "cpp": {
+        "acceleration": "acceleration",
+        "name": "name",
+        "position": "position",
+        "velocity": "velocity"
+      },
+      "javascript": {
+        "acceleration": "acceleration",
+        "name": "name",
+        "position": "position",
+        "velocity": "velocity"
+      },
+      "rust": {
+        "acceleration": "acceleration",
+        "name": "name",
+        "position": "position",
+        "velocity": "velocity"
+      },
+      "tinygo": {
+        "acceleration": "Acceleration",
+        "name": "Name",
+        "position": "Position",
+        "velocity": "Velocity"
+      }
+    },
+    "geometry_msgs/msg/Quaternion": {
+      "assemblyscript": {
+        "w": "w",
+        "x": "x",
+        "y": "y",
+        "z": "z"
+      },
+      "c": {
+        "w": "w",
+        "x": "x",
+        "y": "y",
+        "z": "z"
+      },
+      "cpp": {
+        "w": "w",
+        "x": "x",
+        "y": "y",
+        "z": "z"
+      },
+      "javascript": {
+        "w": "w",
+        "x": "x",
+        "y": "y",
+        "z": "z"
+      },
+      "rust": {
+        "w": "w",
+        "x": "x",
+        "y": "y",
+        "z": "z"
+      },
+      "tinygo": {
+        "w": "W",
+        "x": "X",
+        "y": "Y",
+        "z": "Z"
+      }
+    },
+    "geometry_msgs/msg/Transform": {
+      "assemblyscript": {
+        "rotation": "rotation",
+        "translation": "translation"
+      },
+      "c": {
+        "rotation": "rotation",
+        "translation": "translation"
+      },
+      "cpp": {
+        "rotation": "rotation",
+        "translation": "translation"
+      },
+      "javascript": {
+        "rotation": "rotation",
+        "translation": "translation"
+      },
+      "rust": {
+        "rotation": "rotation",
+        "translation": "translation"
+      },
+      "tinygo": {
+        "rotation": "Rotation",
+        "translation": "Translation"
+      }
+    },
+    "geometry_msgs/msg/Twist": {
+      "assemblyscript": {
+        "angular": "angular",
+        "linear": "linear"
+      },
+      "c": {
+        "angular": "angular",
+        "linear": "linear"
+      },
+      "cpp": {
+        "angular": "angular",
+        "linear": "linear"
+      },
+      "javascript": {
+        "angular": "angular",
+        "linear": "linear"
+      },
+      "rust": {
+        "angular": "angular",
+        "linear": "linear"
+      },
+      "tinygo": {
+        "angular": "Angular",
+        "linear": "Linear"
+      }
+    },
+    "geometry_msgs/msg/Vector3": {
+      "assemblyscript": {
+        "x": "x",
+        "y": "y",
+        "z": "z"
+      },
+      "c": {
+        "x": "x",
+        "y": "y",
+        "z": "z"
+      },
+      "cpp": {
+        "x": "x",
+        "y": "y",
+        "z": "z"
+      },
+      "javascript": {
+        "x": "x",
+        "y": "y",
+        "z": "z"
+      },
+      "rust": {
+        "x": "x",
+        "y": "y",
+        "z": "z"
+      },
+      "tinygo": {
+        "x": "X",
+        "y": "Y",
+        "z": "Z"
+      }
+    },
+    "sensor_msgs/msg/JointState": {
+      "assemblyscript": {
+        "effort": "effort",
+        "header": "header",
+        "name": "name",
+        "position": "position",
+        "velocity": "velocity"
+      },
+      "c": {
+        "effort": "effort",
+        "header": "header",
+        "name": "name",
+        "position": "position",
+        "velocity": "velocity"
+      },
+      "cpp": {
+        "effort": "effort",
+        "header": "header",
+        "name": "name",
+        "position": "position",
+        "velocity": "velocity"
+      },
+      "javascript": {
+        "effort": "effort",
+        "header": "header",
+        "name": "name",
+        "position": "position",
+        "velocity": "velocity"
+      },
+      "rust": {
+        "effort": "effort",
+        "header": "header",
+        "name": "name",
+        "position": "position",
+        "velocity": "velocity"
+      },
+      "tinygo": {
+        "effort": "Effort",
+        "header": "Header",
+        "name": "Name",
+        "position": "Position",
+        "velocity": "Velocity"
+      }
+    },
+    "std_msgs/msg/Header": {
+      "assemblyscript": {
+        "frame_id": "frame_id",
+        "stamp": "stamp"
+      },
+      "c": {
+        "frame_id": "frame_id",
+        "stamp": "stamp"
+      },
+      "cpp": {
+        "frame_id": "frame_id",
+        "stamp": "stamp"
+      },
+      "javascript": {
+        "frame_id": "frame_id",
+        "stamp": "stamp"
+      },
+      "rust": {
+        "frame_id": "frame_id",
+        "stamp": "stamp"
+      },
+      "tinygo": {
+        "frame_id": "Frame_id",
+        "stamp": "Stamp"
+      }
+    },
+    "std_srvs/srv/Trigger_Request": {
+      "assemblyscript": {},
+      "c": {},
+      "cpp": {},
+      "javascript": {},
+      "rust": {},
+      "tinygo": {}
+    },
+    "std_srvs/srv/Trigger_Response": {
+      "assemblyscript": {
+        "message": "message",
+        "success": "success"
+      },
+      "c": {
+        "message": "message",
+        "success": "success"
+      },
+      "cpp": {
+        "message": "message",
+        "success": "success"
+      },
+      "javascript": {
+        "message": "message",
+        "success": "success"
+      },
+      "rust": {
+        "message": "message",
+        "success": "success"
+      },
+      "tinygo": {
+        "message": "Message",
+        "success": "Success"
+      }
+    },
+    "trajectory_msgs/msg/JointTrajectory": {
+      "assemblyscript": {
+        "header": "header",
+        "joint_names": "joint_names",
+        "points": "points"
+      },
+      "c": {
+        "header": "header",
+        "joint_names": "joint_names",
+        "points": "points"
+      },
+      "cpp": {
+        "header": "header",
+        "joint_names": "joint_names",
+        "points": "points"
+      },
+      "javascript": {
+        "header": "header",
+        "joint_names": "joint_names",
+        "points": "points"
+      },
+      "rust": {
+        "header": "header",
+        "joint_names": "joint_names",
+        "points": "points"
+      },
+      "tinygo": {
+        "header": "Header",
+        "joint_names": "Joint_names",
+        "points": "Points"
+      }
+    },
+    "trajectory_msgs/msg/JointTrajectoryPoint": {
+      "assemblyscript": {
+        "accelerations": "accelerations",
+        "effort": "effort",
+        "positions": "positions",
+        "time_from_start": "time_from_start",
+        "velocities": "velocities"
+      },
+      "c": {
+        "accelerations": "accelerations",
+        "effort": "effort",
+        "positions": "positions",
+        "time_from_start": "time_from_start",
+        "velocities": "velocities"
+      },
+      "cpp": {
+        "accelerations": "accelerations",
+        "effort": "effort",
+        "positions": "positions",
+        "time_from_start": "time_from_start",
+        "velocities": "velocities"
+      },
+      "javascript": {
+        "accelerations": "accelerations",
+        "effort": "effort",
+        "positions": "positions",
+        "time_from_start": "time_from_start",
+        "velocities": "velocities"
+      },
+      "rust": {
+        "accelerations": "accelerations",
+        "effort": "effort",
+        "positions": "positions",
+        "time_from_start": "time_from_start",
+        "velocities": "velocities"
+      },
+      "tinygo": {
+        "accelerations": "Accelerations",
+        "effort": "Effort",
+        "positions": "Positions",
+        "time_from_start": "Time_from_start",
+        "velocities": "Velocities"
+      }
+    },
+    "trajectory_msgs/msg/MultiDOFJointTrajectory": {
+      "assemblyscript": {
+        "header": "header",
+        "joint_names": "joint_names",
+        "points": "points"
+      },
+      "c": {
+        "header": "header",
+        "joint_names": "joint_names",
+        "points": "points"
+      },
+      "cpp": {
+        "header": "header",
+        "joint_names": "joint_names",
+        "points": "points"
+      },
+      "javascript": {
+        "header": "header",
+        "joint_names": "joint_names",
+        "points": "points"
+      },
+      "rust": {
+        "header": "header",
+        "joint_names": "joint_names",
+        "points": "points"
+      },
+      "tinygo": {
+        "header": "Header",
+        "joint_names": "Joint_names",
+        "points": "Points"
+      }
+    },
+    "trajectory_msgs/msg/MultiDOFJointTrajectoryPoint": {
+      "assemblyscript": {
+        "accelerations": "accelerations",
+        "time_from_start": "time_from_start",
+        "transforms": "transforms",
+        "velocities": "velocities"
+      },
+      "c": {
+        "accelerations": "accelerations",
+        "time_from_start": "time_from_start",
+        "transforms": "transforms",
+        "velocities": "velocities"
+      },
+      "cpp": {
+        "accelerations": "accelerations",
+        "time_from_start": "time_from_start",
+        "transforms": "transforms",
+        "velocities": "velocities"
+      },
+      "javascript": {
+        "accelerations": "accelerations",
+        "time_from_start": "time_from_start",
+        "transforms": "transforms",
+        "velocities": "velocities"
+      },
+      "rust": {
+        "accelerations": "accelerations",
+        "time_from_start": "time_from_start",
+        "transforms": "transforms",
+        "velocities": "velocities"
+      },
+      "tinygo": {
+        "accelerations": "Accelerations",
+        "time_from_start": "Time_from_start",
+        "transforms": "Transforms",
+        "velocities": "Velocities"
+      }
+    }
+  },
+  "native_execution": "NOT_RUN",
+  "native_exporter_helper_source": {
+    "bytes": 10784,
+    "sha256": "55c5e504a1d61a648f73dd732aa0561f4b4dc0adf54dbe631857edf1564f3ac6"
+  },
+  "native_registry_emitted": false,
+  "outputs": {
+    "bounded_interfaces.go": {
+      "bytes": 158887,
+      "sha256": "1f9e2032cd039a241870dd15d05486d56366cd295684ae552e8eeeb23769a48b"
+    },
+    "bounded_interfaces.h": {
+      "bytes": 69259,
+      "sha256": "96e5e1fbd443c980409e1c7daa915610123d94fd9fd3dabb7a2cd264c020006d"
+    },
+    "bounded_interfaces.hpp": {
+      "bytes": 94484,
+      "sha256": "e3ff2f244a81c44fff994b98006e61404add0a04b489f90fc5bcb3947b39d9e5"
+    },
+    "bounded_interfaces.mjs": {
+      "bytes": 37041,
+      "sha256": "5be9fdebf98ddc3ae33440859ef6a801e967b1e42dffca7e07c70510892c6de2"
+    },
+    "bounded_interfaces.rs": {
+      "bytes": 37827,
+      "sha256": "63a0e6955febb62d5cac22371b1c8ea8e6af82cd7800f9049a653900998bd1d1"
+    },
+    "bounded_interfaces.ts": {
+      "bytes": 49426,
+      "sha256": "4a2650bd470c4671af63b9c5c36f350c32fb4f78710dcd301870a4d577915a85"
+    },
+    "bounded_records.go": {
+      "bytes": 328141,
+      "sha256": "80eaba875c020010202effcfe855054430e3045bcd3359fda4b97abeef713f83"
+    },
+    "bounded_records.h": {
+      "bytes": 488913,
+      "sha256": "87d42b57835296dfeb7323b9687d350ca941b84621c33aae9745828a0d299794"
+    },
+    "bounded_records.hpp": {
+      "bytes": 113635,
+      "sha256": "0cb35bae0127a89718c9bb58206306fb9bc99ba011ad9794e4575c4119a503a1"
+    },
+    "bounded_records.mjs": {
+      "bytes": 227359,
+      "sha256": "c5aea8b1e86ed97577e56bdda9441224ad0c36948c3f3d477573849778926c2f"
+    },
+    "bounded_records.rs": {
+      "bytes": 263758,
+      "sha256": "6e481110b2a2ee00c14782ab5b9b7b8ea751c98559b7a5f3e6e0716b946cab1f"
+    },
+    "bounded_records.ts": {
+      "bytes": 310517,
+      "sha256": "a682e6fd650daee72a74a20aaeffe7af30c59a702443e2a3dcb32417f6476bc9"
+    },
+    "native_constants.hpp": {
+      "bytes": 10781,
+      "sha256": "537b80c852e115d87234ee902633ae612c4d974b0b0cce46834b97730abd8031"
+    },
+    "native_identity.cc": {
+      "bytes": 59815,
+      "sha256": "fe8df70ad477606b9dc987503cd16a081a6d58df00b5e01ee6ddad1eac9b7d5f"
+    }
+  },
+  "records": [
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 81,
+      "codec_identity": "UWVMROS1_fbd288b93963fccc92aa114570c0a4f6a1fdc5b473cb8e252922720f5d88b519",
+      "expanded_nodes": 8,
+      "maximum_wire_bytes": 81,
+      "minimum_wire_bytes": 17,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_egm_msgs/msg/EGMChannelState"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 8,
+      "codec_identity": "UWVMROS1_0fd520c23fd8cb06e2c27292fdc20694732fa9332d452fc3fa31da90f7605fb7",
+      "expanded_nodes": 3,
+      "maximum_wire_bytes": 8,
+      "minimum_wire_bytes": 8,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "builtin_interfaces/msg/Time"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 76,
+      "codec_identity": "UWVMROS1_afba9e74be3c5e3321750c1c4c30ba2925269f75b9da43a6d5c1e93d293d7396",
+      "expanded_nodes": 5,
+      "maximum_wire_bytes": 76,
+      "minimum_wire_bytes": 12,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "std_msgs/msg/Header"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 1376,
+      "codec_identity": "UWVMROS1_5b10efb13c3be7290c7e391d55679a174969887edd1b8baca682edac311a8e5d",
+      "expanded_nodes": 135,
+      "maximum_wire_bytes": 1376,
+      "minimum_wire_bytes": 16,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_egm_msgs/msg/EGMState"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 16,
+      "codec_identity": "UWVMROS1_0c22cc29db62f5001ef20ea7b131de63099e31ac5f150d3e9f0bb62120d60571",
+      "expanded_nodes": 5,
+      "maximum_wire_bytes": 16,
+      "minimum_wire_bytes": 16,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_msgs/msg/ConfData"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 24,
+      "codec_identity": "UWVMROS1_8b799c6bec9e4eab0900a633a93375a7792e49fde0bf302f6752115a001a4ae2",
+      "expanded_nodes": 7,
+      "maximum_wire_bytes": 24,
+      "minimum_wire_bytes": 24,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_msgs/msg/ExtJoint"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 24,
+      "codec_identity": "UWVMROS1_6d842aebc0a3b222a727063a41ef7e96f2b8c14ffbba5c8d6e140ba2890e69cd",
+      "expanded_nodes": 7,
+      "maximum_wire_bytes": 24,
+      "minimum_wire_bytes": 24,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_msgs/msg/RobJoint"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 48,
+      "codec_identity": "UWVMROS1_5949cf0121391646c1f04b54d8f7deaae0497f4920f7817739fc25bfddc4e540",
+      "expanded_nodes": 15,
+      "maximum_wire_bytes": 48,
+      "minimum_wire_bytes": 48,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_msgs/msg/JointTarget"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 12,
+      "codec_identity": "UWVMROS1_31d490d6ead5a1a78295dc4e934f0b89e74e4732da2b57d28d297477bf4cbdd2",
+      "expanded_nodes": 4,
+      "maximum_wire_bytes": 12,
+      "minimum_wire_bytes": 12,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_msgs/msg/Pos"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 16,
+      "codec_identity": "UWVMROS1_821d887b88298422f9466aaf3926db580f878e964055fbd72226b7f76f2f536e",
+      "expanded_nodes": 5,
+      "maximum_wire_bytes": 16,
+      "minimum_wire_bytes": 16,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_msgs/msg/Orient"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 44,
+      "codec_identity": "UWVMROS1_f73e480a0e6746a4df8f4d62bc123d68d01d3dc48f0bc5f0eac51b859a0750f9",
+      "expanded_nodes": 14,
+      "maximum_wire_bytes": 44,
+      "minimum_wire_bytes": 44,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_msgs/msg/LoadData"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 28,
+      "codec_identity": "UWVMROS1_8f1535fe21326706fd0b16314857162d36bca91ce8e8f6a8bec3864dafb9e2f2",
+      "expanded_nodes": 10,
+      "maximum_wire_bytes": 28,
+      "minimum_wire_bytes": 28,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_msgs/msg/Pose"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 68,
+      "codec_identity": "UWVMROS1_8decb56e8faf0a6a954af974adfea5c500aea8392e6a778ae7394174323489d8",
+      "expanded_nodes": 22,
+      "maximum_wire_bytes": 68,
+      "minimum_wire_bytes": 68,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_msgs/msg/RobTarget"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 73,
+      "codec_identity": "UWVMROS1_948fa0bbaaf95f0d88ca03cad687f16102261f54b0da889ae8bca82042fc5237",
+      "expanded_nodes": 26,
+      "maximum_wire_bytes": 73,
+      "minimum_wire_bytes": 73,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_msgs/msg/ToolData"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 574,
+      "codec_identity": "UWVMROS1_b36f0448512fab6028431d19b39a8ae31b7b81b2615ffc8311139f63b5d8e7cd",
+      "expanded_nodes": 24,
+      "maximum_wire_bytes": 574,
+      "minimum_wire_bytes": 62,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_msgs/msg/WObjData"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 716,
+      "codec_identity": "UWVMROS1_fce73aea80d9b8a299b8e2ab742602871146b3ebbd624a2e807e25c1ac107cfa",
+      "expanded_nodes": 75,
+      "maximum_wire_bytes": 716,
+      "minimum_wire_bytes": 204,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_sm_addin_msgs/msg/EGMActivateSettings"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 40,
+      "codec_identity": "UWVMROS1_92a2a654eb2eda89077933f955f04ed87884827b8875cf563570eed5d211b0e2",
+      "expanded_nodes": 14,
+      "maximum_wire_bytes": 40,
+      "minimum_wire_bytes": 40,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_sm_addin_msgs/msg/EGMRunSettings"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 5,
+      "codec_identity": "UWVMROS1_2565bed5b83b132c69f37d7294c69181800ad2974ddc54f60868da57e28e782c",
+      "expanded_nodes": 3,
+      "maximum_wire_bytes": 5,
+      "minimum_wire_bytes": 5,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_sm_addin_msgs/msg/EGMSetupSettings"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 4,
+      "codec_identity": "UWVMROS1_0f3f2f6034567a7d49dd140ff9ff620e8567548139597b9b823e63a947673cee",
+      "expanded_nodes": 2,
+      "maximum_wire_bytes": 4,
+      "minimum_wire_bytes": 4,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_sm_addin_msgs/msg/EGMStopSettings"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 767,
+      "codec_identity": "UWVMROS1_622d3a975eecb11f7729aecfadc161cada271208d6fe7599f455750b90144ef3",
+      "expanded_nodes": 97,
+      "maximum_wire_bytes": 767,
+      "minimum_wire_bytes": 255,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_sm_addin_msgs/msg/EGMSettings"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 518,
+      "codec_identity": "UWVMROS1_ff2a09e4b6e8ef26cbdc3ecdffdceb33d6b2c82f0d51ed2c38ce9648c6f47711",
+      "expanded_nodes": 4,
+      "maximum_wire_bytes": 518,
+      "minimum_wire_bytes": 6,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_sm_addin_msgs/msg/StateMachineState"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 8368,
+      "codec_identity": "UWVMROS1_3c0f157544fa82c4e206a4fb42f8ba7f67213d19533f79b77c66dec6fd0460d9",
+      "expanded_nodes": 71,
+      "maximum_wire_bytes": 8368,
+      "minimum_wire_bytes": 16,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_sm_addin_msgs/msg/RuntimeState"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 68,
+      "codec_identity": "UWVMROS1_363be2459fcc9c475c6305cbcfebf7689e891eb27645b7667960aace23d56e8e",
+      "expanded_nodes": 2,
+      "maximum_wire_bytes": 68,
+      "minimum_wire_bytes": 4,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_sm_addin_msgs/srv/GetEGMSettings_Request"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 1285,
+      "codec_identity": "UWVMROS1_d8f340e1c6d78fc0a782c3279efb34ae5e11df175a82f9dd5ee82e603d6b2ffb",
+      "expanded_nodes": 100,
+      "maximum_wire_bytes": 1285,
+      "minimum_wire_bytes": 261,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_sm_addin_msgs/srv/GetEGMSettings_Response"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 835,
+      "codec_identity": "UWVMROS1_c2f3dd535e9475526bf18bdffa0e9a839049d315c9aebb150f8561ee3361a2bd",
+      "expanded_nodes": 99,
+      "maximum_wire_bytes": 835,
+      "minimum_wire_bytes": 259,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_sm_addin_msgs/srv/SetEGMSettings_Request"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 518,
+      "codec_identity": "UWVMROS1_6a1adeebe31dfe101a6d57019e26ee2f1144b9a6ce30aee08d4c6fe56ea6838d",
+      "expanded_nodes": 3,
+      "maximum_wire_bytes": 518,
+      "minimum_wire_bytes": 6,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_sm_addin_msgs/srv/SetEGMSettings_Response"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 584,
+      "codec_identity": "UWVMROS1_4561b7e5e296a1a329d5f5684bcbde1ef41324554a34e9a79a85824286dd477c",
+      "expanded_nodes": 3,
+      "maximum_wire_bytes": 584,
+      "minimum_wire_bytes": 8,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_sm_addin_msgs/srv/SetRAPIDRoutine_Request"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 518,
+      "codec_identity": "UWVMROS1_980d2a16536289f446161acdf2fc57d459baa2290d74f1dd5aaf8129126cbba1",
+      "expanded_nodes": 3,
+      "maximum_wire_bytes": 518,
+      "minimum_wire_bytes": 6,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_sm_addin_msgs/srv/SetRAPIDRoutine_Response"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 73,
+      "codec_identity": "UWVMROS1_5d6983aa85c2c52f8ec06cbd723d5929cfc381db2e0bfffb4c27078497d86c90",
+      "expanded_nodes": 4,
+      "maximum_wire_bytes": 73,
+      "minimum_wire_bytes": 9,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_sm_addin_msgs/srv/SetSGCommand_Request"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 518,
+      "codec_identity": "UWVMROS1_87cdc41c81d49930dce7193d4b7af98add266a6e9a7cf5e69457d01ded388cf8",
+      "expanded_nodes": 3,
+      "maximum_wire_bytes": 518,
+      "minimum_wire_bytes": 6,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_sm_addin_msgs/srv/SetSGCommand_Response"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 69,
+      "codec_identity": "UWVMROS1_1dc7a7dcbaa19e78cd6419f8844287a7fbd9d7a839ab1a8ad97ef0be34f3a3a8",
+      "expanded_nodes": 3,
+      "maximum_wire_bytes": 69,
+      "minimum_wire_bytes": 5,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/msg/MechanicalUnitState"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 204,
+      "codec_identity": "UWVMROS1_249523197567fbf638f30487a7f5b8d8ff5ea746fcd4a65a35f2dbb18a3adf0e",
+      "expanded_nodes": 4,
+      "maximum_wire_bytes": 204,
+      "minimum_wire_bytes": 12,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/msg/RAPIDSymbolPath"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 71,
+      "codec_identity": "UWVMROS1_ff698e375b0ff33026cfd248c1ac734f939763aba25a6c4f7cac628d445422fd",
+      "expanded_nodes": 5,
+      "maximum_wire_bytes": 71,
+      "minimum_wire_bytes": 7,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/msg/RAPIDTaskState"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 0,
+      "codec_identity": "UWVMROS1_4e01b972b67454e851801f28aee09c0774b67907d2241cc67cae7d045c18f646",
+      "expanded_nodes": 1,
+      "maximum_wire_bytes": 0,
+      "minimum_wire_bytes": 0,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/msg/ServiceResponses"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 2327,
+      "codec_identity": "UWVMROS1_c1cdbf0e578fddc5bf70cc2cc181d786f3e8189afc6a67962de6eb273973a38f",
+      "expanded_nodes": 139,
+      "maximum_wire_bytes": 2327,
+      "minimum_wire_bytes": 23,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/msg/SystemState"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 516,
+      "codec_identity": "UWVMROS1_bdcf73a965bd05356e48019b74d633176fdeda62452bc7185d6b6ff30576016b",
+      "expanded_nodes": 2,
+      "maximum_wire_bytes": 516,
+      "minimum_wire_bytes": 4,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/GetFileContents_Request"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 4618,
+      "codec_identity": "UWVMROS1_f05617145a40043e87cbc251f833274d2a962bd7cdaabc5f9a8e4591bd56e107",
+      "expanded_nodes": 4,
+      "maximum_wire_bytes": 4618,
+      "minimum_wire_bytes": 10,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/GetFileContents_Response"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 516,
+      "codec_identity": "UWVMROS1_2406d53c2fce44e72ad7e6f1c9e75ea19c4df694ff9f00917229ec758209b1f5",
+      "expanded_nodes": 2,
+      "maximum_wire_bytes": 516,
+      "minimum_wire_bytes": 4,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/GetIOSignal_Request"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 1034,
+      "codec_identity": "UWVMROS1_1f668ef78c353f2ec8defdac619d349cda731576f2429cf07107b9b56ba9030e",
+      "expanded_nodes": 4,
+      "maximum_wire_bytes": 1034,
+      "minimum_wire_bytes": 10,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/GetIOSignal_Response"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 204,
+      "codec_identity": "UWVMROS1_c381080d235c78216a8e64275819ff3fb97e1b1de96e7da758c4889630b8e0ff",
+      "expanded_nodes": 5,
+      "maximum_wire_bytes": 204,
+      "minimum_wire_bytes": 12,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/GetRAPIDBool_Request"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 519,
+      "codec_identity": "UWVMROS1_b853e212489fb815866fa29b165eea474a977483158b6203699c4a1293aa6acd",
+      "expanded_nodes": 4,
+      "maximum_wire_bytes": 519,
+      "minimum_wire_bytes": 7,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/GetRAPIDBool_Response"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 204,
+      "codec_identity": "UWVMROS1_71057c2fe44bc96505ec6e05d998fcb6323b281fff40808ce990207c48626979",
+      "expanded_nodes": 5,
+      "maximum_wire_bytes": 204,
+      "minimum_wire_bytes": 12,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/GetRAPIDDnum_Request"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 526,
+      "codec_identity": "UWVMROS1_af0420c126368a7e45b728c7fef76062b5ef2f0adea7535ad38e4771244edd56",
+      "expanded_nodes": 4,
+      "maximum_wire_bytes": 526,
+      "minimum_wire_bytes": 14,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/GetRAPIDDnum_Response"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 204,
+      "codec_identity": "UWVMROS1_03d5da34af8d90ed8a20f8ca38fa75d9e777496828978f0f348e3c1c8f67d0a5",
+      "expanded_nodes": 5,
+      "maximum_wire_bytes": 204,
+      "minimum_wire_bytes": 12,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/GetRAPIDNum_Request"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 522,
+      "codec_identity": "UWVMROS1_a0da03014dd001e58efc4a5b274cd5c62016e7fa257af1120a8142a79635220d",
+      "expanded_nodes": 4,
+      "maximum_wire_bytes": 522,
+      "minimum_wire_bytes": 10,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/GetRAPIDNum_Response"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 204,
+      "codec_identity": "UWVMROS1_c7bc9c788301e619a165c18a1cdb0aca80df8def5be31da5dbf34c0038e73596",
+      "expanded_nodes": 5,
+      "maximum_wire_bytes": 204,
+      "minimum_wire_bytes": 12,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/GetRAPIDString_Request"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 1034,
+      "codec_identity": "UWVMROS1_cf7bfdb2af5b91eb58b19b909f7fa3357dc1dad02716f8fa4465b53f3f4a1458",
+      "expanded_nodes": 4,
+      "maximum_wire_bytes": 1034,
+      "minimum_wire_bytes": 10,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/GetRAPIDString_Response"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 204,
+      "codec_identity": "UWVMROS1_e216a54cdae70f8147489928ff05a4b172ba4fc47e9ed5df4828b070354ac469",
+      "expanded_nodes": 5,
+      "maximum_wire_bytes": 204,
+      "minimum_wire_bytes": 12,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/GetRAPIDSymbol_Request"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 1034,
+      "codec_identity": "UWVMROS1_b1f6de7ad0640f5645678d327804dc7e732bdad38805e642b13ed7294c21d602",
+      "expanded_nodes": 4,
+      "maximum_wire_bytes": 1034,
+      "minimum_wire_bytes": 10,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/GetRAPIDSymbol_Response"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 0,
+      "codec_identity": "UWVMROS1_caf70e11b386a933f62d06a433ca1cedaa3c8ecc75b7e8de8c1d5ae00a29f03e",
+      "expanded_nodes": 1,
+      "maximum_wire_bytes": 0,
+      "minimum_wire_bytes": 0,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/GetRobotControllerDescription_Request"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 4618,
+      "codec_identity": "UWVMROS1_1af2591f035379597f376ed1e2343f73a89f9fef5c29269aa420243a82e6c368",
+      "expanded_nodes": 4,
+      "maximum_wire_bytes": 4618,
+      "minimum_wire_bytes": 10,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/GetRobotControllerDescription_Response"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 0,
+      "codec_identity": "UWVMROS1_54ee2c897e2bf2f39c96cc42246ffe5997c8df280280433e8748b3bcf24c299c",
+      "expanded_nodes": 1,
+      "maximum_wire_bytes": 0,
+      "minimum_wire_bytes": 0,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/GetSpeedRatio_Request"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 519,
+      "codec_identity": "UWVMROS1_baa271a258c7ca274e0145fea1abb7cbc43e98c82b8e40d67c4743237a19910b",
+      "expanded_nodes": 4,
+      "maximum_wire_bytes": 519,
+      "minimum_wire_bytes": 7,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/GetSpeedRatio_Response"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 4616,
+      "codec_identity": "UWVMROS1_3bfa8ad1846fc31acae47a875d3555a78a64b777923eb9b62e87a836f041b26b",
+      "expanded_nodes": 3,
+      "maximum_wire_bytes": 4616,
+      "minimum_wire_bytes": 8,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/SetFileContents_Request"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 518,
+      "codec_identity": "UWVMROS1_1586344401d43055460b49f2487567638f66838cfe5cac99a47e0a39c0b06ede",
+      "expanded_nodes": 3,
+      "maximum_wire_bytes": 518,
+      "minimum_wire_bytes": 6,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/SetFileContents_Response"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 1032,
+      "codec_identity": "UWVMROS1_2d206d0020179263e83e745a428616ed53d809b0c65a79ad495cb882ae9e49b7",
+      "expanded_nodes": 3,
+      "maximum_wire_bytes": 1032,
+      "minimum_wire_bytes": 8,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/SetIOSignal_Request"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 518,
+      "codec_identity": "UWVMROS1_1fa28cc3160d51f71d0740cbe145663ec360d6fa488c2a6bf14ad6ab92004a75",
+      "expanded_nodes": 3,
+      "maximum_wire_bytes": 518,
+      "minimum_wire_bytes": 6,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/SetIOSignal_Response"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 205,
+      "codec_identity": "UWVMROS1_4e707e429acc860d032d216bcd2c1eb1a0f731fad7e7c0bef7beed810c6e4a52",
+      "expanded_nodes": 6,
+      "maximum_wire_bytes": 205,
+      "minimum_wire_bytes": 13,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/SetRAPIDBool_Request"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 518,
+      "codec_identity": "UWVMROS1_80d2b31c93771cfa8a19ff82a3d9d63951bf9d28c039d2725017327fa3b0114a",
+      "expanded_nodes": 3,
+      "maximum_wire_bytes": 518,
+      "minimum_wire_bytes": 6,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/SetRAPIDBool_Response"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 212,
+      "codec_identity": "UWVMROS1_cece086311a908f12c0b0ab3988ca829e891749c74687c717d2a52bfb8ceaf76",
+      "expanded_nodes": 6,
+      "maximum_wire_bytes": 212,
+      "minimum_wire_bytes": 20,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/SetRAPIDDnum_Request"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 518,
+      "codec_identity": "UWVMROS1_e5f77fe9850f109d873a2784b9690c8aa0632b9e91d158ed4d14daf1aaf90ea6",
+      "expanded_nodes": 3,
+      "maximum_wire_bytes": 518,
+      "minimum_wire_bytes": 6,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/SetRAPIDDnum_Response"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 208,
+      "codec_identity": "UWVMROS1_a5bee9a64be69dc4246f68837a44362f52795ae3c6420a2df47685606283ea02",
+      "expanded_nodes": 6,
+      "maximum_wire_bytes": 208,
+      "minimum_wire_bytes": 16,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/SetRAPIDNum_Request"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 518,
+      "codec_identity": "UWVMROS1_744f3c5fac58ff098c96cedcea94fe6fa87c88ceb89674449f50fbdcd1ca30bb",
+      "expanded_nodes": 3,
+      "maximum_wire_bytes": 518,
+      "minimum_wire_bytes": 6,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/SetRAPIDNum_Response"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 720,
+      "codec_identity": "UWVMROS1_f21c45f3f8cd4c0b50781bdd487fdc6ec0c0b35adbc7e36e9ca5b7cc47c3d461",
+      "expanded_nodes": 6,
+      "maximum_wire_bytes": 720,
+      "minimum_wire_bytes": 16,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/SetRAPIDString_Request"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 518,
+      "codec_identity": "UWVMROS1_1496ef4f4ffe48fe74b9e25b925c19f10f0e171a9d33fa2e56c15aa5cfbe4774",
+      "expanded_nodes": 3,
+      "maximum_wire_bytes": 518,
+      "minimum_wire_bytes": 6,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/SetRAPIDString_Response"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 720,
+      "codec_identity": "UWVMROS1_928d427801b79775595fed6e3779f9ba9e7e8e27f2de66cf79610cb51bb72bcf",
+      "expanded_nodes": 6,
+      "maximum_wire_bytes": 720,
+      "minimum_wire_bytes": 16,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/SetRAPIDSymbol_Request"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 518,
+      "codec_identity": "UWVMROS1_e156616a51bf4691a1c3853d62a8b0c43bb17d1a330cd4e7a58eceb5fe442382",
+      "expanded_nodes": 3,
+      "maximum_wire_bytes": 518,
+      "minimum_wire_bytes": 6,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/SetRAPIDSymbol_Response"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 1,
+      "codec_identity": "UWVMROS1_da30970377ba1bc151b544560773f02e17f4eaed56eb4c8d791de72bdef04355",
+      "expanded_nodes": 2,
+      "maximum_wire_bytes": 1,
+      "minimum_wire_bytes": 1,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/SetSpeedRatio_Request"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 518,
+      "codec_identity": "UWVMROS1_25e6d7edaa0503a4d45d893e886db4215bfd0af8711307c141bc63552609e3a5",
+      "expanded_nodes": 3,
+      "maximum_wire_bytes": 518,
+      "minimum_wire_bytes": 6,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/SetSpeedRatio_Response"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 0,
+      "codec_identity": "UWVMROS1_fd1d49c3b4e489464c6662f306210137f71d15192f64cd8a8abf93acd5fbff8d",
+      "expanded_nodes": 1,
+      "maximum_wire_bytes": 0,
+      "minimum_wire_bytes": 0,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/TriggerWithResultCode_Request"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 518,
+      "codec_identity": "UWVMROS1_e38422b2a008f07e108505ac3ce65c24189a1d6657e88a6289e17d7d4ae38d51",
+      "expanded_nodes": 3,
+      "maximum_wire_bytes": 518,
+      "minimum_wire_bytes": 6,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/TriggerWithResultCode_Response"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 8,
+      "codec_identity": "UWVMROS1_3804444fae7a82a57907d25c2c3dc54d9a42dcd305f41ca073b1221dca7d36e4",
+      "expanded_nodes": 3,
+      "maximum_wire_bytes": 8,
+      "minimum_wire_bytes": 8,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "builtin_interfaces/msg/Duration"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 408,
+      "codec_identity": "UWVMROS1_4d55f494f060a9a3ff23bedd54da49f9e70e6b77acbdf911878afbf672cbadc5",
+      "expanded_nodes": 56,
+      "maximum_wire_bytes": 408,
+      "minimum_wire_bytes": 24,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "trajectory_msgs/msg/JointTrajectoryPoint"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 4164,
+      "codec_identity": "UWVMROS1_d74956440763bd09c76ec623efeb322aa89be8ef6410b9125d4e2cb1aeeb69c0",
+      "expanded_nodes": 468,
+      "maximum_wire_bytes": 4164,
+      "minimum_wire_bytes": 20,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "trajectory_msgs/msg/JointTrajectory"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 24,
+      "codec_identity": "UWVMROS1_5adebf211fe375fba92c0628f9b8ebf05bff9ab22ddc4bbf00629167af295d5e",
+      "expanded_nodes": 4,
+      "maximum_wire_bytes": 24,
+      "minimum_wire_bytes": 24,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Vector3"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 32,
+      "codec_identity": "UWVMROS1_34a32c3470cbfe2ff12340781a5bf22f6c370a8f5c06669f25a34321ade81672",
+      "expanded_nodes": 5,
+      "maximum_wire_bytes": 32,
+      "minimum_wire_bytes": 32,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Quaternion"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 56,
+      "codec_identity": "UWVMROS1_7ddcb1c3fca43f4a0299d43fb6fac1b77a8f26001af809dc13307f4f9c61d65b",
+      "expanded_nodes": 10,
+      "maximum_wire_bytes": 56,
+      "minimum_wire_bytes": 56,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Transform"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 48,
+      "codec_identity": "UWVMROS1_1a6c18d19bb6853a2cff3b775974ba31f8e3674c1bbe566444ccabf0ef9d117e",
+      "expanded_nodes": 9,
+      "maximum_wire_bytes": 48,
+      "minimum_wire_bytes": 48,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Twist"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 324,
+      "codec_identity": "UWVMROS1_6590b7ca1cdaa89da04b7a661266e2d4c6e3e2668dc90505a7c24d7be8a43242",
+      "expanded_nodes": 63,
+      "maximum_wire_bytes": 324,
+      "minimum_wire_bytes": 20,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "trajectory_msgs/msg/MultiDOFJointTrajectoryPoint"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 1516,
+      "codec_identity": "UWVMROS1_6ea66f146cdce31369361e521be484d2c39bca818cc4b2069e1209d250ec2401",
+      "expanded_nodes": 262,
+      "maximum_wire_bytes": 1516,
+      "minimum_wire_bytes": 20,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "trajectory_msgs/msg/MultiDOFJointTrajectory"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 92,
+      "codec_identity": "UWVMROS1_ad7701ac1cb0dd68a947577272964b0d6051d1846019de97e9c9d0f7be7b2fa2",
+      "expanded_nodes": 5,
+      "maximum_wire_bytes": 92,
+      "minimum_wire_bytes": 28,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "control_msgs/msg/JointTolerance"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 542,
+      "codec_identity": "UWVMROS1_658f3d3f180b301e5c612188390187ec4034064976f133018048bb1fdec55342",
+      "expanded_nodes": 6,
+      "maximum_wire_bytes": 542,
+      "minimum_wire_bytes": 30,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "control_msgs/msg/JointComponentTolerance"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 20920,
+      "codec_identity": "UWVMROS1_8945d5b29832f1190b0a4f8c4af4e82686c4b913413affe9c0945570b4fb1f16",
+      "expanded_nodes": 1002,
+      "maximum_wire_bytes": 20920,
+      "minimum_wire_bytes": 64,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "control_msgs/action/FollowJointTrajectory_Goal"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 4104,
+      "codec_identity": "UWVMROS1_c698e3a3a772735ff6027b04af28e9bc88d6b7138863ce5737aa090f543dac70",
+      "expanded_nodes": 3,
+      "maximum_wire_bytes": 4104,
+      "minimum_wire_bytes": 8,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "control_msgs/action/FollowJointTrajectory_Result"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 4128,
+      "codec_identity": "UWVMROS1_68f3809217bd914cd971e1365ca825111c1394b2587c6989736adcaa8a40a7cb",
+      "expanded_nodes": 379,
+      "maximum_wire_bytes": 4128,
+      "minimum_wire_bytes": 152,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "control_msgs/action/FollowJointTrajectory_Feedback"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 1196,
+      "codec_identity": "UWVMROS1_88d44f7bdb40f8c45539a041a25903609561fa74db90b9972e1369ebbff6c884",
+      "expanded_nodes": 58,
+      "maximum_wire_bytes": 1196,
+      "minimum_wire_bytes": 28,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "sensor_msgs/msg/JointState"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 0,
+      "codec_identity": "UWVMROS1_f1d8ad4ab7cf476cada6301f71ae24e046c244ba62bb6735183efe8e8c530a77",
+      "expanded_nodes": 1,
+      "maximum_wire_bytes": 0,
+      "minimum_wire_bytes": 0,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "std_srvs/srv/Trigger_Request"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 517,
+      "codec_identity": "UWVMROS1_95fe65bd59112bb00093f66c6853844b01ccea8e6ded47e73038718aa886f39d",
+      "expanded_nodes": 3,
+      "maximum_wire_bytes": 517,
+      "minimum_wire_bytes": 5,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "std_srvs/srv/Trigger_Response"
+    }
+  ],
+  "required_native_domain_provider": "paired complete_vendor descriptor/Native trait/source-metadata admission; requires actual Root implementation and full rebuild; old refusal is preserved",
+  "source_generator_pair": {
+    "bounded": {
+      "bytes": 239137,
+      "sha256": "3c40ed90910bde0ec15ae8976b0e34c37061c2eeacc121259604e7eaeba89f2d"
+    },
+    "industrial_adapter": {
+      "bytes": 73639,
+      "sha256": "e830acc0c4a1cb243cb50f28cbabb71299dcc692ecd9a0b42dd725f4a4f361b3"
+    },
+    "parent": {
+      "bytes": 61312,
+      "sha256": "1a73d6a87624e563bbb6be2624e77b51d7dba0f0f2fb524cda4079f493381826"
+    }
+  },
+  "source_inputs": {
+    "catalog": {
+      "bytes": 17181,
+      "sha256": "5a67fc89c434e6019e8212380760ae2cad82c41c49b8c22b2fd18e4bf5948c4b"
+    },
+    "definitions": [
+      {
+        "bytes": 1583,
+        "file": "abb_egm_msgs/msg/EGMChannelState.msg",
+        "sha256": "a4e4dc5ca5225e05dd8616726a51fd954581a129d301c8d7b7bc190ae34f68f7"
+      },
+      {
+        "bytes": 585,
+        "file": "abb_egm_msgs/msg/EGMState.msg",
+        "sha256": "6e34c57f341601075966c53917f77d00431305d9b591290be194c87c79d101ff"
+      },
+      {
+        "bytes": 1551,
+        "file": "abb_rapid_msgs/msg/ConfData.msg",
+        "sha256": "fc346fbf7f5e76ca40c6cfde4e513db7aeface67c5efa3547060e8fa43795b02"
+      },
+      {
+        "bytes": 809,
+        "file": "abb_rapid_msgs/msg/ExtJoint.msg",
+        "sha256": "925a51e4b90682b9e2108374dd37ce8de800d3055204517703d2c406d64ce043"
+      },
+      {
+        "bytes": 750,
+        "file": "abb_rapid_msgs/msg/JointTarget.msg",
+        "sha256": "c8ccc2b7eb85421ec9845e75fedd3387e3d31f11dc0129b0d7b1f277c3028b7b"
+      },
+      {
+        "bytes": 1363,
+        "file": "abb_rapid_msgs/msg/LoadData.msg",
+        "sha256": "065cf3e0977a9414ed6fe36f9e0f5470c4bc77b94762ef4163a37b6124a299c6"
+      },
+      {
+        "bytes": 654,
+        "file": "abb_rapid_msgs/msg/Orient.msg",
+        "sha256": "8edb4f6f2ec775ab54f0798b86b212a8339900f33979a082329e43ab22a41ede"
+      },
+      {
+        "bytes": 677,
+        "file": "abb_rapid_msgs/msg/Pos.msg",
+        "sha256": "feccb992c3b666d431efd20eb4f7cbef5fa5b921a5a95337656cff1e7735333f"
+      },
+      {
+        "bytes": 769,
+        "file": "abb_rapid_msgs/msg/Pose.msg",
+        "sha256": "e1ef4e275d3bb79ce51e40df08f743b7291dcb9aff922f091990de6822df0ab9"
+      },
+      {
+        "bytes": 770,
+        "file": "abb_rapid_msgs/msg/RobJoint.msg",
+        "sha256": "c89c1f4e8ff4995aa87b7bba5fe05b2bfe8b58ff667a460232e9281b8d8df928"
+      },
+      {
+        "bytes": 1609,
+        "file": "abb_rapid_msgs/msg/RobTarget.msg",
+        "sha256": "366579976fefcc1b0957d715a258003aaeff9f4e9e46cccca3ead2fb06a97c86"
+      },
+      {
+        "bytes": 1190,
+        "file": "abb_rapid_msgs/msg/ToolData.msg",
+        "sha256": "1aebc012c3f06707e37e6c9fb8891fb02fba0a38f7bda7cbbb9023269e1354f3"
+      },
+      {
+        "bytes": 1615,
+        "file": "abb_rapid_msgs/msg/WObjData.msg",
+        "sha256": "a901ff2f360df5a002137e0b0b1c47c5140b3b6dfeb7aa44f91d2f3844f1378b"
+      },
+      {
+        "bytes": 1328,
+        "file": "abb_rapid_sm_addin_msgs/msg/EGMActivateSettings.msg",
+        "sha256": "f9f9fae8eac679dd6d22d36798a33c7e2104508d237aea91f2a4d2ac5e8f0acd"
+      },
+      {
+        "bytes": 1013,
+        "file": "abb_rapid_sm_addin_msgs/msg/EGMRunSettings.msg",
+        "sha256": "d9fcdba07f147d41de07bdca455f812105dea2eaede3416fafc6bb99102aee98"
+      },
+      {
+        "bytes": 1056,
+        "file": "abb_rapid_sm_addin_msgs/msg/EGMSettings.msg",
+        "sha256": "5469a730f54ce7a50f6e9ae4b30fa03336ffd9bca358dc9ce87bd763be082d95"
+      },
+      {
+        "bytes": 768,
+        "file": "abb_rapid_sm_addin_msgs/msg/EGMSetupSettings.msg",
+        "sha256": "1d5cb84d330f60ea25d3d77407b8307ac7129f5bc379fc403f198cfccb70f4c5"
+      },
+      {
+        "bytes": 650,
+        "file": "abb_rapid_sm_addin_msgs/msg/EGMStopSettings.msg",
+        "sha256": "b16dbec655d9a35c063f77fede4acf17de6c15fbda90eca5deb5cdfe1c8b1261"
+      },
+      {
+        "bytes": 634,
+        "file": "abb_rapid_sm_addin_msgs/msg/RuntimeState.msg",
+        "sha256": "38a80f3c32d393c5d7743304a2acfa691247f178d1dcd372961ea003e02a61ce"
+      },
+      {
+        "bytes": 1775,
+        "file": "abb_rapid_sm_addin_msgs/msg/StateMachineState.msg",
+        "sha256": "e97dd2b665cde842791aa94a1ca53c95ddb3f6c99d2e9572175f2fc30246ff46"
+      },
+      {
+        "bytes": 1214,
+        "file": "abb_rapid_sm_addin_msgs/srv/GetEGMSettings.srv",
+        "sha256": "4c91e0529bd71135b7cc79744c52f5d9e7a92f3bc9f17f25929fec529d206916"
+      },
+      {
+        "bytes": 1216,
+        "file": "abb_rapid_sm_addin_msgs/srv/SetEGMSettings.srv",
+        "sha256": "1e24c9c9154d10478a0b4e102b68337f389c6c5cd3fa3d9fd036ec8e88df9fb5"
+      },
+      {
+        "bytes": 1194,
+        "file": "abb_rapid_sm_addin_msgs/srv/SetRAPIDRoutine.srv",
+        "sha256": "9fd84ed30d22d80bb10b246f39ef96f7fa987ebdc7ed5368a3d56af88b84f752"
+      },
+      {
+        "bytes": 2216,
+        "file": "abb_rapid_sm_addin_msgs/srv/SetSGCommand.srv",
+        "sha256": "5434b962c5284096632035be876af208ca87b3dda4ebd1b984e28ada101afb4c"
+      },
+      {
+        "bytes": 616,
+        "file": "abb_robot_msgs/msg/MechanicalUnitState.msg",
+        "sha256": "957f6ac053b1b5daa70eba43575dd054d509d41040aa278ceb1fd3436d347dd4"
+      },
+      {
+        "bytes": 733,
+        "file": "abb_robot_msgs/msg/RAPIDSymbolPath.msg",
+        "sha256": "c4c8135a38fb24bdf613bc129fde55b9882037fd044b7344a517d06d6c6d43c3"
+      },
+      {
+        "bytes": 1117,
+        "file": "abb_robot_msgs/msg/RAPIDTaskState.msg",
+        "sha256": "9440c505af1744657a7023f28a37e6bdcd2569439024bc37c06ae88bb9c39fcf"
+      },
+      {
+        "bytes": 2171,
+        "file": "abb_robot_msgs/msg/ServiceResponses.msg",
+        "sha256": "fb40ccf4939758ae6952d62731ddd9c46edf65ce65577339a66735760a7cd819"
+      },
+      {
+        "bytes": 801,
+        "file": "abb_robot_msgs/msg/SystemState.msg",
+        "sha256": "447e5540b75302620bcb5f290464e5836af4f5ca7e5ac9f191cb5c5b2ba9a3b2"
+      },
+      {
+        "bytes": 1086,
+        "file": "abb_robot_msgs/srv/GetFileContents.srv",
+        "sha256": "f01602123f34c0a833f824c3f441280a69c497617476f4bb5963c17368bbae41"
+      },
+      {
+        "bytes": 979,
+        "file": "abb_robot_msgs/srv/GetIOSignal.srv",
+        "sha256": "b53c95133264cb3a128ae7cbd0011fd83bb59c62398f4331f6b7c4c69a258c1e"
+      },
+      {
+        "bytes": 1036,
+        "file": "abb_robot_msgs/srv/GetRAPIDBool.srv",
+        "sha256": "fe16f2b638a808a68ff4d482e7bf9a07688a6f1ad04d8e3ecd94b70ffab0bd70"
+      },
+      {
+        "bytes": 1039,
+        "file": "abb_robot_msgs/srv/GetRAPIDDnum.srv",
+        "sha256": "331e203e8328d1a6f76bcd6030000416c0d844015a96bd360a1455c9845d37fb"
+      },
+      {
+        "bytes": 1038,
+        "file": "abb_robot_msgs/srv/GetRAPIDNum.srv",
+        "sha256": "5e7e469585c7026f9205aaf26a38d380e0fccc75bae1feb97692f4d07ea1ca83"
+      },
+      {
+        "bytes": 1040,
+        "file": "abb_robot_msgs/srv/GetRAPIDString.srv",
+        "sha256": "6e0cecf9f0b07313d1c34161681d6ac8d7e5ad90c46b4d3e9dc7faa8b1b4ae79"
+      },
+      {
+        "bytes": 1128,
+        "file": "abb_robot_msgs/srv/GetRAPIDSymbol.srv",
+        "sha256": "2075f9e09c233c8f8d6e79d6762b97e1e4f9429e854e21685a2e722f5a9d2dfa"
+      },
+      {
+        "bytes": 1035,
+        "file": "abb_robot_msgs/srv/GetRobotControllerDescription.srv",
+        "sha256": "021bc83dcec746d8fde806a1d75a9e80f32eb61d138ad5236173d546bac8b58b"
+      },
+      {
+        "bytes": 1043,
+        "file": "abb_robot_msgs/srv/GetSpeedRatio.srv",
+        "sha256": "b241e9021d40c8bb091f56c9f2075ec8ccf80c9d63c78b10dd3ce4d74fcf19c5"
+      },
+      {
+        "bytes": 1168,
+        "file": "abb_robot_msgs/srv/SetFileContents.srv",
+        "sha256": "df87425dc04ff5934dd2e71c6b594a288b6399e81a0c379025883127245d53ce"
+      },
+      {
+        "bytes": 984,
+        "file": "abb_robot_msgs/srv/SetIOSignal.srv",
+        "sha256": "bd362e7a7af1c0f7980600aa753cb460c1d2514aca175078b51605361743da7c"
+      },
+      {
+        "bytes": 1040,
+        "file": "abb_robot_msgs/srv/SetRAPIDBool.srv",
+        "sha256": "9f81931661874748766a3a4712e0150c182e587974089df35f52425926f45193"
+      },
+      {
+        "bytes": 1043,
+        "file": "abb_robot_msgs/srv/SetRAPIDDnum.srv",
+        "sha256": "b173193c6a357bde0acf0905af0220c828a60a79a19e5306c9d56b6f243db997"
+      },
+      {
+        "bytes": 1042,
+        "file": "abb_robot_msgs/srv/SetRAPIDNum.srv",
+        "sha256": "1e8288519a5d23043b54da3e7e5cf5e2b3d5a2f0c758225a95f79a407956ea0e"
+      },
+      {
+        "bytes": 1044,
+        "file": "abb_robot_msgs/srv/SetRAPIDString.srv",
+        "sha256": "9714ff32cea6370bcb18b965cc957b82eec181e42877218c6ef4dcb0ab56476b"
+      },
+      {
+        "bytes": 1128,
+        "file": "abb_robot_msgs/srv/SetRAPIDSymbol.srv",
+        "sha256": "22bf08bc346632de78216cbd975d652dc285148bba868b98bc8b001c26971c20"
+      },
+      {
+        "bytes": 1046,
+        "file": "abb_robot_msgs/srv/SetSpeedRatio.srv",
+        "sha256": "cc238b657aac741bafe3a2896ff4a876ff3556e27820aa456fffd99b524c25b4"
+      },
+      {
+        "bytes": 921,
+        "file": "abb_robot_msgs/srv/TriggerWithResultCode.srv",
+        "sha256": "ab0ecb47e304a920b779b21e46ebd36cd9145a369423b5a505d1dd75b81f1b30"
+      },
+      {
+        "bytes": 498,
+        "file": "builtin_interfaces/msg/Duration.msg",
+        "sha256": "57da13a4201e7d258a2931323145b953e47e46967494e62ba66c2faca4fbade2"
+      },
+      {
+        "bytes": 421,
+        "file": "builtin_interfaces/msg/Time.msg",
+        "sha256": "dc5a01ddde3aecffee21eb24974fe77cc969f873218a2b1811aa0ac8a456b8bd"
+      },
+      {
+        "bytes": 2551,
+        "file": "control_msgs/action/FollowJointTrajectory.action",
+        "sha256": "31a124428ee490da22c15cc70a9ac2c89d07bbbba7d3bf370ca7596b229cb9f0"
+      },
+      {
+        "bytes": 1161,
+        "file": "control_msgs/msg/JointComponentTolerance.msg",
+        "sha256": "6b09271d0f74e0a3a701f3ddb997b0ad4a588bdd9ab7d7899ddc70063ba924dd"
+      },
+      {
+        "bytes": 724,
+        "file": "control_msgs/msg/JointTolerance.msg",
+        "sha256": "8208718f17c1b1feb9418c3ed7ca73d029566cbf298ecda819c9e0b78cb379d3"
+      },
+      {
+        "bytes": 116,
+        "file": "geometry_msgs/msg/Quaternion.msg",
+        "sha256": "298495eb67a139642ffd37cc9029eae085e6c39a8789828b7517868a487939ed"
+      },
+      {
+        "bytes": 118,
+        "file": "geometry_msgs/msg/Transform.msg",
+        "sha256": "c8916279f0a429dd9561158bd2133bc4e2d780277c3c594116b240a27e7a2993"
+      },
+      {
+        "bytes": 116,
+        "file": "geometry_msgs/msg/Twist.msg",
+        "sha256": "ed471ef861f65af991b1f64d66ef941dd41dd4c0702f6222512b1a16c62d58b0"
+      },
+      {
+        "bytes": 251,
+        "file": "geometry_msgs/msg/Vector3.msg",
+        "sha256": "d8b9ea9aad1f424faf4d2b94dae1e1368af1e5d59de11aeed019399cff7f9e1d"
+      },
+      {
+        "bytes": 999,
+        "file": "sensor_msgs/msg/JointState.msg",
+        "sha256": "711d1771a002c7190e5bbe746a163a67477c1e2a45482a64f1fe339815ca6f5d"
+      },
+      {
+        "bytes": 322,
+        "file": "std_msgs/msg/Header.msg",
+        "sha256": "d2cea14630e39ed0fa5b432ba9160a7c38855b9427d3344f99e83e83facb53c2"
+      },
+      {
+        "bytes": 122,
+        "file": "std_srvs/srv/Trigger.srv",
+        "sha256": "81e80d26771d0c0af8783938720c763cacc429e68d9d6b9c1f912474db0d8dca"
+      },
+      {
+        "bytes": 465,
+        "file": "trajectory_msgs/msg/JointTrajectory.msg",
+        "sha256": "d63cda4a5ec81824ed4acd737e6b5903449fb1a7e2f5cdcdcc4c49285f01117c"
+      },
+      {
+        "bytes": 1176,
+        "file": "trajectory_msgs/msg/JointTrajectoryPoint.msg",
+        "sha256": "2358055d26d27c0c302e921f90d5aa59cb5feb3e22937f8ac98314b0c52ba8f4"
+      },
+      {
+        "bytes": 485,
+        "file": "trajectory_msgs/msg/MultiDOFJointTrajectory.msg",
+        "sha256": "070af6b4c9f4238d9de36621105d78c999dbad2045d0cb2a633f86a17f73f6b7"
+      },
+      {
+        "bytes": 427,
+        "file": "trajectory_msgs/msg/MultiDOFJointTrajectoryPoint.msg",
+        "sha256": "7e3a4b150ff7ce8d7d897a480d8d324a244a0afb4a07fdf6241074071170ac7a"
+      }
+    ]
+  },
+  "source_template_inputs": {
+    "interface_templates/bounded_interfaces.go.in": {
+      "bytes": 9692,
+      "sha256": "c9e7893ccedc67b91a3aebc51c1e0c3c65263f03b2769aa07c34fcfb6befa1f7"
+    },
+    "interface_templates/bounded_interfaces.mjs.in": {
+      "bytes": 17046,
+      "sha256": "10986eddd766435dde89b0d3046ef7f48705e2c3e21301c99163c3a7d4ea62fe"
+    },
+    "interface_templates/bounded_interfaces.rs.in": {
+      "bytes": 15514,
+      "sha256": "063130e797684df0530aa1882f8082a10d5756ceb892677d8082e980c7b29b18"
+    },
+    "interface_templates/bounded_interfaces.ts.in": {
+      "bytes": 16626,
+      "sha256": "a61a7b7eb3b5464648577f3ab44629a5c6140d04effff6e4099509f68b204ac5"
+    }
+  },
+  "status": "GENERATED_SOURCE_ONLY_NOT_COMPILED_OR_EXECUTED",
+  "types": [
+    {
+      "adapter_codec_identity": "UWVMROS1_fbd288b93963fccc92aa114570c0a4f6a1fdc5b473cb8e252922720f5d88b519",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_fbd288b93963fccc92aa114570c0a4f6a1fdc5b473cb8e252922720f5d88b519",
+          "expanded_nodes": 8,
+          "maximum_wire_bytes": 81,
+          "minimum_wire_bytes": 17,
+          "native_identity": null,
+          "type": "abb_egm_msgs/msg/EGMChannelState"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_egm_msgs/msg/EGMChannelState"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_5b10efb13c3be7290c7e391d55679a174969887edd1b8baca682edac311a8e5d",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_5b10efb13c3be7290c7e391d55679a174969887edd1b8baca682edac311a8e5d",
+          "expanded_nodes": 135,
+          "maximum_wire_bytes": 1376,
+          "minimum_wire_bytes": 16,
+          "native_identity": null,
+          "type": "abb_egm_msgs/msg/EGMState"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_egm_msgs/msg/EGMState"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_0c22cc29db62f5001ef20ea7b131de63099e31ac5f150d3e9f0bb62120d60571",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_0c22cc29db62f5001ef20ea7b131de63099e31ac5f150d3e9f0bb62120d60571",
+          "expanded_nodes": 5,
+          "maximum_wire_bytes": 16,
+          "minimum_wire_bytes": 16,
+          "native_identity": null,
+          "type": "abb_rapid_msgs/msg/ConfData"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_msgs/msg/ConfData"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_8b799c6bec9e4eab0900a633a93375a7792e49fde0bf302f6752115a001a4ae2",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_8b799c6bec9e4eab0900a633a93375a7792e49fde0bf302f6752115a001a4ae2",
+          "expanded_nodes": 7,
+          "maximum_wire_bytes": 24,
+          "minimum_wire_bytes": 24,
+          "native_identity": null,
+          "type": "abb_rapid_msgs/msg/ExtJoint"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_msgs/msg/ExtJoint"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_5949cf0121391646c1f04b54d8f7deaae0497f4920f7817739fc25bfddc4e540",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_5949cf0121391646c1f04b54d8f7deaae0497f4920f7817739fc25bfddc4e540",
+          "expanded_nodes": 15,
+          "maximum_wire_bytes": 48,
+          "minimum_wire_bytes": 48,
+          "native_identity": null,
+          "type": "abb_rapid_msgs/msg/JointTarget"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_msgs/msg/JointTarget"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_f73e480a0e6746a4df8f4d62bc123d68d01d3dc48f0bc5f0eac51b859a0750f9",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_f73e480a0e6746a4df8f4d62bc123d68d01d3dc48f0bc5f0eac51b859a0750f9",
+          "expanded_nodes": 14,
+          "maximum_wire_bytes": 44,
+          "minimum_wire_bytes": 44,
+          "native_identity": null,
+          "type": "abb_rapid_msgs/msg/LoadData"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_msgs/msg/LoadData"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_821d887b88298422f9466aaf3926db580f878e964055fbd72226b7f76f2f536e",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_821d887b88298422f9466aaf3926db580f878e964055fbd72226b7f76f2f536e",
+          "expanded_nodes": 5,
+          "maximum_wire_bytes": 16,
+          "minimum_wire_bytes": 16,
+          "native_identity": null,
+          "type": "abb_rapid_msgs/msg/Orient"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_msgs/msg/Orient"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_31d490d6ead5a1a78295dc4e934f0b89e74e4732da2b57d28d297477bf4cbdd2",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_31d490d6ead5a1a78295dc4e934f0b89e74e4732da2b57d28d297477bf4cbdd2",
+          "expanded_nodes": 4,
+          "maximum_wire_bytes": 12,
+          "minimum_wire_bytes": 12,
+          "native_identity": null,
+          "type": "abb_rapid_msgs/msg/Pos"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_msgs/msg/Pos"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_8f1535fe21326706fd0b16314857162d36bca91ce8e8f6a8bec3864dafb9e2f2",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_8f1535fe21326706fd0b16314857162d36bca91ce8e8f6a8bec3864dafb9e2f2",
+          "expanded_nodes": 10,
+          "maximum_wire_bytes": 28,
+          "minimum_wire_bytes": 28,
+          "native_identity": null,
+          "type": "abb_rapid_msgs/msg/Pose"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_msgs/msg/Pose"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_6d842aebc0a3b222a727063a41ef7e96f2b8c14ffbba5c8d6e140ba2890e69cd",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_6d842aebc0a3b222a727063a41ef7e96f2b8c14ffbba5c8d6e140ba2890e69cd",
+          "expanded_nodes": 7,
+          "maximum_wire_bytes": 24,
+          "minimum_wire_bytes": 24,
+          "native_identity": null,
+          "type": "abb_rapid_msgs/msg/RobJoint"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_msgs/msg/RobJoint"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_8decb56e8faf0a6a954af974adfea5c500aea8392e6a778ae7394174323489d8",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_8decb56e8faf0a6a954af974adfea5c500aea8392e6a778ae7394174323489d8",
+          "expanded_nodes": 22,
+          "maximum_wire_bytes": 68,
+          "minimum_wire_bytes": 68,
+          "native_identity": null,
+          "type": "abb_rapid_msgs/msg/RobTarget"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_msgs/msg/RobTarget"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_948fa0bbaaf95f0d88ca03cad687f16102261f54b0da889ae8bca82042fc5237",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_948fa0bbaaf95f0d88ca03cad687f16102261f54b0da889ae8bca82042fc5237",
+          "expanded_nodes": 26,
+          "maximum_wire_bytes": 73,
+          "minimum_wire_bytes": 73,
+          "native_identity": null,
+          "type": "abb_rapid_msgs/msg/ToolData"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_msgs/msg/ToolData"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_b36f0448512fab6028431d19b39a8ae31b7b81b2615ffc8311139f63b5d8e7cd",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_b36f0448512fab6028431d19b39a8ae31b7b81b2615ffc8311139f63b5d8e7cd",
+          "expanded_nodes": 24,
+          "maximum_wire_bytes": 574,
+          "minimum_wire_bytes": 62,
+          "native_identity": null,
+          "type": "abb_rapid_msgs/msg/WObjData"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_msgs/msg/WObjData"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_fce73aea80d9b8a299b8e2ab742602871146b3ebbd624a2e807e25c1ac107cfa",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_fce73aea80d9b8a299b8e2ab742602871146b3ebbd624a2e807e25c1ac107cfa",
+          "expanded_nodes": 75,
+          "maximum_wire_bytes": 716,
+          "minimum_wire_bytes": 204,
+          "native_identity": null,
+          "type": "abb_rapid_sm_addin_msgs/msg/EGMActivateSettings"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_sm_addin_msgs/msg/EGMActivateSettings"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_92a2a654eb2eda89077933f955f04ed87884827b8875cf563570eed5d211b0e2",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_92a2a654eb2eda89077933f955f04ed87884827b8875cf563570eed5d211b0e2",
+          "expanded_nodes": 14,
+          "maximum_wire_bytes": 40,
+          "minimum_wire_bytes": 40,
+          "native_identity": null,
+          "type": "abb_rapid_sm_addin_msgs/msg/EGMRunSettings"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_sm_addin_msgs/msg/EGMRunSettings"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_622d3a975eecb11f7729aecfadc161cada271208d6fe7599f455750b90144ef3",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_622d3a975eecb11f7729aecfadc161cada271208d6fe7599f455750b90144ef3",
+          "expanded_nodes": 97,
+          "maximum_wire_bytes": 767,
+          "minimum_wire_bytes": 255,
+          "native_identity": null,
+          "type": "abb_rapid_sm_addin_msgs/msg/EGMSettings"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_sm_addin_msgs/msg/EGMSettings"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_2565bed5b83b132c69f37d7294c69181800ad2974ddc54f60868da57e28e782c",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_2565bed5b83b132c69f37d7294c69181800ad2974ddc54f60868da57e28e782c",
+          "expanded_nodes": 3,
+          "maximum_wire_bytes": 5,
+          "minimum_wire_bytes": 5,
+          "native_identity": null,
+          "type": "abb_rapid_sm_addin_msgs/msg/EGMSetupSettings"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_sm_addin_msgs/msg/EGMSetupSettings"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_0f3f2f6034567a7d49dd140ff9ff620e8567548139597b9b823e63a947673cee",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_0f3f2f6034567a7d49dd140ff9ff620e8567548139597b9b823e63a947673cee",
+          "expanded_nodes": 2,
+          "maximum_wire_bytes": 4,
+          "minimum_wire_bytes": 4,
+          "native_identity": null,
+          "type": "abb_rapid_sm_addin_msgs/msg/EGMStopSettings"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_sm_addin_msgs/msg/EGMStopSettings"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_3c0f157544fa82c4e206a4fb42f8ba7f67213d19533f79b77c66dec6fd0460d9",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_3c0f157544fa82c4e206a4fb42f8ba7f67213d19533f79b77c66dec6fd0460d9",
+          "expanded_nodes": 71,
+          "maximum_wire_bytes": 8368,
+          "minimum_wire_bytes": 16,
+          "native_identity": null,
+          "type": "abb_rapid_sm_addin_msgs/msg/RuntimeState"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_sm_addin_msgs/msg/RuntimeState"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_ff2a09e4b6e8ef26cbdc3ecdffdceb33d6b2c82f0d51ed2c38ce9648c6f47711",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_ff2a09e4b6e8ef26cbdc3ecdffdceb33d6b2c82f0d51ed2c38ce9648c6f47711",
+          "expanded_nodes": 4,
+          "maximum_wire_bytes": 518,
+          "minimum_wire_bytes": 6,
+          "native_identity": null,
+          "type": "abb_rapid_sm_addin_msgs/msg/StateMachineState"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_sm_addin_msgs/msg/StateMachineState"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_629da1466b9fb1d5619c9ed7cb72af63f1abf8edffca98b76253939cd6c85b13",
+      "components": {
+        "request": {
+          "adapter_codec_identity": "UWVMROS1_363be2459fcc9c475c6305cbcfebf7689e891eb27645b7667960aace23d56e8e",
+          "expanded_nodes": 2,
+          "maximum_wire_bytes": 68,
+          "minimum_wire_bytes": 4,
+          "native_identity": null,
+          "type": "abb_rapid_sm_addin_msgs/srv/GetEGMSettings_Request"
+        },
+        "response": {
+          "adapter_codec_identity": "UWVMROS1_d8f340e1c6d78fc0a782c3279efb34ae5e11df175a82f9dd5ee82e603d6b2ffb",
+          "expanded_nodes": 100,
+          "maximum_wire_bytes": 1285,
+          "minimum_wire_bytes": 261,
+          "native_identity": null,
+          "type": "abb_rapid_sm_addin_msgs/srv/GetEGMSettings_Response"
+        }
+      },
+      "kind": "service",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_sm_addin_msgs/srv/GetEGMSettings"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_63ebd3925a4dcccddc17fd99f01aecd0380241b441391bb15b0b7179b78c907d",
+      "components": {
+        "request": {
+          "adapter_codec_identity": "UWVMROS1_c2f3dd535e9475526bf18bdffa0e9a839049d315c9aebb150f8561ee3361a2bd",
+          "expanded_nodes": 99,
+          "maximum_wire_bytes": 835,
+          "minimum_wire_bytes": 259,
+          "native_identity": null,
+          "type": "abb_rapid_sm_addin_msgs/srv/SetEGMSettings_Request"
+        },
+        "response": {
+          "adapter_codec_identity": "UWVMROS1_6a1adeebe31dfe101a6d57019e26ee2f1144b9a6ce30aee08d4c6fe56ea6838d",
+          "expanded_nodes": 3,
+          "maximum_wire_bytes": 518,
+          "minimum_wire_bytes": 6,
+          "native_identity": null,
+          "type": "abb_rapid_sm_addin_msgs/srv/SetEGMSettings_Response"
+        }
+      },
+      "kind": "service",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_sm_addin_msgs/srv/SetEGMSettings"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_fece71adbfbaa38621a9440e9d453164e326cc12ce7b4f62ae8f5208a446a428",
+      "components": {
+        "request": {
+          "adapter_codec_identity": "UWVMROS1_4561b7e5e296a1a329d5f5684bcbde1ef41324554a34e9a79a85824286dd477c",
+          "expanded_nodes": 3,
+          "maximum_wire_bytes": 584,
+          "minimum_wire_bytes": 8,
+          "native_identity": null,
+          "type": "abb_rapid_sm_addin_msgs/srv/SetRAPIDRoutine_Request"
+        },
+        "response": {
+          "adapter_codec_identity": "UWVMROS1_980d2a16536289f446161acdf2fc57d459baa2290d74f1dd5aaf8129126cbba1",
+          "expanded_nodes": 3,
+          "maximum_wire_bytes": 518,
+          "minimum_wire_bytes": 6,
+          "native_identity": null,
+          "type": "abb_rapid_sm_addin_msgs/srv/SetRAPIDRoutine_Response"
+        }
+      },
+      "kind": "service",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_sm_addin_msgs/srv/SetRAPIDRoutine"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_263a3706bdfe6388b6a466be4dcaebe86241a5f0a93d9c874c41252a05fba1fe",
+      "components": {
+        "request": {
+          "adapter_codec_identity": "UWVMROS1_5d6983aa85c2c52f8ec06cbd723d5929cfc381db2e0bfffb4c27078497d86c90",
+          "expanded_nodes": 4,
+          "maximum_wire_bytes": 73,
+          "minimum_wire_bytes": 9,
+          "native_identity": null,
+          "type": "abb_rapid_sm_addin_msgs/srv/SetSGCommand_Request"
+        },
+        "response": {
+          "adapter_codec_identity": "UWVMROS1_87cdc41c81d49930dce7193d4b7af98add266a6e9a7cf5e69457d01ded388cf8",
+          "expanded_nodes": 3,
+          "maximum_wire_bytes": 518,
+          "minimum_wire_bytes": 6,
+          "native_identity": null,
+          "type": "abb_rapid_sm_addin_msgs/srv/SetSGCommand_Response"
+        }
+      },
+      "kind": "service",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_rapid_sm_addin_msgs/srv/SetSGCommand"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_1dc7a7dcbaa19e78cd6419f8844287a7fbd9d7a839ab1a8ad97ef0be34f3a3a8",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_1dc7a7dcbaa19e78cd6419f8844287a7fbd9d7a839ab1a8ad97ef0be34f3a3a8",
+          "expanded_nodes": 3,
+          "maximum_wire_bytes": 69,
+          "minimum_wire_bytes": 5,
+          "native_identity": null,
+          "type": "abb_robot_msgs/msg/MechanicalUnitState"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/msg/MechanicalUnitState"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_249523197567fbf638f30487a7f5b8d8ff5ea746fcd4a65a35f2dbb18a3adf0e",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_249523197567fbf638f30487a7f5b8d8ff5ea746fcd4a65a35f2dbb18a3adf0e",
+          "expanded_nodes": 4,
+          "maximum_wire_bytes": 204,
+          "minimum_wire_bytes": 12,
+          "native_identity": null,
+          "type": "abb_robot_msgs/msg/RAPIDSymbolPath"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/msg/RAPIDSymbolPath"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_ff698e375b0ff33026cfd248c1ac734f939763aba25a6c4f7cac628d445422fd",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_ff698e375b0ff33026cfd248c1ac734f939763aba25a6c4f7cac628d445422fd",
+          "expanded_nodes": 5,
+          "maximum_wire_bytes": 71,
+          "minimum_wire_bytes": 7,
+          "native_identity": null,
+          "type": "abb_robot_msgs/msg/RAPIDTaskState"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/msg/RAPIDTaskState"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_4e01b972b67454e851801f28aee09c0774b67907d2241cc67cae7d045c18f646",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_4e01b972b67454e851801f28aee09c0774b67907d2241cc67cae7d045c18f646",
+          "expanded_nodes": 1,
+          "maximum_wire_bytes": 0,
+          "minimum_wire_bytes": 0,
+          "native_identity": null,
+          "type": "abb_robot_msgs/msg/ServiceResponses"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/msg/ServiceResponses"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_c1cdbf0e578fddc5bf70cc2cc181d786f3e8189afc6a67962de6eb273973a38f",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_c1cdbf0e578fddc5bf70cc2cc181d786f3e8189afc6a67962de6eb273973a38f",
+          "expanded_nodes": 139,
+          "maximum_wire_bytes": 2327,
+          "minimum_wire_bytes": 23,
+          "native_identity": null,
+          "type": "abb_robot_msgs/msg/SystemState"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/msg/SystemState"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_c7b97ec9f395c089ef8b57e8ee2516eab9e6ed3f9634e6b0bef7e2c775372254",
+      "components": {
+        "request": {
+          "adapter_codec_identity": "UWVMROS1_bdcf73a965bd05356e48019b74d633176fdeda62452bc7185d6b6ff30576016b",
+          "expanded_nodes": 2,
+          "maximum_wire_bytes": 516,
+          "minimum_wire_bytes": 4,
+          "native_identity": null,
+          "type": "abb_robot_msgs/srv/GetFileContents_Request"
+        },
+        "response": {
+          "adapter_codec_identity": "UWVMROS1_f05617145a40043e87cbc251f833274d2a962bd7cdaabc5f9a8e4591bd56e107",
+          "expanded_nodes": 4,
+          "maximum_wire_bytes": 4618,
+          "minimum_wire_bytes": 10,
+          "native_identity": null,
+          "type": "abb_robot_msgs/srv/GetFileContents_Response"
+        }
+      },
+      "kind": "service",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/GetFileContents"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_eb316d69fb5a32c8f6420013e9129bfdd22c468233686b3cd59715f1a0d4ea2e",
+      "components": {
+        "request": {
+          "adapter_codec_identity": "UWVMROS1_2406d53c2fce44e72ad7e6f1c9e75ea19c4df694ff9f00917229ec758209b1f5",
+          "expanded_nodes": 2,
+          "maximum_wire_bytes": 516,
+          "minimum_wire_bytes": 4,
+          "native_identity": null,
+          "type": "abb_robot_msgs/srv/GetIOSignal_Request"
+        },
+        "response": {
+          "adapter_codec_identity": "UWVMROS1_1f668ef78c353f2ec8defdac619d349cda731576f2429cf07107b9b56ba9030e",
+          "expanded_nodes": 4,
+          "maximum_wire_bytes": 1034,
+          "minimum_wire_bytes": 10,
+          "native_identity": null,
+          "type": "abb_robot_msgs/srv/GetIOSignal_Response"
+        }
+      },
+      "kind": "service",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/GetIOSignal"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_95dd04c7da1d3bacf8966cc5edc81610db309d4d9b742bc60aaeec8e37958496",
+      "components": {
+        "request": {
+          "adapter_codec_identity": "UWVMROS1_c381080d235c78216a8e64275819ff3fb97e1b1de96e7da758c4889630b8e0ff",
+          "expanded_nodes": 5,
+          "maximum_wire_bytes": 204,
+          "minimum_wire_bytes": 12,
+          "native_identity": null,
+          "type": "abb_robot_msgs/srv/GetRAPIDBool_Request"
+        },
+        "response": {
+          "adapter_codec_identity": "UWVMROS1_b853e212489fb815866fa29b165eea474a977483158b6203699c4a1293aa6acd",
+          "expanded_nodes": 4,
+          "maximum_wire_bytes": 519,
+          "minimum_wire_bytes": 7,
+          "native_identity": null,
+          "type": "abb_robot_msgs/srv/GetRAPIDBool_Response"
+        }
+      },
+      "kind": "service",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/GetRAPIDBool"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_05ef910e3b349c82858b78b07d492c20ea94fe654237ef84aa5381b773e7205c",
+      "components": {
+        "request": {
+          "adapter_codec_identity": "UWVMROS1_71057c2fe44bc96505ec6e05d998fcb6323b281fff40808ce990207c48626979",
+          "expanded_nodes": 5,
+          "maximum_wire_bytes": 204,
+          "minimum_wire_bytes": 12,
+          "native_identity": null,
+          "type": "abb_robot_msgs/srv/GetRAPIDDnum_Request"
+        },
+        "response": {
+          "adapter_codec_identity": "UWVMROS1_af0420c126368a7e45b728c7fef76062b5ef2f0adea7535ad38e4771244edd56",
+          "expanded_nodes": 4,
+          "maximum_wire_bytes": 526,
+          "minimum_wire_bytes": 14,
+          "native_identity": null,
+          "type": "abb_robot_msgs/srv/GetRAPIDDnum_Response"
+        }
+      },
+      "kind": "service",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/GetRAPIDDnum"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_94575e630f48c602029406b42b68dce108ab4f6dfa7b472f1fc5790ac12b4c42",
+      "components": {
+        "request": {
+          "adapter_codec_identity": "UWVMROS1_03d5da34af8d90ed8a20f8ca38fa75d9e777496828978f0f348e3c1c8f67d0a5",
+          "expanded_nodes": 5,
+          "maximum_wire_bytes": 204,
+          "minimum_wire_bytes": 12,
+          "native_identity": null,
+          "type": "abb_robot_msgs/srv/GetRAPIDNum_Request"
+        },
+        "response": {
+          "adapter_codec_identity": "UWVMROS1_a0da03014dd001e58efc4a5b274cd5c62016e7fa257af1120a8142a79635220d",
+          "expanded_nodes": 4,
+          "maximum_wire_bytes": 522,
+          "minimum_wire_bytes": 10,
+          "native_identity": null,
+          "type": "abb_robot_msgs/srv/GetRAPIDNum_Response"
+        }
+      },
+      "kind": "service",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/GetRAPIDNum"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_d10ac5ec86f441f67de7a2ee840c24111f0a50d5db6978a723499015a60489be",
+      "components": {
+        "request": {
+          "adapter_codec_identity": "UWVMROS1_c7bc9c788301e619a165c18a1cdb0aca80df8def5be31da5dbf34c0038e73596",
+          "expanded_nodes": 5,
+          "maximum_wire_bytes": 204,
+          "minimum_wire_bytes": 12,
+          "native_identity": null,
+          "type": "abb_robot_msgs/srv/GetRAPIDString_Request"
+        },
+        "response": {
+          "adapter_codec_identity": "UWVMROS1_cf7bfdb2af5b91eb58b19b909f7fa3357dc1dad02716f8fa4465b53f3f4a1458",
+          "expanded_nodes": 4,
+          "maximum_wire_bytes": 1034,
+          "minimum_wire_bytes": 10,
+          "native_identity": null,
+          "type": "abb_robot_msgs/srv/GetRAPIDString_Response"
+        }
+      },
+      "kind": "service",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/GetRAPIDString"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_aa9eafab83cb6ef87e5a066ed003e2ea981e12c08d94247acaab926ef6a0744b",
+      "components": {
+        "request": {
+          "adapter_codec_identity": "UWVMROS1_e216a54cdae70f8147489928ff05a4b172ba4fc47e9ed5df4828b070354ac469",
+          "expanded_nodes": 5,
+          "maximum_wire_bytes": 204,
+          "minimum_wire_bytes": 12,
+          "native_identity": null,
+          "type": "abb_robot_msgs/srv/GetRAPIDSymbol_Request"
+        },
+        "response": {
+          "adapter_codec_identity": "UWVMROS1_b1f6de7ad0640f5645678d327804dc7e732bdad38805e642b13ed7294c21d602",
+          "expanded_nodes": 4,
+          "maximum_wire_bytes": 1034,
+          "minimum_wire_bytes": 10,
+          "native_identity": null,
+          "type": "abb_robot_msgs/srv/GetRAPIDSymbol_Response"
+        }
+      },
+      "kind": "service",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/GetRAPIDSymbol"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_e619dfd61cfa53caaf1f68654265dc55840f22c9e0f0aba4bf13ab113c7e8807",
+      "components": {
+        "request": {
+          "adapter_codec_identity": "UWVMROS1_caf70e11b386a933f62d06a433ca1cedaa3c8ecc75b7e8de8c1d5ae00a29f03e",
+          "expanded_nodes": 1,
+          "maximum_wire_bytes": 0,
+          "minimum_wire_bytes": 0,
+          "native_identity": null,
+          "type": "abb_robot_msgs/srv/GetRobotControllerDescription_Request"
+        },
+        "response": {
+          "adapter_codec_identity": "UWVMROS1_1af2591f035379597f376ed1e2343f73a89f9fef5c29269aa420243a82e6c368",
+          "expanded_nodes": 4,
+          "maximum_wire_bytes": 4618,
+          "minimum_wire_bytes": 10,
+          "native_identity": null,
+          "type": "abb_robot_msgs/srv/GetRobotControllerDescription_Response"
+        }
+      },
+      "kind": "service",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/GetRobotControllerDescription"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_f60207d7d91d2ec182aca36906b656362af00b0295fd571cb251396c112bad22",
+      "components": {
+        "request": {
+          "adapter_codec_identity": "UWVMROS1_54ee2c897e2bf2f39c96cc42246ffe5997c8df280280433e8748b3bcf24c299c",
+          "expanded_nodes": 1,
+          "maximum_wire_bytes": 0,
+          "minimum_wire_bytes": 0,
+          "native_identity": null,
+          "type": "abb_robot_msgs/srv/GetSpeedRatio_Request"
+        },
+        "response": {
+          "adapter_codec_identity": "UWVMROS1_baa271a258c7ca274e0145fea1abb7cbc43e98c82b8e40d67c4743237a19910b",
+          "expanded_nodes": 4,
+          "maximum_wire_bytes": 519,
+          "minimum_wire_bytes": 7,
+          "native_identity": null,
+          "type": "abb_robot_msgs/srv/GetSpeedRatio_Response"
+        }
+      },
+      "kind": "service",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/GetSpeedRatio"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_668b5831104ea9a62c8a17bbf472e1ed41bdbdff8eb8198668d7fce3cd0904a4",
+      "components": {
+        "request": {
+          "adapter_codec_identity": "UWVMROS1_3bfa8ad1846fc31acae47a875d3555a78a64b777923eb9b62e87a836f041b26b",
+          "expanded_nodes": 3,
+          "maximum_wire_bytes": 4616,
+          "minimum_wire_bytes": 8,
+          "native_identity": null,
+          "type": "abb_robot_msgs/srv/SetFileContents_Request"
+        },
+        "response": {
+          "adapter_codec_identity": "UWVMROS1_1586344401d43055460b49f2487567638f66838cfe5cac99a47e0a39c0b06ede",
+          "expanded_nodes": 3,
+          "maximum_wire_bytes": 518,
+          "minimum_wire_bytes": 6,
+          "native_identity": null,
+          "type": "abb_robot_msgs/srv/SetFileContents_Response"
+        }
+      },
+      "kind": "service",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/SetFileContents"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_203b99505ba5e8687db76351a993eebfc19cfceb6b020f53a7ea6ed5883b7b77",
+      "components": {
+        "request": {
+          "adapter_codec_identity": "UWVMROS1_2d206d0020179263e83e745a428616ed53d809b0c65a79ad495cb882ae9e49b7",
+          "expanded_nodes": 3,
+          "maximum_wire_bytes": 1032,
+          "minimum_wire_bytes": 8,
+          "native_identity": null,
+          "type": "abb_robot_msgs/srv/SetIOSignal_Request"
+        },
+        "response": {
+          "adapter_codec_identity": "UWVMROS1_1fa28cc3160d51f71d0740cbe145663ec360d6fa488c2a6bf14ad6ab92004a75",
+          "expanded_nodes": 3,
+          "maximum_wire_bytes": 518,
+          "minimum_wire_bytes": 6,
+          "native_identity": null,
+          "type": "abb_robot_msgs/srv/SetIOSignal_Response"
+        }
+      },
+      "kind": "service",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/SetIOSignal"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_bbbcf522450086ae2504598275b38bb4c693837878adcbef88a8eba146b7cba9",
+      "components": {
+        "request": {
+          "adapter_codec_identity": "UWVMROS1_4e707e429acc860d032d216bcd2c1eb1a0f731fad7e7c0bef7beed810c6e4a52",
+          "expanded_nodes": 6,
+          "maximum_wire_bytes": 205,
+          "minimum_wire_bytes": 13,
+          "native_identity": null,
+          "type": "abb_robot_msgs/srv/SetRAPIDBool_Request"
+        },
+        "response": {
+          "adapter_codec_identity": "UWVMROS1_80d2b31c93771cfa8a19ff82a3d9d63951bf9d28c039d2725017327fa3b0114a",
+          "expanded_nodes": 3,
+          "maximum_wire_bytes": 518,
+          "minimum_wire_bytes": 6,
+          "native_identity": null,
+          "type": "abb_robot_msgs/srv/SetRAPIDBool_Response"
+        }
+      },
+      "kind": "service",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/SetRAPIDBool"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_921a02212c775748bb0efa41c1a099d01f8a365cbaa2c6b848f308ea8343773c",
+      "components": {
+        "request": {
+          "adapter_codec_identity": "UWVMROS1_cece086311a908f12c0b0ab3988ca829e891749c74687c717d2a52bfb8ceaf76",
+          "expanded_nodes": 6,
+          "maximum_wire_bytes": 212,
+          "minimum_wire_bytes": 20,
+          "native_identity": null,
+          "type": "abb_robot_msgs/srv/SetRAPIDDnum_Request"
+        },
+        "response": {
+          "adapter_codec_identity": "UWVMROS1_e5f77fe9850f109d873a2784b9690c8aa0632b9e91d158ed4d14daf1aaf90ea6",
+          "expanded_nodes": 3,
+          "maximum_wire_bytes": 518,
+          "minimum_wire_bytes": 6,
+          "native_identity": null,
+          "type": "abb_robot_msgs/srv/SetRAPIDDnum_Response"
+        }
+      },
+      "kind": "service",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/SetRAPIDDnum"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_f53f6854ac9971f826db237909035a28694c08d99470685504bf7961c9ec718d",
+      "components": {
+        "request": {
+          "adapter_codec_identity": "UWVMROS1_a5bee9a64be69dc4246f68837a44362f52795ae3c6420a2df47685606283ea02",
+          "expanded_nodes": 6,
+          "maximum_wire_bytes": 208,
+          "minimum_wire_bytes": 16,
+          "native_identity": null,
+          "type": "abb_robot_msgs/srv/SetRAPIDNum_Request"
+        },
+        "response": {
+          "adapter_codec_identity": "UWVMROS1_744f3c5fac58ff098c96cedcea94fe6fa87c88ceb89674449f50fbdcd1ca30bb",
+          "expanded_nodes": 3,
+          "maximum_wire_bytes": 518,
+          "minimum_wire_bytes": 6,
+          "native_identity": null,
+          "type": "abb_robot_msgs/srv/SetRAPIDNum_Response"
+        }
+      },
+      "kind": "service",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/SetRAPIDNum"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_869a873b853404f55cf2089141feb4f02b635cfc7d41379119e1cbd27e803024",
+      "components": {
+        "request": {
+          "adapter_codec_identity": "UWVMROS1_f21c45f3f8cd4c0b50781bdd487fdc6ec0c0b35adbc7e36e9ca5b7cc47c3d461",
+          "expanded_nodes": 6,
+          "maximum_wire_bytes": 720,
+          "minimum_wire_bytes": 16,
+          "native_identity": null,
+          "type": "abb_robot_msgs/srv/SetRAPIDString_Request"
+        },
+        "response": {
+          "adapter_codec_identity": "UWVMROS1_1496ef4f4ffe48fe74b9e25b925c19f10f0e171a9d33fa2e56c15aa5cfbe4774",
+          "expanded_nodes": 3,
+          "maximum_wire_bytes": 518,
+          "minimum_wire_bytes": 6,
+          "native_identity": null,
+          "type": "abb_robot_msgs/srv/SetRAPIDString_Response"
+        }
+      },
+      "kind": "service",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/SetRAPIDString"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_1e56d1bd5cce820b2de1ab138d1cfa04d86a0d533ecae924af6399e4361b7d8d",
+      "components": {
+        "request": {
+          "adapter_codec_identity": "UWVMROS1_928d427801b79775595fed6e3779f9ba9e7e8e27f2de66cf79610cb51bb72bcf",
+          "expanded_nodes": 6,
+          "maximum_wire_bytes": 720,
+          "minimum_wire_bytes": 16,
+          "native_identity": null,
+          "type": "abb_robot_msgs/srv/SetRAPIDSymbol_Request"
+        },
+        "response": {
+          "adapter_codec_identity": "UWVMROS1_e156616a51bf4691a1c3853d62a8b0c43bb17d1a330cd4e7a58eceb5fe442382",
+          "expanded_nodes": 3,
+          "maximum_wire_bytes": 518,
+          "minimum_wire_bytes": 6,
+          "native_identity": null,
+          "type": "abb_robot_msgs/srv/SetRAPIDSymbol_Response"
+        }
+      },
+      "kind": "service",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/SetRAPIDSymbol"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_71c8ed938f11420b01451d43b7487212b1745061cd5016e65f5b33e1cac61c6b",
+      "components": {
+        "request": {
+          "adapter_codec_identity": "UWVMROS1_da30970377ba1bc151b544560773f02e17f4eaed56eb4c8d791de72bdef04355",
+          "expanded_nodes": 2,
+          "maximum_wire_bytes": 1,
+          "minimum_wire_bytes": 1,
+          "native_identity": null,
+          "type": "abb_robot_msgs/srv/SetSpeedRatio_Request"
+        },
+        "response": {
+          "adapter_codec_identity": "UWVMROS1_25e6d7edaa0503a4d45d893e886db4215bfd0af8711307c141bc63552609e3a5",
+          "expanded_nodes": 3,
+          "maximum_wire_bytes": 518,
+          "minimum_wire_bytes": 6,
+          "native_identity": null,
+          "type": "abb_robot_msgs/srv/SetSpeedRatio_Response"
+        }
+      },
+      "kind": "service",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/SetSpeedRatio"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_4fa47b1ad67153250f276ad1bcd7ab8f30d32e150715d2856caabb40261deb5c",
+      "components": {
+        "request": {
+          "adapter_codec_identity": "UWVMROS1_fd1d49c3b4e489464c6662f306210137f71d15192f64cd8a8abf93acd5fbff8d",
+          "expanded_nodes": 1,
+          "maximum_wire_bytes": 0,
+          "minimum_wire_bytes": 0,
+          "native_identity": null,
+          "type": "abb_robot_msgs/srv/TriggerWithResultCode_Request"
+        },
+        "response": {
+          "adapter_codec_identity": "UWVMROS1_e38422b2a008f07e108505ac3ce65c24189a1d6657e88a6289e17d7d4ae38d51",
+          "expanded_nodes": 3,
+          "maximum_wire_bytes": 518,
+          "minimum_wire_bytes": 6,
+          "native_identity": null,
+          "type": "abb_robot_msgs/srv/TriggerWithResultCode_Response"
+        }
+      },
+      "kind": "service",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "abb_robot_msgs/srv/TriggerWithResultCode"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_3804444fae7a82a57907d25c2c3dc54d9a42dcd305f41ca073b1221dca7d36e4",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_3804444fae7a82a57907d25c2c3dc54d9a42dcd305f41ca073b1221dca7d36e4",
+          "expanded_nodes": 3,
+          "maximum_wire_bytes": 8,
+          "minimum_wire_bytes": 8,
+          "native_identity": null,
+          "type": "builtin_interfaces/msg/Duration"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "builtin_interfaces/msg/Duration"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_0fd520c23fd8cb06e2c27292fdc20694732fa9332d452fc3fa31da90f7605fb7",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_0fd520c23fd8cb06e2c27292fdc20694732fa9332d452fc3fa31da90f7605fb7",
+          "expanded_nodes": 3,
+          "maximum_wire_bytes": 8,
+          "minimum_wire_bytes": 8,
+          "native_identity": null,
+          "type": "builtin_interfaces/msg/Time"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "builtin_interfaces/msg/Time"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_bd40771444c5441b79e63bdf5f2d5829d2c8b7ea0ccfd285baba8867cdc43757",
+      "components": {
+        "feedback": {
+          "adapter_codec_identity": "UWVMROS1_68f3809217bd914cd971e1365ca825111c1394b2587c6989736adcaa8a40a7cb",
+          "expanded_nodes": 379,
+          "maximum_wire_bytes": 4128,
+          "minimum_wire_bytes": 152,
+          "native_identity": null,
+          "type": "control_msgs/action/FollowJointTrajectory_Feedback"
+        },
+        "goal": {
+          "adapter_codec_identity": "UWVMROS1_8945d5b29832f1190b0a4f8c4af4e82686c4b913413affe9c0945570b4fb1f16",
+          "expanded_nodes": 1002,
+          "maximum_wire_bytes": 20920,
+          "minimum_wire_bytes": 64,
+          "native_identity": null,
+          "type": "control_msgs/action/FollowJointTrajectory_Goal"
+        },
+        "result": {
+          "adapter_codec_identity": "UWVMROS1_c698e3a3a772735ff6027b04af28e9bc88d6b7138863ce5737aa090f543dac70",
+          "expanded_nodes": 3,
+          "maximum_wire_bytes": 4104,
+          "minimum_wire_bytes": 8,
+          "native_identity": null,
+          "type": "control_msgs/action/FollowJointTrajectory_Result"
+        }
+      },
+      "kind": "action",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "control_msgs/action/FollowJointTrajectory"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_658f3d3f180b301e5c612188390187ec4034064976f133018048bb1fdec55342",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_658f3d3f180b301e5c612188390187ec4034064976f133018048bb1fdec55342",
+          "expanded_nodes": 6,
+          "maximum_wire_bytes": 542,
+          "minimum_wire_bytes": 30,
+          "native_identity": null,
+          "type": "control_msgs/msg/JointComponentTolerance"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "control_msgs/msg/JointComponentTolerance"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_ad7701ac1cb0dd68a947577272964b0d6051d1846019de97e9c9d0f7be7b2fa2",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_ad7701ac1cb0dd68a947577272964b0d6051d1846019de97e9c9d0f7be7b2fa2",
+          "expanded_nodes": 5,
+          "maximum_wire_bytes": 92,
+          "minimum_wire_bytes": 28,
+          "native_identity": null,
+          "type": "control_msgs/msg/JointTolerance"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "control_msgs/msg/JointTolerance"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_34a32c3470cbfe2ff12340781a5bf22f6c370a8f5c06669f25a34321ade81672",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_34a32c3470cbfe2ff12340781a5bf22f6c370a8f5c06669f25a34321ade81672",
+          "expanded_nodes": 5,
+          "maximum_wire_bytes": 32,
+          "minimum_wire_bytes": 32,
+          "native_identity": null,
+          "type": "geometry_msgs/msg/Quaternion"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Quaternion"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_7ddcb1c3fca43f4a0299d43fb6fac1b77a8f26001af809dc13307f4f9c61d65b",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_7ddcb1c3fca43f4a0299d43fb6fac1b77a8f26001af809dc13307f4f9c61d65b",
+          "expanded_nodes": 10,
+          "maximum_wire_bytes": 56,
+          "minimum_wire_bytes": 56,
+          "native_identity": null,
+          "type": "geometry_msgs/msg/Transform"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Transform"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_1a6c18d19bb6853a2cff3b775974ba31f8e3674c1bbe566444ccabf0ef9d117e",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_1a6c18d19bb6853a2cff3b775974ba31f8e3674c1bbe566444ccabf0ef9d117e",
+          "expanded_nodes": 9,
+          "maximum_wire_bytes": 48,
+          "minimum_wire_bytes": 48,
+          "native_identity": null,
+          "type": "geometry_msgs/msg/Twist"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Twist"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_5adebf211fe375fba92c0628f9b8ebf05bff9ab22ddc4bbf00629167af295d5e",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_5adebf211fe375fba92c0628f9b8ebf05bff9ab22ddc4bbf00629167af295d5e",
+          "expanded_nodes": 4,
+          "maximum_wire_bytes": 24,
+          "minimum_wire_bytes": 24,
+          "native_identity": null,
+          "type": "geometry_msgs/msg/Vector3"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Vector3"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_88d44f7bdb40f8c45539a041a25903609561fa74db90b9972e1369ebbff6c884",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_88d44f7bdb40f8c45539a041a25903609561fa74db90b9972e1369ebbff6c884",
+          "expanded_nodes": 58,
+          "maximum_wire_bytes": 1196,
+          "minimum_wire_bytes": 28,
+          "native_identity": null,
+          "type": "sensor_msgs/msg/JointState"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "sensor_msgs/msg/JointState"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_afba9e74be3c5e3321750c1c4c30ba2925269f75b9da43a6d5c1e93d293d7396",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_afba9e74be3c5e3321750c1c4c30ba2925269f75b9da43a6d5c1e93d293d7396",
+          "expanded_nodes": 5,
+          "maximum_wire_bytes": 76,
+          "minimum_wire_bytes": 12,
+          "native_identity": null,
+          "type": "std_msgs/msg/Header"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "std_msgs/msg/Header"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_2bafba62f4b166a5e736d6b5f0a5db9a8f8c2f02dc21daa0779ff56f8b87e583",
+      "components": {
+        "request": {
+          "adapter_codec_identity": "UWVMROS1_f1d8ad4ab7cf476cada6301f71ae24e046c244ba62bb6735183efe8e8c530a77",
+          "expanded_nodes": 1,
+          "maximum_wire_bytes": 0,
+          "minimum_wire_bytes": 0,
+          "native_identity": null,
+          "type": "std_srvs/srv/Trigger_Request"
+        },
+        "response": {
+          "adapter_codec_identity": "UWVMROS1_95fe65bd59112bb00093f66c6853844b01ccea8e6ded47e73038718aa886f39d",
+          "expanded_nodes": 3,
+          "maximum_wire_bytes": 517,
+          "minimum_wire_bytes": 5,
+          "native_identity": null,
+          "type": "std_srvs/srv/Trigger_Response"
+        }
+      },
+      "kind": "service",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "std_srvs/srv/Trigger"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_d74956440763bd09c76ec623efeb322aa89be8ef6410b9125d4e2cb1aeeb69c0",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_d74956440763bd09c76ec623efeb322aa89be8ef6410b9125d4e2cb1aeeb69c0",
+          "expanded_nodes": 468,
+          "maximum_wire_bytes": 4164,
+          "minimum_wire_bytes": 20,
+          "native_identity": null,
+          "type": "trajectory_msgs/msg/JointTrajectory"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "trajectory_msgs/msg/JointTrajectory"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_4d55f494f060a9a3ff23bedd54da49f9e70e6b77acbdf911878afbf672cbadc5",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_4d55f494f060a9a3ff23bedd54da49f9e70e6b77acbdf911878afbf672cbadc5",
+          "expanded_nodes": 56,
+          "maximum_wire_bytes": 408,
+          "minimum_wire_bytes": 24,
+          "native_identity": null,
+          "type": "trajectory_msgs/msg/JointTrajectoryPoint"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "trajectory_msgs/msg/JointTrajectoryPoint"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_6ea66f146cdce31369361e521be484d2c39bca818cc4b2069e1209d250ec2401",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_6ea66f146cdce31369361e521be484d2c39bca818cc4b2069e1209d250ec2401",
+          "expanded_nodes": 262,
+          "maximum_wire_bytes": 1516,
+          "minimum_wire_bytes": 20,
+          "native_identity": null,
+          "type": "trajectory_msgs/msg/MultiDOFJointTrajectory"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "trajectory_msgs/msg/MultiDOFJointTrajectory"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_6590b7ca1cdaa89da04b7a661266e2d4c6e3e2668dc90505a7c24d7be8a43242",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_6590b7ca1cdaa89da04b7a661266e2d4c6e3e2668dc90505a7c24d7be8a43242",
+          "expanded_nodes": 63,
+          "maximum_wire_bytes": 324,
+          "minimum_wire_bytes": 20,
+          "native_identity": null,
+          "type": "trajectory_msgs/msg/MultiDOFJointTrajectoryPoint"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "trajectory_msgs/msg/MultiDOFJointTrajectoryPoint"
+    }
+  ]
+}

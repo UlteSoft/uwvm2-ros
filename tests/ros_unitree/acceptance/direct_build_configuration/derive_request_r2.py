@@ -1,0 +1,145 @@
+#!/usr/bin/env python3
+"""DRAFT callable for Root's existing current64 owner; never executed here.
+
+The function writes no file and starts no actor. Root passes actual current
+full-seven observations for the completed Typed14 report, already-staged shared
+metadata helper and selected source manifest. Fresh output strings/context come
+from Root. No future Typed14 pin is supplied or guessed by this source draft.
+"""
+from pathlib import Path
+
+
+def derive_direct_request(common, *, typed_build_current, shared_helper_current,
+                          source, manifest_current, cgroup, fresh_paths,
+                          restart_mappings):
+    """Use only actual preserved config fields and existing file bytes.
+
+    ``common`` must already be loaded from Root's exact SHA-bound frozen source
+    under its current cgroup guard. The caller retains its normal live guard
+    around these metadata reads and independently SHA-binds this draft before
+    use. The maintained Direct maker performs all final independent checks.
+    """
+    def need(value, reason):
+        if not value:
+            raise ValueError(reason)
+
+    def current(pin):
+        actual = common.opened(Path(pin['path']))
+        need(actual == pin, 'supplied CURRENT full-seven observation changed')
+        return actual
+
+    def selected(thin):
+        # Frame inputs use the physical resolved target of an explicit input
+        # spelling. Preserve that original spelling in the provenance list;
+        # do not rewrite an original producer document to look newly current.
+        spelled = Path(thin['path'])
+        physical = spelled.resolve(strict=True)
+        actual = common.opened(physical)
+        need(all(actual[key] == thin[key] for key in ('bytes', 'sha256')),
+             'actual selected config bytes differ')
+        provenance.append({'original_selection': thin, 'actual_current_pin': actual,
+                           'physical_target_of_explicit_spelling': str(physical)})
+        return actual
+
+    provenance = []
+    need(type(restart_mappings) is list and len(restart_mappings) <= 64 and all(type(row) is dict and set(row) ==
+         {'root', 'historical_device', 'current_device'} and type(row['historical_device']) is int and
+         type(row['current_device']) is int and row['historical_device'] != row['current_device'] and
+         Path(row['root']).resolve(strict=True) == Path(row['root']) and Path(row['root']).is_dir() and
+         Path(row['root']).stat().st_dev == row['current_device'] for row in restart_mappings) and
+         len({(row['root'], row['historical_device']) for row in restart_mappings}) == len(restart_mappings),
+         'finite explicit actual distinct-device scopes required')
+    def historical_object(previous):
+        fields = {'path', 'bytes', 'sha256', 'device', 'inode', 'mtime_ns', 'ctime_ns'}
+        need(type(previous) is dict and set(previous) == fields and
+             Path(previous['path']).resolve(strict=True) == Path(previous['path']),
+             'exact physical historical overlay object observation required')
+        actual = common.opened(Path(previous['path']))
+        if actual != previous:
+            rows = sorted((row for row in restart_mappings if Path(previous['path']).is_relative_to(Path(row['root'])) and
+                 previous['device'] == row['historical_device'] and actual['device'] == row['current_device']),
+                 key=lambda row: len(Path(row['root']).parts), reverse=True)
+            need(rows and all(actual[key] == previous[key] for key in fields - {'device'}),
+                 'overlay object changed beyond selected strict device-only bridge')
+            provenance.append({'historical_overlay_object': previous, 'actual_current_pin': actual,
+                               'mapping': rows[0], 'execution_qualification': 'NOT_PERFORMED'})
+        return actual
+    current(typed_build_current)
+    typed, tp = common.document(Path(typed_build_current['path']))
+    need(tp == typed_build_current and typed['status'] ==
+         'PASS_SOURCE40_FOURTEEN_COMMAND_PRODUCTS_NINE_RETAINED_FIVE_FRESH_BINARY_VALIDATED_ONLY' and
+         typed['compiled_command_products'] == 14 and typed['retained_command_products'] == 9 and
+         typed['fresh_command_products'] == 5 and typed['actual_Runtime_cases_executed'] == 0 and
+         typed['source_manifest_sha256'] == 'a1c302c830b9965c73d3a9f1fa775056ff60cb7b252ec2af15c8c73ee0969afd',
+         'actual completed Typed14 continuation with unchanged original Source40 provenance required')
+    # Retry directories are not source/toolchain identities. Select the exact
+    # CURRENT configuration actually consumed by the successful producer; do
+    # not require the failed r5 control path or forecast a future r6/r7 pin.
+    selected_config = typed['configuration']
+    need(type(selected_config) is dict and set(selected_config) ==
+         {'path', 'bytes', 'sha256', 'device', 'inode', 'mtime_ns', 'ctime_ns'},
+         'actual successful producer configuration must be a full-seven pin')
+    current(selected_config)
+    cfg, cfg_pin = common.document(Path(selected_config['path']))
+    need(cfg_pin == selected_config and cfg['cgroup'] == cgroup,
+         'actual successful Typed14 configuration/current context differs')
+    current(shared_helper_current)
+    need(shared_helper_current['sha256'] == '86d87f16cde0ddcdb91d893a2520a73d3851f4ef0cf13aeda6c6409ddf8262fb',
+         'already-staged exact reviewed shared metadata helper required')
+    current(manifest_current)
+    need(manifest_current['sha256'] == '9a01f114e4091d4329392b291b5785952e99b22d8e2a48be52b7e02a7d8f0178',
+         'Root selected actual complete Source43 manifest required')
+    inputs = cfg['inputs']
+    js_pin = selected(inputs['embedded_js_inputs'])
+    js, actual_js = common.document(Path(js_pin['path']))
+    need(actual_js == js_pin and js['schema'] == 'uwvm-embedded-js-build-inputs-v1',
+         'actual pinned original embedded-JavaScript SDK metadata required')
+    tools = {role: selected(inputs[label]) for role, label in
+             (('cc', 'wasi_cc'), ('cxx', 'wasi_cxx'), ('python', 'python'), ('validator', 'wasm_tools'))}
+    for role in ('libc', 'libm', 'printscan', 'builtins'):
+        tools[role] = selected(js['inputs'][role])
+    # These two exact archive basenames are mandated by the maintained Direct
+    # consumer; the sysroot itself is read from the actual qualified producer.
+    sysroot = Path(js['paths']['sysroot'])
+    for role, basename in (('libcxx', 'libc++.a'), ('libcxxabi', 'libc++abi.a')):
+        tools[role] = common.opened((sysroot / 'lib/wasm32-wasip1' / basename).resolve(strict=True))
+    need(tools['cc'] == selected(js['inputs']['clang']) and
+         tools['validator'] == selected(js['inputs']['validator']),
+         'actual successful typed/WASI/embedded compiler and validator selections must agree')
+    sdk_paths = {'sysroot': js['paths']['sysroot'], 'resource_dir': js['paths']['resource_dir'],
+                 'wasm_ld_alias': js['paths']['linker_alias'], 'quickjs': js['paths']['quickjs']}
+    official = typed['official_cpp_object']['qualification']
+    current(official['report'])
+    overlay_report, overlay_report_pin = common.document(Path(official['report']['path']))
+    need(overlay_report_pin == official['report'] and overlay_report['kind'] == 'wasi-cpp-official-termination-overlay' and
+         overlay_report['status'] == 'PASS_OFFICIAL_CPP_TERMINATION_OBJECT_PREPARATION_ONLY',
+         'actual unchanged independent successful official C++ overlay report required')
+    overlay = overlay_report['overlay']
+    current(official['object'])
+    need(historical_object(overlay['object']) == official['object'] and
+         overlay['compiler']['physical'] == tools['cxx']['path'] and overlay['sysroot'] == sdk_paths['sysroot'],
+         'actual successful official overlay object/compiler/sysroot association differs')
+    # Its artifact81→81 equality is represented by exact pins, not a forbidden
+    # same-device transition row in the Direct Evidence API.
+    host_roots = sorted({str(Path(pin['path']).parent) for pin in tools.values()
+                         if pin['device'] != 81})
+    # The actual continuation config contains no restart_mappings field. Root must pass
+    # its separately selected explicit scopes, including66307 and66308 for the
+    # current66312 host if those original references are consumed. The caller
+    # must pass actual explicitly selected distinct-device scopes; no scope is
+    # inferred merely from the host-tool parent observations above.
+    need(type(restart_mappings) is list and all(type(row) is dict and set(row) ==
+         {'root', 'historical_device', 'current_device'} and row['historical_device'] != row['current_device']
+         for row in restart_mappings), 'explicit current historical-device scopes required')
+    request = {'format_version': 1, 'kind': 'uwvm-unitree-direct-build-configuration-request-v1',
+        'source': {'root': source, 'manifest': manifest_current}, 'cgroup': cgroup,
+        'shared_helper': shared_helper_current, 'typed_build': typed_build_current,
+        'tools': tools, 'sdk_paths': sdk_paths, 'restart_mappings': restart_mappings, 'paths': fresh_paths,
+        'limits': {'jobs': 1, 'command_seconds': 600, 'rss_bytes': 2 * 1024**3,
+                   'log_bytes': 16 * 1024**2, 'output_bytes': 4 * 1024**3}}
+    for pin in [cfg_pin, tp, shared_helper_current, manifest_current, actual_js,
+                overlay_report_pin, official['object'], *tools.values()]:
+        current(pin)
+    return request, {'configuration': cfg_pin, 'embedded_js_metadata': js_pin, 'official_overlay_report': overlay_report_pin,
+        'actual_tool_provenance': provenance, 'actual_host_tool_parent_observations_only': host_roots,
+        'restart_scopes_supplied_explicitly': True, 'compiler_or_Runtime_executed': False}

@@ -1,0 +1,59 @@
+{
+  "format_version": 1,
+  "kind": "wasi-sdk33-cpp-termination-official-inputs-v1",
+  "policy": "OFFICIAL_LIBCXXABI_BAREMETAL_ABORT_TU_AND_HEADER_VERBOSE_TRAP_V1",
+  "repository": "https://github.com/llvm/llvm-project",
+  "commit": "4434dabb69916856b824f68a64b029c67175e532",
+  "root_tree": "5b5f21833fe9bbfed23a0e2b8a01a82321bcb4d9",
+  "sdk_version": {
+    "bytes": 92,
+    "sha256": "973b79c8f797edfede7db06753dddd2b8db3e85d4859fb8ef17e0929ca64470e"
+  },
+  "files": [
+    {
+      "path": "libcxxabi/src/abort_message.cpp",
+      "bytes": 1939,
+      "sha256": "93b1415fedb1c74486e888446c17b0a65bb93f26d74fc2f6329734e94e735ee7",
+      "git_blob_sha1": "d51d9d87d35e021005023fca158085502b7805cb",
+      "url": "https://api.github.com/repos/llvm/llvm-project/git/blobs/d51d9d87d35e021005023fca158085502b7805cb"
+    },
+    {
+      "path": "libcxxabi/src/abort_message.h",
+      "bytes": 1391,
+      "sha256": "a5d95a89ae7013a171d3f7688f70f7b71e870ff85f2144c250782c399cff20de",
+      "git_blob_sha1": "2c12c429569d342c5b06f3c387c56f385a426456",
+      "url": "https://api.github.com/repos/llvm/llvm-project/git/blobs/2c12c429569d342c5b06f3c387c56f385a426456"
+    },
+    {
+      "path": "libcxxabi/include/cxxabi.h",
+      "bytes": 8262,
+      "sha256": "3c2ca8786f9419e1151a5fe92b8dbdcdadf0bde3011e7154d60b172b67ff4ebc",
+      "git_blob_sha1": "9ea93680f62e06365ddba048b7a26a19c5b0fa45",
+      "url": "https://api.github.com/repos/llvm/llvm-project/git/blobs/9ea93680f62e06365ddba048b7a26a19c5b0fa45"
+    },
+    {
+      "path": "libcxxabi/include/__cxxabi_config.h",
+      "bytes": 4705,
+      "sha256": "e2e4db49c80aeefef76c1fbd58b2f5e1b4f9fe0f6a215bc75621c768f51dc409",
+      "git_blob_sha1": "e4fd845b1fb35596e603309612471fdb2aafc893",
+      "url": "https://api.github.com/repos/llvm/llvm-project/git/blobs/e4fd845b1fb35596e603309612471fdb2aafc893"
+    },
+    {
+      "path": "LICENSE.TXT",
+      "bytes": 15141,
+      "sha256": "8d85c1057d742e597985c7d4e6320b015a9139385cff4cbae06ffc0ebe89afee",
+      "git_blob_sha1": "fa6ac540007032cbd0ec772a1c72e6cb5527a4fe",
+      "url": "https://api.github.com/repos/llvm/llvm-project/git/blobs/fa6ac540007032cbd0ec772a1c72e6cb5527a4fe"
+    }
+  ],
+  "origin_scope": "Exact upstream Git tree/blob content matched to the selected SDK VERSION; this file does not authenticate a downloaded SDK/compiler or claim signature verification",
+  "guest_compile_flags": [
+    "-UNDEBUG",
+    "-D_LIBCPP_VERBOSE_ABORT(...)=__builtin_trap()"
+  ],
+  "official_TU_compile_flags": [
+    "-DLIBCXXABI_BAREMETAL",
+    "-DNDEBUG"
+  ],
+  "source_files_vendored": false
+}

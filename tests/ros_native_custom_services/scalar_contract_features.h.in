@@ -1,0 +1,3 @@
+/* Actual same-SDK executable C compile/link result; no caller boolean proof. */
+#pragma once
+#cmakedefine01 UWVM_CUSTOM_SCALAR_C_METADATA_API

@@ -1,0 +1,10 @@
+{
+  "format": "uwvm-ros-custom-bounded-v2",
+  "types": [
+    {
+      "ros_version": 1,
+      "type": "csharp_fixture/Value",
+      "file": "Value.msg"
+    }
+  ]
+}

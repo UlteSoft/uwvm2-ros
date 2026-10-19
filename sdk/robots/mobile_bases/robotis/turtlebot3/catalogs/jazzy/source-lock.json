@@ -1,0 +1,518 @@
+{
+  "kind": "turtlebot3-selected-original-source-lock-v1",
+  "vendor": "robotis",
+  "profile": "jazzy",
+  "ros_version": 2,
+  "default_authority": [],
+  "definitions": [
+    {
+      "type": "builtin_interfaces/msg/Time",
+      "repository": "rcl_jazzy",
+      "original_file": "builtin_interfaces/msg/Time.msg",
+      "generation_file": "builtin_interfaces/msg/Time.msg",
+      "bytes": 421,
+      "sha256": "dc5a01ddde3aecffee21eb24974fe77cc969f873218a2b1811aa0ac8a456b8bd",
+      "git_blob_sha1": "03cc83f8622675b1ce70fcc5b6d260b1dd13d860"
+    },
+    {
+      "type": "geometry_msgs/msg/Point",
+      "repository": "common_jazzy",
+      "original_file": "geometry_msgs/msg/Point.msg",
+      "generation_file": "geometry_msgs/msg/Point.msg",
+      "bytes": 84,
+      "sha256": "eb4c07e591cf0269ccb17245dcd4f998162feb09cc8add85fa082c8a30bfc91d",
+      "git_blob_sha1": "f1d3a71a853c668f066de795ba5e0f4458f3f1c0"
+    },
+    {
+      "type": "geometry_msgs/msg/Pose",
+      "repository": "common_jazzy",
+      "original_file": "geometry_msgs/msg/Pose.msg",
+      "generation_file": "geometry_msgs/msg/Pose.msg",
+      "bytes": 119,
+      "sha256": "3eceb77c63ebbb544c11d7f991e475e9819e0cf534deb1a879392c1b3dc997de",
+      "git_blob_sha1": "277e2f0179a64cd3e17e31502e3d8a074ace7064"
+    },
+    {
+      "type": "geometry_msgs/msg/PoseWithCovariance",
+      "repository": "common_jazzy",
+      "original_file": "geometry_msgs/msg/PoseWithCovariance.msg",
+      "generation_file": "geometry_msgs/msg/PoseWithCovariance.msg",
+      "bytes": 323,
+      "sha256": "a22f234e91b9fcd4ba0c5b533496b43c62d7f6ade39082212ac9835679d29f94",
+      "git_blob_sha1": "86bc45adbb5d7d64e90556ac1f24ca8f725313cd"
+    },
+    {
+      "type": "geometry_msgs/msg/Quaternion",
+      "repository": "common_jazzy",
+      "original_file": "geometry_msgs/msg/Quaternion.msg",
+      "generation_file": "geometry_msgs/msg/Quaternion.msg",
+      "bytes": 116,
+      "sha256": "298495eb67a139642ffd37cc9029eae085e6c39a8789828b7517868a487939ed",
+      "git_blob_sha1": "96d392779a286cc3f4c83d80962236f5ea42c884"
+    },
+    {
+      "type": "geometry_msgs/msg/Transform",
+      "repository": "common_jazzy",
+      "original_file": "geometry_msgs/msg/Transform.msg",
+      "generation_file": "geometry_msgs/msg/Transform.msg",
+      "bytes": 118,
+      "sha256": "c8916279f0a429dd9561158bd2133bc4e2d780277c3c594116b240a27e7a2993",
+      "git_blob_sha1": "f605c85ea8ec4c4871bdb7d77db6e7011c63e86d"
+    },
+    {
+      "type": "geometry_msgs/msg/TransformStamped",
+      "repository": "common_jazzy",
+      "original_file": "geometry_msgs/msg/TransformStamped.msg",
+      "generation_file": "geometry_msgs/msg/TransformStamped.msg",
+      "bytes": 748,
+      "sha256": "f6e137c205e9187ac1dafdfbace7435de58bb3779a55e9c6b52c2cb513785c42",
+      "git_blob_sha1": "24e97b80b39d9ed9b1ea7b4df553d9ad40bb0b7c"
+    },
+    {
+      "type": "geometry_msgs/msg/Twist",
+      "repository": "common_jazzy",
+      "original_file": "geometry_msgs/msg/Twist.msg",
+      "generation_file": "geometry_msgs/msg/Twist.msg",
+      "bytes": 116,
+      "sha256": "ed471ef861f65af991b1f64d66ef941dd41dd4c0702f6222512b1a16c62d58b0",
+      "git_blob_sha1": "ede73597b9025238af28f55c275ddb02a8ed2f94"
+    },
+    {
+      "type": "geometry_msgs/msg/TwistStamped",
+      "repository": "common_jazzy",
+      "original_file": "geometry_msgs/msg/TwistStamped.msg",
+      "generation_file": "geometry_msgs/msg/TwistStamped.msg",
+      "bytes": 92,
+      "sha256": "ffc9d5925412410b28d601c55cf386a0b3e4d5dba00920fbafb98d7201f582ca",
+      "git_blob_sha1": "2dcbeac1b07c1a9a2db84ca496b91d2a6345c6f4"
+    },
+    {
+      "type": "geometry_msgs/msg/TwistWithCovariance",
+      "repository": "common_jazzy",
+      "original_file": "geometry_msgs/msg/TwistWithCovariance.msg",
+      "generation_file": "geometry_msgs/msg/TwistWithCovariance.msg",
+      "bytes": 326,
+      "sha256": "5690a1f109d4962c73b5ca7f3673c48052d02f37b6a38fe2fb37c899cf555c45",
+      "git_blob_sha1": "111a19c5f7da42f846ed9eaff26ffc6a515c9e5f"
+    },
+    {
+      "type": "geometry_msgs/msg/Vector3",
+      "repository": "common_jazzy",
+      "original_file": "geometry_msgs/msg/Vector3.msg",
+      "generation_file": "geometry_msgs/msg/Vector3.msg",
+      "bytes": 251,
+      "sha256": "d8b9ea9aad1f424faf4d2b94dae1e1368af1e5d59de11aeed019399cff7f9e1d",
+      "git_blob_sha1": "b54588e117c4632f551c221fbc33df8f958804bf"
+    },
+    {
+      "type": "nav_msgs/msg/Odometry",
+      "repository": "common_jazzy",
+      "original_file": "nav_msgs/msg/Odometry.msg",
+      "generation_file": "nav_msgs/msg/Odometry.msg",
+      "bytes": 645,
+      "sha256": "bb00547ddf498cdbae46fd991d9d85a59f507e12e7cf01fb18a86f1111524f4f",
+      "git_blob_sha1": "7186f064bf6827db2baa4d02041e4fb3304ed5ba"
+    },
+    {
+      "type": "sensor_msgs/msg/BatteryState",
+      "repository": "common_jazzy",
+      "original_file": "sensor_msgs/msg/BatteryState.msg",
+      "generation_file": "sensor_msgs/msg/BatteryState.msg",
+      "bytes": 2969,
+      "sha256": "ce13430f3c107274fb7123a6d1e79a9f83974d78cb0be1721695129e49240b25",
+      "git_blob_sha1": "c42ed6e1133a4deaae6632049a0f62447d7818be"
+    },
+    {
+      "type": "sensor_msgs/msg/Imu",
+      "repository": "common_jazzy",
+      "original_file": "sensor_msgs/msg/Imu.msg",
+      "generation_file": "sensor_msgs/msg/Imu.msg",
+      "bytes": 1211,
+      "sha256": "5800b7c2e6d3afed966ae229b1559f6e762c792ad34a88e55ad4288d8bbbd34b",
+      "git_blob_sha1": "8d8a6bdaf34a11150826d160162a54fa1cc323d4"
+    },
+    {
+      "type": "sensor_msgs/msg/JointState",
+      "repository": "common_jazzy",
+      "original_file": "sensor_msgs/msg/JointState.msg",
+      "generation_file": "sensor_msgs/msg/JointState.msg",
+      "bytes": 999,
+      "sha256": "711d1771a002c7190e5bbe746a163a67477c1e2a45482a64f1fe339815ca6f5d",
+      "git_blob_sha1": "ffaa9bfb0059383a6282abee168c72fdc92793ce"
+    },
+    {
+      "type": "sensor_msgs/msg/LaserScan",
+      "repository": "common_jazzy",
+      "original_file": "sensor_msgs/msg/LaserScan.msg",
+      "generation_file": "sensor_msgs/msg/LaserScan.msg",
+      "bytes": 1593,
+      "sha256": "bb688599d8787fa1b48393e50064013e58449055eb60e501eb01a07e8bc03357",
+      "git_blob_sha1": "6e5c2a1c7cd9c4ca78dde889515c1c24e2de519c"
+    },
+    {
+      "type": "sensor_msgs/msg/MagneticField",
+      "repository": "common_jazzy",
+      "original_file": "sensor_msgs/msg/MagneticField.msg",
+      "generation_file": "sensor_msgs/msg/MagneticField.msg",
+      "bytes": 1183,
+      "sha256": "b1bf534a4175055d85ee4630788c67a960733c383a458b86f6dfdfa27786be64",
+      "git_blob_sha1": "a0468fa7c211089e1aeaafb4b713f88260616eb9"
+    },
+    {
+      "type": "std_msgs/msg/Header",
+      "repository": "common_jazzy",
+      "original_file": "std_msgs/msg/Header.msg",
+      "generation_file": "std_msgs/msg/Header.msg",
+      "bytes": 322,
+      "sha256": "d2cea14630e39ed0fa5b432ba9160a7c38855b9427d3344f99e83e83facb53c2",
+      "git_blob_sha1": "6966bb98863c237131a2bd2822298df9511ce948"
+    },
+    {
+      "type": "std_srvs/srv/SetBool",
+      "repository": "common_jazzy",
+      "original_file": "std_srvs/srv/SetBool.srv",
+      "generation_file": "std_srvs/srv/SetBool.srv",
+      "bytes": 173,
+      "sha256": "a36d99cd5f0467a58a5b06b1443e9ffc0fcb59977190def5ef677fd16f05a664",
+      "git_blob_sha1": "93003477744daee97782eeafe272eccece948b7b"
+    },
+    {
+      "type": "std_srvs/srv/Trigger",
+      "repository": "common_jazzy",
+      "original_file": "std_srvs/srv/Trigger.srv",
+      "generation_file": "std_srvs/srv/Trigger.srv",
+      "bytes": 122,
+      "sha256": "81e80d26771d0c0af8783938720c763cacc429e68d9d6b9c1f912474db0d8dca",
+      "git_blob_sha1": "371dfd22e1508994dacdf1fa93290f46d138fcaa"
+    },
+    {
+      "type": "turtlebot3_msgs/action/Patrol",
+      "repository": "msgs_jazzy",
+      "original_file": "action/Patrol.action",
+      "generation_file": "turtlebot3_msgs/action/Patrol.action",
+      "bytes": 128,
+      "sha256": "239de7579be911d34379064c6a5bb53da4beb40dc7371328e3e49d6c5662a82f",
+      "git_blob_sha1": "2c0ce2c6b2679729fbafc5f2bfa520ba391475ca"
+    },
+    {
+      "type": "turtlebot3_msgs/msg/SensorState",
+      "repository": "msgs_jazzy",
+      "original_file": "msg/SensorState.msg",
+      "generation_file": "turtlebot3_msgs/msg/SensorState.msg",
+      "bytes": 1141,
+      "sha256": "e121d9df6a438a533942236506ee75f71086ecfeaafa6256391638f373962601",
+      "git_blob_sha1": "794805de83cb13865d5e76f1917b0cb06f1de295"
+    },
+    {
+      "type": "turtlebot3_msgs/msg/Sound",
+      "repository": "msgs_jazzy",
+      "original_file": "msg/Sound.msg",
+      "generation_file": "turtlebot3_msgs/msg/Sound.msg",
+      "bytes": 344,
+      "sha256": "eb4861a35e75b7b4a04baf8beb171b527e0d7a382c0db969f5b32a2cb97b8bdf",
+      "git_blob_sha1": "8cfe5a059a4ed8749ff26003705a8890ee9daf72"
+    },
+    {
+      "type": "turtlebot3_msgs/msg/VersionInfo",
+      "repository": "msgs_jazzy",
+      "original_file": "msg/VersionInfo.msg",
+      "generation_file": "turtlebot3_msgs/msg/VersionInfo.msg",
+      "bytes": 350,
+      "sha256": "27497e6e84c079319860ad6444ff2b738a2d75243f46b637559d7c297f38ef68",
+      "git_blob_sha1": "5dc94653418d52dc78978ac47d28915ae18f5f1a"
+    },
+    {
+      "type": "turtlebot3_msgs/srv/Dqn",
+      "repository": "msgs_jazzy",
+      "original_file": "srv/Dqn.srv",
+      "generation_file": "turtlebot3_msgs/srv/Dqn.srv",
+      "bytes": 68,
+      "sha256": "163b4fa05097b87400ff94a3925450000665d3f04e4e3db8afbd743bc82cef8b",
+      "git_blob_sha1": "d4449e579e8aa838051bfeccd46894bb41f02a8c"
+    },
+    {
+      "type": "turtlebot3_msgs/srv/Goal",
+      "repository": "msgs_jazzy",
+      "original_file": "srv/Goal.srv",
+      "generation_file": "turtlebot3_msgs/srv/Goal.srv",
+      "bytes": 47,
+      "sha256": "2ee2d8023fd1c3ae99c80250770ddd0b6ea81ca92d4111a20d1026bd4f5e1e0a",
+      "git_blob_sha1": "a8dc7e313fe1403f4746b5c2c98bab2316231615"
+    },
+    {
+      "type": "turtlebot3_msgs/srv/Sound",
+      "repository": "msgs_jazzy",
+      "original_file": "srv/Sound.srv",
+      "generation_file": "turtlebot3_msgs/srv/Sound.srv",
+      "bytes": 295,
+      "sha256": "5c98b373291a8270e783e9224be89d1160efa4f9310e617603a079640d01f663",
+      "git_blob_sha1": "c36a726b33b0c0d0c80550ebc51a9dabc89238db"
+    }
+  ],
+  "original_custom_roots": [
+    "turtlebot3_msgs/action/Patrol",
+    "turtlebot3_msgs/msg/SensorState",
+    "turtlebot3_msgs/msg/Sound",
+    "turtlebot3_msgs/msg/VersionInfo",
+    "turtlebot3_msgs/srv/Dqn",
+    "turtlebot3_msgs/srv/Goal",
+    "turtlebot3_msgs/srv/Sound"
+  ],
+  "additional_standard_roots": [
+    "sensor_msgs/msg/Imu",
+    "sensor_msgs/msg/MagneticField",
+    "sensor_msgs/msg/LaserScan",
+    "sensor_msgs/msg/JointState",
+    "sensor_msgs/msg/BatteryState",
+    "nav_msgs/msg/Odometry",
+    "geometry_msgs/msg/Twist",
+    "geometry_msgs/msg/TwistStamped",
+    "geometry_msgs/msg/TransformStamped",
+    "std_srvs/srv/Trigger",
+    "std_srvs/srv/SetBool"
+  ],
+  "repositories": [
+    {
+      "id": "common_jazzy",
+      "url": "https://github.com/ros2/common_interfaces",
+      "branch": "jazzy",
+      "commit": "a941f14bb318d8d904505ed935ccbb97f24a70a4",
+      "tree_git_sha1": "bbd609d90753abf6e10bdc94f594f36b75921677",
+      "archive": {
+        "url": "https://codeload.github.com/ros2/common_interfaces/tar.gz/a941f14bb318d8d904505ed935ccbb97f24a70a4",
+        "bytes": 150460,
+        "sha256": "4140cc780aec296bcd88c3049ba541783d40fbb7dd0e5919e621a85e314416ba"
+      },
+      "default_authority": [],
+      "scope": "Unchanged selected original interfaces/source and complete original acquisition archive; no compilation, native or robot execution.",
+      "retained_archive_augmentation": {
+        "files": [
+          {
+            "path": "diagnostic_msgs/srv/AddDiagnostics.srv",
+            "bytes": 1458,
+            "sha256": "e88df6a6769a9ee85480aa2b1adac052fa368b4a00016f1a9b8422fdacdf1767",
+            "git_blob_sha1": "413c4019d73e3860dd09c51b5d6a078bf57a7bcb"
+          },
+          {
+            "path": "diagnostic_msgs/srv/SelfTest.srv",
+            "bytes": 52,
+            "sha256": "3a95f0dfd99d48a34b58608a80443e9bcd343ebd76d8865f58f8b9b312b6d38f",
+            "git_blob_sha1": "ee2974d4270d5c37aedd4b2253d0075b91582f74"
+          },
+          {
+            "path": "nav_msgs/srv/GetMap.srv",
+            "bytes": 110,
+            "sha256": "b4bdbb1875bfd2b22596e238cb9571f0baec6505032f7df8cc7e5cd47bfd3adc",
+            "git_blob_sha1": "91be6a7bdf5593b58a1815be2e5f2096f654d68d"
+          },
+          {
+            "path": "nav_msgs/srv/GetPlan.srv",
+            "bytes": 400,
+            "sha256": "84582c21447bd35286bbf93b9ca80de69e964cad577fa6ac44aabdbba43cba2e",
+            "git_blob_sha1": "689290a632bef9aff8f5186211b387e03f237b64"
+          },
+          {
+            "path": "nav_msgs/srv/LoadMap.srv",
+            "bytes": 473,
+            "sha256": "301ea2a2226e8723ae8a421eefc4dfbc0e3ed7819402583bd13c034f0802d3aa",
+            "git_blob_sha1": "3b9caaad47004e34d800ef84aae0553a8e2e5077"
+          },
+          {
+            "path": "nav_msgs/srv/SetMap.srv",
+            "bytes": 280,
+            "sha256": "14b58f196f2eafdeb75d2b913af3687665cce880aef970e03e6a6c014cd6fbed",
+            "git_blob_sha1": "5270d458bd409ad922289e457388af8930afd2f5"
+          },
+          {
+            "path": "sensor_msgs/srv/SetCameraInfo.srv",
+            "bytes": 597,
+            "sha256": "d7e720e522387083ff70c0b9e8aacec379c416d8d04f3cdca55de2008beba1f3",
+            "git_blob_sha1": "98b5b261d409d1b44fd7b50586777d380ed46249"
+          },
+          {
+            "path": "std_srvs/srv/Empty.srv",
+            "bytes": 4,
+            "sha256": "f52d711103d50a437830c6fbcd04fb4bab49a0f82f6d26d1c791c6e8488dd090",
+            "git_blob_sha1": "ed97d539c095cf1413af30cc23dea272095b97dd"
+          },
+          {
+            "path": "std_srvs/srv/SetBool.srv",
+            "bytes": 173,
+            "sha256": "a36d99cd5f0467a58a5b06b1443e9ffc0fcb59977190def5ef677fd16f05a664",
+            "git_blob_sha1": "93003477744daee97782eeafe272eccece948b7b"
+          },
+          {
+            "path": "std_srvs/srv/Trigger.srv",
+            "bytes": 122,
+            "sha256": "81e80d26771d0c0af8783938720c763cacc429e68d9d6b9c1f912474db0d8dca",
+            "git_blob_sha1": "371dfd22e1508994dacdf1fa93290f46d138fcaa"
+          },
+          {
+            "path": "visualization_msgs/srv/GetInteractiveMarkers.srv",
+            "bytes": 287,
+            "sha256": "a5291d771d7568d176844b2322c5d91b389370e8c25015a5ae00d63fac4471ea",
+            "git_blob_sha1": "493e885ec305e7d0beadda281c3297ea341fdfba"
+          }
+        ],
+        "scope": "Unchanged bodies recovered from the previously verified original archive, not newly downloaded."
+      }
+    },
+    {
+      "id": "driver_jazzy",
+      "url": "https://github.com/ROBOTIS-GIT/turtlebot3",
+      "branch": "jazzy",
+      "commit": "0c0be84e3f5c3194fb2adea8426a58a96060eab5",
+      "tree_git_sha1": "cdf2659c4c74b1f6868aca21ea099f7daa9e34ae",
+      "archive": {
+        "url": "https://codeload.github.com/ROBOTIS-GIT/turtlebot3/tar.gz/0c0be84e3f5c3194fb2adea8426a58a96060eab5",
+        "bytes": 8862258,
+        "sha256": "3fdda60f779a8bbe3bc9698b56a9b70207196a2dca6c2e07f2f89477b60f0ab9"
+      },
+      "default_authority": [],
+      "scope": "Original source and complete acquisition archive only; no compatibility, compiler, Guest, native or physical robot result."
+    },
+    {
+      "id": "msgs_jazzy",
+      "url": "https://github.com/ROBOTIS-GIT/turtlebot3_msgs",
+      "branch": "jazzy",
+      "commit": "9209e01b4708cf3ca5610b01dfc9586d3c7889d8",
+      "tree_git_sha1": "13ea568ce1203d4ee01a33ab15469c74777f11df",
+      "archive": {
+        "url": "https://codeload.github.com/ROBOTIS-GIT/turtlebot3_msgs/tar.gz/9209e01b4708cf3ca5610b01dfc9586d3c7889d8",
+        "bytes": 9045,
+        "sha256": "f3130dc98b11cc4f616e04daa80c886ab22cd20f9b824d8002d2f9818fc6743e"
+      },
+      "default_authority": [],
+      "scope": "Original source and complete acquisition archive only; no compatibility, compiler, Guest, native or physical robot result."
+    },
+    {
+      "id": "rcl_jazzy",
+      "url": "https://github.com/ros2/rcl_interfaces",
+      "branch": "jazzy",
+      "commit": "7aa3caf43377ea6ad615bc1040832e2c7566bfbe",
+      "tree_git_sha1": "4515d6d00cf6209db404352534818e4199fe33c9",
+      "archive": {
+        "url": "https://codeload.github.com/ros2/rcl_interfaces/tar.gz/7aa3caf43377ea6ad615bc1040832e2c7566bfbe",
+        "bytes": 48039,
+        "sha256": "d984942035cd4df4f60c92d6038cecbfc3f5a01a1977c1b3199cee45cd67281c"
+      },
+      "default_authority": [],
+      "scope": "Unchanged selected original interfaces/source and complete original acquisition archive; no compilation, native or robot execution.",
+      "retained_archive_augmentation": {
+        "files": [
+          {
+            "path": "action_msgs/srv/CancelGoal.srv",
+            "bytes": 1453,
+            "sha256": "5f4dc57f41cab2fd1987a61d5821282ece5075e38e5044f90126ab62c98fac20",
+            "git_blob_sha1": "86afbdbf4eacb2c55c1faf8da3a17946c5f0fa9b"
+          },
+          {
+            "path": "composition_interfaces/srv/ListNodes.srv",
+            "bytes": 167,
+            "sha256": "7b01c631b25d12e91315098748bb526f19101c70041613704ac8f09b7482db63",
+            "git_blob_sha1": "4b1421eb4031b37e38cd90f614cd303e66b5d9e3"
+          },
+          {
+            "path": "composition_interfaces/srv/LoadNode.srv",
+            "bytes": 1253,
+            "sha256": "db83f2776f37bf2cbe94ba8d3e8fefb0bca5b3edaa978e2b151c16f41bb47f11",
+            "git_blob_sha1": "ffd243f3a518362e11ccf059417b5a6bd037a8d1"
+          },
+          {
+            "path": "composition_interfaces/srv/UnloadNode.srv",
+            "bytes": 221,
+            "sha256": "6b6106bb2ba8ec9c8fd3812ab57a57775da388d12754bc6b266e1a883618f4d9",
+            "git_blob_sha1": "0fa36a516759a491a799a7f15a84a54f30ff5189"
+          },
+          {
+            "path": "lifecycle_msgs/srv/ChangeState.srv",
+            "bytes": 217,
+            "sha256": "a724c2437f5dc7eda1120f79ac30f945fea1475ac62654936f0d04530b1aef23",
+            "git_blob_sha1": "1bad3d1012bcd67269d05c893770be9b4dfa48d5"
+          },
+          {
+            "path": "lifecycle_msgs/srv/GetAvailableStates.srv",
+            "bytes": 85,
+            "sha256": "ab291560449fc5914c35cb9a9ec14cedfa67f6b643d4b7abb6c98cfb29e76f0d",
+            "git_blob_sha1": "2faa79b03d1f094781b03ced38e553fe984196e2"
+          },
+          {
+            "path": "lifecycle_msgs/srv/GetAvailableTransitions.srv",
+            "bytes": 112,
+            "sha256": "b6081c35e61f405e999e10044e9a68f862347da3c133070fe04dad9b54f2ecea",
+            "git_blob_sha1": "a7f4e506626903c8b90d1297415e51004ada8a17"
+          },
+          {
+            "path": "lifecycle_msgs/srv/GetState.srv",
+            "bytes": 71,
+            "sha256": "fc5e96531728baa4fcbc78d79b93e4c84e5787e288cc49d8c76ce8fcfef67292",
+            "git_blob_sha1": "b2569fa65ba13d3de35c482587332bd8fcb98458"
+          },
+          {
+            "path": "rcl_interfaces/srv/DescribeParameters.srv",
+            "bytes": 278,
+            "sha256": "6047a59261d6c19a4e8e921f06702cc0672e0e8b6a6854fe601b30edf02e5981",
+            "git_blob_sha1": "a8f0b9162c4bb92b0eb003ef9d8248394c53bec7"
+          },
+          {
+            "path": "rcl_interfaces/srv/GetLoggerLevels.srv",
+            "bytes": 220,
+            "sha256": "80d7c2ffe896e3b8d0ee228b78a5783d544887bbd3bd4549ef9d2a83403bae3c",
+            "git_blob_sha1": "3c0884e53b8f19bb7a67357ec172f0f6fa31085a"
+          },
+          {
+            "path": "rcl_interfaces/srv/GetParameterTypes.srv",
+            "bytes": 322,
+            "sha256": "e5745ed79201f3ea515c13917f8d28780d16ed53c35f1b8d0f27c89945777bbe",
+            "git_blob_sha1": "cdf0e78d8727c6304d0baab30fc3c8ee886046fe"
+          },
+          {
+            "path": "rcl_interfaces/srv/GetParameters.srv",
+            "bytes": 518,
+            "sha256": "3ae49531812d8813350fad5261905a88939f8352f8a08fd238dcae19a08e59f7",
+            "git_blob_sha1": "1822479bca1c947446fda9b4a158cfdb723b8e61"
+          },
+          {
+            "path": "rcl_interfaces/srv/ListParameters.srv",
+            "bytes": 369,
+            "sha256": "8254b67551049b2dc477d2fad286b645588227188482436d1b3bc0041731ed8b",
+            "git_blob_sha1": "ee1b7a6ffa6f40d27f59d369e24e4eccca9c378f"
+          },
+          {
+            "path": "rcl_interfaces/srv/SetLoggerLevels.srv",
+            "bytes": 152,
+            "sha256": "f418e17d4db720944d1edae8073ae6df1499677c8f1a11ca19b0bcba6a19d44d",
+            "git_blob_sha1": "7a83b1b01c605bf6906449c1741d68de0926907d"
+          },
+          {
+            "path": "rcl_interfaces/srv/SetParameters.srv",
+            "bytes": 158,
+            "sha256": "6a0dcce330e51f954350e4ca3095fff7a7c0a0fa1c9d986b1dad340afb05f70a",
+            "git_blob_sha1": "97d11796b67e2c6deb0deafb12dbadc87546cd9e"
+          },
+          {
+            "path": "rcl_interfaces/srv/SetParametersAtomically.srv",
+            "bytes": 238,
+            "sha256": "8593b435156b70299a4664839dc1b799ff22a7b7c0c27cec7b33bcc336389954",
+            "git_blob_sha1": "2df928a4fddd5a2accd9363821ca1bf9abe9b956"
+          },
+          {
+            "path": "test_msgs/action/NestedMessage.action",
+            "bytes": 381,
+            "sha256": "cb976305a0af5bc92868e74e9d0e9d088285608c668b09195c8e7d53089ae835",
+            "git_blob_sha1": "f0c7cf279cfbfe5210212cd3f3297bd605792d16"
+          },
+          {
+            "path": "type_description_interfaces/srv/GetTypeDescription.srv",
+            "bytes": 1182,
+            "sha256": "3e26a2ac0c055cc8c1b6bd50c4b5c9cdd750a5604027c20cc23519a1905b4f5f",
+            "git_blob_sha1": "9d34d0d0b4139a85499793c83aa7fb102f68e8c3"
+          }
+        ],
+        "scope": "Unchanged bodies recovered from the previously verified original archive, not newly downloaded."
+      }
+    }
+  ],
+  "catalog_sha256": "09bc0feff7c32b76ca2caa6a7d4142b3fdc6349841e3ec4fa2be83834d2bcf7f",
+  "scope": "Complete original custom declarations and all reached unchanged dependencies plus explicit full standard data roots. Main is a development snapshot. No native ROS, model, controller, official-suite or other-release qualification."
+}

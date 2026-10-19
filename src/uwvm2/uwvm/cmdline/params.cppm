@@ -33,6 +33,7 @@ module;
 #endif
 #include <uwvm2/uwvm/runtime/macro/push_macros.h>
 
+#include <uwvm2/runtime/lib/uwvm_runtime_threaded_profile_feature.h>
 export module uwvm2.uwvm.cmdline:params;
 
 import uwvm2.utils.cmdline;

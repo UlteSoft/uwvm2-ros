@@ -1,0 +1,229 @@
+{
+  "kind": "ACTUAL_OFFICIAL_UPSTREAM_SOURCE_PINNING_NOT_COMPATIBILITY_TEST",
+  "repositories": [
+    {
+      "repository": "ros2_java",
+      "commit": "d0e4e952bad1977ce9818d00b520d3ad0aeafd8d",
+      "tree": "152e79bcb6ad7e3e0ef808acbd5ae47191cadb76",
+      "files": [
+        {
+          "relative": "LICENSE",
+          "git_blob": "8d89d4e113e63604583ca7893077d478feebf93a",
+          "url": "https://raw.githubusercontent.com/ros2-java/ros2_java/d0e4e952bad1977ce9818d00b520d3ad0aeafd8d/LICENSE",
+          "bytes": 10769,
+          "sha256": "8d3d045229f6ed48c18807b96cd1ade6d08268b6435e66593d099305f53be027"
+        },
+        {
+          "relative": "NOTICE",
+          "git_blob": "16d2754bce8f0dbaf00066f24e9a2e0b96b57d25",
+          "url": "https://raw.githubusercontent.com/ros2-java/ros2_java/d0e4e952bad1977ce9818d00b520d3ad0aeafd8d/NOTICE",
+          "bytes": 149,
+          "sha256": "2516170cd8dc77b0252432c1295b854e75eb675187942580d1bcf96d1452db65"
+        },
+        {
+          "relative": "rcljava/src/main/java/org/ros2/rcljava/RCLJava.java",
+          "git_blob": "15a703c82597c8f30c7b8aab0e941cd9d1854cb6",
+          "url": "https://raw.githubusercontent.com/ros2-java/ros2_java/d0e4e952bad1977ce9818d00b520d3ad0aeafd8d/rcljava/src/main/java/org/ros2/rcljava/RCLJava.java",
+          "bytes": 10470,
+          "sha256": "f940edb6c1c02d2cf1a4ab1f5c7b54db40a811c67c3ddfece368b3b9c1a8d6b1"
+        },
+        {
+          "relative": "rcljava/src/main/java/org/ros2/rcljava/concurrent/Callback.java",
+          "git_blob": "f003064cde36042455502cd844af0a34144977f6",
+          "url": "https://raw.githubusercontent.com/ros2-java/ros2_java/d0e4e952bad1977ce9818d00b520d3ad0aeafd8d/rcljava/src/main/java/org/ros2/rcljava/concurrent/Callback.java",
+          "bytes": 704,
+          "sha256": "6b9cad1fcdd8a0dc8bb80f6e1770adc47e6b74aefcf69e8a2ed1661db4bbef75"
+        },
+        {
+          "relative": "rcljava/src/main/java/org/ros2/rcljava/consumers/Consumer.java",
+          "git_blob": "023b6b4737086353f59736675b92f6b369ae498f",
+          "url": "https://raw.githubusercontent.com/ros2-java/ros2_java/d0e4e952bad1977ce9818d00b520d3ad0aeafd8d/rcljava/src/main/java/org/ros2/rcljava/consumers/Consumer.java",
+          "bytes": 1020,
+          "sha256": "074fc4cbe1a8467587f3d4b6b698c4c262d89b9e94703e528b3863b733a0608a"
+        },
+        {
+          "relative": "rcljava/src/main/java/org/ros2/rcljava/node/BaseComposableNode.java",
+          "git_blob": "271a746ca8b904f2a910d2a55a5253816bb07d61",
+          "url": "https://raw.githubusercontent.com/ros2-java/ros2_java/d0e4e952bad1977ce9818d00b520d3ad0aeafd8d/rcljava/src/main/java/org/ros2/rcljava/node/BaseComposableNode.java",
+          "bytes": 970,
+          "sha256": "b11f2b8fdd1ec2a5599d4219057e93ca02e20486e6ce54fbfdbbd75a5e3dac6a"
+        },
+        {
+          "relative": "rcljava/src/main/java/org/ros2/rcljava/node/ComposableNode.java",
+          "git_blob": "ba2ea48679889f87fea1991def5228bb94c7007f",
+          "url": "https://raw.githubusercontent.com/ros2-java/ros2_java/d0e4e952bad1977ce9818d00b520d3ad0aeafd8d/rcljava/src/main/java/org/ros2/rcljava/node/ComposableNode.java",
+          "bytes": 709,
+          "sha256": "459b5155a83f1a7743032af93d40d5b16665a8d7c02dc66152dbf263d87e311f"
+        },
+        {
+          "relative": "rcljava/src/main/java/org/ros2/rcljava/node/Node.java",
+          "git_blob": "5059adeeea42fbfbc021a8ce33e9c9155f8aba68",
+          "url": "https://raw.githubusercontent.com/ros2-java/ros2_java/d0e4e952bad1977ce9818d00b520d3ad0aeafd8d/rcljava/src/main/java/org/ros2/rcljava/node/Node.java",
+          "bytes": 25521,
+          "sha256": "2a371aa8b9e7216021d6c3d9a21b37b2d269065f1dcf7f67b26c1643d040815e"
+        },
+        {
+          "relative": "rcljava/src/main/java/org/ros2/rcljava/publisher/Publisher.java",
+          "git_blob": "47c857ff69a0c288747f1f02d7b440a1ca0aa6fb",
+          "url": "https://raw.githubusercontent.com/ros2-java/ros2_java/d0e4e952bad1977ce9818d00b520d3ad0aeafd8d/rcljava/src/main/java/org/ros2/rcljava/publisher/Publisher.java",
+          "bytes": 2545,
+          "sha256": "88140343a31ccceb10cbbcabff820c90689da2f51ea4fe095eb0ae6cad364490"
+        },
+        {
+          "relative": "rcljava/src/main/java/org/ros2/rcljava/qos/QoSProfile.java",
+          "git_blob": "73961faadf92f7bb4fb910dc7d57d86ce93c2e95",
+          "url": "https://raw.githubusercontent.com/ros2-java/ros2_java/d0e4e952bad1977ce9818d00b520d3ad0aeafd8d/rcljava/src/main/java/org/ros2/rcljava/qos/QoSProfile.java",
+          "bytes": 10369,
+          "sha256": "aaf9ed793ccced275b1e6cfeea36bae52ac1cfc32e58e991665635118e56bcf6"
+        },
+        {
+          "relative": "rcljava/src/main/java/org/ros2/rcljava/subscription/Subscription.java",
+          "git_blob": "732d8bbbc5a713e8abd27c1707cda63e4bf8ecea",
+          "url": "https://raw.githubusercontent.com/ros2-java/ros2_java/d0e4e952bad1977ce9818d00b520d3ad0aeafd8d/rcljava/src/main/java/org/ros2/rcljava/subscription/Subscription.java",
+          "bytes": 2633,
+          "sha256": "1346450f640ea47e5b2354756469f8cc5f94f79a0f8b8e2707e5436413abc943"
+        },
+        {
+          "relative": "rcljava/src/main/java/org/ros2/rcljava/timer/Timer.java",
+          "git_blob": "46aa6d43c6287e023078d40b9f620514cb7ee2c6",
+          "url": "https://raw.githubusercontent.com/ros2-java/ros2_java/d0e4e952bad1977ce9818d00b520d3ad0aeafd8d/rcljava/src/main/java/org/ros2/rcljava/timer/Timer.java",
+          "bytes": 819,
+          "sha256": "0cad2b0a3ada0189e1b43166e8a04ebde5347fd37efdede85ee93b03669cbc8c"
+        },
+        {
+          "relative": "rcljava/src/main/java/org/ros2/rcljava/timer/WallTimer.java",
+          "git_blob": "f21a96f453fc42ecf1c3933b564b00c5f69fe605",
+          "url": "https://raw.githubusercontent.com/ros2-java/ros2_java/d0e4e952bad1977ce9818d00b520d3ad0aeafd8d/rcljava/src/main/java/org/ros2/rcljava/timer/WallTimer.java",
+          "bytes": 931,
+          "sha256": "569c80abf6bf2df2eea7a27321e0366e13176e2d45b6ffb96ef55e231bbcb5d0"
+        },
+        {
+          "relative": "rcljava_common/src/main/java/org/ros2/rcljava/interfaces/Disposable.java",
+          "git_blob": "05ce0a701b271111429fd9c21f3eb9af5c52c755",
+          "url": "https://raw.githubusercontent.com/ros2-java/ros2_java/d0e4e952bad1977ce9818d00b520d3ad0aeafd8d/rcljava_common/src/main/java/org/ros2/rcljava/interfaces/Disposable.java",
+          "bytes": 888,
+          "sha256": "3ba7f5109c9e3d22bcaaced71496047088fcc5f5bfe2dee3dd53da9bb5224419"
+        },
+        {
+          "relative": "rcljava_common/src/main/java/org/ros2/rcljava/interfaces/MessageDefinition.java",
+          "git_blob": "a5a05dc5a0aa948939dc2bc86ac473638509d830",
+          "url": "https://raw.githubusercontent.com/ros2-java/ros2_java/d0e4e952bad1977ce9818d00b520d3ad0aeafd8d/rcljava_common/src/main/java/org/ros2/rcljava/interfaces/MessageDefinition.java",
+          "bytes": 872,
+          "sha256": "b3d93729afb6d247744dc4a0fa29a02ee91743cac3f94f6e2dc4c1ef75ae23fa"
+        }
+      ]
+    },
+    {
+      "repository": "ros2_java_examples",
+      "commit": "3c1fa01f95fb96110953c0f7f196424aa0557b97",
+      "tree": "cbae8811f7d7d918ab6a7a5ad3a57993d707812c",
+      "files": [
+        {
+          "relative": "LICENSE",
+          "git_blob": "8d89d4e113e63604583ca7893077d478feebf93a",
+          "url": "https://raw.githubusercontent.com/ros2-java/ros2_java_examples/3c1fa01f95fb96110953c0f7f196424aa0557b97/LICENSE",
+          "bytes": 10769,
+          "sha256": "8d3d045229f6ed48c18807b96cd1ade6d08268b6435e66593d099305f53be027"
+        },
+        {
+          "relative": "NOTICE",
+          "git_blob": "16d2754bce8f0dbaf00066f24e9a2e0b96b57d25",
+          "url": "https://raw.githubusercontent.com/ros2-java/ros2_java_examples/3c1fa01f95fb96110953c0f7f196424aa0557b97/NOTICE",
+          "bytes": 149,
+          "sha256": "2516170cd8dc77b0252432c1295b854e75eb675187942580d1bcf96d1452db65"
+        },
+        {
+          "relative": "rcljava_examples/src/main/java/org/ros2/rcljava/examples/client/AddTwoIntsClient.java",
+          "git_blob": "d8357a69dc1748265266b81d46ae35d96c15a598",
+          "url": "https://raw.githubusercontent.com/ros2-java/ros2_java_examples/3c1fa01f95fb96110953c0f7f196424aa0557b97/rcljava_examples/src/main/java/org/ros2/rcljava/examples/client/AddTwoIntsClient.java",
+          "bytes": 1719,
+          "sha256": "77bc9398f72fbc4708b313770891d09badf1e83e2668908c345f862456d0bc33"
+        },
+        {
+          "relative": "rcljava_examples/src/main/java/org/ros2/rcljava/examples/composition/Composed.java",
+          "git_blob": "b46f36601926d97ea21d55c63ec397041e23a16a",
+          "url": "https://raw.githubusercontent.com/ros2-java/ros2_java_examples/3c1fa01f95fb96110953c0f7f196424aa0557b97/rcljava_examples/src/main/java/org/ros2/rcljava/examples/composition/Composed.java",
+          "bytes": 1242,
+          "sha256": "77babff81a09e44fb62bf14d74fbf14c93eff9796bb94dfd941b949bb95bc0d4"
+        },
+        {
+          "relative": "rcljava_examples/src/main/java/org/ros2/rcljava/examples/composition/PublisherNode.java",
+          "git_blob": "38d83b0fb90d8534250a69e7d92338eede8262e7",
+          "url": "https://raw.githubusercontent.com/ros2-java/ros2_java_examples/3c1fa01f95fb96110953c0f7f196424aa0557b97/rcljava_examples/src/main/java/org/ros2/rcljava/examples/composition/PublisherNode.java",
+          "bytes": 1561,
+          "sha256": "928bcf5490cd95f07bbda1d5b9ff228b2c8cd2b4de57880666c1fcdd34f4c103"
+        },
+        {
+          "relative": "rcljava_examples/src/main/java/org/ros2/rcljava/examples/composition/SubscriberNode.java",
+          "git_blob": "fc69c33dcfe0885e8811b8f96627da2a778e5132",
+          "url": "https://raw.githubusercontent.com/ros2-java/ros2_java_examples/3c1fa01f95fb96110953c0f7f196424aa0557b97/rcljava_examples/src/main/java/org/ros2/rcljava/examples/composition/SubscriberNode.java",
+          "bytes": 1198,
+          "sha256": "708d5a8854a8afc0ddf2c742cb2b01d0c3f7e0e3afc524fbc775faa0dc619119"
+        },
+        {
+          "relative": "rcljava_examples/src/main/java/org/ros2/rcljava/examples/publisher/PublisherLambda.java",
+          "git_blob": "dff833a8771d2339892c3ced6ec6ba6e455cb4ea",
+          "url": "https://raw.githubusercontent.com/ros2-java/ros2_java_examples/3c1fa01f95fb96110953c0f7f196424aa0557b97/rcljava_examples/src/main/java/org/ros2/rcljava/examples/publisher/PublisherLambda.java",
+          "bytes": 1870,
+          "sha256": "05ffd5b344ef12237607653e74fc057f1e9ee1c1c50ff2f7764a8fc7b232d99a"
+        },
+        {
+          "relative": "rcljava_examples/src/main/java/org/ros2/rcljava/examples/publisher/PublisherMemberFunction.java",
+          "git_blob": "6126497c4b22cd353dff1fcea0d75dd6c2b4f509",
+          "url": "https://raw.githubusercontent.com/ros2-java/ros2_java_examples/3c1fa01f95fb96110953c0f7f196424aa0557b97/rcljava_examples/src/main/java/org/ros2/rcljava/examples/publisher/PublisherMemberFunction.java",
+          "bytes": 1885,
+          "sha256": "73fbbccc72827fca1b90ba96c0fe66cb7dd1a076f00171b9c1c744a17551e429"
+        },
+        {
+          "relative": "rcljava_examples/src/main/java/org/ros2/rcljava/examples/publisher/PublisherNotComposable.java",
+          "git_blob": "8d3400eeebe461d874bb8b9ea7a8f828b595db16",
+          "url": "https://raw.githubusercontent.com/ros2-java/ros2_java_examples/3c1fa01f95fb96110953c0f7f196424aa0557b97/rcljava_examples/src/main/java/org/ros2/rcljava/examples/publisher/PublisherNotComposable.java",
+          "bytes": 1719,
+          "sha256": "a998f91cf157f3cfc0d9440d9aeb1745894d02b547c4315e3a77007ea548a8e8"
+        },
+        {
+          "relative": "rcljava_examples/src/main/java/org/ros2/rcljava/examples/service/AddTwoIntsService.java",
+          "git_blob": "58dc34131fc4ffb7cfea60d46e3e536e4c091404",
+          "url": "https://raw.githubusercontent.com/ros2-java/ros2_java_examples/3c1fa01f95fb96110953c0f7f196424aa0557b97/rcljava_examples/src/main/java/org/ros2/rcljava/examples/service/AddTwoIntsService.java",
+          "bytes": 1912,
+          "sha256": "bc24598de58f8f286d7a98c3fde017230e279c30fa9d618b794a0ba9b4a8456c"
+        },
+        {
+          "relative": "rcljava_examples/src/main/java/org/ros2/rcljava/examples/subscriber/SubscriberLambda.java",
+          "git_blob": "e8f38b774b66a8f868e9aa8b72b8d8ad1b077a3d",
+          "url": "https://raw.githubusercontent.com/ros2-java/ros2_java_examples/3c1fa01f95fb96110953c0f7f196424aa0557b97/rcljava_examples/src/main/java/org/ros2/rcljava/examples/subscriber/SubscriberLambda.java",
+          "bytes": 1392,
+          "sha256": "edffe3ea24b8cb104360879b9c95524aad3dc2e3861c59ff0f41477b77717fdc"
+        },
+        {
+          "relative": "rcljava_examples/src/main/java/org/ros2/rcljava/examples/subscriber/SubscriberMemberFunction.java",
+          "git_blob": "7bd2adb4af053e1ab9611aafe9380e808766b5c4",
+          "url": "https://raw.githubusercontent.com/ros2-java/ros2_java_examples/3c1fa01f95fb96110953c0f7f196424aa0557b97/rcljava_examples/src/main/java/org/ros2/rcljava/examples/subscriber/SubscriberMemberFunction.java",
+          "bytes": 1503,
+          "sha256": "f3a9aa49102317b67a479751bdf7d58e2b81cd343d72b2c46fda70479f4afde6"
+        },
+        {
+          "relative": "rcljava_examples/src/main/java/org/ros2/rcljava/examples/subscriber/SubscriberNotComposable.java",
+          "git_blob": "f76db703f153a0443513af88f3110066948f88eb",
+          "url": "https://raw.githubusercontent.com/ros2-java/ros2_java_examples/3c1fa01f95fb96110953c0f7f196424aa0557b97/rcljava_examples/src/main/java/org/ros2/rcljava/examples/subscriber/SubscriberNotComposable.java",
+          "bytes": 1608,
+          "sha256": "0a116ff835a31b2cb65e4c31ffe40320e2269f18576de2c9417558b04240c44b"
+        },
+        {
+          "relative": "rcljava_examples/src/main/java/org/ros2/rcljava/examples/timer/TimerLambda.java",
+          "git_blob": "bab343df85827df03cc67efd8e4a61644b1d014a",
+          "url": "https://raw.githubusercontent.com/ros2-java/ros2_java_examples/3c1fa01f95fb96110953c0f7f196424aa0557b97/rcljava_examples/src/main/java/org/ros2/rcljava/examples/timer/TimerLambda.java",
+          "bytes": 1394,
+          "sha256": "ab042e47c986acbe628e67ac56b92acc8554017d3db36e5416107fb3e80805ed"
+        },
+        {
+          "relative": "rcljava_examples/src/main/java/org/ros2/rcljava/examples/timer/TimerMemberFunction.java",
+          "git_blob": "ea0d283234849d3ca27e27cb9e83de2bfd1aab29",
+          "url": "https://raw.githubusercontent.com/ros2-java/ros2_java_examples/3c1fa01f95fb96110953c0f7f196424aa0557b97/rcljava_examples/src/main/java/org/ros2/rcljava/examples/timer/TimerMemberFunction.java",
+          "bytes": 1423,
+          "sha256": "c4559d8fda0f4ec5d73e381c5e89372518217fffa1faf18ef71c6edcc080c3c3"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+{
+  "SSH_or_archive_or_retirement_executed_by_source_author": false,
+  "actual_candidate_bytes": null,
+  "actual_compressed_archive_bytes": null,
+  "actual_unique_reclaimed_bytes": null,
+  "candidate_physical_alias_overlap_closed": false,
+  "candidate_remote_existence_and_current_pins_collected": false,
+  "current_control_sha256": "344eb5d9bd35436b5d30d9f817d46978110842dfdc22a3ea45bcf376b4cc8c9e",
+  "files": [
+    {
+      "bytes": 8651,
+      "path": "tests/ros_unitree/acceptance/noetic_cold_storage/README.md",
+      "sha256": "061472b86f2c70a1c1fe3b0b5d6b41d6ca7b4d1ab31bdb45ee709cfe4ea4966c"
+    },
+    {
+      "bytes": 16052,
+      "path": "tests/ros_unitree/acceptance/noetic_cold_storage/current-selected-roots.root-observed.json",
+      "sha256": "a5da919d289950db78d20139d853cd2806507940f266ddeb21aabdff780c9787"
+    },
+    {
+      "bytes": 45779,
+      "path": "tests/ros_unitree/acceptance/noetic_cold_storage/passive-collection-request.json",
+      "sha256": "5258b87ffe1725343d3dfe9c996a797ebdc13ac80b734fa3f3de69092b4f9e27"
+    }
+  ],
+  "first_priority_exact_files": 56,
+  "format_version": 1,
+  "four_snapshot_reference_logical_bytes_if_all_present": 927050888,
+  "future_consumer_controls_closed": false,
+  "historical_filename_reference_source": {
+    "bytes": 3615127,
+    "path": "/tmp/uwvm-boot2-remote-recovery-20261016-r1/files/010-report.json",
+    "scope": "HISTORICAL_DATA_ONLY_NOT_CURRENT_FULL7_OR_ACTOR_CONTINUITY",
+    "sha256": "f37195059b17d68573edd9e1b072dc32c933dc3a1a9fc7fed8ec4a9f9f738bc3"
+  },
+  "historical_r4_reference_logical_bytes": 231762722,
+  "kind": "noetic-cold-storage-source-only-plan-readiness",
+  "local_metadata_check": "Exact56 unique literal paths are lexically disjoint from supplied protected roots/finite pins only; no remote filesystem or compiler test.",
+  "lossless_archive_verified_and_fsynced": false,
+  "source_evidence": [
+    {
+      "bytes": 40453,
+      "path": "tests/ros_unitree/acceptance/noetic6_r4/owner.py",
+      "sha256": "a1cb53a56288536c43bba7467619180ec45f12ecce99a6d80a8dcffab76becd8"
+    },
+    {
+      "bytes": 99869,
+      "path": "tests/ros_unitree/acceptance/noetic6_r4/acquire-sdk.py",
+      "sha256": "71fb6117a82b7154422c458ceee051c1bc44cc4a203a5a1d5a368f6be79d9e26"
+    },
+    {
+      "bytes": 30126,
+      "path": "tests/ros_unitree/acceptance/noetic6_r4/fresh_rebuild.py",
+      "sha256": "1b79407cb37fde9ed72758c273bf8cc3e46ffdd7418bc820f70e31d112cb2d91"
+    },
+    {
+      "bytes": 14379,
+      "path": "tests/ros_unitree/acceptance/noetic6_next/cacheview_contract.py",
+      "sha256": "588d2b269734cf4715643988aabfd31daffd62e2bad2d27f60775563a12f1d87"
+    },
+    {
+      "bytes": 13427,
+      "path": "tools/ros_distro/profile.py",
+      "sha256": "d19eebc8be697fdde233815ce7402874330e679a4964bbd2a7c9165ae95dd302"
+    },
+    {
+      "bytes": 20176,
+      "path": "tools/ros_distro/probe.py",
+      "sha256": "d5ded18da79f25c718678e506fe106e3e001537a293187621e3c3b9c56d5ee16"
+    },
+    {
+      "bytes": 10168,
+      "path": "tools/ros_distro/build.py",
+      "sha256": "30c4426575d88b0ca8bd43c06004d624c8a50e092675265330dda27942f36a20"
+    },
+    {
+      "bytes": 11624,
+      "path": "tests/ros_native_audit_io/run_noetic_build.py",
+      "sha256": "75d0d99d09b4136ae6ace993233ba7c82af9681a3481b578cea3ae3913865785"
+    },
+    {
+      "bytes": 62428,
+      "path": "tests/ros_aarch64/run_ros1_search.py",
+      "sha256": "755ad235b0d96016c29166207a16a6b64f2028ade4be1788bf1312da4341a638"
+    }
+  ],
+  "status": "PASS_SOURCE_PLAN_ONLY_NO_ARCHIVE_OR_RETIREMENT_AUTHORIZATION"
+}

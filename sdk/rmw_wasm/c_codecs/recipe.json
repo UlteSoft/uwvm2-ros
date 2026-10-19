@@ -1,0 +1,239 @@
+{
+  "format_version": 1,
+  "status": "SOURCE_ONLY_NOT_EXECUTED",
+  "default_rights": [],
+  "identities_order": [
+    "actual-native-String-rihs01",
+    "actual-native-Time-rihs01",
+    "actual-native-ServiceEventInfo-rihs01",
+    "actual-native-EmptyRequest-rihs01",
+    "actual-native-EmptyResponse-rihs01",
+    "actual-native-EmptyEvent-rihs01",
+    "actual-native-AddRequest-rihs01",
+    "actual-native-AddResponse-rihs01",
+    "actual-native-AddEvent-rihs01",
+    "actual-native-EmptyService-rihs01",
+    "actual-native-AddService-rihs01"
+  ],
+  "actual_native_or_target_results": 0,
+  "unexecuted_cases": [
+    {
+      "argv": [
+        "checked_service_c",
+        "client",
+        "empty",
+        "actual-primary-alias",
+        "actual-distinct-peer-alias",
+        "/actual-service",
+        "actual-domain",
+        "actual-native-String-rihs01",
+        "actual-native-Time-rihs01",
+        "actual-native-ServiceEventInfo-rihs01",
+        "actual-native-EmptyRequest-rihs01",
+        "actual-native-EmptyResponse-rihs01",
+        "actual-native-EmptyEvent-rihs01",
+        "actual-native-AddRequest-rihs01",
+        "actual-native-AddResponse-rihs01",
+        "actual-native-AddEvent-rihs01",
+        "actual-native-EmptyService-rihs01",
+        "actual-native-AddService-rihs01"
+      ],
+      "full_value": "logical0/placeholder0",
+      "availability": "old RMW95, independently coordinate actual opposite peer"
+    },
+    {
+      "argv": [
+        "checked_service_c",
+        "client",
+        "add",
+        "actual-primary-alias",
+        "actual-distinct-peer-alias",
+        "/actual-service",
+        "actual-domain",
+        "actual-native-String-rihs01",
+        "actual-native-Time-rihs01",
+        "actual-native-ServiceEventInfo-rihs01",
+        "actual-native-EmptyRequest-rihs01",
+        "actual-native-EmptyResponse-rihs01",
+        "actual-native-EmptyEvent-rihs01",
+        "actual-native-AddRequest-rihs01",
+        "actual-native-AddResponse-rihs01",
+        "actual-native-AddEvent-rihs01",
+        "actual-native-EmptyService-rihs01",
+        "actual-native-AddService-rihs01"
+      ],
+      "full_value": "17,-9/8",
+      "availability": "old RMW95, independently coordinate actual opposite peer"
+    },
+    {
+      "argv": [
+        "checked_service_c",
+        "server",
+        "empty",
+        "actual-primary-alias",
+        "actual-distinct-peer-alias",
+        "/actual-service",
+        "actual-domain",
+        "actual-native-String-rihs01",
+        "actual-native-Time-rihs01",
+        "actual-native-ServiceEventInfo-rihs01",
+        "actual-native-EmptyRequest-rihs01",
+        "actual-native-EmptyResponse-rihs01",
+        "actual-native-EmptyEvent-rihs01",
+        "actual-native-AddRequest-rihs01",
+        "actual-native-AddResponse-rihs01",
+        "actual-native-AddEvent-rihs01",
+        "actual-native-EmptyService-rihs01",
+        "actual-native-AddService-rihs01"
+      ],
+      "full_value": "logical0/placeholder0",
+      "availability": "old RMW95, independently coordinate actual opposite peer"
+    },
+    {
+      "argv": [
+        "checked_service_c",
+        "server",
+        "add",
+        "actual-primary-alias",
+        "actual-distinct-peer-alias",
+        "/actual-service",
+        "actual-domain",
+        "actual-native-String-rihs01",
+        "actual-native-Time-rihs01",
+        "actual-native-ServiceEventInfo-rihs01",
+        "actual-native-EmptyRequest-rihs01",
+        "actual-native-EmptyResponse-rihs01",
+        "actual-native-EmptyEvent-rihs01",
+        "actual-native-AddRequest-rihs01",
+        "actual-native-AddResponse-rihs01",
+        "actual-native-AddEvent-rihs01",
+        "actual-native-EmptyService-rihs01",
+        "actual-native-AddService-rihs01"
+      ],
+      "full_value": "17,-9/8",
+      "availability": "old RMW95, independently coordinate actual opposite peer"
+    },
+    {
+      "argv": [
+        "checked_string_c",
+        "publish",
+        "actual-alias",
+        "/actual-topic",
+        "actual-domain",
+        "actual-native-String-rihs01",
+        "actual-native-Time-rihs01",
+        "actual-native-ServiceEventInfo-rihs01",
+        "actual-native-EmptyRequest-rihs01",
+        "actual-native-EmptyResponse-rihs01",
+        "actual-native-EmptyEvent-rihs01",
+        "actual-native-AddRequest-rihs01",
+        "actual-native-AddResponse-rihs01",
+        "actual-native-AddEvent-rihs01",
+        "actual-native-EmptyService-rihs01",
+        "actual-native-AddService-rihs01"
+      ],
+      "native_bytes": [
+        119,
+        97,
+        115,
+        109,
+        0,
+        114,
+        111
+      ],
+      "canonical_bytes": 11
+    },
+    {
+      "argv": [
+        "checked_string_c",
+        "subscribe",
+        "actual-alias",
+        "/actual-topic",
+        "actual-domain",
+        "actual-native-String-rihs01",
+        "actual-native-Time-rihs01",
+        "actual-native-ServiceEventInfo-rihs01",
+        "actual-native-EmptyRequest-rihs01",
+        "actual-native-EmptyResponse-rihs01",
+        "actual-native-EmptyEvent-rihs01",
+        "actual-native-AddRequest-rihs01",
+        "actual-native-AddResponse-rihs01",
+        "actual-native-AddEvent-rihs01",
+        "actual-native-EmptyService-rihs01",
+        "actual-native-AddService-rihs01"
+      ],
+      "native_bytes": [
+        119,
+        97,
+        115,
+        109,
+        0,
+        114,
+        111
+      ],
+      "canonical_bytes": 11
+    },
+    {
+      "argv": [
+        "checked_composite_c",
+        "pub-alias",
+        "sub-alias",
+        "advertise-alias",
+        "respond-alias",
+        "call-alias",
+        "observe-alias",
+        "/actual-topic",
+        "/actual-empty",
+        "/actual-add",
+        "actual-domain",
+        "actual-native-String-rihs01",
+        "actual-native-Time-rihs01",
+        "actual-native-ServiceEventInfo-rihs01",
+        "actual-native-EmptyRequest-rihs01",
+        "actual-native-EmptyResponse-rihs01",
+        "actual-native-EmptyEvent-rihs01",
+        "actual-native-AddRequest-rihs01",
+        "actual-native-AddResponse-rihs01",
+        "actual-native-AddEvent-rihs01",
+        "actual-native-EmptyService-rihs01",
+        "actual-native-AddService-rihs01"
+      ],
+      "one_context_four_endpoints": true,
+      "actual_C9_C14_states_and_Bpublisher_separate": true
+    },
+    {
+      "argv": [
+        "uwvm_rmw_c_codec_contract",
+        "actual-native-String-rihs01",
+        "actual-native-Time-rihs01",
+        "actual-native-ServiceEventInfo-rihs01",
+        "actual-native-EmptyRequest-rihs01",
+        "actual-native-EmptyResponse-rihs01",
+        "actual-native-EmptyEvent-rihs01",
+        "actual-native-AddRequest-rihs01",
+        "actual-native-AddResponse-rihs01",
+        "actual-native-AddEvent-rihs01",
+        "actual-native-EmptyService-rihs01",
+        "actual-native-AddService-rihs01"
+      ],
+      "authored_groups": 22,
+      "no_execution_credit": true
+    }
+  ],
+  "required_targets": [
+    "rmw_uwvm",
+    "uwvm_rmw_service_transport",
+    "uwvm_rmw_subscription_transport",
+    "uwvm_rmw_publisher_transport"
+  ],
+  "no_CPP10_attachment": true,
+  "whole_process_owner": "Root future actual cgroup/pidfd/tree/network/backing/deadline and immutable source qualification; not supplied by this source recipe",
+  "required_before_execution": [
+    "Independent full source peer and exact actual overlay",
+    "Actual executable compile/link feature probe, no caller Boolean/cache substitute",
+    "Complete generated-C SDK/source/library/whole MD/ELF/maps and11 independent real identities",
+    "Correct original A static forwarding; actual raw5/raw7/raw12 imports/signatures and Native same-source transport",
+    "Fresh Guest default13 and actual full-value opposite Native peers in every direction",
+    "Retained Native checkpoints and complete Native/raw/session/process-tree terminal cleanup"
+  ]
+}

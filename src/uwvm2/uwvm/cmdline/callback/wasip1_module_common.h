@@ -85,6 +85,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
             hide_host_api,
             noinherit_system_environment,
             inherit_system_environment,
+            grant_permission,
+            deny_permission,
             disable_utf8_check,
             enable_utf8_check,
             trace,
@@ -114,6 +116,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
             else if(text == u8"hide-host-api") { action = target_action_t::hide_host_api; }
             else if(text == u8"noinherit-system-environment") { action = target_action_t::noinherit_system_environment; }
             else if(text == u8"inherit-system-environment") { action = target_action_t::inherit_system_environment; }
+            else if(text == u8"grant") { action = target_action_t::grant_permission; }
+            else if(text == u8"deny") { action = target_action_t::deny_permission; }
             else if(text == u8"disable-utf8-check") { action = target_action_t::disable_utf8_check; }
             else if(text == u8"enable-utf8-check") { action = target_action_t::enable_utf8_check; }
             else if(text == u8"trace") { action = target_action_t::trace; }
@@ -154,11 +158,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
                                                                                           ::uwvm2::utils::container::u8string_view msg) noexcept
         {
             ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
+                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
                                 u8"uwvm: ",
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RED),
+                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RED),
                                 u8"[error] ",
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                 msg,
                                 u8" Usage: ",
                                 ::uwvm2::utils::cmdline::print_usage(parameter),
@@ -688,17 +692,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
                             if(!::uwvm2::uwvm::imported::wasi::wasip1::storage::reopen_wasip1_trace_output_file(test_output, file_path)) [[unlikely]]
                             {
                                 ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
+                                                    ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
                                                     u8"uwvm: ",
-                                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RED),
+                                                    ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RED),
                                                     u8"[error] ",
-                                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                                    ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                                     u8"Unable to open WASI trace output file \"",
-                                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_CYAN),
+                                                    ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_CYAN),
                                                     file_path,
-                                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                                    ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                                     u8"\".\n\n",
-                                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL));
+                                                    ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
                                 return parameter_return_type::return_m1_imme;
                             }
 
@@ -796,6 +800,24 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
                     if(extra1 == para_end || extra1->type != parameter_type::arg) [[unlikely]] { return print_usage_error(parameter, u8"Missing fd limit."); }
                     auto const ret{parse_fd_limit(parameter, ::uwvm2::utils::container::u8string_view{extra1->str}, target)};
                     if(ret != parameter_return_type::def) [[unlikely]] { return ret; }
+                    mark_consumed(extra1);
+                    return parameter_return_type::def;
+                }
+                case target_action_t::grant_permission: [[fallthrough]];
+                case target_action_t::deny_permission:
+                {
+                    if(extra1 == para_end || extra1->type != parameter_type::arg) [[unlikely]]
+                    { return print_usage_error(parameter, u8"Missing WASI permission name."); }
+                    using permission = ::uwvm2::imported::wasi::wasip1::environment::permission_t;
+                    auto const bit{::uwvm2::uwvm::imported::wasi::wasip1::storage::parse_wasip1_permission(
+                        ::uwvm2::utils::container::u8string_view{extra1->str})};
+                    if(bit == permission{}) [[unlikely]]
+                    { return print_usage_error(parameter, u8"Unknown WASI permission name; wildcards are not supported."); }
+                    if((target.permission_presence & bit) != permission{}) [[unlikely]]
+                    { return print_usage_error(parameter, u8"Duplicate or conflicting grant/deny for this WASI target permission."); }
+                    target.permission_presence = target.permission_presence | bit;
+                    target.non_fd_permissions = action == target_action_t::grant_permission ?
+                        target.non_fd_permissions | bit : target.non_fd_permissions & ~bit;
                     mark_consumed(extra1);
                     return parameter_return_type::def;
                 }

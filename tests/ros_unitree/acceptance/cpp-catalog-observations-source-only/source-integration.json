@@ -1,0 +1,33 @@
+{
+  "kind": "reviewed-cpp-catalog-observed-regular-target-source-integration",
+  "status": "SOURCE_INTEGRATED_ACTUAL_NEW_SOURCE_TESTS_AND_QUALIFICATION_PENDING",
+  "current_files": {
+    "tests/ros_unitree/CPP_CATALOG_OBSERVATIONS.md": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/CPP_CATALOG_OBSERVATIONS.md",
+      "bytes": 4841,
+      "sha256": "be56002dce9485ce336b7a22a2ecc02c4d2f68463c8167d199731bcbebdbc381"
+    },
+    "tests/ros_unitree/independent_cpp_object.py": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/independent_cpp_object.py",
+      "bytes": 35193,
+      "sha256": "98b286ec21fb9a1957f9331e490a9468e72e1768876a7d88d7afe918cd86024f"
+    },
+    "tests/ros_unitree/test_cpp_catalog_observations.py": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/test_cpp_catalog_observations.py",
+      "bytes": 8821,
+      "sha256": "2e7aaf42a06a68e58be1286082ff4ccce2b8a5d3c92ceebbf73e5c0ad09514d8"
+    }
+  },
+  "reviewed_source_manifest": {
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/cpp-catalog-observations-source-only/source-ready.json",
+    "bytes": 3782,
+    "sha256": "6973bb356c0fb9e4b652b3682b76a56dd5c2db5e76be6641462db8900c937081"
+  },
+  "independent_source_peer": {
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/cpp-catalog-observations-source-only/independent-source-peer.json",
+    "bytes": 5933,
+    "sha256": "ff7be1429cf05ee67f22358893ea938eb1e3e1b70137dc72b0d58114701d17b4"
+  },
+  "actual_execution_performed": false,
+  "compiler_or_Guest_authority_expanded": false
+}

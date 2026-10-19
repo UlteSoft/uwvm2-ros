@@ -361,6 +361,9 @@ int main()
                                             .trace_wasip1_call = false,
                                             .disable_utf8_check = false};
 
+    // The clock-positive stress scenario explicitly grants only its monotonic clock.
+    env.non_fd_permissions = ::uwvm2::imported::wasi::wasip1::environment::permission_t::clock_monotonic;
+
     // Prepare fd table
     env.fd_storage.opens.resize(static_cast<::std::size_t>(4u + thread_count));
 

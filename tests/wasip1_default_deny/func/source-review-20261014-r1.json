@@ -1,0 +1,151 @@
+{
+  "schema": "uwvm.wasip1.default-deny.authority-source-review.v1",
+  "utc": "2026-10-14T00:03:14.837489+00:00",
+  "status": "SOURCE_MODEL_PASS",
+  "native_compile": "NOT_PERFORMED_LINUX_SSH_UNAVAILABLE",
+  "native_execution": "NOT_PERFORMED_LINUX_SSH_UNAVAILABLE",
+  "guest_execution": "NOT_PERFORMED",
+  "ros_execution": "NOT_PERFORMED",
+  "aarch64_execution": "NOT_PERFORMED",
+  "task_complete": false,
+  "source_stable_across_model_run": true,
+  "source_files": {
+    "src/uwvm2/imported/wasi/wasip1/func/clock_res_get.h": {
+      "bytes": 6608,
+      "sha256": "69470d167c6e2f7ee9ed76912bc007a96ba6fd380cdf0a15623f8aaed59d3545"
+    },
+    "src/uwvm2/imported/wasi/wasip1/func/clock_res_get_wasm64.h": {
+      "bytes": 6770,
+      "sha256": "ff916ead2df770b8473bc17038a848bcea8854721c85f52672925357e0a220b2"
+    },
+    "src/uwvm2/imported/wasi/wasip1/func/clock_time_get.h": {
+      "bytes": 7204,
+      "sha256": "f25ee8e63b4d5d91dbca1f70120cfe5c30d3aabdbf1d4e674c39322b519190fd"
+    },
+    "src/uwvm2/imported/wasi/wasip1/func/clock_time_get_wasm64.h": {
+      "bytes": 7372,
+      "sha256": "011347410731a29bb3dba4612248e7f6d120f37f973b4e5bba4a06022cc40375"
+    },
+    "src/uwvm2/imported/wasi/wasip1/func/random_get.h": {
+      "bytes": 5479,
+      "sha256": "aa116b4289489e325874431abf76799d47a6d6159e61cd6566e12a05c0ee5c50"
+    },
+    "src/uwvm2/imported/wasi/wasip1/func/random_get_wasm64.h": {
+      "bytes": 5591,
+      "sha256": "fa2c01e5629406f3abf4a6f47d4fdbf5e38e6d210c5307b09d5655f01cefa275"
+    },
+    "src/uwvm2/imported/wasi/wasip1/func/poll_oneoff.h": {
+      "bytes": 230394,
+      "sha256": "73083c5fe31e28ba58205941c5c6f4dab28c451e31034e40342cce038abba673"
+    },
+    "src/uwvm2/imported/wasi/wasip1/func/poll_oneoff_wasm64.h": {
+      "bytes": 235029,
+      "sha256": "4a8f12f11fa2a6954251427f0b3128fe63f57872b04bdb955f25a94accee89b5"
+    },
+    "src/uwvm2/imported/wasi/wasip1/func/proc_raise.h": {
+      "bytes": 6007,
+      "sha256": "91fd9c5bf04804cb8d818db7fab99e4dd75ba414b10a3ee79875fd7ffabc5353"
+    },
+    "src/uwvm2/imported/wasi/wasip1/func/sched_yield.h": {
+      "bytes": 4119,
+      "sha256": "6f9f4e5ce0c00d2d8d9c649e9925bf8e325cb80b66ed9237be561cecd25d801f"
+    },
+    "test/0008.imported/wasi/wasip1/func/clock_res_get.cc": {
+      "bytes": 3281,
+      "sha256": "625d3680d1f4f98fcf0b6673e8846bea3a9d5a2ffa20e0660fbd000aa9d3536d"
+    },
+    "test/0008.imported/wasi/wasip1/func/clock_res_get_wasm64.cc": {
+      "bytes": 3497,
+      "sha256": "a2709cf3c0e729c86cd45b9ce51dfaa533bab93c1766bae22ead3e3203bfda7d"
+    },
+    "test/0008.imported/wasi/wasip1/func/clock_time_get.cc": {
+      "bytes": 6681,
+      "sha256": "ce5efd28ebd570d98d77370531ee185ad9ddd7bd16a972a87459344b09a4f092"
+    },
+    "test/0008.imported/wasi/wasip1/func/clock_time_get_wasm64.cc": {
+      "bytes": 7643,
+      "sha256": "67f5cf67655eb5626ac61449f8077ada7c8419a2052438e03fc22352ba0347a0"
+    },
+    "test/0008.imported/wasi/wasip1/func/random_get.cc": {
+      "bytes": 4321,
+      "sha256": "a798ec9c1014466eabc0bdf8dcd2c500cce5e84391cc066d450fac98442074e6"
+    },
+    "test/0008.imported/wasi/wasip1/func/random_get_wasm64.cc": {
+      "bytes": 4490,
+      "sha256": "c88b5a5d3031941df0771d8fb45981184c660d3d1efde9fa005cee79fe6e0a8d"
+    },
+    "test/0008.imported/wasi/wasip1/func/poll_oneoff.cc": {
+      "bytes": 18135,
+      "sha256": "eac7b50b9fa423d955afc5b76d4cca53f9e24b29f177847a0e9b6d41b9ef9e79"
+    },
+    "test/0008.imported/wasi/wasip1/func/poll_oneoff_wasm64.cc": {
+      "bytes": 19159,
+      "sha256": "dcdac7d45c00c215890a86a1935fd93c161d26be27115f88d89604a1a5cad171"
+    },
+    "test/0008.imported/wasi/wasip1/func/proc_raise.cc": {
+      "bytes": 3799,
+      "sha256": "2f1d9bd27e93d90d2ff625a24bfae1cd0f33f6c455e9ed0a5076f215be46cf66"
+    },
+    "test/0008.imported/wasi/wasip1/func/proc_raise_wasm64.cc": {
+      "bytes": 4013,
+      "sha256": "1cadec434221229d428f07137fcbd47c69e068ae31940ddf1bdd6dcf73ef4f7e"
+    },
+    "test/0008.imported/wasi/wasip1/func/sched_yield.cc": {
+      "bytes": 3007,
+      "sha256": "42bb694b42249e6d9557f0f6261f77195ff2a8d4c20c8ef0ac97b1a63c94250c"
+    },
+    "test/0008.imported/wasi/wasip1/func/sched_yield_wasm64.cc": {
+      "bytes": 3228,
+      "sha256": "7f63c5b64cc35ad7b97d85101484f2cd18436e7bc7d1896d2bfca7a6ab6eaddb"
+    },
+    "test/0008.imported/wasi/wasip1/hybrid/wasi_hybrid_mixed_stress.cc": {
+      "bytes": 22564,
+      "sha256": "a253a63f0c72ec81e052ce3575a7f3c7003add6bfa47bb8f1f52c44474ede92d"
+    },
+    "test/0008.imported/wasi/wasip1/hybrid/wasi_hybrid_mt.cc": {
+      "bytes": 28770,
+      "sha256": "cb9abcb8fc6ef8c85422d804e8c1111d85511072e6ce0f5ed2b72fdb27309a95"
+    },
+    "tests/wasip1_default_deny/func/authority.cc": {
+      "bytes": 16608,
+      "sha256": "0ebf453ce6a14f107d818d215d42c47c7a5743733a2c39e31f018eef9b3085dc"
+    },
+    "tests/wasip1_default_deny/func/source_models.py": {
+      "bytes": 6998,
+      "sha256": "214d0afb591f2d374c470d806589d78ff0c4738b0a4a9472ad5026a8a404e8b4"
+    },
+    "tests/wasip1_default_deny/func/README.md": {
+      "bytes": 2219,
+      "sha256": "0d0f5dbb0a992060453c1b43055466d71377da73189c0c28b6e633f3264d7801"
+    },
+    "src/uwvm2/imported/wasi/wasip1/environment/environment.h": {
+      "bytes": 13328,
+      "sha256": "a9155ae4b7253381db74d52a84d544d3334a6ec0bfc0fa827dbcad5cf4696124"
+    }
+  },
+  "model_methods": 4,
+  "independent_authority_mask_combinations": 65536,
+  "platform_fd_checks_reviewed": 12,
+  "per_platform_direction_mutations_refused": 24,
+  "changed_implementation_headers": 10,
+  "existing_positive_fixtures_with_exact_grants": 14,
+  "new_native_fixture": "tests/wasip1_default_deny/func/authority.cc",
+  "new_native_rows_prepared": [
+    {
+      "width": 32,
+      "status": "PREPARED_NOT_COMPILED"
+    },
+    {
+      "width": 64,
+      "status": "PREPARED_NOT_COMPILED",
+      "required_feature": "UWVM_ENABLE_LOCAL_IMPORTED_WASIP1_WASM64"
+    }
+  ],
+  "raw_python_result": "test_clock_ordering_and_gate_mutations (wasip1_authority_source_models.SourceModels.test_clock_ordering_and_gate_mutations) ... ok\ntest_independent_authority_mask (wasip1_authority_source_models.SourceModels.test_independent_authority_mask) ... ok\ntest_poll_array_and_all_platform_paths (wasip1_authority_source_models.SourceModels.test_poll_array_and_all_platform_paths) ... ok\ntest_random_and_shared_callback_gates (wasip1_authority_source_models.SourceModels.test_random_and_shared_callback_gates) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.032s\n\nOK\n",
+  "limitations": [
+    "Text models and Python truth tables do not validate C++ compilation or host API execution.",
+    "No guest interpreter, native syscall counter, CLI scope, ROS, cgroup, or QEMU behavior was exercised.",
+    "Source hashes identify this narrow source snapshot, not a qualified whole-Worker build.",
+    "Signal and yield native fixtures use explicit callback counters; no operating-system signal is delivered."
+  ]
+}

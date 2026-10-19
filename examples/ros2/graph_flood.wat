@@ -1,0 +1,27 @@
+(module
+ (import "uwvm_ros2_v1" "capability_open" (func $open (param i32 i64 i64 i64) (result i32)))
+ (import "uwvm_ros2_v1" "graph_list_nodes" (func $op (param i64 i32 i64 i64 i64 i64 i64) (result i32)))
+ (import "wasi_snapshot_preview1" "proc_exit" (func $exit (param i32)))
+ (memory (export "memory") 1) (data (i32.const 0) "cap")
+ (data (i32.const 8192) "\0b\00\00\00allow_flood")
+ (data (i32.const 8224) "\0a\00\00\00deny_flood")
+ (data (i32.const 8256) "/uwvm_resources/native\0a")
+ (func (export "_start") (local $n i32) (local $allowed i32) (local $denied i32) (local $e i32) (local $i i32)
+  (if (call $open (i32.const 0) (i64.const 0) (i64.const 3) (i64.const 8)) (then (call $exit (i32.const 201))))
+  (loop $flood
+   (i64.store (i32.const 16) (i64.const -1)) (i64.store (i32.const 128) (i64.const -1))
+   (local.set $e (call $op (i64.load (i32.const 8)) (i32.const 0) (i64.const 8192) (i64.const 0) (i64.const 128) (i64.const 4096) (i64.const 16)))
+   (if (i32.eqz (local.get $e))
+    (then (if (i32.or (i64.ne (i64.load (i32.const 16)) (i64.const 27)) (i32.ne (i32.load (i32.const 128)) (i32.const 23))) (then (call $exit (i32.const 204))))
+     (local.set $i (i32.const 0))
+     (loop $content
+      (if (i32.ne (i32.load8_u (i32.add (i32.const 132) (local.get $i))) (i32.load8_u (i32.add (i32.const 8256) (local.get $i)))) (then (call $exit (i32.const 205))))
+      (local.set $i (i32.add (local.get $i) (i32.const 1)))
+      (br_if $content (i32.lt_u (local.get $i) (i32.const 23)))) (local.set $allowed (i32.add (local.get $allowed) (i32.const 1))))
+    (else
+     (if (i32.ne (local.get $e) (i32.const 11)) (then (call $exit (local.get $e))))
+     (local.set $denied (i32.add (local.get $denied) (i32.const 1)))
+     (if (i32.or (i64.ne (i64.load (i32.const 16)) (i64.const -1)) (i64.ne (i64.load (i32.const 128)) (i64.const -1))) (then (call $exit (i32.const 203))))))
+   (local.set $n (i32.add (local.get $n) (i32.const 1)))
+   (br_if $flood (i32.lt_u (local.get $n) (i32.const 100))))
+  (if (i32.or (i32.ne (local.get $allowed) (i32.const 2)) (i32.ne (local.get $denied) (i32.const 98))) (then (call $exit (i32.const 202))))))

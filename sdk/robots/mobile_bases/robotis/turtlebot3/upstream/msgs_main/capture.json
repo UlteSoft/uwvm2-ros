@@ -1,0 +1,88 @@
+{
+  "id": "msgs_main",
+  "url": "https://github.com/ROBOTIS-GIT/turtlebot3_msgs",
+  "branch": "main",
+  "commit": "b60833d0224ca9a9136a8581d6b5f18122edef9b",
+  "tree_git_sha1": "c3bb8d19b2af751dd665db6be1aca057ad37abc3",
+  "files": [
+    {
+      "path": "CHANGELOG.rst",
+      "bytes": 1869,
+      "sha256": "c6eb3aa239d5218a8da24bc01db402151c06534de3d8c445d2e243784030cb18",
+      "git_blob_sha1": "6fea07c700a4af3ab51b6a62e831767c142276b4"
+    },
+    {
+      "path": "CMakeLists.txt",
+      "bytes": 1744,
+      "sha256": "e19f6e370549ee8cd9a2bd601c03b854a7bcc2a0a43675d6e9fcbefc66248a1b",
+      "git_blob_sha1": "300bc4e240747b80236128ae43daa9c0a34d7e22"
+    },
+    {
+      "path": "LICENSE",
+      "bytes": 11357,
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "git_blob_sha1": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64"
+    },
+    {
+      "path": "README.md",
+      "bytes": 2598,
+      "sha256": "5a8bfde2208229bd1470e291283bfe742ef169ce836f23c21449a5b5aff75010",
+      "git_blob_sha1": "66105b57ce83aca3a7f42eec3a761f35f44afed5"
+    },
+    {
+      "path": "action/Patrol.action",
+      "bytes": 128,
+      "sha256": "239de7579be911d34379064c6a5bb53da4beb40dc7371328e3e49d6c5662a82f",
+      "git_blob_sha1": "2c0ce2c6b2679729fbafc5f2bfa520ba391475ca"
+    },
+    {
+      "path": "msg/SensorState.msg",
+      "bytes": 1141,
+      "sha256": "e121d9df6a438a533942236506ee75f71086ecfeaafa6256391638f373962601",
+      "git_blob_sha1": "794805de83cb13865d5e76f1917b0cb06f1de295"
+    },
+    {
+      "path": "msg/Sound.msg",
+      "bytes": 344,
+      "sha256": "eb4861a35e75b7b4a04baf8beb171b527e0d7a382c0db969f5b32a2cb97b8bdf",
+      "git_blob_sha1": "8cfe5a059a4ed8749ff26003705a8890ee9daf72"
+    },
+    {
+      "path": "msg/VersionInfo.msg",
+      "bytes": 350,
+      "sha256": "27497e6e84c079319860ad6444ff2b738a2d75243f46b637559d7c297f38ef68",
+      "git_blob_sha1": "5dc94653418d52dc78978ac47d28915ae18f5f1a"
+    },
+    {
+      "path": "package.xml",
+      "bytes": 1774,
+      "sha256": "05bd4397aa03fb49d39de97b9cf0697c9707df350e97d27f43865394108beb91",
+      "git_blob_sha1": "fe44ccd2c661a8151ce2b5f0bc443a84b8f1fb40"
+    },
+    {
+      "path": "srv/Dqn.srv",
+      "bytes": 68,
+      "sha256": "163b4fa05097b87400ff94a3925450000665d3f04e4e3db8afbd743bc82cef8b",
+      "git_blob_sha1": "d4449e579e8aa838051bfeccd46894bb41f02a8c"
+    },
+    {
+      "path": "srv/Goal.srv",
+      "bytes": 47,
+      "sha256": "2ee2d8023fd1c3ae99c80250770ddd0b6ea81ca92d4111a20d1026bd4f5e1e0a",
+      "git_blob_sha1": "a8dc7e313fe1403f4746b5c2c98bab2316231615"
+    },
+    {
+      "path": "srv/Sound.srv",
+      "bytes": 295,
+      "sha256": "5c98b373291a8270e783e9224be89d1160efa4f9310e617603a079640d01f663",
+      "git_blob_sha1": "c36a726b33b0c0d0c80550ebc51a9dabc89238db"
+    }
+  ],
+  "archive": {
+    "url": "https://codeload.github.com/ROBOTIS-GIT/turtlebot3_msgs/tar.gz/b60833d0224ca9a9136a8581d6b5f18122edef9b",
+    "bytes": 9258,
+    "sha256": "b29755384dcf52f72720188c53089a61ec2675e3c25315334c5b70a5213fe9bb"
+  },
+  "default_authority": [],
+  "scope": "Original source and complete acquisition archive only; no compatibility, compiler, Guest, native or physical robot result."
+}

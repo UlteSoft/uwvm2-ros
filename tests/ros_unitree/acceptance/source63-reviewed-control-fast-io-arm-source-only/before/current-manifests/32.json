@@ -1,0 +1,70 @@
+{
+  "kind": "source60-reviewed-linker-archive-statistics-source-group",
+  "status": "CURRENT_SOURCE_INDEPENDENT_REVIEW_CLOSED_RETEST_PENDING",
+  "current_files": {
+    "documents/ros/architecture.md": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/documents/ros/architecture.md",
+      "bytes": 4179,
+      "sha256": "59bf004f007d071d1be09ddf0984d2247c3507c6281ff2985a99ffb0c3a008f4"
+    },
+    "documents/ros/current-capabilities.md": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/documents/ros/current-capabilities.md",
+      "bytes": 10618,
+      "sha256": "ceb610a7278cb4732f48958ba8b9b9e7997b6b9dae8893eed8366d213216a907"
+    },
+    "documents/ros/security.md": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/documents/ros/security.md",
+      "bytes": 8984,
+      "sha256": "f075623fab583888b9147c4badc2adc428d0c9e5184b5bb56355ad36828e9329"
+    },
+    "tests/ros_debugger/README.build-runtime.md": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/README.build-runtime.md",
+      "bytes": 13841,
+      "sha256": "b381f0f07810513cf974c9bf4ed598700d7cd082e1a6a09e4bae53e4132131ac"
+    },
+    "tests/ros_debugger/build_runtime.py": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/build_runtime.py",
+      "bytes": 61496,
+      "sha256": "eb6980910b7d4aca174bcbe540d4ad580a51fe0ecab2bacf3f28ca7e881abcde"
+    },
+    "tests/ros_debugger/integration_runtime.py": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/integration_runtime.py",
+      "bytes": 47052,
+      "sha256": "ec055329ee5ef6412fbfe16c0f5435c19fd9c30917c94efde82ced9805377b8a"
+    },
+    "tests/ros_debugger/runtime-build.schema.json": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/runtime-build.schema.json",
+      "bytes": 16088,
+      "sha256": "08a7ceea7d2b4fb9bc3c0af8eeef534c2325de6f5d947574629b0c83305aae69"
+    },
+    "tests/ros_debugger/test_llvm_archive_statistics.py": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/test_llvm_archive_statistics.py",
+      "bytes": 12999,
+      "sha256": "bf05865227b91d23126c210bccecd8f51b37a847993676e53d2cbca4ca042baf"
+    }
+  },
+  "review_evidence": {
+    "original_package": {
+      "path": "/private/tmp/uwvm-runtime-archive-statistics-source-only-20261017-r1/source-ready.json",
+      "bytes": 16052,
+      "sha256": "6a36647f4913d126e7153521bed5669562dcc732f405cd7aaf81a7f876a9f58f"
+    },
+    "saved_package": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source60-reviewed-linker-archive-statistics-source-only/review-evidence/source-ready.original.json",
+      "bytes": 16052,
+      "sha256": "6a36647f4913d126e7153521bed5669562dcc732f405cd7aaf81a7f876a9f58f"
+    },
+    "original_independent_peer": {
+      "path": "/private/tmp/uwvm-source60-runtime-archive-statistics-independent-source-peer-restart-20261017-r1.json",
+      "bytes": 12909,
+      "sha256": "0772b0df959da955e2ab2bed2b2eb41e356aa2928707314904c7be101788f4b3"
+    },
+    "saved_independent_peer": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source60-reviewed-linker-archive-statistics-source-only/review-evidence/independent-source-peer.json",
+      "bytes": 12909,
+      "sha256": "0772b0df959da955e2ab2bed2b2eb41e356aa2928707314904c7be101788f4b3"
+    }
+  },
+  "execution_performed": false,
+  "scope": "Actual linker sidecar implementation and focused model source only; no future execution credit."
+}

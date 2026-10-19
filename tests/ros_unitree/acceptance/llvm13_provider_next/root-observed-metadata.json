@@ -1,0 +1,1042 @@
+{
+  "format_version": 1,
+  "status": "ROOT_ACTUAL_PASSIVE_METADATA_ONLY",
+  "root_packet": {
+    "path": "/tmp/uwvm-boot3-llvm13-finite-metadata-observe-actual-root-20261017-r1.json",
+    "bytes": 1975869,
+    "sha256": "5d7088a8650849535b3785458dc98546ec5e1cc5330d7cb51fd70c9f711d24d6"
+  },
+  "source_qualification": "NOT_PERFORMED",
+  "compiler_or_build_execution": "NOT_PERFORMED",
+  "supervisors": [
+    {
+      "current_pin": {
+        "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/llvmros13-input-admission-root-supervisor-20261016-r1/report.json",
+        "bytes": 10490,
+        "sha256": "b8c82da30f4f005184db9878bf2252e239837c0149560255b7d4e27424ed0c8c",
+        "device": 81,
+        "inode": 327464,
+        "mtime_ns": 1792100386403191903,
+        "ctime_ns": 1792100386407912308
+      },
+      "raw_status": "FAIL",
+      "raw_scope": "Metadata admission for the exact patched LLVM preparer only; no compiler/tool-version/CMake/Ninja/runtime/ROS execution",
+      "raw_source": "/var/tmp/uwvm-ros-complete-20261015-r1/inputs-r31/source",
+      "raw_cleanup": {
+        "remaining": [],
+        "status": "PASS"
+      },
+      "raw_controls": [
+        {
+          "bytes": 29732,
+          "ctime_ns": 1792100357399477927,
+          "device": 66307,
+          "inode": 30987266,
+          "mtime_ns": 1792100357364878819,
+          "path": "/var/tmp/uwvm-ros-unitree-20261016-r1/llvmros13-input-controls-r1/input-maker.py",
+          "sha256": "4dfb1bc5f11902094d9a3d53f8f0bc0e727fb2174faf6f7c21dca7d956f5ddb5"
+        },
+        {
+          "bytes": 2572,
+          "ctime_ns": 1792100357402477972,
+          "device": 66307,
+          "inode": 30987267,
+          "mtime_ns": 1792100357400140556,
+          "path": "/var/tmp/uwvm-ros-unitree-20261016-r1/llvmros13-input-controls-r1/candidate.json",
+          "sha256": "fe918d5952c58d4108d8e73d8ce10981cc95a057c7de53b25d546dc11adb6893"
+        },
+        {
+          "bytes": 253,
+          "ctime_ns": 1792100357406478032,
+          "device": 66307,
+          "inode": 30987268,
+          "mtime_ns": 1792100357403535762,
+          "path": "/var/tmp/uwvm-ros-unitree-20261016-r1/llvmros13-input-controls-r1/bootstrap-current.json",
+          "sha256": "b6a98d203f70a522557bd4b5c59f90cb1f7985658c44044add6899de79435e5f"
+        }
+      ],
+      "raw_input_admission_report": {
+        "bytes": 81048,
+        "ctime_ns": 1792100385870904268,
+        "device": 66307,
+        "inode": 30987306,
+        "mtime_ns": 1792100385869904253,
+        "path": "/var/tmp/uwvm-ros-unitree-20261016-r1/llvmros13-admitted-inputs-r1/report.json",
+        "sha256": "42ce3628f9fbeff0481c73e4b3704679129cfb294e0d671b39861c55041a8374"
+      },
+      "raw_configuration": null,
+      "raw_future_argv": null,
+      "execution_qualification": "NOT_PERFORMED_BY_THIS_PASSIVE_OBSERVATION"
+    },
+    {
+      "current_pin": {
+        "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/llvmros13-input-admission-root-supervisor-20261016-r2/report.json",
+        "bytes": 10363,
+        "sha256": "ab708ceae1d6ae38b0693ad3bc0ca696669f2afe88138d986788e29c2bd07a38",
+        "device": 81,
+        "inode": 333386,
+        "mtime_ns": 1792100737929896560,
+        "ctime_ns": 1792100737935217551
+      },
+      "raw_status": "PASS_CURRENT31_LLVM_INPUT_ADMISSION_ONLY",
+      "raw_scope": "Metadata admission for the exact patched LLVM preparer only; no compiler/tool-version/CMake/Ninja/runtime/ROS execution",
+      "raw_source": "/var/tmp/uwvm-ros-complete-20261015-r1/inputs-r31/source",
+      "raw_cleanup": {
+        "remaining": [],
+        "status": "PASS"
+      },
+      "raw_controls": [
+        {
+          "bytes": 30284,
+          "ctime_ns": 1792100709055778898,
+          "device": 66307,
+          "inode": 30987315,
+          "mtime_ns": 1792100709020040352,
+          "path": "/var/tmp/uwvm-ros-unitree-20261016-r1/llvmros13-input-controls-r2/input-maker.py",
+          "sha256": "9ebd0b674cce442d8d2f88f9eee8d5a26a7a0bb4e1d3b68f4d8364148ae4834c"
+        },
+        {
+          "bytes": 2572,
+          "ctime_ns": 1792100709058778944,
+          "device": 66307,
+          "inode": 30987316,
+          "mtime_ns": 1792100709056349251,
+          "path": "/var/tmp/uwvm-ros-unitree-20261016-r1/llvmros13-input-controls-r2/candidate.json",
+          "sha256": "fe918d5952c58d4108d8e73d8ce10981cc95a057c7de53b25d546dc11adb6893"
+        },
+        {
+          "bytes": 253,
+          "ctime_ns": 1792100709062779005,
+          "device": 66307,
+          "inode": 30987317,
+          "mtime_ns": 1792100709060039649,
+          "path": "/var/tmp/uwvm-ros-unitree-20261016-r1/llvmros13-input-controls-r2/bootstrap-current.json",
+          "sha256": "b6a98d203f70a522557bd4b5c59f90cb1f7985658c44044add6899de79435e5f"
+        }
+      ],
+      "raw_input_admission_report": {
+        "bytes": 89016,
+        "ctime_ns": 1792100737410209581,
+        "device": 66307,
+        "inode": 30987356,
+        "mtime_ns": 1792100737408209550,
+        "path": "/var/tmp/uwvm-ros-unitree-20261016-r1/llvmros13-admitted-inputs-r2/report.json",
+        "sha256": "2152efabb3b8de6b65d80a5c537a8527ad277b3a0c2fd1a0ab09b18161faf3e4"
+      },
+      "raw_configuration": {
+        "bytes": 2572,
+        "ctime_ns": 1792100737406696007,
+        "device": 66307,
+        "inode": 30987355,
+        "mtime_ns": 1792100737406696007,
+        "path": "/var/tmp/uwvm-ros-unitree-20261016-r1/llvmros13-admitted-inputs-r2/configuration.json",
+        "sha256": "fe918d5952c58d4108d8e73d8ce10981cc95a057c7de53b25d546dc11adb6893"
+      },
+      "raw_future_argv": [
+        "/usr/bin/python3.14",
+        "-B",
+        "/var/tmp/uwvm-ros-complete-20261015-r1/inputs-r31/source/tests/ros_debugger/prepare_llvm.py",
+        "--source",
+        "/var/tmp/uwvm-ros-complete-20261015-r1/inputs-r31/source",
+        "--manifest",
+        "/var/tmp/uwvm-ros-complete-20261015-r1/inputs-r31/source-manifest.json",
+        "--config",
+        "/var/tmp/uwvm-ros-unitree-20261016-r1/llvmros13-admitted-inputs-r2/configuration.json",
+        "--out",
+        "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/source31-llvm-native-prepare-r1"
+      ],
+      "execution_qualification": "NOT_PERFORMED_BY_THIS_PASSIVE_OBSERVATION"
+    }
+  ],
+  "source_lock_current": {
+    "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/llvm-source13-r1/sources.sha256",
+    "bytes": 1446549,
+    "sha256": "a685b608fd38e86d034ba4ce96d89801bfc69c57b84d514ba1954777b9fa8790",
+    "device": 81,
+    "inode": 2100,
+    "mtime_ns": 1791464323771896618,
+    "ctime_ns": 1792054204355025625
+  },
+  "cross_root_observed_names": {
+    "extra-cross-sdk-inputs-r1": [
+      {
+        "name": "Packages.xz",
+        "kind": "regular"
+      },
+      {
+        "name": "Release",
+        "kind": "regular"
+      },
+      {
+        "name": "Release.gpg",
+        "kind": "regular"
+      },
+      {
+        "name": "archive-key-13.asc",
+        "kind": "regular"
+      },
+      {
+        "name": "archive-key-inspection.log",
+        "kind": "regular"
+      },
+      {
+        "name": "arm",
+        "kind": "dir"
+      },
+      {
+        "name": "commands.json",
+        "kind": "regular"
+      },
+      {
+        "name": "debian-archive-key-13.gpg",
+        "kind": "regular"
+      },
+      {
+        "name": "gnupg",
+        "kind": "dir"
+      },
+      {
+        "name": "i386",
+        "kind": "dir"
+      },
+      {
+        "name": "key-conversion.log",
+        "kind": "regular"
+      },
+      {
+        "name": "packages",
+        "kind": "dir"
+      },
+      {
+        "name": "release-signature.log",
+        "kind": "regular"
+      },
+      {
+        "name": "report.json",
+        "kind": "regular"
+      },
+      {
+        "name": "selected-packages.json",
+        "kind": "regular"
+      }
+    ],
+    "extra-cross-sdk-inputs-r3": [
+      {
+        "name": "Packages.xz",
+        "kind": "regular"
+      },
+      {
+        "name": "Release",
+        "kind": "regular"
+      },
+      {
+        "name": "Release.gpg",
+        "kind": "regular"
+      },
+      {
+        "name": "archive-key-13.asc",
+        "kind": "regular"
+      },
+      {
+        "name": "archive-key-inspection.log",
+        "kind": "regular"
+      },
+      {
+        "name": "arm",
+        "kind": "dir"
+      },
+      {
+        "name": "commands.json",
+        "kind": "regular"
+      },
+      {
+        "name": "debian-archive-key-13.gpg",
+        "kind": "regular"
+      },
+      {
+        "name": "gnupg",
+        "kind": "dir"
+      },
+      {
+        "name": "i386",
+        "kind": "dir"
+      },
+      {
+        "name": "key-conversion.log",
+        "kind": "regular"
+      },
+      {
+        "name": "loongarch64",
+        "kind": "dir"
+      },
+      {
+        "name": "packages",
+        "kind": "dir"
+      },
+      {
+        "name": "ppc64le",
+        "kind": "dir"
+      },
+      {
+        "name": "release-signature.log",
+        "kind": "regular"
+      },
+      {
+        "name": "report.json",
+        "kind": "regular"
+      },
+      {
+        "name": "riscv64",
+        "kind": "dir"
+      },
+      {
+        "name": "s390x",
+        "kind": "dir"
+      },
+      {
+        "name": "selected-packages.json",
+        "kind": "regular"
+      }
+    ]
+  },
+  "root_followup_packet": {
+    "path": "/tmp/uwvm-boot3-llvm13-finite-followup-observe-actual-root-20261017-r1.json",
+    "bytes": 163660,
+    "sha256": "4c5a3c61fd4ca9e8431ca375505a065ad8e9e7552bcbf53d50fda837b53aad7f"
+  },
+  "followup_current_pins": [
+    {
+      "path": "/var/tmp/uwvm-ros-unitree-20261016-r1/llvmros13-admitted-inputs-r2/configuration.json",
+      "bytes": 2572,
+      "sha256": "fe918d5952c58d4108d8e73d8ce10981cc95a057c7de53b25d546dc11adb6893",
+      "device": 66312,
+      "inode": 30987355,
+      "mtime_ns": 1792100737406696007,
+      "ctime_ns": 1792100737406696007
+    },
+    {
+      "path": "/var/tmp/uwvm-ros-unitree-20261016-r1/llvmros13-admitted-inputs-r2/report.json",
+      "bytes": 89016,
+      "sha256": "2152efabb3b8de6b65d80a5c537a8527ad277b3a0c2fd1a0ab09b18161faf3e4",
+      "device": 66312,
+      "inode": 30987356,
+      "mtime_ns": 1792100737408209550,
+      "ctime_ns": 1792100737410209581
+    },
+    {
+      "path": "/var/tmp/uwvm-ros-unitree-20261016-r1/llvmros13-input-controls-r2/input-maker.py",
+      "bytes": 30284,
+      "sha256": "9ebd0b674cce442d8d2f88f9eee8d5a26a7a0bb4e1d3b68f4d8364148ae4834c",
+      "device": 66312,
+      "inode": 30987315,
+      "mtime_ns": 1792100709020040352,
+      "ctime_ns": 1792100709055778898
+    }
+  ],
+  "raw_r2_input_admission_selected_fields": {
+    "status": "METADATA_ADMITTED_CURRENT31_LLVM_PREPARATION_CONFIG_NOT_BUILT",
+    "kind": "Source31-patched-LLVM-preparation-input-admission",
+    "package_version": "23.1.1-uwvm-ros.13",
+    "admission_complete": true,
+    "LLVM_package_built": false,
+    "ROS_or_robot_qualified": false,
+    "Worker_executed": false,
+    "subprocesses_started": 0,
+    "tools_executed": false,
+    "patched_source": {
+      "SDK_lock": {
+        "bytes": 1446549,
+        "ctime_ns": 1792054204355025625,
+        "device": 81,
+        "inode": 2100,
+        "mtime_ns": 1791464323771896618,
+        "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/llvm-source13-r1/sources.sha256",
+        "sha256": "a685b608fd38e86d034ba4ce96d89801bfc69c57b84d514ba1954777b9fa8790"
+      },
+      "body_ledger": {
+        "bytes": 5116282,
+        "ctime_ns": 1792100722901989262,
+        "device": 66307,
+        "inode": 30987337,
+        "mtime_ns": 1792100722901989262,
+        "path": "/var/tmp/uwvm-ros-unitree-20261016-r1/llvmros13-admitted-inputs-r2/patched-source-bodies.jsonl",
+        "sha256": "a9fb615940ea2648bdc4d6b6c0e095b542fdab6bbdce4fe15d0af1c90e2ab96e"
+      },
+      "bytes": 210476555,
+      "files": 12874,
+      "lock": {
+        "bytes": 1446549,
+        "ctime_ns": 1792097956606095730,
+        "device": 66307,
+        "inode": 2264999,
+        "mtime_ns": 1792055444560931749,
+        "path": "/var/tmp/uwvm-ros-complete-20261015-r1/inputs-r31/source/third-parties/llvm/sources.sha256",
+        "sha256": "a685b608fd38e86d034ba4ce96d89801bfc69c57b84d514ba1954777b9fa8790"
+      },
+      "root": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/llvm-source13-r1"
+    },
+    "current_compiler_copy": {
+      "bytes": 1452419119,
+      "catalog": {
+        "bytes": 305126,
+        "ctime_ns": 1792100711430814989,
+        "device": 66307,
+        "inode": 30987320,
+        "mtime_ns": 1792100711430814989,
+        "path": "/var/tmp/uwvm-ros-unitree-20261016-r1/llvmros13-admitted-inputs-r2/input-before-01.jsonl",
+        "sha256": "2086f23ec2d34ff30bd27da990e340c15e5de52f1cd4916804dc24118c65a104"
+      },
+      "content_sha256": "2086f23ec2d34ff30bd27da990e340c15e5de52f1cd4916804dc24118c65a104",
+      "files": 1067,
+      "root": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/host-compiler-r1",
+      "symlinks": 27
+    },
+    "tools": {
+      "ar": {
+        "alias": {
+          "links": [
+            {
+              "bytes": 19,
+              "ctime_ns": 1784917032596268139,
+              "device": 66307,
+              "inode": 12324872,
+              "mtime_ns": 1773538381000000000,
+              "path": "/usr/bin/ar",
+              "resolved": "/usr/bin/x86_64-linux-gnu-ar",
+              "target": "x86_64-linux-gnu-ar"
+            }
+          ],
+          "resolved": "/usr/bin/x86_64-linux-gnu-ar",
+          "selection": "/usr/bin/ar"
+        },
+        "elf": {
+          "DT_NEEDED": [
+            "libbfd-2.46-system.so",
+            "libc.so.6"
+          ],
+          "DT_RPATH": [],
+          "DT_RUNPATH": [],
+          "PT_INTERP": "/lib64/ld-linux-x86-64.so.2",
+          "bits": 64,
+          "endian": "little",
+          "machine": 62,
+          "scope": "FILE_HEADERS_ONLY_NOT_MAPPED_OR_EXECUTED",
+          "type": 3
+        },
+        "invocation": "/usr/bin/ar",
+        "physical": {
+          "bytes": 55944,
+          "ctime_ns": 1784917032685269999,
+          "device": 66307,
+          "inode": 12320790,
+          "mtime_ns": 1773538381000000000,
+          "path": "/usr/bin/x86_64-linux-gnu-ar",
+          "sha256": "531473816bf553e863df5aab14c8177c72b732cf80c51dcf0fa990a50125041c"
+        }
+      },
+      "cc": {
+        "alias": {
+          "links": [
+            {
+              "bytes": 8,
+              "ctime_ns": 1792033679771169196,
+              "device": 81,
+              "inode": 1436,
+              "mtime_ns": 1792033679771169196,
+              "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/host-compiler-r1/bin/clang",
+              "resolved": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/host-compiler-r1/bin/clang-23",
+              "target": "clang-23"
+            }
+          ],
+          "resolved": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/host-compiler-r1/bin/clang-23",
+          "selection": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/host-compiler-r1/bin/clang"
+        },
+        "elf": {
+          "DT_NEEDED": [
+            "libclang-cpp.so.23.0git",
+            "libLLVM.so.23.0git",
+            "libc++.so.1",
+            "libc++abi.so.1",
+            "libunwind.so.1",
+            "libm.so.6",
+            "libc.so.6"
+          ],
+          "DT_RPATH": [],
+          "DT_RUNPATH": [
+            "$ORIGIN/../lib"
+          ],
+          "PT_INTERP": "/lib64/ld-linux-x86-64.so.2",
+          "bits": 64,
+          "endian": "little",
+          "machine": 62,
+          "scope": "FILE_HEADERS_ONLY_NOT_MAPPED_OR_EXECUTED",
+          "type": 3
+        },
+        "invocation": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/host-compiler-r1/bin/clang",
+        "physical": {
+          "bytes": 114912,
+          "ctime_ns": 1792033679764172751,
+          "device": 81,
+          "inode": 1434,
+          "mtime_ns": 1792033679763998243,
+          "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/host-compiler-r1/bin/clang-23",
+          "sha256": "0e800e4decf0de00b5ebeefed814b2cf6551d17291a220ee107b5198cd7ca23b"
+        }
+      },
+      "cmake": {
+        "alias": {
+          "links": [],
+          "resolved": "/usr/bin/cmake",
+          "selection": "/usr/bin/cmake"
+        },
+        "elf": {
+          "DT_NEEDED": [
+            "libcurl.so.4",
+            "libarchive.so.13",
+            "librhash.so.1",
+            "libuv.so.1",
+            "libz.so.1",
+            "libjsoncpp.so.26",
+            "libstdc++.so.6",
+            "libm.so.6",
+            "libgcc_s.so.1",
+            "libc.so.6"
+          ],
+          "DT_RPATH": [],
+          "DT_RUNPATH": [],
+          "PT_INTERP": "/lib64/ld-linux-x86-64.so.2",
+          "bits": 64,
+          "endian": "little",
+          "machine": 62,
+          "scope": "FILE_HEADERS_ONLY_NOT_MAPPED_OR_EXECUTED",
+          "type": 3
+        },
+        "invocation": "/usr/bin/cmake",
+        "physical": {
+          "bytes": 13402184,
+          "ctime_ns": 1779281731771475438,
+          "device": 66307,
+          "inode": 12340578,
+          "mtime_ns": 1758375025000000000,
+          "path": "/usr/bin/cmake",
+          "sha256": "e8e3ba5a77d694b6c85ea52c96af984b6aec172cd23454f1f55dfe468da8b6a9"
+        }
+      },
+      "cxx": {
+        "alias": {
+          "links": [
+            {
+              "bytes": 8,
+              "ctime_ns": 1792033679771169196,
+              "device": 81,
+              "inode": 1437,
+              "mtime_ns": 1792033679771169196,
+              "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/host-compiler-r1/bin/clang++",
+              "resolved": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/host-compiler-r1/bin/clang-23",
+              "target": "clang-23"
+            }
+          ],
+          "resolved": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/host-compiler-r1/bin/clang-23",
+          "selection": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/host-compiler-r1/bin/clang++"
+        },
+        "elf": {
+          "DT_NEEDED": [
+            "libclang-cpp.so.23.0git",
+            "libLLVM.so.23.0git",
+            "libc++.so.1",
+            "libc++abi.so.1",
+            "libunwind.so.1",
+            "libm.so.6",
+            "libc.so.6"
+          ],
+          "DT_RPATH": [],
+          "DT_RUNPATH": [
+            "$ORIGIN/../lib"
+          ],
+          "PT_INTERP": "/lib64/ld-linux-x86-64.so.2",
+          "bits": 64,
+          "endian": "little",
+          "machine": 62,
+          "scope": "FILE_HEADERS_ONLY_NOT_MAPPED_OR_EXECUTED",
+          "type": 3
+        },
+        "invocation": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/host-compiler-r1/bin/clang++",
+        "physical": {
+          "bytes": 114912,
+          "ctime_ns": 1792033679764172751,
+          "device": 81,
+          "inode": 1434,
+          "mtime_ns": 1792033679763998243,
+          "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/host-compiler-r1/bin/clang-23",
+          "sha256": "0e800e4decf0de00b5ebeefed814b2cf6551d17291a220ee107b5198cd7ca23b"
+        }
+      },
+      "linker": {
+        "alias": {
+          "links": [
+            {
+              "bytes": 3,
+              "ctime_ns": 1792033679771169196,
+              "device": 81,
+              "inode": 1438,
+              "mtime_ns": 1792033679771169196,
+              "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/host-compiler-r1/bin/ld.lld",
+              "resolved": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/host-compiler-r1/bin/lld",
+              "target": "lld"
+            }
+          ],
+          "resolved": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/host-compiler-r1/bin/lld",
+          "selection": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/host-compiler-r1/bin/ld.lld"
+        },
+        "elf": {
+          "DT_NEEDED": [
+            "libz.so.1",
+            "libzstd.so.1",
+            "libLLVM.so.23.0git",
+            "libc++.so.1",
+            "libc++abi.so.1",
+            "libunwind.so.1",
+            "libm.so.6",
+            "libc.so.6",
+            "ld-linux-x86-64.so.2"
+          ],
+          "DT_RPATH": [],
+          "DT_RUNPATH": [
+            "$ORIGIN/../lib"
+          ],
+          "PT_INTERP": "/lib64/ld-linux-x86-64.so.2",
+          "bits": 64,
+          "endian": "little",
+          "machine": 62,
+          "scope": "FILE_HEADERS_ONLY_NOT_MAPPED_OR_EXECUTED",
+          "type": 3
+        },
+        "invocation": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/host-compiler-r1/bin/ld.lld",
+        "physical": {
+          "bytes": 6480288,
+          "ctime_ns": 1792033679771169196,
+          "device": 81,
+          "inode": 1435,
+          "mtime_ns": 1792033679765169106,
+          "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/host-compiler-r1/bin/lld",
+          "sha256": "2c67e1532947128d789d0c4696f75ff26d30400cd658361604b46806fd61b105"
+        }
+      },
+      "ninja": {
+        "alias": {
+          "links": [],
+          "resolved": "/usr/bin/ninja",
+          "selection": "/usr/bin/ninja"
+        },
+        "elf": {
+          "DT_NEEDED": [
+            "libstdc++.so.6",
+            "libgcc_s.so.1",
+            "libc.so.6"
+          ],
+          "DT_RPATH": [],
+          "DT_RUNPATH": [],
+          "PT_INTERP": "/lib64/ld-linux-x86-64.so.2",
+          "bits": 64,
+          "endian": "little",
+          "machine": 62,
+          "scope": "FILE_HEADERS_ONLY_NOT_MAPPED_OR_EXECUTED",
+          "type": 3
+        },
+        "invocation": "/usr/bin/ninja",
+        "physical": {
+          "bytes": 297296,
+          "ctime_ns": 1770287954854185666,
+          "device": 66307,
+          "inode": 12327026,
+          "mtime_ns": 1715505421000000000,
+          "path": "/usr/bin/ninja",
+          "sha256": "5dec5e71f76c49d281c9faf91f7c7b37d6e495a492d1d59540501f9b66cca86f"
+        }
+      },
+      "python": {
+        "alias": {
+          "links": [],
+          "resolved": "/usr/bin/python3.14",
+          "selection": "/usr/bin/python3.14"
+        },
+        "elf": {
+          "DT_NEEDED": [
+            "libm.so.6",
+            "libz.so.1",
+            "libexpat.so.1",
+            "libc.so.6"
+          ],
+          "DT_RPATH": [],
+          "DT_RUNPATH": [],
+          "PT_INTERP": "/lib64/ld-linux-x86-64.so.2",
+          "bits": 64,
+          "endian": "little",
+          "machine": 62,
+          "scope": "FILE_HEADERS_ONLY_NOT_MAPPED_OR_EXECUTED",
+          "type": 2
+        },
+        "invocation": "/usr/bin/python3.14",
+        "physical": {
+          "bytes": 7481192,
+          "ctime_ns": 1784917205940892038,
+          "device": 66307,
+          "inode": 12359920,
+          "mtime_ns": 1781792702000000000,
+          "path": "/usr/bin/python3.14",
+          "sha256": "b8d8288faefdd300201f43fcf00f6f539a27218eeed3a3dff5ab10b9c4c99700"
+        }
+      },
+      "ranlib": {
+        "alias": {
+          "links": [
+            {
+              "bytes": 23,
+              "ctime_ns": 1784917032596268139,
+              "device": 66307,
+              "inode": 12327698,
+              "mtime_ns": 1773538381000000000,
+              "path": "/usr/bin/ranlib",
+              "resolved": "/usr/bin/x86_64-linux-gnu-ranlib",
+              "target": "x86_64-linux-gnu-ranlib"
+            }
+          ],
+          "resolved": "/usr/bin/x86_64-linux-gnu-ranlib",
+          "selection": "/usr/bin/ranlib"
+        },
+        "elf": {
+          "DT_NEEDED": [
+            "libbfd-2.46-system.so",
+            "libc.so.6"
+          ],
+          "DT_RPATH": [],
+          "DT_RUNPATH": [],
+          "PT_INTERP": "/lib64/ld-linux-x86-64.so.2",
+          "bits": 64,
+          "endian": "little",
+          "machine": 62,
+          "scope": "FILE_HEADERS_ONLY_NOT_MAPPED_OR_EXECUTED",
+          "type": 3
+        },
+        "invocation": "/usr/bin/ranlib",
+        "physical": {
+          "bytes": 31368,
+          "ctime_ns": 1784917032686270020,
+          "device": 66307,
+          "inode": 12324883,
+          "mtime_ns": 1773538381000000000,
+          "path": "/usr/bin/x86_64-linux-gnu-ranlib",
+          "sha256": "369cf0d60a6167b11f39ed9b4bbb3d93903cc364975b244e1d084aaccf48dc92"
+        }
+      }
+    },
+    "standard_library_inputs": {
+      "/usr/include/c++/15/memory": {
+        "alias": {
+          "links": [],
+          "resolved": "/usr/include/c++/15/memory",
+          "selection": "/usr/include/c++/15/memory"
+        },
+        "invocation": "/usr/include/c++/15/memory",
+        "kind": "HEADER_OR_LINKER_DATA",
+        "physical": {
+          "bytes": 5460,
+          "ctime_ns": 1784917036230344106,
+          "device": 66307,
+          "inode": 12845895,
+          "mtime_ns": 1774174097000000000,
+          "path": "/usr/include/c++/15/memory",
+          "sha256": "4665e3af0ca8492655d10a5e20557e356a0968a00c5b8288b58782661454c329"
+        }
+      },
+      "/usr/include/c++/15/vector": {
+        "alias": {
+          "links": [],
+          "resolved": "/usr/include/c++/15/vector",
+          "selection": "/usr/include/c++/15/vector"
+        },
+        "invocation": "/usr/include/c++/15/vector",
+        "kind": "HEADER_OR_LINKER_DATA",
+        "physical": {
+          "bytes": 6416,
+          "ctime_ns": 1784917036253344587,
+          "device": 66307,
+          "inode": 12846076,
+          "mtime_ns": 1774174097000000000,
+          "path": "/usr/include/c++/15/vector",
+          "sha256": "7e76ff0301475adbdaa5623a523e6e95fd3ba1cf41986254dfe9f1e45266678c"
+        }
+      },
+      "/usr/include/x86_64-linux-gnu/c++/15/bits/c++config.h": {
+        "alias": {
+          "links": [],
+          "resolved": "/usr/include/x86_64-linux-gnu/c++/15/bits/c++config.h",
+          "selection": "/usr/include/x86_64-linux-gnu/c++/15/bits/c++config.h"
+        },
+        "invocation": "/usr/include/x86_64-linux-gnu/c++/15/bits/c++config.h",
+        "kind": "HEADER_OR_LINKER_DATA",
+        "physical": {
+          "bytes": 60004,
+          "ctime_ns": 1784917036253344587,
+          "device": 66307,
+          "inode": 12846081,
+          "mtime_ns": 1774174097000000000,
+          "path": "/usr/include/x86_64-linux-gnu/c++/15/bits/c++config.h",
+          "sha256": "2bb380bf9cd3f24109331230e8d94daad63fb39fa6b6969c4a06b066d469177f"
+        }
+      },
+      "/usr/lib/gcc/x86_64-linux-gnu/15/crtbegin.o": {
+        "alias": {
+          "links": [],
+          "resolved": "/usr/lib/gcc/x86_64-linux-gnu/15/crtbegin.o",
+          "selection": "/usr/lib/gcc/x86_64-linux-gnu/15/crtbegin.o"
+        },
+        "elf_type": 1,
+        "invocation": "/usr/lib/gcc/x86_64-linux-gnu/15/crtbegin.o",
+        "kind": "ELF",
+        "physical": {
+          "bytes": 2440,
+          "ctime_ns": 1784917036501349771,
+          "device": 66307,
+          "inode": 12846104,
+          "mtime_ns": 1774174097000000000,
+          "path": "/usr/lib/gcc/x86_64-linux-gnu/15/crtbegin.o",
+          "sha256": "f179b9f114a7421f32f0de4a3e1a25790469047b34a621c5b9af652f14b04014"
+        }
+      },
+      "/usr/lib/gcc/x86_64-linux-gnu/15/crtend.o": {
+        "alias": {
+          "links": [],
+          "resolved": "/usr/lib/gcc/x86_64-linux-gnu/15/crtend.o",
+          "selection": "/usr/lib/gcc/x86_64-linux-gnu/15/crtend.o"
+        },
+        "elf_type": 1,
+        "invocation": "/usr/lib/gcc/x86_64-linux-gnu/15/crtend.o",
+        "kind": "ELF",
+        "physical": {
+          "bytes": 1160,
+          "ctime_ns": 1784917036501349771,
+          "device": 66307,
+          "inode": 12846110,
+          "mtime_ns": 1774174097000000000,
+          "path": "/usr/lib/gcc/x86_64-linux-gnu/15/crtend.o",
+          "sha256": "b4b7d9001893f0baf4ebfbe12df8d5cf0dd7f69643a5caae04d956d1a443b246"
+        }
+      },
+      "/usr/lib/gcc/x86_64-linux-gnu/15/libgcc.a": {
+        "alias": {
+          "links": [],
+          "resolved": "/usr/lib/gcc/x86_64-linux-gnu/15/libgcc.a",
+          "selection": "/usr/lib/gcc/x86_64-linux-gnu/15/libgcc.a"
+        },
+        "invocation": "/usr/lib/gcc/x86_64-linux-gnu/15/libgcc.a",
+        "kind": "STATIC_ARCHIVE_MAGIC_ONLY_NOT_LINKED",
+        "physical": {
+          "bytes": 3237076,
+          "ctime_ns": 1784917036518350127,
+          "device": 66307,
+          "inode": 12846278,
+          "mtime_ns": 1774174097000000000,
+          "path": "/usr/lib/gcc/x86_64-linux-gnu/15/libgcc.a",
+          "sha256": "d9c2e7a0c0f3dbfc0ff2dec153b0d044cf49d66d64d736b5d1db8ae25ca9c75e"
+        }
+      },
+      "/usr/lib/gcc/x86_64-linux-gnu/15/libgcc_s.so": {
+        "alias": {
+          "links": [],
+          "resolved": "/usr/lib/gcc/x86_64-linux-gnu/15/libgcc_s.so",
+          "selection": "/usr/lib/gcc/x86_64-linux-gnu/15/libgcc_s.so"
+        },
+        "invocation": "/usr/lib/gcc/x86_64-linux-gnu/15/libgcc_s.so",
+        "kind": "RETAINED_GCC_LINKER_SCRIPT_NOT_EVALUATED",
+        "physical": {
+          "bytes": 132,
+          "ctime_ns": 1784917036518350127,
+          "device": 66307,
+          "inode": 12846280,
+          "mtime_ns": 1774174097000000000,
+          "path": "/usr/lib/gcc/x86_64-linux-gnu/15/libgcc_s.so",
+          "sha256": "69a56a9993b7729b29b274e65016031c81f2397f176ed5ad44d59bd50425e0bd"
+        }
+      },
+      "/usr/lib/gcc/x86_64-linux-gnu/15/libstdc++.so": {
+        "alias": {
+          "links": [],
+          "resolved": "/usr/lib/gcc/x86_64-linux-gnu/15/libstdc++.so",
+          "selection": "/usr/lib/gcc/x86_64-linux-gnu/15/libstdc++.so"
+        },
+        "elf_type": 3,
+        "invocation": "/usr/lib/gcc/x86_64-linux-gnu/15/libstdc++.so",
+        "kind": "ELF",
+        "physical": {
+          "bytes": 2657792,
+          "ctime_ns": 1784917036256344650,
+          "device": 66307,
+          "inode": 12846103,
+          "mtime_ns": 1774174097000000000,
+          "path": "/usr/lib/gcc/x86_64-linux-gnu/15/libstdc++.so",
+          "sha256": "946ce23525e79c2916eacb0aeaabd6538df4b1ea9b84ebdd17451f0c89350777"
+        }
+      }
+    },
+    "source_package_metadata": {
+      "inputs": [
+        {
+          "bytes": 16828,
+          "ctime_ns": 1792054204354025610,
+          "device": 81,
+          "inode": 2088,
+          "mtime_ns": 1791465267571654072,
+          "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/llvm-source13-r1/README.md",
+          "sha256": "82332f5210435c578e1bc996ea07afd0e5f0f36dd1c8b825065d7144ddd60b2f"
+        },
+        {
+          "bytes": 38530,
+          "ctime_ns": 1792054204354025610,
+          "device": 81,
+          "inode": 2090,
+          "mtime_ns": 1791465267571340785,
+          "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/llvm-source13-r1/UPSTREAM_CHANGES.md",
+          "sha256": "d794bfa5dba15e89a75a20843b3a0f8048b62dcec82f43e42627b09052a77fd1"
+        },
+        {
+          "bytes": 1992,
+          "ctime_ns": 1792054204354025610,
+          "device": 81,
+          "inode": 2098,
+          "mtime_ns": 1789537080378725094,
+          "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/llvm-source13-r1/manifest.mjs",
+          "sha256": "4fca8d9ff76d5161f850b338fe867e04a5bc0320e5d567ecfac89e17728ba00e"
+        },
+        {
+          "bytes": 11055,
+          "ctime_ns": 1792054204748031322,
+          "device": 81,
+          "inode": 3760,
+          "mtime_ns": 1789535494679221843,
+          "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/llvm-source13-r1/provenance/llvm-project-23.1.1.src.tar.xz.jsonl",
+          "sha256": "b6e886269c5d9ab1995627a59d52c8ea71d113b34aeb1c34fcd5962b2f65320f"
+        },
+        {
+          "bytes": 466,
+          "ctime_ns": 1792054204746031293,
+          "device": 81,
+          "inode": 3754,
+          "mtime_ns": 1789535494678901800,
+          "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/llvm-source13-r1/provenance/llvm-project-23.1.1.src.tar.xz.sig",
+          "sha256": "973fe303c2aa5bb0438d9f6762dc03b2a1e4e700a6b5480ec84b1db3fc33cec2"
+        },
+        {
+          "bytes": 13300,
+          "ctime_ns": 1792054204747031308,
+          "device": 81,
+          "inode": 3756,
+          "mtime_ns": 1789535494679905097,
+          "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/llvm-source13-r1/provenance/release-keys.asc",
+          "sha256": "f38bd19b7f2d22cafa755841e6ce9375b9a2e6d41f7b974e4953d6b084839001"
+        },
+        {
+          "bytes": 7562,
+          "ctime_ns": 1792054204747031308,
+          "device": 81,
+          "inode": 3758,
+          "mtime_ns": 1791464260000326109,
+          "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/llvm-source13-r1/provenance/verify-upstream.py",
+          "sha256": "ba255b29e303f96935b19e16eb24c634c699a4b0789ee6439f34c876d7e3a4b0"
+        }
+      ],
+      "scope": "EXACT_NAMED_PACKAGE_DOCUMENTATION_AND_PROVENANCE_ONLY_NOT_LOCKED_OR_EXECUTED_UPSTREAM_SOURCE"
+    },
+    "source_preserved": true,
+    "inputs_preserved": true,
+    "products_preserved": true,
+    "cleanup": {
+      "remaining": [],
+      "scope": "NO_ACTORS_CREATED",
+      "status": "PASS"
+    },
+    "future_outer_scope": {
+      "actual_outer_execution_or_lease_claim": false,
+      "build_seconds": 28800,
+      "configure_seconds": 600,
+      "cooperative_coordinator_cleanup_seconds": 600,
+      "full_consumer_closure": "MAINTAINED_PREPARER_ACTUAL_CMAKE_FILE_API_STATIC_COMPONENTS_FULL_MD_ARCHIVES_RESPONSE_STDLIB_PROOF_REQUIRED",
+      "inner_actor_rss_bytes": 2147483648,
+      "jobs": 1,
+      "metadata_allowance_seconds": 3600,
+      "minimum_planned_outer_seconds": 33600,
+      "non_ninja_actor_seconds": 600,
+      "rss_bytes": 3221225472
+    }
+  },
+  "raw_r2_configuration_unchanged": {
+    "format_version": 1,
+    "source_root": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/llvm-source13-r1",
+    "tools": {
+      "cc": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/host-compiler-r1/bin/clang",
+      "cxx": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/host-compiler-r1/bin/clang++",
+      "cmake": "/usr/bin/cmake",
+      "ninja": "/usr/bin/ninja",
+      "ar": "/usr/bin/ar",
+      "ranlib": "/usr/bin/ranlib",
+      "linker": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/host-compiler-r1/bin/ld.lld",
+      "python": "/usr/bin/python3.14"
+    },
+    "target": {
+      "triple": "x86_64-unknown-linux-gnu",
+      "machine": 62,
+      "bits": 64,
+      "endian": "little",
+      "host_machine": "x86_64"
+    },
+    "stdlib": "libstdc++",
+    "cflags": [
+      "--gcc-install-dir=/usr/lib/gcc/x86_64-linux-gnu/15"
+    ],
+    "cxxflags": [
+      "--gcc-install-dir=/usr/lib/gcc/x86_64-linux-gnu/15",
+      "-stdlib=libstdc++"
+    ],
+    "link_flags": [
+      "--gcc-install-dir=/usr/lib/gcc/x86_64-linux-gnu/15",
+      "-stdlib=libstdc++"
+    ],
+    "sysroot": null,
+    "input_roots": [
+      "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/llvm-source13-r1",
+      "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/host-compiler-r1",
+      "/usr/bin",
+      "/usr/include",
+      "/usr/lib/x86_64-linux-gnu",
+      "/usr/lib/gcc/x86_64-linux-gnu/15",
+      "/usr/lib/python3.14",
+      "/usr/share/cmake-3.31",
+      "/usr/share/cmake",
+      "/usr/lib/locale",
+      "/usr/lib/llvm-20/include/c++/v1",
+      "/usr/lib/llvm-17/lib/clang/17/include",
+      "/usr/lib/llvm-18/lib/clang/18/include",
+      "/usr/lib/llvm-19/lib/clang/19/include",
+      "/usr/lib/llvm-20/lib/clang/20/include",
+      "/usr/lib/llvm-21/lib/clang/21/include",
+      "/usr/lib/llvm-22/lib/clang/22/include"
+    ],
+    "environment": {
+      "PATH": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/host-compiler-r1/bin:/usr/bin",
+      "LD_LIBRARY_PATH": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/host-compiler-r1/lib:/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/host-compiler-r1/lib/x86_64-unknown-linux-gnu",
+      "LANG": "C.UTF-8",
+      "LC_ALL": "C.UTF-8"
+    },
+    "cgroup": {
+      "memory_max": 68719476736,
+      "memory_swap_max": 0,
+      "expected_leaf": "/sys/fs/cgroup/system.slice/docker-4dd58ad4560fde2ab9b539e4ef9cab1fac531654e99ad554aff1fce8ae0eae37.scope",
+      "expected_device": 29,
+      "expected_inode": 18151,
+      "expected_boot_id": "af121220-8c6e-4302-9853-f08bf4c50dbb",
+      "expected_cpus": "0-31"
+    },
+    "build_seconds": 28800
+  },
+  "interpretation": "The exact old boot1 source/tool admission is genuine historical metadata; actual source/compiler directories may be freshly admitted/shared without recopying. No LLVM library/object build or execution occurred. Root current pin of each raw document does not renew its old cgroup/source observations."
+}

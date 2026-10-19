@@ -1,0 +1,5637 @@
+{
+  "Guest_executed": false,
+  "binding": null,
+  "compiler_executed": false,
+  "default_authority": [],
+  "generation": {
+    "compiler_execution": "NOT_RUN",
+    "declared_constants": {
+      "control_msgs/action/FollowJointTrajectory_Result": [
+        {
+          "literal": "0",
+          "name": "SUCCESSFUL",
+          "native_type": "int32",
+          "type": "int32",
+          "value": "0"
+        },
+        {
+          "literal": "-1",
+          "name": "INVALID_GOAL",
+          "native_type": "int32",
+          "type": "int32",
+          "value": "-1"
+        },
+        {
+          "literal": "-2",
+          "name": "INVALID_JOINTS",
+          "native_type": "int32",
+          "type": "int32",
+          "value": "-2"
+        },
+        {
+          "literal": "-3",
+          "name": "OLD_HEADER_TIMESTAMP",
+          "native_type": "int32",
+          "type": "int32",
+          "value": "-3"
+        },
+        {
+          "literal": "-4",
+          "name": "PATH_TOLERANCE_VIOLATED",
+          "native_type": "int32",
+          "type": "int32",
+          "value": "-4"
+        },
+        {
+          "literal": "-5",
+          "name": "GOAL_TOLERANCE_VIOLATED",
+          "native_type": "int32",
+          "type": "int32",
+          "value": "-5"
+        }
+      ],
+      "control_msgs/msg/JointComponentTolerance": [
+        {
+          "literal": "1",
+          "name": "X_AXIS",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "1"
+        },
+        {
+          "literal": "2",
+          "name": "Y_AXIS",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "2"
+        },
+        {
+          "literal": "3",
+          "name": "Z_AXIS",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "3"
+        },
+        {
+          "literal": "4",
+          "name": "TRANSLATION",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "4"
+        },
+        {
+          "literal": "5",
+          "name": "ROTATION",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "5"
+        }
+      ],
+      "industrial_msgs/msg/DebugLevel": [
+        {
+          "literal": "5",
+          "name": "DEBUG",
+          "native_type": "uint8",
+          "type": "uint8",
+          "value": "5"
+        },
+        {
+          "literal": "4",
+          "name": "INFO",
+          "native_type": "uint8",
+          "type": "uint8",
+          "value": "4"
+        },
+        {
+          "literal": "3",
+          "name": "WARN",
+          "native_type": "uint8",
+          "type": "uint8",
+          "value": "3"
+        },
+        {
+          "literal": "2",
+          "name": "ERROR",
+          "native_type": "uint8",
+          "type": "uint8",
+          "value": "2"
+        },
+        {
+          "literal": "1",
+          "name": "FATAL",
+          "native_type": "uint8",
+          "type": "uint8",
+          "value": "1"
+        },
+        {
+          "literal": "0",
+          "name": "NONE",
+          "native_type": "uint8",
+          "type": "uint8",
+          "value": "0"
+        }
+      ],
+      "industrial_msgs/msg/RobotMode": [
+        {
+          "literal": "-1",
+          "name": "UNKNOWN",
+          "native_type": "int8",
+          "type": "int8",
+          "value": "-1"
+        },
+        {
+          "literal": "1",
+          "name": "MANUAL",
+          "native_type": "int8",
+          "type": "int8",
+          "value": "1"
+        },
+        {
+          "literal": "2",
+          "name": "AUTO",
+          "native_type": "int8",
+          "type": "int8",
+          "value": "2"
+        }
+      ],
+      "industrial_msgs/msg/ServiceReturnCode": [
+        {
+          "literal": "1",
+          "name": "SUCCESS",
+          "native_type": "int8",
+          "type": "int8",
+          "value": "1"
+        },
+        {
+          "literal": "-1",
+          "name": "FAILURE",
+          "native_type": "int8",
+          "type": "int8",
+          "value": "-1"
+        }
+      ],
+      "industrial_msgs/msg/TriState": [
+        {
+          "literal": "-1",
+          "name": "UNKNOWN",
+          "native_type": "int8",
+          "type": "int8",
+          "value": "-1"
+        },
+        {
+          "literal": "1",
+          "name": "TRUE",
+          "native_type": "int8",
+          "type": "int8",
+          "value": "1"
+        },
+        {
+          "literal": "1",
+          "name": "ON",
+          "native_type": "int8",
+          "type": "int8",
+          "value": "1"
+        },
+        {
+          "literal": "1",
+          "name": "ENABLED",
+          "native_type": "int8",
+          "type": "int8",
+          "value": "1"
+        },
+        {
+          "literal": "1",
+          "name": "HIGH",
+          "native_type": "int8",
+          "type": "int8",
+          "value": "1"
+        },
+        {
+          "literal": "1",
+          "name": "CLOSED",
+          "native_type": "int8",
+          "type": "int8",
+          "value": "1"
+        },
+        {
+          "literal": "0",
+          "name": "FALSE",
+          "native_type": "int8",
+          "type": "int8",
+          "value": "0"
+        },
+        {
+          "literal": "0",
+          "name": "OFF",
+          "native_type": "int8",
+          "type": "int8",
+          "value": "0"
+        },
+        {
+          "literal": "0",
+          "name": "DISABLED",
+          "native_type": "int8",
+          "type": "int8",
+          "value": "0"
+        },
+        {
+          "literal": "0",
+          "name": "LOW",
+          "native_type": "int8",
+          "type": "int8",
+          "value": "0"
+        },
+        {
+          "literal": "0",
+          "name": "OPEN",
+          "native_type": "int8",
+          "type": "int8",
+          "value": "0"
+        }
+      ],
+      "motoros2_interfaces/msg/InformJobCrudResultCodes": [
+        {
+          "literal": "1",
+          "name": "RC_OK",
+          "native_type": "uint32",
+          "type": "uint32",
+          "value": "1"
+        },
+        {
+          "literal": "\"Success\"",
+          "name": "STR_OK",
+          "native_type": "string",
+          "type": "string",
+          "value": "Success"
+        },
+        {
+          "literal": "10",
+          "name": "RC_ERR_REFRESHING_JOB_LIST",
+          "native_type": "uint32",
+          "type": "uint32",
+          "value": "10"
+        },
+        {
+          "literal": "\"Error refreshing job list\"",
+          "name": "STR_ERR_REFRESHING_JOB_LIST",
+          "native_type": "string",
+          "type": "string",
+          "value": "Error refreshing job list"
+        },
+        {
+          "literal": "11",
+          "name": "RC_ERR_RETRIEVING_FILE_COUNT",
+          "native_type": "uint32",
+          "type": "uint32",
+          "value": "11"
+        },
+        {
+          "literal": "\"Error retrieving file count\"",
+          "name": "STR_ERR_RETRIEVING_FILE_COUNT",
+          "native_type": "string",
+          "type": "string",
+          "value": "Error retrieving file count"
+        },
+        {
+          "literal": "12",
+          "name": "RC_ERR_TOO_MANY_JOBS",
+          "native_type": "uint32",
+          "type": "uint32",
+          "value": "12"
+        },
+        {
+          "literal": "\"Too many jobs\"",
+          "name": "STR_ERR_TOO_MANY_JOBS",
+          "native_type": "string",
+          "type": "string",
+          "value": "Too many jobs"
+        },
+        {
+          "literal": "13",
+          "name": "RC_ERR_RETRIEVING_JOB_NAME_FROM_LIST",
+          "native_type": "uint32",
+          "type": "uint32",
+          "value": "13"
+        },
+        {
+          "literal": "\"Failed retrieving job name from list\"",
+          "name": "STR_ERR_RETRIEVING_JOB_NAME_FROM_LIST",
+          "native_type": "string",
+          "type": "string",
+          "value": "Failed retrieving job name from list"
+        },
+        {
+          "literal": "14",
+          "name": "RC_ERR_APPENDING_JOB_NAME_TO_SVC_RESPONSE",
+          "native_type": "uint32",
+          "type": "uint32",
+          "value": "14"
+        },
+        {
+          "literal": "\"Error adding job name to service response\"",
+          "name": "STR_ERR_APPENDING_JOB_NAME_TO_SVC_RESPONSE",
+          "native_type": "string",
+          "type": "string",
+          "value": "Error adding job name to service response"
+        }
+      ],
+      "motoros2_interfaces/msg/InitTrajEnum": [
+        {
+          "literal": "0",
+          "name": "INIT_TRAJ_OK",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "0"
+        },
+        {
+          "literal": "\"OK\"",
+          "name": "INIT_TRAJ_OK_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "OK"
+        },
+        {
+          "literal": "200",
+          "name": "INIT_TRAJ_UNSPECIFIED",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "200"
+        },
+        {
+          "literal": "\"Unspecified failure\"",
+          "name": "INIT_TRAJ_UNSPECIFIED_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "Unspecified failure"
+        },
+        {
+          "literal": "201",
+          "name": "INIT_TRAJ_TOO_SMALL",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "201"
+        },
+        {
+          "literal": "\"Trajectory must contain at least two points.\"",
+          "name": "INIT_TRAJ_TOO_SMALL_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "Trajectory must contain at least two points."
+        },
+        {
+          "literal": "202",
+          "name": "INIT_TRAJ_TOO_BIG",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "202"
+        },
+        {
+          "literal": "\"Trajectory contains too many points (Not enough memory).\"",
+          "name": "INIT_TRAJ_TOO_BIG_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "Trajectory contains too many points (Not enough memory)."
+        },
+        {
+          "literal": "203",
+          "name": "INIT_TRAJ_ALREADY_IN_MOTION",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "203"
+        },
+        {
+          "literal": "\"Already running a trajectory.\"",
+          "name": "INIT_TRAJ_ALREADY_IN_MOTION_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "Already running a trajectory."
+        },
+        {
+          "literal": "204",
+          "name": "INIT_TRAJ_INVALID_STARTING_POS",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "204"
+        },
+        {
+          "literal": "\"The first point must match the robot's current position.\"",
+          "name": "INIT_TRAJ_INVALID_STARTING_POS_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "The first point must match the robot's current position."
+        },
+        {
+          "literal": "205",
+          "name": "INIT_TRAJ_INVALID_VELOCITY",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "205"
+        },
+        {
+          "literal": "\"The commanded velocity is too high.\"",
+          "name": "INIT_TRAJ_INVALID_VELOCITY_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "The commanded velocity is too high."
+        },
+        {
+          "literal": "206",
+          "name": "INIT_TRAJ_INVALID_JOINTNAME",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "206"
+        },
+        {
+          "literal": "\"Invalid joint name specified. Check motoros2_config.yaml.\"",
+          "name": "INIT_TRAJ_INVALID_JOINTNAME_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "Invalid joint name specified. Check motoros2_config.yaml."
+        },
+        {
+          "literal": "207",
+          "name": "INIT_TRAJ_INCOMPLETE_JOINTLIST",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "207"
+        },
+        {
+          "literal": "\"Trajectory must contain data for all joints.\"",
+          "name": "INIT_TRAJ_INCOMPLETE_JOINTLIST_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "Trajectory must contain data for all joints."
+        },
+        {
+          "literal": "208",
+          "name": "INIT_TRAJ_INVALID_TIME",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "208"
+        },
+        {
+          "literal": "\"Invalid time in trajectory.\"",
+          "name": "INIT_TRAJ_INVALID_TIME_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "Invalid time in trajectory."
+        },
+        {
+          "literal": "209",
+          "name": "INIT_TRAJ_WRONG_MODE",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "209"
+        },
+        {
+          "literal": "\"Must call start_traj_mode service\"",
+          "name": "INIT_TRAJ_WRONG_MODE_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "Must call start_traj_mode service"
+        },
+        {
+          "literal": "210",
+          "name": "INIT_TRAJ_BACKWARD_TIME",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "210"
+        },
+        {
+          "literal": "\"Trajectory message contains waypoints that are not strictly increasing in time.\"",
+          "name": "INIT_TRAJ_BACKWARD_TIME_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "Trajectory message contains waypoints that are not strictly increasing in time."
+        },
+        {
+          "literal": "211",
+          "name": "INIT_TRAJ_WRONG_NUMBER_OF_POSITIONS",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "211"
+        },
+        {
+          "literal": "\"Trajectory did not contain position data for all axes.\"",
+          "name": "INIT_TRAJ_WRONG_NUMBER_OF_POSITIONS_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "Trajectory did not contain position data for all axes."
+        },
+        {
+          "literal": "212",
+          "name": "INIT_TRAJ_WRONG_NUMBER_OF_VELOCITIES",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "212"
+        },
+        {
+          "literal": "\"Trajectory did not contain velocity data for all axes.\"",
+          "name": "INIT_TRAJ_WRONG_NUMBER_OF_VELOCITIES_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "Trajectory did not contain velocity data for all axes."
+        },
+        {
+          "literal": "213",
+          "name": "INIT_TRAJ_INVALID_ENDING_VELOCITY",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "213"
+        },
+        {
+          "literal": "\"The final point in the trajectory must have zero velocity.\"",
+          "name": "INIT_TRAJ_INVALID_ENDING_VELOCITY_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "The final point in the trajectory must have zero velocity."
+        },
+        {
+          "literal": "214",
+          "name": "INIT_TRAJ_INVALID_ENDING_ACCELERATION",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "214"
+        },
+        {
+          "literal": "\"The final point in the trajectory must have zero acceleration.\"",
+          "name": "INIT_TRAJ_INVALID_ENDING_ACCELERATION_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "The final point in the trajectory must have zero acceleration."
+        },
+        {
+          "literal": "215",
+          "name": "INIT_TRAJ_DUPLICATE_JOINT_NAME",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "215"
+        },
+        {
+          "literal": "\"The trajectory contains duplicate joint names.\"",
+          "name": "INIT_TRAJ_DUPLICATE_JOINT_NAME_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "The trajectory contains duplicate joint names."
+        }
+      ],
+      "motoros2_interfaces/msg/IoResultCodes": [
+        {
+          "literal": "0",
+          "name": "OK",
+          "native_type": "uint32",
+          "type": "uint32",
+          "value": "0"
+        },
+        {
+          "literal": "\"Success\"",
+          "name": "OK_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "Success"
+        },
+        {
+          "literal": "1001",
+          "name": "READ_ADDRESS_INVALID",
+          "native_type": "uint32",
+          "type": "uint32",
+          "value": "1001"
+        },
+        {
+          "literal": "\"Address cannot be read from (out of readable range)\"",
+          "name": "READ_ADDRESS_INVALID_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "Address cannot be read from (out of readable range)"
+        },
+        {
+          "literal": "1002",
+          "name": "WRITE_ADDRESS_INVALID",
+          "native_type": "uint32",
+          "type": "uint32",
+          "value": "1002"
+        },
+        {
+          "literal": "\"Address cannot be written to (out of writable range)\"",
+          "name": "WRITE_ADDRESS_INVALID_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "Address cannot be written to (out of writable range)"
+        },
+        {
+          "literal": "1003",
+          "name": "WRITE_VALUE_INVALID",
+          "native_type": "uint32",
+          "type": "uint32",
+          "value": "1003"
+        },
+        {
+          "literal": "\"Illegal value for the type of IO element addressed\"",
+          "name": "WRITE_VALUE_INVALID_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "Illegal value for the type of IO element addressed"
+        },
+        {
+          "literal": "1004",
+          "name": "READ_API_ERROR",
+          "native_type": "uint32",
+          "type": "uint32",
+          "value": "1004"
+        },
+        {
+          "literal": "\"The MotoPlus function mpReadIO returned -1. No further information is available\"",
+          "name": "READ_API_ERROR_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "The MotoPlus function mpReadIO returned -1. No further information is available"
+        },
+        {
+          "literal": "1005",
+          "name": "WRITE_API_ERROR",
+          "native_type": "uint32",
+          "type": "uint32",
+          "value": "1005"
+        },
+        {
+          "literal": "\"The MotoPlus function mpWriteIO returned -1. No further information is available\"",
+          "name": "WRITE_API_ERROR_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "The MotoPlus function mpWriteIO returned -1. No further information is available"
+        },
+        {
+          "literal": "\"Unknown error accessing I/O. No further information is available\"",
+          "name": "UNKNOWN_API_ERROR_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "Unknown error accessing I/O. No further information is available"
+        }
+      ],
+      "motoros2_interfaces/msg/MotionReadyEnum": [
+        {
+          "literal": "1",
+          "name": "READY",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "1"
+        },
+        {
+          "literal": "\"Ready\"",
+          "name": "READY_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "Ready"
+        },
+        {
+          "literal": "100",
+          "name": "NOT_READY_UNSPECIFIED",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "100"
+        },
+        {
+          "literal": "\"Unspecified\"",
+          "name": "NOT_READY_UNSPECIFIED_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "Unspecified"
+        },
+        {
+          "literal": "101",
+          "name": "NOT_READY_ALARM",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "101"
+        },
+        {
+          "literal": "\"The controller has an active Alarm\"",
+          "name": "NOT_READY_ALARM_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "The controller has an active Alarm"
+        },
+        {
+          "literal": "102",
+          "name": "NOT_READY_ERROR",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "102"
+        },
+        {
+          "literal": "\"The controller has an active Error\"",
+          "name": "NOT_READY_ERROR_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "The controller has an active Error"
+        },
+        {
+          "literal": "103",
+          "name": "NOT_READY_ESTOP",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "103"
+        },
+        {
+          "literal": "\"The controller is in E-Stop\"",
+          "name": "NOT_READY_ESTOP_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "The controller is in E-Stop"
+        },
+        {
+          "literal": "104",
+          "name": "NOT_READY_NOT_PLAY",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "104"
+        },
+        {
+          "literal": "\"The teach pendant must not be in TEACH mode\"",
+          "name": "NOT_READY_NOT_PLAY_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "The teach pendant must not be in TEACH mode"
+        },
+        {
+          "literal": "105",
+          "name": "NOT_READY_NOT_REMOTE",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "105"
+        },
+        {
+          "literal": "\"The teach pendant must be in REMOTE mode\"",
+          "name": "NOT_READY_NOT_REMOTE_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "The teach pendant must be in REMOTE mode"
+        },
+        {
+          "literal": "106",
+          "name": "NOT_READY_SERVO_OFF",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "106"
+        },
+        {
+          "literal": "\"Servo power is OFF. Please call start_traj_mode or start_point_queue_mode service\"",
+          "name": "NOT_READY_SERVO_OFF_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "Servo power is OFF. Please call start_traj_mode or start_point_queue_mode service"
+        },
+        {
+          "literal": "107",
+          "name": "NOT_READY_HOLD",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "107"
+        },
+        {
+          "literal": "\"The controller is in HOLD\"",
+          "name": "NOT_READY_HOLD_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "The controller is in HOLD"
+        },
+        {
+          "literal": "108",
+          "name": "NOT_READY_JOB_NOT_STARTED",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "108"
+        },
+        {
+          "literal": "\"The INIT_ROS job has not started. Please call start_traj_mode or start_point_queue_mode service\"",
+          "name": "NOT_READY_JOB_NOT_STARTED_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "The INIT_ROS job has not started. Please call start_traj_mode or start_point_queue_mode service"
+        },
+        {
+          "literal": "109",
+          "name": "NOT_READY_NOT_ON_WAIT_CMD",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "109"
+        },
+        {
+          "literal": "\"INFORM job is not on a WAIT command. Check the format of INIT_ROS\"",
+          "name": "NOT_READY_NOT_ON_WAIT_CMD_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "INFORM job is not on a WAIT command. Check the format of INIT_ROS"
+        },
+        {
+          "literal": "111",
+          "name": "NOT_READY_PFL_ACTIVE",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "111"
+        },
+        {
+          "literal": "\"A PFL event has occurred. Please return the robot to a safe state\"",
+          "name": "NOT_READY_PFL_ACTIVE_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "A PFL event has occurred. Please return the robot to a safe state"
+        },
+        {
+          "literal": "112",
+          "name": "NOT_READY_INC_MOVE_ERROR",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "112"
+        },
+        {
+          "literal": "\"The controller is in an error state. Please call reset_error to attempt to clear the error\"",
+          "name": "NOT_READY_INC_MOVE_ERROR_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "The controller is in an error state. Please call reset_error to attempt to clear the error"
+        },
+        {
+          "literal": "113",
+          "name": "NOT_READY_OTHER_PROGRAM_RUNNING",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "113"
+        },
+        {
+          "literal": "\"Controller is running another job\"",
+          "name": "NOT_READY_OTHER_PROGRAM_RUNNING_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "Controller is running another job"
+        },
+        {
+          "literal": "114",
+          "name": "NOT_READY_OTHER_TRAJ_MODE_ACTIVE",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "114"
+        },
+        {
+          "literal": "\"Another trajectory mode is already active. Please call stop_traj_mode service\"",
+          "name": "NOT_READY_OTHER_TRAJ_MODE_ACTIVE_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "Another trajectory mode is already active. Please call stop_traj_mode service"
+        },
+        {
+          "literal": "115",
+          "name": "NOT_READY_NOT_CONT_CYCLE_MODE",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "115"
+        },
+        {
+          "literal": "\"AUTO cycle mode not set. Please set the cycle mode to AUTO\"",
+          "name": "NOT_READY_NOT_CONT_CYCLE_MODE_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "AUTO cycle mode not set. Please set the cycle mode to AUTO"
+        },
+        {
+          "literal": "116",
+          "name": "NOT_READY_MAJOR_ALARM",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "116"
+        },
+        {
+          "literal": "\"Major Alarms can't be reset. Please check the teach pendant\"",
+          "name": "NOT_READY_MAJOR_ALARM_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "Major Alarms can't be reset. Please check the teach pendant"
+        },
+        {
+          "literal": "117",
+          "name": "NOT_READY_ECO_MODE",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "117"
+        },
+        {
+          "literal": "\"Couldn't disable eco mode\"",
+          "name": "NOT_READY_ECO_MODE_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "Couldn't disable eco mode"
+        },
+        {
+          "literal": "118",
+          "name": "NOT_READY_SERVO_ON_TIMEOUT",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "118"
+        },
+        {
+          "literal": "\"Timed out while waiting for servo on\"",
+          "name": "NOT_READY_SERVO_ON_TIMEOUT_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "Timed out while waiting for servo on"
+        }
+      ],
+      "motoros2_interfaces/msg/QueueResultEnum": [
+        {
+          "literal": "1",
+          "name": "SUCCESS",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "1"
+        },
+        {
+          "literal": "\"\"",
+          "name": "SUCCESS_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": ""
+        },
+        {
+          "literal": "2",
+          "name": "WRONG_MODE",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "2"
+        },
+        {
+          "literal": "\"Must call start_point_queue_mode service\"",
+          "name": "WRONG_MODE_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "Must call start_point_queue_mode service"
+        },
+        {
+          "literal": "3",
+          "name": "INIT_FAILURE",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "3"
+        },
+        {
+          "literal": "\"Failed to initialize the streaming trajectory\"",
+          "name": "INIT_FAILURE_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "Failed to initialize the streaming trajectory"
+        },
+        {
+          "literal": "4",
+          "name": "BUSY",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "4"
+        },
+        {
+          "literal": "\"Busy processing the previous trajectory point. Please resend the next point shortly\"",
+          "name": "BUSY_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "Busy processing the previous trajectory point. Please resend the next point shortly"
+        },
+        {
+          "literal": "5",
+          "name": "INVALID_JOINT_LIST",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "5"
+        },
+        {
+          "literal": "\"Point must contain data for all joints\"",
+          "name": "INVALID_JOINT_LIST_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "Point must contain data for all joints"
+        },
+        {
+          "literal": "6",
+          "name": "UNABLE_TO_PROCESS_POINT",
+          "native_type": "uint16",
+          "type": "uint16",
+          "value": "6"
+        },
+        {
+          "literal": "\"Error while processing the trajectory point. Check debug log for more details\"",
+          "name": "UNABLE_TO_PROCESS_POINT_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "Error while processing the trajectory point. Check debug log for more details"
+        }
+      ],
+      "motoros2_interfaces/msg/SelectionResultCodes": [
+        {
+          "literal": "0",
+          "name": "OK",
+          "native_type": "uint32",
+          "type": "uint32",
+          "value": "0"
+        },
+        {
+          "literal": "\"\"",
+          "name": "OK_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": ""
+        },
+        {
+          "literal": "400",
+          "name": "INVALID_CONTROLLER_STATE",
+          "native_type": "uint32",
+          "type": "uint32",
+          "value": "400"
+        },
+        {
+          "literal": "\"Pendant is not in REMOTE mode\"",
+          "name": "INVALID_CONTROLLER_STATE_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "Pendant is not in REMOTE mode"
+        },
+        {
+          "literal": "401",
+          "name": "INVALID_CONTROL_GROUP",
+          "native_type": "uint32",
+          "type": "uint32",
+          "value": "401"
+        },
+        {
+          "literal": "\"Invalid control group\"",
+          "name": "INVALID_CONTROL_GROUP_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "Invalid control group"
+        },
+        {
+          "literal": "402",
+          "name": "INVALID_SELECTION_INDEX",
+          "native_type": "uint32",
+          "type": "uint32",
+          "value": "402"
+        },
+        {
+          "literal": "\"Invalid tool selection\"",
+          "name": "INVALID_SELECTION_INDEX_STR",
+          "native_type": "string",
+          "type": "string",
+          "value": "Invalid tool selection"
+        }
+      ]
+    },
+    "declared_defaults": {
+      "geometry_msgs/msg/Quaternion": {
+        "w": "1.0",
+        "x": "0.0",
+        "y": "0.0",
+        "z": "0.0"
+      }
+    },
+    "declared_empty_default_native_binding": "REFUSED_UNTIL_INDEPENDENT_ORIGINAL_NATIVE_IDL_SOURCE_PROOF",
+    "default_authority": [],
+    "facade_template_inputs": [
+      {
+        "bytes": 15514,
+        "generator_relative": "interface_templates/bounded_interfaces.rs.in",
+        "sha256": "063130e797684df0530aa1882f8082a10d5756ceb892677d8082e980c7b29b18"
+      },
+      {
+        "bytes": 17046,
+        "generator_relative": "interface_templates/bounded_interfaces.mjs.in",
+        "sha256": "10986eddd766435dde89b0d3046ef7f48705e2c3e21301c99163c3a7d4ea62fe"
+      },
+      {
+        "bytes": 9692,
+        "generator_relative": "interface_templates/bounded_interfaces.go.in",
+        "sha256": "c9e7893ccedc67b91a3aebc51c1e0c3c65263f03b2769aa07c34fcfb6befa1f7"
+      },
+      {
+        "bytes": 16626,
+        "generator_relative": "interface_templates/bounded_interfaces.ts.in",
+        "sha256": "a61a7b7eb3b5464648577f3ab44629a5c6140d04effff6e4099509f68b204ac5"
+      }
+    ],
+    "format": "uwvm-ros-vendor-complete-bounded-v1",
+    "implemented_record_outputs": [
+      "c",
+      "cpp",
+      "rust",
+      "javascript",
+      "assemblyscript",
+      "tinygo"
+    ],
+    "implicit_permissions": [],
+    "member_map": {
+      "builtin_interfaces/msg/Duration": {
+        "assemblyscript": {
+          "nanosec": "nanosec",
+          "sec": "sec"
+        },
+        "c": {
+          "nanosec": "nanosec",
+          "sec": "sec"
+        },
+        "cpp": {
+          "nanosec": "nanosec",
+          "sec": "sec"
+        },
+        "javascript": {
+          "nanosec": "nanosec",
+          "sec": "sec"
+        },
+        "rust": {
+          "nanosec": "nanosec",
+          "sec": "sec"
+        },
+        "tinygo": {
+          "nanosec": "Nanosec",
+          "sec": "Sec"
+        }
+      },
+      "builtin_interfaces/msg/Time": {
+        "assemblyscript": {
+          "nanosec": "nanosec",
+          "sec": "sec"
+        },
+        "c": {
+          "nanosec": "nanosec",
+          "sec": "sec"
+        },
+        "cpp": {
+          "nanosec": "nanosec",
+          "sec": "sec"
+        },
+        "javascript": {
+          "nanosec": "nanosec",
+          "sec": "sec"
+        },
+        "rust": {
+          "nanosec": "nanosec",
+          "sec": "sec"
+        },
+        "tinygo": {
+          "nanosec": "Nanosec",
+          "sec": "Sec"
+        }
+      },
+      "control_msgs/action/FollowJointTrajectory_Feedback": {
+        "assemblyscript": {
+          "actual": "actual",
+          "desired": "desired",
+          "error": "error",
+          "header": "header",
+          "joint_names": "joint_names",
+          "multi_dof_actual": "multi_dof_actual",
+          "multi_dof_desired": "multi_dof_desired",
+          "multi_dof_error": "multi_dof_error",
+          "multi_dof_joint_names": "multi_dof_joint_names"
+        },
+        "c": {
+          "actual": "actual",
+          "desired": "desired",
+          "error": "error",
+          "header": "header",
+          "joint_names": "joint_names",
+          "multi_dof_actual": "multi_dof_actual",
+          "multi_dof_desired": "multi_dof_desired",
+          "multi_dof_error": "multi_dof_error",
+          "multi_dof_joint_names": "multi_dof_joint_names"
+        },
+        "cpp": {
+          "actual": "actual",
+          "desired": "desired",
+          "error": "error",
+          "header": "header",
+          "joint_names": "joint_names",
+          "multi_dof_actual": "multi_dof_actual",
+          "multi_dof_desired": "multi_dof_desired",
+          "multi_dof_error": "multi_dof_error",
+          "multi_dof_joint_names": "multi_dof_joint_names"
+        },
+        "javascript": {
+          "actual": "actual",
+          "desired": "desired",
+          "error": "error",
+          "header": "header",
+          "joint_names": "joint_names",
+          "multi_dof_actual": "multi_dof_actual",
+          "multi_dof_desired": "multi_dof_desired",
+          "multi_dof_error": "multi_dof_error",
+          "multi_dof_joint_names": "multi_dof_joint_names"
+        },
+        "rust": {
+          "actual": "actual",
+          "desired": "desired",
+          "error": "error",
+          "header": "header",
+          "joint_names": "joint_names",
+          "multi_dof_actual": "multi_dof_actual",
+          "multi_dof_desired": "multi_dof_desired",
+          "multi_dof_error": "multi_dof_error",
+          "multi_dof_joint_names": "multi_dof_joint_names"
+        },
+        "tinygo": {
+          "actual": "Actual",
+          "desired": "Desired",
+          "error": "Error",
+          "header": "Header",
+          "joint_names": "Joint_names",
+          "multi_dof_actual": "Multi_dof_actual",
+          "multi_dof_desired": "Multi_dof_desired",
+          "multi_dof_error": "Multi_dof_error",
+          "multi_dof_joint_names": "Multi_dof_joint_names"
+        }
+      },
+      "control_msgs/action/FollowJointTrajectory_Goal": {
+        "assemblyscript": {
+          "component_goal_tolerance": "component_goal_tolerance",
+          "component_path_tolerance": "component_path_tolerance",
+          "goal_time_tolerance": "goal_time_tolerance",
+          "goal_tolerance": "goal_tolerance",
+          "multi_dof_trajectory": "multi_dof_trajectory",
+          "path_tolerance": "path_tolerance",
+          "trajectory": "trajectory"
+        },
+        "c": {
+          "component_goal_tolerance": "component_goal_tolerance",
+          "component_path_tolerance": "component_path_tolerance",
+          "goal_time_tolerance": "goal_time_tolerance",
+          "goal_tolerance": "goal_tolerance",
+          "multi_dof_trajectory": "multi_dof_trajectory",
+          "path_tolerance": "path_tolerance",
+          "trajectory": "trajectory"
+        },
+        "cpp": {
+          "component_goal_tolerance": "component_goal_tolerance",
+          "component_path_tolerance": "component_path_tolerance",
+          "goal_time_tolerance": "goal_time_tolerance",
+          "goal_tolerance": "goal_tolerance",
+          "multi_dof_trajectory": "multi_dof_trajectory",
+          "path_tolerance": "path_tolerance",
+          "trajectory": "trajectory"
+        },
+        "javascript": {
+          "component_goal_tolerance": "component_goal_tolerance",
+          "component_path_tolerance": "component_path_tolerance",
+          "goal_time_tolerance": "goal_time_tolerance",
+          "goal_tolerance": "goal_tolerance",
+          "multi_dof_trajectory": "multi_dof_trajectory",
+          "path_tolerance": "path_tolerance",
+          "trajectory": "trajectory"
+        },
+        "rust": {
+          "component_goal_tolerance": "component_goal_tolerance",
+          "component_path_tolerance": "component_path_tolerance",
+          "goal_time_tolerance": "goal_time_tolerance",
+          "goal_tolerance": "goal_tolerance",
+          "multi_dof_trajectory": "multi_dof_trajectory",
+          "path_tolerance": "path_tolerance",
+          "trajectory": "trajectory"
+        },
+        "tinygo": {
+          "component_goal_tolerance": "Component_goal_tolerance",
+          "component_path_tolerance": "Component_path_tolerance",
+          "goal_time_tolerance": "Goal_time_tolerance",
+          "goal_tolerance": "Goal_tolerance",
+          "multi_dof_trajectory": "Multi_dof_trajectory",
+          "path_tolerance": "Path_tolerance",
+          "trajectory": "Trajectory"
+        }
+      },
+      "control_msgs/action/FollowJointTrajectory_Result": {
+        "assemblyscript": {
+          "error_code": "error_code",
+          "error_string": "error_string"
+        },
+        "c": {
+          "error_code": "error_code",
+          "error_string": "error_string"
+        },
+        "cpp": {
+          "error_code": "error_code",
+          "error_string": "error_string"
+        },
+        "javascript": {
+          "error_code": "error_code",
+          "error_string": "error_string"
+        },
+        "rust": {
+          "error_code": "error_code",
+          "error_string": "error_string"
+        },
+        "tinygo": {
+          "error_code": "Error_code",
+          "error_string": "Error_string"
+        }
+      },
+      "control_msgs/msg/JointComponentTolerance": {
+        "assemblyscript": {
+          "acceleration": "acceleration",
+          "component": "component",
+          "joint_name": "joint_name",
+          "position": "position",
+          "velocity": "velocity"
+        },
+        "c": {
+          "acceleration": "acceleration",
+          "component": "component",
+          "joint_name": "joint_name",
+          "position": "position",
+          "velocity": "velocity"
+        },
+        "cpp": {
+          "acceleration": "acceleration",
+          "component": "component",
+          "joint_name": "joint_name",
+          "position": "position",
+          "velocity": "velocity"
+        },
+        "javascript": {
+          "acceleration": "acceleration",
+          "component": "component",
+          "joint_name": "joint_name",
+          "position": "position",
+          "velocity": "velocity"
+        },
+        "rust": {
+          "acceleration": "acceleration",
+          "component": "component",
+          "joint_name": "joint_name",
+          "position": "position",
+          "velocity": "velocity"
+        },
+        "tinygo": {
+          "acceleration": "Acceleration",
+          "component": "Component",
+          "joint_name": "Joint_name",
+          "position": "Position",
+          "velocity": "Velocity"
+        }
+      },
+      "control_msgs/msg/JointTolerance": {
+        "assemblyscript": {
+          "acceleration": "acceleration",
+          "name": "name",
+          "position": "position",
+          "velocity": "velocity"
+        },
+        "c": {
+          "acceleration": "acceleration",
+          "name": "name",
+          "position": "position",
+          "velocity": "velocity"
+        },
+        "cpp": {
+          "acceleration": "acceleration",
+          "name": "name",
+          "position": "position",
+          "velocity": "velocity"
+        },
+        "javascript": {
+          "acceleration": "acceleration",
+          "name": "name",
+          "position": "position",
+          "velocity": "velocity"
+        },
+        "rust": {
+          "acceleration": "acceleration",
+          "name": "name",
+          "position": "position",
+          "velocity": "velocity"
+        },
+        "tinygo": {
+          "acceleration": "Acceleration",
+          "name": "Name",
+          "position": "Position",
+          "velocity": "Velocity"
+        }
+      },
+      "geometry_msgs/msg/Quaternion": {
+        "assemblyscript": {
+          "w": "w",
+          "x": "x",
+          "y": "y",
+          "z": "z"
+        },
+        "c": {
+          "w": "w",
+          "x": "x",
+          "y": "y",
+          "z": "z"
+        },
+        "cpp": {
+          "w": "w",
+          "x": "x",
+          "y": "y",
+          "z": "z"
+        },
+        "javascript": {
+          "w": "w",
+          "x": "x",
+          "y": "y",
+          "z": "z"
+        },
+        "rust": {
+          "w": "w",
+          "x": "x",
+          "y": "y",
+          "z": "z"
+        },
+        "tinygo": {
+          "w": "W",
+          "x": "X",
+          "y": "Y",
+          "z": "Z"
+        }
+      },
+      "geometry_msgs/msg/Transform": {
+        "assemblyscript": {
+          "rotation": "rotation",
+          "translation": "translation"
+        },
+        "c": {
+          "rotation": "rotation",
+          "translation": "translation"
+        },
+        "cpp": {
+          "rotation": "rotation",
+          "translation": "translation"
+        },
+        "javascript": {
+          "rotation": "rotation",
+          "translation": "translation"
+        },
+        "rust": {
+          "rotation": "rotation",
+          "translation": "translation"
+        },
+        "tinygo": {
+          "rotation": "Rotation",
+          "translation": "Translation"
+        }
+      },
+      "geometry_msgs/msg/TransformStamped": {
+        "assemblyscript": {
+          "child_frame_id": "child_frame_id",
+          "header": "header",
+          "transform": "transform"
+        },
+        "c": {
+          "child_frame_id": "child_frame_id",
+          "header": "header",
+          "transform": "transform"
+        },
+        "cpp": {
+          "child_frame_id": "child_frame_id",
+          "header": "header",
+          "transform": "transform"
+        },
+        "javascript": {
+          "child_frame_id": "child_frame_id",
+          "header": "header",
+          "transform": "transform"
+        },
+        "rust": {
+          "child_frame_id": "child_frame_id",
+          "header": "header",
+          "transform": "transform"
+        },
+        "tinygo": {
+          "child_frame_id": "Child_frame_id",
+          "header": "Header",
+          "transform": "Transform"
+        }
+      },
+      "geometry_msgs/msg/Twist": {
+        "assemblyscript": {
+          "angular": "angular",
+          "linear": "linear"
+        },
+        "c": {
+          "angular": "angular",
+          "linear": "linear"
+        },
+        "cpp": {
+          "angular": "angular",
+          "linear": "linear"
+        },
+        "javascript": {
+          "angular": "angular",
+          "linear": "linear"
+        },
+        "rust": {
+          "angular": "angular",
+          "linear": "linear"
+        },
+        "tinygo": {
+          "angular": "Angular",
+          "linear": "Linear"
+        }
+      },
+      "geometry_msgs/msg/Vector3": {
+        "assemblyscript": {
+          "x": "x",
+          "y": "y",
+          "z": "z"
+        },
+        "c": {
+          "x": "x",
+          "y": "y",
+          "z": "z"
+        },
+        "cpp": {
+          "x": "x",
+          "y": "y",
+          "z": "z"
+        },
+        "javascript": {
+          "x": "x",
+          "y": "y",
+          "z": "z"
+        },
+        "rust": {
+          "x": "x",
+          "y": "y",
+          "z": "z"
+        },
+        "tinygo": {
+          "x": "X",
+          "y": "Y",
+          "z": "Z"
+        }
+      },
+      "industrial_msgs/msg/DebugLevel": {
+        "assemblyscript": {
+          "val": "val"
+        },
+        "c": {
+          "val": "val"
+        },
+        "cpp": {
+          "val": "val"
+        },
+        "javascript": {
+          "val": "val"
+        },
+        "rust": {
+          "val": "val"
+        },
+        "tinygo": {
+          "val": "Val"
+        }
+      },
+      "industrial_msgs/msg/DeviceInfo": {
+        "assemblyscript": {
+          "address": "address",
+          "hw_version": "hw_version",
+          "model": "model",
+          "serial_number": "serial_number",
+          "sw_version": "sw_version"
+        },
+        "c": {
+          "address": "address",
+          "hw_version": "hw_version",
+          "model": "model",
+          "serial_number": "serial_number",
+          "sw_version": "sw_version"
+        },
+        "cpp": {
+          "address": "address",
+          "hw_version": "hw_version",
+          "model": "model",
+          "serial_number": "serial_number",
+          "sw_version": "sw_version"
+        },
+        "javascript": {
+          "address": "address",
+          "hw_version": "hw_version",
+          "model": "model",
+          "serial_number": "serial_number",
+          "sw_version": "sw_version"
+        },
+        "rust": {
+          "address": "address",
+          "hw_version": "hw_version",
+          "model": "model",
+          "serial_number": "serial_number",
+          "sw_version": "sw_version"
+        },
+        "tinygo": {
+          "address": "Address",
+          "hw_version": "Hw_version",
+          "model": "Model",
+          "serial_number": "Serial_number",
+          "sw_version": "Sw_version"
+        }
+      },
+      "industrial_msgs/msg/RobotMode": {
+        "assemblyscript": {
+          "val": "val"
+        },
+        "c": {
+          "val": "val"
+        },
+        "cpp": {
+          "val": "val"
+        },
+        "javascript": {
+          "val": "val"
+        },
+        "rust": {
+          "val": "val"
+        },
+        "tinygo": {
+          "val": "Val"
+        }
+      },
+      "industrial_msgs/msg/RobotStatus": {
+        "assemblyscript": {
+          "drives_powered": "drives_powered",
+          "e_stopped": "e_stopped",
+          "error_codes": "error_codes",
+          "header": "header",
+          "in_error": "in_error",
+          "in_motion": "in_motion",
+          "mode": "mode",
+          "motion_possible": "motion_possible"
+        },
+        "c": {
+          "drives_powered": "drives_powered",
+          "e_stopped": "e_stopped",
+          "error_codes": "error_codes",
+          "header": "header",
+          "in_error": "in_error",
+          "in_motion": "in_motion",
+          "mode": "mode",
+          "motion_possible": "motion_possible"
+        },
+        "cpp": {
+          "drives_powered": "drives_powered",
+          "e_stopped": "e_stopped",
+          "error_codes": "error_codes",
+          "header": "header",
+          "in_error": "in_error",
+          "in_motion": "in_motion",
+          "mode": "mode",
+          "motion_possible": "motion_possible"
+        },
+        "javascript": {
+          "drives_powered": "drives_powered",
+          "e_stopped": "e_stopped",
+          "error_codes": "error_codes",
+          "header": "header",
+          "in_error": "in_error",
+          "in_motion": "in_motion",
+          "mode": "mode",
+          "motion_possible": "motion_possible"
+        },
+        "rust": {
+          "drives_powered": "drives_powered",
+          "e_stopped": "e_stopped",
+          "error_codes": "error_codes",
+          "header": "header",
+          "in_error": "in_error",
+          "in_motion": "in_motion",
+          "mode": "mode",
+          "motion_possible": "motion_possible"
+        },
+        "tinygo": {
+          "drives_powered": "Drives_powered",
+          "e_stopped": "E_stopped",
+          "error_codes": "Error_codes",
+          "header": "Header",
+          "in_error": "In_error",
+          "in_motion": "In_motion",
+          "mode": "Mode",
+          "motion_possible": "Motion_possible"
+        }
+      },
+      "industrial_msgs/msg/ServiceReturnCode": {
+        "assemblyscript": {
+          "val": "val"
+        },
+        "c": {
+          "val": "val"
+        },
+        "cpp": {
+          "val": "val"
+        },
+        "javascript": {
+          "val": "val"
+        },
+        "rust": {
+          "val": "val"
+        },
+        "tinygo": {
+          "val": "Val"
+        }
+      },
+      "industrial_msgs/msg/TriState": {
+        "assemblyscript": {
+          "val": "val"
+        },
+        "c": {
+          "val": "val"
+        },
+        "cpp": {
+          "val": "val"
+        },
+        "javascript": {
+          "val": "val"
+        },
+        "rust": {
+          "val": "val"
+        },
+        "tinygo": {
+          "val": "Val"
+        }
+      },
+      "industrial_msgs/srv/CmdJointTrajectory_Request": {
+        "assemblyscript": {
+          "trajectory": "trajectory"
+        },
+        "c": {
+          "trajectory": "trajectory"
+        },
+        "cpp": {
+          "trajectory": "trajectory"
+        },
+        "javascript": {
+          "trajectory": "trajectory"
+        },
+        "rust": {
+          "trajectory": "trajectory"
+        },
+        "tinygo": {
+          "trajectory": "Trajectory"
+        }
+      },
+      "industrial_msgs/srv/CmdJointTrajectory_Response": {
+        "assemblyscript": {
+          "code": "code"
+        },
+        "c": {
+          "code": "code"
+        },
+        "cpp": {
+          "code": "code"
+        },
+        "javascript": {
+          "code": "code"
+        },
+        "rust": {
+          "code": "code"
+        },
+        "tinygo": {
+          "code": "Code"
+        }
+      },
+      "industrial_msgs/srv/GetRobotInfo_Request": {
+        "assemblyscript": {},
+        "c": {},
+        "cpp": {},
+        "javascript": {},
+        "rust": {},
+        "tinygo": {}
+      },
+      "industrial_msgs/srv/GetRobotInfo_Response": {
+        "assemblyscript": {
+          "code": "code",
+          "controller": "controller",
+          "robots": "robots"
+        },
+        "c": {
+          "code": "code",
+          "controller": "controller",
+          "robots": "robots"
+        },
+        "cpp": {
+          "code": "code",
+          "controller": "controller",
+          "robots": "robots"
+        },
+        "javascript": {
+          "code": "code",
+          "controller": "controller",
+          "robots": "robots"
+        },
+        "rust": {
+          "code": "code",
+          "controller": "controller",
+          "robots": "robots"
+        },
+        "tinygo": {
+          "code": "Code",
+          "controller": "Controller",
+          "robots": "Robots"
+        }
+      },
+      "industrial_msgs/srv/SetDrivePower_Request": {
+        "assemblyscript": {
+          "drive_power": "drive_power"
+        },
+        "c": {
+          "drive_power": "drive_power"
+        },
+        "cpp": {
+          "drive_power": "drive_power"
+        },
+        "javascript": {
+          "drive_power": "drive_power"
+        },
+        "rust": {
+          "drive_power": "drive_power"
+        },
+        "tinygo": {
+          "drive_power": "Drive_power"
+        }
+      },
+      "industrial_msgs/srv/SetDrivePower_Response": {
+        "assemblyscript": {
+          "code": "code"
+        },
+        "c": {
+          "code": "code"
+        },
+        "cpp": {
+          "code": "code"
+        },
+        "javascript": {
+          "code": "code"
+        },
+        "rust": {
+          "code": "code"
+        },
+        "tinygo": {
+          "code": "Code"
+        }
+      },
+      "industrial_msgs/srv/SetRemoteLoggerLevel_Request": {
+        "assemblyscript": {
+          "level": "level"
+        },
+        "c": {
+          "level": "level"
+        },
+        "cpp": {
+          "level": "level"
+        },
+        "javascript": {
+          "level": "level"
+        },
+        "rust": {
+          "level": "level"
+        },
+        "tinygo": {
+          "level": "Level"
+        }
+      },
+      "industrial_msgs/srv/SetRemoteLoggerLevel_Response": {
+        "assemblyscript": {
+          "code": "code"
+        },
+        "c": {
+          "code": "code"
+        },
+        "cpp": {
+          "code": "code"
+        },
+        "javascript": {
+          "code": "code"
+        },
+        "rust": {
+          "code": "code"
+        },
+        "tinygo": {
+          "code": "Code"
+        }
+      },
+      "industrial_msgs/srv/StartMotion_Request": {
+        "assemblyscript": {},
+        "c": {},
+        "cpp": {},
+        "javascript": {},
+        "rust": {},
+        "tinygo": {}
+      },
+      "industrial_msgs/srv/StartMotion_Response": {
+        "assemblyscript": {
+          "code": "code"
+        },
+        "c": {
+          "code": "code"
+        },
+        "cpp": {
+          "code": "code"
+        },
+        "javascript": {
+          "code": "code"
+        },
+        "rust": {
+          "code": "code"
+        },
+        "tinygo": {
+          "code": "Code"
+        }
+      },
+      "industrial_msgs/srv/StopMotion_Request": {
+        "assemblyscript": {},
+        "c": {},
+        "cpp": {},
+        "javascript": {},
+        "rust": {},
+        "tinygo": {}
+      },
+      "industrial_msgs/srv/StopMotion_Response": {
+        "assemblyscript": {
+          "code": "code"
+        },
+        "c": {
+          "code": "code"
+        },
+        "cpp": {
+          "code": "code"
+        },
+        "javascript": {
+          "code": "code"
+        },
+        "rust": {
+          "code": "code"
+        },
+        "tinygo": {
+          "code": "Code"
+        }
+      },
+      "motoros2_interfaces/msg/AlarmCauseRemedy": {
+        "assemblyscript": {
+          "cause": "cause",
+          "remedy": "remedy"
+        },
+        "c": {
+          "cause": "cause",
+          "remedy": "remedy"
+        },
+        "cpp": {
+          "cause": "cause",
+          "remedy": "remedy"
+        },
+        "javascript": {
+          "cause": "cause",
+          "remedy": "remedy"
+        },
+        "rust": {
+          "cause": "cause",
+          "remedy": "remedy"
+        },
+        "tinygo": {
+          "cause": "Cause",
+          "remedy": "Remedy"
+        }
+      },
+      "motoros2_interfaces/msg/AlarmInfo": {
+        "assemblyscript": {
+          "contents": "contents",
+          "datetime": "datetime",
+          "description": "description",
+          "help": "help",
+          "message": "message",
+          "number": "number",
+          "sub_code": "sub_code"
+        },
+        "c": {
+          "contents": "contents",
+          "datetime": "datetime",
+          "description": "description",
+          "help": "help",
+          "message": "message",
+          "number": "number",
+          "sub_code": "sub_code"
+        },
+        "cpp": {
+          "contents": "contents",
+          "datetime": "datetime",
+          "description": "description",
+          "help": "help",
+          "message": "message",
+          "number": "number",
+          "sub_code": "sub_code"
+        },
+        "javascript": {
+          "contents": "contents",
+          "datetime": "datetime",
+          "description": "description",
+          "help": "help",
+          "message": "message",
+          "number": "number",
+          "sub_code": "sub_code"
+        },
+        "rust": {
+          "contents": "contents",
+          "datetime": "datetime",
+          "description": "description",
+          "help": "help",
+          "message": "message",
+          "number": "number",
+          "sub_code": "sub_code"
+        },
+        "tinygo": {
+          "contents": "Contents",
+          "datetime": "Datetime",
+          "description": "Description",
+          "help": "Help",
+          "message": "Message",
+          "number": "Number",
+          "sub_code": "Sub_code"
+        }
+      },
+      "motoros2_interfaces/msg/ErrorInfo": {
+        "assemblyscript": {
+          "datetime": "datetime",
+          "message": "message",
+          "number": "number",
+          "sub_code": "sub_code"
+        },
+        "c": {
+          "datetime": "datetime",
+          "message": "message",
+          "number": "number",
+          "sub_code": "sub_code"
+        },
+        "cpp": {
+          "datetime": "datetime",
+          "message": "message",
+          "number": "number",
+          "sub_code": "sub_code"
+        },
+        "javascript": {
+          "datetime": "datetime",
+          "message": "message",
+          "number": "number",
+          "sub_code": "sub_code"
+        },
+        "rust": {
+          "datetime": "datetime",
+          "message": "message",
+          "number": "number",
+          "sub_code": "sub_code"
+        },
+        "tinygo": {
+          "datetime": "Datetime",
+          "message": "Message",
+          "number": "Number",
+          "sub_code": "Sub_code"
+        }
+      },
+      "motoros2_interfaces/msg/InformJobCrudResultCodes": {
+        "assemblyscript": {},
+        "c": {},
+        "cpp": {},
+        "javascript": {},
+        "rust": {},
+        "tinygo": {}
+      },
+      "motoros2_interfaces/msg/InitTrajEnum": {
+        "assemblyscript": {
+          "value": "value"
+        },
+        "c": {
+          "value": "value"
+        },
+        "cpp": {
+          "value": "value"
+        },
+        "javascript": {
+          "value": "value"
+        },
+        "rust": {
+          "value": "value"
+        },
+        "tinygo": {
+          "value": "Value"
+        }
+      },
+      "motoros2_interfaces/msg/IoResultCodes": {
+        "assemblyscript": {},
+        "c": {},
+        "cpp": {},
+        "javascript": {},
+        "rust": {},
+        "tinygo": {}
+      },
+      "motoros2_interfaces/msg/MotionReadyEnum": {
+        "assemblyscript": {
+          "value": "value"
+        },
+        "c": {
+          "value": "value"
+        },
+        "cpp": {
+          "value": "value"
+        },
+        "javascript": {
+          "value": "value"
+        },
+        "rust": {
+          "value": "value"
+        },
+        "tinygo": {
+          "value": "Value"
+        }
+      },
+      "motoros2_interfaces/msg/QueueResultEnum": {
+        "assemblyscript": {
+          "value": "value"
+        },
+        "c": {
+          "value": "value"
+        },
+        "cpp": {
+          "value": "value"
+        },
+        "javascript": {
+          "value": "value"
+        },
+        "rust": {
+          "value": "value"
+        },
+        "tinygo": {
+          "value": "Value"
+        }
+      },
+      "motoros2_interfaces/msg/SelectionResultCodes": {
+        "assemblyscript": {
+          "value": "value"
+        },
+        "c": {
+          "value": "value"
+        },
+        "cpp": {
+          "value": "value"
+        },
+        "javascript": {
+          "value": "value"
+        },
+        "rust": {
+          "value": "value"
+        },
+        "tinygo": {
+          "value": "Value"
+        }
+      },
+      "motoros2_interfaces/srv/GetActiveAlarmInfo_Request": {
+        "assemblyscript": {},
+        "c": {},
+        "cpp": {},
+        "javascript": {},
+        "rust": {},
+        "tinygo": {}
+      },
+      "motoros2_interfaces/srv/GetActiveAlarmInfo_Response": {
+        "assemblyscript": {
+          "alarms": "alarms",
+          "errors": "errors",
+          "result_code": "result_code",
+          "result_message": "result_message"
+        },
+        "c": {
+          "alarms": "alarms",
+          "errors": "errors",
+          "result_code": "result_code",
+          "result_message": "result_message"
+        },
+        "cpp": {
+          "alarms": "alarms",
+          "errors": "errors",
+          "result_code": "result_code",
+          "result_message": "result_message"
+        },
+        "javascript": {
+          "alarms": "alarms",
+          "errors": "errors",
+          "result_code": "result_code",
+          "result_message": "result_message"
+        },
+        "rust": {
+          "alarms": "alarms",
+          "errors": "errors",
+          "result_code": "result_code",
+          "result_message": "result_message"
+        },
+        "tinygo": {
+          "alarms": "Alarms",
+          "errors": "Errors",
+          "result_code": "Result_code",
+          "result_message": "Result_message"
+        }
+      },
+      "motoros2_interfaces/srv/ListInformJobs_Request": {
+        "assemblyscript": {},
+        "c": {},
+        "cpp": {},
+        "javascript": {},
+        "rust": {},
+        "tinygo": {}
+      },
+      "motoros2_interfaces/srv/ListInformJobs_Response": {
+        "assemblyscript": {
+          "message": "message",
+          "names": "names",
+          "result_code": "result_code"
+        },
+        "c": {
+          "message": "message",
+          "names": "names",
+          "result_code": "result_code"
+        },
+        "cpp": {
+          "message": "message",
+          "names": "names",
+          "result_code": "result_code"
+        },
+        "javascript": {
+          "message": "message",
+          "names": "names",
+          "result_code": "result_code"
+        },
+        "rust": {
+          "message": "message",
+          "names": "names",
+          "result_code": "result_code"
+        },
+        "tinygo": {
+          "message": "Message",
+          "names": "Names",
+          "result_code": "Result_code"
+        }
+      },
+      "motoros2_interfaces/srv/QueueTrajPoint_Request": {
+        "assemblyscript": {
+          "joint_names": "joint_names",
+          "point": "point"
+        },
+        "c": {
+          "joint_names": "joint_names",
+          "point": "point"
+        },
+        "cpp": {
+          "joint_names": "joint_names",
+          "point": "point"
+        },
+        "javascript": {
+          "joint_names": "joint_names",
+          "point": "point"
+        },
+        "rust": {
+          "joint_names": "joint_names",
+          "point": "point"
+        },
+        "tinygo": {
+          "joint_names": "Joint_names",
+          "point": "Point"
+        }
+      },
+      "motoros2_interfaces/srv/QueueTrajPoint_Response": {
+        "assemblyscript": {
+          "message": "message",
+          "result_code": "result_code"
+        },
+        "c": {
+          "message": "message",
+          "result_code": "result_code"
+        },
+        "cpp": {
+          "message": "message",
+          "result_code": "result_code"
+        },
+        "javascript": {
+          "message": "message",
+          "result_code": "result_code"
+        },
+        "rust": {
+          "message": "message",
+          "result_code": "result_code"
+        },
+        "tinygo": {
+          "message": "Message",
+          "result_code": "Result_code"
+        }
+      },
+      "motoros2_interfaces/srv/ReadGroupIO_Request": {
+        "assemblyscript": {
+          "address": "address"
+        },
+        "c": {
+          "address": "address"
+        },
+        "cpp": {
+          "address": "address"
+        },
+        "javascript": {
+          "address": "address"
+        },
+        "rust": {
+          "address": "address"
+        },
+        "tinygo": {
+          "address": "Address"
+        }
+      },
+      "motoros2_interfaces/srv/ReadGroupIO_Response": {
+        "assemblyscript": {
+          "message": "message",
+          "result_code": "result_code",
+          "success": "success",
+          "value": "value"
+        },
+        "c": {
+          "message": "message",
+          "result_code": "result_code",
+          "success": "success",
+          "value": "value"
+        },
+        "cpp": {
+          "message": "message",
+          "result_code": "result_code",
+          "success": "success",
+          "value": "value"
+        },
+        "javascript": {
+          "message": "message",
+          "result_code": "result_code",
+          "success": "success",
+          "value": "value"
+        },
+        "rust": {
+          "message": "message",
+          "result_code": "result_code",
+          "success": "success",
+          "value": "value"
+        },
+        "tinygo": {
+          "message": "Message",
+          "result_code": "Result_code",
+          "success": "Success",
+          "value": "Value"
+        }
+      },
+      "motoros2_interfaces/srv/ReadMRegister_Request": {
+        "assemblyscript": {
+          "address": "address"
+        },
+        "c": {
+          "address": "address"
+        },
+        "cpp": {
+          "address": "address"
+        },
+        "javascript": {
+          "address": "address"
+        },
+        "rust": {
+          "address": "address"
+        },
+        "tinygo": {
+          "address": "Address"
+        }
+      },
+      "motoros2_interfaces/srv/ReadMRegister_Response": {
+        "assemblyscript": {
+          "message": "message",
+          "result_code": "result_code",
+          "success": "success",
+          "value": "value"
+        },
+        "c": {
+          "message": "message",
+          "result_code": "result_code",
+          "success": "success",
+          "value": "value"
+        },
+        "cpp": {
+          "message": "message",
+          "result_code": "result_code",
+          "success": "success",
+          "value": "value"
+        },
+        "javascript": {
+          "message": "message",
+          "result_code": "result_code",
+          "success": "success",
+          "value": "value"
+        },
+        "rust": {
+          "message": "message",
+          "result_code": "result_code",
+          "success": "success",
+          "value": "value"
+        },
+        "tinygo": {
+          "message": "Message",
+          "result_code": "Result_code",
+          "success": "Success",
+          "value": "Value"
+        }
+      },
+      "motoros2_interfaces/srv/ReadSingleIO_Request": {
+        "assemblyscript": {
+          "address": "address"
+        },
+        "c": {
+          "address": "address"
+        },
+        "cpp": {
+          "address": "address"
+        },
+        "javascript": {
+          "address": "address"
+        },
+        "rust": {
+          "address": "address"
+        },
+        "tinygo": {
+          "address": "Address"
+        }
+      },
+      "motoros2_interfaces/srv/ReadSingleIO_Response": {
+        "assemblyscript": {
+          "message": "message",
+          "result_code": "result_code",
+          "success": "success",
+          "value": "value"
+        },
+        "c": {
+          "message": "message",
+          "result_code": "result_code",
+          "success": "success",
+          "value": "value"
+        },
+        "cpp": {
+          "message": "message",
+          "result_code": "result_code",
+          "success": "success",
+          "value": "value"
+        },
+        "javascript": {
+          "message": "message",
+          "result_code": "result_code",
+          "success": "success",
+          "value": "value"
+        },
+        "rust": {
+          "message": "message",
+          "result_code": "result_code",
+          "success": "success",
+          "value": "value"
+        },
+        "tinygo": {
+          "message": "Message",
+          "result_code": "Result_code",
+          "success": "Success",
+          "value": "Value"
+        }
+      },
+      "motoros2_interfaces/srv/ResetError_Request": {
+        "assemblyscript": {},
+        "c": {},
+        "cpp": {},
+        "javascript": {},
+        "rust": {},
+        "tinygo": {}
+      },
+      "motoros2_interfaces/srv/ResetError_Response": {
+        "assemblyscript": {
+          "message": "message",
+          "result_code": "result_code"
+        },
+        "c": {
+          "message": "message",
+          "result_code": "result_code"
+        },
+        "cpp": {
+          "message": "message",
+          "result_code": "result_code"
+        },
+        "javascript": {
+          "message": "message",
+          "result_code": "result_code"
+        },
+        "rust": {
+          "message": "message",
+          "result_code": "result_code"
+        },
+        "tinygo": {
+          "message": "Message",
+          "result_code": "Result_code"
+        }
+      },
+      "motoros2_interfaces/srv/SelectMotionTool_Request": {
+        "assemblyscript": {
+          "group_number": "group_number",
+          "tool_number": "tool_number"
+        },
+        "c": {
+          "group_number": "group_number",
+          "tool_number": "tool_number"
+        },
+        "cpp": {
+          "group_number": "group_number",
+          "tool_number": "tool_number"
+        },
+        "javascript": {
+          "group_number": "group_number",
+          "tool_number": "tool_number"
+        },
+        "rust": {
+          "group_number": "group_number",
+          "tool_number": "tool_number"
+        },
+        "tinygo": {
+          "group_number": "Group_number",
+          "tool_number": "Tool_number"
+        }
+      },
+      "motoros2_interfaces/srv/SelectMotionTool_Response": {
+        "assemblyscript": {
+          "message": "message",
+          "result_code": "result_code",
+          "success": "success"
+        },
+        "c": {
+          "message": "message",
+          "result_code": "result_code",
+          "success": "success"
+        },
+        "cpp": {
+          "message": "message",
+          "result_code": "result_code",
+          "success": "success"
+        },
+        "javascript": {
+          "message": "message",
+          "result_code": "result_code",
+          "success": "success"
+        },
+        "rust": {
+          "message": "message",
+          "result_code": "result_code",
+          "success": "success"
+        },
+        "tinygo": {
+          "message": "Message",
+          "result_code": "Result_code",
+          "success": "Success"
+        }
+      },
+      "motoros2_interfaces/srv/StartPointQueueMode_Request": {
+        "assemblyscript": {},
+        "c": {},
+        "cpp": {},
+        "javascript": {},
+        "rust": {},
+        "tinygo": {}
+      },
+      "motoros2_interfaces/srv/StartPointQueueMode_Response": {
+        "assemblyscript": {
+          "message": "message",
+          "result_code": "result_code"
+        },
+        "c": {
+          "message": "message",
+          "result_code": "result_code"
+        },
+        "cpp": {
+          "message": "message",
+          "result_code": "result_code"
+        },
+        "javascript": {
+          "message": "message",
+          "result_code": "result_code"
+        },
+        "rust": {
+          "message": "message",
+          "result_code": "result_code"
+        },
+        "tinygo": {
+          "message": "Message",
+          "result_code": "Result_code"
+        }
+      },
+      "motoros2_interfaces/srv/StartTrajMode_Request": {
+        "assemblyscript": {},
+        "c": {},
+        "cpp": {},
+        "javascript": {},
+        "rust": {},
+        "tinygo": {}
+      },
+      "motoros2_interfaces/srv/StartTrajMode_Response": {
+        "assemblyscript": {
+          "message": "message",
+          "result_code": "result_code"
+        },
+        "c": {
+          "message": "message",
+          "result_code": "result_code"
+        },
+        "cpp": {
+          "message": "message",
+          "result_code": "result_code"
+        },
+        "javascript": {
+          "message": "message",
+          "result_code": "result_code"
+        },
+        "rust": {
+          "message": "message",
+          "result_code": "result_code"
+        },
+        "tinygo": {
+          "message": "Message",
+          "result_code": "Result_code"
+        }
+      },
+      "motoros2_interfaces/srv/WriteGroupIO_Request": {
+        "assemblyscript": {
+          "address": "address",
+          "value": "value"
+        },
+        "c": {
+          "address": "address",
+          "value": "value"
+        },
+        "cpp": {
+          "address": "address",
+          "value": "value"
+        },
+        "javascript": {
+          "address": "address",
+          "value": "value"
+        },
+        "rust": {
+          "address": "address",
+          "value": "value"
+        },
+        "tinygo": {
+          "address": "Address",
+          "value": "Value"
+        }
+      },
+      "motoros2_interfaces/srv/WriteGroupIO_Response": {
+        "assemblyscript": {
+          "message": "message",
+          "result_code": "result_code",
+          "success": "success"
+        },
+        "c": {
+          "message": "message",
+          "result_code": "result_code",
+          "success": "success"
+        },
+        "cpp": {
+          "message": "message",
+          "result_code": "result_code",
+          "success": "success"
+        },
+        "javascript": {
+          "message": "message",
+          "result_code": "result_code",
+          "success": "success"
+        },
+        "rust": {
+          "message": "message",
+          "result_code": "result_code",
+          "success": "success"
+        },
+        "tinygo": {
+          "message": "Message",
+          "result_code": "Result_code",
+          "success": "Success"
+        }
+      },
+      "motoros2_interfaces/srv/WriteMRegister_Request": {
+        "assemblyscript": {
+          "address": "address",
+          "value": "value"
+        },
+        "c": {
+          "address": "address",
+          "value": "value"
+        },
+        "cpp": {
+          "address": "address",
+          "value": "value"
+        },
+        "javascript": {
+          "address": "address",
+          "value": "value"
+        },
+        "rust": {
+          "address": "address",
+          "value": "value"
+        },
+        "tinygo": {
+          "address": "Address",
+          "value": "Value"
+        }
+      },
+      "motoros2_interfaces/srv/WriteMRegister_Response": {
+        "assemblyscript": {
+          "message": "message",
+          "result_code": "result_code",
+          "success": "success"
+        },
+        "c": {
+          "message": "message",
+          "result_code": "result_code",
+          "success": "success"
+        },
+        "cpp": {
+          "message": "message",
+          "result_code": "result_code",
+          "success": "success"
+        },
+        "javascript": {
+          "message": "message",
+          "result_code": "result_code",
+          "success": "success"
+        },
+        "rust": {
+          "message": "message",
+          "result_code": "result_code",
+          "success": "success"
+        },
+        "tinygo": {
+          "message": "Message",
+          "result_code": "Result_code",
+          "success": "Success"
+        }
+      },
+      "motoros2_interfaces/srv/WriteSingleIO_Request": {
+        "assemblyscript": {
+          "address": "address",
+          "value": "value"
+        },
+        "c": {
+          "address": "address",
+          "value": "value"
+        },
+        "cpp": {
+          "address": "address",
+          "value": "value"
+        },
+        "javascript": {
+          "address": "address",
+          "value": "value"
+        },
+        "rust": {
+          "address": "address",
+          "value": "value"
+        },
+        "tinygo": {
+          "address": "Address",
+          "value": "Value"
+        }
+      },
+      "motoros2_interfaces/srv/WriteSingleIO_Response": {
+        "assemblyscript": {
+          "message": "message",
+          "result_code": "result_code",
+          "success": "success"
+        },
+        "c": {
+          "message": "message",
+          "result_code": "result_code",
+          "success": "success"
+        },
+        "cpp": {
+          "message": "message",
+          "result_code": "result_code",
+          "success": "success"
+        },
+        "javascript": {
+          "message": "message",
+          "result_code": "result_code",
+          "success": "success"
+        },
+        "rust": {
+          "message": "message",
+          "result_code": "result_code",
+          "success": "success"
+        },
+        "tinygo": {
+          "message": "Message",
+          "result_code": "Result_code",
+          "success": "Success"
+        }
+      },
+      "sensor_msgs/msg/JointState": {
+        "assemblyscript": {
+          "effort": "effort",
+          "header": "header",
+          "name": "name",
+          "position": "position",
+          "velocity": "velocity"
+        },
+        "c": {
+          "effort": "effort",
+          "header": "header",
+          "name": "name",
+          "position": "position",
+          "velocity": "velocity"
+        },
+        "cpp": {
+          "effort": "effort",
+          "header": "header",
+          "name": "name",
+          "position": "position",
+          "velocity": "velocity"
+        },
+        "javascript": {
+          "effort": "effort",
+          "header": "header",
+          "name": "name",
+          "position": "position",
+          "velocity": "velocity"
+        },
+        "rust": {
+          "effort": "effort",
+          "header": "header",
+          "name": "name",
+          "position": "position",
+          "velocity": "velocity"
+        },
+        "tinygo": {
+          "effort": "Effort",
+          "header": "Header",
+          "name": "Name",
+          "position": "Position",
+          "velocity": "Velocity"
+        }
+      },
+      "std_msgs/msg/Header": {
+        "assemblyscript": {
+          "frame_id": "frame_id",
+          "stamp": "stamp"
+        },
+        "c": {
+          "frame_id": "frame_id",
+          "stamp": "stamp"
+        },
+        "cpp": {
+          "frame_id": "frame_id",
+          "stamp": "stamp"
+        },
+        "javascript": {
+          "frame_id": "frame_id",
+          "stamp": "stamp"
+        },
+        "rust": {
+          "frame_id": "frame_id",
+          "stamp": "stamp"
+        },
+        "tinygo": {
+          "frame_id": "Frame_id",
+          "stamp": "Stamp"
+        }
+      },
+      "std_srvs/srv/Trigger_Request": {
+        "assemblyscript": {},
+        "c": {},
+        "cpp": {},
+        "javascript": {},
+        "rust": {},
+        "tinygo": {}
+      },
+      "std_srvs/srv/Trigger_Response": {
+        "assemblyscript": {
+          "message": "message",
+          "success": "success"
+        },
+        "c": {
+          "message": "message",
+          "success": "success"
+        },
+        "cpp": {
+          "message": "message",
+          "success": "success"
+        },
+        "javascript": {
+          "message": "message",
+          "success": "success"
+        },
+        "rust": {
+          "message": "message",
+          "success": "success"
+        },
+        "tinygo": {
+          "message": "Message",
+          "success": "Success"
+        }
+      },
+      "tf2_msgs/msg/TFMessage": {
+        "assemblyscript": {
+          "transforms": "transforms"
+        },
+        "c": {
+          "transforms": "transforms"
+        },
+        "cpp": {
+          "transforms": "transforms"
+        },
+        "javascript": {
+          "transforms": "transforms"
+        },
+        "rust": {
+          "transforms": "transforms"
+        },
+        "tinygo": {
+          "transforms": "Transforms"
+        }
+      },
+      "trajectory_msgs/msg/JointTrajectory": {
+        "assemblyscript": {
+          "header": "header",
+          "joint_names": "joint_names",
+          "points": "points"
+        },
+        "c": {
+          "header": "header",
+          "joint_names": "joint_names",
+          "points": "points"
+        },
+        "cpp": {
+          "header": "header",
+          "joint_names": "joint_names",
+          "points": "points"
+        },
+        "javascript": {
+          "header": "header",
+          "joint_names": "joint_names",
+          "points": "points"
+        },
+        "rust": {
+          "header": "header",
+          "joint_names": "joint_names",
+          "points": "points"
+        },
+        "tinygo": {
+          "header": "Header",
+          "joint_names": "Joint_names",
+          "points": "Points"
+        }
+      },
+      "trajectory_msgs/msg/JointTrajectoryPoint": {
+        "assemblyscript": {
+          "accelerations": "accelerations",
+          "effort": "effort",
+          "positions": "positions",
+          "time_from_start": "time_from_start",
+          "velocities": "velocities"
+        },
+        "c": {
+          "accelerations": "accelerations",
+          "effort": "effort",
+          "positions": "positions",
+          "time_from_start": "time_from_start",
+          "velocities": "velocities"
+        },
+        "cpp": {
+          "accelerations": "accelerations",
+          "effort": "effort",
+          "positions": "positions",
+          "time_from_start": "time_from_start",
+          "velocities": "velocities"
+        },
+        "javascript": {
+          "accelerations": "accelerations",
+          "effort": "effort",
+          "positions": "positions",
+          "time_from_start": "time_from_start",
+          "velocities": "velocities"
+        },
+        "rust": {
+          "accelerations": "accelerations",
+          "effort": "effort",
+          "positions": "positions",
+          "time_from_start": "time_from_start",
+          "velocities": "velocities"
+        },
+        "tinygo": {
+          "accelerations": "Accelerations",
+          "effort": "Effort",
+          "positions": "Positions",
+          "time_from_start": "Time_from_start",
+          "velocities": "Velocities"
+        }
+      },
+      "trajectory_msgs/msg/MultiDOFJointTrajectory": {
+        "assemblyscript": {
+          "header": "header",
+          "joint_names": "joint_names",
+          "points": "points"
+        },
+        "c": {
+          "header": "header",
+          "joint_names": "joint_names",
+          "points": "points"
+        },
+        "cpp": {
+          "header": "header",
+          "joint_names": "joint_names",
+          "points": "points"
+        },
+        "javascript": {
+          "header": "header",
+          "joint_names": "joint_names",
+          "points": "points"
+        },
+        "rust": {
+          "header": "header",
+          "joint_names": "joint_names",
+          "points": "points"
+        },
+        "tinygo": {
+          "header": "Header",
+          "joint_names": "Joint_names",
+          "points": "Points"
+        }
+      },
+      "trajectory_msgs/msg/MultiDOFJointTrajectoryPoint": {
+        "assemblyscript": {
+          "accelerations": "accelerations",
+          "time_from_start": "time_from_start",
+          "transforms": "transforms",
+          "velocities": "velocities"
+        },
+        "c": {
+          "accelerations": "accelerations",
+          "time_from_start": "time_from_start",
+          "transforms": "transforms",
+          "velocities": "velocities"
+        },
+        "cpp": {
+          "accelerations": "accelerations",
+          "time_from_start": "time_from_start",
+          "transforms": "transforms",
+          "velocities": "velocities"
+        },
+        "javascript": {
+          "accelerations": "accelerations",
+          "time_from_start": "time_from_start",
+          "transforms": "transforms",
+          "velocities": "velocities"
+        },
+        "rust": {
+          "accelerations": "accelerations",
+          "time_from_start": "time_from_start",
+          "transforms": "transforms",
+          "velocities": "velocities"
+        },
+        "tinygo": {
+          "accelerations": "Accelerations",
+          "time_from_start": "Time_from_start",
+          "transforms": "Transforms",
+          "velocities": "Velocities"
+        }
+      }
+    },
+    "native_execution": "NOT_RUN",
+    "native_exporter_helper_source": {
+      "bytes": 10784,
+      "sha256": "55c5e504a1d61a648f73dd732aa0561f4b4dc0adf54dbe631857edf1564f3ac6"
+    },
+    "native_registry_emitted": false,
+    "outputs": {
+      "bounded_interfaces.go": {
+        "bytes": 141893,
+        "sha256": "7d187395bb4067ded2cdbe4da3a4f97751996215b7caeba9d7faccf49920efc8"
+      },
+      "bounded_interfaces.h": {
+        "bytes": 61547,
+        "sha256": "eaaa73e3d9a3d87fef89580229a00397c81e55c9938e2004aa1da4c7088d4403"
+      },
+      "bounded_interfaces.hpp": {
+        "bytes": 84215,
+        "sha256": "fd14f34993a25ff4d0118b57345dd38db7d451f08a1075714d10de2312488718"
+      },
+      "bounded_interfaces.mjs": {
+        "bytes": 34853,
+        "sha256": "f102aa4b640295c04654a95b611772472a41888135f66b7c069cc283ae4b0372"
+      },
+      "bounded_interfaces.rs": {
+        "bytes": 35461,
+        "sha256": "edafa11c86d5b483db5431ce87b3aad12e3c06cea422811c9431ab8fc3f23897"
+      },
+      "bounded_interfaces.ts": {
+        "bytes": 45983,
+        "sha256": "98d7bd0ea3c6a8fd1c4976149a0d2347ab0064ce611f1cf540b94d132c817d75"
+      },
+      "bounded_records.go": {
+        "bytes": 264543,
+        "sha256": "036c8a69a838bf67e3116408c0d0c7b36d90062c53edf784f21d3ce62b47de49"
+      },
+      "bounded_records.h": {
+        "bytes": 429249,
+        "sha256": "bb33408d16921444c837a911d8bdff7e160e8cf50e8dca86e0a66b41c0a69e62"
+      },
+      "bounded_records.hpp": {
+        "bytes": 97877,
+        "sha256": "b284096d47fab4e4fe8406365da4a99ff81ba79c2f7f90caa10ca32342f9b5f8"
+      },
+      "bounded_records.mjs": {
+        "bytes": 188569,
+        "sha256": "4bbf9e708d21fa781742a0c68e7e1705e7dbbaf064932e42ce7f5831ed05ab8e"
+      },
+      "bounded_records.rs": {
+        "bytes": 214149,
+        "sha256": "cdb74f8d79c88eb6be70d133afe64eeef2236dee2d50187392783ad7725fe149"
+      },
+      "bounded_records.ts": {
+        "bytes": 256950,
+        "sha256": "aa068c6a35454a5f37d9e247e97c5e9b5e61ae3c4a0ca3ea3159f68d35e5cd26"
+      },
+      "native_constants.hpp": {
+        "bytes": 26510,
+        "sha256": "6afd19e01e59dd7da50098444f566b71b2f8a6836bd44efa1712f45dbec4208a"
+      },
+      "native_identity.cc": {
+        "bytes": 52016,
+        "sha256": "482aa7f1547dd90ef98400ec1456265eba42964414a0d3d2b7243cbd28b55cba"
+      }
+    },
+    "records": [
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 8,
+        "codec_identity": "UWVMROS1_3804444fae7a82a57907d25c2c3dc54d9a42dcd305f41ca073b1221dca7d36e4",
+        "expanded_nodes": 3,
+        "maximum_wire_bytes": 8,
+        "minimum_wire_bytes": 8,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "builtin_interfaces/msg/Duration"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 8,
+        "codec_identity": "UWVMROS1_0fd520c23fd8cb06e2c27292fdc20694732fa9332d452fc3fa31da90f7605fb7",
+        "expanded_nodes": 3,
+        "maximum_wire_bytes": 8,
+        "minimum_wire_bytes": 8,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "builtin_interfaces/msg/Time"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 76,
+        "codec_identity": "UWVMROS1_afba9e74be3c5e3321750c1c4c30ba2925269f75b9da43a6d5c1e93d293d7396",
+        "expanded_nodes": 5,
+        "maximum_wire_bytes": 76,
+        "minimum_wire_bytes": 12,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "std_msgs/msg/Header"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 408,
+        "codec_identity": "UWVMROS1_4d55f494f060a9a3ff23bedd54da49f9e70e6b77acbdf911878afbf672cbadc5",
+        "expanded_nodes": 56,
+        "maximum_wire_bytes": 408,
+        "minimum_wire_bytes": 24,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "trajectory_msgs/msg/JointTrajectoryPoint"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 4164,
+        "codec_identity": "UWVMROS1_d74956440763bd09c76ec623efeb322aa89be8ef6410b9125d4e2cb1aeeb69c0",
+        "expanded_nodes": 468,
+        "maximum_wire_bytes": 4164,
+        "minimum_wire_bytes": 20,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "trajectory_msgs/msg/JointTrajectory"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 24,
+        "codec_identity": "UWVMROS1_5adebf211fe375fba92c0628f9b8ebf05bff9ab22ddc4bbf00629167af295d5e",
+        "expanded_nodes": 4,
+        "maximum_wire_bytes": 24,
+        "minimum_wire_bytes": 24,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "geometry_msgs/msg/Vector3"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 32,
+        "codec_identity": "UWVMROS1_34a32c3470cbfe2ff12340781a5bf22f6c370a8f5c06669f25a34321ade81672",
+        "expanded_nodes": 5,
+        "maximum_wire_bytes": 32,
+        "minimum_wire_bytes": 32,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "geometry_msgs/msg/Quaternion"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 56,
+        "codec_identity": "UWVMROS1_7ddcb1c3fca43f4a0299d43fb6fac1b77a8f26001af809dc13307f4f9c61d65b",
+        "expanded_nodes": 10,
+        "maximum_wire_bytes": 56,
+        "minimum_wire_bytes": 56,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "geometry_msgs/msg/Transform"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 48,
+        "codec_identity": "UWVMROS1_1a6c18d19bb6853a2cff3b775974ba31f8e3674c1bbe566444ccabf0ef9d117e",
+        "expanded_nodes": 9,
+        "maximum_wire_bytes": 48,
+        "minimum_wire_bytes": 48,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "geometry_msgs/msg/Twist"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 324,
+        "codec_identity": "UWVMROS1_6590b7ca1cdaa89da04b7a661266e2d4c6e3e2668dc90505a7c24d7be8a43242",
+        "expanded_nodes": 63,
+        "maximum_wire_bytes": 324,
+        "minimum_wire_bytes": 20,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "trajectory_msgs/msg/MultiDOFJointTrajectoryPoint"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 1516,
+        "codec_identity": "UWVMROS1_6ea66f146cdce31369361e521be484d2c39bca818cc4b2069e1209d250ec2401",
+        "expanded_nodes": 262,
+        "maximum_wire_bytes": 1516,
+        "minimum_wire_bytes": 20,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "trajectory_msgs/msg/MultiDOFJointTrajectory"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 92,
+        "codec_identity": "UWVMROS1_ad7701ac1cb0dd68a947577272964b0d6051d1846019de97e9c9d0f7be7b2fa2",
+        "expanded_nodes": 5,
+        "maximum_wire_bytes": 92,
+        "minimum_wire_bytes": 28,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "control_msgs/msg/JointTolerance"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 542,
+        "codec_identity": "UWVMROS1_658f3d3f180b301e5c612188390187ec4034064976f133018048bb1fdec55342",
+        "expanded_nodes": 6,
+        "maximum_wire_bytes": 542,
+        "minimum_wire_bytes": 30,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "control_msgs/msg/JointComponentTolerance"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 20920,
+        "codec_identity": "UWVMROS1_8945d5b29832f1190b0a4f8c4af4e82686c4b913413affe9c0945570b4fb1f16",
+        "expanded_nodes": 1002,
+        "maximum_wire_bytes": 20920,
+        "minimum_wire_bytes": 64,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "control_msgs/action/FollowJointTrajectory_Goal"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 4104,
+        "codec_identity": "UWVMROS1_c698e3a3a772735ff6027b04af28e9bc88d6b7138863ce5737aa090f543dac70",
+        "expanded_nodes": 3,
+        "maximum_wire_bytes": 4104,
+        "minimum_wire_bytes": 8,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "control_msgs/action/FollowJointTrajectory_Result"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 4128,
+        "codec_identity": "UWVMROS1_68f3809217bd914cd971e1365ca825111c1394b2587c6989736adcaa8a40a7cb",
+        "expanded_nodes": 379,
+        "maximum_wire_bytes": 4128,
+        "minimum_wire_bytes": 152,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "control_msgs/action/FollowJointTrajectory_Feedback"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 648,
+        "codec_identity": "UWVMROS1_be553b5a9c73b687cde56ff1c381e3c67168fd2c0366830be3c65382c5bbd792",
+        "expanded_nodes": 17,
+        "maximum_wire_bytes": 648,
+        "minimum_wire_bytes": 72,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "geometry_msgs/msg/TransformStamped"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 1,
+        "codec_identity": "UWVMROS1_989475cc5d981d8c5ab91fb091235871f7a1c7d87d246eb2250086e6c3c37c79",
+        "expanded_nodes": 2,
+        "maximum_wire_bytes": 1,
+        "minimum_wire_bytes": 1,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "industrial_msgs/msg/DebugLevel"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 2580,
+        "codec_identity": "UWVMROS1_f9a5962800e17495f34dbb73f37373df22f900e528c630497417f78cdecb283b",
+        "expanded_nodes": 6,
+        "maximum_wire_bytes": 2580,
+        "minimum_wire_bytes": 20,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "industrial_msgs/msg/DeviceInfo"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 1,
+        "codec_identity": "UWVMROS1_4f9173c5e27815ca33be603b8645a22420bda3ab308962127060d2413d092c4c",
+        "expanded_nodes": 2,
+        "maximum_wire_bytes": 1,
+        "minimum_wire_bytes": 1,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "industrial_msgs/msg/RobotMode"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 1,
+        "codec_identity": "UWVMROS1_b7ae62ce19d642ad46e962ffb50cd76c43c96ac673ac36d690f99c1dd8d2a841",
+        "expanded_nodes": 2,
+        "maximum_wire_bytes": 1,
+        "minimum_wire_bytes": 1,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "industrial_msgs/msg/TriState"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 150,
+        "codec_identity": "UWVMROS1_1086f16ba5d614f3d87c3ab195240b5a0683ef490f2e92434e4ea3bdbe7554ba",
+        "expanded_nodes": 35,
+        "maximum_wire_bytes": 150,
+        "minimum_wire_bytes": 22,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "industrial_msgs/msg/RobotStatus"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 1,
+        "codec_identity": "UWVMROS1_62eb4415a63d7686f16ea343193238838c78aa8e9b9786a65c92fb227e03d3e5",
+        "expanded_nodes": 2,
+        "maximum_wire_bytes": 1,
+        "minimum_wire_bytes": 1,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "industrial_msgs/msg/ServiceReturnCode"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 4164,
+        "codec_identity": "UWVMROS1_1def3934b243546a4591b7be1ef2eb27002fbd9d3725302016e3b1846805149d",
+        "expanded_nodes": 469,
+        "maximum_wire_bytes": 4164,
+        "minimum_wire_bytes": 20,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "industrial_msgs/srv/CmdJointTrajectory_Request"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 1,
+        "codec_identity": "UWVMROS1_1e4d064ef659e5d1cc73bdd90f82657a16087c96e0f75b632e2be2be884bca8b",
+        "expanded_nodes": 3,
+        "maximum_wire_bytes": 1,
+        "minimum_wire_bytes": 1,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "industrial_msgs/srv/CmdJointTrajectory_Response"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 0,
+        "codec_identity": "UWVMROS1_688a272f6ee39921013c6c39a7b0b0c4e2cda5119787088234103518ba25c1d2",
+        "expanded_nodes": 1,
+        "maximum_wire_bytes": 0,
+        "minimum_wire_bytes": 0,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "industrial_msgs/srv/GetRobotInfo_Request"
+      },
+      {
+        "aggregate_wire_bytes": 32768,
+        "cartesian_maximum_wire_bytes": 43865,
+        "codec_identity": "UWVMROS1_6d37cdcd8afc918329d7856e682d7fcdae2931832474a9194143c21079ed4152",
+        "expanded_nodes": 106,
+        "maximum_wire_bytes": 32768,
+        "minimum_wire_bytes": 25,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "industrial_msgs/srv/GetRobotInfo_Response"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 1,
+        "codec_identity": "UWVMROS1_b4fc5e109e131a97820ab5856b34839c572ac0b0c256d70457c176e401844f96",
+        "expanded_nodes": 2,
+        "maximum_wire_bytes": 1,
+        "minimum_wire_bytes": 1,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "industrial_msgs/srv/SetDrivePower_Request"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 1,
+        "codec_identity": "UWVMROS1_050fb9a727ebedd240e9023b9a2379a5d72e0d9fa335bead0c40d783abb22cff",
+        "expanded_nodes": 3,
+        "maximum_wire_bytes": 1,
+        "minimum_wire_bytes": 1,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "industrial_msgs/srv/SetDrivePower_Response"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 1,
+        "codec_identity": "UWVMROS1_bbadd39c05cab90b14f4b1fad23ff05ac83325f6cc57810cd649e04fa29fe014",
+        "expanded_nodes": 3,
+        "maximum_wire_bytes": 1,
+        "minimum_wire_bytes": 1,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "industrial_msgs/srv/SetRemoteLoggerLevel_Request"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 1,
+        "codec_identity": "UWVMROS1_b8681d031a4bb5a67b842277af2e2156e8339bdef23be88d2b64e296a7e3d63b",
+        "expanded_nodes": 3,
+        "maximum_wire_bytes": 1,
+        "minimum_wire_bytes": 1,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "industrial_msgs/srv/SetRemoteLoggerLevel_Response"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 0,
+        "codec_identity": "UWVMROS1_0a96fb9489f863612a91bf82f995f2f28bcb7fb403bde74c617925c789e4dcd8",
+        "expanded_nodes": 1,
+        "maximum_wire_bytes": 0,
+        "minimum_wire_bytes": 0,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "industrial_msgs/srv/StartMotion_Request"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 1,
+        "codec_identity": "UWVMROS1_3bb3650fbe638a6d300bcd9fcd5acf574bd54d00a7368edd3014bf44dcf66c16",
+        "expanded_nodes": 3,
+        "maximum_wire_bytes": 1,
+        "minimum_wire_bytes": 1,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "industrial_msgs/srv/StartMotion_Response"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 0,
+        "codec_identity": "UWVMROS1_fe5a7cf0da30270eab5cfb1ab8c1fbd37d2b4c4f91ef29662a0ddcac39e6ef49",
+        "expanded_nodes": 1,
+        "maximum_wire_bytes": 0,
+        "minimum_wire_bytes": 0,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "industrial_msgs/srv/StopMotion_Request"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 1,
+        "codec_identity": "UWVMROS1_c26bda240d86becc5b8b4ea80380eba3602092a5ec4a06818dbfbd38c24015b5",
+        "expanded_nodes": 3,
+        "maximum_wire_bytes": 1,
+        "minimum_wire_bytes": 1,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "industrial_msgs/srv/StopMotion_Response"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 1032,
+        "codec_identity": "UWVMROS1_f977609022f4ca593b9089d0038d1c28d1bc4b533e272f38c3379495f326ddf5",
+        "expanded_nodes": 3,
+        "maximum_wire_bytes": 1032,
+        "minimum_wire_bytes": 8,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/msg/AlarmCauseRemedy"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 25248,
+        "codec_identity": "UWVMROS1_7cf3fa3037f28f295dd62009e708ea3e46a80f83471d0a0f9fb55af125c0c27f",
+        "expanded_nodes": 58,
+        "maximum_wire_bytes": 25248,
+        "minimum_wire_bytes": 32,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/msg/AlarmInfo"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 532,
+        "codec_identity": "UWVMROS1_1cfe60c0af6bc157db84c4d9e0b20a8f2e5c78fd4afd6908d32b3217f3734b67",
+        "expanded_nodes": 7,
+        "maximum_wire_bytes": 532,
+        "minimum_wire_bytes": 20,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/msg/ErrorInfo"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 0,
+        "codec_identity": "UWVMROS1_f5ed037b83926b48a88fa486ed8db5f5d3e39e4a486d4a90190ffd6a70452613",
+        "expanded_nodes": 1,
+        "maximum_wire_bytes": 0,
+        "minimum_wire_bytes": 0,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/msg/InformJobCrudResultCodes"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 2,
+        "codec_identity": "UWVMROS1_9279979f9e3570f48d6e23bf812a4680e3deed9af3309019efdff5464d7b7763",
+        "expanded_nodes": 2,
+        "maximum_wire_bytes": 2,
+        "minimum_wire_bytes": 2,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/msg/InitTrajEnum"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 0,
+        "codec_identity": "UWVMROS1_ef9ab829ae79d4e58336a56259b6beb2ad26a8b1b4070013d9004ac4ab269915",
+        "expanded_nodes": 1,
+        "maximum_wire_bytes": 0,
+        "minimum_wire_bytes": 0,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/msg/IoResultCodes"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 2,
+        "codec_identity": "UWVMROS1_c8d4c2b0eba665e01cddc730421a3a42c5b344f4de35ae0a32204891603326d6",
+        "expanded_nodes": 2,
+        "maximum_wire_bytes": 2,
+        "minimum_wire_bytes": 2,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/msg/MotionReadyEnum"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 2,
+        "codec_identity": "UWVMROS1_146c6ce3f275b9e4a81622d73cca3d2298cf9f7bb95a783c0dea6279cb5b4f23",
+        "expanded_nodes": 2,
+        "maximum_wire_bytes": 2,
+        "minimum_wire_bytes": 2,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/msg/QueueResultEnum"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 4,
+        "codec_identity": "UWVMROS1_46168b1f851163985e75842d9d795c5715160864a7736e7f92f95818c9435602",
+        "expanded_nodes": 2,
+        "maximum_wire_bytes": 4,
+        "minimum_wire_bytes": 4,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/msg/SelectionResultCodes"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 0,
+        "codec_identity": "UWVMROS1_aadcd63f3bc47424c38767afdc1589561e3c90e8aeae9bdceef88b1033d57a7e",
+        "expanded_nodes": 1,
+        "maximum_wire_bytes": 0,
+        "minimum_wire_bytes": 0,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/GetActiveAlarmInfo_Request"
+      },
+      {
+        "aggregate_wire_bytes": 32768,
+        "cartesian_maximum_wire_bytes": 413008,
+        "codec_identity": "UWVMROS1_e11bdbb95b6ded88d035696260c58dad32bcf3604aa4e89dd41c0dab26541567",
+        "expanded_nodes": 1045,
+        "maximum_wire_bytes": 32768,
+        "minimum_wire_bytes": 16,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/GetActiveAlarmInfo_Response"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 0,
+        "codec_identity": "UWVMROS1_e77eedadef98d98321b1757b88284022afcdb1ffef52b98820b0c4ba596d643c",
+        "expanded_nodes": 1,
+        "maximum_wire_bytes": 0,
+        "minimum_wire_bytes": 0,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/ListInformJobs_Request"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 8780,
+        "codec_identity": "UWVMROS1_49021f0abc00f8df1ef49605a244cb6bba8d8b45ece5365ae35d747d2506eadc",
+        "expanded_nodes": 20,
+        "maximum_wire_bytes": 8780,
+        "minimum_wire_bytes": 12,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/ListInformJobs_Response"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 1228,
+        "codec_identity": "UWVMROS1_3d37f9981d6abaca33ec0b5378fa3a1ac301791cc9be94d5bdcf4ea6aa81b8d0",
+        "expanded_nodes": 70,
+        "maximum_wire_bytes": 1228,
+        "minimum_wire_bytes": 28,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/QueueTrajPoint_Request"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 518,
+        "codec_identity": "UWVMROS1_d4887ed24d39332a5ccfd4a3d072004dd8f314fe5c166bf0bd57520a826cbccd",
+        "expanded_nodes": 4,
+        "maximum_wire_bytes": 518,
+        "minimum_wire_bytes": 6,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/QueueTrajPoint_Response"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 4,
+        "codec_identity": "UWVMROS1_6ee09ac379e169fc23b81a551e9a9ed21c3f82b5010859984e911b17152beb7f",
+        "expanded_nodes": 2,
+        "maximum_wire_bytes": 4,
+        "minimum_wire_bytes": 4,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/ReadGroupIO_Request"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 522,
+        "codec_identity": "UWVMROS1_292fcf6e8c46a2509ee4cc5238d443157f37fed0de898367248b967e9001ea0d",
+        "expanded_nodes": 5,
+        "maximum_wire_bytes": 522,
+        "minimum_wire_bytes": 10,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/ReadGroupIO_Response"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 4,
+        "codec_identity": "UWVMROS1_f31f0983466054f5ac5dcb2ab80ab7721d606a681b833ebb376cc87f96054f6f",
+        "expanded_nodes": 2,
+        "maximum_wire_bytes": 4,
+        "minimum_wire_bytes": 4,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/ReadMRegister_Request"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 523,
+        "codec_identity": "UWVMROS1_8d6ded2876adfa2079711205cb0110a82ead6f51db05f266bf285308cd815a04",
+        "expanded_nodes": 5,
+        "maximum_wire_bytes": 523,
+        "minimum_wire_bytes": 11,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/ReadMRegister_Response"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 4,
+        "codec_identity": "UWVMROS1_30e28db303b772f26b2b3cf6165a0ff79037d037d60e8115b4ee8e177f17e8bb",
+        "expanded_nodes": 2,
+        "maximum_wire_bytes": 4,
+        "minimum_wire_bytes": 4,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/ReadSingleIO_Request"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 525,
+        "codec_identity": "UWVMROS1_b42013571274e85769ffac4d47129de8b76e4a675bdef3efefebc9ee19e92082",
+        "expanded_nodes": 5,
+        "maximum_wire_bytes": 525,
+        "minimum_wire_bytes": 13,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/ReadSingleIO_Response"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 0,
+        "codec_identity": "UWVMROS1_2737855d0608478946e2d9ab7f06c92585199c1082ec8406a012f50ad56beae3",
+        "expanded_nodes": 1,
+        "maximum_wire_bytes": 0,
+        "minimum_wire_bytes": 0,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/ResetError_Request"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 518,
+        "codec_identity": "UWVMROS1_0af14ee02c157ecc39b143225a580e475473306389ccc3ba198cf22ca47d82f3",
+        "expanded_nodes": 4,
+        "maximum_wire_bytes": 518,
+        "minimum_wire_bytes": 6,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/ResetError_Response"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 8,
+        "codec_identity": "UWVMROS1_e6c884ae0a97337c1e441efe099b7869dc95205fcbca0a8082d4d9b06f5b438c",
+        "expanded_nodes": 3,
+        "maximum_wire_bytes": 8,
+        "minimum_wire_bytes": 8,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/SelectMotionTool_Request"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 521,
+        "codec_identity": "UWVMROS1_088349a49c14c52282c25b428628462c48618c3b5202df560dcc5c9bed742640",
+        "expanded_nodes": 5,
+        "maximum_wire_bytes": 521,
+        "minimum_wire_bytes": 9,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/SelectMotionTool_Response"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 0,
+        "codec_identity": "UWVMROS1_58a4827fc6535ef0ffc64ee25c5c4af75aa0fe199fa0350a88a95d2e991164a1",
+        "expanded_nodes": 1,
+        "maximum_wire_bytes": 0,
+        "minimum_wire_bytes": 0,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/StartPointQueueMode_Request"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 518,
+        "codec_identity": "UWVMROS1_bc553d5640e1c4644a5d5bdc2dfcefc9dbe789ef1e2a23dd620f08963467b6ff",
+        "expanded_nodes": 4,
+        "maximum_wire_bytes": 518,
+        "minimum_wire_bytes": 6,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/StartPointQueueMode_Response"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 0,
+        "codec_identity": "UWVMROS1_0b8b2ad5db5901047035e1070b675618afc516a1ae8c3308cfdcad1174d34789",
+        "expanded_nodes": 1,
+        "maximum_wire_bytes": 0,
+        "minimum_wire_bytes": 0,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/StartTrajMode_Request"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 518,
+        "codec_identity": "UWVMROS1_170e25737e6a2b06f5d5d9f331d748c97cf0306284271757953a4a801c722939",
+        "expanded_nodes": 4,
+        "maximum_wire_bytes": 518,
+        "minimum_wire_bytes": 6,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/StartTrajMode_Response"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 5,
+        "codec_identity": "UWVMROS1_2d348ed71408a0dd1dd28ee2ed2ca1db56bb07a14546d0fe13ccf64e8553d52c",
+        "expanded_nodes": 3,
+        "maximum_wire_bytes": 5,
+        "minimum_wire_bytes": 5,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/WriteGroupIO_Request"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 521,
+        "codec_identity": "UWVMROS1_06769934711b27fd32cdcbf849504e160189ee82ea32e0e71a2903af47c5d766",
+        "expanded_nodes": 4,
+        "maximum_wire_bytes": 521,
+        "minimum_wire_bytes": 9,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/WriteGroupIO_Response"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 6,
+        "codec_identity": "UWVMROS1_8df4536be27f0632052725d5616fd5b047f49fc306fc7735854d9de4fb15d4ef",
+        "expanded_nodes": 3,
+        "maximum_wire_bytes": 6,
+        "minimum_wire_bytes": 6,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/WriteMRegister_Request"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 521,
+        "codec_identity": "UWVMROS1_a61cc0596a7545ef4836bdc64dc9d6b4ed99b0abd18a726eb37e6215f51c729a",
+        "expanded_nodes": 4,
+        "maximum_wire_bytes": 521,
+        "minimum_wire_bytes": 9,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/WriteMRegister_Response"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 8,
+        "codec_identity": "UWVMROS1_6361affcd8b7ebaaa1fe6b5806e64a7c18f7a96a1178614cfce487de813a6392",
+        "expanded_nodes": 3,
+        "maximum_wire_bytes": 8,
+        "minimum_wire_bytes": 8,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/WriteSingleIO_Request"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 521,
+        "codec_identity": "UWVMROS1_12328db372a572fe9b0c7207331a7971d5d7c9033376e3be410db579b85fb794",
+        "expanded_nodes": 4,
+        "maximum_wire_bytes": 521,
+        "minimum_wire_bytes": 9,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/WriteSingleIO_Response"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 1196,
+        "codec_identity": "UWVMROS1_88d44f7bdb40f8c45539a041a25903609561fa74db90b9972e1369ebbff6c884",
+        "expanded_nodes": 58,
+        "maximum_wire_bytes": 1196,
+        "minimum_wire_bytes": 28,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "sensor_msgs/msg/JointState"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 0,
+        "codec_identity": "UWVMROS1_f1d8ad4ab7cf476cada6301f71ae24e046c244ba62bb6735183efe8e8c530a77",
+        "expanded_nodes": 1,
+        "maximum_wire_bytes": 0,
+        "minimum_wire_bytes": 0,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "std_srvs/srv/Trigger_Request"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 517,
+        "codec_identity": "UWVMROS1_95fe65bd59112bb00093f66c6853844b01ccea8e6ded47e73038718aa886f39d",
+        "expanded_nodes": 3,
+        "maximum_wire_bytes": 517,
+        "minimum_wire_bytes": 5,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "std_srvs/srv/Trigger_Response"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 10372,
+        "codec_identity": "UWVMROS1_4428597a9c2783fd8f0f083a16e8fd1b3d286487f4800c55fcc5571e7f79e65a",
+        "expanded_nodes": 274,
+        "maximum_wire_bytes": 10372,
+        "minimum_wire_bytes": 4,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "tf2_msgs/msg/TFMessage"
+      }
+    ],
+    "required_native_domain_provider": "paired complete_vendor descriptor/Native trait/source-metadata admission; requires actual Root implementation and full rebuild; old refusal is preserved",
+    "source_generator_pair": {
+      "bounded": {
+        "bytes": 239137,
+        "sha256": "3c40ed90910bde0ec15ae8976b0e34c37061c2eeacc121259604e7eaeba89f2d"
+      },
+      "industrial_adapter": {
+        "bytes": 73639,
+        "sha256": "e830acc0c4a1cb243cb50f28cbabb71299dcc692ecd9a0b42dd725f4a4f361b3"
+      },
+      "parent": {
+        "bytes": 61312,
+        "sha256": "1a73d6a87624e563bbb6be2624e77b51d7dba0f0f2fb524cda4079f493381826"
+      }
+    },
+    "source_inputs": {
+      "catalog": {
+        "bytes": 14154,
+        "sha256": "76040491b7d3b047bc98157cdf4a8e4a03819d71fb9bfd9cbc5bd1f0ffa72a03"
+      },
+      "definitions": [
+        {
+          "bytes": 498,
+          "file": "builtin_interfaces/msg/Duration.msg",
+          "sha256": "57da13a4201e7d258a2931323145b953e47e46967494e62ba66c2faca4fbade2"
+        },
+        {
+          "bytes": 421,
+          "file": "builtin_interfaces/msg/Time.msg",
+          "sha256": "dc5a01ddde3aecffee21eb24974fe77cc969f873218a2b1811aa0ac8a456b8bd"
+        },
+        {
+          "bytes": 2551,
+          "file": "control_msgs/action/FollowJointTrajectory.action",
+          "sha256": "31a124428ee490da22c15cc70a9ac2c89d07bbbba7d3bf370ca7596b229cb9f0"
+        },
+        {
+          "bytes": 1161,
+          "file": "control_msgs/msg/JointComponentTolerance.msg",
+          "sha256": "6b09271d0f74e0a3a701f3ddb997b0ad4a588bdd9ab7d7899ddc70063ba924dd"
+        },
+        {
+          "bytes": 724,
+          "file": "control_msgs/msg/JointTolerance.msg",
+          "sha256": "8208718f17c1b1feb9418c3ed7ca73d029566cbf298ecda819c9e0b78cb379d3"
+        },
+        {
+          "bytes": 116,
+          "file": "geometry_msgs/msg/Quaternion.msg",
+          "sha256": "298495eb67a139642ffd37cc9029eae085e6c39a8789828b7517868a487939ed"
+        },
+        {
+          "bytes": 118,
+          "file": "geometry_msgs/msg/Transform.msg",
+          "sha256": "c8916279f0a429dd9561158bd2133bc4e2d780277c3c594116b240a27e7a2993"
+        },
+        {
+          "bytes": 748,
+          "file": "geometry_msgs/msg/TransformStamped.msg",
+          "sha256": "f6e137c205e9187ac1dafdfbace7435de58bb3779a55e9c6b52c2cb513785c42"
+        },
+        {
+          "bytes": 116,
+          "file": "geometry_msgs/msg/Twist.msg",
+          "sha256": "ed471ef861f65af991b1f64d66ef941dd41dd4c0702f6222512b1a16c62d58b0"
+        },
+        {
+          "bytes": 251,
+          "file": "geometry_msgs/msg/Vector3.msg",
+          "sha256": "d8b9ea9aad1f424faf4d2b94dae1e1368af1e5d59de11aeed019399cff7f9e1d"
+        },
+        {
+          "bytes": 267,
+          "file": "industrial_msgs/msg/DebugLevel.msg",
+          "sha256": "b578049ef18456b8b5a9474fdd1285ceb5a20667c48cc2f433eb4aaba53a343a"
+        },
+        {
+          "bytes": 445,
+          "file": "industrial_msgs/msg/DeviceInfo.msg",
+          "sha256": "1d2b39c295e3a3909e74a076823cf935fa3c92c6fa153aefbbcac272b26bbb51"
+        },
+        {
+          "bytes": 333,
+          "file": "industrial_msgs/msg/RobotMode.msg",
+          "sha256": "3bf60f0bcad9b250fe68c5fbd65f0a9671788c0c9c33f4f5c2e028a3213d0bee"
+        },
+        {
+          "bytes": 1352,
+          "file": "industrial_msgs/msg/RobotStatus.msg",
+          "sha256": "0389afd8460bf5fca47744e1bfc41bf2d62c889870025a257dd46ab76e1b1945"
+        },
+        {
+          "bytes": 259,
+          "file": "industrial_msgs/msg/ServiceReturnCode.msg",
+          "sha256": "8f6de01d824b4c9c64103680cebf91b134ae4c17f006ba55e547fe68fc9a52a9"
+        },
+        {
+          "bytes": 330,
+          "file": "industrial_msgs/msg/TriState.msg",
+          "sha256": "2f663b2c98d7e01b68d41beed26dd39a1adf8fa71ca9888702cee4e643efeee9"
+        },
+        {
+          "bytes": 397,
+          "file": "industrial_msgs/srv/CmdJointTrajectory.srv",
+          "sha256": "c22ae18b625b680429b05d4f2fe96475f7ba7fc9b97edef68814647ee90e5648"
+        },
+        {
+          "bytes": 228,
+          "file": "industrial_msgs/srv/GetRobotInfo.srv",
+          "sha256": "f294153cd4b92d8d5540678077257e3aefa61be8cc6bca50fa7517841856b8b9"
+        },
+        {
+          "bytes": 223,
+          "file": "industrial_msgs/srv/SetDrivePower.srv",
+          "sha256": "adc36620c8d85b1bf40b55297742c036707bb41393a2aa6a30f77dd8df8799ca"
+        },
+        {
+          "bytes": 301,
+          "file": "industrial_msgs/srv/SetRemoteLoggerLevel.srv",
+          "sha256": "316136a5cd5d17a81c4f3c1ddc6a09895cf21e7e85aef1c8f2e5ea3ea151a238"
+        },
+        {
+          "bytes": 114,
+          "file": "industrial_msgs/srv/StartMotion.srv",
+          "sha256": "06934498171e4d97b6df2dd9d7f0d39e5fbb9cea156573ea98d5acc01b73b1ed"
+        },
+        {
+          "bytes": 157,
+          "file": "industrial_msgs/srv/StopMotion.srv",
+          "sha256": "2eed9a17e1d7ed421fd3ecd2583499c14cb295302a459f0b2406fd3f8aa12daf"
+        },
+        {
+          "bytes": 203,
+          "file": "motoros2_interfaces/msg/AlarmCauseRemedy.msg",
+          "sha256": "290a311471aff3baa0bd79e3e08330f8596334612b5fa9cdab75146f24d94869"
+        },
+        {
+          "bytes": 1039,
+          "file": "motoros2_interfaces/msg/AlarmInfo.msg",
+          "sha256": "0e751eec501290d29fba03880493868be919da4939eb58a3bed5508e8a3d37b1"
+        },
+        {
+          "bytes": 780,
+          "file": "motoros2_interfaces/msg/ErrorInfo.msg",
+          "sha256": "71046bedd075abe0de6e66da031ece5dce96ccf888a4c87406b991ca7c7ce326"
+        },
+        {
+          "bytes": 761,
+          "file": "motoros2_interfaces/msg/InformJobCrudResultCodes.msg",
+          "sha256": "a38d285634bde4d320cd0f32515bbce26a161746732af80b93f90369211c0549"
+        },
+        {
+          "bytes": 2686,
+          "file": "motoros2_interfaces/msg/InitTrajEnum.msg",
+          "sha256": "fef1e085ebca153094100a9e8a0066f18643f657b8493de25c1fb139059219fd"
+        },
+        {
+          "bytes": 1185,
+          "file": "motoros2_interfaces/msg/IoResultCodes.msg",
+          "sha256": "17c2bd4276006972b4467092477d3cb8a9867c9f17c35ac1ee94df364c4766f9"
+        },
+        {
+          "bytes": 2866,
+          "file": "motoros2_interfaces/msg/MotionReadyEnum.msg",
+          "sha256": "b7fc0a1961869614a588477f2b649f7b2b416d34b194bb6267adb3d7d596a3dc"
+        },
+        {
+          "bytes": 847,
+          "file": "motoros2_interfaces/msg/QueueResultEnum.msg",
+          "sha256": "c14bf7fb06d602f96d442510587e9c7fbe4229f21324bf801e97c87649adb512"
+        },
+        {
+          "bytes": 944,
+          "file": "motoros2_interfaces/msg/SelectionResultCodes.msg",
+          "sha256": "7c94b744ec47c89da4f37ddfa2113d816edfc4ad99d359ff30d9cd5e832b4fe4"
+        },
+        {
+          "bytes": 1108,
+          "file": "motoros2_interfaces/srv/GetActiveAlarmInfo.srv",
+          "sha256": "8d25296b20f84420a58214c33e6bedcba15bb8ad685a3146e3b85f93288fedd7"
+        },
+        {
+          "bytes": 847,
+          "file": "motoros2_interfaces/srv/ListInformJobs.srv",
+          "sha256": "f15c987cf227d396b8c8d4cc52d7689648395b9f590b6af8b768a9c321880f4f"
+        },
+        {
+          "bytes": 688,
+          "file": "motoros2_interfaces/srv/QueueTrajPoint.srv",
+          "sha256": "a512280116529112aedfeb35549fdc0c547c34b217aa57eac6254d59513bcf02"
+        },
+        {
+          "bytes": 921,
+          "file": "motoros2_interfaces/srv/ReadGroupIO.srv",
+          "sha256": "cdf7cb3980ca2f186963b7251aa707ae69c921d7f7f2a59ca32da4abe1a476d6"
+        },
+        {
+          "bytes": 942,
+          "file": "motoros2_interfaces/srv/ReadMRegister.srv",
+          "sha256": "cdff2fbbc252dac1ab90754f9dd4afb5ed852f54a0eef2b8db77a149b397b226"
+        },
+        {
+          "bytes": 709,
+          "file": "motoros2_interfaces/srv/ReadSingleIO.srv",
+          "sha256": "1aa2349d0a045b6ac941ea25ba1361f432e077f9233cb699d0c0beb2c2a1920f"
+        },
+        {
+          "bytes": 776,
+          "file": "motoros2_interfaces/srv/ResetError.srv",
+          "sha256": "eb19edd21e082cf866bb4a8b2a07679d0301e3c3fcf116230e77e87acf8df768"
+        },
+        {
+          "bytes": 4776,
+          "file": "motoros2_interfaces/srv/SelectMotionTool.srv",
+          "sha256": "89b2f66e3dea72582cb03180d0b5a0c6a98f8e1a432928810310215545a396e5"
+        },
+        {
+          "bytes": 994,
+          "file": "motoros2_interfaces/srv/StartPointQueueMode.srv",
+          "sha256": "2c29a9cef3ecb09a9e22c72c5c19a912f3be4460fe2f6c49a7a2a0f4d7ed879c"
+        },
+        {
+          "bytes": 1005,
+          "file": "motoros2_interfaces/srv/StartTrajMode.srv",
+          "sha256": "bc4a560b33854a1927af0df0680a03c476616b1cefa9c7e7277f4ea3ec694c4d"
+        },
+        {
+          "bytes": 923,
+          "file": "motoros2_interfaces/srv/WriteGroupIO.srv",
+          "sha256": "fb664112f34580ec57df3892da0089956d7d9d123174dd00ff7c01f480ab0445"
+        },
+        {
+          "bytes": 925,
+          "file": "motoros2_interfaces/srv/WriteMRegister.srv",
+          "sha256": "2211208e517e78901dae3bc0ccee62f9528b2be1d2d77e6df3aeff6a3649a1a8"
+        },
+        {
+          "bytes": 760,
+          "file": "motoros2_interfaces/srv/WriteSingleIO.srv",
+          "sha256": "3e8c1d04236c7e4a8ded058621ab662c9b83f9ca6128469f91de520402205073"
+        },
+        {
+          "bytes": 999,
+          "file": "sensor_msgs/msg/JointState.msg",
+          "sha256": "711d1771a002c7190e5bbe746a163a67477c1e2a45482a64f1fe339815ca6f5d"
+        },
+        {
+          "bytes": 322,
+          "file": "std_msgs/msg/Header.msg",
+          "sha256": "d2cea14630e39ed0fa5b432ba9160a7c38855b9427d3344f99e83e83facb53c2"
+        },
+        {
+          "bytes": 122,
+          "file": "std_srvs/srv/Trigger.srv",
+          "sha256": "81e80d26771d0c0af8783938720c763cacc429e68d9d6b9c1f912474db0d8dca"
+        },
+        {
+          "bytes": 44,
+          "file": "tf2_msgs/msg/TFMessage.msg",
+          "sha256": "f3fca610a59b31ee4c7b740522ecdd0fd8c76002170088111409e4df513f1dfc"
+        },
+        {
+          "bytes": 465,
+          "file": "trajectory_msgs/msg/JointTrajectory.msg",
+          "sha256": "d63cda4a5ec81824ed4acd737e6b5903449fb1a7e2f5cdcdcc4c49285f01117c"
+        },
+        {
+          "bytes": 1176,
+          "file": "trajectory_msgs/msg/JointTrajectoryPoint.msg",
+          "sha256": "2358055d26d27c0c302e921f90d5aa59cb5feb3e22937f8ac98314b0c52ba8f4"
+        },
+        {
+          "bytes": 485,
+          "file": "trajectory_msgs/msg/MultiDOFJointTrajectory.msg",
+          "sha256": "070af6b4c9f4238d9de36621105d78c999dbad2045d0cb2a633f86a17f73f6b7"
+        },
+        {
+          "bytes": 427,
+          "file": "trajectory_msgs/msg/MultiDOFJointTrajectoryPoint.msg",
+          "sha256": "7e3a4b150ff7ce8d7d897a480d8d324a244a0afb4a07fdf6241074071170ac7a"
+        }
+      ]
+    },
+    "source_template_inputs": {
+      "interface_templates/bounded_interfaces.go.in": {
+        "bytes": 9692,
+        "sha256": "c9e7893ccedc67b91a3aebc51c1e0c3c65263f03b2769aa07c34fcfb6befa1f7"
+      },
+      "interface_templates/bounded_interfaces.mjs.in": {
+        "bytes": 17046,
+        "sha256": "10986eddd766435dde89b0d3046ef7f48705e2c3e21301c99163c3a7d4ea62fe"
+      },
+      "interface_templates/bounded_interfaces.rs.in": {
+        "bytes": 15514,
+        "sha256": "063130e797684df0530aa1882f8082a10d5756ceb892677d8082e980c7b29b18"
+      },
+      "interface_templates/bounded_interfaces.ts.in": {
+        "bytes": 16626,
+        "sha256": "a61a7b7eb3b5464648577f3ab44629a5c6140d04effff6e4099509f68b204ac5"
+      }
+    },
+    "status": "GENERATED_SOURCE_ONLY_NOT_COMPILED_OR_EXECUTED",
+    "types": [
+      {
+        "adapter_codec_identity": "UWVMROS1_3804444fae7a82a57907d25c2c3dc54d9a42dcd305f41ca073b1221dca7d36e4",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_3804444fae7a82a57907d25c2c3dc54d9a42dcd305f41ca073b1221dca7d36e4",
+            "expanded_nodes": 3,
+            "maximum_wire_bytes": 8,
+            "minimum_wire_bytes": 8,
+            "native_identity": null,
+            "type": "builtin_interfaces/msg/Duration"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "builtin_interfaces/msg/Duration"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_0fd520c23fd8cb06e2c27292fdc20694732fa9332d452fc3fa31da90f7605fb7",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_0fd520c23fd8cb06e2c27292fdc20694732fa9332d452fc3fa31da90f7605fb7",
+            "expanded_nodes": 3,
+            "maximum_wire_bytes": 8,
+            "minimum_wire_bytes": 8,
+            "native_identity": null,
+            "type": "builtin_interfaces/msg/Time"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "builtin_interfaces/msg/Time"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_bd40771444c5441b79e63bdf5f2d5829d2c8b7ea0ccfd285baba8867cdc43757",
+        "components": {
+          "feedback": {
+            "adapter_codec_identity": "UWVMROS1_68f3809217bd914cd971e1365ca825111c1394b2587c6989736adcaa8a40a7cb",
+            "expanded_nodes": 379,
+            "maximum_wire_bytes": 4128,
+            "minimum_wire_bytes": 152,
+            "native_identity": null,
+            "type": "control_msgs/action/FollowJointTrajectory_Feedback"
+          },
+          "goal": {
+            "adapter_codec_identity": "UWVMROS1_8945d5b29832f1190b0a4f8c4af4e82686c4b913413affe9c0945570b4fb1f16",
+            "expanded_nodes": 1002,
+            "maximum_wire_bytes": 20920,
+            "minimum_wire_bytes": 64,
+            "native_identity": null,
+            "type": "control_msgs/action/FollowJointTrajectory_Goal"
+          },
+          "result": {
+            "adapter_codec_identity": "UWVMROS1_c698e3a3a772735ff6027b04af28e9bc88d6b7138863ce5737aa090f543dac70",
+            "expanded_nodes": 3,
+            "maximum_wire_bytes": 4104,
+            "minimum_wire_bytes": 8,
+            "native_identity": null,
+            "type": "control_msgs/action/FollowJointTrajectory_Result"
+          }
+        },
+        "kind": "action",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "control_msgs/action/FollowJointTrajectory"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_658f3d3f180b301e5c612188390187ec4034064976f133018048bb1fdec55342",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_658f3d3f180b301e5c612188390187ec4034064976f133018048bb1fdec55342",
+            "expanded_nodes": 6,
+            "maximum_wire_bytes": 542,
+            "minimum_wire_bytes": 30,
+            "native_identity": null,
+            "type": "control_msgs/msg/JointComponentTolerance"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "control_msgs/msg/JointComponentTolerance"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_ad7701ac1cb0dd68a947577272964b0d6051d1846019de97e9c9d0f7be7b2fa2",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_ad7701ac1cb0dd68a947577272964b0d6051d1846019de97e9c9d0f7be7b2fa2",
+            "expanded_nodes": 5,
+            "maximum_wire_bytes": 92,
+            "minimum_wire_bytes": 28,
+            "native_identity": null,
+            "type": "control_msgs/msg/JointTolerance"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "control_msgs/msg/JointTolerance"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_34a32c3470cbfe2ff12340781a5bf22f6c370a8f5c06669f25a34321ade81672",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_34a32c3470cbfe2ff12340781a5bf22f6c370a8f5c06669f25a34321ade81672",
+            "expanded_nodes": 5,
+            "maximum_wire_bytes": 32,
+            "minimum_wire_bytes": 32,
+            "native_identity": null,
+            "type": "geometry_msgs/msg/Quaternion"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "geometry_msgs/msg/Quaternion"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_7ddcb1c3fca43f4a0299d43fb6fac1b77a8f26001af809dc13307f4f9c61d65b",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_7ddcb1c3fca43f4a0299d43fb6fac1b77a8f26001af809dc13307f4f9c61d65b",
+            "expanded_nodes": 10,
+            "maximum_wire_bytes": 56,
+            "minimum_wire_bytes": 56,
+            "native_identity": null,
+            "type": "geometry_msgs/msg/Transform"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "geometry_msgs/msg/Transform"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_be553b5a9c73b687cde56ff1c381e3c67168fd2c0366830be3c65382c5bbd792",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_be553b5a9c73b687cde56ff1c381e3c67168fd2c0366830be3c65382c5bbd792",
+            "expanded_nodes": 17,
+            "maximum_wire_bytes": 648,
+            "minimum_wire_bytes": 72,
+            "native_identity": null,
+            "type": "geometry_msgs/msg/TransformStamped"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "geometry_msgs/msg/TransformStamped"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_1a6c18d19bb6853a2cff3b775974ba31f8e3674c1bbe566444ccabf0ef9d117e",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_1a6c18d19bb6853a2cff3b775974ba31f8e3674c1bbe566444ccabf0ef9d117e",
+            "expanded_nodes": 9,
+            "maximum_wire_bytes": 48,
+            "minimum_wire_bytes": 48,
+            "native_identity": null,
+            "type": "geometry_msgs/msg/Twist"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "geometry_msgs/msg/Twist"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_5adebf211fe375fba92c0628f9b8ebf05bff9ab22ddc4bbf00629167af295d5e",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_5adebf211fe375fba92c0628f9b8ebf05bff9ab22ddc4bbf00629167af295d5e",
+            "expanded_nodes": 4,
+            "maximum_wire_bytes": 24,
+            "minimum_wire_bytes": 24,
+            "native_identity": null,
+            "type": "geometry_msgs/msg/Vector3"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "geometry_msgs/msg/Vector3"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_989475cc5d981d8c5ab91fb091235871f7a1c7d87d246eb2250086e6c3c37c79",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_989475cc5d981d8c5ab91fb091235871f7a1c7d87d246eb2250086e6c3c37c79",
+            "expanded_nodes": 2,
+            "maximum_wire_bytes": 1,
+            "minimum_wire_bytes": 1,
+            "native_identity": null,
+            "type": "industrial_msgs/msg/DebugLevel"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "industrial_msgs/msg/DebugLevel"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_f9a5962800e17495f34dbb73f37373df22f900e528c630497417f78cdecb283b",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_f9a5962800e17495f34dbb73f37373df22f900e528c630497417f78cdecb283b",
+            "expanded_nodes": 6,
+            "maximum_wire_bytes": 2580,
+            "minimum_wire_bytes": 20,
+            "native_identity": null,
+            "type": "industrial_msgs/msg/DeviceInfo"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "industrial_msgs/msg/DeviceInfo"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_4f9173c5e27815ca33be603b8645a22420bda3ab308962127060d2413d092c4c",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_4f9173c5e27815ca33be603b8645a22420bda3ab308962127060d2413d092c4c",
+            "expanded_nodes": 2,
+            "maximum_wire_bytes": 1,
+            "minimum_wire_bytes": 1,
+            "native_identity": null,
+            "type": "industrial_msgs/msg/RobotMode"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "industrial_msgs/msg/RobotMode"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_1086f16ba5d614f3d87c3ab195240b5a0683ef490f2e92434e4ea3bdbe7554ba",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_1086f16ba5d614f3d87c3ab195240b5a0683ef490f2e92434e4ea3bdbe7554ba",
+            "expanded_nodes": 35,
+            "maximum_wire_bytes": 150,
+            "minimum_wire_bytes": 22,
+            "native_identity": null,
+            "type": "industrial_msgs/msg/RobotStatus"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "industrial_msgs/msg/RobotStatus"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_62eb4415a63d7686f16ea343193238838c78aa8e9b9786a65c92fb227e03d3e5",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_62eb4415a63d7686f16ea343193238838c78aa8e9b9786a65c92fb227e03d3e5",
+            "expanded_nodes": 2,
+            "maximum_wire_bytes": 1,
+            "minimum_wire_bytes": 1,
+            "native_identity": null,
+            "type": "industrial_msgs/msg/ServiceReturnCode"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "industrial_msgs/msg/ServiceReturnCode"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_b7ae62ce19d642ad46e962ffb50cd76c43c96ac673ac36d690f99c1dd8d2a841",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_b7ae62ce19d642ad46e962ffb50cd76c43c96ac673ac36d690f99c1dd8d2a841",
+            "expanded_nodes": 2,
+            "maximum_wire_bytes": 1,
+            "minimum_wire_bytes": 1,
+            "native_identity": null,
+            "type": "industrial_msgs/msg/TriState"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "industrial_msgs/msg/TriState"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_e8df4c16f0b40ccebce141f41beb199ffdfcace748f4bd57a8623c5aafe9d18f",
+        "components": {
+          "request": {
+            "adapter_codec_identity": "UWVMROS1_1def3934b243546a4591b7be1ef2eb27002fbd9d3725302016e3b1846805149d",
+            "expanded_nodes": 469,
+            "maximum_wire_bytes": 4164,
+            "minimum_wire_bytes": 20,
+            "native_identity": null,
+            "type": "industrial_msgs/srv/CmdJointTrajectory_Request"
+          },
+          "response": {
+            "adapter_codec_identity": "UWVMROS1_1e4d064ef659e5d1cc73bdd90f82657a16087c96e0f75b632e2be2be884bca8b",
+            "expanded_nodes": 3,
+            "maximum_wire_bytes": 1,
+            "minimum_wire_bytes": 1,
+            "native_identity": null,
+            "type": "industrial_msgs/srv/CmdJointTrajectory_Response"
+          }
+        },
+        "kind": "service",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "industrial_msgs/srv/CmdJointTrajectory"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_6e5a274d17ba3c1eadacdb354e10f3beb536bfb28fefa25c36d90e5b1a98a05d",
+        "components": {
+          "request": {
+            "adapter_codec_identity": "UWVMROS1_688a272f6ee39921013c6c39a7b0b0c4e2cda5119787088234103518ba25c1d2",
+            "expanded_nodes": 1,
+            "maximum_wire_bytes": 0,
+            "minimum_wire_bytes": 0,
+            "native_identity": null,
+            "type": "industrial_msgs/srv/GetRobotInfo_Request"
+          },
+          "response": {
+            "adapter_codec_identity": "UWVMROS1_6d37cdcd8afc918329d7856e682d7fcdae2931832474a9194143c21079ed4152",
+            "expanded_nodes": 106,
+            "maximum_wire_bytes": 32768,
+            "minimum_wire_bytes": 25,
+            "native_identity": null,
+            "type": "industrial_msgs/srv/GetRobotInfo_Response"
+          }
+        },
+        "kind": "service",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "industrial_msgs/srv/GetRobotInfo"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_139774184d22a01cdcaf17d2e4c73c56a9077bc40834f6c5912a8c08dee7109f",
+        "components": {
+          "request": {
+            "adapter_codec_identity": "UWVMROS1_b4fc5e109e131a97820ab5856b34839c572ac0b0c256d70457c176e401844f96",
+            "expanded_nodes": 2,
+            "maximum_wire_bytes": 1,
+            "minimum_wire_bytes": 1,
+            "native_identity": null,
+            "type": "industrial_msgs/srv/SetDrivePower_Request"
+          },
+          "response": {
+            "adapter_codec_identity": "UWVMROS1_050fb9a727ebedd240e9023b9a2379a5d72e0d9fa335bead0c40d783abb22cff",
+            "expanded_nodes": 3,
+            "maximum_wire_bytes": 1,
+            "minimum_wire_bytes": 1,
+            "native_identity": null,
+            "type": "industrial_msgs/srv/SetDrivePower_Response"
+          }
+        },
+        "kind": "service",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "industrial_msgs/srv/SetDrivePower"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_6aaca700956f41c06c20b8069e644cf04ad5fa01c5835623df3b8de946da1ad1",
+        "components": {
+          "request": {
+            "adapter_codec_identity": "UWVMROS1_bbadd39c05cab90b14f4b1fad23ff05ac83325f6cc57810cd649e04fa29fe014",
+            "expanded_nodes": 3,
+            "maximum_wire_bytes": 1,
+            "minimum_wire_bytes": 1,
+            "native_identity": null,
+            "type": "industrial_msgs/srv/SetRemoteLoggerLevel_Request"
+          },
+          "response": {
+            "adapter_codec_identity": "UWVMROS1_b8681d031a4bb5a67b842277af2e2156e8339bdef23be88d2b64e296a7e3d63b",
+            "expanded_nodes": 3,
+            "maximum_wire_bytes": 1,
+            "minimum_wire_bytes": 1,
+            "native_identity": null,
+            "type": "industrial_msgs/srv/SetRemoteLoggerLevel_Response"
+          }
+        },
+        "kind": "service",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "industrial_msgs/srv/SetRemoteLoggerLevel"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_1cf62b342e5cc9b8a9fa463e1971d14bc73b6450e425a7fe9c16caa3529c67b0",
+        "components": {
+          "request": {
+            "adapter_codec_identity": "UWVMROS1_0a96fb9489f863612a91bf82f995f2f28bcb7fb403bde74c617925c789e4dcd8",
+            "expanded_nodes": 1,
+            "maximum_wire_bytes": 0,
+            "minimum_wire_bytes": 0,
+            "native_identity": null,
+            "type": "industrial_msgs/srv/StartMotion_Request"
+          },
+          "response": {
+            "adapter_codec_identity": "UWVMROS1_3bb3650fbe638a6d300bcd9fcd5acf574bd54d00a7368edd3014bf44dcf66c16",
+            "expanded_nodes": 3,
+            "maximum_wire_bytes": 1,
+            "minimum_wire_bytes": 1,
+            "native_identity": null,
+            "type": "industrial_msgs/srv/StartMotion_Response"
+          }
+        },
+        "kind": "service",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "industrial_msgs/srv/StartMotion"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_ee44e3fdaf3b705212972d964e3210babaf941de4be14e94cdd33aa54aea49a0",
+        "components": {
+          "request": {
+            "adapter_codec_identity": "UWVMROS1_fe5a7cf0da30270eab5cfb1ab8c1fbd37d2b4c4f91ef29662a0ddcac39e6ef49",
+            "expanded_nodes": 1,
+            "maximum_wire_bytes": 0,
+            "minimum_wire_bytes": 0,
+            "native_identity": null,
+            "type": "industrial_msgs/srv/StopMotion_Request"
+          },
+          "response": {
+            "adapter_codec_identity": "UWVMROS1_c26bda240d86becc5b8b4ea80380eba3602092a5ec4a06818dbfbd38c24015b5",
+            "expanded_nodes": 3,
+            "maximum_wire_bytes": 1,
+            "minimum_wire_bytes": 1,
+            "native_identity": null,
+            "type": "industrial_msgs/srv/StopMotion_Response"
+          }
+        },
+        "kind": "service",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "industrial_msgs/srv/StopMotion"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_f977609022f4ca593b9089d0038d1c28d1bc4b533e272f38c3379495f326ddf5",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_f977609022f4ca593b9089d0038d1c28d1bc4b533e272f38c3379495f326ddf5",
+            "expanded_nodes": 3,
+            "maximum_wire_bytes": 1032,
+            "minimum_wire_bytes": 8,
+            "native_identity": null,
+            "type": "motoros2_interfaces/msg/AlarmCauseRemedy"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/msg/AlarmCauseRemedy"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_7cf3fa3037f28f295dd62009e708ea3e46a80f83471d0a0f9fb55af125c0c27f",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_7cf3fa3037f28f295dd62009e708ea3e46a80f83471d0a0f9fb55af125c0c27f",
+            "expanded_nodes": 58,
+            "maximum_wire_bytes": 25248,
+            "minimum_wire_bytes": 32,
+            "native_identity": null,
+            "type": "motoros2_interfaces/msg/AlarmInfo"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/msg/AlarmInfo"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_1cfe60c0af6bc157db84c4d9e0b20a8f2e5c78fd4afd6908d32b3217f3734b67",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_1cfe60c0af6bc157db84c4d9e0b20a8f2e5c78fd4afd6908d32b3217f3734b67",
+            "expanded_nodes": 7,
+            "maximum_wire_bytes": 532,
+            "minimum_wire_bytes": 20,
+            "native_identity": null,
+            "type": "motoros2_interfaces/msg/ErrorInfo"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/msg/ErrorInfo"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_f5ed037b83926b48a88fa486ed8db5f5d3e39e4a486d4a90190ffd6a70452613",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_f5ed037b83926b48a88fa486ed8db5f5d3e39e4a486d4a90190ffd6a70452613",
+            "expanded_nodes": 1,
+            "maximum_wire_bytes": 0,
+            "minimum_wire_bytes": 0,
+            "native_identity": null,
+            "type": "motoros2_interfaces/msg/InformJobCrudResultCodes"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/msg/InformJobCrudResultCodes"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_9279979f9e3570f48d6e23bf812a4680e3deed9af3309019efdff5464d7b7763",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_9279979f9e3570f48d6e23bf812a4680e3deed9af3309019efdff5464d7b7763",
+            "expanded_nodes": 2,
+            "maximum_wire_bytes": 2,
+            "minimum_wire_bytes": 2,
+            "native_identity": null,
+            "type": "motoros2_interfaces/msg/InitTrajEnum"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/msg/InitTrajEnum"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_ef9ab829ae79d4e58336a56259b6beb2ad26a8b1b4070013d9004ac4ab269915",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_ef9ab829ae79d4e58336a56259b6beb2ad26a8b1b4070013d9004ac4ab269915",
+            "expanded_nodes": 1,
+            "maximum_wire_bytes": 0,
+            "minimum_wire_bytes": 0,
+            "native_identity": null,
+            "type": "motoros2_interfaces/msg/IoResultCodes"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/msg/IoResultCodes"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_c8d4c2b0eba665e01cddc730421a3a42c5b344f4de35ae0a32204891603326d6",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_c8d4c2b0eba665e01cddc730421a3a42c5b344f4de35ae0a32204891603326d6",
+            "expanded_nodes": 2,
+            "maximum_wire_bytes": 2,
+            "minimum_wire_bytes": 2,
+            "native_identity": null,
+            "type": "motoros2_interfaces/msg/MotionReadyEnum"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/msg/MotionReadyEnum"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_146c6ce3f275b9e4a81622d73cca3d2298cf9f7bb95a783c0dea6279cb5b4f23",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_146c6ce3f275b9e4a81622d73cca3d2298cf9f7bb95a783c0dea6279cb5b4f23",
+            "expanded_nodes": 2,
+            "maximum_wire_bytes": 2,
+            "minimum_wire_bytes": 2,
+            "native_identity": null,
+            "type": "motoros2_interfaces/msg/QueueResultEnum"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/msg/QueueResultEnum"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_46168b1f851163985e75842d9d795c5715160864a7736e7f92f95818c9435602",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_46168b1f851163985e75842d9d795c5715160864a7736e7f92f95818c9435602",
+            "expanded_nodes": 2,
+            "maximum_wire_bytes": 4,
+            "minimum_wire_bytes": 4,
+            "native_identity": null,
+            "type": "motoros2_interfaces/msg/SelectionResultCodes"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/msg/SelectionResultCodes"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_0ba75d003a58f500c933d13af5e3adca9566d503393bda636febb84972f116c0",
+        "components": {
+          "request": {
+            "adapter_codec_identity": "UWVMROS1_aadcd63f3bc47424c38767afdc1589561e3c90e8aeae9bdceef88b1033d57a7e",
+            "expanded_nodes": 1,
+            "maximum_wire_bytes": 0,
+            "minimum_wire_bytes": 0,
+            "native_identity": null,
+            "type": "motoros2_interfaces/srv/GetActiveAlarmInfo_Request"
+          },
+          "response": {
+            "adapter_codec_identity": "UWVMROS1_e11bdbb95b6ded88d035696260c58dad32bcf3604aa4e89dd41c0dab26541567",
+            "expanded_nodes": 1045,
+            "maximum_wire_bytes": 32768,
+            "minimum_wire_bytes": 16,
+            "native_identity": null,
+            "type": "motoros2_interfaces/srv/GetActiveAlarmInfo_Response"
+          }
+        },
+        "kind": "service",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/GetActiveAlarmInfo"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_9954d2544fc3f6a93a863325ee37db0db935e34f785cb8dff1bbcdc6bed008ce",
+        "components": {
+          "request": {
+            "adapter_codec_identity": "UWVMROS1_e77eedadef98d98321b1757b88284022afcdb1ffef52b98820b0c4ba596d643c",
+            "expanded_nodes": 1,
+            "maximum_wire_bytes": 0,
+            "minimum_wire_bytes": 0,
+            "native_identity": null,
+            "type": "motoros2_interfaces/srv/ListInformJobs_Request"
+          },
+          "response": {
+            "adapter_codec_identity": "UWVMROS1_49021f0abc00f8df1ef49605a244cb6bba8d8b45ece5365ae35d747d2506eadc",
+            "expanded_nodes": 20,
+            "maximum_wire_bytes": 8780,
+            "minimum_wire_bytes": 12,
+            "native_identity": null,
+            "type": "motoros2_interfaces/srv/ListInformJobs_Response"
+          }
+        },
+        "kind": "service",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/ListInformJobs"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_68502de019123622ff8db751ea9b1b026c92b0792e6349f4682320eee6dd34f7",
+        "components": {
+          "request": {
+            "adapter_codec_identity": "UWVMROS1_3d37f9981d6abaca33ec0b5378fa3a1ac301791cc9be94d5bdcf4ea6aa81b8d0",
+            "expanded_nodes": 70,
+            "maximum_wire_bytes": 1228,
+            "minimum_wire_bytes": 28,
+            "native_identity": null,
+            "type": "motoros2_interfaces/srv/QueueTrajPoint_Request"
+          },
+          "response": {
+            "adapter_codec_identity": "UWVMROS1_d4887ed24d39332a5ccfd4a3d072004dd8f314fe5c166bf0bd57520a826cbccd",
+            "expanded_nodes": 4,
+            "maximum_wire_bytes": 518,
+            "minimum_wire_bytes": 6,
+            "native_identity": null,
+            "type": "motoros2_interfaces/srv/QueueTrajPoint_Response"
+          }
+        },
+        "kind": "service",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/QueueTrajPoint"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_6660903dbabb303801f8ce21560ff9219dc39fcf07a3d2e0fb3e795efd295ce7",
+        "components": {
+          "request": {
+            "adapter_codec_identity": "UWVMROS1_6ee09ac379e169fc23b81a551e9a9ed21c3f82b5010859984e911b17152beb7f",
+            "expanded_nodes": 2,
+            "maximum_wire_bytes": 4,
+            "minimum_wire_bytes": 4,
+            "native_identity": null,
+            "type": "motoros2_interfaces/srv/ReadGroupIO_Request"
+          },
+          "response": {
+            "adapter_codec_identity": "UWVMROS1_292fcf6e8c46a2509ee4cc5238d443157f37fed0de898367248b967e9001ea0d",
+            "expanded_nodes": 5,
+            "maximum_wire_bytes": 522,
+            "minimum_wire_bytes": 10,
+            "native_identity": null,
+            "type": "motoros2_interfaces/srv/ReadGroupIO_Response"
+          }
+        },
+        "kind": "service",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/ReadGroupIO"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_1a90ea4c10f6cf6101b226da050d17e3204f64fc4e7c34fda6a9c77a895268e4",
+        "components": {
+          "request": {
+            "adapter_codec_identity": "UWVMROS1_f31f0983466054f5ac5dcb2ab80ab7721d606a681b833ebb376cc87f96054f6f",
+            "expanded_nodes": 2,
+            "maximum_wire_bytes": 4,
+            "minimum_wire_bytes": 4,
+            "native_identity": null,
+            "type": "motoros2_interfaces/srv/ReadMRegister_Request"
+          },
+          "response": {
+            "adapter_codec_identity": "UWVMROS1_8d6ded2876adfa2079711205cb0110a82ead6f51db05f266bf285308cd815a04",
+            "expanded_nodes": 5,
+            "maximum_wire_bytes": 523,
+            "minimum_wire_bytes": 11,
+            "native_identity": null,
+            "type": "motoros2_interfaces/srv/ReadMRegister_Response"
+          }
+        },
+        "kind": "service",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/ReadMRegister"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_45367596a399144ccce710f19aec8e07af2b937f0358cc533f12454e63167ea4",
+        "components": {
+          "request": {
+            "adapter_codec_identity": "UWVMROS1_30e28db303b772f26b2b3cf6165a0ff79037d037d60e8115b4ee8e177f17e8bb",
+            "expanded_nodes": 2,
+            "maximum_wire_bytes": 4,
+            "minimum_wire_bytes": 4,
+            "native_identity": null,
+            "type": "motoros2_interfaces/srv/ReadSingleIO_Request"
+          },
+          "response": {
+            "adapter_codec_identity": "UWVMROS1_b42013571274e85769ffac4d47129de8b76e4a675bdef3efefebc9ee19e92082",
+            "expanded_nodes": 5,
+            "maximum_wire_bytes": 525,
+            "minimum_wire_bytes": 13,
+            "native_identity": null,
+            "type": "motoros2_interfaces/srv/ReadSingleIO_Response"
+          }
+        },
+        "kind": "service",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/ReadSingleIO"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_df40965a10883ee12932604f28fb1feebe7f0f1eb6515067b647ec90fae3951d",
+        "components": {
+          "request": {
+            "adapter_codec_identity": "UWVMROS1_2737855d0608478946e2d9ab7f06c92585199c1082ec8406a012f50ad56beae3",
+            "expanded_nodes": 1,
+            "maximum_wire_bytes": 0,
+            "minimum_wire_bytes": 0,
+            "native_identity": null,
+            "type": "motoros2_interfaces/srv/ResetError_Request"
+          },
+          "response": {
+            "adapter_codec_identity": "UWVMROS1_0af14ee02c157ecc39b143225a580e475473306389ccc3ba198cf22ca47d82f3",
+            "expanded_nodes": 4,
+            "maximum_wire_bytes": 518,
+            "minimum_wire_bytes": 6,
+            "native_identity": null,
+            "type": "motoros2_interfaces/srv/ResetError_Response"
+          }
+        },
+        "kind": "service",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/ResetError"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_021260e9311f4412bfdd8cf4a4cd6e6af113d82169e543103ae6acaab065b00e",
+        "components": {
+          "request": {
+            "adapter_codec_identity": "UWVMROS1_e6c884ae0a97337c1e441efe099b7869dc95205fcbca0a8082d4d9b06f5b438c",
+            "expanded_nodes": 3,
+            "maximum_wire_bytes": 8,
+            "minimum_wire_bytes": 8,
+            "native_identity": null,
+            "type": "motoros2_interfaces/srv/SelectMotionTool_Request"
+          },
+          "response": {
+            "adapter_codec_identity": "UWVMROS1_088349a49c14c52282c25b428628462c48618c3b5202df560dcc5c9bed742640",
+            "expanded_nodes": 5,
+            "maximum_wire_bytes": 521,
+            "minimum_wire_bytes": 9,
+            "native_identity": null,
+            "type": "motoros2_interfaces/srv/SelectMotionTool_Response"
+          }
+        },
+        "kind": "service",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/SelectMotionTool"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_4368b9861121806a833f5227574e33547fe20a4891c4d1f146236fbe09891ef7",
+        "components": {
+          "request": {
+            "adapter_codec_identity": "UWVMROS1_58a4827fc6535ef0ffc64ee25c5c4af75aa0fe199fa0350a88a95d2e991164a1",
+            "expanded_nodes": 1,
+            "maximum_wire_bytes": 0,
+            "minimum_wire_bytes": 0,
+            "native_identity": null,
+            "type": "motoros2_interfaces/srv/StartPointQueueMode_Request"
+          },
+          "response": {
+            "adapter_codec_identity": "UWVMROS1_bc553d5640e1c4644a5d5bdc2dfcefc9dbe789ef1e2a23dd620f08963467b6ff",
+            "expanded_nodes": 4,
+            "maximum_wire_bytes": 518,
+            "minimum_wire_bytes": 6,
+            "native_identity": null,
+            "type": "motoros2_interfaces/srv/StartPointQueueMode_Response"
+          }
+        },
+        "kind": "service",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/StartPointQueueMode"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_d5c0a1821382852c10710973aa0214199a5e24a499972078db30fa8656c3edb8",
+        "components": {
+          "request": {
+            "adapter_codec_identity": "UWVMROS1_0b8b2ad5db5901047035e1070b675618afc516a1ae8c3308cfdcad1174d34789",
+            "expanded_nodes": 1,
+            "maximum_wire_bytes": 0,
+            "minimum_wire_bytes": 0,
+            "native_identity": null,
+            "type": "motoros2_interfaces/srv/StartTrajMode_Request"
+          },
+          "response": {
+            "adapter_codec_identity": "UWVMROS1_170e25737e6a2b06f5d5d9f331d748c97cf0306284271757953a4a801c722939",
+            "expanded_nodes": 4,
+            "maximum_wire_bytes": 518,
+            "minimum_wire_bytes": 6,
+            "native_identity": null,
+            "type": "motoros2_interfaces/srv/StartTrajMode_Response"
+          }
+        },
+        "kind": "service",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/StartTrajMode"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_64fc54e69a98903782576a539df8311d1af2565893b6f87dfe0d59061565e834",
+        "components": {
+          "request": {
+            "adapter_codec_identity": "UWVMROS1_2d348ed71408a0dd1dd28ee2ed2ca1db56bb07a14546d0fe13ccf64e8553d52c",
+            "expanded_nodes": 3,
+            "maximum_wire_bytes": 5,
+            "minimum_wire_bytes": 5,
+            "native_identity": null,
+            "type": "motoros2_interfaces/srv/WriteGroupIO_Request"
+          },
+          "response": {
+            "adapter_codec_identity": "UWVMROS1_06769934711b27fd32cdcbf849504e160189ee82ea32e0e71a2903af47c5d766",
+            "expanded_nodes": 4,
+            "maximum_wire_bytes": 521,
+            "minimum_wire_bytes": 9,
+            "native_identity": null,
+            "type": "motoros2_interfaces/srv/WriteGroupIO_Response"
+          }
+        },
+        "kind": "service",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/WriteGroupIO"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_2bfb27c3f17b05fe8b7121b65cb7d2a2f2c54ed2eb9d8f8334d8d3149192f4f4",
+        "components": {
+          "request": {
+            "adapter_codec_identity": "UWVMROS1_8df4536be27f0632052725d5616fd5b047f49fc306fc7735854d9de4fb15d4ef",
+            "expanded_nodes": 3,
+            "maximum_wire_bytes": 6,
+            "minimum_wire_bytes": 6,
+            "native_identity": null,
+            "type": "motoros2_interfaces/srv/WriteMRegister_Request"
+          },
+          "response": {
+            "adapter_codec_identity": "UWVMROS1_a61cc0596a7545ef4836bdc64dc9d6b4ed99b0abd18a726eb37e6215f51c729a",
+            "expanded_nodes": 4,
+            "maximum_wire_bytes": 521,
+            "minimum_wire_bytes": 9,
+            "native_identity": null,
+            "type": "motoros2_interfaces/srv/WriteMRegister_Response"
+          }
+        },
+        "kind": "service",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/WriteMRegister"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_d9671caa86e0a7d249e3d7bea385898517595733fa6e5e0cd16c964d8d66691a",
+        "components": {
+          "request": {
+            "adapter_codec_identity": "UWVMROS1_6361affcd8b7ebaaa1fe6b5806e64a7c18f7a96a1178614cfce487de813a6392",
+            "expanded_nodes": 3,
+            "maximum_wire_bytes": 8,
+            "minimum_wire_bytes": 8,
+            "native_identity": null,
+            "type": "motoros2_interfaces/srv/WriteSingleIO_Request"
+          },
+          "response": {
+            "adapter_codec_identity": "UWVMROS1_12328db372a572fe9b0c7207331a7971d5d7c9033376e3be410db579b85fb794",
+            "expanded_nodes": 4,
+            "maximum_wire_bytes": 521,
+            "minimum_wire_bytes": 9,
+            "native_identity": null,
+            "type": "motoros2_interfaces/srv/WriteSingleIO_Response"
+          }
+        },
+        "kind": "service",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "motoros2_interfaces/srv/WriteSingleIO"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_88d44f7bdb40f8c45539a041a25903609561fa74db90b9972e1369ebbff6c884",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_88d44f7bdb40f8c45539a041a25903609561fa74db90b9972e1369ebbff6c884",
+            "expanded_nodes": 58,
+            "maximum_wire_bytes": 1196,
+            "minimum_wire_bytes": 28,
+            "native_identity": null,
+            "type": "sensor_msgs/msg/JointState"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "sensor_msgs/msg/JointState"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_afba9e74be3c5e3321750c1c4c30ba2925269f75b9da43a6d5c1e93d293d7396",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_afba9e74be3c5e3321750c1c4c30ba2925269f75b9da43a6d5c1e93d293d7396",
+            "expanded_nodes": 5,
+            "maximum_wire_bytes": 76,
+            "minimum_wire_bytes": 12,
+            "native_identity": null,
+            "type": "std_msgs/msg/Header"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "std_msgs/msg/Header"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_2bafba62f4b166a5e736d6b5f0a5db9a8f8c2f02dc21daa0779ff56f8b87e583",
+        "components": {
+          "request": {
+            "adapter_codec_identity": "UWVMROS1_f1d8ad4ab7cf476cada6301f71ae24e046c244ba62bb6735183efe8e8c530a77",
+            "expanded_nodes": 1,
+            "maximum_wire_bytes": 0,
+            "minimum_wire_bytes": 0,
+            "native_identity": null,
+            "type": "std_srvs/srv/Trigger_Request"
+          },
+          "response": {
+            "adapter_codec_identity": "UWVMROS1_95fe65bd59112bb00093f66c6853844b01ccea8e6ded47e73038718aa886f39d",
+            "expanded_nodes": 3,
+            "maximum_wire_bytes": 517,
+            "minimum_wire_bytes": 5,
+            "native_identity": null,
+            "type": "std_srvs/srv/Trigger_Response"
+          }
+        },
+        "kind": "service",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "std_srvs/srv/Trigger"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_4428597a9c2783fd8f0f083a16e8fd1b3d286487f4800c55fcc5571e7f79e65a",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_4428597a9c2783fd8f0f083a16e8fd1b3d286487f4800c55fcc5571e7f79e65a",
+            "expanded_nodes": 274,
+            "maximum_wire_bytes": 10372,
+            "minimum_wire_bytes": 4,
+            "native_identity": null,
+            "type": "tf2_msgs/msg/TFMessage"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "tf2_msgs/msg/TFMessage"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_d74956440763bd09c76ec623efeb322aa89be8ef6410b9125d4e2cb1aeeb69c0",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_d74956440763bd09c76ec623efeb322aa89be8ef6410b9125d4e2cb1aeeb69c0",
+            "expanded_nodes": 468,
+            "maximum_wire_bytes": 4164,
+            "minimum_wire_bytes": 20,
+            "native_identity": null,
+            "type": "trajectory_msgs/msg/JointTrajectory"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "trajectory_msgs/msg/JointTrajectory"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_4d55f494f060a9a3ff23bedd54da49f9e70e6b77acbdf911878afbf672cbadc5",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_4d55f494f060a9a3ff23bedd54da49f9e70e6b77acbdf911878afbf672cbadc5",
+            "expanded_nodes": 56,
+            "maximum_wire_bytes": 408,
+            "minimum_wire_bytes": 24,
+            "native_identity": null,
+            "type": "trajectory_msgs/msg/JointTrajectoryPoint"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "trajectory_msgs/msg/JointTrajectoryPoint"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_6ea66f146cdce31369361e521be484d2c39bca818cc4b2069e1209d250ec2401",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_6ea66f146cdce31369361e521be484d2c39bca818cc4b2069e1209d250ec2401",
+            "expanded_nodes": 262,
+            "maximum_wire_bytes": 1516,
+            "minimum_wire_bytes": 20,
+            "native_identity": null,
+            "type": "trajectory_msgs/msg/MultiDOFJointTrajectory"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "trajectory_msgs/msg/MultiDOFJointTrajectory"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_6590b7ca1cdaa89da04b7a661266e2d4c6e3e2668dc90505a7c24d7be8a43242",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_6590b7ca1cdaa89da04b7a661266e2d4c6e3e2668dc90505a7c24d7be8a43242",
+            "expanded_nodes": 63,
+            "maximum_wire_bytes": 324,
+            "minimum_wire_bytes": 20,
+            "native_identity": null,
+            "type": "trajectory_msgs/msg/MultiDOFJointTrajectoryPoint"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "trajectory_msgs/msg/MultiDOFJointTrajectoryPoint"
+      }
+    ]
+  },
+  "hardware_qualified": false,
+  "kind": "industrial-complete-source-preparation-not-acceptance",
+  "mode": "prepare",
+  "native_delivery_qualified": false,
+  "native_metadata": null,
+  "native_owner_report": null,
+  "original_catalog": {
+    "bytes": 14154,
+    "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/catalog.preparation.json",
+    "sha256": "04f6c8f4e32532fca5b389205b0b4ef39338959ad2e02f6bb68ca73599289a45"
+  },
+  "original_definitions": {
+    "builtin_interfaces/msg/Duration.msg": {
+      "bytes": 498,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/builtin_interfaces/msg/Duration.msg",
+      "sha256": "57da13a4201e7d258a2931323145b953e47e46967494e62ba66c2faca4fbade2"
+    },
+    "builtin_interfaces/msg/Time.msg": {
+      "bytes": 421,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/builtin_interfaces/msg/Time.msg",
+      "sha256": "dc5a01ddde3aecffee21eb24974fe77cc969f873218a2b1811aa0ac8a456b8bd"
+    },
+    "control_msgs/action/FollowJointTrajectory.action": {
+      "bytes": 2551,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/control_msgs/action/FollowJointTrajectory.action",
+      "sha256": "31a124428ee490da22c15cc70a9ac2c89d07bbbba7d3bf370ca7596b229cb9f0"
+    },
+    "control_msgs/msg/JointComponentTolerance.msg": {
+      "bytes": 1161,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/control_msgs/msg/JointComponentTolerance.msg",
+      "sha256": "6b09271d0f74e0a3a701f3ddb997b0ad4a588bdd9ab7d7899ddc70063ba924dd"
+    },
+    "control_msgs/msg/JointTolerance.msg": {
+      "bytes": 724,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/control_msgs/msg/JointTolerance.msg",
+      "sha256": "8208718f17c1b1feb9418c3ed7ca73d029566cbf298ecda819c9e0b78cb379d3"
+    },
+    "geometry_msgs/msg/Quaternion.msg": {
+      "bytes": 116,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/geometry_msgs/msg/Quaternion.msg",
+      "sha256": "298495eb67a139642ffd37cc9029eae085e6c39a8789828b7517868a487939ed"
+    },
+    "geometry_msgs/msg/Transform.msg": {
+      "bytes": 118,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/geometry_msgs/msg/Transform.msg",
+      "sha256": "c8916279f0a429dd9561158bd2133bc4e2d780277c3c594116b240a27e7a2993"
+    },
+    "geometry_msgs/msg/TransformStamped.msg": {
+      "bytes": 748,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/geometry_msgs/msg/TransformStamped.msg",
+      "sha256": "f6e137c205e9187ac1dafdfbace7435de58bb3779a55e9c6b52c2cb513785c42"
+    },
+    "geometry_msgs/msg/Twist.msg": {
+      "bytes": 116,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/geometry_msgs/msg/Twist.msg",
+      "sha256": "ed471ef861f65af991b1f64d66ef941dd41dd4c0702f6222512b1a16c62d58b0"
+    },
+    "geometry_msgs/msg/Vector3.msg": {
+      "bytes": 251,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/geometry_msgs/msg/Vector3.msg",
+      "sha256": "d8b9ea9aad1f424faf4d2b94dae1e1368af1e5d59de11aeed019399cff7f9e1d"
+    },
+    "industrial_msgs/msg/DebugLevel.msg": {
+      "bytes": 267,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/industrial_msgs/msg/DebugLevel.msg",
+      "sha256": "b578049ef18456b8b5a9474fdd1285ceb5a20667c48cc2f433eb4aaba53a343a"
+    },
+    "industrial_msgs/msg/DeviceInfo.msg": {
+      "bytes": 445,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/industrial_msgs/msg/DeviceInfo.msg",
+      "sha256": "1d2b39c295e3a3909e74a076823cf935fa3c92c6fa153aefbbcac272b26bbb51"
+    },
+    "industrial_msgs/msg/RobotMode.msg": {
+      "bytes": 333,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/industrial_msgs/msg/RobotMode.msg",
+      "sha256": "3bf60f0bcad9b250fe68c5fbd65f0a9671788c0c9c33f4f5c2e028a3213d0bee"
+    },
+    "industrial_msgs/msg/RobotStatus.msg": {
+      "bytes": 1352,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/industrial_msgs/msg/RobotStatus.msg",
+      "sha256": "0389afd8460bf5fca47744e1bfc41bf2d62c889870025a257dd46ab76e1b1945"
+    },
+    "industrial_msgs/msg/ServiceReturnCode.msg": {
+      "bytes": 259,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/industrial_msgs/msg/ServiceReturnCode.msg",
+      "sha256": "8f6de01d824b4c9c64103680cebf91b134ae4c17f006ba55e547fe68fc9a52a9"
+    },
+    "industrial_msgs/msg/TriState.msg": {
+      "bytes": 330,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/industrial_msgs/msg/TriState.msg",
+      "sha256": "2f663b2c98d7e01b68d41beed26dd39a1adf8fa71ca9888702cee4e643efeee9"
+    },
+    "industrial_msgs/srv/CmdJointTrajectory.srv": {
+      "bytes": 397,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/industrial_msgs/srv/CmdJointTrajectory.srv",
+      "sha256": "c22ae18b625b680429b05d4f2fe96475f7ba7fc9b97edef68814647ee90e5648"
+    },
+    "industrial_msgs/srv/GetRobotInfo.srv": {
+      "bytes": 228,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/industrial_msgs/srv/GetRobotInfo.srv",
+      "sha256": "f294153cd4b92d8d5540678077257e3aefa61be8cc6bca50fa7517841856b8b9"
+    },
+    "industrial_msgs/srv/SetDrivePower.srv": {
+      "bytes": 223,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/industrial_msgs/srv/SetDrivePower.srv",
+      "sha256": "adc36620c8d85b1bf40b55297742c036707bb41393a2aa6a30f77dd8df8799ca"
+    },
+    "industrial_msgs/srv/SetRemoteLoggerLevel.srv": {
+      "bytes": 301,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/industrial_msgs/srv/SetRemoteLoggerLevel.srv",
+      "sha256": "316136a5cd5d17a81c4f3c1ddc6a09895cf21e7e85aef1c8f2e5ea3ea151a238"
+    },
+    "industrial_msgs/srv/StartMotion.srv": {
+      "bytes": 114,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/industrial_msgs/srv/StartMotion.srv",
+      "sha256": "06934498171e4d97b6df2dd9d7f0d39e5fbb9cea156573ea98d5acc01b73b1ed"
+    },
+    "industrial_msgs/srv/StopMotion.srv": {
+      "bytes": 157,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/industrial_msgs/srv/StopMotion.srv",
+      "sha256": "2eed9a17e1d7ed421fd3ecd2583499c14cb295302a459f0b2406fd3f8aa12daf"
+    },
+    "motoros2_interfaces/msg/AlarmCauseRemedy.msg": {
+      "bytes": 203,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/motoros2_interfaces/msg/AlarmCauseRemedy.msg",
+      "sha256": "290a311471aff3baa0bd79e3e08330f8596334612b5fa9cdab75146f24d94869"
+    },
+    "motoros2_interfaces/msg/AlarmInfo.msg": {
+      "bytes": 1039,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/motoros2_interfaces/msg/AlarmInfo.msg",
+      "sha256": "0e751eec501290d29fba03880493868be919da4939eb58a3bed5508e8a3d37b1"
+    },
+    "motoros2_interfaces/msg/ErrorInfo.msg": {
+      "bytes": 780,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/motoros2_interfaces/msg/ErrorInfo.msg",
+      "sha256": "71046bedd075abe0de6e66da031ece5dce96ccf888a4c87406b991ca7c7ce326"
+    },
+    "motoros2_interfaces/msg/InformJobCrudResultCodes.msg": {
+      "bytes": 761,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/motoros2_interfaces/msg/InformJobCrudResultCodes.msg",
+      "sha256": "a38d285634bde4d320cd0f32515bbce26a161746732af80b93f90369211c0549"
+    },
+    "motoros2_interfaces/msg/InitTrajEnum.msg": {
+      "bytes": 2686,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/motoros2_interfaces/msg/InitTrajEnum.msg",
+      "sha256": "fef1e085ebca153094100a9e8a0066f18643f657b8493de25c1fb139059219fd"
+    },
+    "motoros2_interfaces/msg/IoResultCodes.msg": {
+      "bytes": 1185,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/motoros2_interfaces/msg/IoResultCodes.msg",
+      "sha256": "17c2bd4276006972b4467092477d3cb8a9867c9f17c35ac1ee94df364c4766f9"
+    },
+    "motoros2_interfaces/msg/MotionReadyEnum.msg": {
+      "bytes": 2866,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/motoros2_interfaces/msg/MotionReadyEnum.msg",
+      "sha256": "b7fc0a1961869614a588477f2b649f7b2b416d34b194bb6267adb3d7d596a3dc"
+    },
+    "motoros2_interfaces/msg/QueueResultEnum.msg": {
+      "bytes": 847,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/motoros2_interfaces/msg/QueueResultEnum.msg",
+      "sha256": "c14bf7fb06d602f96d442510587e9c7fbe4229f21324bf801e97c87649adb512"
+    },
+    "motoros2_interfaces/msg/SelectionResultCodes.msg": {
+      "bytes": 944,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/motoros2_interfaces/msg/SelectionResultCodes.msg",
+      "sha256": "7c94b744ec47c89da4f37ddfa2113d816edfc4ad99d359ff30d9cd5e832b4fe4"
+    },
+    "motoros2_interfaces/srv/GetActiveAlarmInfo.srv": {
+      "bytes": 1108,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/motoros2_interfaces/srv/GetActiveAlarmInfo.srv",
+      "sha256": "8d25296b20f84420a58214c33e6bedcba15bb8ad685a3146e3b85f93288fedd7"
+    },
+    "motoros2_interfaces/srv/ListInformJobs.srv": {
+      "bytes": 847,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/motoros2_interfaces/srv/ListInformJobs.srv",
+      "sha256": "f15c987cf227d396b8c8d4cc52d7689648395b9f590b6af8b768a9c321880f4f"
+    },
+    "motoros2_interfaces/srv/QueueTrajPoint.srv": {
+      "bytes": 688,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/motoros2_interfaces/srv/QueueTrajPoint.srv",
+      "sha256": "a512280116529112aedfeb35549fdc0c547c34b217aa57eac6254d59513bcf02"
+    },
+    "motoros2_interfaces/srv/ReadGroupIO.srv": {
+      "bytes": 921,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/motoros2_interfaces/srv/ReadGroupIO.srv",
+      "sha256": "cdf7cb3980ca2f186963b7251aa707ae69c921d7f7f2a59ca32da4abe1a476d6"
+    },
+    "motoros2_interfaces/srv/ReadMRegister.srv": {
+      "bytes": 942,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/motoros2_interfaces/srv/ReadMRegister.srv",
+      "sha256": "cdff2fbbc252dac1ab90754f9dd4afb5ed852f54a0eef2b8db77a149b397b226"
+    },
+    "motoros2_interfaces/srv/ReadSingleIO.srv": {
+      "bytes": 709,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/motoros2_interfaces/srv/ReadSingleIO.srv",
+      "sha256": "1aa2349d0a045b6ac941ea25ba1361f432e077f9233cb699d0c0beb2c2a1920f"
+    },
+    "motoros2_interfaces/srv/ResetError.srv": {
+      "bytes": 776,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/motoros2_interfaces/srv/ResetError.srv",
+      "sha256": "eb19edd21e082cf866bb4a8b2a07679d0301e3c3fcf116230e77e87acf8df768"
+    },
+    "motoros2_interfaces/srv/SelectMotionTool.srv": {
+      "bytes": 4776,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/motoros2_interfaces/srv/SelectMotionTool.srv",
+      "sha256": "89b2f66e3dea72582cb03180d0b5a0c6a98f8e1a432928810310215545a396e5"
+    },
+    "motoros2_interfaces/srv/StartPointQueueMode.srv": {
+      "bytes": 994,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/motoros2_interfaces/srv/StartPointQueueMode.srv",
+      "sha256": "2c29a9cef3ecb09a9e22c72c5c19a912f3be4460fe2f6c49a7a2a0f4d7ed879c"
+    },
+    "motoros2_interfaces/srv/StartTrajMode.srv": {
+      "bytes": 1005,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/motoros2_interfaces/srv/StartTrajMode.srv",
+      "sha256": "bc4a560b33854a1927af0df0680a03c476616b1cefa9c7e7277f4ea3ec694c4d"
+    },
+    "motoros2_interfaces/srv/WriteGroupIO.srv": {
+      "bytes": 923,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/motoros2_interfaces/srv/WriteGroupIO.srv",
+      "sha256": "fb664112f34580ec57df3892da0089956d7d9d123174dd00ff7c01f480ab0445"
+    },
+    "motoros2_interfaces/srv/WriteMRegister.srv": {
+      "bytes": 925,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/motoros2_interfaces/srv/WriteMRegister.srv",
+      "sha256": "2211208e517e78901dae3bc0ccee62f9528b2be1d2d77e6df3aeff6a3649a1a8"
+    },
+    "motoros2_interfaces/srv/WriteSingleIO.srv": {
+      "bytes": 760,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/motoros2_interfaces/srv/WriteSingleIO.srv",
+      "sha256": "3e8c1d04236c7e4a8ded058621ab662c9b83f9ca6128469f91de520402205073"
+    },
+    "sensor_msgs/msg/JointState.msg": {
+      "bytes": 999,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/sensor_msgs/msg/JointState.msg",
+      "sha256": "711d1771a002c7190e5bbe746a163a67477c1e2a45482a64f1fe339815ca6f5d"
+    },
+    "std_msgs/msg/Header.msg": {
+      "bytes": 322,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/std_msgs/msg/Header.msg",
+      "sha256": "d2cea14630e39ed0fa5b432ba9160a7c38855b9427d3344f99e83e83facb53c2"
+    },
+    "std_srvs/srv/Trigger.srv": {
+      "bytes": 122,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/std_srvs/srv/Trigger.srv",
+      "sha256": "81e80d26771d0c0af8783938720c763cacc429e68d9d6b9c1f912474db0d8dca"
+    },
+    "tf2_msgs/msg/TFMessage.msg": {
+      "bytes": 44,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/tf2_msgs/msg/TFMessage.msg",
+      "sha256": "f3fca610a59b31ee4c7b740522ecdd0fd8c76002170088111409e4df513f1dfc"
+    },
+    "trajectory_msgs/msg/JointTrajectory.msg": {
+      "bytes": 465,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/trajectory_msgs/msg/JointTrajectory.msg",
+      "sha256": "d63cda4a5ec81824ed4acd737e6b5903449fb1a7e2f5cdcdcc4c49285f01117c"
+    },
+    "trajectory_msgs/msg/JointTrajectoryPoint.msg": {
+      "bytes": 1176,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/trajectory_msgs/msg/JointTrajectoryPoint.msg",
+      "sha256": "2358055d26d27c0c302e921f90d5aa59cb5feb3e22937f8ac98314b0c52ba8f4"
+    },
+    "trajectory_msgs/msg/MultiDOFJointTrajectory.msg": {
+      "bytes": 485,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/trajectory_msgs/msg/MultiDOFJointTrajectory.msg",
+      "sha256": "070af6b4c9f4238d9de36621105d78c999dbad2045d0cb2a633f86a17f73f6b7"
+    },
+    "trajectory_msgs/msg/MultiDOFJointTrajectoryPoint.msg": {
+      "bytes": 427,
+      "path": "/private/tmp/uwvm-yaskawa-source-generation-20261018-r2/input/trajectory_msgs/msg/MultiDOFJointTrajectoryPoint.msg",
+      "sha256": "7e3a4b150ff7ce8d7d897a480d8d324a244a0afb4a07fdf6241074071170ac7a"
+    }
+  },
+  "original_source_inputs": {
+    "adapter": {
+      "bytes": 73639,
+      "sha256": "e830acc0c4a1cb243cb50f28cbabb71299dcc692ecd9a0b42dd725f4a4f361b3"
+    },
+    "bounded": {
+      "bytes": 239137,
+      "sha256": "3c40ed90910bde0ec15ae8976b0e34c37061c2eeacc121259604e7eaeba89f2d"
+    },
+    "exporter": {
+      "bytes": 10784,
+      "sha256": "55c5e504a1d61a648f73dd732aa0561f4b4dc0adf54dbe631857edf1564f3ac6"
+    },
+    "parent": {
+      "bytes": 61312,
+      "sha256": "1a73d6a87624e563bbb6be2624e77b51d7dba0f0f2fb524cda4079f493381826"
+    }
+  },
+  "source_preparation_executed": true
+}

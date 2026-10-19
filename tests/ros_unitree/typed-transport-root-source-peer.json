@@ -1,0 +1,47 @@
+{
+  "format_version": 1,
+  "kind": "root-independent-typed-transport-source-peer",
+  "status": "SOURCE_REVIEW_NO_ADDITIONAL_CONCRETE_BLOCKER_EXECUTION_PENDING",
+  "reviewer": "/root",
+  "basis": "Direct Root collaboration source-peer closure and subsequent explicit actual-netns API delta acceptance on2026-10-16",
+  "reviewed_files": [
+    {
+      "path": "tests/ros_unitree/run_typed_transport.py",
+      "bytes": 7542,
+      "sha256": "ea14346d0a851a8c6f933bd586967a2e6e7febbfdfe6550fe9533a020168874b"
+    },
+    {
+      "path": "tests/ros_unitree/typed_transport_inputs.py",
+      "bytes": 49021,
+      "sha256": "c230655f895c488b625319733e616394741192e372d9d60807674373e7e281ad"
+    },
+    {
+      "path": "tests/ros_unitree/typed_transport_session.py",
+      "bytes": 15945,
+      "sha256": "e88f174687cd6cfaf00289c01cccfabd78503bd356caa767aab08acd8759f469"
+    }
+  ],
+  "reviewed_scope": [
+    "UTN1/UTM1 opcode order against actual current native witness source",
+    "Complete native GO/HG carrier fixture and Request/Response witness",
+    "Denied and positive closed quiet-window counters",
+    "Held exec gate and opened executable/map_files APIs against existing native.py",
+    "Compact s00..s27 UNIX names with strict104-byte bound",
+    "Actual Typed Frame preservation fields and exact original manifest input-ledger discovery",
+    "Exactly14 admitted Wasm mappings in otherwise complete current Worker catalog",
+    "Actual source/native identity/generation/full-MD input admission interfaces",
+    "Root-directed current_loopback current-netns if_nameindex/read-only SIOCGIFFLAGS UP|LOOPBACK proof; inherited sysfs removed; exact namespace before/after; no Guest rights change"
+  ],
+  "source_review_is_execution": false,
+  "pure_protocol_checks_executed": 0,
+  "actual_Runtime_cases_executed": 0,
+  "native_DDS_cases_executed": 0,
+  "remaining": "Root guarded25 pure protocol checks and all28 actual typed DDS cases still pending; successful actual producer inputs and current complete source freeze required",
+  "reviewed_dependencies": [
+    {
+      "path": "tests/ros_unitree/common.py",
+      "bytes": 35203,
+      "sha256": "21e2486b083431063e9301f5a9d34d1ebb367013b2413886deda9b489ab22061"
+    }
+  ]
+}

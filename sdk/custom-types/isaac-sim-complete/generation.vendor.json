@@ -1,0 +1,309 @@
+{
+  "compiler_execution": "NOT_RUN",
+  "declared_constants": {},
+  "declared_defaults": {},
+  "declared_empty_default_native_binding": "REFUSED_UNTIL_INDEPENDENT_ORIGINAL_NATIVE_IDL_SOURCE_PROOF",
+  "default_authority": [],
+  "facade_template_inputs": [],
+  "format": "uwvm-ros-vendor-complete-bounded-v1",
+  "implemented_record_outputs": [
+    "c",
+    "cpp",
+    "rust",
+    "javascript",
+    "assemblyscript",
+    "tinygo"
+  ],
+  "implicit_permissions": [],
+  "member_map": {
+    "builtin_interfaces/msg/Time": {
+      "assemblyscript": {
+        "nanosec": "nanosec",
+        "sec": "sec"
+      },
+      "c": {
+        "nanosec": "nanosec",
+        "sec": "sec"
+      },
+      "cpp": {
+        "nanosec": "nanosec",
+        "sec": "sec"
+      },
+      "javascript": {
+        "nanosec": "nanosec",
+        "sec": "sec"
+      },
+      "rust": {
+        "nanosec": "nanosec",
+        "sec": "sec"
+      },
+      "tinygo": {
+        "nanosec": "Nanosec",
+        "sec": "Sec"
+      }
+    },
+    "sensor_msgs/msg/JointState": {
+      "assemblyscript": {
+        "effort": "effort",
+        "header": "header",
+        "name": "name",
+        "position": "position",
+        "velocity": "velocity"
+      },
+      "c": {
+        "effort": "effort",
+        "header": "header",
+        "name": "name",
+        "position": "position",
+        "velocity": "velocity"
+      },
+      "cpp": {
+        "effort": "effort",
+        "header": "header",
+        "name": "name",
+        "position": "position",
+        "velocity": "velocity"
+      },
+      "javascript": {
+        "effort": "effort",
+        "header": "header",
+        "name": "name",
+        "position": "position",
+        "velocity": "velocity"
+      },
+      "rust": {
+        "effort": "effort",
+        "header": "header",
+        "name": "name",
+        "position": "position",
+        "velocity": "velocity"
+      },
+      "tinygo": {
+        "effort": "Effort",
+        "header": "Header",
+        "name": "Name",
+        "position": "Position",
+        "velocity": "Velocity"
+      }
+    },
+    "std_msgs/msg/Header": {
+      "assemblyscript": {
+        "frame_id": "frame_id",
+        "stamp": "stamp"
+      },
+      "c": {
+        "frame_id": "frame_id",
+        "stamp": "stamp"
+      },
+      "cpp": {
+        "frame_id": "frame_id",
+        "stamp": "stamp"
+      },
+      "javascript": {
+        "frame_id": "frame_id",
+        "stamp": "stamp"
+      },
+      "rust": {
+        "frame_id": "frame_id",
+        "stamp": "stamp"
+      },
+      "tinygo": {
+        "frame_id": "Frame_id",
+        "stamp": "Stamp"
+      }
+    }
+  },
+  "native_execution": "NOT_RUN",
+  "native_exporter_helper_source": {
+    "bytes": 10784,
+    "sha256": "55c5e504a1d61a648f73dd732aa0561f4b4dc0adf54dbe631857edf1564f3ac6"
+  },
+  "native_registry_emitted": false,
+  "outputs": {
+    "bounded_interfaces.h": {
+      "bytes": 1332,
+      "sha256": "d9c8b1a22bd5c3877398d05fa5c545b331041cf1cd741ff356bbacda32f64150"
+    },
+    "bounded_interfaces.hpp": {
+      "bytes": 3923,
+      "sha256": "2ddbcf92699a416b8dab0a2264ba3dfba6a1dc786dbb476b881c77ee9e508842"
+    },
+    "bounded_records.go": {
+      "bytes": 13910,
+      "sha256": "3501c60ba3b1a42ef654c249a619a8825c4007c45a4af7651fbfe0e9c21ffd6a"
+    },
+    "bounded_records.h": {
+      "bytes": 20332,
+      "sha256": "d2911463dea7c25dfb11b1ea24125d2b3d6253951d293d0ce287d422f967e6df"
+    },
+    "bounded_records.hpp": {
+      "bytes": 3711,
+      "sha256": "ed116ee12034f5b8930008094d187f7362f31345406029c623c7c344ebd1b896"
+    },
+    "bounded_records.mjs": {
+      "bytes": 12735,
+      "sha256": "3156f044d08e5e38028d263f45987b3ff14fc6b1eb74358ef84ee545d10604e0"
+    },
+    "bounded_records.rs": {
+      "bytes": 11973,
+      "sha256": "bd586fe6f904b290501772eb3e6888ee0fe79f5dc47c446392c4ac3b5919b397"
+    },
+    "bounded_records.ts": {
+      "bytes": 13492,
+      "sha256": "ed9b2fbb55ab13c7c41673e2ec2a72ef4e7dc16d7ca4430ee00fc2af02b112e5"
+    },
+    "native_constants.hpp": {
+      "bytes": 267,
+      "sha256": "4700d3bdf5da49f6392540d0487fa661da6f06c15fc817f1cf6e73bd44134b7c"
+    },
+    "native_identity.cc": {
+      "bytes": 10456,
+      "sha256": "e08e822c344c4c245f53b0f7f67206373bfb48eae64e5b7c6ee5e4e507016ee2"
+    }
+  },
+  "records": [
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 8,
+      "codec_identity": "UWVMROS1_0fd520c23fd8cb06e2c27292fdc20694732fa9332d452fc3fa31da90f7605fb7",
+      "expanded_nodes": 3,
+      "maximum_wire_bytes": 8,
+      "minimum_wire_bytes": 8,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "builtin_interfaces/msg/Time"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 76,
+      "codec_identity": "UWVMROS1_afba9e74be3c5e3321750c1c4c30ba2925269f75b9da43a6d5c1e93d293d7396",
+      "expanded_nodes": 5,
+      "maximum_wire_bytes": 76,
+      "minimum_wire_bytes": 12,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "std_msgs/msg/Header"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 5980,
+      "codec_identity": "UWVMROS1_2fe8e1de38676a3880ca61266fb575e3625198e66a1da1708cf8c103cb829cac",
+      "expanded_nodes": 266,
+      "maximum_wire_bytes": 5980,
+      "minimum_wire_bytes": 28,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "sensor_msgs/msg/JointState"
+    }
+  ],
+  "required_native_domain_provider": "paired complete_vendor descriptor/Native trait/source-metadata admission; requires actual Root implementation and full rebuild; old refusal is preserved",
+  "source_generator_pair": {
+    "bounded": {
+      "bytes": 239137,
+      "sha256": "3c40ed90910bde0ec15ae8976b0e34c37061c2eeacc121259604e7eaeba89f2d"
+    },
+    "industrial_adapter": {
+      "bytes": 73639,
+      "sha256": "e830acc0c4a1cb243cb50f28cbabb71299dcc692ecd9a0b42dd725f4a4f361b3"
+    },
+    "parent": {
+      "bytes": 61312,
+      "sha256": "1a73d6a87624e563bbb6be2624e77b51d7dba0f0f2fb524cda4079f493381826"
+    }
+  },
+  "source_inputs": {
+    "catalog": {
+      "bytes": 901,
+      "sha256": "11a9851d88a178df7a1863a08996c0fa7e1ff7607def24a2d5cd71ba2757b3b2"
+    },
+    "definitions": [
+      {
+        "bytes": 421,
+        "file": "builtin_interfaces/msg/Time.msg",
+        "sha256": "dc5a01ddde3aecffee21eb24974fe77cc969f873218a2b1811aa0ac8a456b8bd"
+      },
+      {
+        "bytes": 322,
+        "file": "std_msgs/msg/Header.msg",
+        "sha256": "d2cea14630e39ed0fa5b432ba9160a7c38855b9427d3344f99e83e83facb53c2"
+      },
+      {
+        "bytes": 999,
+        "file": "sensor_msgs/msg/JointState.msg",
+        "sha256": "711d1771a002c7190e5bbe746a163a67477c1e2a45482a64f1fe339815ca6f5d"
+      }
+    ]
+  },
+  "source_template_inputs": {
+    "interface_templates/bounded_interfaces.go.in": {
+      "bytes": 9692,
+      "sha256": "c9e7893ccedc67b91a3aebc51c1e0c3c65263f03b2769aa07c34fcfb6befa1f7"
+    },
+    "interface_templates/bounded_interfaces.mjs.in": {
+      "bytes": 17046,
+      "sha256": "10986eddd766435dde89b0d3046ef7f48705e2c3e21301c99163c3a7d4ea62fe"
+    },
+    "interface_templates/bounded_interfaces.rs.in": {
+      "bytes": 15514,
+      "sha256": "063130e797684df0530aa1882f8082a10d5756ceb892677d8082e980c7b29b18"
+    },
+    "interface_templates/bounded_interfaces.ts.in": {
+      "bytes": 16626,
+      "sha256": "a61a7b7eb3b5464648577f3ab44629a5c6140d04effff6e4099509f68b204ac5"
+    }
+  },
+  "status": "GENERATED_SOURCE_ONLY_NOT_COMPILED_OR_EXECUTED",
+  "types": [
+    {
+      "adapter_codec_identity": "UWVMROS1_0fd520c23fd8cb06e2c27292fdc20694732fa9332d452fc3fa31da90f7605fb7",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_0fd520c23fd8cb06e2c27292fdc20694732fa9332d452fc3fa31da90f7605fb7",
+          "expanded_nodes": 3,
+          "maximum_wire_bytes": 8,
+          "minimum_wire_bytes": 8,
+          "native_identity": null,
+          "type": "builtin_interfaces/msg/Time"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "builtin_interfaces/msg/Time"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_afba9e74be3c5e3321750c1c4c30ba2925269f75b9da43a6d5c1e93d293d7396",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_afba9e74be3c5e3321750c1c4c30ba2925269f75b9da43a6d5c1e93d293d7396",
+          "expanded_nodes": 5,
+          "maximum_wire_bytes": 76,
+          "minimum_wire_bytes": 12,
+          "native_identity": null,
+          "type": "std_msgs/msg/Header"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "std_msgs/msg/Header"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_2fe8e1de38676a3880ca61266fb575e3625198e66a1da1708cf8c103cb829cac",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_2fe8e1de38676a3880ca61266fb575e3625198e66a1da1708cf8c103cb829cac",
+          "expanded_nodes": 266,
+          "maximum_wire_bytes": 5980,
+          "minimum_wire_bytes": 28,
+          "native_identity": null,
+          "type": "sensor_msgs/msg/JointState"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "sensor_msgs/msg/JointState"
+    }
+  ]
+}

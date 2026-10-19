@@ -1,0 +1,21 @@
+--- preserved-source44/prepare_noetic_native.py
++++ prepare_noetic_native.py
+@@ -344,8 +344,18 @@
+         def configure(label, project, build, extra):
+             build.mkdir(mode=0o700)
+             logical = lambda path: '/owned/' + str(Path(path).relative_to(work))
++            # GNU9 with CMake3.16 can emit -MD/-MF without any explicit -MT.
++            # Keep the official project unchanged and set the compile rule for
++            # every configured target instead. Place the full dependency flags
++            # after <FLAGS>, so an earlier target-specific -MF cannot select a
++            # different file. Each object gets its own file and explicit rule
++            # target; build_proof still verifies the real verbose argv and the
++            # complete retained dependency rule, including all system headers.
++            compile_object = ('<CMAKE_CXX_COMPILER> <DEFINES> <INCLUDES> <FLAGS> '
++                '-MD -MF <OBJECT>.full.d -MT <OBJECT> -o <OBJECT> -c <SOURCE>')
+             return run(label + '-configure', native([cmake, '-S', project, '-B', logical(build), '-G', 'Unix Makefiles',
+                 '-DCMAKE_CXX_COMPILER=' + cxx, '-DCMAKE_MAKE_PROGRAM=' + make, '-DPYTHON_EXECUTABLE=' + python,
++                '-DCMAKE_CXX_COMPILE_OBJECT=' + compile_object,
+                 '-DCMAKE_EXPORT_COMPILE_COMMANDS=ON', '-DCMAKE_BUILD_TYPE=', '-DCATKIN_ENABLE_TESTING=OFF',
+                 '-DBUILD_TESTING=OFF', '-DCMAKE_SKIP_RPATH=TRUE',
+                 '-DCMAKE_CXX_FLAGS=-O1 -g0 -UNDEBUG -fno-fast-math -ffp-contract=off -MD',

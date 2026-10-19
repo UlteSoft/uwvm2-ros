@@ -1,0 +1,230 @@
+{
+  "format_version": 1,
+  "kind": "independent-complete-MoonBit-JointState-Guest-source-recipe",
+  "status": "SOURCE_ONLY_UNEXECUTED",
+  "language": "moonbit",
+  "targets": [
+    "wasm",
+    "wasm-gc"
+  ],
+  "ros_versions": [
+    1,
+    2
+  ],
+  "modes": [
+    0,
+    1
+  ],
+  "build_profiles": [
+    "debug",
+    "release"
+  ],
+  "authored_build_variants": 16,
+  "actual_generated_bundles": 0,
+  "actual_compiles": 0,
+  "actual_Guest_runs": 0,
+  "actual_native_deliveries": 0,
+  "default_authority": [],
+  "compiler": {
+    "moonc": "v0.10.15+943464bfa (2026-10-12)",
+    "moon": "0.1.20261012 (748b63c 2026-10-12)",
+    "actual_core_sha256": "96d30f4dbcc6a9e1736ef26fbdd0e8fb0e97cb01d50e55d2a0072208b8061ae5",
+    "selection": "Actual existing SDK/producer receipt, binary versions and dependency pins must be rechecked by future Linux owner; no compiler was invoked here."
+  },
+  "emission": {
+    "source": "sdk/custom-types/moonbit_profile.py",
+    "fixed_runtime_source": "sdk/custom-types/moonbit_runtime.mbt.in",
+    "argv": [
+      "{ADMITTED_PYTHON}",
+      "-I",
+      "-B",
+      "{SOURCE}/sdk/custom-types/moonbit_profile.py",
+      "{ACTUAL_NATIVE_BOUND_CATALOG}",
+      "--language",
+      "moonbit",
+      "--out",
+      "{FRESH_OUTPUT_OUTSIDE_SDK}",
+      "--require-native-identity"
+    ],
+    "outputs": [
+      "moonbit/bounded_records.mbt",
+      "moonbit/moon.pkg",
+      "generation.moonbit.json"
+    ],
+    "rule": "Actual same bound catalog/source_inputs and complete resolved Record objects as native generation; compare every whole output/source/foundation/record/default/identity/bound pin before/after. Native registry is NEVER emitted by this optional producer. Existing managed_profile.py/managed_csharp.py/six emitters remain unchanged."
+  },
+  "fresh_staging": [
+    {
+      "source": "sdk/robots/vendors/examples/joint_state/moonbit/moon.mod",
+      "destination": "{PROJECT}/moon.mod"
+    },
+    {
+      "source": "sdk/robots/vendors/examples/joint_state/moonbit/moon.work",
+      "destination": "{PROJECT}/moon.work"
+    },
+    {
+      "source": "{ACTUAL_SAME_REVIEWED_SOURCE}/sdk/moonbit/whole-tree",
+      "destination": "{PROJECT}/ros-sdk",
+      "rule": "complete byte-exact SDK copy, manifests included; bind every actual file, no registry fallback"
+    },
+    {
+      "source": "{ACTUAL_MOONBIT_GENERATED_BUNDLE}/moonbit/bounded_records.mbt",
+      "destination": "{PROJECT}/records/bounded_records.mbt"
+    },
+    {
+      "source": "{ACTUAL_MOONBIT_GENERATED_BUNDLE}/moonbit/moon.pkg",
+      "destination": "{PROJECT}/records/moon.pkg"
+    },
+    {
+      "source": "sdk/robots/vendors/examples/joint_state/moonbit/main.mbt",
+      "destination": "{PROJECT}/guest/main.mbt"
+    },
+    {
+      "source": "sdk/robots/vendors/examples/joint_state/moonbit/observe_ros{ros}.mbt",
+      "destination": "{PROJECT}/guest/observe.mbt"
+    },
+    {
+      "source": "sdk/robots/vendors/examples/joint_state/moonbit/mode_default.mbt or mode_positive.mbt",
+      "destination": "{PROJECT}/guest/mode.mbt"
+    },
+    {
+      "source": "sdk/robots/vendors/examples/joint_state/moonbit/guest_ros{ros}.pkg",
+      "destination": "{PROJECT}/guest/moon.pkg"
+    },
+    {
+      "source": "sdk/examples/moonbit/stdio/write.mbt",
+      "destination": "{PROJECT}/stdio/write.mbt",
+      "rule": "original exact ASCII writer bytes, not a replacement codec"
+    },
+    {
+      "source": "sdk/examples/moonbit/stdio/moon.pkg",
+      "destination": "{PROJECT}/stdio/moon.pkg"
+    },
+    {
+      "source": "sdk/robots/vendors/examples/joint_state/moonbit/read.mbt",
+      "destination": "{PROJECT}/stdio/read.mbt"
+    }
+  ],
+  "staging_scope": "A new project per target/backend/mode/profile. Do not build the unselected source-variant directory directly. Preserve original source/generation receipts and all staged file full7/byte-equality receipts; never rewrite generated code or SDK.",
+  "compile": {
+    "cwd": "{PROJECT}",
+    "package": "guest; retain actual compiler package selection/output receipt. Select exactly one argv and one literal target, never pass brace placeholders.",
+    "note": "Known maintained producer build flags and source-pinned new-style manifest syntax only; final pinned tool must check/build them. Actual complete core/compiler/SDK/MD/package/link source/output identity, normal exit and raw errors must be retained.",
+    "argv_debug": [
+      "{ACTUAL_MOON}",
+      "-C",
+      "{PROJECT}",
+      "build",
+      "--frozen",
+      "--target",
+      "{wasm|wasm-gc}",
+      "--debug"
+    ],
+    "argv_release": [
+      "{ACTUAL_MOON}",
+      "-C",
+      "{PROJECT}",
+      "build",
+      "--frozen",
+      "--target",
+      "{wasm|wasm-gc}",
+      "--release",
+      "--no-strip"
+    ]
+  },
+  "arena": {
+    "memory_index": 0,
+    "address_bits": 32,
+    "raw_handles_offsets_lengths_bits": 64,
+    "export": "memory",
+    "minimum_pages": 256,
+    "maximum_pages": 1024,
+    "shared": false,
+    "linear_heap_lower_bound": 8519680,
+    "GC_JS_builtin_strings": false,
+    "stdout_descriptor": [
+      0,
+      16
+    ],
+    "stdout_bytes": [
+      32,
+      289
+    ],
+    "new_stdin_iovec_and_result": [
+      320,
+      332
+    ],
+    "new_stdin_one_byte": [
+      352,
+      353
+    ],
+    "ROS_input": [
+      65536,
+      4259840
+    ],
+    "ROS_output": [
+      4259840,
+      8454144
+    ],
+    "ROS_slot_padding": [
+      8454144,
+      8454160
+    ],
+    "actual_validation": "Validate whole actual Wasm, exact memory0 and min/max/unshared, entry/exports/types and every imported function. Prove compiler static segments/actual heap disjoint from BOTH original SDK reservation and additional stdin320..353. Existing SDK producer-contract covers only its original scratch; this recipe does not fake an existing expanded layout qualification."
+  },
+  "imports": {
+    "ROS": "Exactly selected uwvm_ros{ros}_v1 reachable ABI functions; no other backend, Host native library, management/debug/update/source-control import or ABI coverage probe execution.",
+    "WASI": [
+      "fd_read",
+      "fd_write"
+    ],
+    "unknown": "Refuse spectest/browser/env/JS builtin imports or unreviewed startup permissions; do not add successful stubs, preopens, clock/env/random or native fallback."
+  },
+  "execution": {
+    "default": "Actual new_session checks ABI1 and arena; exactly one node.open(joint-state,TopicSubscribe) must return13 with zero acquired owner. Session.shutdown completes and all outcome handles0 before marker.",
+    "positive": "One actual node.subscription joint-state, one Executor source and callback full generated decoder; no generic typed SDK interface extension. One binary R byte releases one actual spin, at most64. Native idle11 is represented by existing Executor code0/delivered0; callback code11 remains failure.",
+    "fixture": "observer-fixture.json; every Header/name/position/emptyvelocity/effort field exactly checked; ROS1 uint seq/sec/nsec, ROS2 signed sec/no seq.",
+    "cleanup": "Executor.close stops local callbacks; actual Session.shutdown closes every real owner before success. Check report.started, code and every completed/outcome code; retain diagnostics.session + original cleanup history/retirements. No replay or fake trap recovery.",
+    "markers": [
+      "PASS_JOINT_STATE_DEFAULT_DENIED",
+      "PASS_JOINT_STATE_FULL_VALUE"
+    ],
+    "native": "Actual separately owned matching native publisher/Gateway/type/default/identity/QoS/source/permission/process proof mandatory; canonical source generation or printed marker is not native delivery."
+  },
+  "explicit_source_refusals": [
+    "native field not MoonBit ASCII lowercase-initial lident",
+    "keyword/reserved native field, including sealed",
+    "new authoritative scalar or complete-value semantic rule",
+    "unresolved/cyclic/unbounded/oversized/unknown schema already refused by actual bounded IR",
+    "unsupported array/string/nested native default grammar already refused by original parser"
+  ],
+  "future_codec_sources": {
+    "policy_suite": "tests/ros_custom_types/moonbit-records/test_moonbit_profile.py::suite with actual pinned modules and owned scratch/guard (not executed)",
+    "positive_fixture": "tests/ros_custom_types/moonbit-records/fixture/catalog.preparation.json: nine COMPLETE existing interfaces and exact copied definitions; no record projection",
+    "negative_original_fixture": "original managed-records fixture remains unchanged and whole-schema refused because native field sealed is reserved by explicit optional policy",
+    "real_typed_MoonBit_tests": [
+      "records_test.mbt (five authored methods)",
+      "joint_ros1_test.mbt (one)",
+      "joint_ros2_test.mbt (one)"
+    ],
+    "commands": "Stage exact generated records as records/ plus selected actual test source into a fresh module uwvm/moonbit_record_contract with actual SDK workspace. Run admitted moon -C PROJECT test --frozen --target wasm/wasm-gc later; do not combine mismatched generated catalogs or treat codec tests as ROS delivery.",
+    "qualification": "Seven authored typed test methods and nine source-generation/refusal roles are not executed/passing results."
+  },
+  "adapter_plan": {
+    "entry": "plan(..., read=trusted_same_FD_reader, moonbit=explicit_selection)",
+    "selection_keys": [
+      "generation",
+      "generated_files",
+      "source_files",
+      "producer_inputs"
+    ],
+    "producer_input_keys": [
+      "producer_source",
+      "toolchain_receipt",
+      "dependency_inventory",
+      "core_archive"
+    ],
+    "rule": "Source/receipt/inventory/archive byte association only. Default six and explicit existing three-managed path remain unchanged when moonbit omitted. No runtime/source authority or native qualification follows."
+  },
+  "limits": "No promises of universally accepted schemas, compiler success, OOM/trap cleanup, threads, all vendors/platforms or unchanged measured performance. All future execution only original SSH Linux64GiB/zero-swap cgroup under a separate actual release."
+}

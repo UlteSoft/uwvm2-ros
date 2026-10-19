@@ -1,0 +1,60 @@
+{
+  "schema": "uwvm-javascript-owned-service-source-recipes-v1",
+  "status": "SOURCE_ONLY_UNEXECUTED",
+  "backend": 2,
+  "optional_catalog": "sdk/abi/rmw-service-v1.json",
+  "builtin": "roswasm:rmw_service_native",
+  "builtin_export": "invoke(index,scalarArgs,inputUint8Array,outputUint8Array)->u32",
+  "producer_guide": "sdk/javascript/guest/OWNED_RMW_SERVICE.md",
+  "builtin_guide": "sdk/javascript/guest/OWNED_SERVICE_NATIVE.md",
+  "default_grants": [],
+  "original_business_abi81_unchanged": true,
+  "legacy_business_service_fallback": false,
+  "records": {
+    "operator": "sdk/rmw_wasm/default_control/managed/generate_managed.py",
+    "mode": "--records-only",
+    "required_product": "bounded_records.mjs",
+    "root_count": 7,
+    "record_count": 32,
+    "output_proof": "generation.control-managed.json",
+    "actual_generation": 0
+  },
+  "sdk_modules": [
+    "sdk/javascript/owned_service/bridge.mjs",
+    "sdk/javascript/owned_service/wire.mjs",
+    "sdk/javascript/owned_service/owned.mjs",
+    "sdk/javascript/owned_service/control.mjs"
+  ],
+  "applications": [
+    "sdk/examples/javascript_owned_service/control_client.mjs",
+    "sdk/examples/javascript_owned_service/control_server.mjs",
+    "sdk/examples/javascript_owned_service/setup.mjs"
+  ],
+  "selection_inputs": [
+    "Actual one-principal guest Session and separately admitted optional native builtin",
+    "Actual generated record namespace and source-pair/canonical proof",
+    "Explicit separately granted source/peer and optional query aliases",
+    "Two independently selected concrete normalized QoS80 byte rows",
+    "Explicit ownership lifetime and finite nonreused history entry budget",
+    "External supervisor process deadline and finite one-record poll schedule"
+  ],
+  "local_model": {
+    "requires": "Complete fresh selected sources and actual generated bounded_records.mjs in an admitted /tmp tree",
+    "argv": [
+      "node",
+      "tests/ros_javascript_owned_service/model_contract.mjs"
+    ],
+    "authored_cases": 23,
+    "executed_cases": 0,
+    "scope": "JavaScript injected mathematical adapter only; not C builtin/Wasm/Runtime/Native ROS proof"
+  },
+  "required_real_qualification": [
+    "Exact current producer catalog/authority/raw-header identities and all12 optional import signatures",
+    "Original business ABI imports unchanged; explicit default denial/output preservation",
+    "Actual bounded C builtin and pinned interpreter Guest execution, trap/exception/heap/RAB/detach cases",
+    "Full original seven Service root native/canonical validation and same-actual-object QoS/metadata",
+    "Full GetTypeDescription source bytes and aggregate/type/callback/shutdown interoperability",
+    "Distribution/vendor/QEMU architecture/physical memory/performance/VTune evidence"
+  ],
+  "all_new_candidate_execution_counts": 0
+}

@@ -1,0 +1,8 @@
+<Project>
+  <!-- Loaded before SDK props; one explicit build root, distinct actual project directories. -->
+  <PropertyGroup Condition="'$(RosBuildRoot)' != ''">
+    <BaseIntermediateOutputPath>$(RosBuildRoot)/obj/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
+    <MSBuildProjectExtensionsPath>$(BaseIntermediateOutputPath)</MSBuildProjectExtensionsPath>
+    <OutputPath>$(RosBuildRoot)/bin/$(MSBuildProjectName)/</OutputPath>
+  </PropertyGroup>
+</Project>

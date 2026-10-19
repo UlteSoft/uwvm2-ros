@@ -1,0 +1,1352 @@
+{
+  "scope": "REMOTE_OFFICIAL_LOCKED_COMMIT_BLOB_BYTES_ONLY_NOT_EXECUTION",
+  "files": [
+    {
+      "repository": "unitreerobotics/unitree_ros",
+      "commit_reference": "5994d4faef0a9cadd3287f8de0199a67eeb2a259",
+      "relative": "README.md",
+      "git_blob": "9a15262064c6b7c383d20b4e7326fa43759462a4",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_ros/5994d4faef0a9cadd3287f8de0199a67eeb2a259/README.md",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--README.md",
+        "bytes": 5504,
+        "sha256": "765b9d3e1fc64be2cd5e33beab19dbfe00a8e7935505b2820c63e7fe6fb3a35a"
+      },
+      "source_markers": [
+        {
+          "line": 59,
+          "text": "Then you can use catkin_make to build:"
+        },
+        {
+          "line": 62,
+          "text": "catkin_make"
+        },
+        {
+          "line": 65,
+          "text": "If you face a dependency problem, you can just run `catkin_make` again."
+        },
+        {
+          "line": 101,
+          "text": "The robot will turn around the origin, which is the movement under the world coordinate frame. And inside of the source file [move_publisher.cpp](https://github.com/unitreerobotics/unitree_ros/blob/master/unitree_controller/src/move_publisher.cpp), we also provide the method to move using the robot coordinate frame. You can change the value of `def_frame` to `coord::ROBOT` and run the catkin_make again, then the `unitree_move_publisher` will move robot under its own coordinate frame."
+        }
+      ]
+    },
+    {
+      "repository": "unitreerobotics/unitree_ros",
+      "commit_reference": "5994d4faef0a9cadd3287f8de0199a67eeb2a259",
+      "relative": "robots/a1_description/CMakeLists.txt",
+      "git_blob": "2dfe747eeb3a6c7db66f9c3da9706a3180de0db5",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_ros/5994d4faef0a9cadd3287f8de0199a67eeb2a259/robots/a1_description/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--robots--a1_description--CMakeLists.txt",
+        "bytes": 275,
+        "sha256": "2dbe30f4dbaf7b8076a726f641a037e29a9bab22665a8a98a2e487b5e7b728c9"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_ros",
+      "commit_reference": "5994d4faef0a9cadd3287f8de0199a67eeb2a259",
+      "relative": "robots/aliengoZ1_description/CMakeLists.txt",
+      "git_blob": "bd381a8ce3db9984765e649d138870d7ca21973c",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_ros/5994d4faef0a9cadd3287f8de0199a67eeb2a259/robots/aliengoZ1_description/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--robots--aliengoZ1_description--CMakeLists.txt",
+        "bytes": 7133,
+        "sha256": "e0460ffeff64a73eb7ce736017a92501cbc8576af8b38a4ce667ed6917e4906b"
+      },
+      "source_markers": [
+        {
+          "line": 135,
+          "text": "## With catkin_make all packages are built within a single CMake context"
+        },
+        {
+          "line": 201,
+          "text": "# catkin_add_gtest(${PROJECT_NAME}-test test/test_aliengoAndarm.cpp)"
+        },
+        {
+          "line": 206,
+          "text": "## Add folders to be run by python nosetests"
+        },
+        {
+          "line": 207,
+          "text": "# catkin_add_nosetests(test)"
+        }
+      ]
+    },
+    {
+      "repository": "unitreerobotics/unitree_ros",
+      "commit_reference": "5994d4faef0a9cadd3287f8de0199a67eeb2a259",
+      "relative": "robots/aliengo_description/CMakeLists.txt",
+      "git_blob": "5a16abd2e369111b881699b6bffa42e02e2232b1",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_ros/5994d4faef0a9cadd3287f8de0199a67eeb2a259/robots/aliengo_description/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--robots--aliengo_description--CMakeLists.txt",
+        "bytes": 280,
+        "sha256": "8355e435eda9a5b8957b04273b24aa4099887c909759274768d27c2debaaea4c"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_ros",
+      "commit_reference": "5994d4faef0a9cadd3287f8de0199a67eeb2a259",
+      "relative": "robots/b1_description/CMakeLists.txt",
+      "git_blob": "af116cb248557d3b186a9218c5db5bfef85fd2b7",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_ros/5994d4faef0a9cadd3287f8de0199a67eeb2a259/robots/b1_description/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--robots--b1_description--CMakeLists.txt",
+        "bytes": 275,
+        "sha256": "80374cc1da5d0b64d40e8c87f0336e14fe7110208ac22fd91192c351d6af4167"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_ros",
+      "commit_reference": "5994d4faef0a9cadd3287f8de0199a67eeb2a259",
+      "relative": "robots/b2_description/CMakeLists.txt",
+      "git_blob": "41da1bc8839a6a96087446f4a4af3c93bcac4e87",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_ros/5994d4faef0a9cadd3287f8de0199a67eeb2a259/robots/b2_description/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--robots--b2_description--CMakeLists.txt",
+        "bytes": 292,
+        "sha256": "d1db7128ed3f154c669c03eafff011762d60391f7c9a525fec1794345431cf10"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_ros",
+      "commit_reference": "5994d4faef0a9cadd3287f8de0199a67eeb2a259",
+      "relative": "robots/b2w_description/CMakeLists.txt",
+      "git_blob": "0f981ba6353c7f0c1faa4e10da88ec6e5c782260",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_ros/5994d4faef0a9cadd3287f8de0199a67eeb2a259/robots/b2w_description/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--robots--b2w_description--CMakeLists.txt",
+        "bytes": 293,
+        "sha256": "9817ed95829cb8f72397d660361bcd6f6416f925558d3ec6b7d96ed488a2264c"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_ros",
+      "commit_reference": "5994d4faef0a9cadd3287f8de0199a67eeb2a259",
+      "relative": "robots/go1_description/CMakeLists.txt",
+      "git_blob": "2b43b9521d2fc892746baf3b8380699278f42c08",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_ros/5994d4faef0a9cadd3287f8de0199a67eeb2a259/robots/go1_description/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--robots--go1_description--CMakeLists.txt",
+        "bytes": 276,
+        "sha256": "f0e58353ed79f059e1f060df0de546188056e758827ef1dcdcce18851c4d7a32"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_ros",
+      "commit_reference": "5994d4faef0a9cadd3287f8de0199a67eeb2a259",
+      "relative": "robots/go2_description/CMakeLists.txt",
+      "git_blob": "a0cad9a495dd90828430304226284bcbb1f37de6",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_ros/5994d4faef0a9cadd3287f8de0199a67eeb2a259/robots/go2_description/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--robots--go2_description--CMakeLists.txt",
+        "bytes": 279,
+        "sha256": "ccf75e67bda4bfe14bed53d53e71567e09eab9831b43630239a8d05bc3e91efa"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_ros",
+      "commit_reference": "5994d4faef0a9cadd3287f8de0199a67eeb2a259",
+      "relative": "robots/go2w_description/CMakeLists.txt",
+      "git_blob": "db965c6633f5714cd573ccf84498250ac737f3a9",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_ros/5994d4faef0a9cadd3287f8de0199a67eeb2a259/robots/go2w_description/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--robots--go2w_description--CMakeLists.txt",
+        "bytes": 280,
+        "sha256": "a13adf619eeaa700cf83dd7cf9f2ffc2b600c9a0320b752442212ce643270c20"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_ros",
+      "commit_reference": "5994d4faef0a9cadd3287f8de0199a67eeb2a259",
+      "relative": "robots/h1_description/CMakeLists.txt",
+      "git_blob": "30a48868f9069113f2b30efc266ca91150c6c849",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_ros/5994d4faef0a9cadd3287f8de0199a67eeb2a259/robots/h1_description/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--robots--h1_description--CMakeLists.txt",
+        "bytes": 292,
+        "sha256": "c72a35e84f9d8eeb6adcbb192907b66ffe877db0598399371cf34d08b763d5fb"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_ros",
+      "commit_reference": "5994d4faef0a9cadd3287f8de0199a67eeb2a259",
+      "relative": "robots/laikago_description/CMakeLists.txt",
+      "git_blob": "8ef23574d1f5b8cb55a02fbe89460cfc764eb68d",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_ros/5994d4faef0a9cadd3287f8de0199a67eeb2a259/robots/laikago_description/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--robots--laikago_description--CMakeLists.txt",
+        "bytes": 280,
+        "sha256": "f1492b1f8a4582a8fd37cda869a3089825e7a90f38fb22cb71adbdda6001f669"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_ros",
+      "commit_reference": "5994d4faef0a9cadd3287f8de0199a67eeb2a259",
+      "relative": "robots/z1_description/CMakeLists.txt",
+      "git_blob": "e009a3814ff8874031a5418731d48c8a70943543",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_ros/5994d4faef0a9cadd3287f8de0199a67eeb2a259/robots/z1_description/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--robots--z1_description--CMakeLists.txt",
+        "bytes": 186,
+        "sha256": "4f36732e9ca34a56697823c1c4a5751fa8afdfe9e4f56d60f76b60c840a5ab20"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_ros",
+      "commit_reference": "5994d4faef0a9cadd3287f8de0199a67eeb2a259",
+      "relative": "unitree_controller/CMakeLists.txt",
+      "git_blob": "88a30cc400b22b755a09a51525e2392db0de8418",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_ros/5994d4faef0a9cadd3287f8de0199a67eeb2a259/unitree_controller/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--unitree_controller--CMakeLists.txt",
+        "bytes": 1511,
+        "sha256": "d260ca85e6589d71a91e72c43b10ab7c1e6adc0c2642da5aaac0307e4c53080e"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_ros",
+      "commit_reference": "5994d4faef0a9cadd3287f8de0199a67eeb2a259",
+      "relative": "unitree_gazebo/CMakeLists.txt",
+      "git_blob": "d0750a292eace774b445af24eb9e57d89100eb2d",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_ros/5994d4faef0a9cadd3287f8de0199a67eeb2a259/unitree_gazebo/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--unitree_gazebo--CMakeLists.txt",
+        "bytes": 1411,
+        "sha256": "c01f4c9f53fa532c05ab576d8383d9f355bb67ace804a85f2a5724dd21db16f5"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_ros",
+      "commit_reference": "5994d4faef0a9cadd3287f8de0199a67eeb2a259",
+      "relative": "unitree_legged_control/CMakeLists.txt",
+      "git_blob": "224450ae259bc154fd9fe8ec88cd6e5cbc0e5c02",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_ros/5994d4faef0a9cadd3287f8de0199a67eeb2a259/unitree_legged_control/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--unitree_legged_control--CMakeLists.txt",
+        "bytes": 728,
+        "sha256": "4f0652741fc152064a381eff30a5efd962e523b0432449a79a37a05fc5dd0fea"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_ros2",
+      "commit_reference": "668d1ec5a05d1c38d3306bdca7d59f2ba3581a88",
+      "relative": ".github/workflows/auto-tag.yml",
+      "git_blob": "d1edf5c66af236f0db7b1afea40ca9fe61fdb90c",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_ros2/668d1ec5a05d1c38d3306bdca7d59f2ba3581a88/.github/workflows/auto-tag.yml",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros2--.github--workflows--auto-tag.yml",
+        "bytes": 1447,
+        "sha256": "7b2a6c98be5358731b3de7ad8ac1c8ee13638ce622807729ffb790f43b8db71a"
+      },
+      "source_markers": [
+        {
+          "line": 10,
+          "text": "runs-on: ubuntu-latest"
+        },
+        {
+          "line": 19,
+          "text": "run: |"
+        },
+        {
+          "line": 27,
+          "text": "run: |"
+        }
+      ]
+    },
+    {
+      "repository": "unitreerobotics/unitree_ros2",
+      "commit_reference": "668d1ec5a05d1c38d3306bdca7d59f2ba3581a88",
+      "relative": ".github/workflows/build-foxy.yml",
+      "git_blob": "d28e5d04aa644d0e46b42cdfc4d429a0cd2fbaac",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_ros2/668d1ec5a05d1c38d3306bdca7d59f2ba3581a88/.github/workflows/build-foxy.yml",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros2--.github--workflows--build-foxy.yml",
+        "bytes": 1539,
+        "sha256": "856689168764d9365442ce7d56678c9bfbe6bf05ae8ff7b1451a081427bf69bb"
+      },
+      "source_markers": [
+        {
+          "line": 11,
+          "text": "runs-on: ubuntu-latest  # Use latest runner to host the container"
+        },
+        {
+          "line": 21,
+          "text": "run: |"
+        },
+        {
+          "line": 27,
+          "text": "run: |"
+        },
+        {
+          "line": 34,
+          "text": "colcon build --packages-select cyclonedds"
+        },
+        {
+          "line": 38,
+          "text": "colcon build --cmake-args -DCMAKE_EXPORT_COMPILE_COMMANDS=ON --packages-select unitree_go unitree_hg unitree_api"
+        },
+        {
+          "line": 41,
+          "text": "colcon build --cmake-args -DCMAKE_EXPORT_COMPILE_COMMANDS=ON --packages-select unitree_ros2_example"
+        }
+      ]
+    },
+    {
+      "repository": "unitreerobotics/unitree_ros2",
+      "commit_reference": "668d1ec5a05d1c38d3306bdca7d59f2ba3581a88",
+      "relative": ".github/workflows/build-humble.yml",
+      "git_blob": "0e1867e1a1387ee6051c9fe2d3e10951c048f269",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_ros2/668d1ec5a05d1c38d3306bdca7d59f2ba3581a88/.github/workflows/build-humble.yml",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros2--.github--workflows--build-humble.yml",
+        "bytes": 1553,
+        "sha256": "90b2c51154d303909c65b8b8c0f1d6a3f306c48d0ac77b01af975fdebc84399f"
+      },
+      "source_markers": [
+        {
+          "line": 11,
+          "text": "runs-on: ubuntu-latest  # Use latest runner to host the container"
+        },
+        {
+          "line": 21,
+          "text": "run: |"
+        },
+        {
+          "line": 27,
+          "text": "run: |"
+        },
+        {
+          "line": 34,
+          "text": "colcon build --packages-select cyclonedds"
+        },
+        {
+          "line": 38,
+          "text": "colcon build --cmake-args -DCMAKE_EXPORT_COMPILE_COMMANDS=ON --packages-select unitree_go unitree_hg unitree_api"
+        },
+        {
+          "line": 41,
+          "text": "colcon build --cmake-args -DCMAKE_EXPORT_COMPILE_COMMANDS=ON --packages-select unitree_ros2_example"
+        }
+      ]
+    },
+    {
+      "repository": "unitreerobotics/unitree_ros2",
+      "commit_reference": "668d1ec5a05d1c38d3306bdca7d59f2ba3581a88",
+      "relative": ".github/workflows/release.yml",
+      "git_blob": "012bdbf7bfc755c8a11cfcec043706cdb8a83a43",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_ros2/668d1ec5a05d1c38d3306bdca7d59f2ba3581a88/.github/workflows/release.yml",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros2--.github--workflows--release.yml",
+        "bytes": 1360,
+        "sha256": "b8d9560a0f32153c1cb49bb909f643fc85c25095cd5dd8c47aae3e639d1e1deb"
+      },
+      "source_markers": [
+        {
+          "line": 10,
+          "text": "runs-on: ubuntu-latest"
+        },
+        {
+          "line": 19,
+          "text": "#   run: |"
+        },
+        {
+          "line": 24,
+          "text": "#   run: |"
+        },
+        {
+          "line": 28,
+          "text": "#   run: |"
+        },
+        {
+          "line": 35,
+          "text": "run: |"
+        }
+      ]
+    },
+    {
+      "repository": "unitreerobotics/unitree_ros2",
+      "commit_reference": "668d1ec5a05d1c38d3306bdca7d59f2ba3581a88",
+      "relative": "README.md",
+      "git_blob": "af6782b2169c533787d2295e3b4e71b3f3bcf79d",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_ros2/668d1ec5a05d1c38d3306bdca7d59f2ba3581a88/README.md",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros2--README.md",
+        "bytes": 14449,
+        "sha256": "975d8a29d4904dc6d3d0f72fd9119afed57b0b193a7a2d26d5211bc6b8858831"
+      },
+      "source_markers": [
+        {
+          "line": 69,
+          "text": "# If build failed, try run: `export LD_LIBRARY_PATH=/opt/ros/foxy/lib` first."
+        },
+        {
+          "line": 70,
+          "text": "colcon build --packages-select cyclonedds #Compile cyclone-dds package"
+        },
+        {
+          "line": 77,
+          "text": "colcon build # Compile all packages in the workspace"
+        },
+        {
+          "line": 157,
+          "text": "colcon build"
+        }
+      ]
+    },
+    {
+      "repository": "unitreerobotics/unitree_ros2",
+      "commit_reference": "668d1ec5a05d1c38d3306bdca7d59f2ba3581a88",
+      "relative": "cyclonedds_ws/src/unitree/unitree_api/CMakeLists.txt",
+      "git_blob": "4e7c4b9d72fc65c4db3b27758ab259a88ce9fdb4",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_ros2/668d1ec5a05d1c38d3306bdca7d59f2ba3581a88/cyclonedds_ws/src/unitree/unitree_api/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros2--cyclonedds_ws--src--unitree--unitree_api--CMakeLists.txt",
+        "bytes": 1729,
+        "sha256": "61029416c795499036c0314866f43a794090fdf24ad3eff5d9cef08ec771fe16"
+      },
+      "source_markers": [
+        {
+          "line": 53,
+          "text": "if(BUILD_TESTING)"
+        },
+        {
+          "line": 54,
+          "text": "find_package(ament_lint_auto REQUIRED)"
+        },
+        {
+          "line": 61,
+          "text": "ament_lint_auto_find_test_dependencies()"
+        }
+      ]
+    },
+    {
+      "repository": "unitreerobotics/unitree_ros2",
+      "commit_reference": "668d1ec5a05d1c38d3306bdca7d59f2ba3581a88",
+      "relative": "cyclonedds_ws/src/unitree/unitree_go/CMakeLists.txt",
+      "git_blob": "7ab5f1cd14cbee6bf0d3955066e3e73e988f428b",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_ros2/668d1ec5a05d1c38d3306bdca7d59f2ba3581a88/cyclonedds_ws/src/unitree/unitree_go/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros2--cyclonedds_ws--src--unitree--unitree_go--CMakeLists.txt",
+        "bytes": 2158,
+        "sha256": "db42b8667068305431f574031edb0889e0f31e458edccab2d427383b655622b7"
+      },
+      "source_markers": [
+        {
+          "line": 68,
+          "text": "if(BUILD_TESTING)"
+        },
+        {
+          "line": 69,
+          "text": "find_package(ament_lint_auto REQUIRED)"
+        },
+        {
+          "line": 76,
+          "text": "ament_lint_auto_find_test_dependencies()"
+        }
+      ]
+    },
+    {
+      "repository": "unitreerobotics/unitree_ros2",
+      "commit_reference": "668d1ec5a05d1c38d3306bdca7d59f2ba3581a88",
+      "relative": "cyclonedds_ws/src/unitree/unitree_hg/CMakeLists.txt",
+      "git_blob": "b7e1d55295dd18fefe5f401ef17891e4887a7129",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_ros2/668d1ec5a05d1c38d3306bdca7d59f2ba3581a88/cyclonedds_ws/src/unitree/unitree_hg/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros2--cyclonedds_ws--src--unitree--unitree_hg--CMakeLists.txt",
+        "bytes": 1712,
+        "sha256": "8fd25f9dffae80e3d23f0f6022919a8669a47c7b5e08fdccf80b7c316cdf1fec"
+      },
+      "source_markers": [
+        {
+          "line": 56,
+          "text": "if(BUILD_TESTING)"
+        },
+        {
+          "line": 57,
+          "text": "find_package(ament_lint_auto REQUIRED)"
+        },
+        {
+          "line": 64,
+          "text": "ament_lint_auto_find_test_dependencies()"
+        }
+      ]
+    },
+    {
+      "repository": "unitreerobotics/unitree_ros2",
+      "commit_reference": "668d1ec5a05d1c38d3306bdca7d59f2ba3581a88",
+      "relative": "example/src/CMakeLists.txt",
+      "git_blob": "55c125794c53cb795b9fa4d2232be7d959df2f6f",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_ros2/668d1ec5a05d1c38d3306bdca7d59f2ba3581a88/example/src/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros2--example--src--CMakeLists.txt",
+        "bytes": 7239,
+        "sha256": "82f0ddd9a84081a7f30a11d07595f190e01eb50be80c22688c6d56b8cca0de19"
+      },
+      "source_markers": [
+        {
+          "line": 172,
+          "text": "if(BUILD_TESTING)"
+        },
+        {
+          "line": 173,
+          "text": "find_package(ament_lint_auto REQUIRED)"
+        },
+        {
+          "line": 180,
+          "text": "ament_lint_auto_find_test_dependencies()"
+        }
+      ]
+    },
+    {
+      "repository": "unitreerobotics/unitree_sdk2",
+      "commit_reference": "d1abf001220d3e5f59e00a0c4aaa595e00089a4a",
+      "relative": ".github/workflows/c-cpp.yml",
+      "git_blob": "a958007650445e547372a1e7f3f1b21b998564fa",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_sdk2/d1abf001220d3e5f59e00a0c4aaa595e00089a4a/.github/workflows/c-cpp.yml",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2--.github--workflows--c-cpp.yml",
+        "bytes": 646,
+        "sha256": "e6d590b272c07e64119916b243dffca1173cb068477ad4caba1490481998e608"
+      },
+      "source_markers": [
+        {
+          "line": 11,
+          "text": "runs-on: ubuntu-latest  # Use latest runner to host the container"
+        },
+        {
+          "line": 21,
+          "text": "run: |"
+        },
+        {
+          "line": 27,
+          "text": "run: |"
+        }
+      ]
+    },
+    {
+      "repository": "unitreerobotics/unitree_sdk2",
+      "commit_reference": "d1abf001220d3e5f59e00a0c4aaa595e00089a4a",
+      "relative": "CMakeLists.txt",
+      "git_blob": "9cb429979edcf4f36dcba69e7de97f8a8b757e9d",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_sdk2/d1abf001220d3e5f59e00a0c4aaa595e00089a4a/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2--CMakeLists.txt",
+        "bytes": 3012,
+        "sha256": "4b563688b286ff0d1e8f97e9b3da8207b2adde59e8d128f3170058e70f48df9f"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_sdk2",
+      "commit_reference": "d1abf001220d3e5f59e00a0c4aaa595e00089a4a",
+      "relative": "README.md",
+      "git_blob": "267aba77cf8d1c5eb481dba5e695c8c888e9c6f8",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_sdk2/d1abf001220d3e5f59e00a0c4aaa595e00089a4a/README.md",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2--README.md",
+        "bytes": 1417,
+        "sha256": "fac73c34a0340b17f9efd2e11ef709e8512f7090a0a00e430ca749d94d3e3c92"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_sdk2",
+      "commit_reference": "d1abf001220d3e5f59e00a0c4aaa595e00089a4a",
+      "relative": "example/CMakeLists.txt",
+      "git_blob": "e9b9510a6fef96693e70f626e00509175662a345",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_sdk2/d1abf001220d3e5f59e00a0c4aaa595e00089a4a/example/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2--example--CMakeLists.txt",
+        "bytes": 341,
+        "sha256": "22ef4ae4d1419bc8faa66e49e1e60381a3366d164c265259bdd9f8d65fcfcc8d"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_sdk2",
+      "commit_reference": "d1abf001220d3e5f59e00a0c4aaa595e00089a4a",
+      "relative": "example/a2/CMakeLists.txt",
+      "git_blob": "3634be84892c21b397ee532b34ffd5a2d3b4751d",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_sdk2/d1abf001220d3e5f59e00a0c4aaa595e00089a4a/example/a2/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2--example--a2--CMakeLists.txt",
+        "bytes": 356,
+        "sha256": "6e16c2a3c474761f9dbb90ccca22a1954b442661bd6794ec34009d56623d7019"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_sdk2",
+      "commit_reference": "d1abf001220d3e5f59e00a0c4aaa595e00089a4a",
+      "relative": "example/as2/CMakeLists.txt",
+      "git_blob": "bc2cd46dc1df444f3224b6dddc080de89e127dd1",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_sdk2/d1abf001220d3e5f59e00a0c4aaa595e00089a4a/example/as2/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2--example--as2--CMakeLists.txt",
+        "bytes": 365,
+        "sha256": "4a45c4620c741ad07d04e92b7d69cba62011e6ad41cf33bd3dd8de43bee3daf6"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_sdk2",
+      "commit_reference": "d1abf001220d3e5f59e00a0c4aaa595e00089a4a",
+      "relative": "example/b2/CMakeLists.txt",
+      "git_blob": "86d6d6519c880809efb6c327355bc36abc5327ba",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_sdk2/d1abf001220d3e5f59e00a0c4aaa595e00089a4a/example/b2/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2--example--b2--CMakeLists.txt",
+        "bytes": 213,
+        "sha256": "175e94a101dba9d4527bbaefdfec27a96083903d2df1f11c348d0783e59420b5"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_sdk2",
+      "commit_reference": "d1abf001220d3e5f59e00a0c4aaa595e00089a4a",
+      "relative": "example/b2w/CMakeLists.txt",
+      "git_blob": "5fc62635cc228e08c2f8aacec82ede6d44ffecd1",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_sdk2/d1abf001220d3e5f59e00a0c4aaa595e00089a4a/example/b2w/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2--example--b2w--CMakeLists.txt",
+        "bytes": 218,
+        "sha256": "d4bc9e413131892cbc37beff82fdf2bbb3676f7533659a28f20a4e2b9ff977e8"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_sdk2",
+      "commit_reference": "d1abf001220d3e5f59e00a0c4aaa595e00089a4a",
+      "relative": "example/g1/CMakeLists.txt",
+      "git_blob": "3d01d4f04f8ea9b0e6c8f36013ba5bc07074c66c",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_sdk2/d1abf001220d3e5f59e00a0c4aaa595e00089a4a/example/g1/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2--example--g1--CMakeLists.txt",
+        "bytes": 2500,
+        "sha256": "c45b3a686aa5750bd6987b16e7cfd161660257d4590d1826c37d5bdb062a1ed6"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_sdk2",
+      "commit_reference": "d1abf001220d3e5f59e00a0c4aaa595e00089a4a",
+      "relative": "example/go2/CMakeLists.txt",
+      "git_blob": "bff084650fa791eaf4b8343615d402f139ead416",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_sdk2/d1abf001220d3e5f59e00a0c4aaa595e00089a4a/example/go2/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2--example--go2--CMakeLists.txt",
+        "bytes": 780,
+        "sha256": "2fa26948a6ed7a94ef18d7dfc89419010ddebfc12d2da0ac22b833c3382348ce"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_sdk2",
+      "commit_reference": "d1abf001220d3e5f59e00a0c4aaa595e00089a4a",
+      "relative": "example/go2w/CMakeLists.txt",
+      "git_blob": "4646cb550e199b45982e8a9be9cfb0773a905b5d",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_sdk2/d1abf001220d3e5f59e00a0c4aaa595e00089a4a/example/go2w/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2--example--go2w--CMakeLists.txt",
+        "bytes": 224,
+        "sha256": "d3888579a82cac422ad24231ab0d0e3a30b8d07a186cd8e9e71a30659b1621ca"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_sdk2",
+      "commit_reference": "d1abf001220d3e5f59e00a0c4aaa595e00089a4a",
+      "relative": "example/h1/CMakeLists.txt",
+      "git_blob": "d2b8fa1b256809f571ccad8226ac96d4a19699b9",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_sdk2/d1abf001220d3e5f59e00a0c4aaa595e00089a4a/example/h1/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2--example--h1--CMakeLists.txt",
+        "bytes": 755,
+        "sha256": "d6b21a69cc2ed35121f087b9add28e9a4ef84275d1edc5bc44d9bada52773579"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_sdk2",
+      "commit_reference": "d1abf001220d3e5f59e00a0c4aaa595e00089a4a",
+      "relative": "example/h2/CMakeLists.txt",
+      "git_blob": "cbc9fb742e05d9757fc51f89bc34e2cb4b818eb0",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_sdk2/d1abf001220d3e5f59e00a0c4aaa595e00089a4a/example/h2/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2--example--h2--CMakeLists.txt",
+        "bytes": 1214,
+        "sha256": "9e63cb73aee476a5ae052cb0d25e0cbc9e9cd3933f8e42f5047ba4140ef69499"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_sdk2",
+      "commit_reference": "d1abf001220d3e5f59e00a0c4aaa595e00089a4a",
+      "relative": "example/helloworld/CMakeLists.txt",
+      "git_blob": "95d5e831eaf445ec64112fe665eec63ac140bc1a",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_sdk2/d1abf001220d3e5f59e00a0c4aaa595e00089a4a/example/helloworld/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2--example--helloworld--CMakeLists.txt",
+        "bytes": 255,
+        "sha256": "aa5a55e2db8d57aa308d39724b77de03a7b7120e48e87b22818063293280f343"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_sdk2",
+      "commit_reference": "d1abf001220d3e5f59e00a0c4aaa595e00089a4a",
+      "relative": "example/jsonize/CMakeLists.txt",
+      "git_blob": "d12f978ec99cd5a95a47e86e7ac6456f5d074b92",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_sdk2/d1abf001220d3e5f59e00a0c4aaa595e00089a4a/example/jsonize/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2--example--jsonize--CMakeLists.txt",
+        "bytes": 94,
+        "sha256": "5bc3dd1c000d667d8b6fe143bf2e6008f9aa0a3d3796d294cce505e08fcd7df9"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_sdk2",
+      "commit_reference": "d1abf001220d3e5f59e00a0c4aaa595e00089a4a",
+      "relative": "example/r1/CMakeLists.txt",
+      "git_blob": "84bbbb5cafb32052b8122ae107dfb82e2a8787e0",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_sdk2/d1abf001220d3e5f59e00a0c4aaa595e00089a4a/example/r1/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2--example--r1--CMakeLists.txt",
+        "bytes": 995,
+        "sha256": "49e7b48092bb0c2fa5c82e39fe61cbaed9ee28388d6719994faea70dcf690669"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_sdk2",
+      "commit_reference": "d1abf001220d3e5f59e00a0c4aaa595e00089a4a",
+      "relative": "example/state_machine/CMakeLists.txt",
+      "git_blob": "5d75c6de19d9ad21006a0d4f5eced6146fc5f26e",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_sdk2/d1abf001220d3e5f59e00a0c4aaa595e00089a4a/example/state_machine/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2--example--state_machine--CMakeLists.txt",
+        "bytes": 104,
+        "sha256": "2f394c379ea12e81a04ca44570b0904cff3ffabd875b7a13bca86d727585ffaf"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_sdk2",
+      "commit_reference": "d1abf001220d3e5f59e00a0c4aaa595e00089a4a",
+      "relative": "example/wireless_controller/CMakeLists.txt",
+      "git_blob": "2ff15c9e924e86d4c00f9b6a8653ed1f23c9c7d0",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_sdk2/d1abf001220d3e5f59e00a0c4aaa595e00089a4a/example/wireless_controller/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2--example--wireless_controller--CMakeLists.txt",
+        "bytes": 94,
+        "sha256": "24dd9e1e5200f0e60ed4380bea6b53563eb0d9c20929bab3c7df0921026a68dc"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_sdk2_python",
+      "commit_reference": "814556d15970dd2ecf1c9984e845ca02ab07e206",
+      "relative": "README.md",
+      "git_blob": "fa4df0043dd327ce5ea8ed8706c37b90a6bbae7b",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_sdk2_python/814556d15970dd2ecf1c9984e845ca02ab07e206/README.md",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2_python--README.md",
+        "bytes": 5550,
+        "sha256": "0fa9e0fb386718da0619c6ddbf29b0ae01bfd49a61f36cb1c14000e4c4a7fe3d"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_sdk2_python",
+      "commit_reference": "814556d15970dd2ecf1c9984e845ca02ab07e206",
+      "relative": "pyproject.toml",
+      "git_blob": "07de284aa5c45f56b69ca6f605edf72a14785b99",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_sdk2_python/814556d15970dd2ecf1c9984e845ca02ab07e206/pyproject.toml",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2_python--pyproject.toml",
+        "bytes": 89,
+        "sha256": "c83da5db515857a120ce4f6afd13c08644ebee0ea5128ad7dc2109236a973075"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_sdk2_python",
+      "commit_reference": "814556d15970dd2ecf1c9984e845ca02ab07e206",
+      "relative": "setup.py",
+      "git_blob": "54d8cac8a87a9bcb137bf6b89e590299cc6f2aca",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_sdk2_python/814556d15970dd2ecf1c9984e845ca02ab07e206/setup.py",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2_python--setup.py",
+        "bytes": 711,
+        "sha256": "f2c73b2981ee918dd8b3810267691d0294ebedf86d7897330819e8a5fefb19b5"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_sdk2_python",
+      "commit_reference": "814556d15970dd2ecf1c9984e845ca02ab07e206",
+      "relative": "unitree_sdk2py/test/crc/test_crc.py",
+      "git_blob": "ceb1b4ba546452ebfe8f6cfb023a55f14e5a6e07",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_sdk2_python/814556d15970dd2ecf1c9984e845ca02ab07e206/unitree_sdk2py/test/crc/test_crc.py",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2_python--unitree_sdk2py--test--crc--test_crc.py",
+        "bytes": 715,
+        "sha256": "17817cbac7789554e8d7b2a7e162a9b6c8fb7e0602ea528956ec026d9315ae3f"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_sdk2_python",
+      "commit_reference": "814556d15970dd2ecf1c9984e845ca02ab07e206",
+      "relative": "unitree_sdk2py/test/rpc/test_api.py",
+      "git_blob": "68778ca35d39a51cbdd77de3196a9c12b142d0ab",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_sdk2_python/814556d15970dd2ecf1c9984e845ca02ab07e206/unitree_sdk2py/test/rpc/test_api.py",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2_python--unitree_sdk2py--test--rpc--test_api.py",
+        "bytes": 143,
+        "sha256": "753290c91eb9961de53b0bc2f95da8f39dcdd85e362e01ba19b9b1513daef85e"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_sdk2_python",
+      "commit_reference": "814556d15970dd2ecf1c9984e845ca02ab07e206",
+      "relative": "unitree_sdk2py/test/rpc/test_client_example.py",
+      "git_blob": "35c6ad45311fef8bdd6bc290de58ef99a83dbe76",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_sdk2_python/814556d15970dd2ecf1c9984e845ca02ab07e206/unitree_sdk2py/test/rpc/test_client_example.py",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2_python--unitree_sdk2py--test--rpc--test_client_example.py",
+        "bytes": 1496,
+        "sha256": "641a729fdbc07e68694a0e72cadbd0b7f17c131b18b6d57a6c9f06c1148bdcd0"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_sdk2_python",
+      "commit_reference": "814556d15970dd2ecf1c9984e845ca02ab07e206",
+      "relative": "unitree_sdk2py/test/rpc/test_server_example.py",
+      "git_blob": "a929e011b1769b3635344c3cd8f8e4df70ae37df",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_sdk2_python/814556d15970dd2ecf1c9984e845ca02ab07e206/unitree_sdk2py/test/rpc/test_server_example.py",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2_python--unitree_sdk2py--test--rpc--test_server_example.py",
+        "bytes": 1017,
+        "sha256": "cef1c190b682ad548e3ecefe192a0252716790f0189c89ccc468c4ff71e90499"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_mujoco",
+      "commit_reference": "1eb6642e3f3fdfb7fb13a9794fd6a2dd93ea0e7d",
+      "relative": "example/cpp/CMakeLists.txt",
+      "git_blob": "291ff212890fdf5021cdb6e7fc1914505088e398",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_mujoco/1eb6642e3f3fdfb7fb13a9794fd6a2dd93ea0e7d/example/cpp/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_mujoco--example--cpp--CMakeLists.txt",
+        "bytes": 276,
+        "sha256": "525f1759599dc9634a822635c0f88dbcf9a46a7f6f4995678f4220111014243d"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_mujoco",
+      "commit_reference": "1eb6642e3f3fdfb7fb13a9794fd6a2dd93ea0e7d",
+      "relative": "example/ros2/CMakeLists.txt",
+      "git_blob": "c71c537706bd76e3ba1f73ff7d5a7723e5178904",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_mujoco/1eb6642e3f3fdfb7fb13a9794fd6a2dd93ea0e7d/example/ros2/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_mujoco--example--ros2--CMakeLists.txt",
+        "bytes": 1350,
+        "sha256": "2edccdecee834fbc6d9134613fd5c51b64531420b642420b9e1c5e898fc4bcce"
+      },
+      "source_markers": [
+        {
+          "line": 46,
+          "text": "if(BUILD_TESTING)"
+        },
+        {
+          "line": 47,
+          "text": "find_package(ament_lint_auto REQUIRED)"
+        },
+        {
+          "line": 54,
+          "text": "ament_lint_auto_find_test_dependencies()"
+        }
+      ]
+    },
+    {
+      "repository": "unitreerobotics/unitree_mujoco",
+      "commit_reference": "1eb6642e3f3fdfb7fb13a9794fd6a2dd93ea0e7d",
+      "relative": "readme.md",
+      "git_blob": "c535c18f1d15c891416ac7faed11b3eb32fe62c5",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_mujoco/1eb6642e3f3fdfb7fb13a9794fd6a2dd93ea0e7d/readme.md",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_mujoco--readme.md",
+        "bytes": 12357,
+        "sha256": "bedce1126b459c6bb6d2e0d0fc044cde978aeaed55d7548b4eeedb27ba51d8f0"
+      },
+      "source_markers": [
+        {
+          "line": 3,
+          "text": "`unitree_mujoco` is a simulator developed based on `Unitree sdk2` and `mujoco`. Users can easily integrate the control programs developed with `Unitree_sdk2`, `unitree_ros2`, and `unitree_sdk2_python` into this simulator, enabling a seamless transition from simulation to physical development. The repository includes two versions of the simulator implemented in C++ and Python, with a structure as follows:"
+        },
+        {
+          "line": 60,
+          "text": "cd unitree_mujoco/simulate/"
+        },
+        {
+          "line": 64,
+          "text": "### 2. Compile unitree_mujoco"
+        },
+        {
+          "line": 66,
+          "text": "cd unitree_mujoco/simulate"
+        },
+        {
+          "line": 74,
+          "text": "./unitree_mujoco -r go2 -s scene_terrain.xml"
+        },
+        {
+          "line": 77,
+          "text": "In a new terminal, run:"
+        },
+        {
+          "line": 92,
+          "text": "./unitree_mujoco -r as2 -s plane_terrain.xml -t 1"
+        },
+        {
+          "line": 125,
+          "text": "python3 ./unitree_mujoco.py"
+        },
+        {
+          "line": 128,
+          "text": "In a new terminal, run:"
+        },
+        {
+          "line": 130,
+          "text": "python3 ./test/test_unitree_sdk2.py"
+        },
+        {
+          "line": 149,
+          "text": "domain_id: 1"
+        },
+        {
+          "line": 177,
+          "text": "DOMAIN_ID = 1  # Domain id"
+        },
+        {
+          "line": 311,
+          "text": "colcon build"
+        },
+        {
+          "line": 317,
+          "text": "export ROS_DOMAIN_ID=1 # Modify the domain id to match the simulation"
+        },
+        {
+          "line": 324,
+          "text": "export ROS_DOMAIN_ID=0 # Use the default domain id"
+        }
+      ]
+    },
+    {
+      "repository": "unitreerobotics/unitree_mujoco",
+      "commit_reference": "1eb6642e3f3fdfb7fb13a9794fd6a2dd93ea0e7d",
+      "relative": "simulate/CMakeLists.txt",
+      "git_blob": "887028928262eb90755dbf68d41759cbff2b6b05",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_mujoco/1eb6642e3f3fdfb7fb13a9794fd6a2dd93ea0e7d/simulate/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_mujoco--simulate--CMakeLists.txt",
+        "bytes": 1032,
+        "sha256": "385bca56c649a7a467d3a941f5b9e9b3393a6c5f79a1425730c7a1f78856c3bc"
+      },
+      "source_markers": [
+        {
+          "line": 2,
+          "text": "project(unitree_mujoco)"
+        },
+        {
+          "line": 45,
+          "text": "add_executable(unitree_mujoco ${SIM_SRC} src/main.cc)"
+        }
+      ]
+    },
+    {
+      "repository": "unitreerobotics/unitree_mujoco",
+      "commit_reference": "1eb6642e3f3fdfb7fb13a9794fd6a2dd93ea0e7d",
+      "relative": "simulate_python/test/gamepad_test.py",
+      "git_blob": "47ea77e1c4cb6ee098253167fbfe0e7ca5715116",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_mujoco/1eb6642e3f3fdfb7fb13a9794fd6a2dd93ea0e7d/simulate_python/test/gamepad_test.py",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_mujoco--simulate_python--test--gamepad_test.py",
+        "bytes": 731,
+        "sha256": "9d775f7116e1d21cabbd3c5302291a06549d657656cb7f1f6dc0ce512405eb91"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_mujoco",
+      "commit_reference": "1eb6642e3f3fdfb7fb13a9794fd6a2dd93ea0e7d",
+      "relative": "simulate_python/test/test_unitree_sdk2.py",
+      "git_blob": "771cb4b132243d1651df57954355e6236d543951",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_mujoco/1eb6642e3f3fdfb7fb13a9794fd6a2dd93ea0e7d/simulate_python/test/test_unitree_sdk2.py",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_mujoco--simulate_python--test--test_unitree_sdk2.py",
+        "bytes": 1998,
+        "sha256": "32adcb06d817d963a59bfdcef0224eeb1e918ea801799e08b653c12bd9bba3b4"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_sim_isaaclab",
+      "commit_reference": "e30c25b1dffdf92ada1d6c8c1fe9a47bdde0fecc",
+      "relative": "README.md",
+      "git_blob": "7c6ece3cfe24ead3f0e6ac515c72d65900d62a85",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_sim_isaaclab/e30c25b1dffdf92ada1d6c8c1fe9a47bdde0fecc/README.md",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sim_isaaclab--README.md",
+        "bytes": 19778,
+        "sha256": "06e5e5dd4d75a048ea890758df7f33ed5bab819a172ce3e7aa98b8a00bd7bccf"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_legged_sdk",
+      "commit_reference": "4539a6c10dfbc9781cea6fcb7d51bc6ddc6f71e1",
+      "relative": "CMakeLists.txt",
+      "git_blob": "87ff0facaffc4546836abd54584fc7265b90f217",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_legged_sdk/4539a6c10dfbc9781cea6fcb7d51bc6ddc6f71e1/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_legged_sdk--CMakeLists.txt",
+        "bytes": 1636,
+        "sha256": "1dfbe6e200958afca516cbe849f37e504a0f556197a7eff0c570edc0729b3509"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_legged_sdk",
+      "commit_reference": "4539a6c10dfbc9781cea6fcb7d51bc6ddc6f71e1",
+      "relative": "README.md",
+      "git_blob": "cec07f8ce10557336cc53c33d43862ebe157c1f0",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_legged_sdk/4539a6c10dfbc9781cea6fcb7d51bc6ddc6f71e1/README.md",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_legged_sdk--README.md",
+        "bytes": 1269,
+        "sha256": "d09d45fe9091e52e57e3a6a1c191078395b861d048eaf56876616c42ac92ab2c"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_legged_sdk",
+      "commit_reference": "4539a6c10dfbc9781cea6fcb7d51bc6ddc6f71e1",
+      "relative": "python_wrapper/CMakeLists.txt",
+      "git_blob": "f1686d08918774f9eeee3d3c89098424d6551728",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_legged_sdk/4539a6c10dfbc9781cea6fcb7d51bc6ddc6f71e1/python_wrapper/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_legged_sdk--python_wrapper--CMakeLists.txt",
+        "bytes": 990,
+        "sha256": "f4c157cd565aa0e91e06443559036d406fb4df7d242e0df4856ab09f9a563ad7"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_legged_sdk",
+      "commit_reference": "4539a6c10dfbc9781cea6fcb7d51bc6ddc6f71e1",
+      "relative": "python_wrapper/third-party/pybind11/CMakeLists.txt",
+      "git_blob": "f449ede5066388829374666fa8639de423510c12",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_legged_sdk/4539a6c10dfbc9781cea6fcb7d51bc6ddc6f71e1/python_wrapper/third-party/pybind11/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_legged_sdk--python_wrapper--third-party--pybind11--CMakeLists.txt",
+        "bytes": 9722,
+        "sha256": "a1fb1c3022ca1da911ef62f86ccc44cd97a52db2230c3acdd6b48202b9adf8e9"
+      },
+      "source_markers": [
+        {
+          "line": 59,
+          "text": "\"pybind11ConfigVersion.cmake tests/CMakeFiles/\\n\")"
+        },
+        {
+          "line": 246,
+          "text": "# BUILD_TESTING takes priority, but only if this is the master project"
+        },
+        {
+          "line": 247,
+          "text": "if(PYBIND11_MASTER_PROJECT AND DEFINED BUILD_TESTING)"
+        },
+        {
+          "line": 248,
+          "text": "if(BUILD_TESTING)"
+        }
+      ]
+    },
+    {
+      "repository": "unitreerobotics/unitree_legged_sdk",
+      "commit_reference": "4539a6c10dfbc9781cea6fcb7d51bc6ddc6f71e1",
+      "relative": "python_wrapper/third-party/pybind11/tests/CMakeLists.txt",
+      "git_blob": "c73da610f6deba103261f9665cb49f500cf01ae1",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_legged_sdk/4539a6c10dfbc9781cea6fcb7d51bc6ddc6f71e1/python_wrapper/third-party/pybind11/tests/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_legged_sdk--python_wrapper--third-party--pybind11--tests--CMakeLists.txt",
+        "bytes": 14255,
+        "sha256": "23419ef845dac05fb3773758b207863ac21c98d2d5cde14fccf6ee8b28af5515"
+      },
+      "source_markers": [
+        {
+          "line": 349,
+          "text": "# Make sure pytest is found or produce a warning"
+        },
+        {
+          "line": 350,
+          "text": "pybind11_find_import(pytest VERSION 3.1)"
+        },
+        {
+          "line": 354,
+          "text": "configure_file(\"${CMAKE_CURRENT_SOURCE_DIR}/pytest.ini\" \"${CMAKE_CURRENT_BINARY_DIR}/pytest.ini\""
+        },
+        {
+          "line": 356,
+          "text": "file(APPEND \"${CMAKE_CURRENT_BINARY_DIR}/pytest.ini\""
+        },
+        {
+          "line": 368,
+          "text": "pytest"
+        },
+        {
+          "line": 369,
+          "text": "COMMAND ${PYTHON_EXECUTABLE} -m pytest ${PYBIND11_ABS_PYTEST_FILES}"
+        },
+        {
+          "line": 376,
+          "text": "TARGET pytest"
+        },
+        {
+          "line": 379,
+          "text": "\"Note: not all tests run: -DPYBIND11_TEST_OVERRIDE is in effect\")"
+        },
+        {
+          "line": 382,
+          "text": "# Add a check target to run all the tests, starting with pytest (we add dependencies to this below)"
+        },
+        {
+          "line": 383,
+          "text": "add_custom_target(check DEPENDS pytest)"
+        }
+      ]
+    },
+    {
+      "repository": "unitreerobotics/unitree_legged_sdk",
+      "commit_reference": "4539a6c10dfbc9781cea6fcb7d51bc6ddc6f71e1",
+      "relative": "python_wrapper/third-party/pybind11/tests/test_cmake_build/CMakeLists.txt",
+      "git_blob": "0c0578ad3d3cead093940452968a0b165f2a3fdc",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_legged_sdk/4539a6c10dfbc9781cea6fcb7d51bc6ddc6f71e1/python_wrapper/third-party/pybind11/tests/test_cmake_build/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_legged_sdk--python_wrapper--third-party--pybind11--tests--test_cmake_build--CMakeLists.txt",
+        "bytes": 2459,
+        "sha256": "49be43869feedc011a316a2044927d4b3c7180a0a6880799715dc4a837458eea"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_legged_sdk",
+      "commit_reference": "4539a6c10dfbc9781cea6fcb7d51bc6ddc6f71e1",
+      "relative": "python_wrapper/third-party/pybind11/tests/test_cmake_build/installed_embed/CMakeLists.txt",
+      "git_blob": "64ae5c4bff13d32c06639d310aebb682ca376d4e",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_legged_sdk/4539a6c10dfbc9781cea6fcb7d51bc6ddc6f71e1/python_wrapper/third-party/pybind11/tests/test_cmake_build/installed_embed/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_legged_sdk--python_wrapper--third-party--pybind11--tests--test_cmake_build--installed_embed--CMakeLists.txt",
+        "bytes": 1175,
+        "sha256": "32f043bdc24fafb9ffad02b90c7b2505269f39d1233fab2995c937b77bcb9c3b"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_legged_sdk",
+      "commit_reference": "4539a6c10dfbc9781cea6fcb7d51bc6ddc6f71e1",
+      "relative": "python_wrapper/third-party/pybind11/tests/test_cmake_build/installed_function/CMakeLists.txt",
+      "git_blob": "1a502863c0c64ad891ebe159a548f0c47dc6ce34",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_legged_sdk/4539a6c10dfbc9781cea6fcb7d51bc6ddc6f71e1/python_wrapper/third-party/pybind11/tests/test_cmake_build/installed_function/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_legged_sdk--python_wrapper--third-party--pybind11--tests--test_cmake_build--installed_function--CMakeLists.txt",
+        "bytes": 1259,
+        "sha256": "c93ba1233f735a7542d48654922494d0e73820d00a1a9c15c7605d77645e8d13"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_legged_sdk",
+      "commit_reference": "4539a6c10dfbc9781cea6fcb7d51bc6ddc6f71e1",
+      "relative": "python_wrapper/third-party/pybind11/tests/test_cmake_build/installed_target/CMakeLists.txt",
+      "git_blob": "b38eb77470e3efa45d8ceb490312b0461118ab82",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_legged_sdk/4539a6c10dfbc9781cea6fcb7d51bc6ddc6f71e1/python_wrapper/third-party/pybind11/tests/test_cmake_build/installed_target/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_legged_sdk--python_wrapper--third-party--pybind11--tests--test_cmake_build--installed_target--CMakeLists.txt",
+        "bytes": 1653,
+        "sha256": "c5539f1bab6b379c056c6d0890edb052349e0028250ac56178443a697d138d0d"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_legged_sdk",
+      "commit_reference": "4539a6c10dfbc9781cea6fcb7d51bc6ddc6f71e1",
+      "relative": "python_wrapper/third-party/pybind11/tests/test_cmake_build/subdirectory_embed/CMakeLists.txt",
+      "git_blob": "c7df0cf77c99b5ca39571fd00aea421bf647256d",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_legged_sdk/4539a6c10dfbc9781cea6fcb7d51bc6ddc6f71e1/python_wrapper/third-party/pybind11/tests/test_cmake_build/subdirectory_embed/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_legged_sdk--python_wrapper--third-party--pybind11--tests--test_cmake_build--subdirectory_embed--CMakeLists.txt",
+        "bytes": 1354,
+        "sha256": "5241c3dd5b1a9fbd8f6f71adae2b500d67dc2b1d48e145f771911713789b3f76"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_legged_sdk",
+      "commit_reference": "4539a6c10dfbc9781cea6fcb7d51bc6ddc6f71e1",
+      "relative": "python_wrapper/third-party/pybind11/tests/test_cmake_build/subdirectory_function/CMakeLists.txt",
+      "git_blob": "624c600f8511bfc2950e702dfd453918375a79af",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_legged_sdk/4539a6c10dfbc9781cea6fcb7d51bc6ddc6f71e1/python_wrapper/third-party/pybind11/tests/test_cmake_build/subdirectory_function/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_legged_sdk--python_wrapper--third-party--pybind11--tests--test_cmake_build--subdirectory_function--CMakeLists.txt",
+        "bytes": 1127,
+        "sha256": "4c6358767cb720bbea59435424f06f624083bce3052f08b497c197f09a7c3ef7"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_legged_sdk",
+      "commit_reference": "4539a6c10dfbc9781cea6fcb7d51bc6ddc6f71e1",
+      "relative": "python_wrapper/third-party/pybind11/tests/test_cmake_build/subdirectory_target/CMakeLists.txt",
+      "git_blob": "2471941fb682951dd6e5224dbeee38a7a738862b",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_legged_sdk/4539a6c10dfbc9781cea6fcb7d51bc6ddc6f71e1/python_wrapper/third-party/pybind11/tests/test_cmake_build/subdirectory_target/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_legged_sdk--python_wrapper--third-party--pybind11--tests--test_cmake_build--subdirectory_target--CMakeLists.txt",
+        "bytes": 1332,
+        "sha256": "ccd4f37e4fbe13c34b1136c2b2a9c1daa91baccd26b17e21daa3852bc0257c48"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_legged_sdk",
+      "commit_reference": "4539a6c10dfbc9781cea6fcb7d51bc6ddc6f71e1",
+      "relative": "python_wrapper/third-party/pybind11/tests/test_embed/CMakeLists.txt",
+      "git_blob": "2e298fa7e44684cfae77184e6218f83b62d90c1c",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_legged_sdk/4539a6c10dfbc9781cea6fcb7d51bc6ddc6f71e1/python_wrapper/third-party/pybind11/tests/test_embed/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_legged_sdk--python_wrapper--third-party--pybind11--tests--test_embed--CMakeLists.txt",
+        "bytes": 1639,
+        "sha256": "dcbcaf9bee198e76764131eaa3514b962500eec6fd12f76f4df1a8c19550ca3d"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_ros_to_real",
+      "commit_reference": "b989870124913091fbe75e0dcfb047eb4ca00a09",
+      "relative": "README.md",
+      "git_blob": "776c476e98808a4f96588f57f4232cfa2bd3ccdc",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_ros_to_real/b989870124913091fbe75e0dcfb047eb4ca00a09/README.md",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros_to_real--README.md",
+        "bytes": 3317,
+        "sha256": "b3820c7fadd265918bf0283c37883abe56d89484d376b83617d3c1937eb4c001"
+      },
+      "source_markers": [
+        {
+          "line": 28,
+          "text": "You can use catkin_make to build ROS packages. First copy the package folder to `~/catkin_ws/src`, then:"
+        },
+        {
+          "line": 31,
+          "text": "catkin_make"
+        }
+      ]
+    },
+    {
+      "repository": "unitreerobotics/unitree_ros_to_real",
+      "commit_reference": "b989870124913091fbe75e0dcfb047eb4ca00a09",
+      "relative": "unitree_legged_msgs/CMakeLists.txt",
+      "git_blob": "31f9bca1a77d343a52914bf27caf674115d42c76",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_ros_to_real/b989870124913091fbe75e0dcfb047eb4ca00a09/unitree_legged_msgs/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros_to_real--unitree_legged_msgs--CMakeLists.txt",
+        "bytes": 753,
+        "sha256": "eb8de3144d953c97db7eccf9c07f964ba34b54fecd7f32c416308703ba76f6b9"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_ros_to_real",
+      "commit_reference": "b989870124913091fbe75e0dcfb047eb4ca00a09",
+      "relative": "unitree_legged_real/CMakeLists.txt",
+      "git_blob": "413cc423bacfafadccd860b4af37a96af0d27c97",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_ros_to_real/b989870124913091fbe75e0dcfb047eb4ca00a09/unitree_legged_real/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros_to_real--unitree_legged_real--CMakeLists.txt",
+        "bytes": 1919,
+        "sha256": "299b1a97b5f4558a0d24c30116da4b49a7d58bc548dbd3ad05b79839878a0d51"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_guide",
+      "commit_reference": "fdf4d23de6affe8ee38fb4d892f61053fa1fcbcb",
+      "relative": "README.md",
+      "git_blob": "98e17c7d0d5b75bce1b21f7c2f99fe00786923cf",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_guide/fdf4d23de6affe8ee38fb4d892f61053fa1fcbcb/README.md",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_guide--README.md",
+        "bytes": 2764,
+        "sha256": "9c0244b6bf911147cbf22ff68f609508155b90ce0afa1abafc45dae32ffe97e0"
+      },
+      "source_markers": [
+        {
+          "line": 21,
+          "text": "catkin_make"
+        },
+        {
+          "line": 29,
+          "text": "To open the gazebo simulator, run:"
+        }
+      ]
+    },
+    {
+      "repository": "unitreerobotics/unitree_guide",
+      "commit_reference": "fdf4d23de6affe8ee38fb4d892f61053fa1fcbcb",
+      "relative": "unitree_guide/CMakeLists.txt",
+      "git_blob": "4779d838a2b1727fb9556d369f9edc5bb13bba72",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_guide/fdf4d23de6affe8ee38fb4d892f61053fa1fcbcb/unitree_guide/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_guide--unitree_guide--CMakeLists.txt",
+        "bytes": 4186,
+        "sha256": "3c238ccd4fc794226208336e5ad1e126f49af8e783258aefdc220c1c0307a9c5"
+      },
+      "source_markers": []
+    },
+    {
+      "repository": "unitreerobotics/unitree_guide",
+      "commit_reference": "fdf4d23de6affe8ee38fb4d892f61053fa1fcbcb",
+      "relative": "unitree_move_base/CMakeLists.txt",
+      "git_blob": "ba2f6d7131bf8f36ad4de446b4ae358f363e8c94",
+      "url": "https://raw.githubusercontent.com/unitreerobotics/unitree_guide/fdf4d23de6affe8ee38fb4d892f61053fa1fcbcb/unitree_move_base/CMakeLists.txt",
+      "observation": {
+        "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_guide--unitree_move_base--CMakeLists.txt",
+        "bytes": 251,
+        "sha256": "1cbd52deb2e45d0f15cf1882270fcd9dbf4818153bedafdab57d52df7fc0ae75"
+      },
+      "source_markers": []
+    }
+  ]
+}

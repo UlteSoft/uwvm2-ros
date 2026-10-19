@@ -1,0 +1,878 @@
+{
+  "kind": "exact-durable-copy-of-official-ROS-and-Unitree-source-observations",
+  "status": "DATA_ONLY_ALL_SUITES_UNEXECUTED",
+  "files": [
+    {
+      "relative": "README.md",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/README.md",
+      "bytes": 5342,
+      "sha256": "71bd94620b61ddd2ba493f032915e7f0cca5428098ddab34415648ffd34ab5c7"
+    },
+    {
+      "relative": "all-distro-repository-metadata.json",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/all-distro-repository-metadata.json",
+      "bytes": 6413277,
+      "sha256": "ff840dc8172d8936e6d822c13a352893f01506ecadcac76e1f71cb06f34f5c45"
+    },
+    {
+      "relative": "distribution-authority-observations.json",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/distribution-authority-observations.json",
+      "bytes": 1285,
+      "sha256": "e064153983a4c4d104f753a67112cb3acca6a7d11431bd0909e3ffc313039e90"
+    },
+    {
+      "relative": "official-suite-project-inventory.json",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/official-suite-project-inventory.json",
+      "bytes": 159441,
+      "sha256": "c0e4a800f101ea6ac64271a66f61869f49f5cb3272fd1c7e820bf269a045e8e7"
+    },
+    {
+      "relative": "source-ready.json",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/source-ready.json",
+      "bytes": 2133,
+      "sha256": "cbce277b7bbbbe59d015bb279ed99c5780dbfe47dbcfbadcafb477d19d6fe5ae"
+    },
+    {
+      "relative": "unitree-official-file-observations.json",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/unitree-official-file-observations.json",
+      "bytes": 66637,
+      "sha256": "6fa5dd7876ae7c38037026a3ce38da43df2db86d117654794b5f57e6d423af67"
+    },
+    {
+      "relative": "unitree-package-manifest-observations.json",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/unitree-package-manifest-observations.json",
+      "bytes": 18519,
+      "sha256": "0ff57a89e90e4c52f898aaa96dfd674b4fec16765d02cd7eddf713568f7b6f15"
+    },
+    {
+      "relative": "unitree-tree-attempt-commit-echo.json",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/unitree-tree-attempt-commit-echo.json",
+      "bytes": 4142,
+      "sha256": "c8af8b0e94671d69313fc9625de860440a46481d69437dd735120c97365378c0"
+    },
+    {
+      "relative": "unitree-tree-observations.json",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/unitree-tree-observations.json",
+      "bytes": 82495,
+      "sha256": "d7832a5cb3a8047008217885c96116375318630b796acc1006023539b615a0f7"
+    },
+    {
+      "relative": "observed-data/ardent.distribution.yaml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-data/ardent.distribution.yaml",
+      "bytes": 24734,
+      "sha256": "aee666d20ab06498140e9d327acaffb8dd11860034b8420509505358b09d3e4d"
+    },
+    {
+      "relative": "observed-data/bouncy.distribution.yaml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-data/bouncy.distribution.yaml",
+      "bytes": 38683,
+      "sha256": "0e03aef5aef245e6ea112de163405b09711873eb67cde6749384e253be668042"
+    },
+    {
+      "relative": "observed-data/crystal.distribution.yaml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-data/crystal.distribution.yaml",
+      "bytes": 61921,
+      "sha256": "dcb16f9dae34a053059f5e9c8531562f15d3ab0cb6fec8cf38fcee9a123d10dc"
+    },
+    {
+      "relative": "observed-data/dashing.distribution.yaml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-data/dashing.distribution.yaml",
+      "bytes": 113562,
+      "sha256": "686d0ead409a07be100f5f03f3988418a436b1a5ae489ea90fc9649721504474"
+    },
+    {
+      "relative": "observed-data/eloquent.distribution.yaml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-data/eloquent.distribution.yaml",
+      "bytes": 105435,
+      "sha256": "baa5991a2cc1e003d1c21b484a9e2b060fb5f4892fc53eae33bb3a339fabb7b9"
+    },
+    {
+      "relative": "observed-data/foxy.distribution.yaml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-data/foxy.distribution.yaml",
+      "bytes": 219366,
+      "sha256": "7eef42a5c41dc2039a28eadad6d5324719ecd09913d93d86585108cd20a49785"
+    },
+    {
+      "relative": "observed-data/galactic.distribution.yaml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-data/galactic.distribution.yaml",
+      "bytes": 188055,
+      "sha256": "795f7a736215ab102e6a84f262ffb7e1c1675a145299920f2a86e462bcf36a91"
+    },
+    {
+      "relative": "observed-data/groovy.distribution.yaml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-data/groovy.distribution.yaml",
+      "bytes": 140047,
+      "sha256": "002f3e2110b7e5302da118325ea2e09b78e4985b38c040ac7c4b6d1bdbdfb5c0"
+    },
+    {
+      "relative": "observed-data/humble.distribution.yaml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-data/humble.distribution.yaml",
+      "bytes": 420292,
+      "sha256": "82bd6e88d298877d4c4286c4ce094740ebb7736059002343a182938c1c4c0740"
+    },
+    {
+      "relative": "observed-data/hydro.distribution.yaml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-data/hydro.distribution.yaml",
+      "bytes": 269718,
+      "sha256": "6b9fe5960a2c590a9cb6a3a22ff6ffdf1efb650c8c6ce50a398eba0fb44ede5f"
+    },
+    {
+      "relative": "observed-data/index-v4.yaml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-data/index-v4.yaml",
+      "bytes": 4863,
+      "sha256": "56e71c7a9dd209c53322b5d4646a5f3707833475ea3f4b4a0ae4ca39bb7f355f"
+    },
+    {
+      "relative": "observed-data/indigo.distribution.yaml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-data/indigo.distribution.yaml",
+      "bytes": 501929,
+      "sha256": "d1ec30669cc700d881bd986d3eb4903ae6e0f9e5eb3f3311f1fdb790110ed053"
+    },
+    {
+      "relative": "observed-data/iron.distribution.yaml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-data/iron.distribution.yaml",
+      "bytes": 248913,
+      "sha256": "ba43a39fbc4002631754eb7a66e6ff108279b5cd1a0266b087be834acd6ec3eb"
+    },
+    {
+      "relative": "observed-data/jade.distribution.yaml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-data/jade.distribution.yaml",
+      "bytes": 222734,
+      "sha256": "9641248f0f7e3401ed58ec3b67870c6efd068633d135727413e90eaf1de21f50"
+    },
+    {
+      "relative": "observed-data/jazzy.distribution.yaml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-data/jazzy.distribution.yaml",
+      "bytes": 406234,
+      "sha256": "eddd839e9356e4e71461cebe2d30287bf35f74e12c96feb63432c744e2041de4"
+    },
+    {
+      "relative": "observed-data/kilted.distribution.yaml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-data/kilted.distribution.yaml",
+      "bytes": 323785,
+      "sha256": "1050dadc31a929887be7bdb4d28c29a96b7a5baf3f68dfe648a6456d1e4f38af"
+    },
+    {
+      "relative": "observed-data/kinetic.distribution.yaml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-data/kinetic.distribution.yaml",
+      "bytes": 517075,
+      "sha256": "da40d4f92360156777b7f210955ba862a44fb4b71a3ca612bafbbffa6fb055cd"
+    },
+    {
+      "relative": "observed-data/lunar.distribution.yaml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-data/lunar.distribution.yaml",
+      "bytes": 183394,
+      "sha256": "5c6fbb7becde5210fff8590d8241f1f6928f5074c08804882ecdb4602d59dc31"
+    },
+    {
+      "relative": "observed-data/lyrical-platforms.rst",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-data/lyrical-platforms.rst",
+      "bytes": 9690,
+      "sha256": "eb4cf58d44fbb5d9d560f5d394d3252e5c0d760c0cff8aa9974741338de573fc"
+    },
+    {
+      "relative": "observed-data/lyrical.distribution.yaml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-data/lyrical.distribution.yaml",
+      "bytes": 343254,
+      "sha256": "0337368513b4d31a0417d61ffa75d83531ac5465a2a7184ff5b8311b7ce52c17"
+    },
+    {
+      "relative": "observed-data/melodic.distribution.yaml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-data/melodic.distribution.yaml",
+      "bytes": 445086,
+      "sha256": "9a9a44e096cbe2a6e588d5e91e7981ad2d3662064a9ccceb118b13f6e0d6d052"
+    },
+    {
+      "relative": "observed-data/noetic.distribution.yaml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-data/noetic.distribution.yaml",
+      "bytes": 380831,
+      "sha256": "b66a1facc8c60576557686dde63bbeb91c8a97b8efd3127fa456fe7f9c8775ae"
+    },
+    {
+      "relative": "observed-data/rep-0003.rst",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-data/rep-0003.rst",
+      "bytes": 19240,
+      "sha256": "61a25704b4ec4ad681f9db3c34ab59c7c488868469f41840d9806986ac328e8d"
+    },
+    {
+      "relative": "observed-data/rep-2000.rst",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-data/rep-2000.rst",
+      "bytes": 100963,
+      "sha256": "e84c7100a020ed1bfe8396f175dda43a4f98a3358bb0cf2cea3d3155a4566907"
+    },
+    {
+      "relative": "observed-data/rolling.distribution.yaml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-data/rolling.distribution.yaml",
+      "bytes": 323424,
+      "sha256": "599d1bc53b159004ee2141a40250fbd6cddec16eef3db1e8b1b4e39ba872aa72"
+    },
+    {
+      "relative": "observed-data/unitree_guide.git-tree.json",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-data/unitree_guide.git-tree.json",
+      "bytes": 60343,
+      "sha256": "bc745e86ea06f96efe3e0cbfe2fa62b01ae3e37640adf53d75d90be947fa11d8"
+    },
+    {
+      "relative": "observed-data/unitree_legged_sdk.git-tree.json",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-data/unitree_legged_sdk.git-tree.json",
+      "bytes": 79528,
+      "sha256": "f7ae380a7d9820fe89132f4dda853cc18a0d9dcd44b79349410fccb64ce5a566"
+    },
+    {
+      "relative": "observed-data/unitree_mujoco.git-tree.json",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-data/unitree_mujoco.git-tree.json",
+      "bytes": 205574,
+      "sha256": "01790a445d0691c6bb770e9072619d4d4783aaf80e1d581b19b6b79b4f2aeb8b"
+    },
+    {
+      "relative": "observed-data/unitree_ros.git-tree.json",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-data/unitree_ros.git-tree.json",
+      "bytes": 446455,
+      "sha256": "1dade9b8eebc9d7f80d0262c427bdfad955be4be83d2cac84c3156576d677156"
+    },
+    {
+      "relative": "observed-data/unitree_ros2.git-tree.json",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-data/unitree_ros2.git-tree.json",
+      "bytes": 57416,
+      "sha256": "afd72d97b91f0492dc1dccec30f94026fb4e14b4dbfb17f2dcc3b598980d69a4"
+    },
+    {
+      "relative": "observed-data/unitree_ros_to_real.git-tree.json",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-data/unitree_ros_to_real.git-tree.json",
+      "bytes": 8787,
+      "sha256": "d20dc088e2ad2ea21c8d5ce5c448e7c2415626c56bd54b61d2642992e13b43f3"
+    },
+    {
+      "relative": "observed-data/unitree_sdk2.git-tree.json",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-data/unitree_sdk2.git-tree.json",
+      "bytes": 283613,
+      "sha256": "ae91204022bb9f9e5453e7a9cb845aec2921eb91596a4aed6c21b19b09deef4a"
+    },
+    {
+      "relative": "observed-data/unitree_sdk2_python.git-tree.json",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-data/unitree_sdk2_python.git-tree.json",
+      "bytes": 97978,
+      "sha256": "a649a08bf5877e6670de54b4d23ca0346b861931f7b46cfc5750086be599b930"
+    },
+    {
+      "relative": "observed-data/unitree_sim_isaaclab.git-tree.json",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-data/unitree_sim_isaaclab.git-tree.json",
+      "bytes": 101402,
+      "sha256": "4234e13f3b300d3bce37094cb1d3f481624d96cc00185316adf8491c32016e8f"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_guide--README.md",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_guide--README.md",
+      "bytes": 2764,
+      "sha256": "9c0244b6bf911147cbf22ff68f609508155b90ce0afa1abafc45dae32ffe97e0"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_guide--unitree_actuator_sdk--unitree_motor_ctrl--package.xml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_guide--unitree_actuator_sdk--unitree_motor_ctrl--package.xml",
+      "bytes": 2638,
+      "sha256": "b00718dcd080810ede7c7008268e7d267c4a9de480b34caeac8fe6e5148f97e3"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_guide--unitree_guide--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_guide--unitree_guide--CMakeLists.txt",
+      "bytes": 4186,
+      "sha256": "3c238ccd4fc794226208336e5ad1e126f49af8e783258aefdc220c1c0307a9c5"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_guide--unitree_guide--package.xml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_guide--unitree_guide--package.xml",
+      "bytes": 1661,
+      "sha256": "9e2549ac10c79cf7ecd59c4a8a4ea739ee4c8e1d1569f86cc184cf8409d4b685"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_guide--unitree_move_base--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_guide--unitree_move_base--CMakeLists.txt",
+      "bytes": 251,
+      "sha256": "1cbd52deb2e45d0f15cf1882270fcd9dbf4818153bedafdab57d52df7fc0ae75"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_guide--unitree_move_base--package.xml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_guide--unitree_move_base--package.xml",
+      "bytes": 1887,
+      "sha256": "10ddb33838919db305b25962ddb0ffd538da7bfd70ea2268ec1922de9287f0ee"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_legged_sdk--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_legged_sdk--CMakeLists.txt",
+      "bytes": 1636,
+      "sha256": "1dfbe6e200958afca516cbe849f37e504a0f556197a7eff0c570edc0729b3509"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_legged_sdk--README.md",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_legged_sdk--README.md",
+      "bytes": 1269,
+      "sha256": "d09d45fe9091e52e57e3a6a1c191078395b861d048eaf56876616c42ac92ab2c"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_legged_sdk--package.xml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_legged_sdk--package.xml",
+      "bytes": 313,
+      "sha256": "e575cfc96fa99efc31c9d316938f6ba96c5d7a79b77419b870cbb3954cac01e8"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_legged_sdk--python_wrapper--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_legged_sdk--python_wrapper--CMakeLists.txt",
+      "bytes": 990,
+      "sha256": "f4c157cd565aa0e91e06443559036d406fb4df7d242e0df4856ab09f9a563ad7"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_legged_sdk--python_wrapper--third-party--pybind11--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_legged_sdk--python_wrapper--third-party--pybind11--CMakeLists.txt",
+      "bytes": 9722,
+      "sha256": "a1fb1c3022ca1da911ef62f86ccc44cd97a52db2230c3acdd6b48202b9adf8e9"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_legged_sdk--python_wrapper--third-party--pybind11--tests--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_legged_sdk--python_wrapper--third-party--pybind11--tests--CMakeLists.txt",
+      "bytes": 14255,
+      "sha256": "23419ef845dac05fb3773758b207863ac21c98d2d5cde14fccf6ee8b28af5515"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_legged_sdk--python_wrapper--third-party--pybind11--tests--test_cmake_build--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_legged_sdk--python_wrapper--third-party--pybind11--tests--test_cmake_build--CMakeLists.txt",
+      "bytes": 2459,
+      "sha256": "49be43869feedc011a316a2044927d4b3c7180a0a6880799715dc4a837458eea"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_legged_sdk--python_wrapper--third-party--pybind11--tests--test_cmake_build--installed_embed--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_legged_sdk--python_wrapper--third-party--pybind11--tests--test_cmake_build--installed_embed--CMakeLists.txt",
+      "bytes": 1175,
+      "sha256": "32f043bdc24fafb9ffad02b90c7b2505269f39d1233fab2995c937b77bcb9c3b"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_legged_sdk--python_wrapper--third-party--pybind11--tests--test_cmake_build--installed_function--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_legged_sdk--python_wrapper--third-party--pybind11--tests--test_cmake_build--installed_function--CMakeLists.txt",
+      "bytes": 1259,
+      "sha256": "c93ba1233f735a7542d48654922494d0e73820d00a1a9c15c7605d77645e8d13"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_legged_sdk--python_wrapper--third-party--pybind11--tests--test_cmake_build--installed_target--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_legged_sdk--python_wrapper--third-party--pybind11--tests--test_cmake_build--installed_target--CMakeLists.txt",
+      "bytes": 1653,
+      "sha256": "c5539f1bab6b379c056c6d0890edb052349e0028250ac56178443a697d138d0d"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_legged_sdk--python_wrapper--third-party--pybind11--tests--test_cmake_build--subdirectory_embed--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_legged_sdk--python_wrapper--third-party--pybind11--tests--test_cmake_build--subdirectory_embed--CMakeLists.txt",
+      "bytes": 1354,
+      "sha256": "5241c3dd5b1a9fbd8f6f71adae2b500d67dc2b1d48e145f771911713789b3f76"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_legged_sdk--python_wrapper--third-party--pybind11--tests--test_cmake_build--subdirectory_function--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_legged_sdk--python_wrapper--third-party--pybind11--tests--test_cmake_build--subdirectory_function--CMakeLists.txt",
+      "bytes": 1127,
+      "sha256": "4c6358767cb720bbea59435424f06f624083bce3052f08b497c197f09a7c3ef7"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_legged_sdk--python_wrapper--third-party--pybind11--tests--test_cmake_build--subdirectory_target--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_legged_sdk--python_wrapper--third-party--pybind11--tests--test_cmake_build--subdirectory_target--CMakeLists.txt",
+      "bytes": 1332,
+      "sha256": "ccd4f37e4fbe13c34b1136c2b2a9c1daa91baccd26b17e21daa3852bc0257c48"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_legged_sdk--python_wrapper--third-party--pybind11--tests--test_embed--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_legged_sdk--python_wrapper--third-party--pybind11--tests--test_embed--CMakeLists.txt",
+      "bytes": 1639,
+      "sha256": "dcbcaf9bee198e76764131eaa3514b962500eec6fd12f76f4df1a8c19550ca3d"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_mujoco--example--cpp--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_mujoco--example--cpp--CMakeLists.txt",
+      "bytes": 276,
+      "sha256": "525f1759599dc9634a822635c0f88dbcf9a46a7f6f4995678f4220111014243d"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_mujoco--example--ros2--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_mujoco--example--ros2--CMakeLists.txt",
+      "bytes": 1350,
+      "sha256": "2edccdecee834fbc6d9134613fd5c51b64531420b642420b9e1c5e898fc4bcce"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_mujoco--example--ros2--package.xml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_mujoco--example--ros2--package.xml",
+      "bytes": 612,
+      "sha256": "ea4ee954ed4467b29a5650122624535bc20c96c6b9b42e65dd3038844426a0e2"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_mujoco--readme.md",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_mujoco--readme.md",
+      "bytes": 12357,
+      "sha256": "bedce1126b459c6bb6d2e0d0fc044cde978aeaed55d7548b4eeedb27ba51d8f0"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_mujoco--simulate--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_mujoco--simulate--CMakeLists.txt",
+      "bytes": 1032,
+      "sha256": "385bca56c649a7a467d3a941f5b9e9b3393a6c5f79a1425730c7a1f78856c3bc"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_mujoco--simulate_python--test--gamepad_test.py",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_mujoco--simulate_python--test--gamepad_test.py",
+      "bytes": 731,
+      "sha256": "9d775f7116e1d21cabbd3c5302291a06549d657656cb7f1f6dc0ce512405eb91"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_mujoco--simulate_python--test--test_unitree_sdk2.py",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_mujoco--simulate_python--test--test_unitree_sdk2.py",
+      "bytes": 1998,
+      "sha256": "32adcb06d817d963a59bfdcef0224eeb1e918ea801799e08b653c12bd9bba3b4"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros--README.md",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--README.md",
+      "bytes": 5504,
+      "sha256": "765b9d3e1fc64be2cd5e33beab19dbfe00a8e7935505b2820c63e7fe6fb3a35a"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros--robots--a1_description--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--robots--a1_description--CMakeLists.txt",
+      "bytes": 275,
+      "sha256": "2dbe30f4dbaf7b8076a726f641a037e29a9bab22665a8a98a2e487b5e7b728c9"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros--robots--a1_description--package.xml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--robots--a1_description--package.xml",
+      "bytes": 374,
+      "sha256": "eda05d3fbb5092d54aa1e7ae493303de8685a44fccf2b51f4bfc21439540015d"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros--robots--aliengoZ1_description--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--robots--aliengoZ1_description--CMakeLists.txt",
+      "bytes": 7133,
+      "sha256": "e0460ffeff64a73eb7ce736017a92501cbc8576af8b38a4ce667ed6917e4906b"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros--robots--aliengoZ1_description--package.xml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--robots--aliengoZ1_description--package.xml",
+      "bytes": 558,
+      "sha256": "632c623f86ca3c464e028df45a93825c894c95c18574cd75c1b741a9844acdcb"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros--robots--aliengo_description--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--robots--aliengo_description--CMakeLists.txt",
+      "bytes": 280,
+      "sha256": "8355e435eda9a5b8957b04273b24aa4099887c909759274768d27c2debaaea4c"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros--robots--aliengo_description--package.xml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--robots--aliengo_description--package.xml",
+      "bytes": 384,
+      "sha256": "21305915154c566bb95395d068605060ebc7eab447319fb327177bff3271493c"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros--robots--b1_description--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--robots--b1_description--CMakeLists.txt",
+      "bytes": 275,
+      "sha256": "80374cc1da5d0b64d40e8c87f0336e14fe7110208ac22fd91192c351d6af4167"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros--robots--b1_description--package.xml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--robots--b1_description--package.xml",
+      "bytes": 369,
+      "sha256": "01ffcd476590971a7580ac93d23c21b90f7d4e0c9d6ac729ce856ef0fc1f46ac"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros--robots--b2_description--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--robots--b2_description--CMakeLists.txt",
+      "bytes": 292,
+      "sha256": "d1db7128ed3f154c669c03eafff011762d60391f7c9a525fec1794345431cf10"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros--robots--b2_description--package.xml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--robots--b2_description--package.xml",
+      "bytes": 669,
+      "sha256": "5f3e676aa87b96612a6166da58086a60659019c59026067e3c223e61fe5d6708"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros--robots--b2w_description--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--robots--b2w_description--CMakeLists.txt",
+      "bytes": 293,
+      "sha256": "9817ed95829cb8f72397d660361bcd6f6416f925558d3ec6b7d96ed488a2264c"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros--robots--b2w_description--package.xml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--robots--b2w_description--package.xml",
+      "bytes": 660,
+      "sha256": "c668305cd947f1b2fd6ec3924434b0dea77f57c1f615eef0caa8c4a21a15c1b1"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros--robots--go1_description--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--robots--go1_description--CMakeLists.txt",
+      "bytes": 276,
+      "sha256": "f0e58353ed79f059e1f060df0de546188056e758827ef1dcdcce18851c4d7a32"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros--robots--go1_description--package.xml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--robots--go1_description--package.xml",
+      "bytes": 374,
+      "sha256": "6ee21e3a6b78899eac17f593810943f5c70e40f503b8ec95e3ba0f583b7fea65"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros--robots--go2_description--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--robots--go2_description--CMakeLists.txt",
+      "bytes": 279,
+      "sha256": "ccf75e67bda4bfe14bed53d53e71567e09eab9831b43630239a8d05bc3e91efa"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros--robots--go2_description--package.xml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--robots--go2_description--package.xml",
+      "bytes": 640,
+      "sha256": "fc1a4712aa4ce5b298b0f429752e4445e7e91e3e1fd4b582b6d0745309fe4b54"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros--robots--go2w_description--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--robots--go2w_description--CMakeLists.txt",
+      "bytes": 280,
+      "sha256": "a13adf619eeaa700cf83dd7cf9f2ffc2b600c9a0320b752442212ce643270c20"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros--robots--go2w_description--package.xml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--robots--go2w_description--package.xml",
+      "bytes": 643,
+      "sha256": "e905715a838ac9c553faca38cce93a79a0c16e3808f0c2b610f3ddc0f9b40d24"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros--robots--h1_description--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--robots--h1_description--CMakeLists.txt",
+      "bytes": 292,
+      "sha256": "c72a35e84f9d8eeb6adcbb192907b66ffe877db0598399371cf34d08b763d5fb"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros--robots--h1_description--package.xml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--robots--h1_description--package.xml",
+      "bytes": 470,
+      "sha256": "623794a21ba9fcd4495fe21725ccc9347494c20f82e18ac3018828bc88221c2f"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros--robots--laikago_description--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--robots--laikago_description--CMakeLists.txt",
+      "bytes": 280,
+      "sha256": "f1492b1f8a4582a8fd37cda869a3089825e7a90f38fb22cb71adbdda6001f669"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros--robots--laikago_description--package.xml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--robots--laikago_description--package.xml",
+      "bytes": 382,
+      "sha256": "2885fb79d5312b8157944f3a4ae505dedbdbce60b1f0e68564e4cb4c062b53b1"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros--robots--z1_description--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--robots--z1_description--CMakeLists.txt",
+      "bytes": 186,
+      "sha256": "4f36732e9ca34a56697823c1c4a5751fa8afdfe9e4f56d60f76b60c840a5ab20"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros--robots--z1_description--package.xml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--robots--z1_description--package.xml",
+      "bytes": 548,
+      "sha256": "f64cf9781e3ae216ccdfffe2e1fda41e0c3f5010459392cd25aff905370a7183"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros--unitree_controller--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--unitree_controller--CMakeLists.txt",
+      "bytes": 1511,
+      "sha256": "d260ca85e6589d71a91e72c43b10ab7c1e6adc0c2642da5aaac0307e4c53080e"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros--unitree_controller--package.xml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--unitree_controller--package.xml",
+      "bytes": 1466,
+      "sha256": "41c0201dc878f38078621352b8a559792baeba803a1592076c20fdc70abad65c"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros--unitree_gazebo--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--unitree_gazebo--CMakeLists.txt",
+      "bytes": 1411,
+      "sha256": "c01f4c9f53fa532c05ab576d8383d9f355bb67ace804a85f2a5724dd21db16f5"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros--unitree_gazebo--package.xml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--unitree_gazebo--package.xml",
+      "bytes": 1482,
+      "sha256": "24f81c93d28a1b5855368c7ef1917606a63cdaf6581e5a9e726c3427f659a7bf"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros--unitree_legged_control--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--unitree_legged_control--CMakeLists.txt",
+      "bytes": 728,
+      "sha256": "4f0652741fc152064a381eff30a5efd962e523b0432449a79a37a05fc5dd0fea"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros--unitree_legged_control--package.xml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros--unitree_legged_control--package.xml",
+      "bytes": 1234,
+      "sha256": "57af8b25d583c7a636e566d58ef973d402375e501c08549d2492648f8b85d1df"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros2--.github--workflows--auto-tag.yml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros2--.github--workflows--auto-tag.yml",
+      "bytes": 1447,
+      "sha256": "7b2a6c98be5358731b3de7ad8ac1c8ee13638ce622807729ffb790f43b8db71a"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros2--.github--workflows--build-foxy.yml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros2--.github--workflows--build-foxy.yml",
+      "bytes": 1539,
+      "sha256": "856689168764d9365442ce7d56678c9bfbe6bf05ae8ff7b1451a081427bf69bb"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros2--.github--workflows--build-humble.yml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros2--.github--workflows--build-humble.yml",
+      "bytes": 1553,
+      "sha256": "90b2c51154d303909c65b8b8c0f1d6a3f306c48d0ac77b01af975fdebc84399f"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros2--.github--workflows--release.yml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros2--.github--workflows--release.yml",
+      "bytes": 1360,
+      "sha256": "b8d9560a0f32153c1cb49bb909f643fc85c25095cd5dd8c47aae3e639d1e1deb"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros2--README.md",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros2--README.md",
+      "bytes": 14449,
+      "sha256": "975d8a29d4904dc6d3d0f72fd9119afed57b0b193a7a2d26d5211bc6b8858831"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros2--cyclonedds_ws--src--unitree--unitree_api--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros2--cyclonedds_ws--src--unitree--unitree_api--CMakeLists.txt",
+      "bytes": 1729,
+      "sha256": "61029416c795499036c0314866f43a794090fdf24ad3eff5d9cef08ec771fe16"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros2--cyclonedds_ws--src--unitree--unitree_api--package.xml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros2--cyclonedds_ws--src--unitree--unitree_api--package.xml",
+      "bytes": 706,
+      "sha256": "2acf54b778c17736c36c325fe4fc76e396083b0c9e19a14426fe15b6f435a8bf"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros2--cyclonedds_ws--src--unitree--unitree_go--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros2--cyclonedds_ws--src--unitree--unitree_go--CMakeLists.txt",
+      "bytes": 2158,
+      "sha256": "db42b8667068305431f574031edb0889e0f31e458edccab2d427383b655622b7"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros2--cyclonedds_ws--src--unitree--unitree_go--package.xml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros2--cyclonedds_ws--src--unitree--unitree_go--package.xml",
+      "bytes": 705,
+      "sha256": "6a23b69425841653e4f4ed1231a1305c4c6f40c15d83225260ff82aba6df62f5"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros2--cyclonedds_ws--src--unitree--unitree_hg--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros2--cyclonedds_ws--src--unitree--unitree_hg--CMakeLists.txt",
+      "bytes": 1712,
+      "sha256": "8fd25f9dffae80e3d23f0f6022919a8669a47c7b5e08fdccf80b7c316cdf1fec"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros2--cyclonedds_ws--src--unitree--unitree_hg--package.xml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros2--cyclonedds_ws--src--unitree--unitree_hg--package.xml",
+      "bytes": 705,
+      "sha256": "36708720442ad4375e0a8dc26f90fca8df1cfa2d003dd1487ab8bc033201c06c"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros2--example--src--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros2--example--src--CMakeLists.txt",
+      "bytes": 7239,
+      "sha256": "82f0ddd9a84081a7f30a11d07595f190e01eb50be80c22688c6d56b8cca0de19"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros2--example--src--package.xml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros2--example--src--package.xml",
+      "bytes": 696,
+      "sha256": "4916c493a827db46ae5fc825b8fa39373bd724cb255f7b5c8fd5662e91c87167"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros_to_real--README.md",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros_to_real--README.md",
+      "bytes": 3317,
+      "sha256": "b3820c7fadd265918bf0283c37883abe56d89484d376b83617d3c1937eb4c001"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros_to_real--unitree_legged_msgs--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros_to_real--unitree_legged_msgs--CMakeLists.txt",
+      "bytes": 753,
+      "sha256": "eb8de3144d953c97db7eccf9c07f964ba34b54fecd7f32c416308703ba76f6b9"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros_to_real--unitree_legged_msgs--package.xml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros_to_real--unitree_legged_msgs--package.xml",
+      "bytes": 485,
+      "sha256": "048356334c81c6a084dce484f5c9086a409bc6b14fd7aa3acdbdda14f3de814d"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros_to_real--unitree_legged_real--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros_to_real--unitree_legged_real--CMakeLists.txt",
+      "bytes": 1919,
+      "sha256": "299b1a97b5f4558a0d24c30116da4b49a7d58bc548dbd3ad05b79839878a0d51"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_ros_to_real--unitree_legged_real--package.xml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_ros_to_real--unitree_legged_real--package.xml",
+      "bytes": 673,
+      "sha256": "ae76a7054b5eb31e634a65e2fed1fb3f454d61febb5040fe718ed76b9f5310d7"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_sdk2--.github--workflows--c-cpp.yml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2--.github--workflows--c-cpp.yml",
+      "bytes": 646,
+      "sha256": "e6d590b272c07e64119916b243dffca1173cb068477ad4caba1490481998e608"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_sdk2--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2--CMakeLists.txt",
+      "bytes": 3012,
+      "sha256": "4b563688b286ff0d1e8f97e9b3da8207b2adde59e8d128f3170058e70f48df9f"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_sdk2--README.md",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2--README.md",
+      "bytes": 1417,
+      "sha256": "fac73c34a0340b17f9efd2e11ef709e8512f7090a0a00e430ca749d94d3e3c92"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_sdk2--example--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2--example--CMakeLists.txt",
+      "bytes": 341,
+      "sha256": "22ef4ae4d1419bc8faa66e49e1e60381a3366d164c265259bdd9f8d65fcfcc8d"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_sdk2--example--a2--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2--example--a2--CMakeLists.txt",
+      "bytes": 356,
+      "sha256": "6e16c2a3c474761f9dbb90ccca22a1954b442661bd6794ec34009d56623d7019"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_sdk2--example--as2--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2--example--as2--CMakeLists.txt",
+      "bytes": 365,
+      "sha256": "4a45c4620c741ad07d04e92b7d69cba62011e6ad41cf33bd3dd8de43bee3daf6"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_sdk2--example--b2--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2--example--b2--CMakeLists.txt",
+      "bytes": 213,
+      "sha256": "175e94a101dba9d4527bbaefdfec27a96083903d2df1f11c348d0783e59420b5"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_sdk2--example--b2w--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2--example--b2w--CMakeLists.txt",
+      "bytes": 218,
+      "sha256": "d4bc9e413131892cbc37beff82fdf2bbb3676f7533659a28f20a4e2b9ff977e8"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_sdk2--example--g1--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2--example--g1--CMakeLists.txt",
+      "bytes": 2500,
+      "sha256": "c45b3a686aa5750bd6987b16e7cfd161660257d4590d1826c37d5bdb062a1ed6"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_sdk2--example--go2--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2--example--go2--CMakeLists.txt",
+      "bytes": 780,
+      "sha256": "2fa26948a6ed7a94ef18d7dfc89419010ddebfc12d2da0ac22b833c3382348ce"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_sdk2--example--go2w--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2--example--go2w--CMakeLists.txt",
+      "bytes": 224,
+      "sha256": "d3888579a82cac422ad24231ab0d0e3a30b8d07a186cd8e9e71a30659b1621ca"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_sdk2--example--h1--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2--example--h1--CMakeLists.txt",
+      "bytes": 755,
+      "sha256": "d6b21a69cc2ed35121f087b9add28e9a4ef84275d1edc5bc44d9bada52773579"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_sdk2--example--h2--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2--example--h2--CMakeLists.txt",
+      "bytes": 1214,
+      "sha256": "9e63cb73aee476a5ae052cb0d25e0cbc9e9cd3933f8e42f5047ba4140ef69499"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_sdk2--example--helloworld--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2--example--helloworld--CMakeLists.txt",
+      "bytes": 255,
+      "sha256": "aa5a55e2db8d57aa308d39724b77de03a7b7120e48e87b22818063293280f343"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_sdk2--example--jsonize--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2--example--jsonize--CMakeLists.txt",
+      "bytes": 94,
+      "sha256": "5bc3dd1c000d667d8b6fe143bf2e6008f9aa0a3d3796d294cce505e08fcd7df9"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_sdk2--example--r1--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2--example--r1--CMakeLists.txt",
+      "bytes": 995,
+      "sha256": "49e7b48092bb0c2fa5c82e39fe61cbaed9ee28388d6719994faea70dcf690669"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_sdk2--example--state_machine--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2--example--state_machine--CMakeLists.txt",
+      "bytes": 104,
+      "sha256": "2f394c379ea12e81a04ca44570b0904cff3ffabd875b7a13bca86d727585ffaf"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_sdk2--example--wireless_controller--CMakeLists.txt",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2--example--wireless_controller--CMakeLists.txt",
+      "bytes": 94,
+      "sha256": "24dd9e1e5200f0e60ed4380bea6b53563eb0d9c20929bab3c7df0921026a68dc"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_sdk2_python--README.md",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2_python--README.md",
+      "bytes": 5550,
+      "sha256": "0fa9e0fb386718da0619c6ddbf29b0ae01bfd49a61f36cb1c14000e4c4a7fe3d"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_sdk2_python--pyproject.toml",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2_python--pyproject.toml",
+      "bytes": 89,
+      "sha256": "c83da5db515857a120ce4f6afd13c08644ebee0ea5128ad7dc2109236a973075"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_sdk2_python--setup.py",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2_python--setup.py",
+      "bytes": 711,
+      "sha256": "f2c73b2981ee918dd8b3810267691d0294ebedf86d7897330819e8a5fefb19b5"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_sdk2_python--unitree_sdk2py--test--crc--test_crc.py",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2_python--unitree_sdk2py--test--crc--test_crc.py",
+      "bytes": 715,
+      "sha256": "17817cbac7789554e8d7b2a7e162a9b6c8fb7e0602ea528956ec026d9315ae3f"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_sdk2_python--unitree_sdk2py--test--rpc--test_api.py",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2_python--unitree_sdk2py--test--rpc--test_api.py",
+      "bytes": 143,
+      "sha256": "753290c91eb9961de53b0bc2f95da8f39dcdd85e362e01ba19b9b1513daef85e"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_sdk2_python--unitree_sdk2py--test--rpc--test_client_example.py",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2_python--unitree_sdk2py--test--rpc--test_client_example.py",
+      "bytes": 1496,
+      "sha256": "641a729fdbc07e68694a0e72cadbd0b7f17c131b18b6d57a6c9f06c1148bdcd0"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_sdk2_python--unitree_sdk2py--test--rpc--test_server_example.py",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sdk2_python--unitree_sdk2py--test--rpc--test_server_example.py",
+      "bytes": 1017,
+      "sha256": "cef1c190b682ad548e3ecefe192a0252716790f0189c89ccc468c4ff71e90499"
+    },
+    {
+      "relative": "observed-upstream-files/unitree_sim_isaaclab--README.md",
+      "original_observation_path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/observed-upstream-files/unitree_sim_isaaclab--README.md",
+      "bytes": 19778,
+      "sha256": "06e5e5dd4d75a048ea890758df7f33ed5bab819a172ce3e7aa98b8a00bd7bccf"
+    }
+  ],
+  "source_only_original_seal_sha256": "cbce277b7bbbbe59d015bb279ed99c5780dbfe47dbcfbadcafb477d19d6fe5ae",
+  "none_of_these_observations_qualifies_an_executed_SDK_or_checkout": true
+}

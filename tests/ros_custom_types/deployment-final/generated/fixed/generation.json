@@ -1,0 +1,99 @@
+{
+  "format": "uwvm-ros-custom-fixed-v1",
+  "status": "GENERATED_SOURCE_ONLY",
+  "native_registry_emitted": true,
+  "native_identity_provenance": "not required for guest-only source; otherwise caller-supplied official identities requiring native verification",
+  "native_execution": "NOT_RUN",
+  "compiler_execution": "NOT_RUN",
+  "source_inputs": {
+    "catalog": {
+      "bytes": 480,
+      "sha256": "68bc9ce5b8c99abed6bce3f43549520c97e0e9893f447874b8a5dcbd469e7631"
+    },
+    "definitions": [
+      {
+        "file": "msg/ros1/Packet.msg",
+        "bytes": 530,
+        "sha256": "0ae19ba650ee6345d44a0b0d4597eb031900dc896ef030326efe58293c8a9331"
+      },
+      {
+        "file": "msg/ros2/FixedSample.msg",
+        "bytes": 1052,
+        "sha256": "220cbaabfcfc4ba7ae5e861cf30a447d78499faa8f704e75e5faaf4e1e3c099f"
+      }
+    ]
+  },
+  "generator_sha256": "31338eb36898685699cb7bd2e6fe29855d7979afd517ecd1bb7b58817154a3e3",
+  "types": [
+    {
+      "ros_version": 1,
+      "type": "uwvm_custom_ros1_fixture/Packet",
+      "native_identity": "f9f763c3e1630ff9c5652c744e59a68a",
+      "adapter_codec_identity": "UWVMROS1_eb0eef4515ec546678bae4030eb858c151af98afa1bfa3ca08b3a0e02bd48544",
+      "wire_bytes": 23,
+      "scalar_cells": 10,
+      "native_operations": [
+        "topic.publish",
+        "topic.subscribe"
+      ]
+    },
+    {
+      "ros_version": 2,
+      "type": "uwvm_ros_custom_test_msgs/msg/FixedSample",
+      "native_identity": "RIHS01_5026d3427fd5649d1cb11a7cf9e79429d2775096e9bec98669dde689b4d20fc2",
+      "adapter_codec_identity": "UWVMROS1_3f390efa2dccaf91a53c14a50fcead8790bb1bbc103c6ac6b29f176d045e2516",
+      "wire_bytes": 45,
+      "scalar_cells": 16,
+      "native_operations": [
+        "topic.publish",
+        "topic.subscribe"
+      ]
+    }
+  ],
+  "packages": {
+    "ros1": [
+      "uwvm_custom_ros1_fixture"
+    ],
+    "ros2": [
+      "uwvm_ros_custom_test_msgs"
+    ]
+  },
+  "outputs": {
+    "fixed_records.h": {
+      "bytes": 11217,
+      "sha256": "67d993c306349c9824666dc56306e763c214781a32211751b22b8967e45f788a"
+    },
+    "fixed_records.hpp": {
+      "bytes": 2534,
+      "sha256": "4c509cfe36ae3cca9ec01937bd5781dc465b17b2847d0b5c29b2d33042f756d8"
+    },
+    "fixed_records.rs": {
+      "bytes": 9671,
+      "sha256": "cc65a6e56f23a2b09975ef35a74a8f6337fbb3ce9739d20d2613dd052b18949a"
+    },
+    "fixed_records.mjs": {
+      "bytes": 6456,
+      "sha256": "0905524baace58dac73c6d265b0165253401dac9ff3548403b04830f1c21c712"
+    },
+    "fixed_records.ts": {
+      "bytes": 6324,
+      "sha256": "c1114f2fec66316946508885fe1972a5786a27e6e5c0070351dbae9dc54745e0"
+    },
+    "fixed_records.go": {
+      "bytes": 7450,
+      "sha256": "b45c4d72a8be0ca253f983a7f37271868ae0bdebaaff6d5bb7708f35622964a4"
+    },
+    "manifest.hpp": {
+      "bytes": 1723,
+      "sha256": "d8e74863b2f5d84a8cfbc6c5f8e0e2b0e3b5209e7d98259f960e4e8e67b95a79"
+    },
+    "native_ros1.hpp": {
+      "bytes": 7681,
+      "sha256": "e6406531596d537df69e715917cb5510c8b23f456236613d02fb87bb83a8a400"
+    },
+    "native_ros2.hpp": {
+      "bytes": 9380,
+      "sha256": "90d2ab28702795751522f5163efb63af6195bb38cd284b0cddd72c68eaa806de"
+    }
+  }
+}

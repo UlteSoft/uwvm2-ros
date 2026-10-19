@@ -1,0 +1,94 @@
+{
+  "id": "driver_main",
+  "url": "https://github.com/clearpathrobotics/clearpath_robot",
+  "branch": "main",
+  "commit": "18906e74507ed98e778d4b44b59326a063708db0",
+  "tree_git_sha1": "36f6b44b0e3bf745373e45a44c609ec8b1709a88",
+  "files": [
+    {
+      "path": "LICENSE",
+      "bytes": 1504,
+      "sha256": "c5b036522ecf21b207daad625d10aff273d170b5cb46e3cae89129f67a6603c7",
+      "git_blob_sha1": "6080cef2f56b73d44611824fcc29dd336d63b3f9"
+    },
+    {
+      "path": "clearpath_diagnostics/CHANGELOG.rst",
+      "bytes": 2316,
+      "sha256": "54344e28426e53068d30aba2a59d6c88f6748291a829383b2ff5ef1e00ea2dd6",
+      "git_blob_sha1": "f9daf060ecb7fa608fbc69861ec15149c10f98a1"
+    },
+    {
+      "path": "clearpath_diagnostics/CMakeLists.txt",
+      "bytes": 1151,
+      "sha256": "a59e3d5999abf9c623a04e5a269717b27ef1d5a4d00061d33808e97cf0bc6df1",
+      "git_blob_sha1": "db672ca0e04fc7c53fc852a144c6ee64659ec686"
+    },
+    {
+      "path": "clearpath_diagnostics/package.xml",
+      "bytes": 989,
+      "sha256": "9505043e79f6ac720521dda9170ef9eca3f3378dc57c638e35e9fcb767f3fb01",
+      "git_blob_sha1": "6c21f34d6492e655d73d9ac42e5620b35122a2a2"
+    },
+    {
+      "path": "clearpath_generator_robot/CHANGELOG.rst",
+      "bytes": 3542,
+      "sha256": "ea31a7c729861fa39ef9db7779a6430fb5c2ba8b62e0eb1c53df85ac692f4003",
+      "git_blob_sha1": "8f4f63208c056fb96e7f03cb865b368e3601d556"
+    },
+    {
+      "path": "clearpath_generator_robot/CMakeLists.txt",
+      "bytes": 1454,
+      "sha256": "0063e7e7f393fb744427bf8fcd9c192bac0f3b613f249b11ac5d7c893d6cde27",
+      "git_blob_sha1": "c3af6c78cb634e191f841201528b5676f9f1e2f3"
+    },
+    {
+      "path": "clearpath_generator_robot/package.xml",
+      "bytes": 1211,
+      "sha256": "5731cb0127e679cc0c3e67c905bdd470a3c26a1f203eef9a936398e30675a20f",
+      "git_blob_sha1": "50fe44879f7c4243ce0a3175a5eb1b294428816a"
+    },
+    {
+      "path": "clearpath_robot/CHANGELOG.rst",
+      "bytes": 2750,
+      "sha256": "042f9d9e16e04c1fc3f5f1c77b28ee387cd799874d1ad3406db14354817e193b",
+      "git_blob_sha1": "e51e9700bfe354bf69e1a46aacb1076c0d20b60f"
+    },
+    {
+      "path": "clearpath_robot/CMakeLists.txt",
+      "bytes": 934,
+      "sha256": "613c863a179fb785bf2215551bb651baf72fa19298bd6f315f66602a92c21890",
+      "git_blob_sha1": "1735df120a47289a2f1067ef80120536367fc6bd"
+    },
+    {
+      "path": "clearpath_robot/package.xml",
+      "bytes": 1355,
+      "sha256": "e2923ad2042c9a49d8a8c4e0dd81bc68163358c5aa4523352efe2a4e53501010",
+      "git_blob_sha1": "e5dff74c6f0ca96d39ac82a881ced6d0c1642acd"
+    },
+    {
+      "path": "clearpath_sensors/CHANGELOG.rst",
+      "bytes": 3656,
+      "sha256": "2bfbf98214f8662df24228d0557bb08da94abcc913cbbd004db9d194854adcac",
+      "git_blob_sha1": "e6247c3fa27fbef2d0113be4ab17928484c021b0"
+    },
+    {
+      "path": "clearpath_sensors/CMakeLists.txt",
+      "bytes": 856,
+      "sha256": "482f4183015b900c3eda17552ad6b0b71b408638074dfba96461b97e400070cf",
+      "git_blob_sha1": "29b4897b6f0b011dc919d8d161c28dc9711ad3a1"
+    },
+    {
+      "path": "clearpath_sensors/package.xml",
+      "bytes": 1486,
+      "sha256": "17885cfd2b46a751270eabf8e964a97a1c9a88333df13cc9f3ab1b5e3f9939df",
+      "git_blob_sha1": "ceae9efb6aaf2b01ec4b61d1fd58748036e1a167"
+    }
+  ],
+  "archive": {
+    "url": "https://codeload.github.com/clearpathrobotics/clearpath_robot/tar.gz/18906e74507ed98e778d4b44b59326a063708db0",
+    "bytes": 49963,
+    "sha256": "81fb1e97a3321467547e54a08310232a2838fc735ad39cb576cf889b3ea4f23a"
+  },
+  "default_authority": [],
+  "scope": "Original source and complete acquisition archive only; no compatibility, compiler, Guest, native or physical robot result."
+}

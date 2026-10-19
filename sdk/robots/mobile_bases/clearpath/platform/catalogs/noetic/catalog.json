@@ -1,0 +1,2852 @@
+{
+  "format": "uwvm-ros-vendor-complete-bounded-v1",
+  "types": [
+    {
+      "ros_version": 1,
+      "type": "clearpath_camera_msgs/InspectPOI",
+      "file": "clearpath_camera_msgs/action/InspectPOI.action",
+      "registered": true,
+      "bounds": {
+        "goal.poi_uuid": {
+          "string": 256
+        },
+        "result.message": {
+          "string": 256
+        },
+        "feedback.message": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_dock_msgs/LocalDock",
+      "file": "clearpath_dock_msgs/action/LocalDock.action",
+      "registered": true,
+      "bounds": {
+        "result.message": {
+          "string": 256
+        },
+        "feedback.message": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_dock_msgs/LocalUndock",
+      "file": "clearpath_dock_msgs/action/LocalUndock.action",
+      "registered": true,
+      "bounds": {
+        "result.message": {
+          "string": 256
+        },
+        "feedback.message": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_dock_msgs/NetworkDock",
+      "file": "clearpath_dock_msgs/action/NetworkDock.action",
+      "registered": true,
+      "bounds": {
+        "goal.dock_uuid": {
+          "string": 256
+        },
+        "goal.network_uuid": {
+          "string": 256
+        },
+        "result.message": {
+          "string": 256
+        },
+        "feedback.message": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_dock_msgs/RadiusDock",
+      "file": "clearpath_dock_msgs/action/RadiusDock.action",
+      "registered": true,
+      "bounds": {
+        "goal.dock_uuid": {
+          "string": 256
+        },
+        "result.message": {
+          "string": 256
+        },
+        "feedback.message": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_localization_msgs/SurveyBaseStation",
+      "file": "clearpath_localization_msgs/action/SurveyBaseStation.action",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_scheduler_msgs/RunScheduleByUuid",
+      "file": "clearpath_mission_scheduler_msgs/action/RunScheduleByUuid.action",
+      "registered": true,
+      "bounds": {
+        "goal.uuid": {
+          "string": 256
+        },
+        "feedback.current_mission_uuid": {
+          "string": 256
+        },
+        "feedback.state": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/ExecuteMissionByUuid",
+      "file": "clearpath_navigation_msgs/action/ExecuteMissionByUuid.action",
+      "registered": true,
+      "bounds": {
+        "goal.uuid": {
+          "string": 256
+        },
+        "goal.start_waypoint_uuid": {
+          "string": 256
+        },
+        "result.message": {
+          "string": 256
+        },
+        "feedback.message": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/ExecuteNetworkGoTo",
+      "file": "clearpath_navigation_msgs/action/ExecuteNetworkGoTo.action",
+      "registered": true,
+      "bounds": {
+        "goal.map_uuid": {
+          "string": 256
+        },
+        "result.message": {
+          "string": 256
+        },
+        "feedback.message": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/ExecuteNetworkMissionByUuid",
+      "file": "clearpath_navigation_msgs/action/ExecuteNetworkMissionByUuid.action",
+      "registered": true,
+      "bounds": {
+        "goal.mission_uuid": {
+          "string": 256
+        },
+        "goal.map_uuid": {
+          "string": 256
+        },
+        "result.message": {
+          "string": 256
+        },
+        "result.goal_states": {
+          "sequence": 2
+        },
+        "feedback.message": {
+          "string": 256
+        },
+        "feedback.goal_states": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/GetWaypointPath",
+      "file": "clearpath_navigation_msgs/action/GetWaypointPath.action",
+      "registered": true,
+      "bounds": {
+        "goal.waypoints": {
+          "sequence": 2
+        },
+        "goal.planner": {
+          "string": 256
+        },
+        "result.message": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/Mission",
+      "file": "clearpath_navigation_msgs/action/Mission.action",
+      "registered": true,
+      "bounds": {
+        "result.message": {
+          "string": 256
+        },
+        "feedback.message": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/NetworkGoToPOI",
+      "file": "clearpath_navigation_msgs/action/NetworkGoToPOI.action",
+      "registered": true,
+      "bounds": {
+        "goal.poi_uuid": {
+          "string": 256
+        },
+        "goal.map_uuid": {
+          "string": 256
+        },
+        "result.message": {
+          "string": 256
+        },
+        "feedback.message": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/RecordPath",
+      "file": "clearpath_navigation_msgs/action/RecordPath.action",
+      "registered": true,
+      "bounds": {
+        "result.points": {
+          "sequence": 2
+        },
+        "feedback.points": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/RunNetworkGoToPlanner",
+      "file": "clearpath_navigation_msgs/action/RunNetworkGoToPlanner.action",
+      "registered": true,
+      "bounds": {
+        "goal.map_uuid": {
+          "string": 256
+        },
+        "feedback.points": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/RunNetworkMissionPreviewer",
+      "file": "clearpath_navigation_msgs/action/RunNetworkMissionPreviewer.action",
+      "registered": true,
+      "bounds": {
+        "goal.map_uuid": {
+          "string": 256
+        },
+        "goal.mission_uuid": {
+          "string": 256
+        },
+        "feedback.segments": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/SmoothPath",
+      "file": "clearpath_navigation_msgs/action/SmoothPath.action",
+      "registered": true,
+      "bounds": {
+        "feedback.sequence": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/UITask",
+      "file": "clearpath_navigation_msgs/action/UITask.action",
+      "registered": true,
+      "bounds": {
+        "goal.version": {
+          "string": 256
+        },
+        "goal.floats": {
+          "sequence": 2
+        },
+        "goal.strings": {
+          "string": 256,
+          "sequence": 2
+        },
+        "feedback.state": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_configuration_msgs/AutonomyConfig",
+      "file": "clearpath_configuration_msgs/msg/AutonomyConfig.msg",
+      "registered": true,
+      "bounds": {
+        "version": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_configuration_msgs/PlatformConfig",
+      "file": "clearpath_configuration_msgs/msg/PlatformConfig.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_control_msgs/AutonomySync",
+      "file": "clearpath_control_msgs/msg/AutonomySync.msg",
+      "registered": true,
+      "bounds": {
+        "missionType": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_control_msgs/ControlMode",
+      "file": "clearpath_control_msgs/msg/ControlMode.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_control_msgs/ControlSelectionState",
+      "file": "clearpath_control_msgs/msg/ControlSelectionState.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_control_msgs/ControlState",
+      "file": "clearpath_control_msgs/msg/ControlState.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_dock_msgs/DockInfo",
+      "file": "clearpath_dock_msgs/msg/DockInfo.msg",
+      "registered": true,
+      "bounds": {
+        "name": {
+          "string": 128
+        },
+        "uuid": {
+          "string": 256
+        },
+        "frame": {
+          "string": 256
+        },
+        "target_template": {
+          "string": 256
+        },
+        "last_location_set_time": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_dock_msgs/DockProperties",
+      "file": "clearpath_dock_msgs/msg/DockProperties.msg",
+      "registered": true,
+      "bounds": {
+        "docks": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_dock_msgs/DockState",
+      "file": "clearpath_dock_msgs/msg/DockState.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_dock_msgs/TargetTrackerState",
+      "file": "clearpath_dock_msgs/msg/TargetTrackerState.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_localization_msgs/GNSSStatus",
+      "file": "clearpath_localization_msgs/msg/GNSSStatus.msg",
+      "registered": true,
+      "bounds": {
+        "cn0": {
+          "sequence": 64
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_localization_msgs/LocalizationStatus",
+      "file": "clearpath_localization_msgs/msg/LocalizationStatus.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_localization_msgs/SurveyProperties",
+      "file": "clearpath_localization_msgs/msg/SurveyProperties.msg",
+      "registered": true,
+      "bounds": {
+        "last_survey_time": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_localization_msgs/XvnStatus",
+      "file": "clearpath_localization_msgs/msg/XvnStatus.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_logger_msgs/Event",
+      "file": "clearpath_logger_msgs/msg/Event.msg",
+      "registered": true,
+      "bounds": {
+        "media_path": {
+          "string": 256
+        },
+        "media_mime_type": {
+          "string": 256
+        },
+        "error_msg": {
+          "string": 256
+        },
+        "error_component": {
+          "string": 256
+        },
+        "tags": {
+          "string": 256,
+          "sequence": 2
+        },
+        "custom_fields_json": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_logger_msgs/EventLog",
+      "file": "clearpath_logger_msgs/msg/EventLog.msg",
+      "registered": true,
+      "bounds": {
+        "uuid": {
+          "string": 256
+        },
+        "name": {
+          "string": 128
+        },
+        "custom_fields_json": {
+          "string": 256
+        },
+        "events": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_logger_msgs/EventLogs",
+      "file": "clearpath_logger_msgs/msg/EventLogs.msg",
+      "registered": true,
+      "bounds": {
+        "logs": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/NetworkEdgeReq",
+      "file": "clearpath_mission_manager_msgs/msg/NetworkEdgeReq.msg",
+      "registered": true,
+      "bounds": {
+        "start_point_id": {
+          "string": 256
+        },
+        "end_point_id": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/NetworkMapState",
+      "file": "clearpath_mission_manager_msgs/msg/NetworkMapState.msg",
+      "registered": true,
+      "bounds": {
+        "uuid": {
+          "string": 256
+        },
+        "disconnected_point_ids": {
+          "string": 256,
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/NetworkMapValidityState",
+      "file": "clearpath_mission_manager_msgs/msg/NetworkMapValidityState.msg",
+      "registered": true,
+      "bounds": {
+        "map_states": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/StorageState",
+      "file": "clearpath_mission_manager_msgs/msg/StorageState.msg",
+      "registered": true,
+      "bounds": {
+        "missions": {
+          "sequence": 2
+        },
+        "waypoints": {
+          "sequence": 2
+        },
+        "tasks": {
+          "sequence": 2
+        },
+        "network_missions": {
+          "sequence": 2
+        },
+        "network_maps": {
+          "sequence": 2
+        },
+        "points_of_interest": {
+          "sequence": 2
+        }
+      },
+      "wire_limits": {
+        "message": 32768
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_scheduler_msgs/NextSchedule",
+      "file": "clearpath_mission_scheduler_msgs/msg/NextSchedule.msg",
+      "registered": true,
+      "bounds": {
+        "uuid": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_scheduler_msgs/Schedule",
+      "file": "clearpath_mission_scheduler_msgs/msg/Schedule.msg",
+      "registered": true,
+      "bounds": {
+        "name": {
+          "string": 128
+        },
+        "uuid": {
+          "string": 256
+        },
+        "mission_ids": {
+          "string": 256,
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_scheduler_msgs/StorageState",
+      "file": "clearpath_mission_scheduler_msgs/msg/StorageState.msg",
+      "registered": true,
+      "bounds": {
+        "schedules": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_scheduler_msgs/UtcTime",
+      "file": "clearpath_mission_scheduler_msgs/msg/UtcTime.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/AutonomyStatus",
+      "file": "clearpath_navigation_msgs/msg/AutonomyStatus.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/DistanceToGoal",
+      "file": "clearpath_navigation_msgs/msg/DistanceToGoal.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/Metrics",
+      "file": "clearpath_navigation_msgs/msg/Metrics.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/Mission",
+      "file": "clearpath_navigation_msgs/msg/Mission.msg",
+      "registered": true,
+      "bounds": {
+        "name": {
+          "string": 128
+        },
+        "uuid": {
+          "string": 256
+        },
+        "waypoints": {
+          "sequence": 2
+        },
+        "on_start": {
+          "sequence": 2
+        },
+        "on_stop": {
+          "sequence": 2
+        },
+        "onav_config": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/MissionStatus",
+      "file": "clearpath_navigation_msgs/msg/MissionStatus.msg",
+      "registered": true,
+      "bounds": {
+        "name": {
+          "string": 128
+        },
+        "uuid": {
+          "string": 256
+        },
+        "waypoints": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/MotionState",
+      "file": "clearpath_navigation_msgs/msg/MotionState.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/NavigationState",
+      "file": "clearpath_navigation_msgs/msg/NavigationState.msg",
+      "registered": true,
+      "bounds": {
+        "states": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/NetworkEdge",
+      "file": "clearpath_navigation_msgs/msg/NetworkEdge.msg",
+      "registered": true,
+      "bounds": {
+        "uuid": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/NetworkGoalState",
+      "file": "clearpath_navigation_msgs/msg/NetworkGoalState.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/NetworkMap",
+      "file": "clearpath_navigation_msgs/msg/NetworkMap.msg",
+      "registered": true,
+      "bounds": {
+        "name": {
+          "string": 128
+        },
+        "uuid": {
+          "string": 256
+        },
+        "points": {
+          "sequence": 2
+        },
+        "connections": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/NetworkMission",
+      "file": "clearpath_navigation_msgs/msg/NetworkMission.msg",
+      "registered": true,
+      "bounds": {
+        "name": {
+          "string": 128
+        },
+        "uuid": {
+          "string": 256
+        },
+        "waypoints": {
+          "sequence": 2
+        },
+        "on_start": {
+          "sequence": 2
+        },
+        "on_stop": {
+          "sequence": 2
+        },
+        "return_to_dock_id": {
+          "string": 256
+        },
+        "onav_config": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/NetworkMissionSegment",
+      "file": "clearpath_navigation_msgs/msg/NetworkMissionSegment.msg",
+      "registered": true,
+      "bounds": {
+        "points": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/NetworkPoint",
+      "file": "clearpath_navigation_msgs/msg/NetworkPoint.msg",
+      "registered": true,
+      "bounds": {
+        "uuid": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/OdomIntent",
+      "file": "clearpath_navigation_msgs/msg/OdomIntent.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/PointOfInterest",
+      "file": "clearpath_navigation_msgs/msg/PointOfInterest.msg",
+      "registered": true,
+      "bounds": {
+        "uuid": {
+          "string": 256
+        },
+        "name": {
+          "string": 128
+        },
+        "tags": {
+          "string": 256,
+          "sequence": 2
+        },
+        "custom_fields_json": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/PointVector",
+      "file": "clearpath_navigation_msgs/msg/PointVector.msg",
+      "registered": true,
+      "bounds": {
+        "cloud": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/Progress",
+      "file": "clearpath_navigation_msgs/msg/Progress.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/ScanPoints",
+      "file": "clearpath_navigation_msgs/msg/ScanPoints.msg",
+      "registered": true,
+      "bounds": {
+        "frames_vector": {
+          "string": 256,
+          "sequence": 2
+        },
+        "cloud_vector": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/Task",
+      "file": "clearpath_navigation_msgs/msg/Task.msg",
+      "registered": true,
+      "bounds": {
+        "name": {
+          "string": 128
+        },
+        "uuid": {
+          "string": 256
+        },
+        "action_server_name": {
+          "string": 256
+        },
+        "version": {
+          "string": 256
+        },
+        "floats": {
+          "sequence": 2
+        },
+        "strings": {
+          "string": 256,
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/TrackError",
+      "file": "clearpath_navigation_msgs/msg/TrackError.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/Vector2D",
+      "file": "clearpath_navigation_msgs/msg/Vector2D.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/Vector2D64",
+      "file": "clearpath_navigation_msgs/msg/Vector2D64.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/Waypoint",
+      "file": "clearpath_navigation_msgs/msg/Waypoint.msg",
+      "registered": true,
+      "bounds": {
+        "uuid": {
+          "string": 256
+        },
+        "name": {
+          "string": 128
+        },
+        "tasks": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/WaypointStatus",
+      "file": "clearpath_navigation_msgs/msg/WaypointStatus.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_platform_msgs/Drive",
+      "file": "clearpath_platform_msgs/msg/Drive.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_platform_msgs/DriveFeedback",
+      "file": "clearpath_platform_msgs/msg/DriveFeedback.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_platform_msgs/Fans",
+      "file": "clearpath_platform_msgs/msg/Fans.msg",
+      "registered": true,
+      "bounds": {
+        "fans": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_platform_msgs/Feedback",
+      "file": "clearpath_platform_msgs/msg/Feedback.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_platform_msgs/Lights",
+      "file": "clearpath_platform_msgs/msg/Lights.msg",
+      "registered": true,
+      "bounds": {
+        "lights": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_platform_msgs/PlatformID",
+      "file": "clearpath_platform_msgs/msg/PlatformID.msg",
+      "registered": true,
+      "bounds": {
+        "model": {
+          "string": 256
+        },
+        "serial_id": {
+          "string": 256
+        },
+        "hardware_revision": {
+          "string": 256
+        },
+        "firmware_revision": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_platform_msgs/Power",
+      "file": "clearpath_platform_msgs/msg/Power.msg",
+      "registered": true,
+      "bounds": {
+        "measured_voltages": {
+          "sequence": 2
+        },
+        "measured_currents": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_platform_msgs/RGB",
+      "file": "clearpath_platform_msgs/msg/RGB.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_platform_msgs/RYG",
+      "file": "clearpath_platform_msgs/msg/RYG.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_platform_msgs/StackLightState",
+      "file": "clearpath_platform_msgs/msg/StackLightState.msg",
+      "registered": true,
+      "bounds": {
+        "message": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_platform_msgs/Status",
+      "file": "clearpath_platform_msgs/msg/Status.msg",
+      "registered": true,
+      "bounds": {
+        "hardware_id": {
+          "string": 256
+        },
+        "firmware_commit": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_platform_msgs/StopStatus",
+      "file": "clearpath_platform_msgs/msg/StopStatus.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_safety_msgs/AssistedTeleopState",
+      "file": "clearpath_safety_msgs/msg/AssistedTeleopState.msg",
+      "registered": true,
+      "bounds": {
+        "error_message": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_safety_msgs/ObstacleMap",
+      "file": "clearpath_safety_msgs/msg/ObstacleMap.msg",
+      "registered": true,
+      "bounds": {
+        "threat_level": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_safety_msgs/Safety",
+      "file": "clearpath_safety_msgs/msg/Safety.msg",
+      "registered": true,
+      "bounds": {
+        "message": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_safety_msgs/WatchdogConfigArray",
+      "file": "clearpath_safety_msgs/msg/WatchdogConfigArray.msg",
+      "registered": true,
+      "bounds": {
+        "communication_config": {
+          "sequence": 2
+        },
+        "heartbeat_config": {
+          "sequence": 2
+        },
+        "inclination_config": {
+          "sequence": 2
+        },
+        "node_status_config": {
+          "sequence": 2
+        },
+        "nodelet_status_config": {
+          "sequence": 2
+        },
+        "num_points_config": {
+          "sequence": 2
+        },
+        "odom_covariance_config": {
+          "sequence": 2
+        },
+        "rtk_fix_config": {
+          "sequence": 2
+        },
+        "topic_data_config": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_safety_msgs/WatchdogConfigCommon",
+      "file": "clearpath_safety_msgs/msg/WatchdogConfigCommon.msg",
+      "registered": true,
+      "bounds": {
+        "name": {
+          "string": 128
+        },
+        "type": {
+          "string": 256
+        },
+        "components": {
+          "string": 256,
+          "sequence": 2
+        },
+        "on_trigger_action": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_safety_msgs/WatchdogConfigCommunication",
+      "file": "clearpath_safety_msgs/msg/WatchdogConfigCommunication.msg",
+      "registered": true,
+      "bounds": {
+        "protocol": {
+          "string": 256
+        },
+        "ip": {
+          "string": 256
+        },
+        "interface": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_safety_msgs/WatchdogConfigHeartbeat",
+      "file": "clearpath_safety_msgs/msg/WatchdogConfigHeartbeat.msg",
+      "registered": true,
+      "bounds": {
+        "topic": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_safety_msgs/WatchdogConfigInclination",
+      "file": "clearpath_safety_msgs/msg/WatchdogConfigInclination.msg",
+      "registered": true,
+      "bounds": {
+        "topic": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_safety_msgs/WatchdogConfigNodeStatus",
+      "file": "clearpath_safety_msgs/msg/WatchdogConfigNodeStatus.msg",
+      "registered": true,
+      "bounds": {
+        "node_name": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_safety_msgs/WatchdogConfigNodeletStatus",
+      "file": "clearpath_safety_msgs/msg/WatchdogConfigNodeletStatus.msg",
+      "registered": true,
+      "bounds": {
+        "manager": {
+          "string": 256
+        },
+        "nodelet": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_safety_msgs/WatchdogConfigNumPoints",
+      "file": "clearpath_safety_msgs/msg/WatchdogConfigNumPoints.msg",
+      "registered": true,
+      "bounds": {
+        "topic": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_safety_msgs/WatchdogConfigOdomCovariance",
+      "file": "clearpath_safety_msgs/msg/WatchdogConfigOdomCovariance.msg",
+      "registered": true,
+      "bounds": {
+        "topic": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_safety_msgs/WatchdogConfigRtkFix",
+      "file": "clearpath_safety_msgs/msg/WatchdogConfigRtkFix.msg",
+      "registered": true,
+      "bounds": {
+        "gnss_type": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_safety_msgs/WatchdogConfigTopicData",
+      "file": "clearpath_safety_msgs/msg/WatchdogConfigTopicData.msg",
+      "registered": true,
+      "bounds": {
+        "topic": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_safety_msgs/WatchdogStatus",
+      "file": "clearpath_safety_msgs/msg/WatchdogStatus.msg",
+      "registered": true,
+      "bounds": {
+        "name": {
+          "string": 128
+        },
+        "trigger_message": {
+          "string": 256
+        },
+        "action": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_safety_msgs/WatchdogStatusArray",
+      "file": "clearpath_safety_msgs/msg/WatchdogStatusArray.msg",
+      "registered": true,
+      "bounds": {
+        "statuses": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "geometry_msgs/Point",
+      "file": "geometry_msgs/msg/Point.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "geometry_msgs/Pose",
+      "file": "geometry_msgs/msg/Pose.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "geometry_msgs/PoseStamped",
+      "file": "geometry_msgs/msg/PoseStamped.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "geometry_msgs/PoseWithCovariance",
+      "file": "geometry_msgs/msg/PoseWithCovariance.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "geometry_msgs/PoseWithCovarianceStamped",
+      "file": "geometry_msgs/msg/PoseWithCovarianceStamped.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "geometry_msgs/Quaternion",
+      "file": "geometry_msgs/msg/Quaternion.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "geometry_msgs/Twist",
+      "file": "geometry_msgs/msg/Twist.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "geometry_msgs/TwistWithCovariance",
+      "file": "geometry_msgs/msg/TwistWithCovariance.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "geometry_msgs/Vector3",
+      "file": "geometry_msgs/msg/Vector3.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "husky_msgs/HuskyStatus",
+      "file": "husky_msgs/msg/HuskyStatus.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "jackal_msgs/Drive",
+      "file": "jackal_msgs/msg/Drive.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "jackal_msgs/DriveFeedback",
+      "file": "jackal_msgs/msg/DriveFeedback.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "jackal_msgs/Feedback",
+      "file": "jackal_msgs/msg/Feedback.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "jackal_msgs/Status",
+      "file": "jackal_msgs/msg/Status.msg",
+      "registered": true,
+      "bounds": {
+        "hardware_id": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "nav_msgs/Odometry",
+      "file": "nav_msgs/msg/Odometry.msg",
+      "registered": false,
+      "bounds": {
+        "child_frame_id": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "nav_msgs/Path",
+      "file": "nav_msgs/msg/Path.msg",
+      "registered": false,
+      "bounds": {
+        "poses": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "sensor_msgs/NavSatFix",
+      "file": "sensor_msgs/msg/NavSatFix.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "sensor_msgs/NavSatStatus",
+      "file": "sensor_msgs/msg/NavSatStatus.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "std_msgs/Duration",
+      "file": "std_msgs/msg/Duration.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "std_msgs/Header",
+      "file": "std_msgs/msg/Header.msg",
+      "registered": false,
+      "bounds": {
+        "frame_id": {
+          "string": 128
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "std_msgs/String",
+      "file": "std_msgs/msg/String.msg",
+      "registered": false,
+      "bounds": {
+        "data": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "std_msgs/Time",
+      "file": "std_msgs/msg/Time.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_camera_msgs/q62AreaZoom",
+      "file": "clearpath_camera_msgs/srv/q62AreaZoom.srv",
+      "registered": true,
+      "bounds": {
+        "response.message": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_control_msgs/SetControlMode",
+      "file": "clearpath_control_msgs/srv/SetControlMode.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_dock_msgs/AddDock",
+      "file": "clearpath_dock_msgs/srv/AddDock.srv",
+      "registered": true,
+      "bounds": {
+        "response.message": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_dock_msgs/ExportData",
+      "file": "clearpath_dock_msgs/srv/ExportData.srv",
+      "registered": true,
+      "bounds": {
+        "response.data": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_dock_msgs/GetDockByUuid",
+      "file": "clearpath_dock_msgs/srv/GetDockByUuid.srv",
+      "registered": true,
+      "bounds": {
+        "request.dock_uuid": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_dock_msgs/ImportData",
+      "file": "clearpath_dock_msgs/srv/ImportData.srv",
+      "registered": true,
+      "bounds": {
+        "request.data": {
+          "string": 256
+        },
+        "response.docks": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_dock_msgs/RemoveDock",
+      "file": "clearpath_dock_msgs/srv/RemoveDock.srv",
+      "registered": true,
+      "bounds": {
+        "request.uuid": {
+          "string": 256
+        },
+        "request.name": {
+          "string": 128
+        },
+        "response.message": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_dock_msgs/SetDockLocationById",
+      "file": "clearpath_dock_msgs/srv/SetDockLocationById.srv",
+      "registered": true,
+      "bounds": {
+        "request.uuid": {
+          "string": 256
+        },
+        "response.message": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_dock_msgs/SetDockLocationByName",
+      "file": "clearpath_dock_msgs/srv/SetDockLocationByName.srv",
+      "registered": true,
+      "bounds": {
+        "request.name": {
+          "string": 128
+        },
+        "response.message": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_localization_msgs/ConvertCartesianToLatLon",
+      "file": "clearpath_localization_msgs/srv/ConvertCartesianToLatLon.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_localization_msgs/ConvertCartesianToLatLonArray",
+      "file": "clearpath_localization_msgs/srv/ConvertCartesianToLatLonArray.srv",
+      "registered": true,
+      "bounds": {
+        "request.pose": {
+          "sequence": 2
+        },
+        "response.msg": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_localization_msgs/ConvertLatLonToCartesian",
+      "file": "clearpath_localization_msgs/srv/ConvertLatLonToCartesian.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_localization_msgs/ConvertLatLonToCartesianArray",
+      "file": "clearpath_localization_msgs/srv/ConvertLatLonToCartesianArray.srv",
+      "registered": true,
+      "bounds": {
+        "request.msg": {
+          "sequence": 2
+        },
+        "response.pose": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_localization_msgs/ResetLocalization",
+      "file": "clearpath_localization_msgs/srv/ResetLocalization.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_localization_msgs/SetDatum",
+      "file": "clearpath_localization_msgs/srv/SetDatum.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_logger_msgs/DeleteLog",
+      "file": "clearpath_logger_msgs/srv/DeleteLog.srv",
+      "registered": true,
+      "bounds": {
+        "request.uuid": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_logger_msgs/DownloadLog",
+      "file": "clearpath_logger_msgs/srv/DownloadLog.srv",
+      "registered": true,
+      "bounds": {
+        "request.log_uuid": {
+          "string": 256
+        },
+        "response.path": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_logger_msgs/GetAllLogs",
+      "file": "clearpath_logger_msgs/srv/GetAllLogs.srv",
+      "registered": true,
+      "bounds": {
+        "response.logs": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_logger_msgs/RecordCustomEvent",
+      "file": "clearpath_logger_msgs/srv/RecordCustomEvent.srv",
+      "registered": true,
+      "bounds": {
+        "request.custom_fields_json": {
+          "string": 256
+        },
+        "request.tags": {
+          "string": 256,
+          "sequence": 2
+        },
+        "request.frame_id": {
+          "string": 128
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_logger_msgs/RecordErrorEvent",
+      "file": "clearpath_logger_msgs/srv/RecordErrorEvent.srv",
+      "registered": true,
+      "bounds": {
+        "request.error_msg": {
+          "string": 256
+        },
+        "request.error_component": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_logger_msgs/RecordEvent",
+      "file": "clearpath_logger_msgs/srv/RecordEvent.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_logger_msgs/RecordLocationEvent",
+      "file": "clearpath_logger_msgs/srv/RecordLocationEvent.srv",
+      "registered": true,
+      "bounds": {
+        "request.tags": {
+          "string": 256,
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_logger_msgs/RecordMediaEvent",
+      "file": "clearpath_logger_msgs/srv/RecordMediaEvent.srv",
+      "registered": true,
+      "bounds": {
+        "request.media_path": {
+          "string": 256
+        },
+        "request.mime_type": {
+          "string": 256
+        },
+        "request.frame_id": {
+          "string": 128
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_logger_msgs/RecordPowerEvent",
+      "file": "clearpath_logger_msgs/srv/RecordPowerEvent.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_logger_msgs/StartRecording",
+      "file": "clearpath_logger_msgs/srv/StartRecording.srv",
+      "registered": true,
+      "bounds": {
+        "request.name": {
+          "string": 128
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_logger_msgs/StopRecording",
+      "file": "clearpath_logger_msgs/srv/StopRecording.srv",
+      "registered": true,
+      "bounds": {
+        "request.custom_fields_json": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/AddNetworkEdge",
+      "file": "clearpath_mission_manager_msgs/srv/AddNetworkEdge.srv",
+      "registered": true,
+      "bounds": {
+        "request.map_id": {
+          "string": 256
+        },
+        "request.start_point_id": {
+          "string": 256
+        },
+        "request.end_point_id": {
+          "string": 256
+        },
+        "response.edges": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/AddNetworkPath",
+      "file": "clearpath_mission_manager_msgs/srv/AddNetworkPath.srv",
+      "registered": true,
+      "bounds": {
+        "request.latitudes": {
+          "sequence": 2
+        },
+        "request.longitudes": {
+          "sequence": 2
+        },
+        "request.map_id": {
+          "string": 256
+        },
+        "response.message": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/AddNetworkPoint",
+      "file": "clearpath_mission_manager_msgs/srv/AddNetworkPoint.srv",
+      "registered": true,
+      "bounds": {
+        "request.map_id": {
+          "string": 256
+        },
+        "request.connect_from": {
+          "string": 256,
+          "sequence": 2
+        },
+        "request.connect_to": {
+          "string": 256,
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/AddRemoveById",
+      "file": "clearpath_mission_manager_msgs/srv/AddRemoveById.srv",
+      "registered": true,
+      "bounds": {
+        "request.uuid": {
+          "string": 256
+        },
+        "request.parent_uuid": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/AddRemoveTag",
+      "file": "clearpath_mission_manager_msgs/srv/AddRemoveTag.srv",
+      "registered": true,
+      "bounds": {
+        "request.uuid": {
+          "string": 256
+        },
+        "request.tag": {
+          "string": 256
+        },
+        "response.tags": {
+          "string": 256,
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/CloneMission",
+      "file": "clearpath_mission_manager_msgs/srv/CloneMission.srv",
+      "registered": true,
+      "bounds": {
+        "request.uuid": {
+          "string": 256
+        },
+        "request.new_name": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/CloneNetworkMap",
+      "file": "clearpath_mission_manager_msgs/srv/CloneNetworkMap.srv",
+      "registered": true,
+      "bounds": {
+        "request.uuid": {
+          "string": 256
+        },
+        "request.new_name": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/CloneNetworkMission",
+      "file": "clearpath_mission_manager_msgs/srv/CloneNetworkMission.srv",
+      "registered": true,
+      "bounds": {
+        "request.uuid": {
+          "string": 256
+        },
+        "request.new_name": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/ClonePointOfInterest",
+      "file": "clearpath_mission_manager_msgs/srv/ClonePointOfInterest.srv",
+      "registered": true,
+      "bounds": {
+        "request.uuid": {
+          "string": 256
+        },
+        "request.new_name": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/CreateMission",
+      "file": "clearpath_mission_manager_msgs/srv/CreateMission.srv",
+      "registered": true,
+      "bounds": {
+        "request.name": {
+          "string": 128
+        },
+        "request.onav_config": {
+          "string": 256
+        },
+        "request.waypoint_ids": {
+          "string": 256,
+          "sequence": 2
+        },
+        "request.on_start_ids": {
+          "string": 256,
+          "sequence": 2
+        },
+        "request.on_stop_ids": {
+          "string": 256,
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/CreateNetworkMap",
+      "file": "clearpath_mission_manager_msgs/srv/CreateNetworkMap.srv",
+      "registered": true,
+      "bounds": {
+        "request.name": {
+          "string": 128
+        },
+        "request.points": {
+          "sequence": 2
+        },
+        "request.connections": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/CreateNetworkMission",
+      "file": "clearpath_mission_manager_msgs/srv/CreateNetworkMission.srv",
+      "registered": true,
+      "bounds": {
+        "request.name": {
+          "string": 128
+        },
+        "request.onav_config": {
+          "string": 256
+        },
+        "request.waypoint_ids": {
+          "string": 256,
+          "sequence": 2
+        },
+        "request.on_start_ids": {
+          "string": 256,
+          "sequence": 2
+        },
+        "request.on_stop_ids": {
+          "string": 256,
+          "sequence": 2
+        },
+        "request.return_to_dock_id": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/CreatePointOfInterest",
+      "file": "clearpath_mission_manager_msgs/srv/CreatePointOfInterest.srv",
+      "registered": true,
+      "bounds": {
+        "request.name": {
+          "string": 128
+        },
+        "request.tags": {
+          "string": 256,
+          "sequence": 2
+        },
+        "request.custom_fields_json": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/CreateTask",
+      "file": "clearpath_mission_manager_msgs/srv/CreateTask.srv",
+      "registered": true,
+      "bounds": {
+        "request.name": {
+          "string": 128
+        },
+        "request.action_server_name": {
+          "string": 256
+        },
+        "request.version": {
+          "string": 256
+        },
+        "request.floats": {
+          "sequence": 2
+        },
+        "request.strings": {
+          "string": 256,
+          "sequence": 2
+        },
+        "request.assign_to_wp": {
+          "string": 256,
+          "sequence": 2
+        },
+        "request.assign_on_start": {
+          "string": 256,
+          "sequence": 2
+        },
+        "request.assign_on_stop": {
+          "string": 256,
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/CreateWaypoint",
+      "file": "clearpath_mission_manager_msgs/srv/CreateWaypoint.srv",
+      "registered": true,
+      "bounds": {
+        "request.name": {
+          "string": 128
+        },
+        "request.task_ids": {
+          "string": 256,
+          "sequence": 2
+        },
+        "request.assign_to": {
+          "string": 256,
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/CreateWaypointFromPoi",
+      "file": "clearpath_mission_manager_msgs/srv/CreateWaypointFromPoi.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/DeleteById",
+      "file": "clearpath_mission_manager_msgs/srv/DeleteById.srv",
+      "registered": true,
+      "bounds": {
+        "request.uuid": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/DeleteEverything",
+      "file": "clearpath_mission_manager_msgs/srv/DeleteEverything.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/DeleteMultiple",
+      "file": "clearpath_mission_manager_msgs/srv/DeleteMultiple.srv",
+      "registered": true,
+      "bounds": {
+        "request.uuids": {
+          "string": 256,
+          "sequence": 2
+        },
+        "request.parent_id": {
+          "string": 256
+        },
+        "response.failed_uuids": {
+          "string": 256,
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/ExportData",
+      "file": "clearpath_mission_manager_msgs/srv/ExportData.srv",
+      "registered": true,
+      "bounds": {
+        "response.data": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/GetAllMissions",
+      "file": "clearpath_mission_manager_msgs/srv/GetAllMissions.srv",
+      "registered": true,
+      "bounds": {
+        "response.missions": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/GetAllNetworkMaps",
+      "file": "clearpath_mission_manager_msgs/srv/GetAllNetworkMaps.srv",
+      "registered": true,
+      "bounds": {
+        "response.maps": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/GetAllNetworkMissions",
+      "file": "clearpath_mission_manager_msgs/srv/GetAllNetworkMissions.srv",
+      "registered": true,
+      "bounds": {
+        "response.missions": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/GetAllPointsOfInterest",
+      "file": "clearpath_mission_manager_msgs/srv/GetAllPointsOfInterest.srv",
+      "registered": true,
+      "bounds": {
+        "response.points_of_interest": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/GetAllTasks",
+      "file": "clearpath_mission_manager_msgs/srv/GetAllTasks.srv",
+      "registered": true,
+      "bounds": {
+        "response.tasks": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/GetAllWaypoints",
+      "file": "clearpath_mission_manager_msgs/srv/GetAllWaypoints.srv",
+      "registered": true,
+      "bounds": {
+        "response.waypoints": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/GetEverything",
+      "file": "clearpath_mission_manager_msgs/srv/GetEverything.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/GetMission",
+      "file": "clearpath_mission_manager_msgs/srv/GetMission.srv",
+      "registered": true,
+      "bounds": {
+        "request.uuid": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/GetNetworkMap",
+      "file": "clearpath_mission_manager_msgs/srv/GetNetworkMap.srv",
+      "registered": true,
+      "bounds": {
+        "request.uuid": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/GetNetworkMission",
+      "file": "clearpath_mission_manager_msgs/srv/GetNetworkMission.srv",
+      "registered": true,
+      "bounds": {
+        "request.uuid": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/GetPointOfInterest",
+      "file": "clearpath_mission_manager_msgs/srv/GetPointOfInterest.srv",
+      "registered": true,
+      "bounds": {
+        "request.uuid": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/GetTask",
+      "file": "clearpath_mission_manager_msgs/srv/GetTask.srv",
+      "registered": true,
+      "bounds": {
+        "request.uuid": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/GetWaypoint",
+      "file": "clearpath_mission_manager_msgs/srv/GetWaypoint.srv",
+      "registered": true,
+      "bounds": {
+        "request.uuid": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/ImportData",
+      "file": "clearpath_mission_manager_msgs/srv/ImportData.srv",
+      "registered": true,
+      "bounds": {
+        "request.data": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/ImportMission",
+      "file": "clearpath_mission_manager_msgs/srv/ImportMission.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/ImportNetworkMap",
+      "file": "clearpath_mission_manager_msgs/srv/ImportNetworkMap.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/ImportNetworkMission",
+      "file": "clearpath_mission_manager_msgs/srv/ImportNetworkMission.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/SplitNetworkEdge",
+      "file": "clearpath_mission_manager_msgs/srv/SplitNetworkEdge.srv",
+      "registered": true,
+      "bounds": {
+        "request.map_id": {
+          "string": 256
+        },
+        "request.edge_id": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/UpdateMission",
+      "file": "clearpath_mission_manager_msgs/srv/UpdateMission.srv",
+      "registered": true,
+      "bounds": {
+        "request.uuid": {
+          "string": 256
+        },
+        "request.name": {
+          "string": 128
+        },
+        "request.onav_config": {
+          "string": 256
+        },
+        "request.waypoint_ids": {
+          "string": 256,
+          "sequence": 2
+        },
+        "request.on_start_ids": {
+          "string": 256,
+          "sequence": 2
+        },
+        "request.on_stop_ids": {
+          "string": 256,
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/UpdateNetworkEdge",
+      "file": "clearpath_mission_manager_msgs/srv/UpdateNetworkEdge.srv",
+      "registered": true,
+      "bounds": {
+        "request.map_id": {
+          "string": 256
+        },
+        "request.uuid": {
+          "string": 256
+        },
+        "request.start_point_id": {
+          "string": 256
+        },
+        "request.end_point_id": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/UpdateNetworkEdges",
+      "file": "clearpath_mission_manager_msgs/srv/UpdateNetworkEdges.srv",
+      "registered": true,
+      "bounds": {
+        "request.map_id": {
+          "string": 256
+        },
+        "request.uuids": {
+          "string": 256,
+          "sequence": 2
+        },
+        "request.radii": {
+          "sequence": 2
+        },
+        "request.speed_limits": {
+          "sequence": 2
+        },
+        "request.cost_factors": {
+          "sequence": 2
+        },
+        "response.result": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/UpdateNetworkMap",
+      "file": "clearpath_mission_manager_msgs/srv/UpdateNetworkMap.srv",
+      "registered": true,
+      "bounds": {
+        "request.uuid": {
+          "string": 256
+        },
+        "request.name": {
+          "string": 128
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/UpdateNetworkMission",
+      "file": "clearpath_mission_manager_msgs/srv/UpdateNetworkMission.srv",
+      "registered": true,
+      "bounds": {
+        "request.uuid": {
+          "string": 256
+        },
+        "request.name": {
+          "string": 128
+        },
+        "request.onav_config": {
+          "string": 256
+        },
+        "request.waypoint_ids": {
+          "string": 256,
+          "sequence": 2
+        },
+        "request.on_start_ids": {
+          "string": 256,
+          "sequence": 2
+        },
+        "request.on_stop_ids": {
+          "string": 256,
+          "sequence": 2
+        },
+        "request.return_to_dock_id": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/UpdateNetworkPoint",
+      "file": "clearpath_mission_manager_msgs/srv/UpdateNetworkPoint.srv",
+      "registered": true,
+      "bounds": {
+        "request.map_id": {
+          "string": 256
+        },
+        "request.uuid": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/UpdateNetworkPoints",
+      "file": "clearpath_mission_manager_msgs/srv/UpdateNetworkPoints.srv",
+      "registered": true,
+      "bounds": {
+        "request.map_id": {
+          "string": 256
+        },
+        "request.uuids": {
+          "string": 256,
+          "sequence": 2
+        },
+        "request.latitudes": {
+          "sequence": 2
+        },
+        "request.longitudes": {
+          "sequence": 2
+        },
+        "response.result": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/UpdatePointOfInterest",
+      "file": "clearpath_mission_manager_msgs/srv/UpdatePointOfInterest.srv",
+      "registered": true,
+      "bounds": {
+        "request.uuid": {
+          "string": 256
+        },
+        "request.name": {
+          "string": 128
+        },
+        "request.tags": {
+          "string": 256,
+          "sequence": 2
+        },
+        "request.custom_fields_json": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/UpdateTask",
+      "file": "clearpath_mission_manager_msgs/srv/UpdateTask.srv",
+      "registered": true,
+      "bounds": {
+        "request.uuid": {
+          "string": 256
+        },
+        "request.name": {
+          "string": 128
+        },
+        "request.action_server_name": {
+          "string": 256
+        },
+        "request.version": {
+          "string": 256
+        },
+        "request.floats": {
+          "sequence": 2
+        },
+        "request.strings": {
+          "string": 256,
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/UpdateWaypoint",
+      "file": "clearpath_mission_manager_msgs/srv/UpdateWaypoint.srv",
+      "registered": true,
+      "bounds": {
+        "request.uuid": {
+          "string": 256
+        },
+        "request.name": {
+          "string": 128
+        },
+        "request.task_ids": {
+          "string": 256,
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_manager_msgs/ValidateNetworkMap",
+      "file": "clearpath_mission_manager_msgs/srv/ValidateNetworkMap.srv",
+      "registered": true,
+      "bounds": {
+        "request.uuid": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_scheduler_msgs/CloneSchedule",
+      "file": "clearpath_mission_scheduler_msgs/srv/CloneSchedule.srv",
+      "registered": true,
+      "bounds": {
+        "request.uuid": {
+          "string": 256
+        },
+        "request.new_name": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_scheduler_msgs/CreateSchedule",
+      "file": "clearpath_mission_scheduler_msgs/srv/CreateSchedule.srv",
+      "registered": true,
+      "bounds": {
+        "request.name": {
+          "string": 128
+        },
+        "request.mission_ids": {
+          "string": 256,
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_scheduler_msgs/EnableSchedule",
+      "file": "clearpath_mission_scheduler_msgs/srv/EnableSchedule.srv",
+      "registered": true,
+      "bounds": {
+        "request.uuid": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_scheduler_msgs/ExportData",
+      "file": "clearpath_mission_scheduler_msgs/srv/ExportData.srv",
+      "registered": true,
+      "bounds": {
+        "response.data": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_scheduler_msgs/GetAllSchedules",
+      "file": "clearpath_mission_scheduler_msgs/srv/GetAllSchedules.srv",
+      "registered": true,
+      "bounds": {
+        "response.schedules": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_scheduler_msgs/GetNextSchedule",
+      "file": "clearpath_mission_scheduler_msgs/srv/GetNextSchedule.srv",
+      "registered": true,
+      "bounds": {
+        "response.uuid": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_scheduler_msgs/GetSchedule",
+      "file": "clearpath_mission_scheduler_msgs/srv/GetSchedule.srv",
+      "registered": true,
+      "bounds": {
+        "request.uuid": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_scheduler_msgs/ImportData",
+      "file": "clearpath_mission_scheduler_msgs/srv/ImportData.srv",
+      "registered": true,
+      "bounds": {
+        "request.data": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_mission_scheduler_msgs/UpdateSchedule",
+      "file": "clearpath_mission_scheduler_msgs/srv/UpdateSchedule.srv",
+      "registered": true,
+      "bounds": {
+        "request.uuid": {
+          "string": 256
+        },
+        "request.name": {
+          "string": 128
+        },
+        "request.mission_ids": {
+          "string": 256,
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/AutonomyTaskSrv",
+      "file": "clearpath_navigation_msgs/srv/AutonomyTaskSrv.srv",
+      "registered": true,
+      "bounds": {
+        "request.version": {
+          "string": 256
+        },
+        "request.floats": {
+          "sequence": 2
+        },
+        "request.strings": {
+          "string": 256,
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/SetDelayCompensation",
+      "file": "clearpath_navigation_msgs/srv/SetDelayCompensation.srv",
+      "registered": true,
+      "bounds": {
+        "response.message": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/SetPathShifter",
+      "file": "clearpath_navigation_msgs/srv/SetPathShifter.srv",
+      "registered": true,
+      "bounds": {
+        "response.message": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/SetPathSmoother",
+      "file": "clearpath_navigation_msgs/srv/SetPathSmoother.srv",
+      "registered": true,
+      "bounds": {
+        "response.message": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_navigation_msgs/SetStopDistance",
+      "file": "clearpath_navigation_msgs/srv/SetStopDistance.srv",
+      "registered": true,
+      "bounds": {
+        "response.message": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_safety_msgs/AddCommunicationWatchdog",
+      "file": "clearpath_safety_msgs/srv/AddCommunicationWatchdog.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_safety_msgs/AddHeartbeatWatchdog",
+      "file": "clearpath_safety_msgs/srv/AddHeartbeatWatchdog.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_safety_msgs/AddInclinationWatchdog",
+      "file": "clearpath_safety_msgs/srv/AddInclinationWatchdog.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_safety_msgs/AddNodeStatusWatchdog",
+      "file": "clearpath_safety_msgs/srv/AddNodeStatusWatchdog.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_safety_msgs/AddNodeletStatusWatchdog",
+      "file": "clearpath_safety_msgs/srv/AddNodeletStatusWatchdog.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_safety_msgs/AddNumPointsWatchdog",
+      "file": "clearpath_safety_msgs/srv/AddNumPointsWatchdog.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_safety_msgs/AddOdomCovarianceWatchdog",
+      "file": "clearpath_safety_msgs/srv/AddOdomCovarianceWatchdog.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_safety_msgs/AddRtkFixWatchdog",
+      "file": "clearpath_safety_msgs/srv/AddRtkFixWatchdog.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_safety_msgs/AddTopicDataWatchdog",
+      "file": "clearpath_safety_msgs/srv/AddTopicDataWatchdog.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_safety_msgs/RemoveWatchdog",
+      "file": "clearpath_safety_msgs/srv/RemoveWatchdog.srv",
+      "registered": true,
+      "bounds": {
+        "request.name": {
+          "string": 128
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_safety_msgs/UpdateCommunicationWatchdog",
+      "file": "clearpath_safety_msgs/srv/UpdateCommunicationWatchdog.srv",
+      "registered": true,
+      "bounds": {
+        "request.current_name": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_safety_msgs/UpdateHeartbeatWatchdog",
+      "file": "clearpath_safety_msgs/srv/UpdateHeartbeatWatchdog.srv",
+      "registered": true,
+      "bounds": {
+        "request.current_name": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_safety_msgs/UpdateInclinationWatchdog",
+      "file": "clearpath_safety_msgs/srv/UpdateInclinationWatchdog.srv",
+      "registered": true,
+      "bounds": {
+        "request.current_name": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_safety_msgs/UpdateNodeStatusWatchdog",
+      "file": "clearpath_safety_msgs/srv/UpdateNodeStatusWatchdog.srv",
+      "registered": true,
+      "bounds": {
+        "request.current_name": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_safety_msgs/UpdateNodeletStatusWatchdog",
+      "file": "clearpath_safety_msgs/srv/UpdateNodeletStatusWatchdog.srv",
+      "registered": true,
+      "bounds": {
+        "request.current_name": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_safety_msgs/UpdateNumPointsWatchdog",
+      "file": "clearpath_safety_msgs/srv/UpdateNumPointsWatchdog.srv",
+      "registered": true,
+      "bounds": {
+        "request.current_name": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_safety_msgs/UpdateOdomCovarianceWatchdog",
+      "file": "clearpath_safety_msgs/srv/UpdateOdomCovarianceWatchdog.srv",
+      "registered": true,
+      "bounds": {
+        "request.current_name": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_safety_msgs/UpdateRtkFixWatchdog",
+      "file": "clearpath_safety_msgs/srv/UpdateRtkFixWatchdog.srv",
+      "registered": true,
+      "bounds": {
+        "request.current_name": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "clearpath_safety_msgs/UpdateTopicDataWatchdog",
+      "file": "clearpath_safety_msgs/srv/UpdateTopicDataWatchdog.srv",
+      "registered": true,
+      "bounds": {
+        "request.current_name": {
+          "string": 256
+        }
+      }
+    }
+  ]
+}

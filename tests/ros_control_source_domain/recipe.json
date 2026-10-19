@@ -1,0 +1,114 @@
+{
+  "format_version": 1,
+  "status": "AUTHORED_SOURCE_ONLY_NOT_EXECUTED",
+  "default_authority": [],
+  "canonical_source_generation": {
+    "tool": "sdk/tools/custom_types.py",
+    "argv": [
+      "sdk/rmw_wasm/default_control/catalog.preparation.json",
+      "--out",
+      "CALLER_FRESH_TMP_GENERATED",
+      "--guest-only"
+    ],
+    "automatic": false
+  },
+  "source_contracts": {
+    "c_groups": 8,
+    "cpp_groups": 4,
+    "python_methods": 11,
+    "native_true_sources_witness": 1,
+    "executed": 0
+  },
+  "native": {
+    "actual_original_rclcpp_commit": "53fa7aeea86e8ed484f9465fa14059faf13a71f1",
+    "actual_original_rcl_commit": "18d96c9c2b98e616324ae9a2c7701dd0b0886ff0",
+    "required_actual_getters": [
+      "get_type_hash_func",
+      "get_type_description_func",
+      "get_type_description_sources_func"
+    ],
+    "reference_count": 11,
+    "source_count": 12,
+    "maximum_source_bytes": 6162,
+    "actual_permission_or_transport_acceptance": false,
+    "cli": {
+      "scanner": "actual fast_io::parse_by_scan + mnp::dec_get<true,true>",
+      "maximum_token_bytes": 20,
+      "complete_consumption": true,
+      "domain_min": 0,
+      "domain_max": 232,
+      "required_cpp_standard": 20
+    },
+    "deadline": "real steady presend check; aftersend nonpositive budget removes exact SDK pending ID; positive executor spin only; no replay"
+  },
+  "wire_limits": {
+    "global_unchanged": 32768,
+    "explicit_TypeDescription_message": 32768,
+    "explicit_GetTypeDescription_response": 32768,
+    "inline_sizeof": "REQUIRES_ACTUAL_TARGET_MEASUREMENT_NOT_32768"
+  },
+  "execution_owner": "Root, after complete source integration and independent admission",
+  "outputs": "fresh caller-owned /tmp only",
+  "policy_source_contract": {
+    "argv": [
+      "python3",
+      "tests/ros_control_source_domain/test_source_domain_policy.py",
+      "--sdk",
+      "ABSOLUTE_REVIEWED_CURRENT_SDK",
+      "--before",
+      "ABSOLUTE_PRESERVED_BEFORE_BOUNDED_SOURCE",
+      "--after",
+      "ABSOLUTE_REVIEWED_AFTER_BOUNDED_SOURCE",
+      "--old-control",
+      "ABSOLUTE_PRESERVED_OLD_CATALOG",
+      "--new-control",
+      "ABSOLUTE_REVIEWED_NEW_CATALOG",
+      "--scratch",
+      "ABSOLUTE_EXISTING_PRIVATE_SCRATCH_OUTSIDE_SDK",
+      "--parent-sha256",
+      "ACTUAL_FULL_CURRENT_PARENT_SOURCE_SHA256",
+      "--before-sha256",
+      "ACTUAL_FULL_PRESERVED_BEFORE_SOURCE_SHA256",
+      "--after-sha256",
+      "ACTUAL_FULL_CURRENT_AFTER_SOURCE_SHA256"
+    ],
+    "original_policy_methods": 11,
+    "source_loading": "same captured bytes/real filename/dont_inherit/direct ModuleType; no pyc; full identity/SHA requalification",
+    "automatic": false,
+    "executed": 0
+  },
+  "source_identity_contract": {
+    "argv": [
+      "python3",
+      "tests/ros_control_source_domain/test_source_identity.py",
+      "--parent",
+      "ABSOLUTE_REVIEWED_CURRENT_PARENT_SOURCE",
+      "--parent-sha256",
+      "ACTUAL_FULL_CURRENT_PARENT_SOURCE_SHA256",
+      "--scratch",
+      "ABSOLUTE_EXISTING_PRIVATE_SCRATCH_OUTSIDE_SDK"
+    ],
+    "executed": 0,
+    "external_finite_owner_required": true,
+    "authored_methods": 10,
+    "scratch_admission": "physical containing-SDK directory comparison; source leaf remains lexical/O_NOFOLLOW"
+  },
+  "default_control_source_profile_contract": {
+    "argv": [
+      "python3",
+      "sdk/rmw_wasm/default_control/tests/test_source_profile.py",
+      "--sdk",
+      "ABSOLUTE_REVIEWED_CURRENT_SDK",
+      "--parent-sha256",
+      "ACTUAL_FULL_CURRENT_PARENT_SOURCE_SHA256",
+      "--bounded-sha256",
+      "ACTUAL_FULL_CURRENT_BOUNDED_SOURCE_SHA256",
+      "--scratch",
+      "ABSOLUTE_EXISTING_PRIVATE_SCRATCH_OUTSIDE_SDK"
+    ],
+    "original_methods": 20,
+    "corrected_actual_current_control_output_count": 8,
+    "executed": 0,
+    "automatic": false
+  }
+}

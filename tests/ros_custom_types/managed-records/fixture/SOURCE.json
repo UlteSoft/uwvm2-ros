@@ -1,0 +1,31 @@
+{
+  "format_version": 1,
+  "kind": "maintained-official-fixture-source-copies-not-identities",
+  "source_only": true,
+  "copies": [
+    {
+      "source_relative": "tests/ros_custom_types/quaternion-defaults/fixture/geometry_msgs/msg/Point.msg",
+      "destination": "tests/ros_custom_types/managed-records/fixture/geometry_msgs/msg/Point.msg",
+      "bytes": 84,
+      "sha256": "eb4c07e591cf0269ccb17245dcd4f998162feb09cc8add85fa082c8a30bfc91d",
+      "scope": "same-byte maintained official Quaternion-family fixture source; no native identity or generated type supplied"
+    },
+    {
+      "source_relative": "tests/ros_custom_types/quaternion-defaults/fixture/geometry_msgs/msg/Quaternion.msg",
+      "destination": "tests/ros_custom_types/managed-records/fixture/geometry_msgs/msg/Quaternion.msg",
+      "bytes": 116,
+      "sha256": "298495eb67a139642ffd37cc9029eae085e6c39a8789828b7517868a487939ed",
+      "scope": "same-byte maintained official Quaternion-family fixture source; no native identity or generated type supplied"
+    },
+    {
+      "source_relative": "tests/ros_custom_types/quaternion-defaults/fixture/geometry_msgs/msg/Pose.msg",
+      "destination": "tests/ros_custom_types/managed-records/fixture/geometry_msgs/msg/Pose.msg",
+      "bytes": 119,
+      "sha256": "3eceb77c63ebbb544c11d7f991e475e9819e0cf534deb1a879392c1b3dc997de",
+      "scope": "same-byte maintained official Quaternion-family fixture source; no native identity or generated type supplied"
+    }
+  ],
+  "local_types": "managed_fixture is an explicit local codec fixture, not a native SDK or registered ROS interface",
+  "actual_native_identity_export": false,
+  "license_scope": "The three exact maintained geometry definitions retain their existing upstream source/license provenance; consult sdk/custom-types/official-geometry-nav/upstream and the Quaternion defaults source acquisition. No vendor/native SDK licence or availability is inferred."
+}

@@ -1,0 +1,7 @@
+{
+  "format": "uwvm-ros-custom-bounded-v2",
+  "types": [
+    {"ros_version": 2, "type": "demo_rpc/srv/Increment", "file": "schema/srv/Increment.srv"},
+    {"ros_version": 2, "type": "demo_rpc/action/Count", "file": "schema/action/Count.action"}
+  ]
+}

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Narrow signed native roles for the separate domain75 lifecycle fixture.
+     Domain selection is supplied literally to Jazzy SROS2 artifact generation
+     and verified from the signed DDS XML by the controller. These native
+     permissions do not create either internal Guest capability grant. -->
+<policy version="0.2.0">
+  <enclaves>
+    <enclave path="/gateway">
+      <profiles>
+        <profile ns="/uwvm_revoke_test" node="uwvm_ros2_gateway_probe">
+          <topics publish="ALLOW">
+            <topic>/uwvm_revoke_test/dead</topic>
+            <topic>/uwvm_revoke_test/live</topic>
+          </topics>
+          <topics subscribe="ALLOW"><topic>/parameter_events</topic></topics>
+        </profile>
+      </profiles>
+    </enclave>
+    <enclave path="/witness">
+      <profiles>
+        <profile ns="/uwvm_revoke_test" node="revoke_witness">
+          <topics subscribe="ALLOW">
+            <topic>/uwvm_revoke_test/dead</topic>
+            <topic>/uwvm_revoke_test/live</topic>
+            <topic>/parameter_events</topic>
+          </topics>
+        </profile>
+      </profiles>
+    </enclave>
+  </enclaves>
+</policy>

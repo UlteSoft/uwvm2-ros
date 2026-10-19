@@ -32,6 +32,8 @@ module;
 #include <cstdint>
 #include <cstring>
 #include <memory>
+#include "runtime_origin.h"
+#include <type_traits>
 #include <uwvm2/runtime/compiler/shared/strict_float.h>
 // macro
 #include <uwvm2/utils/macro/push_macros.h>
@@ -40,6 +42,7 @@ module;
 # include <unistd.h>
 #endif
 #if defined(UWVM_RUNTIME_LLVM_JIT)
+# include <uwvm2/runtime/compiler/llvm_jit/pinned_version.h>
 # include <llvm/Config/llvm-config.h>
 # include <llvm/ADT/StringMap.h>
 # include <llvm/ADT/StringRef.h>
@@ -54,6 +57,7 @@ import fast_io_crypto;
 import uwvm2.utils.container;
 import uwvm2.uwvm.runtime.runtime_mode;
 import :format;
+import :self_executable;
 
 #ifndef UWVM_MODULE
 # define UWVM_MODULE

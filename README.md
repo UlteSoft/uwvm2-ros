@@ -52,6 +52,24 @@ WebAssembly System Interface Preview 1 (WASI P1) host bindings for `wasm32-wasip
 ### Plugin-facing host APIs
 Preload modules (dynamic libraries / weak-symbol plugins) can consume a stable host-side API for linear-memory access, and can optionally consume the UWVM2 WASI Preview 1 host API as well. The WASI table is disabled by default and must be explicitly enabled from the command line. When enabled for a single target or named group, plugin-facing WASI calls are resolved against that target's WASI environment rather than one process-wide table. Native dynamic libraries still execute as host code and must be treated as trusted host extensions.
 
+### ROS 1 and ROS 2 runtime extensions
+Optional Linux interpreter extensions expose independently configured ROS 1 and ROS 2 capabilities through separate native Gateways. Each Wasm instance receives its own capability table; explicit Global, Single and Group configuration controls Topic, Service, Parameter, Graph, Action, TF, Time, Logging and ROS 2 Lifecycle access. The core build requires no ROS libraries. See the [architecture](documents/ros/architecture.md), [build instructions](documents/ros/build.md), [ROS 1 CLI](documents/command-line/ros1.md), [ROS 2 CLI](documents/command-line/ros2.md) and [test instructions](documents/ros/testing.md) for supported adapters and reproducible validation.
+
+The [vendor build options](documents/ros/vendor-build-options.md) independently
+select all28 vendor schema targets and the separate NVIDIA platform layers.
+Every switch defaults off; only an explicitly supplied coherent registry is
+compiled, and Native SDKs remain outside the Wasm execution binary.
+
+Actual SSH Linux results, artifact hashes and limitations are recorded in the [delivery report](documents/ros/test-report.md), [55 attack cases](documents/ros/acceptance-matrix.md) and [original 50 acceptance items](documents/ros/final-checklist.md).
+
+The [WasmROS guest SDK](sdk/README.md) provides C/C++, Rust, JavaScript,
+AssemblyScript and TinyGo libraries, from complete raw imports to typed
+Node/resource/executor APIs and detailed English application examples. SDK
+construction grants no ROS authority. The
+[current SDK delivery record](documents/ros/sdk-client-libraries-20261015-r1.md)
+binds 334 validated Wasm products and serial local models; native ROS delivery
+and the original Runtime acceptance matrix retain their separate scopes.
+
 ### Flexible linear memory models
 uwvm2 provides three host-side models for implementing WebAssembly linear memory (mmap-based, multi-threaded allocator-based, and single-thread allocator-based backends), allowing efficient execution on platforms with or without virtual memory support. See [readme.md](src/uwvm2/object/memory/readme.md) for a detailed description.
 

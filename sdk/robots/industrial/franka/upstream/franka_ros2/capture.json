@@ -1,0 +1,538 @@
+{
+  "id": "franka_ros2",
+  "url": "https://github.com/frankarobotics/franka_ros2",
+  "branch": "jazzy",
+  "commit": "4acc05c01ebfcdf916ee6b3df966df0ad7b2f9ec",
+  "tree_git_sha1": "2cbd593c44bd695bbb6f0bfd450edb1b11b926a0",
+  "files": [
+    {
+      "path": "LICENSE",
+      "bytes": 10173,
+      "sha256": "a6cba85bc92e0cff7a450b1d873c0eaa2e9fc96bf472df0247a26bec77bf3ff9",
+      "git_blob_sha1": "d9a10c0d8e868ebf8da0b3dc95bb0be634c34bfe"
+    },
+    {
+      "path": "NOTICE",
+      "bytes": 574,
+      "sha256": "edf4d327f25582a1c18c2c733ea6014c31b41974dc3f8567dbf9bbc0332f333a",
+      "git_blob_sha1": "664ea276dbf47cf21748d9980b4cb5049253cc7a"
+    },
+    {
+      "path": "README.md",
+      "bytes": 11726,
+      "sha256": "a87daf0a4e2a67bb781e25c7c492b13a3d9d58f46a9d2f36c8d0e934e5c78fdb",
+      "git_blob_sha1": "83c4bad5e4ba9c9828d51d68e772fa4a211246fe"
+    },
+    {
+      "path": "franka_bringup/CMakeLists.txt",
+      "bytes": 2308,
+      "sha256": "203f097de9201683ef6c5988ced530706eaa9544cb36437951ba770791e347a8",
+      "git_blob_sha1": "c002cfaf48eb8516c76f02842c4dd02ac5c8c141"
+    },
+    {
+      "path": "franka_bringup/README.md",
+      "bytes": 649,
+      "sha256": "3225429e03d7166fbc00ae452b95b6c5c3efe0f7ffe7caa4a38eef0b4fd0e361",
+      "git_blob_sha1": "42909105c3f5276a434d8670e2034d22061ced6b"
+    },
+    {
+      "path": "franka_bringup/package.xml",
+      "bytes": 2864,
+      "sha256": "e95c8496b83f77e49475e71e15eb52d199268757848a98c0ca6e07ae16573e2f",
+      "git_blob_sha1": "1f9fcc4f3d93383afb8ee935e81866f378e749b6"
+    },
+    {
+      "path": "franka_bringup/test/README.md",
+      "bytes": 5635,
+      "sha256": "4c021921b105d2695355d283e71aae8670667b2bbc9b4b5bd6269d85d6d54957",
+      "git_blob_sha1": "2f844b30a7c62c2fb44d582aea5264375d9b6851"
+    },
+    {
+      "path": "franka_description_extensions/franka_mobile_sensors/CMakeLists.txt",
+      "bytes": 479,
+      "sha256": "3caab751875806e2dad33aea5827881051d4b1fe1ee50d3f8f7707b78569551b",
+      "git_blob_sha1": "2fbe141908eef456b5e5cae9ef6efe12222a18bc"
+    },
+    {
+      "path": "franka_description_extensions/franka_mobile_sensors/package.xml",
+      "bytes": 1314,
+      "sha256": "c5c5411ec0daaf80fd7b03ac0bc946133e88546da5d24509f29b966bae19a282",
+      "git_blob_sha1": "0e33ba3fef21fdc35f76bcdba7419b155eb45216"
+    },
+    {
+      "path": "franka_description_extensions/franka_vision_and_manipulation_kit/CMakeLists.txt",
+      "bytes": 535,
+      "sha256": "7604a23bc545c0f13a2f591d5adff89ce74bf1d77ab11e432e67850c4127c02c",
+      "git_blob_sha1": "837f4e1c62c39df6157f434f35f14f0471b442d2"
+    },
+    {
+      "path": "franka_description_extensions/franka_vision_and_manipulation_kit/package.xml",
+      "bytes": 1207,
+      "sha256": "06d343626fd586a2bf67e9b17435f6f311be5957c77baaffc0f4017a02eb3554",
+      "git_blob_sha1": "f3b73c0520816b40e11c268053a0af7abf8a594c"
+    },
+    {
+      "path": "franka_desk_api/CMakeLists.txt",
+      "bytes": 379,
+      "sha256": "3ecfd9d4f743ea3eac5cacc23b651277fac74198b13f452a42b35d1342bace95",
+      "git_blob_sha1": "9832b930e6f9ef31c691c6aa7073d33ec25bb3a1"
+    },
+    {
+      "path": "franka_desk_api/README.md",
+      "bytes": 578,
+      "sha256": "5b7a1f487ab85bc78c1c6e69795dacc8cc51c5b07ba22f8986687f541e3e4e44",
+      "git_blob_sha1": "fa6cc67c96fc97fe38d4841101ea97d4412a2988"
+    },
+    {
+      "path": "franka_desk_api/package.xml",
+      "bytes": 939,
+      "sha256": "854ace45a6284f47a0781c3c60ec567e2bdba95d662e3c790c53dd5604118702",
+      "git_blob_sha1": "d28c1ad33dd98c95bb2b225319f6b0e517f6a5ce"
+    },
+    {
+      "path": "franka_example_controllers/CMakeLists.txt",
+      "bytes": 6097,
+      "sha256": "5d855767aa1e55592b7147cdece556e9a1ebcec48dddf24b1bbe802e95228b4a",
+      "git_blob_sha1": "dc64f700263e257c43a85e1b50ddba8b18ff1de5"
+    },
+    {
+      "path": "franka_example_controllers/package.xml",
+      "bytes": 1593,
+      "sha256": "f4bed8b9d54d1d5fd2dd16e8e5b68390d212fc2e303c98b0e0d47be61fb3a563",
+      "git_blob_sha1": "3bb0907b9aefac9957669ef580358b5c4b5737a6"
+    },
+    {
+      "path": "franka_fr3_moveit_config/CMakeLists.txt",
+      "bytes": 1222,
+      "sha256": "d2057fe0d51ed981c763e5a4aeb9eab7669435aacdf096b27cf44f28eda453f0",
+      "git_blob_sha1": "dd514ee2eefaa696e3b7c17adcdff5016041911f"
+    },
+    {
+      "path": "franka_fr3_moveit_config/package.xml",
+      "bytes": 1870,
+      "sha256": "dfffb3d076b37f5f35b17c4f64bc27be18e1b58a5e0bb74e7a79868444a2e5fd",
+      "git_blob_sha1": "ddbfa54c74a24b87e2f365d98d6667c424d1bb0c"
+    },
+    {
+      "path": "franka_gazebo/franka_gazebo_bringup/CMakeLists.txt",
+      "bytes": 1098,
+      "sha256": "134f4c6b25b36c58fb2bb70361b41d8d43cc6c3c14a606cd2e6e389e1be61eea",
+      "git_blob_sha1": "aa15808d0b90eb69733b6881946d883f2797f2b2"
+    },
+    {
+      "path": "franka_gazebo/franka_gazebo_bringup/package.xml",
+      "bytes": 1539,
+      "sha256": "60fdad861820cc17b47c9bd2d10751aa054ef415485096d18e07cc7c4057c7c7",
+      "git_blob_sha1": "4367d018259ef3b113b1404ebe97838652bbbd5a"
+    },
+    {
+      "path": "franka_gazebo/franka_gazebo_hardware/CMakeLists.txt",
+      "bytes": 4196,
+      "sha256": "af279bcf8194987113a9972eadef0225647777f5f350472f3c82fba5aa8764fa",
+      "git_blob_sha1": "eb236802a3803667c9b52f059d87f756c9d00897"
+    },
+    {
+      "path": "franka_gazebo/franka_gazebo_hardware/package.xml",
+      "bytes": 1204,
+      "sha256": "f4e500529d7fc8fc099367d259fc9ca85486cd2832f0ead1802eea5760cae24a",
+      "git_blob_sha1": "2ff6c10f84b052163e708acacb2ec142ef48df23"
+    },
+    {
+      "path": "franka_gripper/CMakeLists.txt",
+      "bytes": 2908,
+      "sha256": "3085e7e67e625969987d17f1bc5dd96d9a593d6137f56ead562f60dfbf134532",
+      "git_blob_sha1": "1e315f3ecd5feadcc1dd0b8ca0bd3f9ad8b27d84"
+    },
+    {
+      "path": "franka_gripper/package.xml",
+      "bytes": 1620,
+      "sha256": "f4693ff29879cd5f90e389d750ed115d7a4bdec443e309d95dab81e94b7f329a",
+      "git_blob_sha1": "305b47af9f05789ea45ba1494ee5b20b544059a1"
+    },
+    {
+      "path": "franka_hardware/CMakeLists.txt",
+      "bytes": 3300,
+      "sha256": "b23ffb552dcbc57c614670192a06f2819d825b0e250eb1c94130494336feaa7b",
+      "git_blob_sha1": "a35d179577b63910c6f358a7eb3849791e8c68c4"
+    },
+    {
+      "path": "franka_hardware/package.xml",
+      "bytes": 1463,
+      "sha256": "71b1f48a5ca3bd636e46a5ded6c7e03fb95bcfd9087e037441ff6fc11026b545",
+      "git_blob_sha1": "518e654f0a1b419dce565f08be0c256ed8d93130"
+    },
+    {
+      "path": "franka_hardware/test/CMakeLists.txt",
+      "bytes": 1395,
+      "sha256": "cc34a87dc9a4d225934837403b4bf4d2a01938447d0eca28faf4313e775a7089",
+      "git_blob_sha1": "dea2c56ca4602629fe9e3d71876fa3478ba50b75"
+    },
+    {
+      "path": "franka_mobile/CMakeLists.txt",
+      "bytes": 3261,
+      "sha256": "dfbf5b139c0753d894f8166ed64c723f7c11aa4547e2bc9fb0d6f4a456ccb3b2",
+      "git_blob_sha1": "aa2361065e198445375879f299b75c5802d4af69"
+    },
+    {
+      "path": "franka_mobile/package.xml",
+      "bytes": 1345,
+      "sha256": "ef01542f68b0fe0cb3d9c8adc4cf2c2d12c3f342d8518b60d6aa86db685d6240",
+      "git_blob_sha1": "a4dbe5c8e1f84756918281e99e87485011ccd1cc"
+    },
+    {
+      "path": "franka_mobile_fr3_duo_moveit_config/CMakeLists.txt",
+      "bytes": 527,
+      "sha256": "e22b86727fd6b01ba805825a23040c1d7cbc4af4fc21fd5cc22876605493ed42",
+      "git_blob_sha1": "59f1c6b4d379bc9f76693d9633512f7f8bc9688f"
+    },
+    {
+      "path": "franka_mobile_fr3_duo_moveit_config/README.md",
+      "bytes": 3271,
+      "sha256": "de752bf3cd21346e1e5f2956f2b4019481209c97b3805e05ef5f053fec9279c3",
+      "git_blob_sha1": "500f499a2160461bdf829e1aab61b9fc0f9ad9f8"
+    },
+    {
+      "path": "franka_mobile_fr3_duo_moveit_config/package.xml",
+      "bytes": 1894,
+      "sha256": "195cc892aa5a8d687cee6b3eed919740f3f1c71ac454ff86db7add90c6890657",
+      "git_blob_sha1": "a144711149e86503434ce5c97a56295025b9f61e"
+    },
+    {
+      "path": "franka_msgs/CMakeLists.txt",
+      "bytes": 1110,
+      "sha256": "14b4a121e8d77e2daed6a8b88c05a0f3db7e239e786f2e257ee395a8fdb7a93f",
+      "git_blob_sha1": "3e05fe7bd6f934a49745de0bb8013b78131f9f98"
+    },
+    {
+      "path": "franka_msgs/action/ErrorRecovery.action",
+      "bytes": 8,
+      "sha256": "d487269d2de0655a9ed127c83b0d1006d724e600385b32f4f4b39893c1e0164b",
+      "git_blob_sha1": "a845151cc840034a50f5fd010515d61e661f79ee"
+    },
+    {
+      "path": "franka_msgs/action/Grasp.action",
+      "bytes": 145,
+      "sha256": "e129fa8bfc57b36851e4f3466af34d9a5a23935a9566c24bd981818047fdb6d8",
+      "git_blob_sha1": "d0b4bf535cf90c7bcb5e6fa87be423c3adb33858"
+    },
+    {
+      "path": "franka_msgs/action/Homing.action",
+      "bytes": 62,
+      "sha256": "34409ed1a35ba24f95bd4ca67e99c4ef7efcf76bbf5f2844fc75360fd794e99b",
+      "git_blob_sha1": "6ea0aa20ed298198b6c5e7ff5ac6e78b1f77d394"
+    },
+    {
+      "path": "franka_msgs/action/Move.action",
+      "bytes": 106,
+      "sha256": "349bd984b63d6510e61492b8b3352070ff4b9ef6d1825f8ae86ad5bc9462b25b",
+      "git_blob_sha1": "34f37d6e6a15c09ead283f2a7da6d1df02ebb2eb"
+    },
+    {
+      "path": "franka_msgs/action/PTPMotion.action",
+      "bytes": 844,
+      "sha256": "19836199eda892ef1ab73dec2a25a966358b0a69f80b456a1d843b46834bec20",
+      "git_blob_sha1": "328268094223bd556b4bd38e501ed7c8e2ee1dde"
+    },
+    {
+      "path": "franka_msgs/msg/CollisionIndicators.msg",
+      "bytes": 341,
+      "sha256": "39654ff147120c2f3e5a4cdaf6a43a7af6e1b3ff889aff9e5bac83b920a95c78",
+      "git_blob_sha1": "03e92733f9e66fe1100ba61098c3d1149e16ab07"
+    },
+    {
+      "path": "franka_msgs/msg/Elbow.msg",
+      "bytes": 169,
+      "sha256": "3bdb18227176ab8f368f00b47ee06aa843bd2df4cd60e40034bf6b69d42f496e",
+      "git_blob_sha1": "d69eee910e075aac5f85444a2a423597020f6a6e"
+    },
+    {
+      "path": "franka_msgs/msg/Errors.msg",
+      "bytes": 1654,
+      "sha256": "bf9d2b5e09680daaa5b46d5ba9051a9201ae5c892ab8609893364ddf424c01ae",
+      "git_blob_sha1": "9eca9b41ba0af0f44f269b6f44ce07a76c75f385"
+    },
+    {
+      "path": "franka_msgs/msg/FrankaRobotState.msg",
+      "bytes": 2818,
+      "sha256": "c55a163656bcf7674601ff18d02819b3088c1e9e3edc220855b3099ec0985ae5",
+      "git_blob_sha1": "1b75a80bd5e92001c3a9e117e92012298c431d26"
+    },
+    {
+      "path": "franka_msgs/msg/GraspEpsilon.msg",
+      "bytes": 269,
+      "sha256": "e6c8564c1603c990487a3c3c7f123e459cd4ec7619c98c148675601d55a0ba3b",
+      "git_blob_sha1": "0efb3917a1f46eb4a7b62a88873b18b35f689566"
+    },
+    {
+      "path": "franka_msgs/msg/TargetStatus.msg",
+      "bytes": 614,
+      "sha256": "d8941e0276cf834af45919646c6b7cd4d8f18f352b169c72cf6672a5d6d3b062",
+      "git_blob_sha1": "3fb83695c89ac0f866dab923568323a34843bd33"
+    },
+    {
+      "path": "franka_msgs/package.xml",
+      "bytes": 1033,
+      "sha256": "0be0328a737b3b711c72d1b954d8883aae4f19f93a1ff9eed1a7296e81e1bd56",
+      "git_blob_sha1": "5bb32104fe89db6d36eee76646c8e01b3145e852"
+    },
+    {
+      "path": "franka_msgs/srv/SetCartesianStiffness.srv",
+      "bytes": 190,
+      "sha256": "0857969a07f8a7ee4efd27a869c9dda31be017f8dac26e8d336a4bb8116ae0df",
+      "git_blob_sha1": "6f1fb003b661d71b99ddeaeed2f78a6e285359bb"
+    },
+    {
+      "path": "franka_msgs/srv/SetForceTorqueCollisionBehavior.srv",
+      "bytes": 201,
+      "sha256": "ed4057e185473c468834658e92c0d4851b760ed203949c34ea59bea0d2d435b1",
+      "git_blob_sha1": "f6aeaba666c0c4c2f914726480214d91df0171af"
+    },
+    {
+      "path": "franka_msgs/srv/SetFullCollisionBehavior.srv",
+      "bytes": 391,
+      "sha256": "e50a6a720844b538483bf8fe9e1c9aef505576d6d16712f7b7f22c735ec26c3e",
+      "git_blob_sha1": "c4d2b2dd00dc94816fb0e1e6d823f10e075da005"
+    },
+    {
+      "path": "franka_msgs/srv/SetJointStiffness.srv",
+      "bytes": 112,
+      "sha256": "b99b186a76a4f17857f419c9b69f45a9043144e9f8c491bbd38aa5468dd5f82c",
+      "git_blob_sha1": "15d245aef2e9fc1ddb7b50aa53882b270eba2a3a"
+    },
+    {
+      "path": "franka_msgs/srv/SetLoad.srv",
+      "bytes": 227,
+      "sha256": "bddfba6e7ecadf5a7b4208408a2c835d59a87e02a4188517db5d177a9c1b5982",
+      "git_blob_sha1": "d674215334b9bcef92da1dd1915c929baa9a530b"
+    },
+    {
+      "path": "franka_msgs/srv/SetStiffnessFrame.srv",
+      "bytes": 234,
+      "sha256": "021b10a15a69b744a37ff20861d6953926342ef71e616ad015248bf70f0bbdf3",
+      "git_blob_sha1": "fe2af7a2ed5145f60644f44c5b43b83e15b2486f"
+    },
+    {
+      "path": "franka_msgs/srv/SetTCPFrame.srv",
+      "bytes": 228,
+      "sha256": "98bb922a8b71ff502dce86109c5935446512520f8ac9b5f86802f45412088ab2",
+      "git_blob_sha1": "50e86c8b32c93d35dbfc5608ef85e43768a2f4b8"
+    },
+    {
+      "path": "franka_robot_state_broadcaster/CMakeLists.txt",
+      "bytes": 4395,
+      "sha256": "4d3597f602d49929ff22ee7ae8036aaf375ed7399e0b537fde31c41538ed6c87",
+      "git_blob_sha1": "9c3494521d07eeb7329ab633d68828a97389609f"
+    },
+    {
+      "path": "franka_robot_state_broadcaster/package.xml",
+      "bytes": 1072,
+      "sha256": "5305bc75cbe0c872a83c08fb6708ea21bd5c92c5b5b3f2ab84f5d2fa41b4d261",
+      "git_blob_sha1": "5bd92bb1561a5f77cd562d1fae13f15486d36375"
+    },
+    {
+      "path": "franka_robot_state_broadcaster/src/franka_robot_state_broadcaster.cpp",
+      "bytes": 11679,
+      "sha256": "98b55b66d3fbb9b7f6dc1fb5d2963a85bf48b1d0f0084eb183a874372a7c9878",
+      "git_blob_sha1": "1283842b949d54da1d2394bd1b3555602857f9a5"
+    },
+    {
+      "path": "franka_robot_state_broadcaster/test/test_franka_robot_state_broadcaster.cpp",
+      "bytes": 7260,
+      "sha256": "c0582563bf8bb3deae1462f6a091c4d83f23375a6ee326aa343f351c70cf64be",
+      "git_blob_sha1": "e5be71b112ba8e0b14aef64d4042f4a9d13702f9"
+    },
+    {
+      "path": "franka_robot_state_broadcaster/test/test_load_franka_robot_state_broadcaster.cpp",
+      "bytes": 1804,
+      "sha256": "94cfc84182eebfb5b4b3286eff09d1f28140039c6be16a5ce651ba2b87d1dd6b",
+      "git_blob_sha1": "693b752d75376a8fb4ea7261976cdb5176b7a802"
+    },
+    {
+      "path": "franka_ros2/CMakeLists.txt",
+      "bytes": 1209,
+      "sha256": "bf5161cb5f398b16039e0af5ac8a9ea8fb827360aa86b5aa4d3f0b042348bb5e",
+      "git_blob_sha1": "4b6f5fe8c33d989c5883c3992a6a534daed3ce32"
+    },
+    {
+      "path": "franka_ros2/package.xml",
+      "bytes": 1031,
+      "sha256": "e69f64810cc90c2d36cd9381100a3fe0626ea82932e210d0715053521ff8b6b3",
+      "git_blob_sha1": "8a9ed8771a1ad9a9fd93b1f018f5d81a455b70ec"
+    },
+    {
+      "path": "franka_selfcollision/CMakeLists.txt",
+      "bytes": 3032,
+      "sha256": "11cc66bf694aac90fd829e6493f01328effb05e77e96db7f105b3e1ff3960890",
+      "git_blob_sha1": "36b88db907d1ffe5dc051a66f8fa1d4c72a20d15"
+    },
+    {
+      "path": "franka_selfcollision/package.xml",
+      "bytes": 1263,
+      "sha256": "76a7884934b2565e9a5d8f5a9b3ea86923712e9ab1e71622545cc140b272fd0a",
+      "git_blob_sha1": "a255ccad762c304a83d21e5c30bfc651f1873b3b"
+    },
+    {
+      "path": "franka_semantic_components/CMakeLists.txt",
+      "bytes": 5457,
+      "sha256": "ee1ea25549878ee7870277ed1e3579fc1b7dc2589aaf7baa19da5d13e46fce65",
+      "git_blob_sha1": "95fd3e41442f0b86e1d3ae7a04d97209069ebc94"
+    },
+    {
+      "path": "franka_semantic_components/package.xml",
+      "bytes": 1417,
+      "sha256": "b1e07c27f61124575558afb98e81c0d5cf6bd1389be6e719d510584e45e84855",
+      "git_blob_sha1": "7608803f36091d6a5a094af320fd87bb3d8032c1"
+    },
+    {
+      "path": "franka_spine/franka_spine_examples/CMakeLists.txt",
+      "bytes": 2377,
+      "sha256": "283e43e2181cfbd616efc3cac12ea8f58c3847b098bbf29b2de899692d15394f",
+      "git_blob_sha1": "8064b3a415bdb2f318dd3935828b9eb3720f370d"
+    },
+    {
+      "path": "franka_spine/franka_spine_examples/package.xml",
+      "bytes": 826,
+      "sha256": "45b75ab2aa41061135c9f786f693bb0938d68cc9957db4088737210eeaffc16e",
+      "git_blob_sha1": "c7dab919cb0f9921b872bae60f9af10ca1ec341d"
+    },
+    {
+      "path": "franka_spine/franka_spine_msgs/CMakeLists.txt",
+      "bytes": 784,
+      "sha256": "95d39238c0713922d790c00aa705cd968247f8cc113282025289b5a6e8585ffa",
+      "git_blob_sha1": "7f8bf1a7f47d634e8a913000a00465d763e44f98"
+    },
+    {
+      "path": "franka_spine/franka_spine_msgs/action/MoveAbsolute.action",
+      "bytes": 544,
+      "sha256": "20296fd0b977b6dc5078cc807f38395feffc05df09913c32d8cabd00aad3ad6e",
+      "git_blob_sha1": "cbe036756fb2585682564382a01543e03f911f6e"
+    },
+    {
+      "path": "franka_spine/franka_spine_msgs/msg/SpineParameters.msg",
+      "bytes": 140,
+      "sha256": "20bbc8342c3cef0dd9b8950d66c48dfea99b1ef5ff1b9d55bbf98ca4ce5068f4",
+      "git_blob_sha1": "bb630ba685cf2fdab0c1cbab40339100a65384db"
+    },
+    {
+      "path": "franka_spine/franka_spine_msgs/msg/SpinePosition.msg",
+      "bytes": 279,
+      "sha256": "bf6e4b21f7666ec509de108df7bc3322b8f02edea6d6df09c7cf4df7e3c549e5",
+      "git_blob_sha1": "1da9cbf10ebad2bc90370db786b7b716a435a5ae"
+    },
+    {
+      "path": "franka_spine/franka_spine_msgs/msg/SpineState.msg",
+      "bytes": 558,
+      "sha256": "a49bb6b5cc53d1a6fd3f8d62162cfb117aa8d3a6d9c98770cc715ae63144d8b1",
+      "git_blob_sha1": "4123a2ae7353118729831b60ee1f4e2b6549281c"
+    },
+    {
+      "path": "franka_spine/franka_spine_msgs/msg/UserLimits.msg",
+      "bytes": 141,
+      "sha256": "f7ed8c93f107f28ddd6d068a74ca5def023c01ba8b5b9be25a68d33572a6d783",
+      "git_blob_sha1": "1a8f7c7daa80034777a45e5eb0437645cc1513ce"
+    },
+    {
+      "path": "franka_spine/franka_spine_msgs/package.xml",
+      "bytes": 902,
+      "sha256": "a6103047ad4ddb555864827150422e283a463270b16bc3afb45968e89d21c8de",
+      "git_blob_sha1": "21b5d1b6ece79155b83dc50cccbe2982b88077d1"
+    },
+    {
+      "path": "franka_spine/franka_spine_msgs/srv/FaultReset.srv",
+      "bytes": 220,
+      "sha256": "c6a15e38e42a502f66ed2160ebaff2cb086d361f338995fe22d0696a3c281342",
+      "git_blob_sha1": "8161af32bbb74830f64fa58b9d03aa0c0e11d150"
+    },
+    {
+      "path": "franka_spine/franka_spine_msgs/srv/GetParameters.srv",
+      "bytes": 318,
+      "sha256": "9cbe855d5273d7381cbca71b6b662e55cae70bb54936db3c919a4fe05731d48e",
+      "git_blob_sha1": "80c0edd6bcce2ad43ef4598dcb21c40320a947f7"
+    },
+    {
+      "path": "franka_spine/franka_spine_msgs/srv/GetPosition.srv",
+      "bytes": 143,
+      "sha256": "888ed826a56da9583f87d8a132d00a60380fbd464daf11f6a3f86be16456f1e5",
+      "git_blob_sha1": "8306107f99ce2f41de367b5be1564074a59a88a4"
+    },
+    {
+      "path": "franka_spine/franka_spine_msgs/srv/GetSpineState.srv",
+      "bytes": 436,
+      "sha256": "827ef78a6b4b9c0b6eaf33e2a586092c9e0a363d5fe997f675257005afda8d56",
+      "git_blob_sha1": "9e7c3ae06358d2f83fae70706cfc67c9dc58c4a6"
+    },
+    {
+      "path": "franka_spine/franka_spine_msgs/srv/Halt.srv",
+      "bytes": 225,
+      "sha256": "0c8eccacefd95d6d98fb89d959027deace723ea44b3c58f652466b4137080824",
+      "git_blob_sha1": "f013aec801920a25cef185a6145e2912f5bb770b"
+    },
+    {
+      "path": "franka_spine/franka_spine_msgs/srv/SwitchOff.srv",
+      "bytes": 236,
+      "sha256": "cefedba74e07b78e85f418181880a0915a2cc378d640e9eb0f015b7ccb2c0c1f",
+      "git_blob_sha1": "9252a33c05c6caf4c9d1e0894cf93e42a081b595"
+    },
+    {
+      "path": "franka_spine/franka_spine_msgs/srv/SwitchOn.srv",
+      "bytes": 232,
+      "sha256": "e9845e0be5302a08a4c0f68524600e55f516066aed3c99bfb024d4264415cf09",
+      "git_blob_sha1": "ef33c7860f8c12361c1ca627e96089bce2c3f700"
+    },
+    {
+      "path": "franka_spine/franka_spine_server/CMakeLists.txt",
+      "bytes": 657,
+      "sha256": "37d29a46b5c8ee04a2b42699aa16f380acb86c40f3dbcebb43049371f66a273f",
+      "git_blob_sha1": "2a3640c1a03b81ccd1b0e67291a9e28af1a7e69e"
+    },
+    {
+      "path": "franka_spine/franka_spine_server/package.xml",
+      "bytes": 1104,
+      "sha256": "4bfbccec3c95346e665635264a7232ec1858c512f35896355a9dd0586a210387",
+      "git_blob_sha1": "edac05099516aed1560ce19cd0fa1eca89ce4273"
+    },
+    {
+      "path": "mobile_fr3_duo_trajectory_controller/CMakeLists.txt",
+      "bytes": 3455,
+      "sha256": "344e2f25b4db42d60f04e2209c3fb5809f624aebc971ec71fbd164456ed928be",
+      "git_blob_sha1": "c7aeb377faeefffdd42ad59800f2961b21d3f7b8"
+    },
+    {
+      "path": "mobile_fr3_duo_trajectory_controller/package.xml",
+      "bytes": 1352,
+      "sha256": "d7476c1f6c1825f22429b1329c7046440d3bf3db9eef8da8d02062c6738ae19f",
+      "git_blob_sha1": "f228a9cadfd878f36148b0c9f53187aad27952ab"
+    },
+    {
+      "path": "realtime_tools/LICENSE",
+      "bytes": 1459,
+      "sha256": "143077f9f6a8de5a99f78c2c2472801fb53cf240277ef661642f079b9acdfff8",
+      "git_blob_sha1": "574ef07902908574cba9a471d7e5eb0b684691e4"
+    },
+    {
+      "path": "realtime_tools/README.md",
+      "bytes": 5983,
+      "sha256": "fe5b8abb834ab54407d3fd85e9c00d4ef2b5140545e215adbea3a68fd44a6ba7",
+      "git_blob_sha1": "dbd81ada208d679c2f4c85e5acfeb4dfe1766437"
+    },
+    {
+      "path": "realtime_tools/realtime_tools/CMakeLists.txt",
+      "bytes": 4217,
+      "sha256": "b47222a0bed5bf158d2d9b1fa843cc57fc6badc64d27138dfd6b4dad44211c94",
+      "git_blob_sha1": "a9b56961ca9ec4bddd5e972e5dec34ac6273626e"
+    },
+    {
+      "path": "realtime_tools/realtime_tools/package.xml",
+      "bytes": 1301,
+      "sha256": "0e8f030c8e072243132dd5165cae9aa47103dc908c1660d1804ecb53d8ecde14",
+      "git_blob_sha1": "b409b228eb7d6e7f5f998ab96deb641494ce750f"
+    }
+  ],
+  "archive": {
+    "url": "https://codeload.github.com/frankarobotics/franka_ros2/tar.gz/4acc05c01ebfcdf916ee6b3df966df0ad7b2f9ec",
+    "bytes": 4885278,
+    "sha256": "dec1de15d1cb4a4111db201932d257d45371272e264336279a218c2b799da2c3"
+  },
+  "default_authority": [],
+  "scope": "Unchanged selected original interfaces/source and complete original acquisition archive; no compilation, native or robot execution."
+}

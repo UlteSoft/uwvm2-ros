@@ -1,0 +1,279 @@
+{
+  "id": "driver_ros1",
+  "repository": "UniversalRobots/Universal_Robots_ROS_Driver",
+  "branch": "master",
+  "commit": "bd14b5c533135886f4f85ef0cabd097a5e1b8d0f",
+  "tree_git_sha1": "313539d9de7b6583e5635571cea2dba0d7930c7b",
+  "interface_inventory": [
+    {
+      "path": "ur_dashboard_msgs/action/SetMode.action",
+      "bytes": 969,
+      "git_blob_sha1": "4eac29152fd3c0292a6b2e1355b4b132edcd72fb"
+    },
+    {
+      "path": "ur_dashboard_msgs/msg/ProgramState.msg",
+      "bytes": 82,
+      "git_blob_sha1": "cd597bd30b3227db0c22b8e27490eb3d90ad38d0"
+    },
+    {
+      "path": "ur_dashboard_msgs/msg/RobotMode.msg",
+      "bytes": 193,
+      "git_blob_sha1": "3acec31d491c53789d9a24bfb3564ed52f557b03"
+    },
+    {
+      "path": "ur_dashboard_msgs/msg/SafetyMode.msg",
+      "bytes": 340,
+      "git_blob_sha1": "7db0851e928e7067f291335abf544f02d0034b4a"
+    },
+    {
+      "path": "ur_dashboard_msgs/srv/AddToLog.srv",
+      "bytes": 46,
+      "git_blob_sha1": "230cee461cdd8bb27a884f20c394cd2e19d89ea1"
+    },
+    {
+      "path": "ur_dashboard_msgs/srv/GetLoadedProgram.srv",
+      "bytes": 51,
+      "git_blob_sha1": "c564420c70ecc8e0d71da4b22e919939e1787de2"
+    },
+    {
+      "path": "ur_dashboard_msgs/srv/GetProgramState.srv",
+      "bytes": 70,
+      "git_blob_sha1": "68a4b0862cabee345f8f7e9510309b117a9b444d"
+    },
+    {
+      "path": "ur_dashboard_msgs/srv/GetRobotMode.srv",
+      "bytes": 52,
+      "git_blob_sha1": "7b419508b701b638ff08b107518290c7a9e40dfe"
+    },
+    {
+      "path": "ur_dashboard_msgs/srv/GetSafetyMode.srv",
+      "bytes": 54,
+      "git_blob_sha1": "5b3874fba66eecffece1648483a5111c6650a046"
+    },
+    {
+      "path": "ur_dashboard_msgs/srv/IsInRemoteControl.srv",
+      "bytes": 144,
+      "git_blob_sha1": "3e44b4d395398e7e705dadeec0273d42371a1147"
+    },
+    {
+      "path": "ur_dashboard_msgs/srv/IsProgramRunning.srv",
+      "bytes": 117,
+      "git_blob_sha1": "61d6067bc95242ba4d8c9a789ea5272b835202ba"
+    },
+    {
+      "path": "ur_dashboard_msgs/srv/IsProgramSaved.srv",
+      "bytes": 143,
+      "git_blob_sha1": "065bbf6df083ce1dc7efe3de363ad06761e9db91"
+    },
+    {
+      "path": "ur_dashboard_msgs/srv/Load.srv",
+      "bytes": 91,
+      "git_blob_sha1": "6883ab6531e67eca71f8fabeec5997769884be1d"
+    },
+    {
+      "path": "ur_dashboard_msgs/srv/Popup.srv",
+      "bytes": 46,
+      "git_blob_sha1": "230cee461cdd8bb27a884f20c394cd2e19d89ea1"
+    },
+    {
+      "path": "ur_dashboard_msgs/srv/RawRequest.srv",
+      "bytes": 111,
+      "git_blob_sha1": "92712adcdd359a35113e4748a2a4496641f01c6c"
+    }
+  ],
+  "default_authority": [],
+  "scope": "Whole original declared interface files and selected original native implementation/documentation, not native execution or all releases.",
+  "files": [
+    {
+      "path": "LICENSE",
+      "bytes": 10177,
+      "git_blob_sha1": "6b4e9741b0eb302cc195ebe0b737408b552f2565",
+      "sha256": "6f70c2e9ff1a9a196ddc5335c6ec231e0bd8cdb387a6e595a3fbb904893e91a4"
+    },
+    {
+      "path": "README.md",
+      "bytes": 22080,
+      "git_blob_sha1": "6987db044ef348a2dbb9cabdc2e9b451865ffbf2",
+      "sha256": "193e709380d0f2e667d0885dceef5ec14b3e8971161ddbe55a75b413dfd71235"
+    },
+    {
+      "path": "ur_calibration/CMakeLists.txt",
+      "bytes": 1645,
+      "git_blob_sha1": "3662b8b685f2cb73a4ffd005dbfbdbfb59de48fd",
+      "sha256": "7f49bb14f6183b49e508ee4ff958067a32c08e51300eaf958a8187dbd5d81dcc"
+    },
+    {
+      "path": "ur_calibration/LICENSE",
+      "bytes": 10177,
+      "git_blob_sha1": "6b4e9741b0eb302cc195ebe0b737408b552f2565",
+      "sha256": "6f70c2e9ff1a9a196ddc5335c6ec231e0bd8cdb387a6e595a3fbb904893e91a4"
+    },
+    {
+      "path": "ur_calibration/README.md",
+      "bytes": 2876,
+      "git_blob_sha1": "1684a6a45605fc804c88c09030fe6c8b3226379d",
+      "sha256": "da1ebf2e32b1832c7c2ea49e8cd3846bc7d17518c554fda624c3e740c02a6a0f"
+    },
+    {
+      "path": "ur_calibration/package.xml",
+      "bytes": 786,
+      "git_blob_sha1": "9869fb6a3e0c83f665282511d4bc88c10cd30ca3",
+      "sha256": "bebd958fb740a05cc75300e6b26d2c56faa49f5d2da1d92377a53dae668c2c26"
+    },
+    {
+      "path": "ur_dashboard_msgs/CMakeLists.txt",
+      "bytes": 6851,
+      "git_blob_sha1": "702a1fceec196db286ee2fa6800e4630b57e01d9",
+      "sha256": "c7d1fa2b284cc2946d4975a72a877ff9073da210de8ef4365a4d969ac6afad53"
+    },
+    {
+      "path": "ur_dashboard_msgs/LICENSE",
+      "bytes": 10177,
+      "git_blob_sha1": "6b4e9741b0eb302cc195ebe0b737408b552f2565",
+      "sha256": "6f70c2e9ff1a9a196ddc5335c6ec231e0bd8cdb387a6e595a3fbb904893e91a4"
+    },
+    {
+      "path": "ur_dashboard_msgs/action/SetMode.action",
+      "bytes": 969,
+      "git_blob_sha1": "4eac29152fd3c0292a6b2e1355b4b132edcd72fb",
+      "sha256": "44b35d346177de422ef4f080fc1b72baea4f0c5dec7b5dda9dd43fbea8031ec8"
+    },
+    {
+      "path": "ur_dashboard_msgs/msg/ProgramState.msg",
+      "bytes": 82,
+      "git_blob_sha1": "cd597bd30b3227db0c22b8e27490eb3d90ad38d0",
+      "sha256": "6e15633513c877a22e1daba751819ff5cb1f663bce3f5cf09b0560d45bd6a91e"
+    },
+    {
+      "path": "ur_dashboard_msgs/msg/RobotMode.msg",
+      "bytes": 193,
+      "git_blob_sha1": "3acec31d491c53789d9a24bfb3564ed52f557b03",
+      "sha256": "9fdad17b4ea58ca1ba83f097e25334d5b8a20933585bc7b57002e841131331aa"
+    },
+    {
+      "path": "ur_dashboard_msgs/msg/SafetyMode.msg",
+      "bytes": 340,
+      "git_blob_sha1": "7db0851e928e7067f291335abf544f02d0034b4a",
+      "sha256": "1c55f245ae2c99dda03537a2664f3924ccc74428cfc33f0fc4debb51889cb089"
+    },
+    {
+      "path": "ur_dashboard_msgs/package.xml",
+      "bytes": 717,
+      "git_blob_sha1": "e7f5419fe9bca8327805136e8cf75ce83fcd4cbf",
+      "sha256": "04c34ccfa233097e8c9b7ae9ad48f829c3b944fcfcace46f881b78bed0d8f1d5"
+    },
+    {
+      "path": "ur_dashboard_msgs/srv/AddToLog.srv",
+      "bytes": 46,
+      "git_blob_sha1": "230cee461cdd8bb27a884f20c394cd2e19d89ea1",
+      "sha256": "bcc1fb2c252ffcecea329c59065cd5d54511c00d5586c8bee09cf503681d2ce7"
+    },
+    {
+      "path": "ur_dashboard_msgs/srv/GetLoadedProgram.srv",
+      "bytes": 51,
+      "git_blob_sha1": "c564420c70ecc8e0d71da4b22e919939e1787de2",
+      "sha256": "4c04e33fb4d77ecc5666e457ba5e5d9f08c667ef98aca95612387ce073dbd538"
+    },
+    {
+      "path": "ur_dashboard_msgs/srv/GetProgramState.srv",
+      "bytes": 70,
+      "git_blob_sha1": "68a4b0862cabee345f8f7e9510309b117a9b444d",
+      "sha256": "7c009c559280d058b23e5aefca97803677f2f4d06550cc41628981b76545380a"
+    },
+    {
+      "path": "ur_dashboard_msgs/srv/GetRobotMode.srv",
+      "bytes": 52,
+      "git_blob_sha1": "7b419508b701b638ff08b107518290c7a9e40dfe",
+      "sha256": "7c1f4b74a92a3a98589ae4717d08b658a576393de7fffebf18f320920ccfb38e"
+    },
+    {
+      "path": "ur_dashboard_msgs/srv/GetSafetyMode.srv",
+      "bytes": 54,
+      "git_blob_sha1": "5b3874fba66eecffece1648483a5111c6650a046",
+      "sha256": "4f17600cab88c429c1802a4b55f8fb6a9eeb4e380a41ef81d932c37af1b12b9b"
+    },
+    {
+      "path": "ur_dashboard_msgs/srv/IsInRemoteControl.srv",
+      "bytes": 144,
+      "git_blob_sha1": "3e44b4d395398e7e705dadeec0273d42371a1147",
+      "sha256": "adf144c26a81ac44348f79dc4f0cdb4928db921f82ba2125b77af5f80266189a"
+    },
+    {
+      "path": "ur_dashboard_msgs/srv/IsProgramRunning.srv",
+      "bytes": 117,
+      "git_blob_sha1": "61d6067bc95242ba4d8c9a789ea5272b835202ba",
+      "sha256": "80b637790161e40284e19dde437ba920e02830a139cd98a57309031a3595393d"
+    },
+    {
+      "path": "ur_dashboard_msgs/srv/IsProgramSaved.srv",
+      "bytes": 143,
+      "git_blob_sha1": "065bbf6df083ce1dc7efe3de363ad06761e9db91",
+      "sha256": "b78a09dc0d9bac0731bf826c0d39249caef877f22d8b8cca299817c5bab5776b"
+    },
+    {
+      "path": "ur_dashboard_msgs/srv/Load.srv",
+      "bytes": 91,
+      "git_blob_sha1": "6883ab6531e67eca71f8fabeec5997769884be1d",
+      "sha256": "8bea2f082168ea6c954acf4d6a2880849939c3b67dd9937df382d1c42159b9f5"
+    },
+    {
+      "path": "ur_dashboard_msgs/srv/Popup.srv",
+      "bytes": 46,
+      "git_blob_sha1": "230cee461cdd8bb27a884f20c394cd2e19d89ea1",
+      "sha256": "bcc1fb2c252ffcecea329c59065cd5d54511c00d5586c8bee09cf503681d2ce7"
+    },
+    {
+      "path": "ur_dashboard_msgs/srv/RawRequest.srv",
+      "bytes": 111,
+      "git_blob_sha1": "92712adcdd359a35113e4748a2a4496641f01c6c",
+      "sha256": "9a70e21d7bae70e5a865f3aa296e05aeedc8fbff0aaa41b054953034f69348ea"
+    },
+    {
+      "path": "ur_robot_driver/CMakeLists.txt",
+      "bytes": 4501,
+      "git_blob_sha1": "a4d0d93a95228e6ae6c6e26d87fbee56888eb041",
+      "sha256": "5a333ac43200ffeec28f7138bcf56bc10353ce64cb2156a31e5bbaa466c9917e"
+    },
+    {
+      "path": "ur_robot_driver/LICENSE",
+      "bytes": 10177,
+      "git_blob_sha1": "6b4e9741b0eb302cc195ebe0b737408b552f2565",
+      "sha256": "6f70c2e9ff1a9a196ddc5335c6ec231e0bd8cdb387a6e595a3fbb904893e91a4"
+    },
+    {
+      "path": "ur_robot_driver/README.md",
+      "bytes": 5999,
+      "git_blob_sha1": "3b8b9674e29e25244d973848d911864eda052be8",
+      "sha256": "4577c82d24d78774b606890c887c94d8a4795fd8c26f968ce60c538d77f257b8"
+    },
+    {
+      "path": "ur_robot_driver/doc/ROS_INTERFACE.md",
+      "bytes": 44572,
+      "git_blob_sha1": "aee071aa75365e4bfd0e6e0f2d8eb6cdde7cba4d",
+      "sha256": "2262d0076aee93438e952ed002c8f04e981960a33a964c07497bcfcff85fe181"
+    },
+    {
+      "path": "ur_robot_driver/package.xml",
+      "bytes": 2741,
+      "git_blob_sha1": "ec3b0cae3416a82d12c8b3b0d04210bffa2ea940",
+      "sha256": "fd4b50ee12de478d8eb2dd3bae6daf10e6523be7bc8ef8ffe5608a550beaeb18"
+    },
+    {
+      "path": "ur_robot_driver/src/dashboard_client_ros.cpp",
+      "bytes": 15173,
+      "git_blob_sha1": "7cc9c657b7cda4635deba0a4d29c9b8ae338636a",
+      "sha256": "a64da4c55cc3a6b603b9b520e40d4cdccead175896712383aba5cb4f3d102565"
+    },
+    {
+      "path": "ur_robot_driver/src/hardware_interface.cpp",
+      "bytes": 59437,
+      "git_blob_sha1": "493221dc367f0196600e7b6ca7c629559da673f5",
+      "sha256": "8c8cf8ddcb9aa98504ff18a011cdb368e1febe8a022fdb13c31382746052280e"
+    }
+  ],
+  "archive": {
+    "url": "https://codeload.github.com/UniversalRobots/Universal_Robots_ROS_Driver/tar.gz/bd14b5c533135886f4f85ef0cabd097a5e1b8d0f",
+    "bytes": 2149381,
+    "sha256": "137ab883404f996524c3b42cf4b1b7366ccaa31d6a4ec5eb9b34847ec03a7098"
+  }
+}

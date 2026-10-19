@@ -1,0 +1,23 @@
+{
+  "id": "actual-original-unittest-modules",
+  "snapshot": "actual-selected-original",
+  "engine": "unittest",
+  "workflow_inputs": [],
+  "commands": [],
+  "build": null,
+  "pytest_tool": null,
+  "pytest_paths": [],
+  "unittest": {
+    "python_tool": "actual_sdk_python",
+    "top": "{workspace}/original-test-directory",
+    "modules": []
+  },
+  "junit_roots": [],
+  "source_test_files": [],
+  "coverage_gaps": [
+    "Fill actual committed whole module names and original workflow inputs. This is not nose/rostest discovery or a fake completed universe."
+  ],
+  "ignored_packages": [],
+  "disabled_features": [],
+  "requested_permutations": []
+}

@@ -1,0 +1,22 @@
+[package]
+name = "roswasm-owned-service"
+version = "0.1.0"
+edition = "2021"
+publish = false
+autoexamples = false
+license = "Apache-2.0"
+description = "Explicit owned ROS2 service raw12 Guest transport for uwvm2"
+
+[dependencies]
+roswasm = { path = "..", features = ["alloc", "ros2"] }
+
+[lib]
+path = "src/lib.rs"
+
+[[example]]
+name = "control_client"
+path = "examples/control_client.rs"
+
+[[example]]
+name = "control_server"
+path = "examples/control_server.rs"

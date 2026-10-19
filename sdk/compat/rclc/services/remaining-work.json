@@ -1,0 +1,52 @@
+{
+  "format_version": 1,
+  "kind": "rclc-service-profile-required-work-not-completion",
+  "implemented_source_family": [
+    "AddTwoInts full records and complete canonical request/response",
+    "Trigger full records and owned dynamic message",
+    "SetBool full records and owned dynamic message",
+    "real service_submit and independent observer completion",
+    "no-header original two-pointer service/client callbacks",
+    "finite actual-clock elapsed void sleep with explicit driver or visible failure"
+  ],
+  "required": [
+    {
+      "scope": "actual local/Guest/native validation",
+      "state": "UNEXECUTED",
+      "work": "Compile/link/run new local models and unchanged old topic/timer groups; validate actual complete Wasm/ABI; actual default denial and both native directions with all3field oracles, SDK/MD/link/maps and normalfinish."
+    },
+    {
+      "scope": "native RMW metadata callbacks/take/send",
+      "state": "UNSUPPORTED95",
+      "work": "Independent real protocol extension for writer_guid/native sequence/service timestamps. Never synthesize from Gateway opaque ticket."
+    },
+    {
+      "scope": "matched service availability",
+      "state": "UNSUPPORTED95_UNTIL_SEPARATE_ADAPTER_INTEGRATION",
+      "work": "Consume separately reviewed optional source/query capability namespace coherently; no graph/elapsed-delay substitute."
+    },
+    {
+      "scope": "all11 official upstream tests",
+      "state": "REQUIRED_UNEXECUTED",
+      "work": "Preserve units and require actual broader dependencies/semantics, including test_msgs and Actions; no local model substitution."
+    },
+    {
+      "scope": "all rcl/rclc/rmw/ROS distributions and API",
+      "state": "REQUIRED_NOT_COMPLETE",
+      "work": "Broader services/types, parameter/graph/remap/name expansion, native executor/waitset, header callbacks, actions, clients metadata, complete introspection and upstream suites require separate implementations."
+    },
+    {
+      "scope": "original mains cleanup",
+      "state": "NARROW_SOURCE_COMPATIBILITY_ONLY",
+      "work": "Original early-return/omitted executor/support fini remain byte-exact. External process/native Session cleanup mandatory; use separate checked lesson to test complete in-process cleanup."
+    }
+  ],
+  "actual": {
+    "generators": 0,
+    "compilers": 0,
+    "local_models": 0,
+    "Wasm": 0,
+    "native_ROS": 0,
+    "official_cases": 0
+  }
+}

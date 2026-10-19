@@ -1,0 +1,48 @@
+{
+  "label": "uwvm-c20-ros-codegen-oracle-reference-read-a2",
+  "argv": [
+    "/tmp/uwvm-gc-perf-20261011-r74/build/repo-sync-c20-v4/uwvm2-ros/uwvm",
+    "-Raot",
+    "-Rllvm-full-policy",
+    "pb-o3",
+    "-Rct",
+    "0",
+    "-WFE-gc",
+    "-WFE-function-references",
+    "-WFE-tail-call",
+    "-WFE-exceptions",
+    "-WFE-simd",
+    "-WFE-relaxed-simd",
+    "--",
+    "/tmp/uwvm-gc-perf-20261011-r74/source/wasmtime-codegen-analysis-a1/fixtures/reference-read.wasm"
+  ],
+  "cpu": 6,
+  "pid": 1517997,
+  "pgid": 1517997,
+  "returncode": 0,
+  "seconds": 0.15754842999740504,
+  "guard": null,
+  "guard_error": null,
+  "pre": {
+    "boot": "e000195b-afa2-4a53-93ba-1fb8e28eac03",
+    "cgroup": "/system.slice/docker-4dd58ad4560fde2ab9b539e4ef9cab1fac531654e99ad554aff1fce8ae0eae37.scope",
+    "memory": 26445180928,
+    "host_available": 82334199808,
+    "unique64": [
+      "/sys/fs/cgroup/system.slice/docker-4dd58ad4560fde2ab9b539e4ef9cab1fac531654e99ad554aff1fce8ae0eae37.scope"
+    ],
+    "affinity": [
+      20
+    ],
+    "memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n"
+  },
+  "post_memory": 26445488128,
+  "peak_group_memory": 26446299136,
+  "peak_aggregate_rss": 0,
+  "min_host_available": 82334199808,
+  "stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "pmu": false,
+  "initial_perf_max_sample_rate": 32000,
+  "final_perf_max_sample_rate": 32000
+}

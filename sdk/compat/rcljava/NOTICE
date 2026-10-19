@@ -1,0 +1,6 @@
+This opt-in source migration profile retains selected interfaces and example source
+from ros2-java/ros2_java and ros2_java_examples at the exact commits recorded
+in upstream/acquisition.json. Their original NOTICE and LICENSE are preserved
+under each upstream repository directory. New migration implementation and
+source-only recipes follow the SDK Apache License 2.0. Native rcl/JNI is not
+linked into the Guest, and no upstream compatibility qualification is claimed.

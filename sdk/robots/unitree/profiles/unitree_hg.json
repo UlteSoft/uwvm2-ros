@@ -1,0 +1,82 @@
+{
+  "format": "uwvm-unitree-profile-v1",
+  "family": "unitree_hg",
+  "repository": "unitreerobotics/unitree_ros2",
+  "commit": "668d1ec5a05d1c38d3306bdca7d59f2ba3581a88",
+  "ros_version": 2,
+  "protocol": "bounded-complete-topic-values",
+  "native_identity": "REQUIRES_OFFICIAL_EXPORT",
+  "default_authority": [],
+  "sim_defaults": {
+    "domain_id": 1,
+    "interface": "lo"
+  },
+  "definitions": [
+    {
+      "type": "unitree_hg/msg/BmsCmd",
+      "path": "cyclonedds_ws/src/unitree/unitree_hg/msg/BmsCmd.msg",
+      "bounds": {}
+    },
+    {
+      "type": "unitree_hg/msg/BmsState",
+      "path": "cyclonedds_ws/src/unitree/unitree_hg/msg/BmsState.msg",
+      "bounds": {}
+    },
+    {
+      "type": "unitree_hg/msg/HandCmd",
+      "path": "cyclonedds_ws/src/unitree/unitree_hg/msg/HandCmd.msg",
+      "bounds": {
+        "motor_cmd": {
+          "sequence": 35
+        }
+      }
+    },
+    {
+      "type": "unitree_hg/msg/HandState",
+      "path": "cyclonedds_ws/src/unitree/unitree_hg/msg/HandState.msg",
+      "bounds": {
+        "motor_state": {
+          "sequence": 35
+        },
+        "press_sensor_state": {
+          "sequence": 4
+        }
+      }
+    },
+    {
+      "type": "unitree_hg/msg/IMUState",
+      "path": "cyclonedds_ws/src/unitree/unitree_hg/msg/IMUState.msg",
+      "bounds": {}
+    },
+    {
+      "type": "unitree_hg/msg/LowCmd",
+      "path": "cyclonedds_ws/src/unitree/unitree_hg/msg/LowCmd.msg",
+      "bounds": {}
+    },
+    {
+      "type": "unitree_hg/msg/LowState",
+      "path": "cyclonedds_ws/src/unitree/unitree_hg/msg/LowState.msg",
+      "bounds": {}
+    },
+    {
+      "type": "unitree_hg/msg/MainBoardState",
+      "path": "cyclonedds_ws/src/unitree/unitree_hg/msg/MainBoardState.msg",
+      "bounds": {}
+    },
+    {
+      "type": "unitree_hg/msg/MotorCmd",
+      "path": "cyclonedds_ws/src/unitree/unitree_hg/msg/MotorCmd.msg",
+      "bounds": {}
+    },
+    {
+      "type": "unitree_hg/msg/MotorState",
+      "path": "cyclonedds_ws/src/unitree/unitree_hg/msg/MotorState.msg",
+      "bounds": {}
+    },
+    {
+      "type": "unitree_hg/msg/PressSensorState",
+      "path": "cyclonedds_ws/src/unitree/unitree_hg/msg/PressSensorState.msg",
+      "bounds": {}
+    }
+  ]
+}

@@ -1,0 +1,670 @@
+{
+  "Guest_executed": false,
+  "binding": null,
+  "compiler_executed": false,
+  "default_authority": [],
+  "generation": {
+    "compiler_execution": "NOT_RUN",
+    "declared_constants": {},
+    "declared_defaults": {},
+    "declared_empty_default_native_binding": "REFUSED_UNTIL_INDEPENDENT_ORIGINAL_NATIVE_IDL_SOURCE_PROOF",
+    "default_authority": [],
+    "facade_template_inputs": [],
+    "format": "uwvm-ros-vendor-complete-bounded-v1",
+    "implemented_record_outputs": [
+      "c",
+      "cpp",
+      "rust",
+      "javascript",
+      "assemblyscript",
+      "tinygo"
+    ],
+    "implicit_permissions": [],
+    "member_map": {
+      "unitree_api/msg/Request": {
+        "assemblyscript": {
+          "binary": "binary",
+          "header": "header",
+          "parameter": "parameter"
+        },
+        "c": {
+          "binary": "binary",
+          "header": "header",
+          "parameter": "parameter"
+        },
+        "cpp": {
+          "binary": "binary",
+          "header": "header",
+          "parameter": "parameter"
+        },
+        "javascript": {
+          "binary": "binary",
+          "header": "header",
+          "parameter": "parameter"
+        },
+        "rust": {
+          "binary": "binary",
+          "header": "header",
+          "parameter": "parameter"
+        },
+        "tinygo": {
+          "binary": "Binary",
+          "header": "Header",
+          "parameter": "Parameter"
+        }
+      },
+      "unitree_api/msg/RequestHeader": {
+        "assemblyscript": {
+          "identity": "identity",
+          "lease": "lease",
+          "policy": "policy"
+        },
+        "c": {
+          "identity": "identity",
+          "lease": "lease",
+          "policy": "policy"
+        },
+        "cpp": {
+          "identity": "identity",
+          "lease": "lease",
+          "policy": "policy"
+        },
+        "javascript": {
+          "identity": "identity",
+          "lease": "lease",
+          "policy": "policy"
+        },
+        "rust": {
+          "identity": "identity",
+          "lease": "lease",
+          "policy": "policy"
+        },
+        "tinygo": {
+          "identity": "Identity",
+          "lease": "Lease",
+          "policy": "Policy"
+        }
+      },
+      "unitree_api/msg/RequestIdentity": {
+        "assemblyscript": {
+          "api_id": "api_id",
+          "id": "id"
+        },
+        "c": {
+          "api_id": "api_id",
+          "id": "id"
+        },
+        "cpp": {
+          "api_id": "api_id",
+          "id": "id"
+        },
+        "javascript": {
+          "api_id": "api_id",
+          "id": "id"
+        },
+        "rust": {
+          "api_id": "api_id",
+          "id": "id"
+        },
+        "tinygo": {
+          "api_id": "Api_id",
+          "id": "Id"
+        }
+      },
+      "unitree_api/msg/RequestLease": {
+        "assemblyscript": {
+          "id": "id"
+        },
+        "c": {
+          "id": "id"
+        },
+        "cpp": {
+          "id": "id"
+        },
+        "javascript": {
+          "id": "id"
+        },
+        "rust": {
+          "id": "id"
+        },
+        "tinygo": {
+          "id": "Id"
+        }
+      },
+      "unitree_api/msg/RequestPolicy": {
+        "assemblyscript": {
+          "noreply": "noreply",
+          "priority": "priority"
+        },
+        "c": {
+          "noreply": "noreply",
+          "priority": "priority"
+        },
+        "cpp": {
+          "noreply": "noreply",
+          "priority": "priority"
+        },
+        "javascript": {
+          "noreply": "noreply",
+          "priority": "priority"
+        },
+        "rust": {
+          "noreply": "noreply",
+          "priority": "priority"
+        },
+        "tinygo": {
+          "noreply": "Noreply",
+          "priority": "Priority"
+        }
+      },
+      "unitree_api/msg/Response": {
+        "assemblyscript": {
+          "binary": "binary",
+          "data": "data",
+          "header": "header"
+        },
+        "c": {
+          "binary": "binary",
+          "data": "data",
+          "header": "header"
+        },
+        "cpp": {
+          "binary": "binary",
+          "data": "data",
+          "header": "header"
+        },
+        "javascript": {
+          "binary": "binary",
+          "data": "data",
+          "header": "header"
+        },
+        "rust": {
+          "binary": "binary",
+          "data": "data",
+          "header": "header"
+        },
+        "tinygo": {
+          "binary": "Binary",
+          "data": "Data",
+          "header": "Header"
+        }
+      },
+      "unitree_api/msg/ResponseHeader": {
+        "assemblyscript": {
+          "identity": "identity",
+          "status": "status"
+        },
+        "c": {
+          "identity": "identity",
+          "status": "status"
+        },
+        "cpp": {
+          "identity": "identity",
+          "status": "status"
+        },
+        "javascript": {
+          "identity": "identity",
+          "status": "status"
+        },
+        "rust": {
+          "identity": "identity",
+          "status": "status"
+        },
+        "tinygo": {
+          "identity": "Identity",
+          "status": "Status"
+        }
+      },
+      "unitree_api/msg/ResponseStatus": {
+        "assemblyscript": {
+          "code": "code"
+        },
+        "c": {
+          "code": "code"
+        },
+        "cpp": {
+          "code": "code"
+        },
+        "javascript": {
+          "code": "code"
+        },
+        "rust": {
+          "code": "code"
+        },
+        "tinygo": {
+          "code": "Code"
+        }
+      }
+    },
+    "native_execution": "NOT_RUN",
+    "native_exporter_helper_source": {
+      "bytes": 10784,
+      "sha256": "55c5e504a1d61a648f73dd732aa0561f4b4dc0adf54dbe631857edf1564f3ac6"
+    },
+    "native_registry_emitted": false,
+    "outputs": {
+      "bounded_interfaces.h": {
+        "bytes": 1332,
+        "sha256": "d9c8b1a22bd5c3877398d05fa5c545b331041cf1cd741ff356bbacda32f64150"
+      },
+      "bounded_interfaces.hpp": {
+        "bytes": 3923,
+        "sha256": "2ddbcf92699a416b8dab0a2264ba3dfba6a1dc786dbb476b881c77ee9e508842"
+      },
+      "bounded_records.go": {
+        "bytes": 22463,
+        "sha256": "a5cb64cef80234fedf13c5a78963af33aeb52987a8905b6a2d0f641ade4b569d"
+      },
+      "bounded_records.h": {
+        "bytes": 37170,
+        "sha256": "6c937bbfbb1d9b17b12ab040451d5d50b31ad710122c43d3db1a85ff661fd9e4"
+      },
+      "bounded_records.hpp": {
+        "bytes": 9593,
+        "sha256": "d3e8c263532c47c2b0de7f2142e0948d6cbcb06a1cc2d85c154f95c63cffcc3c"
+      },
+      "bounded_records.mjs": {
+        "bytes": 19782,
+        "sha256": "adc030e1334f7bd89f17ba70441b355949ec60b528f1d88e37262a86953c0ec9"
+      },
+      "bounded_records.rs": {
+        "bytes": 20705,
+        "sha256": "927800601be76ea362d8bce5e86dc7d76f94c6e64ba82b9740015522fc65eafa"
+      },
+      "bounded_records.ts": {
+        "bytes": 24726,
+        "sha256": "0dce9834ac1295d508cb38b39ba91b9639fd18f74101f68c415f99a051d0a033"
+      },
+      "native_constants.hpp": {
+        "bytes": 267,
+        "sha256": "4700d3bdf5da49f6392540d0487fa661da6f06c15fc817f1cf6e73bd44134b7c"
+      },
+      "native_identity.cc": {
+        "bytes": 13833,
+        "sha256": "509ddb6341d0ac81bdf94385014066998d647882e644ba73db9807a1f0d45ec1"
+      }
+    },
+    "records": [
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 16,
+        "codec_identity": "UWVMROS1_e3daab89abcdaf6526511a189cfcc0c78aaebe8aefc53814ba77f6eb80cdc4e2",
+        "expanded_nodes": 3,
+        "maximum_wire_bytes": 16,
+        "minimum_wire_bytes": 16,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "unitree_api/msg/RequestIdentity"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 8,
+        "codec_identity": "UWVMROS1_3dcb1fe2998c880e2d9196967da172ccd9060ebc7f6d2feb8682dc3d104c2e6e",
+        "expanded_nodes": 2,
+        "maximum_wire_bytes": 8,
+        "minimum_wire_bytes": 8,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "unitree_api/msg/RequestLease"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 5,
+        "codec_identity": "UWVMROS1_61f1a1eafec2f694d24cf798963dcb5a0c8f40e9791db5a502f0736cc8587bb8",
+        "expanded_nodes": 3,
+        "maximum_wire_bytes": 5,
+        "minimum_wire_bytes": 5,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "unitree_api/msg/RequestPolicy"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 29,
+        "codec_identity": "UWVMROS1_c8e8b83e2cdc978c5279483dbfac8d4185a3e05c87799b424643f0fcb02d0fd0",
+        "expanded_nodes": 9,
+        "maximum_wire_bytes": 29,
+        "minimum_wire_bytes": 29,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "unitree_api/msg/RequestHeader"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 6181,
+        "codec_identity": "UWVMROS1_39bb2426d68c160c07e7cff951d234c8ec9d0c70fddb5d432d9b238d08565eb2",
+        "expanded_nodes": 13,
+        "maximum_wire_bytes": 6181,
+        "minimum_wire_bytes": 37,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "unitree_api/msg/Request"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 4,
+        "codec_identity": "UWVMROS1_aaad17e09d5d6549455f69060d1bb03ec81cddfc0ede323a5f2365a6c1a7b7b1",
+        "expanded_nodes": 2,
+        "maximum_wire_bytes": 4,
+        "minimum_wire_bytes": 4,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "unitree_api/msg/ResponseStatus"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 20,
+        "codec_identity": "UWVMROS1_20ddef706f0be7d7e2e356ab2222b6e198bd36fd6d8a81706553d5a883de85e0",
+        "expanded_nodes": 6,
+        "maximum_wire_bytes": 20,
+        "minimum_wire_bytes": 20,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "unitree_api/msg/ResponseHeader"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 6172,
+        "codec_identity": "UWVMROS1_c048bd88b9c7d86cde04e6a589c50aeba396be29acf0d58bc6972f2dd8d8b749",
+        "expanded_nodes": 2057,
+        "maximum_wire_bytes": 6172,
+        "minimum_wire_bytes": 28,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "unitree_api/msg/Response"
+      }
+    ],
+    "required_native_domain_provider": "paired complete_vendor descriptor/Native trait/source-metadata admission; requires actual Root implementation and full rebuild; old refusal is preserved",
+    "source_generator_pair": {
+      "bounded": {
+        "bytes": 239137,
+        "sha256": "3c40ed90910bde0ec15ae8976b0e34c37061c2eeacc121259604e7eaeba89f2d"
+      },
+      "industrial_adapter": {
+        "bytes": 73639,
+        "sha256": "e830acc0c4a1cb243cb50f28cbabb71299dcc692ecd9a0b42dd725f4a4f361b3"
+      },
+      "parent": {
+        "bytes": 61312,
+        "sha256": "1a73d6a87624e563bbb6be2624e77b51d7dba0f0f2fb524cda4079f493381826"
+      }
+    },
+    "source_inputs": {
+      "catalog": {
+        "bytes": 1624,
+        "sha256": "a8482927030dfeca26a211f1144fd1112d4c8fdcb6e39c0bef3bf21a52835a25"
+      },
+      "definitions": [
+        {
+          "bytes": 52,
+          "file": "definitions/unitree_api/msg/Request.msg",
+          "sha256": "095718e795b7fb08210f32fad9b2ce519ca2b0a0976054e772bc89e48fbe14bc"
+        },
+        {
+          "bytes": 64,
+          "file": "definitions/unitree_api/msg/RequestHeader.msg",
+          "sha256": "0783c0fd13fa9cd588bc2cd2b7961c98f1312ab7c1e730d62eae43901c093ab3"
+        },
+        {
+          "bytes": 22,
+          "file": "definitions/unitree_api/msg/RequestIdentity.msg",
+          "sha256": "ae144634bbd4b142308d3801fe0fe1712b4fad442fe15cca3552fcce127be2fd"
+        },
+        {
+          "bytes": 8,
+          "file": "definitions/unitree_api/msg/RequestLease.msg",
+          "sha256": "b16d384a7334bf5f9d59a90800984ba0e5fdf0b5bed931f2ce11557d0f49f879"
+        },
+        {
+          "bytes": 27,
+          "file": "definitions/unitree_api/msg/RequestPolicy.msg",
+          "sha256": "b93c83f07a266ed0de9071be1242d7d7c5cd247a5ec494cfd16720d1a41161ee"
+        },
+        {
+          "bytes": 48,
+          "file": "definitions/unitree_api/msg/Response.msg",
+          "sha256": "deeb19c6fec4bf67790d33a9e4a391f717840e274f6882e968d7d65c57402a13"
+        },
+        {
+          "bytes": 47,
+          "file": "definitions/unitree_api/msg/ResponseHeader.msg",
+          "sha256": "808649ac643d66fa0620c11cec50d7d8f5cba576094cd50a941093b2f7ac673b"
+        },
+        {
+          "bytes": 10,
+          "file": "definitions/unitree_api/msg/ResponseStatus.msg",
+          "sha256": "1102bc217ff8add7007d6bd6ffb6d6f183ee1c9b029d20cd5b09cc7134a6ac41"
+        }
+      ]
+    },
+    "source_template_inputs": {
+      "interface_templates/bounded_interfaces.go.in": {
+        "bytes": 9692,
+        "sha256": "c9e7893ccedc67b91a3aebc51c1e0c3c65263f03b2769aa07c34fcfb6befa1f7"
+      },
+      "interface_templates/bounded_interfaces.mjs.in": {
+        "bytes": 17046,
+        "sha256": "10986eddd766435dde89b0d3046ef7f48705e2c3e21301c99163c3a7d4ea62fe"
+      },
+      "interface_templates/bounded_interfaces.rs.in": {
+        "bytes": 15514,
+        "sha256": "063130e797684df0530aa1882f8082a10d5756ceb892677d8082e980c7b29b18"
+      },
+      "interface_templates/bounded_interfaces.ts.in": {
+        "bytes": 16626,
+        "sha256": "a61a7b7eb3b5464648577f3ab44629a5c6140d04effff6e4099509f68b204ac5"
+      }
+    },
+    "status": "GENERATED_SOURCE_ONLY_NOT_COMPILED_OR_EXECUTED",
+    "types": [
+      {
+        "adapter_codec_identity": "UWVMROS1_39bb2426d68c160c07e7cff951d234c8ec9d0c70fddb5d432d9b238d08565eb2",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_39bb2426d68c160c07e7cff951d234c8ec9d0c70fddb5d432d9b238d08565eb2",
+            "expanded_nodes": 13,
+            "maximum_wire_bytes": 6181,
+            "minimum_wire_bytes": 37,
+            "native_identity": null,
+            "type": "unitree_api/msg/Request"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "unitree_api/msg/Request"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_c8e8b83e2cdc978c5279483dbfac8d4185a3e05c87799b424643f0fcb02d0fd0",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_c8e8b83e2cdc978c5279483dbfac8d4185a3e05c87799b424643f0fcb02d0fd0",
+            "expanded_nodes": 9,
+            "maximum_wire_bytes": 29,
+            "minimum_wire_bytes": 29,
+            "native_identity": null,
+            "type": "unitree_api/msg/RequestHeader"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "unitree_api/msg/RequestHeader"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_e3daab89abcdaf6526511a189cfcc0c78aaebe8aefc53814ba77f6eb80cdc4e2",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_e3daab89abcdaf6526511a189cfcc0c78aaebe8aefc53814ba77f6eb80cdc4e2",
+            "expanded_nodes": 3,
+            "maximum_wire_bytes": 16,
+            "minimum_wire_bytes": 16,
+            "native_identity": null,
+            "type": "unitree_api/msg/RequestIdentity"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "unitree_api/msg/RequestIdentity"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_3dcb1fe2998c880e2d9196967da172ccd9060ebc7f6d2feb8682dc3d104c2e6e",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_3dcb1fe2998c880e2d9196967da172ccd9060ebc7f6d2feb8682dc3d104c2e6e",
+            "expanded_nodes": 2,
+            "maximum_wire_bytes": 8,
+            "minimum_wire_bytes": 8,
+            "native_identity": null,
+            "type": "unitree_api/msg/RequestLease"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "unitree_api/msg/RequestLease"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_61f1a1eafec2f694d24cf798963dcb5a0c8f40e9791db5a502f0736cc8587bb8",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_61f1a1eafec2f694d24cf798963dcb5a0c8f40e9791db5a502f0736cc8587bb8",
+            "expanded_nodes": 3,
+            "maximum_wire_bytes": 5,
+            "minimum_wire_bytes": 5,
+            "native_identity": null,
+            "type": "unitree_api/msg/RequestPolicy"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "unitree_api/msg/RequestPolicy"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_c048bd88b9c7d86cde04e6a589c50aeba396be29acf0d58bc6972f2dd8d8b749",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_c048bd88b9c7d86cde04e6a589c50aeba396be29acf0d58bc6972f2dd8d8b749",
+            "expanded_nodes": 2057,
+            "maximum_wire_bytes": 6172,
+            "minimum_wire_bytes": 28,
+            "native_identity": null,
+            "type": "unitree_api/msg/Response"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "unitree_api/msg/Response"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_20ddef706f0be7d7e2e356ab2222b6e198bd36fd6d8a81706553d5a883de85e0",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_20ddef706f0be7d7e2e356ab2222b6e198bd36fd6d8a81706553d5a883de85e0",
+            "expanded_nodes": 6,
+            "maximum_wire_bytes": 20,
+            "minimum_wire_bytes": 20,
+            "native_identity": null,
+            "type": "unitree_api/msg/ResponseHeader"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "unitree_api/msg/ResponseHeader"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_aaad17e09d5d6549455f69060d1bb03ec81cddfc0ede323a5f2365a6c1a7b7b1",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_aaad17e09d5d6549455f69060d1bb03ec81cddfc0ede323a5f2365a6c1a7b7b1",
+            "expanded_nodes": 2,
+            "maximum_wire_bytes": 4,
+            "minimum_wire_bytes": 4,
+            "native_identity": null,
+            "type": "unitree_api/msg/ResponseStatus"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "unitree_api/msg/ResponseStatus"
+      }
+    ]
+  },
+  "hardware_qualified": false,
+  "kind": "industrial-complete-source-preparation-not-acceptance",
+  "mode": "prepare",
+  "native_delivery_qualified": false,
+  "native_metadata": null,
+  "native_owner_report": null,
+  "original_catalog": {
+    "bytes": 1624,
+    "path": "/home/macromodel/Documents/uwvm-test-261018/build/unitree-complete-domain-20261018-r1/unitree_api-materialized/catalog.preparation.json",
+    "sha256": "53c6e23933ceebb7b41d0373deb816e9e0c418a480789d60c6920bec0c1e5377"
+  },
+  "original_definitions": {
+    "definitions/unitree_api/msg/Request.msg": {
+      "bytes": 52,
+      "path": "/home/macromodel/Documents/uwvm-test-261018/build/unitree-complete-domain-20261018-r1/unitree_api-materialized/definitions/unitree_api/msg/Request.msg",
+      "sha256": "095718e795b7fb08210f32fad9b2ce519ca2b0a0976054e772bc89e48fbe14bc"
+    },
+    "definitions/unitree_api/msg/RequestHeader.msg": {
+      "bytes": 64,
+      "path": "/home/macromodel/Documents/uwvm-test-261018/build/unitree-complete-domain-20261018-r1/unitree_api-materialized/definitions/unitree_api/msg/RequestHeader.msg",
+      "sha256": "0783c0fd13fa9cd588bc2cd2b7961c98f1312ab7c1e730d62eae43901c093ab3"
+    },
+    "definitions/unitree_api/msg/RequestIdentity.msg": {
+      "bytes": 22,
+      "path": "/home/macromodel/Documents/uwvm-test-261018/build/unitree-complete-domain-20261018-r1/unitree_api-materialized/definitions/unitree_api/msg/RequestIdentity.msg",
+      "sha256": "ae144634bbd4b142308d3801fe0fe1712b4fad442fe15cca3552fcce127be2fd"
+    },
+    "definitions/unitree_api/msg/RequestLease.msg": {
+      "bytes": 8,
+      "path": "/home/macromodel/Documents/uwvm-test-261018/build/unitree-complete-domain-20261018-r1/unitree_api-materialized/definitions/unitree_api/msg/RequestLease.msg",
+      "sha256": "b16d384a7334bf5f9d59a90800984ba0e5fdf0b5bed931f2ce11557d0f49f879"
+    },
+    "definitions/unitree_api/msg/RequestPolicy.msg": {
+      "bytes": 27,
+      "path": "/home/macromodel/Documents/uwvm-test-261018/build/unitree-complete-domain-20261018-r1/unitree_api-materialized/definitions/unitree_api/msg/RequestPolicy.msg",
+      "sha256": "b93c83f07a266ed0de9071be1242d7d7c5cd247a5ec494cfd16720d1a41161ee"
+    },
+    "definitions/unitree_api/msg/Response.msg": {
+      "bytes": 48,
+      "path": "/home/macromodel/Documents/uwvm-test-261018/build/unitree-complete-domain-20261018-r1/unitree_api-materialized/definitions/unitree_api/msg/Response.msg",
+      "sha256": "deeb19c6fec4bf67790d33a9e4a391f717840e274f6882e968d7d65c57402a13"
+    },
+    "definitions/unitree_api/msg/ResponseHeader.msg": {
+      "bytes": 47,
+      "path": "/home/macromodel/Documents/uwvm-test-261018/build/unitree-complete-domain-20261018-r1/unitree_api-materialized/definitions/unitree_api/msg/ResponseHeader.msg",
+      "sha256": "808649ac643d66fa0620c11cec50d7d8f5cba576094cd50a941093b2f7ac673b"
+    },
+    "definitions/unitree_api/msg/ResponseStatus.msg": {
+      "bytes": 10,
+      "path": "/home/macromodel/Documents/uwvm-test-261018/build/unitree-complete-domain-20261018-r1/unitree_api-materialized/definitions/unitree_api/msg/ResponseStatus.msg",
+      "sha256": "1102bc217ff8add7007d6bd6ffb6d6f183ee1c9b029d20cd5b09cc7134a6ac41"
+    }
+  },
+  "original_source_inputs": {
+    "adapter": {
+      "bytes": 73639,
+      "sha256": "e830acc0c4a1cb243cb50f28cbabb71299dcc692ecd9a0b42dd725f4a4f361b3"
+    },
+    "bounded": {
+      "bytes": 239137,
+      "sha256": "3c40ed90910bde0ec15ae8976b0e34c37061c2eeacc121259604e7eaeba89f2d"
+    },
+    "exporter": {
+      "bytes": 10784,
+      "sha256": "55c5e504a1d61a648f73dd732aa0561f4b4dc0adf54dbe631857edf1564f3ac6"
+    },
+    "parent": {
+      "bytes": 61312,
+      "sha256": "1a73d6a87624e563bbb6be2624e77b51d7dba0f0f2fb524cda4079f493381826"
+    }
+  },
+  "source_preparation_executed": true
+}

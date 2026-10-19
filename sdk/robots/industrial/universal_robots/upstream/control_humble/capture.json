@@ -1,0 +1,29 @@
+{
+  "id": "control_humble",
+  "repository": "ros-controls/control_msgs",
+  "branch": "humble",
+  "commit": "4418bbf3efda12828795e4bb011742133c67a6e2",
+  "tree_git_sha1": "9e655261e019801059195e6edff98e933f276cf2",
+  "files": [
+    {
+      "path": "LICENSE",
+      "bytes": 1505,
+      "git_blob_sha1": "66e3e5167f84ff53438460714ba9122227947b34",
+      "sha256": "1731298f899c65fa14cbdfe340b2c9c5fe17e9e219749e7fe2434e9374f66956"
+    },
+    {
+      "path": "control_msgs/msg/JointTolerance.msg",
+      "bytes": 724,
+      "git_blob_sha1": "43767db5478710016304148f50e27f54be965cba",
+      "sha256": "8208718f17c1b1feb9418c3ed7ca73d029566cbf298ecda819c9e0b78cb379d3"
+    },
+    {
+      "path": "control_msgs/package.xml",
+      "bytes": 1173,
+      "git_blob_sha1": "65f739560371b644e4a0777eb3882caf920e85ce",
+      "sha256": "ef373248e7a00f544cbfbecfd02f413e1375dc436db20018aa91d5b16a8fb512"
+    }
+  ],
+  "default_authority": [],
+  "scope": "Selected original JointTolerance dependency only, not a native control_msgs build."
+}

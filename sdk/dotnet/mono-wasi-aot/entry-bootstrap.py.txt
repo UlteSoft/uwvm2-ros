@@ -1,0 +1,27 @@
+# This is reviewed literal -c bootstrap Source, NOT an ordinary candidate import.
+# The outer keeper admits the exact Python executable, startup/stdlib and these
+# bootstrap bytes before execution. This file cannot authenticate itself.
+import hashlib
+import os
+import stat
+import sys
+program,expected=sys.argv[1:3]
+fd=os.open(program,os.O_RDONLY|os.O_NONBLOCK|os.O_NOFOLLOW|os.O_CLOEXEC)
+try:
+    first=os.fstat(fd)
+    if not stat.S_ISREG(first.st_mode)or not 0<first.st_size<=2<<20:
+        raise ValueError('bounded actual entry Source required')
+    parts=[];n=0
+    while n<=first.st_size:
+        part=os.read(fd,min(65536,first.st_size+1-n))
+        if not part:break
+        parts.append(part);n+=len(part)
+    raw=b''.join(parts)
+    def key(s):return tuple(getattr(s,'st_'+k)for k in('dev','ino','mode','nlink','size','mtime_ns','ctime_ns'))
+    if n!=first.st_size or key(first)!=key(os.fstat(fd))or key(first)!=key(os.lstat(program))or hashlib.sha256(raw).hexdigest()!=expected:
+        raise ValueError('actual captured entry identity differs')
+finally:
+    os.close(fd)
+sys.argv=[program,*sys.argv[3:]]
+scope={'__name__':'__main__','__file__':program,'__captured_source__':raw}
+exec(compile(raw,program,'exec'),scope)

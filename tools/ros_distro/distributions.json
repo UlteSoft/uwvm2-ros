@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "scope": "COMPATIBILITY_TARGETS_ONLY_NOT_BUILD_OR_RUNTIME_RESULTS",
+  "checked_date": "2026-10-15",
+  "official_sources": [
+    "https://raw.githubusercontent.com/ros/rosdistro/master/index-v4.yaml",
+    "https://raw.githubusercontent.com/ros-infrastructure/rep/master/rep-0003.rst",
+    "https://raw.githubusercontent.com/ros-infrastructure/rep/master/rep-2000.rst",
+    "https://raw.githubusercontent.com/ros2/ros2_documentation/rolling/source/Releases.rst",
+    "https://raw.githubusercontent.com/ros2/ros2_documentation/rolling/source/Releases/lyrical/supported-platforms.rst"
+  ],
+  "architecture_targets": ["x86_64", "aarch64", "arm", "riscv64", "loongarch64", "ppc64le", "s390x"],
+  "additional_architecture_targets": ["i386", "mips", "mipsel", "mips64", "mips64el"],
+  "named_historical_ros1_source": "REP3 names five pre-Groovy distributions absent from index-v4. Each needs a locked source/configured SDK and real feature probes; no stock-catkin compatibility is implied.",
+  "architecture_scope": "Targets require their own actual SDK and ELF identity. This list does not assert upstream binary availability. Explicit ELF identities also admit MIPS or other source ports.",
+  "distributions": [
+    {"backend": 1, "distro": "boxturtle", "upstream_status": "end-of-life", "release": "2010-02", "candidate_ubuntu": "8.04", "upstream_cpp_floor": "03", "matrix_cpp": 17, "sdk_availability": "UNVERIFIED", "basis": "REP3_NOT_INDEX_V4", "source_lock_required": true},
+    {"backend": 1, "distro": "cturtle", "upstream_status": "end-of-life", "release": "2010-08", "candidate_ubuntu": "10.04", "upstream_cpp_floor": "03", "matrix_cpp": 17, "sdk_availability": "UNVERIFIED", "basis": "REP3_NOT_INDEX_V4", "source_lock_required": true},
+    {"backend": 1, "distro": "diamondback", "upstream_status": "end-of-life", "release": "2011-02", "candidate_ubuntu": "10.04", "upstream_cpp_floor": "03", "matrix_cpp": 17, "sdk_availability": "UNVERIFIED", "basis": "REP3_NOT_INDEX_V4", "source_lock_required": true},
+    {"backend": 1, "distro": "electric", "upstream_status": "end-of-life", "release": "2011-08", "candidate_ubuntu": "10.04", "upstream_cpp_floor": "03", "matrix_cpp": 17, "sdk_availability": "UNVERIFIED", "basis": "REP3_NOT_INDEX_V4", "source_lock_required": true},
+    {"backend": 1, "distro": "fuerte", "upstream_status": "end-of-life", "release": "2012-03", "candidate_ubuntu": "12.04", "upstream_cpp_floor": "03", "matrix_cpp": 17, "sdk_availability": "UNVERIFIED", "basis": "REP3_NOT_INDEX_V4", "source_lock_required": true},
+    {"backend": 1, "distro": "groovy", "upstream_status": "end-of-life", "candidate_ubuntu": "12.04", "upstream_cpp_floor": "03", "matrix_cpp": 17, "sdk_availability": "UNVERIFIED"},
+    {"backend": 1, "distro": "hydro", "upstream_status": "end-of-life", "candidate_ubuntu": "12.04", "upstream_cpp_floor": "03", "matrix_cpp": 17, "sdk_availability": "UNVERIFIED"},
+    {"backend": 1, "distro": "indigo", "upstream_status": "end-of-life", "candidate_ubuntu": "14.04", "upstream_cpp_floor": "03", "matrix_cpp": 17, "sdk_availability": "UNVERIFIED"},
+    {"backend": 1, "distro": "jade", "upstream_status": "end-of-life", "candidate_ubuntu": "14.04", "upstream_cpp_floor": "03", "matrix_cpp": 17, "sdk_availability": "UNVERIFIED"},
+    {"backend": 1, "distro": "kinetic", "upstream_status": "end-of-life", "candidate_ubuntu": "16.04", "upstream_cpp_floor": "11", "matrix_cpp": 17, "sdk_availability": "UNVERIFIED"},
+    {"backend": 1, "distro": "lunar", "upstream_status": "end-of-life", "candidate_ubuntu": "16.04", "upstream_cpp_floor": "11", "matrix_cpp": 17, "sdk_availability": "UNVERIFIED"},
+    {"backend": 1, "distro": "melodic", "upstream_status": "end-of-life", "candidate_ubuntu": "18.04", "upstream_cpp_floor": "14", "matrix_cpp": 17, "sdk_availability": "UNVERIFIED"},
+    {"backend": 1, "distro": "noetic", "upstream_status": "end-of-life", "candidate_ubuntu": "20.04", "upstream_cpp_floor": "14", "matrix_cpp": 17, "sdk_availability": "UNVERIFIED"},
+    {"backend": 2, "distro": "ardent", "upstream_status": "end-of-life", "candidate_ubuntu": "16.04", "upstream_cpp_floor": "14", "matrix_cpp": 17, "sdk_availability": "UNVERIFIED"},
+    {"backend": 2, "distro": "bouncy", "upstream_status": "end-of-life", "candidate_ubuntu": "18.04", "upstream_cpp_floor": "14", "matrix_cpp": 17, "sdk_availability": "UNVERIFIED"},
+    {"backend": 2, "distro": "crystal", "upstream_status": "end-of-life", "candidate_ubuntu": "18.04", "upstream_cpp_floor": "14", "matrix_cpp": 17, "sdk_availability": "UNVERIFIED"},
+    {"backend": 2, "distro": "dashing", "upstream_status": "end-of-life", "candidate_ubuntu": "18.04", "upstream_cpp_floor": "14", "matrix_cpp": 17, "sdk_availability": "UNVERIFIED"},
+    {"backend": 2, "distro": "eloquent", "upstream_status": "end-of-life", "candidate_ubuntu": "18.04", "upstream_cpp_floor": "14", "matrix_cpp": 17, "sdk_availability": "UNVERIFIED"},
+    {"backend": 2, "distro": "foxy", "upstream_status": "end-of-life", "candidate_ubuntu": "20.04", "upstream_cpp_floor": "14", "matrix_cpp": 17, "sdk_availability": "UNVERIFIED"},
+    {"backend": 2, "distro": "galactic", "upstream_status": "end-of-life", "candidate_ubuntu": "20.04", "upstream_cpp_floor": "17", "matrix_cpp": 17, "sdk_availability": "UNVERIFIED"},
+    {"backend": 2, "distro": "humble", "upstream_status": "active", "candidate_ubuntu": "22.04", "upstream_cpp_floor": "17", "matrix_cpp": 17, "sdk_availability": "UNVERIFIED"},
+    {"backend": 2, "distro": "iron", "upstream_status": "end-of-life", "candidate_ubuntu": "22.04", "upstream_cpp_floor": "17", "matrix_cpp": 17, "sdk_availability": "UNVERIFIED"},
+    {"backend": 2, "distro": "jazzy", "upstream_status": "active", "candidate_ubuntu": "24.04", "upstream_cpp_floor": "17", "matrix_cpp": 17, "sdk_availability": "UNVERIFIED"},
+    {"backend": 2, "distro": "kilted", "upstream_status": "active", "candidate_ubuntu": "24.04", "upstream_cpp_floor": "17", "matrix_cpp": 17, "sdk_availability": "UNVERIFIED"},
+    {"backend": 2, "distro": "lyrical", "upstream_status": "active", "candidate_ubuntu": "26.04", "upstream_cpp_floor": "20", "matrix_cpp": 20, "sdk_availability": "UNVERIFIED"},
+    {"backend": 2, "distro": "rolling", "upstream_status": "rolling", "candidate_ubuntu": null, "upstream_cpp_floor": null, "matrix_cpp": 20, "sdk_availability": "UNVERIFIED"}
+  ],
+  "legacy": {"distro": "legacy", "description": "Explicit locked source/backport profile, including pre-Groovy rosbuild deployments. No stock-catkin or upstream support claim is implied."},
+  "notes": [
+    "The candidate Ubuntu column is a useful historical SDK selection, not the complete upstream platform support table.",
+    "The matrix compiler floor is this implementation's requirement, not a rewritten upstream REP language requirement.",
+    "Rolling's platform and language requirements move. Probe and pin the actual current SDK; no frozen Ubuntu guess is used.",
+    "REP 2000's current raw document can lag the release index; the separate official Lyrical platform document specifies C++20.",
+    "EOL metadata, source availability, or an OCI tag never counts as a successful build, behavior, or security test."
+  ]
+}

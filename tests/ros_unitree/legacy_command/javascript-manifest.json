@@ -1,0 +1,86 @@
+{
+  "schema": "uwvm-embedded-javascript-build-v1",
+  "mode": "command",
+  "backend": 1,
+  "entry": "sdk/robots/unitree/examples/legacy/lowlevel.mjs",
+  "modules": [
+    {
+      "name": "sdk/javascript/abi.mjs",
+      "source": "sdk/javascript/abi.mjs"
+    },
+    {
+      "name": "sdk/javascript/raw.mjs",
+      "source": "sdk/javascript/raw.mjs"
+    },
+    {
+      "name": "sdk/javascript/roswasm.mjs",
+      "source": "sdk/javascript/roswasm.mjs"
+    },
+    {
+      "name": "sdk/javascript/async.mjs",
+      "source": "sdk/javascript/async.mjs"
+    },
+    {
+      "name": "sdk/javascript/relay.mjs",
+      "source": "sdk/javascript/relay.mjs"
+    },
+    {
+      "name": "sdk/javascript/codecs.mjs",
+      "source": "sdk/javascript/codecs.mjs"
+    },
+    {
+      "name": "sdk/javascript/scheduling.mjs",
+      "source": "sdk/javascript/scheduling.mjs"
+    },
+    {
+      "name": "sdk/javascript/ownership.mjs",
+      "source": "sdk/javascript/ownership.mjs"
+    },
+    {
+      "name": "sdk/javascript/events.mjs",
+      "source": "sdk/javascript/events.mjs"
+    },
+    {
+      "name": "sdk/javascript/copied_transport.mjs",
+      "source": "sdk/javascript/copied_transport.mjs"
+    },
+    {
+      "name": "sdk/javascript/guest.mjs",
+      "source": "sdk/javascript/guest.mjs"
+    },
+    {
+      "name": "sdk/javascript/guest/bootstrap.mjs",
+      "source": "sdk/javascript/guest/bootstrap.mjs"
+    },
+    {
+      "name": "sdk/robots/unitree/examples/legacy/lowlevel.mjs",
+      "source": "sdk/robots/unitree/examples/legacy/lowlevel.mjs"
+    },
+    {
+      "name": "sdk/robots/unitree/examples/legacy/values.mjs",
+      "source": "sdk/robots/unitree/examples/legacy/values.mjs"
+    },
+    {
+      "name": "sdk/robots/unitree/examples/legacy/bounded_records.mjs",
+      "source": "sdk/robots/unitree/examples/legacy/bounded_records.mjs"
+    }
+  ],
+  "imports": [],
+  "exports": [],
+  "limits": {
+    "heap_bytes": 33554432,
+    "stack_bytes": 524288,
+    "max_jobs": 4096,
+    "interrupt_polls": 1000000,
+    "input_bytes": 32768,
+    "output_bytes": 32768,
+    "print_bytes": 4096,
+    "max_text_bytes": 4193786,
+    "max_modules": 32,
+    "max_source_bytes": 8388608
+  },
+  "random_seed": 1,
+  "optimization": "-O2",
+  "initial_memory": 16777216,
+  "maximum_memory": 67108864
+}

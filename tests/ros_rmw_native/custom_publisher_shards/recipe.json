@@ -1,0 +1,49 @@
+{
+  "format_version": 1,
+  "source_only": true,
+  "actual_executed": 0,
+  "prerequisites": [
+    "full independent source peer of this package",
+    "same-byte integrated final D4 helpers and probe/features; original APIs and legacy bodies preserved",
+    "actual complete generated catalog/manifest/native provider + all actual installed original SDK packages and full 19-root inventories; no fabricated identity",
+    "actual SDK compile/link features, compiler/sysroot and bounded external process/tree/cgroup/disk/deadline owner"
+  ],
+  "configure_empty": [
+    "cmake",
+    "-S",
+    "<source>/tests/ros_rmw_native/custom_publisher_shards",
+    "-B",
+    "<owned-build>/empty",
+    "-DUWVM_SOURCE_ROOT=<actual-integrated-source>",
+    "-DUWVM_ROS2_GATEWAY_FEATURE_DIR=<actual-Gateway-feature-dir>",
+    "-DCMAKE_CXX_STANDARD=<actual-17-20-23-26>",
+    "-DCMAKE_BUILD_TYPE=Release",
+    "-DCMAKE_PREFIX_PATH=<actual-installed-SDK-prefix>"
+  ],
+  "configure_custom_extra": [
+    "-DUWVM_ROS_CUSTOM_REGISTRY_HEADER=<actual-complete-generated-manifest>",
+    "-DUWVM_ROS_CUSTOM_ROS2_HEADER=<actual-complete-native-provider>",
+    "-DUWVM_ROS_CUSTOM_ROS2_PACKAGES=<complete-explicit-selected-package-list>",
+    "-DUWVM_ROS2_CUSTOM_TOPIC_SHARDS=<actual-1..256>"
+  ],
+  "build": [
+    "cmake",
+    "--build",
+    "<owned-build>/<actual-empty-or-custom>",
+    "--target",
+    "custom-owned-publisher-contract",
+    "--parallel",
+    "1"
+  ],
+  "run_only_by_independent_owner": [
+    "<owned-build>/<actual-empty-or-custom>/custom-owned-publisher-contract"
+  ],
+  "required_matrix": [
+    "empty provider with no shard/dispatcher object",
+    "actual nonempty provider with complete whole-source MD/object/link closure for all S shards, default S32",
+    "actual same complete provider with S1 and with S above row count; no row projection",
+    "actual omitted-shard-object link refusal (not success/skip)",
+    "actual independent custom positive publisher/inspect/fullvalue/nativeGID+actualQoS/retire witness for every selected schema-family and original SDK route, separately from the metadata/invalid-argument source contract"
+  ],
+  "credit_boundary": "No executed command by author; future metadata-only source contract marker is not actual endpoint creation, Host/Runtime authority, ROS delivery, whole SDK/vendor or performance acceptance."
+}

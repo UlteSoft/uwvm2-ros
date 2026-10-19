@@ -1,0 +1,10 @@
+{
+  "format": "uwvm-ros-custom-fixed-v1",
+  "types": [
+    {
+      "ros_version": 2,
+      "type": "uwvm_ros_custom_test_msgs/msg/FixedSample",
+      "file": "interfaces/msg/FixedSample.msg"
+    }
+  ]
+}

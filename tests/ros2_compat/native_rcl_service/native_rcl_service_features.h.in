@@ -1,0 +1,10 @@
+#pragma once
+/* Only an actual selected-SDK compile AND link observation enables this API.
+ * Header presence or a distribution spelling never enables a native provider. */
+#cmakedefine01 UWVM_NATIVE_RCL_SERVICE_API
+#cmakedefine01 UWVM_NATIVE_RCL_AVAILABILITY_API
+#if UWVM_NATIVE_RCL_SERVICE_API
+#ifndef UWVM_ROS2_HAVE_COMPLETE_RMW_QOS
+#define UWVM_ROS2_HAVE_COMPLETE_RMW_QOS 1
+#endif
+#endif

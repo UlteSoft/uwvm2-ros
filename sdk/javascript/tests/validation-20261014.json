@@ -1,0 +1,190 @@
+{
+  "status": "PARTIAL",
+  "source_revision_scope": "JS/AS SDK additions only",
+  "generated_at_utc": "2026-10-13T22:42:11.277856+00:00",
+  "javascript_pure_tests": {
+    "status": "PASS",
+    "scope": "pure JavaScript codec and in-memory adapter tests; no ROS/uwvm runtime verdict",
+    "goldenPositive": 57,
+    "goldenNegative": 11,
+    "checks": 238
+  },
+  "javascript_syntax_checked_files": 9,
+  "assemblyscript_static_inventory": {
+    "ROS1": 34,
+    "ROS2": 39,
+    "request_dispatch_ROS1": 25,
+    "request_dispatch_ROS2": 29,
+    "status": "PASS_STATIC_ONLY"
+  },
+  "assemblyscript_prepared_golden_fixtures": {
+    "positive": 57,
+    "negative": 11
+  },
+  "assemblyscript_compilation": "NOT_EXECUTED; authorized Linux cgroup host unavailable",
+  "assemblyscript_runtime": "NOT_EXECUTED",
+  "native_ROS_integration": "NOT_EXECUTED",
+  "javascript_production_bridge": "Not supplied by this SDK; explicit authority-aware embedder is required",
+  "source_files": [
+    {
+      "path": "sdk/assemblyscript/README.md",
+      "bytes": 6612,
+      "sha256": "328b47aa48c8fb0af96bad01d1f94aea2d29d394eb8ecd737a250e57a13e6650"
+    },
+    {
+      "path": "sdk/assemblyscript/api.ts",
+      "bytes": 3806,
+      "sha256": "a7f5ddbd1fe429408bf5069080842a807347cf6a55ced13867e98999a7c0a2b0"
+    },
+    {
+      "path": "sdk/assemblyscript/codecs.ts",
+      "bytes": 23456,
+      "sha256": "0ce5e1cbf87796ee8a58833c479b268072417e2e9656cbc231fe78e1bf0d0134"
+    },
+    {
+      "path": "sdk/assemblyscript/package.json",
+      "bytes": 297,
+      "sha256": "f457ae10f72d6cd59452898fd748a8276025a537dc176c696b51da32a42f74ff"
+    },
+    {
+      "path": "sdk/assemblyscript/ros1/raw.ts",
+      "bytes": 28423,
+      "sha256": "ecfd7383e2930086ca672384a2b96b4f024bfeb3ef8b6c44c7258c9e18a91eee"
+    },
+    {
+      "path": "sdk/assemblyscript/ros1/roswasm.ts",
+      "bytes": 6509,
+      "sha256": "d8df23bc1dd515d60b6c565944f7399beddf8a51f4b3685d28e3effb4857e284"
+    },
+    {
+      "path": "sdk/assemblyscript/ros2/raw.ts",
+      "bytes": 32644,
+      "sha256": "201e8b18bb9e4a141e97046441d9a3101dcc2911d2e0e27c42a9aeffaea4e478"
+    },
+    {
+      "path": "sdk/assemblyscript/ros2/roswasm.ts",
+      "bytes": 7168,
+      "sha256": "1bf3670fbe1a1114fad944c22b17821359f3e7275167db80f60ba9ee333f4963"
+    },
+    {
+      "path": "sdk/assemblyscript/roswasm.ts",
+      "bytes": 24410,
+      "sha256": "aa4b79cde86beb467deaeaad0f36905c9406315d289d6475ad48772656540552"
+    },
+    {
+      "path": "sdk/assemblyscript/tests/adapter_contracts.ts",
+      "bytes": 3660,
+      "sha256": "49aa13dd4ad5d384c3d8ea60af4e2c555152f495d73526a9cb22b5ab3a957b80"
+    },
+    {
+      "path": "sdk/assemblyscript/tests/codec_vectors.ts",
+      "bytes": 28548,
+      "sha256": "bbcea791093e870ec993aaeadc01f5465681d0c1d075dc04eb99d542199947fb"
+    },
+    {
+      "path": "sdk/assemblyscript/tests/coverage_ros1.ts",
+      "bytes": 3978,
+      "sha256": "e63993eefce6f8e42dc42756aaeadf856810edf3f31d77bc9ad17c91af2702af"
+    },
+    {
+      "path": "sdk/assemblyscript/tests/coverage_ros2.ts",
+      "bytes": 4489,
+      "sha256": "a6586af4d0eaee41473e4799c0b8c79a89c31a5e95f8afcf2e1b1db01907cc5e"
+    },
+    {
+      "path": "sdk/assemblyscript/tests/highlevel_coverage.ts",
+      "bytes": 4861,
+      "sha256": "30874214c9194d1bde1331743f0e2792259d754f67395e5fa1d2ddc5e23a0bce"
+    },
+    {
+      "path": "sdk/docs/javascript-assemblyscript.md",
+      "bytes": 3117,
+      "sha256": "dc6da31ab8d1764128dbfe55b01a26933eb620accbb5ab6c489a502320a6234d"
+    },
+    {
+      "path": "sdk/examples/assemblyscript/01-raw.ts",
+      "bytes": 1216,
+      "sha256": "5cf44fae29e5de69ae4106439b950f51bd35b2bc9fe365051ff6ceb599016c69"
+    },
+    {
+      "path": "sdk/examples/assemblyscript/02-codecs.ts",
+      "bytes": 1282,
+      "sha256": "0e9f237893c7d0229727fdf168420ff3f15a568822ef0d433d240a73b1ba693c"
+    },
+    {
+      "path": "sdk/examples/assemblyscript/03-node.ts",
+      "bytes": 1459,
+      "sha256": "480b0c231c57e6e5c8a26071174772501ec3601a11db4874fa5d888b26896e6f"
+    },
+    {
+      "path": "sdk/examples/assemblyscript/04-resources.ts",
+      "bytes": 1509,
+      "sha256": "f2f22116f098e94f660fcb7b72d800346d1333541080238949e57f8f8ec5f036"
+    },
+    {
+      "path": "sdk/examples/assemblyscript/README.md",
+      "bytes": 1162,
+      "sha256": "b0d8306c7fd3519af8be4eb55c497a204cd2bc6abb7ca88c3192e1d0598c8d69"
+    },
+    {
+      "path": "sdk/examples/javascript/01-raw.mjs",
+      "bytes": 1953,
+      "sha256": "6ff2d955d8380c124f92a15d28cecc34cd38559a3201abad856922264c2eb401"
+    },
+    {
+      "path": "sdk/examples/javascript/02-codecs.mjs",
+      "bytes": 1155,
+      "sha256": "ab1807bbfe08344d358ac35d8b7c97c100ca5d14d484de0381cdb94d1af68a57"
+    },
+    {
+      "path": "sdk/examples/javascript/03-node.mjs",
+      "bytes": 1377,
+      "sha256": "cd10dfa2d350a9434e308216e9375cab3112930ad26bc1e8387c0dfd983d575b"
+    },
+    {
+      "path": "sdk/examples/javascript/04-resources.mjs",
+      "bytes": 1414,
+      "sha256": "8243b218db00e216e2fad1723b04684a8b8f569c99a8276ce0e1c9148c431518"
+    },
+    {
+      "path": "sdk/examples/javascript/README.md",
+      "bytes": 1028,
+      "sha256": "67b1bfe8c8d5428b8fc929ecded2b78db3b4542916895b45f6bfc1b17671d39f"
+    },
+    {
+      "path": "sdk/javascript/README.md",
+      "bytes": 6223,
+      "sha256": "75946cc25f4e155b2f75a67a6fd7a9b943cb1492e03aeff35626d8e9fef92a98"
+    },
+    {
+      "path": "sdk/javascript/abi.mjs",
+      "bytes": 45030,
+      "sha256": "d350b76d57b4f8572a17340baa01233208f37389236c1a293cfcbf075b3dcb45"
+    },
+    {
+      "path": "sdk/javascript/codecs.mjs",
+      "bytes": 18138,
+      "sha256": "a34d4805d5a989dd8b1fdf6bb806f02f1c539cd3edae5401d9a803567ce77a62"
+    },
+    {
+      "path": "sdk/javascript/package.json",
+      "bytes": 410,
+      "sha256": "71991c1ef2798f3d1eaca957e2a27a989bbf69b8153a1e2ce57f966ae48cad69"
+    },
+    {
+      "path": "sdk/javascript/raw.mjs",
+      "bytes": 5446,
+      "sha256": "dedc969e2ce91b857fb293ea1a4f174f5be3255665b8b398a5104015b11a9d70"
+    },
+    {
+      "path": "sdk/javascript/roswasm.mjs",
+      "bytes": 28294,
+      "sha256": "dbcc9114270758a590c1d724aa3de857afa5adb034d2a3fa3cb7ea8090f8a3ac"
+    },
+    {
+      "path": "sdk/javascript/tests/test.mjs",
+      "bytes": 13845,
+      "sha256": "c250db686b8c139e8d29464770a79d0684e16d6cd8fc4f77b88acd5843249769"
+    }
+  ]
+}

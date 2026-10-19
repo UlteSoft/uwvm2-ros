@@ -1,0 +1,652 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fresh actual LLVM-full ROS debugger Runtime build receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format_version",
+    "kind",
+    "status",
+    "source",
+    "source_manifest_sha256",
+    "profile",
+    "runtime_backend",
+    "binary",
+    "elf",
+    "input_pins",
+    "commands",
+    "compile_records",
+    "link",
+    "llvm_closure",
+    "full_dependencies_verified",
+    "source_preserved",
+    "inputs_preserved",
+    "products_preserved",
+    "no_reuse",
+    "reused_products",
+    "compilation_executed",
+    "runtime_integration_executed"
+  ],
+  "properties": {
+    "format_version": {
+      "enum": [
+        1,
+        2
+      ]
+    },
+    "kind": {
+      "const": "ros-debugger-runtime-build"
+    },
+    "status": {
+      "enum": [
+        "PASS",
+        "FAIL",
+        "BLOCKED"
+      ]
+    },
+    "source": {
+      "$ref": "#/$defs/path"
+    },
+    "source_manifest_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "profile": {
+      "enum": [
+        "ros1",
+        "ros2",
+        "dual"
+      ]
+    },
+    "runtime_backend": {
+      "const": "llvm-full"
+    },
+    "binary": {
+      "$ref": "#/$defs/pin"
+    },
+    "elf": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "machine",
+        "bits",
+        "endian"
+      ],
+      "properties": {
+        "machine": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "bits": {
+          "enum": [
+            32,
+            64
+          ]
+        },
+        "endian": {
+          "enum": [
+            "little",
+            "big"
+          ]
+        }
+      }
+    },
+    "input_pins": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/pin"
+      }
+    },
+    "commands": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "$ref": "#/$defs/command"
+      }
+    },
+    "compile_records": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "command_index",
+          "source",
+          "object",
+          "dependency_file",
+          "dependencies"
+        ],
+        "properties": {
+          "command_index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "source": {
+            "$ref": "#/$defs/pin"
+          },
+          "object": {
+            "$ref": "#/$defs/pin"
+          },
+          "dependency_file": {
+            "$ref": "#/$defs/pin"
+          },
+          "dependencies": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/$defs/pin"
+            }
+          }
+        }
+      }
+    },
+    "link": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "command_index",
+        "objects",
+        "explicit_inputs",
+        "response_files",
+        "archive_statistics",
+        "llvm_archive_statistics"
+      ],
+      "properties": {
+        "command_index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "objects": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/pin"
+          }
+        },
+        "explicit_inputs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/pin"
+          }
+        },
+        "response_files": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/pin"
+          }
+        },
+        "archive_statistics": {
+          "$ref": "#/$defs/pin"
+        },
+        "llvm_archive_statistics": {
+          "$ref": "#/$defs/llvm_archive_statistics"
+        }
+      }
+    },
+    "llvm_closure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "compiler",
+        "headers",
+        "libraries",
+        "archives",
+        "response_files",
+        "configuration"
+      ],
+      "properties": {
+        "compiler": {
+          "$ref": "#/$defs/pin"
+        },
+        "headers": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/pin"
+          }
+        },
+        "libraries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/pin"
+          }
+        },
+        "archives": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/pin"
+          }
+        },
+        "response_files": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/pin"
+          }
+        },
+        "configuration": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/pin"
+          }
+        }
+      }
+    },
+    "full_dependencies_verified": {
+      "type": "boolean"
+    },
+    "source_preserved": {
+      "type": "boolean"
+    },
+    "inputs_preserved": {
+      "type": "boolean"
+    },
+    "products_preserved": {
+      "type": "boolean"
+    },
+    "no_reuse": {
+      "const": true
+    },
+    "reused_products": {
+      "const": 0
+    },
+    "compilation_executed": {
+      "type": "boolean"
+    },
+    "runtime_integration_executed": {
+      "const": false
+    },
+    "error": {
+      "type": "string"
+    },
+    "build_configuration": {
+      "$ref": "#/$defs/pin"
+    },
+    "runtime_execution": {
+      "$ref": "target-execution.schema.json#/$defs/receipt"
+    },
+    "build_evidence": {
+      "$ref": "#/$defs/pin"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "PASS"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "full_dependencies_verified": {
+            "const": true
+          },
+          "source_preserved": {
+            "const": true
+          },
+          "inputs_preserved": {
+            "const": true
+          },
+          "products_preserved": {
+            "const": true
+          },
+          "compilation_executed": {
+            "const": true
+          },
+          "commands": {
+            "items": {
+              "properties": {
+                "returncode": {
+                  "const": 0
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "format_version": {
+            "const": 1
+          }
+        }
+      },
+      "then": {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "build_configuration"
+              ]
+            },
+            {
+              "required": [
+                "runtime_execution"
+              ]
+            },
+            {
+              "required": [
+                "build_evidence"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "format_version": {
+            "const": 2
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "build_configuration",
+          "runtime_execution",
+          "build_evidence"
+        ]
+      }
+    }
+  ],
+  "$defs": {
+    "path": {
+      "type": "string",
+      "pattern": "^/",
+      "minLength": 2
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "pin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "device",
+        "inode",
+        "bytes",
+        "mtime_ns",
+        "ctime_ns",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/path"
+        },
+        "device": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "inode": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "mtime_ns": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ctime_ns": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "argv",
+        "cwd",
+        "returncode",
+        "stdout",
+        "stderr"
+      ],
+      "properties": {
+        "role": {
+          "enum": [
+            "compile",
+            "link",
+            "configure",
+            "tool-version"
+          ]
+        },
+        "argv": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "cwd": {
+          "$ref": "#/$defs/path"
+        },
+        "returncode": {
+          "type": "integer"
+        },
+        "stdout": {
+          "$ref": "#/$defs/pin"
+        },
+        "stderr": {
+          "$ref": "#/$defs/pin"
+        }
+      }
+    },
+    "llvm_archive_statistics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format_version",
+        "kind",
+        "statistics",
+        "offered_archive_operands",
+        "rows",
+        "archives",
+        "selected_archive_count",
+        "selected_archives_missing_from_trace_only_zero_extracted"
+      ],
+      "properties": {
+        "format_version": {
+          "const": 1
+        },
+        "kind": {
+          "const": "llvm-archive-statistics-v1"
+        },
+        "statistics": {
+          "$ref": "#/$defs/pin"
+        },
+        "offered_archive_operands": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/path"
+          }
+        },
+        "rows": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16384,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "line",
+              "archive",
+              "reported_archive",
+              "members",
+              "extracted",
+              "occurrence",
+              "path_observation"
+            ],
+            "properties": {
+              "line": {
+                "type": "integer",
+                "minimum": 2
+              },
+              "archive": {
+                "$ref": "#/$defs/path"
+              },
+              "reported_archive": {
+                "$ref": "#/$defs/path"
+              },
+              "members": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "extracted": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "occurrence": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "path_observation": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "canonical",
+                  "components"
+                ],
+                "properties": {
+                  "canonical": {
+                    "$ref": "#/$defs/path"
+                  },
+                  "components": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "path",
+                        "device",
+                        "inode",
+                        "mode"
+                      ],
+                      "properties": {
+                        "path": {
+                          "$ref": "#/$defs/path"
+                        },
+                        "device": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "inode": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "mode": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "target": {
+                          "type": "string"
+                        },
+                        "bytes": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "mtime_ns": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "ctime_ns": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "nlink": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "archives": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16384,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "archive",
+              "members",
+              "occurrences",
+              "extracted",
+              "trace_present",
+              "selected_LLVM",
+              "scope",
+              "native_architecture_qualified"
+            ],
+            "properties": {
+              "archive": {
+                "$ref": "#/$defs/pin"
+              },
+              "members": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "occurrences": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "extracted": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "trace_present": {
+                "type": "boolean"
+              },
+              "selected_LLVM": {
+                "type": "boolean"
+              },
+              "scope": {
+                "enum": [
+                  "selected-provider",
+                  "explicit-system",
+                  "implicit-driver-system"
+                ]
+              },
+              "native_architecture_qualified": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "selected_archive_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "selected_archives_missing_from_trace_only_zero_extracted": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/path"
+          }
+        }
+      }
+    }
+  },
+  "$comment": "PASS means actual fresh compilation with full original -MD dependencies and exact compiler/link/rsp/LLVM input closure, not Runtime integration. Producer must verify depfile parsing, exact command/object/output association, all raw logs and before/after physical pins. Consumer reopens all pins, requires matching frozen source and selected profile/ELF, and refuses interpreter/reused products. Native ELF62 is a supported host case; other actual matching targets require their selected execution/ownership adapter, never a guessed architecture. No implicit ROS rights. V2 adds the original build configuration full7 and independently observed execution provenance; those fields do not assert that QEMU/Runtime or any debugger case executed. Native v1 fields stay unchanged. V2 explicitly pins whole original build evidence; actual complete provider/sysroot catalogs must equal its terminal catalogs before actors and remain equal after owned process cleanup. The current link retains actual LLD archive statistics plus the separate unmodified extraction trace. Every offered package archive remains full7/native-member/ordered-response-qualified; zero extracted is the only allowed absence from trace. Implicit system archives remain in original physical roots, with exact empty ar distinguished from native object archives. No unused member is claimed extracted."
+}

@@ -31,6 +31,12 @@ module;
 #include <atomic>
 #include <bit>
 #include <utility>
+#include <stop_token>
+#if defined(__linux__)
+#include <pthread.h>
+#include <sched.h>
+#include <cerrno>
+#endif
 // macro
 #include <uwvm2/utils/macro/push_macros.h>
 // platform
@@ -47,6 +53,7 @@ import uwvm2.utils.mutex;
 import uwvm2.object.memory.wasm_page;
 import uwvm2.object.memory.platform_page;
 import uwvm2.object.memory.signal;
+import :threaded_grow_types;
 
 #ifndef UWVM_MODULE
 # define UWVM_MODULE

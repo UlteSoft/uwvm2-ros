@@ -27,7 +27,12 @@
 # include <atomic>
 # include <cstddef>
 # include <cstdint>
+# if defined(UWVM2_TEST_CAPTURE_NATIVE_JIT_OBJECT)
+#  include <fcntl.h>
+#  include <uwvm2/runtime/lib/uwvm_runtime_posix_abi.h>
+# endif
 # include <memory>
+# include <limits>
 # include <string>
 # include <utility>
 // macro
@@ -57,6 +62,10 @@
 #endif
 
 #if defined(UWVM_RUNTIME_LLVM_JIT)
+#if defined(__linux__) && (defined(__GNUC__) || defined(__clang__))
+# pragma GCC visibility push(hidden)
+#endif
+
 UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
 {
     namespace details
@@ -116,9 +125,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
         cache_context derived_context{};
         bool has_derived_context{};
 
-        [[nodiscard]] inline constexpr cache_context make_module_context(::llvm::Module const& module) UWVM_THROWS
+        [[nodiscard]] inline cache_context make_module_context(::llvm::Module const& module) UWVM_THROWS
         {
             auto ctx{base_context};
+            auto const& layout{module.getDataLayoutStr()};
+            ctx.data_layout.clear();
+            ::fast_io::io::print(::uwvm2::utils::container::u8string_ref_uwvm{::std::addressof(ctx.data_layout)},
+                                ::uwvm2::utils::container::u8string_view{reinterpret_cast<char8_t const*>(layout.data()), layout.size()});
             // Some callers already provide a fully qualified cache key, so avoid expensive bitcode hashing in that path.
             if(ctx.cache_key_is_complete) { return ctx; }
 
@@ -180,9 +193,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
         }
 
     public:
-        inline constexpr llvm_jit_object_cache() noexcept = default;
+        // Borrow THIS stack-owned adapter's configured context after its real
+        // constructor consumed the materializer's local context. Full callers
+        // set cache_key_is_complete before construction, so no derived lookup
+        // context replaces it. This is compiler-input DATA, not cache adoption.
+        // The actual materializer keeps this owner alive through finalizeObject,
+        // symbol resolution, and synchronous receipt copy; the borrow never
+        // escapes into the publication. This metadata copy explicitly strips the weak origin.
+        [[nodiscard]] inline cache_context actual_materializer_base_context() const noexcept
+        { auto data{base_context}; data.origin.reset(); return data; }
+        inline llvm_jit_object_cache() noexcept = default;
 
-        inline explicit constexpr llvm_jit_object_cache(cache_context ctx, cache_policy pol = default_cache_policy()) noexcept :
+        inline explicit llvm_jit_object_cache(cache_context ctx, cache_policy pol = default_cache_policy()) noexcept :
             base_context{::std::move(ctx)}, policy{pol}
         {
         }
@@ -201,6 +223,57 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
 
             auto const buffer{object.getBuffer()};
             auto const first{reinterpret_cast<::std::byte const*>(buffer.data())};
+# if defined(UWVM2_TEST_CAPTURE_NATIVE_JIT_OBJECT)
+            // Test-only, compile-time object capture lets QEMU inspect the
+            // actual MCJIT output on targets whose persistent cache must stay
+            // disabled because its object embeds process-local addresses.
+            // This writes bytes for inspection only; getObject never loads them.
+#  if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__WINE__)
+#   ifndef _WIN32_WINDOWS
+            auto const capture_path{details::win32_environment_variable(u"UWVM2_TEST_CAPTURE_NATIVE_JIT_OBJECT")};
+#   else
+            auto const capture_path{details::win32_environment_variable("UWVM2_TEST_CAPTURE_NATIVE_JIT_OBJECT")};
+#   endif
+            auto const path{reinterpret_cast<char const*>(capture_path.c_str())};
+#  else
+            auto const path{::uwvm2::runtime::lib::posix_abi::getenv_noexcept("UWVM2_TEST_CAPTURE_NATIVE_JIT_OBJECT")};
+#  endif
+            if(path != nullptr && *path != '\0')
+            {
+                // The emitted object may contain process-local addresses. The
+                // harness supplies a private directory; exclusive no-follow
+                // creation prevents overwriting another file or symlink.
+#  if defined(UWVM_CPP_EXCEPTIONS)
+                try
+#  endif
+                {
+                    // native_file owns the exclusive capture through every
+                    // partial write/error. No follow/inherit mode is supplied,
+                    // so fast_io retains O_NOFOLLOW/O_CLOEXEC on POSIX.
+                    ::fast_io::native_file capture{::fast_io::mnp::os_c_str(path),
+                        ::fast_io::open_mode::out | ::fast_io::open_mode::excl,
+                        static_cast<::fast_io::perms>(0600)};
+                    if(buffer.size() > static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)()))
+                    { ::fast_io::fast_terminate(); }
+                    if(!buffer.empty())
+                    {
+                        // [first, first + buffer.size()) is the live LLVM object.
+                        // [safe                       ] unsafe (one-past)
+                        //         ^^ end is formed only after the size bound above;
+                        // write_all_bytes owns the bounded partial-write cursor.
+                        auto const end{first + buffer.size()};
+                        ::fast_io::operations::write_all_bytes(capture, first, end);
+                    }
+                    // The checked fast_io close invalidates its owner even on
+                    // failure; destruction can never close a recycled handle.
+                    capture.close();
+                }
+#  if defined(UWVM_CPP_EXCEPTIONS)
+                catch(::fast_io::error const&)
+                { ::fast_io::fast_terminate(); }
+#  endif
+            }
+# endif
             // Store asynchronously because object emission is on the JIT compile path and disk latency should not block it.
             auto const status{store_object_async(ctx, first, buffer.size(), policy, module_name, true)};
             details::runtime_log_line(u8"object-cache-store-enqueue module=\"",
@@ -233,6 +306,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
         }
     };
 }  // namespace uwvm2::runtime::llvm_jit_cache
+#endif
+
+#if defined(__linux__) && (defined(__GNUC__) || defined(__clang__))
+# pragma GCC visibility pop
 #endif
 
 #ifndef UWVM_MODULE

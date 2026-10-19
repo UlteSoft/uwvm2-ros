@@ -25,6 +25,8 @@ module;
 export module uwvm2.uwvm.run;
 export import :retval;
 export import :loader;
+export import :owned_source;
+export import :threaded_signal_cli;
 export import :run;
 
 #ifndef UWVM_MODULE

@@ -1,0 +1,188 @@
+{
+  "format_version": 1,
+  "source_only": true,
+  "actual_executed": 0,
+  "real_upstream_rmw": true,
+  "forbidden_include": "sdk/compat/rclc/include",
+  "build_prerequisites": [
+    "exact source-integrated A current platform/cmake",
+    "exact source-integrated B revision7 QoS semantic equality and zero-GID implementation closure; earlier revision5 snapshots are historical only",
+    "this C cohort",
+    "one complete admitted original Jazzy RMW/rcutils/rosidl/std_msgs/example_interfaces C SDK; no substitute structs",
+    "actual independent native RIHS export for deployment use; model self-selection is not this evidence"
+  ],
+  "core_configure": [
+    "cmake",
+    "-S",
+    "sdk/rmw_wasm/cmake",
+    "-B",
+    "<owned-build>/rmw",
+    "-DBUILD_SHARED_LIBS=OFF",
+    "-DCMAKE_PREFIX_PATH=<actual-admitted-static-SDK-and-A-prefix>"
+  ],
+  "models_configure": [
+    "cmake",
+    "-S",
+    "sdk/rmw_wasm/c_provider",
+    "-B",
+    "<owned-build>/c-model",
+    "-DCMAKE_PREFIX_PATH=<actual-admitted-SDK-and-installed-A-B-C-prefix>"
+  ],
+  "models_build": [
+    "cmake",
+    "--build",
+    "<owned-build>/c-model",
+    "--parallel",
+    "1"
+  ],
+  "model_commands": [
+    [
+      "<owned-build>/c-model/uwvm_rmw_c_models",
+      "missing-native-provider"
+    ],
+    [
+      "<owned-build>/c-model/uwvm_rmw_c_models",
+      "guard-trigger-consumed"
+    ],
+    [
+      "<owned-build>/c-model/uwvm_rmw_c_models",
+      "context-child-lifetime"
+    ],
+    [
+      "<owned-build>/c-model/uwvm_rmw_c_models",
+      "foreign-wait-entry"
+    ],
+    [
+      "<owned-build>/c-model/uwvm_rmw_c_models",
+      "indefinite-wait"
+    ],
+    [
+      "<owned-build>/c-model/uwvm_rmw_c_models",
+      "missing-wait-driver"
+    ],
+    [
+      "<owned-build>/c-model/uwvm_rmw_c_models",
+      "measured-wait"
+    ],
+    [
+      "<owned-build>/c-model/uwvm_rmw_c_models",
+      "clock-rollback"
+    ],
+    [
+      "<owned-build>/c-model/uwvm_rmw_c_models",
+      "incoming-native-header"
+    ],
+    [
+      "<owned-build>/c-model/uwvm_rmw_c_models",
+      "reply-once"
+    ],
+    [
+      "<owned-build>/c-model/uwvm_rmw_c_models",
+      "post-take-upper-scope"
+    ],
+    [
+      "<owned-build>/c-model/uwvm_rmw_c_models",
+      "activation-failure-cleanup"
+    ],
+    [
+      "<owned-build>/c-model/uwvm_rmw_c_models",
+      "topic-owned-info"
+    ],
+    [
+      "<owned-build>/c-model/uwvm_rmw_c_models",
+      "codec-complete-extent"
+    ],
+    [
+      "<owned-build>/c-model/uwvm_rmw_c_models",
+      "global-gid-missing"
+    ],
+    [
+      "<owned-build>/c-model/uwvm_rmw_c_models",
+      "global-gid-wide"
+    ],
+    [
+      "<owned-build>/c-model/uwvm_rmw_c_models",
+      "global-gid-complete"
+    ],
+    [
+      "<owned-build>/c-model/uwvm_rmw_c_models",
+      "pending-cap-before-submit"
+    ],
+    [
+      "<owned-build>/c-model/uwvm_rmw_c_models",
+      "native-qos-drift"
+    ],
+    [
+      "<owned-build>/c-model/uwvm_rmw_c_models",
+      "shutdown-retire-order"
+    ],
+    [
+      "<owned-build>/c-model/uwvm_rmw_c_models",
+      "unknown-ticket"
+    ],
+    [
+      "<owned-build>/c-model/uwvm_rmw_c_models",
+      "malformed-response"
+    ],
+    [
+      "<owned-build>/c-model/uwvm_rmw_c_models",
+      "sequence-gap"
+    ],
+    [
+      "<owned-build>/c-model/uwvm_rmw_c_models",
+      "closed-flags-preserved"
+    ],
+    [
+      "<owned-build>/c-model/uwvm_rmw_c_models",
+      "idle-output-preserved"
+    ],
+    [
+      "<owned-build>/c-model/uwvm_rmw_c_models",
+      "client-copy-native-local"
+    ],
+    [
+      "<owned-build>/c-model/uwvm_rmw_c_models",
+      "owned-prefetch"
+    ],
+    [
+      "<owned-build>/c-model/uwvm_rmw_c_models",
+      "global-gid-zero"
+    ],
+    [
+      "<owned-build>/c-model/uwvm_rmw_c_models",
+      "topic-zero-gid"
+    ],
+    [
+      "<owned-build>/c-model/uwvm_rmw_c_models",
+      "incoming-zero-writer"
+    ],
+    [
+      "<owned-build>/c-model/uwvm_rmw_c_models",
+      "response-zero-writer"
+    ],
+    [
+      "<owned-build>/c-model/uwvm_rmw_c_models",
+      "response-missing-presence"
+    ],
+    [
+      "<owned-build>/c-model/uwvm_rmw_c_models",
+      "nonnormalized-wait-equivalent"
+    ],
+    [
+      "<owned-build>/c-model/uwvm_rmw_c_models",
+      "nonnormalized-no-driver"
+    ],
+    [
+      "<owned-build>/c-model/uwvm_rmw_c_models",
+      "duration-bounded-refusal"
+    ]
+  ],
+  "real_witness": [
+    "actual selected bootstrap source/object must first be authored/peer-closed against actual D namespace and grants",
+    "compile examples/checked_service.c together with real selected bootstrap + A/B/C + complete actual codecs",
+    "genuine Root process/cgroup/deadline/log/cleanup owner required",
+    "only full terminal normal cleanup and all field checks may produce witness marker; never infer all-RMW/vendor acceptance"
+  ],
+  "no_invocation_by_author": true,
+  "model_assertion_gate": "-UNDEBUG (MSVC /UNDEBUG) plus source NDEBUG #error; Release may not remove operations"
+}

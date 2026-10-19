@@ -1,0 +1,634 @@
+{
+  "Guest_executed": false,
+  "binding": null,
+  "compiler_executed": false,
+  "default_authority": [],
+  "generation": {
+    "compiler_execution": "NOT_RUN",
+    "declared_constants": {},
+    "declared_defaults": {},
+    "declared_empty_default_native_binding": "REFUSED_UNTIL_INDEPENDENT_ORIGINAL_NATIVE_IDL_SOURCE_PROOF",
+    "default_authority": [],
+    "facade_template_inputs": [],
+    "format": "uwvm-ros-vendor-complete-bounded-v1",
+    "implemented_record_outputs": [
+      "c",
+      "cpp",
+      "rust",
+      "javascript",
+      "assemblyscript",
+      "tinygo"
+    ],
+    "implicit_permissions": [],
+    "member_map": {
+      "uwvm_limx_bridge/msg/ImuData": {
+        "assemblyscript": {
+          "acc": "acc",
+          "euler": "euler",
+          "gyro": "gyro",
+          "header": "header",
+          "imustamp": "imustamp",
+          "quat": "quat",
+          "status": "status"
+        },
+        "c": {
+          "acc": "acc",
+          "euler": "euler",
+          "gyro": "gyro",
+          "header": "header",
+          "imustamp": "imustamp",
+          "quat": "quat",
+          "status": "status"
+        },
+        "cpp": {
+          "acc": "acc",
+          "euler": "euler",
+          "gyro": "gyro",
+          "header": "header",
+          "imustamp": "imustamp",
+          "quat": "quat",
+          "status": "status"
+        },
+        "javascript": {
+          "acc": "acc",
+          "euler": "euler",
+          "gyro": "gyro",
+          "header": "header",
+          "imustamp": "imustamp",
+          "quat": "quat",
+          "status": "status"
+        },
+        "rust": {
+          "acc": "acc",
+          "euler": "euler",
+          "gyro": "gyro",
+          "header": "header",
+          "imustamp": "imustamp",
+          "quat": "quat",
+          "status": "status"
+        },
+        "tinygo": {
+          "acc": "Acc",
+          "euler": "Euler",
+          "gyro": "Gyro",
+          "header": "Header",
+          "imustamp": "Imustamp",
+          "quat": "Quat",
+          "status": "Status"
+        }
+      },
+      "uwvm_limx_bridge/msg/JointCmd": {
+        "assemblyscript": {
+          "header": "header",
+          "kd": "kd",
+          "kp": "kp",
+          "mode": "mode",
+          "na": "na",
+          "names": "names",
+          "q": "q",
+          "tau": "tau",
+          "v": "v"
+        },
+        "c": {
+          "header": "header",
+          "kd": "kd",
+          "kp": "kp",
+          "mode": "mode",
+          "na": "na",
+          "names": "names",
+          "q": "q",
+          "tau": "tau",
+          "v": "v"
+        },
+        "cpp": {
+          "header": "header",
+          "kd": "kd",
+          "kp": "kp",
+          "mode": "mode",
+          "na": "na",
+          "names": "names",
+          "q": "q",
+          "tau": "tau",
+          "v": "v"
+        },
+        "javascript": {
+          "header": "header",
+          "kd": "kd",
+          "kp": "kp",
+          "mode": "mode",
+          "na": "na",
+          "names": "names",
+          "q": "q",
+          "tau": "tau",
+          "v": "v"
+        },
+        "rust": {
+          "header": "header",
+          "kd": "kd",
+          "kp": "kp",
+          "mode": "mode",
+          "na": "na",
+          "names": "names",
+          "q": "q",
+          "tau": "tau",
+          "v": "v"
+        },
+        "tinygo": {
+          "header": "Header",
+          "kd": "Kd",
+          "kp": "Kp",
+          "mode": "Mode",
+          "na": "Na",
+          "names": "Names",
+          "q": "Q",
+          "tau": "Tau",
+          "v": "V"
+        }
+      },
+      "uwvm_limx_bridge/msg/JointCmdLimx": {
+        "assemblyscript": {
+          "header": "header",
+          "kd": "kd",
+          "kp": "kp",
+          "mode": "mode",
+          "na": "na",
+          "names": "names",
+          "parallel_solver_mode": "parallel_solver_mode",
+          "q": "q",
+          "tau": "tau",
+          "v": "v"
+        },
+        "c": {
+          "header": "header",
+          "kd": "kd",
+          "kp": "kp",
+          "mode": "mode",
+          "na": "na",
+          "names": "names",
+          "parallel_solver_mode": "parallel_solver_mode",
+          "q": "q",
+          "tau": "tau",
+          "v": "v"
+        },
+        "cpp": {
+          "header": "header",
+          "kd": "kd",
+          "kp": "kp",
+          "mode": "mode",
+          "na": "na",
+          "names": "names",
+          "parallel_solver_mode": "parallel_solver_mode",
+          "q": "q",
+          "tau": "tau",
+          "v": "v"
+        },
+        "javascript": {
+          "header": "header",
+          "kd": "kd",
+          "kp": "kp",
+          "mode": "mode",
+          "na": "na",
+          "names": "names",
+          "parallel_solver_mode": "parallel_solver_mode",
+          "q": "q",
+          "tau": "tau",
+          "v": "v"
+        },
+        "rust": {
+          "header": "header",
+          "kd": "kd",
+          "kp": "kp",
+          "mode": "mode",
+          "na": "na",
+          "names": "names",
+          "parallel_solver_mode": "parallel_solver_mode",
+          "q": "q",
+          "tau": "tau",
+          "v": "v"
+        },
+        "tinygo": {
+          "header": "Header",
+          "kd": "Kd",
+          "kp": "Kp",
+          "mode": "Mode",
+          "na": "Na",
+          "names": "Names",
+          "parallel_solver_mode": "Parallel_solver_mode",
+          "q": "Q",
+          "tau": "Tau",
+          "v": "V"
+        }
+      },
+      "uwvm_limx_bridge/msg/JointState": {
+        "assemblyscript": {
+          "header": "header",
+          "na": "na",
+          "names": "names",
+          "q": "q",
+          "tau": "tau",
+          "v": "v",
+          "vd": "vd"
+        },
+        "c": {
+          "header": "header",
+          "na": "na",
+          "names": "names",
+          "q": "q",
+          "tau": "tau",
+          "v": "v",
+          "vd": "vd"
+        },
+        "cpp": {
+          "header": "header",
+          "na": "na",
+          "names": "names",
+          "q": "q",
+          "tau": "tau",
+          "v": "v",
+          "vd": "vd"
+        },
+        "javascript": {
+          "header": "header",
+          "na": "na",
+          "names": "names",
+          "q": "q",
+          "tau": "tau",
+          "v": "v",
+          "vd": "vd"
+        },
+        "rust": {
+          "header": "header",
+          "na": "na",
+          "names": "names",
+          "q": "q",
+          "tau": "tau",
+          "v": "v",
+          "vd": "vd"
+        },
+        "tinygo": {
+          "header": "Header",
+          "na": "Na",
+          "names": "Names",
+          "q": "Q",
+          "tau": "Tau",
+          "v": "V",
+          "vd": "Vd"
+        }
+      },
+      "uwvm_limx_bridge/msg/NativeHeader": {
+        "assemblyscript": {
+          "frame_id": "frame_id",
+          "seq": "seq",
+          "stamp_nsec": "stamp_nsec",
+          "stamp_sec": "stamp_sec"
+        },
+        "c": {
+          "frame_id": "frame_id",
+          "seq": "seq",
+          "stamp_nsec": "stamp_nsec",
+          "stamp_sec": "stamp_sec"
+        },
+        "cpp": {
+          "frame_id": "frame_id",
+          "seq": "seq",
+          "stamp_nsec": "stamp_nsec",
+          "stamp_sec": "stamp_sec"
+        },
+        "javascript": {
+          "frame_id": "frame_id",
+          "seq": "seq",
+          "stamp_nsec": "stamp_nsec",
+          "stamp_sec": "stamp_sec"
+        },
+        "rust": {
+          "frame_id": "frame_id",
+          "seq": "seq",
+          "stamp_nsec": "stamp_nsec",
+          "stamp_sec": "stamp_sec"
+        },
+        "tinygo": {
+          "frame_id": "Frame_id",
+          "seq": "Seq",
+          "stamp_nsec": "Stamp_nsec",
+          "stamp_sec": "Stamp_sec"
+        }
+      }
+    },
+    "native_execution": "NOT_RUN",
+    "native_exporter_helper_source": {
+      "bytes": 10784,
+      "sha256": "55c5e504a1d61a648f73dd732aa0561f4b4dc0adf54dbe631857edf1564f3ac6"
+    },
+    "native_registry_emitted": false,
+    "outputs": {
+      "bounded_interfaces.h": {
+        "bytes": 1332,
+        "sha256": "d9c8b1a22bd5c3877398d05fa5c545b331041cf1cd741ff356bbacda32f64150"
+      },
+      "bounded_interfaces.hpp": {
+        "bytes": 3923,
+        "sha256": "2ddbcf92699a416b8dab0a2264ba3dfba6a1dc786dbb476b881c77ee9e508842"
+      },
+      "bounded_records.go": {
+        "bytes": 39548,
+        "sha256": "ab5fd769925cee3d5eeed1948e9e8e2ca3c0693929aadb44342babd7cff8e4bb"
+      },
+      "bounded_records.h": {
+        "bytes": 52254,
+        "sha256": "1daf1dcadbd361e331547633adcb12ab1960ebbfa3206f0083fd9a385ed3261a"
+      },
+      "bounded_records.hpp": {
+        "bytes": 6304,
+        "sha256": "1cd2f8217c3d68eb332c49e41096d26c1ac575e21820aa6f3549082cc700c917"
+      },
+      "bounded_records.mjs": {
+        "bytes": 32497,
+        "sha256": "e4a13a68c77458aaed232e47ba1cf9ff14dc23ec726633add851f17310a015b4"
+      },
+      "bounded_records.rs": {
+        "bytes": 29464,
+        "sha256": "a519d6c02830224d28be33632632db77a0d58d373ce9d0e4caa8dc86a450a148"
+      },
+      "bounded_records.ts": {
+        "bytes": 31963,
+        "sha256": "2794f0265b2cdf3922c8203b0f7c5c167eeddea3f2bad1fa079be4e071eefdd1"
+      },
+      "native_constants.hpp": {
+        "bytes": 267,
+        "sha256": "4700d3bdf5da49f6392540d0487fa661da6f06c15fc817f1cf6e73bd44134b7c"
+      },
+      "native_identity.cc": {
+        "bytes": 11937,
+        "sha256": "3dd25998433fad9a1dfd61b476e44629321cee86dc06c05d97d17b1c91f230c8"
+      }
+    },
+    "records": [
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 144,
+        "codec_identity": "UWVMROS1_d86b96b26db6c2a28dfa86e2255cb3cccd6cd24648e877746d8d75394d1635b2",
+        "expanded_nodes": 5,
+        "maximum_wire_bytes": 144,
+        "minimum_wire_bytes": 16,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "uwvm_limx_bridge/msg/NativeHeader"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 260,
+        "codec_identity": "UWVMROS1_53ba9eb23b36de77e1793bdd19a31f708aca557b81f4ae72927b2a44f5ce097b",
+        "expanded_nodes": 25,
+        "maximum_wire_bytes": 260,
+        "minimum_wire_bytes": 132,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "uwvm_limx_bridge/msg/ImuData"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 5544,
+        "codec_identity": "UWVMROS1_d99e5855c0dd55d4d1b5a724ad5719734a668a512ea09e553c8f4a560b97a3a4",
+        "expanded_nodes": 332,
+        "maximum_wire_bytes": 5544,
+        "minimum_wire_bytes": 40,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "uwvm_limx_bridge/msg/JointState"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 5872,
+        "codec_identity": "UWVMROS1_8c477a93cc192cd3039b285f111a56eb1305707d798587ef7ab9504f714ce6f0",
+        "expanded_nodes": 399,
+        "maximum_wire_bytes": 5872,
+        "minimum_wire_bytes": 48,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "uwvm_limx_bridge/msg/JointCmd"
+      },
+      {
+        "aggregate_wire_bytes": 0,
+        "cartesian_maximum_wire_bytes": 5940,
+        "codec_identity": "UWVMROS1_d469dd32f446fb4013144b7e176cdb831c146b6a9279ea776ec4a0c053060be9",
+        "expanded_nodes": 401,
+        "maximum_wire_bytes": 5940,
+        "minimum_wire_bytes": 52,
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "uwvm_limx_bridge/msg/JointCmdLimx"
+      }
+    ],
+    "required_native_domain_provider": "paired complete_vendor descriptor/Native trait/source-metadata admission; requires actual Root implementation and full rebuild; old refusal is preserved",
+    "source_generator_pair": {
+      "bounded": {
+        "bytes": 239137,
+        "sha256": "3c40ed90910bde0ec15ae8976b0e34c37061c2eeacc121259604e7eaeba89f2d"
+      },
+      "industrial_adapter": {
+        "bytes": 73639,
+        "sha256": "e830acc0c4a1cb243cb50f28cbabb71299dcc692ecd9a0b42dd725f4a4f361b3"
+      },
+      "parent": {
+        "bytes": 61312,
+        "sha256": "1a73d6a87624e563bbb6be2624e77b51d7dba0f0f2fb524cda4079f493381826"
+      }
+    },
+    "source_inputs": {
+      "catalog": {
+        "bytes": 2210,
+        "sha256": "7d88463a024c297b1f954284c9fc16da9df20a1f314fc599ea5b616009abf444"
+      },
+      "definitions": [
+        {
+          "bytes": 140,
+          "file": "uwvm_limx_bridge/msg/NativeHeader.msg",
+          "sha256": "fbe3be9e2d1085b2c2dca9b4b9885099b42ef3de06cf75c43b842eca23d9a87f"
+        },
+        {
+          "bytes": 192,
+          "file": "uwvm_limx_bridge/msg/ImuData.msg",
+          "sha256": "3973c188b163f8632c69f9095b4d9843ba79a25e89b00c54057baeacaafe1307"
+        },
+        {
+          "bytes": 174,
+          "file": "uwvm_limx_bridge/msg/JointState.msg",
+          "sha256": "399b78d9335108d2c85bdb0928dfac77c93959106b99b82478111b5dbab03f90"
+        },
+        {
+          "bytes": 200,
+          "file": "uwvm_limx_bridge/msg/JointCmd.msg",
+          "sha256": "2fa558b00161ab6b9c79b92d95002a88f938f01982bc1eadf38d38a2e87d53da"
+        },
+        {
+          "bytes": 229,
+          "file": "uwvm_limx_bridge/msg/JointCmdLimx.msg",
+          "sha256": "0f3d3ef0d9da77566c636baaa62e7a460e7c31a16c991214e0d8761f05dda6d1"
+        }
+      ]
+    },
+    "source_template_inputs": {
+      "interface_templates/bounded_interfaces.go.in": {
+        "bytes": 9692,
+        "sha256": "c9e7893ccedc67b91a3aebc51c1e0c3c65263f03b2769aa07c34fcfb6befa1f7"
+      },
+      "interface_templates/bounded_interfaces.mjs.in": {
+        "bytes": 17046,
+        "sha256": "10986eddd766435dde89b0d3046ef7f48705e2c3e21301c99163c3a7d4ea62fe"
+      },
+      "interface_templates/bounded_interfaces.rs.in": {
+        "bytes": 15514,
+        "sha256": "063130e797684df0530aa1882f8082a10d5756ceb892677d8082e980c7b29b18"
+      },
+      "interface_templates/bounded_interfaces.ts.in": {
+        "bytes": 16626,
+        "sha256": "a61a7b7eb3b5464648577f3ab44629a5c6140d04effff6e4099509f68b204ac5"
+      }
+    },
+    "status": "GENERATED_SOURCE_ONLY_NOT_COMPILED_OR_EXECUTED",
+    "types": [
+      {
+        "adapter_codec_identity": "UWVMROS1_d86b96b26db6c2a28dfa86e2255cb3cccd6cd24648e877746d8d75394d1635b2",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_d86b96b26db6c2a28dfa86e2255cb3cccd6cd24648e877746d8d75394d1635b2",
+            "expanded_nodes": 5,
+            "maximum_wire_bytes": 144,
+            "minimum_wire_bytes": 16,
+            "native_identity": null,
+            "type": "uwvm_limx_bridge/msg/NativeHeader"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "uwvm_limx_bridge/msg/NativeHeader"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_53ba9eb23b36de77e1793bdd19a31f708aca557b81f4ae72927b2a44f5ce097b",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_53ba9eb23b36de77e1793bdd19a31f708aca557b81f4ae72927b2a44f5ce097b",
+            "expanded_nodes": 25,
+            "maximum_wire_bytes": 260,
+            "minimum_wire_bytes": 132,
+            "native_identity": null,
+            "type": "uwvm_limx_bridge/msg/ImuData"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "uwvm_limx_bridge/msg/ImuData"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_d99e5855c0dd55d4d1b5a724ad5719734a668a512ea09e553c8f4a560b97a3a4",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_d99e5855c0dd55d4d1b5a724ad5719734a668a512ea09e553c8f4a560b97a3a4",
+            "expanded_nodes": 332,
+            "maximum_wire_bytes": 5544,
+            "minimum_wire_bytes": 40,
+            "native_identity": null,
+            "type": "uwvm_limx_bridge/msg/JointState"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "uwvm_limx_bridge/msg/JointState"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_8c477a93cc192cd3039b285f111a56eb1305707d798587ef7ab9504f714ce6f0",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_8c477a93cc192cd3039b285f111a56eb1305707d798587ef7ab9504f714ce6f0",
+            "expanded_nodes": 399,
+            "maximum_wire_bytes": 5872,
+            "minimum_wire_bytes": 48,
+            "native_identity": null,
+            "type": "uwvm_limx_bridge/msg/JointCmd"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "uwvm_limx_bridge/msg/JointCmd"
+      },
+      {
+        "adapter_codec_identity": "UWVMROS1_d469dd32f446fb4013144b7e176cdb831c146b6a9279ea776ec4a0c053060be9",
+        "components": {
+          "message": {
+            "adapter_codec_identity": "UWVMROS1_d469dd32f446fb4013144b7e176cdb831c146b6a9279ea776ec4a0c053060be9",
+            "expanded_nodes": 401,
+            "maximum_wire_bytes": 5940,
+            "minimum_wire_bytes": 52,
+            "native_identity": null,
+            "type": "uwvm_limx_bridge/msg/JointCmdLimx"
+          }
+        },
+        "kind": "message",
+        "native_identity": null,
+        "ros_version": 2,
+        "type": "uwvm_limx_bridge/msg/JointCmdLimx"
+      }
+    ]
+  },
+  "hardware_qualified": false,
+  "kind": "industrial-complete-source-preparation-not-acceptance",
+  "mode": "prepare",
+  "native_delivery_qualified": false,
+  "native_metadata": null,
+  "native_owner_report": null,
+  "original_catalog": {
+    "bytes": 2210,
+    "path": "/Users/liyinan/Documents/MacroModel/uwvm2-ros-recovery-archives/20261018/source-work/restart-default-control/humanoid-vendors-r1/after/sdk/robots/humanoids/limx/source-definitions/ros2/catalog.preparation.json",
+    "sha256": "5b3016a6e9e1924bb7c0125796b4ae2489dc2f7d4d84b6597f05be0f488ddac8"
+  },
+  "original_definitions": {
+    "uwvm_limx_bridge/msg/ImuData.msg": {
+      "bytes": 192,
+      "path": "/Users/liyinan/Documents/MacroModel/uwvm2-ros-recovery-archives/20261018/source-work/restart-default-control/humanoid-vendors-r1/after/sdk/robots/humanoids/limx/source-definitions/ros2/uwvm_limx_bridge/msg/ImuData.msg",
+      "sha256": "3973c188b163f8632c69f9095b4d9843ba79a25e89b00c54057baeacaafe1307"
+    },
+    "uwvm_limx_bridge/msg/JointCmd.msg": {
+      "bytes": 200,
+      "path": "/Users/liyinan/Documents/MacroModel/uwvm2-ros-recovery-archives/20261018/source-work/restart-default-control/humanoid-vendors-r1/after/sdk/robots/humanoids/limx/source-definitions/ros2/uwvm_limx_bridge/msg/JointCmd.msg",
+      "sha256": "2fa558b00161ab6b9c79b92d95002a88f938f01982bc1eadf38d38a2e87d53da"
+    },
+    "uwvm_limx_bridge/msg/JointCmdLimx.msg": {
+      "bytes": 229,
+      "path": "/Users/liyinan/Documents/MacroModel/uwvm2-ros-recovery-archives/20261018/source-work/restart-default-control/humanoid-vendors-r1/after/sdk/robots/humanoids/limx/source-definitions/ros2/uwvm_limx_bridge/msg/JointCmdLimx.msg",
+      "sha256": "0f3d3ef0d9da77566c636baaa62e7a460e7c31a16c991214e0d8761f05dda6d1"
+    },
+    "uwvm_limx_bridge/msg/JointState.msg": {
+      "bytes": 174,
+      "path": "/Users/liyinan/Documents/MacroModel/uwvm2-ros-recovery-archives/20261018/source-work/restart-default-control/humanoid-vendors-r1/after/sdk/robots/humanoids/limx/source-definitions/ros2/uwvm_limx_bridge/msg/JointState.msg",
+      "sha256": "399b78d9335108d2c85bdb0928dfac77c93959106b99b82478111b5dbab03f90"
+    },
+    "uwvm_limx_bridge/msg/NativeHeader.msg": {
+      "bytes": 140,
+      "path": "/Users/liyinan/Documents/MacroModel/uwvm2-ros-recovery-archives/20261018/source-work/restart-default-control/humanoid-vendors-r1/after/sdk/robots/humanoids/limx/source-definitions/ros2/uwvm_limx_bridge/msg/NativeHeader.msg",
+      "sha256": "fbe3be9e2d1085b2c2dca9b4b9885099b42ef3de06cf75c43b842eca23d9a87f"
+    }
+  },
+  "original_source_inputs": {
+    "adapter": {
+      "bytes": 73639,
+      "sha256": "e830acc0c4a1cb243cb50f28cbabb71299dcc692ecd9a0b42dd725f4a4f361b3"
+    },
+    "bounded": {
+      "bytes": 239137,
+      "sha256": "3c40ed90910bde0ec15ae8976b0e34c37061c2eeacc121259604e7eaeba89f2d"
+    },
+    "exporter": {
+      "bytes": 10784,
+      "sha256": "55c5e504a1d61a648f73dd732aa0561f4b4dc0adf54dbe631857edf1564f3ac6"
+    },
+    "parent": {
+      "bytes": 61312,
+      "sha256": "1a73d6a87624e563bbb6be2624e77b51d7dba0f0f2fb524cda4079f493381826"
+    }
+  },
+  "source_preparation_executed": true
+}

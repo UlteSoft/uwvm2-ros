@@ -1,0 +1,201 @@
+{
+  "schema_version": 1,
+  "extension_version": 1,
+  "kind": "optional-owned-rmw-service-v1",
+  "source_status": "SOURCE_ONLY_HELD_UNEXECUTED",
+  "authority_source": {
+    "path": "src/uwvm2/uwvm/imported/ros/host.h",
+    "sha256": "af98d37878e4e34e7e2e0ea8a5b099faccbd05bd51cfe066c4083dcf0c14959b"
+  },
+  "implementation_source": {
+    "path": "src/uwvm2/uwvm/imported/ros/rmw_service_host.h",
+    "sha256": "e795fb57537f416e107f4bfe58f2867944cbb34a7e0a01fefa2e9cf04f9dc6d5"
+  },
+  "raw_header": {
+    "path": "sdk/include/roswasm/rmw_service_v1.h",
+    "sha256": "6cbda155ccc897772f64094dd1b7b53577bf72432df50e469999c9227d3637ec"
+  },
+  "original_business_modules_unchanged": true,
+  "authority_contract": "Current genuine Runtime caller; independent live call+event.observe or advertise+respond, same full saved pair/native session. Availability additionally needs its independent service.available grant. Values/protocols do not grant rights; default empty.",
+  "modules": {
+    "uwvm_ros2_rmw_srv_v1": {
+      "backend": 2,
+      "function_count": 12,
+      "functions": [
+        {
+          "name": "abi_version",
+          "params": [],
+          "results": [
+            "i32"
+          ]
+        },
+        {
+          "name": "client_activate",
+          "params": [
+            "i64",
+            "i64",
+            "i32",
+            "i64"
+          ],
+          "results": [
+            "i32"
+          ]
+        },
+        {
+          "name": "service_activate",
+          "params": [
+            "i64",
+            "i64",
+            "i32",
+            "i64"
+          ],
+          "results": [
+            "i32"
+          ]
+        },
+        {
+          "name": "endpoint_inspect",
+          "params": [
+            "i64",
+            "i64",
+            "i32",
+            "i64"
+          ],
+          "results": [
+            "i32"
+          ]
+        },
+        {
+          "name": "client_submit",
+          "params": [
+            "i64",
+            "i64",
+            "i32",
+            "i64",
+            "i64",
+            "i64"
+          ],
+          "results": [
+            "i32"
+          ]
+        },
+        {
+          "name": "client_abandon",
+          "params": [
+            "i64",
+            "i64",
+            "i64"
+          ],
+          "results": [
+            "i32"
+          ]
+        },
+        {
+          "name": "service_respond",
+          "params": [
+            "i64",
+            "i64",
+            "i64",
+            "i64",
+            "i32",
+            "i64",
+            "i64"
+          ],
+          "results": [
+            "i32"
+          ]
+        },
+        {
+          "name": "endpoint_peek",
+          "params": [
+            "i64",
+            "i64",
+            "i32",
+            "i32",
+            "i64",
+            "i64"
+          ],
+          "results": [
+            "i32"
+          ]
+        },
+        {
+          "name": "endpoint_commit",
+          "params": [
+            "i64",
+            "i64",
+            "i64",
+            "i64"
+          ],
+          "results": [
+            "i32"
+          ]
+        },
+        {
+          "name": "endpoint_cancel",
+          "params": [
+            "i64",
+            "i64",
+            "i64",
+            "i64"
+          ],
+          "results": [
+            "i32"
+          ]
+        },
+        {
+          "name": "client_available",
+          "params": [
+            "i64",
+            "i64",
+            "i64",
+            "i64",
+            "i32",
+            "i64"
+          ],
+          "results": [
+            "i32"
+          ]
+        },
+        {
+          "name": "endpoint_retire",
+          "params": [
+            "i64",
+            "i64"
+          ],
+          "results": [
+            "i32"
+          ]
+        }
+      ]
+    }
+  },
+  "output_contract": {
+    "activation_inspection_bytes": 256,
+    "submit_ticket_bytes": 8,
+    "availability_bytes": 1,
+    "peek": "one complete UMRC160+URMI192+canonical body checked copy, no separate length write",
+    "minimum_peek_capacity": 352,
+    "maximum_peek_capacity": 4194304,
+    "nonzero_error_preserves_output": true,
+    "ack_abandon_retire_no_output": true
+  },
+  "quota_contract": {
+    "client_peek": "one event.observe operation token including idle; actual authorize_event_delivery admits actual observer mask and64+body credit plus canonical response source credit",
+    "server_peek_respond": "real manager ticket-envelope validation; only canonical bytes charged, never the fixed8 ticket",
+    "available": "independent actual64-byte semantic query+response envelope on its own grant; no call debit",
+    "ack_metadata": "UMRC/UMRE/URMI/ACK are transport control and never double charged as canonical body"
+  },
+  "pair_history": "65536 lifetime rows, no erase/reset/regrant; actual max-services controls server active aliases; no invented max-clients or reuse of max-inflight as history capacity",
+  "transaction_contract": {
+    "peek": "known complete same-record borrow; associated source/incarnation/sequence plus distinct nonreused native reservation nonce",
+    "commit": "distinct exact ACK, no retry after uncertain outcome",
+    "host_refused_borrow": "explicit exact cancel under original deadline or session retirement; preserve primary/cancel/commit/cleanup separately",
+    "cleanup": "tombstone every matching pair/UMRE first, once private Native cleanup with one entry deadline, old disconnected session107 retained"
+  },
+  "legacy_preservation": {
+    "catalog_path": "sdk/abi/abi-v1.json",
+    "catalog_sha256": "0a13f6c49100173c156eb76acfd35ebe103a40b2a90c752d3d1302c31f875ec0"
+  },
+  "actual_compilers_models_Guest_native_ROS": 0
+}

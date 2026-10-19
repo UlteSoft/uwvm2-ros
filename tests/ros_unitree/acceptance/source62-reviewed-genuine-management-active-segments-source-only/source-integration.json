@@ -1,0 +1,494 @@
+{
+  "kind": "source62-current-declaration-integration",
+  "status": "APPLIED_REVIEWED_METADATA_ONLY_NOT_A_TEST_OR_BUILD",
+  "old_cross": {
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/before/current-batch-source-cross-seal.json",
+    "bytes": 181806,
+    "sha256": "53f830e6c9ba9c46f5d17fb3a55590cfd3490a7154b07915d975bf882d243f2b"
+  },
+  "new_cross": {
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/current-batch-source-cross-seal.json",
+    "bytes": 208070,
+    "sha256": "d98d2a2f6b68462014a02c6d26f11d1a32e9009a3c0544a29a8cc917d048a0b8"
+  },
+  "affected_existing_groups": [
+    31,
+    33
+  ],
+  "reviewed_current_source_files": [
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_runtime_contract.cc",
+      "bytes": 35869,
+      "sha256": "dda45eafba7fbf3c2fd3f77248f0f00b2b2a7c5a34278ee0d27f4cc6bb47f957"
+    }
+  ],
+  "current_unique_file_count": 234,
+  "current_group_count": 35,
+  "preserved_old_manifests": [
+    {
+      "group_index": 0,
+      "original": {
+        "bytes": 9661,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_ticket_lifetime/source-ready.json",
+        "sha256": "49eb2a401a0aafc522419ef460fb14f576f2c3f3a1aef18a1ecb4ac300808933"
+      },
+      "saved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/before/current-manifests/00.json",
+        "bytes": 9661,
+        "sha256": "49eb2a401a0aafc522419ef460fb14f576f2c3f3a1aef18a1ecb4ac300808933"
+      }
+    },
+    {
+      "group_index": 1,
+      "original": {
+        "bytes": 21844,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/noetic-native-source-ready.json",
+        "sha256": "42556147c441055791d893896836d5526ce6683efff3df53e773cdf1bbfeedf5"
+      },
+      "saved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/before/current-manifests/01.json",
+        "bytes": 21844,
+        "sha256": "42556147c441055791d893896836d5526ce6683efff3df53e773cdf1bbfeedf5"
+      }
+    },
+    {
+      "group_index": 2,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/current-declarations/02-source-ready.json",
+        "bytes": 5364,
+        "sha256": "26053f07e840eea83f38050690cc4cc2117ca1eba9dc145388a5fb72f038848b"
+      },
+      "saved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/before/current-manifests/02.json",
+        "bytes": 5364,
+        "sha256": "26053f07e840eea83f38050690cc4cc2117ca1eba9dc145388a5fb72f038848b"
+      }
+    },
+    {
+      "group_index": 3,
+      "original": {
+        "bytes": 4979,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/legacy12/source-ready.json",
+        "sha256": "0631686fd793839a211b7a178e6899b6874e804850e145757b9294eda62c818b"
+      },
+      "saved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/before/current-manifests/03.json",
+        "bytes": 4979,
+        "sha256": "0631686fd793839a211b7a178e6899b6874e804850e145757b9294eda62c818b"
+      }
+    },
+    {
+      "group_index": 4,
+      "original": {
+        "bytes": 15685,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/core-regressions-source-ready.json",
+        "sha256": "a3dad17e3a77715e21b2d403326a36a9e1c48923c59459c97d6935e50421dbf2"
+      },
+      "saved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/before/current-manifests/04.json",
+        "bytes": 15685,
+        "sha256": "a3dad17e3a77715e21b2d403326a36a9e1c48923c59459c97d6935e50421dbf2"
+      }
+    },
+    {
+      "group_index": 5,
+      "original": {
+        "bytes": 6036,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros2_compat/acceptance/action-client-options-source-only/source-ready.json",
+        "sha256": "659f10aae24e17ef69ba7f60c24b4ae4f52990c9af3aa895f1401f99d23038a1"
+      },
+      "saved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/before/current-manifests/05.json",
+        "bytes": 6036,
+        "sha256": "659f10aae24e17ef69ba7f60c24b4ae4f52990c9af3aa895f1401f99d23038a1"
+      }
+    },
+    {
+      "group_index": 6,
+      "original": {
+        "bytes": 4644,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros2_compat/acceptance/action-capabilities-source-only/source-ready.json",
+        "sha256": "1b2eb4e74ac85f83128ff55745e55d0b1af23a704a5c0b0a370e271bb9240608"
+      },
+      "saved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/before/current-manifests/06.json",
+        "bytes": 4644,
+        "sha256": "1b2eb4e74ac85f83128ff55745e55d0b1af23a704a5c0b0a370e271bb9240608"
+      }
+    },
+    {
+      "group_index": 7,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/current-declarations/07-source-ready.json",
+        "bytes": 10507,
+        "sha256": "d3bb556608c2cfb5a7a464f41a5b80cb3c55db4f4faefb60755307b89931505b"
+      },
+      "saved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/before/current-manifests/07.json",
+        "bytes": 10507,
+        "sha256": "d3bb556608c2cfb5a7a464f41a5b80cb3c55db4f4faefb60755307b89931505b"
+      }
+    },
+    {
+      "group_index": 8,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/current-declarations/08-source-ready.json",
+        "bytes": 4701,
+        "sha256": "3c811770c4c38651beda02be01defa7a0e22802115fc3ea0aca266834d17f89c"
+      },
+      "saved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/before/current-manifests/08.json",
+        "bytes": 4701,
+        "sha256": "3c811770c4c38651beda02be01defa7a0e22802115fc3ea0aca266834d17f89c"
+      }
+    },
+    {
+      "group_index": 9,
+      "original": {
+        "bytes": 1683,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/actor-exit-race-source-only/source-ready.json",
+        "sha256": "f1fbc61f6ffaab357a235d3c3e0eb8ed47c4d42683b2fb13cd23836962a8c675"
+      },
+      "saved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/before/current-manifests/09.json",
+        "bytes": 1683,
+        "sha256": "f1fbc61f6ffaab357a235d3c3e0eb8ed47c4d42683b2fb13cd23836962a8c675"
+      }
+    },
+    {
+      "group_index": 10,
+      "original": {
+        "bytes": 1702,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/cpp-catalog-observations-source-only/source-integration.json",
+        "sha256": "497988de7acf108a6eb23dca2b02e96b7cde437db34f143ab8f36fd9e113df6d"
+      },
+      "saved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/before/current-manifests/10.json",
+        "bytes": 1702,
+        "sha256": "497988de7acf108a6eb23dca2b02e96b7cde437db34f143ab8f36fd9e113df6d"
+      }
+    },
+    {
+      "group_index": 11,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/current-declarations/11-source-ready.json",
+        "bytes": 8419,
+        "sha256": "626a9e9eeaf2ff38bbeb413668d26eb94ed7fc7fd6f698a331a92d832e22475e"
+      },
+      "saved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/before/current-manifests/11.json",
+        "bytes": 8419,
+        "sha256": "626a9e9eeaf2ff38bbeb413668d26eb94ed7fc7fd6f698a331a92d832e22475e"
+      }
+    },
+    {
+      "group_index": 12,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source56-event-model-wiring-source-only/prior-current-successors/12-source-ready.json",
+        "bytes": 10513,
+        "sha256": "dbd2d2e72fc7a50b855745a325e3e15d9b36ac4d8b600ec8d60701fd4fa2d0a8"
+      },
+      "saved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/before/current-manifests/12.json",
+        "bytes": 10513,
+        "sha256": "dbd2d2e72fc7a50b855745a325e3e15d9b36ac4d8b600ec8d60701fd4fa2d0a8"
+      }
+    },
+    {
+      "group_index": 13,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source60-reviewed-linker-archive-statistics-source-only/current-declarations/13-source-ready.json",
+        "bytes": 5581,
+        "sha256": "c0f918f819b42ebd95cac399f095be18c2210199c10338f16301ec3241830233"
+      },
+      "saved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/before/current-manifests/13.json",
+        "bytes": 5581,
+        "sha256": "c0f918f819b42ebd95cac399f095be18c2210199c10338f16301ec3241830233"
+      }
+    },
+    {
+      "group_index": 14,
+      "original": {
+        "bytes": 6911,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source51-reviewed-source-batch/official/source-ready.json",
+        "sha256": "e8a75f279dd923ce0e2a7cc286f1efdd4a347767e7af8611ad0bd49f4673323d"
+      },
+      "saved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/before/current-manifests/14.json",
+        "bytes": 6911,
+        "sha256": "e8a75f279dd923ce0e2a7cc286f1efdd4a347767e7af8611ad0bd49f4673323d"
+      }
+    },
+    {
+      "group_index": 15,
+      "original": {
+        "bytes": 1402,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_ipc/acceptance/handshake-source-only/source-ready.json",
+        "sha256": "068f813cbb646d5182f2397f262c65e9d540e75f315846d4dfb85ae72d4aa0ed"
+      },
+      "saved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/before/current-manifests/15.json",
+        "bytes": 1402,
+        "sha256": "068f813cbb646d5182f2397f262c65e9d540e75f315846d4dfb85ae72d4aa0ed"
+      }
+    },
+    {
+      "group_index": 16,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source53-management-and-sdk-source-only/host-retirement/source-ready.json",
+        "bytes": 1996,
+        "sha256": "5cff9208b49406eab8902a91dd2235100ec1798dc6101ab59a30d1773912f759"
+      },
+      "saved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/before/current-manifests/16.json",
+        "bytes": 1996,
+        "sha256": "5cff9208b49406eab8902a91dd2235100ec1798dc6101ab59a30d1773912f759"
+      }
+    },
+    {
+      "group_index": 17,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source53-management-and-sdk-source-only/runtime-integration/source-ready.json",
+        "bytes": 1738,
+        "sha256": "ce354db4d3eece53caba9f6e5f293529972c838fee90ea4232e2ef093ce5ead3"
+      },
+      "saved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/before/current-manifests/17.json",
+        "bytes": 1738,
+        "sha256": "ce354db4d3eece53caba9f6e5f293529972c838fee90ea4232e2ef093ce5ead3"
+      }
+    },
+    {
+      "group_index": 18,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source60-reviewed-linker-archive-statistics-source-only/current-declarations/18-source-ready.json",
+        "bytes": 5878,
+        "sha256": "ffd4ed8a77076a93085238b8db75c4e06a4319d30ee7066090a9937002f87b96"
+      },
+      "saved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/before/current-manifests/18.json",
+        "bytes": 5878,
+        "sha256": "ffd4ed8a77076a93085238b8db75c4e06a4319d30ee7066090a9937002f87b96"
+      }
+    },
+    {
+      "group_index": 19,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source54-generated-input-and-management-fixtures-source-only/prior-current-successors/19-source-ready.json",
+        "bytes": 3565,
+        "sha256": "46395e9ff5fe0497b552c43a7e196a0e4e4a98b47a9bab16dfb72589bb6fd10d"
+      },
+      "saved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/before/current-manifests/19.json",
+        "bytes": 3565,
+        "sha256": "46395e9ff5fe0497b552c43a7e196a0e4e4a98b47a9bab16dfb72589bb6fd10d"
+      }
+    },
+    {
+      "group_index": 20,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source54-generated-input-and-management-fixtures-source-only/sdk-generated-references/source-ready.json",
+        "bytes": 3500,
+        "sha256": "d08441d32256de94200b7cc21c88659efbc2be95c9abfb48d626c25f222630a0"
+      },
+      "saved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/before/current-manifests/20.json",
+        "bytes": 3500,
+        "sha256": "d08441d32256de94200b7cc21c88659efbc2be95c9abfb48d626c25f222630a0"
+      }
+    },
+    {
+      "group_index": 21,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source54-generated-input-and-management-fixtures-source-only/runtime-reset-and-guest-management-negative-fixtures/source-ready.json",
+        "bytes": 3851,
+        "sha256": "b7d2107f0b13edf022583925b59a5dd0e277bcc0e0b9fa80abb7edf51b40eeeb"
+      },
+      "saved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/before/current-manifests/21.json",
+        "bytes": 3851,
+        "sha256": "b7d2107f0b13edf022583925b59a5dd0e277bcc0e0b9fa80abb7edf51b40eeeb"
+      }
+    },
+    {
+      "group_index": 22,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source54-generated-input-and-management-fixtures-source-only/component-policy-fixture/source-ready.json",
+        "bytes": 1260,
+        "sha256": "d4a4fa7560c70872f787d0d2edf185f1601ded79ac498d7b202419ec70d020d0"
+      },
+      "saved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/before/current-manifests/22.json",
+        "bytes": 1260,
+        "sha256": "d4a4fa7560c70872f787d0d2edf185f1601ded79ac498d7b202419ec70d020d0"
+      }
+    },
+    {
+      "group_index": 23,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source55-assemblyscript-constructor-source-only/assemblyscript-event-constructor/source-ready.json",
+        "bytes": 1231,
+        "sha256": "f2fd788c334ad3bc1967e040f604018c0253dc4f2c8c79cf22b101bd3b922099"
+      },
+      "saved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/before/current-manifests/23.json",
+        "bytes": 1231,
+        "sha256": "f2fd788c334ad3bc1967e040f604018c0253dc4f2c8c79cf22b101bd3b922099"
+      }
+    },
+    {
+      "group_index": 24,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source56-event-model-wiring-source-only/event-model-wiring/source-ready.json",
+        "bytes": 1445,
+        "sha256": "204c12dbe02b463ceb27d25974539b74a0a72cd3a5c42f3110770af35cd5e57d"
+      },
+      "saved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/before/current-manifests/24.json",
+        "bytes": 1445,
+        "sha256": "204c12dbe02b463ceb27d25974539b74a0a72cd3a5c42f3110770af35cd5e57d"
+      }
+    },
+    {
+      "group_index": 25,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source57-pure-wasm-option-fixture-list-source-only/pure-wasm-options-fixture-list/source-ready.json",
+        "bytes": 1264,
+        "sha256": "d136e292a1ce8c1c019163389a2b9ffb3615a68fd44dfd1bd59fdeef1b01cac0"
+      },
+      "saved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/before/current-manifests/25.json",
+        "bytes": 1264,
+        "sha256": "d136e292a1ce8c1c019163389a2b9ffb3615a68fd44dfd1bd59fdeef1b01cac0"
+      }
+    },
+    {
+      "group_index": 26,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/current-declarations/26-source-ready.json",
+        "bytes": 4091,
+        "sha256": "3a5cefb716391c7f168c7fa8aaac765df78c5bd5f7542c4d9e8d8e226f0a063c"
+      },
+      "saved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/before/current-manifests/26.json",
+        "bytes": 4091,
+        "sha256": "3a5cefb716391c7f168c7fa8aaac765df78c5bd5f7542c4d9e8d8e226f0a063c"
+      }
+    },
+    {
+      "group_index": 27,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/legacy-javascript-closed8/source-ready.json",
+        "bytes": 5595,
+        "sha256": "d44887493c0b004616ee7552c0ae90c774753911cff4759bd979b1415095eea1"
+      },
+      "saved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/before/current-manifests/27.json",
+        "bytes": 5595,
+        "sha256": "d44887493c0b004616ee7552c0ae90c774753911cff4759bd979b1415095eea1"
+      }
+    },
+    {
+      "group_index": 28,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/direct-javascript-closed8-documentation/source-ready.json",
+        "bytes": 5062,
+        "sha256": "24944789159d796512848cb8b9a9d8b6d90dd5855857551e3644aaf48f3f5a84"
+      },
+      "saved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/before/current-manifests/28.json",
+        "bytes": 5062,
+        "sha256": "24944789159d796512848cb8b9a9d8b6d90dd5855857551e3644aaf48f3f5a84"
+      }
+    },
+    {
+      "group_index": 29,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/direct-wasi-cpp-explicit-profile/source-ready.json",
+        "bytes": 6523,
+        "sha256": "bda967be42dda001ba84823326a2b3b3c08ceab8922b47f1c65b1a52a69dcf99"
+      },
+      "saved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/before/current-manifests/29.json",
+        "bytes": 6523,
+        "sha256": "bda967be42dda001ba84823326a2b3b3c08ceab8922b47f1c65b1a52a69dcf99"
+      }
+    },
+    {
+      "group_index": 30,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/current64GiB-example-doc/source-ready.json",
+        "bytes": 4987,
+        "sha256": "7c5d299ac765e2d43b365b919e12672a7da5bcb3fc605cf03803f69c6806800c"
+      },
+      "saved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/before/current-manifests/30.json",
+        "bytes": 4987,
+        "sha256": "7c5d299ac765e2d43b365b919e12672a7da5bcb3fc605cf03803f69c6806800c"
+      }
+    },
+    {
+      "group_index": 31,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source61-reviewed-genuine-management-fixture-compile-source-only/current-declarations/31-source-ready.json",
+        "bytes": 4801,
+        "sha256": "d7b5e095ccc52eafdb38c9f5f46cd46665cf3f3f1a956981c836bb85a417d542"
+      },
+      "saved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/before/current-manifests/31.json",
+        "bytes": 4801,
+        "sha256": "d7b5e095ccc52eafdb38c9f5f46cd46665cf3f3f1a956981c836bb85a417d542"
+      }
+    },
+    {
+      "group_index": 32,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source60-reviewed-linker-archive-statistics-source-only/linker-archive-statistics/source-ready.json",
+        "bytes": 3642,
+        "sha256": "275746af71b0007c2776a8d4777701e063b60b1b8e88505638167dba9f66b0a2"
+      },
+      "saved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/before/current-manifests/32.json",
+        "bytes": 3642,
+        "sha256": "275746af71b0007c2776a8d4777701e063b60b1b8e88505638167dba9f66b0a2"
+      }
+    },
+    {
+      "group_index": 33,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source61-reviewed-genuine-management-fixture-compile-source-only/genuine-management-fixture/source-ready.json",
+        "bytes": 1859,
+        "sha256": "9b63c4975354d44f0adf91bdc9126b1cc91be2f4b31ec7e7313d1c645ef28930"
+      },
+      "saved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/before/current-manifests/33.json",
+        "bytes": 1859,
+        "sha256": "9b63c4975354d44f0adf91bdc9126b1cc91be2f4b31ec7e7313d1c645ef28930"
+      }
+    }
+  ],
+  "review_evidence": {
+    "original_package": {
+      "path": "/private/tmp/uwvm-source62-management-active-segments-fixture-source-only-20261017-r1/root-applied-source-ready.json",
+      "bytes": 1176,
+      "sha256": "d712ef5eb6e042b76c7d1b883b124ddf9db9d75d426a3dbdb594e901349cdddb"
+    },
+    "saved_package": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/review-evidence/source-ready.original.json",
+      "bytes": 1176,
+      "sha256": "d712ef5eb6e042b76c7d1b883b124ddf9db9d75d426a3dbdb594e901349cdddb"
+    },
+    "original_independent_peer": {
+      "path": "/private/tmp/uwvm-source62-management-active-segments-independent-source-peer-recovery-20261017-r1.json",
+      "bytes": 10596,
+      "sha256": "0c8cd7b67d69fc3d7244c8545a286d09acbe380cc042321d03e4d396752038d3"
+    },
+    "saved_independent_peer": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/review-evidence/independent-source-peer.json",
+      "bytes": 10596,
+      "sha256": "0c8cd7b67d69fc3d7244c8545a286d09acbe380cc042321d03e4d396752038d3"
+    }
+  },
+  "candidate_imports_tests_compilers_SSH": false
+}

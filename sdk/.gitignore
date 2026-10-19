@@ -1,0 +1,9 @@
+# SDK producer and package outputs.
+*.wasm
+*.class
+*.jar
+*.nupkg
+/target/
+**/target/
+**/bin/
+**/obj/

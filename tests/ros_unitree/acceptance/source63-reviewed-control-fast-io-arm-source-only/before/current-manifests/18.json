@@ -1,0 +1,114 @@
+{
+  "kind": "source60-reviewed-current-declaration-successor",
+  "status": "CURRENT_SOURCE_INDEPENDENT_REVIEW_CLOSED_RETEST_PENDING",
+  "historical_manifest": {
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source54-generated-input-and-management-fixtures-source-only/prior-current-successors/18-source-ready.json",
+    "bytes": 6803,
+    "sha256": "faa90561ee59d538bcd6a1ae7b448b32df77d5cdb54dff1c1c05970529712852"
+  },
+  "preserved_historical_manifest": {
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source60-reviewed-linker-archive-statistics-source-only/before/current-manifests/18.json",
+    "bytes": 6803,
+    "sha256": "faa90561ee59d538bcd6a1ae7b448b32df77d5cdb54dff1c1c05970529712852"
+  },
+  "current_files": {
+    "tests/ros_debugger/test_update_ros_boundary.py": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/test_update_ros_boundary.py",
+      "bytes": 10049,
+      "sha256": "7b7649aeb2565e01aba7e488fc7baa9990151a8766651f7a0892b9aa4077f48a"
+    },
+    "tests/ros_debugger/management_test_policy.h": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_test_policy.h",
+      "bytes": 2930,
+      "sha256": "4c1f6f40f259f9be8621e81e1ba54eda5ef7ca0555888d6f79a6aecc71923988"
+    },
+    "tests/ros_debugger/management_contract.cc": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_contract.cc",
+      "bytes": 7205,
+      "sha256": "f87ebe727aeec3975e742fe1221360b186a8718953b651255368b1907bd5ae15"
+    },
+    "tests/ros_debugger/host_retirement_contract.cc": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/host_retirement_contract.cc",
+      "bytes": 19689,
+      "sha256": "0ea343824ab9e98383cc6b31e539c414eeab1e98b119211d3e41d04c2a6bd2bf"
+    },
+    "tests/ros_debugger/README.management.md": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/README.management.md",
+      "bytes": 11839,
+      "sha256": "61dd5d2bb1e1523a845a1009f1adae56bb26a53f290a3b2f5f7ea2277ce92e61"
+    },
+    "tests/ros_debugger/management-recipes.json": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management-recipes.json",
+      "bytes": 11387,
+      "sha256": "9b2b27dfed578551335034c85bd43771ebb639e7335f5cec602f3eb17d682646"
+    },
+    "tests/ros_debugger/integration_guest.py": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/integration_guest.py",
+      "bytes": 9437,
+      "sha256": "9109acc26ec79b41b7431940339387f2593cf7526d85aca5477fe3ae2c16beb5"
+    },
+    "tests/ros_debugger/integration_runtime.py": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/integration_runtime.py",
+      "bytes": 47052,
+      "sha256": "ec055329ee5ef6412fbfe16c0f5435c19fd9c30917c94efde82ced9805377b8a"
+    },
+    "tests/ros_debugger/README.md": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/README.md",
+      "bytes": 5734,
+      "sha256": "e0280269716574b9795fcc2a291c835c60aa2f0c3b173f74d67d0df1674d3ea8"
+    },
+    "tools/debug/README.ros.md": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/debug/README.ros.md",
+      "bytes": 8347,
+      "sha256": "a440270f7cf2113362bcb8e6f1c5fde24fd589642749a708e4ba91aa7c436050"
+    },
+    "sdk/docs/host-setup.md": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/docs/host-setup.md",
+      "bytes": 5825,
+      "sha256": "45297a5c27a09883475525a954ccfdfc3c2f8b07ec89cd1b3c3109258eb4914f"
+    },
+    "sdk/docs/update-and-debug-boundary.md": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/docs/update-and-debug-boundary.md",
+      "bytes": 4786,
+      "sha256": "943fe9f762d2d6a380333bf2358b8a9fd5e1da1923e75918c062ca2d1c52662a"
+    }
+  },
+  "changed_current_files": [
+    {
+      "previous": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/integration_runtime.py",
+        "bytes": 41714,
+        "sha256": "a36f31b550b2f95ad0fdd4648fca7b1b9593db2100a2ed3b18997f384f7c265f"
+      },
+      "current": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/integration_runtime.py",
+        "bytes": 47052,
+        "sha256": "ec055329ee5ef6412fbfe16c0f5435c19fd9c30917c94efde82ced9805377b8a"
+      }
+    }
+  ],
+  "review_evidence": {
+    "original_package": {
+      "path": "/private/tmp/uwvm-runtime-archive-statistics-source-only-20261017-r1/source-ready.json",
+      "bytes": 16052,
+      "sha256": "6a36647f4913d126e7153521bed5669562dcc732f405cd7aaf81a7f876a9f58f"
+    },
+    "saved_package": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source60-reviewed-linker-archive-statistics-source-only/review-evidence/source-ready.original.json",
+      "bytes": 16052,
+      "sha256": "6a36647f4913d126e7153521bed5669562dcc732f405cd7aaf81a7f876a9f58f"
+    },
+    "original_independent_peer": {
+      "path": "/private/tmp/uwvm-source60-runtime-archive-statistics-independent-source-peer-restart-20261017-r1.json",
+      "bytes": 12909,
+      "sha256": "0772b0df959da955e2ab2bed2b2eb41e356aa2928707314904c7be101788f4b3"
+    },
+    "saved_independent_peer": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source60-reviewed-linker-archive-statistics-source-only/review-evidence/independent-source-peer.json",
+      "bytes": 12909,
+      "sha256": "0772b0df959da955e2ab2bed2b2eb41e356aa2928707314904c7be101788f4b3"
+    }
+  },
+  "scope": "Real linker archive-statistics source verification; original package/results stay historical.",
+  "execution_performed": false
+}

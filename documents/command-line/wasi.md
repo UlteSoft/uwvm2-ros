@@ -22,6 +22,80 @@ The WASI command category is compiled only when WASI support is enabled.
 
 If a command is not compiled into the binary, the parser treats its name as an invalid parameter.
 
+## Default Authority
+
+WASI Preview 1 imports remain available for linking by default. The concrete
+environment starts with no inherited host environment variables and no
+non-descriptor permissions. Merely enabling imports or exposing the native host
+API does not authorize clocks, random bytes, process signals or scheduler calls.
+
+Standard input grants read, descriptor metadata and readiness; standard output
+and standard error grant write, descriptor metadata and readiness. Their
+inheriting rights are zero. Filesystem mutation, seek, shared descriptor flag
+changes, path operations, socket acceptance and shutdown are absent from these
+default masks. Directory and socket preopens remain explicit command-line
+resources. Arguments supplied by the launcher, descriptor introspection and
+closing/renumbering existing descriptors do not create additional resources.
+
+This changes the previous permissive defaults. Applications that need an
+operation must request it explicitly. Positive clock/random unit fixtures and
+applications that use a WASI sleep timer must grant their exact required
+permission. The new implementation and prepared tests are documented in
+[the default-authority configuration tests](../../tests/wasip1_default_deny/README.configuration.md);
+source-model checks do not establish compiled runtime acceptance.
+
+## Explicit Permission Commands
+
+| Command | Arguments | Effect |
+| --- | --- | --- |
+| `--wasip1-global-grant` | `<permission:str>` | Grant one permission in the Global default. |
+| `--wasip1-global-deny` | `<permission:str>` | Explicitly deny one permission in the Global default. |
+| `--wasip1-single-grant` | `<module:str> <permission:str>` | Grant one bit for an already-created Single target. |
+| `--wasip1-single-deny` | `<module:str> <permission:str>` | Deny one bit for an already-created Single target, including a Global grant. |
+| `--wasip1-group-grant` | `<group:str> <permission:str>` | Grant one bit for an already-created named Group. |
+| `--wasip1-group-deny` | `<group:str> <permission:str>` | Deny one bit for an already-created named Group, including a Global grant. |
+
+Permission names are exact and case-sensitive:
+
+| Permission | Authorized operation |
+| --- | --- |
+| `realtime-clock` | Realtime `clock_res_get`, `clock_time_get` and clock subscriptions in `poll_oneoff`. |
+| `monotonic-clock` | The same operations for the monotonic domain. |
+| `process-clock` | The same operations for the process CPU-time domain, where supported. |
+| `thread-clock` | The same operations for the thread CPU-time domain, where supported. |
+| `random` | `random_get`, including its wasm64 form. |
+| `proc-raise` | `proc_raise` and its host callback/native signal behavior. |
+| `sched-yield` | `sched_yield` and its host callback/native scheduler behavior. |
+| `stdio-full-rights` | Opt into the previous full base/inheriting stdio masks during initialization. |
+
+There is no wildcard. Repeat grant/deny for distinct permissions only: a repeated
+or opposing command for the same bit in the same target is an error. A target
+has separate value and presence masks. Unspecified bits follow Global; an
+explicit target deny removes only its configured bit. These are WASI policies:
+they neither create nor revoke ROS capabilities.
+
+For example, permit a monotonic timer globally while keeping one module without
+that timer and allowing random bytes only in a separate Group:
+
+```bash
+uwvm \
+  --wasip1-global-grant monotonic-clock \
+  --wasip1-single-create restricted \
+  --wasip1-single-deny restricted monotonic-clock \
+  --wasip1-group-create entropy \
+  --wasip1-group-add-module entropy generator \
+  --wasip1-group-grant entropy random \
+  --wasm-preload-library restricted.wasm restricted \
+  --wasm-preload-library generator.wasm generator \
+  --run main.wasm
+```
+
+`stdio-full-rights` is a broad compatibility opt-in. It authorizes descriptor
+operations allowed by the former masks; native descriptor access modes still
+apply. Debugger launchers retain their stricter console masks even with this
+option, and strict ROS execution continues to reject socket standard streams.
+Use the basic default when ordinary stream I/O is sufficient.
+
 ## Target Model
 
 WASI Preview 1 configuration has three layers:
@@ -127,6 +201,7 @@ For WASI mount paths, this flag changes command-line validation from "valid UTF-
 | `--wasip1-global-set-argv0` | `--wasip1-set-argv0`, `-I1argv0` | `<argv0:str>` | Once | Override global-default WASI `argv[0]`. |
 | `--wasip1-global-force-args` | `--wasip1-force-args`, `-I1fargs` | `<num:size_t> [arg:str]...` | Once, conflicts with global set-argv0 | Replace the complete global-default WASI argv vector. `num` may be `0`. |
 | `--wasip1-global-noinherit-system-environment` | `--wasip1-noinherit-system-environment`, `-I1nosysenv` | None | Once | Start the global-default WASI environment without inheriting host environment variables. |
+| `--wasip1-global-inherit-system-environment` | None | None | Once, conflicts with global noinherit | Explicitly inherit the host environment; default inheritance is disabled. |
 | `--wasip1-global-delete-system-environment` | `--wasip1-delete-system-environment`, `-I1delsysenv` | `<env:str>` | Repeatable, no duplicate name | Remove one inherited host environment variable by name. Repeating the same name is rejected. |
 | `--wasip1-global-add-or-replace-environment` | `--wasip1-add-or-replace-environment`, `-I1addrepenv` | `<env:str> <value:str>` | Repeatable | Add or replace one WASI environment variable. Repeating the same name is allowed; the last value wins. |
 | `--wasip1-global-socket-tcp-listen` | `--wasip1-socket-tcp-listen`, `-I1tcplisten` | `<fd:i32> [<ipv4|ipv6>:<port>|unix <path>]` | Repeatable | Create a default TCP listening socket. |

@@ -1,0 +1,212 @@
+{
+  "format_version": 1,
+  "kind": "guest-retained-native-original-rmw-service-source-only-recipe",
+  "source_only": true,
+  "executed": 0,
+  "default_grants": [],
+  "actual_source_manifest": null,
+  "actual_Runtime_Host_native_SDK_results": null,
+  "prerequisites": [
+    "Independent full source peer and same-byte coherent Root integration",
+    "Actual Root wire12 r2 source closure, Host numeric imports/routing, NativeRegistry/policy Empty+AddTwoInts family closure; none inferred from declarations",
+    "Actual complete selected original cross-built SDK, current A/B/C/CPP10/header source recompilation and original generated objects/TypeSupport",
+    "Independent actual native identities: all11 CPP10 identities or actual3 C AddTwoInts identities; no invented hash/export",
+    "Actual system-inclusive MD/source inventories/objects/libraries/link/ELF/Wasm fullimports and platform ABI",
+    "Root sole finite process/thread/pidfd/tree/cgroup/memory/backing/output/deadline/cleanup/namespace/domain owner"
+  ],
+  "composition": {
+    "service_subdirectory": "sdk/rmw_wasm/service_transport",
+    "actual_B_C_target": "rmw_uwvm",
+    "library": "uwvm_rmw_service_transport",
+    "CPP10_attach": "actual sdk/rmw_wasm/cpp/attach.cmake uwvm_rmw_attach_cpp_codecs(rmw_uwvm, STATIC_WASI or NATIVE_CONTRACT)",
+    "native_models_also": "actual independently reviewed uwvm_rmw_subscription_transport target; compose both real states, no fake provider",
+    "header_includes": [
+      "UWVM_RMW_INCLUDE_DIR=<actual>/sdk/rmw_wasm/include",
+      "UWVM_ROS_SDK_INCLUDE_DIR=<actual>/sdk/include"
+    ],
+    "preserve_other_interfaces": "Only assign Cprofile activation/requests/metadata; preserve separately selected Cprofile.wait and Bprofile.publisher"
+  },
+  "configure_data": [
+    "ACTUAL_CMAKE",
+    "-S",
+    "ACTUAL_COMPOSED_SOURCE/sdk/rmw_wasm/service_transport/compose",
+    "-B",
+    "FRESH_OWNED_BUILD",
+    "-DCMAKE_TOOLCHAIN_FILE=ACTUAL_ORIGINAL_STATIC_WASI_TOOLCHAIN",
+    "-DUWVM_COMPOSED_SOURCE_ROOT=ACTUAL_COMPOSED_SOURCE",
+    "-DUWVM_RMW_CPP_MODE=STATIC_WASI",
+    "-DUWVM_RMW_SERVICE_BUILD_INTEROP_EXAMPLES=ON",
+    "-DUWVM_RMW_SERVICE_BUILD_PURE_C_ADD_EXAMPLE=ON"
+  ],
+  "build_targets": {
+    "models": [
+      "cmake",
+      "--build",
+      "FRESH_NATIVE_MODEL_BUILD",
+      "--target",
+      "uwvm_rmw_service_models",
+      "--parallel",
+      "1"
+    ],
+    "interop": [
+      "cmake",
+      "--build",
+      "FRESH_GUEST_BUILD",
+      "--target",
+      "checked_service",
+      "checked_availability",
+      "--parallel",
+      "1"
+    ],
+    "pure_C": [
+      "cmake",
+      "--build",
+      "FRESH_GUEST_BUILD",
+      "--target",
+      "checked_add_two_ints_c",
+      "--parallel",
+      "1"
+    ],
+    "separate_native": [
+      "cmake",
+      "--build",
+      "FRESH_ORIGINAL_NATIVE_BUILD",
+      "--target",
+      "raw12_native_service_peer",
+      "--parallel",
+      "1"
+    ]
+  },
+  "actual_argv": {
+    "interop": [
+      "ACTUAL_CHECKED_SERVICE_WASM",
+      "client|server",
+      "empty|add",
+      "EXACT_PRIMARY_ALIAS",
+      "EXACT_PAIRED_ALIAS",
+      "/actual/isolated/service",
+      "ACTUAL_DOMAIN_ID",
+      "ACTUAL_NATIVE_STRING_RIHS",
+      "ACTUAL_NATIVE_TIME_RIHS",
+      "ACTUAL_NATIVE_SERVICEEVENTINFO_RIHS",
+      "ACTUAL_NATIVE_EMPTY_REQUEST_RIHS",
+      "ACTUAL_NATIVE_EMPTY_RESPONSE_RIHS",
+      "ACTUAL_NATIVE_EMPTY_EVENT_RIHS",
+      "ACTUAL_NATIVE_ADD_REQUEST_RIHS",
+      "ACTUAL_NATIVE_ADD_RESPONSE_RIHS",
+      "ACTUAL_NATIVE_ADD_EVENT_RIHS",
+      "ACTUAL_NATIVE_EMPTY_COMPLETE_SERVICE_RIHS",
+      "ACTUAL_NATIVE_ADD_COMPLETE_SERVICE_RIHS"
+    ],
+    "pure_C": [
+      "ACTUAL_CHECKED_ADD_C_WASM",
+      "client|server",
+      "EXACT_PRIMARY_ALIAS",
+      "EXACT_PAIRED_ALIAS",
+      "/actual/isolated/service",
+      "ACTUAL_DOMAIN_ID",
+      "ACTUAL_NATIVE_ADD_REQUEST_RIHS",
+      "ACTUAL_NATIVE_ADD_RESPONSE_RIHS",
+      "ACTUAL_NATIVE_ADD_COMPLETE_SERVICE_RIHS"
+    ],
+    "direct_provider_availability": [
+      "ACTUAL_AVAILABILITY_WASM",
+      "EXACT_CALL_ALIAS",
+      "EXACT_EVENT_OBSERVE_ALIAS",
+      "EXACT_AVAILABILITY_ALIAS",
+      "11_ACTUAL_NATIVE_IDENTITIES_IN_CPP10_ORDER"
+    ],
+    "original_native_peer": [
+      "ACTUAL_NATIVE_PEER",
+      "--owned-native-fixture",
+      "server|client",
+      "empty|add",
+      "/actual/isolated/service"
+    ]
+  },
+  "required_rights": {
+    "client": [
+      "service.call",
+      "independently paired event.observe"
+    ],
+    "server": [
+      "service.advertise",
+      "distinct service.respond"
+    ],
+    "availability": [
+      "distinct actual service.available for same owned client"
+    ],
+    "not_implicitly_granted": [
+      "clock",
+      "logger",
+      "environment",
+      "filesystem",
+      "wait",
+      "graph",
+      "update",
+      "debugger",
+      "management"
+    ]
+  },
+  "explicit_bounds": {
+    "example_endpoint_slots": 1,
+    "example_transaction_attempt_slots": 64,
+    "recommended_transaction_slots_ceiling": 256,
+    "maximum_source_api_is_not_native_credit": 65536,
+    "interop_Empty_request_response": [
+      0,
+      0
+    ],
+    "AddTwoInts_request_response": [
+      16,
+      8
+    ],
+    "private_packet_headers": 352,
+    "example_poll_iterations": 4096,
+    "poll_iterations_are_elapsed_time": false,
+    "aggregate_transaction_history_bytes": 67108864
+  },
+  "required_matrix": [
+    "Actual default13 with zero native activation under denied selection",
+    "Actual native Empty full logical0 and AddTwoInts17/-9/8 both directions, C-API/CPP-object and actual pure-C Add path separately",
+    "All3 real public Cprofile fields coexist with actual C subscription callbacks and genuine B.publisher unchanged",
+    "Same complete actual native request GUID/signedsequence/timestamps and separate RMW-local identity/Gateway ticket",
+    "Controls preserve error/retired/external effects with no invented native info",
+    "11/90/95 no consumption; metadata malformed/unknown-ticket cancels, badheader retires, no output after lost ACK",
+    "Once NativeRetire plus independent BOTH Brawclose/graph/local/context diagnostics and Host drain",
+    "All actual broader SDK/distributions/vendor/language/architecture/whole upstream/performance/VTune requirements remain independently required"
+  ],
+  "authored_models": {
+    "groups": 18,
+    "executed": 0,
+    "scope": "local synthetic raw12/raw7 only, real SDK/CPP10 object contracts; never Native proof"
+  },
+  "required_remaining": [
+    "Pure-C complete Empty registry (interop companion is not replacement)",
+    "Original rmw_service_server_is_available seam uses actual same-owned-client helper only after separately reviewed connection",
+    "Complete Host/NativeRegistry/routing/policy/default13 and actual genuine imports",
+    "Actual finite wait provider/other complete RMW features not implemented by this component"
+  ],
+  "configure_native_models": [
+    "ACTUAL_CMAKE",
+    "-S",
+    "ACTUAL_COMPOSED_SOURCE/sdk/rmw_wasm/service_transport/compose",
+    "-B",
+    "FRESH_NATIVE_MODEL_BUILD",
+    "-DUWVM_COMPOSED_SOURCE_ROOT=ACTUAL_COMPOSED_SOURCE",
+    "-DUWVM_RMW_CPP_MODE=NATIVE_CONTRACT",
+    "-DUWVM_RMW_SERVICE_BUILD_MODELS=ON",
+    "-DCMAKE_PREFIX_PATH=ACTUAL_ORIGINAL_NATIVE_SDK"
+  ],
+  "configure_native_peer": [
+    "ACTUAL_CMAKE",
+    "-S",
+    "ACTUAL_COMPOSED_SOURCE/sdk/rmw_wasm/service_transport",
+    "-B",
+    "FRESH_ORIGINAL_NATIVE_BUILD",
+    "-DUWVM_RMW_INCLUDE_DIR=ACTUAL_COMPOSED_SOURCE/sdk/rmw_wasm/include",
+    "-DUWVM_ROS_SDK_INCLUDE_DIR=ACTUAL_COMPOSED_SOURCE/sdk/include",
+    "-DUWVM_RMW_SERVICE_BUILD_NATIVE_PEER=ON",
+    "-DCMAKE_PREFIX_PATH=ACTUAL_ORIGINAL_NATIVE_SDK"
+  ]
+}

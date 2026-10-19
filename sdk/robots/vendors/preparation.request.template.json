@@ -1,0 +1,22 @@
+{
+  "format_version": 1,
+  "vendor": null,
+  "model": null,
+  "sdk_revision": null,
+  "ros_version": null,
+  "upstream_lock": null,
+  "native_headers": null,
+  "support": {
+    "sdk/tools/custom_types.py": null,
+    "sdk/custom-types/bounded_profile.py": null,
+    "tests/ros_custom_types/bounded-v2/bind_catalog.py": null,
+    "tests/ros_custom_types/bounded-v2/native_identity.cc": null,
+    "tests/ros_custom_types/bounded-v2/native_protocol.h": null,
+    "gateways/common/native_io.h": null,
+    "sdk/custom-types/interface_templates/bounded_interfaces.rs.in": null,
+    "sdk/custom-types/interface_templates/bounded_interfaces.mjs.in": null,
+    "sdk/custom-types/interface_templates/bounded_interfaces.go.in": null,
+    "sdk/custom-types/interface_templates/bounded_interfaces.ts.in": null
+  },
+  "identity_mode": "original-native-metadata"
+}

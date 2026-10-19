@@ -1,0 +1,86 @@
+{
+  "format_version": 1,
+  "kind": "source-only-rclc-three-service-future-owner-recipe",
+  "status": "AUTHORED_NOT_EXECUTED",
+  "coherent_current_source_required": true,
+  "rights": [],
+  "phases": [
+    {
+      "role": "local model",
+      "sources": [
+        "src/compat.c",
+        "services/tests/contract.c"
+      ],
+      "credit": "local model only; actual0"
+    },
+    {
+      "role": "old topic/timer regression",
+      "sources": [
+        "src/compat.c",
+        "tests/contract.c"
+      ],
+      "credit": "must run actual changed coherent adapter; no old-credit retagging"
+    },
+    {
+      "role": "Guest Wasm command",
+      "translation_units": [
+        "src/compat.c",
+        "services/examples/selection.c",
+        "services/examples/checked_service.c"
+      ],
+      "compile_original_each_separately": [
+        "services/upstream/rclc_examples/src/example_service_node.c",
+        "services/upstream/rclc_examples/src/example_client_node.c"
+      ],
+      "requirements": "actual whole Wasm validator/imports/current SDK+ABI, complete MD/link/ELF/tool inputs"
+    },
+    {
+      "role": "actual native AddTwoInts source bind",
+      "reuse_current": "sdk/compat/rclcpp/services/native/{identity_export,codec_contract}",
+      "requirements": "modern full root/Request/Response/Event/Time metadata warm+SIGSTOP+I, real native full7 maps/MD/whole SDK, binder+complete original receipts/generation products"
+    },
+    {
+      "role": "native real C/rclc peer",
+      "sources": [
+        "services/native/peer.c"
+      ],
+      "gates": [
+        "actual warm",
+        "SIGSTOP",
+        "I",
+        "M",
+        "P",
+        "F",
+        "C"
+      ],
+      "requirements": "no Guest adapter includes; installed generated3types, full independent input/cleanup and bidirectional complete field comparison"
+    },
+    {
+      "role": "default deny",
+      "mode": "fresh checked-service deny",
+      "requires": "actual first source open13 plus zero live owners and all independent cleanup/normal Framefinish"
+    }
+  ],
+  "finite": {
+    "Context_owners": 256,
+    "requests_per_owner_maximum": 64,
+    "driver_steps_maximum": 1048576,
+    "three_family_examples_maximum_requests": 4,
+    "example_wire_bytes": {
+      "AddTwoInts": 16,
+      "Trigger": 261,
+      "SetBool": 261
+    },
+    "example_physical_sleep_ns": 3000000000,
+    "example_sleep_steps": 512
+  },
+  "external_owner_required": "Actual original cgroup/current memory+CPU+physical backing admission, retained same-birth pidfd tree, real timeouts, bounded raw logs/outputs, all cleanup and source/SDK preservation. Root sole execution; this recipe grants none.",
+  "actual": {
+    "candidate_imports": 0,
+    "generators": 0,
+    "compilers": 0,
+    "tests": 0,
+    "native_or_ROS": 0,
+    "SSH": 0
+  }
+}

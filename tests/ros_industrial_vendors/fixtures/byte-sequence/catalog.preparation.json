@@ -1,0 +1,16 @@
+{
+  "format": "uwvm-ros-vendor-complete-bounded-v1",
+  "types": [
+    {
+      "ros_version": 2,
+      "type": "test_industrial/msg/BytePayload",
+      "file": "BytePayload.msg",
+      "bounds": {
+        "payload": {
+          "sequence": 16384
+        }
+      },
+      "registered": false
+    }
+  ]
+}

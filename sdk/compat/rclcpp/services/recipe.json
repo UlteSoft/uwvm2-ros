@@ -1,0 +1,96 @@
+{
+  "budgets": "A separate independently reviewed Root execution owner must admit actual current64 memory/CPU/process/output/backing commitments, strict pidfd ownership, whole SDK/MD/link/maps and all independent cleanup/normalfinish. Documented commands are not permission to execute from this source package.",
+  "build_source_roles": {
+    "distinct_migration_lesson": "sdk/compat/rclcpp/services/examples/explicit_ready_async_client.cc",
+    "guest_selection": "sdk/compat/rclcpp/services/examples/selected_service_binding.hpp",
+    "guest_source": "sdk/compat/rclcpp/services/upstream/examples/rclcpp/services/minimal_service/main.cpp",
+    "model_official_server": "Exact unchanged main.cpp is compiled with -Dmain=official_service_main only as a model link symbol. This is not a native/ROS source claim.",
+    "model_sources": [
+      "sdk/compat/rclcpp/services/tests/model_binding.hpp",
+      "sdk/compat/rclcpp/services/tests/service_contract.cc"
+    ],
+    "modified_existing": [
+      "sdk/include/roswasm/roswasmcpp.hpp",
+      "sdk/compat/rclcpp/include/rclcpp/rclcpp.hpp",
+      "sdk/compat/rclcpp/include/roswasm_rclcpp/selection.hpp"
+    ]
+  },
+  "coherent_source_required": true,
+  "compiler_invocations": 0,
+  "format_version": 1,
+  "future_actor_matrix": [
+    {
+      "actual": 0,
+      "authored_cases": 26,
+      "credit": "no native/ROS/official credit",
+      "rights": "fake explicitly marked host model only",
+      "role": "source_model"
+    },
+    {
+      "Guest": "distinct explicit-ready lesson, NOT original official client",
+      "actual": 0,
+      "peer": "actual native service_peer server I/M/P/F",
+      "requirements": "actual native readiness before first R, real custom Gateway registry + aliases/native/codec IDs, real request41+1/response42, complete raw logs, all close/Frame evidence",
+      "role": "native_server_to_Guest_async_client"
+    },
+    {
+      "Guest": "exact original minimal_service main",
+      "actual": 0,
+      "peer": "actual native service_peer client I/M/P/F",
+      "requirements": "real native availability, one actual native request, exact full41+1/42 values, real log alias, ownership/normalfinish",
+      "role": "Guest_original_server_to_native_client"
+    },
+    {
+      "actual": 0,
+      "required_error": 13,
+      "requirements": "ABI-qualified original current artifacts, no live capability. Separate log-only policy may isolate Service denial; record actual first denied role.",
+      "role": "defaultdeny"
+    },
+    {
+      "actual": 0,
+      "reason": "No actual Guest native availability ABI or ERROR logger mapping in this cohort.",
+      "role": "unchanged_official_client",
+      "status": "REQUIRED_NOT_IMPLEMENTED"
+    }
+  ],
+  "kind": "rclcpp-service-future-explicit-unexecuted-source-recipe-v1",
+  "native_or_ROS_runs": 0,
+  "ordered_native_preparation": [
+    {
+      "actual_input": "Actual coherent whole source, installed ROS2 modern SDK roots/features/compiler/MD/link/ELF/whole inventories",
+      "cmake": "-DUWVM_BUILD_BOUND_CONTRACT=OFF",
+      "stage": "native_export_build",
+      "targets": [
+        "identity_export",
+        "service_peer"
+      ]
+    },
+    {
+      "actual_input": "Original-pidfd stopped full-map/FD/hash observation after actual modern root+Request+Response support warm",
+      "gate": "I",
+      "output": "Actual complete native-v2 JSON; no identity forecast",
+      "stage": "actual_owned_export"
+    },
+    {
+      "output": "fresh actual native-bound catalog with all original export/template/definition associations",
+      "source": "tests/ros_custom_types/bounded-v2/bind_catalog.py",
+      "stage": "bind",
+      "template": "sdk/compat/rclcpp/services/catalogs/catalog.preparation.json"
+    },
+    {
+      "output": "actual generation.json and complete native_ros2.hpp/bounded_* products",
+      "source": "sdk/tools/custom_types.py",
+      "stage": "generate"
+    },
+    {
+      "cmake": "-DUWVM_BUILD_BOUND_CONTRACT=ON -DUWVM_BOUND_GENERATED=<actual generated directory>",
+      "gate": "I after actual warmed SIGSTOP and strict native evidence",
+      "qualified_delivery": false,
+      "stage": "bound_native_contract",
+      "target": "codec_contract"
+    }
+  ],
+  "source_review": "PENDING_INDEPENDENT_REVIEW",
+  "status": "AUTHORED_NOT_EXECUTED",
+  "tests": 0
+}

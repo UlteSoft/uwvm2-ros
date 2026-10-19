@@ -1,0 +1,55 @@
+{
+  "format_version": 1,
+  "current_scope": "two exact official Jazzy String source examples; source-only, no execution",
+  "remaining_compatibility_obligations": [
+    {
+      "id": "native-waitset",
+      "required_work": "rcl/rmw waitset, guard conditions and actual bounded timeout/ready semantics",
+      "acceptance": "actual unchanged official source + failure/cleanup cases + actual installed SDK/native/Guest proof; never success stubs"
+    },
+    {
+      "id": "executor-modes",
+      "required_work": "LET/trigger configuration, remove/replace registrations, full context-callback scheduling and reentrancy",
+      "acceptance": "actual unchanged official source + failure/cleanup cases + actual installed SDK/native/Guest proof; never success stubs"
+    },
+    {
+      "id": "services-actions",
+      "required_work": "complete native service/action protocol schemas, current native identity, all roles and correlated lifecycle",
+      "acceptance": "actual unchanged official source + failure/cleanup cases + actual installed SDK/native/Guest proof; never success stubs"
+    },
+    {
+      "id": "all-messages",
+      "required_work": "sequence/String families and complete generated rosidl messages, no native layout projection",
+      "acceptance": "actual unchanged official source + failure/cleanup cases + actual installed SDK/native/Guest proof; never success stubs"
+    },
+    {
+      "id": "init-and-errors",
+      "required_work": "init options/remapping/argument parsing and complete error/logging API/source contracts",
+      "acceptance": "actual unchanged official source + failure/cleanup cases + actual installed SDK/native/Guest proof; never success stubs"
+    },
+    {
+      "id": "concurrency",
+      "required_work": "real multithreaded contexts, timer callback cancellation/reset and concurrent dispatch synchronization",
+      "acceptance": "actual unchanged official source + failure/cleanup cases + actual installed SDK/native/Guest proof; never success stubs"
+    },
+    {
+      "id": "native-loaning",
+      "required_work": "native allocation/loaned data semantics without treating a Guest pointer as native storage",
+      "acceptance": "actual unchanged official source + failure/cleanup cases + actual installed SDK/native/Guest proof; never success stubs"
+    },
+    {
+      "id": "qos",
+      "required_work": "all supported QoS options, actual policy/native negotiation/graph checks",
+      "acceptance": "actual unchanged official source + failure/cleanup cases + actual installed SDK/native/Guest proof; never success stubs"
+    },
+    {
+      "id": "lifecycle-parameters",
+      "required_work": "full lifecycle/parameter APIs with separate explicit grants",
+      "acceptance": "actual unchanged official source + failure/cleanup cases + actual installed SDK/native/Guest proof; never success stubs"
+    }
+  ],
+  "default_authority": [],
+  "native_rcl_abi_compatible": false,
+  "full_rclc_supported": false,
+  "executed_tests": 0
+}

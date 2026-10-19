@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Explicit immutable Unitree simulation and performance inputs",
+  "description": "Root fills actual paths, SHA256/size pins, upstream Git-tree proofs and the current boot/cgroup incarnation. This document supplies no Guest rights, downloads, execution results, signing policy or deployment orchestration.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format_version", "cgroup", "input_roots", "inputs", "environment", "limits", "upstreams", "simulation", "benchmark", "profiler"],
+  "properties": {
+    "format_version": {"const": 1},
+    "cgroup": {
+      "description": "Exact original 64 GiB leaf and boot. A reboot invalidates device/inode/boot selections and requires fresh actual admission evidence.",
+      "type": "object", "additionalProperties": false,
+      "required": ["memory_max", "memory_swap_max", "expected_boot_id", "expected_leaf", "expected_device", "expected_inode", "expected_cpus"],
+      "properties": {
+        "memory_max": {"const": 68719476736}, "memory_swap_max": {"const": 0},
+        "expected_boot_id": {"type": "string", "pattern": "^[0-9a-f-]{36}$"},
+        "expected_leaf": {"$ref": "#/$defs/path"},
+        "expected_device": {"type": "integer", "minimum": 0},
+        "expected_inode": {"type": "integer", "minimum": 1},
+        "expected_cpus": {"type": "string", "minLength": 1}
+      }
+    },
+    "input_roots": {"description": "Complete immutable SDK/tool/upstream/keystore roots. Never /, the output, or an output ancestor. Whole rooted inventories are compared before/after.", "type": "array", "minItems": 1, "maxItems": 64, "uniqueItems": true, "items": {"$ref": "#/$defs/path"}},
+    "inputs": {"description": "Named physical file selections. Executables and command placeholders reference these names; availability is not compatibility qualification.", "type": "object", "minProperties": 1, "additionalProperties": {"$ref": "#/$defs/input"}},
+    "environment": {"description": "Only the documented allowlist in common.py is accepted. Selected ROS security remains Enforce with a completely inventoried keystore; no security setting grants Guest authority.", "type": "object", "additionalProperties": {"type": "string"}},
+    "limits": {
+      "type": "object", "additionalProperties": false,
+      "required": ["jobs", "command_seconds", "rss_bytes", "log_bytes", "output_bytes"],
+      "properties": {
+        "jobs": {"const": 1}, "command_seconds": {"type": "integer", "minimum": 1, "maximum": 3600},
+        "rss_bytes": {"type": "integer", "minimum": 1, "maximum": 8589934592},
+        "log_bytes": {"type": "integer", "minimum": 1, "maximum": 16777216},
+        "output_bytes": {"type": "integer", "minimum": 1, "maximum": 4294967296}
+      }
+    },
+    "upstreams": {
+      "type": "object", "additionalProperties": {
+        "description": "Consumes the actual OFFICIAL_SNAPSHOT_GIT_TREE_AND_ALL_BLOBS_VERIFIED producer proof, reopening every recorded blob and retaining unmaterialized Git links as absent.",
+        "type": "object", "additionalProperties": false,
+        "required": ["root", "repository", "commit", "lock_input"],
+        "properties": {"root": {"$ref": "#/$defs/path"}, "repository": {"type": "string"}, "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"}, "lock_input": {"$ref": "#/$defs/label"}}
+      }
+    },
+    "simulation": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/simulation"}]},
+    "benchmark": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/benchmark"}]},
+    "profiler": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/profiler"}]}
+  },
+  "$defs": {
+    "path": {"type": "string", "pattern": "^/[^\\u0000\\r\\n]*$"},
+    "label": {"type": "string", "pattern": "^[a-z][a-z0-9_-]{0,63}$"},
+    "input": {"type": "object", "additionalProperties": false, "required": ["path", "sha256", "bytes"], "properties": {"path": {"$ref": "#/$defs/path"}, "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "bytes": {"type": "integer", "minimum": 0}}},
+    "job": {"description": "Direct executable input label and literal argv tokens. Only {source}, {out}, and {input:label} placeholders are expanded. No shell, PATH search, daemon, systemd or implicit container launch is supported.", "type": "object", "additionalProperties": false, "required": ["executable", "arguments"], "properties": {"executable": {"$ref": "#/$defs/label"}, "arguments": {"type": "array", "maxItems": 128, "items": {"type": "string"}}}},
+    "controllers": {
+      "type": "object", "additionalProperties": false,
+      "required": ["native", "wasm", "native_binary_input", "runtime_input", "wasm_binary_input", "native_build_input", "wasm_build_input"],
+      "properties": {"native": {"$ref": "#/$defs/job"}, "wasm": {"$ref": "#/$defs/job"}, "native_binary_input": {"$ref": "#/$defs/label"}, "runtime_input": {"$ref": "#/$defs/label"}, "wasm_binary_input": {"$ref": "#/$defs/label"}, "native_build_input": {"$ref": "#/$defs/label"}, "wasm_build_input": {"$ref": "#/$defs/label"}}
+    },
+    "simulation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["robot", "family", "model_input", "model_upstream", "keyframe", "dt_ns", "steps", "domain", "interface", "expected_network_namespace", "motor_sensors", "imu", "render", "state_abs_limit", "state_tolerance", "command_tolerance", "mode_machine", "step_timeout_seconds", "python_input", "peer_transport", "controllers", "direct_runtime"],
+      "properties": {
+        "robot": {"type": "string"}, "family": {"enum": ["go", "hg"]},
+        "model_input": {"$ref": "#/$defs/label"}, "model_upstream": {"$ref": "#/$defs/label"},
+        "keyframe": {"type": ["string", "null"]}, "dt_ns": {"type": "integer", "minimum": 100000, "maximum": 20000000}, "steps": {"type": "integer", "minimum": 1, "maximum": 2000},
+        "domain": {"type": "integer", "minimum": 1, "maximum": 232}, "interface": {"const": "lo"},
+        "expected_network_namespace": {"type": "string", "pattern": "^net:\\[[0-9]+\\]$"},
+        "motor_sensors": {"description": "Ordered actual MuJoCo actuator, explicit DDS carrier slot and scalar sensor names. Actuator order is proved against actual model IDs; carrier slots are unique. Never infer a humanoid map from Go2 or body-tree order.", "type": "array", "minItems": 1, "maxItems": 35, "items": {"type": "object", "additionalProperties": false, "required": ["actuator", "slot", "q", "dq", "tau"], "properties": {"actuator": {"type": "string"}, "slot": {"type": "integer", "minimum": 0, "maximum": 34}, "q": {"type": "string"}, "dq": {"type": "string"}, "tau": {"type": "string"}}}},
+        "imu": {"type": "object", "additionalProperties": false, "required": ["quaternion", "gyroscope", "accelerometer"], "properties": {"quaternion": {"type": "string"}, "gyroscope": {"type": "string"}, "accelerometer": {"type": "string"}}},
+        "render": {"oneOf": [{"type": "null"}, {"type": "object", "additionalProperties": false, "required": ["camera", "width", "height", "max_pixel_error"], "properties": {"camera": {"oneOf": [{"type": "string"}, {"const": -1}]}, "width": {"type": "integer", "minimum": 16, "maximum": 320}, "height": {"type": "integer", "minimum": 16, "maximum": 240}, "max_pixel_error": {"type": "integer", "minimum": 0, "maximum": 32}}}]},
+        "state_abs_limit": {"type": "number", "minimum": 1, "maximum": 1000000}, "state_tolerance": {"type": "number", "minimum": 0, "maximum": 0.01}, "command_tolerance": {"type": "number", "minimum": 0, "maximum": 0.01}, "mode_machine": {"type": "integer", "minimum": 0, "maximum": 255}, "step_timeout_seconds": {"type": "number", "minimum": 0.01, "maximum": 10},
+        "python_input": {"$ref": "#/$defs/label"}, "peer_transport": {"enum": ["sdk2", "ros2"]},
+        "controllers": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/controllers"}]},
+        "direct_runtime": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/direct_runtime"}]}
+      }
+    },
+    "direct_runtime": {
+      "type": "object", "additionalProperties": false,
+      "required": ["job", "denied_job", "runtime_input", "guest_input", "denied_guest_input", "guest_build_input", "denied_build_input", "steps", "native_job", "native_binary_input", "native_build_input", "warmup_steps", "slowdown_trigger", "controller_mode", "hold", "modular", "libraries"],
+      "properties": {
+        "language": {"description": "Actual standalone Guest language. Omission preserves the original C++ contract; C and embedded JavaScript use their separate real source/compile receipts.", "enum": ["c", "cpp", "javascript"]},
+        "job": {"$ref": "#/$defs/job"}, "denied_job": {"$ref": "#/$defs/job"}, "runtime_input": {"$ref": "#/$defs/label"}, "runtime_build_input": {"description": "Optional actual full-MD native-interpreter-four-profile build receipt for the selected Runtime. Required to omit unavailable ROS1 CLI flags for a proven ros2-only Worker; original source/MF, actual compiler macros and all consumed current source counterparts are checked.", "$ref": "#/$defs/label"}, "guest_input": {"$ref": "#/$defs/label"}, "denied_guest_input": {"$ref": "#/$defs/label"}, "guest_build_input": {"$ref": "#/$defs/label"}, "denied_build_input": {"$ref": "#/$defs/label"}, "steps": {"type": "integer", "minimum": 1, "maximum": 32}, "native_job": {"$ref": "#/$defs/job"}, "native_binary_input": {"$ref": "#/$defs/label"}, "native_build_input": {"$ref": "#/$defs/label"}, "warmup_steps": {"type": "integer", "minimum": 0, "maximum": 2}, "slowdown_trigger": {"type": "number", "minimum": 1, "maximum": 10},
+        "controller_mode": {"enum": ["go2-stand", "sampled-hold"]},
+        "modular": {"description": "True selects the separate scalar Unitree preload graph. The explicit owned Direct3 route binds callbacks, motion and observed-LowState perception for every language; the generic legacy two-provider route remains separate. Valid only for go2-stand.", "type": "boolean"},
+        "hold": {"oneOf": [{"type": "null"}, {"type": "object", "additionalProperties": false, "required": ["kp", "kd", "mode_pr"], "properties": {"kp": {"type": "number", "exclusiveMinimum": 0, "maximum": 1000}, "kd": {"type": "number", "exclusiveMinimum": 0, "maximum": 100}, "mode_pr": {"type": "integer", "minimum": 0, "maximum": 255}}}]},
+        "libraries": {"type": "array", "maxItems": 3, "items": {"type": "object", "additionalProperties": false, "required": ["name", "guest_input", "build_input"], "properties": {"name": {"enum": ["callbacks", "motion", "perception"]}, "guest_input": {"$ref": "#/$defs/label"}, "build_input": {"$ref": "#/$defs/label"}}}}
+      }
+    },
+    "benchmark": {
+      "type": "object", "additionalProperties": false,
+      "required": ["native", "wasm", "native_binary_input", "runtime_input", "wasm_binary_input", "native_build_input", "wasm_build_input", "seed", "iterations", "warmup", "samples", "protocol", "wasm_backend", "slowdown_trigger"],
+      "properties": {
+        "native": {"$ref": "#/$defs/job"}, "wasm": {"$ref": "#/$defs/job"}, "native_binary_input": {"$ref": "#/$defs/label"}, "runtime_input": {"$ref": "#/$defs/label"}, "wasm_binary_input": {"$ref": "#/$defs/label"}, "native_build_input": {"$ref": "#/$defs/label"}, "wasm_build_input": {"$ref": "#/$defs/label"},
+        "seed": {"type": "integer", "minimum": 0, "maximum": 4294967295}, "iterations": {"type": "integer", "minimum": 1, "maximum": 1000000}, "warmup": {"type": "integer", "minimum": 1, "maximum": 20}, "samples": {"type": "integer", "minimum": 30, "maximum": 1000}, "protocol": {"enum": ["one-shot-le64", "session-le64"]}, "wasm_backend": {"enum": ["llvm-full", "interp", "u8", "u16", "u32"]}, "slowdown_trigger": {"type": "number", "minimum": 1, "maximum": 10}
+      }
+    },
+    "profiler": {
+      "type": "object", "additionalProperties": false,
+      "required": ["installation", "vtune_input", "self_checker_input", "benchmark_report_input", "target", "target_input", "target_stdin_input", "target_role", "seconds"],
+      "properties": {
+        "installation": {"description": "Only --action install uses this. The selected offline installer runs as this explicit nonroot UID/GID in an owned output subtree, never through sudo, a package daemon or system service.", "oneOf": [{"type": "null"}, {"type": "object", "additionalProperties": false, "required": ["shell_input", "installer_input", "official_input_receipt", "uid", "gid"], "properties": {"shell_input": {"$ref": "#/$defs/label"}, "installer_input": {"$ref": "#/$defs/label"}, "official_input_receipt": {"$ref": "#/$defs/label"}, "uid": {"type": "integer", "minimum": 1000}, "gid": {"type": "integer", "minimum": 1000}}}]},
+        "vtune_input": {"type": ["string", "null"]}, "self_checker_input": {"type": ["string", "null"]}, "benchmark_report_input": {"type": ["string", "null"]}, "target": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/job"}]}, "target_input": {"type": ["string", "null"]}, "target_stdin_input": {"type": ["string", "null"]}, "target_role": {"enum": ["native", "wasm", null]}, "direct3": {"description": "Only --action direct3-collect uses this explicit measured-language recipe; it adds no Guest authority.", "type": "object", "additionalProperties": false, "required": ["language", "selection_input", "baseline_config_input", "baseline_selection_input"], "properties": {"language": {"enum": ["c", "cpp", "javascript"]}, "selection_input": {"const": "physics_selection"}, "baseline_config_input": {"const": "direct3-profile-config"}, "baseline_selection_input": {"const": "direct3-profile-selection"}}}, "seconds": {"type": "integer", "minimum": 1, "maximum": 120}
+      }
+    }
+  }
+}

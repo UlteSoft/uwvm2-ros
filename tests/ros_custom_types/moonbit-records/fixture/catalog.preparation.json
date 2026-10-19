@@ -1,0 +1,71 @@
+{
+  "format": "uwvm-ros-official-standard-bounded-v1",
+  "types": [
+    {
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Point",
+      "file": "geometry_msgs/msg/Point.msg",
+      "registered": false
+    },
+    {
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Quaternion",
+      "file": "geometry_msgs/msg/Quaternion.msg",
+      "registered": false
+    },
+    {
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Pose",
+      "file": "geometry_msgs/msg/Pose.msg",
+      "registered": false
+    },
+    {
+      "ros_version": 2,
+      "type": "managed_fixture/msg/Scalars",
+      "file": "managed_fixture/msg/Scalars.msg",
+      "bounds": {
+        "text": {
+          "string": 16
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "managed_fixture/msg/Inner",
+      "file": "managed_fixture/msg/Inner.msg",
+      "bounds": {
+        "tags": {
+          "string": 8
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "managed_fixture/msg/Outer",
+      "file": "managed_fixture/msg/Outer.msg",
+      "bounds": {
+        "items": {
+          "sequence": 2
+        },
+        "dynamic": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "managed_fixture/srv/Probe",
+      "file": "managed_fixture/srv/Probe.srv"
+    },
+    {
+      "ros_version": 2,
+      "type": "managed_fixture/action/Trajectory",
+      "file": "managed_fixture/action/Trajectory.action"
+    },
+    {
+      "ros_version": 1,
+      "type": "managed_fixture/Times",
+      "file": "ros1/Times.msg"
+    }
+  ]
+}

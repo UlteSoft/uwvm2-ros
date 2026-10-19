@@ -71,6 +71,10 @@ int main()
                                             .mount_dir_roots = {},
                                             .trace_wasip1_call = false};
 
+    // This positive native API fixture explicitly grants only the facility it tests.
+    // New environments intentionally start without non-FD authority.
+    env.non_fd_permissions = ::uwvm2::imported::wasi::wasip1::environment::permission_t::clock_monotonic;
+
     constexpr wasi_void_ptr_t res_ptr{4096u};
 
     auto const ret{::uwvm2::imported::wasi::wasip1::func::clock_res_get(env, clockid_t::clock_monotonic, res_ptr)};

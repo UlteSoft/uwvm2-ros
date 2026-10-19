@@ -1,0 +1,1708 @@
+[
+  {
+    "kind": "bool",
+    "scenario": "roundtrip",
+    "name": "ros2-typed_parameter_event_bool_roundtrip",
+    "grants": [
+      {
+        "alias": "cap",
+        "operation": "param.subscribe-events",
+        "resource": "/uwvm_resources/native/value",
+        "type": "builtin/param-event-bool-v1",
+        "identity": "builtin:param-event-bool-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "8",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "4096",
+          "validator": "none",
+          "parameter-node": "/uwvm_resources/native",
+          "parameter-name": "value",
+          "max-subscribers": "1",
+          "max-event-fields": "8",
+          "max-event-queue-depth": "8",
+          "max-event-queue-bytes": "32768",
+          "overflow-policy": "reject",
+          "qos.reliability": "reliable",
+          "qos.durability": "volatile",
+          "qos.history": "keep-last",
+          "qos.depth": "32",
+          "qos.deadline": "infinite",
+          "qos.lifespan": "infinite",
+          "qos.liveliness": "automatic",
+          "qos.liveliness-lease-duration": "infinite"
+        }
+      }
+    ],
+    "guest_assertions": {
+      "all_event_bytes_compared": true,
+      "expected_event_hex": [
+        "7b00000001000000010201160000002f7577766d5f7265736f75726365732f6e61746976650500000076616c75650100000000",
+        "7b00000002000000020201160000002f7577766d5f7265736f75726365732f6e61746976650500000076616c75650100000001",
+        "7b00000003000000030201160000002f7577766d5f7265736f75726365732f6e61746976650500000076616c756500000000"
+      ],
+      "poll11_preserves_all_output_bytes": 4096,
+      "poll11_preserves_length": true,
+      "max_poll_attempts_per_phase": 100000,
+      "positive_deadline_seconds": 10,
+      "rejected_phase_seconds": 0,
+      "native_kind_checked_before_typed_delete": true
+    }
+  },
+  {
+    "kind": "bool",
+    "scenario": "wrong-kind",
+    "name": "ros2-typed_parameter_event_bool_wrong_kind",
+    "grants": [
+      {
+        "alias": "cap",
+        "operation": "param.subscribe-events",
+        "resource": "/uwvm_resources/native/value",
+        "type": "builtin/param-event-bool-v1",
+        "identity": "builtin:param-event-bool-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "8",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "4096",
+          "validator": "none",
+          "parameter-node": "/uwvm_resources/native",
+          "parameter-name": "value",
+          "max-subscribers": "1",
+          "max-event-fields": "8",
+          "max-event-queue-depth": "8",
+          "max-event-queue-bytes": "32768",
+          "overflow-policy": "reject",
+          "qos.reliability": "reliable",
+          "qos.durability": "volatile",
+          "qos.history": "keep-last",
+          "qos.depth": "32",
+          "qos.deadline": "infinite",
+          "qos.lifespan": "infinite",
+          "qos.liveliness": "automatic",
+          "qos.liveliness-lease-duration": "infinite"
+        }
+      }
+    ],
+    "guest_assertions": {
+      "all_event_bytes_compared": true,
+      "expected_event_hex": [
+        "7b00000009000000020201160000002f7577766d5f7265736f75726365732f6e61746976650500000076616c75650100000001"
+      ],
+      "poll11_preserves_all_output_bytes": 4096,
+      "poll11_preserves_length": true,
+      "max_poll_attempts_per_phase": 100000,
+      "positive_deadline_seconds": 10,
+      "rejected_phase_seconds": 1,
+      "native_kind_checked_before_typed_delete": true
+    }
+  },
+  {
+    "kind": "bool",
+    "scenario": "wrong-node",
+    "name": "ros2-typed_parameter_event_bool_wrong_node",
+    "grants": [
+      {
+        "alias": "cap",
+        "operation": "param.subscribe-events",
+        "resource": "/uwvm_resources/native/value",
+        "type": "builtin/param-event-bool-v1",
+        "identity": "builtin:param-event-bool-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "8",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "4096",
+          "validator": "none",
+          "parameter-node": "/uwvm_resources/native",
+          "parameter-name": "value",
+          "max-subscribers": "1",
+          "max-event-fields": "8",
+          "max-event-queue-depth": "8",
+          "max-event-queue-bytes": "32768",
+          "overflow-policy": "reject",
+          "qos.reliability": "reliable",
+          "qos.durability": "volatile",
+          "qos.history": "keep-last",
+          "qos.depth": "32",
+          "qos.deadline": "infinite",
+          "qos.lifespan": "infinite",
+          "qos.liveliness": "automatic",
+          "qos.liveliness-lease-duration": "infinite"
+        }
+      }
+    ],
+    "guest_assertions": {
+      "all_event_bytes_compared": true,
+      "expected_event_hex": [
+        "7b00000009000000020201160000002f7577766d5f7265736f75726365732f6e61746976650500000076616c75650100000001"
+      ],
+      "poll11_preserves_all_output_bytes": 4096,
+      "poll11_preserves_length": true,
+      "max_poll_attempts_per_phase": 100000,
+      "positive_deadline_seconds": 10,
+      "rejected_phase_seconds": 1,
+      "native_kind_checked_before_typed_delete": true
+    }
+  },
+  {
+    "kind": "bool",
+    "scenario": "wrong-name",
+    "name": "ros2-typed_parameter_event_bool_wrong_name",
+    "grants": [
+      {
+        "alias": "cap",
+        "operation": "param.subscribe-events",
+        "resource": "/uwvm_resources/native/value",
+        "type": "builtin/param-event-bool-v1",
+        "identity": "builtin:param-event-bool-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "8",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "4096",
+          "validator": "none",
+          "parameter-node": "/uwvm_resources/native",
+          "parameter-name": "value",
+          "max-subscribers": "1",
+          "max-event-fields": "8",
+          "max-event-queue-depth": "8",
+          "max-event-queue-bytes": "32768",
+          "overflow-policy": "reject",
+          "qos.reliability": "reliable",
+          "qos.durability": "volatile",
+          "qos.history": "keep-last",
+          "qos.depth": "32",
+          "qos.deadline": "infinite",
+          "qos.lifespan": "infinite",
+          "qos.liveliness": "automatic",
+          "qos.liveliness-lease-duration": "infinite"
+        }
+      }
+    ],
+    "guest_assertions": {
+      "all_event_bytes_compared": true,
+      "expected_event_hex": [
+        "7b00000009000000020201160000002f7577766d5f7265736f75726365732f6e61746976650500000076616c75650100000001"
+      ],
+      "poll11_preserves_all_output_bytes": 4096,
+      "poll11_preserves_length": true,
+      "max_poll_attempts_per_phase": 100000,
+      "positive_deadline_seconds": 10,
+      "rejected_phase_seconds": 1,
+      "native_kind_checked_before_typed_delete": true
+    }
+  },
+  {
+    "kind": "bool",
+    "scenario": "not-set-delete",
+    "name": "ros2-typed_parameter_event_bool_not_set_delete",
+    "grants": [
+      {
+        "alias": "cap",
+        "operation": "param.subscribe-events",
+        "resource": "/uwvm_resources/native/value",
+        "type": "builtin/param-event-bool-v1",
+        "identity": "builtin:param-event-bool-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "8",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "4096",
+          "validator": "none",
+          "parameter-node": "/uwvm_resources/native",
+          "parameter-name": "value",
+          "max-subscribers": "1",
+          "max-event-fields": "8",
+          "max-event-queue-depth": "8",
+          "max-event-queue-bytes": "32768",
+          "overflow-policy": "reject",
+          "qos.reliability": "reliable",
+          "qos.durability": "volatile",
+          "qos.history": "keep-last",
+          "qos.depth": "32",
+          "qos.deadline": "infinite",
+          "qos.lifespan": "infinite",
+          "qos.liveliness": "automatic",
+          "qos.liveliness-lease-duration": "infinite"
+        }
+      }
+    ],
+    "guest_assertions": {
+      "all_event_bytes_compared": true,
+      "expected_event_hex": [
+        "7b00000009000000020201160000002f7577766d5f7265736f75726365732f6e61746976650500000076616c75650100000001"
+      ],
+      "poll11_preserves_all_output_bytes": 4096,
+      "poll11_preserves_length": true,
+      "max_poll_attempts_per_phase": 100000,
+      "positive_deadline_seconds": 10,
+      "rejected_phase_seconds": 1,
+      "native_kind_checked_before_typed_delete": true
+    }
+  },
+  {
+    "kind": "bool",
+    "scenario": "malformed-stamp",
+    "name": "ros2-typed_parameter_event_bool_malformed_stamp",
+    "grants": [
+      {
+        "alias": "cap",
+        "operation": "param.subscribe-events",
+        "resource": "/uwvm_resources/native/value",
+        "type": "builtin/param-event-bool-v1",
+        "identity": "builtin:param-event-bool-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "8",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "4096",
+          "validator": "none",
+          "parameter-node": "/uwvm_resources/native",
+          "parameter-name": "value",
+          "max-subscribers": "1",
+          "max-event-fields": "8",
+          "max-event-queue-depth": "8",
+          "max-event-queue-bytes": "32768",
+          "overflow-policy": "reject",
+          "qos.reliability": "reliable",
+          "qos.durability": "volatile",
+          "qos.history": "keep-last",
+          "qos.depth": "32",
+          "qos.deadline": "infinite",
+          "qos.lifespan": "infinite",
+          "qos.liveliness": "automatic",
+          "qos.liveliness-lease-duration": "infinite"
+        }
+      }
+    ],
+    "guest_assertions": {
+      "all_event_bytes_compared": true,
+      "expected_event_hex": [
+        "7b00000009000000020201160000002f7577766d5f7265736f75726365732f6e61746976650500000076616c75650100000001"
+      ],
+      "poll11_preserves_all_output_bytes": 4096,
+      "poll11_preserves_length": true,
+      "max_poll_attempts_per_phase": 100000,
+      "positive_deadline_seconds": 10,
+      "rejected_phase_seconds": 1,
+      "native_kind_checked_before_typed_delete": true
+    }
+  },
+  {
+    "kind": "bool",
+    "scenario": "fields",
+    "name": "ros2-typed_parameter_event_bool_fields",
+    "grants": [
+      {
+        "alias": "cap",
+        "operation": "param.subscribe-events",
+        "resource": "/uwvm_resources/native/value",
+        "type": "builtin/param-event-bool-v1",
+        "identity": "builtin:param-event-bool-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "8",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "4096",
+          "validator": "none",
+          "parameter-node": "/uwvm_resources/native",
+          "parameter-name": "value",
+          "max-subscribers": "1",
+          "max-event-fields": "1",
+          "max-event-queue-depth": "8",
+          "max-event-queue-bytes": "32768",
+          "overflow-policy": "reject",
+          "qos.reliability": "reliable",
+          "qos.durability": "volatile",
+          "qos.history": "keep-last",
+          "qos.depth": "32",
+          "qos.deadline": "infinite",
+          "qos.lifespan": "infinite",
+          "qos.liveliness": "automatic",
+          "qos.liveliness-lease-duration": "infinite"
+        }
+      }
+    ],
+    "guest_assertions": {
+      "all_event_bytes_compared": true,
+      "expected_event_hex": [
+        "7b00000009000000020201160000002f7577766d5f7265736f75726365732f6e61746976650500000076616c75650100000001"
+      ],
+      "poll11_preserves_all_output_bytes": 4096,
+      "poll11_preserves_length": true,
+      "max_poll_attempts_per_phase": 100000,
+      "positive_deadline_seconds": 10,
+      "rejected_phase_seconds": 1,
+      "native_kind_checked_before_typed_delete": true
+    }
+  },
+  {
+    "kind": "bool",
+    "scenario": "bytes",
+    "name": "ros2-typed_parameter_event_bool_bytes",
+    "grants": [
+      {
+        "alias": "cap",
+        "operation": "param.subscribe-events",
+        "resource": "/uwvm_resources/native/quota_value",
+        "type": "builtin/param-event-bool-v1",
+        "identity": "builtin:param-event-bool-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "8",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "1",
+          "validator": "none",
+          "parameter-node": "/uwvm_resources/native",
+          "parameter-name": "quota_value",
+          "max-subscribers": "1",
+          "max-event-fields": "8",
+          "max-event-queue-depth": "8",
+          "max-event-queue-bytes": "32768",
+          "overflow-policy": "reject",
+          "qos.reliability": "reliable",
+          "qos.durability": "volatile",
+          "qos.history": "keep-last",
+          "qos.depth": "32",
+          "qos.deadline": "infinite",
+          "qos.lifespan": "infinite",
+          "qos.liveliness": "automatic",
+          "qos.liveliness-lease-duration": "infinite"
+        }
+      },
+      {
+        "alias": "marker",
+        "operation": "param.subscribe-events",
+        "resource": "/uwvm_resources/native/value",
+        "type": "builtin/param-event-bool-v1",
+        "identity": "builtin:param-event-bool-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "8",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "4096",
+          "validator": "none",
+          "parameter-node": "/uwvm_resources/native",
+          "parameter-name": "value",
+          "max-subscribers": "1",
+          "max-event-fields": "8",
+          "max-event-queue-depth": "8",
+          "max-event-queue-bytes": "32768",
+          "overflow-policy": "reject",
+          "qos.reliability": "reliable",
+          "qos.durability": "volatile",
+          "qos.history": "keep-last",
+          "qos.depth": "32",
+          "qos.deadline": "infinite",
+          "qos.lifespan": "infinite",
+          "qos.liveliness": "automatic",
+          "qos.liveliness-lease-duration": "infinite"
+        }
+      }
+    ],
+    "guest_assertions": {
+      "all_event_bytes_compared": true,
+      "expected_event_hex": [
+        "7b00000009000000020201160000002f7577766d5f7265736f75726365732f6e61746976650500000076616c75650100000001"
+      ],
+      "poll11_preserves_all_output_bytes": 4096,
+      "poll11_preserves_length": true,
+      "max_poll_attempts_per_phase": 100000,
+      "positive_deadline_seconds": 10,
+      "rejected_phase_seconds": 1,
+      "native_kind_checked_before_typed_delete": true
+    }
+  },
+  {
+    "kind": "int64",
+    "scenario": "roundtrip",
+    "name": "ros2-typed_parameter_event_int64_roundtrip",
+    "grants": [
+      {
+        "alias": "cap",
+        "operation": "param.subscribe-events",
+        "resource": "/uwvm_resources/native/value",
+        "type": "builtin/param-event-int64-v1",
+        "identity": "builtin:param-event-int64-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "8",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "4096",
+          "validator": "none",
+          "parameter-node": "/uwvm_resources/native",
+          "parameter-name": "value",
+          "max-subscribers": "1",
+          "max-event-fields": "8",
+          "max-event-queue-depth": "8",
+          "max-event-queue-bytes": "32768",
+          "overflow-policy": "reject",
+          "qos.reliability": "reliable",
+          "qos.durability": "volatile",
+          "qos.history": "keep-last",
+          "qos.depth": "32",
+          "qos.deadline": "infinite",
+          "qos.lifespan": "infinite",
+          "qos.liveliness": "automatic",
+          "qos.liveliness-lease-duration": "infinite",
+          "parameter-min-value": "-9223372036854775808",
+          "parameter-max-value": "9223372036854775807"
+        }
+      }
+    ],
+    "guest_assertions": {
+      "all_event_bytes_compared": true,
+      "expected_event_hex": [
+        "7b00000001000000010202160000002f7577766d5f7265736f75726365732f6e61746976650500000076616c7565080000000000000000000080",
+        "7b00000002000000020202160000002f7577766d5f7265736f75726365732f6e61746976650500000076616c7565080000000100000000002000",
+        "7b00000003000000020202160000002f7577766d5f7265736f75726365732f6e61746976650500000076616c756508000000ffffffffffffff7f",
+        "7b00000004000000030202160000002f7577766d5f7265736f75726365732f6e61746976650500000076616c756500000000"
+      ],
+      "poll11_preserves_all_output_bytes": 4096,
+      "poll11_preserves_length": true,
+      "max_poll_attempts_per_phase": 100000,
+      "positive_deadline_seconds": 10,
+      "rejected_phase_seconds": 0,
+      "native_kind_checked_before_typed_delete": true
+    }
+  },
+  {
+    "kind": "int64",
+    "scenario": "wrong-kind",
+    "name": "ros2-typed_parameter_event_int64_wrong_kind",
+    "grants": [
+      {
+        "alias": "cap",
+        "operation": "param.subscribe-events",
+        "resource": "/uwvm_resources/native/value",
+        "type": "builtin/param-event-int64-v1",
+        "identity": "builtin:param-event-int64-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "8",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "4096",
+          "validator": "none",
+          "parameter-node": "/uwvm_resources/native",
+          "parameter-name": "value",
+          "max-subscribers": "1",
+          "max-event-fields": "8",
+          "max-event-queue-depth": "8",
+          "max-event-queue-bytes": "32768",
+          "overflow-policy": "reject",
+          "qos.reliability": "reliable",
+          "qos.durability": "volatile",
+          "qos.history": "keep-last",
+          "qos.depth": "32",
+          "qos.deadline": "infinite",
+          "qos.lifespan": "infinite",
+          "qos.liveliness": "automatic",
+          "qos.liveliness-lease-duration": "infinite",
+          "parameter-min-value": "-9223372036854775808",
+          "parameter-max-value": "9223372036854775807"
+        }
+      }
+    ],
+    "guest_assertions": {
+      "all_event_bytes_compared": true,
+      "expected_event_hex": [
+        "7b00000009000000020202160000002f7577766d5f7265736f75726365732f6e61746976650500000076616c7565080000000100000000002000"
+      ],
+      "poll11_preserves_all_output_bytes": 4096,
+      "poll11_preserves_length": true,
+      "max_poll_attempts_per_phase": 100000,
+      "positive_deadline_seconds": 10,
+      "rejected_phase_seconds": 1,
+      "native_kind_checked_before_typed_delete": true
+    }
+  },
+  {
+    "kind": "int64",
+    "scenario": "wrong-node",
+    "name": "ros2-typed_parameter_event_int64_wrong_node",
+    "grants": [
+      {
+        "alias": "cap",
+        "operation": "param.subscribe-events",
+        "resource": "/uwvm_resources/native/value",
+        "type": "builtin/param-event-int64-v1",
+        "identity": "builtin:param-event-int64-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "8",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "4096",
+          "validator": "none",
+          "parameter-node": "/uwvm_resources/native",
+          "parameter-name": "value",
+          "max-subscribers": "1",
+          "max-event-fields": "8",
+          "max-event-queue-depth": "8",
+          "max-event-queue-bytes": "32768",
+          "overflow-policy": "reject",
+          "qos.reliability": "reliable",
+          "qos.durability": "volatile",
+          "qos.history": "keep-last",
+          "qos.depth": "32",
+          "qos.deadline": "infinite",
+          "qos.lifespan": "infinite",
+          "qos.liveliness": "automatic",
+          "qos.liveliness-lease-duration": "infinite",
+          "parameter-min-value": "-9223372036854775808",
+          "parameter-max-value": "9223372036854775807"
+        }
+      }
+    ],
+    "guest_assertions": {
+      "all_event_bytes_compared": true,
+      "expected_event_hex": [
+        "7b00000009000000020202160000002f7577766d5f7265736f75726365732f6e61746976650500000076616c7565080000000100000000002000"
+      ],
+      "poll11_preserves_all_output_bytes": 4096,
+      "poll11_preserves_length": true,
+      "max_poll_attempts_per_phase": 100000,
+      "positive_deadline_seconds": 10,
+      "rejected_phase_seconds": 1,
+      "native_kind_checked_before_typed_delete": true
+    }
+  },
+  {
+    "kind": "int64",
+    "scenario": "wrong-name",
+    "name": "ros2-typed_parameter_event_int64_wrong_name",
+    "grants": [
+      {
+        "alias": "cap",
+        "operation": "param.subscribe-events",
+        "resource": "/uwvm_resources/native/value",
+        "type": "builtin/param-event-int64-v1",
+        "identity": "builtin:param-event-int64-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "8",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "4096",
+          "validator": "none",
+          "parameter-node": "/uwvm_resources/native",
+          "parameter-name": "value",
+          "max-subscribers": "1",
+          "max-event-fields": "8",
+          "max-event-queue-depth": "8",
+          "max-event-queue-bytes": "32768",
+          "overflow-policy": "reject",
+          "qos.reliability": "reliable",
+          "qos.durability": "volatile",
+          "qos.history": "keep-last",
+          "qos.depth": "32",
+          "qos.deadline": "infinite",
+          "qos.lifespan": "infinite",
+          "qos.liveliness": "automatic",
+          "qos.liveliness-lease-duration": "infinite",
+          "parameter-min-value": "-9223372036854775808",
+          "parameter-max-value": "9223372036854775807"
+        }
+      }
+    ],
+    "guest_assertions": {
+      "all_event_bytes_compared": true,
+      "expected_event_hex": [
+        "7b00000009000000020202160000002f7577766d5f7265736f75726365732f6e61746976650500000076616c7565080000000100000000002000"
+      ],
+      "poll11_preserves_all_output_bytes": 4096,
+      "poll11_preserves_length": true,
+      "max_poll_attempts_per_phase": 100000,
+      "positive_deadline_seconds": 10,
+      "rejected_phase_seconds": 1,
+      "native_kind_checked_before_typed_delete": true
+    }
+  },
+  {
+    "kind": "int64",
+    "scenario": "not-set-delete",
+    "name": "ros2-typed_parameter_event_int64_not_set_delete",
+    "grants": [
+      {
+        "alias": "cap",
+        "operation": "param.subscribe-events",
+        "resource": "/uwvm_resources/native/value",
+        "type": "builtin/param-event-int64-v1",
+        "identity": "builtin:param-event-int64-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "8",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "4096",
+          "validator": "none",
+          "parameter-node": "/uwvm_resources/native",
+          "parameter-name": "value",
+          "max-subscribers": "1",
+          "max-event-fields": "8",
+          "max-event-queue-depth": "8",
+          "max-event-queue-bytes": "32768",
+          "overflow-policy": "reject",
+          "qos.reliability": "reliable",
+          "qos.durability": "volatile",
+          "qos.history": "keep-last",
+          "qos.depth": "32",
+          "qos.deadline": "infinite",
+          "qos.lifespan": "infinite",
+          "qos.liveliness": "automatic",
+          "qos.liveliness-lease-duration": "infinite",
+          "parameter-min-value": "-9223372036854775808",
+          "parameter-max-value": "9223372036854775807"
+        }
+      }
+    ],
+    "guest_assertions": {
+      "all_event_bytes_compared": true,
+      "expected_event_hex": [
+        "7b00000009000000020202160000002f7577766d5f7265736f75726365732f6e61746976650500000076616c7565080000000100000000002000"
+      ],
+      "poll11_preserves_all_output_bytes": 4096,
+      "poll11_preserves_length": true,
+      "max_poll_attempts_per_phase": 100000,
+      "positive_deadline_seconds": 10,
+      "rejected_phase_seconds": 1,
+      "native_kind_checked_before_typed_delete": true
+    }
+  },
+  {
+    "kind": "int64",
+    "scenario": "malformed-stamp",
+    "name": "ros2-typed_parameter_event_int64_malformed_stamp",
+    "grants": [
+      {
+        "alias": "cap",
+        "operation": "param.subscribe-events",
+        "resource": "/uwvm_resources/native/value",
+        "type": "builtin/param-event-int64-v1",
+        "identity": "builtin:param-event-int64-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "8",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "4096",
+          "validator": "none",
+          "parameter-node": "/uwvm_resources/native",
+          "parameter-name": "value",
+          "max-subscribers": "1",
+          "max-event-fields": "8",
+          "max-event-queue-depth": "8",
+          "max-event-queue-bytes": "32768",
+          "overflow-policy": "reject",
+          "qos.reliability": "reliable",
+          "qos.durability": "volatile",
+          "qos.history": "keep-last",
+          "qos.depth": "32",
+          "qos.deadline": "infinite",
+          "qos.lifespan": "infinite",
+          "qos.liveliness": "automatic",
+          "qos.liveliness-lease-duration": "infinite",
+          "parameter-min-value": "-9223372036854775808",
+          "parameter-max-value": "9223372036854775807"
+        }
+      }
+    ],
+    "guest_assertions": {
+      "all_event_bytes_compared": true,
+      "expected_event_hex": [
+        "7b00000009000000020202160000002f7577766d5f7265736f75726365732f6e61746976650500000076616c7565080000000100000000002000"
+      ],
+      "poll11_preserves_all_output_bytes": 4096,
+      "poll11_preserves_length": true,
+      "max_poll_attempts_per_phase": 100000,
+      "positive_deadline_seconds": 10,
+      "rejected_phase_seconds": 1,
+      "native_kind_checked_before_typed_delete": true
+    }
+  },
+  {
+    "kind": "int64",
+    "scenario": "fields",
+    "name": "ros2-typed_parameter_event_int64_fields",
+    "grants": [
+      {
+        "alias": "cap",
+        "operation": "param.subscribe-events",
+        "resource": "/uwvm_resources/native/value",
+        "type": "builtin/param-event-int64-v1",
+        "identity": "builtin:param-event-int64-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "8",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "4096",
+          "validator": "none",
+          "parameter-node": "/uwvm_resources/native",
+          "parameter-name": "value",
+          "max-subscribers": "1",
+          "max-event-fields": "1",
+          "max-event-queue-depth": "8",
+          "max-event-queue-bytes": "32768",
+          "overflow-policy": "reject",
+          "qos.reliability": "reliable",
+          "qos.durability": "volatile",
+          "qos.history": "keep-last",
+          "qos.depth": "32",
+          "qos.deadline": "infinite",
+          "qos.lifespan": "infinite",
+          "qos.liveliness": "automatic",
+          "qos.liveliness-lease-duration": "infinite",
+          "parameter-min-value": "-9223372036854775808",
+          "parameter-max-value": "9223372036854775807"
+        }
+      }
+    ],
+    "guest_assertions": {
+      "all_event_bytes_compared": true,
+      "expected_event_hex": [
+        "7b00000009000000020202160000002f7577766d5f7265736f75726365732f6e61746976650500000076616c7565080000000100000000002000"
+      ],
+      "poll11_preserves_all_output_bytes": 4096,
+      "poll11_preserves_length": true,
+      "max_poll_attempts_per_phase": 100000,
+      "positive_deadline_seconds": 10,
+      "rejected_phase_seconds": 1,
+      "native_kind_checked_before_typed_delete": true
+    }
+  },
+  {
+    "kind": "int64",
+    "scenario": "bytes",
+    "name": "ros2-typed_parameter_event_int64_bytes",
+    "grants": [
+      {
+        "alias": "cap",
+        "operation": "param.subscribe-events",
+        "resource": "/uwvm_resources/native/quota_value",
+        "type": "builtin/param-event-int64-v1",
+        "identity": "builtin:param-event-int64-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "8",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "1",
+          "validator": "none",
+          "parameter-node": "/uwvm_resources/native",
+          "parameter-name": "quota_value",
+          "max-subscribers": "1",
+          "max-event-fields": "8",
+          "max-event-queue-depth": "8",
+          "max-event-queue-bytes": "32768",
+          "overflow-policy": "reject",
+          "qos.reliability": "reliable",
+          "qos.durability": "volatile",
+          "qos.history": "keep-last",
+          "qos.depth": "32",
+          "qos.deadline": "infinite",
+          "qos.lifespan": "infinite",
+          "qos.liveliness": "automatic",
+          "qos.liveliness-lease-duration": "infinite",
+          "parameter-min-value": "-9223372036854775808",
+          "parameter-max-value": "9223372036854775807"
+        }
+      },
+      {
+        "alias": "marker",
+        "operation": "param.subscribe-events",
+        "resource": "/uwvm_resources/native/value",
+        "type": "builtin/param-event-int64-v1",
+        "identity": "builtin:param-event-int64-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "8",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "4096",
+          "validator": "none",
+          "parameter-node": "/uwvm_resources/native",
+          "parameter-name": "value",
+          "max-subscribers": "1",
+          "max-event-fields": "8",
+          "max-event-queue-depth": "8",
+          "max-event-queue-bytes": "32768",
+          "overflow-policy": "reject",
+          "qos.reliability": "reliable",
+          "qos.durability": "volatile",
+          "qos.history": "keep-last",
+          "qos.depth": "32",
+          "qos.deadline": "infinite",
+          "qos.lifespan": "infinite",
+          "qos.liveliness": "automatic",
+          "qos.liveliness-lease-duration": "infinite",
+          "parameter-min-value": "-9223372036854775808",
+          "parameter-max-value": "9223372036854775807"
+        }
+      }
+    ],
+    "guest_assertions": {
+      "all_event_bytes_compared": true,
+      "expected_event_hex": [
+        "7b00000009000000020202160000002f7577766d5f7265736f75726365732f6e61746976650500000076616c7565080000000100000000002000"
+      ],
+      "poll11_preserves_all_output_bytes": 4096,
+      "poll11_preserves_length": true,
+      "max_poll_attempts_per_phase": 100000,
+      "positive_deadline_seconds": 10,
+      "rejected_phase_seconds": 1,
+      "native_kind_checked_before_typed_delete": true
+    }
+  },
+  {
+    "kind": "int64",
+    "scenario": "bounds",
+    "name": "ros2-typed_parameter_event_int64_bounds",
+    "grants": [
+      {
+        "alias": "cap",
+        "operation": "param.subscribe-events",
+        "resource": "/uwvm_resources/native/value",
+        "type": "builtin/param-event-int64-v1",
+        "identity": "builtin:param-event-int64-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "8",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "4096",
+          "validator": "none",
+          "parameter-node": "/uwvm_resources/native",
+          "parameter-name": "value",
+          "max-subscribers": "1",
+          "max-event-fields": "8",
+          "max-event-queue-depth": "8",
+          "max-event-queue-bytes": "32768",
+          "overflow-policy": "reject",
+          "qos.reliability": "reliable",
+          "qos.durability": "volatile",
+          "qos.history": "keep-last",
+          "qos.depth": "32",
+          "qos.deadline": "infinite",
+          "qos.lifespan": "infinite",
+          "qos.liveliness": "automatic",
+          "qos.liveliness-lease-duration": "infinite",
+          "parameter-min-value": "-9007199254740995",
+          "parameter-max-value": "9007199254740995"
+        }
+      }
+    ],
+    "guest_assertions": {
+      "all_event_bytes_compared": true,
+      "expected_event_hex": [
+        "7b00000009000000020202160000002f7577766d5f7265736f75726365732f6e61746976650500000076616c7565080000000100000000002000"
+      ],
+      "poll11_preserves_all_output_bytes": 4096,
+      "poll11_preserves_length": true,
+      "max_poll_attempts_per_phase": 100000,
+      "positive_deadline_seconds": 10,
+      "rejected_phase_seconds": 1,
+      "native_kind_checked_before_typed_delete": true
+    }
+  },
+  {
+    "kind": "float64",
+    "scenario": "roundtrip",
+    "name": "ros2-typed_parameter_event_float64_roundtrip",
+    "grants": [
+      {
+        "alias": "cap",
+        "operation": "param.subscribe-events",
+        "resource": "/uwvm_resources/native/value",
+        "type": "builtin/param-event-float64-v1",
+        "identity": "builtin:param-event-float64-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "8",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "4096",
+          "validator": "finite",
+          "parameter-node": "/uwvm_resources/native",
+          "parameter-name": "value",
+          "max-subscribers": "1",
+          "max-event-fields": "8",
+          "max-event-queue-depth": "8",
+          "max-event-queue-bytes": "32768",
+          "overflow-policy": "reject",
+          "qos.reliability": "reliable",
+          "qos.durability": "volatile",
+          "qos.history": "keep-last",
+          "qos.depth": "32",
+          "qos.deadline": "infinite",
+          "qos.lifespan": "infinite",
+          "qos.liveliness": "automatic",
+          "qos.liveliness-lease-duration": "infinite",
+          "parameter-min-value": "-2",
+          "parameter-max-value": "2"
+        }
+      }
+    ],
+    "guest_assertions": {
+      "all_event_bytes_compared": true,
+      "expected_event_hex": [
+        "7b00000001000000010203160000002f7577766d5f7265736f75726365732f6e61746976650500000076616c7565080000000000000000000080",
+        "7b00000002000000020203160000002f7577766d5f7265736f75726365732f6e61746976650500000076616c756508000000010000000000f03f",
+        "7b00000003000000030203160000002f7577766d5f7265736f75726365732f6e61746976650500000076616c756500000000"
+      ],
+      "poll11_preserves_all_output_bytes": 4096,
+      "poll11_preserves_length": true,
+      "max_poll_attempts_per_phase": 100000,
+      "positive_deadline_seconds": 10,
+      "rejected_phase_seconds": 0,
+      "native_kind_checked_before_typed_delete": true
+    }
+  },
+  {
+    "kind": "float64",
+    "scenario": "wrong-kind",
+    "name": "ros2-typed_parameter_event_float64_wrong_kind",
+    "grants": [
+      {
+        "alias": "cap",
+        "operation": "param.subscribe-events",
+        "resource": "/uwvm_resources/native/value",
+        "type": "builtin/param-event-float64-v1",
+        "identity": "builtin:param-event-float64-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "8",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "4096",
+          "validator": "finite",
+          "parameter-node": "/uwvm_resources/native",
+          "parameter-name": "value",
+          "max-subscribers": "1",
+          "max-event-fields": "8",
+          "max-event-queue-depth": "8",
+          "max-event-queue-bytes": "32768",
+          "overflow-policy": "reject",
+          "qos.reliability": "reliable",
+          "qos.durability": "volatile",
+          "qos.history": "keep-last",
+          "qos.depth": "32",
+          "qos.deadline": "infinite",
+          "qos.lifespan": "infinite",
+          "qos.liveliness": "automatic",
+          "qos.liveliness-lease-duration": "infinite",
+          "parameter-min-value": "-2",
+          "parameter-max-value": "2"
+        }
+      }
+    ],
+    "guest_assertions": {
+      "all_event_bytes_compared": true,
+      "expected_event_hex": [
+        "7b00000009000000020203160000002f7577766d5f7265736f75726365732f6e61746976650500000076616c756508000000010000000000f03f"
+      ],
+      "poll11_preserves_all_output_bytes": 4096,
+      "poll11_preserves_length": true,
+      "max_poll_attempts_per_phase": 100000,
+      "positive_deadline_seconds": 10,
+      "rejected_phase_seconds": 1,
+      "native_kind_checked_before_typed_delete": true
+    }
+  },
+  {
+    "kind": "float64",
+    "scenario": "wrong-node",
+    "name": "ros2-typed_parameter_event_float64_wrong_node",
+    "grants": [
+      {
+        "alias": "cap",
+        "operation": "param.subscribe-events",
+        "resource": "/uwvm_resources/native/value",
+        "type": "builtin/param-event-float64-v1",
+        "identity": "builtin:param-event-float64-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "8",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "4096",
+          "validator": "finite",
+          "parameter-node": "/uwvm_resources/native",
+          "parameter-name": "value",
+          "max-subscribers": "1",
+          "max-event-fields": "8",
+          "max-event-queue-depth": "8",
+          "max-event-queue-bytes": "32768",
+          "overflow-policy": "reject",
+          "qos.reliability": "reliable",
+          "qos.durability": "volatile",
+          "qos.history": "keep-last",
+          "qos.depth": "32",
+          "qos.deadline": "infinite",
+          "qos.lifespan": "infinite",
+          "qos.liveliness": "automatic",
+          "qos.liveliness-lease-duration": "infinite",
+          "parameter-min-value": "-2",
+          "parameter-max-value": "2"
+        }
+      }
+    ],
+    "guest_assertions": {
+      "all_event_bytes_compared": true,
+      "expected_event_hex": [
+        "7b00000009000000020203160000002f7577766d5f7265736f75726365732f6e61746976650500000076616c756508000000010000000000f03f"
+      ],
+      "poll11_preserves_all_output_bytes": 4096,
+      "poll11_preserves_length": true,
+      "max_poll_attempts_per_phase": 100000,
+      "positive_deadline_seconds": 10,
+      "rejected_phase_seconds": 1,
+      "native_kind_checked_before_typed_delete": true
+    }
+  },
+  {
+    "kind": "float64",
+    "scenario": "wrong-name",
+    "name": "ros2-typed_parameter_event_float64_wrong_name",
+    "grants": [
+      {
+        "alias": "cap",
+        "operation": "param.subscribe-events",
+        "resource": "/uwvm_resources/native/value",
+        "type": "builtin/param-event-float64-v1",
+        "identity": "builtin:param-event-float64-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "8",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "4096",
+          "validator": "finite",
+          "parameter-node": "/uwvm_resources/native",
+          "parameter-name": "value",
+          "max-subscribers": "1",
+          "max-event-fields": "8",
+          "max-event-queue-depth": "8",
+          "max-event-queue-bytes": "32768",
+          "overflow-policy": "reject",
+          "qos.reliability": "reliable",
+          "qos.durability": "volatile",
+          "qos.history": "keep-last",
+          "qos.depth": "32",
+          "qos.deadline": "infinite",
+          "qos.lifespan": "infinite",
+          "qos.liveliness": "automatic",
+          "qos.liveliness-lease-duration": "infinite",
+          "parameter-min-value": "-2",
+          "parameter-max-value": "2"
+        }
+      }
+    ],
+    "guest_assertions": {
+      "all_event_bytes_compared": true,
+      "expected_event_hex": [
+        "7b00000009000000020203160000002f7577766d5f7265736f75726365732f6e61746976650500000076616c756508000000010000000000f03f"
+      ],
+      "poll11_preserves_all_output_bytes": 4096,
+      "poll11_preserves_length": true,
+      "max_poll_attempts_per_phase": 100000,
+      "positive_deadline_seconds": 10,
+      "rejected_phase_seconds": 1,
+      "native_kind_checked_before_typed_delete": true
+    }
+  },
+  {
+    "kind": "float64",
+    "scenario": "not-set-delete",
+    "name": "ros2-typed_parameter_event_float64_not_set_delete",
+    "grants": [
+      {
+        "alias": "cap",
+        "operation": "param.subscribe-events",
+        "resource": "/uwvm_resources/native/value",
+        "type": "builtin/param-event-float64-v1",
+        "identity": "builtin:param-event-float64-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "8",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "4096",
+          "validator": "finite",
+          "parameter-node": "/uwvm_resources/native",
+          "parameter-name": "value",
+          "max-subscribers": "1",
+          "max-event-fields": "8",
+          "max-event-queue-depth": "8",
+          "max-event-queue-bytes": "32768",
+          "overflow-policy": "reject",
+          "qos.reliability": "reliable",
+          "qos.durability": "volatile",
+          "qos.history": "keep-last",
+          "qos.depth": "32",
+          "qos.deadline": "infinite",
+          "qos.lifespan": "infinite",
+          "qos.liveliness": "automatic",
+          "qos.liveliness-lease-duration": "infinite",
+          "parameter-min-value": "-2",
+          "parameter-max-value": "2"
+        }
+      }
+    ],
+    "guest_assertions": {
+      "all_event_bytes_compared": true,
+      "expected_event_hex": [
+        "7b00000009000000020203160000002f7577766d5f7265736f75726365732f6e61746976650500000076616c756508000000010000000000f03f"
+      ],
+      "poll11_preserves_all_output_bytes": 4096,
+      "poll11_preserves_length": true,
+      "max_poll_attempts_per_phase": 100000,
+      "positive_deadline_seconds": 10,
+      "rejected_phase_seconds": 1,
+      "native_kind_checked_before_typed_delete": true
+    }
+  },
+  {
+    "kind": "float64",
+    "scenario": "malformed-stamp",
+    "name": "ros2-typed_parameter_event_float64_malformed_stamp",
+    "grants": [
+      {
+        "alias": "cap",
+        "operation": "param.subscribe-events",
+        "resource": "/uwvm_resources/native/value",
+        "type": "builtin/param-event-float64-v1",
+        "identity": "builtin:param-event-float64-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "8",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "4096",
+          "validator": "finite",
+          "parameter-node": "/uwvm_resources/native",
+          "parameter-name": "value",
+          "max-subscribers": "1",
+          "max-event-fields": "8",
+          "max-event-queue-depth": "8",
+          "max-event-queue-bytes": "32768",
+          "overflow-policy": "reject",
+          "qos.reliability": "reliable",
+          "qos.durability": "volatile",
+          "qos.history": "keep-last",
+          "qos.depth": "32",
+          "qos.deadline": "infinite",
+          "qos.lifespan": "infinite",
+          "qos.liveliness": "automatic",
+          "qos.liveliness-lease-duration": "infinite",
+          "parameter-min-value": "-2",
+          "parameter-max-value": "2"
+        }
+      }
+    ],
+    "guest_assertions": {
+      "all_event_bytes_compared": true,
+      "expected_event_hex": [
+        "7b00000009000000020203160000002f7577766d5f7265736f75726365732f6e61746976650500000076616c756508000000010000000000f03f"
+      ],
+      "poll11_preserves_all_output_bytes": 4096,
+      "poll11_preserves_length": true,
+      "max_poll_attempts_per_phase": 100000,
+      "positive_deadline_seconds": 10,
+      "rejected_phase_seconds": 1,
+      "native_kind_checked_before_typed_delete": true
+    }
+  },
+  {
+    "kind": "float64",
+    "scenario": "fields",
+    "name": "ros2-typed_parameter_event_float64_fields",
+    "grants": [
+      {
+        "alias": "cap",
+        "operation": "param.subscribe-events",
+        "resource": "/uwvm_resources/native/value",
+        "type": "builtin/param-event-float64-v1",
+        "identity": "builtin:param-event-float64-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "8",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "4096",
+          "validator": "finite",
+          "parameter-node": "/uwvm_resources/native",
+          "parameter-name": "value",
+          "max-subscribers": "1",
+          "max-event-fields": "1",
+          "max-event-queue-depth": "8",
+          "max-event-queue-bytes": "32768",
+          "overflow-policy": "reject",
+          "qos.reliability": "reliable",
+          "qos.durability": "volatile",
+          "qos.history": "keep-last",
+          "qos.depth": "32",
+          "qos.deadline": "infinite",
+          "qos.lifespan": "infinite",
+          "qos.liveliness": "automatic",
+          "qos.liveliness-lease-duration": "infinite",
+          "parameter-min-value": "-2",
+          "parameter-max-value": "2"
+        }
+      }
+    ],
+    "guest_assertions": {
+      "all_event_bytes_compared": true,
+      "expected_event_hex": [
+        "7b00000009000000020203160000002f7577766d5f7265736f75726365732f6e61746976650500000076616c756508000000010000000000f03f"
+      ],
+      "poll11_preserves_all_output_bytes": 4096,
+      "poll11_preserves_length": true,
+      "max_poll_attempts_per_phase": 100000,
+      "positive_deadline_seconds": 10,
+      "rejected_phase_seconds": 1,
+      "native_kind_checked_before_typed_delete": true
+    }
+  },
+  {
+    "kind": "float64",
+    "scenario": "bytes",
+    "name": "ros2-typed_parameter_event_float64_bytes",
+    "grants": [
+      {
+        "alias": "cap",
+        "operation": "param.subscribe-events",
+        "resource": "/uwvm_resources/native/quota_value",
+        "type": "builtin/param-event-float64-v1",
+        "identity": "builtin:param-event-float64-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "8",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "1",
+          "validator": "finite",
+          "parameter-node": "/uwvm_resources/native",
+          "parameter-name": "quota_value",
+          "max-subscribers": "1",
+          "max-event-fields": "8",
+          "max-event-queue-depth": "8",
+          "max-event-queue-bytes": "32768",
+          "overflow-policy": "reject",
+          "qos.reliability": "reliable",
+          "qos.durability": "volatile",
+          "qos.history": "keep-last",
+          "qos.depth": "32",
+          "qos.deadline": "infinite",
+          "qos.lifespan": "infinite",
+          "qos.liveliness": "automatic",
+          "qos.liveliness-lease-duration": "infinite",
+          "parameter-min-value": "-2",
+          "parameter-max-value": "2"
+        }
+      },
+      {
+        "alias": "marker",
+        "operation": "param.subscribe-events",
+        "resource": "/uwvm_resources/native/value",
+        "type": "builtin/param-event-float64-v1",
+        "identity": "builtin:param-event-float64-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "8",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "4096",
+          "validator": "finite",
+          "parameter-node": "/uwvm_resources/native",
+          "parameter-name": "value",
+          "max-subscribers": "1",
+          "max-event-fields": "8",
+          "max-event-queue-depth": "8",
+          "max-event-queue-bytes": "32768",
+          "overflow-policy": "reject",
+          "qos.reliability": "reliable",
+          "qos.durability": "volatile",
+          "qos.history": "keep-last",
+          "qos.depth": "32",
+          "qos.deadline": "infinite",
+          "qos.lifespan": "infinite",
+          "qos.liveliness": "automatic",
+          "qos.liveliness-lease-duration": "infinite",
+          "parameter-min-value": "-2",
+          "parameter-max-value": "2"
+        }
+      }
+    ],
+    "guest_assertions": {
+      "all_event_bytes_compared": true,
+      "expected_event_hex": [
+        "7b00000009000000020203160000002f7577766d5f7265736f75726365732f6e61746976650500000076616c756508000000010000000000f03f"
+      ],
+      "poll11_preserves_all_output_bytes": 4096,
+      "poll11_preserves_length": true,
+      "max_poll_attempts_per_phase": 100000,
+      "positive_deadline_seconds": 10,
+      "rejected_phase_seconds": 1,
+      "native_kind_checked_before_typed_delete": true
+    }
+  },
+  {
+    "kind": "float64",
+    "scenario": "bounds",
+    "name": "ros2-typed_parameter_event_float64_bounds",
+    "grants": [
+      {
+        "alias": "cap",
+        "operation": "param.subscribe-events",
+        "resource": "/uwvm_resources/native/value",
+        "type": "builtin/param-event-float64-v1",
+        "identity": "builtin:param-event-float64-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "8",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "4096",
+          "validator": "finite",
+          "parameter-node": "/uwvm_resources/native",
+          "parameter-name": "value",
+          "max-subscribers": "1",
+          "max-event-fields": "8",
+          "max-event-queue-depth": "8",
+          "max-event-queue-bytes": "32768",
+          "overflow-policy": "reject",
+          "qos.reliability": "reliable",
+          "qos.durability": "volatile",
+          "qos.history": "keep-last",
+          "qos.depth": "32",
+          "qos.deadline": "infinite",
+          "qos.lifespan": "infinite",
+          "qos.liveliness": "automatic",
+          "qos.liveliness-lease-duration": "infinite",
+          "parameter-min-value": "-2",
+          "parameter-max-value": "2"
+        }
+      }
+    ],
+    "guest_assertions": {
+      "all_event_bytes_compared": true,
+      "expected_event_hex": [
+        "7b00000009000000020203160000002f7577766d5f7265736f75726365732f6e61746976650500000076616c756508000000010000000000f03f"
+      ],
+      "poll11_preserves_all_output_bytes": 4096,
+      "poll11_preserves_length": true,
+      "max_poll_attempts_per_phase": 100000,
+      "positive_deadline_seconds": 10,
+      "rejected_phase_seconds": 1,
+      "native_kind_checked_before_typed_delete": true
+    }
+  },
+  {
+    "kind": "float64",
+    "scenario": "nonfinite",
+    "name": "ros2-typed_parameter_event_float64_nonfinite",
+    "grants": [
+      {
+        "alias": "cap",
+        "operation": "param.subscribe-events",
+        "resource": "/uwvm_resources/native/value",
+        "type": "builtin/param-event-float64-v1",
+        "identity": "builtin:param-event-float64-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "8",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "4096",
+          "validator": "finite",
+          "parameter-node": "/uwvm_resources/native",
+          "parameter-name": "value",
+          "max-subscribers": "1",
+          "max-event-fields": "8",
+          "max-event-queue-depth": "8",
+          "max-event-queue-bytes": "32768",
+          "overflow-policy": "reject",
+          "qos.reliability": "reliable",
+          "qos.durability": "volatile",
+          "qos.history": "keep-last",
+          "qos.depth": "32",
+          "qos.deadline": "infinite",
+          "qos.lifespan": "infinite",
+          "qos.liveliness": "automatic",
+          "qos.liveliness-lease-duration": "infinite",
+          "parameter-min-value": "-2",
+          "parameter-max-value": "2"
+        }
+      }
+    ],
+    "guest_assertions": {
+      "all_event_bytes_compared": true,
+      "expected_event_hex": [
+        "7b00000009000000020203160000002f7577766d5f7265736f75726365732f6e61746976650500000076616c756508000000010000000000f03f"
+      ],
+      "poll11_preserves_all_output_bytes": 4096,
+      "poll11_preserves_length": true,
+      "max_poll_attempts_per_phase": 100000,
+      "positive_deadline_seconds": 10,
+      "rejected_phase_seconds": 1,
+      "native_kind_checked_before_typed_delete": true
+    }
+  },
+  {
+    "kind": "bool",
+    "scenario": "permission-denied",
+    "name": "ros2-typed_parameter_event_permission_denied",
+    "grants": [
+      {
+        "alias": "cap",
+        "operation": "param.get",
+        "resource": "/uwvm_resources/native/value",
+        "type": "builtin/bool-v1",
+        "identity": "builtin:param-bool-v1",
+        "limits": {
+          "audit": "allow-and-deny",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "20",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576",
+          "timeout-ms": "2000",
+          "max-inflight": "2",
+          "max-rate-hz": "100",
+          "burst": "20",
+          "max-bytes-per-second": "1048576",
+          "max-parameter-bytes": "64",
+          "validator": "none",
+          "parameter-node": "/uwvm_resources/native",
+          "parameter-name": "value",
+          "qos.reliability": "reliable",
+          "qos.durability": "volatile",
+          "qos.history": "keep-last",
+          "qos.depth": "10",
+          "qos.deadline": "infinite",
+          "qos.lifespan": "infinite",
+          "qos.liveliness": "automatic",
+          "qos.liveliness-lease-duration": "infinite"
+        }
+      }
+    ],
+    "guest_assertions": {
+      "all_event_bytes_compared": true,
+      "expected_event_hex": [],
+      "poll11_preserves_all_output_bytes": 4096,
+      "poll11_preserves_length": true,
+      "max_poll_attempts_per_phase": 100000,
+      "positive_deadline_seconds": 10,
+      "rejected_phase_seconds": 1,
+      "native_kind_checked_before_typed_delete": true
+    }
+  },
+  {
+    "kind": "bool",
+    "scenario": "no-capability",
+    "name": "ros2-typed_parameter_event_no_capability",
+    "grants": [],
+    "guest_assertions": {
+      "all_event_bytes_compared": true,
+      "expected_event_hex": [],
+      "poll11_preserves_all_output_bytes": 4096,
+      "poll11_preserves_length": true,
+      "max_poll_attempts_per_phase": 100000,
+      "positive_deadline_seconds": 10,
+      "rejected_phase_seconds": 1,
+      "native_kind_checked_before_typed_delete": true
+    }
+  }
+]

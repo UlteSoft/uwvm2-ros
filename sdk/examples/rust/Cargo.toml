@@ -1,0 +1,62 @@
+[package]
+name = "roswasm-examples"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+roswasm = { path = "../../rust", default-features = false }
+
+[features]
+default = []
+ros1 = ["roswasm/ros1"]
+ros2 = ["roswasm/ros2"]
+alloc = ["roswasm/alloc"]
+
+[[bin]]
+name = "raw"
+path = "raw.rs"
+[[bin]]
+name = "typed"
+path = "typed.rs"
+[[bin]]
+name = "node"
+path = "node.rs"
+required-features = ["alloc"]
+[[bin]]
+name = "resources"
+path = "resources.rs"
+required-features = ["alloc"]
+
+[[bin]]
+name = "coverage"
+path = "coverage.rs"
+
+[[bin]]
+name = "servers"
+path = "servers.rs"
+required-features = ["alloc"]
+
+[[bin]]
+name = "events_tf_lifecycle"
+path = "events_tf_lifecycle.rs"
+required-features = ["ros2", "alloc"]
+
+[[bin]]
+name = "scheduling"
+path = "scheduling.rs"
+required-features = ["alloc"]
+
+[[bin]]
+name = "action_parameters"
+path = "action_parameters.rs"
+required-features = ["alloc"]
+
+[[bin]]
+name = "tf_graph_clock"
+path = "tf_graph_clock.rs"
+required-features = ["alloc"]
+
+[[bin]]
+name = "unified_events"
+path = "unified_events.rs"

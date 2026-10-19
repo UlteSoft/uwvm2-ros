@@ -1,0 +1,342 @@
+{
+  "kind": "IMMUTABLE_OFFICIAL_SOURCE_DATA_ONLY_NOT_EXECUTED",
+  "repositories": [
+    {
+      "repository": "ros2/examples",
+      "requested_ref": "jazzy",
+      "commit": "07008852303f2a35a91c65d78046b274a35477ea",
+      "tree": "cc1f17d44a88c740e4ed580be99ead013bcb1afd",
+      "files": [
+        {
+          "path": "LICENSE",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/examples/files/LICENSE",
+          "bytes": 11358,
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "git_blob": "d645695673349e3947e8e5ae42332d0ac3164cd7",
+          "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/LICENSE"
+        },
+        {
+          "path": "rclpy/services/minimal_client/README.md",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/examples/files/rclpy/services/minimal_client/README.md",
+          "bytes": 477,
+          "sha256": "158d6494193af9b97f8a94f3790583e1466a3dd68c7ac83851dcabdba9935237",
+          "git_blob": "3f301240ddd9222ab259c580c3d0529e009c8f7e",
+          "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclpy/services/minimal_client/README.md"
+        },
+        {
+          "path": "rclpy/services/minimal_client/examples_rclpy_minimal_client/__init__.py",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/examples/files/rclpy/services/minimal_client/examples_rclpy_minimal_client/__init__.py",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "git_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+          "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclpy/services/minimal_client/examples_rclpy_minimal_client/__init__.py"
+        },
+        {
+          "path": "rclpy/services/minimal_client/examples_rclpy_minimal_client/client.py",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/examples/files/rclpy/services/minimal_client/examples_rclpy_minimal_client/client.py",
+          "bytes": 1321,
+          "sha256": "38db7f7feccd1aad2639c231db156d4c34d35da2b46aa81318e65984644daab7",
+          "git_blob": "16ed5908792c4c5e3d27085e9f0616be4a5f058c",
+          "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclpy/services/minimal_client/examples_rclpy_minimal_client/client.py"
+        },
+        {
+          "path": "rclpy/services/minimal_client/examples_rclpy_minimal_client/client_async.py",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/examples/files/rclpy/services/minimal_client/examples_rclpy_minimal_client/client_async.py",
+          "bytes": 1405,
+          "sha256": "34f262e00f4f663fbd2ae64f5359ef2c9a7e8c89e4a1f3063f25e8f6f740c4b0",
+          "git_blob": "e154d4fa0e76695bf63f6a0159e4cf7721cac269",
+          "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclpy/services/minimal_client/examples_rclpy_minimal_client/client_async.py"
+        },
+        {
+          "path": "rclpy/services/minimal_client/examples_rclpy_minimal_client/client_async_callback.py",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/examples/files/rclpy/services/minimal_client/examples_rclpy_minimal_client/client_async_callback.py",
+          "bytes": 2208,
+          "sha256": "569c009f2b8202e6b58a51ca27469a53b957f5a2389f17f5bd9cca2f4003feff",
+          "git_blob": "7e8cd8872f71375238309c0859712efd1fe2a094",
+          "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclpy/services/minimal_client/examples_rclpy_minimal_client/client_async_callback.py"
+        },
+        {
+          "path": "rclpy/services/minimal_client/examples_rclpy_minimal_client/client_async_member_function.py",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/examples/files/rclpy/services/minimal_client/examples_rclpy_minimal_client/client_async_member_function.py",
+          "bytes": 1753,
+          "sha256": "f515c19e9c8bd7e6e681cf7ef462c628346de4d6ac3556623926d81c1d30b7d6",
+          "git_blob": "ae7fc9d8a022af570a1dc67c55fe7e8369373fc6",
+          "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclpy/services/minimal_client/examples_rclpy_minimal_client/client_async_member_function.py"
+        },
+        {
+          "path": "rclpy/services/minimal_client/package.xml",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/examples/files/rclpy/services/minimal_client/package.xml",
+          "bytes": 1146,
+          "sha256": "9dd43b5248d59107c01a185022964c01d078ffd9a9339b10c787674b9315214b",
+          "git_blob": "d730f14ffc6d537e15b5b00c60b88a7c91425a4e",
+          "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclpy/services/minimal_client/package.xml"
+        },
+        {
+          "path": "rclpy/services/minimal_client/setup.py",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/examples/files/rclpy/services/minimal_client/setup.py",
+          "bytes": 1401,
+          "sha256": "ff68382c3eb0118783f0246fa50e2ff426cd9b182bc9e175512d41bbe1e8ee3e",
+          "git_blob": "a1549d05d2fced1b73f20e8c1cf1c71cee82c1b9",
+          "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclpy/services/minimal_client/setup.py"
+        },
+        {
+          "path": "rclpy/services/minimal_client/test/test_copyright.py",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/examples/files/rclpy/services/minimal_client/test/test_copyright.py",
+          "bytes": 782,
+          "sha256": "aa3f427ec9380425a42fc885a592132dcd52f4ef7c1f6c74482ab437345cd37b",
+          "git_blob": "aa74f3e05caadf387e9954f6fd624f18d417c37f",
+          "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclpy/services/minimal_client/test/test_copyright.py"
+        },
+        {
+          "path": "rclpy/services/minimal_client/test/test_flake8.py",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/examples/files/rclpy/services/minimal_client/test/test_flake8.py",
+          "bytes": 884,
+          "sha256": "37a813a0507f0ce51a2d0b57312d2cc078a0307a3ca85580ea801b0d2f9755d2",
+          "git_blob": "27ee1078ff077cc3a0fec75b7d023101a68164d1",
+          "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclpy/services/minimal_client/test/test_flake8.py"
+        },
+        {
+          "path": "rclpy/services/minimal_client/test/test_pep257.py",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/examples/files/rclpy/services/minimal_client/test/test_pep257.py",
+          "bytes": 795,
+          "sha256": "121557ca2ec5ebeef046e0994a82aa5acd3f01dca2a1d457d542cd80b12d6437",
+          "git_blob": "399afc9a4eaeab1fdf895a0b811bb0fb2a6aaf6d",
+          "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclpy/services/minimal_client/test/test_pep257.py"
+        },
+        {
+          "path": "rclpy/services/minimal_service/README.md",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/examples/files/rclpy/services/minimal_service/README.md",
+          "bytes": 308,
+          "sha256": "246a4099c2bfa6a8a29702f942bbb684672e4512108a0197857acebb5d06660b",
+          "git_blob": "5cb9b868f1ec7e0beec085745bf379c61bffdaa4",
+          "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclpy/services/minimal_service/README.md"
+        },
+        {
+          "path": "rclpy/services/minimal_service/examples_rclpy_minimal_service/__init__.py",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/examples/files/rclpy/services/minimal_service/examples_rclpy_minimal_service/__init__.py",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "git_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+          "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclpy/services/minimal_service/examples_rclpy_minimal_service/__init__.py"
+        },
+        {
+          "path": "rclpy/services/minimal_service/examples_rclpy_minimal_service/service.py",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/examples/files/rclpy/services/minimal_service/examples_rclpy_minimal_service/service.py",
+          "bytes": 1426,
+          "sha256": "0fd46256ae017f59b7bfcfc91a6f3d4af582eb592895bd7fdb9572087da0526f",
+          "git_blob": "f80df116dd372bdbe4ea6a62b6c8db6bc601465e",
+          "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclpy/services/minimal_service/examples_rclpy_minimal_service/service.py"
+        },
+        {
+          "path": "rclpy/services/minimal_service/examples_rclpy_minimal_service/service_member_function.py",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/examples/files/rclpy/services/minimal_service/examples_rclpy_minimal_service/service_member_function.py",
+          "bytes": 1284,
+          "sha256": "4a307057b9f5a53f471bb63a48bc43f64948ddf22442ee36cce9ac821728ad30",
+          "git_blob": "3f1dc80f2a0f00669b7c9954abbf19245f34be51",
+          "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclpy/services/minimal_service/examples_rclpy_minimal_service/service_member_function.py"
+        },
+        {
+          "path": "rclpy/services/minimal_service/package.xml",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/examples/files/rclpy/services/minimal_service/package.xml",
+          "bytes": 1147,
+          "sha256": "f3e08e22b16a6f3f8af1e8c1031352bf5cc0f08c89f4624982af0cb450b12e93",
+          "git_blob": "524a04efe24acda9123f3e34908acf913c7add03",
+          "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclpy/services/minimal_service/package.xml"
+        },
+        {
+          "path": "rclpy/services/minimal_service/setup.py",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/examples/files/rclpy/services/minimal_service/setup.py",
+          "bytes": 1223,
+          "sha256": "3af3ee7c4da69f329fdc4e79275f7bc5c344799a987ab4ca3e0ad8f2bbd02bb8",
+          "git_blob": "336488f7fcfd795f517c229d31404ffda74df380",
+          "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclpy/services/minimal_service/setup.py"
+        },
+        {
+          "path": "rclpy/services/minimal_service/test/test_copyright.py",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/examples/files/rclpy/services/minimal_service/test/test_copyright.py",
+          "bytes": 782,
+          "sha256": "aa3f427ec9380425a42fc885a592132dcd52f4ef7c1f6c74482ab437345cd37b",
+          "git_blob": "aa74f3e05caadf387e9954f6fd624f18d417c37f",
+          "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclpy/services/minimal_service/test/test_copyright.py"
+        },
+        {
+          "path": "rclpy/services/minimal_service/test/test_flake8.py",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/examples/files/rclpy/services/minimal_service/test/test_flake8.py",
+          "bytes": 884,
+          "sha256": "37a813a0507f0ce51a2d0b57312d2cc078a0307a3ca85580ea801b0d2f9755d2",
+          "git_blob": "27ee1078ff077cc3a0fec75b7d023101a68164d1",
+          "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclpy/services/minimal_service/test/test_flake8.py"
+        },
+        {
+          "path": "rclpy/services/minimal_service/test/test_pep257.py",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/examples/files/rclpy/services/minimal_service/test/test_pep257.py",
+          "bytes": 795,
+          "sha256": "121557ca2ec5ebeef046e0994a82aa5acd3f01dca2a1d457d542cd80b12d6437",
+          "git_blob": "399afc9a4eaeab1fdf895a0b811bb0fb2a6aaf6d",
+          "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclpy/services/minimal_service/test/test_pep257.py"
+        }
+      ]
+    },
+    {
+      "repository": "ros2/rclpy",
+      "requested_ref": "jazzy",
+      "commit": "4e607c09d624debc39a4ae5405680c06d87fac35",
+      "tree": "73be1e4e222814041503be75c6868ef9256b9fff",
+      "files": [
+        {
+          "path": "LICENSE",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/rclpy/files/LICENSE",
+          "bytes": 11358,
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "git_blob": "d645695673349e3947e8e5ae42332d0ac3164cd7",
+          "url": "https://raw.githubusercontent.com/ros2/rclpy/4e607c09d624debc39a4ae5405680c06d87fac35/LICENSE"
+        },
+        {
+          "path": "rclpy/rclpy/__init__.py",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/rclpy/files/rclpy/rclpy/__init__.py",
+          "bytes": 10985,
+          "sha256": "15b5665a97a688645545e704a6111a5be5f5b2d147cfcf099e2f92aabcbdf00f",
+          "git_blob": "dcc5ff056cf4b360de802a98132e7a3b6ea8ba9d",
+          "url": "https://raw.githubusercontent.com/ros2/rclpy/4e607c09d624debc39a4ae5405680c06d87fac35/rclpy/rclpy/__init__.py"
+        },
+        {
+          "path": "rclpy/rclpy/client.py",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/rclpy/files/rclpy/rclpy/client.py",
+          "bytes": 8698,
+          "sha256": "ab3523d5b99998d71ce5990ec9babcb4ba9d352a73899e03ede55cf727ca5d5f",
+          "git_blob": "e0fa355be945edccd4e5dc598db14c085202e457",
+          "url": "https://raw.githubusercontent.com/ros2/rclpy/4e607c09d624debc39a4ae5405680c06d87fac35/rclpy/rclpy/client.py"
+        },
+        {
+          "path": "rclpy/rclpy/context.py",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/rclpy/files/rclpy/rclpy/context.py",
+          "bytes": 7038,
+          "sha256": "a33eb8a3a7bf4f43b45e7acc3d5efd85a5fbf8da7626c069494215a342df6c77",
+          "git_blob": "c3a27953e37b3e34cd1fb71a49cee40a3d6478dc",
+          "url": "https://raw.githubusercontent.com/ros2/rclpy/4e607c09d624debc39a4ae5405680c06d87fac35/rclpy/rclpy/context.py"
+        },
+        {
+          "path": "rclpy/rclpy/exceptions.py",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/rclpy/files/rclpy/rclpy/exceptions.py",
+          "bytes": 6066,
+          "sha256": "cc76cefbf8587c87e38239288f399cb5c955dff3ff41a1218dd716009c1db5ab",
+          "git_blob": "27d736fa5161228d5db614577b3854a3e4e84c0a",
+          "url": "https://raw.githubusercontent.com/ros2/rclpy/4e607c09d624debc39a4ae5405680c06d87fac35/rclpy/rclpy/exceptions.py"
+        },
+        {
+          "path": "rclpy/rclpy/executors.py",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/rclpy/files/rclpy/rclpy/executors.py",
+          "bytes": 39804,
+          "sha256": "6a6cd0dde85474270582e64ab1ec2b8847c4bdeb67d2369be8b9de70c30a3930",
+          "git_blob": "3a54e1ea4e18208a74c50eb0fdd0641dba0a15b5",
+          "url": "https://raw.githubusercontent.com/ros2/rclpy/4e607c09d624debc39a4ae5405680c06d87fac35/rclpy/rclpy/executors.py"
+        },
+        {
+          "path": "rclpy/rclpy/node.py",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/rclpy/files/rclpy/rclpy/node.py",
+          "bytes": 100175,
+          "sha256": "8b7fe0ea64e0de12cc1d5d01ebf56c202fa6e153251eb71dfff93e35eb5b3c80",
+          "git_blob": "1cace64a22670e3bb3cd9da7fc05e6d42faeff29",
+          "url": "https://raw.githubusercontent.com/ros2/rclpy/4e607c09d624debc39a4ae5405680c06d87fac35/rclpy/rclpy/node.py"
+        },
+        {
+          "path": "rclpy/rclpy/qos.py",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/rclpy/files/rclpy/rclpy/qos.py",
+          "bytes": 17376,
+          "sha256": "0fba9cda7e15dd40f3ed32a0b3d8e60ef9060040e201e886aa1cebb2a61745f6",
+          "git_blob": "dfa326c9b83ef8015e8f871ddd590837d3ec5324",
+          "url": "https://raw.githubusercontent.com/ros2/rclpy/4e607c09d624debc39a4ae5405680c06d87fac35/rclpy/rclpy/qos.py"
+        },
+        {
+          "path": "rclpy/rclpy/service.py",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/rclpy/files/rclpy/rclpy/service.py",
+          "bytes": 4791,
+          "sha256": "f8f36fb63197012ef2ed821c3dbec23ce32549f3ca3e2be37adb568bbc4adc51",
+          "git_blob": "17515b4ef0e0484ab6add695052be131b7f9c394",
+          "url": "https://raw.githubusercontent.com/ros2/rclpy/4e607c09d624debc39a4ae5405680c06d87fac35/rclpy/rclpy/service.py"
+        },
+        {
+          "path": "rclpy/rclpy/task.py",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/rclpy/files/rclpy/rclpy/task.py",
+          "bytes": 11581,
+          "sha256": "4b645fa767a61f11279150fa169d1eb7f99cfa706ea4afc5f23a211b3b034a77",
+          "git_blob": "46b6486d4727cc256513a1e674d8fb9904cebb51",
+          "url": "https://raw.githubusercontent.com/ros2/rclpy/4e607c09d624debc39a4ae5405680c06d87fac35/rclpy/rclpy/task.py"
+        }
+      ]
+    },
+    {
+      "repository": "ros2/example_interfaces",
+      "requested_ref": "jazzy",
+      "commit": "4ed406d1277df78be01a31005306d69e7592a993",
+      "tree": "e052b44c4ec48a966d71af9a5185c6549c67fc8e",
+      "files": [
+        {
+          "path": "LICENSE",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/example_interfaces/files/LICENSE",
+          "bytes": 11358,
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "git_blob": "d645695673349e3947e8e5ae42332d0ac3164cd7",
+          "url": "https://raw.githubusercontent.com/ros2/example_interfaces/4ed406d1277df78be01a31005306d69e7592a993/LICENSE"
+        },
+        {
+          "path": "srv/AddTwoInts.srv",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/example_interfaces/files/srv/AddTwoInts.srv",
+          "bytes": 30,
+          "sha256": "4ef4cbc2558b4dd05b438dbd063d5732acd6e4eb0886f0738340274a43d9affb",
+          "git_blob": "3a68808ee591a3623cbf5e553eed28bac5233be8",
+          "url": "https://raw.githubusercontent.com/ros2/example_interfaces/4ed406d1277df78be01a31005306d69e7592a993/srv/AddTwoInts.srv"
+        }
+      ]
+    },
+    {
+      "repository": "ros2/common_interfaces",
+      "requested_ref": "jazzy",
+      "commit": "a941f14bb318d8d904505ed935ccbb97f24a70a4",
+      "tree": "bbd609d90753abf6e10bdc94f594f36b75921677",
+      "files": [
+        {
+          "path": "std_srvs/LICENSE",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/common_interfaces/files/std_srvs/LICENSE",
+          "bytes": 11358,
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "git_blob": "d645695673349e3947e8e5ae42332d0ac3164cd7",
+          "url": "https://raw.githubusercontent.com/ros2/common_interfaces/a941f14bb318d8d904505ed935ccbb97f24a70a4/std_srvs/LICENSE"
+        },
+        {
+          "path": "std_srvs/package.xml",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/common_interfaces/files/std_srvs/package.xml",
+          "bytes": 1034,
+          "sha256": "3c20c6ce8315a8c79a9b74cfeb560ba0c1dda641561603ab276e8a485b6479ad",
+          "git_blob": "8ec7bb3c0e0e9fca28768c0f2f80024fc920846d",
+          "url": "https://raw.githubusercontent.com/ros2/common_interfaces/a941f14bb318d8d904505ed935ccbb97f24a70a4/std_srvs/package.xml"
+        },
+        {
+          "path": "std_srvs/srv/Empty.srv",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/common_interfaces/files/std_srvs/srv/Empty.srv",
+          "bytes": 4,
+          "sha256": "f52d711103d50a437830c6fbcd04fb4bab49a0f82f6d26d1c791c6e8488dd090",
+          "git_blob": "ed97d539c095cf1413af30cc23dea272095b97dd",
+          "url": "https://raw.githubusercontent.com/ros2/common_interfaces/a941f14bb318d8d904505ed935ccbb97f24a70a4/std_srvs/srv/Empty.srv"
+        },
+        {
+          "path": "std_srvs/srv/SetBool.srv",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/common_interfaces/files/std_srvs/srv/SetBool.srv",
+          "bytes": 173,
+          "sha256": "a36d99cd5f0467a58a5b06b1443e9ffc0fcb59977190def5ef677fd16f05a664",
+          "git_blob": "93003477744daee97782eeafe272eccece948b7b",
+          "url": "https://raw.githubusercontent.com/ros2/common_interfaces/a941f14bb318d8d904505ed935ccbb97f24a70a4/std_srvs/srv/SetBool.srv"
+        },
+        {
+          "path": "std_srvs/srv/Trigger.srv",
+          "local": "/private/tmp/uwvm-rclpy-service-future-source-only-recovery-20261018-r1/official/common_interfaces/files/std_srvs/srv/Trigger.srv",
+          "bytes": 122,
+          "sha256": "81e80d26771d0c0af8783938720c763cacc429e68d9d6b9c1f912474db0d8dca",
+          "git_blob": "371dfd22e1508994dacdf1fa93290f46d138fcaa",
+          "url": "https://raw.githubusercontent.com/ros2/common_interfaces/a941f14bb318d8d904505ed935ccbb97f24a70a4/std_srvs/srv/Trigger.srv"
+        }
+      ]
+    }
+  ],
+  "initial_partial_acquisition_note": "Initial common_interfaces root LICENSE request returned404; exact tree selected std_srvs/LICENSE instead. All successful original bytes retained; no downloaded code executed."
+}

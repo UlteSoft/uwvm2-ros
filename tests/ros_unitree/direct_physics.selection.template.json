@@ -1,0 +1,95 @@
+{
+  "format_version": 1,
+  "reports": {
+    "workers": "worker-build",
+    "native_products": "native-products",
+    "native_interfaces": "native-interfaces",
+    "guests": "direct-guest-build"
+  },
+  "workers": {
+    "ros2": "worker-ros2",
+    "dual": "worker-dual"
+  },
+  "families": {
+    "unitree_go": {
+      "generation": "unitree_go-generation",
+      "native_export": "unitree_go-native-export",
+      "gateway": "gateway-go-api",
+      "worker_registry_generation": "go-api-registry-generation",
+      "peer_mappings": [],
+      "worker_mappings": [],
+      "gateway_mappings": [],
+      "gateway_context_mappings": []
+    },
+    "unitree_hg": {
+      "generation": "unitree_hg-generation",
+      "native_export": "unitree_hg-native-export",
+      "gateway": "gateway-hg",
+      "worker_registry_generation": "hg-registry-generation",
+      "peer_mappings": [],
+      "worker_mappings": [],
+      "gateway_mappings": [],
+      "gateway_context_mappings": []
+    },
+    "unitree_api": {
+      "generation": "unitree_api-generation",
+      "native_export": "unitree_api-native-export",
+      "gateway": "gateway-go-api",
+      "worker_registry_generation": "go-api-registry-generation",
+      "peer_mappings": [],
+      "worker_mappings": [],
+      "gateway_mappings": [],
+      "gateway_context_mappings": []
+    }
+  },
+  "native_peer": "native-typed-peer",
+  "exec_gate": "exec-gate",
+  "restart_mappings": [],
+  "worker_catalog_roots": [],
+  "expected_network_namespace": null,
+  "cyclonedds_xml": "cyclonedds-xml",
+  "kind": "unitree-go2-three-direct-physics-v1",
+  "guests": {
+    "c": {
+      "positive": "c-direct-positive",
+      "positive_receipt": "c-direct-positive_receipt",
+      "denied": "c-direct-denied",
+      "denied_receipt": "c-direct-denied_receipt"
+    },
+    "cpp": {
+      "positive": "cpp-direct-positive",
+      "positive_receipt": "cpp-direct-positive_receipt",
+      "denied": "cpp-direct-denied",
+      "denied_receipt": "cpp-direct-denied_receipt"
+    },
+    "javascript": {
+      "positive": "javascript-direct-positive",
+      "positive_receipt": "javascript-direct-positive_receipt",
+      "denied": "javascript-direct-denied",
+      "denied_receipt": "javascript-direct-denied_receipt"
+    }
+  },
+  "native_controller": "native-go2-controller",
+  "mappings": {
+    "worker": [],
+    "gateway": [],
+    "gateway_context": [],
+    "native_controller": [],
+    "native_controller_context": [],
+    "physics_python": [],
+    "witness_python": []
+  },
+  "cp310": {
+    "root": null,
+    "python": "cp310-python",
+    "chroot": "host-chroot",
+    "catalog_roots": [],
+    "environment": {},
+    "view_receipt": "cp310-view-receipt"
+  },
+  "measurement": {
+    "steps": null,
+    "warmup_steps": null,
+    "slowdown_trigger": null
+  }
+}

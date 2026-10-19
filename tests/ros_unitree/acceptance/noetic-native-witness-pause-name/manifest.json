@@ -1,0 +1,8 @@
+{
+  "kind": "preserved-source45-witness-before-posix-pause-name-fix",
+  "path": "tests/ros_unitree/native_legacy_ros1_peer.cpp",
+  "bytes": 14054,
+  "sha256": "f5895548cd0344f9fa6e6b745e66b8f6937f4074de763a4f0fa542e1cb061762",
+  "actual_failure_report": "documents/ros/continuation-20261016-boot3-evidence/source45-noetic-native3-r1-failed/inner.json",
+  "scope": "GENUINE_GNU9_COMPILER_AMBIGUOUS_CALL_FAILURE_NOT_A_PASS"
+}

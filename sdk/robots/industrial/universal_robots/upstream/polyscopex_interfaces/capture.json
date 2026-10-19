@@ -1,0 +1,427 @@
+{
+  "id": "polyscopex_interfaces",
+  "repository": "UniversalRobots/urinterfaces",
+  "branch": "master",
+  "commit": "e88cebb16503bcbe6e7385251e1f83b1fa54e9c8",
+  "tree_git_sha1": "b49534f8a27c6a817c23620298506f8f46eaa090",
+  "interface_inventory": [
+    {
+      "path": "action/SetMode.action",
+      "bytes": 957,
+      "git_blob_sha1": "3d589dbc1da60cf5a1480eadf866f43271316bc0"
+    },
+    {
+      "path": "msg/ActiveTCP.msg",
+      "bytes": 36,
+      "git_blob_sha1": "d6e29e383083216a4fd4a99dcd6074c32df41f75"
+    },
+    {
+      "path": "msg/Analog.msg",
+      "bytes": 102,
+      "git_blob_sha1": "e7af1ce99ed20fb96927129c61c8caa569b9f45c"
+    },
+    {
+      "path": "msg/AnalogIO.msg",
+      "bytes": 113,
+      "git_blob_sha1": "a35089bddadf9705a9f8839a612f6ba6a3c32792"
+    },
+    {
+      "path": "msg/AnalogIOStateStamped.msg",
+      "bytes": 42,
+      "git_blob_sha1": "e3bae79d033246b35790a5b77411070aa1896cff"
+    },
+    {
+      "path": "msg/AnalogStamped.msg",
+      "bytes": 35,
+      "git_blob_sha1": "836695939b9c35b5654ea619348d1730eccc8969"
+    },
+    {
+      "path": "msg/BoolStamped.msg",
+      "bytes": 33,
+      "git_blob_sha1": "b8b7e7a655ec55861bb894c8f6b966d1bda16518"
+    },
+    {
+      "path": "msg/ControlCycle.msg",
+      "bytes": 35,
+      "git_blob_sha1": "e1015bc5cfed028cc504e034d2816439e62af2ab"
+    },
+    {
+      "path": "msg/Current.msg",
+      "bytes": 36,
+      "git_blob_sha1": "2072419759a4572d12ab46b73cc03d45aa307c3b"
+    },
+    {
+      "path": "msg/Digital.msg",
+      "bytes": 21,
+      "git_blob_sha1": "6183945954e683178d10d2fde80da6ed1d314de9"
+    },
+    {
+      "path": "msg/DigitalIO.msg",
+      "bytes": 117,
+      "git_blob_sha1": "c7cf3046870c6ab2e8271a8c64ff33396b22716a"
+    },
+    {
+      "path": "msg/DigitalIOStateStamped.msg",
+      "bytes": 72,
+      "git_blob_sha1": "88db8aff44a77edd856c8b749aeb7f4157ee24c9"
+    },
+    {
+      "path": "msg/DigitalStamped.msg",
+      "bytes": 36,
+      "git_blob_sha1": "93b3ea2c5d641f9a45e54606660f7a18ae21ae20"
+    },
+    {
+      "path": "msg/DoubleMultiArrayStamped.msg",
+      "bytes": 38,
+      "git_blob_sha1": "8e4a1c8f3a869934eec36e73cfa3fcb1ffcc7d79"
+    },
+    {
+      "path": "msg/Float32Stamped.msg",
+      "bytes": 36,
+      "git_blob_sha1": "2072419759a4572d12ab46b73cc03d45aa307c3b"
+    },
+    {
+      "path": "msg/Float64Stamped.msg",
+      "bytes": 36,
+      "git_blob_sha1": "5a609c9301a288c52730a65a9fd416b901368c04"
+    },
+    {
+      "path": "msg/JointMode.msg",
+      "bytes": 597,
+      "git_blob_sha1": "f2e769521f2add007977d6a206b40e65410cd8d8"
+    },
+    {
+      "path": "msg/JointTemperature.msg",
+      "bytes": 39,
+      "git_blob_sha1": "9fdcd2767818a4a17636b0250891974673e2061d"
+    },
+    {
+      "path": "msg/JointVoltage.msg",
+      "bytes": 39,
+      "git_blob_sha1": "b4eb3d760290da58ec046283f056b7e079d23ec2"
+    },
+    {
+      "path": "msg/JsonStringType.msg",
+      "bytes": 28,
+      "git_blob_sha1": "673b10c5392e115cca2fe1ee9ad948eda18cd7a0"
+    },
+    {
+      "path": "msg/RobotMode.msg",
+      "bytes": 193,
+      "git_blob_sha1": "38cf7c7fa5528dc742dded3d607ec017fe4f0377"
+    },
+    {
+      "path": "msg/RuntimeState.msg",
+      "bytes": 273,
+      "git_blob_sha1": "3ad3d9f8238da854c547a7ef8929c6b4fc7c1f44"
+    },
+    {
+      "path": "msg/SafetyStatus.msg",
+      "bytes": 656,
+      "git_blob_sha1": "9a9329e30e986c1c66d3404db47913f23f3071ca"
+    },
+    {
+      "path": "msg/SharedVariablesEditResponse.msg",
+      "bytes": 95,
+      "git_blob_sha1": "15533000590775d9c06e15ec838422eb05f8e8fc"
+    },
+    {
+      "path": "msg/SpeedSliderFraction.msg",
+      "bytes": 36,
+      "git_blob_sha1": "5a609c9301a288c52730a65a9fd416b901368c04"
+    },
+    {
+      "path": "msg/TCPState.msg",
+      "bytes": 74,
+      "git_blob_sha1": "e6133a8263ce9c7d9de6ba7b89da912b965a59e5"
+    },
+    {
+      "path": "msg/ToolOutputMode.msg",
+      "bytes": 242,
+      "git_blob_sha1": "3bd171c405e3211ad6ed813c8e8ed06b0f55130a"
+    },
+    {
+      "path": "msg/VariableUpdate.msg",
+      "bytes": 43,
+      "git_blob_sha1": "6c60b89c7f49932b36529c1c735693e0ac14ea79"
+    },
+    {
+      "path": "msg/VoltageCurrentStamped.msg",
+      "bytes": 55,
+      "git_blob_sha1": "a071fdcebc9b07be2311e95c62d37baa681ffe50"
+    },
+    {
+      "path": "msg/WorldModelNames.msg",
+      "bytes": 47,
+      "git_blob_sha1": "de79ee7d74ac6afd82af6b06c3e290e23baa9936"
+    },
+    {
+      "path": "srv/SetAnalogOutput.srv",
+      "bytes": 161,
+      "git_blob_sha1": "fee09cc3e68a3c3c8cb0d9d82a49691bf657fef9"
+    },
+    {
+      "path": "srv/SetDigitalOutput.srv",
+      "bytes": 162,
+      "git_blob_sha1": "eae4bc838b4d66093452a88e8c501dde1b55b909"
+    },
+    {
+      "path": "srv/SetSpeedFraction.srv",
+      "bytes": 133,
+      "git_blob_sha1": "be351b926614710d298f035319c72f5f57ad115c"
+    },
+    {
+      "path": "srv/SharedVariablesEditor.srv",
+      "bytes": 125,
+      "git_blob_sha1": "3d6eb4ae55bff0dff40aeae3cdcd7a8954e5cc2d"
+    },
+    {
+      "path": "srv/VariablesViewer.srv",
+      "bytes": 70,
+      "git_blob_sha1": "cdb21b2cb9b16fa0e9c56af3d3d1add12de07cb4"
+    }
+  ],
+  "default_authority": [],
+  "scope": "Whole original declared interface files and selected original native implementation/documentation, not native execution or all releases.",
+  "files": [
+    {
+      "path": "CMakeLists.txt",
+      "bytes": 1747,
+      "git_blob_sha1": "c07c93b1e6aedd3ea0a716c1ebfb9c9e59740241",
+      "sha256": "0b32ca17c0f27715ca15a0f2d3bace5e3ef51a8655871f98181ffc7aa6f88608"
+    },
+    {
+      "path": "LICENSE",
+      "bytes": 1459,
+      "git_blob_sha1": "574ef07902908574cba9a471d7e5eb0b684691e4",
+      "sha256": "143077f9f6a8de5a99f78c2c2472801fb53cf240277ef661642f079b9acdfff8"
+    },
+    {
+      "path": "README.md",
+      "bytes": 866,
+      "git_blob_sha1": "e5d8d71e7461feb3f387806fe4d95d163d382847",
+      "sha256": "7ada54d37b1475aa5c2340ebc552104418717f82e4f428de061b19a7fc1bee3c"
+    },
+    {
+      "path": "action/SetMode.action",
+      "bytes": 957,
+      "git_blob_sha1": "3d589dbc1da60cf5a1480eadf866f43271316bc0",
+      "sha256": "875deb36327caa0d1c11220dbc4429e3f82c2b4adb0d065678176b370985744d"
+    },
+    {
+      "path": "msg/ActiveTCP.msg",
+      "bytes": 36,
+      "git_blob_sha1": "d6e29e383083216a4fd4a99dcd6074c32df41f75",
+      "sha256": "3ba449443d66023cb59571eaa9480d54fbbe36fcea6825903f30d2251fc2c8ed"
+    },
+    {
+      "path": "msg/Analog.msg",
+      "bytes": 102,
+      "git_blob_sha1": "e7af1ce99ed20fb96927129c61c8caa569b9f45c",
+      "sha256": "857aa51a5216614486b3be7a4834081f10a8eb0c34b61395948a6a988550c0f5"
+    },
+    {
+      "path": "msg/AnalogIO.msg",
+      "bytes": 113,
+      "git_blob_sha1": "a35089bddadf9705a9f8839a612f6ba6a3c32792",
+      "sha256": "261f7cc436b166f48343e1d63cdc26cbe80b1c05ddff7eb4b5c5f0f208c73d54"
+    },
+    {
+      "path": "msg/AnalogIOStateStamped.msg",
+      "bytes": 42,
+      "git_blob_sha1": "e3bae79d033246b35790a5b77411070aa1896cff",
+      "sha256": "b4bff8bca01affadb63f60427fa4df79d7a08b629f064a89bc32e4e9cc8f2c37"
+    },
+    {
+      "path": "msg/AnalogStamped.msg",
+      "bytes": 35,
+      "git_blob_sha1": "836695939b9c35b5654ea619348d1730eccc8969",
+      "sha256": "73fe48f66fbb559c38c56567798aeb8ce9f18738d39a4877160fe1a673fe3a81"
+    },
+    {
+      "path": "msg/BoolStamped.msg",
+      "bytes": 33,
+      "git_blob_sha1": "b8b7e7a655ec55861bb894c8f6b966d1bda16518",
+      "sha256": "9022da10587f19fd74c2acd2b3b7cd69b3080a0f4d588998bb968e1b13a05854"
+    },
+    {
+      "path": "msg/ControlCycle.msg",
+      "bytes": 35,
+      "git_blob_sha1": "e1015bc5cfed028cc504e034d2816439e62af2ab",
+      "sha256": "5f44a7f8e50b0552c6f384c320ebfe76bc48ab01b9f006b428b659219bca9a89"
+    },
+    {
+      "path": "msg/Current.msg",
+      "bytes": 36,
+      "git_blob_sha1": "2072419759a4572d12ab46b73cc03d45aa307c3b",
+      "sha256": "c71b1dd89a3a948b354ab45451ba60885de05e86824a3b58be68a5593a872bb2"
+    },
+    {
+      "path": "msg/Digital.msg",
+      "bytes": 21,
+      "git_blob_sha1": "6183945954e683178d10d2fde80da6ed1d314de9",
+      "sha256": "d0497cd504a632e323f13952188672a59396e70ed0e4fb5ddb35db51a70d1b5b"
+    },
+    {
+      "path": "msg/DigitalIO.msg",
+      "bytes": 117,
+      "git_blob_sha1": "c7cf3046870c6ab2e8271a8c64ff33396b22716a",
+      "sha256": "5312185df7358b533168f8419c19ec7f0024f671862d63bd0f612f7b80af6d3e"
+    },
+    {
+      "path": "msg/DigitalIOStateStamped.msg",
+      "bytes": 72,
+      "git_blob_sha1": "88db8aff44a77edd856c8b749aeb7f4157ee24c9",
+      "sha256": "3ad59558dc8476d12cc4c2b2d15b68b763da9b8229cb6a9914d4fbb2f3240f33"
+    },
+    {
+      "path": "msg/DigitalStamped.msg",
+      "bytes": 36,
+      "git_blob_sha1": "93b3ea2c5d641f9a45e54606660f7a18ae21ae20",
+      "sha256": "f811ef7f2e3790717885d334f6c7dab821e77e67a701e8f74ff1345570368e76"
+    },
+    {
+      "path": "msg/DoubleMultiArrayStamped.msg",
+      "bytes": 38,
+      "git_blob_sha1": "8e4a1c8f3a869934eec36e73cfa3fcb1ffcc7d79",
+      "sha256": "73a3ab16367472929d55b520baa7a6c402600a7848f51499de12df8d5234c75e"
+    },
+    {
+      "path": "msg/Float32Stamped.msg",
+      "bytes": 36,
+      "git_blob_sha1": "2072419759a4572d12ab46b73cc03d45aa307c3b",
+      "sha256": "c71b1dd89a3a948b354ab45451ba60885de05e86824a3b58be68a5593a872bb2"
+    },
+    {
+      "path": "msg/Float64Stamped.msg",
+      "bytes": 36,
+      "git_blob_sha1": "5a609c9301a288c52730a65a9fd416b901368c04",
+      "sha256": "da9ceb40e23d76271a821b7528365efbb19f2e09038b2c4d5bde64ec997f7400"
+    },
+    {
+      "path": "msg/JointMode.msg",
+      "bytes": 597,
+      "git_blob_sha1": "f2e769521f2add007977d6a206b40e65410cd8d8",
+      "sha256": "256beef939055d91b5e6bb2ee03065670f63cb247173ba978cc053710976d6c9"
+    },
+    {
+      "path": "msg/JointTemperature.msg",
+      "bytes": 39,
+      "git_blob_sha1": "9fdcd2767818a4a17636b0250891974673e2061d",
+      "sha256": "d90442d8c04bd3846ddf474a4c809be1184fcff768305837790649b9e866c568"
+    },
+    {
+      "path": "msg/JointVoltage.msg",
+      "bytes": 39,
+      "git_blob_sha1": "b4eb3d760290da58ec046283f056b7e079d23ec2",
+      "sha256": "1b0da7ef62affa6c37042de4092f6e0c1c13a27b2beb65870842aee734a86c9b"
+    },
+    {
+      "path": "msg/JsonStringType.msg",
+      "bytes": 28,
+      "git_blob_sha1": "673b10c5392e115cca2fe1ee9ad948eda18cd7a0",
+      "sha256": "47bb90bb3c34b342c023b04f959f46df37e68a2eb5eeb3f9a8217c02371cf2c7"
+    },
+    {
+      "path": "msg/RobotMode.msg",
+      "bytes": 193,
+      "git_blob_sha1": "38cf7c7fa5528dc742dded3d607ec017fe4f0377",
+      "sha256": "46293039e4d26ae0716c0d9088a1e90ad01d845b411a1a2829131fba6d826478"
+    },
+    {
+      "path": "msg/RuntimeState.msg",
+      "bytes": 273,
+      "git_blob_sha1": "3ad3d9f8238da854c547a7ef8929c6b4fc7c1f44",
+      "sha256": "e66951198121466a4f31ba760b56670d3fc5bc6fbd804c19e3c9b0cc754f7918"
+    },
+    {
+      "path": "msg/SafetyStatus.msg",
+      "bytes": 656,
+      "git_blob_sha1": "9a9329e30e986c1c66d3404db47913f23f3071ca",
+      "sha256": "4ef4950f8097ac8092f3c4f34b3e483fc8393e15e2625b78ad3d7a317eb29871"
+    },
+    {
+      "path": "msg/SharedVariablesEditResponse.msg",
+      "bytes": 95,
+      "git_blob_sha1": "15533000590775d9c06e15ec838422eb05f8e8fc",
+      "sha256": "69494ab590c5786bca9763287cb7f34e73a3ee7d969cdc2834bc233403ddb351"
+    },
+    {
+      "path": "msg/SpeedSliderFraction.msg",
+      "bytes": 36,
+      "git_blob_sha1": "5a609c9301a288c52730a65a9fd416b901368c04",
+      "sha256": "da9ceb40e23d76271a821b7528365efbb19f2e09038b2c4d5bde64ec997f7400"
+    },
+    {
+      "path": "msg/TCPState.msg",
+      "bytes": 74,
+      "git_blob_sha1": "e6133a8263ce9c7d9de6ba7b89da912b965a59e5",
+      "sha256": "70c553d9683ddf7fa6bdd8b687601dcefd85506113691b0e1dc7921cc5ed41ef"
+    },
+    {
+      "path": "msg/ToolOutputMode.msg",
+      "bytes": 242,
+      "git_blob_sha1": "3bd171c405e3211ad6ed813c8e8ed06b0f55130a",
+      "sha256": "cef0f354525761b8bd20d61c4b602c688773c73a7050b2c91f62b5df511b558a"
+    },
+    {
+      "path": "msg/VariableUpdate.msg",
+      "bytes": 43,
+      "git_blob_sha1": "6c60b89c7f49932b36529c1c735693e0ac14ea79",
+      "sha256": "29fc9b1572eb639921e563b4bb02bf4ebe74e881cc2436c53565ab95eb04bd86"
+    },
+    {
+      "path": "msg/VoltageCurrentStamped.msg",
+      "bytes": 55,
+      "git_blob_sha1": "a071fdcebc9b07be2311e95c62d37baa681ffe50",
+      "sha256": "c80fff2b5f3aaeb32e88415a3f83a61963351bd65ad59095d080398a6075a656"
+    },
+    {
+      "path": "msg/WorldModelNames.msg",
+      "bytes": 47,
+      "git_blob_sha1": "de79ee7d74ac6afd82af6b06c3e290e23baa9936",
+      "sha256": "6acdb228de0de0eae4ac23dcd904239b2deb4f7633cc9fac7953451f85e7ea8a"
+    },
+    {
+      "path": "package.xml",
+      "bytes": 1226,
+      "git_blob_sha1": "c5c394877fc6e4b0a8e22a93b723f9c1e4975278",
+      "sha256": "e1839fe1f2dbc74635ee858c3c9d985a687aa8dccbd4b4a68686369e786b4bed"
+    },
+    {
+      "path": "srv/SetAnalogOutput.srv",
+      "bytes": 161,
+      "git_blob_sha1": "fee09cc3e68a3c3c8cb0d9d82a49691bf657fef9",
+      "sha256": "377d1cfc0fc6bcb4f8dd4dd1dc9b3d369fd5e019663a0908594c0bb397c91544"
+    },
+    {
+      "path": "srv/SetDigitalOutput.srv",
+      "bytes": 162,
+      "git_blob_sha1": "eae4bc838b4d66093452a88e8c501dde1b55b909",
+      "sha256": "acac96d2793b11644e6366b0bcf19273997225d560d53b0f1cd4216b53f728fe"
+    },
+    {
+      "path": "srv/SetSpeedFraction.srv",
+      "bytes": 133,
+      "git_blob_sha1": "be351b926614710d298f035319c72f5f57ad115c",
+      "sha256": "33907f0ac0967fed143f3a08d2f234e11e38880eb26592c415c8b687c1aecf74"
+    },
+    {
+      "path": "srv/SharedVariablesEditor.srv",
+      "bytes": 125,
+      "git_blob_sha1": "3d6eb4ae55bff0dff40aeae3cdcd7a8954e5cc2d",
+      "sha256": "5651716c82bd96856d69691f693715a21e8350bcee3bd84b426a6acf5c94153a"
+    },
+    {
+      "path": "srv/VariablesViewer.srv",
+      "bytes": 70,
+      "git_blob_sha1": "cdb21b2cb9b16fa0e9c56af3d3d1add12de07cb4",
+      "sha256": "d72ca7a583acc8a20cf60c3da60f34eb113bee0487d419b1cc77076f0fe62032"
+    }
+  ],
+  "archive": {
+    "url": "https://codeload.github.com/UniversalRobots/urinterfaces/tar.gz/e88cebb16503bcbe6e7385251e1f83b1fa54e9c8",
+    "bytes": 6815,
+    "sha256": "0323521b0cac87e9673a0c621caa74d69339fb42d0980e793890dbb9465bf1c4"
+  }
+}

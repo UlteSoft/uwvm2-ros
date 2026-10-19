@@ -1,0 +1,4091 @@
+/** @file C++20 typed bounded canonical records, independent of native ROS libraries.
+ * Includes use the existing roswasmcpp Publisher/Subscription codecs and do not grant
+ * aliases. Custom Service/Action component codecs also accept the raw typed RPC facade. */
+#pragma once
+#include "bounded_records.h"
+#include <roswasm/roswasmcpp.hpp>
+namespace uwvm_custom {
+/** Complete bounded guest value for clearpath_camera_msgs/InspectPOIGoal. */
+using Ros1Clearpath_camera_msgsInspectPOIGoal=roswasmc_bounded_1_clearpath_camera_msgs_InspectPOIGoal;
+/** Complete bounded guest value for clearpath_camera_msgs/InspectPOIResult. */
+using Ros1Clearpath_camera_msgsInspectPOIResult=roswasmc_bounded_1_clearpath_camera_msgs_InspectPOIResult;
+/** Complete bounded guest value for clearpath_camera_msgs/InspectPOIFeedback. */
+using Ros1Clearpath_camera_msgsInspectPOIFeedback=roswasmc_bounded_1_clearpath_camera_msgs_InspectPOIFeedback;
+/** Complete bounded guest value for clearpath_dock_msgs/LocalDockGoal. */
+using Ros1Clearpath_dock_msgsLocalDockGoal=roswasmc_bounded_1_clearpath_dock_msgs_LocalDockGoal;
+/** Complete bounded guest value for clearpath_dock_msgs/LocalDockResult. */
+using Ros1Clearpath_dock_msgsLocalDockResult=roswasmc_bounded_1_clearpath_dock_msgs_LocalDockResult;
+/** Complete bounded guest value for clearpath_dock_msgs/LocalDockFeedback. */
+using Ros1Clearpath_dock_msgsLocalDockFeedback=roswasmc_bounded_1_clearpath_dock_msgs_LocalDockFeedback;
+/** Complete bounded guest value for clearpath_dock_msgs/LocalUndockGoal. */
+using Ros1Clearpath_dock_msgsLocalUndockGoal=roswasmc_bounded_1_clearpath_dock_msgs_LocalUndockGoal;
+/** Complete bounded guest value for clearpath_dock_msgs/LocalUndockResult. */
+using Ros1Clearpath_dock_msgsLocalUndockResult=roswasmc_bounded_1_clearpath_dock_msgs_LocalUndockResult;
+/** Complete bounded guest value for clearpath_dock_msgs/LocalUndockFeedback. */
+using Ros1Clearpath_dock_msgsLocalUndockFeedback=roswasmc_bounded_1_clearpath_dock_msgs_LocalUndockFeedback;
+/** Complete bounded guest value for clearpath_dock_msgs/NetworkDockGoal. */
+using Ros1Clearpath_dock_msgsNetworkDockGoal=roswasmc_bounded_1_clearpath_dock_msgs_NetworkDockGoal;
+/** Complete bounded guest value for clearpath_dock_msgs/NetworkDockResult. */
+using Ros1Clearpath_dock_msgsNetworkDockResult=roswasmc_bounded_1_clearpath_dock_msgs_NetworkDockResult;
+/** Complete bounded guest value for time. */
+using Ros1Time=roswasmc_bounded_1_time;
+/** Complete bounded guest value for std_msgs/Header. */
+using Ros1Std_msgsHeader=roswasmc_bounded_1_std_msgs_Header;
+/** Complete bounded guest value for clearpath_navigation_msgs/Task. */
+using Ros1Clearpath_navigation_msgsTask=roswasmc_bounded_1_clearpath_navigation_msgs_Task;
+/** Complete bounded guest value for clearpath_navigation_msgs/Waypoint. */
+using Ros1Clearpath_navigation_msgsWaypoint=roswasmc_bounded_1_clearpath_navigation_msgs_Waypoint;
+/** Complete bounded guest value for geometry_msgs/Point. */
+using Ros1Geometry_msgsPoint=roswasmc_bounded_1_geometry_msgs_Point;
+/** Complete bounded guest value for clearpath_navigation_msgs/NetworkMissionSegment. */
+using Ros1Clearpath_navigation_msgsNetworkMissionSegment=roswasmc_bounded_1_clearpath_navigation_msgs_NetworkMissionSegment;
+/** Complete bounded guest value for clearpath_dock_msgs/NetworkDockFeedback. */
+using Ros1Clearpath_dock_msgsNetworkDockFeedback=roswasmc_bounded_1_clearpath_dock_msgs_NetworkDockFeedback;
+/** Complete bounded guest value for clearpath_dock_msgs/RadiusDockGoal. */
+using Ros1Clearpath_dock_msgsRadiusDockGoal=roswasmc_bounded_1_clearpath_dock_msgs_RadiusDockGoal;
+/** Complete bounded guest value for clearpath_dock_msgs/RadiusDockResult. */
+using Ros1Clearpath_dock_msgsRadiusDockResult=roswasmc_bounded_1_clearpath_dock_msgs_RadiusDockResult;
+/** Complete bounded guest value for clearpath_dock_msgs/RadiusDockFeedback. */
+using Ros1Clearpath_dock_msgsRadiusDockFeedback=roswasmc_bounded_1_clearpath_dock_msgs_RadiusDockFeedback;
+/** Complete bounded guest value for clearpath_localization_msgs/SurveyBaseStationGoal. */
+using Ros1Clearpath_localization_msgsSurveyBaseStationGoal=roswasmc_bounded_1_clearpath_localization_msgs_SurveyBaseStationGoal;
+/** Complete bounded guest value for clearpath_localization_msgs/SurveyBaseStationResult. */
+using Ros1Clearpath_localization_msgsSurveyBaseStationResult=roswasmc_bounded_1_clearpath_localization_msgs_SurveyBaseStationResult;
+/** Complete bounded guest value for clearpath_localization_msgs/SurveyBaseStationFeedback. */
+using Ros1Clearpath_localization_msgsSurveyBaseStationFeedback=roswasmc_bounded_1_clearpath_localization_msgs_SurveyBaseStationFeedback;
+/** Complete bounded guest value for duration. */
+using Ros1Duration=roswasmc_bounded_1_duration;
+/** Complete bounded guest value for clearpath_mission_scheduler_msgs/RunScheduleByUuidGoal. */
+using Ros1Clearpath_mission_scheduler_msgsRunScheduleByUuidGoal=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_RunScheduleByUuidGoal;
+/** Complete bounded guest value for clearpath_mission_scheduler_msgs/RunScheduleByUuidResult. */
+using Ros1Clearpath_mission_scheduler_msgsRunScheduleByUuidResult=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_RunScheduleByUuidResult;
+/** Complete bounded guest value for clearpath_mission_scheduler_msgs/RunScheduleByUuidFeedback. */
+using Ros1Clearpath_mission_scheduler_msgsRunScheduleByUuidFeedback=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_RunScheduleByUuidFeedback;
+/** Complete bounded guest value for clearpath_navigation_msgs/ExecuteMissionByUuidGoal. */
+using Ros1Clearpath_navigation_msgsExecuteMissionByUuidGoal=roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteMissionByUuidGoal;
+/** Complete bounded guest value for clearpath_navigation_msgs/ExecuteMissionByUuidResult. */
+using Ros1Clearpath_navigation_msgsExecuteMissionByUuidResult=roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteMissionByUuidResult;
+/** Complete bounded guest value for clearpath_navigation_msgs/ExecuteMissionByUuidFeedback. */
+using Ros1Clearpath_navigation_msgsExecuteMissionByUuidFeedback=roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteMissionByUuidFeedback;
+/** Complete bounded guest value for clearpath_navigation_msgs/ExecuteNetworkGoToGoal. */
+using Ros1Clearpath_navigation_msgsExecuteNetworkGoToGoal=roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteNetworkGoToGoal;
+/** Complete bounded guest value for clearpath_navigation_msgs/ExecuteNetworkGoToResult. */
+using Ros1Clearpath_navigation_msgsExecuteNetworkGoToResult=roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteNetworkGoToResult;
+/** Complete bounded guest value for clearpath_navigation_msgs/ExecuteNetworkGoToFeedback. */
+using Ros1Clearpath_navigation_msgsExecuteNetworkGoToFeedback=roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteNetworkGoToFeedback;
+/** Complete bounded guest value for clearpath_navigation_msgs/ExecuteNetworkMissionByUuidGoal. */
+using Ros1Clearpath_navigation_msgsExecuteNetworkMissionByUuidGoal=roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteNetworkMissionByUuidGoal;
+/** Complete bounded guest value for clearpath_navigation_msgs/NetworkGoalState. */
+using Ros1Clearpath_navigation_msgsNetworkGoalState=roswasmc_bounded_1_clearpath_navigation_msgs_NetworkGoalState;
+/** Complete bounded guest value for clearpath_navigation_msgs/ExecuteNetworkMissionByUuidResult. */
+using Ros1Clearpath_navigation_msgsExecuteNetworkMissionByUuidResult=roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteNetworkMissionByUuidResult;
+/** Complete bounded guest value for clearpath_navigation_msgs/ExecuteNetworkMissionByUuidFeedback. */
+using Ros1Clearpath_navigation_msgsExecuteNetworkMissionByUuidFeedback=roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteNetworkMissionByUuidFeedback;
+/** Complete bounded guest value for geometry_msgs/Quaternion. */
+using Ros1Geometry_msgsQuaternion=roswasmc_bounded_1_geometry_msgs_Quaternion;
+/** Complete bounded guest value for geometry_msgs/Pose. */
+using Ros1Geometry_msgsPose=roswasmc_bounded_1_geometry_msgs_Pose;
+/** Complete bounded guest value for geometry_msgs/PoseStamped. */
+using Ros1Geometry_msgsPoseStamped=roswasmc_bounded_1_geometry_msgs_PoseStamped;
+/** Complete bounded guest value for clearpath_navigation_msgs/GetWaypointPathGoal. */
+using Ros1Clearpath_navigation_msgsGetWaypointPathGoal=roswasmc_bounded_1_clearpath_navigation_msgs_GetWaypointPathGoal;
+/** Complete bounded guest value for nav_msgs/Path. */
+using Ros1Nav_msgsPath=roswasmc_bounded_1_nav_msgs_Path;
+/** Complete bounded guest value for std_msgs/Duration. */
+using Ros1Std_msgsDuration=roswasmc_bounded_1_std_msgs_Duration;
+/** Complete bounded guest value for clearpath_navigation_msgs/GetWaypointPathResult. */
+using Ros1Clearpath_navigation_msgsGetWaypointPathResult=roswasmc_bounded_1_clearpath_navigation_msgs_GetWaypointPathResult;
+/** Complete bounded guest value for clearpath_navigation_msgs/GetWaypointPathFeedback. */
+using Ros1Clearpath_navigation_msgsGetWaypointPathFeedback=roswasmc_bounded_1_clearpath_navigation_msgs_GetWaypointPathFeedback;
+/** Complete bounded guest value for clearpath_navigation_msgs/Mission. */
+using Ros1Clearpath_navigation_msgsMission=roswasmc_bounded_1_clearpath_navigation_msgs_Mission;
+/** Complete bounded guest value for clearpath_navigation_msgs/MissionGoal. */
+using Ros1Clearpath_navigation_msgsMissionGoal=roswasmc_bounded_1_clearpath_navigation_msgs_MissionGoal;
+/** Complete bounded guest value for clearpath_navigation_msgs/MissionResult. */
+using Ros1Clearpath_navigation_msgsMissionResult=roswasmc_bounded_1_clearpath_navigation_msgs_MissionResult;
+/** Complete bounded guest value for clearpath_navigation_msgs/MissionFeedback. */
+using Ros1Clearpath_navigation_msgsMissionFeedback=roswasmc_bounded_1_clearpath_navigation_msgs_MissionFeedback;
+/** Complete bounded guest value for clearpath_navigation_msgs/NetworkGoToPOIGoal. */
+using Ros1Clearpath_navigation_msgsNetworkGoToPOIGoal=roswasmc_bounded_1_clearpath_navigation_msgs_NetworkGoToPOIGoal;
+/** Complete bounded guest value for clearpath_navigation_msgs/NetworkGoToPOIResult. */
+using Ros1Clearpath_navigation_msgsNetworkGoToPOIResult=roswasmc_bounded_1_clearpath_navigation_msgs_NetworkGoToPOIResult;
+/** Complete bounded guest value for clearpath_navigation_msgs/NetworkGoToPOIFeedback. */
+using Ros1Clearpath_navigation_msgsNetworkGoToPOIFeedback=roswasmc_bounded_1_clearpath_navigation_msgs_NetworkGoToPOIFeedback;
+/** Complete bounded guest value for clearpath_navigation_msgs/RecordPathGoal. */
+using Ros1Clearpath_navigation_msgsRecordPathGoal=roswasmc_bounded_1_clearpath_navigation_msgs_RecordPathGoal;
+/** Complete bounded guest value for clearpath_navigation_msgs/Vector2D64. */
+using Ros1Clearpath_navigation_msgsVector2D64=roswasmc_bounded_1_clearpath_navigation_msgs_Vector2D64;
+/** Complete bounded guest value for clearpath_navigation_msgs/RecordPathResult. */
+using Ros1Clearpath_navigation_msgsRecordPathResult=roswasmc_bounded_1_clearpath_navigation_msgs_RecordPathResult;
+/** Complete bounded guest value for clearpath_navigation_msgs/RecordPathFeedback. */
+using Ros1Clearpath_navigation_msgsRecordPathFeedback=roswasmc_bounded_1_clearpath_navigation_msgs_RecordPathFeedback;
+/** Complete bounded guest value for clearpath_navigation_msgs/RunNetworkGoToPlannerGoal. */
+using Ros1Clearpath_navigation_msgsRunNetworkGoToPlannerGoal=roswasmc_bounded_1_clearpath_navigation_msgs_RunNetworkGoToPlannerGoal;
+/** Complete bounded guest value for clearpath_navigation_msgs/RunNetworkGoToPlannerResult. */
+using Ros1Clearpath_navigation_msgsRunNetworkGoToPlannerResult=roswasmc_bounded_1_clearpath_navigation_msgs_RunNetworkGoToPlannerResult;
+/** Complete bounded guest value for clearpath_navigation_msgs/RunNetworkGoToPlannerFeedback. */
+using Ros1Clearpath_navigation_msgsRunNetworkGoToPlannerFeedback=roswasmc_bounded_1_clearpath_navigation_msgs_RunNetworkGoToPlannerFeedback;
+/** Complete bounded guest value for clearpath_navigation_msgs/RunNetworkMissionPreviewerGoal. */
+using Ros1Clearpath_navigation_msgsRunNetworkMissionPreviewerGoal=roswasmc_bounded_1_clearpath_navigation_msgs_RunNetworkMissionPreviewerGoal;
+/** Complete bounded guest value for clearpath_navigation_msgs/RunNetworkMissionPreviewerResult. */
+using Ros1Clearpath_navigation_msgsRunNetworkMissionPreviewerResult=roswasmc_bounded_1_clearpath_navigation_msgs_RunNetworkMissionPreviewerResult;
+/** Complete bounded guest value for clearpath_navigation_msgs/RunNetworkMissionPreviewerFeedback. */
+using Ros1Clearpath_navigation_msgsRunNetworkMissionPreviewerFeedback=roswasmc_bounded_1_clearpath_navigation_msgs_RunNetworkMissionPreviewerFeedback;
+/** Complete bounded guest value for clearpath_navigation_msgs/SmoothPathGoal. */
+using Ros1Clearpath_navigation_msgsSmoothPathGoal=roswasmc_bounded_1_clearpath_navigation_msgs_SmoothPathGoal;
+/** Complete bounded guest value for clearpath_navigation_msgs/SmoothPathResult. */
+using Ros1Clearpath_navigation_msgsSmoothPathResult=roswasmc_bounded_1_clearpath_navigation_msgs_SmoothPathResult;
+/** Complete bounded guest value for clearpath_navigation_msgs/SmoothPathFeedback. */
+using Ros1Clearpath_navigation_msgsSmoothPathFeedback=roswasmc_bounded_1_clearpath_navigation_msgs_SmoothPathFeedback;
+/** Complete bounded guest value for clearpath_navigation_msgs/UITaskGoal. */
+using Ros1Clearpath_navigation_msgsUITaskGoal=roswasmc_bounded_1_clearpath_navigation_msgs_UITaskGoal;
+/** Complete bounded guest value for clearpath_navigation_msgs/UITaskResult. */
+using Ros1Clearpath_navigation_msgsUITaskResult=roswasmc_bounded_1_clearpath_navigation_msgs_UITaskResult;
+/** Complete bounded guest value for clearpath_navigation_msgs/UITaskFeedback. */
+using Ros1Clearpath_navigation_msgsUITaskFeedback=roswasmc_bounded_1_clearpath_navigation_msgs_UITaskFeedback;
+/** Complete bounded guest value for clearpath_configuration_msgs/AutonomyConfig. */
+using Ros1Clearpath_configuration_msgsAutonomyConfig=roswasmc_bounded_1_clearpath_configuration_msgs_AutonomyConfig;
+/** Complete bounded guest value for clearpath_configuration_msgs/PlatformConfig. */
+using Ros1Clearpath_configuration_msgsPlatformConfig=roswasmc_bounded_1_clearpath_configuration_msgs_PlatformConfig;
+/** Complete bounded guest value for clearpath_control_msgs/AutonomySync. */
+using Ros1Clearpath_control_msgsAutonomySync=roswasmc_bounded_1_clearpath_control_msgs_AutonomySync;
+/** Complete bounded guest value for clearpath_control_msgs/ControlMode. */
+using Ros1Clearpath_control_msgsControlMode=roswasmc_bounded_1_clearpath_control_msgs_ControlMode;
+/** Complete bounded guest value for clearpath_control_msgs/ControlState. */
+using Ros1Clearpath_control_msgsControlState=roswasmc_bounded_1_clearpath_control_msgs_ControlState;
+/** Complete bounded guest value for clearpath_control_msgs/ControlSelectionState. */
+using Ros1Clearpath_control_msgsControlSelectionState=roswasmc_bounded_1_clearpath_control_msgs_ControlSelectionState;
+/** Complete bounded guest value for clearpath_dock_msgs/DockInfo. */
+using Ros1Clearpath_dock_msgsDockInfo=roswasmc_bounded_1_clearpath_dock_msgs_DockInfo;
+/** Complete bounded guest value for clearpath_dock_msgs/DockProperties. */
+using Ros1Clearpath_dock_msgsDockProperties=roswasmc_bounded_1_clearpath_dock_msgs_DockProperties;
+/** Complete bounded guest value for clearpath_dock_msgs/DockState. */
+using Ros1Clearpath_dock_msgsDockState=roswasmc_bounded_1_clearpath_dock_msgs_DockState;
+/** Complete bounded guest value for geometry_msgs/PoseWithCovariance. */
+using Ros1Geometry_msgsPoseWithCovariance=roswasmc_bounded_1_geometry_msgs_PoseWithCovariance;
+/** Complete bounded guest value for geometry_msgs/PoseWithCovarianceStamped. */
+using Ros1Geometry_msgsPoseWithCovarianceStamped=roswasmc_bounded_1_geometry_msgs_PoseWithCovarianceStamped;
+/** Complete bounded guest value for clearpath_dock_msgs/TargetTrackerState. */
+using Ros1Clearpath_dock_msgsTargetTrackerState=roswasmc_bounded_1_clearpath_dock_msgs_TargetTrackerState;
+/** Complete bounded guest value for clearpath_localization_msgs/GNSSStatus. */
+using Ros1Clearpath_localization_msgsGNSSStatus=roswasmc_bounded_1_clearpath_localization_msgs_GNSSStatus;
+/** Complete bounded guest value for clearpath_localization_msgs/LocalizationStatus. */
+using Ros1Clearpath_localization_msgsLocalizationStatus=roswasmc_bounded_1_clearpath_localization_msgs_LocalizationStatus;
+/** Complete bounded guest value for sensor_msgs/NavSatStatus. */
+using Ros1Sensor_msgsNavSatStatus=roswasmc_bounded_1_sensor_msgs_NavSatStatus;
+/** Complete bounded guest value for sensor_msgs/NavSatFix. */
+using Ros1Sensor_msgsNavSatFix=roswasmc_bounded_1_sensor_msgs_NavSatFix;
+/** Complete bounded guest value for clearpath_localization_msgs/SurveyProperties. */
+using Ros1Clearpath_localization_msgsSurveyProperties=roswasmc_bounded_1_clearpath_localization_msgs_SurveyProperties;
+/** Complete bounded guest value for clearpath_localization_msgs/XvnStatus. */
+using Ros1Clearpath_localization_msgsXvnStatus=roswasmc_bounded_1_clearpath_localization_msgs_XvnStatus;
+/** Complete bounded guest value for geometry_msgs/Vector3. */
+using Ros1Geometry_msgsVector3=roswasmc_bounded_1_geometry_msgs_Vector3;
+/** Complete bounded guest value for geometry_msgs/Twist. */
+using Ros1Geometry_msgsTwist=roswasmc_bounded_1_geometry_msgs_Twist;
+/** Complete bounded guest value for geometry_msgs/TwistWithCovariance. */
+using Ros1Geometry_msgsTwistWithCovariance=roswasmc_bounded_1_geometry_msgs_TwistWithCovariance;
+/** Complete bounded guest value for nav_msgs/Odometry. */
+using Ros1Nav_msgsOdometry=roswasmc_bounded_1_nav_msgs_Odometry;
+/** Complete bounded guest value for clearpath_logger_msgs/Event. */
+using Ros1Clearpath_logger_msgsEvent=roswasmc_bounded_1_clearpath_logger_msgs_Event;
+/** Complete bounded guest value for clearpath_logger_msgs/EventLog. */
+using Ros1Clearpath_logger_msgsEventLog=roswasmc_bounded_1_clearpath_logger_msgs_EventLog;
+/** Complete bounded guest value for clearpath_logger_msgs/EventLogs. */
+using Ros1Clearpath_logger_msgsEventLogs=roswasmc_bounded_1_clearpath_logger_msgs_EventLogs;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/NetworkEdgeReq. */
+using Ros1Clearpath_mission_manager_msgsNetworkEdgeReq=roswasmc_bounded_1_clearpath_mission_manager_msgs_NetworkEdgeReq;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/NetworkMapState. */
+using Ros1Clearpath_mission_manager_msgsNetworkMapState=roswasmc_bounded_1_clearpath_mission_manager_msgs_NetworkMapState;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/NetworkMapValidityState. */
+using Ros1Clearpath_mission_manager_msgsNetworkMapValidityState=roswasmc_bounded_1_clearpath_mission_manager_msgs_NetworkMapValidityState;
+/** Complete bounded guest value for clearpath_navigation_msgs/NetworkMission. */
+using Ros1Clearpath_navigation_msgsNetworkMission=roswasmc_bounded_1_clearpath_navigation_msgs_NetworkMission;
+/** Complete bounded guest value for clearpath_navigation_msgs/NetworkPoint. */
+using Ros1Clearpath_navigation_msgsNetworkPoint=roswasmc_bounded_1_clearpath_navigation_msgs_NetworkPoint;
+/** Complete bounded guest value for clearpath_navigation_msgs/NetworkEdge. */
+using Ros1Clearpath_navigation_msgsNetworkEdge=roswasmc_bounded_1_clearpath_navigation_msgs_NetworkEdge;
+/** Complete bounded guest value for clearpath_navigation_msgs/NetworkMap. */
+using Ros1Clearpath_navigation_msgsNetworkMap=roswasmc_bounded_1_clearpath_navigation_msgs_NetworkMap;
+/** Complete bounded guest value for clearpath_navigation_msgs/PointOfInterest. */
+using Ros1Clearpath_navigation_msgsPointOfInterest=roswasmc_bounded_1_clearpath_navigation_msgs_PointOfInterest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/StorageState. */
+using Ros1Clearpath_mission_manager_msgsStorageState=roswasmc_bounded_1_clearpath_mission_manager_msgs_StorageState;
+/** Complete bounded guest value for clearpath_mission_scheduler_msgs/NextSchedule. */
+using Ros1Clearpath_mission_scheduler_msgsNextSchedule=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_NextSchedule;
+/** Complete bounded guest value for clearpath_mission_scheduler_msgs/UtcTime. */
+using Ros1Clearpath_mission_scheduler_msgsUtcTime=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_UtcTime;
+/** Complete bounded guest value for clearpath_mission_scheduler_msgs/Schedule. */
+using Ros1Clearpath_mission_scheduler_msgsSchedule=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_Schedule;
+/** Complete bounded guest value for clearpath_mission_scheduler_msgs/StorageState. */
+using Ros1Clearpath_mission_scheduler_msgsStorageState=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_StorageState;
+/** Complete bounded guest value for std_msgs/Time. */
+using Ros1Std_msgsTime=roswasmc_bounded_1_std_msgs_Time;
+/** Complete bounded guest value for std_msgs/String. */
+using Ros1Std_msgsString=roswasmc_bounded_1_std_msgs_String;
+/** Complete bounded guest value for clearpath_navigation_msgs/AutonomyStatus. */
+using Ros1Clearpath_navigation_msgsAutonomyStatus=roswasmc_bounded_1_clearpath_navigation_msgs_AutonomyStatus;
+/** Complete bounded guest value for clearpath_navigation_msgs/DistanceToGoal. */
+using Ros1Clearpath_navigation_msgsDistanceToGoal=roswasmc_bounded_1_clearpath_navigation_msgs_DistanceToGoal;
+/** Complete bounded guest value for clearpath_navigation_msgs/Metrics. */
+using Ros1Clearpath_navigation_msgsMetrics=roswasmc_bounded_1_clearpath_navigation_msgs_Metrics;
+/** Complete bounded guest value for clearpath_navigation_msgs/WaypointStatus. */
+using Ros1Clearpath_navigation_msgsWaypointStatus=roswasmc_bounded_1_clearpath_navigation_msgs_WaypointStatus;
+/** Complete bounded guest value for clearpath_navigation_msgs/MissionStatus. */
+using Ros1Clearpath_navigation_msgsMissionStatus=roswasmc_bounded_1_clearpath_navigation_msgs_MissionStatus;
+/** Complete bounded guest value for clearpath_navigation_msgs/MotionState. */
+using Ros1Clearpath_navigation_msgsMotionState=roswasmc_bounded_1_clearpath_navigation_msgs_MotionState;
+/** Complete bounded guest value for clearpath_navigation_msgs/NavigationState. */
+using Ros1Clearpath_navigation_msgsNavigationState=roswasmc_bounded_1_clearpath_navigation_msgs_NavigationState;
+/** Complete bounded guest value for clearpath_navigation_msgs/OdomIntent. */
+using Ros1Clearpath_navigation_msgsOdomIntent=roswasmc_bounded_1_clearpath_navigation_msgs_OdomIntent;
+/** Complete bounded guest value for clearpath_navigation_msgs/Vector2D. */
+using Ros1Clearpath_navigation_msgsVector2D=roswasmc_bounded_1_clearpath_navigation_msgs_Vector2D;
+/** Complete bounded guest value for clearpath_navigation_msgs/PointVector. */
+using Ros1Clearpath_navigation_msgsPointVector=roswasmc_bounded_1_clearpath_navigation_msgs_PointVector;
+/** Complete bounded guest value for clearpath_navigation_msgs/Progress. */
+using Ros1Clearpath_navigation_msgsProgress=roswasmc_bounded_1_clearpath_navigation_msgs_Progress;
+/** Complete bounded guest value for clearpath_navigation_msgs/ScanPoints. */
+using Ros1Clearpath_navigation_msgsScanPoints=roswasmc_bounded_1_clearpath_navigation_msgs_ScanPoints;
+/** Complete bounded guest value for clearpath_navigation_msgs/TrackError. */
+using Ros1Clearpath_navigation_msgsTrackError=roswasmc_bounded_1_clearpath_navigation_msgs_TrackError;
+/** Complete bounded guest value for clearpath_platform_msgs/Drive. */
+using Ros1Clearpath_platform_msgsDrive=roswasmc_bounded_1_clearpath_platform_msgs_Drive;
+/** Complete bounded guest value for clearpath_platform_msgs/DriveFeedback. */
+using Ros1Clearpath_platform_msgsDriveFeedback=roswasmc_bounded_1_clearpath_platform_msgs_DriveFeedback;
+/** Complete bounded guest value for clearpath_platform_msgs/Fans. */
+using Ros1Clearpath_platform_msgsFans=roswasmc_bounded_1_clearpath_platform_msgs_Fans;
+/** Complete bounded guest value for clearpath_platform_msgs/Feedback. */
+using Ros1Clearpath_platform_msgsFeedback=roswasmc_bounded_1_clearpath_platform_msgs_Feedback;
+/** Complete bounded guest value for clearpath_platform_msgs/RGB. */
+using Ros1Clearpath_platform_msgsRGB=roswasmc_bounded_1_clearpath_platform_msgs_RGB;
+/** Complete bounded guest value for clearpath_platform_msgs/Lights. */
+using Ros1Clearpath_platform_msgsLights=roswasmc_bounded_1_clearpath_platform_msgs_Lights;
+/** Complete bounded guest value for clearpath_platform_msgs/PlatformID. */
+using Ros1Clearpath_platform_msgsPlatformID=roswasmc_bounded_1_clearpath_platform_msgs_PlatformID;
+/** Complete bounded guest value for clearpath_platform_msgs/Power. */
+using Ros1Clearpath_platform_msgsPower=roswasmc_bounded_1_clearpath_platform_msgs_Power;
+/** Complete bounded guest value for clearpath_platform_msgs/RYG. */
+using Ros1Clearpath_platform_msgsRYG=roswasmc_bounded_1_clearpath_platform_msgs_RYG;
+/** Complete bounded guest value for clearpath_platform_msgs/StackLightState. */
+using Ros1Clearpath_platform_msgsStackLightState=roswasmc_bounded_1_clearpath_platform_msgs_StackLightState;
+/** Complete bounded guest value for clearpath_platform_msgs/Status. */
+using Ros1Clearpath_platform_msgsStatus=roswasmc_bounded_1_clearpath_platform_msgs_Status;
+/** Complete bounded guest value for clearpath_platform_msgs/StopStatus. */
+using Ros1Clearpath_platform_msgsStopStatus=roswasmc_bounded_1_clearpath_platform_msgs_StopStatus;
+/** Complete bounded guest value for clearpath_safety_msgs/AssistedTeleopState. */
+using Ros1Clearpath_safety_msgsAssistedTeleopState=roswasmc_bounded_1_clearpath_safety_msgs_AssistedTeleopState;
+/** Complete bounded guest value for clearpath_safety_msgs/ObstacleMap. */
+using Ros1Clearpath_safety_msgsObstacleMap=roswasmc_bounded_1_clearpath_safety_msgs_ObstacleMap;
+/** Complete bounded guest value for clearpath_safety_msgs/Safety. */
+using Ros1Clearpath_safety_msgsSafety=roswasmc_bounded_1_clearpath_safety_msgs_Safety;
+/** Complete bounded guest value for clearpath_safety_msgs/WatchdogConfigCommon. */
+using Ros1Clearpath_safety_msgsWatchdogConfigCommon=roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigCommon;
+/** Complete bounded guest value for clearpath_safety_msgs/WatchdogConfigCommunication. */
+using Ros1Clearpath_safety_msgsWatchdogConfigCommunication=roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigCommunication;
+/** Complete bounded guest value for clearpath_safety_msgs/WatchdogConfigHeartbeat. */
+using Ros1Clearpath_safety_msgsWatchdogConfigHeartbeat=roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigHeartbeat;
+/** Complete bounded guest value for clearpath_safety_msgs/WatchdogConfigInclination. */
+using Ros1Clearpath_safety_msgsWatchdogConfigInclination=roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigInclination;
+/** Complete bounded guest value for clearpath_safety_msgs/WatchdogConfigNodeStatus. */
+using Ros1Clearpath_safety_msgsWatchdogConfigNodeStatus=roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigNodeStatus;
+/** Complete bounded guest value for clearpath_safety_msgs/WatchdogConfigNodeletStatus. */
+using Ros1Clearpath_safety_msgsWatchdogConfigNodeletStatus=roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigNodeletStatus;
+/** Complete bounded guest value for clearpath_safety_msgs/WatchdogConfigNumPoints. */
+using Ros1Clearpath_safety_msgsWatchdogConfigNumPoints=roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigNumPoints;
+/** Complete bounded guest value for clearpath_safety_msgs/WatchdogConfigOdomCovariance. */
+using Ros1Clearpath_safety_msgsWatchdogConfigOdomCovariance=roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigOdomCovariance;
+/** Complete bounded guest value for clearpath_safety_msgs/WatchdogConfigRtkFix. */
+using Ros1Clearpath_safety_msgsWatchdogConfigRtkFix=roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigRtkFix;
+/** Complete bounded guest value for clearpath_safety_msgs/WatchdogConfigTopicData. */
+using Ros1Clearpath_safety_msgsWatchdogConfigTopicData=roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigTopicData;
+/** Complete bounded guest value for clearpath_safety_msgs/WatchdogConfigArray. */
+using Ros1Clearpath_safety_msgsWatchdogConfigArray=roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigArray;
+/** Complete bounded guest value for clearpath_safety_msgs/WatchdogStatus. */
+using Ros1Clearpath_safety_msgsWatchdogStatus=roswasmc_bounded_1_clearpath_safety_msgs_WatchdogStatus;
+/** Complete bounded guest value for clearpath_safety_msgs/WatchdogStatusArray. */
+using Ros1Clearpath_safety_msgsWatchdogStatusArray=roswasmc_bounded_1_clearpath_safety_msgs_WatchdogStatusArray;
+/** Complete bounded guest value for husky_msgs/HuskyStatus. */
+using Ros1Husky_msgsHuskyStatus=roswasmc_bounded_1_husky_msgs_HuskyStatus;
+/** Complete bounded guest value for jackal_msgs/Drive. */
+using Ros1Jackal_msgsDrive=roswasmc_bounded_1_jackal_msgs_Drive;
+/** Complete bounded guest value for jackal_msgs/DriveFeedback. */
+using Ros1Jackal_msgsDriveFeedback=roswasmc_bounded_1_jackal_msgs_DriveFeedback;
+/** Complete bounded guest value for jackal_msgs/Feedback. */
+using Ros1Jackal_msgsFeedback=roswasmc_bounded_1_jackal_msgs_Feedback;
+/** Complete bounded guest value for jackal_msgs/Status. */
+using Ros1Jackal_msgsStatus=roswasmc_bounded_1_jackal_msgs_Status;
+/** Complete bounded guest value for clearpath_camera_msgs/q62AreaZoomRequest. */
+using Ros1Clearpath_camera_msgsQ62AreaZoomRequest=roswasmc_bounded_1_clearpath_camera_msgs_q62AreaZoomRequest;
+/** Complete bounded guest value for clearpath_camera_msgs/q62AreaZoomResponse. */
+using Ros1Clearpath_camera_msgsQ62AreaZoomResponse=roswasmc_bounded_1_clearpath_camera_msgs_q62AreaZoomResponse;
+/** Complete bounded guest value for clearpath_control_msgs/SetControlModeRequest. */
+using Ros1Clearpath_control_msgsSetControlModeRequest=roswasmc_bounded_1_clearpath_control_msgs_SetControlModeRequest;
+/** Complete bounded guest value for clearpath_control_msgs/SetControlModeResponse. */
+using Ros1Clearpath_control_msgsSetControlModeResponse=roswasmc_bounded_1_clearpath_control_msgs_SetControlModeResponse;
+/** Complete bounded guest value for clearpath_dock_msgs/AddDockRequest. */
+using Ros1Clearpath_dock_msgsAddDockRequest=roswasmc_bounded_1_clearpath_dock_msgs_AddDockRequest;
+/** Complete bounded guest value for clearpath_dock_msgs/AddDockResponse. */
+using Ros1Clearpath_dock_msgsAddDockResponse=roswasmc_bounded_1_clearpath_dock_msgs_AddDockResponse;
+/** Complete bounded guest value for clearpath_dock_msgs/ExportDataRequest. */
+using Ros1Clearpath_dock_msgsExportDataRequest=roswasmc_bounded_1_clearpath_dock_msgs_ExportDataRequest;
+/** Complete bounded guest value for clearpath_dock_msgs/ExportDataResponse. */
+using Ros1Clearpath_dock_msgsExportDataResponse=roswasmc_bounded_1_clearpath_dock_msgs_ExportDataResponse;
+/** Complete bounded guest value for clearpath_dock_msgs/GetDockByUuidRequest. */
+using Ros1Clearpath_dock_msgsGetDockByUuidRequest=roswasmc_bounded_1_clearpath_dock_msgs_GetDockByUuidRequest;
+/** Complete bounded guest value for clearpath_dock_msgs/GetDockByUuidResponse. */
+using Ros1Clearpath_dock_msgsGetDockByUuidResponse=roswasmc_bounded_1_clearpath_dock_msgs_GetDockByUuidResponse;
+/** Complete bounded guest value for clearpath_dock_msgs/ImportDataRequest. */
+using Ros1Clearpath_dock_msgsImportDataRequest=roswasmc_bounded_1_clearpath_dock_msgs_ImportDataRequest;
+/** Complete bounded guest value for clearpath_dock_msgs/ImportDataResponse. */
+using Ros1Clearpath_dock_msgsImportDataResponse=roswasmc_bounded_1_clearpath_dock_msgs_ImportDataResponse;
+/** Complete bounded guest value for clearpath_dock_msgs/RemoveDockRequest. */
+using Ros1Clearpath_dock_msgsRemoveDockRequest=roswasmc_bounded_1_clearpath_dock_msgs_RemoveDockRequest;
+/** Complete bounded guest value for clearpath_dock_msgs/RemoveDockResponse. */
+using Ros1Clearpath_dock_msgsRemoveDockResponse=roswasmc_bounded_1_clearpath_dock_msgs_RemoveDockResponse;
+/** Complete bounded guest value for clearpath_dock_msgs/SetDockLocationByIdRequest. */
+using Ros1Clearpath_dock_msgsSetDockLocationByIdRequest=roswasmc_bounded_1_clearpath_dock_msgs_SetDockLocationByIdRequest;
+/** Complete bounded guest value for clearpath_dock_msgs/SetDockLocationByIdResponse. */
+using Ros1Clearpath_dock_msgsSetDockLocationByIdResponse=roswasmc_bounded_1_clearpath_dock_msgs_SetDockLocationByIdResponse;
+/** Complete bounded guest value for clearpath_dock_msgs/SetDockLocationByNameRequest. */
+using Ros1Clearpath_dock_msgsSetDockLocationByNameRequest=roswasmc_bounded_1_clearpath_dock_msgs_SetDockLocationByNameRequest;
+/** Complete bounded guest value for clearpath_dock_msgs/SetDockLocationByNameResponse. */
+using Ros1Clearpath_dock_msgsSetDockLocationByNameResponse=roswasmc_bounded_1_clearpath_dock_msgs_SetDockLocationByNameResponse;
+/** Complete bounded guest value for clearpath_localization_msgs/ConvertCartesianToLatLonRequest. */
+using Ros1Clearpath_localization_msgsConvertCartesianToLatLonRequest=roswasmc_bounded_1_clearpath_localization_msgs_ConvertCartesianToLatLonRequest;
+/** Complete bounded guest value for clearpath_localization_msgs/ConvertCartesianToLatLonResponse. */
+using Ros1Clearpath_localization_msgsConvertCartesianToLatLonResponse=roswasmc_bounded_1_clearpath_localization_msgs_ConvertCartesianToLatLonResponse;
+/** Complete bounded guest value for clearpath_localization_msgs/ConvertCartesianToLatLonArrayRequest. */
+using Ros1Clearpath_localization_msgsConvertCartesianToLatLonArrayRequest=roswasmc_bounded_1_clearpath_localization_msgs_ConvertCartesianToLatLonArrayRequest;
+/** Complete bounded guest value for clearpath_localization_msgs/ConvertCartesianToLatLonArrayResponse. */
+using Ros1Clearpath_localization_msgsConvertCartesianToLatLonArrayResponse=roswasmc_bounded_1_clearpath_localization_msgs_ConvertCartesianToLatLonArrayResponse;
+/** Complete bounded guest value for clearpath_localization_msgs/ConvertLatLonToCartesianRequest. */
+using Ros1Clearpath_localization_msgsConvertLatLonToCartesianRequest=roswasmc_bounded_1_clearpath_localization_msgs_ConvertLatLonToCartesianRequest;
+/** Complete bounded guest value for clearpath_localization_msgs/ConvertLatLonToCartesianResponse. */
+using Ros1Clearpath_localization_msgsConvertLatLonToCartesianResponse=roswasmc_bounded_1_clearpath_localization_msgs_ConvertLatLonToCartesianResponse;
+/** Complete bounded guest value for clearpath_localization_msgs/ConvertLatLonToCartesianArrayRequest. */
+using Ros1Clearpath_localization_msgsConvertLatLonToCartesianArrayRequest=roswasmc_bounded_1_clearpath_localization_msgs_ConvertLatLonToCartesianArrayRequest;
+/** Complete bounded guest value for clearpath_localization_msgs/ConvertLatLonToCartesianArrayResponse. */
+using Ros1Clearpath_localization_msgsConvertLatLonToCartesianArrayResponse=roswasmc_bounded_1_clearpath_localization_msgs_ConvertLatLonToCartesianArrayResponse;
+/** Complete bounded guest value for clearpath_localization_msgs/ResetLocalizationRequest. */
+using Ros1Clearpath_localization_msgsResetLocalizationRequest=roswasmc_bounded_1_clearpath_localization_msgs_ResetLocalizationRequest;
+/** Complete bounded guest value for clearpath_localization_msgs/ResetLocalizationResponse. */
+using Ros1Clearpath_localization_msgsResetLocalizationResponse=roswasmc_bounded_1_clearpath_localization_msgs_ResetLocalizationResponse;
+/** Complete bounded guest value for clearpath_localization_msgs/SetDatumRequest. */
+using Ros1Clearpath_localization_msgsSetDatumRequest=roswasmc_bounded_1_clearpath_localization_msgs_SetDatumRequest;
+/** Complete bounded guest value for clearpath_localization_msgs/SetDatumResponse. */
+using Ros1Clearpath_localization_msgsSetDatumResponse=roswasmc_bounded_1_clearpath_localization_msgs_SetDatumResponse;
+/** Complete bounded guest value for clearpath_logger_msgs/DeleteLogRequest. */
+using Ros1Clearpath_logger_msgsDeleteLogRequest=roswasmc_bounded_1_clearpath_logger_msgs_DeleteLogRequest;
+/** Complete bounded guest value for clearpath_logger_msgs/DeleteLogResponse. */
+using Ros1Clearpath_logger_msgsDeleteLogResponse=roswasmc_bounded_1_clearpath_logger_msgs_DeleteLogResponse;
+/** Complete bounded guest value for clearpath_logger_msgs/DownloadLogRequest. */
+using Ros1Clearpath_logger_msgsDownloadLogRequest=roswasmc_bounded_1_clearpath_logger_msgs_DownloadLogRequest;
+/** Complete bounded guest value for clearpath_logger_msgs/DownloadLogResponse. */
+using Ros1Clearpath_logger_msgsDownloadLogResponse=roswasmc_bounded_1_clearpath_logger_msgs_DownloadLogResponse;
+/** Complete bounded guest value for clearpath_logger_msgs/GetAllLogsRequest. */
+using Ros1Clearpath_logger_msgsGetAllLogsRequest=roswasmc_bounded_1_clearpath_logger_msgs_GetAllLogsRequest;
+/** Complete bounded guest value for clearpath_logger_msgs/GetAllLogsResponse. */
+using Ros1Clearpath_logger_msgsGetAllLogsResponse=roswasmc_bounded_1_clearpath_logger_msgs_GetAllLogsResponse;
+/** Complete bounded guest value for clearpath_logger_msgs/RecordCustomEventRequest. */
+using Ros1Clearpath_logger_msgsRecordCustomEventRequest=roswasmc_bounded_1_clearpath_logger_msgs_RecordCustomEventRequest;
+/** Complete bounded guest value for clearpath_logger_msgs/RecordCustomEventResponse. */
+using Ros1Clearpath_logger_msgsRecordCustomEventResponse=roswasmc_bounded_1_clearpath_logger_msgs_RecordCustomEventResponse;
+/** Complete bounded guest value for clearpath_logger_msgs/RecordErrorEventRequest. */
+using Ros1Clearpath_logger_msgsRecordErrorEventRequest=roswasmc_bounded_1_clearpath_logger_msgs_RecordErrorEventRequest;
+/** Complete bounded guest value for clearpath_logger_msgs/RecordErrorEventResponse. */
+using Ros1Clearpath_logger_msgsRecordErrorEventResponse=roswasmc_bounded_1_clearpath_logger_msgs_RecordErrorEventResponse;
+/** Complete bounded guest value for clearpath_logger_msgs/RecordEventRequest. */
+using Ros1Clearpath_logger_msgsRecordEventRequest=roswasmc_bounded_1_clearpath_logger_msgs_RecordEventRequest;
+/** Complete bounded guest value for clearpath_logger_msgs/RecordEventResponse. */
+using Ros1Clearpath_logger_msgsRecordEventResponse=roswasmc_bounded_1_clearpath_logger_msgs_RecordEventResponse;
+/** Complete bounded guest value for clearpath_logger_msgs/RecordLocationEventRequest. */
+using Ros1Clearpath_logger_msgsRecordLocationEventRequest=roswasmc_bounded_1_clearpath_logger_msgs_RecordLocationEventRequest;
+/** Complete bounded guest value for clearpath_logger_msgs/RecordLocationEventResponse. */
+using Ros1Clearpath_logger_msgsRecordLocationEventResponse=roswasmc_bounded_1_clearpath_logger_msgs_RecordLocationEventResponse;
+/** Complete bounded guest value for clearpath_logger_msgs/RecordMediaEventRequest. */
+using Ros1Clearpath_logger_msgsRecordMediaEventRequest=roswasmc_bounded_1_clearpath_logger_msgs_RecordMediaEventRequest;
+/** Complete bounded guest value for clearpath_logger_msgs/RecordMediaEventResponse. */
+using Ros1Clearpath_logger_msgsRecordMediaEventResponse=roswasmc_bounded_1_clearpath_logger_msgs_RecordMediaEventResponse;
+/** Complete bounded guest value for clearpath_logger_msgs/RecordPowerEventRequest. */
+using Ros1Clearpath_logger_msgsRecordPowerEventRequest=roswasmc_bounded_1_clearpath_logger_msgs_RecordPowerEventRequest;
+/** Complete bounded guest value for clearpath_logger_msgs/RecordPowerEventResponse. */
+using Ros1Clearpath_logger_msgsRecordPowerEventResponse=roswasmc_bounded_1_clearpath_logger_msgs_RecordPowerEventResponse;
+/** Complete bounded guest value for clearpath_logger_msgs/StartRecordingRequest. */
+using Ros1Clearpath_logger_msgsStartRecordingRequest=roswasmc_bounded_1_clearpath_logger_msgs_StartRecordingRequest;
+/** Complete bounded guest value for clearpath_logger_msgs/StartRecordingResponse. */
+using Ros1Clearpath_logger_msgsStartRecordingResponse=roswasmc_bounded_1_clearpath_logger_msgs_StartRecordingResponse;
+/** Complete bounded guest value for clearpath_logger_msgs/StopRecordingRequest. */
+using Ros1Clearpath_logger_msgsStopRecordingRequest=roswasmc_bounded_1_clearpath_logger_msgs_StopRecordingRequest;
+/** Complete bounded guest value for clearpath_logger_msgs/StopRecordingResponse. */
+using Ros1Clearpath_logger_msgsStopRecordingResponse=roswasmc_bounded_1_clearpath_logger_msgs_StopRecordingResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/AddNetworkEdgeRequest. */
+using Ros1Clearpath_mission_manager_msgsAddNetworkEdgeRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_AddNetworkEdgeRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/AddNetworkEdgeResponse. */
+using Ros1Clearpath_mission_manager_msgsAddNetworkEdgeResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_AddNetworkEdgeResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/AddNetworkPathRequest. */
+using Ros1Clearpath_mission_manager_msgsAddNetworkPathRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_AddNetworkPathRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/AddNetworkPathResponse. */
+using Ros1Clearpath_mission_manager_msgsAddNetworkPathResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_AddNetworkPathResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/AddNetworkPointRequest. */
+using Ros1Clearpath_mission_manager_msgsAddNetworkPointRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_AddNetworkPointRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/AddNetworkPointResponse. */
+using Ros1Clearpath_mission_manager_msgsAddNetworkPointResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_AddNetworkPointResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/AddRemoveByIdRequest. */
+using Ros1Clearpath_mission_manager_msgsAddRemoveByIdRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_AddRemoveByIdRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/AddRemoveByIdResponse. */
+using Ros1Clearpath_mission_manager_msgsAddRemoveByIdResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_AddRemoveByIdResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/AddRemoveTagRequest. */
+using Ros1Clearpath_mission_manager_msgsAddRemoveTagRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_AddRemoveTagRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/AddRemoveTagResponse. */
+using Ros1Clearpath_mission_manager_msgsAddRemoveTagResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_AddRemoveTagResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/CloneMissionRequest. */
+using Ros1Clearpath_mission_manager_msgsCloneMissionRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_CloneMissionRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/CloneMissionResponse. */
+using Ros1Clearpath_mission_manager_msgsCloneMissionResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_CloneMissionResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/CloneNetworkMapRequest. */
+using Ros1Clearpath_mission_manager_msgsCloneNetworkMapRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_CloneNetworkMapRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/CloneNetworkMapResponse. */
+using Ros1Clearpath_mission_manager_msgsCloneNetworkMapResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_CloneNetworkMapResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/CloneNetworkMissionRequest. */
+using Ros1Clearpath_mission_manager_msgsCloneNetworkMissionRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_CloneNetworkMissionRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/CloneNetworkMissionResponse. */
+using Ros1Clearpath_mission_manager_msgsCloneNetworkMissionResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_CloneNetworkMissionResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/ClonePointOfInterestRequest. */
+using Ros1Clearpath_mission_manager_msgsClonePointOfInterestRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_ClonePointOfInterestRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/ClonePointOfInterestResponse. */
+using Ros1Clearpath_mission_manager_msgsClonePointOfInterestResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_ClonePointOfInterestResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/CreateMissionRequest. */
+using Ros1Clearpath_mission_manager_msgsCreateMissionRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateMissionRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/CreateMissionResponse. */
+using Ros1Clearpath_mission_manager_msgsCreateMissionResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateMissionResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/CreateNetworkMapRequest. */
+using Ros1Clearpath_mission_manager_msgsCreateNetworkMapRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateNetworkMapRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/CreateNetworkMapResponse. */
+using Ros1Clearpath_mission_manager_msgsCreateNetworkMapResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateNetworkMapResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/CreateNetworkMissionRequest. */
+using Ros1Clearpath_mission_manager_msgsCreateNetworkMissionRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateNetworkMissionRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/CreateNetworkMissionResponse. */
+using Ros1Clearpath_mission_manager_msgsCreateNetworkMissionResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateNetworkMissionResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/CreatePointOfInterestRequest. */
+using Ros1Clearpath_mission_manager_msgsCreatePointOfInterestRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_CreatePointOfInterestRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/CreatePointOfInterestResponse. */
+using Ros1Clearpath_mission_manager_msgsCreatePointOfInterestResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_CreatePointOfInterestResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/CreateTaskRequest. */
+using Ros1Clearpath_mission_manager_msgsCreateTaskRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateTaskRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/CreateTaskResponse. */
+using Ros1Clearpath_mission_manager_msgsCreateTaskResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateTaskResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/CreateWaypointRequest. */
+using Ros1Clearpath_mission_manager_msgsCreateWaypointRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateWaypointRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/CreateWaypointResponse. */
+using Ros1Clearpath_mission_manager_msgsCreateWaypointResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateWaypointResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/CreateWaypointFromPoiRequest. */
+using Ros1Clearpath_mission_manager_msgsCreateWaypointFromPoiRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateWaypointFromPoiRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/CreateWaypointFromPoiResponse. */
+using Ros1Clearpath_mission_manager_msgsCreateWaypointFromPoiResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateWaypointFromPoiResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/DeleteByIdRequest. */
+using Ros1Clearpath_mission_manager_msgsDeleteByIdRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_DeleteByIdRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/DeleteByIdResponse. */
+using Ros1Clearpath_mission_manager_msgsDeleteByIdResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_DeleteByIdResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/DeleteEverythingRequest. */
+using Ros1Clearpath_mission_manager_msgsDeleteEverythingRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_DeleteEverythingRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/DeleteEverythingResponse. */
+using Ros1Clearpath_mission_manager_msgsDeleteEverythingResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_DeleteEverythingResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/DeleteMultipleRequest. */
+using Ros1Clearpath_mission_manager_msgsDeleteMultipleRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_DeleteMultipleRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/DeleteMultipleResponse. */
+using Ros1Clearpath_mission_manager_msgsDeleteMultipleResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_DeleteMultipleResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/ExportDataRequest. */
+using Ros1Clearpath_mission_manager_msgsExportDataRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_ExportDataRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/ExportDataResponse. */
+using Ros1Clearpath_mission_manager_msgsExportDataResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_ExportDataResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/GetAllMissionsRequest. */
+using Ros1Clearpath_mission_manager_msgsGetAllMissionsRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllMissionsRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/GetAllMissionsResponse. */
+using Ros1Clearpath_mission_manager_msgsGetAllMissionsResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllMissionsResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/GetAllNetworkMapsRequest. */
+using Ros1Clearpath_mission_manager_msgsGetAllNetworkMapsRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllNetworkMapsRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/GetAllNetworkMapsResponse. */
+using Ros1Clearpath_mission_manager_msgsGetAllNetworkMapsResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllNetworkMapsResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/GetAllNetworkMissionsRequest. */
+using Ros1Clearpath_mission_manager_msgsGetAllNetworkMissionsRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllNetworkMissionsRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/GetAllNetworkMissionsResponse. */
+using Ros1Clearpath_mission_manager_msgsGetAllNetworkMissionsResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllNetworkMissionsResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/GetAllPointsOfInterestRequest. */
+using Ros1Clearpath_mission_manager_msgsGetAllPointsOfInterestRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllPointsOfInterestRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/GetAllPointsOfInterestResponse. */
+using Ros1Clearpath_mission_manager_msgsGetAllPointsOfInterestResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllPointsOfInterestResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/GetAllTasksRequest. */
+using Ros1Clearpath_mission_manager_msgsGetAllTasksRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllTasksRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/GetAllTasksResponse. */
+using Ros1Clearpath_mission_manager_msgsGetAllTasksResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllTasksResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/GetAllWaypointsRequest. */
+using Ros1Clearpath_mission_manager_msgsGetAllWaypointsRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllWaypointsRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/GetAllWaypointsResponse. */
+using Ros1Clearpath_mission_manager_msgsGetAllWaypointsResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllWaypointsResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/GetEverythingRequest. */
+using Ros1Clearpath_mission_manager_msgsGetEverythingRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetEverythingRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/GetEverythingResponse. */
+using Ros1Clearpath_mission_manager_msgsGetEverythingResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetEverythingResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/GetMissionRequest. */
+using Ros1Clearpath_mission_manager_msgsGetMissionRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetMissionRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/GetMissionResponse. */
+using Ros1Clearpath_mission_manager_msgsGetMissionResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetMissionResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/GetNetworkMapRequest. */
+using Ros1Clearpath_mission_manager_msgsGetNetworkMapRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetNetworkMapRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/GetNetworkMapResponse. */
+using Ros1Clearpath_mission_manager_msgsGetNetworkMapResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetNetworkMapResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/GetNetworkMissionRequest. */
+using Ros1Clearpath_mission_manager_msgsGetNetworkMissionRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetNetworkMissionRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/GetNetworkMissionResponse. */
+using Ros1Clearpath_mission_manager_msgsGetNetworkMissionResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetNetworkMissionResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/GetPointOfInterestRequest. */
+using Ros1Clearpath_mission_manager_msgsGetPointOfInterestRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetPointOfInterestRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/GetPointOfInterestResponse. */
+using Ros1Clearpath_mission_manager_msgsGetPointOfInterestResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetPointOfInterestResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/GetTaskRequest. */
+using Ros1Clearpath_mission_manager_msgsGetTaskRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetTaskRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/GetTaskResponse. */
+using Ros1Clearpath_mission_manager_msgsGetTaskResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetTaskResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/GetWaypointRequest. */
+using Ros1Clearpath_mission_manager_msgsGetWaypointRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetWaypointRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/GetWaypointResponse. */
+using Ros1Clearpath_mission_manager_msgsGetWaypointResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetWaypointResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/ImportDataRequest. */
+using Ros1Clearpath_mission_manager_msgsImportDataRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportDataRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/ImportDataResponse. */
+using Ros1Clearpath_mission_manager_msgsImportDataResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportDataResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/ImportMissionRequest. */
+using Ros1Clearpath_mission_manager_msgsImportMissionRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportMissionRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/ImportMissionResponse. */
+using Ros1Clearpath_mission_manager_msgsImportMissionResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportMissionResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/ImportNetworkMapRequest. */
+using Ros1Clearpath_mission_manager_msgsImportNetworkMapRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportNetworkMapRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/ImportNetworkMapResponse. */
+using Ros1Clearpath_mission_manager_msgsImportNetworkMapResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportNetworkMapResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/ImportNetworkMissionRequest. */
+using Ros1Clearpath_mission_manager_msgsImportNetworkMissionRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportNetworkMissionRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/ImportNetworkMissionResponse. */
+using Ros1Clearpath_mission_manager_msgsImportNetworkMissionResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportNetworkMissionResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/SplitNetworkEdgeRequest. */
+using Ros1Clearpath_mission_manager_msgsSplitNetworkEdgeRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_SplitNetworkEdgeRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/SplitNetworkEdgeResponse. */
+using Ros1Clearpath_mission_manager_msgsSplitNetworkEdgeResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_SplitNetworkEdgeResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/UpdateMissionRequest. */
+using Ros1Clearpath_mission_manager_msgsUpdateMissionRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateMissionRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/UpdateMissionResponse. */
+using Ros1Clearpath_mission_manager_msgsUpdateMissionResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateMissionResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/UpdateNetworkEdgeRequest. */
+using Ros1Clearpath_mission_manager_msgsUpdateNetworkEdgeRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkEdgeRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/UpdateNetworkEdgeResponse. */
+using Ros1Clearpath_mission_manager_msgsUpdateNetworkEdgeResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkEdgeResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/UpdateNetworkEdgesRequest. */
+using Ros1Clearpath_mission_manager_msgsUpdateNetworkEdgesRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkEdgesRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/UpdateNetworkEdgesResponse. */
+using Ros1Clearpath_mission_manager_msgsUpdateNetworkEdgesResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkEdgesResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/UpdateNetworkMapRequest. */
+using Ros1Clearpath_mission_manager_msgsUpdateNetworkMapRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkMapRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/UpdateNetworkMapResponse. */
+using Ros1Clearpath_mission_manager_msgsUpdateNetworkMapResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkMapResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/UpdateNetworkMissionRequest. */
+using Ros1Clearpath_mission_manager_msgsUpdateNetworkMissionRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkMissionRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/UpdateNetworkMissionResponse. */
+using Ros1Clearpath_mission_manager_msgsUpdateNetworkMissionResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkMissionResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/UpdateNetworkPointRequest. */
+using Ros1Clearpath_mission_manager_msgsUpdateNetworkPointRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkPointRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/UpdateNetworkPointResponse. */
+using Ros1Clearpath_mission_manager_msgsUpdateNetworkPointResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkPointResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/UpdateNetworkPointsRequest. */
+using Ros1Clearpath_mission_manager_msgsUpdateNetworkPointsRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkPointsRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/UpdateNetworkPointsResponse. */
+using Ros1Clearpath_mission_manager_msgsUpdateNetworkPointsResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkPointsResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/UpdatePointOfInterestRequest. */
+using Ros1Clearpath_mission_manager_msgsUpdatePointOfInterestRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdatePointOfInterestRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/UpdatePointOfInterestResponse. */
+using Ros1Clearpath_mission_manager_msgsUpdatePointOfInterestResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdatePointOfInterestResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/UpdateTaskRequest. */
+using Ros1Clearpath_mission_manager_msgsUpdateTaskRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateTaskRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/UpdateTaskResponse. */
+using Ros1Clearpath_mission_manager_msgsUpdateTaskResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateTaskResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/UpdateWaypointRequest. */
+using Ros1Clearpath_mission_manager_msgsUpdateWaypointRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateWaypointRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/UpdateWaypointResponse. */
+using Ros1Clearpath_mission_manager_msgsUpdateWaypointResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateWaypointResponse;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/ValidateNetworkMapRequest. */
+using Ros1Clearpath_mission_manager_msgsValidateNetworkMapRequest=roswasmc_bounded_1_clearpath_mission_manager_msgs_ValidateNetworkMapRequest;
+/** Complete bounded guest value for clearpath_mission_manager_msgs/ValidateNetworkMapResponse. */
+using Ros1Clearpath_mission_manager_msgsValidateNetworkMapResponse=roswasmc_bounded_1_clearpath_mission_manager_msgs_ValidateNetworkMapResponse;
+/** Complete bounded guest value for clearpath_mission_scheduler_msgs/CloneScheduleRequest. */
+using Ros1Clearpath_mission_scheduler_msgsCloneScheduleRequest=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_CloneScheduleRequest;
+/** Complete bounded guest value for clearpath_mission_scheduler_msgs/CloneScheduleResponse. */
+using Ros1Clearpath_mission_scheduler_msgsCloneScheduleResponse=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_CloneScheduleResponse;
+/** Complete bounded guest value for clearpath_mission_scheduler_msgs/CreateScheduleRequest. */
+using Ros1Clearpath_mission_scheduler_msgsCreateScheduleRequest=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_CreateScheduleRequest;
+/** Complete bounded guest value for clearpath_mission_scheduler_msgs/CreateScheduleResponse. */
+using Ros1Clearpath_mission_scheduler_msgsCreateScheduleResponse=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_CreateScheduleResponse;
+/** Complete bounded guest value for clearpath_mission_scheduler_msgs/EnableScheduleRequest. */
+using Ros1Clearpath_mission_scheduler_msgsEnableScheduleRequest=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_EnableScheduleRequest;
+/** Complete bounded guest value for clearpath_mission_scheduler_msgs/EnableScheduleResponse. */
+using Ros1Clearpath_mission_scheduler_msgsEnableScheduleResponse=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_EnableScheduleResponse;
+/** Complete bounded guest value for clearpath_mission_scheduler_msgs/ExportDataRequest. */
+using Ros1Clearpath_mission_scheduler_msgsExportDataRequest=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_ExportDataRequest;
+/** Complete bounded guest value for clearpath_mission_scheduler_msgs/ExportDataResponse. */
+using Ros1Clearpath_mission_scheduler_msgsExportDataResponse=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_ExportDataResponse;
+/** Complete bounded guest value for clearpath_mission_scheduler_msgs/GetAllSchedulesRequest. */
+using Ros1Clearpath_mission_scheduler_msgsGetAllSchedulesRequest=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_GetAllSchedulesRequest;
+/** Complete bounded guest value for clearpath_mission_scheduler_msgs/GetAllSchedulesResponse. */
+using Ros1Clearpath_mission_scheduler_msgsGetAllSchedulesResponse=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_GetAllSchedulesResponse;
+/** Complete bounded guest value for clearpath_mission_scheduler_msgs/GetNextScheduleRequest. */
+using Ros1Clearpath_mission_scheduler_msgsGetNextScheduleRequest=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_GetNextScheduleRequest;
+/** Complete bounded guest value for clearpath_mission_scheduler_msgs/GetNextScheduleResponse. */
+using Ros1Clearpath_mission_scheduler_msgsGetNextScheduleResponse=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_GetNextScheduleResponse;
+/** Complete bounded guest value for clearpath_mission_scheduler_msgs/GetScheduleRequest. */
+using Ros1Clearpath_mission_scheduler_msgsGetScheduleRequest=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_GetScheduleRequest;
+/** Complete bounded guest value for clearpath_mission_scheduler_msgs/GetScheduleResponse. */
+using Ros1Clearpath_mission_scheduler_msgsGetScheduleResponse=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_GetScheduleResponse;
+/** Complete bounded guest value for clearpath_mission_scheduler_msgs/ImportDataRequest. */
+using Ros1Clearpath_mission_scheduler_msgsImportDataRequest=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_ImportDataRequest;
+/** Complete bounded guest value for clearpath_mission_scheduler_msgs/ImportDataResponse. */
+using Ros1Clearpath_mission_scheduler_msgsImportDataResponse=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_ImportDataResponse;
+/** Complete bounded guest value for clearpath_mission_scheduler_msgs/UpdateScheduleRequest. */
+using Ros1Clearpath_mission_scheduler_msgsUpdateScheduleRequest=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_UpdateScheduleRequest;
+/** Complete bounded guest value for clearpath_mission_scheduler_msgs/UpdateScheduleResponse. */
+using Ros1Clearpath_mission_scheduler_msgsUpdateScheduleResponse=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_UpdateScheduleResponse;
+/** Complete bounded guest value for clearpath_navigation_msgs/AutonomyTaskSrvRequest. */
+using Ros1Clearpath_navigation_msgsAutonomyTaskSrvRequest=roswasmc_bounded_1_clearpath_navigation_msgs_AutonomyTaskSrvRequest;
+/** Complete bounded guest value for clearpath_navigation_msgs/AutonomyTaskSrvResponse. */
+using Ros1Clearpath_navigation_msgsAutonomyTaskSrvResponse=roswasmc_bounded_1_clearpath_navigation_msgs_AutonomyTaskSrvResponse;
+/** Complete bounded guest value for clearpath_navigation_msgs/SetDelayCompensationRequest. */
+using Ros1Clearpath_navigation_msgsSetDelayCompensationRequest=roswasmc_bounded_1_clearpath_navigation_msgs_SetDelayCompensationRequest;
+/** Complete bounded guest value for clearpath_navigation_msgs/SetDelayCompensationResponse. */
+using Ros1Clearpath_navigation_msgsSetDelayCompensationResponse=roswasmc_bounded_1_clearpath_navigation_msgs_SetDelayCompensationResponse;
+/** Complete bounded guest value for clearpath_navigation_msgs/SetPathShifterRequest. */
+using Ros1Clearpath_navigation_msgsSetPathShifterRequest=roswasmc_bounded_1_clearpath_navigation_msgs_SetPathShifterRequest;
+/** Complete bounded guest value for clearpath_navigation_msgs/SetPathShifterResponse. */
+using Ros1Clearpath_navigation_msgsSetPathShifterResponse=roswasmc_bounded_1_clearpath_navigation_msgs_SetPathShifterResponse;
+/** Complete bounded guest value for clearpath_navigation_msgs/SetPathSmootherRequest. */
+using Ros1Clearpath_navigation_msgsSetPathSmootherRequest=roswasmc_bounded_1_clearpath_navigation_msgs_SetPathSmootherRequest;
+/** Complete bounded guest value for clearpath_navigation_msgs/SetPathSmootherResponse. */
+using Ros1Clearpath_navigation_msgsSetPathSmootherResponse=roswasmc_bounded_1_clearpath_navigation_msgs_SetPathSmootherResponse;
+/** Complete bounded guest value for clearpath_navigation_msgs/SetStopDistanceRequest. */
+using Ros1Clearpath_navigation_msgsSetStopDistanceRequest=roswasmc_bounded_1_clearpath_navigation_msgs_SetStopDistanceRequest;
+/** Complete bounded guest value for clearpath_navigation_msgs/SetStopDistanceResponse. */
+using Ros1Clearpath_navigation_msgsSetStopDistanceResponse=roswasmc_bounded_1_clearpath_navigation_msgs_SetStopDistanceResponse;
+/** Complete bounded guest value for clearpath_safety_msgs/AddCommunicationWatchdogRequest. */
+using Ros1Clearpath_safety_msgsAddCommunicationWatchdogRequest=roswasmc_bounded_1_clearpath_safety_msgs_AddCommunicationWatchdogRequest;
+/** Complete bounded guest value for clearpath_safety_msgs/AddCommunicationWatchdogResponse. */
+using Ros1Clearpath_safety_msgsAddCommunicationWatchdogResponse=roswasmc_bounded_1_clearpath_safety_msgs_AddCommunicationWatchdogResponse;
+/** Complete bounded guest value for clearpath_safety_msgs/AddHeartbeatWatchdogRequest. */
+using Ros1Clearpath_safety_msgsAddHeartbeatWatchdogRequest=roswasmc_bounded_1_clearpath_safety_msgs_AddHeartbeatWatchdogRequest;
+/** Complete bounded guest value for clearpath_safety_msgs/AddHeartbeatWatchdogResponse. */
+using Ros1Clearpath_safety_msgsAddHeartbeatWatchdogResponse=roswasmc_bounded_1_clearpath_safety_msgs_AddHeartbeatWatchdogResponse;
+/** Complete bounded guest value for clearpath_safety_msgs/AddInclinationWatchdogRequest. */
+using Ros1Clearpath_safety_msgsAddInclinationWatchdogRequest=roswasmc_bounded_1_clearpath_safety_msgs_AddInclinationWatchdogRequest;
+/** Complete bounded guest value for clearpath_safety_msgs/AddInclinationWatchdogResponse. */
+using Ros1Clearpath_safety_msgsAddInclinationWatchdogResponse=roswasmc_bounded_1_clearpath_safety_msgs_AddInclinationWatchdogResponse;
+/** Complete bounded guest value for clearpath_safety_msgs/AddNodeStatusWatchdogRequest. */
+using Ros1Clearpath_safety_msgsAddNodeStatusWatchdogRequest=roswasmc_bounded_1_clearpath_safety_msgs_AddNodeStatusWatchdogRequest;
+/** Complete bounded guest value for clearpath_safety_msgs/AddNodeStatusWatchdogResponse. */
+using Ros1Clearpath_safety_msgsAddNodeStatusWatchdogResponse=roswasmc_bounded_1_clearpath_safety_msgs_AddNodeStatusWatchdogResponse;
+/** Complete bounded guest value for clearpath_safety_msgs/AddNodeletStatusWatchdogRequest. */
+using Ros1Clearpath_safety_msgsAddNodeletStatusWatchdogRequest=roswasmc_bounded_1_clearpath_safety_msgs_AddNodeletStatusWatchdogRequest;
+/** Complete bounded guest value for clearpath_safety_msgs/AddNodeletStatusWatchdogResponse. */
+using Ros1Clearpath_safety_msgsAddNodeletStatusWatchdogResponse=roswasmc_bounded_1_clearpath_safety_msgs_AddNodeletStatusWatchdogResponse;
+/** Complete bounded guest value for clearpath_safety_msgs/AddNumPointsWatchdogRequest. */
+using Ros1Clearpath_safety_msgsAddNumPointsWatchdogRequest=roswasmc_bounded_1_clearpath_safety_msgs_AddNumPointsWatchdogRequest;
+/** Complete bounded guest value for clearpath_safety_msgs/AddNumPointsWatchdogResponse. */
+using Ros1Clearpath_safety_msgsAddNumPointsWatchdogResponse=roswasmc_bounded_1_clearpath_safety_msgs_AddNumPointsWatchdogResponse;
+/** Complete bounded guest value for clearpath_safety_msgs/AddOdomCovarianceWatchdogRequest. */
+using Ros1Clearpath_safety_msgsAddOdomCovarianceWatchdogRequest=roswasmc_bounded_1_clearpath_safety_msgs_AddOdomCovarianceWatchdogRequest;
+/** Complete bounded guest value for clearpath_safety_msgs/AddOdomCovarianceWatchdogResponse. */
+using Ros1Clearpath_safety_msgsAddOdomCovarianceWatchdogResponse=roswasmc_bounded_1_clearpath_safety_msgs_AddOdomCovarianceWatchdogResponse;
+/** Complete bounded guest value for clearpath_safety_msgs/AddRtkFixWatchdogRequest. */
+using Ros1Clearpath_safety_msgsAddRtkFixWatchdogRequest=roswasmc_bounded_1_clearpath_safety_msgs_AddRtkFixWatchdogRequest;
+/** Complete bounded guest value for clearpath_safety_msgs/AddRtkFixWatchdogResponse. */
+using Ros1Clearpath_safety_msgsAddRtkFixWatchdogResponse=roswasmc_bounded_1_clearpath_safety_msgs_AddRtkFixWatchdogResponse;
+/** Complete bounded guest value for clearpath_safety_msgs/AddTopicDataWatchdogRequest. */
+using Ros1Clearpath_safety_msgsAddTopicDataWatchdogRequest=roswasmc_bounded_1_clearpath_safety_msgs_AddTopicDataWatchdogRequest;
+/** Complete bounded guest value for clearpath_safety_msgs/AddTopicDataWatchdogResponse. */
+using Ros1Clearpath_safety_msgsAddTopicDataWatchdogResponse=roswasmc_bounded_1_clearpath_safety_msgs_AddTopicDataWatchdogResponse;
+/** Complete bounded guest value for clearpath_safety_msgs/RemoveWatchdogRequest. */
+using Ros1Clearpath_safety_msgsRemoveWatchdogRequest=roswasmc_bounded_1_clearpath_safety_msgs_RemoveWatchdogRequest;
+/** Complete bounded guest value for clearpath_safety_msgs/RemoveWatchdogResponse. */
+using Ros1Clearpath_safety_msgsRemoveWatchdogResponse=roswasmc_bounded_1_clearpath_safety_msgs_RemoveWatchdogResponse;
+/** Complete bounded guest value for clearpath_safety_msgs/UpdateCommunicationWatchdogRequest. */
+using Ros1Clearpath_safety_msgsUpdateCommunicationWatchdogRequest=roswasmc_bounded_1_clearpath_safety_msgs_UpdateCommunicationWatchdogRequest;
+/** Complete bounded guest value for clearpath_safety_msgs/UpdateCommunicationWatchdogResponse. */
+using Ros1Clearpath_safety_msgsUpdateCommunicationWatchdogResponse=roswasmc_bounded_1_clearpath_safety_msgs_UpdateCommunicationWatchdogResponse;
+/** Complete bounded guest value for clearpath_safety_msgs/UpdateHeartbeatWatchdogRequest. */
+using Ros1Clearpath_safety_msgsUpdateHeartbeatWatchdogRequest=roswasmc_bounded_1_clearpath_safety_msgs_UpdateHeartbeatWatchdogRequest;
+/** Complete bounded guest value for clearpath_safety_msgs/UpdateHeartbeatWatchdogResponse. */
+using Ros1Clearpath_safety_msgsUpdateHeartbeatWatchdogResponse=roswasmc_bounded_1_clearpath_safety_msgs_UpdateHeartbeatWatchdogResponse;
+/** Complete bounded guest value for clearpath_safety_msgs/UpdateInclinationWatchdogRequest. */
+using Ros1Clearpath_safety_msgsUpdateInclinationWatchdogRequest=roswasmc_bounded_1_clearpath_safety_msgs_UpdateInclinationWatchdogRequest;
+/** Complete bounded guest value for clearpath_safety_msgs/UpdateInclinationWatchdogResponse. */
+using Ros1Clearpath_safety_msgsUpdateInclinationWatchdogResponse=roswasmc_bounded_1_clearpath_safety_msgs_UpdateInclinationWatchdogResponse;
+/** Complete bounded guest value for clearpath_safety_msgs/UpdateNodeStatusWatchdogRequest. */
+using Ros1Clearpath_safety_msgsUpdateNodeStatusWatchdogRequest=roswasmc_bounded_1_clearpath_safety_msgs_UpdateNodeStatusWatchdogRequest;
+/** Complete bounded guest value for clearpath_safety_msgs/UpdateNodeStatusWatchdogResponse. */
+using Ros1Clearpath_safety_msgsUpdateNodeStatusWatchdogResponse=roswasmc_bounded_1_clearpath_safety_msgs_UpdateNodeStatusWatchdogResponse;
+/** Complete bounded guest value for clearpath_safety_msgs/UpdateNodeletStatusWatchdogRequest. */
+using Ros1Clearpath_safety_msgsUpdateNodeletStatusWatchdogRequest=roswasmc_bounded_1_clearpath_safety_msgs_UpdateNodeletStatusWatchdogRequest;
+/** Complete bounded guest value for clearpath_safety_msgs/UpdateNodeletStatusWatchdogResponse. */
+using Ros1Clearpath_safety_msgsUpdateNodeletStatusWatchdogResponse=roswasmc_bounded_1_clearpath_safety_msgs_UpdateNodeletStatusWatchdogResponse;
+/** Complete bounded guest value for clearpath_safety_msgs/UpdateNumPointsWatchdogRequest. */
+using Ros1Clearpath_safety_msgsUpdateNumPointsWatchdogRequest=roswasmc_bounded_1_clearpath_safety_msgs_UpdateNumPointsWatchdogRequest;
+/** Complete bounded guest value for clearpath_safety_msgs/UpdateNumPointsWatchdogResponse. */
+using Ros1Clearpath_safety_msgsUpdateNumPointsWatchdogResponse=roswasmc_bounded_1_clearpath_safety_msgs_UpdateNumPointsWatchdogResponse;
+/** Complete bounded guest value for clearpath_safety_msgs/UpdateOdomCovarianceWatchdogRequest. */
+using Ros1Clearpath_safety_msgsUpdateOdomCovarianceWatchdogRequest=roswasmc_bounded_1_clearpath_safety_msgs_UpdateOdomCovarianceWatchdogRequest;
+/** Complete bounded guest value for clearpath_safety_msgs/UpdateOdomCovarianceWatchdogResponse. */
+using Ros1Clearpath_safety_msgsUpdateOdomCovarianceWatchdogResponse=roswasmc_bounded_1_clearpath_safety_msgs_UpdateOdomCovarianceWatchdogResponse;
+/** Complete bounded guest value for clearpath_safety_msgs/UpdateRtkFixWatchdogRequest. */
+using Ros1Clearpath_safety_msgsUpdateRtkFixWatchdogRequest=roswasmc_bounded_1_clearpath_safety_msgs_UpdateRtkFixWatchdogRequest;
+/** Complete bounded guest value for clearpath_safety_msgs/UpdateRtkFixWatchdogResponse. */
+using Ros1Clearpath_safety_msgsUpdateRtkFixWatchdogResponse=roswasmc_bounded_1_clearpath_safety_msgs_UpdateRtkFixWatchdogResponse;
+/** Complete bounded guest value for clearpath_safety_msgs/UpdateTopicDataWatchdogRequest. */
+using Ros1Clearpath_safety_msgsUpdateTopicDataWatchdogRequest=roswasmc_bounded_1_clearpath_safety_msgs_UpdateTopicDataWatchdogRequest;
+/** Complete bounded guest value for clearpath_safety_msgs/UpdateTopicDataWatchdogResponse. */
+using Ros1Clearpath_safety_msgsUpdateTopicDataWatchdogResponse=roswasmc_bounded_1_clearpath_safety_msgs_UpdateTopicDataWatchdogResponse;
+}
+namespace roswasmcpp {
+/** Checked codec for clearpath_camera_msgs/InspectPOIGoal; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_camera_msgsInspectPOIGoal> {
+  static constexpr size_t max_wire_bytes=264;
+  static constexpr char const* codec_identity="UWVMROS1_565be10d97c4c60912d396cfb44121df60bc367458a8907d0dbccb48df3a35db";
+  static bool encode(uwvm_custom::Ros1Clearpath_camera_msgsInspectPOIGoal const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_camera_msgs_InspectPOIGoal_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_camera_msgs_InspectPOIGoal_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_camera_msgs_InspectPOIGoal_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_camera_msgsInspectPOIGoal& out) {return !roswasmc_bounded_1_clearpath_camera_msgs_InspectPOIGoal_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_camera_msgs/InspectPOIResult; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_camera_msgsInspectPOIResult> {
+  static constexpr size_t max_wire_bytes=261;
+  static constexpr char const* codec_identity="UWVMROS1_6e3fb05c4e74fb8dd7de685bc0f774506921e3b4cf060721b2a756771403e156";
+  static bool encode(uwvm_custom::Ros1Clearpath_camera_msgsInspectPOIResult const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_camera_msgs_InspectPOIResult_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_camera_msgs_InspectPOIResult_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_camera_msgs_InspectPOIResult_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_camera_msgsInspectPOIResult& out) {return !roswasmc_bounded_1_clearpath_camera_msgs_InspectPOIResult_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_camera_msgs/InspectPOIFeedback; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_camera_msgsInspectPOIFeedback> {
+  static constexpr size_t max_wire_bytes=260;
+  static constexpr char const* codec_identity="UWVMROS1_27296847f85ab4f22770912227596b59886335e35a4c3b0313fee5bf5b386777";
+  static bool encode(uwvm_custom::Ros1Clearpath_camera_msgsInspectPOIFeedback const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_camera_msgs_InspectPOIFeedback_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_camera_msgs_InspectPOIFeedback_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_camera_msgs_InspectPOIFeedback_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_camera_msgsInspectPOIFeedback& out) {return !roswasmc_bounded_1_clearpath_camera_msgs_InspectPOIFeedback_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_dock_msgs/LocalDockGoal; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_dock_msgsLocalDockGoal> {
+  static constexpr size_t max_wire_bytes=0;
+  static constexpr char const* codec_identity="UWVMROS1_45a53e58200f1fae57933c2414443a3ee7c0c80dfe5d849d59f5085030abab81";
+  static bool encode(uwvm_custom::Ros1Clearpath_dock_msgsLocalDockGoal const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_dock_msgs_LocalDockGoal_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_dock_msgs_LocalDockGoal_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_dock_msgs_LocalDockGoal_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_dock_msgsLocalDockGoal& out) {return !roswasmc_bounded_1_clearpath_dock_msgs_LocalDockGoal_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_dock_msgs/LocalDockResult; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_dock_msgsLocalDockResult> {
+  static constexpr size_t max_wire_bytes=261;
+  static constexpr char const* codec_identity="UWVMROS1_eb485112962a291a8ab4d789f8d36a96e9dd45b54c35ecd070ffefcef510310b";
+  static bool encode(uwvm_custom::Ros1Clearpath_dock_msgsLocalDockResult const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_dock_msgs_LocalDockResult_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_dock_msgs_LocalDockResult_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_dock_msgs_LocalDockResult_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_dock_msgsLocalDockResult& out) {return !roswasmc_bounded_1_clearpath_dock_msgs_LocalDockResult_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_dock_msgs/LocalDockFeedback; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_dock_msgsLocalDockFeedback> {
+  static constexpr size_t max_wire_bytes=260;
+  static constexpr char const* codec_identity="UWVMROS1_242011c30d8e33482c33e2d379c7d70a021236a000ecf3f6df4941980cfe10e1";
+  static bool encode(uwvm_custom::Ros1Clearpath_dock_msgsLocalDockFeedback const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_dock_msgs_LocalDockFeedback_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_dock_msgs_LocalDockFeedback_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_dock_msgs_LocalDockFeedback_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_dock_msgsLocalDockFeedback& out) {return !roswasmc_bounded_1_clearpath_dock_msgs_LocalDockFeedback_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_dock_msgs/LocalUndockGoal; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_dock_msgsLocalUndockGoal> {
+  static constexpr size_t max_wire_bytes=4;
+  static constexpr char const* codec_identity="UWVMROS1_9ae8cdbd777755af0f8d92e93b3a45438af4b1b02af9fedfedf97ea45a0d81fc";
+  static bool encode(uwvm_custom::Ros1Clearpath_dock_msgsLocalUndockGoal const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_dock_msgs_LocalUndockGoal_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_dock_msgs_LocalUndockGoal_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_dock_msgs_LocalUndockGoal_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_dock_msgsLocalUndockGoal& out) {return !roswasmc_bounded_1_clearpath_dock_msgs_LocalUndockGoal_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_dock_msgs/LocalUndockResult; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_dock_msgsLocalUndockResult> {
+  static constexpr size_t max_wire_bytes=261;
+  static constexpr char const* codec_identity="UWVMROS1_e6f44748c15f5653f3f79ac5ebbcb8067a52736c1905aeb76a8646d4d0caf6c2";
+  static bool encode(uwvm_custom::Ros1Clearpath_dock_msgsLocalUndockResult const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_dock_msgs_LocalUndockResult_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_dock_msgs_LocalUndockResult_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_dock_msgs_LocalUndockResult_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_dock_msgsLocalUndockResult& out) {return !roswasmc_bounded_1_clearpath_dock_msgs_LocalUndockResult_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_dock_msgs/LocalUndockFeedback; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_dock_msgsLocalUndockFeedback> {
+  static constexpr size_t max_wire_bytes=260;
+  static constexpr char const* codec_identity="UWVMROS1_f3d6f32b8f1735c612aba8c5bfc6bc4d45f59b80b3ed75e6fc64f20b821d534f";
+  static bool encode(uwvm_custom::Ros1Clearpath_dock_msgsLocalUndockFeedback const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_dock_msgs_LocalUndockFeedback_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_dock_msgs_LocalUndockFeedback_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_dock_msgs_LocalUndockFeedback_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_dock_msgsLocalUndockFeedback& out) {return !roswasmc_bounded_1_clearpath_dock_msgs_LocalUndockFeedback_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_dock_msgs/NetworkDockGoal; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_dock_msgsNetworkDockGoal> {
+  static constexpr size_t max_wire_bytes=520;
+  static constexpr char const* codec_identity="UWVMROS1_d4b9ecb8f25cbbb6b0db567d93de10a739e9d4f5b5cc9a9744a45bd515de45ec";
+  static bool encode(uwvm_custom::Ros1Clearpath_dock_msgsNetworkDockGoal const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_dock_msgs_NetworkDockGoal_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_dock_msgs_NetworkDockGoal_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_dock_msgs_NetworkDockGoal_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_dock_msgsNetworkDockGoal& out) {return !roswasmc_bounded_1_clearpath_dock_msgs_NetworkDockGoal_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_dock_msgs/NetworkDockResult; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_dock_msgsNetworkDockResult> {
+  static constexpr size_t max_wire_bytes=261;
+  static constexpr char const* codec_identity="UWVMROS1_7f7886646fa1c9792d2ded3033e67f6476d5401a5d67536365d7b97b9318a913";
+  static bool encode(uwvm_custom::Ros1Clearpath_dock_msgsNetworkDockResult const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_dock_msgs_NetworkDockResult_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_dock_msgs_NetworkDockResult_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_dock_msgs_NetworkDockResult_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_dock_msgsNetworkDockResult& out) {return !roswasmc_bounded_1_clearpath_dock_msgs_NetworkDockResult_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for time; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Time> {
+  static constexpr size_t max_wire_bytes=8;
+  static constexpr char const* codec_identity="UWVMROS1_90b75571d2bcc21b824eb993b485a001bf97e281adda7907e1b2e3357e4804b0";
+  static bool encode(uwvm_custom::Ros1Time const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_time_valid(&value))return false;size_t n=roswasmc_bounded_1_time_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_time_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Time& out) {return !roswasmc_bounded_1_time_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for std_msgs/Header; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Std_msgsHeader> {
+  static constexpr size_t max_wire_bytes=144;
+  static constexpr char const* codec_identity="UWVMROS1_ee2b4e736d36ebcdb562d3ef7832777233d39d366837e9148a76aa2c36756435";
+  static bool encode(uwvm_custom::Ros1Std_msgsHeader const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_std_msgs_Header_valid(&value))return false;size_t n=roswasmc_bounded_1_std_msgs_Header_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_std_msgs_Header_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Std_msgsHeader& out) {return !roswasmc_bounded_1_std_msgs_Header_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/Task; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsTask> {
+  static constexpr size_t max_wire_bytes=1457;
+  static constexpr char const* codec_identity="UWVMROS1_9800265a8c633618cc26019c169871c8f2cb53c56aebba1567b1de52f15ac658";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsTask const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_Task_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_Task_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_Task_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsTask& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_Task_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/Waypoint; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsWaypoint> {
+  static constexpr size_t max_wire_bytes=3350;
+  static constexpr char const* codec_identity="UWVMROS1_68f7d2e826789aad21d6f15bd06060b6e0fb0bdac40bdc7de685c935afc93c30";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsWaypoint const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_Waypoint_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_Waypoint_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_Waypoint_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsWaypoint& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_Waypoint_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for geometry_msgs/Point; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Geometry_msgsPoint> {
+  static constexpr size_t max_wire_bytes=24;
+  static constexpr char const* codec_identity="UWVMROS1_b55e2bde60f6cedb426cada54bc7baefc536c7bc731bd49fb152d89a892de62b";
+  static bool encode(uwvm_custom::Ros1Geometry_msgsPoint const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_geometry_msgs_Point_valid(&value))return false;size_t n=roswasmc_bounded_1_geometry_msgs_Point_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_geometry_msgs_Point_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Geometry_msgsPoint& out) {return !roswasmc_bounded_1_geometry_msgs_Point_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/NetworkMissionSegment; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsNetworkMissionSegment> {
+  static constexpr size_t max_wire_bytes=3546;
+  static constexpr char const* codec_identity="UWVMROS1_63c55d82f410637d740a5a5c93fe4f1e0d1539bdbce947eac474bb2472355877";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsNetworkMissionSegment const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_NetworkMissionSegment_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_NetworkMissionSegment_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_NetworkMissionSegment_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsNetworkMissionSegment& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_NetworkMissionSegment_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_dock_msgs/NetworkDockFeedback; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_dock_msgsNetworkDockFeedback> {
+  static constexpr size_t max_wire_bytes=3806;
+  static constexpr char const* codec_identity="UWVMROS1_5b1b091da1ad18a3686cd6b3c57b2c181539a5b94e0f31dd2ddb89aa297bd6f6";
+  static bool encode(uwvm_custom::Ros1Clearpath_dock_msgsNetworkDockFeedback const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_dock_msgs_NetworkDockFeedback_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_dock_msgs_NetworkDockFeedback_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_dock_msgs_NetworkDockFeedback_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_dock_msgsNetworkDockFeedback& out) {return !roswasmc_bounded_1_clearpath_dock_msgs_NetworkDockFeedback_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_dock_msgs/RadiusDockGoal; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_dock_msgsRadiusDockGoal> {
+  static constexpr size_t max_wire_bytes=260;
+  static constexpr char const* codec_identity="UWVMROS1_078d5852eab50c98283fcb512c9b9161ea1a710b5827b5738fbe0199323230a9";
+  static bool encode(uwvm_custom::Ros1Clearpath_dock_msgsRadiusDockGoal const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_dock_msgs_RadiusDockGoal_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_dock_msgs_RadiusDockGoal_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_dock_msgs_RadiusDockGoal_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_dock_msgsRadiusDockGoal& out) {return !roswasmc_bounded_1_clearpath_dock_msgs_RadiusDockGoal_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_dock_msgs/RadiusDockResult; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_dock_msgsRadiusDockResult> {
+  static constexpr size_t max_wire_bytes=261;
+  static constexpr char const* codec_identity="UWVMROS1_e4b1757e3b129f7de6427334ea3ad10d6bd7df27a0558af6130b20ab37a5c30a";
+  static bool encode(uwvm_custom::Ros1Clearpath_dock_msgsRadiusDockResult const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_dock_msgs_RadiusDockResult_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_dock_msgs_RadiusDockResult_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_dock_msgs_RadiusDockResult_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_dock_msgsRadiusDockResult& out) {return !roswasmc_bounded_1_clearpath_dock_msgs_RadiusDockResult_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_dock_msgs/RadiusDockFeedback; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_dock_msgsRadiusDockFeedback> {
+  static constexpr size_t max_wire_bytes=260;
+  static constexpr char const* codec_identity="UWVMROS1_1a3467aced8c46a9d3c1146d69d9af4b1ec04849b52c2fb971ed12e6c587c048";
+  static bool encode(uwvm_custom::Ros1Clearpath_dock_msgsRadiusDockFeedback const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_dock_msgs_RadiusDockFeedback_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_dock_msgs_RadiusDockFeedback_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_dock_msgs_RadiusDockFeedback_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_dock_msgsRadiusDockFeedback& out) {return !roswasmc_bounded_1_clearpath_dock_msgs_RadiusDockFeedback_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_localization_msgs/SurveyBaseStationGoal; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_localization_msgsSurveyBaseStationGoal> {
+  static constexpr size_t max_wire_bytes=4;
+  static constexpr char const* codec_identity="UWVMROS1_0cc3ffd35550c179c2cc3a7a40a6c0976ff2749c5405473d8b0504ff1bd2e904";
+  static bool encode(uwvm_custom::Ros1Clearpath_localization_msgsSurveyBaseStationGoal const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_localization_msgs_SurveyBaseStationGoal_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_localization_msgs_SurveyBaseStationGoal_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_localization_msgs_SurveyBaseStationGoal_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_localization_msgsSurveyBaseStationGoal& out) {return !roswasmc_bounded_1_clearpath_localization_msgs_SurveyBaseStationGoal_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_localization_msgs/SurveyBaseStationResult; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_localization_msgsSurveyBaseStationResult> {
+  static constexpr size_t max_wire_bytes=1;
+  static constexpr char const* codec_identity="UWVMROS1_80e92d291c46cd247b66d76aef498a69a9a1289d55442d2fc170092728a1b466";
+  static bool encode(uwvm_custom::Ros1Clearpath_localization_msgsSurveyBaseStationResult const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_localization_msgs_SurveyBaseStationResult_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_localization_msgs_SurveyBaseStationResult_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_localization_msgs_SurveyBaseStationResult_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_localization_msgsSurveyBaseStationResult& out) {return !roswasmc_bounded_1_clearpath_localization_msgs_SurveyBaseStationResult_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_localization_msgs/SurveyBaseStationFeedback; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_localization_msgsSurveyBaseStationFeedback> {
+  static constexpr size_t max_wire_bytes=4;
+  static constexpr char const* codec_identity="UWVMROS1_d90857766b78e69fe9ccd7fcc4fc234e8411fcd162ef0d1912b3d11465ba3d72";
+  static bool encode(uwvm_custom::Ros1Clearpath_localization_msgsSurveyBaseStationFeedback const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_localization_msgs_SurveyBaseStationFeedback_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_localization_msgs_SurveyBaseStationFeedback_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_localization_msgs_SurveyBaseStationFeedback_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_localization_msgsSurveyBaseStationFeedback& out) {return !roswasmc_bounded_1_clearpath_localization_msgs_SurveyBaseStationFeedback_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for duration; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Duration> {
+  static constexpr size_t max_wire_bytes=8;
+  static constexpr char const* codec_identity="UWVMROS1_8dbec6cdfef79495208abb358c5e8283ec8d9d471f984424afcda997d142cca8";
+  static bool encode(uwvm_custom::Ros1Duration const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_duration_valid(&value))return false;size_t n=roswasmc_bounded_1_duration_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_duration_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Duration& out) {return !roswasmc_bounded_1_duration_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_scheduler_msgs/RunScheduleByUuidGoal; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_scheduler_msgsRunScheduleByUuidGoal> {
+  static constexpr size_t max_wire_bytes=268;
+  static constexpr char const* codec_identity="UWVMROS1_cbe7e0318b365563a448441b29166d798a20ef92c0c65415f80c1a71a00cbf72";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_scheduler_msgsRunScheduleByUuidGoal const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_scheduler_msgs_RunScheduleByUuidGoal_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_RunScheduleByUuidGoal_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_scheduler_msgs_RunScheduleByUuidGoal_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_scheduler_msgsRunScheduleByUuidGoal& out) {return !roswasmc_bounded_1_clearpath_mission_scheduler_msgs_RunScheduleByUuidGoal_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_scheduler_msgs/RunScheduleByUuidResult; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_scheduler_msgsRunScheduleByUuidResult> {
+  static constexpr size_t max_wire_bytes=1;
+  static constexpr char const* codec_identity="UWVMROS1_01288b98deab00397457f14ea6817e320bff6448f839acfad0047654facb91d4";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_scheduler_msgsRunScheduleByUuidResult const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_scheduler_msgs_RunScheduleByUuidResult_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_RunScheduleByUuidResult_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_scheduler_msgs_RunScheduleByUuidResult_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_scheduler_msgsRunScheduleByUuidResult& out) {return !roswasmc_bounded_1_clearpath_mission_scheduler_msgs_RunScheduleByUuidResult_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_scheduler_msgs/RunScheduleByUuidFeedback; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_scheduler_msgsRunScheduleByUuidFeedback> {
+  static constexpr size_t max_wire_bytes=520;
+  static constexpr char const* codec_identity="UWVMROS1_8b075ffb1cdf13580f5a4ddec2cb3d6edbeb88a9ba1e038d85a82a6029ec0f32";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_scheduler_msgsRunScheduleByUuidFeedback const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_scheduler_msgs_RunScheduleByUuidFeedback_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_RunScheduleByUuidFeedback_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_scheduler_msgs_RunScheduleByUuidFeedback_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_scheduler_msgsRunScheduleByUuidFeedback& out) {return !roswasmc_bounded_1_clearpath_mission_scheduler_msgs_RunScheduleByUuidFeedback_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/ExecuteMissionByUuidGoal; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsExecuteMissionByUuidGoal> {
+  static constexpr size_t max_wire_bytes=521;
+  static constexpr char const* codec_identity="UWVMROS1_2026328374c75acb27d33669d0e8a4aa7aa9527b90607c23e5aae986b2be7801";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsExecuteMissionByUuidGoal const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteMissionByUuidGoal_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteMissionByUuidGoal_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteMissionByUuidGoal_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsExecuteMissionByUuidGoal& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteMissionByUuidGoal_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/ExecuteMissionByUuidResult; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsExecuteMissionByUuidResult> {
+  static constexpr size_t max_wire_bytes=261;
+  static constexpr char const* codec_identity="UWVMROS1_5b93894ac84b85948b10ebe884bd74c1c0bc90031a86f407516badb1940a12f8";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsExecuteMissionByUuidResult const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteMissionByUuidResult_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteMissionByUuidResult_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteMissionByUuidResult_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsExecuteMissionByUuidResult& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteMissionByUuidResult_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/ExecuteMissionByUuidFeedback; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsExecuteMissionByUuidFeedback> {
+  static constexpr size_t max_wire_bytes=260;
+  static constexpr char const* codec_identity="UWVMROS1_f86df88585d2f804900f3d362f53bcb1552c3981c806b9d5a3eb83be6023b8fb";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsExecuteMissionByUuidFeedback const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteMissionByUuidFeedback_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteMissionByUuidFeedback_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteMissionByUuidFeedback_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsExecuteMissionByUuidFeedback& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteMissionByUuidFeedback_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/ExecuteNetworkGoToGoal; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsExecuteNetworkGoToGoal> {
+  static constexpr size_t max_wire_bytes=3610;
+  static constexpr char const* codec_identity="UWVMROS1_0877cd8087712f31f6f7d6461f9a12eb23c62b0369b02b1363be5367e6bbe9a5";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsExecuteNetworkGoToGoal const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteNetworkGoToGoal_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteNetworkGoToGoal_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteNetworkGoToGoal_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsExecuteNetworkGoToGoal& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteNetworkGoToGoal_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/ExecuteNetworkGoToResult; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsExecuteNetworkGoToResult> {
+  static constexpr size_t max_wire_bytes=262;
+  static constexpr char const* codec_identity="UWVMROS1_2b2841163f46c7b7debb7cfe15df2b60f32e103396455f68ed328a1a11cddeda";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsExecuteNetworkGoToResult const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteNetworkGoToResult_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteNetworkGoToResult_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteNetworkGoToResult_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsExecuteNetworkGoToResult& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteNetworkGoToResult_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/ExecuteNetworkGoToFeedback; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsExecuteNetworkGoToFeedback> {
+  static constexpr size_t max_wire_bytes=3806;
+  static constexpr char const* codec_identity="UWVMROS1_fe1de33d922bd1483c747ede295e8383a18848ae5911e66fb947fd110a196067";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsExecuteNetworkGoToFeedback const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteNetworkGoToFeedback_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteNetworkGoToFeedback_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteNetworkGoToFeedback_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsExecuteNetworkGoToFeedback& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteNetworkGoToFeedback_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/ExecuteNetworkMissionByUuidGoal; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsExecuteNetworkMissionByUuidGoal> {
+  static constexpr size_t max_wire_bytes=520;
+  static constexpr char const* codec_identity="UWVMROS1_f75615051b84d90d373e7a16785d6cfaf7c48465ea3a644dc54711172a13be65";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsExecuteNetworkMissionByUuidGoal const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteNetworkMissionByUuidGoal_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteNetworkMissionByUuidGoal_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteNetworkMissionByUuidGoal_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsExecuteNetworkMissionByUuidGoal& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteNetworkMissionByUuidGoal_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/NetworkGoalState; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsNetworkGoalState> {
+  static constexpr size_t max_wire_bytes=3351;
+  static constexpr char const* codec_identity="UWVMROS1_2a039023aed39c0b8b3e91c1938a6b9b41c94e698639bc4b27fb377e9e5dde01";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsNetworkGoalState const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_NetworkGoalState_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_NetworkGoalState_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_NetworkGoalState_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsNetworkGoalState& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_NetworkGoalState_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/ExecuteNetworkMissionByUuidResult; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsExecuteNetworkMissionByUuidResult> {
+  static constexpr size_t max_wire_bytes=6968;
+  static constexpr char const* codec_identity="UWVMROS1_5bdab4569bc5bb4f94910b294acf04708f4677f6a1adcc326ee0420edf6de856";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsExecuteNetworkMissionByUuidResult const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteNetworkMissionByUuidResult_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteNetworkMissionByUuidResult_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteNetworkMissionByUuidResult_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsExecuteNetworkMissionByUuidResult& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteNetworkMissionByUuidResult_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/ExecuteNetworkMissionByUuidFeedback; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsExecuteNetworkMissionByUuidFeedback> {
+  static constexpr size_t max_wire_bytes=10512;
+  static constexpr char const* codec_identity="UWVMROS1_f36146854331b1ff188708a23717889180d6bda4fed7ae6c6e758782372d0927";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsExecuteNetworkMissionByUuidFeedback const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteNetworkMissionByUuidFeedback_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteNetworkMissionByUuidFeedback_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteNetworkMissionByUuidFeedback_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsExecuteNetworkMissionByUuidFeedback& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_ExecuteNetworkMissionByUuidFeedback_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for geometry_msgs/Quaternion; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Geometry_msgsQuaternion> {
+  static constexpr size_t max_wire_bytes=32;
+  static constexpr char const* codec_identity="UWVMROS1_48fe20d5d29a8ca1a630605a58f80baacc52d9a65b1ca87efd50ffdd52882934";
+  static bool encode(uwvm_custom::Ros1Geometry_msgsQuaternion const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_geometry_msgs_Quaternion_valid(&value))return false;size_t n=roswasmc_bounded_1_geometry_msgs_Quaternion_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_geometry_msgs_Quaternion_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Geometry_msgsQuaternion& out) {return !roswasmc_bounded_1_geometry_msgs_Quaternion_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for geometry_msgs/Pose; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Geometry_msgsPose> {
+  static constexpr size_t max_wire_bytes=56;
+  static constexpr char const* codec_identity="UWVMROS1_e49ed287cd0de31a16c8cd49ad8f41f81d44e23306b8dcb61da6e0e789595471";
+  static bool encode(uwvm_custom::Ros1Geometry_msgsPose const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_geometry_msgs_Pose_valid(&value))return false;size_t n=roswasmc_bounded_1_geometry_msgs_Pose_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_geometry_msgs_Pose_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Geometry_msgsPose& out) {return !roswasmc_bounded_1_geometry_msgs_Pose_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for geometry_msgs/PoseStamped; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Geometry_msgsPoseStamped> {
+  static constexpr size_t max_wire_bytes=200;
+  static constexpr char const* codec_identity="UWVMROS1_bb59c4e82f561266c0f10500bfbbd1a809e9c1122ecbf559a812326af3eb2e95";
+  static bool encode(uwvm_custom::Ros1Geometry_msgsPoseStamped const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_geometry_msgs_PoseStamped_valid(&value))return false;size_t n=roswasmc_bounded_1_geometry_msgs_PoseStamped_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_geometry_msgs_PoseStamped_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Geometry_msgsPoseStamped& out) {return !roswasmc_bounded_1_geometry_msgs_PoseStamped_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/GetWaypointPathGoal; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsGetWaypointPathGoal> {
+  static constexpr size_t max_wire_bytes=874;
+  static constexpr char const* codec_identity="UWVMROS1_9f4e55ff8c5c423e58bc206b5ba8cf40f2dce89fe6b6194e3f274f33915c8373";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsGetWaypointPathGoal const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_GetWaypointPathGoal_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_GetWaypointPathGoal_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_GetWaypointPathGoal_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsGetWaypointPathGoal& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_GetWaypointPathGoal_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for nav_msgs/Path; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Nav_msgsPath> {
+  static constexpr size_t max_wire_bytes=548;
+  static constexpr char const* codec_identity="UWVMROS1_4451806e82167229ab44f7a8f9f3de7bdcec2e8b7c98e8765b029c7e76af7f60";
+  static bool encode(uwvm_custom::Ros1Nav_msgsPath const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_nav_msgs_Path_valid(&value))return false;size_t n=roswasmc_bounded_1_nav_msgs_Path_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_nav_msgs_Path_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Nav_msgsPath& out) {return !roswasmc_bounded_1_nav_msgs_Path_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for std_msgs/Duration; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Std_msgsDuration> {
+  static constexpr size_t max_wire_bytes=8;
+  static constexpr char const* codec_identity="UWVMROS1_195444342590aabe87833226c1cce7cc900519e5b1fe13ff460406396e3ce175";
+  static bool encode(uwvm_custom::Ros1Std_msgsDuration const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_std_msgs_Duration_valid(&value))return false;size_t n=roswasmc_bounded_1_std_msgs_Duration_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_std_msgs_Duration_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Std_msgsDuration& out) {return !roswasmc_bounded_1_std_msgs_Duration_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/GetWaypointPathResult; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsGetWaypointPathResult> {
+  static constexpr size_t max_wire_bytes=828;
+  static constexpr char const* codec_identity="UWVMROS1_e380ef98ced5ac0bb2edff0accf0df86828cc9d9a8d17c73d7b236b8f660c396";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsGetWaypointPathResult const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_GetWaypointPathResult_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_GetWaypointPathResult_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_GetWaypointPathResult_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsGetWaypointPathResult& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_GetWaypointPathResult_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/GetWaypointPathFeedback; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsGetWaypointPathFeedback> {
+  static constexpr size_t max_wire_bytes=0;
+  static constexpr char const* codec_identity="UWVMROS1_d1e0f84cfd174723eaae1a46d298702562ce42b19875146e18bf58ac6a1c9cec";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsGetWaypointPathFeedback const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_GetWaypointPathFeedback_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_GetWaypointPathFeedback_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_GetWaypointPathFeedback_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsGetWaypointPathFeedback& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_GetWaypointPathFeedback_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/Mission; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsMission> {
+  static constexpr size_t max_wire_bytes=13336;
+  static constexpr char const* codec_identity="UWVMROS1_7a2e7409a879989eedd02009b13a33cc775188ee2af9409a3a47ed8fd38d4490";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsMission const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_Mission_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_Mission_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_Mission_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsMission& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_Mission_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/MissionGoal; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsMissionGoal> {
+  static constexpr size_t max_wire_bytes=16687;
+  static constexpr char const* codec_identity="UWVMROS1_d763e90ea09778c5cf9d16bb789eaec779b81a3527fec14fa556b2a2fbfe41bc";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsMissionGoal const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_MissionGoal_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_MissionGoal_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_MissionGoal_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsMissionGoal& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_MissionGoal_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/MissionResult; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsMissionResult> {
+  static constexpr size_t max_wire_bytes=261;
+  static constexpr char const* codec_identity="UWVMROS1_9f8dcc6b43b368957630f5dd039ec3a7e3bc1091a04a3acd639a9571293628a2";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsMissionResult const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_MissionResult_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_MissionResult_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_MissionResult_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsMissionResult& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_MissionResult_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/MissionFeedback; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsMissionFeedback> {
+  static constexpr size_t max_wire_bytes=260;
+  static constexpr char const* codec_identity="UWVMROS1_dfb40538ac8673b076a60565a1bca3b9805b7cf6a0ab5b50a46cbc6cdd59f2ef";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsMissionFeedback const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_MissionFeedback_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_MissionFeedback_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_MissionFeedback_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsMissionFeedback& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_MissionFeedback_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/NetworkGoToPOIGoal; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsNetworkGoToPOIGoal> {
+  static constexpr size_t max_wire_bytes=520;
+  static constexpr char const* codec_identity="UWVMROS1_f8c1dddcecc439487e6811465240e02f26291fe68ae773d9cbf2a61a976de4bd";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsNetworkGoToPOIGoal const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_NetworkGoToPOIGoal_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_NetworkGoToPOIGoal_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_NetworkGoToPOIGoal_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsNetworkGoToPOIGoal& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_NetworkGoToPOIGoal_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/NetworkGoToPOIResult; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsNetworkGoToPOIResult> {
+  static constexpr size_t max_wire_bytes=261;
+  static constexpr char const* codec_identity="UWVMROS1_402e95779afd664798a412dbebce299c4a4cc332c5d01bda4b19f2c24023c548";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsNetworkGoToPOIResult const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_NetworkGoToPOIResult_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_NetworkGoToPOIResult_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_NetworkGoToPOIResult_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsNetworkGoToPOIResult& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_NetworkGoToPOIResult_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/NetworkGoToPOIFeedback; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsNetworkGoToPOIFeedback> {
+  static constexpr size_t max_wire_bytes=3806;
+  static constexpr char const* codec_identity="UWVMROS1_77676f75545d6eb58b93904be926923f749a6ddc7332476dd23e635ed0e072e8";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsNetworkGoToPOIFeedback const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_NetworkGoToPOIFeedback_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_NetworkGoToPOIFeedback_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_NetworkGoToPOIFeedback_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsNetworkGoToPOIFeedback& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_NetworkGoToPOIFeedback_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/RecordPathGoal; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsRecordPathGoal> {
+  static constexpr size_t max_wire_bytes=16;
+  static constexpr char const* codec_identity="UWVMROS1_64cc3f4f8c7cd725d8a5a1a7286cacafd7a41ab74e8d664dc10149ac92b0cf68";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsRecordPathGoal const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_RecordPathGoal_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_RecordPathGoal_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_RecordPathGoal_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsRecordPathGoal& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_RecordPathGoal_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/Vector2D64; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsVector2D64> {
+  static constexpr size_t max_wire_bytes=16;
+  static constexpr char const* codec_identity="UWVMROS1_13edfb447d3fdb131755cd00318a6ce89fc45096b9e41440b021231b324caee9";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsVector2D64 const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_Vector2D64_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_Vector2D64_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_Vector2D64_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsVector2D64& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_Vector2D64_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/RecordPathResult; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsRecordPathResult> {
+  static constexpr size_t max_wire_bytes=36;
+  static constexpr char const* codec_identity="UWVMROS1_e2b420a2149b030f0aac9bba36797abfcb705d6478679dfe85b00e83be0ebe98";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsRecordPathResult const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_RecordPathResult_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_RecordPathResult_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_RecordPathResult_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsRecordPathResult& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_RecordPathResult_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/RecordPathFeedback; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsRecordPathFeedback> {
+  static constexpr size_t max_wire_bytes=36;
+  static constexpr char const* codec_identity="UWVMROS1_3d12790afde54b03439f03f1fd1453d746fbfeddf8a8cfd2cf0af0f2a4e8ee7a";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsRecordPathFeedback const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_RecordPathFeedback_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_RecordPathFeedback_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_RecordPathFeedback_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsRecordPathFeedback& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_RecordPathFeedback_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/RunNetworkGoToPlannerGoal; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsRunNetworkGoToPlannerGoal> {
+  static constexpr size_t max_wire_bytes=3610;
+  static constexpr char const* codec_identity="UWVMROS1_95c219ff4985d097b9bd8e24f7811fb1090ce3d0d977f6d53f7ad8191cfeb4dc";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsRunNetworkGoToPlannerGoal const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_RunNetworkGoToPlannerGoal_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_RunNetworkGoToPlannerGoal_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_RunNetworkGoToPlannerGoal_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsRunNetworkGoToPlannerGoal& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_RunNetworkGoToPlannerGoal_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/RunNetworkGoToPlannerResult; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsRunNetworkGoToPlannerResult> {
+  static constexpr size_t max_wire_bytes=1;
+  static constexpr char const* codec_identity="UWVMROS1_74a36e238244de86de447c97874d3b22a8cea29c61c0000a38cb97981bd0ffad";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsRunNetworkGoToPlannerResult const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_RunNetworkGoToPlannerResult_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_RunNetworkGoToPlannerResult_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_RunNetworkGoToPlannerResult_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsRunNetworkGoToPlannerResult& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_RunNetworkGoToPlannerResult_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/RunNetworkGoToPlannerFeedback; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsRunNetworkGoToPlannerFeedback> {
+  static constexpr size_t max_wire_bytes=196;
+  static constexpr char const* codec_identity="UWVMROS1_0a0c6aa1c129a3c64ab4fc70915d8d4fe2c320b24d0a127f61b09b55c091f0be";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsRunNetworkGoToPlannerFeedback const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_RunNetworkGoToPlannerFeedback_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_RunNetworkGoToPlannerFeedback_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_RunNetworkGoToPlannerFeedback_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsRunNetworkGoToPlannerFeedback& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_RunNetworkGoToPlannerFeedback_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/RunNetworkMissionPreviewerGoal; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsRunNetworkMissionPreviewerGoal> {
+  static constexpr size_t max_wire_bytes=520;
+  static constexpr char const* codec_identity="UWVMROS1_80e350b2bcb3fe42a76d2a717ca07e57f7d9a31ba2f21066d5f2b59822ec8966";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsRunNetworkMissionPreviewerGoal const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_RunNetworkMissionPreviewerGoal_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_RunNetworkMissionPreviewerGoal_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_RunNetworkMissionPreviewerGoal_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsRunNetworkMissionPreviewerGoal& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_RunNetworkMissionPreviewerGoal_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/RunNetworkMissionPreviewerResult; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsRunNetworkMissionPreviewerResult> {
+  static constexpr size_t max_wire_bytes=1;
+  static constexpr char const* codec_identity="UWVMROS1_57d1973b7ae42cf0dbba42920caf934cb9ce1dee9c934e11b7044e52b4fc7b10";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsRunNetworkMissionPreviewerResult const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_RunNetworkMissionPreviewerResult_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_RunNetworkMissionPreviewerResult_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_RunNetworkMissionPreviewerResult_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsRunNetworkMissionPreviewerResult& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_RunNetworkMissionPreviewerResult_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/RunNetworkMissionPreviewerFeedback; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsRunNetworkMissionPreviewerFeedback> {
+  static constexpr size_t max_wire_bytes=7096;
+  static constexpr char const* codec_identity="UWVMROS1_5e2c543ebca10579806d00dd9b7cc5c302e31a2fcf54321ff07f55fa58ec8e89";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsRunNetworkMissionPreviewerFeedback const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_RunNetworkMissionPreviewerFeedback_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_RunNetworkMissionPreviewerFeedback_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_RunNetworkMissionPreviewerFeedback_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsRunNetworkMissionPreviewerFeedback& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_RunNetworkMissionPreviewerFeedback_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/SmoothPathGoal; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsSmoothPathGoal> {
+  static constexpr size_t max_wire_bytes=580;
+  static constexpr char const* codec_identity="UWVMROS1_bed6cefe852634fd4fa352eb0413c69583559346cc66772514345d4c71ae8a05";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsSmoothPathGoal const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_SmoothPathGoal_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_SmoothPathGoal_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_SmoothPathGoal_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsSmoothPathGoal& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_SmoothPathGoal_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/SmoothPathResult; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsSmoothPathResult> {
+  static constexpr size_t max_wire_bytes=556;
+  static constexpr char const* codec_identity="UWVMROS1_f42205bb1dad95ed43d6d8f9159ea3803a944050dcfc5b840309e9fd104bf5f9";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsSmoothPathResult const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_SmoothPathResult_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_SmoothPathResult_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_SmoothPathResult_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsSmoothPathResult& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_SmoothPathResult_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/SmoothPathFeedback; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsSmoothPathFeedback> {
+  static constexpr size_t max_wire_bytes=260;
+  static constexpr char const* codec_identity="UWVMROS1_f5ab7d56fd2811fd4caac7fe44c6a1c7a4f6b5593ee1903251bf312a979c09d1";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsSmoothPathFeedback const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_SmoothPathFeedback_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_SmoothPathFeedback_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_SmoothPathFeedback_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsSmoothPathFeedback& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_SmoothPathFeedback_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/UITaskGoal; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsUITaskGoal> {
+  static constexpr size_t max_wire_bytes=804;
+  static constexpr char const* codec_identity="UWVMROS1_29c35437efebdb8c8c42b2ab4ed29f81e6f8e91c300380ba7099dd68a862ef9b";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsUITaskGoal const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_UITaskGoal_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_UITaskGoal_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_UITaskGoal_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsUITaskGoal& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_UITaskGoal_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/UITaskResult; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsUITaskResult> {
+  static constexpr size_t max_wire_bytes=1;
+  static constexpr char const* codec_identity="UWVMROS1_f88d16093a93f26c60a09ed08a0944ba8b3da03fda60d514dce4a8e48533b3ad";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsUITaskResult const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_UITaskResult_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_UITaskResult_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_UITaskResult_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsUITaskResult& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_UITaskResult_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/UITaskFeedback; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsUITaskFeedback> {
+  static constexpr size_t max_wire_bytes=260;
+  static constexpr char const* codec_identity="UWVMROS1_bb14cbf36189f1bc9759c168619ab4cd6be5d68147658ac54535f16d36f2960f";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsUITaskFeedback const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_UITaskFeedback_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_UITaskFeedback_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_UITaskFeedback_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsUITaskFeedback& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_UITaskFeedback_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_configuration_msgs/AutonomyConfig; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_configuration_msgsAutonomyConfig> {
+  static constexpr size_t max_wire_bytes=268;
+  static constexpr char const* codec_identity="UWVMROS1_94bd6352cf4c46adffcfffd54ad5ac5e1b0cb4aadc98ea00eeb9c62a8ec5be2c";
+  static bool encode(uwvm_custom::Ros1Clearpath_configuration_msgsAutonomyConfig const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_configuration_msgs_AutonomyConfig_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_configuration_msgs_AutonomyConfig_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_configuration_msgs_AutonomyConfig_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_configuration_msgsAutonomyConfig& out) {return !roswasmc_bounded_1_clearpath_configuration_msgs_AutonomyConfig_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_configuration_msgs/PlatformConfig; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_configuration_msgsPlatformConfig> {
+  static constexpr size_t max_wire_bytes=0;
+  static constexpr char const* codec_identity="UWVMROS1_8ec6a196a91bd5d6cd4d4ea2af14b5c549d8efe82c1da95ec08903bb4cbc5407";
+  static bool encode(uwvm_custom::Ros1Clearpath_configuration_msgsPlatformConfig const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_configuration_msgs_PlatformConfig_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_configuration_msgs_PlatformConfig_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_configuration_msgs_PlatformConfig_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_configuration_msgsPlatformConfig& out) {return !roswasmc_bounded_1_clearpath_configuration_msgs_PlatformConfig_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_control_msgs/AutonomySync; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_control_msgsAutonomySync> {
+  static constexpr size_t max_wire_bytes=7;
+  static constexpr char const* codec_identity="UWVMROS1_55bd50b3af5341d9a4793156e250a75451dfc293f5b18036d493c22cc23ca7a4";
+  static bool encode(uwvm_custom::Ros1Clearpath_control_msgsAutonomySync const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_control_msgs_AutonomySync_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_control_msgs_AutonomySync_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_control_msgs_AutonomySync_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_control_msgsAutonomySync& out) {return !roswasmc_bounded_1_clearpath_control_msgs_AutonomySync_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_control_msgs/ControlMode; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_control_msgsControlMode> {
+  static constexpr size_t max_wire_bytes=1;
+  static constexpr char const* codec_identity="UWVMROS1_654f836cb5e86bdc3c861109e4c976683f6368e8d856c7145642c6b2c7260cfc";
+  static bool encode(uwvm_custom::Ros1Clearpath_control_msgsControlMode const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_control_msgs_ControlMode_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_control_msgs_ControlMode_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_control_msgs_ControlMode_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_control_msgsControlMode& out) {return !roswasmc_bounded_1_clearpath_control_msgs_ControlMode_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_control_msgs/ControlState; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_control_msgsControlState> {
+  static constexpr size_t max_wire_bytes=2;
+  static constexpr char const* codec_identity="UWVMROS1_3553232b4b685317bcb311ee342d756f535155d72b33a58b1346eb036badd860";
+  static bool encode(uwvm_custom::Ros1Clearpath_control_msgsControlState const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_control_msgs_ControlState_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_control_msgs_ControlState_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_control_msgs_ControlState_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_control_msgsControlState& out) {return !roswasmc_bounded_1_clearpath_control_msgs_ControlState_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_control_msgs/ControlSelectionState; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_control_msgsControlSelectionState> {
+  static constexpr size_t max_wire_bytes=3;
+  static constexpr char const* codec_identity="UWVMROS1_1dff74daa9b8550504ebab354d18f2a40a143fcb3cfd721e3d04aab79546f994";
+  static bool encode(uwvm_custom::Ros1Clearpath_control_msgsControlSelectionState const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_control_msgs_ControlSelectionState_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_control_msgs_ControlSelectionState_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_control_msgs_ControlSelectionState_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_control_msgsControlSelectionState& out) {return !roswasmc_bounded_1_clearpath_control_msgs_ControlSelectionState_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_dock_msgs/DockInfo; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_dock_msgsDockInfo> {
+  static constexpr size_t max_wire_bytes=1204;
+  static constexpr char const* codec_identity="UWVMROS1_d4c6b31ecbec7e01340e6693718db5de0429a897dda5caea9ee49b58a77649c7";
+  static bool encode(uwvm_custom::Ros1Clearpath_dock_msgsDockInfo const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_dock_msgs_DockInfo_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_dock_msgs_DockInfo_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_dock_msgs_DockInfo_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_dock_msgsDockInfo& out) {return !roswasmc_bounded_1_clearpath_dock_msgs_DockInfo_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_dock_msgs/DockProperties; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_dock_msgsDockProperties> {
+  static constexpr size_t max_wire_bytes=2412;
+  static constexpr char const* codec_identity="UWVMROS1_842af6b3b69fb6e2dfe1fdaabed4e45d6a39410456960dd7a4422eb491d19a76";
+  static bool encode(uwvm_custom::Ros1Clearpath_dock_msgsDockProperties const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_dock_msgs_DockProperties_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_dock_msgs_DockProperties_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_dock_msgs_DockProperties_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_dock_msgsDockProperties& out) {return !roswasmc_bounded_1_clearpath_dock_msgs_DockProperties_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_dock_msgs/DockState; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_dock_msgsDockState> {
+  static constexpr size_t max_wire_bytes=1;
+  static constexpr char const* codec_identity="UWVMROS1_18f6c0addce5321932de99e4b80127dc1ac69f545778938e39b293be4c5e7a53";
+  static bool encode(uwvm_custom::Ros1Clearpath_dock_msgsDockState const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_dock_msgs_DockState_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_dock_msgs_DockState_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_dock_msgs_DockState_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_dock_msgsDockState& out) {return !roswasmc_bounded_1_clearpath_dock_msgs_DockState_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for geometry_msgs/PoseWithCovariance; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Geometry_msgsPoseWithCovariance> {
+  static constexpr size_t max_wire_bytes=344;
+  static constexpr char const* codec_identity="UWVMROS1_17b25963aafb3adfd0432febe040c9b38a531a7a667949b89e0f3937585ef8cf";
+  static bool encode(uwvm_custom::Ros1Geometry_msgsPoseWithCovariance const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_geometry_msgs_PoseWithCovariance_valid(&value))return false;size_t n=roswasmc_bounded_1_geometry_msgs_PoseWithCovariance_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_geometry_msgs_PoseWithCovariance_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Geometry_msgsPoseWithCovariance& out) {return !roswasmc_bounded_1_geometry_msgs_PoseWithCovariance_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for geometry_msgs/PoseWithCovarianceStamped; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Geometry_msgsPoseWithCovarianceStamped> {
+  static constexpr size_t max_wire_bytes=488;
+  static constexpr char const* codec_identity="UWVMROS1_6708292fe381a7f14aaf84f47a969f55af7446087bfcb309d3b86ab95f34a2d9";
+  static bool encode(uwvm_custom::Ros1Geometry_msgsPoseWithCovarianceStamped const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_geometry_msgs_PoseWithCovarianceStamped_valid(&value))return false;size_t n=roswasmc_bounded_1_geometry_msgs_PoseWithCovarianceStamped_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_geometry_msgs_PoseWithCovarianceStamped_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Geometry_msgsPoseWithCovarianceStamped& out) {return !roswasmc_bounded_1_geometry_msgs_PoseWithCovarianceStamped_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_dock_msgs/TargetTrackerState; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_dock_msgsTargetTrackerState> {
+  static constexpr size_t max_wire_bytes=502;
+  static constexpr char const* codec_identity="UWVMROS1_22cddfc9827c9b576e8baf843379e8856efd0b22c309ae700c619945c45274a8";
+  static bool encode(uwvm_custom::Ros1Clearpath_dock_msgsTargetTrackerState const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_dock_msgs_TargetTrackerState_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_dock_msgs_TargetTrackerState_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_dock_msgs_TargetTrackerState_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_dock_msgsTargetTrackerState& out) {return !roswasmc_bounded_1_clearpath_dock_msgs_TargetTrackerState_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_localization_msgs/GNSSStatus; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_localization_msgsGNSSStatus> {
+  static constexpr size_t max_wire_bytes=273;
+  static constexpr char const* codec_identity="UWVMROS1_4bda462d76cea809faf3fad93446de6db661c1379d743f829f7bcf64ef7959f3";
+  static bool encode(uwvm_custom::Ros1Clearpath_localization_msgsGNSSStatus const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_localization_msgs_GNSSStatus_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_localization_msgs_GNSSStatus_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_localization_msgs_GNSSStatus_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_localization_msgsGNSSStatus& out) {return !roswasmc_bounded_1_clearpath_localization_msgs_GNSSStatus_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_localization_msgs/LocalizationStatus; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_localization_msgsLocalizationStatus> {
+  static constexpr size_t max_wire_bytes=968;
+  static constexpr char const* codec_identity="UWVMROS1_2dcb14d889fb5ccc69ad66860b3495b7c3eadd94fb9d814b9f475ff0f6dffc74";
+  static bool encode(uwvm_custom::Ros1Clearpath_localization_msgsLocalizationStatus const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_localization_msgs_LocalizationStatus_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_localization_msgs_LocalizationStatus_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_localization_msgs_LocalizationStatus_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_localization_msgsLocalizationStatus& out) {return !roswasmc_bounded_1_clearpath_localization_msgs_LocalizationStatus_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for sensor_msgs/NavSatStatus; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Sensor_msgsNavSatStatus> {
+  static constexpr size_t max_wire_bytes=3;
+  static constexpr char const* codec_identity="UWVMROS1_a44d99b9b113b546b2f45c991925ea62a8e28ffceed7de4da2dbc81936fd2453";
+  static bool encode(uwvm_custom::Ros1Sensor_msgsNavSatStatus const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_sensor_msgs_NavSatStatus_valid(&value))return false;size_t n=roswasmc_bounded_1_sensor_msgs_NavSatStatus_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_sensor_msgs_NavSatStatus_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Sensor_msgsNavSatStatus& out) {return !roswasmc_bounded_1_sensor_msgs_NavSatStatus_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for sensor_msgs/NavSatFix; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Sensor_msgsNavSatFix> {
+  static constexpr size_t max_wire_bytes=244;
+  static constexpr char const* codec_identity="UWVMROS1_40bcafbbd6e6fed3086df74b5bd06aea5c2b6bf3244fcee92ab8cfab9c3c4d4d";
+  static bool encode(uwvm_custom::Ros1Sensor_msgsNavSatFix const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_sensor_msgs_NavSatFix_valid(&value))return false;size_t n=roswasmc_bounded_1_sensor_msgs_NavSatFix_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_sensor_msgs_NavSatFix_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Sensor_msgsNavSatFix& out) {return !roswasmc_bounded_1_sensor_msgs_NavSatFix_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_localization_msgs/SurveyProperties; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_localization_msgsSurveyProperties> {
+  static constexpr size_t max_wire_bytes=509;
+  static constexpr char const* codec_identity="UWVMROS1_91f7b0f79ca81b76885c2a05a5de907620de7b5420f71e1ca08166bdb320c393";
+  static bool encode(uwvm_custom::Ros1Clearpath_localization_msgsSurveyProperties const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_localization_msgs_SurveyProperties_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_localization_msgs_SurveyProperties_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_localization_msgs_SurveyProperties_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_localization_msgsSurveyProperties& out) {return !roswasmc_bounded_1_clearpath_localization_msgs_SurveyProperties_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_localization_msgs/XvnStatus; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_localization_msgsXvnStatus> {
+  static constexpr size_t max_wire_bytes=182;
+  static constexpr char const* codec_identity="UWVMROS1_16bffc785ac0a8da2af278aefa77478e1ecc986d6a505b306e6df5f9db6e7def";
+  static bool encode(uwvm_custom::Ros1Clearpath_localization_msgsXvnStatus const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_localization_msgs_XvnStatus_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_localization_msgs_XvnStatus_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_localization_msgs_XvnStatus_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_localization_msgsXvnStatus& out) {return !roswasmc_bounded_1_clearpath_localization_msgs_XvnStatus_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for geometry_msgs/Vector3; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Geometry_msgsVector3> {
+  static constexpr size_t max_wire_bytes=24;
+  static constexpr char const* codec_identity="UWVMROS1_e90efcf4803d82763e0b83f8ef5502b5d042158873fcc91be32543d25d7632bc";
+  static bool encode(uwvm_custom::Ros1Geometry_msgsVector3 const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_geometry_msgs_Vector3_valid(&value))return false;size_t n=roswasmc_bounded_1_geometry_msgs_Vector3_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_geometry_msgs_Vector3_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Geometry_msgsVector3& out) {return !roswasmc_bounded_1_geometry_msgs_Vector3_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for geometry_msgs/Twist; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Geometry_msgsTwist> {
+  static constexpr size_t max_wire_bytes=48;
+  static constexpr char const* codec_identity="UWVMROS1_d5a69cfff4380fcf3e9c131ddb3dfb6def041cd7308a7ebdbc150b6483dfd921";
+  static bool encode(uwvm_custom::Ros1Geometry_msgsTwist const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_geometry_msgs_Twist_valid(&value))return false;size_t n=roswasmc_bounded_1_geometry_msgs_Twist_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_geometry_msgs_Twist_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Geometry_msgsTwist& out) {return !roswasmc_bounded_1_geometry_msgs_Twist_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for geometry_msgs/TwistWithCovariance; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Geometry_msgsTwistWithCovariance> {
+  static constexpr size_t max_wire_bytes=336;
+  static constexpr char const* codec_identity="UWVMROS1_ff6790d181503b424d84726c8f4a7852cef14c6dd93e6d32cf3c37023f74bcdf";
+  static bool encode(uwvm_custom::Ros1Geometry_msgsTwistWithCovariance const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_geometry_msgs_TwistWithCovariance_valid(&value))return false;size_t n=roswasmc_bounded_1_geometry_msgs_TwistWithCovariance_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_geometry_msgs_TwistWithCovariance_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Geometry_msgsTwistWithCovariance& out) {return !roswasmc_bounded_1_geometry_msgs_TwistWithCovariance_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for nav_msgs/Odometry; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Nav_msgsOdometry> {
+  static constexpr size_t max_wire_bytes=1084;
+  static constexpr char const* codec_identity="UWVMROS1_e0ff5eb7aef868891846ac7618249b12c18fcf0969653f24fdeaa7644e636ca0";
+  static bool encode(uwvm_custom::Ros1Nav_msgsOdometry const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_nav_msgs_Odometry_valid(&value))return false;size_t n=roswasmc_bounded_1_nav_msgs_Odometry_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_nav_msgs_Odometry_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Nav_msgsOdometry& out) {return !roswasmc_bounded_1_nav_msgs_Odometry_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_logger_msgs/Event; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_logger_msgsEvent> {
+  static constexpr size_t max_wire_bytes=3190;
+  static constexpr char const* codec_identity="UWVMROS1_3ab8dbb5d488cb1c0789bbb96076f531b245703045330fb6f9b01079d78177ca";
+  static bool encode(uwvm_custom::Ros1Clearpath_logger_msgsEvent const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_logger_msgs_Event_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_logger_msgs_Event_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_logger_msgs_Event_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_logger_msgsEvent& out) {return !roswasmc_bounded_1_clearpath_logger_msgs_Event_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_logger_msgs/EventLog; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_logger_msgsEventLog> {
+  static constexpr size_t max_wire_bytes=7064;
+  static constexpr char const* codec_identity="UWVMROS1_ff2b4c89394c5f796204cf33e19c125c1affe603a96e22fd18268d75becd9c98";
+  static bool encode(uwvm_custom::Ros1Clearpath_logger_msgsEventLog const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_logger_msgs_EventLog_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_logger_msgs_EventLog_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_logger_msgs_EventLog_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_logger_msgsEventLog& out) {return !roswasmc_bounded_1_clearpath_logger_msgs_EventLog_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_logger_msgs/EventLogs; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_logger_msgsEventLogs> {
+  static constexpr size_t max_wire_bytes=14132;
+  static constexpr char const* codec_identity="UWVMROS1_0bd7c8adb2807c9a4273f01efb36309685301550a6e201f76865c6b5becabd61";
+  static bool encode(uwvm_custom::Ros1Clearpath_logger_msgsEventLogs const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_logger_msgs_EventLogs_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_logger_msgs_EventLogs_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_logger_msgs_EventLogs_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_logger_msgsEventLogs& out) {return !roswasmc_bounded_1_clearpath_logger_msgs_EventLogs_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/NetworkEdgeReq; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsNetworkEdgeReq> {
+  static constexpr size_t max_wire_bytes=528;
+  static constexpr char const* codec_identity="UWVMROS1_134bc2836c26c258057ae81465e06ba1f52307895c8016da1bab139a8efb9d62";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsNetworkEdgeReq const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_NetworkEdgeReq_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_NetworkEdgeReq_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_NetworkEdgeReq_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsNetworkEdgeReq& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_NetworkEdgeReq_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/NetworkMapState; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsNetworkMapState> {
+  static constexpr size_t max_wire_bytes=790;
+  static constexpr char const* codec_identity="UWVMROS1_c87392fb395b63731581dec3a3b199c830a7ed5001c53949c3002f9062d4958c";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsNetworkMapState const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_NetworkMapState_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_NetworkMapState_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_NetworkMapState_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsNetworkMapState& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_NetworkMapState_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/NetworkMapValidityState; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsNetworkMapValidityState> {
+  static constexpr size_t max_wire_bytes=1584;
+  static constexpr char const* codec_identity="UWVMROS1_12fe0cef6a55971defedc37a35a87257b71c7e3bb103b91cbbeb6bfbd30e850a";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsNetworkMapValidityState const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_NetworkMapValidityState_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_NetworkMapValidityState_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_NetworkMapValidityState_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsNetworkMapValidityState& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_NetworkMapValidityState_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/NetworkMission; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsNetworkMission> {
+  static constexpr size_t max_wire_bytes=13606;
+  static constexpr char const* codec_identity="UWVMROS1_8dff81532124b3498e9e9e82252f2ba06804a29c6ccfadb7e75b04483d850c2e";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsNetworkMission const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_NetworkMission_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_NetworkMission_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_NetworkMission_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsNetworkMission& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_NetworkMission_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/NetworkPoint; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsNetworkPoint> {
+  static constexpr size_t max_wire_bytes=276;
+  static constexpr char const* codec_identity="UWVMROS1_d64f71c07c2c73314a1e23969620110e52e225f9d46a745413f84e2030855014";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsNetworkPoint const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_NetworkPoint_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_NetworkPoint_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_NetworkPoint_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsNetworkPoint& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_NetworkPoint_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/NetworkEdge; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsNetworkEdge> {
+  static constexpr size_t max_wire_bytes=824;
+  static constexpr char const* codec_identity="UWVMROS1_2d67f3d8176b117f6f00334633385aee6b1fd23a24a2c8b214e40793fc1c2943";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsNetworkEdge const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_NetworkEdge_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_NetworkEdge_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_NetworkEdge_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsNetworkEdge& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_NetworkEdge_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/NetworkMap; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsNetworkMap> {
+  static constexpr size_t max_wire_bytes=2608;
+  static constexpr char const* codec_identity="UWVMROS1_3b14eff4b520d1eaeb357959f984142dcfcc1039cb1434469247f32fb16f06fe";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsNetworkMap const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_NetworkMap_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_NetworkMap_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_NetworkMap_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsNetworkMap& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_NetworkMap_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/PointOfInterest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsPointOfInterest> {
+  static constexpr size_t max_wire_bytes=1209;
+  static constexpr char const* codec_identity="UWVMROS1_8d302ade38f6b9c0046c577a1cb4fce0dad418fc4b1aa9de496409fac4632d2c";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsPointOfInterest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_PointOfInterest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_PointOfInterest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_PointOfInterest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsPointOfInterest& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_PointOfInterest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/StorageState; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsStorageState> {
+  static constexpr size_t max_wire_bytes=32768;
+  static constexpr char const* codec_identity="UWVMROS1_3f23f2e49c54f2e0c5b3302d299dace8b15bcb205530b7b0f040125ed8b6e189";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsStorageState const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_StorageState_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_StorageState_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_StorageState_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsStorageState& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_StorageState_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_scheduler_msgs/NextSchedule; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_scheduler_msgsNextSchedule> {
+  static constexpr size_t max_wire_bytes=268;
+  static constexpr char const* codec_identity="UWVMROS1_a2be03201266ebf80af5587b59ff48514b3e97a536078c6b235c434e6dc80f3a";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_scheduler_msgsNextSchedule const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_scheduler_msgs_NextSchedule_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_NextSchedule_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_scheduler_msgs_NextSchedule_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_scheduler_msgsNextSchedule& out) {return !roswasmc_bounded_1_clearpath_mission_scheduler_msgs_NextSchedule_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_scheduler_msgs/UtcTime; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_scheduler_msgsUtcTime> {
+  static constexpr size_t max_wire_bytes=5;
+  static constexpr char const* codec_identity="UWVMROS1_5d8b0173e89fb44a2c6444028d65232a492255e596b8a535d2aea714fca0ab49";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_scheduler_msgsUtcTime const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_scheduler_msgs_UtcTime_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_UtcTime_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_scheduler_msgs_UtcTime_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_scheduler_msgsUtcTime& out) {return !roswasmc_bounded_1_clearpath_mission_scheduler_msgs_UtcTime_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_scheduler_msgs/Schedule; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_scheduler_msgsSchedule> {
+  static constexpr size_t max_wire_bytes=944;
+  static constexpr char const* codec_identity="UWVMROS1_552fe3494bad6517edf7d69e98021b0ebc373bf084de7335d57d1e074caa1465";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_scheduler_msgsSchedule const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_scheduler_msgs_Schedule_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_Schedule_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_scheduler_msgs_Schedule_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_scheduler_msgsSchedule& out) {return !roswasmc_bounded_1_clearpath_mission_scheduler_msgs_Schedule_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_scheduler_msgs/StorageState; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_scheduler_msgsStorageState> {
+  static constexpr size_t max_wire_bytes=1892;
+  static constexpr char const* codec_identity="UWVMROS1_e2993af302bafec841a18f71a54d104c34b9c7ce91c84e3e4ee3be7f643a4f9a";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_scheduler_msgsStorageState const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_scheduler_msgs_StorageState_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_StorageState_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_scheduler_msgs_StorageState_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_scheduler_msgsStorageState& out) {return !roswasmc_bounded_1_clearpath_mission_scheduler_msgs_StorageState_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for std_msgs/Time; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Std_msgsTime> {
+  static constexpr size_t max_wire_bytes=8;
+  static constexpr char const* codec_identity="UWVMROS1_64c147e5ad9757a29f19692f4f933be0b2079e1b8ae40566bb3c20841734a7d1";
+  static bool encode(uwvm_custom::Ros1Std_msgsTime const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_std_msgs_Time_valid(&value))return false;size_t n=roswasmc_bounded_1_std_msgs_Time_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_std_msgs_Time_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Std_msgsTime& out) {return !roswasmc_bounded_1_std_msgs_Time_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for std_msgs/String; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Std_msgsString> {
+  static constexpr size_t max_wire_bytes=260;
+  static constexpr char const* codec_identity="UWVMROS1_2e8d1356eb6d39d2456dc2744c3aab174c093deebb56384704976f0a9aae5413";
+  static bool encode(uwvm_custom::Ros1Std_msgsString const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_std_msgs_String_valid(&value))return false;size_t n=roswasmc_bounded_1_std_msgs_String_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_std_msgs_String_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Std_msgsString& out) {return !roswasmc_bounded_1_std_msgs_String_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/AutonomyStatus; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsAutonomyStatus> {
+  static constexpr size_t max_wire_bytes=673;
+  static constexpr char const* codec_identity="UWVMROS1_69ab909d6efdf65bcd36d0f8c159047b0dc3ecd5e9f03015936b69c6397dfdaf";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsAutonomyStatus const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_AutonomyStatus_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_AutonomyStatus_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_AutonomyStatus_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsAutonomyStatus& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_AutonomyStatus_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/DistanceToGoal; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsDistanceToGoal> {
+  static constexpr size_t max_wire_bytes=8;
+  static constexpr char const* codec_identity="UWVMROS1_d1dec9c2784feaf6a70c2a5291ed9cb407145d6f42e2132ad71a141f5993a519";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsDistanceToGoal const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_DistanceToGoal_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_DistanceToGoal_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_DistanceToGoal_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsDistanceToGoal& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_DistanceToGoal_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/Metrics; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsMetrics> {
+  static constexpr size_t max_wire_bytes=56;
+  static constexpr char const* codec_identity="UWVMROS1_6e28edfbea9de8f1e0e52e200560b25b0f636160461f1bd99d353595906d7c19";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsMetrics const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_Metrics_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_Metrics_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_Metrics_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsMetrics& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_Metrics_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/WaypointStatus; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsWaypointStatus> {
+  static constexpr size_t max_wire_bytes=3352;
+  static constexpr char const* codec_identity="UWVMROS1_8a69049422ce8a2ef23a319f2d3ed7783455381a91b7083fca402a3ca59c6644";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsWaypointStatus const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_WaypointStatus_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_WaypointStatus_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_WaypointStatus_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsWaypointStatus& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_WaypointStatus_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/MissionStatus; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsMissionStatus> {
+  static constexpr size_t max_wire_bytes=7244;
+  static constexpr char const* codec_identity="UWVMROS1_e1ecf20b0466f7bda1f41537b80304e5c93cd0d7e599a4164da047a653edd9e4";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsMissionStatus const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_MissionStatus_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_MissionStatus_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_MissionStatus_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsMissionStatus& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_MissionStatus_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/MotionState; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsMotionState> {
+  static constexpr size_t max_wire_bytes=3;
+  static constexpr char const* codec_identity="UWVMROS1_04e1a2cc31ea5b08b7f385b305b8e89acc31a7c6675b36a473930116076a1efa";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsMotionState const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_MotionState_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_MotionState_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_MotionState_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsMotionState& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_MotionState_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/NavigationState; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsNavigationState> {
+  static constexpr size_t max_wire_bytes=6;
+  static constexpr char const* codec_identity="UWVMROS1_59723baf8c5871ea7bff969a09fe753455ef07d0cbc982ef23c1f55b984a7d2a";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsNavigationState const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_NavigationState_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_NavigationState_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_NavigationState_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsNavigationState& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_NavigationState_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/OdomIntent; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsOdomIntent> {
+  static constexpr size_t max_wire_bytes=2316;
+  static constexpr char const* codec_identity="UWVMROS1_84aa6a07039ac3402c2762cdf89f217053c0f7e2448f535e12282c1184635f69";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsOdomIntent const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_OdomIntent_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_OdomIntent_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_OdomIntent_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsOdomIntent& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_OdomIntent_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/Vector2D; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsVector2D> {
+  static constexpr size_t max_wire_bytes=8;
+  static constexpr char const* codec_identity="UWVMROS1_fab839d4e160f8dca805b36fd2d93362ea5929238c33f34f0695f8edaed15047";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsVector2D const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_Vector2D_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_Vector2D_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_Vector2D_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsVector2D& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_Vector2D_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/PointVector; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsPointVector> {
+  static constexpr size_t max_wire_bytes=164;
+  static constexpr char const* codec_identity="UWVMROS1_4372dc043aaa0a9b16845e53db15405ec5dd98c4b5bc314319d185ba4557c9b8";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsPointVector const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_PointVector_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_PointVector_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_PointVector_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsPointVector& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_PointVector_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/Progress; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsProgress> {
+  static constexpr size_t max_wire_bytes=12;
+  static constexpr char const* codec_identity="UWVMROS1_a85be472664da59faec23030269b688f4afd1d071c0f8d9d02d5c10d6f7649d7";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsProgress const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_Progress_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_Progress_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_Progress_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsProgress& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_Progress_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/ScanPoints; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsScanPoints> {
+  static constexpr size_t max_wire_bytes=1000;
+  static constexpr char const* codec_identity="UWVMROS1_99d632501402a495a9337dee91bda1c0078fa379b9dbf872b45ad29af85a25b5";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsScanPoints const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_ScanPoints_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_ScanPoints_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_ScanPoints_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsScanPoints& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_ScanPoints_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/TrackError; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsTrackError> {
+  static constexpr size_t max_wire_bytes=152;
+  static constexpr char const* codec_identity="UWVMROS1_ddaf051241e0ae7ffa19ed965cbaf65bb7c11a0b7feaa2e0530ca6068a633323";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsTrackError const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_TrackError_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_TrackError_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_TrackError_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsTrackError& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_TrackError_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_platform_msgs/Drive; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_platform_msgsDrive> {
+  static constexpr size_t max_wire_bytes=9;
+  static constexpr char const* codec_identity="UWVMROS1_5189b2de776409879f0b7baa8687b3c59663b886de4a9038a9bff5b7da962ea6";
+  static bool encode(uwvm_custom::Ros1Clearpath_platform_msgsDrive const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_platform_msgs_Drive_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_platform_msgs_Drive_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_platform_msgs_Drive_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_platform_msgsDrive& out) {return !roswasmc_bounded_1_clearpath_platform_msgs_Drive_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_platform_msgs/DriveFeedback; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_platform_msgsDriveFeedback> {
+  static constexpr size_t max_wire_bytes=25;
+  static constexpr char const* codec_identity="UWVMROS1_07cc1a72329f8ef223455d21ed1ac6398ea48b87c5be0b78aec5513791172c16";
+  static bool encode(uwvm_custom::Ros1Clearpath_platform_msgsDriveFeedback const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_platform_msgs_DriveFeedback_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_platform_msgs_DriveFeedback_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_platform_msgs_DriveFeedback_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_platform_msgsDriveFeedback& out) {return !roswasmc_bounded_1_clearpath_platform_msgs_DriveFeedback_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_platform_msgs/Fans; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_platform_msgsFans> {
+  static constexpr size_t max_wire_bytes=6;
+  static constexpr char const* codec_identity="UWVMROS1_5ce5485623fa8b07de5f3094110877bf5741c94e90a508fb0bb66a9552a13fb5";
+  static bool encode(uwvm_custom::Ros1Clearpath_platform_msgsFans const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_platform_msgs_Fans_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_platform_msgs_Fans_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_platform_msgs_Fans_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_platform_msgsFans& out) {return !roswasmc_bounded_1_clearpath_platform_msgs_Fans_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_platform_msgs/Feedback; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_platform_msgsFeedback> {
+  static constexpr size_t max_wire_bytes=196;
+  static constexpr char const* codec_identity="UWVMROS1_38f073bad8f592e143e0a60cb123a652bf00b72b160dd9e0a356bfc73eb0312a";
+  static bool encode(uwvm_custom::Ros1Clearpath_platform_msgsFeedback const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_platform_msgs_Feedback_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_platform_msgs_Feedback_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_platform_msgs_Feedback_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_platform_msgsFeedback& out) {return !roswasmc_bounded_1_clearpath_platform_msgs_Feedback_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_platform_msgs/RGB; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_platform_msgsRGB> {
+  static constexpr size_t max_wire_bytes=3;
+  static constexpr char const* codec_identity="UWVMROS1_8c848638975b7775b8ce0ff10d07c7d79c856f800745d30af6051c574c019056";
+  static bool encode(uwvm_custom::Ros1Clearpath_platform_msgsRGB const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_platform_msgs_RGB_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_platform_msgs_RGB_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_platform_msgs_RGB_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_platform_msgsRGB& out) {return !roswasmc_bounded_1_clearpath_platform_msgs_RGB_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_platform_msgs/Lights; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_platform_msgsLights> {
+  static constexpr size_t max_wire_bytes=10;
+  static constexpr char const* codec_identity="UWVMROS1_21d6dc7f4b57ae3468a7ee08945ee60f8d6bc9cbf24217f5ff48e55a4ce33c4b";
+  static bool encode(uwvm_custom::Ros1Clearpath_platform_msgsLights const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_platform_msgs_Lights_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_platform_msgs_Lights_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_platform_msgs_Lights_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_platform_msgsLights& out) {return !roswasmc_bounded_1_clearpath_platform_msgs_Lights_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_platform_msgs/PlatformID; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_platform_msgsPlatformID> {
+  static constexpr size_t max_wire_bytes=1040;
+  static constexpr char const* codec_identity="UWVMROS1_dc63cb65c84ae77ef0a36e938c77beeb234ad1e63acf11270ea4de337d5b2b07";
+  static bool encode(uwvm_custom::Ros1Clearpath_platform_msgsPlatformID const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_platform_msgs_PlatformID_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_platform_msgs_PlatformID_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_platform_msgs_PlatformID_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_platform_msgsPlatformID& out) {return !roswasmc_bounded_1_clearpath_platform_msgs_PlatformID_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_platform_msgs/Power; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_platform_msgsPower> {
+  static constexpr size_t max_wire_bytes=172;
+  static constexpr char const* codec_identity="UWVMROS1_59c3c92a37e301e2fdfc43e0d1585138e26cda4c7821dab3085869c1c9115efc";
+  static bool encode(uwvm_custom::Ros1Clearpath_platform_msgsPower const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_platform_msgs_Power_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_platform_msgs_Power_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_platform_msgs_Power_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_platform_msgsPower& out) {return !roswasmc_bounded_1_clearpath_platform_msgs_Power_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_platform_msgs/RYG; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_platform_msgsRYG> {
+  static constexpr size_t max_wire_bytes=3;
+  static constexpr char const* codec_identity="UWVMROS1_7a5c0869aad03d552e5029582d0a63d70723954f84b63ab459f45121ea1da8df";
+  static bool encode(uwvm_custom::Ros1Clearpath_platform_msgsRYG const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_platform_msgs_RYG_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_platform_msgs_RYG_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_platform_msgs_RYG_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_platform_msgsRYG& out) {return !roswasmc_bounded_1_clearpath_platform_msgs_RYG_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_platform_msgs/StackLightState; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_platform_msgsStackLightState> {
+  static constexpr size_t max_wire_bytes=264;
+  static constexpr char const* codec_identity="UWVMROS1_508b54b7050d7598a79aa238e96f210280796c177de357d9b969df4437d969e1";
+  static bool encode(uwvm_custom::Ros1Clearpath_platform_msgsStackLightState const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_platform_msgs_StackLightState_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_platform_msgs_StackLightState_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_platform_msgs_StackLightState_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_platform_msgsStackLightState& out) {return !roswasmc_bounded_1_clearpath_platform_msgs_StackLightState_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_platform_msgs/Status; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_platform_msgsStatus> {
+  static constexpr size_t max_wire_bytes=688;
+  static constexpr char const* codec_identity="UWVMROS1_9db960375fb63d011c0c038266421414c4c5f4ce1909ff5105e63dd2e1289a33";
+  static bool encode(uwvm_custom::Ros1Clearpath_platform_msgsStatus const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_platform_msgs_Status_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_platform_msgs_Status_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_platform_msgs_Status_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_platform_msgsStatus& out) {return !roswasmc_bounded_1_clearpath_platform_msgs_Status_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_platform_msgs/StopStatus; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_platform_msgsStopStatus> {
+  static constexpr size_t max_wire_bytes=146;
+  static constexpr char const* codec_identity="UWVMROS1_e16505686f22cd4183a6eb89e53c3b4184ccd58a15b1bc46efa656d50b0b3a18";
+  static bool encode(uwvm_custom::Ros1Clearpath_platform_msgsStopStatus const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_platform_msgs_StopStatus_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_platform_msgs_StopStatus_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_platform_msgs_StopStatus_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_platform_msgsStopStatus& out) {return !roswasmc_bounded_1_clearpath_platform_msgs_StopStatus_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/AssistedTeleopState; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsAssistedTeleopState> {
+  static constexpr size_t max_wire_bytes=262;
+  static constexpr char const* codec_identity="UWVMROS1_e502d2181d51f1de7976b35a95ea2463644d374becce390d668a81e549fad82e";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsAssistedTeleopState const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_AssistedTeleopState_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_AssistedTeleopState_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_AssistedTeleopState_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsAssistedTeleopState& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_AssistedTeleopState_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/ObstacleMap; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsObstacleMap> {
+  static constexpr size_t max_wire_bytes=12;
+  static constexpr char const* codec_identity="UWVMROS1_e137bca7b7ac8e14451792df0b9347910c5ff236087eb0f5db872c5a0f3e0f93";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsObstacleMap const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_ObstacleMap_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_ObstacleMap_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_ObstacleMap_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsObstacleMap& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_ObstacleMap_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/Safety; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsSafety> {
+  static constexpr size_t max_wire_bytes=262;
+  static constexpr char const* codec_identity="UWVMROS1_033ee9ca48e803538ac663cdd476b65fdc5e29359be86b8ea6251cfaaa85e9ce";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsSafety const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_Safety_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_Safety_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_Safety_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsSafety& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_Safety_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/WatchdogConfigCommon; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsWatchdogConfigCommon> {
+  static constexpr size_t max_wire_bytes=1177;
+  static constexpr char const* codec_identity="UWVMROS1_508d2bd15b0b42a056f3ef82fd04799bd2b6d8d4d6d03dc571e151f5c30c8844";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsWatchdogConfigCommon const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigCommon_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigCommon_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigCommon_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsWatchdogConfigCommon& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigCommon_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/WatchdogConfigCommunication; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsWatchdogConfigCommunication> {
+  static constexpr size_t max_wire_bytes=1961;
+  static constexpr char const* codec_identity="UWVMROS1_be40239142afe7ffedef0d13cc13f093e1c6c5f49b73074cfa5c9ccaa0106446";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsWatchdogConfigCommunication const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigCommunication_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigCommunication_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigCommunication_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsWatchdogConfigCommunication& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigCommunication_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/WatchdogConfigHeartbeat; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsWatchdogConfigHeartbeat> {
+  static constexpr size_t max_wire_bytes=1441;
+  static constexpr char const* codec_identity="UWVMROS1_66f859db1405ce185c91bd0e04b20901c12cb4e66deb3c2fff3a7085647a2cc2";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsWatchdogConfigHeartbeat const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigHeartbeat_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigHeartbeat_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigHeartbeat_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsWatchdogConfigHeartbeat& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigHeartbeat_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/WatchdogConfigInclination; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsWatchdogConfigInclination> {
+  static constexpr size_t max_wire_bytes=1449;
+  static constexpr char const* codec_identity="UWVMROS1_55022d7e5888b670bce29de4cc9c54da784e26b21d8843770de5a9db75f78d77";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsWatchdogConfigInclination const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigInclination_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigInclination_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigInclination_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsWatchdogConfigInclination& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigInclination_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/WatchdogConfigNodeStatus; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsWatchdogConfigNodeStatus> {
+  static constexpr size_t max_wire_bytes=1438;
+  static constexpr char const* codec_identity="UWVMROS1_b8efb3fe844ee27f21c9f77dcb71be6e818931c2d927b163c70fd988c371f0f9";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsWatchdogConfigNodeStatus const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigNodeStatus_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigNodeStatus_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigNodeStatus_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsWatchdogConfigNodeStatus& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigNodeStatus_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/WatchdogConfigNodeletStatus; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsWatchdogConfigNodeletStatus> {
+  static constexpr size_t max_wire_bytes=1698;
+  static constexpr char const* codec_identity="UWVMROS1_170ba32f5c32e65fd02acf9aee6715014a6e3ed471fc416f1181e2759182ba5f";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsWatchdogConfigNodeletStatus const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigNodeletStatus_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigNodeletStatus_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigNodeletStatus_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsWatchdogConfigNodeletStatus& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigNodeletStatus_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/WatchdogConfigNumPoints; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsWatchdogConfigNumPoints> {
+  static constexpr size_t max_wire_bytes=1441;
+  static constexpr char const* codec_identity="UWVMROS1_ea9a231a5a1f6471b20965acd6b2ec11ece3d76dd510649ac2e93b33c5235b85";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsWatchdogConfigNumPoints const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigNumPoints_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigNumPoints_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigNumPoints_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsWatchdogConfigNumPoints& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigNumPoints_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/WatchdogConfigOdomCovariance; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsWatchdogConfigOdomCovariance> {
+  static constexpr size_t max_wire_bytes=1449;
+  static constexpr char const* codec_identity="UWVMROS1_16d77772c5fed2351e0d79f6ab3d2e80bd2ac3c8d96fa16234d6148baa66c813";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsWatchdogConfigOdomCovariance const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigOdomCovariance_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigOdomCovariance_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigOdomCovariance_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsWatchdogConfigOdomCovariance& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigOdomCovariance_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/WatchdogConfigRtkFix; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsWatchdogConfigRtkFix> {
+  static constexpr size_t max_wire_bytes=1443;
+  static constexpr char const* codec_identity="UWVMROS1_c73d2db18765570053184bef37ec0519c43d8265f73dae48a18e209577190bc2";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsWatchdogConfigRtkFix const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigRtkFix_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigRtkFix_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigRtkFix_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsWatchdogConfigRtkFix& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigRtkFix_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/WatchdogConfigTopicData; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsWatchdogConfigTopicData> {
+  static constexpr size_t max_wire_bytes=1441;
+  static constexpr char const* codec_identity="UWVMROS1_1bf0a230aef86f09014852b1be0cf0d5998d4e8a69e4630a9e387b10b470ad8f";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsWatchdogConfigTopicData const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigTopicData_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigTopicData_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigTopicData_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsWatchdogConfigTopicData& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigTopicData_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/WatchdogConfigArray; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsWatchdogConfigArray> {
+  static constexpr size_t max_wire_bytes=27558;
+  static constexpr char const* codec_identity="UWVMROS1_5395da95a24a49234ff91d9149558ae13d621524f233b286744dcc28e6a558d3";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsWatchdogConfigArray const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigArray_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigArray_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigArray_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsWatchdogConfigArray& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_WatchdogConfigArray_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/WatchdogStatus; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsWatchdogStatus> {
+  static constexpr size_t max_wire_bytes=653;
+  static constexpr char const* codec_identity="UWVMROS1_823af4aa5da6787f2014faecb325f5c78d28f593409fc73f3237eb43ed01b5cc";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsWatchdogStatus const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_WatchdogStatus_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_WatchdogStatus_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_WatchdogStatus_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsWatchdogStatus& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_WatchdogStatus_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/WatchdogStatusArray; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsWatchdogStatusArray> {
+  static constexpr size_t max_wire_bytes=1454;
+  static constexpr char const* codec_identity="UWVMROS1_744df181cbf598672b82290fc5bac35af5fb6c4e62b55e5afed820a7cf270f96";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsWatchdogStatusArray const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_WatchdogStatusArray_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_WatchdogStatusArray_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_WatchdogStatusArray_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsWatchdogStatusArray& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_WatchdogStatusArray_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for husky_msgs/HuskyStatus; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Husky_msgsHuskyStatus> {
+  static constexpr size_t max_wire_bytes=252;
+  static constexpr char const* codec_identity="UWVMROS1_4aaed6c015314bd743406086571c12760cb41e446d5248d26537e6fc22c40a86";
+  static bool encode(uwvm_custom::Ros1Husky_msgsHuskyStatus const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_husky_msgs_HuskyStatus_valid(&value))return false;size_t n=roswasmc_bounded_1_husky_msgs_HuskyStatus_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_husky_msgs_HuskyStatus_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Husky_msgsHuskyStatus& out) {return !roswasmc_bounded_1_husky_msgs_HuskyStatus_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for jackal_msgs/Drive; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Jackal_msgsDrive> {
+  static constexpr size_t max_wire_bytes=9;
+  static constexpr char const* codec_identity="UWVMROS1_a1991d124f321c1aaa7e02647dfdd7114d5c389197d621ddc8213b240b3541e6";
+  static bool encode(uwvm_custom::Ros1Jackal_msgsDrive const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_jackal_msgs_Drive_valid(&value))return false;size_t n=roswasmc_bounded_1_jackal_msgs_Drive_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_jackal_msgs_Drive_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Jackal_msgsDrive& out) {return !roswasmc_bounded_1_jackal_msgs_Drive_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for jackal_msgs/DriveFeedback; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Jackal_msgsDriveFeedback> {
+  static constexpr size_t max_wire_bytes=25;
+  static constexpr char const* codec_identity="UWVMROS1_491d1150e13f8a9985582d3d80ccaadfb11feb4686624beb32689b1ff4b096d1";
+  static bool encode(uwvm_custom::Ros1Jackal_msgsDriveFeedback const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_jackal_msgs_DriveFeedback_valid(&value))return false;size_t n=roswasmc_bounded_1_jackal_msgs_DriveFeedback_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_jackal_msgs_DriveFeedback_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Jackal_msgsDriveFeedback& out) {return !roswasmc_bounded_1_jackal_msgs_DriveFeedback_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for jackal_msgs/Feedback; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Jackal_msgsFeedback> {
+  static constexpr size_t max_wire_bytes=204;
+  static constexpr char const* codec_identity="UWVMROS1_5d574303e5854771234ad6b215d5923df4319cb597acc70ff00a6c73c27ccb89";
+  static bool encode(uwvm_custom::Ros1Jackal_msgsFeedback const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_jackal_msgs_Feedback_valid(&value))return false;size_t n=roswasmc_bounded_1_jackal_msgs_Feedback_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_jackal_msgs_Feedback_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Jackal_msgsFeedback& out) {return !roswasmc_bounded_1_jackal_msgs_Feedback_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for jackal_msgs/Status; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Jackal_msgsStatus> {
+  static constexpr size_t max_wire_bytes=463;
+  static constexpr char const* codec_identity="UWVMROS1_e340e68eb138003c1a4f99aa0defbe651fe573681fda03dff451e1c5d73d48af";
+  static bool encode(uwvm_custom::Ros1Jackal_msgsStatus const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_jackal_msgs_Status_valid(&value))return false;size_t n=roswasmc_bounded_1_jackal_msgs_Status_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_jackal_msgs_Status_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Jackal_msgsStatus& out) {return !roswasmc_bounded_1_jackal_msgs_Status_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_camera_msgs/q62AreaZoomRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_camera_msgsQ62AreaZoomRequest> {
+  static constexpr size_t max_wire_bytes=12;
+  static constexpr char const* codec_identity="UWVMROS1_f1c8e9c75b7792b47733669fc00a61bbb2340e058450e72fcbaab9211b33362f";
+  static bool encode(uwvm_custom::Ros1Clearpath_camera_msgsQ62AreaZoomRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_camera_msgs_q62AreaZoomRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_camera_msgs_q62AreaZoomRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_camera_msgs_q62AreaZoomRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_camera_msgsQ62AreaZoomRequest& out) {return !roswasmc_bounded_1_clearpath_camera_msgs_q62AreaZoomRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_camera_msgs/q62AreaZoomResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_camera_msgsQ62AreaZoomResponse> {
+  static constexpr size_t max_wire_bytes=261;
+  static constexpr char const* codec_identity="UWVMROS1_af1389573cb858990ad84dde13231fba6e758b46629c100bb8ae30fbf141ae3b";
+  static bool encode(uwvm_custom::Ros1Clearpath_camera_msgsQ62AreaZoomResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_camera_msgs_q62AreaZoomResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_camera_msgs_q62AreaZoomResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_camera_msgs_q62AreaZoomResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_camera_msgsQ62AreaZoomResponse& out) {return !roswasmc_bounded_1_clearpath_camera_msgs_q62AreaZoomResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_control_msgs/SetControlModeRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_control_msgsSetControlModeRequest> {
+  static constexpr size_t max_wire_bytes=1;
+  static constexpr char const* codec_identity="UWVMROS1_80b29d151ddf41bb49d6deffc3b119e278ad7893d3a63f976f21f86ffc21a23f";
+  static bool encode(uwvm_custom::Ros1Clearpath_control_msgsSetControlModeRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_control_msgs_SetControlModeRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_control_msgs_SetControlModeRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_control_msgs_SetControlModeRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_control_msgsSetControlModeRequest& out) {return !roswasmc_bounded_1_clearpath_control_msgs_SetControlModeRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_control_msgs/SetControlModeResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_control_msgsSetControlModeResponse> {
+  static constexpr size_t max_wire_bytes=0;
+  static constexpr char const* codec_identity="UWVMROS1_9aeb21dcef1fa6b6c12300e9c93cb7859090a5a96e58c9d2dd6ed00af3049734";
+  static bool encode(uwvm_custom::Ros1Clearpath_control_msgsSetControlModeResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_control_msgs_SetControlModeResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_control_msgs_SetControlModeResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_control_msgs_SetControlModeResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_control_msgsSetControlModeResponse& out) {return !roswasmc_bounded_1_clearpath_control_msgs_SetControlModeResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_dock_msgs/AddDockRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_dock_msgsAddDockRequest> {
+  static constexpr size_t max_wire_bytes=1204;
+  static constexpr char const* codec_identity="UWVMROS1_d779d320a6f98a81388a91a74c0199608b11f794ded24f3863a42b38b9a2d340";
+  static bool encode(uwvm_custom::Ros1Clearpath_dock_msgsAddDockRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_dock_msgs_AddDockRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_dock_msgs_AddDockRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_dock_msgs_AddDockRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_dock_msgsAddDockRequest& out) {return !roswasmc_bounded_1_clearpath_dock_msgs_AddDockRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_dock_msgs/AddDockResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_dock_msgsAddDockResponse> {
+  static constexpr size_t max_wire_bytes=261;
+  static constexpr char const* codec_identity="UWVMROS1_ba1e0ca5cef0dbfbc42d0a22fc241f044fd90ad8d5fff3f8b94be57dae26d08f";
+  static bool encode(uwvm_custom::Ros1Clearpath_dock_msgsAddDockResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_dock_msgs_AddDockResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_dock_msgs_AddDockResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_dock_msgs_AddDockResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_dock_msgsAddDockResponse& out) {return !roswasmc_bounded_1_clearpath_dock_msgs_AddDockResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_dock_msgs/ExportDataRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_dock_msgsExportDataRequest> {
+  static constexpr size_t max_wire_bytes=0;
+  static constexpr char const* codec_identity="UWVMROS1_5921228fb0be54a809ad2ca87d1a56293cd455f080d90800880d147617044827";
+  static bool encode(uwvm_custom::Ros1Clearpath_dock_msgsExportDataRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_dock_msgs_ExportDataRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_dock_msgs_ExportDataRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_dock_msgs_ExportDataRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_dock_msgsExportDataRequest& out) {return !roswasmc_bounded_1_clearpath_dock_msgs_ExportDataRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_dock_msgs/ExportDataResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_dock_msgsExportDataResponse> {
+  static constexpr size_t max_wire_bytes=260;
+  static constexpr char const* codec_identity="UWVMROS1_6fc247ff50ba6c24159cd8f308df22b541e86ebc56f8aa27207d5fcdfaf9cb2c";
+  static bool encode(uwvm_custom::Ros1Clearpath_dock_msgsExportDataResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_dock_msgs_ExportDataResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_dock_msgs_ExportDataResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_dock_msgs_ExportDataResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_dock_msgsExportDataResponse& out) {return !roswasmc_bounded_1_clearpath_dock_msgs_ExportDataResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_dock_msgs/GetDockByUuidRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_dock_msgsGetDockByUuidRequest> {
+  static constexpr size_t max_wire_bytes=260;
+  static constexpr char const* codec_identity="UWVMROS1_a54abd75f8db68630e6964a3f5f7ea520f5ef37103e2ba07c44ba85f519b339c";
+  static bool encode(uwvm_custom::Ros1Clearpath_dock_msgsGetDockByUuidRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_dock_msgs_GetDockByUuidRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_dock_msgs_GetDockByUuidRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_dock_msgs_GetDockByUuidRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_dock_msgsGetDockByUuidRequest& out) {return !roswasmc_bounded_1_clearpath_dock_msgs_GetDockByUuidRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_dock_msgs/GetDockByUuidResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_dock_msgsGetDockByUuidResponse> {
+  static constexpr size_t max_wire_bytes=1316;
+  static constexpr char const* codec_identity="UWVMROS1_e574e53eca717e5855217d0829d238a7604133fa944db368b39a2660acdeef54";
+  static bool encode(uwvm_custom::Ros1Clearpath_dock_msgsGetDockByUuidResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_dock_msgs_GetDockByUuidResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_dock_msgs_GetDockByUuidResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_dock_msgs_GetDockByUuidResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_dock_msgsGetDockByUuidResponse& out) {return !roswasmc_bounded_1_clearpath_dock_msgs_GetDockByUuidResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_dock_msgs/ImportDataRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_dock_msgsImportDataRequest> {
+  static constexpr size_t max_wire_bytes=260;
+  static constexpr char const* codec_identity="UWVMROS1_a9ffc12e91eac79296a09b8a795b665e0bb176380d9ec48b598c2bffde5ad9ae";
+  static bool encode(uwvm_custom::Ros1Clearpath_dock_msgsImportDataRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_dock_msgs_ImportDataRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_dock_msgs_ImportDataRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_dock_msgs_ImportDataRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_dock_msgsImportDataRequest& out) {return !roswasmc_bounded_1_clearpath_dock_msgs_ImportDataRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_dock_msgs/ImportDataResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_dock_msgsImportDataResponse> {
+  static constexpr size_t max_wire_bytes=2412;
+  static constexpr char const* codec_identity="UWVMROS1_582614b533e6d2f79eb08cdd1f8f7786a98428d13ca197c967b87a169f847e5d";
+  static bool encode(uwvm_custom::Ros1Clearpath_dock_msgsImportDataResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_dock_msgs_ImportDataResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_dock_msgs_ImportDataResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_dock_msgs_ImportDataResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_dock_msgsImportDataResponse& out) {return !roswasmc_bounded_1_clearpath_dock_msgs_ImportDataResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_dock_msgs/RemoveDockRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_dock_msgsRemoveDockRequest> {
+  static constexpr size_t max_wire_bytes=392;
+  static constexpr char const* codec_identity="UWVMROS1_eac82f7b602d69a732174a7a43c45550e91e299973d0d6de9a8d5a58d261058e";
+  static bool encode(uwvm_custom::Ros1Clearpath_dock_msgsRemoveDockRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_dock_msgs_RemoveDockRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_dock_msgs_RemoveDockRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_dock_msgs_RemoveDockRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_dock_msgsRemoveDockRequest& out) {return !roswasmc_bounded_1_clearpath_dock_msgs_RemoveDockRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_dock_msgs/RemoveDockResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_dock_msgsRemoveDockResponse> {
+  static constexpr size_t max_wire_bytes=261;
+  static constexpr char const* codec_identity="UWVMROS1_64707a9a3b2ad309850d39b89a8ae0f0f26a5f823dc142f2ee3e4ccb4769574f";
+  static bool encode(uwvm_custom::Ros1Clearpath_dock_msgsRemoveDockResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_dock_msgs_RemoveDockResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_dock_msgs_RemoveDockResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_dock_msgs_RemoveDockResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_dock_msgsRemoveDockResponse& out) {return !roswasmc_bounded_1_clearpath_dock_msgs_RemoveDockResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_dock_msgs/SetDockLocationByIdRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_dock_msgsSetDockLocationByIdRequest> {
+  static constexpr size_t max_wire_bytes=260;
+  static constexpr char const* codec_identity="UWVMROS1_581419b14cf665be4a9d3dda8ba2c4233ebf084576d8c9a659158c3dc63d3c6b";
+  static bool encode(uwvm_custom::Ros1Clearpath_dock_msgsSetDockLocationByIdRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_dock_msgs_SetDockLocationByIdRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_dock_msgs_SetDockLocationByIdRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_dock_msgs_SetDockLocationByIdRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_dock_msgsSetDockLocationByIdRequest& out) {return !roswasmc_bounded_1_clearpath_dock_msgs_SetDockLocationByIdRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_dock_msgs/SetDockLocationByIdResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_dock_msgsSetDockLocationByIdResponse> {
+  static constexpr size_t max_wire_bytes=261;
+  static constexpr char const* codec_identity="UWVMROS1_c3a384f22b47a30e4ca35aff300960108f5feced16af4bffeee342fcd3b07b12";
+  static bool encode(uwvm_custom::Ros1Clearpath_dock_msgsSetDockLocationByIdResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_dock_msgs_SetDockLocationByIdResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_dock_msgs_SetDockLocationByIdResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_dock_msgs_SetDockLocationByIdResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_dock_msgsSetDockLocationByIdResponse& out) {return !roswasmc_bounded_1_clearpath_dock_msgs_SetDockLocationByIdResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_dock_msgs/SetDockLocationByNameRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_dock_msgsSetDockLocationByNameRequest> {
+  static constexpr size_t max_wire_bytes=132;
+  static constexpr char const* codec_identity="UWVMROS1_4751614c464a74f577b3da7c8224def643d79dfcdfdb250deb6aa4dd5ffd3773";
+  static bool encode(uwvm_custom::Ros1Clearpath_dock_msgsSetDockLocationByNameRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_dock_msgs_SetDockLocationByNameRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_dock_msgs_SetDockLocationByNameRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_dock_msgs_SetDockLocationByNameRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_dock_msgsSetDockLocationByNameRequest& out) {return !roswasmc_bounded_1_clearpath_dock_msgs_SetDockLocationByNameRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_dock_msgs/SetDockLocationByNameResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_dock_msgsSetDockLocationByNameResponse> {
+  static constexpr size_t max_wire_bytes=261;
+  static constexpr char const* codec_identity="UWVMROS1_596351bd90396d0cfd1f195b82dcae64edc481f8e9fba25dc9548942df2aca6e";
+  static bool encode(uwvm_custom::Ros1Clearpath_dock_msgsSetDockLocationByNameResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_dock_msgs_SetDockLocationByNameResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_dock_msgs_SetDockLocationByNameResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_dock_msgs_SetDockLocationByNameResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_dock_msgsSetDockLocationByNameResponse& out) {return !roswasmc_bounded_1_clearpath_dock_msgs_SetDockLocationByNameResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_localization_msgs/ConvertCartesianToLatLonRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_localization_msgsConvertCartesianToLatLonRequest> {
+  static constexpr size_t max_wire_bytes=200;
+  static constexpr char const* codec_identity="UWVMROS1_c2cd021cd86fca2e45b47022987f7de44d14d010abf5fcf31c326310abd19305";
+  static bool encode(uwvm_custom::Ros1Clearpath_localization_msgsConvertCartesianToLatLonRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_localization_msgs_ConvertCartesianToLatLonRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_localization_msgs_ConvertCartesianToLatLonRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_localization_msgs_ConvertCartesianToLatLonRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_localization_msgsConvertCartesianToLatLonRequest& out) {return !roswasmc_bounded_1_clearpath_localization_msgs_ConvertCartesianToLatLonRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_localization_msgs/ConvertCartesianToLatLonResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_localization_msgsConvertCartesianToLatLonResponse> {
+  static constexpr size_t max_wire_bytes=244;
+  static constexpr char const* codec_identity="UWVMROS1_4de91da28a53ef701e8d063d74fb527d296118d5b7bb9255ee027057f7f35312";
+  static bool encode(uwvm_custom::Ros1Clearpath_localization_msgsConvertCartesianToLatLonResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_localization_msgs_ConvertCartesianToLatLonResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_localization_msgs_ConvertCartesianToLatLonResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_localization_msgs_ConvertCartesianToLatLonResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_localization_msgsConvertCartesianToLatLonResponse& out) {return !roswasmc_bounded_1_clearpath_localization_msgs_ConvertCartesianToLatLonResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_localization_msgs/ConvertCartesianToLatLonArrayRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_localization_msgsConvertCartesianToLatLonArrayRequest> {
+  static constexpr size_t max_wire_bytes=404;
+  static constexpr char const* codec_identity="UWVMROS1_03e1cf82239cc5336b5b7b54c69c267afc70318c1e221ef30913f9add2a0aa70";
+  static bool encode(uwvm_custom::Ros1Clearpath_localization_msgsConvertCartesianToLatLonArrayRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_localization_msgs_ConvertCartesianToLatLonArrayRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_localization_msgs_ConvertCartesianToLatLonArrayRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_localization_msgs_ConvertCartesianToLatLonArrayRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_localization_msgsConvertCartesianToLatLonArrayRequest& out) {return !roswasmc_bounded_1_clearpath_localization_msgs_ConvertCartesianToLatLonArrayRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_localization_msgs/ConvertCartesianToLatLonArrayResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_localization_msgsConvertCartesianToLatLonArrayResponse> {
+  static constexpr size_t max_wire_bytes=492;
+  static constexpr char const* codec_identity="UWVMROS1_403b1732b1772db7eee605e8e7560f923756d1d43c9ed036705455bd0f33498b";
+  static bool encode(uwvm_custom::Ros1Clearpath_localization_msgsConvertCartesianToLatLonArrayResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_localization_msgs_ConvertCartesianToLatLonArrayResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_localization_msgs_ConvertCartesianToLatLonArrayResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_localization_msgs_ConvertCartesianToLatLonArrayResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_localization_msgsConvertCartesianToLatLonArrayResponse& out) {return !roswasmc_bounded_1_clearpath_localization_msgs_ConvertCartesianToLatLonArrayResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_localization_msgs/ConvertLatLonToCartesianRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_localization_msgsConvertLatLonToCartesianRequest> {
+  static constexpr size_t max_wire_bytes=244;
+  static constexpr char const* codec_identity="UWVMROS1_e1aed3afdc81e8fb0a2539f2b46971fe70f67bafaf6660dcc96e575bcb92d95b";
+  static bool encode(uwvm_custom::Ros1Clearpath_localization_msgsConvertLatLonToCartesianRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_localization_msgs_ConvertLatLonToCartesianRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_localization_msgs_ConvertLatLonToCartesianRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_localization_msgs_ConvertLatLonToCartesianRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_localization_msgsConvertLatLonToCartesianRequest& out) {return !roswasmc_bounded_1_clearpath_localization_msgs_ConvertLatLonToCartesianRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_localization_msgs/ConvertLatLonToCartesianResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_localization_msgsConvertLatLonToCartesianResponse> {
+  static constexpr size_t max_wire_bytes=200;
+  static constexpr char const* codec_identity="UWVMROS1_252d8d183faa2f20cfa6b10d35deeee44a2c2b2ae04ef01e20e556426a63ce76";
+  static bool encode(uwvm_custom::Ros1Clearpath_localization_msgsConvertLatLonToCartesianResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_localization_msgs_ConvertLatLonToCartesianResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_localization_msgs_ConvertLatLonToCartesianResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_localization_msgs_ConvertLatLonToCartesianResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_localization_msgsConvertLatLonToCartesianResponse& out) {return !roswasmc_bounded_1_clearpath_localization_msgs_ConvertLatLonToCartesianResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_localization_msgs/ConvertLatLonToCartesianArrayRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_localization_msgsConvertLatLonToCartesianArrayRequest> {
+  static constexpr size_t max_wire_bytes=492;
+  static constexpr char const* codec_identity="UWVMROS1_20251e11541b312f114d6a6c0c007086369ed272952a4144e459af9d37472e9a";
+  static bool encode(uwvm_custom::Ros1Clearpath_localization_msgsConvertLatLonToCartesianArrayRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_localization_msgs_ConvertLatLonToCartesianArrayRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_localization_msgs_ConvertLatLonToCartesianArrayRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_localization_msgs_ConvertLatLonToCartesianArrayRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_localization_msgsConvertLatLonToCartesianArrayRequest& out) {return !roswasmc_bounded_1_clearpath_localization_msgs_ConvertLatLonToCartesianArrayRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_localization_msgs/ConvertLatLonToCartesianArrayResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_localization_msgsConvertLatLonToCartesianArrayResponse> {
+  static constexpr size_t max_wire_bytes=404;
+  static constexpr char const* codec_identity="UWVMROS1_b2b9af859bba03c260b29eea8953b0a1c232e8c482353188a19db61a40480ae3";
+  static bool encode(uwvm_custom::Ros1Clearpath_localization_msgsConvertLatLonToCartesianArrayResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_localization_msgs_ConvertLatLonToCartesianArrayResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_localization_msgs_ConvertLatLonToCartesianArrayResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_localization_msgs_ConvertLatLonToCartesianArrayResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_localization_msgsConvertLatLonToCartesianArrayResponse& out) {return !roswasmc_bounded_1_clearpath_localization_msgs_ConvertLatLonToCartesianArrayResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_localization_msgs/ResetLocalizationRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_localization_msgsResetLocalizationRequest> {
+  static constexpr size_t max_wire_bytes=5;
+  static constexpr char const* codec_identity="UWVMROS1_22fbc4612b0b68bd20e0018476f5ed22276b22cc677fbfdb7645f6e242a8c707";
+  static bool encode(uwvm_custom::Ros1Clearpath_localization_msgsResetLocalizationRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_localization_msgs_ResetLocalizationRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_localization_msgs_ResetLocalizationRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_localization_msgs_ResetLocalizationRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_localization_msgsResetLocalizationRequest& out) {return !roswasmc_bounded_1_clearpath_localization_msgs_ResetLocalizationRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_localization_msgs/ResetLocalizationResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_localization_msgsResetLocalizationResponse> {
+  static constexpr size_t max_wire_bytes=1;
+  static constexpr char const* codec_identity="UWVMROS1_6c613160101b7598e26b7243f7e756c3f55aecad15725e5d68f64540ef5f28ab";
+  static bool encode(uwvm_custom::Ros1Clearpath_localization_msgsResetLocalizationResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_localization_msgs_ResetLocalizationResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_localization_msgs_ResetLocalizationResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_localization_msgs_ResetLocalizationResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_localization_msgsResetLocalizationResponse& out) {return !roswasmc_bounded_1_clearpath_localization_msgs_ResetLocalizationResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_localization_msgs/SetDatumRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_localization_msgsSetDatumRequest> {
+  static constexpr size_t max_wire_bytes=8;
+  static constexpr char const* codec_identity="UWVMROS1_c1e4818a01522e1c73da13bf605db0464c245908182f728b016d436fdf4a6574";
+  static bool encode(uwvm_custom::Ros1Clearpath_localization_msgsSetDatumRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_localization_msgs_SetDatumRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_localization_msgs_SetDatumRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_localization_msgs_SetDatumRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_localization_msgsSetDatumRequest& out) {return !roswasmc_bounded_1_clearpath_localization_msgs_SetDatumRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_localization_msgs/SetDatumResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_localization_msgsSetDatumResponse> {
+  static constexpr size_t max_wire_bytes=1;
+  static constexpr char const* codec_identity="UWVMROS1_db90d1e0168fb29d9563692c1b5d86c1a30b2cf4bb1186b370ed177842acc6f2";
+  static bool encode(uwvm_custom::Ros1Clearpath_localization_msgsSetDatumResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_localization_msgs_SetDatumResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_localization_msgs_SetDatumResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_localization_msgs_SetDatumResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_localization_msgsSetDatumResponse& out) {return !roswasmc_bounded_1_clearpath_localization_msgs_SetDatumResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_logger_msgs/DeleteLogRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_logger_msgsDeleteLogRequest> {
+  static constexpr size_t max_wire_bytes=262;
+  static constexpr char const* codec_identity="UWVMROS1_b54559708072a689b0944885be1d6627b37bbee14845982890968cb51be523da";
+  static bool encode(uwvm_custom::Ros1Clearpath_logger_msgsDeleteLogRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_logger_msgs_DeleteLogRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_logger_msgs_DeleteLogRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_logger_msgs_DeleteLogRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_logger_msgsDeleteLogRequest& out) {return !roswasmc_bounded_1_clearpath_logger_msgs_DeleteLogRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_logger_msgs/DeleteLogResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_logger_msgsDeleteLogResponse> {
+  static constexpr size_t max_wire_bytes=1;
+  static constexpr char const* codec_identity="UWVMROS1_d78cf7d455fda53e3ab5882e1990e75da7f93546f9e59e6e3b2325c738cabc49";
+  static bool encode(uwvm_custom::Ros1Clearpath_logger_msgsDeleteLogResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_logger_msgs_DeleteLogResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_logger_msgs_DeleteLogResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_logger_msgs_DeleteLogResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_logger_msgsDeleteLogResponse& out) {return !roswasmc_bounded_1_clearpath_logger_msgs_DeleteLogResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_logger_msgs/DownloadLogRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_logger_msgsDownloadLogRequest> {
+  static constexpr size_t max_wire_bytes=260;
+  static constexpr char const* codec_identity="UWVMROS1_92e66dfc586d2444e0314d6eb77604c23354c0f1922b50f88b84d970217d5e64";
+  static bool encode(uwvm_custom::Ros1Clearpath_logger_msgsDownloadLogRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_logger_msgs_DownloadLogRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_logger_msgs_DownloadLogRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_logger_msgs_DownloadLogRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_logger_msgsDownloadLogRequest& out) {return !roswasmc_bounded_1_clearpath_logger_msgs_DownloadLogRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_logger_msgs/DownloadLogResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_logger_msgsDownloadLogResponse> {
+  static constexpr size_t max_wire_bytes=261;
+  static constexpr char const* codec_identity="UWVMROS1_02df348a428fed4659fff462c547d41fa0aaa1daa0101a2eee25d0634924bcf8";
+  static bool encode(uwvm_custom::Ros1Clearpath_logger_msgsDownloadLogResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_logger_msgs_DownloadLogResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_logger_msgs_DownloadLogResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_logger_msgs_DownloadLogResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_logger_msgsDownloadLogResponse& out) {return !roswasmc_bounded_1_clearpath_logger_msgs_DownloadLogResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_logger_msgs/GetAllLogsRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_logger_msgsGetAllLogsRequest> {
+  static constexpr size_t max_wire_bytes=0;
+  static constexpr char const* codec_identity="UWVMROS1_68d786f935d2fd1912ac01f0196841b491f5c6d1b6e319ab22bdca371993fbb6";
+  static bool encode(uwvm_custom::Ros1Clearpath_logger_msgsGetAllLogsRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_logger_msgs_GetAllLogsRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_logger_msgs_GetAllLogsRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_logger_msgs_GetAllLogsRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_logger_msgsGetAllLogsRequest& out) {return !roswasmc_bounded_1_clearpath_logger_msgs_GetAllLogsRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_logger_msgs/GetAllLogsResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_logger_msgsGetAllLogsResponse> {
+  static constexpr size_t max_wire_bytes=14132;
+  static constexpr char const* codec_identity="UWVMROS1_3c4c4948dd5425a9ca6a1042f07aa926138e21ce73c01ead9fe7471f27690149";
+  static bool encode(uwvm_custom::Ros1Clearpath_logger_msgsGetAllLogsResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_logger_msgs_GetAllLogsResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_logger_msgs_GetAllLogsResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_logger_msgs_GetAllLogsResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_logger_msgsGetAllLogsResponse& out) {return !roswasmc_bounded_1_clearpath_logger_msgs_GetAllLogsResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_logger_msgs/RecordCustomEventRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_logger_msgsRecordCustomEventRequest> {
+  static constexpr size_t max_wire_bytes=916;
+  static constexpr char const* codec_identity="UWVMROS1_63b69b7bad4a34c168013248ed6c6e7dede8c588750a66d78e174f13ed0f89c5";
+  static bool encode(uwvm_custom::Ros1Clearpath_logger_msgsRecordCustomEventRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_logger_msgs_RecordCustomEventRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_logger_msgs_RecordCustomEventRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_logger_msgs_RecordCustomEventRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_logger_msgsRecordCustomEventRequest& out) {return !roswasmc_bounded_1_clearpath_logger_msgs_RecordCustomEventRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_logger_msgs/RecordCustomEventResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_logger_msgsRecordCustomEventResponse> {
+  static constexpr size_t max_wire_bytes=3190;
+  static constexpr char const* codec_identity="UWVMROS1_2c722c562ef52b0eea7c7888b494cc98bb79947cde164074b4cbed645caa93cd";
+  static bool encode(uwvm_custom::Ros1Clearpath_logger_msgsRecordCustomEventResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_logger_msgs_RecordCustomEventResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_logger_msgs_RecordCustomEventResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_logger_msgs_RecordCustomEventResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_logger_msgsRecordCustomEventResponse& out) {return !roswasmc_bounded_1_clearpath_logger_msgs_RecordCustomEventResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_logger_msgs/RecordErrorEventRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_logger_msgsRecordErrorEventRequest> {
+  static constexpr size_t max_wire_bytes=524;
+  static constexpr char const* codec_identity="UWVMROS1_a9cdf939aa39c10e714f29245790b1ec112d2e0ee5ec7629ee81df1effbfbc78";
+  static bool encode(uwvm_custom::Ros1Clearpath_logger_msgsRecordErrorEventRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_logger_msgs_RecordErrorEventRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_logger_msgs_RecordErrorEventRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_logger_msgs_RecordErrorEventRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_logger_msgsRecordErrorEventRequest& out) {return !roswasmc_bounded_1_clearpath_logger_msgs_RecordErrorEventRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_logger_msgs/RecordErrorEventResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_logger_msgsRecordErrorEventResponse> {
+  static constexpr size_t max_wire_bytes=3190;
+  static constexpr char const* codec_identity="UWVMROS1_d8134e572a44c305c69f2ae1da4f37a6d9920cd762bbe9a90dc15e9ef7981b54";
+  static bool encode(uwvm_custom::Ros1Clearpath_logger_msgsRecordErrorEventResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_logger_msgs_RecordErrorEventResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_logger_msgs_RecordErrorEventResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_logger_msgs_RecordErrorEventResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_logger_msgsRecordErrorEventResponse& out) {return !roswasmc_bounded_1_clearpath_logger_msgs_RecordErrorEventResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_logger_msgs/RecordEventRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_logger_msgsRecordEventRequest> {
+  static constexpr size_t max_wire_bytes=3190;
+  static constexpr char const* codec_identity="UWVMROS1_05f725bbe2f4fbd2976bf766a0e60e6a5566326b27dd09f774a096c0864f677e";
+  static bool encode(uwvm_custom::Ros1Clearpath_logger_msgsRecordEventRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_logger_msgs_RecordEventRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_logger_msgs_RecordEventRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_logger_msgs_RecordEventRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_logger_msgsRecordEventRequest& out) {return !roswasmc_bounded_1_clearpath_logger_msgs_RecordEventRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_logger_msgs/RecordEventResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_logger_msgsRecordEventResponse> {
+  static constexpr size_t max_wire_bytes=3190;
+  static constexpr char const* codec_identity="UWVMROS1_5b1e7fb4032c38c3b4a7ab8477019fc0290c643e9f1cff449d007d33c9a22961";
+  static bool encode(uwvm_custom::Ros1Clearpath_logger_msgsRecordEventResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_logger_msgs_RecordEventResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_logger_msgs_RecordEventResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_logger_msgs_RecordEventResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_logger_msgsRecordEventResponse& out) {return !roswasmc_bounded_1_clearpath_logger_msgs_RecordEventResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_logger_msgs/RecordLocationEventRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_logger_msgsRecordLocationEventRequest> {
+  static constexpr size_t max_wire_bytes=1680;
+  static constexpr char const* codec_identity="UWVMROS1_066b7fbb43be3ddb476c6542478e70c253dad5bb6930d5b757f2e578a9a8e884";
+  static bool encode(uwvm_custom::Ros1Clearpath_logger_msgsRecordLocationEventRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_logger_msgs_RecordLocationEventRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_logger_msgs_RecordLocationEventRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_logger_msgs_RecordLocationEventRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_logger_msgsRecordLocationEventRequest& out) {return !roswasmc_bounded_1_clearpath_logger_msgs_RecordLocationEventRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_logger_msgs/RecordLocationEventResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_logger_msgsRecordLocationEventResponse> {
+  static constexpr size_t max_wire_bytes=3190;
+  static constexpr char const* codec_identity="UWVMROS1_707fdc02afa7c63796a952af43697c371d530d5976661c42e1867e3fe5c75e3d";
+  static bool encode(uwvm_custom::Ros1Clearpath_logger_msgsRecordLocationEventResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_logger_msgs_RecordLocationEventResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_logger_msgs_RecordLocationEventResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_logger_msgs_RecordLocationEventResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_logger_msgsRecordLocationEventResponse& out) {return !roswasmc_bounded_1_clearpath_logger_msgs_RecordLocationEventResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_logger_msgs/RecordMediaEventRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_logger_msgsRecordMediaEventRequest> {
+  static constexpr size_t max_wire_bytes=652;
+  static constexpr char const* codec_identity="UWVMROS1_df1b4ba70aa6a687d2be8935aaed1ccadade1ac77a148db72a563a74b300bda5";
+  static bool encode(uwvm_custom::Ros1Clearpath_logger_msgsRecordMediaEventRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_logger_msgs_RecordMediaEventRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_logger_msgs_RecordMediaEventRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_logger_msgs_RecordMediaEventRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_logger_msgsRecordMediaEventRequest& out) {return !roswasmc_bounded_1_clearpath_logger_msgs_RecordMediaEventRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_logger_msgs/RecordMediaEventResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_logger_msgsRecordMediaEventResponse> {
+  static constexpr size_t max_wire_bytes=3190;
+  static constexpr char const* codec_identity="UWVMROS1_7f8ccc45f90b3c2df031bb6aef4c00e7e35ddf620bbc899a9c229d453eb275ae";
+  static bool encode(uwvm_custom::Ros1Clearpath_logger_msgsRecordMediaEventResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_logger_msgs_RecordMediaEventResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_logger_msgs_RecordMediaEventResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_logger_msgs_RecordMediaEventResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_logger_msgsRecordMediaEventResponse& out) {return !roswasmc_bounded_1_clearpath_logger_msgs_RecordMediaEventResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_logger_msgs/RecordPowerEventRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_logger_msgsRecordPowerEventRequest> {
+  static constexpr size_t max_wire_bytes=5;
+  static constexpr char const* codec_identity="UWVMROS1_82706bac64cc379346fc004d2c86b8d466e976a3bb676dea2e8ae7ed1947d974";
+  static bool encode(uwvm_custom::Ros1Clearpath_logger_msgsRecordPowerEventRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_logger_msgs_RecordPowerEventRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_logger_msgs_RecordPowerEventRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_logger_msgs_RecordPowerEventRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_logger_msgsRecordPowerEventRequest& out) {return !roswasmc_bounded_1_clearpath_logger_msgs_RecordPowerEventRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_logger_msgs/RecordPowerEventResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_logger_msgsRecordPowerEventResponse> {
+  static constexpr size_t max_wire_bytes=3190;
+  static constexpr char const* codec_identity="UWVMROS1_4d15a62946c8e9941fc9760d43e8eebcc7e9125561e01e646c6fb6edf7aaf866";
+  static bool encode(uwvm_custom::Ros1Clearpath_logger_msgsRecordPowerEventResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_logger_msgs_RecordPowerEventResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_logger_msgs_RecordPowerEventResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_logger_msgs_RecordPowerEventResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_logger_msgsRecordPowerEventResponse& out) {return !roswasmc_bounded_1_clearpath_logger_msgs_RecordPowerEventResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_logger_msgs/StartRecordingRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_logger_msgsStartRecordingRequest> {
+  static constexpr size_t max_wire_bytes=132;
+  static constexpr char const* codec_identity="UWVMROS1_eb42cefac21b32710fd09c9fb1629f55a334eabc10cc958e0d98911e786ca42f";
+  static bool encode(uwvm_custom::Ros1Clearpath_logger_msgsStartRecordingRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_logger_msgs_StartRecordingRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_logger_msgs_StartRecordingRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_logger_msgs_StartRecordingRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_logger_msgsStartRecordingRequest& out) {return !roswasmc_bounded_1_clearpath_logger_msgs_StartRecordingRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_logger_msgs/StartRecordingResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_logger_msgsStartRecordingResponse> {
+  static constexpr size_t max_wire_bytes=7064;
+  static constexpr char const* codec_identity="UWVMROS1_2220536f6a937fb7bb198bfdbd288855bf294a4b3404e702349f9ff83428af31";
+  static bool encode(uwvm_custom::Ros1Clearpath_logger_msgsStartRecordingResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_logger_msgs_StartRecordingResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_logger_msgs_StartRecordingResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_logger_msgs_StartRecordingResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_logger_msgsStartRecordingResponse& out) {return !roswasmc_bounded_1_clearpath_logger_msgs_StartRecordingResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_logger_msgs/StopRecordingRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_logger_msgsStopRecordingRequest> {
+  static constexpr size_t max_wire_bytes=260;
+  static constexpr char const* codec_identity="UWVMROS1_ece885864f4cc93062aec96411096358e1d2c4885f30431b762b4732d3ff44b5";
+  static bool encode(uwvm_custom::Ros1Clearpath_logger_msgsStopRecordingRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_logger_msgs_StopRecordingRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_logger_msgs_StopRecordingRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_logger_msgs_StopRecordingRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_logger_msgsStopRecordingRequest& out) {return !roswasmc_bounded_1_clearpath_logger_msgs_StopRecordingRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_logger_msgs/StopRecordingResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_logger_msgsStopRecordingResponse> {
+  static constexpr size_t max_wire_bytes=7064;
+  static constexpr char const* codec_identity="UWVMROS1_bc3f620603442ee53fa1b62618eb73ca1fa68347be928b6b38acc65d63295eca";
+  static bool encode(uwvm_custom::Ros1Clearpath_logger_msgsStopRecordingResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_logger_msgs_StopRecordingResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_logger_msgs_StopRecordingResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_logger_msgs_StopRecordingResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_logger_msgsStopRecordingResponse& out) {return !roswasmc_bounded_1_clearpath_logger_msgs_StopRecordingResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/AddNetworkEdgeRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsAddNetworkEdgeRequest> {
+  static constexpr size_t max_wire_bytes=793;
+  static constexpr char const* codec_identity="UWVMROS1_c2ad8aa1d5988fb0397e85e15aa37211b7041a2ecdc67e5c89b53a38431e56f3";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsAddNetworkEdgeRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_AddNetworkEdgeRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_AddNetworkEdgeRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_AddNetworkEdgeRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsAddNetworkEdgeRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_AddNetworkEdgeRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/AddNetworkEdgeResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsAddNetworkEdgeResponse> {
+  static constexpr size_t max_wire_bytes=1652;
+  static constexpr char const* codec_identity="UWVMROS1_2e14500e273e2a953389948d0c7533b096e7559f41d17e518f9eec6e93b7df4f";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsAddNetworkEdgeResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_AddNetworkEdgeResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_AddNetworkEdgeResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_AddNetworkEdgeResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsAddNetworkEdgeResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_AddNetworkEdgeResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/AddNetworkPathRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsAddNetworkPathRequest> {
+  static constexpr size_t max_wire_bytes=301;
+  static constexpr char const* codec_identity="UWVMROS1_0c8717a0058d4fbdf9927579f6bb29d84e32cadcaa811b2d3aa02464807c55d0";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsAddNetworkPathRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_AddNetworkPathRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_AddNetworkPathRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_AddNetworkPathRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsAddNetworkPathRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_AddNetworkPathRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/AddNetworkPathResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsAddNetworkPathResponse> {
+  static constexpr size_t max_wire_bytes=261;
+  static constexpr char const* codec_identity="UWVMROS1_ec9794b231eb22dfd44263164562c393069793f34f603bc35181ef358f26782c";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsAddNetworkPathResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_AddNetworkPathResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_AddNetworkPathResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_AddNetworkPathResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsAddNetworkPathResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_AddNetworkPathResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/AddNetworkPointRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsAddNetworkPointRequest> {
+  static constexpr size_t max_wire_bytes=1325;
+  static constexpr char const* codec_identity="UWVMROS1_c1eb740c2558280db5b6fbe8be5cb67ba3c1538d2e9dd19d7fb5b38df316f909";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsAddNetworkPointRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_AddNetworkPointRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_AddNetworkPointRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_AddNetworkPointRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsAddNetworkPointRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_AddNetworkPointRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/AddNetworkPointResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsAddNetworkPointResponse> {
+  static constexpr size_t max_wire_bytes=276;
+  static constexpr char const* codec_identity="UWVMROS1_adf7216e0cef0cf515203d17726e6c5acf46c03601cd931a4a1e59cdeca313be";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsAddNetworkPointResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_AddNetworkPointResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_AddNetworkPointResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_AddNetworkPointResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsAddNetworkPointResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_AddNetworkPointResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/AddRemoveByIdRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsAddRemoveByIdRequest> {
+  static constexpr size_t max_wire_bytes=524;
+  static constexpr char const* codec_identity="UWVMROS1_3eb2a9e36f226c731491dcb174d1af9bf5bcfe131206dcea36d0d2b42cfc028e";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsAddRemoveByIdRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_AddRemoveByIdRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_AddRemoveByIdRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_AddRemoveByIdRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsAddRemoveByIdRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_AddRemoveByIdRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/AddRemoveByIdResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsAddRemoveByIdResponse> {
+  static constexpr size_t max_wire_bytes=1;
+  static constexpr char const* codec_identity="UWVMROS1_a81b57d98295b7ad37f1bcf070b016e40ea73d802ae5c113822b8341891c12ea";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsAddRemoveByIdResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_AddRemoveByIdResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_AddRemoveByIdResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_AddRemoveByIdResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsAddRemoveByIdResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_AddRemoveByIdResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/AddRemoveTagRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsAddRemoveTagRequest> {
+  static constexpr size_t max_wire_bytes=520;
+  static constexpr char const* codec_identity="UWVMROS1_23ac2c4784aae50c56d78d68ee369ee365113dad9331c6224673b9c53576f2f6";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsAddRemoveTagRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_AddRemoveTagRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_AddRemoveTagRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_AddRemoveTagRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsAddRemoveTagRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_AddRemoveTagRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/AddRemoveTagResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsAddRemoveTagResponse> {
+  static constexpr size_t max_wire_bytes=524;
+  static constexpr char const* codec_identity="UWVMROS1_f2514cde45093626fc3ec068327521d1e077279df21ca36f3812abc6bcd316c6";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsAddRemoveTagResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_AddRemoveTagResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_AddRemoveTagResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_AddRemoveTagResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsAddRemoveTagResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_AddRemoveTagResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/CloneMissionRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsCloneMissionRequest> {
+  static constexpr size_t max_wire_bytes=521;
+  static constexpr char const* codec_identity="UWVMROS1_7c3d4053b272033a901c1fbe5c7eecaf16cd7bd7e28e2d5c6369183a7b6d62d4";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsCloneMissionRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_CloneMissionRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_CloneMissionRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_CloneMissionRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsCloneMissionRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_CloneMissionRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/CloneMissionResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsCloneMissionResponse> {
+  static constexpr size_t max_wire_bytes=13336;
+  static constexpr char const* codec_identity="UWVMROS1_88894721fb1457e6aafd8b131c6a3b26af8d96ee27a8224e3bb1277bc0f987cc";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsCloneMissionResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_CloneMissionResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_CloneMissionResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_CloneMissionResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsCloneMissionResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_CloneMissionResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/CloneNetworkMapRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsCloneNetworkMapRequest> {
+  static constexpr size_t max_wire_bytes=520;
+  static constexpr char const* codec_identity="UWVMROS1_2f74e78c9bc6bff2eb44665cdb4b516c6fdafa209addd1a4d4f3fa3c1976a5f5";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsCloneNetworkMapRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_CloneNetworkMapRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_CloneNetworkMapRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_CloneNetworkMapRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsCloneNetworkMapRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_CloneNetworkMapRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/CloneNetworkMapResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsCloneNetworkMapResponse> {
+  static constexpr size_t max_wire_bytes=2608;
+  static constexpr char const* codec_identity="UWVMROS1_1143b6aaee73251732ae77f676ba29ca561a47c11d5443d56e74326689a38ffb";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsCloneNetworkMapResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_CloneNetworkMapResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_CloneNetworkMapResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_CloneNetworkMapResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsCloneNetworkMapResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_CloneNetworkMapResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/CloneNetworkMissionRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsCloneNetworkMissionRequest> {
+  static constexpr size_t max_wire_bytes=521;
+  static constexpr char const* codec_identity="UWVMROS1_46048ce502c1e4aa8629826444bf77de18318f16c9398768ea75283549b802b4";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsCloneNetworkMissionRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_CloneNetworkMissionRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_CloneNetworkMissionRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_CloneNetworkMissionRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsCloneNetworkMissionRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_CloneNetworkMissionRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/CloneNetworkMissionResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsCloneNetworkMissionResponse> {
+  static constexpr size_t max_wire_bytes=13606;
+  static constexpr char const* codec_identity="UWVMROS1_7aa5c1e17efce3523e3c751e6900a63eacea43b47b6c1e8987fce3d98462b63d";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsCloneNetworkMissionResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_CloneNetworkMissionResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_CloneNetworkMissionResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_CloneNetworkMissionResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsCloneNetworkMissionResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_CloneNetworkMissionResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/ClonePointOfInterestRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsClonePointOfInterestRequest> {
+  static constexpr size_t max_wire_bytes=520;
+  static constexpr char const* codec_identity="UWVMROS1_ffa35600ea2a044f4ef3388627f8f34323407b6dfdf314d5e68e8a997f95cc69";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsClonePointOfInterestRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_ClonePointOfInterestRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_ClonePointOfInterestRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_ClonePointOfInterestRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsClonePointOfInterestRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_ClonePointOfInterestRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/ClonePointOfInterestResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsClonePointOfInterestResponse> {
+  static constexpr size_t max_wire_bytes=1209;
+  static constexpr char const* codec_identity="UWVMROS1_97edd93b8afb8681c2c0755f0313129e0ea8bea5384235a03b3b48c39e6438d0";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsClonePointOfInterestResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_ClonePointOfInterestResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_ClonePointOfInterestResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_ClonePointOfInterestResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsClonePointOfInterestResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_ClonePointOfInterestResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/CreateMissionRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsCreateMissionRequest> {
+  static constexpr size_t max_wire_bytes=1964;
+  static constexpr char const* codec_identity="UWVMROS1_caa700efafa4dbdb056e78e08af082f2f4d985f1b431b5bfb2ae019542f3925f";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsCreateMissionRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateMissionRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateMissionRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateMissionRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsCreateMissionRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateMissionRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/CreateMissionResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsCreateMissionResponse> {
+  static constexpr size_t max_wire_bytes=13336;
+  static constexpr char const* codec_identity="UWVMROS1_ce4a3a3cc959015bffb0a98373399a9d1063d5dee0baa4b4e685c6fde879bc01";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsCreateMissionResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateMissionResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateMissionResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateMissionResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsCreateMissionResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateMissionResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/CreateNetworkMapRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsCreateNetworkMapRequest> {
+  static constexpr size_t max_wire_bytes=1756;
+  static constexpr char const* codec_identity="UWVMROS1_339dba93c2db9e3f5280805772411b26292f0587a465f95a6369828c556d9f3a";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsCreateNetworkMapRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateNetworkMapRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateNetworkMapRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateNetworkMapRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsCreateNetworkMapRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateNetworkMapRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/CreateNetworkMapResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsCreateNetworkMapResponse> {
+  static constexpr size_t max_wire_bytes=2608;
+  static constexpr char const* codec_identity="UWVMROS1_cc887ebcf4ab3232cff47e7c47c90a3458fd83ca6c252d6942d4d7e2b9a4b5cb";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsCreateNetworkMapResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateNetworkMapResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateNetworkMapResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateNetworkMapResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsCreateNetworkMapResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateNetworkMapResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/CreateNetworkMissionRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsCreateNetworkMissionRequest> {
+  static constexpr size_t max_wire_bytes=2234;
+  static constexpr char const* codec_identity="UWVMROS1_7f681e1a88063ba1d41a6e6156a499e7dc0cc68f656c09931589b8a1532e95bf";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsCreateNetworkMissionRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateNetworkMissionRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateNetworkMissionRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateNetworkMissionRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsCreateNetworkMissionRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateNetworkMissionRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/CreateNetworkMissionResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsCreateNetworkMissionResponse> {
+  static constexpr size_t max_wire_bytes=13606;
+  static constexpr char const* codec_identity="UWVMROS1_7795dd8fd48439f93f4ff545ed7ecdb4948692d973e4d688d197c7a2c8afb374";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsCreateNetworkMissionResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateNetworkMissionResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateNetworkMissionResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateNetworkMissionResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsCreateNetworkMissionResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateNetworkMissionResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/CreatePointOfInterestRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsCreatePointOfInterestRequest> {
+  static constexpr size_t max_wire_bytes=949;
+  static constexpr char const* codec_identity="UWVMROS1_46db8c6cd151bb2b514dbbb6ca3c5638186e78ed8c0a5b587c63d263dbf4e707";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsCreatePointOfInterestRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_CreatePointOfInterestRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_CreatePointOfInterestRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_CreatePointOfInterestRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsCreatePointOfInterestRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_CreatePointOfInterestRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/CreatePointOfInterestResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsCreatePointOfInterestResponse> {
+  static constexpr size_t max_wire_bytes=1209;
+  static constexpr char const* codec_identity="UWVMROS1_0a515e14a911f9bbb05e1b44fccbe91b8ae9c5d83e6bf3b3055bdd46c95ab82e";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsCreatePointOfInterestResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_CreatePointOfInterestResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_CreatePointOfInterestResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_CreatePointOfInterestResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsCreatePointOfInterestResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_CreatePointOfInterestResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/CreateTaskRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsCreateTaskRequest> {
+  static constexpr size_t max_wire_bytes=2769;
+  static constexpr char const* codec_identity="UWVMROS1_b6d1b102bd25c79e40c1c8f009688a8a183d7fbebb3983b97ab8ecb219e4eab3";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsCreateTaskRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateTaskRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateTaskRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateTaskRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsCreateTaskRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateTaskRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/CreateTaskResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsCreateTaskResponse> {
+  static constexpr size_t max_wire_bytes=1457;
+  static constexpr char const* codec_identity="UWVMROS1_1fab04f16b13985ec3cffd38cace15e459fbb8de05d7283917df6ac0e7e30c8a";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsCreateTaskResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateTaskResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateTaskResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateTaskResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsCreateTaskResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateTaskResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/CreateWaypointRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsCreateWaypointRequest> {
+  static constexpr size_t max_wire_bytes=1220;
+  static constexpr char const* codec_identity="UWVMROS1_0779feb60308617994f391072eba0fb734890defcf0b05974cf4a54485586188";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsCreateWaypointRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateWaypointRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateWaypointRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateWaypointRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsCreateWaypointRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateWaypointRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/CreateWaypointResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsCreateWaypointResponse> {
+  static constexpr size_t max_wire_bytes=3350;
+  static constexpr char const* codec_identity="UWVMROS1_ecf69fcfa5288295555651d9e8215b75b0b368a019447a7f50f25390eaf73a37";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsCreateWaypointResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateWaypointResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateWaypointResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateWaypointResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsCreateWaypointResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateWaypointResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/CreateWaypointFromPoiRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsCreateWaypointFromPoiRequest> {
+  static constexpr size_t max_wire_bytes=1209;
+  static constexpr char const* codec_identity="UWVMROS1_792f6ca7e821aa73a48aafcec57ba7b6c729115e7d2fbd4b4ac25412e1d76522";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsCreateWaypointFromPoiRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateWaypointFromPoiRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateWaypointFromPoiRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateWaypointFromPoiRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsCreateWaypointFromPoiRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateWaypointFromPoiRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/CreateWaypointFromPoiResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsCreateWaypointFromPoiResponse> {
+  static constexpr size_t max_wire_bytes=3350;
+  static constexpr char const* codec_identity="UWVMROS1_39d1b867f9aa0a0fa17ceb11ab8b301a42a96c3156a97a8258d2a775853549ac";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsCreateWaypointFromPoiResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateWaypointFromPoiResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateWaypointFromPoiResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateWaypointFromPoiResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsCreateWaypointFromPoiResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_CreateWaypointFromPoiResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/DeleteByIdRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsDeleteByIdRequest> {
+  static constexpr size_t max_wire_bytes=260;
+  static constexpr char const* codec_identity="UWVMROS1_489c2a214ef86b4b1b60e32ee19f71e11e7d000a3293ae747d48c20b746527f2";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsDeleteByIdRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_DeleteByIdRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_DeleteByIdRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_DeleteByIdRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsDeleteByIdRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_DeleteByIdRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/DeleteByIdResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsDeleteByIdResponse> {
+  static constexpr size_t max_wire_bytes=1;
+  static constexpr char const* codec_identity="UWVMROS1_a93b6bdc62702c29ed1db507504586a1b651ba32f98725326faf10b14e5abfcf";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsDeleteByIdResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_DeleteByIdResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_DeleteByIdResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_DeleteByIdResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsDeleteByIdResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_DeleteByIdResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/DeleteEverythingRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsDeleteEverythingRequest> {
+  static constexpr size_t max_wire_bytes=1;
+  static constexpr char const* codec_identity="UWVMROS1_a0b2722e0ba476021308ba2d3dc2a6ef9843dbcf607c0e6ca18d8c4de60256f8";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsDeleteEverythingRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_DeleteEverythingRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_DeleteEverythingRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_DeleteEverythingRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsDeleteEverythingRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_DeleteEverythingRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/DeleteEverythingResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsDeleteEverythingResponse> {
+  static constexpr size_t max_wire_bytes=1;
+  static constexpr char const* codec_identity="UWVMROS1_cd73a92e3a56214ea6fd445e5f7b20aab1a91945875774af4db25426f4a67a4d";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsDeleteEverythingResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_DeleteEverythingResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_DeleteEverythingResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_DeleteEverythingResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsDeleteEverythingResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_DeleteEverythingResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/DeleteMultipleRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsDeleteMultipleRequest> {
+  static constexpr size_t max_wire_bytes=784;
+  static constexpr char const* codec_identity="UWVMROS1_93d59bed5a06ad0d5d7c19f7c2881255ab70f4136e8d9633c6619e7060d2c2df";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsDeleteMultipleRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_DeleteMultipleRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_DeleteMultipleRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_DeleteMultipleRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsDeleteMultipleRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_DeleteMultipleRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/DeleteMultipleResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsDeleteMultipleResponse> {
+  static constexpr size_t max_wire_bytes=524;
+  static constexpr char const* codec_identity="UWVMROS1_ddfebd2869fb25d1e6d51221ab483db5d1015d44607cfbf7d45fb2c28cd4cb60";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsDeleteMultipleResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_DeleteMultipleResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_DeleteMultipleResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_DeleteMultipleResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsDeleteMultipleResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_DeleteMultipleResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/ExportDataRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsExportDataRequest> {
+  static constexpr size_t max_wire_bytes=0;
+  static constexpr char const* codec_identity="UWVMROS1_273ca86bcaa10fda29a72290dd5b605569d6c59562e935e4779deee94249e5f4";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsExportDataRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_ExportDataRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_ExportDataRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_ExportDataRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsExportDataRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_ExportDataRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/ExportDataResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsExportDataResponse> {
+  static constexpr size_t max_wire_bytes=260;
+  static constexpr char const* codec_identity="UWVMROS1_497c67643bdb2dfb03f415e5af67a58b3dcfe439842441973fece1df28e56dbb";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsExportDataResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_ExportDataResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_ExportDataResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_ExportDataResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsExportDataResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_ExportDataResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/GetAllMissionsRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsGetAllMissionsRequest> {
+  static constexpr size_t max_wire_bytes=0;
+  static constexpr char const* codec_identity="UWVMROS1_9b2758f137a20a5a8d0c798befe715f0d834c3fa912fddd5005a88c95340fb45";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsGetAllMissionsRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllMissionsRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllMissionsRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllMissionsRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsGetAllMissionsRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllMissionsRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/GetAllMissionsResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsGetAllMissionsResponse> {
+  static constexpr size_t max_wire_bytes=26676;
+  static constexpr char const* codec_identity="UWVMROS1_b3936fa567f9f915b83d8933633c280b42684da025f096333fd133772642649b";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsGetAllMissionsResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllMissionsResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllMissionsResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllMissionsResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsGetAllMissionsResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllMissionsResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/GetAllNetworkMapsRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsGetAllNetworkMapsRequest> {
+  static constexpr size_t max_wire_bytes=0;
+  static constexpr char const* codec_identity="UWVMROS1_b366fcf604486b90ff0de6d4cdf601f179509337b308b423d51a941857b964ed";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsGetAllNetworkMapsRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllNetworkMapsRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllNetworkMapsRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllNetworkMapsRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsGetAllNetworkMapsRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllNetworkMapsRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/GetAllNetworkMapsResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsGetAllNetworkMapsResponse> {
+  static constexpr size_t max_wire_bytes=5220;
+  static constexpr char const* codec_identity="UWVMROS1_ac5719469bbfc8fbc6f0dd9a897cea857ecde83b65f7d2d6b19ac1b2c3905f3d";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsGetAllNetworkMapsResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllNetworkMapsResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllNetworkMapsResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllNetworkMapsResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsGetAllNetworkMapsResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllNetworkMapsResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/GetAllNetworkMissionsRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsGetAllNetworkMissionsRequest> {
+  static constexpr size_t max_wire_bytes=0;
+  static constexpr char const* codec_identity="UWVMROS1_a1aed2728f1c66328d9c6f15d5866d67b379abfe7afd71b03c02ce69ef4fd11f";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsGetAllNetworkMissionsRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllNetworkMissionsRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllNetworkMissionsRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllNetworkMissionsRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsGetAllNetworkMissionsRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllNetworkMissionsRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/GetAllNetworkMissionsResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsGetAllNetworkMissionsResponse> {
+  static constexpr size_t max_wire_bytes=27216;
+  static constexpr char const* codec_identity="UWVMROS1_e0f273f3e31d98804e84ffe011f5060be89d009d790fb34992de6aaa346ef0e2";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsGetAllNetworkMissionsResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllNetworkMissionsResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllNetworkMissionsResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllNetworkMissionsResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsGetAllNetworkMissionsResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllNetworkMissionsResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/GetAllPointsOfInterestRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsGetAllPointsOfInterestRequest> {
+  static constexpr size_t max_wire_bytes=0;
+  static constexpr char const* codec_identity="UWVMROS1_1774ba572ac91b4246b91b9e006829ff4f38a195ae67b23f5ed461574d72ccc9";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsGetAllPointsOfInterestRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllPointsOfInterestRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllPointsOfInterestRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllPointsOfInterestRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsGetAllPointsOfInterestRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllPointsOfInterestRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/GetAllPointsOfInterestResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsGetAllPointsOfInterestResponse> {
+  static constexpr size_t max_wire_bytes=2422;
+  static constexpr char const* codec_identity="UWVMROS1_8105af95e78f446b3f73eb05379d4633513a51c29ea157adf3fb24ebed014fe4";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsGetAllPointsOfInterestResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllPointsOfInterestResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllPointsOfInterestResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllPointsOfInterestResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsGetAllPointsOfInterestResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllPointsOfInterestResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/GetAllTasksRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsGetAllTasksRequest> {
+  static constexpr size_t max_wire_bytes=0;
+  static constexpr char const* codec_identity="UWVMROS1_e345153b30f5709bffaea462092527b89285ab0902c8b7c78f759f92d823c74e";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsGetAllTasksRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllTasksRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllTasksRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllTasksRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsGetAllTasksRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllTasksRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/GetAllTasksResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsGetAllTasksResponse> {
+  static constexpr size_t max_wire_bytes=2918;
+  static constexpr char const* codec_identity="UWVMROS1_fed546c0b2b8ea2db1ca9e8e13e918144b436e4a2a818e724fadfe5a3775c148";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsGetAllTasksResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllTasksResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllTasksResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllTasksResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsGetAllTasksResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllTasksResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/GetAllWaypointsRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsGetAllWaypointsRequest> {
+  static constexpr size_t max_wire_bytes=0;
+  static constexpr char const* codec_identity="UWVMROS1_d5a22af162ba215c95bddbd955eac6aba558134ee4a5c988a13b6819fc5e22c7";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsGetAllWaypointsRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllWaypointsRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllWaypointsRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllWaypointsRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsGetAllWaypointsRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllWaypointsRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/GetAllWaypointsResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsGetAllWaypointsResponse> {
+  static constexpr size_t max_wire_bytes=6704;
+  static constexpr char const* codec_identity="UWVMROS1_daacee9b652bc78820380eaf5d515c8813f8387fc7d2a3b934d7961fd1f46208";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsGetAllWaypointsResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllWaypointsResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllWaypointsResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllWaypointsResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsGetAllWaypointsResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_GetAllWaypointsResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/GetEverythingRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsGetEverythingRequest> {
+  static constexpr size_t max_wire_bytes=0;
+  static constexpr char const* codec_identity="UWVMROS1_6be79503b5553344dcbc97ef60843035d672883c3431f33b86a6e367bff35783";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsGetEverythingRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_GetEverythingRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetEverythingRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_GetEverythingRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsGetEverythingRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_GetEverythingRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/GetEverythingResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsGetEverythingResponse> {
+  static constexpr size_t max_wire_bytes=32768;
+  static constexpr char const* codec_identity="UWVMROS1_135f1c7e2aea6353167ae048ae6afdc57fb6614c64a1a135321015734fc79069";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsGetEverythingResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_GetEverythingResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetEverythingResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_GetEverythingResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsGetEverythingResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_GetEverythingResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/GetMissionRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsGetMissionRequest> {
+  static constexpr size_t max_wire_bytes=260;
+  static constexpr char const* codec_identity="UWVMROS1_c1587963d27ada2cb3d8fbb4ccad1faa2f7bdbe2cb88081b76e573843f51051f";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsGetMissionRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_GetMissionRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetMissionRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_GetMissionRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsGetMissionRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_GetMissionRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/GetMissionResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsGetMissionResponse> {
+  static constexpr size_t max_wire_bytes=13336;
+  static constexpr char const* codec_identity="UWVMROS1_ed24abebf6a3316c8583a2d6d9e62f7eca8ea493607c7772130b057468aa483f";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsGetMissionResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_GetMissionResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetMissionResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_GetMissionResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsGetMissionResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_GetMissionResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/GetNetworkMapRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsGetNetworkMapRequest> {
+  static constexpr size_t max_wire_bytes=260;
+  static constexpr char const* codec_identity="UWVMROS1_67930348022f20b977b129f0a583130b9664cf9c45d26bcfaf5a5af087e185b7";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsGetNetworkMapRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_GetNetworkMapRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetNetworkMapRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_GetNetworkMapRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsGetNetworkMapRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_GetNetworkMapRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/GetNetworkMapResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsGetNetworkMapResponse> {
+  static constexpr size_t max_wire_bytes=2608;
+  static constexpr char const* codec_identity="UWVMROS1_0a25742662a313fe30697c86f1463304d54a7bfc06e86b6e6a2c9881c09dc775";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsGetNetworkMapResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_GetNetworkMapResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetNetworkMapResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_GetNetworkMapResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsGetNetworkMapResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_GetNetworkMapResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/GetNetworkMissionRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsGetNetworkMissionRequest> {
+  static constexpr size_t max_wire_bytes=260;
+  static constexpr char const* codec_identity="UWVMROS1_a69493f449f860b33c6c6c510b7a23b015ce5c3566ac13aae7d2d42b4a0652b7";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsGetNetworkMissionRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_GetNetworkMissionRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetNetworkMissionRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_GetNetworkMissionRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsGetNetworkMissionRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_GetNetworkMissionRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/GetNetworkMissionResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsGetNetworkMissionResponse> {
+  static constexpr size_t max_wire_bytes=13606;
+  static constexpr char const* codec_identity="UWVMROS1_9ec509115489f3011105522578f549180057312e652eb9bf1a1c3f1dbee2025a";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsGetNetworkMissionResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_GetNetworkMissionResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetNetworkMissionResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_GetNetworkMissionResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsGetNetworkMissionResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_GetNetworkMissionResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/GetPointOfInterestRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsGetPointOfInterestRequest> {
+  static constexpr size_t max_wire_bytes=260;
+  static constexpr char const* codec_identity="UWVMROS1_a6b60dbc44cf3fdfc7deea9ce5d8826b9bfb17cfe3bdf6e5a82ae485d51fa9a7";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsGetPointOfInterestRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_GetPointOfInterestRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetPointOfInterestRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_GetPointOfInterestRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsGetPointOfInterestRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_GetPointOfInterestRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/GetPointOfInterestResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsGetPointOfInterestResponse> {
+  static constexpr size_t max_wire_bytes=1209;
+  static constexpr char const* codec_identity="UWVMROS1_711a556a81c17e244578495cac6e6721c5e7b81dadf505784ea191cc1f0b9a13";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsGetPointOfInterestResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_GetPointOfInterestResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetPointOfInterestResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_GetPointOfInterestResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsGetPointOfInterestResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_GetPointOfInterestResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/GetTaskRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsGetTaskRequest> {
+  static constexpr size_t max_wire_bytes=260;
+  static constexpr char const* codec_identity="UWVMROS1_854685ce6f5dc28caf2c8e11d82813aa8f0611945d5c76d29bb2ca11461a94dc";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsGetTaskRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_GetTaskRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetTaskRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_GetTaskRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsGetTaskRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_GetTaskRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/GetTaskResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsGetTaskResponse> {
+  static constexpr size_t max_wire_bytes=1457;
+  static constexpr char const* codec_identity="UWVMROS1_7ddc2f1b761f344a7765b4f54d9a15a91a4097e715f0610c741fc2a16dba947f";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsGetTaskResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_GetTaskResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetTaskResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_GetTaskResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsGetTaskResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_GetTaskResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/GetWaypointRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsGetWaypointRequest> {
+  static constexpr size_t max_wire_bytes=260;
+  static constexpr char const* codec_identity="UWVMROS1_d3530712135cd3a80f746e233124cb3e79ef8d8ef69ca6fe1f26c750a3314539";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsGetWaypointRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_GetWaypointRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetWaypointRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_GetWaypointRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsGetWaypointRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_GetWaypointRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/GetWaypointResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsGetWaypointResponse> {
+  static constexpr size_t max_wire_bytes=3350;
+  static constexpr char const* codec_identity="UWVMROS1_8226d0597a337e9b43babecca8bf4ba09274c53802cd87ece58feea9c0954c66";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsGetWaypointResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_GetWaypointResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_GetWaypointResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_GetWaypointResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsGetWaypointResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_GetWaypointResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/ImportDataRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsImportDataRequest> {
+  static constexpr size_t max_wire_bytes=260;
+  static constexpr char const* codec_identity="UWVMROS1_5e0a54e52dea50a99d18f8e82ded58dafd203c692fd467c0123e0fb057e37d25";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsImportDataRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportDataRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportDataRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportDataRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsImportDataRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportDataRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/ImportDataResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsImportDataResponse> {
+  static constexpr size_t max_wire_bytes=32768;
+  static constexpr char const* codec_identity="UWVMROS1_16cd6e810a8c986454949c165ec577118481f2557bf2d1620fc098108b806488";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsImportDataResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportDataResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportDataResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportDataResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsImportDataResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportDataResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/ImportMissionRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsImportMissionRequest> {
+  static constexpr size_t max_wire_bytes=13336;
+  static constexpr char const* codec_identity="UWVMROS1_4eb653a68629b1c4461091d9ab12f90d26ed5e8b063d13b3cbbe1a2944f3fb53";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsImportMissionRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportMissionRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportMissionRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportMissionRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsImportMissionRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportMissionRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/ImportMissionResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsImportMissionResponse> {
+  static constexpr size_t max_wire_bytes=13336;
+  static constexpr char const* codec_identity="UWVMROS1_8881f8b70cb092d74936eb93345036049e07cc11cd5c55e52b2b3f7f36d07e7d";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsImportMissionResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportMissionResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportMissionResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportMissionResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsImportMissionResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportMissionResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/ImportNetworkMapRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsImportNetworkMapRequest> {
+  static constexpr size_t max_wire_bytes=2608;
+  static constexpr char const* codec_identity="UWVMROS1_ca063451548e0a85552a3069cccf7b86524d6cb30c5dd6c788d44ba0fc508978";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsImportNetworkMapRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportNetworkMapRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportNetworkMapRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportNetworkMapRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsImportNetworkMapRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportNetworkMapRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/ImportNetworkMapResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsImportNetworkMapResponse> {
+  static constexpr size_t max_wire_bytes=2608;
+  static constexpr char const* codec_identity="UWVMROS1_b53c8f06e58b7dde2c5127df98451db37c1825fe667cf8eb816c0cacf93ecf3f";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsImportNetworkMapResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportNetworkMapResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportNetworkMapResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportNetworkMapResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsImportNetworkMapResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportNetworkMapResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/ImportNetworkMissionRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsImportNetworkMissionRequest> {
+  static constexpr size_t max_wire_bytes=13606;
+  static constexpr char const* codec_identity="UWVMROS1_03140f9073798b8de77e3ba9b8fc8f048b0ab43fa5d17c17bb767c23dfcf1a39";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsImportNetworkMissionRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportNetworkMissionRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportNetworkMissionRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportNetworkMissionRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsImportNetworkMissionRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportNetworkMissionRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/ImportNetworkMissionResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsImportNetworkMissionResponse> {
+  static constexpr size_t max_wire_bytes=13606;
+  static constexpr char const* codec_identity="UWVMROS1_2f4b00981cea86beab4c6872e8184ad90257612396bb44d0a120290b8404c7d8";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsImportNetworkMissionResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportNetworkMissionResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportNetworkMissionResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportNetworkMissionResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsImportNetworkMissionResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_ImportNetworkMissionResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/SplitNetworkEdgeRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsSplitNetworkEdgeRequest> {
+  static constexpr size_t max_wire_bytes=537;
+  static constexpr char const* codec_identity="UWVMROS1_6d083d95fc9720932b330979fdf997abeaa7e463265226bf7ae09fec1bb97be5";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsSplitNetworkEdgeRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_SplitNetworkEdgeRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_SplitNetworkEdgeRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_SplitNetworkEdgeRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsSplitNetworkEdgeRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_SplitNetworkEdgeRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/SplitNetworkEdgeResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsSplitNetworkEdgeResponse> {
+  static constexpr size_t max_wire_bytes=2608;
+  static constexpr char const* codec_identity="UWVMROS1_55fdb27f06984817af8a20e3e0bcc8dd85c33db0fbc65f1881822eabc6ab14b3";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsSplitNetworkEdgeResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_SplitNetworkEdgeResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_SplitNetworkEdgeResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_SplitNetworkEdgeResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsSplitNetworkEdgeResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_SplitNetworkEdgeResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/UpdateMissionRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateMissionRequest> {
+  static constexpr size_t max_wire_bytes=2224;
+  static constexpr char const* codec_identity="UWVMROS1_3320e01dc2228359832eb75a54c3df011870d017f0f8f862fe2a68d2cb56a3d3";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateMissionRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateMissionRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateMissionRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateMissionRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateMissionRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateMissionRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/UpdateMissionResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateMissionResponse> {
+  static constexpr size_t max_wire_bytes=13336;
+  static constexpr char const* codec_identity="UWVMROS1_1d43fee27013957863e01990de9010ebb6b8a7a8668cf6b3916835aaa92e18a9";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateMissionResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateMissionResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateMissionResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateMissionResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateMissionResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateMissionResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/UpdateNetworkEdgeRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateNetworkEdgeRequest> {
+  static constexpr size_t max_wire_bytes=1052;
+  static constexpr char const* codec_identity="UWVMROS1_6f6eb31133df261e82cf165b1e93ae4d853c4a9de1a928a612ac35115d0bd563";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateNetworkEdgeRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkEdgeRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkEdgeRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkEdgeRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateNetworkEdgeRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkEdgeRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/UpdateNetworkEdgeResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateNetworkEdgeResponse> {
+  static constexpr size_t max_wire_bytes=824;
+  static constexpr char const* codec_identity="UWVMROS1_4534230375b42cc0956c57d587baac63882da426edfe851fccc4b95a42d59c01";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateNetworkEdgeResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkEdgeResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkEdgeResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkEdgeResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateNetworkEdgeResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkEdgeResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/UpdateNetworkEdgesRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateNetworkEdgesRequest> {
+  static constexpr size_t max_wire_bytes=820;
+  static constexpr char const* codec_identity="UWVMROS1_9126cc96d7840c27a84dbb4144580cb9a76a7c77aa1fefea23b6b965e6d2d7f4";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateNetworkEdgesRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkEdgesRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkEdgesRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkEdgesRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateNetworkEdgesRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkEdgesRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/UpdateNetworkEdgesResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateNetworkEdgesResponse> {
+  static constexpr size_t max_wire_bytes=1652;
+  static constexpr char const* codec_identity="UWVMROS1_0a5fee23a1ef3a75299f92c499ef73bc22f39f15932a9c383d7406445cb89b0c";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateNetworkEdgesResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkEdgesResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkEdgesResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkEdgesResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateNetworkEdgesResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkEdgesResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/UpdateNetworkMapRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateNetworkMapRequest> {
+  static constexpr size_t max_wire_bytes=400;
+  static constexpr char const* codec_identity="UWVMROS1_527641cfaf5b2283be483c5fceb31d82cdcbe01dd9199343033b910c1864e012";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateNetworkMapRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkMapRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkMapRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkMapRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateNetworkMapRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkMapRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/UpdateNetworkMapResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateNetworkMapResponse> {
+  static constexpr size_t max_wire_bytes=2608;
+  static constexpr char const* codec_identity="UWVMROS1_1ea078b7625f7a8593ddbd8df3f158972cfcc973bb956f041d36e66734a03924";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateNetworkMapResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkMapResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkMapResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkMapResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateNetworkMapResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkMapResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/UpdateNetworkMissionRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateNetworkMissionRequest> {
+  static constexpr size_t max_wire_bytes=2494;
+  static constexpr char const* codec_identity="UWVMROS1_e3f246a1753021aee8ab1d6a7792a878fda832ee63d797b52ecabff917a41d95";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateNetworkMissionRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkMissionRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkMissionRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkMissionRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateNetworkMissionRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkMissionRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/UpdateNetworkMissionResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateNetworkMissionResponse> {
+  static constexpr size_t max_wire_bytes=13606;
+  static constexpr char const* codec_identity="UWVMROS1_223f3be41c5e6b365f0aed33952e2b53619fdb700b6249cd79cdb835a66317f3";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateNetworkMissionResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkMissionResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkMissionResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkMissionResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateNetworkMissionResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkMissionResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/UpdateNetworkPointRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateNetworkPointRequest> {
+  static constexpr size_t max_wire_bytes=536;
+  static constexpr char const* codec_identity="UWVMROS1_ced6a1449a9a8f8c92cec59f865adbb3563e6840d992c977ca124e018668fd85";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateNetworkPointRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkPointRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkPointRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkPointRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateNetworkPointRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkPointRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/UpdateNetworkPointResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateNetworkPointResponse> {
+  static constexpr size_t max_wire_bytes=276;
+  static constexpr char const* codec_identity="UWVMROS1_7015a36b6124bdbb162c38c33a1a107431c3b2050cdd48d33707d4a27317d2ee";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateNetworkPointResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkPointResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkPointResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkPointResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateNetworkPointResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkPointResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/UpdateNetworkPointsRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateNetworkPointsRequest> {
+  static constexpr size_t max_wire_bytes=824;
+  static constexpr char const* codec_identity="UWVMROS1_cd684b3f95616f37e2620228a24e41609f3c102f286797d0d49069ad6f8fb7d9";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateNetworkPointsRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkPointsRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkPointsRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkPointsRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateNetworkPointsRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkPointsRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/UpdateNetworkPointsResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateNetworkPointsResponse> {
+  static constexpr size_t max_wire_bytes=556;
+  static constexpr char const* codec_identity="UWVMROS1_867e62ceec9cffd73f6bc697994998578c0d848b489c7fb1536ff29cc2ed740d";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateNetworkPointsResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkPointsResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkPointsResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkPointsResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateNetworkPointsResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateNetworkPointsResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/UpdatePointOfInterestRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdatePointOfInterestRequest> {
+  static constexpr size_t max_wire_bytes=1209;
+  static constexpr char const* codec_identity="UWVMROS1_e1dc3af1f989ce0787973a31ea9f5fc4e4be8c2a23cc73e258ceb5f5e503ff51";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdatePointOfInterestRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdatePointOfInterestRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdatePointOfInterestRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdatePointOfInterestRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdatePointOfInterestRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdatePointOfInterestRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/UpdatePointOfInterestResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdatePointOfInterestResponse> {
+  static constexpr size_t max_wire_bytes=1209;
+  static constexpr char const* codec_identity="UWVMROS1_4bfcd0f85d450d766dc190745d8abdddb2320a4b8990e02cf1fce80aff304e05";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdatePointOfInterestResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdatePointOfInterestResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdatePointOfInterestResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdatePointOfInterestResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdatePointOfInterestResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdatePointOfInterestResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/UpdateTaskRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateTaskRequest> {
+  static constexpr size_t max_wire_bytes=1457;
+  static constexpr char const* codec_identity="UWVMROS1_a5844fedb72c67d92446e533cd49d4e18fb1cec1aecc522646fc0fb5834fde15";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateTaskRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateTaskRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateTaskRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateTaskRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateTaskRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateTaskRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/UpdateTaskResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateTaskResponse> {
+  static constexpr size_t max_wire_bytes=1457;
+  static constexpr char const* codec_identity="UWVMROS1_9e2be799a216403d720d9aac572b8faf20a4cb81abd299fa6f845798cb64e86d";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateTaskResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateTaskResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateTaskResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateTaskResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateTaskResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateTaskResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/UpdateWaypointRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateWaypointRequest> {
+  static constexpr size_t max_wire_bytes=956;
+  static constexpr char const* codec_identity="UWVMROS1_79fb82878e0bc290e0975c281962165c5ea99dd8cf550607896633a9a2a3215a";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateWaypointRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateWaypointRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateWaypointRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateWaypointRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateWaypointRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateWaypointRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/UpdateWaypointResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateWaypointResponse> {
+  static constexpr size_t max_wire_bytes=3350;
+  static constexpr char const* codec_identity="UWVMROS1_7488513078df8a3a9b1b3bfcca432aee912b3f7bf028f9d772c67f91e26c850c";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateWaypointResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateWaypointResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateWaypointResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateWaypointResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsUpdateWaypointResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_UpdateWaypointResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/ValidateNetworkMapRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsValidateNetworkMapRequest> {
+  static constexpr size_t max_wire_bytes=260;
+  static constexpr char const* codec_identity="UWVMROS1_6924bb2508845236c9ef6c5ef4d71881eed30960550df58105c3b9e91fa45041";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsValidateNetworkMapRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_ValidateNetworkMapRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_ValidateNetworkMapRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_ValidateNetworkMapRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsValidateNetworkMapRequest& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_ValidateNetworkMapRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_manager_msgs/ValidateNetworkMapResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_manager_msgsValidateNetworkMapResponse> {
+  static constexpr size_t max_wire_bytes=790;
+  static constexpr char const* codec_identity="UWVMROS1_c213df6efac189646a82ff69eb42d36321e72356308da44743cce592910c4bd8";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_manager_msgsValidateNetworkMapResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_manager_msgs_ValidateNetworkMapResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_manager_msgs_ValidateNetworkMapResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_manager_msgs_ValidateNetworkMapResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_manager_msgsValidateNetworkMapResponse& out) {return !roswasmc_bounded_1_clearpath_mission_manager_msgs_ValidateNetworkMapResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_scheduler_msgs/CloneScheduleRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_scheduler_msgsCloneScheduleRequest> {
+  static constexpr size_t max_wire_bytes=520;
+  static constexpr char const* codec_identity="UWVMROS1_8387bc2882c59ffb6124127d6a5dd54bc7e2685fd5a0aa3453389612e50b3216";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_scheduler_msgsCloneScheduleRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_scheduler_msgs_CloneScheduleRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_CloneScheduleRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_scheduler_msgs_CloneScheduleRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_scheduler_msgsCloneScheduleRequest& out) {return !roswasmc_bounded_1_clearpath_mission_scheduler_msgs_CloneScheduleRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_scheduler_msgs/CloneScheduleResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_scheduler_msgsCloneScheduleResponse> {
+  static constexpr size_t max_wire_bytes=944;
+  static constexpr char const* codec_identity="UWVMROS1_2245dcf9c323b09f914e5ff952fadd117c5ae6a3c62e31d2b7faa4b723be27a0";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_scheduler_msgsCloneScheduleResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_scheduler_msgs_CloneScheduleResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_CloneScheduleResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_scheduler_msgs_CloneScheduleResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_scheduler_msgsCloneScheduleResponse& out) {return !roswasmc_bounded_1_clearpath_mission_scheduler_msgs_CloneScheduleResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_scheduler_msgs/CreateScheduleRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_scheduler_msgsCreateScheduleRequest> {
+  static constexpr size_t max_wire_bytes=684;
+  static constexpr char const* codec_identity="UWVMROS1_5c2188fde6641a0d1d38f8c03f09f2feef33a0c6938310fb2233adef32719b53";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_scheduler_msgsCreateScheduleRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_scheduler_msgs_CreateScheduleRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_CreateScheduleRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_scheduler_msgs_CreateScheduleRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_scheduler_msgsCreateScheduleRequest& out) {return !roswasmc_bounded_1_clearpath_mission_scheduler_msgs_CreateScheduleRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_scheduler_msgs/CreateScheduleResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_scheduler_msgsCreateScheduleResponse> {
+  static constexpr size_t max_wire_bytes=944;
+  static constexpr char const* codec_identity="UWVMROS1_9859bffd0fb72f93e6692c733cf9160af07d648b317f8bf9fdc34f6a7dc7b24c";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_scheduler_msgsCreateScheduleResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_scheduler_msgs_CreateScheduleResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_CreateScheduleResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_scheduler_msgs_CreateScheduleResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_scheduler_msgsCreateScheduleResponse& out) {return !roswasmc_bounded_1_clearpath_mission_scheduler_msgs_CreateScheduleResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_scheduler_msgs/EnableScheduleRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_scheduler_msgsEnableScheduleRequest> {
+  static constexpr size_t max_wire_bytes=261;
+  static constexpr char const* codec_identity="UWVMROS1_26ad79f2ef123281877514e3bc65268a180f01441229ccc08c907bc76f16e953";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_scheduler_msgsEnableScheduleRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_scheduler_msgs_EnableScheduleRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_EnableScheduleRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_scheduler_msgs_EnableScheduleRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_scheduler_msgsEnableScheduleRequest& out) {return !roswasmc_bounded_1_clearpath_mission_scheduler_msgs_EnableScheduleRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_scheduler_msgs/EnableScheduleResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_scheduler_msgsEnableScheduleResponse> {
+  static constexpr size_t max_wire_bytes=1;
+  static constexpr char const* codec_identity="UWVMROS1_4ca5afdf4ac83e2d03d94b02e3bd156bfaec1835922a6f3d719ea700251324b2";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_scheduler_msgsEnableScheduleResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_scheduler_msgs_EnableScheduleResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_EnableScheduleResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_scheduler_msgs_EnableScheduleResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_scheduler_msgsEnableScheduleResponse& out) {return !roswasmc_bounded_1_clearpath_mission_scheduler_msgs_EnableScheduleResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_scheduler_msgs/ExportDataRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_scheduler_msgsExportDataRequest> {
+  static constexpr size_t max_wire_bytes=0;
+  static constexpr char const* codec_identity="UWVMROS1_8ad06898b5c892ea73d57aa1db2f7b8b0a8e435d05c8a614c6d76d08ac598c54";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_scheduler_msgsExportDataRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_scheduler_msgs_ExportDataRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_ExportDataRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_scheduler_msgs_ExportDataRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_scheduler_msgsExportDataRequest& out) {return !roswasmc_bounded_1_clearpath_mission_scheduler_msgs_ExportDataRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_scheduler_msgs/ExportDataResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_scheduler_msgsExportDataResponse> {
+  static constexpr size_t max_wire_bytes=260;
+  static constexpr char const* codec_identity="UWVMROS1_b3ee9c9b3c93a5e1c1df96c51d33fc883713fc6dc1657e6c9c8a567be368847b";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_scheduler_msgsExportDataResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_scheduler_msgs_ExportDataResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_ExportDataResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_scheduler_msgs_ExportDataResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_scheduler_msgsExportDataResponse& out) {return !roswasmc_bounded_1_clearpath_mission_scheduler_msgs_ExportDataResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_scheduler_msgs/GetAllSchedulesRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_scheduler_msgsGetAllSchedulesRequest> {
+  static constexpr size_t max_wire_bytes=0;
+  static constexpr char const* codec_identity="UWVMROS1_cdf67fd2aa2ebffb723416c55f3aff5700dfad53b2464ba446fd115342da54c1";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_scheduler_msgsGetAllSchedulesRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_scheduler_msgs_GetAllSchedulesRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_GetAllSchedulesRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_scheduler_msgs_GetAllSchedulesRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_scheduler_msgsGetAllSchedulesRequest& out) {return !roswasmc_bounded_1_clearpath_mission_scheduler_msgs_GetAllSchedulesRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_scheduler_msgs/GetAllSchedulesResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_scheduler_msgsGetAllSchedulesResponse> {
+  static constexpr size_t max_wire_bytes=1892;
+  static constexpr char const* codec_identity="UWVMROS1_79b76d2badd9a5a0ab76421b3f992b0c90552d8c879c2a4727966ca749014834";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_scheduler_msgsGetAllSchedulesResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_scheduler_msgs_GetAllSchedulesResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_GetAllSchedulesResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_scheduler_msgs_GetAllSchedulesResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_scheduler_msgsGetAllSchedulesResponse& out) {return !roswasmc_bounded_1_clearpath_mission_scheduler_msgs_GetAllSchedulesResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_scheduler_msgs/GetNextScheduleRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_scheduler_msgsGetNextScheduleRequest> {
+  static constexpr size_t max_wire_bytes=0;
+  static constexpr char const* codec_identity="UWVMROS1_3c10499a950f4c7431e738bf8e1d56a6407f06eec6b570b10ef5532f67ad0e31";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_scheduler_msgsGetNextScheduleRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_scheduler_msgs_GetNextScheduleRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_GetNextScheduleRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_scheduler_msgs_GetNextScheduleRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_scheduler_msgsGetNextScheduleRequest& out) {return !roswasmc_bounded_1_clearpath_mission_scheduler_msgs_GetNextScheduleRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_scheduler_msgs/GetNextScheduleResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_scheduler_msgsGetNextScheduleResponse> {
+  static constexpr size_t max_wire_bytes=268;
+  static constexpr char const* codec_identity="UWVMROS1_eb0d25c6d02bf163d55bf197402c0818a96089948b79be7747bdb4a9d97089fa";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_scheduler_msgsGetNextScheduleResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_scheduler_msgs_GetNextScheduleResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_GetNextScheduleResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_scheduler_msgs_GetNextScheduleResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_scheduler_msgsGetNextScheduleResponse& out) {return !roswasmc_bounded_1_clearpath_mission_scheduler_msgs_GetNextScheduleResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_scheduler_msgs/GetScheduleRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_scheduler_msgsGetScheduleRequest> {
+  static constexpr size_t max_wire_bytes=260;
+  static constexpr char const* codec_identity="UWVMROS1_631d2966a939673a63824e4aab11b1dc1b7f6df6446e64307151b9826264800a";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_scheduler_msgsGetScheduleRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_scheduler_msgs_GetScheduleRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_GetScheduleRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_scheduler_msgs_GetScheduleRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_scheduler_msgsGetScheduleRequest& out) {return !roswasmc_bounded_1_clearpath_mission_scheduler_msgs_GetScheduleRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_scheduler_msgs/GetScheduleResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_scheduler_msgsGetScheduleResponse> {
+  static constexpr size_t max_wire_bytes=944;
+  static constexpr char const* codec_identity="UWVMROS1_c731f817524bcf55c9efd68faeb390dc88a160f2efb2fa472d81a8aaff2cd970";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_scheduler_msgsGetScheduleResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_scheduler_msgs_GetScheduleResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_GetScheduleResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_scheduler_msgs_GetScheduleResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_scheduler_msgsGetScheduleResponse& out) {return !roswasmc_bounded_1_clearpath_mission_scheduler_msgs_GetScheduleResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_scheduler_msgs/ImportDataRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_scheduler_msgsImportDataRequest> {
+  static constexpr size_t max_wire_bytes=260;
+  static constexpr char const* codec_identity="UWVMROS1_7c1b0e75e3d4dacd5f9fc3d82b7ddab8629686215f1c52d7be83c802a1316561";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_scheduler_msgsImportDataRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_scheduler_msgs_ImportDataRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_ImportDataRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_scheduler_msgs_ImportDataRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_scheduler_msgsImportDataRequest& out) {return !roswasmc_bounded_1_clearpath_mission_scheduler_msgs_ImportDataRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_scheduler_msgs/ImportDataResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_scheduler_msgsImportDataResponse> {
+  static constexpr size_t max_wire_bytes=1892;
+  static constexpr char const* codec_identity="UWVMROS1_2a5e62341836cc9171f7c292463a116fc84ddb7b2a8600107e3c5fb2ce5a004f";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_scheduler_msgsImportDataResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_scheduler_msgs_ImportDataResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_ImportDataResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_scheduler_msgs_ImportDataResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_scheduler_msgsImportDataResponse& out) {return !roswasmc_bounded_1_clearpath_mission_scheduler_msgs_ImportDataResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_scheduler_msgs/UpdateScheduleRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_scheduler_msgsUpdateScheduleRequest> {
+  static constexpr size_t max_wire_bytes=944;
+  static constexpr char const* codec_identity="UWVMROS1_24baafba1e1af2d47b61f21aa7f2c5795f298477a90181b97e3d942f8da25b8f";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_scheduler_msgsUpdateScheduleRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_scheduler_msgs_UpdateScheduleRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_UpdateScheduleRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_scheduler_msgs_UpdateScheduleRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_scheduler_msgsUpdateScheduleRequest& out) {return !roswasmc_bounded_1_clearpath_mission_scheduler_msgs_UpdateScheduleRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_mission_scheduler_msgs/UpdateScheduleResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_mission_scheduler_msgsUpdateScheduleResponse> {
+  static constexpr size_t max_wire_bytes=944;
+  static constexpr char const* codec_identity="UWVMROS1_9b32778480e054c6aa5d6100fab9bc44efde5fec5456e05af13618e53b410853";
+  static bool encode(uwvm_custom::Ros1Clearpath_mission_scheduler_msgsUpdateScheduleResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_mission_scheduler_msgs_UpdateScheduleResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_mission_scheduler_msgs_UpdateScheduleResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_mission_scheduler_msgs_UpdateScheduleResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_mission_scheduler_msgsUpdateScheduleResponse& out) {return !roswasmc_bounded_1_clearpath_mission_scheduler_msgs_UpdateScheduleResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/AutonomyTaskSrvRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsAutonomyTaskSrvRequest> {
+  static constexpr size_t max_wire_bytes=804;
+  static constexpr char const* codec_identity="UWVMROS1_e8a7610c646bb07a6de057f8882dd431405a8ce00f8f5ee11679a383d73cb9d6";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsAutonomyTaskSrvRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_AutonomyTaskSrvRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_AutonomyTaskSrvRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_AutonomyTaskSrvRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsAutonomyTaskSrvRequest& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_AutonomyTaskSrvRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/AutonomyTaskSrvResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsAutonomyTaskSrvResponse> {
+  static constexpr size_t max_wire_bytes=2;
+  static constexpr char const* codec_identity="UWVMROS1_f1c6ef16107712804760b090620b57e8bb60dd19ccfbb516630ed916acf42e8c";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsAutonomyTaskSrvResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_AutonomyTaskSrvResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_AutonomyTaskSrvResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_AutonomyTaskSrvResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsAutonomyTaskSrvResponse& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_AutonomyTaskSrvResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/SetDelayCompensationRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsSetDelayCompensationRequest> {
+  static constexpr size_t max_wire_bytes=3;
+  static constexpr char const* codec_identity="UWVMROS1_ec8f99417bf6bf770da1acdebb86acc69ec41b9dd523e235688c4ccc0fff453e";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsSetDelayCompensationRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_SetDelayCompensationRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_SetDelayCompensationRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_SetDelayCompensationRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsSetDelayCompensationRequest& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_SetDelayCompensationRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/SetDelayCompensationResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsSetDelayCompensationResponse> {
+  static constexpr size_t max_wire_bytes=261;
+  static constexpr char const* codec_identity="UWVMROS1_9fc1ca659396456af96f2abb819cec8217992f10b6dd3b0e0f94baf37e70e6bc";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsSetDelayCompensationResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_SetDelayCompensationResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_SetDelayCompensationResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_SetDelayCompensationResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsSetDelayCompensationResponse& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_SetDelayCompensationResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/SetPathShifterRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsSetPathShifterRequest> {
+  static constexpr size_t max_wire_bytes=9;
+  static constexpr char const* codec_identity="UWVMROS1_66a02e58f180dfdb2a32bd6162bf329004e3dd5a91232507dffc15fe4ba0bd6c";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsSetPathShifterRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_SetPathShifterRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_SetPathShifterRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_SetPathShifterRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsSetPathShifterRequest& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_SetPathShifterRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/SetPathShifterResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsSetPathShifterResponse> {
+  static constexpr size_t max_wire_bytes=261;
+  static constexpr char const* codec_identity="UWVMROS1_64e3a6c0fe9c4303436ad8400fb0c5a74b47b226162648e2dad5e19db256ac2e";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsSetPathShifterResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_SetPathShifterResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_SetPathShifterResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_SetPathShifterResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsSetPathShifterResponse& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_SetPathShifterResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/SetPathSmootherRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsSetPathSmootherRequest> {
+  static constexpr size_t max_wire_bytes=9;
+  static constexpr char const* codec_identity="UWVMROS1_13ca562ab68dfd839bd370ac19cd4eec02c7a855876b5e9ec6e5b00f968b111f";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsSetPathSmootherRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_SetPathSmootherRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_SetPathSmootherRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_SetPathSmootherRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsSetPathSmootherRequest& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_SetPathSmootherRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/SetPathSmootherResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsSetPathSmootherResponse> {
+  static constexpr size_t max_wire_bytes=261;
+  static constexpr char const* codec_identity="UWVMROS1_4317fa93c867dc6ef5a4c5bdaece4bdad2ab9d888d707202f65a23d15ce8f0d1";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsSetPathSmootherResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_SetPathSmootherResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_SetPathSmootherResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_SetPathSmootherResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsSetPathSmootherResponse& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_SetPathSmootherResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/SetStopDistanceRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsSetStopDistanceRequest> {
+  static constexpr size_t max_wire_bytes=5;
+  static constexpr char const* codec_identity="UWVMROS1_66c986cb752a0c4990e08b616557fc67e8400f3f4a38a5603d6e5cd5c5b69b12";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsSetStopDistanceRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_SetStopDistanceRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_SetStopDistanceRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_SetStopDistanceRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsSetStopDistanceRequest& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_SetStopDistanceRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_navigation_msgs/SetStopDistanceResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_navigation_msgsSetStopDistanceResponse> {
+  static constexpr size_t max_wire_bytes=261;
+  static constexpr char const* codec_identity="UWVMROS1_9bb0632e92b3f8733eec16b7915dea0f19749b7020466e9a9391365f87d24d19";
+  static bool encode(uwvm_custom::Ros1Clearpath_navigation_msgsSetStopDistanceResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_navigation_msgs_SetStopDistanceResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_navigation_msgs_SetStopDistanceResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_navigation_msgs_SetStopDistanceResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_navigation_msgsSetStopDistanceResponse& out) {return !roswasmc_bounded_1_clearpath_navigation_msgs_SetStopDistanceResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/AddCommunicationWatchdogRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsAddCommunicationWatchdogRequest> {
+  static constexpr size_t max_wire_bytes=1961;
+  static constexpr char const* codec_identity="UWVMROS1_9a1cdf2a02fa873143b12cf9225980c0fd4ba681c8c600fcd11705503a85834d";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsAddCommunicationWatchdogRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_AddCommunicationWatchdogRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_AddCommunicationWatchdogRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_AddCommunicationWatchdogRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsAddCommunicationWatchdogRequest& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_AddCommunicationWatchdogRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/AddCommunicationWatchdogResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsAddCommunicationWatchdogResponse> {
+  static constexpr size_t max_wire_bytes=1;
+  static constexpr char const* codec_identity="UWVMROS1_cc124f08c384c233c2239b1c5cd634d70becf8ed0f556aaeec16011c2e09f159";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsAddCommunicationWatchdogResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_AddCommunicationWatchdogResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_AddCommunicationWatchdogResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_AddCommunicationWatchdogResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsAddCommunicationWatchdogResponse& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_AddCommunicationWatchdogResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/AddHeartbeatWatchdogRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsAddHeartbeatWatchdogRequest> {
+  static constexpr size_t max_wire_bytes=1441;
+  static constexpr char const* codec_identity="UWVMROS1_58a8482be436683e3b1def8c5cfe6b974e63ce9e129d3de2c88531a3112580b4";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsAddHeartbeatWatchdogRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_AddHeartbeatWatchdogRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_AddHeartbeatWatchdogRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_AddHeartbeatWatchdogRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsAddHeartbeatWatchdogRequest& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_AddHeartbeatWatchdogRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/AddHeartbeatWatchdogResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsAddHeartbeatWatchdogResponse> {
+  static constexpr size_t max_wire_bytes=1;
+  static constexpr char const* codec_identity="UWVMROS1_4c15aaf99a3ceab29b595b76df4d641282de57182511447b584126119265b7ce";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsAddHeartbeatWatchdogResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_AddHeartbeatWatchdogResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_AddHeartbeatWatchdogResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_AddHeartbeatWatchdogResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsAddHeartbeatWatchdogResponse& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_AddHeartbeatWatchdogResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/AddInclinationWatchdogRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsAddInclinationWatchdogRequest> {
+  static constexpr size_t max_wire_bytes=1449;
+  static constexpr char const* codec_identity="UWVMROS1_1463748d4c746f08f9347ca0d94fc3860009fff7de2b24862d1fc2b35c328470";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsAddInclinationWatchdogRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_AddInclinationWatchdogRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_AddInclinationWatchdogRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_AddInclinationWatchdogRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsAddInclinationWatchdogRequest& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_AddInclinationWatchdogRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/AddInclinationWatchdogResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsAddInclinationWatchdogResponse> {
+  static constexpr size_t max_wire_bytes=1;
+  static constexpr char const* codec_identity="UWVMROS1_366c7d76dcd82a989d1dd1453d5441e57ff229795b6f978a6a8aa1b1f00cf2d2";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsAddInclinationWatchdogResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_AddInclinationWatchdogResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_AddInclinationWatchdogResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_AddInclinationWatchdogResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsAddInclinationWatchdogResponse& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_AddInclinationWatchdogResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/AddNodeStatusWatchdogRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsAddNodeStatusWatchdogRequest> {
+  static constexpr size_t max_wire_bytes=1438;
+  static constexpr char const* codec_identity="UWVMROS1_418c383184ef1e70c02fabf773dd943f5afc14b581ba07253eb9c285d0ba7836";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsAddNodeStatusWatchdogRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_AddNodeStatusWatchdogRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_AddNodeStatusWatchdogRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_AddNodeStatusWatchdogRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsAddNodeStatusWatchdogRequest& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_AddNodeStatusWatchdogRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/AddNodeStatusWatchdogResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsAddNodeStatusWatchdogResponse> {
+  static constexpr size_t max_wire_bytes=1;
+  static constexpr char const* codec_identity="UWVMROS1_08c4dd8bd289e405d27a981707ebc959c5c786640ac50c6bbeda628245644cfc";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsAddNodeStatusWatchdogResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_AddNodeStatusWatchdogResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_AddNodeStatusWatchdogResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_AddNodeStatusWatchdogResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsAddNodeStatusWatchdogResponse& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_AddNodeStatusWatchdogResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/AddNodeletStatusWatchdogRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsAddNodeletStatusWatchdogRequest> {
+  static constexpr size_t max_wire_bytes=1698;
+  static constexpr char const* codec_identity="UWVMROS1_9d7b4e34a74a50528b1e2c61db3fc36eef9d2e93ccd03815ed8c770526070e8c";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsAddNodeletStatusWatchdogRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_AddNodeletStatusWatchdogRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_AddNodeletStatusWatchdogRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_AddNodeletStatusWatchdogRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsAddNodeletStatusWatchdogRequest& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_AddNodeletStatusWatchdogRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/AddNodeletStatusWatchdogResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsAddNodeletStatusWatchdogResponse> {
+  static constexpr size_t max_wire_bytes=1;
+  static constexpr char const* codec_identity="UWVMROS1_e1f797bf8282c0cc3cdfb105c0545438a3ac9f12e7027231001ed87b2e62dba6";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsAddNodeletStatusWatchdogResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_AddNodeletStatusWatchdogResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_AddNodeletStatusWatchdogResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_AddNodeletStatusWatchdogResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsAddNodeletStatusWatchdogResponse& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_AddNodeletStatusWatchdogResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/AddNumPointsWatchdogRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsAddNumPointsWatchdogRequest> {
+  static constexpr size_t max_wire_bytes=1441;
+  static constexpr char const* codec_identity="UWVMROS1_4303f93fc59680bbd04437b832060a2f2d3f93fe4cb06c5fb42ebba9736f1f73";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsAddNumPointsWatchdogRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_AddNumPointsWatchdogRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_AddNumPointsWatchdogRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_AddNumPointsWatchdogRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsAddNumPointsWatchdogRequest& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_AddNumPointsWatchdogRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/AddNumPointsWatchdogResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsAddNumPointsWatchdogResponse> {
+  static constexpr size_t max_wire_bytes=1;
+  static constexpr char const* codec_identity="UWVMROS1_d51e4b3bfb779b244d3f2bb6979db7bb8144de7c5fafc9eef0b49a4c1f8030ef";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsAddNumPointsWatchdogResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_AddNumPointsWatchdogResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_AddNumPointsWatchdogResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_AddNumPointsWatchdogResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsAddNumPointsWatchdogResponse& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_AddNumPointsWatchdogResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/AddOdomCovarianceWatchdogRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsAddOdomCovarianceWatchdogRequest> {
+  static constexpr size_t max_wire_bytes=1449;
+  static constexpr char const* codec_identity="UWVMROS1_807e8d5088be66039e0e9264f239a0a8f1ca0f067cb2c7173e62b1a5ff9d49b7";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsAddOdomCovarianceWatchdogRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_AddOdomCovarianceWatchdogRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_AddOdomCovarianceWatchdogRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_AddOdomCovarianceWatchdogRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsAddOdomCovarianceWatchdogRequest& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_AddOdomCovarianceWatchdogRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/AddOdomCovarianceWatchdogResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsAddOdomCovarianceWatchdogResponse> {
+  static constexpr size_t max_wire_bytes=1;
+  static constexpr char const* codec_identity="UWVMROS1_2af9a9a057aa4368b076c14bfcef6e7b0bae09a5727ab0e0ad79a6f2c5a21b06";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsAddOdomCovarianceWatchdogResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_AddOdomCovarianceWatchdogResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_AddOdomCovarianceWatchdogResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_AddOdomCovarianceWatchdogResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsAddOdomCovarianceWatchdogResponse& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_AddOdomCovarianceWatchdogResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/AddRtkFixWatchdogRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsAddRtkFixWatchdogRequest> {
+  static constexpr size_t max_wire_bytes=1443;
+  static constexpr char const* codec_identity="UWVMROS1_debc849b5738a49920e4adea8e76f75a55f071c2d971a048fbd639c5b3ababe4";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsAddRtkFixWatchdogRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_AddRtkFixWatchdogRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_AddRtkFixWatchdogRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_AddRtkFixWatchdogRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsAddRtkFixWatchdogRequest& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_AddRtkFixWatchdogRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/AddRtkFixWatchdogResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsAddRtkFixWatchdogResponse> {
+  static constexpr size_t max_wire_bytes=1;
+  static constexpr char const* codec_identity="UWVMROS1_1f680adab1e07f42b3d76200810f330ad5e70dcf350484bf5aca0f4dbd32c535";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsAddRtkFixWatchdogResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_AddRtkFixWatchdogResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_AddRtkFixWatchdogResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_AddRtkFixWatchdogResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsAddRtkFixWatchdogResponse& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_AddRtkFixWatchdogResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/AddTopicDataWatchdogRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsAddTopicDataWatchdogRequest> {
+  static constexpr size_t max_wire_bytes=1441;
+  static constexpr char const* codec_identity="UWVMROS1_0bdeed1e711b9da18829c30d7499ea3eda6afa5538db74d2bb0e88385b0bc1fd";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsAddTopicDataWatchdogRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_AddTopicDataWatchdogRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_AddTopicDataWatchdogRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_AddTopicDataWatchdogRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsAddTopicDataWatchdogRequest& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_AddTopicDataWatchdogRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/AddTopicDataWatchdogResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsAddTopicDataWatchdogResponse> {
+  static constexpr size_t max_wire_bytes=1;
+  static constexpr char const* codec_identity="UWVMROS1_9fea6483689717396e22f81e995067ccb427a3a2ac18b48ddd91b72246e8621d";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsAddTopicDataWatchdogResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_AddTopicDataWatchdogResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_AddTopicDataWatchdogResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_AddTopicDataWatchdogResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsAddTopicDataWatchdogResponse& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_AddTopicDataWatchdogResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/RemoveWatchdogRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsRemoveWatchdogRequest> {
+  static constexpr size_t max_wire_bytes=132;
+  static constexpr char const* codec_identity="UWVMROS1_87a214c09e13bf5a9627f6be0b7d59c473fdbb7680791e4f96a580253f820a45";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsRemoveWatchdogRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_RemoveWatchdogRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_RemoveWatchdogRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_RemoveWatchdogRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsRemoveWatchdogRequest& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_RemoveWatchdogRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/RemoveWatchdogResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsRemoveWatchdogResponse> {
+  static constexpr size_t max_wire_bytes=1;
+  static constexpr char const* codec_identity="UWVMROS1_cb5e504b035471d2b78f9574fa83b212689a4e68f197881aa787bfb13defe8a1";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsRemoveWatchdogResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_RemoveWatchdogResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_RemoveWatchdogResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_RemoveWatchdogResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsRemoveWatchdogResponse& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_RemoveWatchdogResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/UpdateCommunicationWatchdogRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsUpdateCommunicationWatchdogRequest> {
+  static constexpr size_t max_wire_bytes=2221;
+  static constexpr char const* codec_identity="UWVMROS1_28311849018f0a63f18add101832a0f70fe8a3cb50455b598f9a4fdea9f0a172";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsUpdateCommunicationWatchdogRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_UpdateCommunicationWatchdogRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_UpdateCommunicationWatchdogRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_UpdateCommunicationWatchdogRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsUpdateCommunicationWatchdogRequest& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_UpdateCommunicationWatchdogRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/UpdateCommunicationWatchdogResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsUpdateCommunicationWatchdogResponse> {
+  static constexpr size_t max_wire_bytes=1;
+  static constexpr char const* codec_identity="UWVMROS1_16bf85e3159ebef01b8aa74c8b2dd8bd4037ea3b98723ce5feeaadaee1086f08";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsUpdateCommunicationWatchdogResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_UpdateCommunicationWatchdogResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_UpdateCommunicationWatchdogResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_UpdateCommunicationWatchdogResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsUpdateCommunicationWatchdogResponse& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_UpdateCommunicationWatchdogResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/UpdateHeartbeatWatchdogRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsUpdateHeartbeatWatchdogRequest> {
+  static constexpr size_t max_wire_bytes=1701;
+  static constexpr char const* codec_identity="UWVMROS1_38f7e38b9de37001d85a0d0642420bcedabc3d16e5477c3c0e80cdd3c01c33dc";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsUpdateHeartbeatWatchdogRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_UpdateHeartbeatWatchdogRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_UpdateHeartbeatWatchdogRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_UpdateHeartbeatWatchdogRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsUpdateHeartbeatWatchdogRequest& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_UpdateHeartbeatWatchdogRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/UpdateHeartbeatWatchdogResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsUpdateHeartbeatWatchdogResponse> {
+  static constexpr size_t max_wire_bytes=1;
+  static constexpr char const* codec_identity="UWVMROS1_5102240f548751135043fe3e20cc41d8ed189ed39f75f5c8328e169e3bf5c4fc";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsUpdateHeartbeatWatchdogResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_UpdateHeartbeatWatchdogResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_UpdateHeartbeatWatchdogResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_UpdateHeartbeatWatchdogResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsUpdateHeartbeatWatchdogResponse& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_UpdateHeartbeatWatchdogResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/UpdateInclinationWatchdogRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsUpdateInclinationWatchdogRequest> {
+  static constexpr size_t max_wire_bytes=1709;
+  static constexpr char const* codec_identity="UWVMROS1_cab6e7cbad06eb1c7692a64f0b7870ec5e3e6e56172916597f551a6dfb6a442c";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsUpdateInclinationWatchdogRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_UpdateInclinationWatchdogRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_UpdateInclinationWatchdogRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_UpdateInclinationWatchdogRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsUpdateInclinationWatchdogRequest& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_UpdateInclinationWatchdogRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/UpdateInclinationWatchdogResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsUpdateInclinationWatchdogResponse> {
+  static constexpr size_t max_wire_bytes=1;
+  static constexpr char const* codec_identity="UWVMROS1_822cddd0fc632d1140f7f32b375eee38348748c4eba1ce79cb271ffdf100e1fb";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsUpdateInclinationWatchdogResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_UpdateInclinationWatchdogResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_UpdateInclinationWatchdogResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_UpdateInclinationWatchdogResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsUpdateInclinationWatchdogResponse& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_UpdateInclinationWatchdogResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/UpdateNodeStatusWatchdogRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsUpdateNodeStatusWatchdogRequest> {
+  static constexpr size_t max_wire_bytes=1698;
+  static constexpr char const* codec_identity="UWVMROS1_962c4c93dd43f25968ee1cae173f614573c8f488bb58e4d254f8e2f9a8ee20cb";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsUpdateNodeStatusWatchdogRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_UpdateNodeStatusWatchdogRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_UpdateNodeStatusWatchdogRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_UpdateNodeStatusWatchdogRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsUpdateNodeStatusWatchdogRequest& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_UpdateNodeStatusWatchdogRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/UpdateNodeStatusWatchdogResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsUpdateNodeStatusWatchdogResponse> {
+  static constexpr size_t max_wire_bytes=1;
+  static constexpr char const* codec_identity="UWVMROS1_4c78b86fb01b4f645285f53ba1f03f7992db7aa21928129d3e436885ee241b07";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsUpdateNodeStatusWatchdogResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_UpdateNodeStatusWatchdogResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_UpdateNodeStatusWatchdogResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_UpdateNodeStatusWatchdogResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsUpdateNodeStatusWatchdogResponse& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_UpdateNodeStatusWatchdogResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/UpdateNodeletStatusWatchdogRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsUpdateNodeletStatusWatchdogRequest> {
+  static constexpr size_t max_wire_bytes=1958;
+  static constexpr char const* codec_identity="UWVMROS1_696685f347ed5da62811b33ff4bc7d5a368b71347e72ff96ae20852c404e5a7b";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsUpdateNodeletStatusWatchdogRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_UpdateNodeletStatusWatchdogRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_UpdateNodeletStatusWatchdogRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_UpdateNodeletStatusWatchdogRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsUpdateNodeletStatusWatchdogRequest& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_UpdateNodeletStatusWatchdogRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/UpdateNodeletStatusWatchdogResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsUpdateNodeletStatusWatchdogResponse> {
+  static constexpr size_t max_wire_bytes=1;
+  static constexpr char const* codec_identity="UWVMROS1_7948d56be62c8db523533c6de69635c32bb16b9ee1f46c5ab2150a148e8951d3";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsUpdateNodeletStatusWatchdogResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_UpdateNodeletStatusWatchdogResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_UpdateNodeletStatusWatchdogResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_UpdateNodeletStatusWatchdogResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsUpdateNodeletStatusWatchdogResponse& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_UpdateNodeletStatusWatchdogResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/UpdateNumPointsWatchdogRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsUpdateNumPointsWatchdogRequest> {
+  static constexpr size_t max_wire_bytes=1701;
+  static constexpr char const* codec_identity="UWVMROS1_b6990dab39039686f9f0ca55bc832b07f299522b0c5a94d441cebcfb78f8da61";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsUpdateNumPointsWatchdogRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_UpdateNumPointsWatchdogRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_UpdateNumPointsWatchdogRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_UpdateNumPointsWatchdogRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsUpdateNumPointsWatchdogRequest& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_UpdateNumPointsWatchdogRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/UpdateNumPointsWatchdogResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsUpdateNumPointsWatchdogResponse> {
+  static constexpr size_t max_wire_bytes=1;
+  static constexpr char const* codec_identity="UWVMROS1_edb0c4ab7f230636492b5e9ddae9d0717f37a042167aed3d1473489321fa5b96";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsUpdateNumPointsWatchdogResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_UpdateNumPointsWatchdogResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_UpdateNumPointsWatchdogResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_UpdateNumPointsWatchdogResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsUpdateNumPointsWatchdogResponse& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_UpdateNumPointsWatchdogResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/UpdateOdomCovarianceWatchdogRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsUpdateOdomCovarianceWatchdogRequest> {
+  static constexpr size_t max_wire_bytes=1709;
+  static constexpr char const* codec_identity="UWVMROS1_884e8b91e3bcb9b559ca03b46c268eebbda100aa40c92c62f805c29f69fae628";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsUpdateOdomCovarianceWatchdogRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_UpdateOdomCovarianceWatchdogRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_UpdateOdomCovarianceWatchdogRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_UpdateOdomCovarianceWatchdogRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsUpdateOdomCovarianceWatchdogRequest& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_UpdateOdomCovarianceWatchdogRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/UpdateOdomCovarianceWatchdogResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsUpdateOdomCovarianceWatchdogResponse> {
+  static constexpr size_t max_wire_bytes=1;
+  static constexpr char const* codec_identity="UWVMROS1_36ab644fd1658850c45accb7a3443210e51420d9bb30200566ab1444de17de20";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsUpdateOdomCovarianceWatchdogResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_UpdateOdomCovarianceWatchdogResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_UpdateOdomCovarianceWatchdogResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_UpdateOdomCovarianceWatchdogResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsUpdateOdomCovarianceWatchdogResponse& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_UpdateOdomCovarianceWatchdogResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/UpdateRtkFixWatchdogRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsUpdateRtkFixWatchdogRequest> {
+  static constexpr size_t max_wire_bytes=1703;
+  static constexpr char const* codec_identity="UWVMROS1_346015ad9d35ab1f670410d69707f5e7464bc961c610ad5f03e1a072bf270e71";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsUpdateRtkFixWatchdogRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_UpdateRtkFixWatchdogRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_UpdateRtkFixWatchdogRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_UpdateRtkFixWatchdogRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsUpdateRtkFixWatchdogRequest& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_UpdateRtkFixWatchdogRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/UpdateRtkFixWatchdogResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsUpdateRtkFixWatchdogResponse> {
+  static constexpr size_t max_wire_bytes=1;
+  static constexpr char const* codec_identity="UWVMROS1_8011c3715440e0b385c2700ba784d7e144a885141644b6446a2bb0d170c02572";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsUpdateRtkFixWatchdogResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_UpdateRtkFixWatchdogResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_UpdateRtkFixWatchdogResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_UpdateRtkFixWatchdogResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsUpdateRtkFixWatchdogResponse& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_UpdateRtkFixWatchdogResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/UpdateTopicDataWatchdogRequest; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsUpdateTopicDataWatchdogRequest> {
+  static constexpr size_t max_wire_bytes=1701;
+  static constexpr char const* codec_identity="UWVMROS1_d5e48e1a2fdc42e8a2e69d6e3052128b040476caf17478fc14cdec784addcc39";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsUpdateTopicDataWatchdogRequest const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_UpdateTopicDataWatchdogRequest_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_UpdateTopicDataWatchdogRequest_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_UpdateTopicDataWatchdogRequest_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsUpdateTopicDataWatchdogRequest& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_UpdateTopicDataWatchdogRequest_decode(bytes.data(),bytes.size(),&out);}
+};
+/** Checked codec for clearpath_safety_msgs/UpdateTopicDataWatchdogResponse; canonical maximum is not an actual message length. */
+template<> struct Codec<uwvm_custom::Ros1Clearpath_safety_msgsUpdateTopicDataWatchdogResponse> {
+  static constexpr size_t max_wire_bytes=1;
+  static constexpr char const* codec_identity="UWVMROS1_491070db415651a6f37bedaa7c23caceda299a84fa956b272dd21fb062684f85";
+  static bool encode(uwvm_custom::Ros1Clearpath_safety_msgsUpdateTopicDataWatchdogResponse const& value,wire::bytes& out) {
+    if(!roswasmc_bounded_1_clearpath_safety_msgs_UpdateTopicDataWatchdogResponse_valid(&value))return false;size_t n=roswasmc_bounded_1_clearpath_safety_msgs_UpdateTopicDataWatchdogResponse_wire_size(&value),used=0;wire::bytes next(n);
+    if(roswasmc_bounded_1_clearpath_safety_msgs_UpdateTopicDataWatchdogResponse_encode(&value,next.data(),next.size(),&used)||used!=n)return false;out=std::move(next);return true;}
+  static bool decode(std::span<unsigned char const> bytes,uwvm_custom::Ros1Clearpath_safety_msgsUpdateTopicDataWatchdogResponse& out) {return !roswasmc_bounded_1_clearpath_safety_msgs_UpdateTopicDataWatchdogResponse_decode(bytes.data(),bytes.size(),&out);}
+};
+}

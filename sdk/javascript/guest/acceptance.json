@@ -1,0 +1,883 @@
+{
+  "additional_profiles": [
+    {
+      "lesson": "03/04",
+      "requires": [
+        "distinct frozen config bytes for every selected profile",
+        "explicit aliases/type/QoS/quota for each operation",
+        "independent native service/Action/parameter/TF/graph/lifecycle/clock/logger oracle",
+        "actual service/Action callbacks and event cases",
+        "empty default only proves local setup/cleanup"
+      ],
+      "scope": "full synchronous/async resource interoperability"
+    },
+    {
+      "lesson": "06",
+      "requires": [
+        "customPublish=true in frozen config",
+        "native generated adapter/identity",
+        "packet-pub ROS1 or sample-pub ROS2 grant",
+        "independent native complete-field oracle",
+        "default roundtrip is guest-local only"
+      ],
+      "scope": "native custom-record publication"
+    }
+  ],
+  "mandatory_per_product": [
+    "frozen source/input/tool hashes rechecked",
+    "actual compiler job exits and complete MD/link traces",
+    "actual Wasm validation and exact signature inspection",
+    "one defined bounded memory, no memory import or start section",
+    "only selected ROS/basic WASI/scalar imports; no env.*",
+    "exact current cgroup and ancestor OOM/reserve checks",
+    "owned deadline/RSS/pidfd descendant cleanup",
+    "actual run and final artifact provenance; no Node model substitution"
+  ],
+  "owner_execution": "All actual preparation/build/validation/Runtime/native/profiling jobs remain serial under the selected64GiB swap-zero cgroup, reserves and process guards. This document starts no processes and grants no rights.",
+  "schema": "uwvm-javascript-guest-acceptance-plan-v1",
+  "status": "SOURCE_PLAN_NOT_EXECUTED",
+  "variant_count": 30,
+  "variants": [
+    {
+      "backend": 1,
+      "default_profile": "empty_ros",
+      "exit": 0,
+      "expected_library_imports": [],
+      "expected_ros_count": 38,
+      "expected_wasi": [
+        "fd_read",
+        "fd_write",
+        "proc_exit"
+      ],
+      "id": "00-raw-ros1",
+      "independent_native_witness": true,
+      "mode": "command",
+      "recipe_variant": "00-raw-ros1",
+      "requirements": [
+        "empty ROS rights",
+        "exact protected slot/output",
+        "no native effects"
+      ],
+      "runtime_scope": "actual_denied_imports",
+      "stdout": {
+        "final": "PASS_JS_GUEST_DEFAULT_DENIED\n",
+        "kind": "marker_lines"
+      }
+    },
+    {
+      "backend": 2,
+      "default_profile": "empty_ros",
+      "exit": 0,
+      "expected_library_imports": [],
+      "expected_ros_count": 43,
+      "expected_wasi": [
+        "fd_read",
+        "fd_write",
+        "proc_exit"
+      ],
+      "id": "00-raw-ros2",
+      "independent_native_witness": true,
+      "mode": "command",
+      "recipe_variant": "00-raw-ros2",
+      "requirements": [
+        "empty ROS rights",
+        "exact protected slot/output",
+        "no native effects"
+      ],
+      "runtime_scope": "actual_denied_imports",
+      "stdout": {
+        "final": "PASS_JS_GUEST_DEFAULT_DENIED\n",
+        "kind": "marker_lines"
+      }
+    },
+    {
+      "backend": 1,
+      "default_profile": "empty_ros",
+      "exit": 0,
+      "expected_library_imports": [],
+      "expected_ros_count": 38,
+      "expected_wasi": [
+        "fd_read",
+        "fd_write",
+        "proc_exit"
+      ],
+      "id": "01-codecs-ros1",
+      "independent_native_witness": false,
+      "mode": "command",
+      "recipe_variant": "01-codecs-ros1",
+      "requirements": [
+        "no implicit grants",
+        "exact local oracle",
+        "checked cleanup"
+      ],
+      "runtime_scope": "guest_local_semantics",
+      "stdout": {
+        "final": "PASS_JS_GUEST_CODECS\n",
+        "kind": "marker_lines"
+      }
+    },
+    {
+      "backend": 2,
+      "default_profile": "empty_ros",
+      "exit": 0,
+      "expected_library_imports": [],
+      "expected_ros_count": 43,
+      "expected_wasi": [
+        "fd_read",
+        "fd_write",
+        "proc_exit"
+      ],
+      "id": "01-codecs-ros2",
+      "independent_native_witness": false,
+      "mode": "command",
+      "recipe_variant": "01-codecs-ros2",
+      "requirements": [
+        "no implicit grants",
+        "exact local oracle",
+        "checked cleanup"
+      ],
+      "runtime_scope": "guest_local_semantics",
+      "stdout": {
+        "final": "PASS_JS_GUEST_CODECS\n",
+        "kind": "marker_lines"
+      }
+    },
+    {
+      "backend": 1,
+      "default_profile": "explicit_native",
+      "exit": 0,
+      "expected_library_imports": [],
+      "expected_ros_count": 38,
+      "expected_wasi": [
+        "fd_read",
+        "fd_write",
+        "proc_exit"
+      ],
+      "id": "02-node-ros1",
+      "independent_native_witness": true,
+      "mode": "command",
+      "recipe_variant": "02-node-ros1",
+      "requirements": [
+        "separate Worker/Gateway/native peer",
+        "observe exact endpoint match before P",
+        "exact warmup/final/reply canonical bytes",
+        "one R per poll, at most200",
+        "actual guest callback once",
+        "stale handle9 and checked cleanup"
+      ],
+      "runtime_scope": "actual_native_delivery",
+      "stdout": {
+        "final": "PASS_JS_GUEST_DELIVERY\n",
+        "kind": "marker_lines"
+      }
+    },
+    {
+      "backend": 2,
+      "default_profile": "explicit_native",
+      "exit": 0,
+      "expected_library_imports": [],
+      "expected_ros_count": 43,
+      "expected_wasi": [
+        "fd_read",
+        "fd_write",
+        "proc_exit"
+      ],
+      "id": "02-node-ros2",
+      "independent_native_witness": true,
+      "mode": "command",
+      "recipe_variant": "02-node-ros2",
+      "requirements": [
+        "separate Worker/Gateway/native peer",
+        "observe exact endpoint match before P",
+        "exact warmup/final/reply canonical bytes",
+        "one R per poll, at most200",
+        "actual guest callback once",
+        "stale handle9 and checked cleanup"
+      ],
+      "runtime_scope": "actual_native_delivery",
+      "stdout": {
+        "final": "PASS_JS_GUEST_DELIVERY\n",
+        "kind": "marker_lines"
+      }
+    },
+    {
+      "backend": 1,
+      "default_profile": "empty_ros",
+      "exit": 0,
+      "expected_library_imports": [],
+      "expected_ros_count": 38,
+      "expected_wasi": [
+        "fd_read",
+        "fd_write",
+        "proc_exit"
+      ],
+      "id": "03-application-ros1",
+      "independent_native_witness": false,
+      "mode": "command",
+      "recipe_variant": "03-application-ros1",
+      "requirements": [
+        "no implicit grants",
+        "exact local oracle",
+        "checked cleanup"
+      ],
+      "runtime_scope": "guest_local_semantics",
+      "stdout": {
+        "final": "PASS_JS_GUEST_APPLICATION\n",
+        "kind": "marker_lines"
+      }
+    },
+    {
+      "backend": 2,
+      "default_profile": "empty_ros",
+      "exit": 0,
+      "expected_library_imports": [],
+      "expected_ros_count": 43,
+      "expected_wasi": [
+        "fd_read",
+        "fd_write",
+        "proc_exit"
+      ],
+      "id": "03-application-ros2",
+      "independent_native_witness": false,
+      "mode": "command",
+      "recipe_variant": "03-application-ros2",
+      "requirements": [
+        "no implicit grants",
+        "exact local oracle",
+        "checked cleanup"
+      ],
+      "runtime_scope": "guest_local_semantics",
+      "stdout": {
+        "final": "PASS_JS_GUEST_APPLICATION\n",
+        "kind": "marker_lines"
+      }
+    },
+    {
+      "backend": 1,
+      "default_profile": "empty_ros",
+      "exit": 0,
+      "expected_library_imports": [],
+      "expected_ros_count": 38,
+      "expected_wasi": [
+        "fd_read",
+        "fd_write",
+        "proc_exit"
+      ],
+      "id": "04-async-application-ros1",
+      "independent_native_witness": false,
+      "mode": "command",
+      "recipe_variant": "04-async-application-ros1",
+      "requirements": [
+        "no implicit grants",
+        "exact local oracle",
+        "checked cleanup"
+      ],
+      "runtime_scope": "guest_local_semantics",
+      "stdout": {
+        "final": "PASS_JS_GUEST_ASYNC_APPLICATION\n",
+        "kind": "marker_lines"
+      }
+    },
+    {
+      "backend": 2,
+      "default_profile": "empty_ros",
+      "exit": 0,
+      "expected_library_imports": [],
+      "expected_ros_count": 43,
+      "expected_wasi": [
+        "fd_read",
+        "fd_write",
+        "proc_exit"
+      ],
+      "id": "04-async-application-ros2",
+      "independent_native_witness": false,
+      "mode": "command",
+      "recipe_variant": "04-async-application-ros2",
+      "requirements": [
+        "no implicit grants",
+        "exact local oracle",
+        "checked cleanup"
+      ],
+      "runtime_scope": "guest_local_semantics",
+      "stdout": {
+        "final": "PASS_JS_GUEST_ASYNC_APPLICATION\n",
+        "kind": "marker_lines"
+      }
+    },
+    {
+      "backend": 1,
+      "default_profile": "empty_ros",
+      "exit": 0,
+      "expected_library_imports": [],
+      "expected_ros_count": 38,
+      "expected_wasi": [
+        "fd_read",
+        "fd_write",
+        "proc_exit"
+      ],
+      "id": "05-ownership-scheduling-ros1",
+      "independent_native_witness": false,
+      "mode": "command",
+      "recipe_variant": "05-ownership-scheduling-ros1",
+      "requirements": [
+        "no implicit grants",
+        "exact local oracle",
+        "checked cleanup"
+      ],
+      "runtime_scope": "guest_local_semantics",
+      "stdout": {
+        "final": "PASS_JS_GUEST_OWNERSHIP\n",
+        "kind": "marker_lines"
+      }
+    },
+    {
+      "backend": 2,
+      "default_profile": "empty_ros",
+      "exit": 0,
+      "expected_library_imports": [],
+      "expected_ros_count": 43,
+      "expected_wasi": [
+        "fd_read",
+        "fd_write",
+        "proc_exit"
+      ],
+      "id": "05-ownership-scheduling-ros2",
+      "independent_native_witness": false,
+      "mode": "command",
+      "recipe_variant": "05-ownership-scheduling-ros2",
+      "requirements": [
+        "no implicit grants",
+        "exact local oracle",
+        "checked cleanup"
+      ],
+      "runtime_scope": "guest_local_semantics",
+      "stdout": {
+        "final": "PASS_JS_GUEST_OWNERSHIP\n",
+        "kind": "marker_lines"
+      }
+    },
+    {
+      "backend": 1,
+      "default_profile": "empty_ros",
+      "exit": 0,
+      "expected_library_imports": [],
+      "expected_ros_count": 38,
+      "expected_wasi": [
+        "fd_read",
+        "fd_write",
+        "proc_exit"
+      ],
+      "id": "06-custom-codec-ros1",
+      "independent_native_witness": false,
+      "mode": "command",
+      "recipe_variant": "06-custom-codec-ros1",
+      "requirements": [
+        "no implicit grants",
+        "exact local oracle",
+        "checked cleanup"
+      ],
+      "runtime_scope": "guest_local_semantics",
+      "stdout": {
+        "final": "PASS_JS_GUEST_CUSTOM_CODEC\n",
+        "kind": "marker_lines"
+      }
+    },
+    {
+      "backend": 2,
+      "default_profile": "empty_ros",
+      "exit": 0,
+      "expected_library_imports": [],
+      "expected_ros_count": 43,
+      "expected_wasi": [
+        "fd_read",
+        "fd_write",
+        "proc_exit"
+      ],
+      "id": "06-custom-codec-ros2",
+      "independent_native_witness": false,
+      "mode": "command",
+      "recipe_variant": "06-custom-codec-ros2",
+      "requirements": [
+        "no implicit grants",
+        "exact local oracle",
+        "checked cleanup"
+      ],
+      "runtime_scope": "guest_local_semantics",
+      "stdout": {
+        "final": "PASS_JS_GUEST_CUSTOM_CODEC\n",
+        "kind": "marker_lines"
+      }
+    },
+    {
+      "backend": 1,
+      "default_profile": "empty_ros",
+      "exit": 0,
+      "expected_library_imports": [],
+      "expected_ros_count": 38,
+      "expected_wasi": [
+        "fd_read",
+        "fd_write",
+        "proc_exit"
+      ],
+      "id": "07-complete-denied-abi-ros1",
+      "independent_native_witness": true,
+      "mode": "command",
+      "recipe_variant": "07-complete-denied-abi-ros1",
+      "requirements": [
+        "empty ROS rights",
+        "exact protected slot/output",
+        "no native effects"
+      ],
+      "runtime_scope": "actual_denied_imports",
+      "stdout": {
+        "final": "PASS_JS_GUEST_COMPLETE_DENIED_ABI\n",
+        "kind": "marker_lines"
+      }
+    },
+    {
+      "backend": 2,
+      "default_profile": "empty_ros",
+      "exit": 0,
+      "expected_library_imports": [],
+      "expected_ros_count": 43,
+      "expected_wasi": [
+        "fd_read",
+        "fd_write",
+        "proc_exit"
+      ],
+      "id": "07-complete-denied-abi-ros2",
+      "independent_native_witness": true,
+      "mode": "command",
+      "recipe_variant": "07-complete-denied-abi-ros2",
+      "requirements": [
+        "empty ROS rights",
+        "exact protected slot/output",
+        "no native effects"
+      ],
+      "runtime_scope": "actual_denied_imports",
+      "stdout": {
+        "final": "PASS_JS_GUEST_COMPLETE_DENIED_ABI\n",
+        "kind": "marker_lines"
+      }
+    },
+    {
+      "backend": 1,
+      "default_profile": "explicit_native",
+      "exit": 0,
+      "expected_library_imports": [],
+      "expected_ros_count": 38,
+      "expected_wasi": [
+        "fd_read",
+        "fd_write",
+        "proc_exit"
+      ],
+      "id": "08-unified-events-ros1",
+      "independent_native_witness": true,
+      "mode": "command",
+      "recipe_variant": "08-unified-events-ros1",
+      "requirements": [
+        "explicit source/observer aliases",
+        "actual native event trigger",
+        "exact envelope source/session/sequence",
+        "close and resource_closed event",
+        "checked cleanup"
+      ],
+      "runtime_scope": "actual_native_events",
+      "stdout": {
+        "final": "PASS_JS_GUEST_UNIFIED_EVENTS\n",
+        "kind": "marker_lines"
+      }
+    },
+    {
+      "backend": 2,
+      "default_profile": "explicit_native",
+      "exit": 0,
+      "expected_library_imports": [],
+      "expected_ros_count": 43,
+      "expected_wasi": [
+        "fd_read",
+        "fd_write",
+        "proc_exit"
+      ],
+      "id": "08-unified-events-ros2",
+      "independent_native_witness": true,
+      "mode": "command",
+      "recipe_variant": "08-unified-events-ros2",
+      "requirements": [
+        "explicit source/observer aliases",
+        "actual native event trigger",
+        "exact envelope source/session/sequence",
+        "close and resource_closed event",
+        "checked cleanup"
+      ],
+      "runtime_scope": "actual_native_events",
+      "stdout": {
+        "final": "PASS_JS_GUEST_UNIFIED_EVENTS\n",
+        "kind": "marker_lines"
+      }
+    },
+    {
+      "backend": 1,
+      "default_profile": "empty_ros",
+      "exit": 0,
+      "expected_library_imports": [],
+      "expected_ros_count": 38,
+      "expected_wasi": [
+        "fd_read",
+        "fd_write",
+        "proc_exit"
+      ],
+      "id": "09-boundary-refusals-ros1",
+      "independent_native_witness": true,
+      "mode": "command",
+      "recipe_variant": "09-boundary-refusals-ros1",
+      "requirements": [
+        "empty ROS rights",
+        "exact protected slot/output",
+        "no native effects"
+      ],
+      "runtime_scope": "actual_denied_imports",
+      "stdout": {
+        "final": "PASS_JS_GUEST_BOUNDARY_REFUSALS\n",
+        "kind": "marker_lines"
+      }
+    },
+    {
+      "backend": 2,
+      "default_profile": "empty_ros",
+      "exit": 0,
+      "expected_library_imports": [],
+      "expected_ros_count": 43,
+      "expected_wasi": [
+        "fd_read",
+        "fd_write",
+        "proc_exit"
+      ],
+      "id": "09-boundary-refusals-ros2",
+      "independent_native_witness": true,
+      "mode": "command",
+      "recipe_variant": "09-boundary-refusals-ros2",
+      "requirements": [
+        "empty ROS rights",
+        "exact protected slot/output",
+        "no native effects"
+      ],
+      "runtime_scope": "actual_denied_imports",
+      "stdout": {
+        "final": "PASS_JS_GUEST_BOUNDARY_REFUSALS\n",
+        "kind": "marker_lines"
+      }
+    },
+    {
+      "backend": 2,
+      "default_profile": "empty_ros",
+      "exit": 3,
+      "expected_library_imports": [],
+      "expected_ros_count": 43,
+      "expected_wasi": [
+        "fd_read",
+        "fd_write",
+        "proc_exit"
+      ],
+      "id": "limit-interrupt",
+      "independent_native_witness": true,
+      "mode": "command",
+      "recipe_variant": "limit-interrupt",
+      "requirements": [
+        "actual armed marker precedes budget exhaustion",
+        "interrupt_polls exhaustion is lifecycle LIMIT3",
+        "no native effects",
+        "deadline and owned process cleanup",
+        "startup/compiler/trap/timeout failure is not a successful refusal"
+      ],
+      "runtime_scope": "deliberate_engine_limit",
+      "stdout": {
+        "kind": "exact",
+        "text": "JS_GUEST_LIMIT_ARMED\n"
+      }
+    },
+    {
+      "backend": 2,
+      "default_profile": "empty_ros",
+      "exit": 3,
+      "expected_library_imports": [],
+      "expected_ros_count": 43,
+      "expected_wasi": [
+        "fd_read",
+        "fd_write",
+        "proc_exit"
+      ],
+      "id": "limit-heap",
+      "independent_native_witness": true,
+      "mode": "command",
+      "recipe_variant": "limit-heap",
+      "requirements": [
+        "actual armed marker precedes budget exhaustion",
+        "heap_bytes exhaustion is lifecycle LIMIT3",
+        "no native effects",
+        "deadline and owned process cleanup",
+        "startup/compiler/trap/timeout failure is not a successful refusal"
+      ],
+      "runtime_scope": "deliberate_engine_limit",
+      "stdout": {
+        "kind": "exact",
+        "text": "JS_GUEST_LIMIT_ARMED\n"
+      }
+    },
+    {
+      "backend": 2,
+      "default_profile": "empty_ros",
+      "exit": 3,
+      "expected_library_imports": [],
+      "expected_ros_count": 43,
+      "expected_wasi": [
+        "fd_read",
+        "fd_write",
+        "proc_exit"
+      ],
+      "id": "limit-jobs",
+      "independent_native_witness": true,
+      "mode": "command",
+      "recipe_variant": "limit-jobs",
+      "requirements": [
+        "actual armed marker precedes budget exhaustion",
+        "max_jobs exhaustion is lifecycle LIMIT3",
+        "no native effects",
+        "deadline and owned process cleanup",
+        "startup/compiler/trap/timeout failure is not a successful refusal"
+      ],
+      "runtime_scope": "deliberate_engine_limit",
+      "stdout": {
+        "kind": "exact",
+        "text": "JS_GUEST_LIMIT_ARMED\n"
+      }
+    },
+    {
+      "backend": 0,
+      "default_profile": "empty_ros_and_wasi",
+      "expected_library_imports": [],
+      "expected_ros_count": 0,
+      "expected_wasi": [],
+      "id": "vision_guest",
+      "mode": "reactor",
+      "recipe_variant": "reactor-vision",
+      "requirements": [
+        "no Wasm start section",
+        "exact configured scalar exports",
+        "actual init/status/call/close lifecycle",
+        "independent numerical/lifetime/stale/error oracle",
+        "closed use must retain CLOSED5 and explicit scalar failure",
+        "no host JS callback or borrowed main capability"
+      ],
+      "runtime_scope": "actual_scalar_library"
+    },
+    {
+      "backend": 0,
+      "default_profile": "empty_ros_and_wasi",
+      "expected_library_imports": [],
+      "expected_ros_count": 0,
+      "expected_wasi": [],
+      "id": "callback_guest",
+      "mode": "reactor",
+      "recipe_variant": "reactor-callback",
+      "requirements": [
+        "no Wasm start section",
+        "exact configured scalar exports",
+        "actual init/status/call/close lifecycle",
+        "independent numerical/lifetime/stale/error oracle",
+        "closed use must retain CLOSED5 and explicit scalar failure",
+        "no host JS callback or borrowed main capability"
+      ],
+      "runtime_scope": "actual_scalar_library"
+    },
+    {
+      "backend": 0,
+      "default_profile": "empty_ros_and_wasi",
+      "expected_library_imports": [
+        {
+          "module": "callbacks",
+          "name": "on_motion",
+          "parameters": [
+            "i32",
+            "i32",
+            "i32",
+            "i32"
+          ],
+          "results": [
+            "i32"
+          ]
+        }
+      ],
+      "expected_ros_count": 0,
+      "expected_wasi": [],
+      "id": "motion_guest",
+      "mode": "reactor",
+      "recipe_variant": "reactor-motion",
+      "requirements": [
+        "no Wasm start section",
+        "exact configured scalar exports",
+        "actual init/status/call/close lifecycle",
+        "independent numerical/lifetime/stale/error oracle",
+        "closed use must retain CLOSED5 and explicit scalar failure",
+        "no host JS callback or borrowed main capability"
+      ],
+      "runtime_scope": "actual_scalar_library"
+    },
+    {
+      "backend": 2,
+      "default_profile": "empty_ros",
+      "exit": 0,
+      "expected_ros_count": 43,
+      "expected_wasi": [
+        "fd_read",
+        "fd_write",
+        "proc_exit"
+      ],
+      "id": "benchmark_guest",
+      "library_modules": [
+        "vision",
+        "callbacks",
+        "motion"
+      ],
+      "mode": "command",
+      "recipe_variant": "benchmark_guest",
+      "requirements": [
+        "same seed1/count10000 as independent robotics_math.h native oracle",
+        "actual scalar imports enter separate Wasm instances",
+        "all pure library rights empty",
+        "compare every checksum before timing",
+        "warmup and measured samples retain exact timing boundaries",
+        "no native ROS/robot/simulator equivalence claim",
+        "root retains unused ROS imports; do not label it zero-import"
+      ],
+      "runtime_scope": "actual_modular_synthetic_computation",
+      "stdout": {
+        "bytes": 8,
+        "encoding": "little-endian uint64 checksum",
+        "kind": "binary"
+      }
+    },
+    {
+      "backend": 2,
+      "default_profile": "empty_ros",
+      "exit": 0,
+      "expected_ros_count": 43,
+      "expected_wasi": [
+        "fd_read",
+        "fd_write",
+        "proc_exit"
+      ],
+      "id": "benchmark_session_guest",
+      "library_modules": [
+        "vision",
+        "callbacks",
+        "motion"
+      ],
+      "mode": "command",
+      "recipe_variant": "benchmark_session_guest",
+      "requirements": [
+        "same seed1/count10000 as independent robotics_math.h native oracle",
+        "actual scalar imports enter separate Wasm instances",
+        "all pure library rights empty",
+        "compare every checksum before timing",
+        "warmup and measured samples retain exact timing boundaries",
+        "no native ROS/robot/simulator equivalence claim",
+        "root retains unused ROS imports; do not label it zero-import"
+      ],
+      "runtime_scope": "actual_modular_synthetic_computation",
+      "stdout": {
+        "commands": "W/P -> exact8LE checksum; Q -> exit0; at most256 command bytes",
+        "kind": "session",
+        "ready": "READY\n"
+      }
+    },
+    {
+      "backend": 0,
+      "default_profile": "empty_ros_and_wasi",
+      "expected_library_imports": [],
+      "expected_ros_count": 0,
+      "expected_wasi": [],
+      "id": "float_guest",
+      "mode": "reactor",
+      "recipe_variant": "float_guest",
+      "requirements": [
+        "actual exact f32/f64 signatures and no start section",
+        "independent IEEE oracle: finite precision/overflow/NaN class/Inf/negative zero",
+        "C Number-only and scalar failure/status poison",
+        "no NaN payload preservation claim",
+        "all library rights empty"
+      ],
+      "runtime_scope": "actual_floating_scalar_library"
+    },
+    {
+      "backend": 2,
+      "default_profile": "empty_ros",
+      "exit": 0,
+      "expected_library_imports": [
+        {
+          "module": "floating",
+          "name": "identity32",
+          "parameters": [
+            "f32"
+          ],
+          "results": [
+            "f32"
+          ]
+        },
+        {
+          "module": "floating",
+          "name": "identity64",
+          "parameters": [
+            "f64"
+          ],
+          "results": [
+            "f64"
+          ]
+        },
+        {
+          "module": "floating",
+          "name": "sum32",
+          "parameters": [
+            "f32",
+            "f32"
+          ],
+          "results": [
+            "f32"
+          ]
+        },
+        {
+          "module": "floating",
+          "name": "sum64",
+          "parameters": [
+            "f64",
+            "f64"
+          ],
+          "results": [
+            "f64"
+          ]
+        }
+      ],
+      "expected_ros_count": 43,
+      "expected_wasi": [
+        "fd_read",
+        "fd_write",
+        "proc_exit"
+      ],
+      "id": "10-floating-modules",
+      "mode": "command",
+      "recipe_variant": "10-floating-modules",
+      "requirements": [
+        "preload actual float_guest artifact as floating",
+        "actual f32/f64 imports, not Number facade in host",
+        "strict non-Number inputs refused before call",
+        "same independent numerical checks as provider",
+        "no native ROS/robot/performance equivalence claim"
+      ],
+      "runtime_scope": "actual_floating_module_composition",
+      "stdout": {
+        "kind": "exact",
+        "text": "PASS_JS_GUEST_FLOATING_MODULES\n"
+      }
+    }
+  ]
+}

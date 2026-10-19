@@ -27,6 +27,10 @@
 # include <cstdint>
 # include <climits>
 # include <type_traits>
+# include <utility>
+# include <string>
+# include <string_view>
+# include <uwvm2/utils/security/wsea.h>
 // macro
 # include <uwvm2/utils/macro/push_macros.h>
 # include <uwvm2/uwvm/utils/ansies/uwvm_color_push_macro.h>
@@ -58,6 +62,24 @@
 
 UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
 {
+    namespace details
+    {
+        template<typename Color>
+        [[nodiscard]] inline constexpr auto diagnostic_color(Color&& color) noexcept
+        {
+#if defined(__linux__)
+            // Conditional scatter alternatives multiply across one diagnostic
+            // on some target print paths. Keep one bounded fast_io view type;
+            // the static ANSI bytes and the single locked output are unchanged.
+            using view = ::uwvm2::utils::container::u8string_view;
+            return ::uwvm2::uwvm::utils::ansies::put_color ? view{color} : view{};
+#else
+            return ::uwvm2::uwvm::utils::ansies::diagnostic_color(::std::forward<Color>(color));
+#endif
+        }
+    }
+
+    extern "C++" {
     enum class load_wasm_file_rtl
     {
         ok,
@@ -68,8 +90,45 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
     inline constexpr load_wasm_file_rtl load_wasm_file(::uwvm2::uwvm::wasm::type::wasm_file_t & wf,
                                                        ::uwvm2::utils::container::u8cstring_view load_file_name,
                                                        ::uwvm2::utils::container::u8string_view rename_module_name,
-                                                       ::uwvm2::uwvm::wasm::type::wasm_parameter_t para) noexcept
+                                                       ::uwvm2::uwvm::wasm::type::wasm_parameter_t para,
+                                                       ::uwvm2::utils::control::owned_file_image::owner image = {}) noexcept
     {
+        // Never reload a parsed immutable image through mutable native file
+        // borrows. Its actual owner must retire after all source users drain.
+        if(wf.has_owned_source_image()) { return load_wasm_file_rtl::load_error; }
+        wf.secure_required_ = ::uwvm2::utils::security::wsea::module_selected(
+            ::std::string_view{reinterpret_cast<char const*>(load_file_name.cbegin()), load_file_name.size()});
+        if(wf.secure_required_)
+        {
+            // A selected module's verification and every parser/compiler borrow
+            // use the same private immutable snapshot, never a reopened path.
+            if(!image)
+            {
+                auto snapshot{::uwvm2::utils::control::owned_file_image::read(
+                    ::std::u8string{load_file_name.cbegin(), load_file_name.size()})};
+                if(!snapshot)
+                {
+                    ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                        u8"uwvm: [SIG_001] DENIED: unable to retain immutable secure WASM input.");
+                    return load_wasm_file_rtl::load_error;
+                }
+                image = ::std::move(snapshot.image);
+            }
+            auto authorization{::uwvm2::utils::security::wsea::verify_module(
+                ::std::string_view{reinterpret_cast<char const*>(load_file_name.cbegin()), load_file_name.size()},
+                reinterpret_cast<::std::byte const*>(image->cbegin()), image->size())};
+            if(!authorization || !authorization.authorization)
+            {
+                ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                    u8"uwvm: [", ::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(authorization.code ? authorization.code : "SIG_003")),
+                    u8"] DENIED: ", ::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(authorization.message ? authorization.message : "missing execution authorization")));
+                return load_wasm_file_rtl::load_error;
+            }
+            wf.execution_authorization_ = ::std::move(authorization.authorization);
+        }
+        if(image && !wf.adopt_unparsed_source_image(::std::move(image)))
+        { return load_wasm_file_rtl::load_error; }
+
         wf.file_name = load_file_name;
 
         wf.wasm_parameter = para;
@@ -78,23 +137,23 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
         if(::uwvm2::uwvm::io::show_verbose) [[unlikely]]
         {
             ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
+                                details::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
                                 u8"uwvm: ",
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_LT_GREEN),
+                                details::diagnostic_color(UWVM_COLOR_U8_LT_GREEN),
                                 u8"[info]  ",
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                 u8"Loading WASM File \"",
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_YELLOW),
+                                details::diagnostic_color(UWVM_COLOR_U8_YELLOW),
                                 load_file_name,
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                 u8"\". ",
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_GREEN),
+                                details::diagnostic_color(UWVM_COLOR_U8_GREEN),
                                 u8"[",
                                 ::uwvm2::uwvm::io::get_local_realtime(),
                                 u8"] ",
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_ORANGE),
+                                details::diagnostic_color(UWVM_COLOR_U8_ORANGE),
                                 u8"(verbose)\n",
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL));
+                                details::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
         }
 
         ::fast_io::unix_timestamp start_time{};
@@ -114,6 +173,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
 #endif
         }
 
+        if(!wf.has_owned_source_image())
+        {
 #if defined(_WIN32) && !defined(_WIN32_WINDOWS)
         if(load_file_name.starts_with(u8"::NT::"))
         {
@@ -125,32 +186,32 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                 // Output the main information and memory indication
                 ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
                                     // 1
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
+                                    details::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
                                     u8"uwvm: ",
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_YELLOW),
+                                    details::diagnostic_color(UWVM_COLOR_U8_YELLOW),
                                     u8"[warn]  ",
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                    details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                     u8"Resolve to NT path: \"",
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_YELLOW),
+                                    details::diagnostic_color(UWVM_COLOR_U8_YELLOW),
                                     load_file_name_nt_subview,
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                    details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                     u8"\".",
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_ORANGE),
+                                    details::diagnostic_color(UWVM_COLOR_U8_ORANGE),
                                     u8" (nt-path)\n",
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL));
+                                    details::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
 
                 if(::uwvm2::uwvm::io::nt_path_warning_fatal) [[unlikely]]
                 {
                     ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                                        ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
+                                        details::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
                                         u8"uwvm: ",
-                                        ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_LT_RED),
+                                        details::diagnostic_color(UWVM_COLOR_U8_LT_RED),
                                         u8"[fatal] ",
-                                        ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                        details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                         u8"Convert warnings to fatal errors. ",
-                                        ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_ORANGE),
+                                        details::diagnostic_color(UWVM_COLOR_U8_ORANGE),
                                         u8"(nt-path)\n\n",
-                                        ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL));
+                                        details::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
                     ::fast_io::fast_terminate();
                 }
             }
@@ -166,24 +227,25 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                 // On platforms where CHAR_BIT is greater than 8, there is no need to clear the utf-8 non-low 8 bits here
                 // allow symlink
                 wf.wasm_file =
-                    ::fast_io::native_file_loader{::fast_io::io_kernel, load_file_name_nt_subview, ::fast_io::open_mode::in | ::fast_io::open_mode::follow};
+                    ::fast_io::native_file_loader{::fast_io::io_kernel, load_file_name_nt_subview,
+                                                 ::fast_io::open_mode::in | ::fast_io::open_mode::follow | ::fast_io::open_mode::no_write_attributes};
             }
 # ifdef UWVM_CPP_EXCEPTIONS
             catch(::fast_io::error e)
             {
                 ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
+                                    details::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
                                     u8"uwvm: ",
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RED),
+                                    details::diagnostic_color(UWVM_COLOR_U8_RED),
                                     u8"[error] ",
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                    details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                     u8"Unable to open WASM file \"",
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_CYAN),
+                                    details::diagnostic_color(UWVM_COLOR_U8_CYAN),
                                     load_file_name_nt_subview,
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                    details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                     u8"\": ",
                                     e,
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL),
+                                    details::diagnostic_color(UWVM_COLOR_U8_RST_ALL),
                                     u8"\n");
 
                 return load_wasm_file_rtl::load_error;
@@ -204,24 +266,25 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
 
                 // On platforms where CHAR_BIT is greater than 8, there is no need to clear the utf-8 non-low 8 bits here
                 // allow symlink
-                wf.wasm_file = ::fast_io::native_file_loader{load_file_name, ::fast_io::open_mode::in | ::fast_io::open_mode::follow};
+                wf.wasm_file = ::fast_io::native_file_loader{load_file_name,
+                                                           ::fast_io::open_mode::in | ::fast_io::open_mode::follow | ::fast_io::open_mode::no_write_attributes};
             }
 # ifdef UWVM_CPP_EXCEPTIONS
             catch(::fast_io::error e)
             {
                 ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
+                                    details::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
                                     u8"uwvm: ",
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RED),
+                                    details::diagnostic_color(UWVM_COLOR_U8_RED),
                                     u8"[error] ",
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                    details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                     u8"Unable to open WASM file \"",
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_CYAN),
+                                    details::diagnostic_color(UWVM_COLOR_U8_CYAN),
                                     load_file_name,
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                    details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                     u8"\": ",
                                     e,
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL),
+                                    details::diagnostic_color(UWVM_COLOR_U8_RST_ALL),
                                     u8"\n");
 
                 return load_wasm_file_rtl::load_error;
@@ -241,24 +304,25 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
 
             // On platforms where CHAR_BIT is greater than 8, there is no need to clear the utf-8 non-low 8 bits here
             // allow symlink
-            wf.wasm_file = ::fast_io::native_file_loader{load_file_name, ::fast_io::open_mode::in | ::fast_io::open_mode::follow};
+            wf.wasm_file = ::fast_io::native_file_loader{load_file_name,
+                                                           ::fast_io::open_mode::in | ::fast_io::open_mode::follow | ::fast_io::open_mode::no_write_attributes};
         }
 # ifdef UWVM_CPP_EXCEPTIONS
         catch(::fast_io::error e)
         {
             ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
+                                details::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
                                 u8"uwvm: ",
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RED),
+                                details::diagnostic_color(UWVM_COLOR_U8_RED),
                                 u8"[error] ",
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                 u8"Unable to open WASM file \"",
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_CYAN),
+                                details::diagnostic_color(UWVM_COLOR_U8_CYAN),
                                 load_file_name,
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                 u8"\": ",
                                 e,
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL),
+                                details::diagnostic_color(UWVM_COLOR_U8_RST_ALL),
                                 u8"\n"
 #  ifndef _WIN32  // Win32 automatically adds a newline (winnt and win9x)
                                 u8"\n"
@@ -270,46 +334,52 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
 # endif
 #endif
 
+        }
+
         // binfmt_ver has to be modified by the change_binfmt_ver function.
-        wf.change_binfmt_ver(::uwvm2::parser::wasm::binfmt::detect_wasm_binfmt_version(reinterpret_cast<::std::byte const*>(wf.wasm_file.cbegin()),
-                                                                                       reinterpret_cast<::std::byte const*>(wf.wasm_file.cend())));
+        wf.change_binfmt_ver(::uwvm2::parser::wasm::binfmt::detect_wasm_binfmt_version(reinterpret_cast<::std::byte const*>(wf.source_cbegin()),
+                                                                                       reinterpret_cast<::std::byte const*>(wf.source_cend())));
 
         // verbose
         if(::uwvm2::uwvm::io::show_verbose) [[unlikely]]
         {
             ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
+                                details::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
                                 u8"uwvm: ",
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_LT_GREEN),
+                                details::diagnostic_color(UWVM_COLOR_U8_LT_GREEN),
                                 u8"[info]  ",
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                 u8"WebAssembly File \"",
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_YELLOW),
+                                details::diagnostic_color(UWVM_COLOR_U8_YELLOW),
                                 load_file_name,
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                 u8"\"\'s Binary Format Version \"",
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_YELLOW),
+                                details::diagnostic_color(UWVM_COLOR_U8_YELLOW),
                                 wf.binfmt_ver,
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                 u8"\" Detected. ",
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_GREEN),
+                                details::diagnostic_color(UWVM_COLOR_U8_GREEN),
                                 u8"[",
                                 ::uwvm2::uwvm::io::get_local_realtime(),
                                 u8"] ",
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_ORANGE),
+                                details::diagnostic_color(UWVM_COLOR_U8_ORANGE),
                                 u8"(verbose)\n",
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL));
+                                details::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
         }
 
         // After detect
         // Instructs to read the file all the way into memory
-        ::uwvm2::utils::madvise::my_madvise(wf.wasm_file.cbegin(), wf.wasm_file.size(), ::uwvm2::utils::madvise::madvise_flag::willneed);
+        if(!wf.has_owned_source_image())
+        { ::uwvm2::utils::madvise::my_madvise(wf.source_cbegin(), wf.source_size(), ::uwvm2::utils::madvise::madvise_flag::willneed); }
 
 #if CHAR_BIT > 8
         // Since files are either private page mapped or memory allocated and read, they can be modified directly.
         // Prevents invalid content in non-low eight bits of char_bit not equal to 8 from causing an unknown error in the parser.
+        if(!wf.has_owned_source_image())
+        {
         auto const wf_wasm_file_end{wf.wasm_file.end()};
         for(auto wf_wasm_file_curr{wf.wasm_file.begin()}; wf_wasm_file_curr != wf_wasm_file_end; ++wf_wasm_file_curr) { *wf_wasm_file_curr &= 0xFFu; }
+        }
 #endif
 
         switch(wf.binfmt_ver)
@@ -321,25 +391,25 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
 
 #ifndef UWVM_DISABLE_OUTPUT_WHEN_PARSE
                 ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
+                                    details::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
                                     // 1
                                     u8"uwvm: ",
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RED),
+                                    details::diagnostic_color(UWVM_COLOR_U8_RED),
                                     u8"[error] ",
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                    details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                     u8"(offset=",
                                     ::fast_io::mnp::addrvw(nullptr),
                                     u8") Illegal WebAssembly file format.\n"
                                     // 2
                                     u8"uwvm: ",
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_LT_GREEN),
+                                    details::diagnostic_color(UWVM_COLOR_U8_LT_GREEN),
                                     u8"[info]  ",
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                    details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                     u8"Parser Memory Indication: ",
-                                    ::uwvm2::uwvm::utils::memory::print_memory{reinterpret_cast<::std::byte const*>(wf.wasm_file.cbegin()),
-                                                                               reinterpret_cast<::std::byte const*>(wf.wasm_file.cbegin()),
-                                                                               reinterpret_cast<::std::byte const*>(wf.wasm_file.cend())},
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL),
+                                    ::uwvm2::uwvm::utils::memory::print_memory{reinterpret_cast<::std::byte const*>(wf.source_cbegin()),
+                                                                               reinterpret_cast<::std::byte const*>(wf.source_cbegin()),
+                                                                               reinterpret_cast<::std::byte const*>(wf.source_cend())},
+                                    details::diagnostic_color(UWVM_COLOR_U8_RST_ALL),
                                     u8"\n\n");
 #endif
                 return load_wasm_file_rtl::wasm_parser_error;  // wasm parsing error
@@ -357,23 +427,23 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                     if(::uwvm2::uwvm::io::show_verbose) [[unlikely]]
                     {
                         ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
+                                            details::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
                                             u8"uwvm: ",
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_LT_GREEN),
+                                            details::diagnostic_color(UWVM_COLOR_U8_LT_GREEN),
                                             u8"[info]  ",
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                            details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                             u8"Parsing WebAssembly file \"",
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_YELLOW),
+                                            details::diagnostic_color(UWVM_COLOR_U8_YELLOW),
                                             load_file_name,
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                            details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                             u8"\". ",
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_GREEN),
+                                            details::diagnostic_color(UWVM_COLOR_U8_GREEN),
                                             u8"[",
                                             ::uwvm2::uwvm::io::get_local_realtime(),
                                             u8"] ",
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_ORANGE),
+                                            details::diagnostic_color(UWVM_COLOR_U8_ORANGE),
                                             u8"(verbose)\n",
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL));
+                                            details::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
                     }
 
 #if defined(UWVM_CPP_EXCEPTIONS) && !defined(UWVM_TERMINATE_IMME_WHEN_PARSE)
@@ -403,8 +473,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                         }
 
                         wf.wasm_module_storage.wasm_binfmt_ver1_storage =
-                            ::uwvm2::uwvm::wasm::feature::binfmt_ver1_handler(reinterpret_cast<::std::byte const*>(wf.wasm_file.cbegin()),
-                                                                              reinterpret_cast<::std::byte const*>(wf.wasm_file.cend()),
+                            ::uwvm2::uwvm::wasm::feature::binfmt_ver1_handler(reinterpret_cast<::std::byte const*>(wf.source_cbegin()),
+                                                                              reinterpret_cast<::std::byte const*>(wf.source_cend()),
                                                                               execute_wasm_binfmt_ver1_storage_wasm_err,
                                                                               wf.wasm_parameter.binfmt1_para);
 
@@ -426,23 +496,23 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
 
                             // verbose
                             ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
+                                                details::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
                                                 u8"uwvm: ",
-                                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_LT_GREEN),
+                                                details::diagnostic_color(UWVM_COLOR_U8_LT_GREEN),
                                                 u8"[info]  ",
-                                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                                details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                                 u8"Parse wasm file \"",
-                                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_YELLOW),
+                                                details::diagnostic_color(UWVM_COLOR_U8_YELLOW),
                                                 load_file_name,
-                                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                                details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                                 u8"\" done. (time=",
-                                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_GREEN),
+                                                details::diagnostic_color(UWVM_COLOR_U8_GREEN),
                                                 parser_end_time - parser_start_time,
-                                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                                details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                                 u8"s). ",
-                                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_ORANGE),
+                                                details::diagnostic_color(UWVM_COLOR_U8_ORANGE),
                                                 u8"(verbose)\n",
-                                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL));
+                                                details::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
                         }
                     }
 #if defined(UWVM_CPP_EXCEPTIONS) && !defined(UWVM_TERMINATE_IMME_WHEN_PARSE)
@@ -460,13 +530,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
 #  endif
 
                         // default print_memory
-                        ::uwvm2::uwvm::utils::memory::print_memory const memory_printer{reinterpret_cast<::std::byte const*>(wf.wasm_file.cbegin()),
+                        ::uwvm2::uwvm::utils::memory::print_memory const memory_printer{reinterpret_cast<::std::byte const*>(wf.source_cbegin()),
                                                                                         execute_wasm_binfmt_ver1_storage_wasm_err.err_curr,
-                                                                                        reinterpret_cast<::std::byte const*>(wf.wasm_file.cend())};
+                                                                                        reinterpret_cast<::std::byte const*>(wf.source_cend())};
 
                         // set errout
                         ::uwvm2::parser::wasm::base::error_output_t errout;
-                        errout.module_begin = reinterpret_cast<::std::byte const*>(wf.wasm_file.cbegin());
+                        errout.module_begin = reinterpret_cast<::std::byte const*>(wf.source_cbegin());
                         errout.err = execute_wasm_binfmt_ver1_storage_wasm_err;
                         errout.flag.enable_ansi = static_cast<::std::uint_least8_t>(::uwvm2::uwvm::utils::ansies::put_color);
 #  if defined(_WIN32) && (_WIN32_WINNT < 0x0A00 || defined(_WIN32_WINDOWS))
@@ -476,28 +546,28 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                         // Output the main information and memory indication
                         ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
                                             // 1
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
+                                            details::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
                                             u8"uwvm: ",
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RED),
+                                            details::diagnostic_color(UWVM_COLOR_U8_RED),
                                             u8"[error] ",
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                            details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                             u8"Parsing error in WebAssembly File \"",
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_YELLOW),
+                                            details::diagnostic_color(UWVM_COLOR_U8_YELLOW),
                                             load_file_name,
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                            details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                             u8"\".\n",
                                             // 2
                                             errout,
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                            details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                             u8"\n"
                                             // 3
                                             u8"uwvm: ",
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_LT_GREEN),
+                                            details::diagnostic_color(UWVM_COLOR_U8_LT_GREEN),
                                             u8"[info]  ",
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                            details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                             u8"Parser Memory Indication: ",
                                             memory_printer,
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL),
+                                            details::diagnostic_color(UWVM_COLOR_U8_RST_ALL),
                                             u8"\n\n");
 # endif
 
@@ -509,23 +579,23 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                     if(::uwvm2::uwvm::io::show_verbose) [[unlikely]]
                     {
                         ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
+                                            details::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
                                             u8"uwvm: ",
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_LT_GREEN),
+                                            details::diagnostic_color(UWVM_COLOR_U8_LT_GREEN),
                                             u8"[info]  ",
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                            details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                             u8"Parsing the custom section of the wasm file \"",
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_YELLOW),
+                                            details::diagnostic_color(UWVM_COLOR_U8_YELLOW),
                                             load_file_name,
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                            details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                             u8"\". ",
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_GREEN),
+                                            details::diagnostic_color(UWVM_COLOR_U8_GREEN),
                                             u8"[",
                                             ::uwvm2::uwvm::io::get_local_realtime(),
                                             u8"] ",
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_ORANGE),
+                                            details::diagnostic_color(UWVM_COLOR_U8_ORANGE),
                                             u8"(verbose)\n",
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL));
+                                            details::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
                     }
 
                     // handle custom section timer
@@ -567,23 +637,23 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
 
                         // verbose
                         ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
+                                            details::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
                                             u8"uwvm: ",
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_LT_GREEN),
+                                            details::diagnostic_color(UWVM_COLOR_U8_LT_GREEN),
                                             u8"[info]  ",
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                            details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                             u8"Parse custom section of wasm file \"",
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_YELLOW),
+                                            details::diagnostic_color(UWVM_COLOR_U8_YELLOW),
                                             load_file_name,
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                            details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                             u8"\" done. (time=",
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_GREEN),
+                                            details::diagnostic_color(UWVM_COLOR_U8_GREEN),
                                             custom_section_end_time - custom_section_start_time,
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                            details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                             u8"s). ",
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_ORANGE),
+                                            details::diagnostic_color(UWVM_COLOR_U8_ORANGE),
                                             u8"(verbose)\n",
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL));
+                                            details::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
                     }
 
                     // handle overall module name
@@ -614,36 +684,36 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                                 // Output the main information and memory indication
                                 ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
                                                     // 1
-                                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
+                                                    details::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
                                                     u8"uwvm: ",
-                                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RED),
+                                                    details::diagnostic_color(UWVM_COLOR_U8_RED),
                                                     u8"[error] ",
-                                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                                    details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                                     u8"Parsing error in WebAssembly File \"",
-                                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_YELLOW),
+                                                    details::diagnostic_color(UWVM_COLOR_U8_YELLOW),
                                                     load_file_name,
-                                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                                    details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                                     u8"\".\n"
                                                     // 2
                                                     u8"uwvm: ",
-                                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RED),
+                                                    details::diagnostic_color(UWVM_COLOR_U8_RED),
                                                     u8"[error] ",
-                                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                                    details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                                     u8"(offset=",
                                                     ::fast_io::mnp::addrvw(utf8pos - module_name.cbegin()),
                                                     u8") Module Name Is Invalid Character Sequence. Reason: \"",
-                                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_YELLOW),
+                                                    details::diagnostic_color(UWVM_COLOR_U8_YELLOW),
                                                     ::uwvm2::utils::utf::get_utf_error_description<char8_t>(utf8err),
-                                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                                    details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                                     u8"\".\n"
                                                     // 3
                                                     u8"uwvm: ",
-                                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_LT_GREEN),
+                                                    details::diagnostic_color(UWVM_COLOR_U8_LT_GREEN),
                                                     u8"[info]  ",
-                                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                                    details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                                     u8"Parser Memory Indication: ",
                                                     memory_printer,
-                                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL),
+                                                    details::diagnostic_color(UWVM_COLOR_U8_RST_ALL),
                                                     u8"\n\n");
 #endif
 
@@ -668,44 +738,44 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                                     // Output the main information and memory indication
                                     ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
                                                         // 1
-                                                        ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
+                                                        details::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
                                                         u8"uwvm: ",
-                                                        ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_YELLOW),
+                                                        details::diagnostic_color(UWVM_COLOR_U8_YELLOW),
                                                         u8"[warn]  ",
-                                                        ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                                        details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                                         u8"(offset=",
                                                         ::fast_io::mnp::addrvw(utf8pos - module_name.cbegin()),
                                                         u8") Module Name contains characters that are not recommended. Details: \"",
-                                                        ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_YELLOW),
+                                                        details::diagnostic_color(UWVM_COLOR_U8_YELLOW),
                                                         ::uwvm2::utils::utf::get_utf_error_description<char8_t>(utf8err),
-                                                        ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                                        details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                                         u8"\". ",
-                                                        ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_ORANGE),
+                                                        details::diagnostic_color(UWVM_COLOR_U8_ORANGE),
                                                         u8"(parser)\n",
-                                                        ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL),
+                                                        details::diagnostic_color(UWVM_COLOR_U8_RST_ALL),
                                                         u8"\n"
                                                         // 2
                                                         u8"uwvm: ",
-                                                        ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_LT_GREEN),
+                                                        details::diagnostic_color(UWVM_COLOR_U8_LT_GREEN),
                                                         u8"[info]  ",
-                                                        ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                                        details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                                         u8"Parser Memory Indication: ",
                                                         memory_printer,
-                                                        ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL),
+                                                        details::diagnostic_color(UWVM_COLOR_U8_RST_ALL),
                                                         u8"\n");
 
                                     if(::uwvm2::uwvm::io::parser_warning_fatal) [[unlikely]]
                                     {
                                         ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
+                                                            details::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
                                                             u8"uwvm: ",
-                                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_LT_RED),
+                                                            details::diagnostic_color(UWVM_COLOR_U8_LT_RED),
                                                             u8"[fatal] ",
-                                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                                            details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                                             u8"Convert warnings to fatal errors. ",
-                                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_ORANGE),
+                                                            details::diagnostic_color(UWVM_COLOR_U8_ORANGE),
                                                             u8"(parser)\n\n",
-                                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL));
+                                                            details::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
                                         ::fast_io::fast_terminate();
                                     }
                                 }
@@ -750,23 +820,23 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
 #ifndef UWVM_DISABLE_OUTPUT_WHEN_PARSE
                             ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
                                                 // 1
-                                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
+                                                details::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
                                                 u8"uwvm: ",
-                                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RED),
+                                                details::diagnostic_color(UWVM_COLOR_U8_RED),
                                                 u8"[error] ",
-                                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                                details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                                 u8"Parsing error in WebAssembly File \"",
-                                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_YELLOW),
+                                                details::diagnostic_color(UWVM_COLOR_U8_YELLOW),
                                                 load_file_name,
-                                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                                details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                                 u8"\".\n"
                                                 // 2
                                                 u8"uwvm: ",
-                                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RED),
+                                                details::diagnostic_color(UWVM_COLOR_U8_RED),
                                                 u8"[error] ",
-                                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                                details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                                 u8"The Overall WebAssembly Module Name Length Cannot Be 0.\n\n",
-                                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL));
+                                                details::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
 #endif
                             return load_wasm_file_rtl::wasm_parser_error;
                         }
@@ -777,28 +847,28 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                             {
                                 ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
                                                     // 1
-                                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
+                                                    details::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
                                                     u8"uwvm: ",
-                                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_YELLOW),
+                                                    details::diagnostic_color(UWVM_COLOR_U8_YELLOW),
                                                     u8"[warn]  ",
-                                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                                    details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                                     u8"Module name is empty (zero length). ",
-                                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_ORANGE),
+                                                    details::diagnostic_color(UWVM_COLOR_U8_ORANGE),
                                                     u8"(parser)\n",
-                                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL));
+                                                    details::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
 
                                 if(::uwvm2::uwvm::io::parser_warning_fatal) [[unlikely]]
                                 {
                                     ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                                                        ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
+                                                        details::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
                                                         u8"uwvm: ",
-                                                        ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_LT_RED),
+                                                        details::diagnostic_color(UWVM_COLOR_U8_LT_RED),
                                                         u8"[fatal] ",
-                                                        ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                                        details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                                         u8"Convert warnings to fatal errors. ",
-                                                        ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_ORANGE),
+                                                        details::diagnostic_color(UWVM_COLOR_U8_ORANGE),
                                                         u8"(parser)\n\n",
-                                                        ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL));
+                                                        details::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
                                     ::fast_io::fast_terminate();
                                 }
                             }
@@ -810,23 +880,23 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                     if(::uwvm2::uwvm::io::show_verbose) [[unlikely]]
                     {
                         ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
+                                            details::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
                                             u8"uwvm: ",
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_LT_GREEN),
+                                            details::diagnostic_color(UWVM_COLOR_U8_LT_GREEN),
                                             u8"[info]  ",
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                            details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                             u8"Overall WebAssembly Module Name \"",
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_YELLOW),
+                                            details::diagnostic_color(UWVM_COLOR_U8_YELLOW),
                                             wf.module_name,
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                            details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                             u8"\". ",
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_GREEN),
+                                            details::diagnostic_color(UWVM_COLOR_U8_GREEN),
                                             u8"[",
                                             ::uwvm2::uwvm::io::get_local_realtime(),
                                             u8"] ",
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_ORANGE),
+                                            details::diagnostic_color(UWVM_COLOR_U8_ORANGE),
                                             u8"(verbose)\n",
-                                            ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL));
+                                            details::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
                     }
                 }
 
@@ -835,35 +905,42 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
             /// @todo wasm component module: 0x0001000d
             [[unlikely]] default:
             {
+                // The detector reports an unknown nonzero version only after
+                // the complete eight-byte header, but independently bound the
+                // diagnostic cursor BEFORE forming source_begin+4 below.
+                if(wf.source_size() < 8uz * sizeof(char8_t)) { return load_wasm_file_rtl::wasm_parser_error; }
+                // [owned source 0..4..8 ... source_size] end
+                // [safe source_size>=8*sizeof(char8_t)] ^^ diagnostic offset4
+                // is in the SAME pinned mapping/private image; never a guest ptr.
                 // [\0 a s m ?? ?? ?? ??]
                 // [        safe        ]
 
 #ifndef UWVM_DISABLE_OUTPUT_WHEN_PARSE
                 ::fast_io::io::perr(
                     ::uwvm2::uwvm::io::u8log_output,
-                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
+                    details::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
                     // 1
                     u8"uwvm: ",
-                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RED),
+                    details::diagnostic_color(UWVM_COLOR_U8_RED),
                     u8"[error] ",
-                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                    details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                     u8"(offset=",
                     ::fast_io::mnp::addrvw(4uz),
                     u8") Unknown Binary Format Version of WebAssembly: \"",
-                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_CYAN),
+                    details::diagnostic_color(UWVM_COLOR_U8_CYAN),
                     wf.binfmt_ver,
-                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                    details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                     u8"\".\n"
                     // 2
                     u8"uwvm: ",
-                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_LT_GREEN),
+                    details::diagnostic_color(UWVM_COLOR_U8_LT_GREEN),
                     u8"[info]  ",
-                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                    details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                     u8"Parser Memory Indication: ",
-                    ::uwvm2::uwvm::utils::memory::print_memory{reinterpret_cast<::std::byte const*>(wf.wasm_file.cbegin()),
-                                                               reinterpret_cast<::std::byte const*>(wf.wasm_file.cbegin()) + 4uz * sizeof(char8_t),
-                                                               reinterpret_cast<::std::byte const*>(wf.wasm_file.cend())},
-                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL),
+                    ::uwvm2::uwvm::utils::memory::print_memory{reinterpret_cast<::std::byte const*>(wf.source_cbegin()),
+                                                               reinterpret_cast<::std::byte const*>(wf.source_cbegin()) + 4uz * sizeof(char8_t),
+                                                               reinterpret_cast<::std::byte const*>(wf.source_cend())},
+                    details::diagnostic_color(UWVM_COLOR_U8_RST_ALL),
                     u8"\n\n");
 #endif
 
@@ -879,19 +956,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
             if(::uwvm2::uwvm::io::show_verbose) [[unlikely]]
             {
                 ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
+                                    details::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
                                     u8"uwvm: ",
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_LT_GREEN),
+                                    details::diagnostic_color(UWVM_COLOR_U8_LT_GREEN),
                                     u8"[info]  ",
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                    details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                     u8"Check some things that are allowed but not recommended in the WebAssembly specification. ",
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_GREEN),
+                                    details::diagnostic_color(UWVM_COLOR_U8_GREEN),
                                     u8"[",
                                     ::uwvm2::uwvm::io::get_local_realtime(),
                                     u8"] ",
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_ORANGE),
+                                    details::diagnostic_color(UWVM_COLOR_U8_ORANGE),
                                     u8"(verbose)\n",
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL));
+                                    details::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
             }
 
             // timer
@@ -934,19 +1011,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
 
                 // verbose
                 ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
+                                    details::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
                                     u8"uwvm: ",
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_LT_GREEN),
+                                    details::diagnostic_color(UWVM_COLOR_U8_LT_GREEN),
                                     u8"[info]  ",
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                    details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                     u8"The review of items permitted has been completed. (time=",
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_GREEN),
+                                    details::diagnostic_color(UWVM_COLOR_U8_GREEN),
                                     end_time - start_time,
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                    details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                     u8"s). ",
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_ORANGE),
+                                    details::diagnostic_color(UWVM_COLOR_U8_ORANGE),
                                     u8"(verbose)\n",
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL));
+                                    details::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
             }
         }
 #endif
@@ -969,28 +1046,29 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
 
             // verbose
             ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
+                                details::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
                                 u8"uwvm: ",
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_LT_GREEN),
+                                details::diagnostic_color(UWVM_COLOR_U8_LT_GREEN),
                                 u8"[info]  ",
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                 u8"Load wasm file \"",
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_YELLOW),
+                                details::diagnostic_color(UWVM_COLOR_U8_YELLOW),
                                 load_file_name,
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                 u8"\" done. (time=",
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_GREEN),
+                                details::diagnostic_color(UWVM_COLOR_U8_GREEN),
                                 end_time - start_time,
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
+                                details::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                 u8"s). ",
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_ORANGE),
+                                details::diagnostic_color(UWVM_COLOR_U8_ORANGE),
                                 u8"(verbose)\n",
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL));
+                                details::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
         }
 
         return load_wasm_file_rtl::ok;
     }
 
+    } // global C++ linkage: shared with the type module's private friend
 }  // namespace uwvm2::uwvm::wasm::loader
 
 #ifndef UWVM_MODULE

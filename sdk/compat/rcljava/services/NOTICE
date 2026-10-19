@@ -1,0 +1,11 @@
+This source-only Service/Future extension preserves selected Apache-2.0
+ros2-java/ros2_java and ros2_java_examples originals with their complete original
+file notices, LICENSE and NOTICE, exact commit/tree/blob evidence. New Guest
+facade/value code is an explicitly adapted source implementation, not native
+JNI, rcljava ABI, native type support or a complete ROS SDK distribution.
+The original generated Java template and official service definitions retain
+separate provenance. The complete field codecs do not imply original native
+converter/equality/hash/reflection APIs. Native AddTwoInts exporter/oracle source
+is copied byte-exact from the maintained reviewed C++ Service profile, recorded
+as such; it is never a generated fake provider. Native peer changes are authored
+against real installed SDK declarations and require actual Root qualification.

@@ -1,0 +1,357 @@
+{
+  "kind": "elephant-selected-original-source-lock-v1",
+  "vendor": "elephant",
+  "profile": "kinetic",
+  "ros_version": 1,
+  "default_authority": [],
+  "definitions": [
+    {
+      "type": "mycobot_communication/MycobotAngles",
+      "kind": "msg",
+      "repository": "kinetic",
+      "original_file": "mycobot_communication/msg/MycobotAngles.msg",
+      "generation_file": "mycobot_communication/msg/MycobotAngles.msg",
+      "bytes": 96,
+      "sha256": "c29c22f7c80460fcfcdb46c46c0c80e2490bdc4e4577713f3fbe8955577db8c5",
+      "git_blob_sha1": "9aa7d97bdca20c2ca6b7e10f53ec09a3b05a6565"
+    },
+    {
+      "type": "mycobot_communication/MycobotCoords",
+      "kind": "msg",
+      "repository": "kinetic",
+      "original_file": "mycobot_communication/msg/MycobotCoords.msg",
+      "generation_file": "mycobot_communication/msg/MycobotCoords.msg",
+      "bytes": 62,
+      "sha256": "d26b24c7e3fefa05650405e9cc871bd8d1a30695012e01f1b90a671b9fb07731",
+      "git_blob_sha1": "08f6dbda3c15688247ed72b95f9c627c1f64f2fe"
+    },
+    {
+      "type": "mycobot_communication/MycobotGripperStatus",
+      "kind": "msg",
+      "repository": "kinetic",
+      "original_file": "mycobot_communication/msg/MycobotGripperStatus.msg",
+      "generation_file": "mycobot_communication/msg/MycobotGripperStatus.msg",
+      "bytes": 11,
+      "sha256": "f9963e6f4eb3df305946b0c062324a0f7edff8097df45fb3bce551e091a336d1",
+      "git_blob_sha1": "18d6277216b815bfff7e963ea48b637e04021dc7"
+    },
+    {
+      "type": "mycobot_communication/MycobotPumpStatus",
+      "kind": "msg",
+      "repository": "kinetic",
+      "original_file": "mycobot_communication/msg/MycobotPumpStatus.msg",
+      "generation_file": "mycobot_communication/msg/MycobotPumpStatus.msg",
+      "bytes": 32,
+      "sha256": "4126837fed94e7f5ef94f448706c02b225128a006b0780f748065fa9ed4f92bc",
+      "git_blob_sha1": "2373241cadb79efccec24b212bb5045c3d315373"
+    },
+    {
+      "type": "mycobot_communication/MycobotSetAngles",
+      "kind": "msg",
+      "repository": "kinetic",
+      "original_file": "mycobot_communication/msg/MycobotSetAngles.msg",
+      "generation_file": "mycobot_communication/msg/MycobotSetAngles.msg",
+      "bytes": 108,
+      "sha256": "720c704e6bf934d2a751a481efa8f5a1dde5e3f1c04ad5a988e2b32001d7093d",
+      "git_blob_sha1": "3888b50f9e299ac601250ca6d21ba5ddcf6d116d"
+    },
+    {
+      "type": "mycobot_communication/MycobotSetCoords",
+      "kind": "msg",
+      "repository": "kinetic",
+      "original_file": "mycobot_communication/msg/MycobotSetCoords.msg",
+      "generation_file": "mycobot_communication/msg/MycobotSetCoords.msg",
+      "bytes": 86,
+      "sha256": "ea067f83de2d517ebd595cecbffd6badd9dc8beddc7da2e10e0bf45f2d0ae28b",
+      "git_blob_sha1": "d4c7e54652d98e7a7224358f74d3c08b202b345d"
+    },
+    {
+      "type": "mycobot_communication/GetAngles",
+      "kind": "srv",
+      "repository": "kinetic",
+      "original_file": "mycobot_communication/srv/GetAngles.srv",
+      "generation_file": "mycobot_communication/srv/GetAngles.srv",
+      "bytes": 102,
+      "sha256": "069eb5a5823aa347e444fca7396d74bb8b5d39caa06aad3c923f0cd0f51a0896",
+      "git_blob_sha1": "699269943dec272e8e6be5aaad9c5e4b3b658b81"
+    },
+    {
+      "type": "mycobot_communication/GetCoords",
+      "kind": "srv",
+      "repository": "kinetic",
+      "original_file": "mycobot_communication/srv/GetCoords.srv",
+      "generation_file": "mycobot_communication/srv/GetCoords.srv",
+      "bytes": 69,
+      "sha256": "c16c972d411c6c5984a25ce1e828633b83545a958f9752c5bc2bed6c0abb9e0e",
+      "git_blob_sha1": "c1f9bbcc21e463b0621c2f7d71aa7e94403ea17c"
+    },
+    {
+      "type": "mycobot_communication/GripperStatus",
+      "kind": "srv",
+      "repository": "kinetic",
+      "original_file": "mycobot_communication/srv/GripperStatus.srv",
+      "generation_file": "mycobot_communication/srv/GripperStatus.srv",
+      "bytes": 27,
+      "sha256": "d65e63ed96199574e633466bcec90714b09b749ec3fc55143f2a8cf1c01dbf21",
+      "git_blob_sha1": "3887d75b2f78418c77c4501e817771551801e783"
+    },
+    {
+      "type": "mycobot_communication/PumpStatus",
+      "kind": "srv",
+      "repository": "kinetic",
+      "original_file": "mycobot_communication/srv/PumpStatus.srv",
+      "generation_file": "mycobot_communication/srv/PumpStatus.srv",
+      "bytes": 47,
+      "sha256": "1aecc454f14c36ebe21e047e91034784bc2a7a502d9d7c4bd9ff5b4c67667214",
+      "git_blob_sha1": "8bd4b530d3a170428af6e3faec909afb347fe1a6"
+    },
+    {
+      "type": "mycobot_communication/SetAngles",
+      "kind": "srv",
+      "repository": "kinetic",
+      "original_file": "mycobot_communication/srv/SetAngles.srv",
+      "generation_file": "mycobot_communication/srv/SetAngles.srv",
+      "bytes": 123,
+      "sha256": "f0920895efcba6a086916f1e954671b52202c55f070cb20635e55724ff585061",
+      "git_blob_sha1": "6f8d8776e4f892a054e1d8765494da7e3471cac7"
+    },
+    {
+      "type": "mycobot_communication/SetCoords",
+      "kind": "srv",
+      "repository": "kinetic",
+      "original_file": "mycobot_communication/srv/SetCoords.srv",
+      "generation_file": "mycobot_communication/srv/SetCoords.srv",
+      "bytes": 101,
+      "sha256": "1696a7aca007d82c9fb290fdbbe1de355b1781d4e834680f54b2df2e4a43487e",
+      "git_blob_sha1": "e5b1e528e1916226fd8548fc73146a3992376c28"
+    },
+    {
+      "type": "mypalletizer_communication/MypalAngles",
+      "kind": "msg",
+      "repository": "kinetic",
+      "original_file": "mypalletizer_communication/msg/MypalAngles.msg",
+      "generation_file": "mypalletizer_communication/msg/MypalAngles.msg",
+      "bytes": 115,
+      "sha256": "d1e1841d26c6261664b454eef4210a946367c3532a5cd8a80f35e7a66383560c",
+      "git_blob_sha1": "bba21813c864d3ead999a5130ba34a48648a8959"
+    },
+    {
+      "type": "mypalletizer_communication/MypalCoords",
+      "kind": "msg",
+      "repository": "kinetic",
+      "original_file": "mypalletizer_communication/msg/MypalCoords.msg",
+      "generation_file": "mypalletizer_communication/msg/MypalCoords.msg",
+      "bytes": 66,
+      "sha256": "7f3c4a5b4c83319461c9f962ea80ae2da58e64e466f6601a3137699feaf63d5e",
+      "git_blob_sha1": "f2e98b9b86b930e708f9828af0c740891a99e1ac"
+    },
+    {
+      "type": "mypalletizer_communication/MypalGripperStatus",
+      "kind": "msg",
+      "repository": "kinetic",
+      "original_file": "mypalletizer_communication/msg/MypalGripperStatus.msg",
+      "generation_file": "mypalletizer_communication/msg/MypalGripperStatus.msg",
+      "bytes": 11,
+      "sha256": "f9963e6f4eb3df305946b0c062324a0f7edff8097df45fb3bce551e091a336d1",
+      "git_blob_sha1": "18d6277216b815bfff7e963ea48b637e04021dc7"
+    },
+    {
+      "type": "mypalletizer_communication/MypalPumpStatus",
+      "kind": "msg",
+      "repository": "kinetic",
+      "original_file": "mypalletizer_communication/msg/MypalPumpStatus.msg",
+      "generation_file": "mypalletizer_communication/msg/MypalPumpStatus.msg",
+      "bytes": 32,
+      "sha256": "4126837fed94e7f5ef94f448706c02b225128a006b0780f748065fa9ed4f92bc",
+      "git_blob_sha1": "2373241cadb79efccec24b212bb5045c3d315373"
+    },
+    {
+      "type": "mypalletizer_communication/MypalSetAngles",
+      "kind": "msg",
+      "repository": "kinetic",
+      "original_file": "mypalletizer_communication/msg/MypalSetAngles.msg",
+      "generation_file": "mypalletizer_communication/msg/MypalSetAngles.msg",
+      "bytes": 127,
+      "sha256": "06d4b027264faa451d82001f92faabc338be205c2b2f59bae1959ac79e2589f3",
+      "git_blob_sha1": "3580a2e810c61cb6fce21d3caabb25e0c43dca86"
+    },
+    {
+      "type": "mypalletizer_communication/MypalSetCoords",
+      "kind": "msg",
+      "repository": "kinetic",
+      "original_file": "mypalletizer_communication/msg/MypalSetCoords.msg",
+      "generation_file": "mypalletizer_communication/msg/MypalSetCoords.msg",
+      "bytes": 90,
+      "sha256": "7bc5e279b197f78c381fbd8e4316ac379a0a9c990ae934032e9e6190f61b86a5",
+      "git_blob_sha1": "15c601fd9f4a4452a139886c69828006218ab103"
+    },
+    {
+      "type": "mypalletizer_communication/GetAngles",
+      "kind": "srv",
+      "repository": "kinetic",
+      "original_file": "mypalletizer_communication/srv/GetAngles.srv",
+      "generation_file": "mypalletizer_communication/srv/GetAngles.srv",
+      "bytes": 122,
+      "sha256": "02428e54cca2807177d0dc469cb03f94abcd6f2091218b324be8fe55571ff616",
+      "git_blob_sha1": "dcf5f2aab042fd8cea0cbb151d556aecc90d6486"
+    },
+    {
+      "type": "mypalletizer_communication/GetCoords",
+      "kind": "srv",
+      "repository": "kinetic",
+      "original_file": "mypalletizer_communication/srv/GetCoords.srv",
+      "generation_file": "mypalletizer_communication/srv/GetCoords.srv",
+      "bytes": 73,
+      "sha256": "15c267464c6c9b98fb802e80a5e4e25e0b777afa1cd45677219d7efed06e2c47",
+      "git_blob_sha1": "aabe929d05ddfb12f51d59ff21106eb33542962e"
+    },
+    {
+      "type": "mypalletizer_communication/GripperStatus",
+      "kind": "srv",
+      "repository": "kinetic",
+      "original_file": "mypalletizer_communication/srv/GripperStatus.srv",
+      "generation_file": "mypalletizer_communication/srv/GripperStatus.srv",
+      "bytes": 27,
+      "sha256": "d65e63ed96199574e633466bcec90714b09b749ec3fc55143f2a8cf1c01dbf21",
+      "git_blob_sha1": "3887d75b2f78418c77c4501e817771551801e783"
+    },
+    {
+      "type": "mypalletizer_communication/PumpStatus",
+      "kind": "srv",
+      "repository": "kinetic",
+      "original_file": "mypalletizer_communication/srv/PumpStatus.srv",
+      "generation_file": "mypalletizer_communication/srv/PumpStatus.srv",
+      "bytes": 47,
+      "sha256": "1aecc454f14c36ebe21e047e91034784bc2a7a502d9d7c4bd9ff5b4c67667214",
+      "git_blob_sha1": "8bd4b530d3a170428af6e3faec909afb347fe1a6"
+    },
+    {
+      "type": "mypalletizer_communication/SetAngles",
+      "kind": "srv",
+      "repository": "kinetic",
+      "original_file": "mypalletizer_communication/srv/SetAngles.srv",
+      "generation_file": "mypalletizer_communication/srv/SetAngles.srv",
+      "bytes": 144,
+      "sha256": "7f03b361a5d23ce3dc5a0afb6b95f81751b03b8b1338ea413122477e68b697d8",
+      "git_blob_sha1": "539dcc3b80d021471250509cf398f44beb5a0d20"
+    },
+    {
+      "type": "mypalletizer_communication/SetCoords",
+      "kind": "srv",
+      "repository": "kinetic",
+      "original_file": "mypalletizer_communication/srv/SetCoords.srv",
+      "generation_file": "mypalletizer_communication/srv/SetCoords.srv",
+      "bytes": 105,
+      "sha256": "4dff82d50aa8131ec5df072845fe7434402a4fb192a2b442c52e78b142b64609",
+      "git_blob_sha1": "39893737442c3f898b3a68749cce9503d4b20a53"
+    }
+  ],
+  "original_custom_roots": [
+    {
+      "kind": "msg",
+      "type": "mycobot_communication/MycobotAngles"
+    },
+    {
+      "kind": "msg",
+      "type": "mycobot_communication/MycobotCoords"
+    },
+    {
+      "kind": "msg",
+      "type": "mycobot_communication/MycobotGripperStatus"
+    },
+    {
+      "kind": "msg",
+      "type": "mycobot_communication/MycobotPumpStatus"
+    },
+    {
+      "kind": "msg",
+      "type": "mycobot_communication/MycobotSetAngles"
+    },
+    {
+      "kind": "msg",
+      "type": "mycobot_communication/MycobotSetCoords"
+    },
+    {
+      "kind": "msg",
+      "type": "mypalletizer_communication/MypalAngles"
+    },
+    {
+      "kind": "msg",
+      "type": "mypalletizer_communication/MypalCoords"
+    },
+    {
+      "kind": "msg",
+      "type": "mypalletizer_communication/MypalGripperStatus"
+    },
+    {
+      "kind": "msg",
+      "type": "mypalletizer_communication/MypalPumpStatus"
+    },
+    {
+      "kind": "msg",
+      "type": "mypalletizer_communication/MypalSetAngles"
+    },
+    {
+      "kind": "msg",
+      "type": "mypalletizer_communication/MypalSetCoords"
+    },
+    {
+      "kind": "srv",
+      "type": "mycobot_communication/GetAngles"
+    },
+    {
+      "kind": "srv",
+      "type": "mycobot_communication/GetCoords"
+    },
+    {
+      "kind": "srv",
+      "type": "mycobot_communication/GripperStatus"
+    },
+    {
+      "kind": "srv",
+      "type": "mycobot_communication/PumpStatus"
+    },
+    {
+      "kind": "srv",
+      "type": "mycobot_communication/SetAngles"
+    },
+    {
+      "kind": "srv",
+      "type": "mycobot_communication/SetCoords"
+    },
+    {
+      "kind": "srv",
+      "type": "mypalletizer_communication/GetAngles"
+    },
+    {
+      "kind": "srv",
+      "type": "mypalletizer_communication/GetCoords"
+    },
+    {
+      "kind": "srv",
+      "type": "mypalletizer_communication/GripperStatus"
+    },
+    {
+      "kind": "srv",
+      "type": "mypalletizer_communication/PumpStatus"
+    },
+    {
+      "kind": "srv",
+      "type": "mypalletizer_communication/SetAngles"
+    },
+    {
+      "kind": "srv",
+      "type": "mypalletizer_communication/SetCoords"
+    }
+  ],
+  "repositories": [
+    {
+      "id": "kinetic",
+      "repository": "elephantrobotics/mycobot_ros",
+      "commit": "9ec3e2ec29024a55150e7f3893b3d6e344f1caff",
+      "tree_git_sha1": "dc8263b63e2476874c6596ed1fefd5745b104c57"
+    }
+  ],
+  "catalog_sha256": "31bf2ef74bbb4ec74d55f59052b22a6278f16b8e592aca65c747782bbc60a6a7",
+  "scope": "Complete original custom declarations in this exact selected Git tree and all reached original dependencies. This is not native/model/controller/upstream-suite acceptance or a claim for other releases."
+}

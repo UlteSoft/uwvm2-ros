@@ -1,0 +1,285 @@
+{
+  "all_selected_blob_extents_and_SHA256_and_Git_SHA1_replayed": true,
+  "all_selected_paths_reach_root_tree": true,
+  "candidate_execution": false,
+  "commit": "07008852303f2a35a91c65d78046b274a35477ea",
+  "commit_source": "preserved actual GitHub commit object response with exact commit.tree.sha, not a branch-name identity",
+  "format_version": 1,
+  "kind": "actual-selected-git-object-closure-not-native-qualification",
+  "repository": "https://github.com/ros2/examples",
+  "root_tree": "cc1f17d44a88c740e4ed580be99ead013bcb1afd",
+  "selected_files": [
+    {
+      "bytes": 11358,
+      "commit": "07008852303f2a35a91c65d78046b274a35477ea",
+      "git_blob_sha1": "d645695673349e3947e8e5ae42332d0ac3164cd7",
+      "relative": "LICENSE",
+      "repository": "https://github.com/ros2/examples",
+      "requested_ref": "jazzy",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "tree": "cc1f17d44a88c740e4ed580be99ead013bcb1afd",
+      "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/LICENSE"
+    },
+    {
+      "bytes": 1485,
+      "commit": "07008852303f2a35a91c65d78046b274a35477ea",
+      "git_blob_sha1": "3cf38fb33db6619b4c6011cec57c48a175ffd0c4",
+      "relative": "rclcpp/services/minimal_service/main.cpp",
+      "repository": "https://github.com/ros2/examples",
+      "requested_ref": "jazzy",
+      "sha256": "9b0c4ccb884ff75772101c028158c1c1153a34d26a8c6a5481a24ba0600aa055",
+      "tree": "cc1f17d44a88c740e4ed580be99ead013bcb1afd",
+      "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclcpp/services/minimal_service/main.cpp"
+    },
+    {
+      "bytes": 732,
+      "commit": "07008852303f2a35a91c65d78046b274a35477ea",
+      "git_blob_sha1": "0ecfe3fb7bdf4753d20f802795d36382e0ba1a18",
+      "relative": "rclcpp/services/minimal_service/CMakeLists.txt",
+      "repository": "https://github.com/ros2/examples",
+      "requested_ref": "jazzy",
+      "sha256": "d0842030b8376943e226f0afc2d73005a271584e7287edb6a6fe893ab9b9ad8b",
+      "tree": "cc1f17d44a88c740e4ed580be99ead013bcb1afd",
+      "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclcpp/services/minimal_service/CMakeLists.txt"
+    },
+    {
+      "bytes": 1118,
+      "commit": "07008852303f2a35a91c65d78046b274a35477ea",
+      "git_blob_sha1": "4fd631f1135c32780b771e04232ec2f8846d0b2c",
+      "relative": "rclcpp/services/minimal_service/package.xml",
+      "repository": "https://github.com/ros2/examples",
+      "requested_ref": "jazzy",
+      "sha256": "c3cf898427e952dd2e9f93b84069cdda96d464a772eafdde87f4d044ef022889",
+      "tree": "cc1f17d44a88c740e4ed580be99ead013bcb1afd",
+      "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclcpp/services/minimal_service/package.xml"
+    },
+    {
+      "bytes": 119,
+      "commit": "07008852303f2a35a91c65d78046b274a35477ea",
+      "git_blob_sha1": "a1b7123ba1468235732aeb16f560df7457d652ad",
+      "relative": "rclcpp/services/minimal_service/README.md",
+      "repository": "https://github.com/ros2/examples",
+      "requested_ref": "jazzy",
+      "sha256": "edbec771d696ee45f6de8813f200954fa982cc66797086167320e26597b5df1b",
+      "tree": "cc1f17d44a88c740e4ed580be99ead013bcb1afd",
+      "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclcpp/services/minimal_service/README.md"
+    },
+    {
+      "bytes": 1885,
+      "commit": "07008852303f2a35a91c65d78046b274a35477ea",
+      "git_blob_sha1": "34b0ed2f5a519960b0fa9cd43cf3bc74e90c48a4",
+      "relative": "rclcpp/services/minimal_client/main.cpp",
+      "repository": "https://github.com/ros2/examples",
+      "requested_ref": "jazzy",
+      "sha256": "f29b513b0e3944db56428320e5f9a2ff2ce3b3e8e374baf1406be621c059accc",
+      "tree": "cc1f17d44a88c740e4ed580be99ead013bcb1afd",
+      "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclcpp/services/minimal_client/main.cpp"
+    },
+    {
+      "bytes": 728,
+      "commit": "07008852303f2a35a91c65d78046b274a35477ea",
+      "git_blob_sha1": "ddc4d6087a02c126b18c93dd64d62e57d00f4d28",
+      "relative": "rclcpp/services/minimal_client/CMakeLists.txt",
+      "repository": "https://github.com/ros2/examples",
+      "requested_ref": "jazzy",
+      "sha256": "0d146fcfe570877ebfa011462ad4ca9aae43c9ef007734b7094bcb1233eafb00",
+      "tree": "cc1f17d44a88c740e4ed580be99ead013bcb1afd",
+      "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclcpp/services/minimal_client/CMakeLists.txt"
+    },
+    {
+      "bytes": 1105,
+      "commit": "07008852303f2a35a91c65d78046b274a35477ea",
+      "git_blob_sha1": "baff2d6b12797737e16436ff28c7795003df86ec",
+      "relative": "rclcpp/services/minimal_client/package.xml",
+      "repository": "https://github.com/ros2/examples",
+      "requested_ref": "jazzy",
+      "sha256": "33665fc07335c3f8f795274881637145461a6b9c490ad25a054c1f633cb5aa1e",
+      "tree": "cc1f17d44a88c740e4ed580be99ead013bcb1afd",
+      "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclcpp/services/minimal_client/package.xml"
+    }
+  ],
+  "source_review": "PENDING_INDEPENDENT_REVIEW",
+  "tree_objects": {
+    "": {
+      "entries": [
+        {
+          "git_object": "c1c0f903dd58dd6ff1b9b1b977547e008e988ed0",
+          "mode": "40000",
+          "name": ".github"
+        },
+        {
+          "git_object": "6a4dae103078c9790fa7cfd2873bb6d60bd528fa",
+          "mode": "100644",
+          "name": ".gitignore"
+        },
+        {
+          "git_object": "cfba094dace53df09974dc9bf5bb9e3c2c677e97",
+          "mode": "100644",
+          "name": "CONTRIBUTING.md"
+        },
+        {
+          "git_object": "d645695673349e3947e8e5ae42332d0ac3164cd7",
+          "mode": "100644",
+          "name": "LICENSE"
+        },
+        {
+          "git_object": "58ee05000f3c9690c3d226b5f485945fe92cc10e",
+          "mode": "100644",
+          "name": "README.md"
+        },
+        {
+          "git_object": "f547f70c6b3a6a9f7ee46f36a51a4b34c2a65712",
+          "mode": "40000",
+          "name": "launch_testing"
+        },
+        {
+          "git_object": "c1f66b770c43261890527282710f498d0d397c79",
+          "mode": "40000",
+          "name": "rclcpp"
+        },
+        {
+          "git_object": "f89c3071e92932dd8aa760d441c90911ea63e49a",
+          "mode": "40000",
+          "name": "rclpy"
+        }
+      ],
+      "git_tree": "cc1f17d44a88c740e4ed580be99ead013bcb1afd",
+      "raw_base64": "NDAwMDAgLmdpdGh1YgDBwPkD3Vjdb/G5sbl3VH4AjpiO0DEwMDY0NCAuZ2l0aWdub3JlAGpNrhAweMl5D6fP0oc7ttYL1Sj6MTAwNjQ0IENPTlRSSUJVVElORy5tZADPuglNrOU98Jl03Jv1u548LGd+lzEwMDY0NCBMSUNFTlNFANZFaVZzNJ45R+jlrkIzLQrDFkzXMTAwNjQ0IFJFQURNRS5tZABY7gUADzyWkMPSJrX0hZRf6SzBDjQwMDAwIGxhdW5jaF90ZXN0aW5nAPVH9wxrOmqffuRvNqUaSzTCplcSNDAwMDAgcmNsY3BwAMH2a3cMQyYYkFJygnEPSY0NOXx5NDAwMDAgcmNscHkA+JwwcekpMt2Kp2DUQckJEepj5Jo=",
+      "raw_bytes": 293,
+      "sha256": "ad3cc714ea688f1b248af590ed4d1c75e0c50495fc3cd5ead7547f73b097faeb"
+    },
+    "rclcpp": {
+      "entries": [
+        {
+          "git_object": "35b81da1ea3051b41767b36d7dabac3a996ff197",
+          "mode": "100644",
+          "name": "README.md"
+        },
+        {
+          "git_object": "7b4049b35b8c193436499e3547915b47392a08d4",
+          "mode": "40000",
+          "name": "actions"
+        },
+        {
+          "git_object": "b51c6e3f60f29b8633e96fa4a54644555c03f8fb",
+          "mode": "40000",
+          "name": "composition"
+        },
+        {
+          "git_object": "adb515aeff314b4276f7045b8adb332602c742ba",
+          "mode": "40000",
+          "name": "executors"
+        },
+        {
+          "git_object": "b38bc3a62ff9f4cecd107e5976a85a9debb67341",
+          "mode": "40000",
+          "name": "services"
+        },
+        {
+          "git_object": "5d0264c49febc82435389bcd5cc8fba6b3e147a3",
+          "mode": "40000",
+          "name": "timers"
+        },
+        {
+          "git_object": "8568db2c761bfc63195cf216273e4607fd861239",
+          "mode": "40000",
+          "name": "topics"
+        },
+        {
+          "git_object": "fdbe740db67eb6cc2aaf36d3eec8d6fd9a7cd1bc",
+          "mode": "40000",
+          "name": "wait_set"
+        }
+      ],
+      "git_tree": "c1f66b770c43261890527282710f498d0d397c79",
+      "raw_base64": "MTAwNjQ0IFJFQURNRS5tZAA1uB2h6jBRtBdns219q6w6mW/xlzQwMDAwIGFjdGlvbnMAe0BJs1uMGTQ2SZ41R5FbRzkqCNQ0MDAwMCBjb21wb3NpdGlvbgC1HG4/YPKbhjPpb6SlRkRVXAP4+zQwMDAwIGV4ZWN1dG9ycwCttRWu/zFLQnb3BFuK2zMmAsdCujQwMDAwIHNlcnZpY2VzALOLw6Yv+fTOzRB+WXaoWp3rtnNBNDAwMDAgdGltZXJzAF0CZMSf68gkNTibzVzI+6az4UejNDAwMDAgdG9waWNzAIVo2yx2G/xjGVzyFic+Rgf9hhI5NDAwMDAgd2FpdF9zZXQA/b50DbZ+tswqrzbT7sjW/Zp80bw=",
+      "raw_bytes": 281,
+      "sha256": "a4f1b699302992ae618edf4f161427d27ff9906e9dfbd5955097b0f977633acf"
+    },
+    "rclcpp/services": {
+      "entries": [
+        {
+          "git_object": "6ed2feb5371888f61164e95271e37c2e4fb4dc5f",
+          "mode": "40000",
+          "name": "async_client"
+        },
+        {
+          "git_object": "a4a390fb9b8a155ea5cdb2683b5e80d29101642f",
+          "mode": "40000",
+          "name": "minimal_client"
+        },
+        {
+          "git_object": "1a3d0aea563bdf0b4a0ef80c77087c5e4103059b",
+          "mode": "40000",
+          "name": "minimal_service"
+        }
+      ],
+      "git_tree": "b38bc3a62ff9f4cecd107e5976a85a9debb67341",
+      "raw_base64": "NDAwMDAgYXN5bmNfY2xpZW50AG7S/rU3GIj2EWTpUnHjfC5PtNxfNDAwMDAgbWluaW1hbF9jbGllbnQApKOQ+5uKFV6lzbJoO16A0pEBZC80MDAwMCBtaW5pbWFsX3NlcnZpY2UAGj0K6lY73wtKDvgMdwh8XkEDBZs=",
+      "raw_bytes": 122,
+      "sha256": "eefa197fecd32e27f8e115f1e29d55f696f03e487f943e8b987c32b0cd403962"
+    },
+    "rclcpp/services/minimal_client": {
+      "entries": [
+        {
+          "git_object": "cc6e6b8bc17d5e1b34ab2452b951b6f4079f8605",
+          "mode": "100644",
+          "name": "CHANGELOG.rst"
+        },
+        {
+          "git_object": "ddc4d6087a02c126b18c93dd64d62e57d00f4d28",
+          "mode": "100644",
+          "name": "CMakeLists.txt"
+        },
+        {
+          "git_object": "34b0ed2f5a519960b0fa9cd43cf3bc74e90c48a4",
+          "mode": "100644",
+          "name": "main.cpp"
+        },
+        {
+          "git_object": "baff2d6b12797737e16436ff28c7795003df86ec",
+          "mode": "100644",
+          "name": "package.xml"
+        }
+      ],
+      "git_tree": "a4a390fb9b8a155ea5cdb2683b5e80d29101642f",
+      "raw_base64": "MTAwNjQ0IENIQU5HRUxPRy5yc3QAzG5ri8F9Xhs0qyRSuVG29AefhgUxMDA2NDQgQ01ha2VMaXN0cy50eHQA3cTWCHoCwSaxjJPdZNYuV9APTSgxMDA2NDQgbWFpbi5jcHAANLDtL1pRmWCw+pzUPPO8dOkMSKQxMDA2NDQgcGFja2FnZS54bWwAuv8taxJ5dzfhZDb/KMd5UAPfhuw=",
+      "raw_bytes": 158,
+      "sha256": "1b8eb0758865559ecc1aea9948ab00f2f141a15abf6a42a82d7c2523d2456b4d"
+    },
+    "rclcpp/services/minimal_service": {
+      "entries": [
+        {
+          "git_object": "7238f7f3e4932c4c43ca3d4c55a446d21c576d74",
+          "mode": "100644",
+          "name": "CHANGELOG.rst"
+        },
+        {
+          "git_object": "0ecfe3fb7bdf4753d20f802795d36382e0ba1a18",
+          "mode": "100644",
+          "name": "CMakeLists.txt"
+        },
+        {
+          "git_object": "a1b7123ba1468235732aeb16f560df7457d652ad",
+          "mode": "100644",
+          "name": "README.md"
+        },
+        {
+          "git_object": "3cf38fb33db6619b4c6011cec57c48a175ffd0c4",
+          "mode": "100644",
+          "name": "main.cpp"
+        },
+        {
+          "git_object": "4fd631f1135c32780b771e04232ec2f8846d0b2c",
+          "mode": "100644",
+          "name": "package.xml"
+        }
+      ],
+      "git_tree": "1a3d0aea563bdf0b4a0ef80c77087c5e4103059b",
+      "raw_base64": "MTAwNjQ0IENIQU5HRUxPRy5yc3QAcjj38+STLExDyj1MVaRG0hxXbXQxMDA2NDQgQ01ha2VMaXN0cy50eHQADs/j+3vfR1PSD4AnldNjguC6GhgxMDA2NDQgUkVBRE1FLm1kAKG3EjuhRoI1cyrrFvVg33RX1lKtMTAwNjQ0IG1haW4uY3BwADzzj7M9tmGbTGARzsV8SKF1/9DEMTAwNjQ0IHBhY2thZ2UueG1sAE/WMfETXDJ4C3ceBCMuwviEbQss",
+      "raw_bytes": 195,
+      "sha256": "a58c7eda4c5262231c31f182431456f6019ec3dfe42499f8931ce07b5c6cf625"
+    }
+  },
+  "whole_worktree_or_native_SDK_materialized": false
+}

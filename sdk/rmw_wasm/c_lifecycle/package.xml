@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<package format="3">
+ <name>uwvm_rmw_c_service_lifecycle</name><version>0.1.0</version>
+ <description>Explicit source-recompiled ownership port for genuine C GetTypeDescription objects in fixed original rclcpp.</description>
+ <maintainer email="maintainer@example.invalid">UWVM ROS SDK maintainers</maintainer>
+ <license>Apache-2.0</license>
+ <buildtool_depend>ament_cmake</buildtool_depend>
+ <depend>type_description_interfaces</depend><depend>rosidl_runtime_c</depend>
+ <test_depend>rclcpp</test_depend><test_depend>rcl</test_depend><test_depend>rcutils</test_depend>
+ <export><build_type>ament_cmake</build_type></export>
+</package>

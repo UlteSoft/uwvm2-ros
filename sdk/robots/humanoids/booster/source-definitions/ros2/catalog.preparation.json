@@ -1,0 +1,191 @@
+{
+  "format": "uwvm-ros-vendor-complete-bounded-v1",
+  "types": [
+    {
+      "ros_version": 2,
+      "type": "booster_interface/msg/BoosterApiReqMsg",
+      "file": "booster_interface/msg/BoosterApiReqMsg.msg",
+      "bounds": {
+        "body": {
+          "string": 4096
+        }
+      },
+      "registered": true
+    },
+    {
+      "ros_version": 2,
+      "type": "booster_interface/msg/BoosterApiRespMsg",
+      "file": "booster_interface/msg/BoosterApiRespMsg.msg",
+      "bounds": {
+        "body": {
+          "string": 4096
+        }
+      },
+      "registered": true
+    },
+    {
+      "ros_version": 2,
+      "type": "booster_interface/msg/ButtonEventMsg",
+      "file": "booster_interface/msg/ButtonEventMsg.msg",
+      "bounds": {},
+      "registered": true
+    },
+    {
+      "ros_version": 2,
+      "type": "booster_interface/msg/FallDownState",
+      "file": "booster_interface/msg/FallDownState.msg",
+      "bounds": {},
+      "registered": true
+    },
+    {
+      "ros_version": 2,
+      "type": "booster_interface/msg/HandCommand",
+      "file": "booster_interface/msg/HandCommand.msg",
+      "bounds": {
+        "hand_param": {
+          "sequence": 32
+        }
+      },
+      "registered": true
+    },
+    {
+      "ros_version": 2,
+      "type": "booster_interface/msg/HandDdsMsg",
+      "file": "booster_interface/msg/HandDdsMsg.msg",
+      "bounds": {
+        "hands_vec": {
+          "sequence": 2
+        }
+      },
+      "registered": true
+    },
+    {
+      "ros_version": 2,
+      "type": "booster_interface/msg/HandParam",
+      "file": "booster_interface/msg/HandParam.msg",
+      "bounds": {},
+      "registered": true
+    },
+    {
+      "ros_version": 2,
+      "type": "booster_interface/msg/ImuState",
+      "file": "booster_interface/msg/ImuState.msg",
+      "bounds": {},
+      "registered": true
+    },
+    {
+      "ros_version": 2,
+      "type": "booster_interface/msg/LowCmd",
+      "file": "booster_interface/msg/LowCmd.msg",
+      "bounds": {
+        "motor_cmd": {
+          "sequence": 29
+        }
+      },
+      "registered": true
+    },
+    {
+      "ros_version": 2,
+      "type": "booster_interface/msg/LowState",
+      "file": "booster_interface/msg/LowState.msg",
+      "bounds": {
+        "motor_state_parallel": {
+          "sequence": 29
+        },
+        "motor_state_serial": {
+          "sequence": 29
+        }
+      },
+      "registered": true
+    },
+    {
+      "ros_version": 2,
+      "type": "booster_interface/msg/MotorCmd",
+      "file": "booster_interface/msg/MotorCmd.msg",
+      "bounds": {},
+      "registered": true
+    },
+    {
+      "ros_version": 2,
+      "type": "booster_interface/msg/MotorState",
+      "file": "booster_interface/msg/MotorState.msg",
+      "bounds": {},
+      "registered": true
+    },
+    {
+      "ros_version": 2,
+      "type": "booster_interface/msg/Odometer",
+      "file": "booster_interface/msg/Odometer.msg",
+      "bounds": {},
+      "registered": true
+    },
+    {
+      "ros_version": 2,
+      "type": "booster_interface/msg/RawBytesMsg",
+      "file": "booster_interface/msg/RawBytesMsg.msg",
+      "bounds": {
+        "msg": {
+          "sequence": 2048
+        }
+      },
+      "registered": true
+    },
+    {
+      "ros_version": 2,
+      "type": "booster_interface/msg/RawBytesStamped",
+      "file": "booster_interface/msg/RawBytesStamped.msg",
+      "bounds": {
+        "msg": {
+          "sequence": 2048
+        }
+      },
+      "registered": true
+    },
+    {
+      "ros_version": 2,
+      "type": "booster_interface/msg/RemoteControllerState",
+      "file": "booster_interface/msg/RemoteControllerState.msg",
+      "bounds": {},
+      "registered": true
+    },
+    {
+      "ros_version": 2,
+      "type": "booster_interface/srv/AgentService",
+      "file": "booster_interface/srv/AgentService.srv",
+      "bounds": {
+        "request.body": {
+          "string": 4096
+        },
+        "response.body": {
+          "string": 4096
+        }
+      },
+      "registered": true
+    },
+    {
+      "ros_version": 2,
+      "type": "booster_interface/srv/RpcService",
+      "file": "booster_interface/srv/RpcService.srv",
+      "bounds": {},
+      "registered": true
+    },
+    {
+      "ros_version": 2,
+      "type": "std_msgs/msg/Header",
+      "file": "std_msgs/msg/Header.msg",
+      "bounds": {
+        "frame_id": {
+          "string": 128
+        }
+      },
+      "registered": false
+    },
+    {
+      "ros_version": 2,
+      "type": "builtin_interfaces/msg/Time",
+      "file": "builtin_interfaces/msg/Time.msg",
+      "bounds": {},
+      "registered": false
+    }
+  ]
+}

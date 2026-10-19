@@ -1,0 +1,62 @@
+{
+  "format_version": 1,
+  "kind": "actual-official-examples-source-bytes-not-sdk-qualification",
+  "repository": "https://github.com/ros2/examples",
+  "requested_ref": "jazzy",
+  "actual_commit": "07008852303f2a35a91c65d78046b274a35477ea",
+  "actual_commit_tree_sha1": "cc1f17d44a88c740e4ed580be99ead013bcb1afd",
+  "raw_files": [
+    {
+      "relative": "rclcpp/topics/minimal_publisher/member_function.cpp",
+      "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclcpp/topics/minimal_publisher/member_function.cpp",
+      "bytes": 1776,
+      "sha256": "f9cce9b0b22f7498991846eff1a228a0b1afe375ec1bb8a0f3ea23107a5f3199",
+      "git_blob_sha1": "b211a5eb78be004f8b4cdbd7caf18782962cccba"
+    },
+    {
+      "relative": "rclcpp/topics/minimal_subscriber/member_function.cpp",
+      "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclcpp/topics/minimal_subscriber/member_function.cpp",
+      "bytes": 1399,
+      "sha256": "8fbd0fbe3b72ea8826b8b5d6d18a1ab90efb6ab03e9ef636d605d91cb75b8a3e",
+      "git_blob_sha1": "40f27f7d6f3ec7be9e315841aac03c9f68ed3579"
+    },
+    {
+      "relative": "rclcpp/topics/minimal_publisher/package.xml",
+      "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclcpp/topics/minimal_publisher/package.xml",
+      "bytes": 1088,
+      "sha256": "1c28dca11f8e08f0fed965bca236c59351c7b7a3020c7d17b5f3694ef4a5c031",
+      "git_blob_sha1": "97fc7094f3a9187d3286fb4059169e786a170aca"
+    },
+    {
+      "relative": "rclcpp/topics/minimal_subscriber/package.xml",
+      "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclcpp/topics/minimal_subscriber/package.xml",
+      "bytes": 1181,
+      "sha256": "abbf72565c8c9473735992535ece1420165756678a1941b1d8b1565083428105",
+      "git_blob_sha1": "ce6ad18ccece767ac958d4308ddc2a53dc877c76"
+    },
+    {
+      "relative": "rclcpp/topics/minimal_publisher/CMakeLists.txt",
+      "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclcpp/topics/minimal_publisher/CMakeLists.txt",
+      "bytes": 1772,
+      "sha256": "fbff3eaecc4f52b086af8b1fb32e4df3b7bdccc50bcf181b5d4c929c129eff46",
+      "git_blob_sha1": "d013600e59d8cc9af9b586853acfc7aabfe72955"
+    },
+    {
+      "relative": "rclcpp/topics/minimal_subscriber/CMakeLists.txt",
+      "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclcpp/topics/minimal_subscriber/CMakeLists.txt",
+      "bytes": 2860,
+      "sha256": "5b7b4b9a55a5291fce42f4ec0acb4caf0d986a79218e3a7580d8065889f6d4f1",
+      "git_blob_sha1": "125b51ad9e0ec5bdfa880d8772e412fbfa59c531"
+    },
+    {
+      "relative": "LICENSE",
+      "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/LICENSE",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "git_blob_sha1": "d645695673349e3947e8e5ae42332d0ac3164cd7"
+    }
+  ],
+  "actual_candidate_calls": 0,
+  "materialized_whole_source_tree": false,
+  "native_identity_qualified": false
+}

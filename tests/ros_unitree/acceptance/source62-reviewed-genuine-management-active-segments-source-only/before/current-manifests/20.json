@@ -1,0 +1,63 @@
+{
+  "kind": "source54-reviewed-sdk-generated-references",
+  "status": "CURRENT_SOURCE_INDEPENDENT_REVIEW_CLOSED_NOT_EXECUTED",
+  "current_files": {
+    "sdk/tools/verify_sources.py": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/tools/verify_sources.py",
+      "bytes": 26531,
+      "sha256": "727d8ed22c0898fff32112094392b7316a3dca46cd8140f6a7c5f1f51f2102c5"
+    },
+    "sdk/tests/generated_source_include_models.py": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/tests/generated_source_include_models.py",
+      "bytes": 12930,
+      "sha256": "06aaf44de36e3428b0e7b017446bf0247b204e149f4c9d2e04ee94bdaace924c"
+    },
+    "sdk/robots/unitree/examples/javascript/control_kernel.c": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/robots/unitree/examples/javascript/control_kernel.c",
+      "bytes": 5328,
+      "sha256": "b2f1618e9cc91ae8ae0c59b4f867471793a07ba457af98800e43e0b787fe0397"
+    },
+    "sdk/custom-types/interface-examples/README.md": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/custom-types/interface-examples/README.md",
+      "bytes": 16367,
+      "sha256": "e9c8a9ded6ea5379dd7e7d06bb6394750f6653008bb029ac226681600314f6c2"
+    },
+    "sdk/tools/generated-reference-contracts.json": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/tools/generated-reference-contracts.json",
+      "bytes": 4141,
+      "sha256": "ed132efdc887041865d80d78961911fde660341ffc82dd6484dd2ffbabc7237f"
+    },
+    "sdk/custom-types/interface-examples/build-recipes.json": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/custom-types/interface-examples/build-recipes.json",
+      "bytes": 5365,
+      "sha256": "06802b84cebad748921c817fb03b503617c4c52eda81e062e96a7145b53abc8d"
+    },
+    "sdk/custom-types/interface-examples/prepare.py": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/custom-types/interface-examples/prepare.py",
+      "bytes": 12227,
+      "sha256": "5f343a6a6fc92fe248b39c7e25898a0f3b6af6e479a6d5493b02f33aad7ce092"
+    },
+    "sdk/custom-types/interface-examples/tinygo-main/main.go": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/custom-types/interface-examples/tinygo-main/main.go",
+      "bytes": 857,
+      "sha256": "d06f94ee629595212128404ce7765a5d23f6b20292cfb9433894ff3ee9fadfdc"
+    },
+    "sdk/docs/generated-source-inputs.md": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/docs/generated-source-inputs.md",
+      "bytes": 4177,
+      "sha256": "2d4f980981241b7912af35bae04fe4952fd7b460ae3e108da5cbaebebc6d57a6"
+    }
+  },
+  "author_source_ready": {
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source54-generated-input-and-management-fixtures-source-only/sdk-generated-references/author-source-ready.json",
+    "bytes": 6113,
+    "sha256": "20b422997b2636e7e699f0a26fd4d87f0f49867d1640ea2ec746d25756044531"
+  },
+  "independent_source_peer": {
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source54-generated-input-and-management-fixtures-source-only/sdk-generated-references/independent-source-peer.json",
+    "bytes": 12749,
+    "sha256": "684f99fb023e4c4a5c0ee0cc50da2207a739a93cdf1178bfa5cb3631fb448490"
+  },
+  "tests_or_compilers_or_Runtime_executed": false,
+  "scope": "Current source only; no historical test or peer result is promoted to changed bytes."
+}

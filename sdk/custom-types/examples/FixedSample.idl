@@ -1,0 +1,14 @@
+// The generator supports this closed ROS2 IDL fixed-record subset.
+// Includes, annotations, typedefs, defaults and dynamic members are refused.
+module example_interfaces_custom {
+  module msg {
+    struct FixedSample {
+      unsigned long sequence;
+      boolean enabled;
+      float temperature;
+      double acceleration[3];
+      uint8 tag[8];
+      short thresholds[2];
+    };
+  };
+};

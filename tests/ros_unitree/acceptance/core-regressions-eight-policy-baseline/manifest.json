@@ -1,0 +1,41 @@
+{
+  "status": "PRESERVED_SOURCE_ONLY_EIGHT_POLICY_BASELINE_NOT_INVOKED",
+  "files": [
+    {
+      "original": "tests/ros_unitree/run_core_regressions.py",
+      "preserved": "tests/ros_unitree/acceptance/core-regressions-eight-policy-baseline/run_core_regressions.py",
+      "bytes": 24281,
+      "sha256": "e1d14b9e53b4c119a31addb65abdb19bb5054aa0b834432c63043d2109311e8f"
+    },
+    {
+      "original": "tests/ros_unitree/CORE_REGRESSIONS.md",
+      "preserved": "tests/ros_unitree/acceptance/core-regressions-eight-policy-baseline/CORE_REGRESSIONS.md",
+      "bytes": 7028,
+      "sha256": "a1c7657831b745edbdb17600a1ffbe089b59d9c7382084fd8afd51aaa2a8c40d"
+    },
+    {
+      "original": "tests/ros_unitree/core-regressions-native-config.template.json",
+      "preserved": "tests/ros_unitree/acceptance/core-regressions-eight-policy-baseline/core-regressions-native-config.template.json",
+      "bytes": 866,
+      "sha256": "3a2bc6b0611fa001581ee92f8c615caaec2e11a40713828246dd56ef94445a41"
+    },
+    {
+      "original": "tests/ros_unitree/core-regressions-source-ready-before-peer.json",
+      "preserved": "tests/ros_unitree/acceptance/core-regressions-eight-policy-baseline/core-regressions-source-ready-before-peer.json",
+      "bytes": 5035,
+      "sha256": "9046f8f7934259d5d36f1995878a55784d2109fc9d335d22fd9f5b62850d465a"
+    },
+    {
+      "original": "tests/ros_unitree/core-regressions-source-ready.json",
+      "preserved": "tests/ros_unitree/acceptance/core-regressions-eight-policy-baseline/core-regressions-source-ready.json",
+      "bytes": 5586,
+      "sha256": "545c456c86aa86f88675b6ec5b5ebef8d0935d92f3dc214f63645dd38461d43e"
+    },
+    {
+      "original": "tests/ros_unitree/acceptance/core-regressions-independent-source-peer-root.json",
+      "preserved": "tests/ros_unitree/acceptance/core-regressions-eight-policy-baseline/core-regressions-independent-source-peer-root.json",
+      "bytes": 4698,
+      "sha256": "fc2806002eeca0feae502b80f6be4da2536a3aa59695e8f77a5ad91da424eec1"
+    }
+  ]
+}

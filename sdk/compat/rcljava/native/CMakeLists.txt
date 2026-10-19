@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.16)
+project(rcljava_migration_native_witness LANGUAGES CXX)
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(std_msgs REQUIRED)
+add_executable(rcljava_string_peer string_peer.cc)
+target_compile_features(rcljava_string_peer PRIVATE cxx_std_17)
+ament_target_dependencies(rcljava_string_peer rclcpp std_msgs)

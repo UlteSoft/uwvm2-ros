@@ -1,0 +1,38 @@
+{
+  "format_version": 1,
+  "kind": "required-legacy-interface-implementation-and-validation-ledger-not-permanent-exclusions",
+  "default_authority": [],
+  "executed_cases": 0,
+  "source_candidate": "complete ROS2 Message/Service metadata and six-language preparation path",
+  "required_next": [
+    {
+      "role": "actual_old_and_modern_sdks",
+      "work": "Run genuine Trigger/SetBool old-SDK positives and mandatory modern refusal with exact owner/compiler/MD/link/ELF/maps/Crypto evidence."
+    },
+    {
+      "role": "six_language_service_delivery",
+      "work": "Real bound generated Service codecs/clients in all six languages, default-denied and explicit call/native oracle, close/cancel/disconnect and current source preservation."
+    },
+    {
+      "role": "action_complete_native_export",
+      "work": "Review/integrate/qualify the separate complete Action source pipeline: real typed five-link ActionSupport, Goal/Result/Feedback and both protocol Services, UUID/Time and additional actual CancelGoal/status metadata. Run original-owner/old-positive/modern-refusal, six-core generated RPC/callback and complete native lifecycle tests before any qualification.",
+      "source_state": "SEPARATE_COMPLETE_ACTION_SOURCE_CANDIDATE_NOT_NATIVE_QUALIFIED"
+    },
+    {
+      "role": "zero_field_topics",
+      "work": "Implement explicit complete native empty Topic representation without treating a C/C++ layout dummy as a wire field."
+    },
+    {
+      "role": "sensor_nonfinite_semantics",
+      "work": "Implement explicit standard sensor value semantics for LaserScan infinity/NaN without weakening the current finite-float custom policy."
+    },
+    {
+      "role": "constants_defaults_wstring",
+      "work": "Preserve official type identities and exact constant/default/Unicode native semantics in parser, native matcher and six codecs."
+    },
+    {
+      "role": "ros2_idl_and_large_images",
+      "work": "Implement complete .idl dependency/source provenance and independently bounded large-image transport; do not truncate existing native fields or silently raise canonical bounds."
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "format_version": 1,
+  "kind": "native-rmw-subscription-transaction-wire-source-only-v1",
+  "magic": "UMRS",
+  "version": 1,
+  "header_bytes": 96,
+  "commands": {
+    "peek": 1,
+    "commit": 2,
+    "cancel": 3
+  },
+  "existing_UMRE_bytes": 256,
+  "same_record_URMI_bytes": 192,
+  "accepted_stream_sequence_and_borrow_attempt_nonce_are_distinct": true,
+  "nonce_positive_nonreuse_exhaustion": 90,
+  "unknown_Guest_import_catalog": null,
+  "unknown_transport_action_numbers": null,
+  "original_81_tuple_changes": 0,
+  "source_only": true,
+  "actual_runs": 0,
+  "whole_reply": "UMRS96 + exact same owned URMI192 + canonical body",
+  "consumer_output_atomicity": "Future independently reviewed Host memory/source lease commit point; no automatic copy/ACK by wire helper",
+  "failure_contract": "capacity90 and metadata95 before borrow; cancel current reservation on failed peek send; retain primary and secondary errors; lost/late commit ACK is ambiguous and requires session retirement, never automatic replay",
+  "custom_factory": "explicit trusted compiled real Native+Codec shard required; absent95, no legacy fallback"
+}

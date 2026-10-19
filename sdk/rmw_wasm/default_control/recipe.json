@@ -1,0 +1,54 @@
+{
+  "format_version": 1,
+  "status": "AUTHORED_COMMANDS_NOT_EXECUTED",
+  "profile": "uwvm-ros-original-node-control-c-cpp-v1",
+  "source_root": "ACTUAL_REVIEWED_CURRENT_REPOSITORY",
+  "working_directory": "SOURCE_ROOT",
+  "stages": [
+    {
+      "name": "read-only-schema",
+      "argv": [
+        "python3",
+        "sdk/tools/custom_types.py",
+        "sdk/rmw_wasm/default_control/catalog.preparation.json",
+        "--check"
+      ],
+      "starts_native": false
+    },
+    {
+      "name": "canonical-c-cpp-source",
+      "argv": [
+        "python3",
+        "sdk/tools/custom_types.py",
+        "sdk/rmw_wasm/default_control/catalog.preparation.json",
+        "--guest-only",
+        "--out",
+        "ABSOLUTE_FRESH_OWNED_OUTPUT"
+      ],
+      "starts_native": false
+    }
+  ],
+  "native_registry": "SEPARATE_IMPLEMENTED_SOURCE_sdk/rmw_wasm/default_control/native_REQUIRES_ACTUAL_GENERATION_SDK_BUILD_AND_EXECUTION",
+  "managed_outputs": "REQUIRED_NOT_EMITTED",
+  "default_NodeOptions": "UNCHANGED",
+  "actual_all_phase_counts": 0,
+  "separate_native_Gateway": "gateways/ros2/default_control: independent genuine C++ proof/factories; exact integration status is in sdk/rmw_wasm/required-work.json",
+  "explicit_Host_integration": "gateways/ros2/README.default_control_profile.md: opt-in build plus separately selected storage and ordinary capabilities",
+  "canonical_outputs_for_this_extended_profile": [
+    "bounded_records.h",
+    "bounded_records.hpp",
+    "bounded_interfaces.h",
+    "bounded_interfaces.hpp",
+    "control_wire.hpp",
+    "control_manifest.hpp",
+    "control-schema.json",
+    "generation.json"
+  ],
+  "actual_source_fixture_roles": {
+    "original_Guest_endpoints": 10,
+    "source_domain_python_methods": 11,
+    "original_source_profile_methods": 20,
+    "new_fixture_executions": 0
+  },
+  "authority": "Every endpoint role needs separate explicit matching aliases and Host grants; no Guest management imports"
+}

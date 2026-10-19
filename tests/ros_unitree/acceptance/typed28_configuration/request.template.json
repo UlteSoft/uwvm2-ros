@@ -1,0 +1,46 @@
+{
+  "current_context": {
+    "cgroup": null,
+    "network_namespace": null
+  },
+  "cyclonedds_xml": null,
+  "format_version": 1,
+  "kind": "uwvm-unitree-typed28-configuration-request-v1",
+  "limits": {
+    "command_seconds": 600,
+    "jobs": 1,
+    "log_bytes": 16777216,
+    "output_bytes": 4294967296,
+    "rss_bytes": 2147483648
+  },
+  "mapping_sets": {
+    "context-go-api": [],
+    "context-hg": [],
+    "gateway-go-api": [],
+    "gateway-hg": [],
+    "peer": [],
+    "worker-dual": [],
+    "worker-ros2": []
+  },
+  "paths": {
+    "admission_out": null,
+    "controls": null,
+    "transport_out": null
+  },
+  "python": null,
+  "reports": {
+    "commands": null,
+    "native_products": null,
+    "workers": null
+  },
+  "restart_mappings": [],
+  "source": {
+    "manifest": null,
+    "root": null
+  },
+  "worker_catalog_roots": [],
+  "worker_registries": {
+    "go-api": null,
+    "hg": null
+  }
+}

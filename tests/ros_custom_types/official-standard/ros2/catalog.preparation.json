@@ -1,0 +1,44 @@
+{
+  "format": "uwvm-ros-official-standard-bounded-v1",
+  "types": [
+    {
+      "ros_version": 2,
+      "type": "std_msgs/msg/Header",
+      "file": "std_msgs/msg/Header.msg",
+      "registered": false,
+      "bounds": {
+        "frame_id": {
+          "string": 128
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "sensor_msgs/msg/JointState",
+      "file": "sensor_msgs/msg/JointState.msg",
+      "registered": true,
+      "bounds": {
+        "name": {
+          "string": 128,
+          "sequence": 64
+        },
+        "position": {
+          "sequence": 64
+        },
+        "velocity": {
+          "sequence": 64
+        },
+        "effort": {
+          "sequence": 64
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "builtin_interfaces/msg/Time",
+      "file": "builtin_interfaces/msg/Time.msg",
+      "registered": false,
+      "bounds": {}
+    }
+  ]
+}

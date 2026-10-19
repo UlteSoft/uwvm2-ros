@@ -1,0 +1,5 @@
+# Set an analog output to a given value.
+# Multiple outputs can be set at once by providing more than one entry in the data array
+Analog[] data
+---
+bool success

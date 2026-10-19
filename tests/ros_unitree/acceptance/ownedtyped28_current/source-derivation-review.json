@@ -1,0 +1,81 @@
+{
+  "actual_execution_performed": false,
+  "baseline": {
+    "derive_request.py": {
+      "bytes": 18902,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/typed28_owned_net/derive_request.py",
+      "sha256": "cecc4f80ef68d3c9e7c6f48325b0d427e59e3f68d035a1dfc9d59ef0d70f28b9"
+    },
+    "owner.py": {
+      "bytes": 39191,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/typed28_owned_net/owner.py",
+      "sha256": "b0f935556f340c1cd0a8297ddb7cb2f3fa8f38d68d39d42e7af80d7727b17d1a"
+    }
+  },
+  "changed_definitions": {
+    "derive_request.py": [
+      "derive_typed28_request"
+    ],
+    "owner.py": [
+      "main"
+    ]
+  },
+  "current": {
+    "README.md": {
+      "bytes": 9836,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/ownedtyped28_current/README.md",
+      "sha256": "b998b0247f880a4fc19d4b4f834206117bf658a286b358fec4278f7205436684"
+    },
+    "control.template.json": {
+      "bytes": 1384,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/ownedtyped28_current/control.template.json",
+      "sha256": "c59e4fc5d1ac4fb05a31786cfa0b85947642c8c0c05041b22491cbca4a85dac2"
+    },
+    "derive_request.py": {
+      "bytes": 19301,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/ownedtyped28_current/derive_request.py",
+      "sha256": "5dbedd49fd6bb281a310ebe9a44d70f27d47b8566e2415ddce5f0143654a87ee"
+    },
+    "make_control.py": {
+      "bytes": 21943,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/ownedtyped28_current/make_control.py",
+      "sha256": "8c8bfd245c3a363131fbecdee0ed137fd8852e329ee3cd40bf58adf6ebc033ae"
+    },
+    "owner.py": {
+      "bytes": 40975,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/ownedtyped28_current/owner.py",
+      "sha256": "a5b26d18c3f96beb171f7f9bf1cb8abd1cfffd9c6a5fa29c692a9c6ae3dd4329"
+    }
+  },
+  "current_source_selection": "Root supplies actual complete source and full7 manifest; helper bytes equal actual manifest entries. No future MF hash or namespace identity forecast.",
+  "delta": {
+    "bytes": 16986,
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/ownedtyped28_current/source-selection-delta.patch",
+    "sha256": "a7cffa155f759695d712e6fb2fc4887fa228dc7d5e9c39addebe2c595291df09"
+  },
+  "explicitly_preserved": [
+    "original Typed14 fourteen-product status and Source40 provenance",
+    "Worker37 exact original report SHA/source role",
+    "Native74 retained at-rest receipt and original Native39 failed raw reports",
+    "fourteen denied plus fourteen positive transport cases",
+    "hard64/swap0 current leaf, actual private loopback and direct-parent birth",
+    "pidfd ownership, original deadlines, resource ceilings and 600-second cleanup"
+  ],
+  "format_version": 1,
+  "kind": "typed28-current-source-only-derivation-review",
+  "unchanged_definitions": {
+    "derive_request.py": [],
+    "owner.py": [
+      "birth",
+      "current_context",
+      "decode",
+      "full",
+      "namespace_handoff",
+      "need",
+      "pairs",
+      "raw_identity",
+      "read"
+    ]
+  },
+  "validation": "Source reads, ast.parse, byte comparison and SHA256 only; no imports, invocation, tests, SSH, compiler, Runtime or ROS execution."
+}

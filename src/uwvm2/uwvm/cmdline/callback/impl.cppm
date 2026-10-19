@@ -53,8 +53,10 @@ export import :runtime_scheduling_policy;
 // partition graph unconditional; backend #if guards belong in each partition's .h.
 export import :runtime_llvm_jit_policy;
 export import :runtime_llvm_jit_full_policy;
+export import :runtime_llvm_jit_exception_dispatch;
 export import :runtime_llvm_jit_call_stack;
 export import :runtime_llvm_jit_cache_path;
+export import :runtime_llvm_jit_cache_seal_process;
 export import :runtime_int;
 export import :runtime_uwvm_int_set_opcode_conbination_level;
 export import :runtime_uwvm_int_loop_unwind_max_size;
@@ -78,6 +80,7 @@ export import :wasip1_global_socket_udp_connect;
 export import :wasip1_module_common;
 export import :wasip1_single_common;
 export import :wasip1_group_common;
+export import :wasip1_permissions;
 export import :wasip1_single_create;
 export import :wasip1_single_enable;
 export import :wasip1_single_disable;
@@ -127,6 +130,8 @@ export import :log_enable_warning;
 export import :log_disable_warning;
 export import :log_convert_warn_to_fatal;
 
+export import :wasi_threads;
+export import :wasi_thread_signals;
 #ifndef UWVM_MODULE
 # define UWVM_MODULE
 #endif

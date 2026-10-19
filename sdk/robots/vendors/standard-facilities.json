@@ -1,0 +1,124 @@
+{
+  "format_version": 1,
+  "kind": "actual-current-standard-facilities-source-inventory-not-native-qualification",
+  "default_authority": [],
+  "twist": {
+    "status": "SIX_CURRENT_SDK_COMPLETE_CANONICAL_CODECS_EXIST_NOT_ROBOT_HOLD_SEMANTICS",
+    "wire_bytes": 48,
+    "official_schema": "https://raw.githubusercontent.com/ros2/common_interfaces/jazzy/geometry_msgs/msg/Twist.msg",
+    "c": [
+      "sdk/include/roswasm/codec.h",
+      "roswasmc_twist",
+      "roswasmc_encode_twist",
+      "roswasmc_decode_twist"
+    ],
+    "cpp": [
+      "sdk/include/roswasm/roswasmcpp.hpp",
+      "roswasmcpp::msg::Twist",
+      "roswasmcpp::Codec"
+    ],
+    "rust": [
+      "sdk/rust/src/typed.rs",
+      "[f64;6]",
+      "roswasm::typed::Canonical"
+    ],
+    "javascript": [
+      "sdk/javascript/codecs.mjs",
+      "TwistMessage"
+    ],
+    "assemblyscript": [
+      "sdk/assemblyscript/codecs.ts",
+      "Twist",
+      "TwistCodec"
+    ],
+    "tinygo": [
+      "sdk/tinygo/typed.go",
+      "Twist"
+    ],
+    "semantics": "Full finite linear xyz/angular xyz values. A zero Twist is not a universal vendor mode/hold/stop command; exact simulator policy and native witness remain required."
+  },
+  "joint_state": {
+    "status": "EXPLICIT_STANDARD_MODE_INTEGRATED_SOURCE_PENDING_NATIVE_EXPORT_GENERATION_AND_EXECUTION",
+    "official_schema": "https://raw.githubusercontent.com/ros2/common_interfaces/jazzy/sensor_msgs/msg/JointState.msg",
+    "whole_fields": [
+      "header",
+      "name",
+      "position",
+      "velocity",
+      "effort"
+    ],
+    "whole_dependencies": [
+      "std_msgs/msg/Header",
+      "builtin_interfaces/msg/Time"
+    ],
+    "official_dependency_sources": [
+      "https://raw.githubusercontent.com/ros2/common_interfaces/jazzy/std_msgs/msg/Header.msg",
+      "https://raw.githubusercontent.com/ros2/rcl_interfaces/jazzy/builtin_interfaces/msg/Time.msg"
+    ],
+    "next_candidate": "Root integrated the separately reviewed complete Header/JointState mode and vendor wiring as source only. Actual native identity export, all-six generation/compilation, full native traits and delivery remain required; source integration is not execution qualification.",
+    "legacy_custom_mode_blocks": [
+      "sdk/tools/custom_types.py::native_name forbids custom shadow of builtin/standard package namespaces",
+      "sdk/custom-types/bounded_profile.py::parse_fields refuses ROS1 Header/time/duration spellings",
+      "No current SDK/Gateway JointState builtin adapter was found in the scoped read"
+    ]
+  },
+  "legacy_ros2_message_source_preparation": {
+    "mode": "legacy-introspection",
+    "source_state": "EXPLICIT_SOURCE_PIPELINE_IMPLEMENTED_PENDING_NATIVE_QUALIFICATION",
+    "default": "original-native-metadata",
+    "native_provenance": "LEGACY_NATIVE_INTROSPECTION_DERIVED_RIHS01",
+    "baked_hash_claim": false,
+    "modern_downgrade_allowed": false,
+    "actual_old_sdk_exports": 0,
+    "actual_modern_refusal_runs": 0,
+    "remaining_required_implementation": [
+      "complete zero-field Topic native representation",
+      "complete Action native root/protocol/feedback associations and original-owner tests",
+      "same-source native SDK/owner integration tests; Service candidate must first be reviewed/applied/qualified"
+    ]
+  },
+  "legacy_ros2_service_source_preparation": {
+    "mode": "legacy-introspection",
+    "source_state": "SOURCE_CANDIDATE_NOT_GENERATED_COMPILED_OR_EXECUTED",
+    "default_authority": [],
+    "native_service_provenance": "LEGACY_NATIVE_SERVICE_WITH_STANDARD_PROTOCOL_DERIVED_RIHS01",
+    "actual_payload_provenance": "LEGACY_NATIVE_INTROSPECTION_DERIVED_RIHS01",
+    "protocol": "ROS2_SERVICE_EVENT_V1",
+    "installed_event_proof": "Separate protocol_event_native_introspection boolean; false on pre-event ServiceMembers, never a fabricated installed type.",
+    "native_contracts": [
+      "std_srvs/srv/Trigger",
+      "std_srvs/srv/SetBool"
+    ],
+    "actual_runs": 0
+  },
+  "legacy_ros2_action_source_preparation": {
+    "mode": "legacy-introspection",
+    "source_state": "SOURCE_CANDIDATE_NOT_GENERATED_COMPILED_OR_EXECUTED",
+    "default_authority": [],
+    "root_provenance": "LEGACY_NATIVE_ACTION_WITH_STANDARD_PROTOCOL_DERIVED_RIHS01",
+    "protocol": "ROS2_ACTION_EVENT_V1",
+    "actual_native_links": [
+      "SendGoalService",
+      "GetResultService",
+      "CancelGoalService",
+      "FeedbackMessage",
+      "GoalStatusMessage"
+    ],
+    "separate_protocol_metadata": [
+      "send_goal",
+      "get_result",
+      "feedback_message",
+      "cancel_goal",
+      "status",
+      "uuid",
+      "time"
+    ],
+    "modern_downgrade_allowed": false,
+    "native_cases_run": 0,
+    "policy_cases_run": 0,
+    "actual_actions_sent": 0,
+    "native_delivery_qualified": false,
+    "actual_definition_distinction": "Original Dashing example_interfaces Feedback.sequence and Humble action_tutorials_interfaces Feedback.partial_sequence remain different.",
+    "ardent_bouncy_boundary": "Exact acquired rosidl trees lack the official Action mechanism paths; no fake installed availability or ROS1 substitution."
+  }
+}

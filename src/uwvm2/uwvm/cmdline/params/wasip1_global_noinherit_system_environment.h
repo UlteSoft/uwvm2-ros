@@ -49,6 +49,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
 
     namespace details
     {
+#  if defined(UWVM_MODULE)
+        extern "C++"
+#  else
+        inline constexpr
+#  endif
+            ::uwvm2::utils::cmdline::parameter_return_type wasip1_global_noinherit_system_environment_callback(
+                ::uwvm2::utils::cmdline::parameter_parsing_results*,
+                ::uwvm2::utils::cmdline::parameter_parsing_results*,
+                ::uwvm2::utils::cmdline::parameter_parsing_results*) noexcept;
         inline constexpr ::uwvm2::utils::container::array<::uwvm2::utils::container::u8string_view, 2uz> wasip1_global_noinherit_system_environment_alias{
             u8"--wasip1-noinherit-system-environment",
             u8"-I1nosysenv"};
@@ -63,7 +72,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
         .describe{u8"Start the global-default WASI Preview 1 environment without inheriting host environment variables."},
         .alias{::uwvm2::utils::cmdline::kns_u8_str_scatter_t{details::wasip1_global_noinherit_system_environment_alias.data(),
                                                              details::wasip1_global_noinherit_system_environment_alias.size()}},
-        .is_exist{::std::addressof(::uwvm2::uwvm::imported::wasi::wasip1::storage::wasip1_noinherit_system_environment)},
+        .handle{::std::addressof(details::wasip1_global_noinherit_system_environment_callback)},
+        .is_exist{::std::addressof(::uwvm2::uwvm::imported::wasi::wasip1::storage::wasip1_noinherit_system_environment_is_set)},
         .cate{::uwvm2::utils::cmdline::categorization::wasi}};
 #  if defined(__clang__)
 #   pragma clang diagnostic pop

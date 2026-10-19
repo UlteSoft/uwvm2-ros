@@ -1,0 +1,97 @@
+{
+  "format_version": 1,
+  "status": "SOURCE_ONLY_IMPLEMENTED_NOT_COMPILED_OR_EXECUTED",
+  "complete_services": [
+    "example_interfaces/srv/AddTwoInts",
+    "std_srvs/srv/Trigger",
+    "std_srvs/srv/SetBool"
+  ],
+  "default_Host_authority": [],
+  "raw_business_ABI_changes": 0,
+  "generic_HLL_runtime_changes": 0,
+  "SDK_java_core_changes": 0,
+  "authored_local_models": [
+    "testDefaultDeniedBeforeOpen",
+    "testDistinctBeforeEffects",
+    "testSecondOpenRollback",
+    "testWatchFailureClosesBoth",
+    "testActivationFailureClosesBoth",
+    "testActualAsyncAndCompleteResponse",
+    "testFiniteGetActuallyDrivesPoll",
+    "testAvailability95NoProbe",
+    "testTimedWaitNeverTreatsStepsAsNanoseconds",
+    "testFullWidthId",
+    "testOutOfOrderIndependentRequests",
+    "testCapacityBeforeThirdSubmit",
+    "testPerRequestErrorPreservesOther",
+    "testCloseFinishesAllWithoutNativeCancellation",
+    "testCallbackWholeContextLease",
+    "testMalformedCancelledTombstoneIsStillDecoded",
+    "testUnknownCorrelationFailsClosed",
+    "testCallbackThrowNoReplay",
+    "testCompleteServerAndAbsentRmwHeader",
+    "testCompleteTriggerAndSetBoolCodecs",
+    "testWrongSourceRefusesAll",
+    "testDuplicateSequenceRefuses",
+    "testNoDriverGet95BeforePoll",
+    "testDriverExhaustionDoesNotInventCompletion",
+    "testSourceRetirementTriesEveryCallback",
+    "testAllCloseOutcomesRetained",
+    "testNativeHeaderInjectionRefused",
+    "testDriverReentryIsLeasedBeforeCredit"
+  ],
+  "actual_local_test_runs": 0,
+  "actual_Wasm_builds": 0,
+  "actual_Runtime_cases": 0,
+  "actual_native_ROS_cases": 0,
+  "official_tests_inventory": {
+    "ClientTest.java": {
+      "actual_methods": [
+        "testAdd"
+      ],
+      "current_status": "REQUIRED_NOT_RUN",
+      "blockers": [
+        "standalone writable RCLFuture/set and test-specific rcljava.srv service classes",
+        "real native availability and physical timed wait",
+        "native getHandle pointer expectations are outside the Wasm capability boundary",
+        "actual installed SDK/owned JNI test context cannot be faked"
+      ]
+    }
+  },
+  "original_business_sources": {
+    "AddTwoIntsService.main": "UNCHANGED_SOURCE_SELECTED_THROUGH_INDEPENDENT_BOOTSTRAP; source/target/native execution pending",
+    "AddTwoIntsClient.main": "UNCHANGED_SOURCE_SELECTED_FOR_COMPILATION; waitForService95; FULL_MAIN_ACCEPTANCE_REQUIRED"
+  },
+  "required_implementation": [
+    {
+      "id": "native-availability",
+      "status": "REQUIRED",
+      "contract": "Actual independently bound availability alias + live service.call relation + real native query/wait + reviewed current producer bridge. No graph/empty-call Boolean or draft ABI dependency."
+    },
+    {
+      "id": "physical-timed-Future",
+      "status": "REQUIRED",
+      "contract": "Real authorized monotonic Clock or bounded Host wait; never map step credits to nanoseconds."
+    },
+    {
+      "id": "RMW-header",
+      "status": "REQUIRED_IF_EXPOSED",
+      "contract": "New reviewed native protocol would need actual RMW GUID/sequence fields. Current ignored-header path passes null; injected native handleResponse/executeCallback refuse95."
+    },
+    {
+      "id": "remaining-future-task",
+      "status": "REQUIRED",
+      "contract": "Standalone writable RCLFuture/Task, general threading/callback/executor semantics and all remaining official tests."
+    },
+    {
+      "id": "all-services-actions",
+      "status": "REQUIRED",
+      "contract": "All remaining native generated type shapes/IDs/versions/Service/Action APIs; complete real native/Wasm tests, no permanent exclusions."
+    },
+    {
+      "id": "generated-Java-conveniences",
+      "status": "REQUIRED",
+      "contract": "Remaining official generated equality/hash/serialization/native reflection APIs; complete fields/fluent getters/setters and strict wire codecs are the implemented value scope."
+    }
+  ]
+}

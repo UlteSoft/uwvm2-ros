@@ -1,0 +1,71 @@
+{
+  "kind": "clearpath-explicit-profile-v1",
+  "profile": "noetic",
+  "ros_version": 1,
+  "source_lock_sha256": "d115cb3a7b78461e92304dc07d5f46923a867acdc1679e4e8a38bfe86e895e9f",
+  "catalog_sha256": "6d34bb6b6321412fbedfb2eb3e8f9075bfb0590ccf111b1af7208a1fd68f15ec",
+  "message_commit": "c17b52e7ba7061310493b43d5b1cd4ffd33cc9b6",
+  "driver_commits": {
+    "husky_noetic": "41e15d283a8d955938204e79554a875264417bb9",
+    "jackal_noetic": "4ddf9b578bb7abce1115c8dc59d8b7f86aa9268c"
+  },
+  "products": {
+    "bounded_interfaces.go": {
+      "bytes": 854465,
+      "sha256": "00e28dcf2e4a310da765c7d01215b87a3dc47b6102079bc0cfa97394b5119148"
+    },
+    "bounded_interfaces.h": {
+      "bytes": 415832,
+      "sha256": "5da4f2e12033cffc424c780d8b102784f80803d635949e00cd7094a8f77b0155"
+    },
+    "bounded_interfaces.hpp": {
+      "bytes": 528665,
+      "sha256": "d8596712007045e019c0e1df622f72c9696af4a21c67c502e3aff686ee23541e"
+    },
+    "bounded_interfaces.mjs": {
+      "bytes": 134548,
+      "sha256": "794b193899e27d0cbeb536171c8c87080fa80de4ba38486574b24fee6cc28bda"
+    },
+    "bounded_interfaces.rs": {
+      "bytes": 149966,
+      "sha256": "1d02fdc867072de1b50c8e76dd3ecbb34dc29e37d7277c75f00f168f2602e883"
+    },
+    "bounded_interfaces.ts": {
+      "bytes": 215007,
+      "sha256": "cb2f5b7358e44dc934553516b720242c929e3248c467b01edb8b3411a5e382ab"
+    },
+    "bounded_records.go": {
+      "bytes": 1407608,
+      "sha256": "8b4facd5c34c687dca281a8818af2903b1b792f76a31ae87696b8e7c14f63afe"
+    },
+    "bounded_records.h": {
+      "bytes": 2070104,
+      "sha256": "292d134e1aba03b734088c02d88dc8636a15b72b90543944b1b36e71a63f4c04"
+    },
+    "bounded_records.hpp": {
+      "bytes": 500809,
+      "sha256": "d653b8d9f5e1e8add73f4cf960772155e4e5ccc1c6a1e5704d661a3bfdfcde9b"
+    },
+    "bounded_records.mjs": {
+      "bytes": 956102,
+      "sha256": "ab44fcab427d3280b910987638adac6ac25e6c8b3387c692e68c497d9ead1fbd"
+    },
+    "bounded_records.rs": {
+      "bytes": 1096104,
+      "sha256": "f7a9fc965d9b2cafacdd50a37d78483709208be82a12bb3ba25fec97de06bc2d"
+    },
+    "bounded_records.ts": {
+      "bytes": 1321185,
+      "sha256": "f211d5fc70343ba7ee3f4f5cb3b0904d2a15e0ef79d819efb98b105b3cf1ce45"
+    },
+    "native_constants.hpp": {
+      "bytes": 21629,
+      "sha256": "968b3cf99791cf544ed7ac07a96b01493c710cbdb0723f40a1766d76f8f7fd5c"
+    },
+    "native_identity.cc": {
+      "bytes": 126570,
+      "sha256": "afbe007ef3e8f59ebe8ee873a9d4a8f4d5243abd64edb3e6abd319a13bfbaa0b"
+    }
+  },
+  "default_authority": []
+}

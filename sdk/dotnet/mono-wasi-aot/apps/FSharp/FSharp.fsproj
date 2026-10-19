@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../../Aot.props" />
+  <PropertyGroup><OutputType>Exe</OutputType><AssemblyName>uwvm-aot-fsharp</AssemblyName><GenerateProgramFile>false</GenerateProgramFile></PropertyGroup>
+  <ItemGroup><Compile Include="Program.fs" /><ProjectReference Include="../../Uwvm.RosWasm.Aot.csproj" /></ItemGroup>
+  <Import Project="../../Aot.targets" />
+</Project>

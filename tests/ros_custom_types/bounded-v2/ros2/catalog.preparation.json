@@ -1,0 +1,30 @@
+{
+  "format": "uwvm-ros-custom-bounded-v2",
+  "types": [
+    {
+      "ros_version": 2,
+      "type": "uwvm_ros_bounded_v2/msg/Point",
+      "file": "uwvm_ros_bounded_v2/msg/Point.msg"
+    },
+    {
+      "ros_version": 2,
+      "type": "uwvm_ros_bounded_v2/msg/Envelope",
+      "file": "uwvm_ros_bounded_v2/msg/Envelope.msg"
+    },
+    {
+      "ros_version": 2,
+      "type": "uwvm_ros_bounded_v2/srv/Echo",
+      "file": "uwvm_ros_bounded_v2/srv/Echo.srv"
+    },
+    {
+      "ros_version": 2,
+      "type": "uwvm_ros_bounded_v2/srv/Empty",
+      "file": "uwvm_ros_bounded_v2/srv/Empty.srv"
+    },
+    {
+      "ros_version": 2,
+      "type": "uwvm_ros_bounded_v2/action/Digest",
+      "file": "uwvm_ros_bounded_v2/action/Digest.action"
+    }
+  ]
+}

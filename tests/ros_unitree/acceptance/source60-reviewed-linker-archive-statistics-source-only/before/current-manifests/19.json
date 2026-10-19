@@ -1,0 +1,74 @@
+{
+  "kind": "source54-explicit-current-declaration-successor",
+  "status": "CURRENT_SOURCE_REVIEWED_SUCCESSORS_RETEST_PENDING",
+  "historical_manifest": {
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source53-management-and-sdk-source-only/sdk-contract-repair/source-ready.json",
+    "bytes": 2421,
+    "sha256": "0d53ed215395d2181c010f0089ab6a87107914ce1c2bd2874942dc13c0dff950"
+  },
+  "current_files": {
+    "sdk/abi/abi-v1.json": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/abi/abi-v1.json",
+      "bytes": 74230,
+      "sha256": "0a13f6c49100173c156eb76acfd35ebe103a40b2a90c752d3d1302c31f875ec0"
+    },
+    "sdk/rust/tests/check_sources.py": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/rust/tests/check_sources.py",
+      "bytes": 11842,
+      "sha256": "8678ebb4f5b8171b6e4f86480f38d4afa6fd1b985e510e404d9cc5d941624d9c"
+    },
+    "sdk/tools/verify_sources.py": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/tools/verify_sources.py",
+      "bytes": 26531,
+      "sha256": "727d8ed22c0898fff32112094392b7316a3dca46cd8140f6a7c5f1f51f2102c5"
+    },
+    "sdk/tools/go_build_constraints.py": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/tools/go_build_constraints.py",
+      "bytes": 5895,
+      "sha256": "1f69bcd2ba3bf5d07a23265925c655064e7c1cd7ebca3492ab0bb2d8b54961d3"
+    },
+    "sdk/tests/go_build_constraint_models.py": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/tests/go_build_constraint_models.py",
+      "bytes": 5475,
+      "sha256": "434d62f97f66d70bc0ad6fa9bb829fe6d1e559966efa88e63677774f8cc055a7"
+    },
+    "sdk/docs/source-validation.md": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/docs/source-validation.md",
+      "bytes": 4870,
+      "sha256": "acc09e52509e7e9879ec72000799dae58f087fd096dd10bee7b0873967235cbd"
+    }
+  },
+  "changed_current_files": [
+    {
+      "previous": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/tools/verify_sources.py",
+        "bytes": 17485,
+        "sha256": "65495a5af77fc61a53288c97d3da17abf623baeb7a9040fb465a8c1ad6b62b56"
+      },
+      "current": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/tools/verify_sources.py",
+        "bytes": 26531,
+        "sha256": "727d8ed22c0898fff32112094392b7316a3dca46cd8140f6a7c5f1f51f2102c5"
+      }
+    }
+  ],
+  "reviewed_current_source_packages": [
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source54-generated-input-and-management-fixtures-source-only/sdk-generated-references/source-ready.json",
+      "bytes": 3500,
+      "sha256": "d08441d32256de94200b7cc21c88659efbc2be95c9abfb48d626c25f222630a0"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source54-generated-input-and-management-fixtures-source-only/runtime-reset-and-guest-management-negative-fixtures/source-ready.json",
+      "bytes": 3851,
+      "sha256": "b7d2107f0b13edf022583925b59a5dd0e277bcc0e0b9fa80abb7edf51b40eeeb"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source54-generated-input-and-management-fixtures-source-only/component-policy-fixture/source-ready.json",
+      "bytes": 1260,
+      "sha256": "d4a4fa7560c70872f787d0d2edf185f1601ded79ac498d7b202419ec70d020d0"
+    }
+  ],
+  "historical_test_results_promoted": false,
+  "execution_performed": false
+}

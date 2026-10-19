@@ -1,0 +1,1679 @@
+{
+  "format": "uwvm-unitree-typed-example-recipes-v1",
+  "status": "SOURCE_RECIPES_NOT_EXECUTED",
+  "default_authority": [],
+  "scope": "14 actual typed reactor products / 28 independent denied-positive runtime cases; no LowCmd, firmware API, legacy native or transport PASS by compilation",
+  "products": [
+    {
+      "id": "rust-lowstate-go",
+      "language": "rust",
+      "backend": 2,
+      "role": "lowstate",
+      "family": "unitree_go",
+      "complete_record_count": 24,
+      "source": "sdk/robots/unitree/examples/rust/lowstate.rs",
+      "default_initialize": [
+        0,
+        1,
+        0
+      ],
+      "positive_initialize": [
+        1,
+        1,
+        0
+      ],
+      "poll_limit": 4096,
+      "exports": {
+        "initialize_case": {
+          "parameters": [
+            "u32",
+            "u32",
+            "u32"
+          ],
+          "result": "u32"
+        },
+        "poll_once": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "received_count": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "denied_verified": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "case_status": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "close_case": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "observed_tick": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "observed_crc": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "motor_word": {
+          "parameters": [
+            "u32",
+            "u32"
+          ],
+          "result": "u32"
+        }
+      },
+      "staging": "full-family-rust",
+      "commands": [
+        {
+          "id": "sdk",
+          "argv": [
+            "{RUSTC}",
+            "--edition=2021",
+            "--target=wasm32-unknown-unknown",
+            "-C",
+            "panic=abort",
+            "-C",
+            "opt-level=1",
+            "-C",
+            "codegen-units=1",
+            "--crate-name",
+            "roswasm",
+            "--crate-type=rlib",
+            "--cfg",
+            "feature=\"alloc\"",
+            "--cfg",
+            "feature=\"ros2\"",
+            "--emit=link,dep-info={OUT}/sdk.d",
+            "{SOURCE}/sdk/rust/src/lib.rs",
+            "-o",
+            "{OUT}/libroswasm.rlib"
+          ]
+        },
+        {
+          "id": "reactor",
+          "argv": [
+            "{RUSTC}",
+            "--edition=2021",
+            "--target=wasm32-unknown-unknown",
+            "-C",
+            "panic=abort",
+            "-C",
+            "opt-level=1",
+            "-C",
+            "codegen-units=1",
+            "--cfg",
+            "unitree_go",
+            "--crate-type=cdylib",
+            "--extern",
+            "roswasm={OUT}/libroswasm.rlib",
+            "--emit=link,dep-info={OUT}/reactor.d",
+            "-C",
+            "linker={WASM_LD_ALIAS}",
+            "-C",
+            "link-arg=--threads=1",
+            "-C",
+            "link-arg=--trace",
+            "-C",
+            "link-arg=--max-memory=67108864",
+            "{STAGE}/sdk/robots/unitree/examples/rust/lowstate.rs",
+            "-o",
+            "{OUT}/guest.wasm"
+          ]
+        }
+      ],
+      "validation": [
+        "{WASM_TOOLS}",
+        "validate",
+        "{OUT}/guest.wasm"
+      ]
+    },
+    {
+      "id": "rust-lowstate-hg",
+      "language": "rust",
+      "backend": 2,
+      "role": "lowstate",
+      "family": "unitree_hg",
+      "complete_record_count": 11,
+      "source": "sdk/robots/unitree/examples/rust/lowstate.rs",
+      "default_initialize": [
+        0,
+        2,
+        0
+      ],
+      "positive_initialize": [
+        1,
+        2,
+        0
+      ],
+      "poll_limit": 4096,
+      "exports": {
+        "initialize_case": {
+          "parameters": [
+            "u32",
+            "u32",
+            "u32"
+          ],
+          "result": "u32"
+        },
+        "poll_once": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "received_count": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "denied_verified": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "case_status": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "close_case": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "observed_tick": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "observed_crc": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "motor_word": {
+          "parameters": [
+            "u32",
+            "u32"
+          ],
+          "result": "u32"
+        }
+      },
+      "staging": "full-family-rust",
+      "commands": [
+        {
+          "id": "sdk",
+          "argv": [
+            "{RUSTC}",
+            "--edition=2021",
+            "--target=wasm32-unknown-unknown",
+            "-C",
+            "panic=abort",
+            "-C",
+            "opt-level=1",
+            "-C",
+            "codegen-units=1",
+            "--crate-name",
+            "roswasm",
+            "--crate-type=rlib",
+            "--cfg",
+            "feature=\"alloc\"",
+            "--cfg",
+            "feature=\"ros2\"",
+            "--emit=link,dep-info={OUT}/sdk.d",
+            "{SOURCE}/sdk/rust/src/lib.rs",
+            "-o",
+            "{OUT}/libroswasm.rlib"
+          ]
+        },
+        {
+          "id": "reactor",
+          "argv": [
+            "{RUSTC}",
+            "--edition=2021",
+            "--target=wasm32-unknown-unknown",
+            "-C",
+            "panic=abort",
+            "-C",
+            "opt-level=1",
+            "-C",
+            "codegen-units=1",
+            "--cfg",
+            "unitree_hg",
+            "--crate-type=cdylib",
+            "--extern",
+            "roswasm={OUT}/libroswasm.rlib",
+            "--emit=link,dep-info={OUT}/reactor.d",
+            "-C",
+            "linker={WASM_LD_ALIAS}",
+            "-C",
+            "link-arg=--threads=1",
+            "-C",
+            "link-arg=--trace",
+            "-C",
+            "link-arg=--max-memory=67108864",
+            "{STAGE}/sdk/robots/unitree/examples/rust/lowstate.rs",
+            "-o",
+            "{OUT}/guest.wasm"
+          ]
+        }
+      ],
+      "validation": [
+        "{WASM_TOOLS}",
+        "validate",
+        "{OUT}/guest.wasm"
+      ]
+    },
+    {
+      "id": "rust-topic-rpc-api",
+      "language": "rust",
+      "backend": 2,
+      "role": "topic-rpc",
+      "family": "unitree_api",
+      "complete_record_count": 8,
+      "source": "sdk/robots/unitree/examples/rust/topic_rpc.rs",
+      "default_initialize": [
+        0,
+        1,
+        1
+      ],
+      "positive_initialize": [
+        1,
+        1,
+        1
+      ],
+      "poll_limit": 4096,
+      "exports": {
+        "initialize_case": {
+          "parameters": [
+            "u32",
+            "u32",
+            "u32"
+          ],
+          "result": "u32"
+        },
+        "poll_once": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "received_count": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "denied_verified": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "case_status": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "close_case": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "submit_once": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "response_code": {
+          "parameters": [],
+          "result": "u32"
+        }
+      },
+      "staging": "full-family-rust",
+      "commands": [
+        {
+          "id": "sdk",
+          "argv": [
+            "{RUSTC}",
+            "--edition=2021",
+            "--target=wasm32-unknown-unknown",
+            "-C",
+            "panic=abort",
+            "-C",
+            "opt-level=1",
+            "-C",
+            "codegen-units=1",
+            "--crate-name",
+            "roswasm",
+            "--crate-type=rlib",
+            "--cfg",
+            "feature=\"alloc\"",
+            "--cfg",
+            "feature=\"ros2\"",
+            "--emit=link,dep-info={OUT}/sdk.d",
+            "{SOURCE}/sdk/rust/src/lib.rs",
+            "-o",
+            "{OUT}/libroswasm.rlib"
+          ]
+        },
+        {
+          "id": "reactor",
+          "argv": [
+            "{RUSTC}",
+            "--edition=2021",
+            "--target=wasm32-unknown-unknown",
+            "-C",
+            "panic=abort",
+            "-C",
+            "opt-level=1",
+            "-C",
+            "codegen-units=1",
+            "--crate-type=cdylib",
+            "--extern",
+            "roswasm={OUT}/libroswasm.rlib",
+            "--emit=link,dep-info={OUT}/reactor.d",
+            "-C",
+            "linker={WASM_LD_ALIAS}",
+            "-C",
+            "link-arg=--threads=1",
+            "-C",
+            "link-arg=--trace",
+            "-C",
+            "link-arg=--max-memory=67108864",
+            "{STAGE}/sdk/robots/unitree/examples/rust/topic_rpc.rs",
+            "-o",
+            "{OUT}/guest.wasm"
+          ]
+        }
+      ],
+      "validation": [
+        "{WASM_TOOLS}",
+        "validate",
+        "{OUT}/guest.wasm"
+      ]
+    },
+    {
+      "id": "javascript-lowstate-go",
+      "language": "javascript",
+      "backend": 2,
+      "role": "lowstate",
+      "family": "unitree_go",
+      "complete_record_count": 24,
+      "source": "sdk/robots/unitree/examples/javascript/lowstate.mjs",
+      "default_initialize": [
+        0,
+        1,
+        0
+      ],
+      "positive_initialize": [
+        1,
+        1,
+        0
+      ],
+      "poll_limit": 4096,
+      "exports": {
+        "initialize_case": {
+          "parameters": [
+            "u32",
+            "u32",
+            "u32"
+          ],
+          "result": "u32"
+        },
+        "poll_once": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "received_count": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "denied_verified": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "case_status": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "close_case": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "observed_tick": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "observed_crc": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "motor_word": {
+          "parameters": [
+            "u32",
+            "u32"
+          ],
+          "result": "u32"
+        }
+      },
+      "staging": "full-family-javascript",
+      "commands": [
+        {
+          "id": "metadata",
+          "argv": [
+            "{PYTHON}",
+            "-B",
+            "{STAGE}/sdk/javascript/guest/prepare.py",
+            "--source-root",
+            "{STAGE}",
+            "--quickjs",
+            "{PINNED_OFFICIAL_QUICKJS_ROOT}",
+            "--manifest",
+            "{OUT}/manifest.json",
+            "--out",
+            "{OUT}/prepared",
+            "--clang",
+            "{WASI_CLANG}",
+            "--linker",
+            "{WASM_LD_ALIAS}",
+            "--sysroot",
+            "{WASI_SYSROOT}",
+            "--resource-dir",
+            "{WASI_RESOURCE_DIR}",
+            "--libc",
+            "{LIBC}",
+            "--libm",
+            "{LIBM}",
+            "--printscan",
+            "{PRINTSCAN}",
+            "--builtins",
+            "{BUILTINS}",
+            "--validator",
+            "{WASM_TOOLS}"
+          ]
+        },
+        {
+          "id": "actual-generated-jobs",
+          "protocol": "Execute the exact MF-bound maintained producer jobs with full-MD/source/object/link associations and actual validator; no guessed job count or Node syntax substitute"
+        }
+      ],
+      "validation": [
+        "{WASM_TOOLS}",
+        "validate",
+        "{OUT}/guest.wasm"
+      ]
+    },
+    {
+      "id": "javascript-lowstate-hg",
+      "language": "javascript",
+      "backend": 2,
+      "role": "lowstate",
+      "family": "unitree_hg",
+      "complete_record_count": 11,
+      "source": "sdk/robots/unitree/examples/javascript/lowstate.mjs",
+      "default_initialize": [
+        0,
+        2,
+        0
+      ],
+      "positive_initialize": [
+        1,
+        2,
+        0
+      ],
+      "poll_limit": 4096,
+      "exports": {
+        "initialize_case": {
+          "parameters": [
+            "u32",
+            "u32",
+            "u32"
+          ],
+          "result": "u32"
+        },
+        "poll_once": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "received_count": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "denied_verified": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "case_status": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "close_case": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "observed_tick": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "observed_crc": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "motor_word": {
+          "parameters": [
+            "u32",
+            "u32"
+          ],
+          "result": "u32"
+        }
+      },
+      "staging": "full-family-javascript",
+      "commands": [
+        {
+          "id": "metadata",
+          "argv": [
+            "{PYTHON}",
+            "-B",
+            "{STAGE}/sdk/javascript/guest/prepare.py",
+            "--source-root",
+            "{STAGE}",
+            "--quickjs",
+            "{PINNED_OFFICIAL_QUICKJS_ROOT}",
+            "--manifest",
+            "{OUT}/manifest.json",
+            "--out",
+            "{OUT}/prepared",
+            "--clang",
+            "{WASI_CLANG}",
+            "--linker",
+            "{WASM_LD_ALIAS}",
+            "--sysroot",
+            "{WASI_SYSROOT}",
+            "--resource-dir",
+            "{WASI_RESOURCE_DIR}",
+            "--libc",
+            "{LIBC}",
+            "--libm",
+            "{LIBM}",
+            "--printscan",
+            "{PRINTSCAN}",
+            "--builtins",
+            "{BUILTINS}",
+            "--validator",
+            "{WASM_TOOLS}"
+          ]
+        },
+        {
+          "id": "actual-generated-jobs",
+          "protocol": "Execute the exact MF-bound maintained producer jobs with full-MD/source/object/link associations and actual validator; no guessed job count or Node syntax substitute"
+        }
+      ],
+      "validation": [
+        "{WASM_TOOLS}",
+        "validate",
+        "{OUT}/guest.wasm"
+      ]
+    },
+    {
+      "id": "javascript-topic-rpc-api",
+      "language": "javascript",
+      "backend": 2,
+      "role": "topic-rpc",
+      "family": "unitree_api",
+      "complete_record_count": 8,
+      "source": "sdk/robots/unitree/examples/javascript/topic_rpc.mjs",
+      "default_initialize": [
+        0,
+        1,
+        1
+      ],
+      "positive_initialize": [
+        1,
+        1,
+        1
+      ],
+      "poll_limit": 4096,
+      "exports": {
+        "initialize_case": {
+          "parameters": [
+            "u32",
+            "u32",
+            "u32"
+          ],
+          "result": "u32"
+        },
+        "poll_once": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "received_count": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "denied_verified": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "case_status": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "close_case": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "submit_once": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "response_code": {
+          "parameters": [],
+          "result": "u32"
+        }
+      },
+      "staging": "full-family-javascript",
+      "commands": [
+        {
+          "id": "metadata",
+          "argv": [
+            "{PYTHON}",
+            "-B",
+            "{STAGE}/sdk/javascript/guest/prepare.py",
+            "--source-root",
+            "{STAGE}",
+            "--quickjs",
+            "{PINNED_OFFICIAL_QUICKJS_ROOT}",
+            "--manifest",
+            "{OUT}/manifest.json",
+            "--out",
+            "{OUT}/prepared",
+            "--clang",
+            "{WASI_CLANG}",
+            "--linker",
+            "{WASM_LD_ALIAS}",
+            "--sysroot",
+            "{WASI_SYSROOT}",
+            "--resource-dir",
+            "{WASI_RESOURCE_DIR}",
+            "--libc",
+            "{LIBC}",
+            "--libm",
+            "{LIBM}",
+            "--printscan",
+            "{PRINTSCAN}",
+            "--builtins",
+            "{BUILTINS}",
+            "--validator",
+            "{WASM_TOOLS}"
+          ]
+        },
+        {
+          "id": "actual-generated-jobs",
+          "protocol": "Execute the exact MF-bound maintained producer jobs with full-MD/source/object/link associations and actual validator; no guessed job count or Node syntax substitute"
+        }
+      ],
+      "validation": [
+        "{WASM_TOOLS}",
+        "validate",
+        "{OUT}/guest.wasm"
+      ]
+    },
+    {
+      "id": "assemblyscript-lowstate-go",
+      "language": "assemblyscript",
+      "backend": 2,
+      "role": "lowstate",
+      "family": "unitree_go",
+      "complete_record_count": 24,
+      "source": "sdk/robots/unitree/examples/assemblyscript/lowstate_go.ts",
+      "default_initialize": [
+        0,
+        1,
+        0
+      ],
+      "positive_initialize": [
+        1,
+        1,
+        0
+      ],
+      "poll_limit": 4096,
+      "exports": {
+        "initialize_case": {
+          "parameters": [
+            "u32",
+            "u32",
+            "u32"
+          ],
+          "result": "u32"
+        },
+        "poll_once": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "received_count": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "denied_verified": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "case_status": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "close_case": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "observed_tick": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "observed_crc": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "motor_word": {
+          "parameters": [
+            "u32",
+            "u32"
+          ],
+          "result": "u32"
+        }
+      },
+      "staging": "full-family-assemblyscript",
+      "commands": [
+        {
+          "id": "reactor",
+          "argv": [
+            "{NODE}",
+            "{ASC_JS}",
+            "{STAGE}/sdk/robots/unitree/examples/assemblyscript/lowstate_go.ts",
+            "--runtime",
+            "incremental",
+            "--initialMemory",
+            "256",
+            "--maximumMemory",
+            "1024",
+            "--exportStart",
+            "_initialize",
+            "--use",
+            "abort=sdk/assemblyscript/api/abortGuest",
+            "--outFile",
+            "{OUT}/guest.wasm"
+          ],
+          "cwd": "{STAGE}"
+        }
+      ],
+      "validation": [
+        "{WASM_TOOLS}",
+        "validate",
+        "{OUT}/guest.wasm"
+      ]
+    },
+    {
+      "id": "assemblyscript-lowstate-hg",
+      "language": "assemblyscript",
+      "backend": 2,
+      "role": "lowstate",
+      "family": "unitree_hg",
+      "complete_record_count": 11,
+      "source": "sdk/robots/unitree/examples/assemblyscript/lowstate_hg.ts",
+      "default_initialize": [
+        0,
+        2,
+        0
+      ],
+      "positive_initialize": [
+        1,
+        2,
+        0
+      ],
+      "poll_limit": 4096,
+      "exports": {
+        "initialize_case": {
+          "parameters": [
+            "u32",
+            "u32",
+            "u32"
+          ],
+          "result": "u32"
+        },
+        "poll_once": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "received_count": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "denied_verified": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "case_status": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "close_case": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "observed_tick": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "observed_crc": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "motor_word": {
+          "parameters": [
+            "u32",
+            "u32"
+          ],
+          "result": "u32"
+        }
+      },
+      "staging": "full-family-assemblyscript",
+      "commands": [
+        {
+          "id": "reactor",
+          "argv": [
+            "{NODE}",
+            "{ASC_JS}",
+            "{STAGE}/sdk/robots/unitree/examples/assemblyscript/lowstate_hg.ts",
+            "--runtime",
+            "incremental",
+            "--initialMemory",
+            "256",
+            "--maximumMemory",
+            "1024",
+            "--exportStart",
+            "_initialize",
+            "--use",
+            "abort=sdk/assemblyscript/api/abortGuest",
+            "--outFile",
+            "{OUT}/guest.wasm"
+          ],
+          "cwd": "{STAGE}"
+        }
+      ],
+      "validation": [
+        "{WASM_TOOLS}",
+        "validate",
+        "{OUT}/guest.wasm"
+      ]
+    },
+    {
+      "id": "assemblyscript-topic-rpc-api",
+      "language": "assemblyscript",
+      "backend": 2,
+      "role": "topic-rpc",
+      "family": "unitree_api",
+      "complete_record_count": 8,
+      "source": "sdk/robots/unitree/examples/assemblyscript/topic_rpc.ts",
+      "default_initialize": [
+        0,
+        1,
+        1
+      ],
+      "positive_initialize": [
+        1,
+        1,
+        1
+      ],
+      "poll_limit": 4096,
+      "exports": {
+        "initialize_case": {
+          "parameters": [
+            "u32",
+            "u32",
+            "u32"
+          ],
+          "result": "u32"
+        },
+        "poll_once": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "received_count": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "denied_verified": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "case_status": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "close_case": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "submit_once": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "response_code": {
+          "parameters": [],
+          "result": "u32"
+        }
+      },
+      "staging": "full-family-assemblyscript",
+      "commands": [
+        {
+          "id": "reactor",
+          "argv": [
+            "{NODE}",
+            "{ASC_JS}",
+            "{STAGE}/sdk/robots/unitree/examples/assemblyscript/topic_rpc.ts",
+            "--runtime",
+            "incremental",
+            "--initialMemory",
+            "256",
+            "--maximumMemory",
+            "1024",
+            "--exportStart",
+            "_initialize",
+            "--use",
+            "abort=sdk/assemblyscript/api/abortGuest",
+            "--outFile",
+            "{OUT}/guest.wasm"
+          ],
+          "cwd": "{STAGE}"
+        }
+      ],
+      "validation": [
+        "{WASM_TOOLS}",
+        "validate",
+        "{OUT}/guest.wasm"
+      ]
+    },
+    {
+      "id": "tinygo-lowstate-go",
+      "language": "tinygo",
+      "backend": 2,
+      "role": "lowstate",
+      "family": "unitree_go",
+      "complete_record_count": 24,
+      "source": "sdk/robots/unitree/examples/tinygo/lowstate.go",
+      "default_initialize": [
+        0,
+        1,
+        0
+      ],
+      "positive_initialize": [
+        1,
+        1,
+        0
+      ],
+      "poll_limit": 4096,
+      "exports": {
+        "initialize_case": {
+          "parameters": [
+            "u32",
+            "u32",
+            "u32"
+          ],
+          "result": "u32"
+        },
+        "poll_once": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "received_count": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "denied_verified": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "case_status": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "close_case": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "observed_tick": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "observed_crc": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "motor_word": {
+          "parameters": [
+            "u32",
+            "u32"
+          ],
+          "result": "u32"
+        }
+      },
+      "staging": "full-family-tinygo",
+      "commands": [
+        {
+          "id": "reactor",
+          "argv": [
+            "{TINYGO}",
+            "build",
+            "-p",
+            "1",
+            "-target={OWNED_PINNED_BOUNDED_WASM_UNKNOWN_JSON}",
+            "-buildmode=c-shared",
+            "-scheduler=none",
+            "-opt=1",
+            "-tags=ros2,unitree_lowstate,unitree_go",
+            "-o",
+            "{OUT}/guest.wasm",
+            "."
+          ],
+          "cwd": "{STAGE}/sdk/robots/unitree/examples/tinygo"
+        }
+      ],
+      "validation": [
+        "{WASM_TOOLS}",
+        "validate",
+        "{OUT}/guest.wasm"
+      ]
+    },
+    {
+      "id": "tinygo-lowstate-hg",
+      "language": "tinygo",
+      "backend": 2,
+      "role": "lowstate",
+      "family": "unitree_hg",
+      "complete_record_count": 11,
+      "source": "sdk/robots/unitree/examples/tinygo/lowstate.go",
+      "default_initialize": [
+        0,
+        2,
+        0
+      ],
+      "positive_initialize": [
+        1,
+        2,
+        0
+      ],
+      "poll_limit": 4096,
+      "exports": {
+        "initialize_case": {
+          "parameters": [
+            "u32",
+            "u32",
+            "u32"
+          ],
+          "result": "u32"
+        },
+        "poll_once": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "received_count": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "denied_verified": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "case_status": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "close_case": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "observed_tick": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "observed_crc": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "motor_word": {
+          "parameters": [
+            "u32",
+            "u32"
+          ],
+          "result": "u32"
+        }
+      },
+      "staging": "full-family-tinygo",
+      "commands": [
+        {
+          "id": "reactor",
+          "argv": [
+            "{TINYGO}",
+            "build",
+            "-p",
+            "1",
+            "-target={OWNED_PINNED_BOUNDED_WASM_UNKNOWN_JSON}",
+            "-buildmode=c-shared",
+            "-scheduler=none",
+            "-opt=1",
+            "-tags=ros2,unitree_lowstate,unitree_hg",
+            "-o",
+            "{OUT}/guest.wasm",
+            "."
+          ],
+          "cwd": "{STAGE}/sdk/robots/unitree/examples/tinygo"
+        }
+      ],
+      "validation": [
+        "{WASM_TOOLS}",
+        "validate",
+        "{OUT}/guest.wasm"
+      ]
+    },
+    {
+      "id": "tinygo-topic-rpc-api",
+      "language": "tinygo",
+      "backend": 2,
+      "role": "topic-rpc",
+      "family": "unitree_api",
+      "complete_record_count": 8,
+      "source": "sdk/robots/unitree/examples/tinygo/topic_rpc.go",
+      "default_initialize": [
+        0,
+        1,
+        1
+      ],
+      "positive_initialize": [
+        1,
+        1,
+        1
+      ],
+      "poll_limit": 4096,
+      "exports": {
+        "initialize_case": {
+          "parameters": [
+            "u32",
+            "u32",
+            "u32"
+          ],
+          "result": "u32"
+        },
+        "poll_once": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "received_count": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "denied_verified": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "case_status": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "close_case": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "submit_once": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "response_code": {
+          "parameters": [],
+          "result": "u32"
+        }
+      },
+      "staging": "full-family-tinygo",
+      "commands": [
+        {
+          "id": "reactor",
+          "argv": [
+            "{TINYGO}",
+            "build",
+            "-p",
+            "1",
+            "-target={OWNED_PINNED_BOUNDED_WASM_UNKNOWN_JSON}",
+            "-buildmode=c-shared",
+            "-scheduler=none",
+            "-opt=1",
+            "-tags=ros2,unitree_topicrpc",
+            "-o",
+            "{OUT}/guest.wasm",
+            "."
+          ],
+          "cwd": "{STAGE}/sdk/robots/unitree/examples/tinygo"
+        }
+      ],
+      "validation": [
+        "{WASM_TOOLS}",
+        "validate",
+        "{OUT}/guest.wasm"
+      ]
+    },
+    {
+      "id": "c-topic-rpc-api",
+      "language": "c",
+      "backend": 2,
+      "role": "topic-rpc",
+      "family": "unitree_api",
+      "complete_record_count": 8,
+      "source": "sdk/robots/unitree/examples/topic_rpc.c",
+      "default_initialize": [
+        0,
+        1,
+        1
+      ],
+      "positive_initialize": [
+        1,
+        1,
+        1
+      ],
+      "poll_limit": 4096,
+      "exports": {
+        "initialize_case": {
+          "parameters": [
+            "u32",
+            "u32",
+            "u32"
+          ],
+          "result": "u32"
+        },
+        "poll_once": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "received_count": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "denied_verified": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "case_status": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "close_case": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "submit_once": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "response_code": {
+          "parameters": [],
+          "result": "u32"
+        }
+      },
+      "staging": "direct-complete-generated-include",
+      "commands": [
+        {
+          "id": "compile",
+          "argv": [
+            "{WASI_CLANG}",
+            "--driver-mode=gcc",
+            "--target=wasm32-wasip1",
+            "--sysroot={WASI_SYSROOT}",
+            "-std=c11",
+            "-O1",
+            "-g0",
+            "-UNDEBUG",
+            "-fno-fast-math",
+            "-ffp-contract=off",
+            "-I{SOURCE}/sdk/include",
+            "-I{ACTUAL_COMPLETE_API_GENERATION}",
+            "-MD",
+            "-MF",
+            "{OUT}/reactor.d",
+            "-MT",
+            "{OUT}/reactor.o",
+            "-c",
+            "{SOURCE}/sdk/robots/unitree/examples/topic_rpc.c",
+            "-o",
+            "{OUT}/reactor.o"
+          ]
+        },
+        {
+          "id": "link",
+          "argv": [
+            "{WASI_CLANG}",
+            "--driver-mode=gcc",
+            "--target=wasm32-wasip1",
+            "--sysroot={WASI_SYSROOT}",
+            "-std=c11",
+            "-O1",
+            "-g0",
+            "-UNDEBUG",
+            "-fno-fast-math",
+            "-ffp-contract=off",
+            "-I{SOURCE}/sdk/include",
+            "-I{ACTUAL_COMPLETE_API_GENERATION}",
+            "-fuse-ld={WASM_LD_ALIAS}",
+            "-nostartfiles",
+            "-Wl,--no-entry",
+            "-Wl,--threads=1",
+            "-Wl,--trace",
+            "-Wl,--initial-memory=16777216",
+            "-Wl,--max-memory=67108864",
+            "{OUT}/reactor.o",
+            "-o",
+            "{OUT}/guest.wasm"
+          ]
+        }
+      ],
+      "validation": [
+        "{WASM_TOOLS}",
+        "validate",
+        "{OUT}/guest.wasm"
+      ]
+    },
+    {
+      "id": "cpp-topic-rpc-api",
+      "language": "cpp",
+      "backend": 2,
+      "role": "topic-rpc",
+      "family": "unitree_api",
+      "complete_record_count": 8,
+      "source": "sdk/robots/unitree/examples/topic_rpc.cpp",
+      "default_initialize": [
+        0,
+        1,
+        1
+      ],
+      "positive_initialize": [
+        1,
+        1,
+        1
+      ],
+      "poll_limit": 4096,
+      "exports": {
+        "initialize_case": {
+          "parameters": [
+            "u32",
+            "u32",
+            "u32"
+          ],
+          "result": "u32"
+        },
+        "poll_once": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "received_count": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "denied_verified": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "case_status": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "close_case": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "submit_once": {
+          "parameters": [],
+          "result": "u32"
+        },
+        "response_code": {
+          "parameters": [],
+          "result": "u32"
+        }
+      },
+      "staging": "direct-complete-generated-include",
+      "commands": [
+        {
+          "id": "compile",
+          "argv": [
+            "{WASI_CLANG}",
+            "--driver-mode=g++",
+            "--target=wasm32-wasip1",
+            "--sysroot={WASI_SYSROOT}",
+            "-std=c++20",
+            "-O1",
+            "-g0",
+            "-UNDEBUG",
+            "-fno-fast-math",
+            "-ffp-contract=off",
+            "-I{SOURCE}/sdk/include",
+            "-I{ACTUAL_COMPLETE_API_GENERATION}",
+            "-fno-exceptions",
+            "-fno-rtti",
+            "-D_LIBCPP_VERBOSE_ABORT(...)=__builtin_trap()",
+            "-MD",
+            "-MF",
+            "{OUT}/reactor.d",
+            "-MT",
+            "{OUT}/reactor.o",
+            "-c",
+            "{SOURCE}/sdk/robots/unitree/examples/topic_rpc.cpp",
+            "-o",
+            "{OUT}/reactor.o"
+          ]
+        },
+        {
+          "id": "link",
+          "argv": [
+            "{WASI_CLANG}",
+            "--driver-mode=g++",
+            "--target=wasm32-wasip1",
+            "--sysroot={WASI_SYSROOT}",
+            "-std=c++20",
+            "-O1",
+            "-g0",
+            "-UNDEBUG",
+            "-fno-fast-math",
+            "-ffp-contract=off",
+            "-I{SOURCE}/sdk/include",
+            "-I{ACTUAL_COMPLETE_API_GENERATION}",
+            "-fno-exceptions",
+            "-fno-rtti",
+            "-D_LIBCPP_VERBOSE_ABORT(...)=__builtin_trap()",
+            "-fuse-ld={WASM_LD_ALIAS}",
+            "-nostartfiles",
+            "-Wl,--no-entry",
+            "-Wl,--threads=1",
+            "-Wl,--trace",
+            "-Wl,--initial-memory=16777216",
+            "-Wl,--max-memory=67108864",
+            "{OUT}/reactor.o",
+            "{QUALIFIED_OFFICIAL_CPP_TERMINATION_OBJECT}",
+            "-o",
+            "{OUT}/guest.wasm"
+          ]
+        }
+      ],
+      "validation": [
+        "{WASM_TOOLS}",
+        "validate",
+        "{OUT}/guest.wasm"
+      ]
+    }
+  ],
+  "generated_build_inputs": {
+    "producer": "sdk/custom-types/bounded_profile.py",
+    "function": "generate",
+    "references": [
+      {
+        "source": "sdk/robots/unitree/examples/topic_rpc.c",
+        "target": "bounded_records.h",
+        "output": "bounded_records.h"
+      },
+      {
+        "source": "sdk/robots/unitree/examples/topic_rpc.cpp",
+        "target": "bounded_records.hpp",
+        "output": "bounded_records.hpp"
+      },
+      {
+        "source": "sdk/robots/unitree/examples/javascript/lowstate.mjs",
+        "target": "./bounded_records.mjs",
+        "output": "bounded_records.mjs"
+      },
+      {
+        "source": "sdk/robots/unitree/examples/javascript/topic_rpc.mjs",
+        "target": "./bounded_records.mjs",
+        "output": "bounded_records.mjs"
+      },
+      {
+        "source": "sdk/robots/unitree/examples/assemblyscript/lowstate_go.ts",
+        "target": "../../../../custom-types/typed-family/bounded_records",
+        "output": "bounded_records.ts"
+      },
+      {
+        "source": "sdk/robots/unitree/examples/assemblyscript/lowstate_hg.ts",
+        "target": "../../../../custom-types/typed-family/bounded_records",
+        "output": "bounded_records.ts"
+      },
+      {
+        "source": "sdk/robots/unitree/examples/assemblyscript/topic_rpc.ts",
+        "target": "../../../../custom-types/typed-family/bounded_records",
+        "output": "bounded_records.ts"
+      }
+    ],
+    "proof": "Actual full-family native-bound generation.json with original catalog/source/native export/identity and unchanged current generator bytes; all outputs reopened. No source stub, fake identity or subset header."
+  },
+  "staging_contracts": {
+    "full-family-rust": "Independent exact bytes of selected complete bounded_records.rs beside selected entry and lifecycle.rs; compile actual SDK rlib with ros2+alloc. Preserve all original/staged source pins and full tool/sysroot catalogs.",
+    "full-family-javascript": "Independent frozen sdk/javascript runtime closure and selected example+lifecycle at identical source-relative paths; entire complete bounded_records.mjs beside selected entry; manifest includes every SDK module listed below plus entry/lifecycle/codec.",
+    "full-family-assemblyscript": "Independent frozen sdk/assemblyscript tree, selected example/lifecycle/state_reader at identical source-relative paths, entire generated module at sdk/custom-types/typed-family/bounded_records.ts; its unchanged ../../assemblyscript/codecs import resolves inside owned stage.",
+    "full-family-tinygo": "Independent full sdk/tinygo module and new example module at identical source-relative paths; full generated module copied to examples/tinygo/customtypes/bounded_records.go. Explicit offline Go environment/cache, sdk go.mod local replace remains actual. Select exactly role tags and one GO/HG tag.",
+    "direct-complete-generated-include": "Actual complete API8 generated h/hpp directory is an explicit complete input root, selected via -I with original pins; never a stub beside maintained source."
+  },
+  "javascript_manifest": {
+    "schema": "uwvm-embedded-javascript-build-v1",
+    "mode": "reactor",
+    "backend": 2,
+    "entry": "{SELECTED_SOURCE_RELATIVE}",
+    "modules": [
+      {
+        "name": "sdk/javascript/abi.mjs",
+        "source": "sdk/javascript/abi.mjs"
+      },
+      {
+        "name": "sdk/javascript/raw.mjs",
+        "source": "sdk/javascript/raw.mjs"
+      },
+      {
+        "name": "sdk/javascript/roswasm.mjs",
+        "source": "sdk/javascript/roswasm.mjs"
+      },
+      {
+        "name": "sdk/javascript/async.mjs",
+        "source": "sdk/javascript/async.mjs"
+      },
+      {
+        "name": "sdk/javascript/relay.mjs",
+        "source": "sdk/javascript/relay.mjs"
+      },
+      {
+        "name": "sdk/javascript/codecs.mjs",
+        "source": "sdk/javascript/codecs.mjs"
+      },
+      {
+        "name": "sdk/javascript/scheduling.mjs",
+        "source": "sdk/javascript/scheduling.mjs"
+      },
+      {
+        "name": "sdk/javascript/ownership.mjs",
+        "source": "sdk/javascript/ownership.mjs"
+      },
+      {
+        "name": "sdk/javascript/events.mjs",
+        "source": "sdk/javascript/events.mjs"
+      },
+      {
+        "name": "sdk/javascript/copied_transport.mjs",
+        "source": "sdk/javascript/copied_transport.mjs"
+      },
+      {
+        "name": "sdk/javascript/guest.mjs",
+        "source": "sdk/javascript/guest.mjs"
+      },
+      {
+        "name": "sdk/javascript/guest/bootstrap.mjs",
+        "source": "sdk/javascript/guest/bootstrap.mjs"
+      },
+      {
+        "name": "sdk/robots/unitree/examples/javascript/lifecycle.mjs",
+        "source": "sdk/robots/unitree/examples/javascript/lifecycle.mjs"
+      },
+      {
+        "name": "{SELECTED_SOURCE_RELATIVE}",
+        "source": "{SELECTED_SOURCE_RELATIVE}"
+      },
+      {
+        "name": "sdk/robots/unitree/examples/javascript/bounded_records.mjs",
+        "source": "sdk/robots/unitree/examples/javascript/bounded_records.mjs"
+      }
+    ],
+    "imports": [],
+    "exports": "Use exact selected product export map with function equal to name, initialize:true, failure:22. No library imports or new ROS rights.",
+    "limits": {
+      "heap_bytes": 33554432,
+      "stack_bytes": 524288,
+      "max_jobs": 4096,
+      "interrupt_polls": 1000000,
+      "input_bytes": 32768,
+      "output_bytes": 32768,
+      "print_bytes": 4096,
+      "max_text_bytes": 4193786,
+      "max_modules": 32,
+      "max_source_bytes": 8388608
+    },
+    "random_seed": 1,
+    "optimization": "-O2",
+    "initial_memory": 16777216,
+    "maximum_memory": 67108864
+  },
+  "tinygo_target_contract": {
+    "source_relative": "targets/wasm-unknown.json",
+    "expected_bytes": 790,
+    "expected_sha256": "63531e39ab6c1a3bcd0c1a78d7a68bdae917a530c0b64fe80541b163a1b037f3",
+    "derivation": "Preserve complete actual selected SDK target JSON unchanged except append --max-memory=67108864 in an owned copy. Do not edit SDK.",
+    "required_effective_flags": [
+      "-buildmode=c-shared",
+      "-scheduler=none",
+      "-opt=1",
+      "-p",
+      "1"
+    ],
+    "actual_binary_required": "Only selected ROS2 ABI function imports, no WASI/env import, explicit _initialize, no implicit start, one own memory maximum1024pages; compiler success alone insufficient."
+  },
+  "binary_contract": {
+    "maximum_memory_pages": 1024,
+    "imported_memory": false,
+    "implicit_start": false,
+    "ros_backend": 2,
+    "ros_functions": "Complete actual sdk/abi/abi-v1.json module uwvm_ros2_v1 with exact signatures; declaration grants no operation right. No other ROS backend.",
+    "wasi_functions": {
+      "c": [],
+      "cpp": [],
+      "rust": [],
+      "tinygo": [],
+      "assemblyscript": [],
+      "javascript": [
+        "fd_read",
+        "fd_write"
+      ]
+    },
+    "nonfunction_imports": [],
+    "initializer": "Require explicit runtime initialization where emitted (TinyGo, AS, QuickJS); no case invocation before actual initializer. No imports called by local Node labels at load.",
+    "unexpected_import_action": "Persist complete actual table and FAIL; never add a stub/grant/unchecked import to make a cell pass."
+  },
+  "producer_requirements": [
+    "Root-only original current64GiB/swap0/j1 with unchanged CG incarnation and finite per-process-tree RSS/deadline/log/output/disk guard",
+    "Actual fresh artifacts and selected full physical tool/invocation-alias pins, full source before/after and complete external source/tool/SDK roots",
+    "C/C++ full actual -MD system dependencies plus link trace; Rust actual depfiles plus complete SDK; TinyGo complete Go/TinyGo roots; AS Node/compiler roots; JS exact real generated C/link/validate job proof",
+    "Official matching C++ termination overlay only; all normal sources UNDEBUG; no stdio stub or fabricated libc/ABI claim",
+    "Actual wasm-tools full validation and complete import/export/memory/start tables before any Runtime case",
+    "Keep source compilation, native identity, Runtime transport, independent peer effects and physics/controller results separate"
+  ],
+  "runtime_protocol": "sdk/robots/unitree/TYPED_EXAMPLES.md",
+  "native_case_description": "tests/ros_unitree/typed_example_cases.py",
+  "legacy_scope": "Existing complete ROS1 legacy11 codecs remain guest-only until real matching Noetic native identities/packages/peer; no fabricated MD5 or positive native recipe"
+}

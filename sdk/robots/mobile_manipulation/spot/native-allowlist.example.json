@@ -1,0 +1,5 @@
+{
+  "format": "uwvm-spot-native-allowlist-v1",
+  "maximum_history": 64,
+  "operations": {}
+}

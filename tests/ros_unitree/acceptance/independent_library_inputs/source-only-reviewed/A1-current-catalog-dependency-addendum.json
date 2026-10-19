@@ -1,0 +1,29 @@
+{
+  "kind": "uwvm-A1-reviewed-current-catalog-dependency-addendum-v1",
+  "status": "SOURCE_DEPENDENCY_REVIEW_ONLY_NO_EXECUTION",
+  "original_A1_manifest_preserved": {
+    "path": "/tmp/uwvm-direct-independent-inputs-source-only-20261017-r1/A1-source-ready.json",
+    "bytes": 5961,
+    "sha256": "948051504f926d4cc45b6192f1199c463f507fdc5692f2748cec4dbc1dfd3da0"
+  },
+  "original_A1_before_peer_preserved": {
+    "path": "/tmp/uwvm-direct-independent-inputs-source-only-20261017-r1/A1-source-ready-before-peer.json",
+    "bytes": 5483,
+    "sha256": "13499d19c2786c99a0fdc03c65f465f0b6e8afcdb2ed305c917d331af8acbd1f"
+  },
+  "original_A1_qualifier_binding": "4e54d6f0 (complete original SHA retained verbatim in the preserved A1 manifest)",
+  "current_qualifier": {
+    "path": "/tmp/uwvm-cpp-catalog-observed-targets-source-only-20261017-r1/files/tests/ros_unitree/independent_cpp_object.py",
+    "bytes": 35193,
+    "sha256": "98b286ec21fb9a1957f9331e490a9468e72e1768876a7d88d7afe918cd86024f"
+  },
+  "current_catalog_dependency_manifest": {
+    "path": "/tmp/uwvm-cpp-catalog-observed-targets-source-only-20261017-r1/source-ready.json",
+    "bytes": 3782,
+    "sha256": "6973bb356c0fb9e4b652b3682b76a56dd5c2db5e76be6641462db8900c937081"
+  },
+  "implementation_files_unchanged": true,
+  "load_contract": "A1 and B load the actual complete-current-MF-bound qualifier. Original official source/full-MD/object policy stays unchanged; only exact external catalog regular observations use reviewed separate finite ledger. No ordinary MD or copied official/library leaf can consume that observation role.",
+  "actual_preparation_or_test_run": false,
+  "future_MF_forecast": false
+}

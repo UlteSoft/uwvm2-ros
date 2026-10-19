@@ -1,0 +1,51 @@
+{
+  "kind": "noetic5-independent-source-peer",
+  "status": "SOURCE_REVIEW_NO_CONCRETE_BLOCKER_ACTUAL_RECONCILIATION_PENDING",
+  "reviewer": "/root/memory_parallel_builds",
+  "files": [
+    {
+      "path": "tests/ros_unitree/acceptance/noetic_partial_resume.py",
+      "bytes": 41661,
+      "sha256": "ae69eef2d2a9fc86b338360aff272ba50b9c4d140dcd777db53d9b6dff18c4b9"
+    },
+    {
+      "path": "tests/ros_unitree/acceptance/noetic_sdk_acquisition_r5.py",
+      "bytes": 89034,
+      "sha256": "b2ef860f3014748fe8c36550841545d3b2c2396f9e800bf290edc97de2ee275e"
+    },
+    {
+      "path": "tests/ros_unitree/acceptance/noetic_resume_root_owner.py",
+      "bytes": 20566,
+      "sha256": "ac412c12687560917656a4117d55411097a11e34602d7b3facf63a7458c2c5eb"
+    },
+    {
+      "path": "tests/ros_unitree/acceptance/noetic_resume_stage.py",
+      "bytes": 17579,
+      "sha256": "ee26695303508ca306dda4264465c62614369922353c303e845d42b42b03f80f"
+    }
+  ],
+  "reviewed_scope": [
+    "VirtualTree versus maintained SafeTree path_parts, alias traversal, root-entry counting, directory/symlink/file overlay, exact metadata rows, regular-file byte/mode accounting and deferred hardlink order",
+    "Fresh signed Release/Packages/empty-status solver and actual retained-DEB controls precede any continuation admission",
+    "Genuine raw r4 inner FAILED_ACQUISITION and outer FAIL remain unchanged; exact255 committed package prefix and original reserve-exhaustion phase required",
+    "Sequential full old ledger matched against independently freshly decoded authenticated tar members; ordinal255 replay stops at ledger EOF before another member, and is excluded from committed checkpoint",
+    "Committed checkpoint is captured after ordinal254 with exact6784738 ledger bytes/19690 entries/414777798 expanded bytes plus independently reconstructed sequence and pending hardlinks",
+    "Entire physical partial tree is descriptor-walked, full-hashed, exact-name/type/mode/link compared twice; unresolved hardlink destinations must remain absent before SafeTree.finish",
+    "Only committed ledger prefix is copied; actual partial SDK directory moves through held-dirfd same-filesystem renameat2 RENAME_NOREPLACE with stable canonical parent names, durable intent, both parents fsynced and separate confirmation",
+    "Failed/missing transfer confirmation does not authorize automatic recovery or duplicate deletion; old DEBs/logs/reports/ledger remain at their original names",
+    "Fresh ordinals255..512 re-extract with maintained SafeTree methods; pending links resolve only at final finish; actual final513-package source/input/product/cgroup preservation required for sysroot-only success",
+    "Owner/stager bind reviewed source roles/full7, old producer/spec hashes, literal SafeTree source comparison, exact source35/current64GiB CG, finite serial RSS/deadlines, immutable roots and child-first pidfd cleanup"
+  ],
+  "original_r4_SafeTree_bytes_independently_available_locally": false,
+  "baseline_comparison_contract": "Reviewed source enforces exact85269B/17f76763 genuine old producer plus literal SafeTree body equality during actual staging and owner admission; that actual comparison is pending",
+  "actual_reviewer_execution": false,
+  "no_project_imports_tests_compilers_SSH": true,
+  "no_compatibility_Runtime_or_robot_qualification": true,
+  "remaining": [
+    "Actual metadata staging under exact current64GiB cgroup",
+    "Actual new signed repository and513-package solver authority",
+    "Actual256 read-only tar audits, two whole partial-tree comparisons and atomic transfer",
+    "Actual258 remaining extractions/final whole sysroot preservation",
+    "Independent native Noetic compiler/runtime/ROS tests remain separate"
+  ]
+}

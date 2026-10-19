@@ -1,0 +1,55 @@
+{
+  "template_status": "DOCUMENTATION_ONLY_NOT_RUNNABLE",
+  "english_usage": "Review the source-only payload, then invoke noetic_resume_stage.py inside the exact current Root-owned 64 GiB, zero-swap cgroup. The stager independently opens current files and writes root-control.json. Never replace null with a historical device/inode/time observation or an invented future value.",
+  "root_control_shape": {
+    "format_version": 1,
+    "kind": "noetic-r5-current-root-acquisition-control",
+    "source": "/var/tmp/uwvm-ros-complete-20261015-r1/inputs-r35/source",
+    "manifest": "/var/tmp/uwvm-ros-complete-20261015-r1/inputs-r35/source-manifest.json",
+    "manifest_sha256": "eb7fd49e03325deffbe510e24be06d1c0e8274b0207f0a33bd335ea470ad2396",
+    "manifest_pin": null,
+    "cgroup": {
+      "memory_max": 68719476736,
+      "memory_swap_max": 0,
+      "expected_device": 29,
+      "expected_inode": 18315,
+      "expected_boot_id": "ec0d5f0f-3060-4220-bee2-2a7791ed4e72",
+      "expected_leaf": "/sys/fs/cgroup/system.slice/docker-4dd58ad4560fde2ab9b539e4ef9cab1fac531654e99ad554aff1fce8ae0eae37.scope",
+      "expected_cpus": "0-31"
+    },
+    "code_root": "/var/tmp/uwvm-ros-unitree-20261016-r1/noetic-amd64-native-sdk-acquisition-controls-r5",
+    "actor_out": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r5",
+    "owner_out": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-root-supervisor-r5",
+    "python": null,
+    "helpers": {"producer": null, "resume": null, "restart": null, "owner": null},
+    "spec": null,
+    "cache": null,
+    "resume_control": null,
+    "original_spec": null,
+    "original_producer": null,
+    "infrastructure_pins": null,
+    "resolver_alias": null,
+    "budgets": {
+      "self_rss_bytes": 536870912,
+      "tree_rss_bytes": 1073741824,
+      "command_seconds": 43800,
+      "active_seconds": 44400,
+      "whole_seconds": 46800,
+      "cleanup_seconds": 600,
+      "reserve_bytes": 8589934592
+    }
+  },
+  "partial_resume_scope": {
+    "historical_inner_status": "FAILED_ACQUISITION",
+    "historical_outer_status": "FAIL",
+    "historical_status_promoted": false,
+    "committed_packages": 255,
+    "fresh_reextract_ordinals_inclusive": [255, 512],
+    "checkpoint": {"ledger_end": 6784738, "entries": 19690, "bytes": 414777798},
+    "old_ledger_preserved": true,
+    "SDK_directory_only_atomic_same_filesystem_transfer": true,
+    "SDK_whole_tree_copy_allowed": false,
+    "automatic_unconfirmed_transfer_recovery_allowed": false,
+    "ROS_or_Runtime_execution_qualified": false
+  }
+}

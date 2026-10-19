@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:uwvm:ros-distro-profile:1",
+  "title": "Explicit native ROS distribution profile; configuration is not acceptance",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "id", "backend", "distro", "legacy_description", "target", "execution", "sdk", "tools", "cxx", "runtime", "limits", "custom", "features", "cmake_options"],
+  "$defs": {
+    "path": {"type": "string", "pattern": "^/[^\\u0000\\n\\r]*$"},
+    "nullablePath": {"anyOf": [{"$ref": "#/$defs/path"}, {"type": "null"}]},
+    "paths": {"type": "array", "minItems": 1, "maxItems": 16, "uniqueItems": true, "items": {"$ref": "#/$defs/path"}},
+    "tokens": {"type": "array", "maxItems": 32, "items": {"type": "string", "minLength": 1}}
+  },
+  "properties": {
+    "schema_version": {"const": 1}, "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_.-]{0,79}$"},
+    "backend": {"enum": [1, 2]},
+    "distro": {"enum": ["boxturtle", "cturtle", "diamondback", "electric", "fuerte", "groovy", "hydro", "indigo", "jade", "kinetic", "lunar", "melodic", "noetic", "ardent", "bouncy", "crystal", "dashing", "eloquent", "foxy", "galactic", "humble", "iron", "jazzy", "kilted", "lyrical", "rolling", "legacy"]},
+    "legacy_description": {"type": "string"},
+    "target": {
+      "type": "object", "additionalProperties": false,
+      "required": ["architecture", "triple", "elf_machine", "bits", "endian"],
+      "properties": {"architecture": {"type": "string"}, "triple": {"type": "string"}, "elf_machine": {"type": "integer", "minimum": 1, "maximum": 65535}, "bits": {"enum": [32, 64]}, "endian": {"enum": ["little", "big"]}}
+    },
+    "execution": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "engine", "image", "rootfs", "python", "network", "user", "mounts", "platform"],
+      "properties": {
+        "kind": {"enum": ["host", "oci", "rootfs"]}, "engine": {"$ref": "#/$defs/nullablePath"}, "image": {"type": ["string", "null"]}, "rootfs": {"$ref": "#/$defs/nullablePath"},
+        "python": {"$ref": "#/$defs/path"}, "network": {"enum": ["none", "host"]}, "user": {"type": "string", "pattern": "^[0-9]+:[0-9]+$"}, "platform": {"type": "string", "pattern": "^linux/"},
+        "mounts": {"type": "array", "maxItems": 16, "items": {"type": "object", "additionalProperties": false, "required": ["source", "target"], "properties": {"source": {"$ref": "#/$defs/path"}, "target": {"$ref": "#/$defs/path"}}}}
+      }
+    },
+    "sdk": {
+      "type": "object", "additionalProperties": false, "required": ["roots", "ros_prefix", "setup", "distribution_index", "source_lock"],
+      "properties": {"roots": {"$ref": "#/$defs/paths"}, "ros_prefix": {"$ref": "#/$defs/path"}, "setup": {"$ref": "#/$defs/path"}, "distribution_index": {"$ref": "#/$defs/path"}, "source_lock": {"$ref": "#/$defs/nullablePath"}}
+    },
+    "tools": {
+      "type": "object", "additionalProperties": false, "required": ["cxx", "cmake", "make", "bash", "host_python", "generator_python", "toolchain_file", "sysroot", "roots"],
+      "properties": {"cxx": {"$ref": "#/$defs/path"}, "cmake": {"$ref": "#/$defs/path"}, "make": {"$ref": "#/$defs/path"}, "bash": {"$ref": "#/$defs/path"}, "host_python": {"$ref": "#/$defs/path"}, "generator_python": {"$ref": "#/$defs/path"}, "toolchain_file": {"$ref": "#/$defs/nullablePath"}, "sysroot": {"$ref": "#/$defs/nullablePath"}, "roots": {"$ref": "#/$defs/paths"}}
+    },
+    "cxx": {
+      "type": "object", "additionalProperties": false, "required": ["standard", "flags", "link_flags", "stdlib_abi"],
+      "properties": {"standard": {"enum": [17, 20, 23]}, "flags": {"$ref": "#/$defs/tokens"}, "link_flags": {"$ref": "#/$defs/tokens"}, "stdlib_abi": {"type": "string", "minLength": 1}}
+    },
+    "runtime": {
+      "type": "object", "additionalProperties": false, "required": ["mode", "qemu", "loader", "rmw", "master_uri", "domain_id", "memory_max", "memory_swap_max", "behavior", "expected_boot_id", "expected_leaf", "expected_device", "expected_inode", "expected_cpus"],
+      "properties": {"mode": {"enum": ["native", "qemu", "build-only"]}, "qemu": {"$ref": "#/$defs/nullablePath"}, "loader": {"$ref": "#/$defs/nullablePath"}, "rmw": {"type": "string"}, "master_uri": {"type": "string"}, "domain_id": {"type": "integer", "minimum": 0, "maximum": 232}, "memory_max": {"const": 68719476736}, "memory_swap_max": {"const": 0}, "behavior": {"enum": ["native-sdk-topic", "none"]}, "expected_boot_id": {"type": "string"}, "expected_leaf": {"$ref": "#/$defs/path"}, "expected_device": {"type": "integer", "minimum": 0}, "expected_inode": {"type": "integer", "minimum": 1}, "expected_cpus": {"type": "string"}}
+    },
+    "limits": {
+      "type": "object", "additionalProperties": false, "required": ["jobs", "rss_bytes", "command_seconds", "log_bytes"],
+      "properties": {"jobs": {"type": "integer", "minimum": 1, "maximum": 64}, "rss_bytes": {"type": "integer", "minimum": 67108864, "maximum": 4294967296}, "command_seconds": {"type": "integer", "minimum": 1, "maximum": 7200}, "log_bytes": {"type": "integer", "minimum": 65536, "maximum": 67108864}}
+    },
+    "custom": {
+      "type": "object", "additionalProperties": false, "required": ["registry", "native", "packages"],
+      "properties": {"registry": {"$ref": "#/$defs/nullablePath"}, "native": {"$ref": "#/$defs/nullablePath"}, "packages": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"}}}
+    },
+    "features": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"}},
+    "cmake_options": {
+      "type": "object", "additionalProperties": false,
+      "properties": {"UWVM_ROS1_DISCOVERY": {"enum": ["CATKIN", "EXPLICIT"]}, "UWVM_ROS1_CXX11_ABI": {"enum": ["auto", "0", "1"]}, "UWVM_ROS1_INCLUDE_DIRS": {"$ref": "#/$defs/paths"}, "UWVM_ROS1_LIBRARIES": {"$ref": "#/$defs/paths"}, "UWVM_ROS1_GENERATOR_PYTHON": {"$ref": "#/$defs/path"}, "UWVM_ROS1_GENCPP_SCRIPT": {"$ref": "#/$defs/path"}, "UWVM_ROS1_GENCPP_TEMPLATE_DIR": {"$ref": "#/$defs/path"}}
+    }
+  },
+  "allOf": [
+    {"if": {"properties": {"distro": {"enum": ["boxturtle", "cturtle", "diamondback", "electric", "fuerte", "legacy"]}}}, "then": {"properties": {"sdk": {"properties": {"source_lock": {"$ref": "#/$defs/path"}}}}}}
+  ],
+  "description": "Twenty-six named ROS targets plus explicit private legacy profiles. profile.py additionally enforces backend/distro, exact ELF (including i386 EM386/32/little), original-cgroup, OCI descriptor, QEMU/sysroot/loader and custom all-or-nothing contracts. Pre-Groovy profiles require a source lock and an actually configured/EXPLICIT SDK, never an assumed stock catkin install. Schema validity is CONFIGURATION_ONLY, never a test PASS."
+}

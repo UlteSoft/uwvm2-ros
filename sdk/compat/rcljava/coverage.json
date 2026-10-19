@@ -1,0 +1,63 @@
+{
+  "format_version": 1,
+  "status": "SOURCE_IMPLEMENTED_NOT_COMPILED_OR_NATIVE_QUALIFIED",
+  "official_commits": {
+    "ros2_java": "d0e4e952bad1977ce9818d00b520d3ad0aeafd8d",
+    "examples": "3c1fa01f95fb96110953c0f7f196424aa0557b97"
+  },
+  "unchanged_selected_examples": [
+    "upstream/ros2_java_examples/rcljava_examples/src/main/java/org/ros2/rcljava/examples/publisher/PublisherLambda.java",
+    "upstream/ros2_java_examples/rcljava_examples/src/main/java/org/ros2/rcljava/examples/publisher/PublisherMemberFunction.java",
+    "upstream/ros2_java_examples/rcljava_examples/src/main/java/org/ros2/rcljava/examples/subscriber/SubscriberLambda.java",
+    "upstream/ros2_java_examples/rcljava_examples/src/main/java/org/ros2/rcljava/examples/subscriber/SubscriberMemberFunction.java",
+    "upstream/ros2_java_examples/rcljava_examples/src/main/java/org/ros2/rcljava/examples/subscriber/SubscriberNotComposable.java",
+    "upstream/ros2_java_examples/rcljava_examples/src/main/java/org/ros2/rcljava/examples/composition/Composed.java",
+    "upstream/ros2_java_examples/rcljava_examples/src/main/java/org/ros2/rcljava/examples/composition/PublisherNode.java",
+    "upstream/ros2_java_examples/rcljava_examples/src/main/java/org/ros2/rcljava/examples/composition/SubscriberNode.java",
+    "upstream/ros2_java_examples/rcljava_examples/src/main/java/org/ros2/rcljava/examples/timer/TimerLambda.java",
+    "upstream/ros2_java_examples/rcljava_examples/src/main/java/org/ros2/rcljava/examples/timer/TimerMemberFunction.java",
+    "upstream/ros2_java_examples/rcljava_examples/src/main/java/org/ros2/rcljava/examples/service/AddTwoIntsService.java"
+  ],
+  "preserved_unselected_examples": {
+    "publisher/PublisherNotComposable.java": "Thread.sleep/native timing remains unimplemented; no hidden WASI clock",
+    "client/AddTwoIntsClient.java": "original source selected for compile; waitForService/serviceAvailable remain explicit95 until real independently bound native availability and low-level producer hooks exist; original main acceptance REQUIRED"
+  },
+  "implemented": [
+    "exact pinned callback/disposable/message/node/composable/topic/timer subset",
+    "default ROS2 Context and independent finite binding bootstrap",
+    "complete std_msgs.msg.String field/codecs, no JNI pointer substitutes",
+    "fixed registration/rollback/cleanup reports and full-context callback lease",
+    "bounded round-robin/snapshot-source polling and separate finite explicit driver"
+  ],
+  "explicit_refusals": [
+    "native context/pointer/JNI conversion handles",
+    "additional contexts/NodeOptions/remapping/automatic native facilities",
+    "non-default QoS profile selection/query and native RMW identity",
+    "positive timed waits/exhaustive spinAll/multithreaded executors",
+    "native service availability/query/wait, positive timed Future.get without a real authorized clock/Host wait, injected native RMW response/header callbacks"
+  ],
+  "remaining_required": [
+    "all remaining official Node parameter/graph/service/client/action APIs, native RMW headers and availability, native waitsets, writable RCLFuture/Task APIs",
+    "QoS-event handlers/generated message APIs and actual native profiles",
+    "all remaining versions/distros/models/vendors",
+    "actual source-local JVM tests, TeaVM target compile/buffer lifetime/import tests",
+    "actual denied/granted Host/Gateway/Guest/native delivery and owned cleanup"
+  ],
+  "default_Host_authority": [],
+  "actual_tests": 0,
+  "actual_Wasm_builds": 0,
+  "actual_native_ROS_cases": 0,
+  "additive_service_profile": {
+    "status": "SOURCE_ONLY_NOT_EXECUTED",
+    "complete_service_types": [
+      "example_interfaces/srv/AddTwoInts",
+      "std_srvs/srv/Trigger",
+      "std_srvs/srv/SetBool"
+    ],
+    "real_async_path": "service_submit + independently opened event.observe + exact admitted ID + event_poll_v1",
+    "full_source_local_models_authored": 28,
+    "old_topic_timer_models": "unchanged, historical Root execution separately preserved",
+    "real_native_cases": 0,
+    "full_rcljava_compatibility": false
+  }
+}

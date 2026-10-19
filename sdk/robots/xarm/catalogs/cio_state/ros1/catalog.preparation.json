@@ -1,0 +1,23 @@
+{
+  "format": "uwvm-ros-official-standard-bounded-v1",
+  "types": [
+    {
+      "ros_version": 1,
+      "type": "std_msgs/Header",
+      "file": "std_msgs/msg/Header.msg",
+      "registered": false,
+      "bounds": {
+        "frame_id": {
+          "string": 128
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "xarm_msgs/CIOState",
+      "file": "xarm_msgs/msg/CIOState.msg",
+      "registered": true,
+      "bounds": {}
+    }
+  ]
+}

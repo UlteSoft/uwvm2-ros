@@ -1,0 +1,44 @@
+{
+  "format": "uwvm-nvidia-authorization-requirements-v1",
+  "role": "explanatory requirements; not a policy parser input; grants nothing",
+  "default_enabled": false,
+  "aliases": [
+    {
+      "alias": "nvidia-apriltags",
+      "operation": "topic.subscribe",
+      "type": "isaac_ros_apriltag_interfaces/msg/AprilTagDetectionArray",
+      "resource": "operator-selected exact native detection topic"
+    },
+    {
+      "alias": "nvidia-sim-joint-command",
+      "operation": "topic.publish",
+      "type": "sensor_msgs/msg/JointState",
+      "resource": "operator-selected exact simulation-only command topic"
+    },
+    {
+      "alias": "nvidia-sim-joint-state",
+      "operation": "topic.subscribe",
+      "type": "sensor_msgs/msg/JointState",
+      "resource": "operator-selected exact simulation-only state topic"
+    },
+    {
+      "alias": "operator-explicit-groot-call",
+      "operation": "service.call",
+      "type": "uwvm_groot_bridge/srv/InferAction",
+      "resource": "operator-selected exact service"
+    },
+    {
+      "alias": "operator-explicit-groot-observer",
+      "operation": "event.observe",
+      "relation": "actual event-source-alias equals explicit call alias; service response mask and separate event codec"
+    },
+    {
+      "alias": "operator-explicit-groot-query",
+      "operation": "service.available",
+      "relation": "actual same native retained client/source and full type/native/canonical/QoS pairing"
+    }
+  ],
+  "native_identity": "must be actual full independent exporter output, never a fixture/default",
+  "codec_identity": "actual complete bound SERVICE-root or Topic-root proof",
+  "guest_native_network_cuda_management": false
+}

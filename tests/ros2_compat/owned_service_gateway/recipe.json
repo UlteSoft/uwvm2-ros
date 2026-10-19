@@ -1,0 +1,34 @@
+{
+  "kind": "original-RCL-private-Gateway-source-only-contract-plan",
+  "source_only": true,
+  "build_opt_in": "UWVM_ROS2_BUILD_OWNED_RCL_SERVICE=ON",
+  "runtime_opt_in": "--owned-rmw-service-profile <actual trusted file>",
+  "private_operations": [
+    "rmw.service-v1",
+    "rmw.service-retire-v1"
+  ],
+  "native_families": [
+    "std_srvs/srv/Empty",
+    "example_interfaces/srv/AddTwoInts"
+  ],
+  "required_profile_fields": 14,
+  "required_actual_Native_hashes": 11,
+  "pure_authored_groups": 10,
+  "optional_actual_profile_read_group": 1,
+  "actual_Gateway_wire_witness": "native_wire_contract.cc: trusted-config call observer advertise respond availability",
+  "real_SDK_provider": "actual source-integrated Registry9 and immutable CPP10 Registry",
+  "positive_graph_wait": "UNIMPLEMENTED_95",
+  "custom_codec_identity_proof": "UNIMPLEMENTED_EXPLICIT_FIELD_REFUSED",
+  "candidate_calls": 0,
+  "generations": 0,
+  "configuration": 0,
+  "compilers": 0,
+  "probes": 0,
+  "models": 0,
+  "tests": 0,
+  "Native_ROS": 0,
+  "Guest": 0,
+  "SSH": 0,
+  "repository_writes": 0,
+  "narrow_revision": "Four Root full-source findings: public/private retire grammar, exception cleanup order, exact empty peek11 classification, and real public-retire witness"
+}

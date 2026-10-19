@@ -1,0 +1,1569 @@
+{
+  "kind": "source59-current-declaration-integration",
+  "status": "APPLIED_REVIEWED_METADATA_ONLY_NOT_A_TEST_OR_BUILD",
+  "old_cross": {
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/before/current-batch-source-cross-seal.json",
+    "bytes": 98945,
+    "sha256": "b10d76babf6ed9b424fd6e0257b2f483636f1644963a3ba98125a13b4ea37425"
+  },
+  "new_cross": {
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/current-batch-source-cross-seal.json",
+    "bytes": 130181,
+    "sha256": "48019093237ba7435726e9dfe3ce963e0589902438e616c8f5d075a324bed6c9"
+  },
+  "affected_existing_groups": [
+    2,
+    7,
+    8,
+    11,
+    26
+  ],
+  "preserved_original_packages": [
+    {
+      "group_index": 0,
+      "original": {
+        "bytes": 9661,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_ticket_lifetime/source-ready.json",
+        "sha256": "49eb2a401a0aafc522419ef460fb14f576f2c3f3a1aef18a1ecb4ac300808933"
+      },
+      "preserved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/before/original-package-manifests/00-source-ready.json",
+        "bytes": 9661,
+        "sha256": "49eb2a401a0aafc522419ef460fb14f576f2c3f3a1aef18a1ecb4ac300808933"
+      }
+    },
+    {
+      "group_index": 1,
+      "original": {
+        "bytes": 21844,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/noetic-native-source-ready.json",
+        "sha256": "42556147c441055791d893896836d5526ce6683efff3df53e773cdf1bbfeedf5"
+      },
+      "preserved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/before/original-package-manifests/01-source-ready.json",
+        "bytes": 21844,
+        "sha256": "42556147c441055791d893896836d5526ce6683efff3df53e773cdf1bbfeedf5"
+      }
+    },
+    {
+      "group_index": 2,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source58-explicit-wasi-cpp-archive-layout-source-only/prior-current-successors/02-source-ready.json",
+        "bytes": 4036,
+        "sha256": "57eedf7f986557e2d52f42713094bd231438c1de8770be00414cc3bc09e72279"
+      },
+      "preserved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/before/original-package-manifests/02-source-ready.json",
+        "bytes": 4036,
+        "sha256": "57eedf7f986557e2d52f42713094bd231438c1de8770be00414cc3bc09e72279"
+      }
+    },
+    {
+      "group_index": 3,
+      "original": {
+        "bytes": 4979,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/legacy12/source-ready.json",
+        "sha256": "0631686fd793839a211b7a178e6899b6874e804850e145757b9294eda62c818b"
+      },
+      "preserved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/before/original-package-manifests/03-source-ready.json",
+        "bytes": 4979,
+        "sha256": "0631686fd793839a211b7a178e6899b6874e804850e145757b9294eda62c818b"
+      }
+    },
+    {
+      "group_index": 4,
+      "original": {
+        "bytes": 15685,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/core-regressions-source-ready.json",
+        "sha256": "a3dad17e3a77715e21b2d403326a36a9e1c48923c59459c97d6935e50421dbf2"
+      },
+      "preserved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/before/original-package-manifests/04-source-ready.json",
+        "bytes": 15685,
+        "sha256": "a3dad17e3a77715e21b2d403326a36a9e1c48923c59459c97d6935e50421dbf2"
+      }
+    },
+    {
+      "group_index": 5,
+      "original": {
+        "bytes": 6036,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros2_compat/acceptance/action-client-options-source-only/source-ready.json",
+        "sha256": "659f10aae24e17ef69ba7f60c24b4ae4f52990c9af3aa895f1401f99d23038a1"
+      },
+      "preserved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/before/original-package-manifests/05-source-ready.json",
+        "bytes": 6036,
+        "sha256": "659f10aae24e17ef69ba7f60c24b4ae4f52990c9af3aa895f1401f99d23038a1"
+      }
+    },
+    {
+      "group_index": 6,
+      "original": {
+        "bytes": 4644,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros2_compat/acceptance/action-capabilities-source-only/source-ready.json",
+        "sha256": "1b2eb4e74ac85f83128ff55745e55d0b1af23a704a5c0b0a370e271bb9240608"
+      },
+      "preserved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/before/original-package-manifests/06-source-ready.json",
+        "bytes": 4644,
+        "sha256": "1b2eb4e74ac85f83128ff55745e55d0b1af23a704a5c0b0a370e271bb9240608"
+      }
+    },
+    {
+      "group_index": 7,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source54-generated-input-and-management-fixtures-source-only/prior-current-successors/07-source-ready.json",
+        "bytes": 8798,
+        "sha256": "6e84d6df70cfde11bbf8dda6252500cf54ae50a8c2e184c192b5d9af0618a1a1"
+      },
+      "preserved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/before/original-package-manifests/07-source-ready.json",
+        "bytes": 8798,
+        "sha256": "6e84d6df70cfde11bbf8dda6252500cf54ae50a8c2e184c192b5d9af0618a1a1"
+      }
+    },
+    {
+      "group_index": 8,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source58-explicit-wasi-cpp-archive-layout-source-only/prior-current-successors/08-source-ready.json",
+        "bytes": 3400,
+        "sha256": "fb74c476cfb983c6b7ad3386f86af711022b9e9a8a3a679187e3c557750c8376"
+      },
+      "preserved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/before/original-package-manifests/08-source-ready.json",
+        "bytes": 3400,
+        "sha256": "fb74c476cfb983c6b7ad3386f86af711022b9e9a8a3a679187e3c557750c8376"
+      }
+    },
+    {
+      "group_index": 9,
+      "original": {
+        "bytes": 1683,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/actor-exit-race-source-only/source-ready.json",
+        "sha256": "f1fbc61f6ffaab357a235d3c3e0eb8ed47c4d42683b2fb13cd23836962a8c675"
+      },
+      "preserved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/before/original-package-manifests/09-source-ready.json",
+        "bytes": 1683,
+        "sha256": "f1fbc61f6ffaab357a235d3c3e0eb8ed47c4d42683b2fb13cd23836962a8c675"
+      }
+    },
+    {
+      "group_index": 10,
+      "original": {
+        "bytes": 1702,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/cpp-catalog-observations-source-only/source-integration.json",
+        "sha256": "497988de7acf108a6eb23dca2b02e96b7cde437db34f143ab8f36fd9e113df6d"
+      },
+      "preserved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/before/original-package-manifests/10-source-ready.json",
+        "bytes": 1702,
+        "sha256": "497988de7acf108a6eb23dca2b02e96b7cde437db34f143ab8f36fd9e113df6d"
+      }
+    },
+    {
+      "group_index": 11,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source52-library-consumer-fixture-source-only/source-ready.json",
+        "bytes": 6549,
+        "sha256": "6fd138d011c4629ed2fbecbecd5572367f22f8b727cdb053990e45b36330ec6a"
+      },
+      "preserved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/before/original-package-manifests/11-source-ready.json",
+        "bytes": 6549,
+        "sha256": "6fd138d011c4629ed2fbecbecd5572367f22f8b727cdb053990e45b36330ec6a"
+      }
+    },
+    {
+      "group_index": 12,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source56-event-model-wiring-source-only/prior-current-successors/12-source-ready.json",
+        "bytes": 10513,
+        "sha256": "dbd2d2e72fc7a50b855745a325e3e15d9b36ac4d8b600ec8d60701fd4fa2d0a8"
+      },
+      "preserved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/before/original-package-manifests/12-source-ready.json",
+        "bytes": 10513,
+        "sha256": "dbd2d2e72fc7a50b855745a325e3e15d9b36ac4d8b600ec8d60701fd4fa2d0a8"
+      }
+    },
+    {
+      "group_index": 13,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source53-management-and-sdk-source-only/prior-current-successors/13-source-ready.json",
+        "bytes": 5628,
+        "sha256": "86e0b0cabae607af0042dbaea1d8b2d79b94cc142dc3c09ebb6dbfe4be93f179"
+      },
+      "preserved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/before/original-package-manifests/13-source-ready.json",
+        "bytes": 5628,
+        "sha256": "86e0b0cabae607af0042dbaea1d8b2d79b94cc142dc3c09ebb6dbfe4be93f179"
+      }
+    },
+    {
+      "group_index": 14,
+      "original": {
+        "bytes": 6911,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source51-reviewed-source-batch/official/source-ready.json",
+        "sha256": "e8a75f279dd923ce0e2a7cc286f1efdd4a347767e7af8611ad0bd49f4673323d"
+      },
+      "preserved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/before/original-package-manifests/14-source-ready.json",
+        "bytes": 6911,
+        "sha256": "e8a75f279dd923ce0e2a7cc286f1efdd4a347767e7af8611ad0bd49f4673323d"
+      }
+    },
+    {
+      "group_index": 15,
+      "original": {
+        "bytes": 1402,
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_ipc/acceptance/handshake-source-only/source-ready.json",
+        "sha256": "068f813cbb646d5182f2397f262c65e9d540e75f315846d4dfb85ae72d4aa0ed"
+      },
+      "preserved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/before/original-package-manifests/15-source-ready.json",
+        "bytes": 1402,
+        "sha256": "068f813cbb646d5182f2397f262c65e9d540e75f315846d4dfb85ae72d4aa0ed"
+      }
+    },
+    {
+      "group_index": 16,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source53-management-and-sdk-source-only/host-retirement/source-ready.json",
+        "bytes": 1996,
+        "sha256": "5cff9208b49406eab8902a91dd2235100ec1798dc6101ab59a30d1773912f759"
+      },
+      "preserved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/before/original-package-manifests/16-source-ready.json",
+        "bytes": 1996,
+        "sha256": "5cff9208b49406eab8902a91dd2235100ec1798dc6101ab59a30d1773912f759"
+      }
+    },
+    {
+      "group_index": 17,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source53-management-and-sdk-source-only/runtime-integration/source-ready.json",
+        "bytes": 1738,
+        "sha256": "ce354db4d3eece53caba9f6e5f293529972c838fee90ea4232e2ef093ce5ead3"
+      },
+      "preserved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/before/original-package-manifests/17-source-ready.json",
+        "bytes": 1738,
+        "sha256": "ce354db4d3eece53caba9f6e5f293529972c838fee90ea4232e2ef093ce5ead3"
+      }
+    },
+    {
+      "group_index": 18,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source54-generated-input-and-management-fixtures-source-only/prior-current-successors/18-source-ready.json",
+        "bytes": 6803,
+        "sha256": "faa90561ee59d538bcd6a1ae7b448b32df77d5cdb54dff1c1c05970529712852"
+      },
+      "preserved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/before/original-package-manifests/18-source-ready.json",
+        "bytes": 6803,
+        "sha256": "faa90561ee59d538bcd6a1ae7b448b32df77d5cdb54dff1c1c05970529712852"
+      }
+    },
+    {
+      "group_index": 19,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source54-generated-input-and-management-fixtures-source-only/prior-current-successors/19-source-ready.json",
+        "bytes": 3565,
+        "sha256": "46395e9ff5fe0497b552c43a7e196a0e4e4a98b47a9bab16dfb72589bb6fd10d"
+      },
+      "preserved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/before/original-package-manifests/19-source-ready.json",
+        "bytes": 3565,
+        "sha256": "46395e9ff5fe0497b552c43a7e196a0e4e4a98b47a9bab16dfb72589bb6fd10d"
+      }
+    },
+    {
+      "group_index": 20,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source54-generated-input-and-management-fixtures-source-only/sdk-generated-references/source-ready.json",
+        "bytes": 3500,
+        "sha256": "d08441d32256de94200b7cc21c88659efbc2be95c9abfb48d626c25f222630a0"
+      },
+      "preserved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/before/original-package-manifests/20-source-ready.json",
+        "bytes": 3500,
+        "sha256": "d08441d32256de94200b7cc21c88659efbc2be95c9abfb48d626c25f222630a0"
+      }
+    },
+    {
+      "group_index": 21,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source54-generated-input-and-management-fixtures-source-only/runtime-reset-and-guest-management-negative-fixtures/source-ready.json",
+        "bytes": 3851,
+        "sha256": "b7d2107f0b13edf022583925b59a5dd0e277bcc0e0b9fa80abb7edf51b40eeeb"
+      },
+      "preserved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/before/original-package-manifests/21-source-ready.json",
+        "bytes": 3851,
+        "sha256": "b7d2107f0b13edf022583925b59a5dd0e277bcc0e0b9fa80abb7edf51b40eeeb"
+      }
+    },
+    {
+      "group_index": 22,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source54-generated-input-and-management-fixtures-source-only/component-policy-fixture/source-ready.json",
+        "bytes": 1260,
+        "sha256": "d4a4fa7560c70872f787d0d2edf185f1601ded79ac498d7b202419ec70d020d0"
+      },
+      "preserved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/before/original-package-manifests/22-source-ready.json",
+        "bytes": 1260,
+        "sha256": "d4a4fa7560c70872f787d0d2edf185f1601ded79ac498d7b202419ec70d020d0"
+      }
+    },
+    {
+      "group_index": 23,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source55-assemblyscript-constructor-source-only/assemblyscript-event-constructor/source-ready.json",
+        "bytes": 1231,
+        "sha256": "f2fd788c334ad3bc1967e040f604018c0253dc4f2c8c79cf22b101bd3b922099"
+      },
+      "preserved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/before/original-package-manifests/23-source-ready.json",
+        "bytes": 1231,
+        "sha256": "f2fd788c334ad3bc1967e040f604018c0253dc4f2c8c79cf22b101bd3b922099"
+      }
+    },
+    {
+      "group_index": 24,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source56-event-model-wiring-source-only/event-model-wiring/source-ready.json",
+        "bytes": 1445,
+        "sha256": "204c12dbe02b463ceb27d25974539b74a0a72cd3a5c42f3110770af35cd5e57d"
+      },
+      "preserved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/before/original-package-manifests/24-source-ready.json",
+        "bytes": 1445,
+        "sha256": "204c12dbe02b463ceb27d25974539b74a0a72cd3a5c42f3110770af35cd5e57d"
+      }
+    },
+    {
+      "group_index": 25,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source57-pure-wasm-option-fixture-list-source-only/pure-wasm-options-fixture-list/source-ready.json",
+        "bytes": 1264,
+        "sha256": "d136e292a1ce8c1c019163389a2b9ffb3615a68fd44dfd1bd59fdeef1b01cac0"
+      },
+      "preserved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/before/original-package-manifests/25-source-ready.json",
+        "bytes": 1264,
+        "sha256": "d136e292a1ce8c1c019163389a2b9ffb3615a68fd44dfd1bd59fdeef1b01cac0"
+      }
+    },
+    {
+      "group_index": 26,
+      "original": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source58-explicit-wasi-cpp-archive-layout-source-only/legacy-explicit-wasi-cpp-archive-layout/source-ready.json",
+        "bytes": 1851,
+        "sha256": "8d6359f7c3eaea290bd5f04c85a895c634b51b2efd435786cb8c906d84cda8ab"
+      },
+      "preserved": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/before/original-package-manifests/26-source-ready.json",
+        "bytes": 1851,
+        "sha256": "8d6359f7c3eaea290bd5f04c85a895c634b51b2efd435786cb8c906d84cda8ab"
+      }
+    }
+  ],
+  "new_groups": [
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/legacy-javascript-closed8/source-ready.json",
+      "bytes": 5595,
+      "sha256": "d44887493c0b004616ee7552c0ae90c774753911cff4759bd979b1415095eea1"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/direct-javascript-closed8-documentation/source-ready.json",
+      "bytes": 5062,
+      "sha256": "24944789159d796512848cb8b9a9d8b6d90dd5855857551e3644aaf48f3f5a84"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/direct-wasi-cpp-explicit-profile/source-ready.json",
+      "bytes": 6523,
+      "sha256": "bda967be42dda001ba84823326a2b3b3c08ceab8922b47f1c65b1a52a69dcf99"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/current64GiB-example-doc/source-ready.json",
+      "bytes": 4987,
+      "sha256": "7c5d299ac765e2d43b365b919e12672a7da5bcb3fc605cf03803f69c6806800c"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/genuine-llvm-management-r2/source-ready.json",
+      "bytes": 6751,
+      "sha256": "0af7d31e62acad29ec52ede8cae684f967f68e827a8e0e7d0fc44a49a061ce9c"
+    }
+  ],
+  "latest_reviewed_distinct_paths": 18,
+  "all_current_declared_unique_files": 227,
+  "source_rows": [
+    {
+      "bytes": 4502,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/documents/ros/ipc.md",
+      "sha256": "c4fe06210b40cacc8dfeb6b307d84726f8240e55cb9e5b05b6ab22b72f204f1b"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/examples/ros/README.md",
+      "bytes": 4556,
+      "sha256": "20e6b294a5b05565ecfd99edc4e04ddc97b85f97ba688750aa10e41cec8dfdb3"
+    },
+    {
+      "bytes": 3682,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/gateways/common/nonreusing_ids.h",
+      "sha256": "3e0dc86c2cdad1d1dadf015c7548d5cbbac72f782e156da49f5a88725ba0fd2a"
+    },
+    {
+      "bytes": 7194,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/gateways/common/service.h",
+      "sha256": "991dc27ac6a24958628cc0e8e1db63fe2227d8070426d772abe327f4b6a9c0eb"
+    },
+    {
+      "bytes": 21502,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/gateways/ros1/action.h",
+      "sha256": "4fbe253cd340dacd4339e090bed7b3d3150b11d9e6040ed18dec0267d5985ac2"
+    },
+    {
+      "bytes": 28452,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/gateways/ros1/custom_actions.h",
+      "sha256": "b53179b270b7937ca2601d7304bffb90cbc1171d224e30c99263a3ce61853159"
+    },
+    {
+      "bytes": 10528,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/gateways/ros2/CMakeLists.txt",
+      "sha256": "da783405d56f10380c07ed48ad7c39c5a1a275a4b85b0f2bf17fa54eeb13461a"
+    },
+    {
+      "bytes": 35968,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/gateways/ros2/action.h",
+      "sha256": "093ad5ca11cbf4d50def4a23e8cb6a1e3219ee0c59dea98abf0cd8be450f6501"
+    },
+    {
+      "bytes": 15832,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/gateways/ros2/compat/Probe.cmake",
+      "sha256": "8b988a6077cf71f29f96a31966488e9d2953aa3d6e0c922bcc650146018728ea"
+    },
+    {
+      "bytes": 15691,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/gateways/ros2/compat/README.md",
+      "sha256": "8babc9d78d1f68d5bcc0e011d13d70c8cb8d1b840b725032a3a883d0b9922676"
+    },
+    {
+      "bytes": 2728,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/gateways/ros2/compat/action_catalog.h",
+      "sha256": "f19af7744196b2ff478d7eea1b6ff416782ac76920093c75281fb3a29d7e3099"
+    },
+    {
+      "bytes": 1573,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/gateways/ros2/compat/action_client.h",
+      "sha256": "09a6c415938deb80d25081108638ab5af1880a5cc71f49867f5951c485b08cd0"
+    },
+    {
+      "bytes": 3135,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/gateways/ros2/compat/action_client_lease.h",
+      "sha256": "710d855a315b95d1b00dd8ecdfd036c483bc46021ee061bf9c2ea2cf55613d48"
+    },
+    {
+      "bytes": 4498,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/gateways/ros2/compat/action_probe.h",
+      "sha256": "148bec2bef7e535f4818cb98ac426aacb6bb3083063c754eda6542b6840d65a9"
+    },
+    {
+      "bytes": 3495,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/gateways/ros2/compat/features.h",
+      "sha256": "f0f42201fc3407733281f28f0cabd7a59ce4ba7b2f913dfe1aaa8b555331695c"
+    },
+    {
+      "bytes": 845,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/gateways/ros2/compat/uwvm_ros2_features.h.in",
+      "sha256": "c186bba894dd1d3494f0b6b9ea4afa0f3a1b7f7c5cabc897776749a30c2e9531"
+    },
+    {
+      "bytes": 44188,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/gateways/ros2/custom_actions.h",
+      "sha256": "ddeb44051992a6f2eba71eb2699abcdd940b64edade8605bf8775399e5eaf97f"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/README.md",
+      "bytes": 14038,
+      "sha256": "10767d55a97868569ad06522ec547ab8d5e5edf0d4092b83940e752689a5089a"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/abi/abi-v1.json",
+      "bytes": 74230,
+      "sha256": "0a13f6c49100173c156eb76acfd35ebe103a40b2a90c752d3d1302c31f875ec0"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/assemblyscript/events.ts",
+      "bytes": 4118,
+      "sha256": "6ab0d94b43063ec4b327a8cd786ab60e3c3ef910dfd074c95e305b76d7c6c034"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/assemblyscript/ros1/roswasm.ts",
+      "bytes": 7484,
+      "sha256": "85b6bbc110e10ccabbb980ec650cad54aa4c141905e22c8744ba8aa18071be45"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/assemblyscript/ros2/roswasm.ts",
+      "bytes": 8186,
+      "sha256": "3ec43fb00c663b23abe5c592ac21168c59b175b5354a50d547d3c2b19c7618b4"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/assemblyscript/roswasm.ts",
+      "bytes": 53682,
+      "sha256": "a493271146f27bcc0c365f30df1de8dca59a552968b542209d238cdcbcd13fa9"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/assemblyscript/tests/event_dispatch.ts",
+      "bytes": 3310,
+      "sha256": "d0a4667f8470ed2bf0c442f6e58799b3ac0c5f580b9a662ba0bcc45ca81e5c40"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/custom-types/interface-examples/README.md",
+      "bytes": 16367,
+      "sha256": "e9c8a9ded6ea5379dd7e7d06bb6394750f6653008bb029ac226681600314f6c2"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/custom-types/interface-examples/build-recipes.json",
+      "bytes": 5365,
+      "sha256": "06802b84cebad748921c817fb03b503617c4c52eda81e062e96a7145b53abc8d"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/custom-types/interface-examples/prepare.py",
+      "bytes": 12227,
+      "sha256": "5f343a6a6fc92fe248b39c7e25898a0f3b6af6e479a6d5493b02f33aad7ce092"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/custom-types/interface-examples/tinygo-main/main.go",
+      "bytes": 857,
+      "sha256": "d06f94ee629595212128404ce7765a5d23f6b20292cfb9433894ff3ee9fadfdc"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/docs/event-dispatch.md",
+      "bytes": 15416,
+      "sha256": "0de51be87030476dc9381be5cea0d8b0e3e4f61bd7b9f05b88a09dad06ade2fc"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/docs/generated-source-inputs.md",
+      "bytes": 4177,
+      "sha256": "2d4f980981241b7912af35bae04fe4952fd7b460ae3e108da5cbaebebc6d57a6"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/docs/host-setup.md",
+      "bytes": 5825,
+      "sha256": "45297a5c27a09883475525a954ccfdfc3c2f8b07ec89cd1b3c3109258eb4914f"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/docs/model-matrix.md",
+      "bytes": 12775,
+      "sha256": "17d0ed58ff3869111bc8312291e99afb07bb1d19c93fc2f769a80458f1254c99"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/docs/source-validation.md",
+      "bytes": 4870,
+      "sha256": "acc09e52509e7e9879ec72000799dae58f087fd096dd10bee7b0873967235cbd"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/docs/unified-events.md",
+      "bytes": 15412,
+      "sha256": "fd81867589ce726a483baa62e953410decea041b13f190bab2ca9500e0d8badf"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/docs/update-and-debug-boundary.md",
+      "bytes": 4786,
+      "sha256": "943fe9f762d2d6a380333bf2358b8a9fd5e1da1923e75918c062ca2d1c52662a"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/examples/assemblyscript/unified-events.ts",
+      "bytes": 1845,
+      "sha256": "3be994b82dd03f6344991c5538d47f2aae99dd59f2ce1fdbdd09f9fa37801224"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/examples/c/11_unified_events.c",
+      "bytes": 2827,
+      "sha256": "8c2dffa27c9976380207fc1f94f2ffb7151d631340d3235ab9ef9acc7d84307b"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/examples/cpp/11_unified_events.cpp",
+      "bytes": 2041,
+      "sha256": "5f7a0f15015229bce7c5ba8e2b249cf93afe608614872d761c3f05addb244b33"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/examples/javascript/09-unified-events.mjs",
+      "bytes": 2903,
+      "sha256": "d439e3f844ef96c73f1b3b5d6a3f66204322637833be64bfe2a1cc99f2c57e1c"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/examples/robotics_modular/unitree_composition_protocol.c",
+      "bytes": 2545,
+      "sha256": "4d5bab3bf63bd2cb4dbfad805d2a89c4f7e7b1ebea00e4c4d5b0f8c4ea68e92f"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/examples/robotics_modular/unitree_modular_control.h",
+      "bytes": 2751,
+      "sha256": "2d351c60ecf3a7c45c1fc5908ceca4e84104c8a6debae7d277866d5e4c747b77"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/examples/robotics_modular/unitree_perception.c",
+      "bytes": 1743,
+      "sha256": "9aecb5c950c2d0b96aa4e09f30076d0939029f5c5a881fb43d7ef6d7759d7fc8"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/examples/robotics_modular/unitree_perception_abi.h",
+      "bytes": 1713,
+      "sha256": "3df7ef3c541c6bcc2fa5819bc1592d37b66024109866e0e9e9d06951175955a3"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/examples/rust/unified_events.rs",
+      "bytes": 2241,
+      "sha256": "4dd2546cde2ffbb57fb2cd18120107f2f00025490253184d6939ebdd2f47bb48"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/examples/tinygo/unified_events/main.go",
+      "bytes": 2115,
+      "sha256": "e1b05253ae031c7760c3f7e79982a839ce01f70448d673e8c5093cd7199d1a47"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/include/roswasm/events.h",
+      "bytes": 14845,
+      "sha256": "34ce8de3295b3ebce6e1a51c92a3c38ef3c53cf9ee5f93f4bf3444cdcdfc5e73"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/include/roswasm/roswasmcpp.hpp",
+      "bytes": 92457,
+      "sha256": "5f88bdd0c849add7bcd781df13564f8db2769ef20aea6ad8d6b24df86f52048d"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/javascript/async.mjs",
+      "bytes": 43591,
+      "sha256": "52e00c05238e3a01792ce6d3ea83cbae1302b1e71a89bda1e203d761ea023529"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/javascript/guest/engine.h",
+      "bytes": 5165,
+      "sha256": "cfaaf5e4c7246ecf299eea481209d75161644869cc8f48f47350cf4df823f879"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/javascript/guest/prepare.py",
+      "bytes": 29688,
+      "sha256": "aafff90df3d82f574d1edc8e338b93bdba587b4951c264f79e7b6f8e9c46d14e"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/javascript/package.json",
+      "bytes": 744,
+      "sha256": "88b4154a060190a6c538b4e1281881c2d2f655586bb095d668c732738c4b4f0d"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/javascript/roswasm.mjs",
+      "bytes": 49424,
+      "sha256": "a110809788e33b04c9cd2ac1ec26a1d5d407910f6bec3b57f426414d52935fd2"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/javascript/tests/event_dispatch_contracts.mjs",
+      "bytes": 4781,
+      "sha256": "89d33348a0399ec1e7bf055ea7401686e5e82f5154d5c428803a6938a23616a5"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/javascript/tests/run_pure_wasm.mjs",
+      "bytes": 9738,
+      "sha256": "95b5b0ef5f0064c35d66562c72f9edc8a802de6befa8a16314ec1cc8365d20b3"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/javascript/tests/run_pure_wasm_options.mjs",
+      "bytes": 2535,
+      "sha256": "4f758a982a7f6af5704acf59f1301c70978ca40c634602f73882135fb8595de8"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/robots/unitree/examples/direct_go2.c",
+      "bytes": 7927,
+      "sha256": "a6ac39e00486f57f34c7c04633565dfba8a2aa1220051bd8cb46e59127b6583d"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/robots/unitree/examples/direct_go2.cpp",
+      "bytes": 7979,
+      "sha256": "f4c1c664004fca2a04951f0cbe1ec78c3bb84b5d40f9dddcf316f4f273df8509"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/robots/unitree/examples/javascript/control_kernel.c",
+      "bytes": 5328,
+      "sha256": "b2f1618e9cc91ae8ae0c59b4f867471793a07ba457af98800e43e0b787fe0397"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/robots/unitree/examples/javascript/direct_go2.mjs",
+      "bytes": 5893,
+      "sha256": "7ce76481568886abfa3b9bd684dc3c6141bcef2c3d203044f698547d82ee71f7"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/rust/src/events.rs",
+      "bytes": 16224,
+      "sha256": "64fb1880e49a2cc1c1bd437548026901b7bfaacb3b79af462f1ce6b37f49426b"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/rust/tests/check_sources.py",
+      "bytes": 11842,
+      "sha256": "8678ebb4f5b8171b6e4f86480f38d4afa6fd1b985e510e404d9cc5d941624d9c"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/tests/c/event_dispatch_contract.c",
+      "bytes": 3135,
+      "sha256": "7bca6b17f0e65bc084555cc3fb1a8e26116f766797c10c9f1108bb3224d32875"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/tests/cpp/event_dispatch_contract.cpp",
+      "bytes": 2767,
+      "sha256": "ba4dcd3f8814a375b246814a12d3258e8f29da3c16d10438010d9f5276615241"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/tests/event_dispatch_wasm_runner.mjs",
+      "bytes": 3188,
+      "sha256": "f936dd3f30a91c61bdd85d6f1b0dc57d6895524ae851b6f47bf3ba912d6ffecf"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/tests/generated_source_include_models.py",
+      "bytes": 12930,
+      "sha256": "06aaf44de36e3428b0e7b017446bf0247b204e149f4c9d2e04ee94bdaace924c"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/tests/go_build_constraint_models.py",
+      "bytes": 5475,
+      "sha256": "434d62f97f66d70bc0ad6fa9bb829fe6d1e559966efa88e63677774f8cc055a7"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/tests/rust/event_dispatch.rs",
+      "bytes": 1306,
+      "sha256": "c443996cdb1faccce32904bff2ba2447482b55c2cad70a950d50b53230bc4126"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/tinygo/event_backend_ros1.go",
+      "bytes": 189,
+      "sha256": "a5da2d961caed5b48fd11c164d4b2b8768a91245d7b7272222e1f043ccd71adf"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/tinygo/event_backend_ros2.go",
+      "bytes": 189,
+      "sha256": "8c1353a925917c94d288ab6769992841bbdbff7552e30fd4dc3e2080d84b77c5"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/tinygo/event_dispatch.go",
+      "bytes": 4941,
+      "sha256": "d07eb3fc3fa695212a0c90a6649c3da8dcfdde5a0166094167e54fa9d95b1686"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/tinygo/event_dispatch_test.go",
+      "bytes": 4115,
+      "sha256": "d377e8f0fc28a661765771cfb1cc979d184b3a01d966be8de401d8946ea8f0dc"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/tinygo/event_stream.go",
+      "bytes": 4816,
+      "sha256": "0c592e957aada0b5abad17a119153d3da8f8a4fd2ae46240fb41fa05d78c7013"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/tinygo/events.go",
+      "bytes": 4885,
+      "sha256": "631901fcaa161b660d7c23dd799406acfbc898300912630f31a1b59d358e5f4a"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/tools/build_cgroup_matrix.py",
+      "bytes": 58961,
+      "sha256": "9b25dc568e05f7ffc35eecd8bfd8ea47b716056079494b128b9ac0f34a0ccc5b"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/tools/generated-reference-contracts.json",
+      "bytes": 4141,
+      "sha256": "ed132efdc887041865d80d78961911fde660341ffc82dd6484dd2ffbabc7237f"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/tools/go_build_constraints.py",
+      "bytes": 5895,
+      "sha256": "1f69bcd2ba3bf5d07a23265925c655064e7c1cd7ebca3492ab0bb2d8b54961d3"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/tools/run_cgroup_models.py",
+      "bytes": 46867,
+      "sha256": "7423db89dfb8c9eaf91ef25ec14efdcea32f1f67ec0d243c3814cef5d1bb5c30"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/tools/run_local_checks.py",
+      "bytes": 57867,
+      "sha256": "244392592facbf1fe32c32d2966f42b448e541ba2fb05a5c97c8587f26d59f22"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/tools/verify_sources.py",
+      "bytes": 26531,
+      "sha256": "727d8ed22c0898fff32112094392b7316a3dca46cd8140f6a7c5f1f51f2102c5"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/src/uwvm2/imported/ros/capability/manager.h",
+      "bytes": 32572,
+      "sha256": "929c388c3ee73bba85785109bf807a24ee0f9d6c41cd8e7ddd88651bdc34472c"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/src/uwvm2/imported/ros/common/management.h",
+      "bytes": 1605,
+      "sha256": "92de621d17fdcb8d91d05cdf5b3a530e27a4f618b68dad1b763eca71f3f3f5bc"
+    },
+    {
+      "bytes": 8874,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/src/uwvm2/imported/ros/ipc/unix.h",
+      "sha256": "3415c54a1302802a9732d64672cae6e4518f200912f68a8d79a02afddba1cfe8"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/src/uwvm2/runtime/lib/uwvm_runtime.default.cpp",
+      "bytes": 1042123,
+      "sha256": "73f0554bb55262df94252f860ca0fdb8beecf39403ec573639a40a9ecb3e3117"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/src/uwvm2/runtime/lib/uwvm_runtime.h",
+      "bytes": 96308,
+      "sha256": "5706296cce61c80973805652b9b16c322baa36ca3c20e1b21a4d3e21c5dab773"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/src/uwvm2/uwvm/debugger/controller.h",
+      "bytes": 445170,
+      "sha256": "b455c5c5d3d363a08c808e3a82a64dfc75c47bc458b4caa8b2d75ec08953fa8e"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/src/uwvm2/uwvm/imported/ros/debug_bridge.h",
+      "bytes": 5724,
+      "sha256": "276ff2cdbae3974f1f38c96bea3013846f659bea34d4f7d27108f5f555929259"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/src/uwvm2/uwvm/imported/ros/host.h",
+      "bytes": 75676,
+      "sha256": "9c3a1c08fe7ac77c8a3adaf223a70d4ecf6066e9edc092a68c3feeea55c204e1"
+    },
+    {
+      "bytes": 3553,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros/run_unit.py",
+      "sha256": "ae0042a3f1aeb31d1d0da7b5ee62d5d735faddac597eb5cb62c92dfc315b701f"
+    },
+    {
+      "bytes": 3860,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros2_compat/ACTION_CAPABILITIES.md",
+      "sha256": "f5a76bc881885edcfa67fb5a7b38593a7f97a14bac1c6d08747db40b6a4368e6"
+    },
+    {
+      "bytes": 3064,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros2_compat/ACTION_CLIENT_COMPAT.md",
+      "sha256": "42ad1a112b29d60372e942258499d29e4c0c7b90cd2d6ab68b11bccb65edfa37"
+    },
+    {
+      "bytes": 3184,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros2_compat/action_capabilities_models.py",
+      "sha256": "c47866ed34a7d7c5a19e5fe8c8a0124f41bc0d5b3b3fb268a9a1d0a9e7a501d7"
+    },
+    {
+      "bytes": 5144,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros2_compat/action_catalog_contract.cc",
+      "sha256": "56f2e6cd8a7abb4b4adea993832f9ca44485dcc6cb8d983f960611d728378ea2"
+    },
+    {
+      "bytes": 5829,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros2_compat/action_client_lease_contract.cc",
+      "sha256": "cff268cdf6c7065fc95a41df64a535fd45e21ae59d2594ba0cbf26c044b2ae83"
+    },
+    {
+      "bytes": 52234,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_aarch64/rebuild_affected.py",
+      "sha256": "a92f05579e8bfbbb232967e3fa167a25ffcec2b392a0219d7d8500f31f3fbd9c"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/README.foreign-runtime.md",
+      "bytes": 12137,
+      "sha256": "cdda2793b9b4b35e11f0f694f6bfeffbf5969b1125b61948aefc30bf4b5ea100"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/README.management-runtime.md",
+      "bytes": 11151,
+      "sha256": "1b472e40eda3f294b71585f761fb6d9cfa266933049b94b1dcfed34b0f4397db"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/README.management.md",
+      "bytes": 11839,
+      "sha256": "61dd5d2bb1e1523a845a1009f1adae56bb26a53f290a3b2f5f7ea2277ce92e61"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/README.md",
+      "bytes": 5734,
+      "sha256": "e0280269716574b9795fcc2a291c835c60aa2f0c3b173f74d67d0df1674d3ea8"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/README.prepare-llvm.md",
+      "bytes": 12821,
+      "sha256": "f2b66f611ad2c06077bda0ff60261f770a06faa896d8b1169f8a612c02b47913"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/host_retirement_contract.cc",
+      "bytes": 19689,
+      "sha256": "0ea343824ab9e98383cc6b31e539c414eeab1e98b119211d3e41d04c2a6bd2bf"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/integration_guest.py",
+      "bytes": 9437,
+      "sha256": "9109acc26ec79b41b7431940339387f2593cf7526d85aca5477fe3ae2c16beb5"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/integration_runtime.py",
+      "bytes": 41714,
+      "sha256": "a36f31b550b2f95ad0fdd4648fca7b1b9593db2100a2ed3b18997f384f7c265f"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management-recipes.json",
+      "bytes": 11387,
+      "sha256": "9b2b27dfed578551335034c85bd43771ebb639e7335f5cec602f3eb17d682646"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management-runtime-recipes.json",
+      "bytes": 7289,
+      "sha256": "c1d9d5e2098615575c297cb8377b4e09c965b995d4bca70a4cb774688538061c"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_contract.cc",
+      "bytes": 7205,
+      "sha256": "f87ebe727aeec3975e742fe1221360b186a8718953b651255368b1907bd5ae15"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_negative_imports/ros1-debug_configure.wat",
+      "bytes": 911,
+      "sha256": "dd85aa6ec124f2660698dceaed9fa9fdb5907faeccac3e47e8936f9bf4580199"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_negative_imports/ros1-policy_set.wat",
+      "bytes": 901,
+      "sha256": "1ccd8c98ac0311bb211eb2fb74d6a5ac869b15aefb9b9a95e446e42d61096f3a"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_negative_imports/ros1-runtime_update.wat",
+      "bytes": 909,
+      "sha256": "732dd8e54f07f84f15de74ea85a9969837f95fc964563c8ec8563ca7f8db75e5"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_negative_imports/ros2-debug_configure.wat",
+      "bytes": 911,
+      "sha256": "02c0a97109c8378507fca78706d517b59de908b924f48421ce4900a7cc0d1afc"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_negative_imports/ros2-policy_set.wat",
+      "bytes": 901,
+      "sha256": "67870d52019bfdc190afbe8a8de51c6dd736417ca2af3bf7d0f50e069a2923de"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_negative_imports/ros2-runtime_update.wat",
+      "bytes": 909,
+      "sha256": "c5fbc8c996fd3ecb6f46cae52e020cf4ac4a318dbb8b7eb97fdfe3627d90dc99"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_runtime_contract.cc",
+      "bytes": 34850,
+      "sha256": "5fdc51443afecae63e33dd8fe87d6ef8a80ab7744117c25d3ddd1cc7a317a7b1"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_runtime_dap.py",
+      "bytes": 11544,
+      "sha256": "e951359d8479e5bde3bf589e675e7106c31355bee7d5c79e9a0e1042190eac2f"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_runtime_replacement.wat",
+      "bytes": 305,
+      "sha256": "40e4868bfaee0eb9a6db3ed40f8ecf72d2c27ca153fa7a085da8098c4fa22d27"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_runtime_ros1.wat",
+      "bytes": 3554,
+      "sha256": "6c268c720736d1ceb424f70730f58a2148ff18774cb0521ceffbc259ac476274"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_runtime_ros2.wat",
+      "bytes": 3554,
+      "sha256": "e27ebcd40fa87c202c2e98b197a48fc00702f63743f83a88e1a114838efbaa19"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_test_policy.h",
+      "bytes": 2930,
+      "sha256": "4c1f6f40f259f9be8621e81e1ba54eda5ef7ca0555888d6f79a6aecc71923988"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/prepare_llvm.py",
+      "bytes": 37841,
+      "sha256": "ac28971b80033f00dd4e262f9da138fdc03388c541e1ac98278e4ca8ddda1693"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/target_execution.py",
+      "bytes": 12198,
+      "sha256": "29282e4fa86c0f43957ea0fc302e14756d3c0a5a81fb9ac282140bc49276e7b5"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/test_dap_ros_state.py",
+      "bytes": 8614,
+      "sha256": "e47cc9f0f1a9dc634cdcce8d265d47eb779e319d4e9ccd1d472ffa66a838ba3e"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/test_prepare_llvm_targets.py",
+      "bytes": 2413,
+      "sha256": "95aa7167873178f0431745e47ba8a9ff379ed0c74a027d1a3ee14a0ce507a87f"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/test_target_execution.py",
+      "bytes": 8087,
+      "sha256": "a7d7e9959032991104aa6abd972ec1b7c0707ec18d6da23f9ecfdcbdcc8c1c62"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/test_update_ros_boundary.py",
+      "bytes": 10049,
+      "sha256": "7b7649aeb2565e01aba7e488fc7baa9990151a8766651f7a0892b9aa4077f48a"
+    },
+    {
+      "bytes": 4588,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_ipc/client_handshake_contract.cc",
+      "sha256": "48757f74fbcd15e8c90b79424d1cdb55b60664394f7545dd4667a6a793f3661c"
+    },
+    {
+      "bytes": 24815,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_ipc/owned_handshake.py",
+      "sha256": "facee096b24a25e21a879c574d654c7de0e7fd18fd2315fe4690422c69d7a921"
+    },
+    {
+      "bytes": 8831,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_ticket_lifetime/README.md",
+      "sha256": "e60c51c8a5695c29b3b74c32a35f104904525ca3ea7f6a77acbf0061860cd81a"
+    },
+    {
+      "bytes": 2397,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_ticket_lifetime/action_contract.h",
+      "sha256": "602cb99d6e115d0f7e63f8e1c82c2be2e87b429c001b19a2689cecf80efbc7ee"
+    },
+    {
+      "bytes": 1311,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_ticket_lifetime/action_ros1.cc",
+      "sha256": "5f91b8ed704e4b97685e3437ae1787708ea7ff2ea5d57d5d4356955e9e1c5e9e"
+    },
+    {
+      "bytes": 1121,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_ticket_lifetime/action_ros2.cc",
+      "sha256": "3a94b087dc14e159f950eb9462e0402f7c527e6c7ce66e5c34719aea1af3b057"
+    },
+    {
+      "bytes": 15917,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_ticket_lifetime/contract.cc",
+      "sha256": "397b622916d46a8cba452860cb11c3fd452f21f37cf62771f5a7bc1b42012472"
+    },
+    {
+      "bytes": 1945,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_ticket_lifetime/original-content-selection.json",
+      "sha256": "6cdfb1ed32c6272840057959e39eba7edb2ce520907b1a8f96cf54ea8eebae17"
+    },
+    {
+      "bytes": 9576,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_ticket_lifetime/production-source-delta.patch",
+      "sha256": "5f369814a5e53b11538199f16579b25b07282c8a26f5caabb433eeae1794653b"
+    },
+    {
+      "bytes": 9238,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/CORE_REGRESSIONS.md",
+      "sha256": "1309209c192fe58f3aa6315d2ae8443a5eadd76715a6c65efdacd6b05758df67"
+    },
+    {
+      "bytes": 4841,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/CPP_CATALOG_OBSERVATIONS.md",
+      "sha256": "be56002dce9485ce336b7a22a2ecc02c4d2f68463c8167d199731bcbebdbc381"
+    },
+    {
+      "bytes": 5682,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/CPP_LIBRARY_INPUTS.md",
+      "sha256": "87b3e029a4ffd6e4110900d997085b3d23fb8e558b6a28f74189c191c8355c6f"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/DIRECT3_MODULAR.md",
+      "bytes": 11151,
+      "sha256": "99efdecdc3be0c84a36adbc1a7b83d39c0785e37436bb48dc4fa4d6d5be88e84"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/DIRECT_JAVASCRIPT_PREPARED_PINS.md",
+      "bytes": 2625,
+      "sha256": "246c589c91f9045b3916d4ffba93dc6d7fdcd74478c3a383283a819a0a36b5ea"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/DIRECT_WASI_CPP_ARCHIVES.md",
+      "bytes": 3980,
+      "sha256": "ade69e1be50cd4ceb28b7f2e69cab57ddbbba800cc82bbd8a28188c69fa9caa6"
+    },
+    {
+      "bytes": 11703,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/INDEPENDENT_DIRECT_INPUTS.md",
+      "sha256": "675352baf5642be1cc61eae88782bbdd27a39aa2d259df9ed52af5cabe98aca4"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/JAVASCRIPT_PREPARED_PINS.md",
+      "bytes": 2724,
+      "sha256": "532641a4c2c666956e2ba4d8f4e9d3474d823d8c4d1dff329dcf9535da017e30"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/LEGACY_GUEST_BUILDS.md",
+      "bytes": 20813,
+      "sha256": "0fdf09aa26ea5ab9cabcd208ec7e0807d4ad4d1766c07228e85157d0ec5ff160"
+    },
+    {
+      "bytes": 16206,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/LEGACY_TRANSPORT.md",
+      "sha256": "3abf2f74cc260fc26bfaa8e2eb019aebe0126ebb223f66fc596fd6cdb75655d4"
+    },
+    {
+      "bytes": 15530,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/NATIVE_LEGACY_ROS1.md",
+      "sha256": "0c5b06c6207e9a3f8bcaea5d4f650638c7d03cab2fe6afd593ffb51e369c67cc"
+    },
+    {
+      "bytes": 18773,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/NOETIC_NATIVE.md",
+      "sha256": "ed9fdd29a2e5f0adb29c3bc47d0e26104b72673e309f89acc355cd715572c39b"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/cp310_physics_current/owner.py",
+      "bytes": 48849,
+      "sha256": "f1209d206ca1dc9db8d43a0a0f51733ec990d1e047f2cf6d2b3824823ab48892"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/cp310_physics_current/stage.py",
+      "bytes": 27662,
+      "sha256": "6914afc686c4b61579cf0df260f69b24ca9aa2145454578ac966ccba060a5cd9"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/direct_build_configuration/README.md",
+      "bytes": 6360,
+      "sha256": "a273be13077200600748424352cda34515c8e213d74c49999e145ef5e1afc70a"
+    },
+    {
+      "bytes": 201,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/independent_library_inputs/cpp-selection.template.json",
+      "sha256": "58ada0370adc14a0a0a9eded0b75c10d1d751bddf9c186c58f9ef3702c5a7b71"
+    },
+    {
+      "bytes": 713,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/independent_library_inputs/direct-v2-request.template.json",
+      "sha256": "72fcec6f01a5fe7cdd880419f8d724d23e84af77568794b759452a3e6f599195"
+    },
+    {
+      "bytes": 175,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/independent_library_inputs/native-go-selection.template.json",
+      "sha256": "e8023c421af2539cff9794816d9e1943bac541c3260daaa4900144b8c9210c3b"
+    },
+    {
+      "bytes": 5541,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/legacy12/original-source-reuse-independent-source-peer.json",
+      "sha256": "055d75a005c1a8a7c3bc1372434eee5b56e31f9b8e628e5112dc4f6e3442f0a5"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/legacy_guest_builds/initial-command-support-provenance.json",
+      "bytes": 5467,
+      "sha256": "d17095d232ee657cf087e0a8236883e7f8a5fbd09c670af55209f28b4a3cf6dc"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/legacy_guest_builds/selection-v2.template.json",
+      "bytes": 758,
+      "sha256": "69f4888d6fe1fa8a0758145a91b18074aed2b83b1167eb73983fe2ef210523d0"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/legacy_guest_builds/selection.template.json",
+      "bytes": 750,
+      "sha256": "1afdbdeef52e0e7138f0fc08a7016b4005faa67829a44b6491f4d4ee354ef86c"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/make_direct_build_configuration.py",
+      "bytes": 20209,
+      "sha256": "9b454ac15e51c032aff55a5ab291207e18ecb07f11748e06668c94f16bd7198b"
+    },
+    {
+      "bytes": 5763,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/actor_exit_stress.py",
+      "sha256": "a45197052e9c0b359f65a1541bcc1aa77ab9dd11738fe00d5a95f39d8ec2a78d"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/command-build-support-source-provenance.json",
+      "bytes": 7801,
+      "sha256": "c573f62781fe55cea5c5ca0eb73ffd42d2adaaa6d4538d35e0b3813adb148a0e"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/command_build_support.py",
+      "bytes": 32485,
+      "sha256": "f0f3bce594db95ea68b554f4f6a9ce18b092205af787d372d91299c8e09191f7"
+    },
+    {
+      "bytes": 39144,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/common.py",
+      "sha256": "3771ac26b51756578bb8173dac694aec75d778d04729fa300d82ac5cb42455db"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/config.schema.json",
+      "bytes": 13661,
+      "sha256": "04a1a69cf1a8ff14ae293a80dde52d2d30d067ea86322369a74304e824c10d84"
+    },
+    {
+      "bytes": 866,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/core-regressions-native-config.template.json",
+      "sha256": "3a2bc6b0611fa001581ee92f8c615caaec2e11a40713828246dd56ef94445a41"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/direct3_profile.py",
+      "bytes": 11501,
+      "sha256": "4f1ce8994891bad34fac5555118d20b7d18bf671a81e837657fbeaaf504c2f63"
+    },
+    {
+      "bytes": 23385,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/direct_guest_receipts.py",
+      "sha256": "11d46426e3bf47673d7eeae4d2b82ceda4d667793dd014667ac460e8541660ad"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/direct_independent_inputs.py",
+      "bytes": 18122,
+      "sha256": "1b19681668c0120f37d5bf59a3bc054fb87d2535acef9e78e5a352aba56a56dc"
+    },
+    {
+      "bytes": 16487,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/direct_modular.py",
+      "sha256": "c9bee4d1244352db81419a441d3bebd4f677381e695f005666b175282847e6e2"
+    },
+    {
+      "bytes": 35193,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/independent_cpp_object.py",
+      "sha256": "98b286ec21fb9a1957f9331e490a9468e72e1768876a7d88d7afe918cd86024f"
+    },
+    {
+      "bytes": 6369,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/legacy-transport-independent-source-peer.json",
+      "sha256": "07c69ae882c5cd2fef4341212c2242ecb85362f43f733f1f6f418e7a60cf469b"
+    },
+    {
+      "bytes": 1834,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/legacy-transport-selection.template.json",
+      "sha256": "7028495fd7bfaee3e986c0f4a90c5bbe58ff5cff102c05d5e1191b3f5af7c78c"
+    },
+    {
+      "bytes": 46404,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/legacy_transport_inputs.py",
+      "sha256": "df136015852fba79c5ff4b38dee9a0466a631f08978adac77075f59ec85aaf8a"
+    },
+    {
+      "bytes": 23655,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/legacy_transport_session.py",
+      "sha256": "a8255fd4ac8732a052d3981b7f9391a4c33b16a5a94c1e151948356c128fd8b1"
+    },
+    {
+      "bytes": 24026,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/library_inputs.py",
+      "sha256": "567afb0de46a8ee1eec2933d795313e484f17020b6b7a741d3da9f57d7b5f4a3"
+    },
+    {
+      "bytes": 51154,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/native_family_inputs.py",
+      "sha256": "1ed6e838336989778ce88db2ec34f9261668718e6970637561f142b5e77bbbed"
+    },
+    {
+      "bytes": 14146,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/native_legacy_ros1_peer.cpp",
+      "sha256": "8c54832eb24d37d31419c596732afcaeb90d8f5db778bdbfa84295bbc1eb113d"
+    },
+    {
+      "bytes": 892,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/noetic_native.selection.template.json",
+      "sha256": "f191fe1842c0fb97db312eae3f52e5ee2672a3fe1d6d4857bbc97a5f3029f327"
+    },
+    {
+      "bytes": 31938,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/noetic_native_support.py",
+      "sha256": "f8c5dd3d7e3cd6ad7acce33771bcdd53b2f4781598b529d33b6bb2bfe77f71a4"
+    },
+    {
+      "bytes": 6479,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/prepare_cpp_library.py",
+      "sha256": "4ba402178dacc42ed81a0b7392e3df71465a0f515f51d94024cdc27b0be83935"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/prepare_direct_guests.py",
+      "bytes": 49660,
+      "sha256": "c7b58d3aedf85138993ad29d01366a47716c86ea410cdf9fc50e73b63adf47f6"
+    },
+    {
+      "bytes": 6844,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/prepare_direct_library_configuration.py",
+      "sha256": "c8525e27db329bce5139335ccb52b47a0de5d2c60b21c6bdbd3c3db677fdab1a"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/prepare_legacy_guests.py",
+      "bytes": 57254,
+      "sha256": "5060864863928a0656d0fce0e52fec9c86ee8e30adec4f47b60f02a3ef954474"
+    },
+    {
+      "bytes": 6645,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/prepare_native_family_library.py",
+      "sha256": "26b3f0d6ed3ad3f069a2b5e3a0dbb24653ef2596916c35549bba57830de956b2"
+    },
+    {
+      "bytes": 47605,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/prepare_noetic_native.py",
+      "sha256": "abcbc9d0ef7e345f897a77b03cd0a39e5695136e4be6e0044e2cbe714f4dd0c0"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/profile_vtune.py",
+      "bytes": 34402,
+      "sha256": "370afb98548731b1f9355a86a2afb9defdc88cf6d7080d76c5507ca8cca48fe8"
+    },
+    {
+      "bytes": 34012,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/run_core_regressions.py",
+      "sha256": "4a5f0f0f95881e44ea3b5e66e8e54fa7fd28734ce380cf8a2524f3a0841956fe"
+    },
+    {
+      "bytes": 33692,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/run_direct_physics.py",
+      "sha256": "ffd09b6f77bce501df46a26ee647c27c29e6fc8ea872f9efc6131ae6b149dd55"
+    },
+    {
+      "bytes": 16329,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/run_legacy_transport.py",
+      "sha256": "85c5949b920a412c2e252f27b81778aff121d2d8996b710bd59d281124eb1ced"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/run_simulation.py",
+      "bytes": 46095,
+      "sha256": "956d518a7f8110647e51c25c663c7bedf385af64ad37b73a392fbc68787a4217"
+    },
+    {
+      "bytes": 9775,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/test_actor_procfs_races.py",
+      "sha256": "ddea7d32a3dad2e856e093a7bfdb67d8364d93406d0bba509970e0411a661240"
+    },
+    {
+      "bytes": 4222,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/test_actor_retirement_ledgers.py",
+      "sha256": "7e0b046056b1af6b53facba204133a833416fcdc31447660dbf52cff764cdf2a"
+    },
+    {
+      "bytes": 8821,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/test_cpp_catalog_observations.py",
+      "sha256": "2e7aaf42a06a68e58be1286082ff4ccce2b8a5d3c92ceebbf73e5c0ad09514d8"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/test_direct_cpp_archive_layout.py",
+      "bytes": 6388,
+      "sha256": "21bfa87f33dfc17ffe4ac13fdde154153e60b04f5c8b78e42f1b399e2a747e2b"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/test_direct_modular_policy.py",
+      "bytes": 10108,
+      "sha256": "ba7144fe3cb8c68b10eea8b55ae7c259835e9fbceff9046dcc1ae4209149db9e"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/test_independent_cpp_object_policy.py",
+      "bytes": 7257,
+      "sha256": "deb38215502f19b39c6be598eba9b1cab22e807ae0e4a6eb236d8a346949abe1"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/test_javascript_prepared_pin.py",
+      "bytes": 5726,
+      "sha256": "68d66ccf35df60490a1406d4f23a56c18f003b377bdaaefebae9b324b3e1d6a6"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/test_legacy_cpp_archive_layout.py",
+      "bytes": 3989,
+      "sha256": "229efde5a60111d9439de1369fef99fade8fabc94ddb0a2a1b6ada57ff2f3d53"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/test_legacy_guest_build_policy.py",
+      "bytes": 16001,
+      "sha256": "4816af55a63da28a3e3abc260340d7b54a7b895dbad5ddb41a53966096e88278"
+    },
+    {
+      "bytes": 15540,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/test_legacy_transport_protocol.py",
+      "sha256": "1a58862bdf6746193e26a9891f2dfa1ecc3f608fd4177abfe64291cb583dc094"
+    },
+    {
+      "bytes": 8395,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/test_library_inputs_policy.py",
+      "sha256": "d0704855e346547259499f9a9a4c43aa367efbec9b276c4a85f499063452ae4d"
+    },
+    {
+      "bytes": 5994,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/test_native_family_inputs_policy.py",
+      "sha256": "b9a15085c9845c97e7b20e5a162fa2fd2a55332ac498fc59cc76986c9990a5bf"
+    },
+    {
+      "bytes": 11053,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/test_noetic_elf.py",
+      "sha256": "1a6bb366f3c2c9d406fae84bf864e537fc4a0d2f214ac06bf33e1385c2d67bbf"
+    },
+    {
+      "bytes": 5181,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/test_output_budget_guard.py",
+      "sha256": "874bb5d5e51645fd82797f6375d311748c8890fd7a0745afe439ba397a7eb8b7"
+    },
+    {
+      "bytes": 7326,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/test_typed_transport_policy.py",
+      "sha256": "28fa8714d527576fcf6d0d97c8053f3766ec35e4d4829109250af317a84cf55d"
+    },
+    {
+      "bytes": 59610,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/typed_transport_inputs.py",
+      "sha256": "f7248f790a1b8e75dddb029aa24401230e664eb61c4624a5cd7444c74944d949"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/typed_transport_session.py",
+      "bytes": 16218,
+      "sha256": "39f7ae290a895e78763e11a4349d666b3ca988022b3c3ea4297ae79cbfda0e79"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/debug/README.dap.md",
+      "bytes": 38762,
+      "sha256": "1b83495481b8e28baca68c15128840ff5626d343d7e800c9078e1aea2f4d6561"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/debug/README.ros.md",
+      "bytes": 8347,
+      "sha256": "a440270f7cf2113362bcb8e6f1c5fde24fd589642749a708e4ba91aa7c436050"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/debug/dap_adapter.py",
+      "bytes": 273807,
+      "sha256": "81eda04952d526f0871c556f3f0f81847b542c1cfed1a34c9ba9c835f9a7082e"
+    },
+    {
+      "bytes": 27273,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/README.md",
+      "sha256": "0309fabe17982f4b00a5f1575a1c10acfcfc4618c7ce90bb7d7109e80c3ea001"
+    },
+    {
+      "bytes": 46193,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/differential.py",
+      "sha256": "16da5b3e2c2f38d1151f25bd1e2868357b268cd3cc3429b00ab055ab2be7a682"
+    },
+    {
+      "bytes": 16290,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/formats.py",
+      "sha256": "8aab9cca8d6a198774967bda50ab7b361c34884dd1b64490f1266edd6b292e47"
+    },
+    {
+      "bytes": 208,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/mapping.template.json",
+      "sha256": "df0b53850790f478f0746a85d399787c3fea3a5108a905c40e7be0b99857fb36"
+    },
+    {
+      "bytes": 643,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/plan.template.json",
+      "sha256": "821ccd19dcd1f91c65e6747da04f8744c27c0eb663c9af4d44d1c22dede88157"
+    },
+    {
+      "bytes": 8719,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/ports/README.md",
+      "sha256": "82e8a1bab5326f1faddb0a0890f765f1caa17f10a50535338c151f375566b173"
+    },
+    {
+      "bytes": 7404,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/ports/build_rospy_pubsub_guest.py",
+      "sha256": "b82ef7d0908fb4a7fbaafa1b1d1affcc767835c5d04709b87842b871a43f6799"
+    },
+    {
+      "bytes": 28613,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/ports/rospy_pubsub_order.py",
+      "sha256": "943c7d0eae76a7ea6222eba912cf6d9699b2bdcd1b7c372ff80e478afac0227f"
+    },
+    {
+      "bytes": 1754,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/ports/rospy_pubsub_order.source.json",
+      "sha256": "d75b17147af13af90ac5ccb06c5634c3e1de6c4f2740cc38664e4dfe825c0275"
+    },
+    {
+      "bytes": 4944,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/ports/rospy_pubsub_order_guest.c",
+      "sha256": "d83baecf2046184b19488871b0e51e44ae275d4aac152785f857ab3104b99447"
+    },
+    {
+      "bytes": 4362,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/ports/rospy_pubsub_order_peer.py",
+      "sha256": "ea3fb2c9172aa0fa07f3f8df1394e91e3ffbead7a83a98a01d28bdd87a514f70"
+    },
+    {
+      "bytes": 6847,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/ports/test_rospy_pubsub_port.py",
+      "sha256": "596ae44c1edfafa880a7a39681ee82894519ad8d946bcf7bd5159adb1c79e8ca"
+    },
+    {
+      "bytes": 49865,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/runner.py",
+      "sha256": "3edde9d032e56a7af1c901124902bd1118d63b84ef9a91457903c9a95f03f309"
+    },
+    {
+      "bytes": 134,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/source-lock.template.json",
+      "sha256": "0e019065c427a57d239956133e8ecd88d7ea9356afab9e983ccb602cfbe6f1d0"
+    },
+    {
+      "bytes": 9730,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/test_formats.py",
+      "sha256": "25f381d49a9760c3d46abaae0d415a239059586e6b5926303174528ef0471719"
+    },
+    {
+      "bytes": 4096,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/test_unittest_events.py",
+      "sha256": "f51c333769aa8e03fbe2405bca2f78252ca47650a8c95da76e861d55ab562034"
+    },
+    {
+      "bytes": 648,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/unittest-suite.template.json",
+      "sha256": "bd0050137ca76a0bebab5ba91579b1977837f481e3b1b283af521cc9c2a28723"
+    },
+    {
+      "bytes": 860,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/unittest_fixture.py",
+      "sha256": "5933e7fa99cf45bd2f86cc9698ee0302278c396f0b5c6481e76b1226ac4d7f71"
+    },
+    {
+      "bytes": 1786,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/uwvm_official_pytest.py",
+      "sha256": "8dc49685d21530e5eb5c870ce353531c0a6855c1e6d3a2703bc6a89da495563c"
+    },
+    {
+      "bytes": 8389,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/official_suites/uwvm_official_unittest.py",
+      "sha256": "b83d8a22ee44c2785c2417bbcef23a915fff8ce9555530777f274287886c1474"
+    },
+    {
+      "bytes": 21613,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/probe.py",
+      "sha256": "0e01b2491c2227ae439141d3906feb46e3d95ccf736f5f795dedcd839fb55c10"
+    }
+  ],
+  "review_evidence": [
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/review-evidence/legacy-js8/independent-source-peer.json",
+      "bytes": 5305,
+      "sha256": "a41dafe25e53c4a6d0225e4932ce9dcbd0fa4bac6f2a6de642efa4a0ca0e6d31"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/review-evidence/direct-js8-historical/independent-source-peer.json",
+      "bytes": 5699,
+      "sha256": "9153a07e66ba955df5e0096137304b18c7826be8c400bc86fca653a74582a608"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/review-evidence/direct-wasi-cpp/independent-source-peer.json",
+      "bytes": 4476,
+      "sha256": "c3ee1575b338a25023a0d941e7a6aea03aaa79727b520e15b3f1943820288e6d"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/review-evidence/llvm-management-r2/independent-source-peer.json",
+      "bytes": 5711,
+      "sha256": "680b970878c354f31d77476dfff637e664c06d276603ff8620d8c142b555b107"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source59-reviewed-js-direct-and-llvm-management-source-only/review-evidence/root64doc/source-review.json",
+      "bytes": 537,
+      "sha256": "ec706705bee5484733c0f5f2fe1302d1b870713812a6215e1de7e080ff7b29c2"
+    }
+  ],
+  "tests_imports_compilers_SSH": false,
+  "checkpoint_or_production_edits": false
+}

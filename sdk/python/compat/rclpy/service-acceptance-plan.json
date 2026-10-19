@@ -1,0 +1,64 @@
+{
+  "format_version": 1,
+  "kind": "FUTURE_REAL_RCLPY_SERVICE_FUTURE_ACCEPTANCE_PLAN_NOT_RESULTS",
+  "actual_source_manifest": null,
+  "actual_native_type_identities": null,
+  "actual_producer": null,
+  "actual_artifacts": null,
+  "default_Host_authority": [],
+  "required": [
+    "independent source peer and exact integrated coherent full source freeze",
+    "matching actual CPython3.14.8 native-build/target-WASI producer and WASI SDK24 tools/archive/cache/fullsource identity",
+    "actual bounded-v2 exporter bind of complete installed example_interfaces/srv/AddTwoInts graph and existing Trigger/SetBool builtin identities",
+    "separate actual Runtime/Gateway/native peer, explicit aliases/type/QoS/max-request/max-response/max-inflight/time/queue/source-owner bounds",
+    "full native compile MD, target ELF62/maps/SDK identity and actual target-Wasm imports/owned memory-lifetime validation",
+    "real whole owner cgroup/current64GiB swap0/cpus/output/memory admission/pidfd serial ownership and normal Frame.finish",
+    "all original failures/rawstdout-stderr/source+SDK before-after closures and all cleanup results preserved"
+  ],
+  "cases": [
+    {
+      "name": "real-empty-Host-policy-denial",
+      "entry": "examples/default_denied_service.py",
+      "require": "real ABI1 + first service capability_open13, no nonzero owner; local missing binding13/logger13/wrong backend are not success"
+    },
+    {
+      "name": "unchanged-official-server-main",
+      "entry": "examples/official_service_bootstrap.py",
+      "original_main": "examples_rclpy_minimal_service.service_member_function.main",
+      "logger_profile": "explicit prepare_callback_logging True + distinct independently granted logger alias",
+      "native_peer": [
+        "--call",
+        "AddTwoInts",
+        "/add_two_ints"
+      ],
+      "require": "real exact request41/1 -> response42 associated through actual Host/Gateway owned IDs; full original callback log and all3 owner outcomes"
+    },
+    {
+      "name": "real-client-submit-not-sync",
+      "entry": "explicit selected Client call_async fixture",
+      "native_peer": [
+        "--serve",
+        "AddTwoInts",
+        "/add_two_ints"
+      ],
+      "require": "admission ID not completion; real complete kind3/error6 event flags/correlation/source/session/sequence, exact response42 and no synchronous service_call"
+    },
+    {
+      "name": "builtin-standard-services",
+      "native_types": [
+        "Trigger",
+        "SetBool"
+      ],
+      "require": "complete empty/bool requests and full success/message including NUL/BOM/Unicode against the installed native peer"
+    },
+    {
+      "name": "real-Host-negative-and-failure",
+      "require": "native deadline110/external-effects flags, source-close/pending detach, no retry/regrant, owned resource cleanup"
+    }
+  ],
+  "preserved_original_client_mains": "NOT SELECTED: all call real wait_for_service first; ABI1 lacks native service availability. No graph-based substitute is installed.",
+  "preserved_nonmember_server_main": "NOT SELECTED: default spin_once native waiting remains unavailable.",
+  "Empty": "Complete record/zero-byte codec source only; factory refuses before open because exact Runtime/Gateway native service adapter/identity is missing and std_srvs custom shadowing is forbidden.",
+  "actual_tests": 0,
+  "actual_Runtime_Gateway_native_ROS_cases": 0
+}

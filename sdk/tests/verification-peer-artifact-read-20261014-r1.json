@@ -1,0 +1,247 @@
+{
+  "status": "SOURCE_ARTIFACT_READ_PEER_REVIEW_PASS",
+  "revision": "20261014-r1",
+  "scope": "Bounded descriptor reader repairs and pure mocked-metadata models only",
+  "actual_compilation": "NOT_PERFORMED",
+  "actual_filesystem_artifact_or_FIFO_execution": "NOT_PERFORMED",
+  "actual_Wasm_ROS_ARM_cgroup_execution": "NOT_PERFORMED",
+  "source_files": [
+    {
+      "path": "sdk/tools/build_cgroup_matrix.py",
+      "bytes": 43448,
+      "sha256": "3a4541618d193f06404bdcaa6210a30a4f9a7afd9037fdc9b42c0a8ecf2c0b6b"
+    },
+    {
+      "path": "sdk/javascript/tests/run_pure_wasm.mjs",
+      "bytes": 7955,
+      "sha256": "729787cd8f086bb0f6f38f3ac8503a83d92155c7a00c1f8b010f45f95ae31855"
+    },
+    {
+      "path": "sdk/tests/artifact_read_models.py",
+      "bytes": 8387,
+      "sha256": "4170b0167cfe572f6e0b8db9d2acfded0d31f5ef0fcf95f4ec447e982a412796"
+    },
+    {
+      "path": "sdk/javascript/tests/run_pure_wasm_artifact_models.mjs",
+      "bytes": 6934,
+      "sha256": "2e91bd9f083384cb034dcfe05eed8df9f3f00dc9c89751ba29662ccee316af7b"
+    },
+    {
+      "path": "sdk/tools/verify_sources.py",
+      "bytes": 9064,
+      "sha256": "e9161122fbc7d680ff78fc6b95234635c7a8a19c91ee3b5668c8b24f0077e160"
+    }
+  ],
+  "checks": 51,
+  "python": {
+    "status": "SOURCE_ARTIFACT_READ_MODEL_PASS",
+    "checks": 24,
+    "rows": [
+      {
+        "name": "regular binary bytes receive one exact identity/hash binding",
+        "status": "PASS",
+        "reads": 2,
+        "descriptor_closed": true,
+        "exception": null
+      },
+      {
+        "name": "empty regular file is bounded and admitted",
+        "status": "PASS",
+        "reads": 1,
+        "descriptor_closed": true,
+        "exception": null
+      },
+      {
+        "name": "short individual reads accumulate without assuming a full read",
+        "status": "PASS",
+        "reads": 5,
+        "descriptor_closed": true,
+        "exception": null
+      },
+      {
+        "name": "FIFO rejected before read",
+        "status": "PASS",
+        "reads": 0,
+        "descriptor_closed": true,
+        "exception": "ValueError"
+      },
+      {
+        "name": "character-device rejected before read",
+        "status": "PASS",
+        "reads": 0,
+        "descriptor_closed": true,
+        "exception": "ValueError"
+      },
+      {
+        "name": "directory rejected before read",
+        "status": "PASS",
+        "reads": 0,
+        "descriptor_closed": true,
+        "exception": "ValueError"
+      },
+      {
+        "name": "socket rejected before read",
+        "status": "PASS",
+        "reads": 0,
+        "descriptor_closed": true,
+        "exception": "ValueError"
+      },
+      {
+        "name": "declared over64MiB rejected before read",
+        "status": "PASS",
+        "reads": 0,
+        "descriptor_closed": true,
+        "exception": "ValueError"
+      },
+      {
+        "name": "negative declared size rejected before read",
+        "status": "PASS",
+        "reads": 0,
+        "descriptor_closed": true,
+        "exception": "ValueError"
+      },
+      {
+        "name": "64MiB boundary still requires exact byte length",
+        "status": "PASS",
+        "reads": 2,
+        "descriptor_closed": true,
+        "exception": "ValueError"
+      },
+      {
+        "name": "missing O_NONBLOCK fails before open",
+        "status": "PASS",
+        "reads": 0,
+        "descriptor_closed": false,
+        "exception": "ValueError"
+      },
+      {
+        "name": "unusable O_NONBLOCK fails before open",
+        "status": "PASS",
+        "reads": 0,
+        "descriptor_closed": false,
+        "exception": "ValueError"
+      },
+      {
+        "name": "truncated data rejected",
+        "status": "PASS",
+        "reads": 2,
+        "descriptor_closed": true,
+        "exception": "ValueError"
+      },
+      {
+        "name": "one extra growth byte rejected",
+        "status": "PASS",
+        "reads": 1,
+        "descriptor_closed": true,
+        "exception": "ValueError"
+      },
+      {
+        "name": "st_dev mutation rejected",
+        "status": "PASS",
+        "reads": 2,
+        "descriptor_closed": true,
+        "exception": "ArtifactMutation"
+      },
+      {
+        "name": "st_ino mutation rejected",
+        "status": "PASS",
+        "reads": 2,
+        "descriptor_closed": true,
+        "exception": "ArtifactMutation"
+      },
+      {
+        "name": "st_size mutation rejected",
+        "status": "PASS",
+        "reads": 2,
+        "descriptor_closed": true,
+        "exception": "ArtifactMutation"
+      },
+      {
+        "name": "st_mtime_ns mutation rejected",
+        "status": "PASS",
+        "reads": 2,
+        "descriptor_closed": true,
+        "exception": "ArtifactMutation"
+      },
+      {
+        "name": "st_ctime_ns mutation rejected",
+        "status": "PASS",
+        "reads": 2,
+        "descriptor_closed": true,
+        "exception": "ArtifactMutation"
+      },
+      {
+        "name": "post-read file-kind mutation rejected",
+        "status": "PASS",
+        "reads": 2,
+        "descriptor_closed": true,
+        "exception": "ArtifactMutation"
+      },
+      {
+        "name": "open error preserves descriptor ownership",
+        "status": "PASS",
+        "reads": 0,
+        "descriptor_closed": false,
+        "exception": "OSError"
+      },
+      {
+        "name": "first-fstat error preserves descriptor ownership",
+        "status": "PASS",
+        "reads": 0,
+        "descriptor_closed": true,
+        "exception": "OSError"
+      },
+      {
+        "name": "read error preserves descriptor ownership",
+        "status": "PASS",
+        "reads": 1,
+        "descriptor_closed": true,
+        "exception": "OSError"
+      },
+      {
+        "name": "last-fstat error preserves descriptor ownership",
+        "status": "PASS",
+        "reads": 2,
+        "descriptor_closed": true,
+        "exception": "OSError"
+      }
+    ],
+    "source": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/sdk/tools/build_cgroup_matrix.py",
+    "source_sha256": "3a4541618d193f06404bdcaa6210a30a4f9a7afd9037fdc9b42c0a8ecf2c0b6b",
+    "scope": "Actual extracted reader with wholly synthetic descriptor operations",
+    "filesystem_artifact_execution": "NOT_PERFORMED",
+    "native_compilation": "NOT_PERFORMED",
+    "WebAssembly_execution": "NOT_PERFORMED",
+    "cgroup_execution": "NOT_PERFORMED",
+    "ROS_execution": "NOT_PERFORMED"
+  },
+  "javascript": {
+    "status": "SOURCE_ARTIFACT_READ_MODEL_PASS",
+    "checks": 27,
+    "source_sha256": "729787cd8f086bb0f6f38f3ac8503a83d92155c7a00c1f8b010f45f95ae31855",
+    "scope": "Actual extracted artifact function with synthetic descriptor operations only",
+    "filesystem_artifact_execution": "NOT_PERFORMED",
+    "WebAssembly_execution": "NOT_PERFORMED",
+    "native_compilation": "NOT_PERFORMED",
+    "cgroup_execution": "NOT_PERFORMED",
+    "ROS_execution": "NOT_PERFORMED"
+  },
+  "raw_outputs": [
+    {
+      "path": "/tmp/uwvm-sdk-artifact-read-peer-python-20261014-r1.json",
+      "sha256": "0c6c3dc38a5db5709758fa9ff376feb2a56e0f024a92bd73b712d75c7e9adaca"
+    },
+    {
+      "path": "/tmp/uwvm-sdk-artifact-read-peer-javascript-20261014-r1.json",
+      "sha256": "24a5c6453bb076a7046f61c18d417d544df265f8eb44a82de019345c6787a6dd"
+    }
+  ],
+  "semantics": [
+    "Open with O_NONBLOCK before checking descriptor kind so a FIFO cannot stall a blocking read-only open.",
+    "Reject nonregular opened descriptors and negative/over64MiB declared lengths before reads or allocation.",
+    "Read only from the admitted descriptor, compare device/inode/size/mtime/ctime around the read, require exact observed length and hash those bytes.",
+    "All successfully opened descriptors are closed in finally, including fstat/read/allocation/hash failures.",
+    "Missing or unusable O_NONBLOCK is explicitly refused before any artifact open.",
+    "These are same-descriptor consistency checks; they do not lock pathname replacement or provide signed compiler attestation. Later parent artifact identity checks still reject substituted output paths."
+  ]
+}

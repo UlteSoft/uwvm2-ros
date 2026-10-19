@@ -1,0 +1,313 @@
+{
+  "format_version": 1,
+  "status": "SOURCE_ONLY_PLAN_NOT_EXECUTED",
+  "provider_required": "23.1.1-uwvm-ros.13",
+  "stock_worker_workaround_is_provider_completion": false,
+  "provider_accepted_receipt_selected": null,
+  "provider_partial_build_selected": null,
+  "full_provider_reuse_established": false,
+  "worker37_actual_current_report": {
+    "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/source37-native-four-runtime-build-r2/workers/report.json",
+    "bytes": 10438490,
+    "sha256": "18932cb8abc7d9998eb7431f751d6d1feea687cb380f1b247eef12750de0fb64",
+    "device": 81,
+    "inode": 578812,
+    "mtime_ns": 1792113898049082283,
+    "ctime_ns": 1792113898059082436
+  },
+  "source43_manifest": {
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/documents/ros/continuation-20261016-boot3-evidence/source43/source-manifest.json",
+    "bytes": 3436243,
+    "sha256": "9a01f114e4091d4329392b291b5785952e99b22d8e2a48be52b7e02a7d8f0178"
+  },
+  "source_inputs": [
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/third-parties/llvm/sources.sha256",
+      "bytes": 1446549,
+      "sha256": "a685b608fd38e86d034ba4ce96d89801bfc69c57b84d514ba1954777b9fa8790",
+      "source43_manifest_member": true
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/third-parties/llvm/README.md",
+      "bytes": 16828,
+      "sha256": "82332f5210435c578e1bc996ea07afd0e5f0f36dd1c8b825065d7144ddd60b2f",
+      "source43_manifest_member": false
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/xmake/llvm/contract.cmake",
+      "bytes": 9065,
+      "sha256": "4ab7efc5ec7e810ef658a98b3fecc0d3b6cebdf008a869e2a240e92bd5693bfc",
+      "source43_manifest_member": true
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/prepare_llvm.py",
+      "bytes": 30436,
+      "sha256": "41b97b9afbbeaeb94cf6b208582dbb18eb6d231b678413b4ea16a430c088a0a4",
+      "source43_manifest_member": true
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/build_runtime.py",
+      "bytes": 45340,
+      "sha256": "d6a954231e58b1c1283a391e598cb0efdc6755e92516936a6f4f27d545977973",
+      "source43_manifest_member": true
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/integration_runtime.py",
+      "bytes": 23145,
+      "sha256": "2a6765271357251426824be6f69571412331afddcd896580e6dbeed7e6256fa9",
+      "source43_manifest_member": true
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/integration-jobs.json",
+      "bytes": 4468,
+      "sha256": "4cab9e055e6bec497517595b0dac95c927ed7869941e6e2303afca1486e5d164",
+      "source43_manifest_member": true
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_multiarch_runtime/profile.py",
+      "bytes": 7002,
+      "sha256": "de6242d00c68ed3cd7d977021c22c602d337d7f00eb868954afe24d338ca1fe9",
+      "source43_manifest_member": true
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_multiarch_runtime/engine.py",
+      "bytes": 24141,
+      "sha256": "4b4b233e57c90199eaadf7f32befcf633b9dce0b5995afbd346c90fdcaa6109d",
+      "source43_manifest_member": true
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_multiarch_runtime/matrix.py",
+      "bytes": 7494,
+      "sha256": "5a570e9ff35e4e318fdd0a3d492b3cc50dc11c41968fc8126613ac3854110c9b",
+      "source43_manifest_member": true
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_multiarch_runtime/prepare.py",
+      "bytes": 9508,
+      "sha256": "5d7089f128fe99bdc8d56a3ec8d23538d1ebf48d1a2757a0f0d9b3412510dacd",
+      "source43_manifest_member": true
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_multiarch_runtime/run.py",
+      "bytes": 19312,
+      "sha256": "094ddf7c7c09f1c56b53d244b8b895e5da3bd2abfe85f657bc9262a6d2401b74",
+      "source43_manifest_member": true
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ci/build_wasm3_cross_llvm_cli.sh",
+      "bytes": 8142,
+      "sha256": "2b254aeda5ec34e33f2c96657dd1940dc39d8a4b0094d7ba8a3921ed0d2efcbe",
+      "source43_manifest_member": false
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tools/ros_distro/build_parallelism.py",
+      "bytes": 7924,
+      "sha256": "7c24d3b5be487cfc78a4a3c2dc9019821c9ab02f1114966461c7716e2d3782b9",
+      "source43_manifest_member": true
+    }
+  ],
+  "current_context_root_supplied_NOT_LIVE_ADMISSION": {
+    "memory_max": 68719476736,
+    "memory_swap_max": 0,
+    "expected_leaf": "/sys/fs/cgroup/system.slice/docker-4dd58ad4560fde2ab9b539e4ef9cab1fac531654e99ad554aff1fce8ae0eae37.scope",
+    "expected_device": 29,
+    "expected_inode": 18358,
+    "expected_boot_id": "501c54bd-af24-4d22-900c-8e24de274464",
+    "expected_cpus": "0-31"
+  },
+  "existing_preparer_unchanged": {
+    "jobs": 1,
+    "owned_rss_bytes": 2147483648,
+    "individual_noncoordinator_age_seconds": 600,
+    "overall_build_seconds_range": [
+      600,
+      86400
+    ],
+    "fresh_output": true,
+    "reused_objects": 0,
+    "backend": "X86",
+    "llvm_link_jobs": 1,
+    "linker_threads": 1
+  },
+  "proposed_parallel_successor_REQUIRES_SOURCE_REVIEW": {
+    "max_jobs": 4,
+    "heavy_job_reservation_bytes": 5368709120,
+    "aggregate_compiler_rss_bytes": 21474836480,
+    "outer_rss_bytes": 25769803776,
+    "parent_reserve_bytes": 2147483648,
+    "working_cgroup_ceiling_bytes": 64424509440,
+    "host_memavailable_reserve_bytes": 8589934592,
+    "jobs_rule": "min(explicit maximum, actual admitted affinity/ancestor CPU quota, aggregate RSS/per-job, allocatable current cgroup headroom/per-job, (actual host MemAvailable-host reserve)/per-job); subtract other live lane committed allowances or require exclusive scheduling; no launch if result<1",
+    "link_jobs": 1,
+    "linker_threads": 1,
+    "implemented": false
+  },
+  "storage": {
+    "root_actual_backing_free_bytes_at_inventory": 14814789632,
+    "unchanged_backing_floor_bytes": 8589934592,
+    "headroom_above_floor_bytes_at_inventory": 6224855040,
+    "actual_complete_provider_size_measurement": null,
+    "single_x86_pilot_proposed_output_ceiling_bytes": 4294967296,
+    "single_x86_pilot_proposed_extra_safety_bytes": 1073741824,
+    "single_x86_pilot_minimum_backing_free_bytes": 13958643712,
+    "single_x86_pilot_admitted": false,
+    "eight_provider_plus16_cell_reservation": "NOT_ESTABLISHED; measure first actual outputs and current backing/CoW extents before computing remaining reservations",
+    "failure_behavior": "Preserve failed raw/products; no guard reduction, deletion, archive or partial-product promotion"
+  },
+  "expected_output_paths_relative_to_FRESH_ACTUAL_OUTPUT_ONLY": [
+    "prepare-evidence.json",
+    "package-manifest.json",
+    "package-candidate.json",
+    "consumer-link.rsp",
+    "runtime-llvm-selection.json",
+    "full-dependencies.jsonl",
+    "actor-births.jsonl",
+    "build/CMakeCache.txt",
+    "build/compile_commands.json",
+    "build/build.ninja",
+    "build/.ninja_log",
+    "build/.ninja_deps",
+    "build/.cmake/api/v1/reply",
+    "build/include/llvm/Config/llvm-config.h"
+  ],
+  "future_output_full7": "NOT_PREDICTED; observed and preserved only after actual writes",
+  "eight_arch_interpreter_matrix": {
+    "architectures": [
+      "x86_64",
+      "aarch64",
+      "arm",
+      "i386",
+      "riscv64",
+      "loongarch64",
+      "ppc64le",
+      "s390x"
+    ],
+    "backends": [
+      1,
+      2
+    ],
+    "cells": 16,
+    "cases_per_cell": 13,
+    "total_cases": 208,
+    "jit_enabled": false,
+    "native_ros_endpoint_architectures": [
+      "x86_64",
+      "aarch64"
+    ],
+    "native_DDS_on_every_Runtime_architecture_claimed": false,
+    "all_distributions_claimed": false,
+    "actual_results_selected": []
+  },
+  "separate_jit_matrix": {
+    "status": "REQUIRES_ACTUAL_PER_TARGET_PROVIDER_RUNTIME_MAP_ADAPTER_AND_BEHAVIOR",
+    "completed_by_interpreter208": false,
+    "initial_debugger_adapter": "native Linux x86_64 ELF62 only"
+  },
+  "guest_default_optional_authority": "NONE; positive fine-grained grants explicit; denied case empty table",
+  "self_execution": {
+    "project_imports": false,
+    "candidate_imports": false,
+    "compiler": false,
+    "test": false,
+    "qemu": false,
+    "ssh": false,
+    "deletion": false
+  },
+  "next_exact_receipt_refs": [],
+  "genuine_old_r2_control_current_pin": {
+    "path": "/var/tmp/uwvm-ros-unitree-20261016-r1/llvmros13-admitted-inputs-r2/configuration.json",
+    "bytes": 2572,
+    "sha256": "fe918d5952c58d4108d8e73d8ce10981cc95a057c7de53b25d546dc11adb6893",
+    "device": 66312,
+    "inode": 30987355,
+    "mtime_ns": 1792100737406696007,
+    "ctime_ns": 1792100737406696007
+  },
+  "genuine_old_r2_control_unchanged_body": {
+    "format_version": 1,
+    "source_root": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/llvm-source13-r1",
+    "tools": {
+      "cc": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/host-compiler-r1/bin/clang",
+      "cxx": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/host-compiler-r1/bin/clang++",
+      "cmake": "/usr/bin/cmake",
+      "ninja": "/usr/bin/ninja",
+      "ar": "/usr/bin/ar",
+      "ranlib": "/usr/bin/ranlib",
+      "linker": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/host-compiler-r1/bin/ld.lld",
+      "python": "/usr/bin/python3.14"
+    },
+    "target": {
+      "triple": "x86_64-unknown-linux-gnu",
+      "machine": 62,
+      "bits": 64,
+      "endian": "little",
+      "host_machine": "x86_64"
+    },
+    "stdlib": "libstdc++",
+    "cflags": [
+      "--gcc-install-dir=/usr/lib/gcc/x86_64-linux-gnu/15"
+    ],
+    "cxxflags": [
+      "--gcc-install-dir=/usr/lib/gcc/x86_64-linux-gnu/15",
+      "-stdlib=libstdc++"
+    ],
+    "link_flags": [
+      "--gcc-install-dir=/usr/lib/gcc/x86_64-linux-gnu/15",
+      "-stdlib=libstdc++"
+    ],
+    "sysroot": null,
+    "input_roots": [
+      "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/llvm-source13-r1",
+      "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/host-compiler-r1",
+      "/usr/bin",
+      "/usr/include",
+      "/usr/lib/x86_64-linux-gnu",
+      "/usr/lib/gcc/x86_64-linux-gnu/15",
+      "/usr/lib/python3.14",
+      "/usr/share/cmake-3.31",
+      "/usr/share/cmake",
+      "/usr/lib/locale",
+      "/usr/lib/llvm-20/include/c++/v1",
+      "/usr/lib/llvm-17/lib/clang/17/include",
+      "/usr/lib/llvm-18/lib/clang/18/include",
+      "/usr/lib/llvm-19/lib/clang/19/include",
+      "/usr/lib/llvm-20/lib/clang/20/include",
+      "/usr/lib/llvm-21/lib/clang/21/include",
+      "/usr/lib/llvm-22/lib/clang/22/include"
+    ],
+    "environment": {
+      "PATH": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/host-compiler-r1/bin:/usr/bin",
+      "LD_LIBRARY_PATH": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/host-compiler-r1/lib:/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/host-compiler-r1/lib/x86_64-unknown-linux-gnu",
+      "LANG": "C.UTF-8",
+      "LC_ALL": "C.UTF-8"
+    },
+    "cgroup": {
+      "memory_max": 68719476736,
+      "memory_swap_max": 0,
+      "expected_leaf": "/sys/fs/cgroup/system.slice/docker-4dd58ad4560fde2ab9b539e4ef9cab1fac531654e99ad554aff1fce8ae0eae37.scope",
+      "expected_device": 29,
+      "expected_inode": 18151,
+      "expected_boot_id": "af121220-8c6e-4302-9853-f08bf4c50dbb",
+      "expected_cpus": "0-31"
+    },
+    "build_seconds": 28800
+  },
+  "source_and_compiler_reuse": {
+    "mode": "IMMUTABLE_INPUT_PACKAGE_REUSE_ONLY_NO_OBJECT_OR_LIBRARY_REUSE",
+    "requires": "Fresh whole-root/source-lock/tool/stdlib/current-cgroup admission, preserving actual old observations unchanged",
+    "old_r2_source_bodies": 12874,
+    "old_r2_source_body_bytes": 210476555,
+    "old_r2_body_ledger": {
+      "bytes": 5116282,
+      "ctime_ns": 1792100722901989262,
+      "device": 66307,
+      "inode": 30987337,
+      "mtime_ns": 1792100722901989262,
+      "path": "/var/tmp/uwvm-ros-unitree-20261016-r1/llvmros13-admitted-inputs-r2/patched-source-bodies.jsonl",
+      "sha256": "a9fb615940ea2648bdc4d6b6c0e095b542fdab6bbdce4fe15d0af1c90e2ab96e"
+    },
+    "old_r2_actual_subprocesses_started": 0,
+    "old_r2_LLVM_package_built": false
+  },
+  "finite_metadata_collection_complete_for_selected_old_controls": true
+}

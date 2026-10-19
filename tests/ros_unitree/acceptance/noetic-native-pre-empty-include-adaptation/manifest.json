@@ -1,0 +1,54 @@
+{
+  "status": "PRESERVED_SOURCE_ONLY_NOT_EXECUTED_BEFORE_ACTUAL_ABSENT_INCLUDE_INSTALL_ADAPTATION",
+  "files": [
+    {
+      "original": "tests/ros_unitree/prepare_noetic_native.py",
+      "preserved": "tests/ros_unitree/acceptance/noetic-native-pre-empty-include-adaptation/prepare_noetic_native.py",
+      "bytes": 40664,
+      "sha256": "568ce47c7747b3878452ea20bb56a368812b2442cb7715fd4b8c1d97d221c813"
+    },
+    {
+      "original": "tests/ros_unitree/noetic_native_support.py",
+      "preserved": "tests/ros_unitree/acceptance/noetic-native-pre-empty-include-adaptation/noetic_native_support.py",
+      "bytes": 25774,
+      "sha256": "d75507ba3bd25fbc19455fc8948625566c0152c331f3ff58b7b765ee4555ce2c"
+    },
+    {
+      "original": "tests/ros_unitree/NOETIC_NATIVE.md",
+      "preserved": "tests/ros_unitree/acceptance/noetic-native-pre-empty-include-adaptation/NOETIC_NATIVE.md",
+      "bytes": 12741,
+      "sha256": "9a4bbab61e411c8a4c18f462a65a2977424fcc8e12ae99189eb5f85ea3e5dd2b"
+    },
+    {
+      "original": "tests/ros_unitree/NATIVE_LEGACY_ROS1.md",
+      "preserved": "tests/ros_unitree/acceptance/noetic-native-pre-empty-include-adaptation/NATIVE_LEGACY_ROS1.md",
+      "bytes": 15530,
+      "sha256": "0c5b06c6207e9a3f8bcaea5d4f650638c7d03cab2fe6afd593ffb51e369c67cc"
+    },
+    {
+      "original": "tests/ros_unitree/noetic_native.selection.template.json",
+      "preserved": "tests/ros_unitree/acceptance/noetic-native-pre-empty-include-adaptation/noetic_native.selection.template.json",
+      "bytes": 892,
+      "sha256": "f191fe1842c0fb97db312eae3f52e5ee2672a3fe1d6d4857bbc97a5f3029f327"
+    },
+    {
+      "original": "tests/ros_unitree/noetic-native-source-ready-before-peer.json",
+      "preserved": "tests/ros_unitree/acceptance/noetic-native-pre-empty-include-adaptation/noetic-native-source-ready-before-peer.json",
+      "bytes": 5723,
+      "sha256": "5cbfbd6aaf089b7aa6b4f91715047c24258e778ef7fcdef2ceef99d7806c5f2a"
+    },
+    {
+      "original": "tests/ros_unitree/noetic-native-source-ready.json",
+      "preserved": "tests/ros_unitree/acceptance/noetic-native-pre-empty-include-adaptation/noetic-native-source-ready.json",
+      "bytes": 6283,
+      "sha256": "a536da6da0f902dff5d6bf142ef5b230505f4efaa57e29f0e2e1589b36d77e31"
+    },
+    {
+      "original": "tests/ros_unitree/acceptance/noetic-native-independent-source-peer-root.json",
+      "preserved": "tests/ros_unitree/acceptance/noetic-native-pre-empty-include-adaptation/noetic-native-independent-source-peer-root.json",
+      "bytes": 5031,
+      "sha256": "399083df462292ea27733f1a43a1dfda672fc8ee73ecec209678b4f2817be4ec"
+    }
+  ],
+  "reason": "Actual original CMake installs absent include/unitree_legged_msgs directory; preserve prior code/readiness/peer unchanged before narrowly adapting only new owned package directories."
+}

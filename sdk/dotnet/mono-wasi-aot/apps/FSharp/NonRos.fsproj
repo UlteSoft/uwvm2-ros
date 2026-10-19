@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../../Aot.props" />
+  <PropertyGroup><OutputType>Exe</OutputType><AssemblyName>uwvm-aot-fsharp-nonros</AssemblyName><GenerateProgramFile>false</GenerateProgramFile></PropertyGroup>
+  <ItemGroup><Compile Include="NonRos.fs" /></ItemGroup>
+  <Import Project="../../Aot.targets" />
+</Project>

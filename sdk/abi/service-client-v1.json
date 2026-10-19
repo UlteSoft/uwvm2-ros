@@ -1,0 +1,247 @@
+{
+  "schema_version": 1,
+  "extension_version": 1,
+  "original_business_modules_unchanged": true,
+  "authority_source": {
+    "path": "src/uwvm2/uwvm/imported/ros/host.h",
+    "sha256": "af98d37878e4e34e7e2e0ea8a5b099faccbd05bd51cfe066c4083dcf0c14959b"
+  },
+  "authority_contract": "Independent explicit service.available plus live service.call; this extension grants no management or ROS authority.",
+  "output_contract": {
+    "features_bytes": 8,
+    "availability_bytes": 1,
+    "nonzero_error_leaves_output_untouched": true
+  },
+  "maximum_wait_ns": 60000000000,
+  "modules": {
+    "uwvm_ros1_client_v1": {
+      "backend": 1,
+      "function_count": 3,
+      "functions": [
+        {
+          "name": "abi_version",
+          "params": [],
+          "results": [
+            "i32"
+          ]
+        },
+        {
+          "name": "features",
+          "params": [
+            "i64",
+            "i64",
+            "i32",
+            "i64"
+          ],
+          "results": [
+            "i32"
+          ]
+        },
+        {
+          "name": "service_available",
+          "params": [
+            "i64",
+            "i64",
+            "i64",
+            "i32",
+            "i64"
+          ],
+          "results": [
+            "i32"
+          ]
+        }
+      ]
+    },
+    "uwvm_ros2_client_v1": {
+      "backend": 2,
+      "function_count": 3,
+      "functions": [
+        {
+          "name": "abi_version",
+          "params": [],
+          "results": [
+            "i32"
+          ]
+        },
+        {
+          "name": "features",
+          "params": [
+            "i64",
+            "i64",
+            "i32",
+            "i64"
+          ],
+          "results": [
+            "i32"
+          ]
+        },
+        {
+          "name": "service_available",
+          "params": [
+            "i64",
+            "i64",
+            "i64",
+            "i32",
+            "i64"
+          ],
+          "results": [
+            "i32"
+          ]
+        }
+      ]
+    }
+  },
+  "wire_contract": {
+    "bytes": 64,
+    "version": 1,
+    "endianness": "little",
+    "fields": [
+      {
+        "offset": 0,
+        "bytes": 1,
+        "name": "version",
+        "exact": 1
+      },
+      {
+        "offset": 1,
+        "bytes": 1,
+        "name": "command",
+        "values": {
+          "features": 0,
+          "query": 1,
+          "private_retire": 2
+        }
+      },
+      {
+        "offset": 2,
+        "bytes": 1,
+        "name": "backend",
+        "values": [
+          1,
+          2
+        ]
+      },
+      {
+        "offset": 3,
+        "bytes": 1,
+        "name": "private_retirement_scope",
+        "public_exact": 0
+      },
+      {
+        "offset": 4,
+        "bytes": 4,
+        "name": "private_retirement_reason",
+        "public_exact": 0
+      },
+      {
+        "offset": 8,
+        "bytes": 8,
+        "name": "availability_full_handle"
+      },
+      {
+        "offset": 16,
+        "bytes": 8,
+        "name": "source_full_handle"
+      },
+      {
+        "offset": 24,
+        "bytes": 8,
+        "name": "actual_capability_instance"
+      },
+      {
+        "offset": 32,
+        "bytes": 8,
+        "name": "actual_Runtime_lifetime_generation"
+      },
+      {
+        "offset": 40,
+        "bytes": 8,
+        "name": "wait_ns_or_fixed_response_value"
+      },
+      {
+        "offset": 48,
+        "bytes": 16,
+        "name": "reserved",
+        "exact": "all-zero"
+      }
+    ],
+    "transport": "Existing UID/PID/session-authenticated Host-to-Gateway IPC; native session credential stays outside this envelope",
+    "public_requests": [
+      "features:wait0",
+      "query:finite_wait_ns"
+    ],
+    "private_retirement_not_a_Guest_import": true
+  },
+  "capability_contract": {
+    "operation": "service.available",
+    "source_operation": "service.call",
+    "source_field": "service-source-alias",
+    "exact_pair": [
+      "backend",
+      "target",
+      "instance",
+      "Runtime_generation",
+      "resource",
+      "type",
+      "native_identity",
+      "custom_codec_presence_and_value",
+      "all_eight_ROS2_QoS_fields"
+    ],
+    "finite_limits": {
+      "max-inflight": {
+        "exact": 1
+      },
+      "max-request-bytes": {
+        "exact": 64
+      },
+      "max-response-bytes": {
+        "exact": 64
+      },
+      "max-wait-ns": {
+        "minimum": 1,
+        "maximum": 60000000000
+      },
+      "max-native-clients": {
+        "minimum": 1,
+        "maximum": 1024
+      },
+      "max-binding-history": {
+        "minimum": 1,
+        "maximum": 65536
+      },
+      "timeout-ms": {
+        "minimum": 1,
+        "maximum": 60000
+      }
+    },
+    "timeout_relation": "ceil(max-wait-ns/1e6)+1 <= timeout-ms",
+    "native_clients_relation": "max-native-clients <= max-binding-history",
+    "source_call_quota_consumed": false,
+    "retirement_bypasses_query_quota_and_revocation": true,
+    "whole_history_hard_ceiling": 65536
+  },
+  "feature_masks": {
+    "uwvm_ros1_client_v1": 11,
+    "uwvm_ros2_client_v1": 7,
+    "explicit_no_features": 0
+  },
+  "evidence_status": "SOURCE_ONLY_NOT_EXECUTED_NATIVE_AND_GUEST_RETEST_PENDING",
+  "kind": "optional-service-client-v1",
+  "legacy_preservation": {
+    "catalog_path": "sdk/abi/abi-v1.json",
+    "catalog_sha256": "0a13f6c49100173c156eb76acfd35ebe103a40b2a90c752d3d1302c31f875ec0",
+    "original_authority_source": {
+      "path": "src/uwvm2/uwvm/imported/ros/host.h",
+      "sha256": "9c3a1c08fe7ac77c8a3adaf223a70d4ecf6066e9edc092a68c3feeea55c204e1"
+    },
+    "original_module_declaration_sha256": {
+      "uwvm_ros1_v1": "d30f5c779457941a6f65df98ddea6130199c70f1c1fb67ceb18cf4a5b7090479",
+      "uwvm_ros2_v1": "e249b388f62f6402680c206fa8dddd3014aeffaa17febaf4bd937261798163e5"
+    },
+    "scope": "Original81 numeric tuples and whole legacy catalog remain exact historical bytes; current Host source authority is separately bound above"
+  },
+  "prior_authority_source": {
+    "path": "src/uwvm2/uwvm/imported/ros/host.h",
+    "sha256": "e0932a08a6306b85bcea0ff9f7bea89d6c40792957587c5815ff7d61d424eaf2"
+  }
+}

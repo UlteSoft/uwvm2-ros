@@ -1,0 +1,48 @@
+--- A2-original/native_family_inputs.py
++++ A2-current/native_family_inputs.py
+@@ -158,11 +158,13 @@
+         self.upstream=Path(frame.config['upstreams'][selection['upstream']]['root'])
+         self.derived=Path(self.family['derived_tree']['root'])
+         need(self.derived==self.work/'unitree_go' and self.rootfs==self.root/'rootfs' and
+-            self.root in frame.roots,'the complete actual original C52 output root must be selected')
++            self.root in frame.roots and self.rootfs in frame.roots and
++            self.family['derived_tree']['symlinks']==self.family['native_prefix']['symlinks']==0,
++            'complete original C52 output and exact saved execution-SDK root required; GO subtrees have no symlinks')
+         self.native=api.frozen_module(frame.source,frame.frozen,'tests/ros_unitree/noetic_native_support.py','A2_actual_native_ELF_reader')
+         self.catalogs=api.frozen_module(frame.source,frame.frozen,'tests/ros_unitree/independent_cpp_object.py','A2_actual_catalog_comparator')
+         self.products={};self.old_rows={};self.leaves={};self.elf_cache={}
+-        self.catalog_scope=[]
++        self.catalog_scope=[];self.observed_targets={}
+         frame.common.cgroup_preserved(self.report['cgroup_before'],self.report['cgroup_after'])
+         old=self.report['cgroup_before'];cg=frame.config['cgroup']
+         need(old['memory_max']==64*1024**3 and old['memory_swap_max']==0 and old['path']==cg['expected_leaf'] and
+@@ -216,7 +218,8 @@
+             rows=[self.frame.common.catalog(root,self.frame.out/('A2-tree-%03d.jsonl'%len(self.catalog_scope)),self.frame.roots)]
+             self.frame.pin(rows[0]['catalog']['path'])
+         need(len(rows)==1,'one complete current catalog per original root required')
+-        proof=self.catalogs.catalog_pair(self.frame,self.evidence,old,rows[0]);self.catalog_scope.append(proof)
++        proof=self.catalogs.catalog_pair(self.frame,self.evidence,old,rows[0],observed_targets=self.observed_targets)
++        self.catalog_scope.append(proof)
+         if root==self.derived:
+             for raw in self.body(old['catalog'],16*MIB).splitlines():
+                 need(len(raw)<=65536,'bounded original family catalog row required');row=self.library.decode(raw)
+@@ -530,6 +533,11 @@
+         copied[role]=native.copy(role,old,'proof/'+role+'.py')
+     config=library.leaf(frame,evidence.restart,native.leaves,'preparation-configuration',frame.report['configuration'],
+         frame.report['configuration'],frame.out/'library/proof/preparation-configuration.json')
++    # These are exactly catalog-observed external regular aliases, not selected
++    # MD/tool/library inputs. The reviewed comparator owns the finite held-FD
++    # ledger and reopens every source alias/target; normal Frame.finish then
++    # independently repeats all actual saved complete source-root catalogs.
++    catalog_observations=native.catalogs.preserve_catalog_observations(frame,evidence,native.observed_targets)
+     frame.report.update(producer=library.selected(frame,frame.source/'tests/ros_unitree/prepare_native_family_library.py'),
+         helper=library.selected(frame,frame.source/'tests/ros_unitree/library_inputs.py'),
+         native_family_helper=library.selected(frame,frame.source/'tests/ros_unitree/native_family_inputs.py'),
+@@ -539,6 +547,7 @@
+             'profile':copied['profile'],'native_metadata':copied['official-native-metadata'],'binding_receipt':copied['binding-receipt'],
+             'outputs':output_pins,'definitions':definitions,'all24_native_types':sorted(wanted),
+             'preparation_complete_original_root_observations':native.catalog_scope,
++            'preparation_catalog_observed_external_regular_targets':catalog_observations,
+             'preparation_retained_compilation':build_proofs,'preparation_retained_exporter_mapping':mapping,
+             'preparation_original_SDK_report':evidence.pin(report['sdk_parent']),
+             'preparation_actual_execution_SDK_tools':tool_proofs,

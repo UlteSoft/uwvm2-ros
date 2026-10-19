@@ -284,6 +284,7 @@ auto const runtime_log_op_name{[](::uwvm2::runtime::compiler::uwvm_int::optable:
 
 auto const runtime_log_vt_name{[]([[maybe_unused]] curr_operand_stack_value_type vt) constexpr noexcept -> ::uwvm2::utils::container::u8string_view
                                {
+                                   if(static_cast<unsigned>(vt) == 0x69u) { return u8"exnref"; }
                                    switch(vt)
                                    {
                                        case curr_operand_stack_value_type::i32: return u8"i32";
@@ -355,6 +356,9 @@ auto const emit_bytes_to{[&](bytecode_vec_t& dst, ::std::byte const* src, ::std:
                              if(n == 0uz) { return; }
                              ensure_vec_capacity(dst, n);
                              auto out{dst.imp.curr_ptr};
+                             // bytecode [written prefix][space for this emission] capacity_end
+                             // [safe checked size and ensured capacity       ] unsafe (past capacity_end)
+                             // ^^ dst.imp.curr_ptr advances within dst's allocation after ensure_vec_capacity checked this append.
                              dst.imp.curr_ptr += n;
                              ::std::memcpy(out, src, n);
                          }};
@@ -366,6 +370,9 @@ auto const emit_imm_to{[&]<typename T>(bytecode_vec_t& dst, T const& v) constexp
                            static_assert(::std::is_trivially_copyable_v<T>);
                            ensure_vec_capacity(dst, sizeof(T));
                            auto out{dst.imp.curr_ptr};
+                           // bytecode [written prefix][space for this emission] capacity_end
+                           // [safe checked size and ensured capacity       ] unsafe (past capacity_end)
+                           // ^^ dst.imp.curr_ptr advances within dst's allocation after ensure_vec_capacity checked this append.
                            dst.imp.curr_ptr += sizeof(T);
                            ::std::memcpy(out, ::std::addressof(v), sizeof(T));
                        }};
@@ -1948,6 +1955,14 @@ auto const stacktop_commit_pop_n{[&](::std::size_t n) constexpr noexcept
                                      else
                                      {
                                          if(n == 0uz) { return; }
+                                         // The physical vector is unchanged during this commit-only loop.
+                                         // Prove the complete suffix before reading any entry, not just
+                                         // that the vector is nonempty. Dead control entries/joins rebuild
+                                         // their declaration-typed model before ordinary instructions.
+                                         // A failure here is a compiler-model invariant, never a Wasm
+                                         // validation shortcut or permission to clamp its stack effect.
+                                         auto const physical_size{codegen_operand_stack.size()};
+                                         if(n > physical_size) [[unlikely]] { ::fast_io::fast_terminate(); }
 
                                          auto const before_curr_stacktop{curr_stacktop};
                                          auto const before_stacktop_memory_count{stacktop_memory_count};
@@ -1960,13 +1975,11 @@ auto const stacktop_commit_pop_n{[&](::std::size_t n) constexpr noexcept
                                          // Pop from the top; if cache becomes empty, remaining pops consume the memory-only stack.
                                          for(::std::size_t i{}; i != n; ++i)
                                          {
-#if (defined(_DEBUG) || defined(DEBUG)) && defined(UWVM_ENABLE_DETAILED_DEBUG_CHECK)
-                                             if(codegen_operand_stack.empty()) [[unlikely]] { ::uwvm2::utils::debug::trap_and_inform_bug_pos(); }
-#endif
-                                             if(codegen_operand_stack.empty()) { return; }
-
-                                             // Pop i-th value from top (type stack is updated by the caller after this commit).
-                                             auto const vt{codegen_operand_stack.index_unchecked((codegen_operand_stack.size() - 1uz) - i).type};
+                                             // [physical.begin ... suffix[n] ... physical.end)
+                                             // [safe                                        ] i < n <= physical_size.
+                                             //        ^^ index physical_size - 1 - i is formed only after the full suffix proof.
+                                             // This borrows one entry; no element pointer or vector size changes here.
+                                             auto const vt{codegen_operand_stack.index_unchecked((physical_size - 1uz) - i).type};
 
                                              if(!stacktop_enabled_for_vt(vt))
                                              {
@@ -2239,6 +2252,28 @@ auto const stacktop_flush_all_to_operand_stack{[&](bytecode_vec_t& dst) constexp
                                                                      stacktop_memory_count = codegen_operand_stack.size();
                                                                  }};
 
+// A validation frame can start/end with a declared tuple even though no execution
+// edge reaches it. Give later ordinary validation a complete physical accounting
+// model without emitting spills/fills/opfuncs or pretending those values exist.
+// Actual incoming edges keep their previously saved register-ring layout.
+[[maybe_unused]] auto const stacktop_restore_dead_validation_model{[&]() constexpr UWVM_THROWS
+                                                                  {
+                                                                      if constexpr(!stacktop_enabled) { return; }
+                                                                      else
+                                                                      {
+                                                                          if(codegen_reachable) { return; }
+                                                                          // [semantic.begin, semantic.end) belongs to this live validator.
+                                                                          // [safe                         ] copy only its declaration-proven carriers.
+                                                                          //         ^^ assignment owns the physical vector; no guest/body pointer advances.
+                                                                          codegen_operand_stack = operand_stack;
+                                                                          stacktop_reset_currpos_to_begin();
+                                                                          stacktop_memory_count = codegen_operand_stack.size();
+                                                                          stacktop_cache_count = 0uz;
+                                                                          stacktop_cache_i32_count = stacktop_cache_i64_count = 0uz;
+                                                                          stacktop_cache_f32_count = stacktop_cache_f64_count = 0uz;
+                                                                      }
+                                                                  }};
+
 auto const stacktop_prepare_push1_if_reachable{[&](bytecode_vec_t& dst, curr_operand_stack_value_type vt) constexpr UWVM_THROWS
                                                {
                                                    if constexpr(!stacktop_enabled) { return; }
@@ -2440,7 +2475,7 @@ auto const emit_drop_typed_to{
         auto const emit_real_drop{
             [&]() constexpr UWVM_THROWS
             {
-                switch(vt)
+                switch(static_cast<unsigned>(vt) == 0x69u ? curr_operand_stack_value_type::externref : vt)
                 {
                     case curr_operand_stack_value_type::i32:
                     {
@@ -2875,7 +2910,8 @@ auto const emit_local_get_typed_to{
 #endif
         }
 
-        if(!fused_spill_and_local_get) switch(vt)
+        if(!fused_spill_and_local_get)
+            switch(static_cast<unsigned>(vt) == 0x69u ? curr_operand_stack_value_type::externref : vt)
             {
                 case curr_operand_stack_value_type::i32:
                 {
@@ -3296,7 +3332,7 @@ auto const emit_local_set_typed_to{
             if(!is_polymorphic && stacktop_cache_count == 0uz) { stacktop_fill_to_canonical(dst); }
         }
 
-        switch(vt)
+        switch(static_cast<unsigned>(vt) == 0x69u ? curr_operand_stack_value_type::externref : vt)
         {
             case curr_operand_stack_value_type::i32:
             {
@@ -3374,7 +3410,7 @@ auto const emit_local_set_typed_to{
             if(!is_polymorphic && stacktop_cache_count == 0uz) { stacktop_fill_one_from_memory_to(dst); }
         }
 
-        switch(vt)
+        switch(static_cast<unsigned>(vt) == 0x69u ? curr_operand_stack_value_type::externref : vt)
         {
             case curr_operand_stack_value_type::i32:
             {
@@ -3452,7 +3488,7 @@ auto const emit_local_tee_typed_to{
 
         ::std::size_t const site{dst.size()};
 
-        switch(vt)
+        switch(static_cast<unsigned>(vt) == 0x69u ? curr_operand_stack_value_type::externref : vt)
         {
             case curr_operand_stack_value_type::i32:
             {
@@ -3554,11 +3590,142 @@ auto const emit_local_tee_typed_to{
         }
     }};
 
+// Matching edges need no runtime repair. The type/arity proof belongs to the
+// validated target frame; differing layouts still pass the full tuple checks below.
+[[maybe_unused]] auto const stacktop_matches_control_end{[&](block_t const& frame) constexpr noexcept
+{
+    return frame.stacktop_has_end_state && (
+                curr_stacktop.i32_stack_top_curr_pos == frame.stacktop_currpos_at_end.i32_stack_top_curr_pos &&
+                curr_stacktop.i64_stack_top_curr_pos == frame.stacktop_currpos_at_end.i64_stack_top_curr_pos &&
+                curr_stacktop.f32_stack_top_curr_pos == frame.stacktop_currpos_at_end.f32_stack_top_curr_pos &&
+                curr_stacktop.f64_stack_top_curr_pos == frame.stacktop_currpos_at_end.f64_stack_top_curr_pos &&
+                curr_stacktop.v128_stack_top_curr_pos == frame.stacktop_currpos_at_end.v128_stack_top_curr_pos &&
+                stacktop_memory_count == frame.stacktop_memory_count_at_end &&
+                stacktop_cache_count == frame.stacktop_cache_count_at_end &&
+                stacktop_cache_i32_count == frame.stacktop_cache_i32_count_at_end &&
+                stacktop_cache_i64_count == frame.stacktop_cache_i64_count_at_end &&
+                stacktop_cache_f32_count == frame.stacktop_cache_f32_count_at_end &&
+                stacktop_cache_f64_count == frame.stacktop_cache_f64_count_at_end);
+}};
+
+// Matching joins emit nothing. A conflicting fallthrough is materialized and
+// refilled to the already published incoming-edge snapshot before its label.
+[[maybe_unused]] auto const normalize_stacktop_to_control_end{[&]([[maybe_unused]] bytecode_vec_t& dst, [[maybe_unused]] block_t const& frame) constexpr UWVM_THROWS
+{
+    if constexpr(stacktop_enabled && !strict_cf_entry_like_call)
+    {
+        if(codegen_reachable && !is_polymorphic && frame.stacktop_has_end_state)
+        {
+            auto const& target_types{frame.codegen_operand_stack_at_end};
+            auto const& target_pos{frame.stacktop_currpos_at_end};
+            bool const same_state{stacktop_matches_control_end(frame)};
+            if(!same_state)
+            {
+                auto const count{codegen_operand_stack.size()};
+                if(count != target_types.size() || frame.stacktop_memory_count_at_end > count ||
+                   frame.stacktop_cache_count_at_end != count - frame.stacktop_memory_count_at_end) [[unlikely]]
+                { ::fast_io::fast_terminate(); }
+                for(::std::size_t index{}; index != count; ++index)
+                {
+                    if(codegen_operand_stack.index_unchecked(index).type != target_types.index_unchecked(index).type) [[unlikely]]
+                    { ::fast_io::fast_terminate(); }
+                }
+                // [live fallthrough operand frame][cached suffix] -> complete memory tuple.
+                // [safe                            ] the current type stack supplies every spill width.
+                stacktop_flush_all_to_operand_stack(dst);
+                // Empty caches make cursor reassignment a compiler-only operation. The target snapshot
+                // came from a validated branch to this exact frame and has the same carrier tuple.
+                curr_stacktop = target_pos;
+                codegen_operand_stack = target_types;
+                while(stacktop_memory_count != frame.stacktop_memory_count_at_end)
+                {
+                    auto const vt{codegen_operand_stack.index_unchecked(stacktop_memory_count - 1uz).type};
+                    if(!stacktop_enabled_for_vt(vt)) [[unlikely]] { ::fast_io::fast_terminate(); }
+                    auto const begin{stacktop_range_begin_pos(vt)};
+                    auto const end{stacktop_range_end_pos(vt)};
+                    auto const cached{stacktop_cache_count_for_range(begin, end)};
+                    if(cached >= end - begin) [[unlikely]] { ::fast_io::fast_terminate(); }
+                    auto const slot{stacktop_ring_advance_next(stacktop_currpos_for_range(begin, end), cached, begin, end)};
+                    // [fully materialized operand prefix][one complete value] -> cached target suffix.
+                    // [safe                            ^^^^^^^^^^^^^^^^^^^] the validated snapshot bounds each fill.
+                    emit_stacktop_fill1_typed_to(dst, slot, vt);
+                    --stacktop_memory_count;
+                    ++stacktop_cache_count;
+                    ++stacktop_cache_count_ref_for_vt(vt);
+                }
+                if(stacktop_cache_count != frame.stacktop_cache_count_at_end ||
+                   stacktop_cache_i32_count != frame.stacktop_cache_i32_count_at_end ||
+                   stacktop_cache_i64_count != frame.stacktop_cache_i64_count_at_end ||
+                   stacktop_cache_f32_count != frame.stacktop_cache_f32_count_at_end ||
+                   stacktop_cache_f64_count != frame.stacktop_cache_f64_count_at_end) [[unlikely]]
+                { ::fast_io::fast_terminate(); }
+            }
+        }
+    }
+
+} };
+
+[[maybe_unused]] auto const prepare_control_end_edge{[&](bytecode_vec_t& dst, [[maybe_unused]] block_t& frame) constexpr UWVM_THROWS -> bool
+{
+    auto const before{dst.size()};
+    if constexpr(stacktop_enabled && !strict_cf_entry_like_call)
+    {
+        if(codegen_reachable && !is_polymorphic)
+        {
+            normalize_stacktop_to_control_end(dst, frame);
+            if(!frame.stacktop_has_end_state)
+            {
+                frame.stacktop_has_end_state = true;
+                frame.stacktop_currpos_at_end = curr_stacktop;
+                frame.stacktop_memory_count_at_end = stacktop_memory_count;
+                frame.stacktop_cache_count_at_end = stacktop_cache_count;
+                frame.stacktop_cache_i32_count_at_end = stacktop_cache_i32_count;
+                frame.stacktop_cache_i64_count_at_end = stacktop_cache_i64_count;
+                frame.stacktop_cache_f32_count_at_end = stacktop_cache_f32_count;
+                frame.stacktop_cache_f64_count_at_end = stacktop_cache_f64_count;
+                frame.codegen_operand_stack_at_end = codegen_operand_stack;
+            }
+        }
+    }
+    return dst.size() != before;
+}};
+
+[[maybe_unused]] auto const control_end_frame{[&](::std::size_t label_id) constexpr noexcept -> block_t*
+{
+    if(label_id >= labels.size()) { ::fast_io::fast_terminate(); }
+    auto const index{labels.index_unchecked(label_id).end_frame_index};
+    if(index >= control_flow_stack.size()) { return nullptr; }
+    auto& frame{control_flow_stack.index_unchecked(index)};
+    return frame.end_label_id == label_id ? ::std::addressof(frame) : nullptr;
+}};
+
+struct control_edge_model_snapshot
+{
+    decltype(curr_stacktop) positions;
+    ::std::size_t memory, cache, i32, i64, f32, f64;
+    decltype(codegen_operand_stack) types;
+    bool polymorphic, reachable;
+};
+[[maybe_unused]] auto const save_control_edge_model{[&]() constexpr UWVM_THROWS
+{
+    return control_edge_model_snapshot{curr_stacktop, stacktop_memory_count, stacktop_cache_count,
+        stacktop_cache_i32_count, stacktop_cache_i64_count, stacktop_cache_f32_count, stacktop_cache_f64_count,
+        codegen_operand_stack, is_polymorphic, codegen_reachable};
+}};
+[[maybe_unused]] auto const restore_control_edge_model{[&](control_edge_model_snapshot const& saved) constexpr UWVM_THROWS
+{
+    curr_stacktop = saved.positions; stacktop_memory_count = saved.memory; stacktop_cache_count = saved.cache;
+    stacktop_cache_i32_count = saved.i32; stacktop_cache_i64_count = saved.i64;
+    stacktop_cache_f32_count = saved.f32; stacktop_cache_f64_count = saved.f64;
+    codegen_operand_stack = saved.types; is_polymorphic = saved.polymorphic; codegen_reachable = saved.reachable;
+}};
+
 // Branch emission records a relative-offset placeholder rather than computing it immediately because
 // targets may be in thunks appended after main bytecode.
 auto const emit_br_to{[&](bytecode_vec_t& dst, ::std::size_t label_id, bool dst_is_thunk) constexpr UWVM_THROWS
                       {
                           namespace translate = ::uwvm2::runtime::compiler::uwvm_int::optable::translate;
+                          if(auto* frame{control_end_frame(label_id)}) { prepare_control_end_edge(dst, *frame); }
                           if(runtime_log_on) [[unlikely]]
                           {
                               ++runtime_log_stats.cf_br_count;
@@ -3581,6 +3748,29 @@ auto const emit_br_to{[&](bytecode_vec_t& dst, ::std::size_t label_id, bool dst_
                           emit_opfunc_to(dst, translate::get_uwvmint_br_fptr_from_tuple<CompileOption>(curr_stacktop, interpreter_tuple));
                           emit_ptr_label_placeholder(label_id, dst_is_thunk);
                       }};
+
+
+// A conditional/direct table edge repairs only its taken path. Do not rotate or
+// spill the still-live fallthrough model, or overwrite an earlier target contract.
+[[maybe_unused]] auto const control_end_branch_target{[&](::std::size_t label_id) constexpr UWVM_THROWS -> ::std::size_t
+{
+    if constexpr(stacktop_enabled && !strict_cf_entry_like_call)
+    {
+        if(auto* frame{control_end_frame(label_id)}; frame != nullptr && codegen_reachable && !is_polymorphic)
+        {
+            if(!frame->stacktop_has_end_state) { prepare_control_end_edge(thunks, *frame); return label_id; }
+            if(!stacktop_matches_control_end(*frame))
+            {
+                auto const saved{save_control_edge_model()};
+                auto const thunk{new_label(true)}; set_label_offset(thunk, thunks.size());
+                emit_br_to(thunks, label_id, true);
+                restore_control_edge_model(saved);
+                return thunk;
+            }
+        }
+    }
+    return label_id;
+}};
 
 [[maybe_unused]] auto const emit_br_to_with_stacktop_transform{
     [&](bytecode_vec_t& dst, ::std::size_t label_id, bool dst_is_thunk) constexpr UWVM_THROWS
@@ -3640,3 +3830,4 @@ auto const emit_return_to{[&](bytecode_vec_t& dst) constexpr UWVM_THROWS
                               stacktop_flush_all_to_operand_stack(dst);
                               emit_opfunc_to(dst, translate::get_uwvmint_return_fptr_from_tuple<CompileOption>(curr_stacktop, interpreter_tuple));
                           }};
+

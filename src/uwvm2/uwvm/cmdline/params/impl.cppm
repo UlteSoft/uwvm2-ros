@@ -1,4 +1,4 @@
-/*************************************************************
+﻿/*************************************************************
  * UlteSoft WebAssembly Virtual Machine (Version 2)          *
  * Copyright (c) 2025-present UlteSoft. All rights reserved. *
  * Licensed under the APL-2.0 License (see LICENSE file).    *
@@ -33,6 +33,7 @@ export import :mode;
 export import :debug_test;
 
 // wasm
+export import :security;
 export import :wasm_set_main_module_name;
 export import :wasm_set_start_func;
 export import :wasm_preload_library;
@@ -55,8 +56,10 @@ export import :runtime_scheduling_policy;
 // partition graph unconditional; backend #if guards belong in each partition's .h.
 export import :runtime_llvm_jit_policy;
 export import :runtime_llvm_jit_full_policy;
+export import :runtime_llvm_jit_exception_dispatch;
 export import :runtime_llvm_jit_call_stack;
 export import :runtime_llvm_jit_cache_path;
+export import :runtime_llvm_jit_cache_seal_process;
 export import :runtime_int;
 export import :runtime_uwvm_int_disable_loop_unwind;
 export import :runtime_uwvm_int_set_opcode_conbination_level;
@@ -77,6 +80,7 @@ export import :wasip1_allow_overlapping_mount_paths;
 export import :wasip1_global_set_argv0;
 export import :wasip1_global_force_args;
 export import :wasip1_global_noinherit_system_environment;
+export import :wasip1_permissions;
 export import :wasip1_global_delete_system_environment;
 export import :wasip1_global_add_or_replace_environment;
 export import :wasip1_global_socket_tcp_listen;
@@ -134,6 +138,9 @@ export import :log_convert_warn_to_fatal;
 export import :log_verbose;
 export import :log_win32_use_ansi;
 
+export import :ros;
+export import :wasi_threads;
+export import :wasi_thread_signals;
 #ifndef UWVM_MODULE
 # define UWVM_MODULE
 #endif

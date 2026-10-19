@@ -1,0 +1,474 @@
+{
+  "format": "uwvm-unitree-source-build-recipes-v1",
+  "status": "SOURCE_RECIPES_NOT_EXECUTED",
+  "sequential": true,
+  "root_memory_max_bytes": 68719476736,
+  "root_swap_max_bytes": 0,
+  "jobs": 1,
+  "permissions": "No recipe grants ROS rights. Root must separately bind exact actual Worker/session/Gateway/native witnesses and stdio-only WASI.",
+  "commands": [
+    {
+      "id": "crc_contract-native-compile",
+      "argv": [
+        "{HOST_CC}",
+        "-std=c11",
+        "-O1",
+        "-UNDEBUG",
+        "-I{SOURCE}/sdk/robots/unitree/include",
+        "-MD",
+        "-MF",
+        "{OUT}/crc_contract.d",
+        "-MT",
+        "{OUT}/crc_contract.o",
+        "-c",
+        "{SOURCE}/sdk/robots/unitree/tests/crc_contract.c",
+        "-o",
+        "{OUT}/crc_contract.o"
+      ],
+      "cwd": "{SOURCE}",
+      "scope": "MATHEMATICAL_MODEL_NOT_NATIVE_UNITREE_ORACLE"
+    },
+    {
+      "id": "crc_contract-native-link",
+      "argv": [
+        "{HOST_CC}",
+        "{OUT}/crc_contract.o",
+        "-o",
+        "{OUT}/crc_contract"
+      ],
+      "cwd": "{SOURCE}"
+    },
+    {
+      "id": "crc_contract-native-run",
+      "argv": [
+        "{OUT}/crc_contract"
+      ],
+      "cwd": "{OUT}",
+      "expected_exit": 0,
+      "scope": "MATHEMATICAL_MODEL_ONLY"
+    },
+    {
+      "id": "topic_rpc_contract-native-compile",
+      "argv": [
+        "{HOST_CC}",
+        "-std=c11",
+        "-O1",
+        "-UNDEBUG",
+        "-I{SOURCE}/sdk/robots/unitree/include",
+        "-MD",
+        "-MF",
+        "{OUT}/topic_rpc_contract.d",
+        "-MT",
+        "{OUT}/topic_rpc_contract.o",
+        "-c",
+        "{SOURCE}/sdk/robots/unitree/tests/topic_rpc_contract.c",
+        "-o",
+        "{OUT}/topic_rpc_contract.o"
+      ],
+      "cwd": "{SOURCE}",
+      "scope": "MATHEMATICAL_MODEL_NOT_NATIVE_UNITREE_ORACLE"
+    },
+    {
+      "id": "topic_rpc_contract-native-link",
+      "argv": [
+        "{HOST_CC}",
+        "{OUT}/topic_rpc_contract.o",
+        "-o",
+        "{OUT}/topic_rpc_contract"
+      ],
+      "cwd": "{SOURCE}"
+    },
+    {
+      "id": "topic_rpc_contract-native-run",
+      "argv": [
+        "{OUT}/topic_rpc_contract"
+      ],
+      "cwd": "{OUT}",
+      "expected_exit": 0,
+      "scope": "MATHEMATICAL_MODEL_ONLY"
+    },
+    {
+      "id": "direct-go2-default-denied-compile-link",
+      "argv": [
+        "{WASI_CXX}",
+        "--target=wasm32-wasi",
+        "--sysroot={WASI_SYSROOT}",
+        "-std=c++20",
+        "-O3",
+        "-g0",
+        "-UNDEBUG",
+        "-fno-fast-math",
+        "-ffp-contract=off",
+        "-fno-rtti",
+        "-fno-exceptions",
+        "-DUWVM_UNITREE_DIRECT_ENABLED=0",
+        "-DUWVM_UNITREE_MODULAR_MOTION=0",
+        "-I{SOURCE}/sdk/include",
+        "-I{SOURCE}/sdk/robots/unitree/include",
+        "-I{GENERATED_GO}",
+        "-I{SOURCE}/third-parties/fast_io/include",
+        "-I{SOURCE}/third-parties/bizwen/include",
+        "-I{SOURCE}/third-parties/boost_unordered/include",
+        "-MD",
+        "-MF",
+        "{OUT}/direct-go2-default-denied.d",
+        "-MT",
+        "{OUT}/direct-go2-default-denied.wasm",
+        "{SOURCE}/sdk/robots/unitree/examples/direct_go2.cpp",
+        "-Wl,--threads=1",
+        "-Wl,--initial-memory=131072",
+        "-Wl,--max-memory=16777216",
+        "-Wl,-z,stack-size=65536",
+        "-o",
+        "{OUT}/direct-go2-default-denied.wasm"
+      ],
+      "cwd": "{SOURCE}",
+      "scope": "FRESH_REAL_SDK_GUEST_NOT_EXECUTED"
+    },
+    {
+      "id": "direct-go2-default-denied-full-validate",
+      "argv": [
+        "{WASM_TOOLS}",
+        "validate",
+        "{OUT}/direct-go2-default-denied.wasm"
+      ],
+      "cwd": "{OUT}",
+      "scope": "WASM_VALIDATION_NOT_DELIVERY"
+    },
+    {
+      "id": "direct-go2-positive-compile-link",
+      "argv": [
+        "{WASI_CXX}",
+        "--target=wasm32-wasi",
+        "--sysroot={WASI_SYSROOT}",
+        "-std=c++20",
+        "-O3",
+        "-g0",
+        "-UNDEBUG",
+        "-fno-fast-math",
+        "-ffp-contract=off",
+        "-fno-rtti",
+        "-fno-exceptions",
+        "-DUWVM_UNITREE_DIRECT_ENABLED=1",
+        "-DUWVM_UNITREE_MODULAR_MOTION=0",
+        "-I{SOURCE}/sdk/include",
+        "-I{SOURCE}/sdk/robots/unitree/include",
+        "-I{GENERATED_GO}",
+        "-I{SOURCE}/third-parties/fast_io/include",
+        "-I{SOURCE}/third-parties/bizwen/include",
+        "-I{SOURCE}/third-parties/boost_unordered/include",
+        "-MD",
+        "-MF",
+        "{OUT}/direct-go2-positive.d",
+        "-MT",
+        "{OUT}/direct-go2-positive.wasm",
+        "{SOURCE}/sdk/robots/unitree/examples/direct_go2.cpp",
+        "-Wl,--threads=1",
+        "-Wl,--initial-memory=131072",
+        "-Wl,--max-memory=16777216",
+        "-Wl,-z,stack-size=65536",
+        "-o",
+        "{OUT}/direct-go2-positive.wasm"
+      ],
+      "cwd": "{SOURCE}",
+      "scope": "FRESH_REAL_SDK_GUEST_NOT_EXECUTED"
+    },
+    {
+      "id": "direct-go2-positive-full-validate",
+      "argv": [
+        "{WASM_TOOLS}",
+        "validate",
+        "{OUT}/direct-go2-positive.wasm"
+      ],
+      "cwd": "{OUT}",
+      "scope": "WASM_VALIDATION_NOT_DELIVERY"
+    },
+    {
+      "id": "direct-go2-modular-positive-compile-link",
+      "argv": [
+        "{WASI_CXX}",
+        "--target=wasm32-wasi",
+        "--sysroot={WASI_SYSROOT}",
+        "-std=c++20",
+        "-O3",
+        "-g0",
+        "-UNDEBUG",
+        "-fno-fast-math",
+        "-ffp-contract=off",
+        "-fno-rtti",
+        "-fno-exceptions",
+        "-DUWVM_UNITREE_DIRECT_ENABLED=1",
+        "-DUWVM_UNITREE_MODULAR_MOTION=1",
+        "-I{SOURCE}/sdk/include",
+        "-I{SOURCE}/sdk/robots/unitree/include",
+        "-I{SOURCE}/sdk/examples/robotics_modular",
+        "-I{GENERATED_GO}",
+        "-I{SOURCE}/third-parties/fast_io/include",
+        "-I{SOURCE}/third-parties/bizwen/include",
+        "-I{SOURCE}/third-parties/boost_unordered/include",
+        "-MD",
+        "-MF",
+        "{OUT}/direct-go2-modular-positive.d",
+        "-MT",
+        "{OUT}/direct-go2-modular-positive.wasm",
+        "{SOURCE}/sdk/robots/unitree/examples/direct_go2.cpp",
+        "-Wl,--threads=1",
+        "-Wl,--initial-memory=131072",
+        "-Wl,--max-memory=16777216",
+        "-Wl,-z,stack-size=65536",
+        "-o",
+        "{OUT}/direct-go2-modular-positive.wasm"
+      ],
+      "cwd": "{SOURCE}",
+      "scope": "FRESH_REAL_SDK_GUEST_NOT_EXECUTED"
+    },
+    {
+      "id": "direct-go2-modular-positive-full-validate",
+      "argv": [
+        "{WASM_TOOLS}",
+        "validate",
+        "{OUT}/direct-go2-modular-positive.wasm"
+      ],
+      "cwd": "{OUT}",
+      "scope": "WASM_VALIDATION_NOT_DELIVERY"
+    },
+    {
+      "id": "direct-hold-go-default-denied-compile-link",
+      "argv": [
+        "{WASI_CXX}",
+        "--target=wasm32-wasi",
+        "--sysroot={WASI_SYSROOT}",
+        "-std=c++20",
+        "-O3",
+        "-g0",
+        "-UNDEBUG",
+        "-fno-fast-math",
+        "-ffp-contract=off",
+        "-fno-rtti",
+        "-fno-exceptions",
+        "-DUWVM_UNITREE_HOLD_ENABLED=0",
+        "-DUWVM_UNITREE_HOLD_FAMILY=1",
+        "-I{SOURCE}/sdk/include",
+        "-I{SOURCE}/sdk/robots/unitree/include",
+        "-I{GENERATED_GO}",
+        "-I{SOURCE}/third-parties/fast_io/include",
+        "-I{SOURCE}/third-parties/bizwen/include",
+        "-I{SOURCE}/third-parties/boost_unordered/include",
+        "-MD",
+        "-MF",
+        "{OUT}/direct-hold-go-default-denied.d",
+        "-MT",
+        "{OUT}/direct-hold-go-default-denied.wasm",
+        "{SOURCE}/sdk/robots/unitree/examples/direct_hold.cpp",
+        "-Wl,--threads=1",
+        "-Wl,--initial-memory=131072",
+        "-Wl,--max-memory=16777216",
+        "-Wl,-z,stack-size=65536",
+        "-o",
+        "{OUT}/direct-hold-go-default-denied.wasm"
+      ],
+      "cwd": "{SOURCE}",
+      "scope": "FRESH_REAL_SDK_GUEST_NOT_EXECUTED"
+    },
+    {
+      "id": "direct-hold-go-default-denied-full-validate",
+      "argv": [
+        "{WASM_TOOLS}",
+        "validate",
+        "{OUT}/direct-hold-go-default-denied.wasm"
+      ],
+      "cwd": "{OUT}",
+      "scope": "WASM_VALIDATION_NOT_DELIVERY"
+    },
+    {
+      "id": "direct-hold-go-positive-compile-link",
+      "argv": [
+        "{WASI_CXX}",
+        "--target=wasm32-wasi",
+        "--sysroot={WASI_SYSROOT}",
+        "-std=c++20",
+        "-O3",
+        "-g0",
+        "-UNDEBUG",
+        "-fno-fast-math",
+        "-ffp-contract=off",
+        "-fno-rtti",
+        "-fno-exceptions",
+        "-DUWVM_UNITREE_HOLD_ENABLED=1",
+        "-DUWVM_UNITREE_HOLD_FAMILY=1",
+        "-I{SOURCE}/sdk/include",
+        "-I{SOURCE}/sdk/robots/unitree/include",
+        "-I{GENERATED_GO}",
+        "-I{SOURCE}/third-parties/fast_io/include",
+        "-I{SOURCE}/third-parties/bizwen/include",
+        "-I{SOURCE}/third-parties/boost_unordered/include",
+        "-MD",
+        "-MF",
+        "{OUT}/direct-hold-go-positive.d",
+        "-MT",
+        "{OUT}/direct-hold-go-positive.wasm",
+        "{SOURCE}/sdk/robots/unitree/examples/direct_hold.cpp",
+        "-Wl,--threads=1",
+        "-Wl,--initial-memory=131072",
+        "-Wl,--max-memory=16777216",
+        "-Wl,-z,stack-size=65536",
+        "-o",
+        "{OUT}/direct-hold-go-positive.wasm"
+      ],
+      "cwd": "{SOURCE}",
+      "scope": "FRESH_REAL_SDK_GUEST_NOT_EXECUTED"
+    },
+    {
+      "id": "direct-hold-go-positive-full-validate",
+      "argv": [
+        "{WASM_TOOLS}",
+        "validate",
+        "{OUT}/direct-hold-go-positive.wasm"
+      ],
+      "cwd": "{OUT}",
+      "scope": "WASM_VALIDATION_NOT_DELIVERY"
+    },
+    {
+      "id": "direct-hold-hg-default-denied-compile-link",
+      "argv": [
+        "{WASI_CXX}",
+        "--target=wasm32-wasi",
+        "--sysroot={WASI_SYSROOT}",
+        "-std=c++20",
+        "-O3",
+        "-g0",
+        "-UNDEBUG",
+        "-fno-fast-math",
+        "-ffp-contract=off",
+        "-fno-rtti",
+        "-fno-exceptions",
+        "-DUWVM_UNITREE_HOLD_ENABLED=0",
+        "-DUWVM_UNITREE_HOLD_FAMILY=2",
+        "-I{SOURCE}/sdk/include",
+        "-I{SOURCE}/sdk/robots/unitree/include",
+        "-I{GENERATED_HG}",
+        "-I{SOURCE}/third-parties/fast_io/include",
+        "-I{SOURCE}/third-parties/bizwen/include",
+        "-I{SOURCE}/third-parties/boost_unordered/include",
+        "-MD",
+        "-MF",
+        "{OUT}/direct-hold-hg-default-denied.d",
+        "-MT",
+        "{OUT}/direct-hold-hg-default-denied.wasm",
+        "{SOURCE}/sdk/robots/unitree/examples/direct_hold.cpp",
+        "-Wl,--threads=1",
+        "-Wl,--initial-memory=131072",
+        "-Wl,--max-memory=16777216",
+        "-Wl,-z,stack-size=65536",
+        "-o",
+        "{OUT}/direct-hold-hg-default-denied.wasm"
+      ],
+      "cwd": "{SOURCE}",
+      "scope": "FRESH_REAL_SDK_GUEST_NOT_EXECUTED"
+    },
+    {
+      "id": "direct-hold-hg-default-denied-full-validate",
+      "argv": [
+        "{WASM_TOOLS}",
+        "validate",
+        "{OUT}/direct-hold-hg-default-denied.wasm"
+      ],
+      "cwd": "{OUT}",
+      "scope": "WASM_VALIDATION_NOT_DELIVERY"
+    },
+    {
+      "id": "direct-hold-hg-positive-compile-link",
+      "argv": [
+        "{WASI_CXX}",
+        "--target=wasm32-wasi",
+        "--sysroot={WASI_SYSROOT}",
+        "-std=c++20",
+        "-O3",
+        "-g0",
+        "-UNDEBUG",
+        "-fno-fast-math",
+        "-ffp-contract=off",
+        "-fno-rtti",
+        "-fno-exceptions",
+        "-DUWVM_UNITREE_HOLD_ENABLED=1",
+        "-DUWVM_UNITREE_HOLD_FAMILY=2",
+        "-I{SOURCE}/sdk/include",
+        "-I{SOURCE}/sdk/robots/unitree/include",
+        "-I{GENERATED_HG}",
+        "-I{SOURCE}/third-parties/fast_io/include",
+        "-I{SOURCE}/third-parties/bizwen/include",
+        "-I{SOURCE}/third-parties/boost_unordered/include",
+        "-MD",
+        "-MF",
+        "{OUT}/direct-hold-hg-positive.d",
+        "-MT",
+        "{OUT}/direct-hold-hg-positive.wasm",
+        "{SOURCE}/sdk/robots/unitree/examples/direct_hold.cpp",
+        "-Wl,--threads=1",
+        "-Wl,--initial-memory=131072",
+        "-Wl,--max-memory=16777216",
+        "-Wl,-z,stack-size=65536",
+        "-o",
+        "{OUT}/direct-hold-hg-positive.wasm"
+      ],
+      "cwd": "{SOURCE}",
+      "scope": "FRESH_REAL_SDK_GUEST_NOT_EXECUTED"
+    },
+    {
+      "id": "direct-hold-hg-positive-full-validate",
+      "argv": [
+        "{WASM_TOOLS}",
+        "validate",
+        "{OUT}/direct-hold-hg-positive.wasm"
+      ],
+      "cwd": "{OUT}",
+      "scope": "WASM_VALIDATION_NOT_DELIVERY"
+    },
+    {
+      "id": "hold_contract-native-compile",
+      "argv": [
+        "{HOST_CC}",
+        "-std=c11",
+        "-O1",
+        "-UNDEBUG",
+        "-I{SOURCE}/sdk/robots/unitree/include",
+        "-MD",
+        "-MF",
+        "{OUT}/hold_contract.d",
+        "-MT",
+        "{OUT}/hold_contract.o",
+        "-c",
+        "{SOURCE}/sdk/robots/unitree/tests/hold_contract.c",
+        "-o",
+        "{OUT}/hold_contract.o"
+      ],
+      "cwd": "{SOURCE}",
+      "scope": "MATHEMATICAL_MODEL_NOT_NATIVE_UNITREE_ORACLE"
+    },
+    {
+      "id": "hold_contract-native-link",
+      "argv": [
+        "{HOST_CC}",
+        "{OUT}/hold_contract.o",
+        "-o",
+        "{OUT}/hold_contract"
+      ],
+      "cwd": "{SOURCE}"
+    },
+    {
+      "id": "hold_contract-native-run",
+      "argv": [
+        "{OUT}/hold_contract"
+      ],
+      "cwd": "{OUT}",
+      "expected_exit": 0,
+      "scope": "MATHEMATICAL_MODEL_ONLY"
+    }
+  ],
+  "actual_runtime_driver": "tests/ros_unitree explicit direct_runtime command under Root-selected actual source/native/identity qualification; no speculative Worker CLI added here",
+  "default_expected": "PASS_UNITREE_DIRECT_DEFAULT_DENIED, each real alias open13, zero LowCmd observed independently",
+  "positive_expected": "Independent actual typed/native delivery, CRC/state/physics witnesses: UCK1 Go2 stand or UHL1 explicit-map GO/HG sampled hold. Guest markers or validation alone do not establish delivery.",
+  "native_link_note": "The selected ordinary native C compiler links these single-object/no-LTO C models serially. Root supplies any linker-specific thread flag only when supported; no GNU bfd --threads assumption.",
+  "controller_float_flags": "All actual matched native/Guest controller recipes use -O3 -fno-fast-math -ffp-contract=off. Independent mathematical CRC/RPC/hold source models retain O1.",
+  "modular_preload_recipe": "sdk/examples/robotics_modular/unitree-preload-recipes.json; actual callbacks then motion libraries require separately pinned artifacts and disabled ROS/WASI, exact4 scalar motion imports; root only publishes after checked motion_end."
+}

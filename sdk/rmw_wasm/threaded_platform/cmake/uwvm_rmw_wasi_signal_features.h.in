@@ -1,0 +1,7 @@
+// SPDX-License-Identifier: Apache-2.0
+#ifndef UWVM_RMW_WASI_SIGNAL_FEATURES_H
+#define UWVM_RMW_WASI_SIGNAL_FEATURES_H
+// Generated only from a fresh genuine executable compile-and-link probe.
+// Absent/disabled support is 0; callers cannot assert a successful probe.
+#cmakedefine01 UWVM_RMW_WASI_SIGNAL_P1_API
+#endif

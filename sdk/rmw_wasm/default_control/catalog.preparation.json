@@ -1,0 +1,356 @@
+{
+  "format": "uwvm-ros-original-node-control-c-cpp-v1",
+  "types": [
+    {
+      "ros_version": 2,
+      "type": "builtin_interfaces/msg/Time",
+      "file": "original/builtin_interfaces/msg/Time.msg",
+      "registered": false
+    },
+    {
+      "ros_version": 2,
+      "type": "rcl_interfaces/msg/FloatingPointRange",
+      "file": "original/rcl_interfaces/msg/FloatingPointRange.msg",
+      "registered": false
+    },
+    {
+      "ros_version": 2,
+      "type": "rcl_interfaces/msg/IntegerRange",
+      "file": "original/rcl_interfaces/msg/IntegerRange.msg",
+      "registered": false
+    },
+    {
+      "ros_version": 2,
+      "type": "rcl_interfaces/msg/ListParametersResult",
+      "file": "original/rcl_interfaces/msg/ListParametersResult.msg",
+      "registered": false,
+      "bounds": {
+        "names": {
+          "string": 64,
+          "sequence": 4
+        },
+        "prefixes": {
+          "string": 64,
+          "sequence": 4
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "rcl_interfaces/msg/Log",
+      "file": "original/rcl_interfaces/msg/Log.msg",
+      "registered": true,
+      "bounds": {
+        "name": {
+          "string": 128
+        },
+        "msg": {
+          "string": 1024
+        },
+        "file": {
+          "string": 256
+        },
+        "function": {
+          "string": 128
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "rcl_interfaces/msg/Parameter",
+      "file": "original/rcl_interfaces/msg/Parameter.msg",
+      "registered": false,
+      "bounds": {
+        "name": {
+          "string": 64
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "rcl_interfaces/msg/ParameterDescriptor",
+      "file": "original/rcl_interfaces/msg/ParameterDescriptor.msg",
+      "registered": false,
+      "bounds": {
+        "name": {
+          "string": 64
+        },
+        "description": {
+          "string": 128
+        },
+        "additional_constraints": {
+          "string": 128
+        },
+        "floating_point_range": {
+          "sequence": 1
+        },
+        "integer_range": {
+          "sequence": 1
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "rcl_interfaces/msg/ParameterEvent",
+      "file": "original/rcl_interfaces/msg/ParameterEvent.msg",
+      "registered": true,
+      "bounds": {
+        "node": {
+          "string": 64
+        },
+        "new_parameters": {
+          "sequence": 4
+        },
+        "changed_parameters": {
+          "sequence": 4
+        },
+        "deleted_parameters": {
+          "sequence": 4
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "rcl_interfaces/msg/ParameterType",
+      "file": "original/rcl_interfaces/msg/ParameterType.msg",
+      "registered": false
+    },
+    {
+      "ros_version": 2,
+      "type": "rcl_interfaces/msg/ParameterValue",
+      "file": "original/rcl_interfaces/msg/ParameterValue.msg",
+      "registered": false,
+      "bounds": {
+        "string_value": {
+          "string": 128
+        },
+        "byte_array_value": {
+          "sequence": 8
+        },
+        "bool_array_value": {
+          "sequence": 8
+        },
+        "integer_array_value": {
+          "sequence": 8
+        },
+        "double_array_value": {
+          "sequence": 8
+        },
+        "string_array_value": {
+          "string": 64,
+          "sequence": 4
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "rcl_interfaces/msg/SetParametersResult",
+      "file": "original/rcl_interfaces/msg/SetParametersResult.msg",
+      "registered": false,
+      "bounds": {
+        "reason": {
+          "string": 64
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "rcl_interfaces/srv/DescribeParameters",
+      "file": "original/rcl_interfaces/srv/DescribeParameters.srv",
+      "registered": true,
+      "bounds": {
+        "request.names": {
+          "string": 64,
+          "sequence": 4
+        },
+        "response.descriptors": {
+          "sequence": 4
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "rcl_interfaces/srv/GetParameterTypes",
+      "file": "original/rcl_interfaces/srv/GetParameterTypes.srv",
+      "registered": true,
+      "bounds": {
+        "request.names": {
+          "string": 64,
+          "sequence": 4
+        },
+        "response.types": {
+          "sequence": 4
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "rcl_interfaces/srv/GetParameters",
+      "file": "original/rcl_interfaces/srv/GetParameters.srv",
+      "registered": true,
+      "bounds": {
+        "request.names": {
+          "string": 64,
+          "sequence": 4
+        },
+        "response.values": {
+          "sequence": 4
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "rcl_interfaces/srv/ListParameters",
+      "file": "original/rcl_interfaces/srv/ListParameters.srv",
+      "registered": true,
+      "bounds": {
+        "request.prefixes": {
+          "string": 64,
+          "sequence": 4
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "rcl_interfaces/srv/SetParameters",
+      "file": "original/rcl_interfaces/srv/SetParameters.srv",
+      "registered": true,
+      "bounds": {
+        "request.parameters": {
+          "sequence": 4
+        },
+        "response.results": {
+          "sequence": 4
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "rcl_interfaces/srv/SetParametersAtomically",
+      "file": "original/rcl_interfaces/srv/SetParametersAtomically.srv",
+      "registered": true,
+      "bounds": {
+        "request.parameters": {
+          "sequence": 4
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "service_msgs/msg/ServiceEventInfo",
+      "file": "original/service_msgs/msg/ServiceEventInfo.msg",
+      "registered": false
+    },
+    {
+      "ros_version": 2,
+      "type": "type_description_interfaces/msg/Field",
+      "file": "original/type_description_interfaces/msg/Field.msg",
+      "registered": false,
+      "bounds": {
+        "name": {
+          "string": 64
+        },
+        "default_value": {
+          "string": 64
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "type_description_interfaces/msg/FieldType",
+      "file": "original/type_description_interfaces/msg/FieldType.msg",
+      "registered": false,
+      "bounds": {
+        "nested_type_name": {
+          "string": 255
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "type_description_interfaces/msg/IndividualTypeDescription",
+      "file": "original/type_description_interfaces/msg/IndividualTypeDescription.msg",
+      "registered": false,
+      "bounds": {
+        "type_name": {
+          "string": 255
+        },
+        "fields": {
+          "sequence": 10
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "type_description_interfaces/msg/KeyValue",
+      "file": "original/type_description_interfaces/msg/KeyValue.msg",
+      "registered": false,
+      "bounds": {
+        "key": {
+          "string": 64
+        },
+        "value": {
+          "string": 64
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "type_description_interfaces/msg/TypeDescription",
+      "file": "original/type_description_interfaces/msg/TypeDescription.msg",
+      "registered": false,
+      "bounds": {
+        "referenced_type_descriptions": {
+          "sequence": 11
+        }
+      },
+      "wire_limits": {
+        "message": 32768
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "type_description_interfaces/msg/TypeSource",
+      "file": "original/type_description_interfaces/msg/TypeSource.msg",
+      "registered": false,
+      "bounds": {
+        "type_name": {
+          "string": 255
+        },
+        "encoding": {
+          "string": 16
+        },
+        "raw_file_contents": {
+          "string": 6162,
+          "encoding": "raw_bytes"
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "type_description_interfaces/srv/GetTypeDescription",
+      "file": "original/type_description_interfaces/srv/GetTypeDescription.srv",
+      "registered": true,
+      "bounds": {
+        "request.type_name": {
+          "string": 64
+        },
+        "request.type_hash": {
+          "string": 71
+        },
+        "response.failure_reason": {
+          "string": 64
+        },
+        "response.type_sources": {
+          "sequence": 12
+        },
+        "response.extra_information": {
+          "sequence": 2
+        }
+      },
+      "wire_limits": {
+        "response": 32768
+      }
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "kind": "actual-original-RCL-same-client-graph-wait-contract-source-v1",
+  "source_only": true,
+  "pure_time_kernel_groups": 13,
+  "actual_Native_family_source_paths": [
+    "std_srvs/srv/Empty",
+    "example_interfaces/srv/AddTwoInts"
+  ],
+  "Native_witness_modes": [
+    "absent",
+    "ready",
+    "disconnect",
+    "stop",
+    "transport"
+  ],
+  "identities": "actual independently exported trusted14-field profile and complete actual11-identity native Registry; no fixture default",
+  "admission": "actual inherited connected UNIX socket+SO_PEERCRED pidfd+process-live lock-free atomic sig_atomic_t stop pointer; logical binding values are Native fixture DATA",
+  "build_opt_in": "UWVM_BUILD_NATIVE_GRAPH_AVAILABILITY_COMPONENT=ON and absolute UWVM_NATIVE_GRAPH_WAIT_ROOT",
+  "existing_Gateway_profile": "unchanged explicit --owned-rmw-service-profile; no default graph thread registration",
+  "bool_output": "success only; errors leave original bool and wire untouched",
+  "original_zero_query_method": "whole source body unchanged",
+  "old_ABI_and_UMRC": "unchanged",
+  "configured": 0,
+  "compiled": 0,
+  "probes_executed": 0,
+  "models_executed": 0,
+  "Native_components_executed": 0,
+  "Guest_executed": 0,
+  "ROS_acceptance": 0,
+  "SSH": 0,
+  "repository_writes": 0,
+  "forced_feature0_kernel_groups": 14,
+  "new_probe_link_contract": "NEW graph probe function-scope EXECUTABLE only; old two bodies/semantics unchanged",
+  "forced_feature0_contract": "Same real original SDK, actual production header, only generated feature switch0; optional Context/Event APIs omitted and check95",
+  "source_recompile": "Common server/both ROS Gateway consumers and every Native admission pointer consumer; private layout changed, old binaries not claimed"
+}

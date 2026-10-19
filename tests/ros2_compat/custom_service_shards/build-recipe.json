@@ -1,0 +1,105 @@
+{
+  "format_version": 1,
+  "status": "SOURCE_ONLY_NOT_EXECUTED",
+  "purpose": "Complete original Service table compile/link contracts, not service or Guest acceptance",
+  "required_inputs": {
+    "SOURCE": "Actual composed reviewed source root",
+    "FEATURES": "Actual selected-SDK compile/link feature directory",
+    "MANIFEST": "Actual complete generated common header",
+    "PROVIDER": "Actual complete generated official native provider header",
+    "PACKAGES": "Actual complete semicolon-separated package selection",
+    "BUILD_CUSTOM": "Fresh owned custom contract build directory",
+    "BUILD_EMPTY": "Fresh owned empty/default contract build directory",
+    "BUILD_OMIT": "Separate fresh nonqualifying omission build directory",
+    "STANDARD": "Actual admitted17/20/23",
+    "BUILD_TYPE": "Same actual original optimization choice"
+  },
+  "commands": [
+    {
+      "name": "custom-configure",
+      "argv": [
+        "cmake",
+        "-S",
+        "@SOURCE@/tests/ros2_compat/custom_service_shards",
+        "-B",
+        "@BUILD_CUSTOM@",
+        "-DUWVM_SOURCE_ROOT=@SOURCE@",
+        "-DUWVM_ROS2_GATEWAY_FEATURE_DIR=@FEATURES@",
+        "-DCMAKE_CXX_STANDARD=@STANDARD@",
+        "-DCMAKE_BUILD_TYPE=@BUILD_TYPE@",
+        "-DUWVM_ROS_CUSTOM_REGISTRY_HEADER=@MANIFEST@",
+        "-DUWVM_ROS_CUSTOM_ROS2_HEADER=@PROVIDER@",
+        "-DUWVM_ROS_CUSTOM_ROS2_PACKAGES=@PACKAGES@",
+        "-DUWVM_ROS2_CUSTOM_SERVICE_SHARDS=32"
+      ]
+    },
+    {
+      "name": "custom-build",
+      "argv": [
+        "cmake",
+        "--build",
+        "@BUILD_CUSTOM@",
+        "--parallel",
+        "1"
+      ]
+    },
+    {
+      "name": "empty-configure",
+      "argv": [
+        "cmake",
+        "-S",
+        "@SOURCE@/tests/ros2_compat/custom_service_shards",
+        "-B",
+        "@BUILD_EMPTY@",
+        "-DUWVM_SOURCE_ROOT=@SOURCE@",
+        "-DUWVM_ROS2_GATEWAY_FEATURE_DIR=@FEATURES@",
+        "-DCMAKE_CXX_STANDARD=@STANDARD@",
+        "-DCMAKE_BUILD_TYPE=Debug"
+      ]
+    },
+    {
+      "name": "empty-build",
+      "argv": [
+        "cmake",
+        "--build",
+        "@BUILD_EMPTY@",
+        "--parallel",
+        "1"
+      ]
+    },
+    {
+      "name": "negative-omission-configure",
+      "argv": [
+        "cmake",
+        "-S",
+        "@SOURCE@/tests/ros2_compat/custom_service_shards",
+        "-B",
+        "@BUILD_OMIT@",
+        "-DUWVM_SOURCE_ROOT=@SOURCE@",
+        "-DUWVM_ROS2_GATEWAY_FEATURE_DIR=@FEATURES@",
+        "-DCMAKE_CXX_STANDARD=@STANDARD@",
+        "-DCMAKE_BUILD_TYPE=@BUILD_TYPE@",
+        "-DUWVM_ROS_CUSTOM_REGISTRY_HEADER=@MANIFEST@",
+        "-DUWVM_ROS_CUSTOM_ROS2_HEADER=@PROVIDER@",
+        "-DUWVM_ROS_CUSTOM_ROS2_PACKAGES=@PACKAGES@",
+        "-DUWVM_ROS2_CUSTOM_SERVICE_SHARDS=32",
+        "-DUWVM_LEGACY_SERVICE_OMIT_SHARD=0"
+      ]
+    },
+    {
+      "name": "negative-omission-build",
+      "argv": [
+        "cmake",
+        "--build",
+        "@BUILD_OMIT@",
+        "--parallel",
+        "1"
+      ],
+      "expected": "Actual missing service_shard link references; unrelated failures do not qualify"
+    }
+  ],
+  "executions": 0,
+  "native_operations": 0,
+  "guest_operations": 0,
+  "default_permissions": []
+}

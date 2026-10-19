@@ -1,0 +1,68 @@
+{
+  "format": "uwvm-ros-vendor-complete-bounded-v1",
+  "types": [
+    {
+      "ros_version": 2,
+      "type": "uwvm_groot_bridge/msg/RGBFrame",
+      "file": "uwvm_groot_bridge/msg/RGBFrame.msg",
+      "bounds": {
+        "key": {
+          "string": 64
+        },
+        "pixels": {
+          "sequence": 768
+        }
+      },
+      "registered": true
+    },
+    {
+      "ros_version": 2,
+      "type": "uwvm_groot_bridge/msg/FloatTensor",
+      "file": "uwvm_groot_bridge/msg/FloatTensor.msg",
+      "bounds": {
+        "key": {
+          "string": 64
+        },
+        "values": {
+          "sequence": 320
+        }
+      },
+      "registered": true
+    },
+    {
+      "ros_version": 2,
+      "type": "uwvm_groot_bridge/msg/TextSequence",
+      "file": "uwvm_groot_bridge/msg/TextSequence.msg",
+      "bounds": {
+        "key": {
+          "string": 64
+        },
+        "texts": {
+          "sequence": 4,
+          "string": 256
+        }
+      },
+      "registered": true
+    },
+    {
+      "ros_version": 2,
+      "type": "uwvm_groot_bridge/srv/InferAction",
+      "file": "uwvm_groot_bridge/srv/InferAction.srv",
+      "bounds": {
+        "request.video": {
+          "sequence": 3
+        },
+        "request.state": {
+          "sequence": 4
+        },
+        "request.language": {
+          "sequence": 2
+        },
+        "response.action": {
+          "sequence": 8
+        }
+      },
+      "registered": true
+    }
+  ]
+}

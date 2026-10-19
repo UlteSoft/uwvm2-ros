@@ -1,0 +1,68 @@
+{
+  "kind": "elephant-explicit-profile-v1",
+  "profile": "humble",
+  "ros_version": 2,
+  "source_lock_sha256": "632676c2b5e110262969f7f2b9b09b056a27ac9142e884936739713c66ab67dc",
+  "catalog_sha256": "8326c015b67e36dac0fdf8b0f194c1c5f479d8ad2ebc5c34405b4a288204796a",
+  "source_commit": "d42ff61a78122c79246623391540d75738b03b23",
+  "original_tree_git_sha1": "d01c98a67c04f3bc7cbb495f14752a45350a2618",
+  "products": {
+    "bounded_interfaces.go": {
+      "bytes": 198323,
+      "sha256": "efa48a38e8a231c18b6aa7580b7bb046c4fb6eb9a9e174f34a7b89bcc318807d"
+    },
+    "bounded_interfaces.h": {
+      "bytes": 82198,
+      "sha256": "292505660f3ea2c374fdc55d05f1d5ba66502b4e2068d2fbe047d3a33172a28e"
+    },
+    "bounded_interfaces.hpp": {
+      "bytes": 116477,
+      "sha256": "b49c7899fbbec0137a296a52a05b81ffcf7aa101de38c2097d1a314f9e811ad3"
+    },
+    "bounded_interfaces.mjs": {
+      "bytes": 42198,
+      "sha256": "f114c8f07a8535943790e68db1a06b0d3d803a6686f29b27393800c33dd87019"
+    },
+    "bounded_interfaces.rs": {
+      "bytes": 43640,
+      "sha256": "d705b1bf2e799696b9db289a329c3d057801ff035bca9a032e573ba5b8819ff2"
+    },
+    "bounded_interfaces.ts": {
+      "bytes": 58011,
+      "sha256": "8847bc1c0e21a8553f9d21020f6175555946d97ec86c84b22d41a29d6da2dd40"
+    },
+    "bounded_records.go": {
+      "bytes": 329504,
+      "sha256": "c751299675aa63097012b31998a39fd16542d54ebaddca07f707b1c8f3935400"
+    },
+    "bounded_records.h": {
+      "bytes": 435943,
+      "sha256": "5de7054a0a008e0c1b1502edd98cdaccd1c6e6cd3511f83abc81896ba9a69041"
+    },
+    "bounded_records.hpp": {
+      "bytes": 116790,
+      "sha256": "84155c82f80c0a34b77efb0b13bc95286d93e71cf4154035725937597eda9dae"
+    },
+    "bounded_records.mjs": {
+      "bytes": 231806,
+      "sha256": "aafca9518817ce8f502a51706824501b63a67d84a7672b9a52161d3f4f8d329b"
+    },
+    "bounded_records.rs": {
+      "bytes": 251867,
+      "sha256": "f5f1323297daa75db8f4a4727a484e67059f4585d9a2287862fbf0efd95e3a40"
+    },
+    "bounded_records.ts": {
+      "bytes": 288991,
+      "sha256": "12b617d107d658b152741f605d41881c354370b764de073417dbde4476de0774"
+    },
+    "native_constants.hpp": {
+      "bytes": 267,
+      "sha256": "4700d3bdf5da49f6392540d0487fa661da6f06c15fc817f1cf6e73bd44134b7c"
+    },
+    "native_identity.cc": {
+      "bytes": 57457,
+      "sha256": "574a4da90b6ab423a4348c7191827d68abc24dce590c4abbb11970149bf05a04"
+    }
+  },
+  "default_authority": []
+}

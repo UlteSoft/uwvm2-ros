@@ -1,0 +1,24 @@
+{
+  "format": "uwvm-rust-owned-rmw-service-source-recipe-v1",
+  "status": "SOURCE_ONLY_ALL_COMMANDS_UNEXECUTED",
+  "authority": [],
+  "source_prerequisites": [
+    "Actual held four-language records/operator source revision and unchanged original32/native source catalog",
+    "Caller-reviewed actual canonical8 plus separate managed4records/proof generated only in admitted private tree",
+    "This new crate and genuine sdk/rust plus installed real Rust compiler/wasm32-wasip1 std/sysroot/libc.a",
+    "Real Host raw12 + owned fullcontrol Gateway + actual NativeSDK export/type/proof and independently configured call/observe or advertise/respond grants"
+  ],
+  "build_argv": [
+    "${ACTUAL_CARGO}", "build", "--offline", "-j1", "--manifest-path", "${PRIVATE_SOURCE}/sdk/rust/owned_service/Cargo.toml", "--target", "wasm32-wasip1", "--target-dir", "${FRESH_PRIVATE_TMP_TARGET}", "--example", "control_client"
+  ],
+  "producer_flags": "Use separately encoded actual existing SDK Rust libc.a linker flags; retain exact compiler/target/sysroot/archive provenance and current SDK recipe. Caller owns process/cgroup/CPU/storage admission; do not copy this string into a shell or guess an archive.",
+  "artifact_gate_argv": [
+    "${ACTUAL_PYTHON}", "${PRIVATE_SOURCE}/sdk/tools/check_rmw_service_imports.py", "${ACTUAL_WASM}", "--allow-module", "wasi_snapshot_preview1", "--report", "${FRESH_REPORT}"
+  ],
+  "full_validation": "Require actual full wasm validator before signature gate, actual memory/index/layout/entry gates and exact producer WASI import inventory. No gate command was executed here.",
+  "client_guest_argv": ["${CALL_ALIAS}", "${OBSERVER_ALIAS}", "${AVAILABILITY_ALIAS_OR_DASH}", "${ACTUAL_TYPE_NAME}", "${ACTUAL_TYPE_HASH}", "${FINITE_WORK_STEPS}"],
+  "server_guest_argv": ["${ADVERTISE_ALIAS}", "${RESPOND_ALIAS}", "${FINITE_WORK_STEPS}"],
+  "model_contracts": "src/contracts.rs has21 actual-source local model groups. Future host cargo test must select the real source crate/stdlib/private target and not claim Guest or Native qualification. No fake Native IDs or compiler invocation supplied.",
+  "native_positive": "Reuse actual default-control Native exporter/peer and Host guide. Exact source hashes/type identities/full12-source native getter values, actual same-take GUID/sequence/timestamps, separate query owner and all cleanup results must be independently checked; markers are not proof.",
+  "scope_gaps": ["No original rclcpp/Native ABI claim", "No local fake blocking Future/native waitset", "No std sleep or work-count physical timeout", "Actual positive bounded-query support may return95", "All build/model/Guest/native/physical-resource qualification remains pending"]
+}

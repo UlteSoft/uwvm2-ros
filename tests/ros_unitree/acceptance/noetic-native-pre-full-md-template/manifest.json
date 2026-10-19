@@ -1,0 +1,28 @@
+{
+  "actual_execution_performed": false,
+  "files": {
+    "NOETIC_NATIVE.md": {
+      "bytes": 14637,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/noetic-native-pre-full-md-template/NOETIC_NATIVE.md",
+      "sha256": "0072037de598a823ec3eb0d38fbf208d50bc3c015c54500c7f1178993147512a"
+    },
+    "noetic-native-source-ready-before-peer.json": {
+      "bytes": 9479,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/noetic-native-pre-full-md-template/noetic-native-source-ready-before-peer.json",
+      "sha256": "6d237b286b5367ba3ad138d3d85fd760323ded4388ccb8a18ea6b3afa3235107"
+    },
+    "noetic-native-source-ready.json": {
+      "bytes": 10037,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/noetic-native-pre-full-md-template/noetic-native-source-ready.json",
+      "sha256": "77d76d995cf900e4d70afcd07fdd91adaf3ce27f52cea35c47b59e5bbffb4268"
+    },
+    "prepare_noetic_native.py": {
+      "bytes": 45553,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/noetic-native-pre-full-md-template/prepare_noetic_native.py",
+      "sha256": "b12bb27cad67173af6e42527e45e03b63c78655a7df7e797a83307164ffe2a74"
+    }
+  },
+  "format_version": 1,
+  "kind": "unitree-noetic-native-source-before-full-md-compile-rule",
+  "scope": "Preserved exact Source44 source/readiness before the separate Source45 compile-object rule correction; historical source only, no current execution qualification."
+}

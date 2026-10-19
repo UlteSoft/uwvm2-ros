@@ -1,0 +1,207 @@
+{
+  "kind": "agilex-scout-selected-original-source-lock-v1",
+  "vendor": "agilex",
+  "ros_version": 2,
+  "models": [
+    "SCOUT",
+    "SCOUT Mini",
+    "SCOUT Mini Omni"
+  ],
+  "default_authority": [],
+  "repositories": [
+    {
+      "id": "common_humble",
+      "repository": "ros2/common_interfaces",
+      "url": "https://github.com/ros2/common_interfaces",
+      "branch": "humble",
+      "commit": "08434490d3e4abd37ccc5462cdde69b88853b5b8",
+      "tree_git_sha1": "c7cb0ba488266ded0627d8b3c96ee19bf5590b46",
+      "default_authority": [],
+      "qualification": "Original standard source capture, no installed ROS or native identity qualification."
+    },
+    {
+      "id": "rcl_humble",
+      "repository": "ros2/rcl_interfaces",
+      "url": "https://github.com/ros2/rcl_interfaces",
+      "branch": "humble",
+      "commit": "82776fc9068d1e0cd4af11c2e2700195994b2eb1",
+      "tree_git_sha1": "6baa0af441f3f9b1a1c3f6d118373f3c92f5973e",
+      "default_authority": [],
+      "qualification": "Original standard source capture, no installed ROS or native identity qualification."
+    },
+    {
+      "id": "scout_ros2",
+      "repository": "agilexrobotics/scout_ros2",
+      "url": "https://github.com/agilexrobotics/scout_ros2",
+      "branch": "humble",
+      "commit": "bf0110ff44cc70cdda2931d69f0e2669a3e26b9d",
+      "tree_git_sha1": "ac870ba02fa28eccfb13c95820780e54a570b47c",
+      "default_authority": [],
+      "qualification": "Actual immutable original source capture, not a build or native/robot result."
+    },
+    {
+      "id": "ugv_sdk",
+      "repository": "agilexrobotics/ugv_sdk",
+      "url": "https://github.com/agilexrobotics/ugv_sdk",
+      "branch": "main",
+      "commit": "f2704eacdc90357078cd93ec60aae08bb4baab35",
+      "tree_git_sha1": "db5bfd08a362d0961664b862b31bf14c4dede02d",
+      "default_authority": [],
+      "qualification": "Selected actual SCOUT/protocol source. No complete native SDK build or transport witness."
+    }
+  ],
+  "definitions": [
+    {
+      "type": "builtin_interfaces/msg/Time",
+      "origin": "OFFICIAL_GIT",
+      "repository": "rcl_humble",
+      "original_file": "builtin_interfaces/msg/Time.msg",
+      "generation_file": "builtin_interfaces/msg/Time.msg",
+      "bytes": 420,
+      "sha256": "0e6f429967a29ba34b224c5c0236c938084e82ee1279deeaf0666768cba220ae",
+      "git_blob_sha1": "c61b0b5d40502bb17fce99e2736897bcbb94bee1"
+    },
+    {
+      "type": "geometry_msgs/msg/Point",
+      "origin": "OFFICIAL_GIT",
+      "repository": "common_humble",
+      "original_file": "geometry_msgs/msg/Point.msg",
+      "generation_file": "geometry_msgs/msg/Point.msg",
+      "bytes": 84,
+      "sha256": "eb4c07e591cf0269ccb17245dcd4f998162feb09cc8add85fa082c8a30bfc91d",
+      "git_blob_sha1": "f1d3a71a853c668f066de795ba5e0f4458f3f1c0"
+    },
+    {
+      "type": "geometry_msgs/msg/Pose",
+      "origin": "OFFICIAL_GIT",
+      "repository": "common_humble",
+      "original_file": "geometry_msgs/msg/Pose.msg",
+      "generation_file": "geometry_msgs/msg/Pose.msg",
+      "bytes": 119,
+      "sha256": "3eceb77c63ebbb544c11d7f991e475e9819e0cf534deb1a879392c1b3dc997de",
+      "git_blob_sha1": "277e2f0179a64cd3e17e31502e3d8a074ace7064"
+    },
+    {
+      "type": "geometry_msgs/msg/PoseWithCovariance",
+      "origin": "OFFICIAL_GIT",
+      "repository": "common_humble",
+      "original_file": "geometry_msgs/msg/PoseWithCovariance.msg",
+      "generation_file": "geometry_msgs/msg/PoseWithCovariance.msg",
+      "bytes": 323,
+      "sha256": "a22f234e91b9fcd4ba0c5b533496b43c62d7f6ade39082212ac9835679d29f94",
+      "git_blob_sha1": "86bc45adbb5d7d64e90556ac1f24ca8f725313cd"
+    },
+    {
+      "type": "geometry_msgs/msg/Quaternion",
+      "origin": "OFFICIAL_GIT",
+      "repository": "common_humble",
+      "original_file": "geometry_msgs/msg/Quaternion.msg",
+      "generation_file": "geometry_msgs/msg/Quaternion.msg",
+      "bytes": 116,
+      "sha256": "298495eb67a139642ffd37cc9029eae085e6c39a8789828b7517868a487939ed",
+      "git_blob_sha1": "96d392779a286cc3f4c83d80962236f5ea42c884"
+    },
+    {
+      "type": "geometry_msgs/msg/Twist",
+      "origin": "OFFICIAL_GIT",
+      "repository": "common_humble",
+      "original_file": "geometry_msgs/msg/Twist.msg",
+      "generation_file": "geometry_msgs/msg/Twist.msg",
+      "bytes": 116,
+      "sha256": "ed471ef861f65af991b1f64d66ef941dd41dd4c0702f6222512b1a16c62d58b0",
+      "git_blob_sha1": "ede73597b9025238af28f55c275ddb02a8ed2f94"
+    },
+    {
+      "type": "geometry_msgs/msg/TwistWithCovariance",
+      "origin": "OFFICIAL_GIT",
+      "repository": "common_humble",
+      "original_file": "geometry_msgs/msg/TwistWithCovariance.msg",
+      "generation_file": "geometry_msgs/msg/TwistWithCovariance.msg",
+      "bytes": 326,
+      "sha256": "5690a1f109d4962c73b5ca7f3673c48052d02f37b6a38fe2fb37c899cf555c45",
+      "git_blob_sha1": "111a19c5f7da42f846ed9eaff26ffc6a515c9e5f"
+    },
+    {
+      "type": "geometry_msgs/msg/Vector3",
+      "origin": "OFFICIAL_GIT",
+      "repository": "common_humble",
+      "original_file": "geometry_msgs/msg/Vector3.msg",
+      "generation_file": "geometry_msgs/msg/Vector3.msg",
+      "bytes": 251,
+      "sha256": "d8b9ea9aad1f424faf4d2b94dae1e1368af1e5d59de11aeed019399cff7f9e1d",
+      "git_blob_sha1": "b54588e117c4632f551c221fbc33df8f958804bf"
+    },
+    {
+      "type": "nav_msgs/msg/Odometry",
+      "origin": "OFFICIAL_GIT",
+      "repository": "common_humble",
+      "original_file": "nav_msgs/msg/Odometry.msg",
+      "generation_file": "nav_msgs/msg/Odometry.msg",
+      "bytes": 645,
+      "sha256": "bb00547ddf498cdbae46fd991d9d85a59f507e12e7cf01fb18a86f1111524f4f",
+      "git_blob_sha1": "7186f064bf6827db2baa4d02041e4fb3304ed5ba"
+    },
+    {
+      "type": "scout_msgs/msg/ScoutActuatorState",
+      "origin": "OFFICIAL_GIT",
+      "repository": "scout_ros2",
+      "original_file": "scout_msgs/msg/ScoutActuatorState.msg",
+      "generation_file": "scout_msgs/msg/ScoutActuatorState.msg",
+      "bytes": 611,
+      "sha256": "9cf3fd50d46433647dd02e8e0f012ea1f5b3fe8e04aec43fe914fca2f5e4332b",
+      "git_blob_sha1": "a3c024ed916f73e063885a11d19cf32abca93abc"
+    },
+    {
+      "type": "scout_msgs/msg/ScoutLightCmd",
+      "origin": "OFFICIAL_GIT",
+      "repository": "scout_ros2",
+      "original_file": "scout_msgs/msg/ScoutLightCmd.msg",
+      "generation_file": "scout_msgs/msg/ScoutLightCmd.msg",
+      "bytes": 202,
+      "sha256": "09b1a206b99b7eb101fcf79fe6b61d1cd60ac4a3f90a231f44dbed88cdd6b860",
+      "git_blob_sha1": "74440c984c1e81fe9616d8de79c153567d35233a"
+    },
+    {
+      "type": "scout_msgs/msg/ScoutLightState",
+      "origin": "OFFICIAL_GIT",
+      "repository": "scout_ros2",
+      "original_file": "scout_msgs/msg/ScoutLightState.msg",
+      "generation_file": "scout_msgs/msg/ScoutLightState.msg",
+      "bytes": 29,
+      "sha256": "f5fc087bf0be8333c6e57baa633152667a60d3167819cef79c7e505a32c68d5f",
+      "git_blob_sha1": "cf6738943d53012f529bd5a9954a481dbdc79e6e"
+    },
+    {
+      "type": "scout_msgs/msg/ScoutRCState",
+      "origin": "OFFICIAL_GIT",
+      "repository": "scout_ros2",
+      "original_file": "scout_msgs/msg/ScoutRCState.msg",
+      "generation_file": "scout_msgs/msg/ScoutRCState.msg",
+      "bytes": 125,
+      "sha256": "f20789a77f045981274fef30b63e60e2a7d8c6294cc741f407c16c6cef95dded",
+      "git_blob_sha1": "250f16d58ae89da78b0d2585e72f6a5c95ab6738"
+    },
+    {
+      "type": "scout_msgs/msg/ScoutStatus",
+      "origin": "OFFICIAL_GIT",
+      "repository": "scout_ros2",
+      "original_file": "scout_msgs/msg/ScoutStatus.msg",
+      "generation_file": "scout_msgs/msg/ScoutStatus.msg",
+      "bytes": 510,
+      "sha256": "d3ad630a13178396c8f29c0a86a838cc8d5310246b1f4eee52e1ee1e7d51f923",
+      "git_blob_sha1": "8aa8b309e442db6d20763b3092f4cd9932320358"
+    },
+    {
+      "type": "std_msgs/msg/Header",
+      "origin": "OFFICIAL_GIT",
+      "repository": "common_humble",
+      "original_file": "std_msgs/msg/Header.msg",
+      "generation_file": "std_msgs/msg/Header.msg",
+      "bytes": 322,
+      "sha256": "d2cea14630e39ed0fa5b432ba9160a7c38855b9427d3344f99e83e83facb53c2",
+      "git_blob_sha1": "6966bb98863c237131a2bd2822298df9511ce948"
+    }
+  ],
+  "catalog_sha256": "7f9213517f2625489b7194e0dacfde24e1085fe570acfa72f2c6788fcbceed5a",
+  "scope": "All original custom scout_msgs plus complete Twist/Odometry dependency graph for these pinned sources. Not all AgileX products, native driver acceptance or a generated Native identity."
+}

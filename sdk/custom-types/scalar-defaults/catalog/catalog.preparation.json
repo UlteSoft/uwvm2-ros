@@ -1,0 +1,21 @@
+{
+  "format": "uwvm-ros-custom-bounded-v2",
+  "types": [
+    {
+      "ros_version": 2,
+      "type": "xarm_msgs/srv/GetSetModbusData",
+      "file": "xarm_msgs/srv/GetSetModbusData.srv",
+      "bounds": {
+        "request.modbus_data": {
+          "sequence": 64
+        },
+        "response.message": {
+          "string": 128
+        },
+        "response.ret_data": {
+          "sequence": 64
+        }
+      }
+    }
+  ]
+}

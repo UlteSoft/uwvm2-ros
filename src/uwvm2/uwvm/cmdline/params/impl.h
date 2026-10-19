@@ -1,4 +1,4 @@
-/*************************************************************
+﻿/*************************************************************
  * UlteSoft WebAssembly Virtual Machine (Version 2)          *
  * Copyright (c) 2025-present UlteSoft. All rights reserved. *
  * Licensed under the APL-2.0 License (see LICENSE file).    *
@@ -33,6 +33,7 @@
 # include "debug_test.h"
 
 // wasm
+# include "security.h"
 # include "wasm_set_main_module_name.h"
 # include "wasm_set_start_func.h"
 # include "wasm_preload_library.h"
@@ -50,11 +51,15 @@
 // runtime
 # include "runtime_compiler_log.h"
 # include "runtime_compile_threads.h"
+# include "wasi_threads.h"
+# include "wasi_thread_signals.h"
 # include "runtime_scheduling_policy.h"
 # include "runtime_llvm_jit_policy.h"
 # include "runtime_llvm_jit_full_policy.h"
+# include "runtime_llvm_jit_exception_dispatch.h"
 # include "runtime_llvm_jit_call_stack.h"
 # include "runtime_llvm_jit_cache_path.h"
+# include "runtime_llvm_jit_cache_seal_process.h"
 # include "runtime_int.h"
 # include "runtime_aot.h"
 # include "runtime_uwvm_int_disable_loop_unwind.h"
@@ -75,6 +80,7 @@
 # include "wasip1_global_set_argv0.h"
 # include "wasip1_global_force_args.h"
 # include "wasip1_global_noinherit_system_environment.h"
+# include "wasip1_permissions.h"
 # include "wasip1_global_delete_system_environment.h"
 # include "wasip1_global_add_or_replace_environment.h"
 # include "wasip1_global_socket_tcp_listen.h"
@@ -122,6 +128,10 @@
 # include "wasip1_group_socket_tcp_connect.h"
 # include "wasip1_group_socket_udp_bind.h"
 # include "wasip1_group_socket_udp_connect.h"
+
+// ROS host extensions
+# include "ros1.h"
+# include "ros2.h"
 
 // log
 # include "log_output.h"

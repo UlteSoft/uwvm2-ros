@@ -1,0 +1,150 @@
+{
+  "format_version": 1,
+  "kind": "unitree-motion-preload-source-recipes",
+  "status": "SOURCE_ONLY_NOT_EXECUTED",
+  "root_memory_max_bytes": 68719476736,
+  "root_swap_max_bytes": 0,
+  "command_rss_max_bytes": 536870912,
+  "command_timeout_seconds": 600,
+  "jobs": 1,
+  "builds": [
+    {
+      "id": "unitree-callback",
+      "cwd": "{SOURCE}",
+      "argv": [
+        "{WASI_CLANG}",
+        "--target=wasm32-wasip1",
+        "--sysroot={WASI_SYSROOT}",
+        "-fuse-ld={WASM_LD}",
+        "-std=c11",
+        "-O3",
+        "-g0",
+        "-fno-fast-math",
+        "-ffp-contract=off",
+        "-ffreestanding",
+        "-fno-builtin",
+        "-nostdlib",
+        "-Wl,--no-entry",
+        "-Wl,--allow-undefined",
+        "-Wl,--threads=1",
+        "-Wl,--initial-memory=131072",
+        "-Wl,--max-memory=131072",
+        "-Wl,-z,stack-size=65536",
+        "-I{SOURCE}/sdk/robots/unitree/include",
+        "{EXAMPLE}/unitree_callback.c",
+        "-o",
+        "{OUT}/unitree-callback.wasm"
+      ],
+      "environment": {
+        "TMPDIR": "{OUT}/tmp"
+      },
+      "artifact": "{OUT}/unitree-callback.wasm"
+    },
+    {
+      "id": "unitree-motion",
+      "cwd": "{SOURCE}",
+      "argv": [
+        "{WASI_CLANG}",
+        "--target=wasm32-wasip1",
+        "--sysroot={WASI_SYSROOT}",
+        "-fuse-ld={WASM_LD}",
+        "-std=c11",
+        "-O3",
+        "-g0",
+        "-fno-fast-math",
+        "-ffp-contract=off",
+        "-ffreestanding",
+        "-fno-builtin",
+        "-nostdlib",
+        "-Wl,--no-entry",
+        "-Wl,--allow-undefined",
+        "-Wl,--threads=1",
+        "-Wl,--initial-memory=131072",
+        "-Wl,--max-memory=131072",
+        "-Wl,-z,stack-size=65536",
+        "-I{SOURCE}/sdk/robots/unitree/include",
+        "{EXAMPLE}/unitree_motion.c",
+        "{WASI_LIBM}",
+        "{WASI_LIBC}",
+        "{WASI_BUILTINS}",
+        "-o",
+        "{OUT}/unitree-motion.wasm"
+      ],
+      "environment": {
+        "TMPDIR": "{OUT}/tmp"
+      },
+      "artifact": "{OUT}/unitree-motion.wasm"
+    }
+  ],
+  "module_names": {
+    "unitree-callback": "callbacks",
+    "unitree-motion": "motion"
+  },
+  "root_direct_guest": {
+    "source": "sdk/robots/unitree/examples/direct_go2.cpp",
+    "definition": "UWVM_UNITREE_MODULAR_MOTION=1",
+    "scope": "Root positive/denied selections are still separate. All motion imports unwind before root main calculates the official-layout CRC or calls ROS. The inline variant is retained as an independent build selection."
+  },
+  "contracts": {
+    "unitree-callback": {
+      "imports": {},
+      "exports": {
+        "joint_begin": "(i32,i32,i32)->i32",
+        "on_joint": "(i32,i32,i32,i32,i32,i32,i32,i32,i32,i32)->i32",
+        "joint_end": "(i32,i32,i32,i32,i32)->i32",
+        "joint_abort": "(i32,i32)->i32"
+      }
+    },
+    "unitree-motion": {
+      "imports": {
+        "callbacks.joint_begin": "(i32,i32,i32)->i32",
+        "callbacks.on_joint": "(i32,i32,i32,i32,i32,i32,i32,i32,i32,i32)->i32",
+        "callbacks.joint_end": "(i32,i32,i32,i32,i32)->i32",
+        "callbacks.joint_abort": "(i32,i32)->i32"
+      },
+      "exports": {
+        "motion_begin": "(i32,i32)->i32",
+        "motion_status": "()->i32",
+        "motion_word": "(i32,i32,i32)->i32",
+        "motion_end": "(i32)->i32"
+      }
+    }
+  },
+  "memory": {
+    "count": 1,
+    "initial_pages": 2,
+    "maximum_pages": 2,
+    "shared": false,
+    "memory64": false
+  },
+  "validation": [
+    "{WASM_TOOLS}",
+    "validate",
+    "{ARTIFACT}"
+  ],
+  "full_dependencies": "Actual C compiler invocation must retain -MD -MF row.d -MT row.o and a fresh object. Preserve exact actual libm/libc/compiler-rt archive pins, target sysroot and compiler closure before/after; record actual linker --trace and the fresh full validator result. No unresolved placeholders are executable inputs.",
+  "authority": "All modules start with zero ROS and WASI grants. Neither library may import ROS, WASI, env.tanh or an unlisted function. A retained pure static libm is not a host math import. No CRT, start section or constructor is accepted.",
+  "lifecycle": "begin returns a nonzero generation only after the exact shared SDK kernel and twelve ordered actual Wasm callback calls. Generation never wraps. The callback checks a separate independently accumulated FNV value checksum, not an authentication credential. Main reads every field with immediate status==0, calls checked end even after a copy failure, and obtains no CRC/ROS side effect until the import stack is empty. Failed callback retirement poisons the instance for subsequent begins.",
+  "word_fields": [
+    "mode-u32",
+    "q-binary32",
+    "dq-binary32",
+    "kp-binary32",
+    "kd-binary32",
+    "tau-binary32"
+  ],
+  "input_bounds": {
+    "step": [
+      1,
+      10000
+    ],
+    "dt_ns": [
+      100000,
+      20000000
+    ],
+    "motors": 20,
+    "active_callbacks": 12
+  },
+  "acceptance": "Compilation and validation alone are not callback execution, native Unitree identity, ROS delivery, physics equivalence or physical robot qualification. Root must retain distinct Worker/Gateway/native participant processes and real native/simulator witnesses.",
+  "optimization_scope": "The real Unitree preload/direct/native physics lane uses matched O3 and contraction-off. Existing independent synthetic 28-recipe O1 lessons remain unchanged and are not relabelled as an O3 performance baseline."
+}

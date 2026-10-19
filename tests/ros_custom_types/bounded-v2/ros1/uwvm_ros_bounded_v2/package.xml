@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>uwvm_ros_bounded_v2</name><version>0.1.0</version>
+  <description>Official bounded custom Message, Service and Action acceptance interfaces.</description>
+  <maintainer email="maintainers@example.invalid">UWVM Runtime maintainers</maintainer>
+  <license>APL-2.0</license>
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>message_generation</build_depend>
+  <exec_depend>message_runtime</exec_depend>
+  <depend>actionlib_msgs</depend><depend>std_msgs</depend>
+</package>

@@ -1,0 +1,330 @@
+{
+  "format": "uwvm-humanoid-future-owned-recipe-v1",
+  "vendor": "limx",
+  "status": "AUTHORED_SOURCE_ONLY_NOT_EXECUTED",
+  "default_authority": [],
+  "selection": {
+    "all_paths_absolute": true,
+    "unknown_tokens_refused": true,
+    "model": "PointFoot/PF_P441A/6",
+    "actual_firmware_required": true,
+    "actual_sdk_library_headers_md_required": true,
+    "no_ambient_tool_or_sdk_search": true
+  },
+  "prepare_records": {
+    "implementation": "sdk/robots/industrial/prepare.py",
+    "shared_source_status": "exact shared-profile-r1 HOLD536236; independent peer/public integration required before invoking from actual SourceB",
+    "argv": [
+      "{actual_python}",
+      "-B",
+      "{source}/sdk/robots/industrial/prepare.py",
+      "--source-root",
+      "{physical_current_full_source}",
+      "--catalog",
+      "{physical_complete_selected_catalog}",
+      "--out",
+      "{fresh_output_outside_source}",
+      "--mode",
+      "prepare",
+      "--parent-sha256",
+      "{actual_parent_source_sha256}",
+      "--bounded-sha256",
+      "{actual_bounded_source_sha256}",
+      "--adapter-sha256",
+      "{actual_vendor_profile_source_sha256}"
+    ],
+    "expected_actual_products": [
+      "generated/bounded_records.hpp",
+      "generated/native_identity.cc",
+      "generated/native_constants.hpp",
+      "generated/generation.vendor.json",
+      "preparation.vendor.json"
+    ],
+    "source_origin": "AUTHORED_BRIDGE with independent official SDK mappings; not official Git msg paths"
+  },
+  "bind": {
+    "argv": [
+      "{actual_python}",
+      "-B",
+      "{source}/sdk/robots/industrial/prepare.py",
+      "--source-root",
+      "{physical_current_full_source}",
+      "--catalog",
+      "{physical_complete_original_unbound_catalog}",
+      "--out",
+      "{fresh_bound_output_outside_source}",
+      "--mode",
+      "bind",
+      "--parent-sha256",
+      "{actual_parent_source_sha256}",
+      "--bounded-sha256",
+      "{actual_bounded_source_sha256}",
+      "--adapter-sha256",
+      "{actual_vendor_profile_source_sha256}",
+      "--native-metadata",
+      "{actual_independent_export_json}",
+      "--native-owner-report",
+      "{actual_independent_original_owner_report}"
+    ],
+    "unrelated_file_is_not_acceptance": true
+  },
+  "native_interfaces": {
+    "argv": [
+      "{actual_cmake}",
+      "-S",
+      "{source}/sdk/robots/humanoids/limx/bridge_interfaces",
+      "-B",
+      "{fresh_interface_build}",
+      "-DCMAKE_CXX_COMPILER={actual_native_cxx}",
+      "-DCMAKE_INSTALL_PREFIX={fresh_interface_install}"
+    ],
+    "original_booster_interface_also_required": false,
+    "role": "genuine ROSIDL package build; never a Guest source projection",
+    "build_install_argv": [
+      "{actual_cmake}",
+      "--build",
+      "{fresh_interface_build}",
+      "--parallel",
+      "1",
+      "--target",
+      "install"
+    ]
+  },
+  "native_configure": {
+    "argv": [
+      "{actual_cmake}",
+      "-S",
+      "{source}/sdk/robots/humanoids/limx/native",
+      "-B",
+      "{fresh_native_build}",
+      "-DCMAKE_CXX_COMPILER={actual_native_cxx}",
+      "-DUWVM_SOURCE_ROOT={source}",
+      "-DUWVM_LIMX_BRIDGE_BUNDLE={actual_new_bridge_guest_only_bundle}",
+      "-DUWVM_LIMX_SDK_ROOT={actual_limx_sdk_root}",
+      "-DUWVM_LIMX_LIBRARY={actual_native_shared_library}",
+      "-DUWVM_LIMX_LIBRARY_SHA256={actual_native_library_sha256}",
+      "-DUWVM_LIMX_ENABLE_NATIVE_SEND=OFF"
+    ],
+    "selected_sdk_prefix_path": "explicit actual ROS2 install CMAKE_PREFIX_PATH; full expanded MD + every real library maps later"
+  },
+  "native_bridge_default": {
+    "argv": [
+      "{fresh_native_build}/limx-native-bridge",
+      "PointFoot",
+      "PF_P441A",
+      "{actual_native_ip}",
+      "{actual_native_state_topic}",
+      "{actual_native_imu_topic}",
+      "{actual_native_command_topic}",
+      "/uwvm_limx_bridge/PF_P441A",
+      "{window_ms_1_to_2000}",
+      "{max_commands_1_to_32}",
+      "6"
+    ],
+    "expected_status": 13,
+    "expected_init_and_native_effects": 0
+  },
+  "native_bridge_positive": {
+    "requires": "separate configure with UWVM_LIMX_ENABLE_NATIVE_SEND=ON plus actual firmware/model/SDK/lease admission",
+    "argv": [
+      "{actual_native_bridge}",
+      "PointFoot",
+      "PF_P441A",
+      "{actual_native_ip}",
+      "{actual_native_state_topic}",
+      "{actual_native_imu_topic}",
+      "{actual_native_command_topic}",
+      "/uwvm_limx_bridge/PF_P441A",
+      "{window_ms_1_to_2000}",
+      "{max_commands_1_to_32}",
+      "6"
+    ],
+    "external_owned_process": {
+      "deadline_ms": 5000,
+      "no_default_cpu_or_memory_permission": true,
+      "all_children_and_sdk_threads_retired": true
+    },
+    "success_meaning": "transport attempt completed, not actuator acknowledgement or hardware stop"
+  },
+  "guest_configure": {
+    "argv": [
+      "{actual_cmake}",
+      "-S",
+      "{source}/sdk/robots/humanoids/limx/examples",
+      "-B",
+      "{fresh_wasm_build}",
+      "-DCMAKE_TOOLCHAIN_FILE={actual_admitted_wasi_sdk_toolchain}",
+      "-DUWVM_SOURCE_ROOT={source}",
+      "-DUWVM_GENERATED_BUNDLE={actual_bound_complete_generated_bundle}",
+      "-DUWVM_HUMANOID_POSITIVE=OFF"
+    ],
+    "positive_is_distinct_artifact_and_source": true
+  },
+  "guest_build": {
+    "argv": [
+      "{actual_cmake}",
+      "--build",
+      "{fresh_wasm_build}",
+      "--parallel",
+      "1",
+      "--target",
+      "limx-raw_command",
+      "limx-complete_command",
+      "limx-telemetry"
+    ],
+    "full_source_md_wasm_imports_required": true
+  },
+  "default_denied": {
+    "ros_argv": [],
+    "wasi": "explicit selected basic stdin/stdout only, no ambient additional rights",
+    "expected_ros_open": 13,
+    "expected_native_command_count": 0,
+    "independent_native_oracle_required": true
+  },
+  "positive_runtime_template": {
+    "prefix": "--ros2-single-",
+    "target": "main",
+    "create": [
+      "--ros2-single-create",
+      "main"
+    ],
+    "enable": [
+      "--ros2-single-enable",
+      "main"
+    ],
+    "connection": {
+      "gateway-socket": "{actual_owned_unix_socket}",
+      "gateway-uid": "{actual_gateway_uid}",
+      "connect-timeout-ms": "1000",
+      "node-name": "uwvm_limx_guest_gateway",
+      "namespace": "/uwvm_humanoid_fixture",
+      "domain-id": "{actual_ros2_domain_id}",
+      "rmw-implementation": "{actual_selected_rmw_identifier}",
+      "security-mode": "{actual_explicit_security_mode}",
+      "keystore": "{actual_keystore_or_explicit_not_applicable}",
+      "enclave": "{actual_enclave_or_explicit_not_applicable}",
+      "audit-deny-max-rate-hz": "100",
+      "audit-deny-burst": "16",
+      "audit-deny-max-records": "10000",
+      "audit-deny-max-bytes": "1048576"
+    },
+    "capabilities": [
+      {
+        "alias": "limx-command",
+        "operation": "topic.publish",
+        "resource": "/uwvm_limx_bridge/PF_P441A/command",
+        "type": "uwvm_limx_bridge/msg/JointCmd",
+        "identity": "{actual_independent_JointCmd_native_identity}",
+        "limits": {
+          "max-message-bytes": "32768",
+          "max-rate-hz": "100",
+          "burst": "1",
+          "max-bytes-per-second": "3276800",
+          "max-queue-bytes": "65536",
+          "overflow-policy": "reject",
+          "validator": "none",
+          "audit": "allow-and-deny",
+          "max-publishers": "1",
+          "max-inflight": "1",
+          "qos.reliability": "reliable",
+          "qos.durability": "volatile",
+          "qos.history": "keep-last",
+          "qos.depth": "1",
+          "qos.deadline": "infinite",
+          "qos.lifespan": "infinite",
+          "qos.liveliness": "automatic",
+          "qos.liveliness-lease-duration": "infinite",
+          "adapter-codec-identity": "{actual_bound_JointCmd_codec_identity}",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "16",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576"
+        }
+      },
+      {
+        "alias": "limx-state",
+        "operation": "topic.subscribe",
+        "resource": "/uwvm_limx_bridge/PF_P441A/state",
+        "type": "uwvm_limx_bridge/msg/JointState",
+        "identity": "{actual_independent_JointState_native_identity}",
+        "limits": {
+          "max-message-bytes": "32768",
+          "max-rate-hz": "100",
+          "burst": "1",
+          "max-bytes-per-second": "3276800",
+          "max-queue-bytes": "65536",
+          "overflow-policy": "reject",
+          "validator": "none",
+          "audit": "allow-and-deny",
+          "max-subscribers": "1",
+          "max-inflight": "1",
+          "qos.reliability": "reliable",
+          "qos.durability": "volatile",
+          "qos.history": "keep-last",
+          "qos.depth": "1",
+          "qos.deadline": "infinite",
+          "qos.lifespan": "infinite",
+          "qos.liveliness": "automatic",
+          "qos.liveliness-lease-duration": "infinite",
+          "adapter-codec-identity": "{actual_bound_JointState_codec_identity}",
+          "audit-max-rate-hz": "100",
+          "audit-burst": "16",
+          "audit-max-records": "10000",
+          "audit-max-bytes": "1048576"
+        }
+      }
+    ],
+    "grant_argv_shape": [
+      "--ros2-single-grant",
+      "main",
+      "{alias}",
+      "{operation}",
+      "{resource}",
+      "{type}",
+      "{identity}"
+    ],
+    "limit_argv_shape": [
+      "--ros2-single-set",
+      "main",
+      "{alias}",
+      "{key}",
+      "{value}"
+    ],
+    "run_tail": [
+      "--wasm-set-main-module-name",
+      "main",
+      "--run",
+      "{actual_selected_wasm}"
+    ],
+    "trusted_gateway": "same exact connection/capability fields + actual worker UID/PID/socket, no wildcard native authority"
+  },
+  "debugger": [
+    "info modules",
+    "bs MODULE FILE:LINE",
+    "print /r command",
+    "print command.na",
+    "info ros capabilities",
+    "info ros sessions",
+    "info ros queues",
+    "info ros stats"
+  ],
+  "meaningful_unrun_cases": [
+    "all complete fields roundtrip",
+    "last field NaN/Inf preserves destination",
+    "overbound90 preserves destination",
+    "default denied no native command",
+    "one native publish attempt no replay after unknown result",
+    "stale telemetry refuses command",
+    "expired lease refuses command",
+    "callback-safe independent once close per native owner",
+    "complete header seq/u32time/names/parallel_solver_mode255 preserved"
+  ],
+  "execution_counts": {
+    "generator": 0,
+    "compiler": 0,
+    "models": 0,
+    "Runtime": 0,
+    "native": 0,
+    "robot": 0
+  }
+}

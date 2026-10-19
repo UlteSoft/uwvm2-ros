@@ -1,0 +1,218 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Explicit foreign LLVM-full Runtime execution declaration and observed receipt",
+  "$defs": {
+    "configuration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "architecture",
+        "mode",
+        "qemu",
+        "sysroot",
+        "loader",
+        "environment"
+      ],
+      "properties": {
+        "architecture": {
+          "enum": [
+            "x86_64",
+            "aarch64",
+            "arm",
+            "i386",
+            "riscv64",
+            "loongarch64",
+            "ppc64le",
+            "s390x"
+          ]
+        },
+        "mode": {
+          "const": "qemu"
+        },
+        "qemu": {
+          "$ref": "#/$defs/pin"
+        },
+        "loader": {
+          "$ref": "#/$defs/pin"
+        },
+        "sysroot": {
+          "$ref": "#/$defs/path"
+        },
+        "environment": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "LD_LIBRARY_PATH": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "architecture",
+        "mode",
+        "qemu",
+        "sysroot",
+        "loader",
+        "environment",
+        "host_elf",
+        "sysroot_identity",
+        "argument_prefix"
+      ],
+      "properties": {
+        "architecture": {
+          "enum": [
+            "x86_64",
+            "aarch64",
+            "arm",
+            "i386",
+            "riscv64",
+            "loongarch64",
+            "ppc64le",
+            "s390x"
+          ]
+        },
+        "mode": {
+          "const": "qemu"
+        },
+        "qemu": {
+          "$ref": "#/$defs/pin"
+        },
+        "loader": {
+          "$ref": "#/$defs/pin"
+        },
+        "sysroot": {
+          "$ref": "#/$defs/path"
+        },
+        "environment": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "LD_LIBRARY_PATH": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "host_elf": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "machine",
+            "bits",
+            "endian"
+          ],
+          "properties": {
+            "machine": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "bits": {
+              "enum": [
+                32,
+                64
+              ]
+            },
+            "endian": {
+              "enum": [
+                "little",
+                "big"
+              ]
+            }
+          }
+        },
+        "sysroot_identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "device",
+            "inode",
+            "mode"
+          ],
+          "properties": {
+            "path": {
+              "$ref": "#/$defs/path"
+            },
+            "device": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "inode": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "mode": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "argument_prefix": {
+          "type": "array",
+          "minItems": 7,
+          "maxItems": 9,
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "pin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "device",
+        "inode",
+        "bytes",
+        "mtime_ns",
+        "ctime_ns",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/path"
+        },
+        "device": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "inode": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "mtime_ns": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ctime_ns": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "path": {
+      "type": "string",
+      "pattern": "^/",
+      "minLength": 2
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "$comment": "Shape only. No QEMU/ELF identity, whole sysroot, console, JIT, native-step or ROS behavior is proven by this declaration."
+}

@@ -1,0 +1,32 @@
+{
+  "actual_SDK_acquisition_run": false,
+  "actual_SSH_run": false,
+  "actual_candidate_imported": false,
+  "actual_compiler_run": false,
+  "actual_signature_verification_run": false,
+  "actual_tests_run": false,
+  "checks": [
+    "All candidate Python source parses with ast.parse; none imported or executed.",
+    "Producer/rebuild/model/storage byte-identical to sealed noetic6_r3; restart byte-identical to maintained0f14 helper.",
+    "All original non-main owner/stager function ASTs unchanged.",
+    "Embedded finite-cache validator function ASTs identical in owner and stager.",
+    "Only r6d fresh paths, fourth whole cache root, actual receipt binding, failed6c provenance and receipt/tree admission/finalization hooks added.",
+    "Actual receipt schema read as JSON only; 41 candidate pins and required content-only flags match expected field names."
+  ],
+  "format_version": 1,
+  "kind": "noetic-r6d-source-only-static-validation",
+  "old_FAILED_status_promoted": false,
+  "source_inputs": [
+    {
+      "bytes": 9127,
+      "path": "tests/ros_unitree/acceptance/noetic6_next/derive_r6d_metadata.py",
+      "sha256": "b107197cfcccce54e772751785e0842a06ecfafac96849f02825a5a80f6e8b7e"
+    },
+    {
+      "bytes": 14379,
+      "path": "tests/ros_unitree/acceptance/noetic6_next/cacheview_contract.py",
+      "sha256": "588d2b269734cf4715643988aabfd31daffd62e2bad2d27f60775563a12f1d87"
+    }
+  ],
+  "status": "PASS_SOURCE_AST_AND_EXACT_BYTE_COMPARISONS_ONLY"
+}

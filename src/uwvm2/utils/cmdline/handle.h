@@ -98,9 +98,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::cmdline
         wasm,
         log,
         runtime,
+        ros1,
+        ros2,
 #if defined(UWVM_IMPORT_WASI)
         wasi,
 #endif
+        secure,
     };
 
     /// @brief Execution charset EBCDIC not supported

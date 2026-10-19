@@ -1,0 +1,38 @@
+{
+  "kind": "source53-reviewed-host-retirement",
+  "status": "CURRENT_SOURCE_INDEPENDENT_REVIEW_CLOSED_NOT_EXECUTED",
+  "current_files": {
+    "src/uwvm2/imported/ros/common/management.h": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/src/uwvm2/imported/ros/common/management.h",
+      "bytes": 1605,
+      "sha256": "92de621d17fdcb8d91d05cdf5b3a530e27a4f618b68dad1b763eca71f3f3f5bc"
+    },
+    "src/uwvm2/imported/ros/capability/manager.h": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/src/uwvm2/imported/ros/capability/manager.h",
+      "bytes": 32572,
+      "sha256": "929c388c3ee73bba85785109bf807a24ee0f9d6c41cd8e7ddd88651bdc34472c"
+    },
+    "src/uwvm2/uwvm/imported/ros/host.h": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/src/uwvm2/uwvm/imported/ros/host.h",
+      "bytes": 75676,
+      "sha256": "9c3a1c08fe7ac77c8a3adaf223a70d4ecf6066e9edc092a68c3feeea55c204e1"
+    },
+    "src/uwvm2/uwvm/imported/ros/debug_bridge.h": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/src/uwvm2/uwvm/imported/ros/debug_bridge.h",
+      "bytes": 5724,
+      "sha256": "276ff2cdbae3974f1f38c96bea3013846f659bea34d4f7d27108f5f555929259"
+    }
+  },
+  "author_source_ready": {
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source53-management-and-sdk-source-only/host-retirement/author-source-ready.json",
+    "bytes": 2398,
+    "sha256": "9c5fbd929223db253524f884b7b59d224cfa84b05752301c861028c98d074a25"
+  },
+  "independent_source_peer": {
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source53-management-and-sdk-source-only/host-retirement/independent-source-peer.json",
+    "bytes": 5917,
+    "sha256": "a8e1c0bc780f4f69736d4cd9d10c368913fc39c027a33101baa698b658c7e694"
+  },
+  "tests_or_compilers_or_Runtime_executed": false,
+  "scope": "Current source only; no historical test or peer result is promoted to changed bytes."
+}

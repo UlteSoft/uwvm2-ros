@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dds xmlns="http://www.eprosima.com/XMLSchemas/fastRTPS_Profiles">
+  <profiles>
+    <participant profile_name="uwvm_qemu_discovery_100ms" is_default_profile="true">
+      <rtps>
+        <builtin>
+          <discovery_config>
+            <leaseAnnouncement><sec>0</sec><nanosec>100000000</nanosec></leaseAnnouncement>
+            <initialAnnouncements>
+              <count>20</count>
+              <period><sec>0</sec><nanosec>100000000</nanosec></period>
+            </initialAnnouncements>
+          </discovery_config>
+        </builtin>
+      </rtps>
+    </participant>
+  </profiles>
+</dds>

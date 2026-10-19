@@ -1,0 +1,51 @@
+{
+  "kind": "sdk33-threaded-standard-eh-source-recipe-not-executed",
+  "actual": {
+    "configure": 0,
+    "compiler": 0,
+    "probe": 0,
+    "model": 0,
+    "Guest": 0,
+    "Native": 0
+  },
+  "default_permissions": [],
+  "toolchain": "sdk/rmw_wasm/cmake/threaded-eh-toolchain.cmake",
+  "mandatory_inputs": [
+    "UWVM_WASI_SDK33_PREFIX",
+    "UWVM_CROSS_PREFIX",
+    "UWVM_SHARED_INITIAL_BYTES",
+    "UWVM_SHARED_MAXIMUM_BYTES",
+    "UWVM_MAIN_STACK_BYTES"
+  ],
+  "configure_argv": [
+    "cmake",
+    "-S",
+    "${ACTUAL_REVIEWED_PACKAGE_SOURCE}",
+    "-B",
+    "${FRESH_OWNED_BUILD}",
+    "-DCMAKE_TOOLCHAIN_FILE=${ACTUAL_SOURCE_ROOT}/sdk/rmw_wasm/cmake/threaded-eh-toolchain.cmake",
+    "-DUWVM_WASI_SDK33_PREFIX=${ACTUAL_ADMITTED_SDK33}",
+    "-DUWVM_CROSS_PREFIX=${ACTUAL_CROSS_PREFIX}",
+    "-DUWVM_SHARED_INITIAL_BYTES=${INITIAL}",
+    "-DUWVM_SHARED_MAXIMUM_BYTES=${MAXIMUM}",
+    "-DUWVM_MAIN_STACK_BYTES=${STACK}",
+    "-DCMAKE_INSTALL_PREFIX=${ACTUAL_CROSS_PREFIX}",
+    "-DCMAKE_PREFIX_PATH=${ACTUAL_CROSS_PREFIX}",
+    "-DBUILD_SHARED_LIBS=OFF",
+    "-DBUILD_TESTING=OFF"
+  ],
+  "build_argv": [
+    "cmake",
+    "--build",
+    "${FRESH_OWNED_BUILD}",
+    "--parallel",
+    "1"
+  ],
+  "no_automatic_runtime_execution": true,
+  "remaining": [
+    "Complete actual original-rclcpp composite project hook and producer",
+    "Genuine actual SDK tool/sysroot/object and executable-link admission",
+    "Actual produced Wasm import/shared-memory/TLS/standard-EH and capability checks",
+    "Complete original default Node and official/native/performance qualification"
+  ]
+}

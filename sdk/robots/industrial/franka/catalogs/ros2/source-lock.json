@@ -1,0 +1,510 @@
+{
+  "kind": "franka-selected-original-source-lock-v1",
+  "vendor": "franka",
+  "variant": "ros2",
+  "ros_version": 2,
+  "default_authority": [],
+  "definitions": [
+    {
+      "type": "builtin_interfaces/msg/Time",
+      "repository": "rcl_jazzy",
+      "original_file": "builtin_interfaces/msg/Time.msg",
+      "generation_file": "builtin_interfaces/msg/Time.msg",
+      "bytes": 421,
+      "sha256": "dc5a01ddde3aecffee21eb24974fe77cc969f873218a2b1811aa0ac8a456b8bd",
+      "git_blob_sha1": "03cc83f8622675b1ce70fcc5b6d260b1dd13d860"
+    },
+    {
+      "type": "franka_msgs/action/ErrorRecovery",
+      "repository": "franka_ros2",
+      "original_file": "franka_msgs/action/ErrorRecovery.action",
+      "generation_file": "franka_msgs/action/ErrorRecovery.action",
+      "bytes": 8,
+      "sha256": "d487269d2de0655a9ed127c83b0d1006d724e600385b32f4f4b39893c1e0164b",
+      "git_blob_sha1": "a845151cc840034a50f5fd010515d61e661f79ee"
+    },
+    {
+      "type": "franka_msgs/action/Grasp",
+      "repository": "franka_ros2",
+      "original_file": "franka_msgs/action/Grasp.action",
+      "generation_file": "franka_msgs/action/Grasp.action",
+      "bytes": 145,
+      "sha256": "e129fa8bfc57b36851e4f3466af34d9a5a23935a9566c24bd981818047fdb6d8",
+      "git_blob_sha1": "d0b4bf535cf90c7bcb5e6fa87be423c3adb33858"
+    },
+    {
+      "type": "franka_msgs/action/Homing",
+      "repository": "franka_ros2",
+      "original_file": "franka_msgs/action/Homing.action",
+      "generation_file": "franka_msgs/action/Homing.action",
+      "bytes": 62,
+      "sha256": "34409ed1a35ba24f95bd4ca67e99c4ef7efcf76bbf5f2844fc75360fd794e99b",
+      "git_blob_sha1": "6ea0aa20ed298198b6c5e7ff5ac6e78b1f77d394"
+    },
+    {
+      "type": "franka_msgs/action/Move",
+      "repository": "franka_ros2",
+      "original_file": "franka_msgs/action/Move.action",
+      "generation_file": "franka_msgs/action/Move.action",
+      "bytes": 106,
+      "sha256": "349bd984b63d6510e61492b8b3352070ff4b9ef6d1825f8ae86ad5bc9462b25b",
+      "git_blob_sha1": "34f37d6e6a15c09ead283f2a7da6d1df02ebb2eb"
+    },
+    {
+      "type": "franka_msgs/action/PTPMotion",
+      "repository": "franka_ros2",
+      "original_file": "franka_msgs/action/PTPMotion.action",
+      "generation_file": "franka_msgs/action/PTPMotion.action",
+      "bytes": 844,
+      "sha256": "19836199eda892ef1ab73dec2a25a966358b0a69f80b456a1d843b46834bec20",
+      "git_blob_sha1": "328268094223bd556b4bd38e501ed7c8e2ee1dde"
+    },
+    {
+      "type": "franka_msgs/msg/CollisionIndicators",
+      "repository": "franka_ros2",
+      "original_file": "franka_msgs/msg/CollisionIndicators.msg",
+      "generation_file": "franka_msgs/msg/CollisionIndicators.msg",
+      "bytes": 341,
+      "sha256": "39654ff147120c2f3e5a4cdaf6a43a7af6e1b3ff889aff9e5bac83b920a95c78",
+      "git_blob_sha1": "03e92733f9e66fe1100ba61098c3d1149e16ab07"
+    },
+    {
+      "type": "franka_msgs/msg/Elbow",
+      "repository": "franka_ros2",
+      "original_file": "franka_msgs/msg/Elbow.msg",
+      "generation_file": "franka_msgs/msg/Elbow.msg",
+      "bytes": 169,
+      "sha256": "3bdb18227176ab8f368f00b47ee06aa843bd2df4cd60e40034bf6b69d42f496e",
+      "git_blob_sha1": "d69eee910e075aac5f85444a2a423597020f6a6e"
+    },
+    {
+      "type": "franka_msgs/msg/Errors",
+      "repository": "franka_ros2",
+      "original_file": "franka_msgs/msg/Errors.msg",
+      "generation_file": "franka_msgs/msg/Errors.msg",
+      "bytes": 1654,
+      "sha256": "bf9d2b5e09680daaa5b46d5ba9051a9201ae5c892ab8609893364ddf424c01ae",
+      "git_blob_sha1": "9eca9b41ba0af0f44f269b6f44ce07a76c75f385"
+    },
+    {
+      "type": "franka_msgs/msg/FrankaRobotState",
+      "repository": "franka_ros2",
+      "original_file": "franka_msgs/msg/FrankaRobotState.msg",
+      "generation_file": "franka_msgs/msg/FrankaRobotState.msg",
+      "bytes": 2818,
+      "sha256": "c55a163656bcf7674601ff18d02819b3088c1e9e3edc220855b3099ec0985ae5",
+      "git_blob_sha1": "1b75a80bd5e92001c3a9e117e92012298c431d26"
+    },
+    {
+      "type": "franka_msgs/msg/GraspEpsilon",
+      "repository": "franka_ros2",
+      "original_file": "franka_msgs/msg/GraspEpsilon.msg",
+      "generation_file": "franka_msgs/msg/GraspEpsilon.msg",
+      "bytes": 269,
+      "sha256": "e6c8564c1603c990487a3c3c7f123e459cd4ec7619c98c148675601d55a0ba3b",
+      "git_blob_sha1": "0efb3917a1f46eb4a7b62a88873b18b35f689566"
+    },
+    {
+      "type": "franka_msgs/msg/TargetStatus",
+      "repository": "franka_ros2",
+      "original_file": "franka_msgs/msg/TargetStatus.msg",
+      "generation_file": "franka_msgs/msg/TargetStatus.msg",
+      "bytes": 614,
+      "sha256": "d8941e0276cf834af45919646c6b7cd4d8f18f352b169c72cf6672a5d6d3b062",
+      "git_blob_sha1": "3fb83695c89ac0f866dab923568323a34843bd33"
+    },
+    {
+      "type": "franka_msgs/srv/SetCartesianStiffness",
+      "repository": "franka_ros2",
+      "original_file": "franka_msgs/srv/SetCartesianStiffness.srv",
+      "generation_file": "franka_msgs/srv/SetCartesianStiffness.srv",
+      "bytes": 190,
+      "sha256": "0857969a07f8a7ee4efd27a869c9dda31be017f8dac26e8d336a4bb8116ae0df",
+      "git_blob_sha1": "6f1fb003b661d71b99ddeaeed2f78a6e285359bb"
+    },
+    {
+      "type": "franka_msgs/srv/SetForceTorqueCollisionBehavior",
+      "repository": "franka_ros2",
+      "original_file": "franka_msgs/srv/SetForceTorqueCollisionBehavior.srv",
+      "generation_file": "franka_msgs/srv/SetForceTorqueCollisionBehavior.srv",
+      "bytes": 201,
+      "sha256": "ed4057e185473c468834658e92c0d4851b760ed203949c34ea59bea0d2d435b1",
+      "git_blob_sha1": "f6aeaba666c0c4c2f914726480214d91df0171af"
+    },
+    {
+      "type": "franka_msgs/srv/SetFullCollisionBehavior",
+      "repository": "franka_ros2",
+      "original_file": "franka_msgs/srv/SetFullCollisionBehavior.srv",
+      "generation_file": "franka_msgs/srv/SetFullCollisionBehavior.srv",
+      "bytes": 391,
+      "sha256": "e50a6a720844b538483bf8fe9e1c9aef505576d6d16712f7b7f22c735ec26c3e",
+      "git_blob_sha1": "c4d2b2dd00dc94816fb0e1e6d823f10e075da005"
+    },
+    {
+      "type": "franka_msgs/srv/SetJointStiffness",
+      "repository": "franka_ros2",
+      "original_file": "franka_msgs/srv/SetJointStiffness.srv",
+      "generation_file": "franka_msgs/srv/SetJointStiffness.srv",
+      "bytes": 112,
+      "sha256": "b99b186a76a4f17857f419c9b69f45a9043144e9f8c491bbd38aa5468dd5f82c",
+      "git_blob_sha1": "15d245aef2e9fc1ddb7b50aa53882b270eba2a3a"
+    },
+    {
+      "type": "franka_msgs/srv/SetLoad",
+      "repository": "franka_ros2",
+      "original_file": "franka_msgs/srv/SetLoad.srv",
+      "generation_file": "franka_msgs/srv/SetLoad.srv",
+      "bytes": 227,
+      "sha256": "bddfba6e7ecadf5a7b4208408a2c835d59a87e02a4188517db5d177a9c1b5982",
+      "git_blob_sha1": "d674215334b9bcef92da1dd1915c929baa9a530b"
+    },
+    {
+      "type": "franka_msgs/srv/SetStiffnessFrame",
+      "repository": "franka_ros2",
+      "original_file": "franka_msgs/srv/SetStiffnessFrame.srv",
+      "generation_file": "franka_msgs/srv/SetStiffnessFrame.srv",
+      "bytes": 234,
+      "sha256": "021b10a15a69b744a37ff20861d6953926342ef71e616ad015248bf70f0bbdf3",
+      "git_blob_sha1": "fe2af7a2ed5145f60644f44c5b43b83e15b2486f"
+    },
+    {
+      "type": "franka_msgs/srv/SetTCPFrame",
+      "repository": "franka_ros2",
+      "original_file": "franka_msgs/srv/SetTCPFrame.srv",
+      "generation_file": "franka_msgs/srv/SetTCPFrame.srv",
+      "bytes": 228,
+      "sha256": "98bb922a8b71ff502dce86109c5935446512520f8ac9b5f86802f45412088ab2",
+      "git_blob_sha1": "50e86c8b32c93d35dbfc5608ef85e43768a2f4b8"
+    },
+    {
+      "type": "franka_spine_msgs/action/MoveAbsolute",
+      "repository": "franka_ros2",
+      "original_file": "franka_spine/franka_spine_msgs/action/MoveAbsolute.action",
+      "generation_file": "franka_spine_msgs/action/MoveAbsolute.action",
+      "bytes": 544,
+      "sha256": "20296fd0b977b6dc5078cc807f38395feffc05df09913c32d8cabd00aad3ad6e",
+      "git_blob_sha1": "cbe036756fb2585682564382a01543e03f911f6e"
+    },
+    {
+      "type": "franka_spine_msgs/msg/SpineParameters",
+      "repository": "franka_ros2",
+      "original_file": "franka_spine/franka_spine_msgs/msg/SpineParameters.msg",
+      "generation_file": "franka_spine_msgs/msg/SpineParameters.msg",
+      "bytes": 140,
+      "sha256": "20bbc8342c3cef0dd9b8950d66c48dfea99b1ef5ff1b9d55bbf98ca4ce5068f4",
+      "git_blob_sha1": "bb630ba685cf2fdab0c1cbab40339100a65384db"
+    },
+    {
+      "type": "franka_spine_msgs/msg/SpinePosition",
+      "repository": "franka_ros2",
+      "original_file": "franka_spine/franka_spine_msgs/msg/SpinePosition.msg",
+      "generation_file": "franka_spine_msgs/msg/SpinePosition.msg",
+      "bytes": 279,
+      "sha256": "bf6e4b21f7666ec509de108df7bc3322b8f02edea6d6df09c7cf4df7e3c549e5",
+      "git_blob_sha1": "1da9cbf10ebad2bc90370db786b7b716a435a5ae"
+    },
+    {
+      "type": "franka_spine_msgs/msg/SpineState",
+      "repository": "franka_ros2",
+      "original_file": "franka_spine/franka_spine_msgs/msg/SpineState.msg",
+      "generation_file": "franka_spine_msgs/msg/SpineState.msg",
+      "bytes": 558,
+      "sha256": "a49bb6b5cc53d1a6fd3f8d62162cfb117aa8d3a6d9c98770cc715ae63144d8b1",
+      "git_blob_sha1": "4123a2ae7353118729831b60ee1f4e2b6549281c"
+    },
+    {
+      "type": "franka_spine_msgs/msg/UserLimits",
+      "repository": "franka_ros2",
+      "original_file": "franka_spine/franka_spine_msgs/msg/UserLimits.msg",
+      "generation_file": "franka_spine_msgs/msg/UserLimits.msg",
+      "bytes": 141,
+      "sha256": "f7ed8c93f107f28ddd6d068a74ca5def023c01ba8b5b9be25a68d33572a6d783",
+      "git_blob_sha1": "1a8f7c7daa80034777a45e5eb0437645cc1513ce"
+    },
+    {
+      "type": "franka_spine_msgs/srv/FaultReset",
+      "repository": "franka_ros2",
+      "original_file": "franka_spine/franka_spine_msgs/srv/FaultReset.srv",
+      "generation_file": "franka_spine_msgs/srv/FaultReset.srv",
+      "bytes": 220,
+      "sha256": "c6a15e38e42a502f66ed2160ebaff2cb086d361f338995fe22d0696a3c281342",
+      "git_blob_sha1": "8161af32bbb74830f64fa58b9d03aa0c0e11d150"
+    },
+    {
+      "type": "franka_spine_msgs/srv/GetParameters",
+      "repository": "franka_ros2",
+      "original_file": "franka_spine/franka_spine_msgs/srv/GetParameters.srv",
+      "generation_file": "franka_spine_msgs/srv/GetParameters.srv",
+      "bytes": 318,
+      "sha256": "9cbe855d5273d7381cbca71b6b662e55cae70bb54936db3c919a4fe05731d48e",
+      "git_blob_sha1": "80c0edd6bcce2ad43ef4598dcb21c40320a947f7"
+    },
+    {
+      "type": "franka_spine_msgs/srv/GetPosition",
+      "repository": "franka_ros2",
+      "original_file": "franka_spine/franka_spine_msgs/srv/GetPosition.srv",
+      "generation_file": "franka_spine_msgs/srv/GetPosition.srv",
+      "bytes": 143,
+      "sha256": "888ed826a56da9583f87d8a132d00a60380fbd464daf11f6a3f86be16456f1e5",
+      "git_blob_sha1": "8306107f99ce2f41de367b5be1564074a59a88a4"
+    },
+    {
+      "type": "franka_spine_msgs/srv/GetSpineState",
+      "repository": "franka_ros2",
+      "original_file": "franka_spine/franka_spine_msgs/srv/GetSpineState.srv",
+      "generation_file": "franka_spine_msgs/srv/GetSpineState.srv",
+      "bytes": 436,
+      "sha256": "827ef78a6b4b9c0b6eaf33e2a586092c9e0a363d5fe997f675257005afda8d56",
+      "git_blob_sha1": "9e7c3ae06358d2f83fae70706cfc67c9dc58c4a6"
+    },
+    {
+      "type": "franka_spine_msgs/srv/Halt",
+      "repository": "franka_ros2",
+      "original_file": "franka_spine/franka_spine_msgs/srv/Halt.srv",
+      "generation_file": "franka_spine_msgs/srv/Halt.srv",
+      "bytes": 225,
+      "sha256": "0c8eccacefd95d6d98fb89d959027deace723ea44b3c58f652466b4137080824",
+      "git_blob_sha1": "f013aec801920a25cef185a6145e2912f5bb770b"
+    },
+    {
+      "type": "franka_spine_msgs/srv/SwitchOff",
+      "repository": "franka_ros2",
+      "original_file": "franka_spine/franka_spine_msgs/srv/SwitchOff.srv",
+      "generation_file": "franka_spine_msgs/srv/SwitchOff.srv",
+      "bytes": 236,
+      "sha256": "cefedba74e07b78e85f418181880a0915a2cc378d640e9eb0f015b7ccb2c0c1f",
+      "git_blob_sha1": "9252a33c05c6caf4c9d1e0894cf93e42a081b595"
+    },
+    {
+      "type": "franka_spine_msgs/srv/SwitchOn",
+      "repository": "franka_ros2",
+      "original_file": "franka_spine/franka_spine_msgs/srv/SwitchOn.srv",
+      "generation_file": "franka_spine_msgs/srv/SwitchOn.srv",
+      "bytes": 232,
+      "sha256": "e9845e0be5302a08a4c0f68524600e55f516066aed3c99bfb024d4264415cf09",
+      "git_blob_sha1": "ef33c7860f8c12361c1ca627e96089bce2c3f700"
+    },
+    {
+      "type": "geometry_msgs/msg/Accel",
+      "repository": "common_jazzy",
+      "original_file": "geometry_msgs/msg/Accel.msg",
+      "generation_file": "geometry_msgs/msg/Accel.msg",
+      "bytes": 119,
+      "sha256": "67f371aabfc8ec1bd58bbb01a1709222e685c549462984c9958cc89fcd9f6abb",
+      "git_blob_sha1": "19fef1411b7704ca358a27ce11111204befa5237"
+    },
+    {
+      "type": "geometry_msgs/msg/AccelStamped",
+      "repository": "common_jazzy",
+      "original_file": "geometry_msgs/msg/AccelStamped.msg",
+      "generation_file": "geometry_msgs/msg/AccelStamped.msg",
+      "bytes": 92,
+      "sha256": "c46e9fcf5551d2330b63b1efe0626f747bcda24ddcc9e281597a9354b3bd9eea",
+      "git_blob_sha1": "9283fbbd377b9f24f3f0b64e7ea35aeaa859679d"
+    },
+    {
+      "type": "geometry_msgs/msg/Inertia",
+      "repository": "common_jazzy",
+      "original_file": "geometry_msgs/msg/Inertia.msg",
+      "generation_file": "geometry_msgs/msg/Inertia.msg",
+      "bytes": 260,
+      "sha256": "33bc8db637874153ba5261bb5e7c23ca12754e15e5a2e58a86533c1f5bd66dd4",
+      "git_blob_sha1": "912aa9530f20b7b95ab64480135d2ad6965529e3"
+    },
+    {
+      "type": "geometry_msgs/msg/InertiaStamped",
+      "repository": "common_jazzy",
+      "original_file": "geometry_msgs/msg/InertiaStamped.msg",
+      "generation_file": "geometry_msgs/msg/InertiaStamped.msg",
+      "bytes": 92,
+      "sha256": "456743836340c5d638dba1fcae3211acfe61f0690dcc9fe5b7ae9af8991591f1",
+      "git_blob_sha1": "7da2662b5727234fff06a1295d13b5ffeb168160"
+    },
+    {
+      "type": "geometry_msgs/msg/Point",
+      "repository": "common_jazzy",
+      "original_file": "geometry_msgs/msg/Point.msg",
+      "generation_file": "geometry_msgs/msg/Point.msg",
+      "bytes": 84,
+      "sha256": "eb4c07e591cf0269ccb17245dcd4f998162feb09cc8add85fa082c8a30bfc91d",
+      "git_blob_sha1": "f1d3a71a853c668f066de795ba5e0f4458f3f1c0"
+    },
+    {
+      "type": "geometry_msgs/msg/Pose",
+      "repository": "common_jazzy",
+      "original_file": "geometry_msgs/msg/Pose.msg",
+      "generation_file": "geometry_msgs/msg/Pose.msg",
+      "bytes": 119,
+      "sha256": "3eceb77c63ebbb544c11d7f991e475e9819e0cf534deb1a879392c1b3dc997de",
+      "git_blob_sha1": "277e2f0179a64cd3e17e31502e3d8a074ace7064"
+    },
+    {
+      "type": "geometry_msgs/msg/PoseStamped",
+      "repository": "common_jazzy",
+      "original_file": "geometry_msgs/msg/PoseStamped.msg",
+      "generation_file": "geometry_msgs/msg/PoseStamped.msg",
+      "bytes": 89,
+      "sha256": "31898ab0eb64a6c44c27ab4959819a32ec3bc3ee847c8fe1b01c897d48e311e5",
+      "git_blob_sha1": "2b43935ed33b384937142aaf3aae085cdcb9ea5e"
+    },
+    {
+      "type": "geometry_msgs/msg/Quaternion",
+      "repository": "common_jazzy",
+      "original_file": "geometry_msgs/msg/Quaternion.msg",
+      "generation_file": "geometry_msgs/msg/Quaternion.msg",
+      "bytes": 116,
+      "sha256": "298495eb67a139642ffd37cc9029eae085e6c39a8789828b7517868a487939ed",
+      "git_blob_sha1": "96d392779a286cc3f4c83d80962236f5ea42c884"
+    },
+    {
+      "type": "geometry_msgs/msg/Twist",
+      "repository": "common_jazzy",
+      "original_file": "geometry_msgs/msg/Twist.msg",
+      "generation_file": "geometry_msgs/msg/Twist.msg",
+      "bytes": 116,
+      "sha256": "ed471ef861f65af991b1f64d66ef941dd41dd4c0702f6222512b1a16c62d58b0",
+      "git_blob_sha1": "ede73597b9025238af28f55c275ddb02a8ed2f94"
+    },
+    {
+      "type": "geometry_msgs/msg/TwistStamped",
+      "repository": "common_jazzy",
+      "original_file": "geometry_msgs/msg/TwistStamped.msg",
+      "generation_file": "geometry_msgs/msg/TwistStamped.msg",
+      "bytes": 92,
+      "sha256": "ffc9d5925412410b28d601c55cf386a0b3e4d5dba00920fbafb98d7201f582ca",
+      "git_blob_sha1": "2dcbeac1b07c1a9a2db84ca496b91d2a6345c6f4"
+    },
+    {
+      "type": "geometry_msgs/msg/Vector3",
+      "repository": "common_jazzy",
+      "original_file": "geometry_msgs/msg/Vector3.msg",
+      "generation_file": "geometry_msgs/msg/Vector3.msg",
+      "bytes": 251,
+      "sha256": "d8b9ea9aad1f424faf4d2b94dae1e1368af1e5d59de11aeed019399cff7f9e1d",
+      "git_blob_sha1": "b54588e117c4632f551c221fbc33df8f958804bf"
+    },
+    {
+      "type": "geometry_msgs/msg/Vector3Stamped",
+      "repository": "common_jazzy",
+      "original_file": "geometry_msgs/msg/Vector3Stamped.msg",
+      "generation_file": "geometry_msgs/msg/Vector3Stamped.msg",
+      "bytes": 285,
+      "sha256": "bfe690d1b7d907c039c9c1580cf8de557d546c8aeb3280c1bd5e0a60d84356cd",
+      "git_blob_sha1": "aab1e0a986010707dfdae8989afb46f75cea61c2"
+    },
+    {
+      "type": "geometry_msgs/msg/Wrench",
+      "repository": "common_jazzy",
+      "original_file": "geometry_msgs/msg/Wrench.msg",
+      "generation_file": "geometry_msgs/msg/Wrench.msg",
+      "bytes": 116,
+      "sha256": "d9667abd3d2a67d5624113fa07a647b0d4806bf89d21c8a5cf914905a036bf25",
+      "git_blob_sha1": "0b8efccbe338bf5aba4e28be5552f6f933aeef08"
+    },
+    {
+      "type": "geometry_msgs/msg/WrenchStamped",
+      "repository": "common_jazzy",
+      "original_file": "geometry_msgs/msg/WrenchStamped.msg",
+      "generation_file": "geometry_msgs/msg/WrenchStamped.msg",
+      "bytes": 95,
+      "sha256": "853a8534230b795b6c1afcb8483002f5d1cf14e967ffa0da2cba8da5453b2162",
+      "git_blob_sha1": "0d5ebd9674a7d50ba96c8f06084b9bae53ca8b83"
+    },
+    {
+      "type": "sensor_msgs/msg/JointState",
+      "repository": "common_jazzy",
+      "original_file": "sensor_msgs/msg/JointState.msg",
+      "generation_file": "sensor_msgs/msg/JointState.msg",
+      "bytes": 999,
+      "sha256": "711d1771a002c7190e5bbe746a163a67477c1e2a45482a64f1fe339815ca6f5d",
+      "git_blob_sha1": "ffaa9bfb0059383a6282abee168c72fdc92793ce"
+    },
+    {
+      "type": "std_msgs/msg/Header",
+      "repository": "common_jazzy",
+      "original_file": "std_msgs/msg/Header.msg",
+      "generation_file": "std_msgs/msg/Header.msg",
+      "bytes": 322,
+      "sha256": "d2cea14630e39ed0fa5b432ba9160a7c38855b9427d3344f99e83e83facb53c2",
+      "git_blob_sha1": "6966bb98863c237131a2bd2822298df9511ce948"
+    }
+  ],
+  "original_custom_roots": [
+    "franka_msgs/action/ErrorRecovery",
+    "franka_msgs/action/Grasp",
+    "franka_msgs/action/Homing",
+    "franka_msgs/action/Move",
+    "franka_msgs/action/PTPMotion",
+    "franka_msgs/msg/CollisionIndicators",
+    "franka_msgs/msg/Elbow",
+    "franka_msgs/msg/Errors",
+    "franka_msgs/msg/FrankaRobotState",
+    "franka_msgs/msg/GraspEpsilon",
+    "franka_msgs/msg/TargetStatus",
+    "franka_msgs/srv/SetCartesianStiffness",
+    "franka_msgs/srv/SetForceTorqueCollisionBehavior",
+    "franka_msgs/srv/SetFullCollisionBehavior",
+    "franka_msgs/srv/SetJointStiffness",
+    "franka_msgs/srv/SetLoad",
+    "franka_msgs/srv/SetStiffnessFrame",
+    "franka_msgs/srv/SetTCPFrame",
+    "franka_spine_msgs/action/MoveAbsolute",
+    "franka_spine_msgs/msg/SpineParameters",
+    "franka_spine_msgs/msg/SpinePosition",
+    "franka_spine_msgs/msg/SpineState",
+    "franka_spine_msgs/msg/UserLimits",
+    "franka_spine_msgs/srv/FaultReset",
+    "franka_spine_msgs/srv/GetParameters",
+    "franka_spine_msgs/srv/GetPosition",
+    "franka_spine_msgs/srv/GetSpineState",
+    "franka_spine_msgs/srv/Halt",
+    "franka_spine_msgs/srv/SwitchOff",
+    "franka_spine_msgs/srv/SwitchOn"
+  ],
+  "repositories": [
+    {
+      "id": "common_jazzy",
+      "url": "https://github.com/ros2/common_interfaces",
+      "branch": "jazzy",
+      "commit": "a941f14bb318d8d904505ed935ccbb97f24a70a4",
+      "tree_git_sha1": "bbd609d90753abf6e10bdc94f594f36b75921677",
+      "archive": {
+        "url": "https://codeload.github.com/ros2/common_interfaces/tar.gz/a941f14bb318d8d904505ed935ccbb97f24a70a4",
+        "bytes": 150460,
+        "sha256": "4140cc780aec296bcd88c3049ba541783d40fbb7dd0e5919e621a85e314416ba"
+      },
+      "default_authority": [],
+      "scope": "Unchanged selected original interfaces/source and complete original acquisition archive; no compilation, native or robot execution."
+    },
+    {
+      "id": "franka_ros2",
+      "url": "https://github.com/frankarobotics/franka_ros2",
+      "branch": "jazzy",
+      "commit": "4acc05c01ebfcdf916ee6b3df966df0ad7b2f9ec",
+      "tree_git_sha1": "2cbd593c44bd695bbb6f0bfd450edb1b11b926a0",
+      "archive": {
+        "url": "https://codeload.github.com/frankarobotics/franka_ros2/tar.gz/4acc05c01ebfcdf916ee6b3df966df0ad7b2f9ec",
+        "bytes": 4885278,
+        "sha256": "dec1de15d1cb4a4111db201932d257d45371272e264336279a218c2b799da2c3"
+      },
+      "default_authority": [],
+      "scope": "Unchanged selected original interfaces/source and complete original acquisition archive; no compilation, native or robot execution."
+    },
+    {
+      "id": "rcl_jazzy",
+      "url": "https://github.com/ros2/rcl_interfaces",
+      "branch": "jazzy",
+      "commit": "7aa3caf43377ea6ad615bc1040832e2c7566bfbe",
+      "tree_git_sha1": "4515d6d00cf6209db404352534818e4199fe33c9",
+      "archive": {
+        "url": "https://codeload.github.com/ros2/rcl_interfaces/tar.gz/7aa3caf43377ea6ad615bc1040832e2c7566bfbe",
+        "bytes": 48039,
+        "sha256": "d984942035cd4df4f60c92d6038cecbfc3f5a01a1977c1b3199cee45cd67281c"
+      },
+      "default_authority": [],
+      "scope": "Unchanged selected original interfaces/source and complete original acquisition archive; no compilation, native or robot execution."
+    }
+  ],
+  "catalog_sha256": "27199564a9e5a5b469d314599f7fb15a1fd8c7c40ba6c52cd241c56621b9a69f",
+  "scope": "Complete original custom declarations in selected Noetic/Jazzy source plus all reached unchanged standard definitions; no FCI/controller/native or other-release qualification."
+}

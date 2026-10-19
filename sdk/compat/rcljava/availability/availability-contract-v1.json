@@ -1,0 +1,137 @@
+{
+  "format_version": 1,
+  "kind": "finite-rcljava-service-availability-source-contract-v1",
+  "evidence_status": "SOURCE_ONLY_NOT_EXECUTED",
+  "default_authority": [],
+  "existing_constructor_query_selection": null,
+  "backend": 2,
+  "optional_module": "uwvm_ros2_client_v1",
+  "abi_version": 1,
+  "tuples": [
+    {
+      "name": "abi_version",
+      "params": [],
+      "results": [
+        "i32"
+      ]
+    },
+    {
+      "name": "features",
+      "params": [
+        "i64",
+        "i64",
+        "i32",
+        "i64"
+      ],
+      "results": [
+        "i32"
+      ]
+    },
+    {
+      "name": "service_available",
+      "params": [
+        "i64",
+        "i64",
+        "i64",
+        "i32",
+        "i64"
+      ],
+      "results": [
+        "i32"
+      ]
+    }
+  ],
+  "outcome": {
+    "features_bytes": 8,
+    "features_complete_mask": 7,
+    "features_explicit_zero": 0,
+    "query_bytes": 1,
+    "query_success_values": [
+      0,
+      1
+    ],
+    "sentinel": 255,
+    "nonzero_errno_is_not_false": true,
+    "malformed_success": 22,
+    "required_feature_absent": 95
+  },
+  "roles": {
+    "ordinary_client": [
+      "service.call",
+      "event.observe"
+    ],
+    "optional_query": "service.available",
+    "optional_wait_clock": "time_read_steady",
+    "query_source_field": "service-source-alias",
+    "host_native_pair": [
+      "resource",
+      "native_type",
+      "native_identity",
+      "canonical_codec_presence_and_value",
+      "all_eight_QoS_fields",
+      "current_instance",
+      "runtime_generation",
+      "native_session"
+    ],
+    "new_grant_from_alias_or_query": false,
+    "business_native_client_same_as_query_client": false
+  },
+  "owners": {
+    "legacy": 2,
+    "query_only": 3,
+    "query_with_wait": 4,
+    "open_order": [
+      "call",
+      "observer",
+      "available",
+      "steady"
+    ],
+    "close_order": [
+      "steady",
+      "available",
+      "observer",
+      "call"
+    ],
+    "preallocated_cleanup": true,
+    "preflight_real_Session_table_before_first_open": true,
+    "whole_alias_table_distinct_when_opted_in": true
+  },
+  "wait": {
+    "zero": "one genuine wait0 query",
+    "positive": "actual granted steady elapsed + native finite slices",
+    "negative": "infinite convention within explicit finite query budget",
+    "maximum_query_ns": 60000000000,
+    "maximum_queries": 65536,
+    "budget_exhaustion": 90,
+    "clockless_nonzero": 13,
+    "clock_signed_range": "0..Long.MAX_VALUE",
+    "clock_regression": 22,
+    "clock_outside_signed_range": 95,
+    "callback_or_recursive_spin": 17,
+    "shutdown_checkpoint": "between completed false observations, no live owner/import/dispatch lease",
+    "threaded_or_preemptive_guest_scheduler_claim": false,
+    "errors_never_timeout_or_false": true
+  },
+  "producer": {
+    "actual_path": "test/0050.high_level_languages/java/jar-input/produce_jar.py",
+    "current_optional_namespace_admitted": false,
+    "required_followup": "explicit reviewed HLL producer ceiling and independent exact optional ABI gate; do not widen old business tuple inventory",
+    "existing_JAR6_and_Strategy39_untouched": true
+  },
+  "required_execution": [
+    "independent source peer",
+    "actual Java17 compilation of coherent full source closure",
+    "28 local model groups + unchanged prior SDK/service suites",
+    "actual TeaVM0.13.1 linear WASI artifact and three optional tuple gate",
+    "Guest default13 with authority[]",
+    "native readiness positive/physical false timeout/Context stop/real async AddTwoInts main",
+    "actual cleanup/IPC cancellation/physical drain"
+  ],
+  "candidate_imports": 0,
+  "compilers": 0,
+  "probes": 0,
+  "tests": 0,
+  "Guest_runs": 0,
+  "Native_runs": 0,
+  "SSH": 0
+}

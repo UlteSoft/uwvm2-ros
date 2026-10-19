@@ -1,0 +1,17 @@
+{
+  "format": "uwvm-ros-custom-fixed-v1",
+  "types": [
+    {
+      "ros_version": 1,
+      "type": "uwvm_custom_ros1_fixture/Packet",
+      "file": "msg/ros1/Packet.msg",
+      "native_identity": "f9f763c3e1630ff9c5652c744e59a68a"
+    },
+    {
+      "ros_version": 2,
+      "type": "uwvm_ros_custom_test_msgs/msg/FixedSample",
+      "file": "msg/ros2/FixedSample.msg",
+      "native_identity": "RIHS01_5026d3427fd5649d1cb11a7cf9e79429d2775096e9bec98669dde689b4d20fc2"
+    }
+  ]
+}

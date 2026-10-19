@@ -1,0 +1,208 @@
+{
+  "kind": "franka-selected-original-source-lock-v1",
+  "vendor": "franka",
+  "variant": "ros1",
+  "ros_version": 1,
+  "default_authority": [],
+  "definitions": [
+    {
+      "type": "franka_example_controllers/JointTorqueComparison",
+      "repository": "franka_ros1",
+      "original_file": "franka_example_controllers/msg/JointTorqueComparison.msg",
+      "generation_file": "franka_example_controllers/msg/JointTorqueComparison.msg",
+      "bytes": 101,
+      "sha256": "6508e8bf776ec24eff3073716e9b15ffd0634c45beadac6892ab5404e4cfc56b",
+      "git_blob_sha1": "c5197324ed2d16df92985ebe664fe9cc96da1d00"
+    },
+    {
+      "type": "franka_gripper/Grasp",
+      "repository": "franka_ros1",
+      "original_file": "franka_gripper/action/Grasp.action",
+      "generation_file": "franka_gripper/action/Grasp.action",
+      "bytes": 117,
+      "sha256": "48f029a4217b5ec4465acca9a2763fdb1a146597b592f23fa3b15562b99364f3",
+      "git_blob_sha1": "b462efa6b3df754dda7f9a1b08652bff8ac2a6dd"
+    },
+    {
+      "type": "franka_gripper/GraspEpsilon",
+      "repository": "franka_ros1",
+      "original_file": "franka_gripper/msg/GraspEpsilon.msg",
+      "generation_file": "franka_gripper/msg/GraspEpsilon.msg",
+      "bytes": 40,
+      "sha256": "10f2e3d822ce0f2372c76d9d7796529ca36ba9336e7ff7631c9e72f09c8b7477",
+      "git_blob_sha1": "b750cf6d50ffc0e2d9035249070284e905e8c21b"
+    },
+    {
+      "type": "franka_gripper/Homing",
+      "repository": "franka_ros1",
+      "original_file": "franka_gripper/action/Homing.action",
+      "generation_file": "franka_gripper/action/Homing.action",
+      "bytes": 34,
+      "sha256": "aedd673bb95547e22bac742906d3156edc9fcb06ae25b5efbb0b184462748563",
+      "git_blob_sha1": "a3b28260ef5d2e838dce92265bc6c4c22c493d08"
+    },
+    {
+      "type": "franka_gripper/Move",
+      "repository": "franka_ros1",
+      "original_file": "franka_gripper/action/Move.action",
+      "generation_file": "franka_gripper/action/Move.action",
+      "bytes": 78,
+      "sha256": "d16aacc4fd045a97900bc006a77f2de64d69636694cf52d08861ad623321136b",
+      "git_blob_sha1": "d908a46ec755857faa78e763436d17058414fc80"
+    },
+    {
+      "type": "franka_gripper/Stop",
+      "repository": "franka_ros1",
+      "original_file": "franka_gripper/action/Stop.action",
+      "generation_file": "franka_gripper/action/Stop.action",
+      "bytes": 34,
+      "sha256": "aedd673bb95547e22bac742906d3156edc9fcb06ae25b5efbb0b184462748563",
+      "git_blob_sha1": "a3b28260ef5d2e838dce92265bc6c4c22c493d08"
+    },
+    {
+      "type": "franka_msgs/ErrorRecovery",
+      "repository": "franka_ros1",
+      "original_file": "franka_msgs/action/ErrorRecovery.action",
+      "generation_file": "franka_msgs/action/ErrorRecovery.action",
+      "bytes": 8,
+      "sha256": "d487269d2de0655a9ed127c83b0d1006d724e600385b32f4f4b39893c1e0164b",
+      "git_blob_sha1": "a845151cc840034a50f5fd010515d61e661f79ee"
+    },
+    {
+      "type": "franka_msgs/Errors",
+      "repository": "franka_ros1",
+      "original_file": "franka_msgs/msg/Errors.msg",
+      "generation_file": "franka_msgs/msg/Errors.msg",
+      "bytes": 1887,
+      "sha256": "90245ca2b0e1997708b089dc72d61f64eb3d253c5f4c09fe5c11c27851527185",
+      "git_blob_sha1": "cd2459918d752cea05aefae218d985300eddbb22"
+    },
+    {
+      "type": "franka_msgs/FrankaState",
+      "repository": "franka_ros1",
+      "original_file": "franka_msgs/msg/FrankaState.msg",
+      "generation_file": "franka_msgs/msg/FrankaState.msg",
+      "bytes": 1198,
+      "sha256": "d25f45f3bbf07ee1f3b003b040b6d3a371961ce261da8391db34e2292acafa79",
+      "git_blob_sha1": "2ab883f5da2e7963fc27cf530e44d9c8df43917d"
+    },
+    {
+      "type": "franka_msgs/SetCartesianImpedance",
+      "repository": "franka_ros1",
+      "original_file": "franka_msgs/srv/SetCartesianImpedance.srv",
+      "generation_file": "franka_msgs/srv/SetCartesianImpedance.srv",
+      "bytes": 62,
+      "sha256": "8a32ba8732790a7ce5982a25bf8dc73269d705b82e9b3fbf86f96c903ccf6e20",
+      "git_blob_sha1": "3a763bae79967532c22ba674055e2b8a87383904"
+    },
+    {
+      "type": "franka_msgs/SetEEFrame",
+      "repository": "franka_ros1",
+      "original_file": "franka_msgs/srv/SetEEFrame.srv",
+      "generation_file": "franka_msgs/srv/SetEEFrame.srv",
+      "bytes": 51,
+      "sha256": "5c1ee2a03aabec3f6a36a0bcb280e34cc4ef49712b03e665a63b2570ec972da7",
+      "git_blob_sha1": "98efab7144a83506c3083968de7c3286d511c12d"
+    },
+    {
+      "type": "franka_msgs/SetForceTorqueCollisionBehavior",
+      "repository": "franka_ros1",
+      "original_file": "franka_msgs/srv/SetForceTorqueCollisionBehavior.srv",
+      "generation_file": "franka_msgs/srv/SetForceTorqueCollisionBehavior.srv",
+      "bytes": 201,
+      "sha256": "ed4057e185473c468834658e92c0d4851b760ed203949c34ea59bea0d2d435b1",
+      "git_blob_sha1": "f6aeaba666c0c4c2f914726480214d91df0171af"
+    },
+    {
+      "type": "franka_msgs/SetFullCollisionBehavior",
+      "repository": "franka_ros1",
+      "original_file": "franka_msgs/srv/SetFullCollisionBehavior.srv",
+      "generation_file": "franka_msgs/srv/SetFullCollisionBehavior.srv",
+      "bytes": 391,
+      "sha256": "e50a6a720844b538483bf8fe9e1c9aef505576d6d16712f7b7f22c735ec26c3e",
+      "git_blob_sha1": "c4d2b2dd00dc94816fb0e1e6d823f10e075da005"
+    },
+    {
+      "type": "franka_msgs/SetJointImpedance",
+      "repository": "franka_ros1",
+      "original_file": "franka_msgs/srv/SetJointImpedance.srv",
+      "generation_file": "franka_msgs/srv/SetJointImpedance.srv",
+      "bytes": 58,
+      "sha256": "845d5247378a634ac63b961b2384bd7a929b5b8f3177d75b109b6ac2c320da8f",
+      "git_blob_sha1": "c966398ebb8229e501ae6a2ec66036478c880e91"
+    },
+    {
+      "type": "franka_msgs/SetKFrame",
+      "repository": "franka_ros1",
+      "original_file": "franka_msgs/srv/SetKFrame.srv",
+      "generation_file": "franka_msgs/srv/SetKFrame.srv",
+      "bytes": 50,
+      "sha256": "fda64d75adcd9f0a5f78dd94c6c5766d20aa0cb1a5595539a35a3191fd5c11a1",
+      "git_blob_sha1": "774c373620be31407c36a000685a56fd30528ebc"
+    },
+    {
+      "type": "franka_msgs/SetLoad",
+      "repository": "franka_ros1",
+      "original_file": "franka_msgs/srv/SetLoad.srv",
+      "generation_file": "franka_msgs/srv/SetLoad.srv",
+      "bytes": 95,
+      "sha256": "b474ff320b4d55b714b1cc04299e75736961bac7099fec2ab9681640784dd165",
+      "git_blob_sha1": "b24211a841dd9f483f0e6a7166eae66619006cdc"
+    },
+    {
+      "type": "std_msgs/Header",
+      "repository": "std_ros1",
+      "original_file": "msg/Header.msg",
+      "generation_file": "std_msgs/msg/Header.msg",
+      "bytes": 551,
+      "sha256": "5e64e71bb8d9d47019367f6a621934aab7e6ffedc6cfdcc912486aa5576ed693",
+      "git_blob_sha1": "2b3866d2cbcaa7c84d8341e541986da1d5a485a1"
+    }
+  ],
+  "original_custom_roots": [
+    "franka_example_controllers/JointTorqueComparison",
+    "franka_gripper/Grasp",
+    "franka_gripper/GraspEpsilon",
+    "franka_gripper/Homing",
+    "franka_gripper/Move",
+    "franka_gripper/Stop",
+    "franka_msgs/ErrorRecovery",
+    "franka_msgs/Errors",
+    "franka_msgs/FrankaState",
+    "franka_msgs/SetCartesianImpedance",
+    "franka_msgs/SetEEFrame",
+    "franka_msgs/SetForceTorqueCollisionBehavior",
+    "franka_msgs/SetFullCollisionBehavior",
+    "franka_msgs/SetJointImpedance",
+    "franka_msgs/SetKFrame",
+    "franka_msgs/SetLoad"
+  ],
+  "repositories": [
+    {
+      "id": "franka_ros1",
+      "url": "https://github.com/frankarobotics/franka_ros",
+      "branch": "noetic-devel",
+      "commit": "35e1f654426e04bc9f83b73af4ab68a3fb145c84",
+      "tree_git_sha1": "5adc7f02a3b015cd81a243db152c33eb25097eba",
+      "archive": {
+        "url": "https://codeload.github.com/frankarobotics/franka_ros/tar.gz/35e1f654426e04bc9f83b73af4ab68a3fb145c84",
+        "bytes": 4039933,
+        "sha256": "ca83bb42c398abf827ea342d26ee9f8875218800c6fd8124402aaf6507652761"
+      },
+      "default_authority": [],
+      "scope": "Unchanged selected original interfaces/source and complete original acquisition archive; no compilation, native or robot execution."
+    },
+    {
+      "id": "std_ros1",
+      "repository": "ros/std_msgs",
+      "url": "https://github.com/ros/std_msgs",
+      "branch": "noetic-devel",
+      "commit": "34198520757d1aab358118a0ef294fe2609fde33",
+      "tree_git_sha1": "c6ce9f1fbbbe6a4310f237726df491359c874519",
+      "default_authority": [],
+      "qualification": "Original standard source capture, no installed ROS or native identity qualification."
+    }
+  ],
+  "catalog_sha256": "5c95e9d2355ca851b905ea8da6b7bc61517fe945d54f24a8259080af54220c3e",
+  "scope": "Complete original custom declarations in selected Noetic/Jazzy source plus all reached unchanged standard definitions; no FCI/controller/native or other-release qualification."
+}

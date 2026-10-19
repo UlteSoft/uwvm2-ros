@@ -1,0 +1,51 @@
+{
+  "SafeTree_changed": false,
+  "all513_fresh_authority_and_extraction_required": true,
+  "embedded_contract_sha256": "588d2b269734cf4715643988aabfd31daffd62e2bad2d27f60775563a12f1d87",
+  "executed": false,
+  "format_version": 1,
+  "input_sha256": {
+    "acquire-sdk.py": "71fb6117a82b7154422c458ceee051c1bc44cc4a203a5a1d5a368f6be79d9e26",
+    "fresh_rebuild.py": "1b79407cb37fde9ed72758c273bf8cc3e46ffdd7418bc820f70e31d112cb2d91",
+    "owned_storage.py": "cdc84eb4b55c727d74a382b019d4faa6f7e65778ec1c07be082073d8c37e1d97",
+    "owner.py": "d8b48ff4375a1490bdf2bdd5c4d2ca4e9204673671c79e0ad89da60015cbf5cf",
+    "signed_tar_model.py": "227f140b7587c989ed9dbcf6d4d035cb886f2ff8b9ba6bc9112c4b31bf46f7df",
+    "stage.py": "7bbcb5960b21bdac948e3d3a3fef1b35f986221a94888ea4d279d6985a82ded6"
+  },
+  "kind": "noetic-r6d-source-only-metadata-derivation",
+  "producer_changed": false,
+  "source_outputs": {
+    "acquire-sdk.py": {
+      "bytes": 99869,
+      "sha256": "71fb6117a82b7154422c458ceee051c1bc44cc4a203a5a1d5a368f6be79d9e26"
+    },
+    "fresh_rebuild.py": {
+      "bytes": 30126,
+      "sha256": "1b79407cb37fde9ed72758c273bf8cc3e46ffdd7418bc820f70e31d112cb2d91"
+    },
+    "owned_storage.py": {
+      "bytes": 10863,
+      "sha256": "cdc84eb4b55c727d74a382b019d4faa6f7e65778ec1c07be082073d8c37e1d97"
+    },
+    "owner.py": {
+      "bytes": 40453,
+      "sha256": "a1cb53a56288536c43bba7467619180ec45f12ecce99a6d80a8dcffab76becd8"
+    },
+    "requalify_after_restart.py": {
+      "bytes": 47606,
+      "sha256": "0f14a3e8b122286f5d934f385d8ca582aa14039cd0b97531dad19b528a1b3260"
+    },
+    "reviewed-source-package.json": {
+      "bytes": 324159,
+      "sha256": "a7b37d4397c4cdd3f0e14973d4c9108e074958de1d9398457d5fea5a9eab05e5"
+    },
+    "signed_tar_model.py": {
+      "bytes": 13296,
+      "sha256": "227f140b7587c989ed9dbcf6d4d035cb886f2ff8b9ba6bc9112c4b31bf46f7df"
+    },
+    "stage.py": {
+      "bytes": 33844,
+      "sha256": "1ccd520b66d8ec104d8699a8a3f9aa687cd369a7cbb3e01f43d98d325522fd04"
+    }
+  }
+}

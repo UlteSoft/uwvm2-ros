@@ -1,0 +1,80 @@
+{
+  "format": "uwvm-ros-vendor-complete-bounded-v1",
+  "types": [
+    {
+      "ros_version": 2,
+      "type": "builtin_interfaces/msg/Time",
+      "file": "builtin_interfaces/msg/Time.msg",
+      "bounds": {},
+      "registered": false
+    },
+    {
+      "ros_version": 2,
+      "type": "std_msgs/msg/Header",
+      "file": "std_msgs/msg/Header.msg",
+      "bounds": {
+        "frame_id": {
+          "string": 64
+        }
+      },
+      "registered": false
+    },
+    {
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Point",
+      "file": "geometry_msgs/msg/Point.msg",
+      "bounds": {},
+      "registered": true
+    },
+    {
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Quaternion",
+      "file": "geometry_msgs/msg/Quaternion.msg",
+      "bounds": {},
+      "registered": true
+    },
+    {
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Pose",
+      "file": "geometry_msgs/msg/Pose.msg",
+      "bounds": {},
+      "registered": true
+    },
+    {
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/PoseWithCovariance",
+      "file": "geometry_msgs/msg/PoseWithCovariance.msg",
+      "bounds": {},
+      "registered": true
+    },
+    {
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+      "file": "geometry_msgs/msg/PoseWithCovarianceStamped.msg",
+      "bounds": {},
+      "registered": true
+    },
+    {
+      "ros_version": 2,
+      "type": "isaac_ros_apriltag_interfaces/msg/AprilTagDetection",
+      "file": "isaac_ros_apriltag_interfaces/msg/AprilTagDetection.msg",
+      "bounds": {
+        "family": {
+          "string": 64
+        }
+      },
+      "registered": true
+    },
+    {
+      "ros_version": 2,
+      "type": "isaac_ros_apriltag_interfaces/msg/AprilTagDetectionArray",
+      "file": "isaac_ros_apriltag_interfaces/msg/AprilTagDetectionArray.msg",
+      "bounds": {
+        "detections": {
+          "sequence": 16
+        }
+      },
+      "registered": true
+    }
+  ]
+}

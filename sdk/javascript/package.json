@@ -1,0 +1,23 @@
+{
+  "name": "@uwvm2/roswasm",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Capability-aware canonical codecs and explicit Wasm guest bridge adapter for uwvm2 ROS ABI v1",
+  "exports": {
+    ".": "./roswasm.mjs",
+    "./raw": "./raw.mjs",
+    "./codecs": "./codecs.mjs",
+    "./abi": "./abi.mjs",
+    "./bridge": "./bridge.mjs",
+    "./relay": "./relay.mjs",
+    "./async": "./async.mjs",
+    "./scheduling": "./scheduling.mjs",
+    "./events": "./events.mjs",
+    "./guest": "./guest.mjs"
+  },
+  "scripts": {
+    "test": "node tests/test.mjs && node tests/factory_transactions.mjs && node tests/executor_contracts.mjs && node tests/event_dispatch_contracts.mjs"
+  },
+  "license": "SEE LICENSE IN ../LICENSE"
+}

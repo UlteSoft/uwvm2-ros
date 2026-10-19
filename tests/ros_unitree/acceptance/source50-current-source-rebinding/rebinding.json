@@ -1,0 +1,93 @@
+{
+  "kind": "current-source50-review-declarations-data-rebinding",
+  "status": "ALL_CURRENT_DECLARED_BYTES_REBOUND_SOURCE_ONLY_NOT_TESTED",
+  "readiness_changes": [
+    {
+      "readiness": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/legacy_guest_builds/independent-cpp-source-only/source-ready.json",
+      "changed": [
+        {
+          "previous": {
+            "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/independent_cpp_object.py",
+            "bytes": 28482,
+            "sha256": "4e54d6f0afcc0ff703e5c2c3ec8997d5ede37c8f6bb56eabd2ed030afc704ee5"
+          },
+          "current": {
+            "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/independent_cpp_object.py",
+            "bytes": 35193,
+            "sha256": "98b286ec21fb9a1957f9331e490a9468e72e1768876a7d88d7afe918cd86024f"
+          }
+        }
+      ]
+    },
+    {
+      "readiness": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/direct3-modular-source-only/source-ready.json",
+      "changed": [
+        {
+          "previous": {
+            "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/direct_guest_receipts.py",
+            "bytes": 22278,
+            "sha256": "a589c4ee73edccae1eb047549db79e33cd5752678695b978a769d460b64422b3"
+          },
+          "current": {
+            "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/direct_guest_receipts.py",
+            "bytes": 23385,
+            "sha256": "11d46426e3bf47673d7eeae4d2b82ceda4d667793dd014667ac460e8541660ad"
+          }
+        },
+        {
+          "previous": {
+            "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/direct_modular.py",
+            "bytes": 15634,
+            "sha256": "7abf6c94012381b709a57329483ea2b644fe9593a6c4598c4671fad7f753b81d"
+          },
+          "current": {
+            "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/direct_modular.py",
+            "bytes": 16487,
+            "sha256": "c9bee4d1244352db81419a441d3bebd4f677381e695f005666b175282847e6e2"
+          }
+        },
+        {
+          "previous": {
+            "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/prepare_direct_guests.py",
+            "bytes": 44642,
+            "sha256": "2d132d85a18cd11e555d5aff31c6c62a91dbcb5082a1b00301d8cbcf9fd56e21"
+          },
+          "current": {
+            "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/prepare_direct_guests.py",
+            "bytes": 46305,
+            "sha256": "b0c2a6db373a4583f189e5068274c9f98e4ae8466641deb0a7372256b342a077"
+          }
+        }
+      ]
+    },
+    {
+      "readiness": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_ticket_lifetime/source-ready.json",
+      "changed": []
+    },
+    {
+      "readiness": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/core-regressions-source-ready.json",
+      "changed": []
+    },
+    {
+      "readiness": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/legacy_guest_builds/source-ready.json",
+      "changed": []
+    },
+    {
+      "readiness": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/noetic-native-source-ready.json",
+      "changed": []
+    },
+    {
+      "readiness": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/typed-policy-codecs/source-ready.json",
+      "changed": []
+    }
+  ],
+  "cross": {
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/current-batch-source-cross-seal.json",
+    "bytes": 54112,
+    "sha256": "88dd762efbc3637f0508e4314fdad9fd9b8f57a86eb8e6d8a97d3f7362bfac3d"
+  },
+  "declared_current_file_count": 112,
+  "candidate_imported": false,
+  "compiler_or_tests_executed": false,
+  "frozen_source49_modified": false
+}

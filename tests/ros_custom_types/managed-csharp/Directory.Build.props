@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup Condition="'$(RosBuildRoot)' != ''">
+    <BaseIntermediateOutputPath>$(RosBuildRoot)/obj/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
+    <MSBuildProjectExtensionsPath>$(BaseIntermediateOutputPath)</MSBuildProjectExtensionsPath>
+    <OutputPath>$(RosBuildRoot)/bin/$(MSBuildProjectName)/</OutputPath>
+  </PropertyGroup>
+</Project>

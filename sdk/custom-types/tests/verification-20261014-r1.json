@@ -1,0 +1,202 @@
+{
+  "status": "SOURCE_AND_PURE_MODEL_PASS",
+  "profile": "uwvm-ros-custom-fixed-v1",
+  "original_G01_status": "PARTIAL_SOURCE_PREPARATION",
+  "actual_compilation": "NOT_RUN",
+  "actual_native_ros": "NOT_RUN",
+  "actual_wasm": "NOT_RUN",
+  "native_registry_in_checked_in_examples": false,
+  "official_native_identities_in_checked_in_examples": false,
+  "current_guest_example_revision": "sdk/custom-types/generated-r3",
+  "older_source_revisions_preserved": [
+    "sdk/custom-types/generated",
+    "sdk/custom-types/generated-r2"
+  ],
+  "source_inputs": {
+    "sdk/tools/custom_types.py": {
+      "bytes": 51174,
+      "sha256": "31338eb36898685699cb7bd2e6fe29855d7979afd517ecd1bb7b58817154a3e3"
+    },
+    "sdk/custom-types/README.md": {
+      "bytes": 15120,
+      "sha256": "810f793388098b304461e01d84268d547c50003145177e257e22a2edf0a30375"
+    },
+    "sdk/custom-types/examples/FixedSample.idl": {
+      "bytes": 391,
+      "sha256": "d6a92dd435a498b2922dbfa37c7494ec9446ad8a1e3e8f189ce859e20f0a107d"
+    },
+    "sdk/custom-types/examples/NestedRecord.msg": {
+      "bytes": 186,
+      "sha256": "101507bd2d0a1921f52f05cb390df4a31c05066585f174a8967aa73c8bfc21c1"
+    },
+    "sdk/custom-types/examples/Packet.msg": {
+      "bytes": 302,
+      "sha256": "1a6bbaec46f19f2bc83f7321f2ead6b6505f15e9a15fef955c76adf9aebc6226"
+    },
+    "sdk/custom-types/examples/ScalarRecord.msg": {
+      "bytes": 358,
+      "sha256": "4ffea3a26e1f14c8a584e2db1f3fe71184585cd7737cf8b95f4307a9fc62380f"
+    },
+    "sdk/custom-types/examples/catalog.json": {
+      "bytes": 458,
+      "sha256": "75566dcb34b856304dd0b96bcb34c7ae2ea09e81b81cb628b51ac796aa7882b8"
+    },
+    "sdk/custom-types/examples/use_generated.c": {
+      "bytes": 1538,
+      "sha256": "78e5098e64df3955aa0c09b6fe018d506e8cfb45d1663357d84ebfa0177662ac"
+    },
+    "sdk/custom-types/examples/use_generated.cpp": {
+      "bytes": 1129,
+      "sha256": "9d5e261940520ec4325281a52612fd32dde2b9a0996b9a38e5de4fa249142e72"
+    },
+    "sdk/custom-types/examples/use_generated.go": {
+      "bytes": 1290,
+      "sha256": "98b16da611d85d15d4e6caba09ff3d04b8248f5a15b5d16fc6b7d57ce4fe157b"
+    },
+    "sdk/custom-types/examples/use_generated.mjs": {
+      "bytes": 1527,
+      "sha256": "2265d029f76fe4ba9118ccacd4cadae6a8d81278b279c2c5643e59d6bc182711"
+    },
+    "sdk/custom-types/examples/use_generated.rs": {
+      "bytes": 1206,
+      "sha256": "f780204f11a5c26da741ee7c8d4969343fc28e24c25b81bc446a698e2634738b"
+    },
+    "sdk/custom-types/examples/use_generated.ts": {
+      "bytes": 1355,
+      "sha256": "3425b57ea50cfd5ff5dfe462d5ff63fadfd0cf09df4e6f1eda82cadfb936ec90"
+    },
+    "sdk/custom-types/generated/fixed_records.go": {
+      "bytes": 18020,
+      "sha256": "8965e583a02d5a68a6df994ac85a7ffbc8d73608e1a7524dc9cfdad4aa8468f9"
+    },
+    "sdk/custom-types/generated/fixed_records.h": {
+      "bytes": 23708,
+      "sha256": "0a7df74c4ded40d834a527c87f880908ef1aac45cfbee86793d6a829f75cac9e"
+    },
+    "sdk/custom-types/generated/fixed_records.hpp": {
+      "bytes": 4769,
+      "sha256": "c71587fd1b41e0a61f3093a55c1908dea424dcd4fb35c127baccf29e5a31ca74"
+    },
+    "sdk/custom-types/generated/fixed_records.mjs": {
+      "bytes": 14979,
+      "sha256": "9a922f365f1c5422df28032248f6dbdacf89344f4df97d5e1065062108c8010d"
+    },
+    "sdk/custom-types/generated/fixed_records.rs": {
+      "bytes": 22154,
+      "sha256": "510e65a66f89039ebd0e269bfde19614e665cd259353eed5416577c8730590fc"
+    },
+    "sdk/custom-types/generated/fixed_records.ts": {
+      "bytes": 14308,
+      "sha256": "96afd7e6592702677c5edbbf39890f3ef3d0eab3b22a87b3b33d4c2570dfcc8b"
+    },
+    "sdk/custom-types/generated/generation.json": {
+      "bytes": 3714,
+      "sha256": "148cf4238d8608039819da5f7847f4c4447471611289c3c8095dbea7076ac38b"
+    },
+    "sdk/custom-types/generated-r2/fixed_records.go": {
+      "bytes": 18020,
+      "sha256": "8965e583a02d5a68a6df994ac85a7ffbc8d73608e1a7524dc9cfdad4aa8468f9"
+    },
+    "sdk/custom-types/generated-r2/fixed_records.h": {
+      "bytes": 23708,
+      "sha256": "0a7df74c4ded40d834a527c87f880908ef1aac45cfbee86793d6a829f75cac9e"
+    },
+    "sdk/custom-types/generated-r2/fixed_records.hpp": {
+      "bytes": 4769,
+      "sha256": "c71587fd1b41e0a61f3093a55c1908dea424dcd4fb35c127baccf29e5a31ca74"
+    },
+    "sdk/custom-types/generated-r2/fixed_records.mjs": {
+      "bytes": 14979,
+      "sha256": "9a922f365f1c5422df28032248f6dbdacf89344f4df97d5e1065062108c8010d"
+    },
+    "sdk/custom-types/generated-r2/fixed_records.rs": {
+      "bytes": 22154,
+      "sha256": "510e65a66f89039ebd0e269bfde19614e665cd259353eed5416577c8730590fc"
+    },
+    "sdk/custom-types/generated-r2/fixed_records.ts": {
+      "bytes": 14308,
+      "sha256": "96afd7e6592702677c5edbbf39890f3ef3d0eab3b22a87b3b33d4c2570dfcc8b"
+    },
+    "sdk/custom-types/generated-r2/generation.json": {
+      "bytes": 3714,
+      "sha256": "be2bb0ca1c37c9fb4b1384c68cb4857701c9d17c70da73c56c52a93c8ffaadee"
+    },
+    "sdk/custom-types/generated-r3/fixed_records.go": {
+      "bytes": 18020,
+      "sha256": "8965e583a02d5a68a6df994ac85a7ffbc8d73608e1a7524dc9cfdad4aa8468f9"
+    },
+    "sdk/custom-types/generated-r3/fixed_records.h": {
+      "bytes": 23708,
+      "sha256": "0a7df74c4ded40d834a527c87f880908ef1aac45cfbee86793d6a829f75cac9e"
+    },
+    "sdk/custom-types/generated-r3/fixed_records.hpp": {
+      "bytes": 4769,
+      "sha256": "c71587fd1b41e0a61f3093a55c1908dea424dcd4fb35c127baccf29e5a31ca74"
+    },
+    "sdk/custom-types/generated-r3/fixed_records.mjs": {
+      "bytes": 14979,
+      "sha256": "9a922f365f1c5422df28032248f6dbdacf89344f4df97d5e1065062108c8010d"
+    },
+    "sdk/custom-types/generated-r3/fixed_records.rs": {
+      "bytes": 22154,
+      "sha256": "510e65a66f89039ebd0e269bfde19614e665cd259353eed5416577c8730590fc"
+    },
+    "sdk/custom-types/generated-r3/fixed_records.ts": {
+      "bytes": 14308,
+      "sha256": "96afd7e6592702677c5edbbf39890f3ef3d0eab3b22a87b3b33d4c2570dfcc8b"
+    },
+    "sdk/custom-types/generated-r3/generation.json": {
+      "bytes": 3714,
+      "sha256": "9f7e4bff88299ac0ded57d30d1d6dbe8c59bfb895ef7777cee107437d52df06e"
+    },
+    "sdk/custom-types/tests/javascript_models.mjs": {
+      "bytes": 3287,
+      "sha256": "1b2d25ec44a8c3f36173275a7456fb0cb29054ec5e4d121bf6fc6fc9b4eb31df"
+    },
+    "sdk/custom-types/tests/source_models.py": {
+      "bytes": 15536,
+      "sha256": "c533a920608b6e05b0edf521b2b174d9e72e8c21adde05e7700920b44ca95e71"
+    }
+  },
+  "models": {
+    "path": "/tmp/uwvm-custom-fixed-models-20261014-r6.json",
+    "sha256": "3e9fca5c49b56e9d6bcb4bdfb17c429f05d7cb77f7cc7fdab6825bd938f1991e",
+    "result": {
+      "status": "SOURCE_AND_PURE_MODEL_PASS",
+      "methods": 15,
+      "javascript_checks": 77,
+      "failures": 0,
+      "errors": 0,
+      "actual_compilation": "NOT_RUN",
+      "native_ros_behavior": "NOT_RUN",
+      "wasm_behavior": "NOT_RUN",
+      "synthetic_identities": "syntax/models only; never official native qualification",
+      "inputs": {
+        "sdk/tools/custom_types.py": {
+          "bytes": 51174,
+          "sha256": "31338eb36898685699cb7bd2e6fe29855d7979afd517ecd1bb7b58817154a3e3"
+        },
+        "sdk/custom-types/tests/source_models.py": {
+          "bytes": 15536,
+          "sha256": "c533a920608b6e05b0edf521b2b174d9e72e8c21adde05e7700920b44ca95e71"
+        },
+        "sdk/custom-types/tests/javascript_models.mjs": {
+          "bytes": 3287,
+          "sha256": "1b2d25ec44a8c3f36173275a7456fb0cb29054ec5e4d121bf6fc6fc9b4eb31df"
+        }
+      }
+    }
+  },
+  "additional_pure_checks": {
+    "packet_example_local_roundtrip": "PASS",
+    "python_AST": "PASS",
+    "README_links": 5
+  },
+  "remaining": [
+    "Compile six guest language outputs and examples in verified Linux cgroup",
+    "Official native generation and identity export",
+    "Compile manifest and native provider headers against official native records",
+    "Actual custom Topic native and guest acceptance/refusal side-effect absence",
+    "Generic Service/Action/dynamic types remain unsupported"
+  ]
+}

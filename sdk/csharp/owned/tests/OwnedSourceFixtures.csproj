@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net8.0</TargetFramework><OutputType>Exe</OutputType><Nullable>enable</Nullable><ImplicitUsings>disable</ImplicitUsings><EnableDefaultCompileItems>false</EnableDefaultCompileItems><DefineConstants>UWVM_ROS2;UWVM_ROSWASM_OWNED_SERVICE;UWVM_ROSWASM_OWNED_SOURCE_FIXTURES</DefineConstants></PropertyGroup>
+  <ItemGroup><Compile Include="../../RosWasm/**/*.cs" /><Compile Include="../NativeOwned.cs;../PreparedSession.cs;../OwnedWire.cs;../OwnedGroup.cs;../ControlWire.cs;OwnedSourceFixtures.cs" /></ItemGroup>
+</Project>

@@ -1,0 +1,780 @@
+{
+  "format": "uwvm-ros-vendor-complete-bounded-v1",
+  "types": [
+    {
+      "ros_version": 2,
+      "type": "builtin_interfaces/msg/Duration",
+      "file": "builtin_interfaces/msg/Duration.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "builtin_interfaces/msg/Time",
+      "file": "builtin_interfaces/msg/Time.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "control_msgs/msg/JointTolerance",
+      "file": "control_msgs/msg/JointTolerance.msg",
+      "registered": false,
+      "bounds": {
+        "name": {
+          "string": 128
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Point",
+      "file": "geometry_msgs/msg/Point.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Pose",
+      "file": "geometry_msgs/msg/Pose.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/PoseStamped",
+      "file": "geometry_msgs/msg/PoseStamped.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Quaternion",
+      "file": "geometry_msgs/msg/Quaternion.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Twist",
+      "file": "geometry_msgs/msg/Twist.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Vector3",
+      "file": "geometry_msgs/msg/Vector3.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Vector3Stamped",
+      "file": "geometry_msgs/msg/Vector3Stamped.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Wrench",
+      "file": "geometry_msgs/msg/Wrench.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "std_msgs/msg/Header",
+      "file": "std_msgs/msg/Header.msg",
+      "registered": false,
+      "bounds": {
+        "frame_id": {
+          "string": 128
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "trajectory_msgs/msg/JointTrajectory",
+      "file": "trajectory_msgs/msg/JointTrajectory.msg",
+      "registered": false,
+      "bounds": {
+        "joint_names": {
+          "string": 256,
+          "sequence": 6
+        },
+        "points": {
+          "sequence": 16
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "trajectory_msgs/msg/JointTrajectoryPoint",
+      "file": "trajectory_msgs/msg/JointTrajectoryPoint.msg",
+      "registered": false,
+      "bounds": {
+        "positions": {
+          "sequence": 6
+        },
+        "velocities": {
+          "sequence": 6
+        },
+        "accelerations": {
+          "sequence": 6
+        },
+        "effort": {
+          "sequence": 6
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_dashboard_msgs/action/SetMode",
+      "file": "ur_dashboard_msgs/action/SetMode.action",
+      "registered": true,
+      "bounds": {
+        "result.message": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_dashboard_msgs/msg/OperationalMode",
+      "file": "ur_dashboard_msgs/msg/OperationalMode.msg",
+      "registered": true,
+      "bounds": {
+        "mode": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_dashboard_msgs/msg/ProgramInformation",
+      "file": "ur_dashboard_msgs/msg/ProgramInformation.msg",
+      "registered": true,
+      "bounds": {
+        "name": {
+          "string": 128
+        },
+        "description": {
+          "string": 256
+        },
+        "program_state": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_dashboard_msgs/msg/ProgramState",
+      "file": "ur_dashboard_msgs/msg/ProgramState.msg",
+      "registered": true,
+      "bounds": {
+        "state": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_dashboard_msgs/msg/RobotMode",
+      "file": "ur_dashboard_msgs/msg/RobotMode.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_dashboard_msgs/msg/SafetyMode",
+      "file": "ur_dashboard_msgs/msg/SafetyMode.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_dashboard_msgs/msg/SafetyStatus",
+      "file": "ur_dashboard_msgs/msg/SafetyStatus.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_dashboard_msgs/msg/UserRole",
+      "file": "ur_dashboard_msgs/msg/UserRole.msg",
+      "registered": true,
+      "bounds": {
+        "role": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_dashboard_msgs/msg/VersionInformation",
+      "file": "ur_dashboard_msgs/msg/VersionInformation.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_dashboard_msgs/srv/AddToLog",
+      "file": "ur_dashboard_msgs/srv/AddToLog.srv",
+      "registered": true,
+      "bounds": {
+        "request.message": {
+          "string": 256
+        },
+        "response.answer": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_dashboard_msgs/srv/DownloadProgram",
+      "file": "ur_dashboard_msgs/srv/DownloadProgram.srv",
+      "registered": true,
+      "bounds": {
+        "request.program_name": {
+          "string": 256
+        },
+        "request.target_path": {
+          "string": 256
+        },
+        "response.answer": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_dashboard_msgs/srv/DownloadSupportFile",
+      "file": "ur_dashboard_msgs/srv/DownloadSupportFile.srv",
+      "registered": true,
+      "bounds": {
+        "request.target_path": {
+          "string": 256
+        },
+        "response.answer": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_dashboard_msgs/srv/GenerateFlightReport",
+      "file": "ur_dashboard_msgs/srv/GenerateFlightReport.srv",
+      "registered": true,
+      "bounds": {
+        "request.report_type": {
+          "string": 256
+        },
+        "response.answer": {
+          "string": 256
+        },
+        "response.report_id": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_dashboard_msgs/srv/GenerateSupportFile",
+      "file": "ur_dashboard_msgs/srv/GenerateSupportFile.srv",
+      "registered": true,
+      "bounds": {
+        "request.dir_path": {
+          "string": 256
+        },
+        "response.answer": {
+          "string": 256
+        },
+        "response.generated_file_name": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_dashboard_msgs/srv/GetLoadedProgram",
+      "file": "ur_dashboard_msgs/srv/GetLoadedProgram.srv",
+      "registered": true,
+      "bounds": {
+        "response.answer": {
+          "string": 256
+        },
+        "response.program_name": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_dashboard_msgs/srv/GetOperationalMode",
+      "file": "ur_dashboard_msgs/srv/GetOperationalMode.srv",
+      "registered": true,
+      "bounds": {
+        "response.answer": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_dashboard_msgs/srv/GetPolyScopeVersion",
+      "file": "ur_dashboard_msgs/srv/GetPolyScopeVersion.srv",
+      "registered": true,
+      "bounds": {
+        "response.answer": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_dashboard_msgs/srv/GetProgramState",
+      "file": "ur_dashboard_msgs/srv/GetProgramState.srv",
+      "registered": true,
+      "bounds": {
+        "response.program_name": {
+          "string": 256
+        },
+        "response.answer": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_dashboard_msgs/srv/GetPrograms",
+      "file": "ur_dashboard_msgs/srv/GetPrograms.srv",
+      "registered": true,
+      "bounds": {
+        "response.programs": {
+          "sequence": 16
+        },
+        "response.answer": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_dashboard_msgs/srv/GetRobotMode",
+      "file": "ur_dashboard_msgs/srv/GetRobotMode.srv",
+      "registered": true,
+      "bounds": {
+        "response.answer": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_dashboard_msgs/srv/GetRobotModel",
+      "file": "ur_dashboard_msgs/srv/GetRobotModel.srv",
+      "registered": true,
+      "bounds": {
+        "response.answer": {
+          "string": 256
+        },
+        "response.robot_model": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_dashboard_msgs/srv/GetSafetyMode",
+      "file": "ur_dashboard_msgs/srv/GetSafetyMode.srv",
+      "registered": true,
+      "bounds": {
+        "response.answer": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_dashboard_msgs/srv/GetSafetyStatus",
+      "file": "ur_dashboard_msgs/srv/GetSafetyStatus.srv",
+      "registered": true,
+      "bounds": {
+        "response.answer": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_dashboard_msgs/srv/GetSerialNumber",
+      "file": "ur_dashboard_msgs/srv/GetSerialNumber.srv",
+      "registered": true,
+      "bounds": {
+        "response.answer": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_dashboard_msgs/srv/GetUserRole",
+      "file": "ur_dashboard_msgs/srv/GetUserRole.srv",
+      "registered": true,
+      "bounds": {
+        "response.answer": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_dashboard_msgs/srv/IsInRemoteControl",
+      "file": "ur_dashboard_msgs/srv/IsInRemoteControl.srv",
+      "registered": true,
+      "bounds": {
+        "response.answer": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_dashboard_msgs/srv/IsProgramRunning",
+      "file": "ur_dashboard_msgs/srv/IsProgramRunning.srv",
+      "registered": true,
+      "bounds": {
+        "response.answer": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_dashboard_msgs/srv/IsProgramSaved",
+      "file": "ur_dashboard_msgs/srv/IsProgramSaved.srv",
+      "registered": true,
+      "bounds": {
+        "response.answer": {
+          "string": 256
+        },
+        "response.program_name": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_dashboard_msgs/srv/Load",
+      "file": "ur_dashboard_msgs/srv/Load.srv",
+      "registered": true,
+      "bounds": {
+        "request.filename": {
+          "string": 256
+        },
+        "response.answer": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_dashboard_msgs/srv/Popup",
+      "file": "ur_dashboard_msgs/srv/Popup.srv",
+      "registered": true,
+      "bounds": {
+        "request.message": {
+          "string": 256
+        },
+        "request.title": {
+          "string": 256
+        },
+        "response.answer": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_dashboard_msgs/srv/RawRequest",
+      "file": "ur_dashboard_msgs/srv/RawRequest.srv",
+      "registered": true,
+      "bounds": {
+        "request.query": {
+          "string": 256
+        },
+        "response.answer": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_dashboard_msgs/srv/SetOperationalMode",
+      "file": "ur_dashboard_msgs/srv/SetOperationalMode.srv",
+      "registered": true,
+      "bounds": {
+        "response.answer": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_dashboard_msgs/srv/SetUserRole",
+      "file": "ur_dashboard_msgs/srv/SetUserRole.srv",
+      "registered": true,
+      "bounds": {
+        "response.answer": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_dashboard_msgs/srv/UploadProgram",
+      "file": "ur_dashboard_msgs/srv/UploadProgram.srv",
+      "registered": true,
+      "bounds": {
+        "request.file_path": {
+          "string": 256
+        },
+        "response.answer": {
+          "string": 256
+        },
+        "response.program_name": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_msgs/action/FollowJointTrajectoryUntil",
+      "file": "ur_msgs/action/FollowJointTrajectoryUntil.action",
+      "registered": true,
+      "bounds": {
+        "goal.path_tolerance": {
+          "sequence": 6
+        },
+        "goal.goal_tolerance": {
+          "sequence": 6
+        },
+        "result.error_string": {
+          "string": 256
+        },
+        "feedback.joint_names": {
+          "string": 256,
+          "sequence": 6
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_msgs/action/SendScript",
+      "file": "ur_msgs/action/SendScript.action",
+      "registered": true,
+      "bounds": {
+        "goal.program": {
+          "string": 8192
+        },
+        "goal.script_name": {
+          "string": 256
+        },
+        "result.message": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_msgs/action/ToolContact",
+      "file": "ur_msgs/action/ToolContact.action",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_msgs/msg/Analog",
+      "file": "ur_msgs/msg/Analog.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_msgs/msg/Digital",
+      "file": "ur_msgs/msg/Digital.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_msgs/msg/FrictionModelParameters",
+      "file": "ur_msgs/msg/FrictionModelParameters.msg",
+      "registered": true,
+      "bounds": {
+        "viscous_scale": {
+          "sequence": 6
+        },
+        "coulomb_scale": {
+          "sequence": 6
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_msgs/msg/IOStates",
+      "file": "ur_msgs/msg/IOStates.msg",
+      "registered": true,
+      "bounds": {
+        "digital_in_states": {
+          "sequence": 32
+        },
+        "digital_out_states": {
+          "sequence": 32
+        },
+        "flag_states": {
+          "sequence": 32
+        },
+        "analog_in_states": {
+          "sequence": 16
+        },
+        "analog_out_states": {
+          "sequence": 16
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_msgs/msg/MasterboardDataMsg",
+      "file": "ur_msgs/msg/MasterboardDataMsg.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_msgs/msg/RobotModeDataMsg",
+      "file": "ur_msgs/msg/RobotModeDataMsg.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_msgs/msg/RobotStateRTMsg",
+      "file": "ur_msgs/msg/RobotStateRTMsg.msg",
+      "registered": true,
+      "bounds": {
+        "q_target": {
+          "sequence": 6
+        },
+        "qd_target": {
+          "sequence": 6
+        },
+        "qdd_target": {
+          "sequence": 6
+        },
+        "i_target": {
+          "sequence": 6
+        },
+        "m_target": {
+          "sequence": 6
+        },
+        "q_actual": {
+          "sequence": 6
+        },
+        "qd_actual": {
+          "sequence": 6
+        },
+        "i_actual": {
+          "sequence": 6
+        },
+        "tool_acc_values": {
+          "sequence": 6
+        },
+        "tcp_force": {
+          "sequence": 6
+        },
+        "tool_vector": {
+          "sequence": 6
+        },
+        "tcp_speed": {
+          "sequence": 6
+        },
+        "motor_temperatures": {
+          "sequence": 6
+        },
+        "joint_modes": {
+          "sequence": 6
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_msgs/msg/ToolDataMsg",
+      "file": "ur_msgs/msg/ToolDataMsg.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_msgs/srv/GetRobotSoftwareVersion",
+      "file": "ur_msgs/srv/GetRobotSoftwareVersion.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_msgs/srv/SetAnalogOutput",
+      "file": "ur_msgs/srv/SetAnalogOutput.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_msgs/srv/SetForceMode",
+      "file": "ur_msgs/srv/SetForceMode.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_msgs/srv/SetFrictionModelParameters",
+      "file": "ur_msgs/srv/SetFrictionModelParameters.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_msgs/srv/SetGravity",
+      "file": "ur_msgs/srv/SetGravity.srv",
+      "registered": true,
+      "bounds": {
+        "response.status": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_msgs/srv/SetIO",
+      "file": "ur_msgs/srv/SetIO.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_msgs/srv/SetPayload",
+      "file": "ur_msgs/srv/SetPayload.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "ur_msgs/srv/SetSpeedSliderFraction",
+      "file": "ur_msgs/srv/SetSpeedSliderFraction.srv",
+      "registered": true,
+      "bounds": {}
+    }
+  ]
+}

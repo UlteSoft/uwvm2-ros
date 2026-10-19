@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "status": "SOURCE_ONLY_NOT_EXECUTED",
+  "wire": "UMRC-v1 header160; same retained native client/service and paired independent source",
+  "raw_namespace": "uwvm_ros2_rmw_srv_v1",
+  "raw_function_count": 12,
+  "value_contract_groups": 18,
+  "value_contracts_are_native_evidence": false,
+  "actual_default_grants": [],
+  "actual_compilers_models_Guest_native_ROS": 0,
+  "required_implementation": [
+    "real retained native service registry using original RCL provider",
+    "Host/current source-pair lifetime, actual permissions/quotas/deadlines and final-copy transactions",
+    "Gateway authenticated packet routing, actual Native effects and independent cleanup observations",
+    "concrete original RMW C request/metadata/activation provider and independent same-client availability",
+    "Runtime optional import registration/caller guard and actual full import catalog",
+    "genuine positive finite availability wait and once physical retirement"
+  ],
+  "required_validation": [
+    "coherent original SDK compile/link/full MD with actual feature probes",
+    "all real Wasm signatures plus whole validation and current Runtime dispatch",
+    "complete same-native-client/server values, full native IDs/metadata/QoS and actual zero-length Empty",
+    "default denial, all paired-owner closes/revokes, stale source/session/incarnation/tickets/nonces",
+    "body-only quotas, deadline/short-buffer/malformed/exception/output atomicity, no replay of uncertain effects",
+    "original upstream, all distribution/vendor/multiarch/simulation and hardware-counter performance suites"
+  ]
+}

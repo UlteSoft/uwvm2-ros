@@ -1,0 +1,273 @@
+{
+  "format": "uwvm-ros-vendor-complete-bounded-v1",
+  "types": [
+    {
+      "ros_version": 2,
+      "type": "builtin_interfaces/msg/Time",
+      "file": "builtin_interfaces/msg/Time.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Point",
+      "file": "geometry_msgs/msg/Point.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Pose",
+      "file": "geometry_msgs/msg/Pose.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/PoseWithCovariance",
+      "file": "geometry_msgs/msg/PoseWithCovariance.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Quaternion",
+      "file": "geometry_msgs/msg/Quaternion.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Transform",
+      "file": "geometry_msgs/msg/Transform.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/TransformStamped",
+      "file": "geometry_msgs/msg/TransformStamped.msg",
+      "registered": false,
+      "bounds": {
+        "child_frame_id": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Twist",
+      "file": "geometry_msgs/msg/Twist.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/TwistStamped",
+      "file": "geometry_msgs/msg/TwistStamped.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/TwistWithCovariance",
+      "file": "geometry_msgs/msg/TwistWithCovariance.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Vector3",
+      "file": "geometry_msgs/msg/Vector3.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "nav_msgs/msg/Odometry",
+      "file": "nav_msgs/msg/Odometry.msg",
+      "registered": false,
+      "bounds": {
+        "child_frame_id": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "sensor_msgs/msg/BatteryState",
+      "file": "sensor_msgs/msg/BatteryState.msg",
+      "registered": false,
+      "bounds": {
+        "cell_voltage": {
+          "sequence": 16
+        },
+        "cell_temperature": {
+          "sequence": 16
+        },
+        "location": {
+          "string": 256
+        },
+        "serial_number": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "sensor_msgs/msg/Imu",
+      "file": "sensor_msgs/msg/Imu.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "sensor_msgs/msg/JointState",
+      "file": "sensor_msgs/msg/JointState.msg",
+      "registered": false,
+      "bounds": {
+        "name": {
+          "string": 128,
+          "sequence": 2
+        },
+        "position": {
+          "sequence": 2
+        },
+        "velocity": {
+          "sequence": 2
+        },
+        "effort": {
+          "sequence": 2
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "sensor_msgs/msg/LaserScan",
+      "file": "sensor_msgs/msg/LaserScan.msg",
+      "registered": false,
+      "bounds": {
+        "ranges": {
+          "sequence": 1024
+        },
+        "intensities": {
+          "sequence": 1024
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "sensor_msgs/msg/MagneticField",
+      "file": "sensor_msgs/msg/MagneticField.msg",
+      "registered": false,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "std_msgs/msg/Header",
+      "file": "std_msgs/msg/Header.msg",
+      "registered": false,
+      "bounds": {
+        "frame_id": {
+          "string": 128
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "std_srvs/srv/SetBool",
+      "file": "std_srvs/srv/SetBool.srv",
+      "registered": false,
+      "bounds": {
+        "response.message": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "std_srvs/srv/Trigger",
+      "file": "std_srvs/srv/Trigger.srv",
+      "registered": false,
+      "bounds": {
+        "response.message": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "turtlebot3_msgs/action/Patrol",
+      "file": "turtlebot3_msgs/action/Patrol.action",
+      "registered": true,
+      "bounds": {
+        "result.result": {
+          "string": 256
+        },
+        "feedback.state": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "turtlebot3_msgs/msg/SensorState",
+      "file": "turtlebot3_msgs/msg/SensorState.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "turtlebot3_msgs/msg/Sound",
+      "file": "turtlebot3_msgs/msg/Sound.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "turtlebot3_msgs/msg/VersionInfo",
+      "file": "turtlebot3_msgs/msg/VersionInfo.msg",
+      "registered": true,
+      "bounds": {
+        "hardware": {
+          "string": 256
+        },
+        "firmware": {
+          "string": 256
+        },
+        "software": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "turtlebot3_msgs/srv/Dqn",
+      "file": "turtlebot3_msgs/srv/Dqn.srv",
+      "registered": true,
+      "bounds": {
+        "response.state": {
+          "sequence": 128
+        }
+      }
+    },
+    {
+      "ros_version": 2,
+      "type": "turtlebot3_msgs/srv/Goal",
+      "file": "turtlebot3_msgs/srv/Goal.srv",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 2,
+      "type": "turtlebot3_msgs/srv/Sound",
+      "file": "turtlebot3_msgs/srv/Sound.srv",
+      "registered": true,
+      "bounds": {
+        "response.message": {
+          "string": 256
+        }
+      }
+    }
+  ]
+}

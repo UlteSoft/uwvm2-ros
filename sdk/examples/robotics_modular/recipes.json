@@ -1,0 +1,1022 @@
+{
+  "format_version": 1,
+  "kind": "robotics-modular-source-recipes",
+  "status": "SOURCE_ONLY_NOT_EXECUTED",
+  "placeholder_policy": "Every {...} must be replaced by one reviewed physical input/value. Refuse remaining placeholders, unexpected imports, mutable tools or missing source dependencies; never append automatic grants.",
+  "sequential": true,
+  "command_rss_max_bytes": 536870912,
+  "root_cgroup_memory_max_bytes": 68719476736,
+  "root_cgroup_swap_max_bytes": 0,
+  "root_memory_current_limit_bytes": 64424509440,
+  "command_timeout_seconds": 600,
+  "workers_parallel": 1,
+  "source_copy_scope": [
+    "sdk/common",
+    "sdk/ros1",
+    "sdk/ros2",
+    "sdk/include",
+    "sdk/examples/robotics_modular"
+  ],
+  "tool_closure": [
+    "Clang resources and executable/loader/shared libraries",
+    "WASI sysroot + libc/libc++/compiler-rt for C++ main",
+    "Rust compiler + complete wasm32-unknown-unknown target sysroot and linker if selected",
+    "Node + entire AssemblyScript package if selected",
+    "TinyGo package/Go roots if selected",
+    "wasm-tools complete tool root",
+    "exact selected Worker and production ROS import registry"
+  ],
+  "builds": [
+    {
+      "id": "callback-c",
+      "cwd": "{SOURCE}",
+      "argv": [
+        "{CLANG}",
+        "--target=wasm32",
+        "-O1",
+        "-g0",
+        "-ffreestanding",
+        "-fno-builtin",
+        "-fno-ident",
+        "-nostdlib",
+        "-Wl,--no-entry",
+        "-Wl,--allow-undefined",
+        "-Wl,--initial-memory=131072",
+        "-Wl,--max-memory=131072",
+        "-Wl,-z,stack-size=65536",
+        "-std=c11",
+        "{EXAMPLE}/callback.c",
+        "-o",
+        "{OUT}/callback-c.wasm"
+      ],
+      "environment": {
+        "TMPDIR": "{OUT}/tmp"
+      },
+      "artifact": "{OUT}/callback-c.wasm",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "motion-c",
+      "cwd": "{SOURCE}",
+      "argv": [
+        "{CLANG}",
+        "--target=wasm32",
+        "-O1",
+        "-g0",
+        "-ffreestanding",
+        "-fno-builtin",
+        "-fno-ident",
+        "-nostdlib",
+        "-Wl,--no-entry",
+        "-Wl,--allow-undefined",
+        "-Wl,--initial-memory=131072",
+        "-Wl,--max-memory=131072",
+        "-Wl,-z,stack-size=65536",
+        "-std=c11",
+        "{EXAMPLE}/motion.c",
+        "-o",
+        "{OUT}/motion-c.wasm"
+      ],
+      "environment": {
+        "TMPDIR": "{OUT}/tmp"
+      },
+      "artifact": "{OUT}/motion-c.wasm",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "vision-c",
+      "cwd": "{SOURCE}",
+      "argv": [
+        "{CLANG}",
+        "--target=wasm32",
+        "-O1",
+        "-g0",
+        "-ffreestanding",
+        "-fno-builtin",
+        "-fno-ident",
+        "-nostdlib",
+        "-Wl,--no-entry",
+        "-Wl,--allow-undefined",
+        "-Wl,--initial-memory=131072",
+        "-Wl,--max-memory=131072",
+        "-Wl,-z,stack-size=65536",
+        "-std=c11",
+        "{EXAMPLE}/vision.c",
+        "-o",
+        "{OUT}/vision-c.wasm"
+      ],
+      "environment": {
+        "TMPDIR": "{OUT}/tmp"
+      },
+      "artifact": "{OUT}/vision-c.wasm",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "callback-cpp",
+      "cwd": "{SOURCE}",
+      "argv": [
+        "{CLANGXX}",
+        "--target=wasm32",
+        "-O1",
+        "-g0",
+        "-ffreestanding",
+        "-fno-builtin",
+        "-fno-ident",
+        "-nostdlib",
+        "-Wl,--no-entry",
+        "-Wl,--allow-undefined",
+        "-Wl,--initial-memory=131072",
+        "-Wl,--max-memory=131072",
+        "-Wl,-z,stack-size=65536",
+        "-std=c++20",
+        "-fno-exceptions",
+        "-fno-rtti",
+        "{EXAMPLE}/callback.cpp",
+        "-o",
+        "{OUT}/callback-cpp.wasm"
+      ],
+      "environment": {
+        "TMPDIR": "{OUT}/tmp"
+      },
+      "artifact": "{OUT}/callback-cpp.wasm",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "motion-cpp",
+      "cwd": "{SOURCE}",
+      "argv": [
+        "{CLANGXX}",
+        "--target=wasm32",
+        "-O1",
+        "-g0",
+        "-ffreestanding",
+        "-fno-builtin",
+        "-fno-ident",
+        "-nostdlib",
+        "-Wl,--no-entry",
+        "-Wl,--allow-undefined",
+        "-Wl,--initial-memory=131072",
+        "-Wl,--max-memory=131072",
+        "-Wl,-z,stack-size=65536",
+        "-std=c++20",
+        "-fno-exceptions",
+        "-fno-rtti",
+        "{EXAMPLE}/motion.cpp",
+        "-o",
+        "{OUT}/motion-cpp.wasm"
+      ],
+      "environment": {
+        "TMPDIR": "{OUT}/tmp"
+      },
+      "artifact": "{OUT}/motion-cpp.wasm",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "vision-cpp",
+      "cwd": "{SOURCE}",
+      "argv": [
+        "{CLANGXX}",
+        "--target=wasm32",
+        "-O1",
+        "-g0",
+        "-ffreestanding",
+        "-fno-builtin",
+        "-fno-ident",
+        "-nostdlib",
+        "-Wl,--no-entry",
+        "-Wl,--allow-undefined",
+        "-Wl,--initial-memory=131072",
+        "-Wl,--max-memory=131072",
+        "-Wl,-z,stack-size=65536",
+        "-std=c++20",
+        "-fno-exceptions",
+        "-fno-rtti",
+        "{EXAMPLE}/vision.cpp",
+        "-o",
+        "{OUT}/vision-cpp.wasm"
+      ],
+      "environment": {
+        "TMPDIR": "{OUT}/tmp"
+      },
+      "artifact": "{OUT}/vision-cpp.wasm",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "main-c-ros1-denied",
+      "cwd": "{SOURCE}",
+      "argv": [
+        "{CLANG}",
+        "--target=wasm32",
+        "-O1",
+        "-g0",
+        "-ffreestanding",
+        "-fno-builtin",
+        "-fno-ident",
+        "-nostdlib",
+        "-Wl,--entry=_start",
+        "-Wl,--allow-undefined",
+        "-Wl,--initial-memory=131072",
+        "-Wl,--max-memory=131072",
+        "-Wl,-z,stack-size=65536",
+        "-std=c11",
+        "-I{SOURCE}/sdk/include",
+        "-DROSWASM_EXAMPLE_ROS_VERSION=1",
+        "-DROBOT_MODULAR_PUBLISH=0",
+        "{EXAMPLE}/main.c",
+        "-o",
+        "{OUT}/main-c-ros1-denied.wasm"
+      ],
+      "environment": {
+        "TMPDIR": "{OUT}/tmp"
+      },
+      "artifact": "{OUT}/main-c-ros1-denied.wasm",
+      "status": "NOT_EXECUTED",
+      "variants": {
+        "ROBOT_EXPECT_CHAIN_DENIALS": "0 normally; explicitly rebuild with1 only with the negative callback provider"
+      }
+    },
+    {
+      "id": "main-c-ros1-publish",
+      "cwd": "{SOURCE}",
+      "argv": [
+        "{CLANG}",
+        "--target=wasm32",
+        "-O1",
+        "-g0",
+        "-ffreestanding",
+        "-fno-builtin",
+        "-fno-ident",
+        "-nostdlib",
+        "-Wl,--entry=_start",
+        "-Wl,--allow-undefined",
+        "-Wl,--initial-memory=131072",
+        "-Wl,--max-memory=131072",
+        "-Wl,-z,stack-size=65536",
+        "-std=c11",
+        "-I{SOURCE}/sdk/include",
+        "-DROSWASM_EXAMPLE_ROS_VERSION=1",
+        "-DROBOT_MODULAR_PUBLISH=1",
+        "{EXAMPLE}/main.c",
+        "-o",
+        "{OUT}/main-c-ros1-publish.wasm"
+      ],
+      "environment": {
+        "TMPDIR": "{OUT}/tmp"
+      },
+      "artifact": "{OUT}/main-c-ros1-publish.wasm",
+      "status": "NOT_EXECUTED",
+      "variants": {
+        "ROBOT_EXPECT_CHAIN_DENIALS": "0 normally; explicitly rebuild with1 only with the negative callback provider"
+      }
+    },
+    {
+      "id": "main-cpp-ros1-denied",
+      "cwd": "{SOURCE}",
+      "argv": [
+        "{WASI_CLANGXX}",
+        "--target=wasm32-wasip1",
+        "--sysroot={WASI_SYSROOT}",
+        "-std=c++20",
+        "-UNDEBUG",
+        "-D_LIBCPP_VERBOSE_ABORT(...)=__builtin_trap()",
+        "-O1",
+        "-g0",
+        "-fno-builtin",
+        "-fno-exceptions",
+        "-fno-rtti",
+        "-nostartfiles",
+        "-Wl,--entry=_start",
+        "-Wl,--allow-undefined",
+        "-Wl,--initial-memory=262144",
+        "-Wl,--max-memory=262144",
+        "-Wl,-z,stack-size=65536",
+        "-I{SOURCE}/sdk/include",
+        "-DROSWASM_EXAMPLE_ROS_VERSION=1",
+        "-DROBOT_MODULAR_PUBLISH=0",
+        "{EXAMPLE}/main.cpp",
+        "{CPP_TERMINATION_OBJECT}",
+        "-o",
+        "{OUT}/main-cpp-ros1-denied.wasm"
+      ],
+      "environment": {
+        "TMPDIR": "{OUT}/tmp"
+      },
+      "artifact": "{OUT}/main-cpp-ros1-denied.wasm",
+      "status": "NOT_EXECUTED",
+      "variants": {
+        "ROBOT_EXPECT_CHAIN_DENIALS": "0 normally; explicitly rebuild with1 only with the negative callback provider"
+      },
+      "required_cpp_termination_policy": "OFFICIAL_LIBCXXABI_BAREMETAL_ABORT_TU_AND_HEADER_VERBOSE_TRAP_V1"
+    },
+    {
+      "id": "main-cpp-ros1-publish",
+      "cwd": "{SOURCE}",
+      "argv": [
+        "{WASI_CLANGXX}",
+        "--target=wasm32-wasip1",
+        "--sysroot={WASI_SYSROOT}",
+        "-std=c++20",
+        "-UNDEBUG",
+        "-D_LIBCPP_VERBOSE_ABORT(...)=__builtin_trap()",
+        "-O1",
+        "-g0",
+        "-fno-builtin",
+        "-fno-exceptions",
+        "-fno-rtti",
+        "-nostartfiles",
+        "-Wl,--entry=_start",
+        "-Wl,--allow-undefined",
+        "-Wl,--initial-memory=262144",
+        "-Wl,--max-memory=262144",
+        "-Wl,-z,stack-size=65536",
+        "-I{SOURCE}/sdk/include",
+        "-DROSWASM_EXAMPLE_ROS_VERSION=1",
+        "-DROBOT_MODULAR_PUBLISH=1",
+        "{EXAMPLE}/main.cpp",
+        "{CPP_TERMINATION_OBJECT}",
+        "-o",
+        "{OUT}/main-cpp-ros1-publish.wasm"
+      ],
+      "environment": {
+        "TMPDIR": "{OUT}/tmp"
+      },
+      "artifact": "{OUT}/main-cpp-ros1-publish.wasm",
+      "status": "NOT_EXECUTED",
+      "variants": {
+        "ROBOT_EXPECT_CHAIN_DENIALS": "0 normally; explicitly rebuild with1 only with the negative callback provider"
+      },
+      "required_cpp_termination_policy": "OFFICIAL_LIBCXXABI_BAREMETAL_ABORT_TU_AND_HEADER_VERBOSE_TRAP_V1"
+    },
+    {
+      "id": "callback-ros1-denied",
+      "cwd": "{SOURCE}",
+      "argv": [
+        "{CLANG}",
+        "--target=wasm32",
+        "-O1",
+        "-g0",
+        "-ffreestanding",
+        "-fno-builtin",
+        "-fno-ident",
+        "-nostdlib",
+        "-Wl,--no-entry",
+        "-Wl,--allow-undefined",
+        "-Wl,--initial-memory=131072",
+        "-Wl,--max-memory=131072",
+        "-Wl,-z,stack-size=65536",
+        "-std=c11",
+        "-I{SOURCE}/sdk/include",
+        "-DROSWASM_EXAMPLE_ROS_VERSION=1",
+        "{EXAMPLE}/callback_ros_denied.c",
+        "-o",
+        "{OUT}/callback-ros1-denied.wasm"
+      ],
+      "environment": {
+        "TMPDIR": "{OUT}/tmp"
+      },
+      "artifact": "{OUT}/callback-ros1-denied.wasm",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "main-c-ros2-denied",
+      "cwd": "{SOURCE}",
+      "argv": [
+        "{CLANG}",
+        "--target=wasm32",
+        "-O1",
+        "-g0",
+        "-ffreestanding",
+        "-fno-builtin",
+        "-fno-ident",
+        "-nostdlib",
+        "-Wl,--entry=_start",
+        "-Wl,--allow-undefined",
+        "-Wl,--initial-memory=131072",
+        "-Wl,--max-memory=131072",
+        "-Wl,-z,stack-size=65536",
+        "-std=c11",
+        "-I{SOURCE}/sdk/include",
+        "-DROSWASM_EXAMPLE_ROS_VERSION=2",
+        "-DROBOT_MODULAR_PUBLISH=0",
+        "{EXAMPLE}/main.c",
+        "-o",
+        "{OUT}/main-c-ros2-denied.wasm"
+      ],
+      "environment": {
+        "TMPDIR": "{OUT}/tmp"
+      },
+      "artifact": "{OUT}/main-c-ros2-denied.wasm",
+      "status": "NOT_EXECUTED",
+      "variants": {
+        "ROBOT_EXPECT_CHAIN_DENIALS": "0 normally; explicitly rebuild with1 only with the negative callback provider"
+      }
+    },
+    {
+      "id": "main-c-ros2-publish",
+      "cwd": "{SOURCE}",
+      "argv": [
+        "{CLANG}",
+        "--target=wasm32",
+        "-O1",
+        "-g0",
+        "-ffreestanding",
+        "-fno-builtin",
+        "-fno-ident",
+        "-nostdlib",
+        "-Wl,--entry=_start",
+        "-Wl,--allow-undefined",
+        "-Wl,--initial-memory=131072",
+        "-Wl,--max-memory=131072",
+        "-Wl,-z,stack-size=65536",
+        "-std=c11",
+        "-I{SOURCE}/sdk/include",
+        "-DROSWASM_EXAMPLE_ROS_VERSION=2",
+        "-DROBOT_MODULAR_PUBLISH=1",
+        "{EXAMPLE}/main.c",
+        "-o",
+        "{OUT}/main-c-ros2-publish.wasm"
+      ],
+      "environment": {
+        "TMPDIR": "{OUT}/tmp"
+      },
+      "artifact": "{OUT}/main-c-ros2-publish.wasm",
+      "status": "NOT_EXECUTED",
+      "variants": {
+        "ROBOT_EXPECT_CHAIN_DENIALS": "0 normally; explicitly rebuild with1 only with the negative callback provider"
+      }
+    },
+    {
+      "id": "main-cpp-ros2-denied",
+      "cwd": "{SOURCE}",
+      "argv": [
+        "{WASI_CLANGXX}",
+        "--target=wasm32-wasip1",
+        "--sysroot={WASI_SYSROOT}",
+        "-std=c++20",
+        "-UNDEBUG",
+        "-D_LIBCPP_VERBOSE_ABORT(...)=__builtin_trap()",
+        "-O1",
+        "-g0",
+        "-fno-builtin",
+        "-fno-exceptions",
+        "-fno-rtti",
+        "-nostartfiles",
+        "-Wl,--entry=_start",
+        "-Wl,--allow-undefined",
+        "-Wl,--initial-memory=262144",
+        "-Wl,--max-memory=262144",
+        "-Wl,-z,stack-size=65536",
+        "-I{SOURCE}/sdk/include",
+        "-DROSWASM_EXAMPLE_ROS_VERSION=2",
+        "-DROBOT_MODULAR_PUBLISH=0",
+        "{EXAMPLE}/main.cpp",
+        "{CPP_TERMINATION_OBJECT}",
+        "-o",
+        "{OUT}/main-cpp-ros2-denied.wasm"
+      ],
+      "environment": {
+        "TMPDIR": "{OUT}/tmp"
+      },
+      "artifact": "{OUT}/main-cpp-ros2-denied.wasm",
+      "status": "NOT_EXECUTED",
+      "variants": {
+        "ROBOT_EXPECT_CHAIN_DENIALS": "0 normally; explicitly rebuild with1 only with the negative callback provider"
+      },
+      "required_cpp_termination_policy": "OFFICIAL_LIBCXXABI_BAREMETAL_ABORT_TU_AND_HEADER_VERBOSE_TRAP_V1"
+    },
+    {
+      "id": "main-cpp-ros2-publish",
+      "cwd": "{SOURCE}",
+      "argv": [
+        "{WASI_CLANGXX}",
+        "--target=wasm32-wasip1",
+        "--sysroot={WASI_SYSROOT}",
+        "-std=c++20",
+        "-UNDEBUG",
+        "-D_LIBCPP_VERBOSE_ABORT(...)=__builtin_trap()",
+        "-O1",
+        "-g0",
+        "-fno-builtin",
+        "-fno-exceptions",
+        "-fno-rtti",
+        "-nostartfiles",
+        "-Wl,--entry=_start",
+        "-Wl,--allow-undefined",
+        "-Wl,--initial-memory=262144",
+        "-Wl,--max-memory=262144",
+        "-Wl,-z,stack-size=65536",
+        "-I{SOURCE}/sdk/include",
+        "-DROSWASM_EXAMPLE_ROS_VERSION=2",
+        "-DROBOT_MODULAR_PUBLISH=1",
+        "{EXAMPLE}/main.cpp",
+        "{CPP_TERMINATION_OBJECT}",
+        "-o",
+        "{OUT}/main-cpp-ros2-publish.wasm"
+      ],
+      "environment": {
+        "TMPDIR": "{OUT}/tmp"
+      },
+      "artifact": "{OUT}/main-cpp-ros2-publish.wasm",
+      "status": "NOT_EXECUTED",
+      "variants": {
+        "ROBOT_EXPECT_CHAIN_DENIALS": "0 normally; explicitly rebuild with1 only with the negative callback provider"
+      },
+      "required_cpp_termination_policy": "OFFICIAL_LIBCXXABI_BAREMETAL_ABORT_TU_AND_HEADER_VERBOSE_TRAP_V1"
+    },
+    {
+      "id": "callback-ros2-denied",
+      "cwd": "{SOURCE}",
+      "argv": [
+        "{CLANG}",
+        "--target=wasm32",
+        "-O1",
+        "-g0",
+        "-ffreestanding",
+        "-fno-builtin",
+        "-fno-ident",
+        "-nostdlib",
+        "-Wl,--no-entry",
+        "-Wl,--allow-undefined",
+        "-Wl,--initial-memory=131072",
+        "-Wl,--max-memory=131072",
+        "-Wl,-z,stack-size=65536",
+        "-std=c11",
+        "-I{SOURCE}/sdk/include",
+        "-DROSWASM_EXAMPLE_ROS_VERSION=2",
+        "{EXAMPLE}/callback_ros_denied.c",
+        "-o",
+        "{OUT}/callback-ros2-denied.wasm"
+      ],
+      "environment": {
+        "TMPDIR": "{OUT}/tmp"
+      },
+      "artifact": "{OUT}/callback-ros2-denied.wasm",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "benchmark-main",
+      "cwd": "{SOURCE}",
+      "argv": [
+        "{CLANG}",
+        "--target=wasm32",
+        "-O1",
+        "-g0",
+        "-ffreestanding",
+        "-fno-builtin",
+        "-fno-ident",
+        "-nostdlib",
+        "-Wl,--entry=_start",
+        "-Wl,--allow-undefined",
+        "-Wl,--initial-memory=131072",
+        "-Wl,--max-memory=131072",
+        "-Wl,-z,stack-size=65536",
+        "-std=c11",
+        "-DROBOT_BENCHMARK_SEED={SEED}",
+        "-DROBOT_BENCHMARK_ITERATIONS={ITERATIONS}",
+        "{EXAMPLE}/benchmark_main.c",
+        "-o",
+        "{OUT}/benchmark-main.wasm"
+      ],
+      "environment": {
+        "TMPDIR": "{OUT}/tmp"
+      },
+      "artifact": "{OUT}/benchmark-main.wasm",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "vision-rust",
+      "cwd": "{SOURCE}",
+      "argv": [
+        "{RUSTC}",
+        "--edition=2021",
+        "--crate-type=cdylib",
+        "--target=wasm32-unknown-unknown",
+        "--sysroot",
+        "{RUST_SYSROOT}",
+        "-C",
+        "panic=abort",
+        "-C",
+        "opt-level=1",
+        "-C",
+        "codegen-units=1",
+        "-C",
+        "linker={WASM_LD}",
+        "-C",
+        "link-arg=--no-entry",
+        "-C",
+        "link-arg=--initial-memory=131072",
+        "-C",
+        "link-arg=--max-memory=131072",
+        "-C",
+        "link-arg=-z",
+        "-C",
+        "link-arg=stack-size=65536",
+        "{EXAMPLE}/vision.rs",
+        "-o",
+        "{OUT}/vision-rust.wasm"
+      ],
+      "environment": {
+        "TMPDIR": "{OUT}/tmp"
+      },
+      "artifact": "{OUT}/vision-rust.wasm",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "vision-assemblyscript",
+      "cwd": "{SOURCE}",
+      "argv": [
+        "{NODE}",
+        "{ASC_JS}",
+        "{EXAMPLE}/vision.ts",
+        "--runtime",
+        "stub",
+        "--use",
+        "abort=sdk/examples/robotics_modular/vision/abortGuest",
+        "--initialMemory",
+        "2",
+        "--maximumMemory",
+        "2",
+        "--outFile",
+        "{OUT}/vision-assemblyscript.wasm"
+      ],
+      "environment": {
+        "TMPDIR": "{OUT}/tmp"
+      },
+      "artifact": "{OUT}/vision-assemblyscript.wasm",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "vision-tinygo-conditional",
+      "cwd": "{EXAMPLE}/tinygo",
+      "argv": [
+        "{TINYGO}",
+        "build",
+        "-p",
+        "1",
+        "-target={EXAMPLE}/tinygo/wasm-unknown-v0.43.0-bounded.json",
+        "-buildmode=c-shared",
+        "-scheduler=none",
+        "-opt=1",
+        "-o",
+        "{OUT}/vision-go.wasm",
+        "."
+      ],
+      "environment": {
+        "GOMAXPROCS": "1",
+        "GOMEMLIMIT": "192MiB",
+        "GOCACHE": "{OUT}/go-cache",
+        "GOPATH": "{OUT}/go-path",
+        "GOTMPDIR": "{OUT}/go-tmp",
+        "TMPDIR": "{OUT}/tmp",
+        "GOTOOLCHAIN": "local",
+        "GOPROXY": "off",
+        "GOSUMDB": "off"
+      },
+      "artifact": "{OUT}/vision-go.wasm",
+      "status": "CONDITIONAL_NOT_EXECUTED",
+      "admission": "The v0.43.0 pure reactor profile must produce zero actual imports, no implicit start or _start, explicit _initialize()->(), and one own memory with maximum1024pages. Actual zero-right initialization is a separate required observation; no clock, entropy or filesystem rights are added."
+    },
+    {
+      "id": "tinygo_adapter",
+      "cwd": "{SOURCE}",
+      "argv": [
+        "{WASM_TOOLS}",
+        "parse",
+        "{EXAMPLE}/tinygo_adapter.wat",
+        "-o",
+        "{OUT}/tinygo_adapter.wasm"
+      ],
+      "environment": {
+        "TMPDIR": "{OUT}/tmp"
+      },
+      "artifact": "{OUT}/tinygo_adapter.wasm",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "funcref_callback",
+      "cwd": "{SOURCE}",
+      "argv": [
+        "{WASM_TOOLS}",
+        "parse",
+        "{EXAMPLE}/funcref_callback.wat",
+        "-o",
+        "{OUT}/funcref_callback.wasm"
+      ],
+      "environment": {
+        "TMPDIR": "{OUT}/tmp"
+      },
+      "artifact": "{OUT}/funcref_callback.wasm",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "funcref_main",
+      "cwd": "{SOURCE}",
+      "argv": [
+        "{WASM_TOOLS}",
+        "parse",
+        "{EXAMPLE}/funcref_main.wat",
+        "-o",
+        "{OUT}/funcref_main.wasm"
+      ],
+      "environment": {
+        "TMPDIR": "{OUT}/tmp"
+      },
+      "artifact": "{OUT}/funcref_main.wasm",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "main-c-ros1-denied-chain",
+      "cwd": "{SOURCE}",
+      "argv": [
+        "{CLANG}",
+        "--target=wasm32",
+        "-O1",
+        "-g0",
+        "-ffreestanding",
+        "-fno-builtin",
+        "-fno-ident",
+        "-nostdlib",
+        "-Wl,--entry=_start",
+        "-Wl,--allow-undefined",
+        "-Wl,--initial-memory=131072",
+        "-Wl,--max-memory=131072",
+        "-Wl,-z,stack-size=65536",
+        "-std=c11",
+        "-I{SOURCE}/sdk/include",
+        "-DROSWASM_EXAMPLE_ROS_VERSION=1",
+        "-DROBOT_MODULAR_PUBLISH=0",
+        "{EXAMPLE}/main.c",
+        "-DROBOT_EXPECT_CHAIN_DENIALS=1",
+        "-o",
+        "{OUT}/main-c-ros1-denied-chain.wasm"
+      ],
+      "environment": {
+        "TMPDIR": "{OUT}/tmp"
+      },
+      "artifact": "{OUT}/main-c-ros1-denied-chain.wasm",
+      "status": "NOT_EXECUTED",
+      "variants": {
+        "callback_provider": "selected ROS version negative callback artifact; default main remains denied",
+        "expected_accepted_callbacks_with_ROS_refusal": 3
+      }
+    },
+    {
+      "id": "main-cpp-ros1-denied-chain",
+      "cwd": "{SOURCE}",
+      "argv": [
+        "{WASI_CLANGXX}",
+        "--target=wasm32-wasip1",
+        "--sysroot={WASI_SYSROOT}",
+        "-std=c++20",
+        "-UNDEBUG",
+        "-D_LIBCPP_VERBOSE_ABORT(...)=__builtin_trap()",
+        "-O1",
+        "-g0",
+        "-fno-builtin",
+        "-fno-exceptions",
+        "-fno-rtti",
+        "-nostartfiles",
+        "-Wl,--entry=_start",
+        "-Wl,--allow-undefined",
+        "-Wl,--initial-memory=262144",
+        "-Wl,--max-memory=262144",
+        "-Wl,-z,stack-size=65536",
+        "-I{SOURCE}/sdk/include",
+        "-DROSWASM_EXAMPLE_ROS_VERSION=1",
+        "-DROBOT_MODULAR_PUBLISH=0",
+        "{EXAMPLE}/main.cpp",
+        "-DROBOT_EXPECT_CHAIN_DENIALS=1",
+        "{CPP_TERMINATION_OBJECT}",
+        "-o",
+        "{OUT}/main-cpp-ros1-denied-chain.wasm"
+      ],
+      "environment": {
+        "TMPDIR": "{OUT}/tmp"
+      },
+      "artifact": "{OUT}/main-cpp-ros1-denied-chain.wasm",
+      "status": "NOT_EXECUTED",
+      "variants": {
+        "callback_provider": "selected ROS version negative callback artifact; default main remains denied",
+        "expected_accepted_callbacks_with_ROS_refusal": 3
+      },
+      "required_cpp_termination_policy": "OFFICIAL_LIBCXXABI_BAREMETAL_ABORT_TU_AND_HEADER_VERBOSE_TRAP_V1"
+    },
+    {
+      "id": "main-c-ros2-denied-chain",
+      "cwd": "{SOURCE}",
+      "argv": [
+        "{CLANG}",
+        "--target=wasm32",
+        "-O1",
+        "-g0",
+        "-ffreestanding",
+        "-fno-builtin",
+        "-fno-ident",
+        "-nostdlib",
+        "-Wl,--entry=_start",
+        "-Wl,--allow-undefined",
+        "-Wl,--initial-memory=131072",
+        "-Wl,--max-memory=131072",
+        "-Wl,-z,stack-size=65536",
+        "-std=c11",
+        "-I{SOURCE}/sdk/include",
+        "-DROSWASM_EXAMPLE_ROS_VERSION=2",
+        "-DROBOT_MODULAR_PUBLISH=0",
+        "{EXAMPLE}/main.c",
+        "-DROBOT_EXPECT_CHAIN_DENIALS=1",
+        "-o",
+        "{OUT}/main-c-ros2-denied-chain.wasm"
+      ],
+      "environment": {
+        "TMPDIR": "{OUT}/tmp"
+      },
+      "artifact": "{OUT}/main-c-ros2-denied-chain.wasm",
+      "status": "NOT_EXECUTED",
+      "variants": {
+        "callback_provider": "selected ROS version negative callback artifact; default main remains denied",
+        "expected_accepted_callbacks_with_ROS_refusal": 3
+      }
+    },
+    {
+      "id": "main-cpp-ros2-denied-chain",
+      "cwd": "{SOURCE}",
+      "argv": [
+        "{WASI_CLANGXX}",
+        "--target=wasm32-wasip1",
+        "--sysroot={WASI_SYSROOT}",
+        "-std=c++20",
+        "-UNDEBUG",
+        "-D_LIBCPP_VERBOSE_ABORT(...)=__builtin_trap()",
+        "-O1",
+        "-g0",
+        "-fno-builtin",
+        "-fno-exceptions",
+        "-fno-rtti",
+        "-nostartfiles",
+        "-Wl,--entry=_start",
+        "-Wl,--allow-undefined",
+        "-Wl,--initial-memory=262144",
+        "-Wl,--max-memory=262144",
+        "-Wl,-z,stack-size=65536",
+        "-I{SOURCE}/sdk/include",
+        "-DROSWASM_EXAMPLE_ROS_VERSION=2",
+        "-DROBOT_MODULAR_PUBLISH=0",
+        "{EXAMPLE}/main.cpp",
+        "-DROBOT_EXPECT_CHAIN_DENIALS=1",
+        "{CPP_TERMINATION_OBJECT}",
+        "-o",
+        "{OUT}/main-cpp-ros2-denied-chain.wasm"
+      ],
+      "environment": {
+        "TMPDIR": "{OUT}/tmp"
+      },
+      "artifact": "{OUT}/main-cpp-ros2-denied-chain.wasm",
+      "status": "NOT_EXECUTED",
+      "variants": {
+        "callback_provider": "selected ROS version negative callback artifact; default main remains denied",
+        "expected_accepted_callbacks_with_ROS_refusal": 3
+      },
+      "required_cpp_termination_policy": "OFFICIAL_LIBCXXABI_BAREMETAL_ABORT_TU_AND_HEADER_VERBOSE_TRAP_V1"
+    },
+    {
+      "id": "benchmark-session-main",
+      "cwd": "{SOURCE}",
+      "argv": [
+        "{CLANG}",
+        "--target=wasm32",
+        "-O1",
+        "-g0",
+        "-ffreestanding",
+        "-fno-builtin",
+        "-fno-ident",
+        "-nostdlib",
+        "-Wl,--entry=_start",
+        "-Wl,--allow-undefined",
+        "-Wl,--initial-memory=131072",
+        "-Wl,--max-memory=131072",
+        "-Wl,-z,stack-size=65536",
+        "-std=c11",
+        "-DROBOT_BENCHMARK_SEED={SEED}",
+        "-DROBOT_BENCHMARK_ITERATIONS={ITERATIONS}",
+        "{EXAMPLE}/benchmark_session_main.c",
+        "-o",
+        "{OUT}/benchmark-session-main.wasm"
+      ],
+      "environment": {
+        "TMPDIR": "{OUT}/tmp"
+      },
+      "artifact": "{OUT}/benchmark-session-main.wasm",
+      "status": "NOT_EXECUTED"
+    }
+  ],
+  "import_export_contracts": {
+    "callbacks": {
+      "imports": [],
+      "exports": {
+        "callback_begin": "(i32)->i32",
+        "callback_end": "(i32,i32)->i32",
+        "callback_count": "(i32,i32)->i32",
+        "callback_denials": "()->i32",
+        "on_motion": "(i32,i32,i32,i32)->i32"
+      }
+    },
+    "motion": {
+      "imports": {
+        "callbacks.on_motion": "(i32,i32,i32,i32)->i32"
+      },
+      "exports": {
+        "motion_step": "(i32,i32,i32,i32)->i32"
+      }
+    },
+    "vision": {
+      "imports": [],
+      "exports": {
+        "vision_initialize": "()->i32",
+        "vision_clearance_mm": "(i32,i32,i32,i32)->i32"
+      }
+    },
+    "main": {
+      "required_imports": {
+        "callbacks.callback_begin": "(i32)->i32",
+        "callbacks.callback_end": "(i32,i32)->i32",
+        "callbacks.callback_count": "(i32,i32)->i32",
+        "callbacks.callback_denials": "()->i32",
+        "motion.motion_step": "(i32,i32,i32,i32)->i32",
+        "vision.vision_initialize": "()->i32",
+        "vision.vision_clearance_mm": "(i32,i32,i32,i32)->i32"
+      },
+      "host_imports": "Only selected uwvm_rosN_v1 ABI functions from sdk/abi/abi-v1.json and basic WASIp1 fd_write/proc_exit (fd_read in positive mode); backend tables may retain unused selected-version ABI imports, which grant no operation rights. No other namespace allowed."
+    },
+    "negative_callback": {
+      "additional_imports": {
+        "uwvm_rosN_v1.capability_open": "(i32,i64,i64,i64)->i32"
+      },
+      "expect": "13 and eight unchanged0xa5 bytes on every otherwise accepted cross-module callback; no successful Guest handle"
+    },
+    "benchmark": {
+      "host_imports": {
+        "wasi_snapshot_preview1.fd_write": "(i32,i32,i32,i32)->i32",
+        "wasi_snapshot_preview1.proc_exit": "(i32)->()"
+      },
+      "note": "No ROS imports; root memory only."
+    },
+    "benchmark_session": {
+      "host_imports": {
+        "wasi_snapshot_preview1.fd_read": "(i32,i32,i32,i32)->i32",
+        "wasi_snapshot_preview1.fd_write": "(i32,i32,i32,i32)->i32",
+        "wasi_snapshot_preview1.proc_exit": "(i32)->()"
+      },
+      "protocol": "READY LF, <=256 single commands W|P ->exact8LEchecksum, Q ->exit0; no ROS, clock, randomness or sleep"
+    }
+  },
+  "validation": {
+    "each_actual_product_argv": [
+      "{WASM_TOOLS}",
+      "validate",
+      "{ARTIFACT}"
+    ],
+    "each_actual_product_import_inspection": "Reopen artifact bytes, inspect every import/export signature and memory bound, bind exact SDK registry bytes and producer logs before launch; validation alone is not native ROS acceptance.",
+    "full_dependencies": "Clang actual runs must add -MD -MF {ROW}.d -MT {ARTIFACT}; preserve all external headers/archives/objects/tools, source/context manifests before/after; Rust/AS/TinyGo retain complete package/sysroot/root catalogs.",
+    "source_compilation_executed": false
+  },
+  "benchmark": {
+    "seed": 1,
+    "iterations": 10000,
+    "maximum_iterations": 1000000,
+    "stdout": "exact8 LE checksum bytes then exit0; no guest timing",
+    "native_header": "{EXAMPLE}/robotics_math.h",
+    "native_entry": "robot_math_batch(seed,iterations)",
+    "scope": "same synthetic math; native fused baseline differs by modular import/callback dispatch overhead; no physical or ROS work",
+    "session_artifact": "{OUT}/benchmark-session-main.wasm",
+    "seed_range": [
+      0,
+      4294967295
+    ]
+  },
+  "native_ROS_acceptance": "NOT_EXECUTED",
+  "required_fresh_output_directories": [
+    "{OUT}",
+    "{OUT}/tmp",
+    "{OUT}/go-cache",
+    "{OUT}/go-path",
+    "{OUT}/go-tmp"
+  ],
+  "compiler_environment_policy": "Use a retained controlled compiler environment; resolve every explicit tool/sysroot/root and reject ambient flag or loader substitutions. These recipes confer no Guest authority.",
+  "cpp_termination": {
+    "policy": "OFFICIAL_LIBCXXABI_BAREMETAL_ABORT_TU_AND_HEADER_VERBOSE_TRAP_V1",
+    "scope_ids": [
+      "main-cpp-ros1-denied",
+      "main-cpp-ros1-publish",
+      "main-cpp-ros2-denied",
+      "main-cpp-ros2-publish",
+      "main-cpp-ros1-denied-chain",
+      "main-cpp-ros2-denied-chain"
+    ],
+    "plan_preparer": "sdk/examples/robotics_modular/cpp_termination/prepare.py",
+    "official_input_lock": "sdk/examples/robotics_modular/cpp_termination/official-inputs.json",
+    "required_substitution": "CPP_TERMINATION_OBJECT",
+    "assertion_policy": "Only exact official no-assert abort_message.cpp uses NDEBUG; every Guest TU keeps UNDEBUG and the header-only verbose trap",
+    "object_placement": "The direct official object must precede driver-provided C++ archives; actual trace and why-extract must reject default handlers",
+    "qualification": "Plan/compile/link/validator/import evidence remain distinct; no Runtime or native ROS PASS follows from recipe data"
+  }
+}

@@ -1,0 +1,12 @@
+bool flag
+uint8 u8
+int8 i8
+uint16 u16
+int16 i16
+uint32 u32
+int32 i32
+uint64 u64
+int64 i64
+float32 f32
+float64 f64
+string text

@@ -1,0 +1,31 @@
+{
+  "status": "OFFICIAL_SOURCE_DATA_NOT_ACTUAL_INSTALLED_TOOL_QUALIFICATION",
+  "official_primary_receipt": {
+    "path": "/tmp/uwvm-wasi-sdk33-threaded-eh-primary-source-root-20261018-r1/source-provenance.json",
+    "bytes": 3884,
+    "sha256": "4d01f488b2f70122889ad5a6bef63b71de33f6f8086c090cfd6c68eb030cb1d1"
+  },
+  "roles": [
+    {
+      "path": "/tmp/uwvm-wasi-sdk33-threaded-eh-primary-source-root-20261018-r1/primary/wasi-sdk-pthread.cmake",
+      "bytes": 1629,
+      "sha256": "c71f5fdc85acdd6864d125427cacab94345f5549b5a75a1819ee84334a8916c3"
+    },
+    {
+      "path": "/tmp/uwvm-wasi-sdk33-threaded-eh-primary-source-root-20261018-r1/primary/CppExceptions.md",
+      "bytes": 3041,
+      "sha256": "324a9b2914ce50a26c9357c19e71850b6a6c597c73c77079cac17ff855950fbd"
+    },
+    {
+      "path": "/tmp/uwvm-wasi-sdk33-threaded-eh-primary-source-root-20261018-r1/primary/README.md",
+      "bytes": 8961,
+      "sha256": "b47879fbe0b024147bd4e86ce09393e10a231a5d9faa0ccf873a51305adaf9e0"
+    },
+    {
+      "path": "/tmp/uwvm-wasi-sdk33-threaded-eh-primary-source-root-20261018-r1/primary/cmake/wasi-sdk-sysroot.cmake",
+      "bytes": 18250,
+      "sha256": "f64bdf4259cefb5ecffeae262353bc8d65cf5d5b9d75dbddc1805b7c8e13b83d"
+    }
+  ],
+  "scope": "Fixed SDK33 official primary bodies independently read before wrapper authoring. The installed prefix and real actual artifact contents have not been downloaded/compiled/probed here."
+}

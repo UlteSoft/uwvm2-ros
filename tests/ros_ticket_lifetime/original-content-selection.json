@@ -1,0 +1,56 @@
+{
+  "status": "SOURCE_CONTENT_SELECTION_ONLY",
+  "archive": "/Users/liyinan/Documents/MacroModel/uwvm2-ros-recovery-archives/20261017/source41-42.tar.gz",
+  "archive_scope": "Only four bounded regular Source42 members were streamed into /tmp; no extraction of unrelated members, original runtime execution or historical file identity claim.",
+  "source43_manifest": {
+    "path": "/tmp/uwvm-source43-complete-freeze-root-20261017-r1/source-manifest.json",
+    "bytes": 3436243,
+    "sha256": "9a01f114e4091d4329392b291b5785952e99b22d8e2a48be52b7e02a7d8f0178"
+  },
+  "changes": [
+    {
+      "path": "gateways/common/service.h",
+      "original_source43": {
+        "bytes": 7247,
+        "sha256": "ca0f87a65fed51063b3c74fdb3a5cfb5bca64ef4883aef1ed6f04803d9e3b93a"
+      },
+      "current": {
+        "bytes": 7194,
+        "sha256": "991dc27ac6a24958628cc0e8e1db63fe2227d8070426d772abe327f4b6a9c0eb"
+      }
+    },
+    {
+      "path": "gateways/ros1/action.h",
+      "original_source43": {
+        "bytes": 21561,
+        "sha256": "8ca922cf88196a281b84187b3d8e9c6ee12d2754f2ae1e23cf4f6fcbfb8b9f42"
+      },
+      "current": {
+        "bytes": 21502,
+        "sha256": "4fbe253cd340dacd4339e090bed7b3d3150b11d9e6040ed18dec0267d5985ac2"
+      }
+    },
+    {
+      "path": "gateways/ros1/custom_actions.h",
+      "original_source43": {
+        "bytes": 28491,
+        "sha256": "8166d3ab7261df6eeb1e3d3dec7316c49d25e883b83398450e3037f87eb2c8fa"
+      },
+      "current": {
+        "bytes": 28452,
+        "sha256": "b53179b270b7937ca2601d7304bffb90cbc1171d224e30c99263a3ce61853159"
+      }
+    },
+    {
+      "path": "gateways/ros2/custom_actions.h",
+      "original_source43": {
+        "bytes": 43930,
+        "sha256": "ee3765213cbc61e3e66e9b0dfedcb4d144084bc9d6e62cb44073a2609bdc4b40"
+      },
+      "current": {
+        "bytes": 43891,
+        "sha256": "ce584668525dcb1ffa50bc2b4b6807cf1b78dd696e1f0e96db19398fe8dbb77b"
+      }
+    }
+  ]
+}

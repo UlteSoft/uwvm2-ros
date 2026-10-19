@@ -1,0 +1,122 @@
+{
+  "active_reserve_bytes": 8589934592,
+  "all_byte_sums_are_metadata_or_logical_only": true,
+  "kind": "owned-artifact-metadata-capacity-summary-not-unique-reclaim",
+  "no_current_content_SHA_of_diagnostic_tar_collected": true,
+  "observed_above_reserve_bytes": 6224855040,
+  "observed_backing_free": 14814789632,
+  "observed_rows": 299,
+  "selected_observations": [
+    {
+      "directories": 534,
+      "disappeared_during_live_inventory": 0,
+      "other_device_entries_not_descended": 0,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/unitree-upstream-snapshots-20261016-r2",
+      "regular_bytes": 2531311333,
+      "regular_files": 3595,
+      "special_nodes": 0,
+      "summed_st_blocks_bytes_not_unique_extents": 2539388928,
+      "symlinks": 4
+    },
+    {
+      "directories": 2568,
+      "disappeared_during_live_inventory": 0,
+      "other_device_entries_not_descended": 0,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r5",
+      "regular_bytes": 2503420841,
+      "regular_files": 22747,
+      "special_nodes": 0,
+      "summed_st_blocks_bytes_not_unique_extents": 2564698112,
+      "symlinks": 1203
+    },
+    {
+      "directories": 2718,
+      "disappeared_during_live_inventory": 0,
+      "other_device_entries_not_descended": 0,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r6d",
+      "regular_bytes": 2303212341,
+      "regular_files": 26458,
+      "special_nodes": 0,
+      "summed_st_blocks_bytes_not_unique_extents": 2387550208,
+      "symlinks": 1203
+    },
+    {
+      "directories": 150,
+      "disappeared_during_live_inventory": 0,
+      "other_device_entries_not_descended": 0,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/unitree-upstream-snapshots-20261016-r3",
+      "regular_bytes": 1960651957,
+      "regular_files": 1564,
+      "special_nodes": 0,
+      "summed_st_blocks_bytes_not_unique_extents": 1963937792,
+      "symlinks": 0
+    },
+    {
+      "directories": 4335,
+      "disappeared_during_live_inventory": 0,
+      "other_device_entries_not_descended": 0,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/source39-native-gateways-physics-peer-r1",
+      "regular_bytes": 1549705457,
+      "regular_files": 32855,
+      "special_nodes": 0,
+      "summed_st_blocks_bytes_not_unique_extents": 1638993920,
+      "symlinks": 1265
+    },
+    {
+      "directories": 4305,
+      "disappeared_during_live_inventory": 0,
+      "other_device_entries_not_descended": 0,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/source37-native-gateways-physics-peer-r1",
+      "regular_bytes": 1545856106,
+      "regular_files": 32764,
+      "special_nodes": 0,
+      "summed_st_blocks_bytes_not_unique_extents": 1634873344,
+      "symlinks": 1265
+    },
+    {
+      "directories": 62,
+      "disappeared_during_live_inventory": 0,
+      "other_device_entries_not_descended": 0,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/host-compiler-r1",
+      "regular_bytes": 1452419119,
+      "regular_files": 1067,
+      "special_nodes": 0,
+      "summed_st_blocks_bytes_not_unique_extents": 1454936064,
+      "symlinks": 27
+    },
+    {
+      "directories": 4254,
+      "disappeared_during_live_inventory": 0,
+      "other_device_entries_not_descended": 0,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/source35-native-gateways-peer-r3",
+      "regular_bytes": 1371919749,
+      "regular_files": 32297,
+      "special_nodes": 0,
+      "summed_st_blocks_bytes_not_unique_extents": 1459875840,
+      "symlinks": 1265
+    },
+    {
+      "directories": 2,
+      "disappeared_during_live_inventory": 0,
+      "other_device_entries_not_descended": 0,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-deb297-single-thread-decompression-diagnostic-r1",
+      "regular_bytes": 829297555,
+      "regular_files": 4,
+      "special_nodes": 0,
+      "summed_st_blocks_bytes_not_unique_extents": 829304832,
+      "symlinks": 0
+    },
+    {
+      "directories": 0,
+      "disappeared_during_live_inventory": 0,
+      "other_device_entries_not_descended": 0,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-failed-decoded-payload-retirement-r1",
+      "regular_bytes": 65471939,
+      "regular_files": 16,
+      "special_nodes": 0,
+      "summed_st_blocks_bytes_not_unique_extents": 65495040,
+      "symlinks": 0
+    }
+  ],
+  "shared_CoW_extents_and_hardlinks_may_be_counted_repeatedly": true
+}

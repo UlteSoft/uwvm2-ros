@@ -1,0 +1,3 @@
+JsonStringType request # json string with new values, null will delete the variable
+---
+SharedVariablesEditResponse response

@@ -1,0 +1,35 @@
+# Trusted source preparation grants no Guest rights and launches no robot.
+cmake_minimum_required(VERSION 3.20)
+project(uwvm_clearpath_elephant_wasm LANGUAGES C CXX)
+option(UWVM_BUILD_CLEARPATH_ELEPHANT "Build explicit two-vendor WASI commands" OFF)
+if(NOT UWVM_BUILD_CLEARPATH_ELEPHANT)
+  return()
+endif()
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "WASI")
+  message(FATAL_ERROR "Use the reviewed WASI Preview1 CMake toolchain")
+endif()
+if(NOT UWVM_SOURCE_ROOT OR NOT UWVM_MERGED_GENERATED OR NOT UWVM_MERGED_CATALOG)
+  message(FATAL_ERROR "Explicit source root, merged catalog and generated directory required")
+endif()
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+execute_process(COMMAND "${Python3_EXECUTABLE}" -I -S -B
+  "${CMAKE_CURRENT_LIST_DIR}/validate_domain.py"
+  --source "${UWVM_SOURCE_ROOT}" --generated "${UWVM_MERGED_GENERATED}"
+  --catalog "${UWVM_MERGED_CATALOG}" RESULT_VARIABLE UWVM_PAIR_SOURCE_CHECK)
+if(NOT UWVM_PAIR_SOURCE_CHECK EQUAL 0)
+  message(FATAL_ERROR "Exact original merged Noetic source/product domain differs")
+endif()
+foreach(lang IN ITEMS c cpp)
+  if(lang STREQUAL "cpp")
+    set(ext cc)
+  else()
+    set(ext c)
+  endif()
+  add_executable(clearpath_elephant_${lang} "guest.${ext}")
+  target_compile_features(clearpath_elephant_${lang} PRIVATE c_std_17 cxx_std_20)
+  target_compile_definitions(clearpath_elephant_${lang} PRIVATE
+    UWVM_CLEARPATH_SELECTION=1 UWVM_ELEPHANT_SELECTION=14)
+  target_include_directories(clearpath_elephant_${lang} PRIVATE
+    "${UWVM_MERGED_GENERATED}" "${UWVM_SOURCE_ROOT}/sdk/include" "${UWVM_SOURCE_ROOT}")
+  set_target_properties(clearpath_elephant_${lang} PROPERTIES SUFFIX ".wasm")
+endforeach()

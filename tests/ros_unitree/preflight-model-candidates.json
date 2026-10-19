@@ -1,0 +1,1673 @@
+{
+  "format_version": 1,
+  "status": "UNQUALIFIED_SOURCE_CANDIDATES_REQUIRE_ACTUAL_NATIVE_PREFLIGHT",
+  "description": "Original integration mapping facts authored from the actual official source snapshot. No asset is vendored. Candidate family, keyframe and slot rows are not native execution or hardware compatibility evidence. The Root-owned preflight must verify every selected actuator ID, physical joint, sensor object/address/dimension and complete model dependency closure against actual MuJoCo.",
+  "upstream": {
+    "repository": "unitreerobotics/unitree_mujoco",
+    "commit": "1eb6642e3f3fdfb7fb13a9794fd6a2dd93ea0e7d",
+    "tree": "dfc776d2eb6da2716c9e7ea830f6a1b461c3ba73",
+    "source_url": "https://github.com/unitreerobotics/unitree_mujoco/tree/1eb6642e3f3fdfb7fb13a9794fd6a2dd93ea0e7d",
+    "source_blobs": [
+      {
+        "path": "simulate/src/main.cc",
+        "git_blob": "db38cb28d1b7c0a41ffd2a5dad86fad2362890c2",
+        "bytes": 20162,
+        "sha256": "85f10859c71bc9047d37397aefcc05dc8753c7cf37141f5e9ac205e91e932234"
+      },
+      {
+        "path": "simulate/src/param.h",
+        "git_blob": "f730e03c87bf9d47ab30926f9ad370a0918dda1e",
+        "bytes": 3736,
+        "sha256": "c57b9484be615da7fe24ca90312f781de9ff13872cf8adca41ae61510dd4445e"
+      },
+      {
+        "path": "simulate/src/unitree_sdk2_bridge.h",
+        "git_blob": "7c13289a9e431946979e83cc9f360619e8642c78",
+        "bytes": 13249,
+        "sha256": "8bd7a48e0e66738359b6c75ca4f2f4760b0670012a86a86a7b8396a3a5bfeaad"
+      },
+      {
+        "path": "simulate_python/unitree_sdk2py_bridge.py",
+        "git_blob": "a9ca97ae12ea15f5eaf94eaa83f1f366dd2b5b4c",
+        "bytes": 16272,
+        "sha256": "3ddb54ddddc6a20255e9bb77760537774b2eb77ce50073bf1f4a69bfaa77b599"
+      },
+      {
+        "path": "unitree_robots/b2/b2.xml",
+        "git_blob": "88e1a789b67e90adbb120237b03a11cb54b1b210",
+        "bytes": 18887,
+        "sha256": "ed6b51d00fb8593dd1c0e2360d10e06c5b86e422ec4583e92add0343ad24c9d8"
+      },
+      {
+        "path": "unitree_robots/b2/scene.xml",
+        "git_blob": "00f10f89b22df57ed5859c368bd1b35706da8949",
+        "bytes": 1620,
+        "sha256": "3c4b8aae8a1113dbad8f465a1e218783c6425871877c5fbe0763381a1a4cc0a6"
+      },
+      {
+        "path": "unitree_robots/b2w/b2w.xml",
+        "git_blob": "0f65df5b8c92425489eb4d9ffa9f47a21d1396d6",
+        "bytes": 22077,
+        "sha256": "31a1b60bef0946568e98ec609fbf2dfb9237a77350a225a4bbf052698e196c0c"
+      },
+      {
+        "path": "unitree_robots/b2w/scene.xml",
+        "git_blob": "8a6e8317fcb7251dc55ece5d127676fa68cf4dad",
+        "bytes": 1640,
+        "sha256": "171d4bc592e1e3eaf15179bcdf0ab5aa1fba3fb0d157fe3bfb285ba0a0316908"
+      },
+      {
+        "path": "unitree_robots/g1/g1_29dof.xml",
+        "git_blob": "41f514f95564bad128f5c6aeef334812d3bd3939",
+        "bytes": 36170,
+        "sha256": "423e28bd718b19f7a65cda539b6f794ddbb268b4b9bdbd85f4bd982b30729617"
+      },
+      {
+        "path": "unitree_robots/g1/scene.xml",
+        "git_blob": "28066be592508e15654da7481e06537603daa936",
+        "bytes": 21325,
+        "sha256": "a05f5b2f5d166c5b5ad4766a404eab7f5c6071245b7d658551139236d38eb63d"
+      },
+      {
+        "path": "unitree_robots/go2/go2.xml",
+        "git_blob": "d970540c8295b2614b043ae282d1804d317edc77",
+        "bytes": 14881,
+        "sha256": "2014a3d76e30f17ab9447d8a67bd015291f74fa4d71ae30d005f1a32bd693d4b"
+      },
+      {
+        "path": "unitree_robots/go2/scene.xml",
+        "git_blob": "e7ad5402a9e45fbfa04ca245f3a7ab8843995b47",
+        "bytes": 1472,
+        "sha256": "6c1fda780e7883665d1c84113b9275b6d448f586a8b1c110e438a37417cbccd0"
+      },
+      {
+        "path": "unitree_robots/go2w/go2w.xml",
+        "git_blob": "88b7dbe2f6ca775a60cb1ddb2e4c2f1ee9573c5a",
+        "bytes": 16920,
+        "sha256": "c8feaef4afdf360335727c80a826d1611950c562a3daaa5b5bfcf8b57f6859a6"
+      },
+      {
+        "path": "unitree_robots/go2w/scene.xml",
+        "git_blob": "f6cdafe65f32671bac30131ae0a74bed5daee819",
+        "bytes": 1474,
+        "sha256": "0f4a68777a01698006fb2f8d7ee9d7323d254270c5f181b6b810debdba39b94f"
+      },
+      {
+        "path": "unitree_robots/h1/h1.xml",
+        "git_blob": "9bb649957ec8aca4d4f00155d4b7cacdd01f201b",
+        "bytes": 18185,
+        "sha256": "878d5e0808d029cefeebf1c447a7a176dc18571715aaba37fa742cbf49bc7386"
+      },
+      {
+        "path": "unitree_robots/h1/scene.xml",
+        "git_blob": "c419d28de97a1f8eee0c89a9eff975812596f764",
+        "bytes": 865,
+        "sha256": "eab3d69e374039679f00efac88386e2d10bb3fd27319305bb011bd30788423a6"
+      },
+      {
+        "path": "unitree_robots/h1_2/h1_2_handless.xml",
+        "git_blob": "76eb8fccad70f85f06a194f5ffd67d18a8223598",
+        "bytes": 27361,
+        "sha256": "8431e90e01fbb7867f83fc1209f1e7baa53eaf35c9ef05dff163c332e9d71955"
+      },
+      {
+        "path": "unitree_robots/h1_2/scene.xml",
+        "git_blob": "5bd179e0b94c1bf778a6406b3fa4028f3db45c96",
+        "bytes": 883,
+        "sha256": "be11d8e57811d9cc70b8ff877a019772c562f4947ce2089dc2c2a8d9e98556c9"
+      },
+      {
+        "path": "unitree_robots/h2/h2_mujoco.xml",
+        "git_blob": "afb167633740f7bd705702813685639a7dfae078",
+        "bytes": 33166,
+        "sha256": "2ac63ffc436fd4a368a448acacfd4f0915e7f986596b254fa681b6a95b69c47f"
+      },
+      {
+        "path": "unitree_robots/h2/scene.xml",
+        "git_blob": "fbd4a523566d9631dc097dcb04883f542924ee45",
+        "bytes": 850,
+        "sha256": "06f6b79b672a2a13031c63c34b0bf948b9aed300eb38cd45c2366dedd55c345b"
+      },
+      {
+        "path": "unitree_robots/r1/R1_C++.xml",
+        "git_blob": "0cca204eaf0c4e12a8226f4885b64d1b1b46ddaf",
+        "bytes": 32290,
+        "sha256": "b0803b6df629b0ce37e0f5c022fcc78d156b21569ed9e60df3dba6ed9beee011"
+      },
+      {
+        "path": "unitree_robots/r1/scene.xml",
+        "git_blob": "5e80d08160fc1af0472a2d914b92bfedfb42aa1a",
+        "bytes": 874,
+        "sha256": "3a87bf51e5381f0ca7221cd6849d933170b58b823503223fecea76b7b2eef32c"
+      }
+    ]
+  },
+  "row_columns": [
+    "slot",
+    "actuator",
+    "q",
+    "dq",
+    "tau"
+  ],
+  "row_use": "After Root's actual metadata validation, a row [s,a,p,v,t] supplies exactly {slot:s,actuator:a,q:p,dq:v,tau:t} to simulation.motor_sensors. Preserve the given row order. Do not sort by actuator or joint name. Actual driver checks ordered actuator IDs and named scalar sensors; it does not use unproved positional sensor offsets.",
+  "shared_imu": {
+    "quaternion": "imu_quat",
+    "gyroscope": "imu_gyro",
+    "accelerometer": "imu_acc"
+  },
+  "shared_imu_evidence": "Each selected robot XML contains framequat/gyro/accelerometer tags with these exact names and objname/site imu. Additional frame and secondary IMU sensors are not substituted. Actual dimensions and addresses remain native MuJoCo checks.",
+  "shared_slot_evidence": [
+    {
+      "path": "unitree_mujoco/simulate/src/unitree_sdk2_bridge.h",
+      "lines": "179-194",
+      "fact": "RobotBridge::run iterates i<num_motor_, reads lowcmd->msg_.motor_cmd()[i], writes mj_data_->ctrl[i], then publishes lowstate motor_state()[i] from sensor blocks. This is the explicit simulator carrier-slot assignment; nu/actuator ID i is distinct from body-tree joint order."
+    },
+    {
+      "path": "unitree_mujoco/simulate_python/unitree_sdk2py_bridge.py",
+      "lines": "109-134",
+      "fact": "Independent upstream Python bridge also assigns motor_cmd[i] to ctrl[i] and motor_state[i] from three sensor blocks. Its family import at lines16-24 special-cases only g1, so it must not qualify other HG models by itself."
+    },
+    {
+      "path": "unitree_mujoco/simulate/src/param.h",
+      "lines": "12-42",
+      "fact": "Official C++ ResolveIdlType supports explicit GO0/HG1/auto-1 and limits20/35. Auto chooses HG when actuator_count>20 or robot as2, otherwise GO, and rejects over-capacity selections. For these actual nine model row counts this proves GO for Go2/H1/B2/B2W/Go2W and HG for G1/H1_2/H2/R1 at simulator protocol scope."
+    },
+    {
+      "path": "unitree_mujoco/simulate/src/main.cc",
+      "lines": "596-609",
+      "fact": "Actual loaded m->nu and configured robot/idl_type feed ResolveIdlType; HG instantiates G1Bridge, GO instantiates Go2Bridge. Thus the generic array-index bridge rule is actually selected for these families, rather than inferred from a model name."
+    },
+    {
+      "path": "unitree_sdk2_python/example/g1/low_level/g1_low_level_example.py",
+      "lines": "36-82",
+      "fact": "G1JointIndex independently confirms all selected29dof native slot names 0..28, including waist yaw12/roll13/pitch14 and wrist pitch/yaw slots. It warns about invalid locked/23dof slots; no29dof result is relabelled23dof hardware behavior."
+    }
+  ],
+  "models": [
+    {
+      "robot": "go2",
+      "scene": "unitree_robots/go2/scene.xml",
+      "scene_include_evidence": "scene.xml:2 includes go2.xml",
+      "xml": "unitree_robots/go2/go2.xml",
+      "actuator_source_lines": "222-235",
+      "sensor_source_lines": "237-283",
+      "family_candidate": "go",
+      "carrier_capacity": 20,
+      "active_actuator_rows": 12,
+      "keyframe_candidate": "home",
+      "keyframe_evidence": "go2.xml:285-288",
+      "slot_basis": "Shared explicit upstream simulator i mapping, with actual twelve XML actuators and three matching sensor blocks. Go2 stand requires exactly this FR/FL/RR/RL order.",
+      "rows": [
+        [
+          0,
+          "FR_hip",
+          "FR_hip_pos",
+          "FR_hip_vel",
+          "FR_hip_torque"
+        ],
+        [
+          1,
+          "FR_thigh",
+          "FR_thigh_pos",
+          "FR_thigh_vel",
+          "FR_thigh_torque"
+        ],
+        [
+          2,
+          "FR_calf",
+          "FR_calf_pos",
+          "FR_calf_vel",
+          "FR_calf_torque"
+        ],
+        [
+          3,
+          "FL_hip",
+          "FL_hip_pos",
+          "FL_hip_vel",
+          "FL_hip_torque"
+        ],
+        [
+          4,
+          "FL_thigh",
+          "FL_thigh_pos",
+          "FL_thigh_vel",
+          "FL_thigh_torque"
+        ],
+        [
+          5,
+          "FL_calf",
+          "FL_calf_pos",
+          "FL_calf_vel",
+          "FL_calf_torque"
+        ],
+        [
+          6,
+          "RR_hip",
+          "RR_hip_pos",
+          "RR_hip_vel",
+          "RR_hip_torque"
+        ],
+        [
+          7,
+          "RR_thigh",
+          "RR_thigh_pos",
+          "RR_thigh_vel",
+          "RR_thigh_torque"
+        ],
+        [
+          8,
+          "RR_calf",
+          "RR_calf_pos",
+          "RR_calf_vel",
+          "RR_calf_torque"
+        ],
+        [
+          9,
+          "RL_hip",
+          "RL_hip_pos",
+          "RL_hip_vel",
+          "RL_hip_torque"
+        ],
+        [
+          10,
+          "RL_thigh",
+          "RL_thigh_pos",
+          "RL_thigh_vel",
+          "RL_thigh_torque"
+        ],
+        [
+          11,
+          "RL_calf",
+          "RL_calf_pos",
+          "RL_calf_vel",
+          "RL_calf_torque"
+        ]
+      ]
+    },
+    {
+      "robot": "g1",
+      "scene": "unitree_robots/g1/scene.xml",
+      "scene_include_evidence": "scene.xml:2 includes g1_29dof.xml, not23dof",
+      "xml": "unitree_robots/g1/g1_29dof.xml",
+      "actuator_source_lines": "387-421",
+      "sensor_source_lines": "423-524",
+      "family_candidate": "hg",
+      "carrier_capacity": 35,
+      "active_actuator_rows": 29,
+      "keyframe_candidate": null,
+      "mode_machine_simulation_candidate": 5,
+      "mode_machine_evidence": "simulate/src/unitree_sdk2_bridge.h:264-268 explicitly uses5 for g1 scene strings not containing23. This is a simulator profile, not a physical robot mode recommendation.",
+      "slot_basis": "Shared upstream simulator i mapping AND independent official G1JointIndex0..28 exact joint-name correspondence. Only selected29dof scene.",
+      "rows": [
+        [
+          0,
+          "left_hip_pitch",
+          "left_hip_pitch_pos",
+          "left_hip_pitch_vel",
+          "left_hip_pitch_torque"
+        ],
+        [
+          1,
+          "left_hip_roll",
+          "left_hip_roll_pos",
+          "left_hip_roll_vel",
+          "left_hip_roll_torque"
+        ],
+        [
+          2,
+          "left_hip_yaw",
+          "left_hip_yaw_pos",
+          "left_hip_yaw_vel",
+          "left_hip_yaw_torque"
+        ],
+        [
+          3,
+          "left_knee",
+          "left_knee_pos",
+          "left_knee_vel",
+          "left_knee_torque"
+        ],
+        [
+          4,
+          "left_ankle_pitch",
+          "left_ankle_pitch_pos",
+          "left_ankle_pitch_vel",
+          "left_ankle_pitch_torque"
+        ],
+        [
+          5,
+          "left_ankle_roll",
+          "left_ankle_roll_pos",
+          "left_ankle_roll_vel",
+          "left_ankle_roll_torque"
+        ],
+        [
+          6,
+          "right_hip_pitch",
+          "right_hip_pitch_pos",
+          "right_hip_pitch_vel",
+          "right_hip_pitch_torque"
+        ],
+        [
+          7,
+          "right_hip_roll",
+          "right_hip_roll_pos",
+          "right_hip_roll_vel",
+          "right_hip_roll_torque"
+        ],
+        [
+          8,
+          "right_hip_yaw",
+          "right_hip_yaw_pos",
+          "right_hip_yaw_vel",
+          "right_hip_yaw_torque"
+        ],
+        [
+          9,
+          "right_knee",
+          "right_knee_pos",
+          "right_knee_vel",
+          "right_knee_torque"
+        ],
+        [
+          10,
+          "right_ankle_pitch",
+          "right_ankle_pitch_pos",
+          "right_ankle_pitch_vel",
+          "right_ankle_pitch_torque"
+        ],
+        [
+          11,
+          "right_ankle_roll",
+          "right_ankle_roll_pos",
+          "right_ankle_roll_vel",
+          "right_ankle_roll_torque"
+        ],
+        [
+          12,
+          "waist_yaw",
+          "waist_yaw_pos",
+          "waist_yaw_vel",
+          "waist_yaw_torque"
+        ],
+        [
+          13,
+          "waist_roll",
+          "waist_roll_pos",
+          "waist_roll_vel",
+          "waist_roll_torque"
+        ],
+        [
+          14,
+          "waist_pitch",
+          "waist_pitch_pos",
+          "waist_pitch_vel",
+          "waist_pitch_torque"
+        ],
+        [
+          15,
+          "left_shoulder_pitch",
+          "left_shoulder_pitch_pos",
+          "left_shoulder_pitch_vel",
+          "left_shoulder_pitch_torque"
+        ],
+        [
+          16,
+          "left_shoulder_roll",
+          "left_shoulder_roll_pos",
+          "left_shoulder_roll_vel",
+          "left_shoulder_roll_torque"
+        ],
+        [
+          17,
+          "left_shoulder_yaw",
+          "left_shoulder_yaw_pos",
+          "left_shoulder_yaw_vel",
+          "left_shoulder_yaw_torque"
+        ],
+        [
+          18,
+          "left_elbow",
+          "left_elbow_pos",
+          "left_elbow_vel",
+          "left_elbow_torque"
+        ],
+        [
+          19,
+          "left_wrist_roll",
+          "left_wrist_roll_pos",
+          "left_wrist_roll_vel",
+          "left_wrist_roll_torque"
+        ],
+        [
+          20,
+          "left_wrist_pitch",
+          "left_wrist_pitch_pos",
+          "left_wrist_pitch_vel",
+          "left_wrist_pitch_torque"
+        ],
+        [
+          21,
+          "left_wrist_yaw",
+          "left_wrist_yaw_pos",
+          "left_wrist_yaw_vel",
+          "left_wrist_yaw_torque"
+        ],
+        [
+          22,
+          "right_shoulder_pitch",
+          "right_shoulder_pitch_pos",
+          "right_shoulder_pitch_vel",
+          "right_shoulder_pitch_torque"
+        ],
+        [
+          23,
+          "right_shoulder_roll",
+          "right_shoulder_roll_pos",
+          "right_shoulder_roll_vel",
+          "right_shoulder_roll_torque"
+        ],
+        [
+          24,
+          "right_shoulder_yaw",
+          "right_shoulder_yaw_pos",
+          "right_shoulder_yaw_vel",
+          "right_shoulder_yaw_torque"
+        ],
+        [
+          25,
+          "right_elbow",
+          "right_elbow_pos",
+          "right_elbow_vel",
+          "right_elbow_torque"
+        ],
+        [
+          26,
+          "right_wrist_roll",
+          "right_wrist_roll_pos",
+          "right_wrist_roll_vel",
+          "right_wrist_roll_torque"
+        ],
+        [
+          27,
+          "right_wrist_pitch",
+          "right_wrist_pitch_pos",
+          "right_wrist_pitch_vel",
+          "right_wrist_pitch_torque"
+        ],
+        [
+          28,
+          "right_wrist_yaw",
+          "right_wrist_yaw_pos",
+          "right_wrist_yaw_vel",
+          "right_wrist_yaw_torque"
+        ]
+      ]
+    },
+    {
+      "robot": "h1",
+      "scene": "unitree_robots/h1/scene.xml",
+      "scene_include_evidence": "scene.xml:2 includes h1.xml",
+      "xml": "unitree_robots/h1/h1.xml",
+      "actuator_source_lines": "195-224",
+      "sensor_source_lines": "226-296",
+      "family_candidate": "go",
+      "carrier_capacity": 20,
+      "active_actuator_rows": 20,
+      "keyframe_candidate": "home",
+      "keyframe_evidence": "h1.xml:298 onwards",
+      "slot_basis": "Shared explicit upstream simulator i mapping; preserve all20 XML actuator slots, including not_use_joint at9. This placeholder is an actual XML declaration, not a physical active joint claim.",
+      "rows": [
+        [
+          0,
+          "right_hip_roll_joint",
+          "right_hip_roll_pos",
+          "right_hip_roll_vel",
+          "right_hip_roll_torque"
+        ],
+        [
+          1,
+          "right_hip_pitch_joint",
+          "right_hip_pitch_pos",
+          "right_hip_pitch_vel",
+          "right_hip_pitch_torque"
+        ],
+        [
+          2,
+          "right_knee_joint",
+          "right_knee_pos",
+          "right_knee_vel",
+          "right_knee_torque"
+        ],
+        [
+          3,
+          "left_hip_roll_joint",
+          "left_hip_roll_pos",
+          "left_hip_roll_vel",
+          "left_hip_roll_torque"
+        ],
+        [
+          4,
+          "left_hip_pitch_joint",
+          "left_hip_pitch_pos",
+          "left_hip_pitch_vel",
+          "left_hip_pitch_torque"
+        ],
+        [
+          5,
+          "left_knee_joint",
+          "left_knee_pos",
+          "left_knee_vel",
+          "left_knee_torque"
+        ],
+        [
+          6,
+          "torso_joint",
+          "torso_pos",
+          "torso_vel",
+          "torso_torque"
+        ],
+        [
+          7,
+          "left_hip_yaw_joint",
+          "left_hip_yaw_pos",
+          "left_hip_yaw_vel",
+          "left_hip_yaw_torque"
+        ],
+        [
+          8,
+          "right_hip_yaw_joint",
+          "right_hip_yaw_pos",
+          "right_hip_yaw_vel",
+          "right_hip_yaw_torque"
+        ],
+        [
+          9,
+          "not_use_joint",
+          "not_use_pos",
+          "not_use_vel",
+          "not_use_torque"
+        ],
+        [
+          10,
+          "left_ankle_joint",
+          "left_ankle_pos",
+          "left_ankle_vel",
+          "left_ankle_torque"
+        ],
+        [
+          11,
+          "right_ankle_joint",
+          "right_ankle_pos",
+          "right_ankle_vel",
+          "right_ankle_torque"
+        ],
+        [
+          12,
+          "right_shoulder_pitch_joint",
+          "right_shoulder_pitch_pos",
+          "right_shoulder_pitch_vel",
+          "right_shoulder_pitch_torque"
+        ],
+        [
+          13,
+          "right_shoulder_roll_joint",
+          "right_shoulder_roll_pos",
+          "right_shoulder_roll_vel",
+          "right_shoulder_roll_torque"
+        ],
+        [
+          14,
+          "right_shoulder_yaw_joint",
+          "right_shoulder_yaw_pos",
+          "right_shoulder_yaw_vel",
+          "right_shoulder_yaw_torque"
+        ],
+        [
+          15,
+          "right_elbow_joint",
+          "right_elbow_pos",
+          "right_elbow_vel",
+          "right_elbow_torque"
+        ],
+        [
+          16,
+          "left_shoulder_pitch_joint",
+          "left_shoulder_pitch_pos",
+          "left_shoulder_pitch_vel",
+          "left_shoulder_pitch_torque"
+        ],
+        [
+          17,
+          "left_shoulder_roll_joint",
+          "left_shoulder_roll_pos",
+          "left_shoulder_roll_vel",
+          "left_shoulder_roll_torque"
+        ],
+        [
+          18,
+          "left_shoulder_yaw_joint",
+          "left_shoulder_yaw_pos",
+          "left_shoulder_yaw_vel",
+          "left_shoulder_yaw_torque"
+        ],
+        [
+          19,
+          "left_elbow_joint",
+          "left_elbow_pos",
+          "left_elbow_vel",
+          "left_elbow_torque"
+        ]
+      ]
+    },
+    {
+      "robot": "h1_2",
+      "scene": "unitree_robots/h1_2/scene.xml",
+      "scene_include_evidence": "scene.xml:2 includes h1_2_handless.xml",
+      "xml": "unitree_robots/h1_2/h1_2_handless.xml",
+      "actuator_source_lines": "206-234",
+      "sensor_source_lines": "236-327",
+      "family_candidate": "hg",
+      "carrier_capacity": 35,
+      "active_actuator_rows": 27,
+      "keyframe_candidate": null,
+      "slot_basis": "Shared explicit upstream simulator i control/q/dq mapping, with each force sensor selected by its actual joint reference. Actual C++ param.h/main.cc auto factory chooses HG for this27-actuator model.",
+      "source_caveat": "Torque declarations at299-301 are right hip pitch/roll/yaw while actuator order is yaw/pitch/roll at213-215; at306-308 left shoulder yaw/pitch/roll differs from actuator pitch/roll/yaw at220-222. Named-joint mapping below is intentional; copying original bridge's raw offset order would mislabel those tau_est values. Do not claim unchanged upstream positional torque publication behavior.",
+      "rows": [
+        [
+          0,
+          "left_hip_yaw_joint",
+          "left_hip_yaw_pos",
+          "left_hip_yaw_vel",
+          "left_hip_yaw_torque"
+        ],
+        [
+          1,
+          "left_hip_pitch_joint",
+          "left_hip_pitch_pos",
+          "left_hip_pitch_vel",
+          "left_hip_pitch_torque"
+        ],
+        [
+          2,
+          "left_hip_roll_joint",
+          "left_hip_roll_pos",
+          "left_hip_roll_vel",
+          "left_hip_roll_torque"
+        ],
+        [
+          3,
+          "left_knee_joint",
+          "left_knee_pos",
+          "left_knee_vel",
+          "left_knee_torque"
+        ],
+        [
+          4,
+          "left_ankle_pitch_joint",
+          "left_ankle_pitch_pos",
+          "left_ankle_pitch_vel",
+          "left_ankle_pitch_torque"
+        ],
+        [
+          5,
+          "left_ankle_roll_joint",
+          "left_ankle_roll_pos",
+          "left_ankle_roll_vel",
+          "left_ankle_roll_torque"
+        ],
+        [
+          6,
+          "right_hip_yaw_joint",
+          "right_hip_yaw_pos",
+          "right_hip_yaw_vel",
+          "right_hip_yaw_torque"
+        ],
+        [
+          7,
+          "right_hip_pitch_joint",
+          "right_hip_pitch_pos",
+          "right_hip_pitch_vel",
+          "right_hip_pitch_torque"
+        ],
+        [
+          8,
+          "right_hip_roll_joint",
+          "right_hip_roll_pos",
+          "right_hip_roll_vel",
+          "right_hip_roll_torque"
+        ],
+        [
+          9,
+          "right_knee_joint",
+          "right_knee_pos",
+          "right_knee_vel",
+          "right_knee_torque"
+        ],
+        [
+          10,
+          "right_ankle_pitch_joint",
+          "right_ankle_pitch_pos",
+          "right_ankle_pitch_vel",
+          "right_ankle_pitch_torque"
+        ],
+        [
+          11,
+          "right_ankle_roll_joint",
+          "right_ankle_roll_pos",
+          "right_ankle_roll_vel",
+          "right_ankle_roll_torque"
+        ],
+        [
+          12,
+          "torso_joint",
+          "torso_joint_pos",
+          "torso_joint_vel",
+          "torso_joint_torque"
+        ],
+        [
+          13,
+          "left_shoulder_pitch_joint",
+          "left_shoulder_pitch_pos",
+          "left_shoulder_pitch_vel",
+          "left_shoulder_pitch_torque"
+        ],
+        [
+          14,
+          "left_shoulder_roll_joint",
+          "left_shoulder_roll_pos",
+          "left_shoulder_roll_vel",
+          "left_shoulder_roll_torque"
+        ],
+        [
+          15,
+          "left_shoulder_yaw_joint",
+          "left_shoulder_yaw_pos",
+          "left_shoulder_yaw_vel",
+          "left_shoulder_yaw_torque"
+        ],
+        [
+          16,
+          "left_elbow_joint",
+          "left_elbow_pos",
+          "left_elbow_vel",
+          "left_elbow_torque"
+        ],
+        [
+          17,
+          "left_wrist_roll_joint",
+          "left_wrist_roll_pos",
+          "left_wrist_roll_vel",
+          "left_wrist_roll_torque"
+        ],
+        [
+          18,
+          "left_wrist_pitch_joint",
+          "left_wrist_pitch_pos",
+          "left_wrist_pitch_vel",
+          "left_wrist_pitch_torque"
+        ],
+        [
+          19,
+          "left_wrist_yaw_joint",
+          "left_wrist_yaw_pos",
+          "left_wrist_yaw_vel",
+          "left_wrist_yaw_torque"
+        ],
+        [
+          20,
+          "right_shoulder_pitch_joint",
+          "right_shoulder_pitch_pos",
+          "right_shoulder_pitch_vel",
+          "right_shoulder_pitch_torque"
+        ],
+        [
+          21,
+          "right_shoulder_roll_joint",
+          "right_shoulder_roll_pos",
+          "right_shoulder_roll_vel",
+          "right_shoulder_roll_torque"
+        ],
+        [
+          22,
+          "right_shoulder_yaw_joint",
+          "right_shoulder_yaw_pos",
+          "right_shoulder_yaw_vel",
+          "right_shoulder_yaw_torque"
+        ],
+        [
+          23,
+          "right_elbow_joint",
+          "right_elbow_pos",
+          "right_elbow_vel",
+          "right_elbow_torque"
+        ],
+        [
+          24,
+          "right_wrist_roll_joint",
+          "right_wrist_roll_pos",
+          "right_wrist_roll_vel",
+          "right_wrist_roll_torque"
+        ],
+        [
+          25,
+          "right_wrist_pitch_joint",
+          "right_wrist_pitch_pos",
+          "right_wrist_pitch_vel",
+          "right_wrist_pitch_torque"
+        ],
+        [
+          26,
+          "right_wrist_yaw_joint",
+          "right_wrist_yaw_pos",
+          "right_wrist_yaw_vel",
+          "right_wrist_yaw_torque"
+        ]
+      ]
+    },
+    {
+      "robot": "b2",
+      "scene": "unitree_robots/b2/scene.xml",
+      "scene_include_evidence": "scene.xml:2 includes b2.xml",
+      "xml": "unitree_robots/b2/b2.xml",
+      "actuator_source_lines": "170-183",
+      "sensor_source_lines": "185-231",
+      "family_candidate": "go",
+      "carrier_capacity": 20,
+      "active_actuator_rows": 12,
+      "keyframe_candidate": "home",
+      "keyframe_evidence": "b2.xml:233-236",
+      "slot_basis": "Shared explicit upstream simulator i mapping and actual B2 names/three joint sensor blocks; no Go2 trajectory/gain equivalence claim.",
+      "rows": [
+        [
+          0,
+          "FR_hip",
+          "FR_hip_pos",
+          "FR_hip_vel",
+          "FR_hip_torque"
+        ],
+        [
+          1,
+          "FR_thigh",
+          "FR_thigh_pos",
+          "FR_thigh_vel",
+          "FR_thigh_torque"
+        ],
+        [
+          2,
+          "FR_calf",
+          "FR_calf_pos",
+          "FR_calf_vel",
+          "FR_calf_torque"
+        ],
+        [
+          3,
+          "FL_hip",
+          "FL_hip_pos",
+          "FL_hip_vel",
+          "FL_hip_torque"
+        ],
+        [
+          4,
+          "FL_thigh",
+          "FL_thigh_pos",
+          "FL_thigh_vel",
+          "FL_thigh_torque"
+        ],
+        [
+          5,
+          "FL_calf",
+          "FL_calf_pos",
+          "FL_calf_vel",
+          "FL_calf_torque"
+        ],
+        [
+          6,
+          "RR_hip",
+          "RR_hip_pos",
+          "RR_hip_vel",
+          "RR_hip_torque"
+        ],
+        [
+          7,
+          "RR_thigh",
+          "RR_thigh_pos",
+          "RR_thigh_vel",
+          "RR_thigh_torque"
+        ],
+        [
+          8,
+          "RR_calf",
+          "RR_calf_pos",
+          "RR_calf_vel",
+          "RR_calf_torque"
+        ],
+        [
+          9,
+          "RL_hip",
+          "RL_hip_pos",
+          "RL_hip_vel",
+          "RL_hip_torque"
+        ],
+        [
+          10,
+          "RL_thigh",
+          "RL_thigh_pos",
+          "RL_thigh_vel",
+          "RL_thigh_torque"
+        ],
+        [
+          11,
+          "RL_calf",
+          "RL_calf_pos",
+          "RL_calf_vel",
+          "RL_calf_torque"
+        ]
+      ]
+    },
+    {
+      "robot": "b2w",
+      "scene": "unitree_robots/b2w/scene.xml",
+      "scene_include_evidence": "scene.xml:2 includes b2w.xml",
+      "xml": "unitree_robots/b2w/b2w.xml",
+      "actuator_source_lines": "283-301",
+      "sensor_source_lines": "303-364",
+      "family_candidate": "go",
+      "carrier_capacity": 20,
+      "active_actuator_rows": 16,
+      "keyframe_candidate": null,
+      "slot_basis": "Shared explicit simulator i mapping. Four wheel actuators are declared after all twelve leg actuators, not inserted after each leg. The home keyframe text is commented out and is NOT an available keyframe.",
+      "rows": [
+        [
+          0,
+          "FR_hip",
+          "FR_hip_pos",
+          "FR_hip_vel",
+          "FR_hip_torque"
+        ],
+        [
+          1,
+          "FR_thigh",
+          "FR_thigh_pos",
+          "FR_thigh_vel",
+          "FR_thigh_torque"
+        ],
+        [
+          2,
+          "FR_calf",
+          "FR_calf_pos",
+          "FR_calf_vel",
+          "FR_calf_torque"
+        ],
+        [
+          3,
+          "FL_hip",
+          "FL_hip_pos",
+          "FL_hip_vel",
+          "FL_hip_torque"
+        ],
+        [
+          4,
+          "FL_thigh",
+          "FL_thigh_pos",
+          "FL_thigh_vel",
+          "FL_thigh_torque"
+        ],
+        [
+          5,
+          "FL_calf",
+          "FL_calf_pos",
+          "FL_calf_vel",
+          "FL_calf_torque"
+        ],
+        [
+          6,
+          "RR_hip",
+          "RR_hip_pos",
+          "RR_hip_vel",
+          "RR_hip_torque"
+        ],
+        [
+          7,
+          "RR_thigh",
+          "RR_thigh_pos",
+          "RR_thigh_vel",
+          "RR_thigh_torque"
+        ],
+        [
+          8,
+          "RR_calf",
+          "RR_calf_pos",
+          "RR_calf_vel",
+          "RR_calf_torque"
+        ],
+        [
+          9,
+          "RL_hip",
+          "RL_hip_pos",
+          "RL_hip_vel",
+          "RL_hip_torque"
+        ],
+        [
+          10,
+          "RL_thigh",
+          "RL_thigh_pos",
+          "RL_thigh_vel",
+          "RL_thigh_torque"
+        ],
+        [
+          11,
+          "RL_calf",
+          "RL_calf_pos",
+          "RL_calf_vel",
+          "RL_calf_torque"
+        ],
+        [
+          12,
+          "FR_wheel",
+          "FR_wheel_pos",
+          "FR_wheel_vel",
+          "FR_wheel_torque"
+        ],
+        [
+          13,
+          "FL_wheel",
+          "FL_wheel_pos",
+          "FL_wheel_vel",
+          "FL_wheel_torque"
+        ],
+        [
+          14,
+          "RR_wheel",
+          "RR_wheel_pos",
+          "RR_wheel_vel",
+          "RR_wheel_torque"
+        ],
+        [
+          15,
+          "RL_wheel",
+          "RL_wheel_pos",
+          "RL_wheel_vel",
+          "RL_wheel_torque"
+        ]
+      ]
+    },
+    {
+      "robot": "go2w",
+      "scene": "unitree_robots/go2w/scene.xml",
+      "scene_include_evidence": "scene.xml:2 includes go2w.xml",
+      "xml": "unitree_robots/go2w/go2w.xml",
+      "actuator_source_lines": "249-270",
+      "sensor_source_lines": "272-336",
+      "family_candidate": "go",
+      "carrier_capacity": 20,
+      "active_actuator_rows": 16,
+      "keyframe_candidate": null,
+      "slot_basis": "Shared explicit simulator i mapping. Actual wheel slots are12-15 after the twelve leg actuator declarations; no wheel locomotion policy is implied.",
+      "rows": [
+        [
+          0,
+          "FR_hip",
+          "FR_hip_pos",
+          "FR_hip_vel",
+          "FR_hip_torque"
+        ],
+        [
+          1,
+          "FR_thigh",
+          "FR_thigh_pos",
+          "FR_thigh_vel",
+          "FR_thigh_torque"
+        ],
+        [
+          2,
+          "FR_calf",
+          "FR_calf_pos",
+          "FR_calf_vel",
+          "FR_calf_torque"
+        ],
+        [
+          3,
+          "FL_hip",
+          "FL_hip_pos",
+          "FL_hip_vel",
+          "FL_hip_torque"
+        ],
+        [
+          4,
+          "FL_thigh",
+          "FL_thigh_pos",
+          "FL_thigh_vel",
+          "FL_thigh_torque"
+        ],
+        [
+          5,
+          "FL_calf",
+          "FL_calf_pos",
+          "FL_calf_vel",
+          "FL_calf_torque"
+        ],
+        [
+          6,
+          "RR_hip",
+          "RR_hip_pos",
+          "RR_hip_vel",
+          "RR_hip_torque"
+        ],
+        [
+          7,
+          "RR_thigh",
+          "RR_thigh_pos",
+          "RR_thigh_vel",
+          "RR_thigh_torque"
+        ],
+        [
+          8,
+          "RR_calf",
+          "RR_calf_pos",
+          "RR_calf_vel",
+          "RR_calf_torque"
+        ],
+        [
+          9,
+          "RL_hip",
+          "RL_hip_pos",
+          "RL_hip_vel",
+          "RL_hip_torque"
+        ],
+        [
+          10,
+          "RL_thigh",
+          "RL_thigh_pos",
+          "RL_thigh_vel",
+          "RL_thigh_torque"
+        ],
+        [
+          11,
+          "RL_calf",
+          "RL_calf_pos",
+          "RL_calf_vel",
+          "RL_calf_torque"
+        ],
+        [
+          12,
+          "FR_wheel",
+          "FR_wheel_pos",
+          "FR_wheel_vel",
+          "FR_wheel_torque"
+        ],
+        [
+          13,
+          "FL_wheel",
+          "FL_wheel_pos",
+          "FL_wheel_vel",
+          "FL_wheel_torque"
+        ],
+        [
+          14,
+          "RR_wheel",
+          "RR_wheel_pos",
+          "RR_wheel_vel",
+          "RR_wheel_torque"
+        ],
+        [
+          15,
+          "RL_wheel",
+          "RL_wheel_pos",
+          "RL_wheel_vel",
+          "RL_wheel_torque"
+        ]
+      ]
+    },
+    {
+      "robot": "h2",
+      "scene": "unitree_robots/h2/scene.xml",
+      "scene_include_evidence": "scene.xml:2 includes h2_mujoco.xml",
+      "xml": "unitree_robots/h2/h2_mujoco.xml",
+      "actuator_source_lines": "241-278",
+      "sensor_source_lines": "280-387",
+      "family_candidate": "hg",
+      "carrier_capacity": 35,
+      "active_actuator_rows": 31,
+      "keyframe_candidate": null,
+      "slot_basis": "Explicit31-row XML order, shared generic bridge i rule and actual param.h/main.cc HG auto factory for nu31. Do not reuse G1 ankle ordering: H2 declares ankle_roll before ankle_pitch; head slots29/30 are additional.",
+      "rows": [
+        [
+          0,
+          "left_hip_pitch",
+          "left_hip_pitch_pos",
+          "left_hip_pitch_vel",
+          "left_hip_pitch_torque"
+        ],
+        [
+          1,
+          "left_hip_roll",
+          "left_hip_roll_pos",
+          "left_hip_roll_vel",
+          "left_hip_roll_torque"
+        ],
+        [
+          2,
+          "left_hip_yaw",
+          "left_hip_yaw_pos",
+          "left_hip_yaw_vel",
+          "left_hip_yaw_torque"
+        ],
+        [
+          3,
+          "left_knee",
+          "left_knee_pos",
+          "left_knee_vel",
+          "left_knee_torque"
+        ],
+        [
+          4,
+          "left_ankle_roll",
+          "left_ankle_roll_pos",
+          "left_ankle_roll_vel",
+          "left_ankle_roll_torque"
+        ],
+        [
+          5,
+          "left_ankle_pitch",
+          "left_ankle_pitch_pos",
+          "left_ankle_pitch_vel",
+          "left_ankle_pitch_torque"
+        ],
+        [
+          6,
+          "right_hip_pitch",
+          "right_hip_pitch_pos",
+          "right_hip_pitch_vel",
+          "right_hip_pitch_torque"
+        ],
+        [
+          7,
+          "right_hip_roll",
+          "right_hip_roll_pos",
+          "right_hip_roll_vel",
+          "right_hip_roll_torque"
+        ],
+        [
+          8,
+          "right_hip_yaw",
+          "right_hip_yaw_pos",
+          "right_hip_yaw_vel",
+          "right_hip_yaw_torque"
+        ],
+        [
+          9,
+          "right_knee",
+          "right_knee_pos",
+          "right_knee_vel",
+          "right_knee_torque"
+        ],
+        [
+          10,
+          "right_ankle_roll",
+          "right_ankle_roll_pos",
+          "right_ankle_roll_vel",
+          "right_ankle_roll_torque"
+        ],
+        [
+          11,
+          "right_ankle_pitch",
+          "right_ankle_pitch_pos",
+          "right_ankle_pitch_vel",
+          "right_ankle_pitch_torque"
+        ],
+        [
+          12,
+          "waist_yaw",
+          "waist_yaw_pos",
+          "waist_yaw_vel",
+          "waist_yaw_torque"
+        ],
+        [
+          13,
+          "waist_roll",
+          "waist_roll_pos",
+          "waist_roll_vel",
+          "waist_roll_torque"
+        ],
+        [
+          14,
+          "waist_pitch",
+          "waist_pitch_pos",
+          "waist_pitch_vel",
+          "waist_pitch_torque"
+        ],
+        [
+          15,
+          "left_shoulder_pitch",
+          "left_shoulder_pitch_pos",
+          "left_shoulder_pitch_vel",
+          "left_shoulder_pitch_torque"
+        ],
+        [
+          16,
+          "left_shoulder_roll",
+          "left_shoulder_roll_pos",
+          "left_shoulder_roll_vel",
+          "left_shoulder_roll_torque"
+        ],
+        [
+          17,
+          "left_shoulder_yaw",
+          "left_shoulder_yaw_pos",
+          "left_shoulder_yaw_vel",
+          "left_shoulder_yaw_torque"
+        ],
+        [
+          18,
+          "left_elbow",
+          "left_elbow_pos",
+          "left_elbow_vel",
+          "left_elbow_torque"
+        ],
+        [
+          19,
+          "left_wrist_roll",
+          "left_wrist_roll_pos",
+          "left_wrist_roll_vel",
+          "left_wrist_roll_torque"
+        ],
+        [
+          20,
+          "left_wrist_pitch",
+          "left_wrist_pitch_pos",
+          "left_wrist_pitch_vel",
+          "left_wrist_pitch_torque"
+        ],
+        [
+          21,
+          "left_wrist_yaw",
+          "left_wrist_yaw_pos",
+          "left_wrist_yaw_vel",
+          "left_wrist_yaw_torque"
+        ],
+        [
+          22,
+          "right_shoulder_pitch",
+          "right_shoulder_pitch_pos",
+          "right_shoulder_pitch_vel",
+          "right_shoulder_pitch_torque"
+        ],
+        [
+          23,
+          "right_shoulder_roll",
+          "right_shoulder_roll_pos",
+          "right_shoulder_roll_vel",
+          "right_shoulder_roll_torque"
+        ],
+        [
+          24,
+          "right_shoulder_yaw",
+          "right_shoulder_yaw_pos",
+          "right_shoulder_yaw_vel",
+          "right_shoulder_yaw_torque"
+        ],
+        [
+          25,
+          "right_elbow",
+          "right_elbow_pos",
+          "right_elbow_vel",
+          "right_elbow_torque"
+        ],
+        [
+          26,
+          "right_wrist_roll",
+          "right_wrist_roll_pos",
+          "right_wrist_roll_vel",
+          "right_wrist_roll_torque"
+        ],
+        [
+          27,
+          "right_wrist_pitch",
+          "right_wrist_pitch_pos",
+          "right_wrist_pitch_vel",
+          "right_wrist_pitch_torque"
+        ],
+        [
+          28,
+          "right_wrist_yaw",
+          "right_wrist_yaw_pos",
+          "right_wrist_yaw_vel",
+          "right_wrist_yaw_torque"
+        ],
+        [
+          29,
+          "head_pitch",
+          "head_pitch_pos",
+          "head_pitch_vel",
+          "head_pitch_torque"
+        ],
+        [
+          30,
+          "head_yaw",
+          "head_yaw_pos",
+          "head_yaw_vel",
+          "head_yaw_torque"
+        ]
+      ]
+    },
+    {
+      "robot": "r1",
+      "scene": "unitree_robots/r1/scene.xml",
+      "scene_include_evidence": "scene.xml:2 includes R1_C++.xml",
+      "xml": "unitree_robots/r1/R1_C++.xml",
+      "actuator_source_lines": "246-280",
+      "sensor_source_lines": "282-379",
+      "family_candidate": "hg",
+      "carrier_capacity": 35,
+      "active_actuator_rows": 29,
+      "keyframe_candidate": null,
+      "slot_basis": "Explicit29-row XML order, shared generic bridge i rule and actual param.h/main.cc HG auto factory for nu29. Waist order is roll12/yaw13, unlike G1. Several placeholder actuator names include _joint while their sensor names do not; preserve them exactly. This is the source model, not a physical R1 joint-count claim.",
+      "rows": [
+        [
+          0,
+          "left_hip_pitch",
+          "left_hip_pitch_pos",
+          "left_hip_pitch_vel",
+          "left_hip_pitch_torque"
+        ],
+        [
+          1,
+          "left_hip_roll",
+          "left_hip_roll_pos",
+          "left_hip_roll_vel",
+          "left_hip_roll_torque"
+        ],
+        [
+          2,
+          "left_hip_yaw",
+          "left_hip_yaw_pos",
+          "left_hip_yaw_vel",
+          "left_hip_yaw_torque"
+        ],
+        [
+          3,
+          "left_knee",
+          "left_knee_pos",
+          "left_knee_vel",
+          "left_knee_torque"
+        ],
+        [
+          4,
+          "left_ankle_pitch",
+          "left_ankle_pitch_pos",
+          "left_ankle_pitch_vel",
+          "left_ankle_pitch_torque"
+        ],
+        [
+          5,
+          "left_ankle_roll",
+          "left_ankle_roll_pos",
+          "left_ankle_roll_vel",
+          "left_ankle_roll_torque"
+        ],
+        [
+          6,
+          "right_hip_pitch",
+          "right_hip_pitch_pos",
+          "right_hip_pitch_vel",
+          "right_hip_pitch_torque"
+        ],
+        [
+          7,
+          "right_hip_roll",
+          "right_hip_roll_pos",
+          "right_hip_roll_vel",
+          "right_hip_roll_torque"
+        ],
+        [
+          8,
+          "right_hip_yaw",
+          "right_hip_yaw_pos",
+          "right_hip_yaw_vel",
+          "right_hip_yaw_torque"
+        ],
+        [
+          9,
+          "right_knee",
+          "right_knee_pos",
+          "right_knee_vel",
+          "right_knee_torque"
+        ],
+        [
+          10,
+          "right_ankle_pitch",
+          "right_ankle_pitch_pos",
+          "right_ankle_pitch_vel",
+          "right_ankle_pitch_torque"
+        ],
+        [
+          11,
+          "right_ankle_roll",
+          "right_ankle_roll_pos",
+          "right_ankle_roll_vel",
+          "right_ankle_roll_torque"
+        ],
+        [
+          12,
+          "waist_roll",
+          "waist_roll_pos",
+          "waist_roll_vel",
+          "waist_roll_torque"
+        ],
+        [
+          13,
+          "waist_yaw",
+          "waist_yaw_pos",
+          "waist_yaw_vel",
+          "waist_yaw_torque"
+        ],
+        [
+          14,
+          "waist_pitch_joint",
+          "waist_pitch_pos",
+          "waist_pitch_vel",
+          "waist_pitch_torque"
+        ],
+        [
+          15,
+          "left_shoulder_pitch",
+          "left_shoulder_pitch_pos",
+          "left_shoulder_pitch_vel",
+          "left_shoulder_pitch_torque"
+        ],
+        [
+          16,
+          "left_shoulder_roll",
+          "left_shoulder_roll_pos",
+          "left_shoulder_roll_vel",
+          "left_shoulder_roll_torque"
+        ],
+        [
+          17,
+          "left_shoulder_yaw",
+          "left_shoulder_yaw_pos",
+          "left_shoulder_yaw_vel",
+          "left_shoulder_yaw_torque"
+        ],
+        [
+          18,
+          "left_elbow",
+          "left_elbow_pos",
+          "left_elbow_vel",
+          "left_elbow_torque"
+        ],
+        [
+          19,
+          "left_wrist_roll",
+          "left_wrist_roll_pos",
+          "left_wrist_roll_vel",
+          "left_wrist_roll_torque"
+        ],
+        [
+          20,
+          "left_wrist_pitch_joint",
+          "left_wrist_pitch_pos",
+          "left_wrist_pitch_vel",
+          "left_wrist_pitch_torque"
+        ],
+        [
+          21,
+          "left_wrist_yaw_joint",
+          "left_wrist_yaw_pos",
+          "left_wrist_yaw_vel",
+          "left_wrist_yaw_torque"
+        ],
+        [
+          22,
+          "right_shoulder_pitch",
+          "right_shoulder_pitch_pos",
+          "right_shoulder_pitch_vel",
+          "right_shoulder_pitch_torque"
+        ],
+        [
+          23,
+          "right_shoulder_roll",
+          "right_shoulder_roll_pos",
+          "right_shoulder_roll_vel",
+          "right_shoulder_roll_torque"
+        ],
+        [
+          24,
+          "right_shoulder_yaw",
+          "right_shoulder_yaw_pos",
+          "right_shoulder_yaw_vel",
+          "right_shoulder_yaw_torque"
+        ],
+        [
+          25,
+          "right_elbow",
+          "right_elbow_pos",
+          "right_elbow_vel",
+          "right_elbow_torque"
+        ],
+        [
+          26,
+          "right_wrist_roll",
+          "right_wrist_roll_pos",
+          "right_wrist_roll_vel",
+          "right_wrist_roll_torque"
+        ],
+        [
+          27,
+          "right_wrist_pitch_joint",
+          "right_wrist_pitch_pos",
+          "right_wrist_pitch_vel",
+          "right_wrist_pitch_torque"
+        ],
+        [
+          28,
+          "right_wrist_yaw_joint",
+          "right_wrist_yaw_pos",
+          "right_wrist_yaw_vel",
+          "right_wrist_yaw_torque"
+        ]
+      ]
+    }
+  ]
+}

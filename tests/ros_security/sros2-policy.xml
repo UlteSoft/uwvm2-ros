@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<policy version="0.2.0">
+  <enclaves>
+    <enclave path="/gateway">
+      <profiles>
+        <profile ns="/uwvm_test" node="uwvm_ros2_gateway_probe">
+          <topics publish="ALLOW"><topic>/uwvm_test/pubString</topic></topics>
+          <topics subscribe="ALLOW"><topic>/uwvm_test/subString</topic><topic>/parameter_events</topic></topics>
+        </profile>
+      </profiles>
+    </enclave>
+    <enclave path="/witness">
+      <profiles>
+        <profile ns="/uwvm_test" node="secure_witness">
+          <topics subscribe="ALLOW"><topic>/uwvm_test/pubString</topic><topic>/parameter_events</topic></topics>
+          <topics publish="ALLOW"><topic>/uwvm_test/subString</topic></topics>
+        </profile>
+      </profiles>
+    </enclave>
+  </enclaves>
+</policy>

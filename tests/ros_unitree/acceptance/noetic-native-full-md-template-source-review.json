@@ -1,0 +1,111 @@
+{
+  "actual_execution_performed": false,
+  "actual_failed_evidence": {
+    "command-08-stdout": {
+      "bytes": 6525,
+      "ctime_ns": 1792179592049933417,
+      "device": 81,
+      "inode": 969705,
+      "mtime_ns": 1792179592049933417,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/source44-noetic-native3-r1/legacy-identities-build.stdout",
+      "sha256": "8ded89fd583c0dd5cd1ef2a3bb6f5426760d6373a13649b665b4d4c103ae2474"
+    },
+    "compileDB-identity-build": {
+      "bytes": 771,
+      "ctime_ns": 1792179591151785901,
+      "device": 81,
+      "inode": 969606,
+      "mtime_ns": 1792179591151785901,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/source44-noetic-native3-r1/native-work/identity-build/compile_commands.json",
+      "sha256": "04e91fdacd44207dd0ab2e51f74e1445630360d69905713897eaa35e0a633117"
+    },
+    "inner": {
+      "bytes": 129616,
+      "ctime_ns": 1792179604097211167,
+      "device": 81,
+      "inode": 969746,
+      "mtime_ns": 1792179604090211005,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/source44-noetic-native3-r1/report.json",
+      "sha256": "dafa2c9c32862c6e34d5f48c9567426e03dc85e919435afd45277dc12c614d85"
+    },
+    "owner": {
+      "bytes": 34201,
+      "ctime_ns": 1792179622064624935,
+      "device": 81,
+      "inode": 969748,
+      "mtime_ns": 1792179622040047485,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/source44-noetic-native3-owned-root-r1/report.json",
+      "sha256": "0928868fdf74df4065dc644fc4851cb5f6be9a25eaf1a120d3febe6fe2f18554"
+    }
+  },
+  "actual_failed_source44_packet": {
+    "bytes": 389840,
+    "path": "/private/tmp/uwvm-boot3-source44-noetic-native3-failure-export-actual-root-20261017-r1.json",
+    "sha256": "30c3f8490e9be8c8db64a09ef70d343ea07ba62c10fc47f94fb9519a55d8dde5"
+  },
+  "actual_failure": "ValueError('actual full -MD/-MF/-MT operands required')",
+  "behavioral_boundary": {
+    "dependency_flags_follow_FLAGS": true,
+    "earlier_MF_overridden_per_object": true,
+    "mount_mapping_lifecycle_or_permissions_changed": false,
+    "no_MT_in_actual_failed_exporter_command": true,
+    "official_upstream_or_CMake_files_changed": false,
+    "rules_are_one_CMake_argument": true,
+    "strict_real_verbose_compileDB_dependency_target_system_header_object_link_checks_unchanged": true
+  },
+  "compile_rule": "<CMAKE_CXX_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -MD -MF <OBJECT>.full.d -MT <OBJECT> -o <OBJECT> -c <SOURCE>",
+  "configure_labels": [
+    "official11",
+    "legacy-identities",
+    "legacy-gateway",
+    "legacy-witness"
+  ],
+  "files": {
+    "NOETIC_NATIVE.md": {
+      "bytes": 16337,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/NOETIC_NATIVE.md",
+      "sha256": "9c123d98af9ac6d9bd3d86c675564b2a1e50ac527ed5388fa159ed55671b34c7"
+    },
+    "noetic_native_support.py": {
+      "bytes": 25774,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/noetic_native_support.py",
+      "sha256": "d75507ba3bd25fbc19455fc8948625566c0152c331f3ff58b7b765ee4555ce2c"
+    },
+    "prepare_noetic_native.py": {
+      "bytes": 46330,
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/prepare_noetic_native.py",
+      "sha256": "fdc36dfd28dd5f238a9a6794cdf3cf6784c2ccdc655d2e45c3e662f7c2938fc6"
+    }
+  },
+  "format_version": 1,
+  "historical_failed_batch_promoted": false,
+  "kind": "unitree-noetic-native-explicit-full-md-compile-rule-source-review",
+  "official_message_cpp_translation_units": 0,
+  "preserved_before_change": {
+    "bytes": 1572,
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/noetic-native-pre-full-md-template/manifest.json",
+    "sha256": "668d42143d93d7d9f332aae86db4a097174dfa30ecc19c2563ff062a7129863b"
+  },
+  "preserved_source44_readiness": {
+    "bytes": 10037,
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/noetic-native-pre-full-md-template/noetic-native-source-ready.json",
+    "sha256": "77d76d995cf900e4d70afcd07fdd91adaf3ce27f52cea35c47b59e5bbffb4268"
+  },
+  "primary_semantic_references": [
+    "https://cmake.org/cmake/help/v3.16/variable/CMAKE_LANG_COMPILE_OBJECT.html",
+    "https://gcc.gnu.org/onlinedocs/gcc-9.5.0/gcc/Preprocessor-Options.html"
+  ],
+  "required_native_primary_tu_roles": [
+    "identity_exporter",
+    "gateway",
+    "legacy_peer"
+  ],
+  "source_AST_facts": {
+    "all_other_function_and_class_ASTs_unchanged": true,
+    "entire_module_after_replacing_only_nested_configure_with_original_AST_equals_old_module": true,
+    "exact_rule_literal_checked": true,
+    "strict_build_proof_helper_bytes_unchanged": true
+  },
+  "status": "SOURCE_ONLY_CONFIGURE_DELTA_AUTHORED_INDEPENDENT_PEER_PENDING_REAL_REBUILD_PENDING",
+  "validation_scope": "Source bytes, AST comparison, actual already-exported JSON/base64 SHA comparison only. No candidate import, invocation, test, SSH, compiler or native execution."
+}

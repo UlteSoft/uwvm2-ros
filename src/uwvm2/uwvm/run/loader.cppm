@@ -36,6 +36,8 @@ module;
 # include <uwvm2/imported/wasi/wasip1/feature/feature_push_macro.h>  // wasip1
 #endif
 
+#include <uwvm2/uwvm/runtime/macro/push_macros.h>
+#include <uwvm2/runtime/lib/uwvm_runtime_threaded_profile_feature.h>
 export module uwvm2.uwvm.run:loader;
 
 import fast_io;
@@ -55,6 +57,15 @@ import uwvm2.uwvm.utils.memory;
 import uwvm2.uwvm.cmdline;
 import uwvm2.uwvm.wasm;
 import uwvm2.uwvm.imported.wasi.wasip1;
+import uwvm2.uwvm.runtime.storage;
+#if UWVM2_HAS_THREADED_PROFILE_HOST_API
+import uwvm2.runtime;
+import uwvm2.uwvm.imported.wasi.threads;
+import uwvm2.uwvm.runtime.threaded_builtin_loader;
+#endif
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+import uwvm2.uwvm.imported.ros;
+#endif
 import :retval;
 import :weak_symbol;
 

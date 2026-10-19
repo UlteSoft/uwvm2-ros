@@ -1,0 +1,515 @@
+{
+  "content_hashed_only_small_reports": true,
+  "kind": "Root-observed-cold-diagnostic-metadata-compact-copy",
+  "retirement_report_body_omitted_from_compact_copy": "Original raw report and every ledger remain online; current reportfull7 metadata preserved here.",
+  "rows": [
+    {
+      "bytes": 0,
+      "ctime_ns": 1792112247802807694,
+      "device": 81,
+      "inode": 576859,
+      "kind": "regular",
+      "mode": 420,
+      "mtime_ns": 1792112247802807694,
+      "nlink": 1,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-deb297-single-thread-decompression-diagnostic-r1/actual-same-deb-dpkg-single-thread.log"
+    },
+    {
+      "bytes": 2023,
+      "ctime_ns": 1792112248610819598,
+      "device": 81,
+      "inode": 576861,
+      "kind": "regular",
+      "mode": 420,
+      "mtime_ns": 1792112248605739517,
+      "nlink": 1,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-deb297-single-thread-decompression-diagnostic-r1/commands.json"
+    },
+    {
+      "bytes": 829286400,
+      "ctime_ns": 1792112248581819171,
+      "device": 81,
+      "inode": 576860,
+      "kind": "regular",
+      "mode": 384,
+      "mtime_ns": 1792112248581819171,
+      "nlink": 1,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-deb297-single-thread-decompression-diagnostic-r1/data.tar"
+    },
+    {
+      "bytes": 0,
+      "ctime_ns": 1792112247759807061,
+      "device": 81,
+      "inode": 576856,
+      "kind": "dir",
+      "mode": 448,
+      "mtime_ns": 1792112247759807061,
+      "nlink": 1,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-deb297-single-thread-decompression-diagnostic-r1/home"
+    },
+    {
+      "bytes": 9132,
+      "ctime_ns": 1792112249123827156,
+      "device": 81,
+      "inode": 576862,
+      "kind": "regular",
+      "mode": 420,
+      "mtime_ns": 1792112249118394389,
+      "nlink": 1,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-deb297-single-thread-decompression-diagnostic-r1/report.json",
+      "report_body": {
+        "cgroup_after": {
+          "ancestors": [
+            {
+              "cpu_max": "max 100000",
+              "events": {
+                "high": 0,
+                "low": 0,
+                "max": 0,
+                "oom": 0,
+                "oom_group_kill": 0,
+                "oom_kill": 0
+              },
+              "memory_max": "68719476736",
+              "memory_swap_max": "0",
+              "path": "/sys/fs/cgroup/system.slice/docker-4dd58ad4560fde2ab9b539e4ef9cab1fac531654e99ad554aff1fce8ae0eae37.scope",
+              "pids_max": "112452"
+            },
+            {
+              "cpu_max": "max 100000",
+              "events": {
+                "high": 0,
+                "low": 0,
+                "max": 0,
+                "oom": 0,
+                "oom_group_kill": 0,
+                "oom_kill": 0
+              },
+              "memory_max": "max",
+              "memory_swap_max": "max",
+              "path": "/sys/fs/cgroup/system.slice",
+              "pids_max": "max"
+            },
+            {
+              "controllerless_hierarchy_root": {
+                "device": 29,
+                "inode": 1,
+                "missing_files": {
+                  "memory.current": "ENOENT",
+                  "memory.events": "ENOENT",
+                  "memory.max": "ENOENT"
+                },
+                "mount": {
+                  "filesystem_type": "cgroup2",
+                  "major_minor": "0:29",
+                  "mount_id": "4225",
+                  "mount_point": "/sys/fs/cgroup",
+                  "raw_mountinfo": "4225 4223 0:29 / /sys/fs/cgroup rw,nosuid,nodev,noexec,relatime master:8 - cgroup2 cgroup2 rw",
+                  "root": "/"
+                },
+                "path": "/sys/fs/cgroup"
+              },
+              "events": {},
+              "path": "/sys/fs/cgroup"
+            }
+          ],
+          "boot_id": "af121220-8c6e-4302-9853-f08bf4c50dbb",
+          "cpus": "0-31",
+          "device": 29,
+          "inode": 18151,
+          "membership": [
+            "0::/system.slice/docker-4dd58ad4560fde2ab9b539e4ef9cab1fac531654e99ad554aff1fce8ae0eae37.scope"
+          ],
+          "memory_current": 61126619136,
+          "memory_current_guard": 64424509440,
+          "memory_max": 68719476736,
+          "memory_swap_max": 0,
+          "path": "/sys/fs/cgroup/system.slice/docker-4dd58ad4560fde2ab9b539e4ef9cab1fac531654e99ad554aff1fce8ae0eae37.scope"
+        },
+        "cgroup_before": {
+          "ancestors": [
+            {
+              "cpu_max": "max 100000",
+              "events": {
+                "high": 0,
+                "low": 0,
+                "max": 0,
+                "oom": 0,
+                "oom_group_kill": 0,
+                "oom_kill": 0
+              },
+              "memory_max": "68719476736",
+              "memory_swap_max": "0",
+              "path": "/sys/fs/cgroup/system.slice/docker-4dd58ad4560fde2ab9b539e4ef9cab1fac531654e99ad554aff1fce8ae0eae37.scope",
+              "pids_max": "112452"
+            },
+            {
+              "cpu_max": "max 100000",
+              "events": {
+                "high": 0,
+                "low": 0,
+                "max": 0,
+                "oom": 0,
+                "oom_group_kill": 0,
+                "oom_kill": 0
+              },
+              "memory_max": "max",
+              "memory_swap_max": "max",
+              "path": "/sys/fs/cgroup/system.slice",
+              "pids_max": "max"
+            },
+            {
+              "controllerless_hierarchy_root": {
+                "device": 29,
+                "inode": 1,
+                "missing_files": {
+                  "memory.current": "ENOENT",
+                  "memory.events": "ENOENT",
+                  "memory.max": "ENOENT"
+                },
+                "mount": {
+                  "filesystem_type": "cgroup2",
+                  "major_minor": "0:29",
+                  "mount_id": "4225",
+                  "mount_point": "/sys/fs/cgroup",
+                  "raw_mountinfo": "4225 4223 0:29 / /sys/fs/cgroup rw,nosuid,nodev,noexec,relatime master:8 - cgroup2 cgroup2 rw",
+                  "root": "/"
+                },
+                "path": "/sys/fs/cgroup"
+              },
+              "events": {},
+              "path": "/sys/fs/cgroup"
+            }
+          ],
+          "boot_id": "af121220-8c6e-4302-9853-f08bf4c50dbb",
+          "cpus": "0-31",
+          "device": 29,
+          "inode": 18151,
+          "membership": [
+            "0::/system.slice/docker-4dd58ad4560fde2ab9b539e4ef9cab1fac531654e99ad554aff1fce8ae0eae37.scope"
+          ],
+          "memory_current": 60294725632,
+          "memory_current_guard": 64424509440,
+          "memory_max": 68719476736,
+          "memory_swap_max": 0,
+          "path": "/sys/fs/cgroup/system.slice/docker-4dd58ad4560fde2ab9b539e4ef9cab1fac531654e99ad554aff1fce8ae0eae37.scope"
+        },
+        "cleanup": {
+          "remaining": [],
+          "status": "PASS"
+        },
+        "commands": [
+          {
+            "argv": [
+              "/usr/bin/python3.14",
+              "-B",
+              "/var/tmp/uwvm-ros-complete-20261015-r1/inputs-r35/source/tools/ros_distro/acquire_sdk.py",
+              "--emit-stdout",
+              "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-deb297-single-thread-decompression-diagnostic-r1/data.tar",
+              "2147483648",
+              "/usr/bin/dpkg-deb",
+              "--fsys-tarfile",
+              "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r1/apt/downloads/00297/libflang-18-dev_1%3a18.1.8-11~20.04.2_amd64.deb"
+            ],
+            "cwd": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-deb297-single-thread-decompression-diagnostic-r1",
+            "environment": {
+              "DPKG_DEB_THREADS_MAX": "1",
+              "GOMAXPROCS": "1",
+              "HOME": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-deb297-single-thread-decompression-diagnostic-r1/home",
+              "LANG": "C",
+              "LC_ALL": "C",
+              "OMP_NUM_THREADS": "1",
+              "PATH": "/nonexistent",
+              "PYTHONDONTWRITEBYTECODE": "1",
+              "TMPDIR": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-deb297-single-thread-decompression-diagnostic-r1/tmp"
+            },
+            "expected_returncode": 0,
+            "finished_monotonic_ns": 21935002935955,
+            "first_identity": {
+              "parent_pid": 264249,
+              "pid": 264256,
+              "starttime": 2193420,
+              "state": "R"
+            },
+            "label": "actual-same-deb-dpkg-single-thread",
+            "log": {
+              "bytes": 0,
+              "ctime_ns": 1792112247802807694,
+              "device": 81,
+              "inode": 576859,
+              "mtime_ns": 1792112247802807694,
+              "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-deb297-single-thread-decompression-diagnostic-r1/actual-same-deb-dpkg-single-thread.log",
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "peak_owned_rss_bytes": 64634880,
+            "pid": 264256,
+            "returncode": 0,
+            "started_monotonic_ns": 21934161227729,
+            "status": "PASS"
+          }
+        ],
+        "dpkg_deb": {
+          "bytes": 150176,
+          "ctime_ns": 1779281670971478487,
+          "device": 66307,
+          "inode": 12329807,
+          "mtime_ns": 1778088953000000000,
+          "path": "/usr/bin/dpkg-deb",
+          "sha256": "2586d9a1ac080f531a52c136745f8f20c57d51794447c15d3bf617fd367e8c3e"
+        },
+        "error": null,
+        "kind": "noetic-deb297-single-thread-decompression-diagnostic",
+        "native_ROS_qualified": false,
+        "original_deb": {
+          "bytes": 20788936,
+          "ctime_ns": 1792111830977523534,
+          "device": 81,
+          "inode": 576814,
+          "mtime_ns": 1734650915000000000,
+          "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r1/apt/downloads/00297/libflang-18-dev_1%3a18.1.8-11~20.04.2_amd64.deb",
+          "sha256": "fc7ba7d10ce74bf5e609fbfd5ca6e6dc18845f851b0d8971935bd7ec1ee09175"
+        },
+        "original_inputs_preserved": true,
+        "original_partial_report": {
+          "bytes": 4401479,
+          "ctime_ns": 1792111831537735139,
+          "device": 81,
+          "inode": 576828,
+          "mtime_ns": 1792111831530735038,
+          "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-r1/report.json",
+          "sha256": "d4544ffcf11f221fe2858f0cd3527c2defa18406d8c041a019401e1d49e61bbe"
+        },
+        "original_spec": {
+          "bytes": 9183,
+          "ctime_ns": 1792110200076942225,
+          "device": 81,
+          "inode": 509239,
+          "mtime_ns": 1792110200075013587,
+          "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-official-lock-and-spec-r1/noetic-amd64.spec.json",
+          "sha256": "9d7c94ca3154f2c57e05167f87a34edf2747ce95d6694d0d60fb03934f6d2f89"
+        },
+        "predecessor": {
+          "bytes": 66178,
+          "ctime_ns": 1792111843753911136,
+          "device": 81,
+          "inode": 576854,
+          "mtime_ns": 1792111843750911092,
+          "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-amd64-native-sdk-acquisition-root-supervisor-r1/report.json",
+          "sha256": "3370f5e44c68f33f24387a35f51b5fa1f3300a6cda0d2430a4658a6d5a889d7d"
+        },
+        "sdk_qualified": false,
+        "source_manifest": {
+          "bytes": 3397553,
+          "ctime_ns": 1792107847810773084,
+          "device": 66307,
+          "inode": 2413939,
+          "mtime_ns": 1792107847810052432,
+          "path": "/var/tmp/uwvm-ros-complete-20261015-r1/inputs-r35/source-manifest.json",
+          "sha256": "eb7fd49e03325deffbe510e24be06d1c0e8274b0207f0a33bd335ea470ad2396"
+        },
+        "status": "PASS_ACTUAL_SINGLE_PACKAGE_DECOMPRESSION_DIAGNOSTIC_ONLY",
+        "tar": {
+          "bytes": 829286400,
+          "ctime_ns": 1792112248581819171,
+          "device": 81,
+          "inode": 576860,
+          "mtime_ns": 1792112248581819171,
+          "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-deb297-single-thread-decompression-diagnostic-r1/data.tar",
+          "sha256": "62d549d5b32f81804d50c1ba98bca414ce72333a76aa285dd51dc0c0569d2c81"
+        },
+        "tar_preflight": "PASS_ACTUAL_SINGLE_PACKAGE_ONLY"
+      },
+      "sha256": "eacb6d758b7f7108364078349973de2af0b31c67b69c5a678643367161f684e8"
+    },
+    {
+      "bytes": 0,
+      "ctime_ns": 1792112247759807061,
+      "device": 81,
+      "inode": 576857,
+      "kind": "dir",
+      "mode": 448,
+      "mtime_ns": 1792112247759807061,
+      "nlink": 1,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-deb297-single-thread-decompression-diagnostic-r1/tmp"
+    },
+    {
+      "bytes": 2293406,
+      "ctime_ns": 1792119330271592276,
+      "device": 81,
+      "inode": 679477,
+      "kind": "regular",
+      "mode": 420,
+      "mtime_ns": 1792119330271592276,
+      "nlink": 1,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-failed-decoded-payload-retirement-r1/noetic-amd64-native-sdk-acquisition-r1-after.jsonl"
+    },
+    {
+      "bytes": 12633866,
+      "ctime_ns": 1792119302130124311,
+      "device": 81,
+      "inode": 679469,
+      "kind": "regular",
+      "mode": 420,
+      "mtime_ns": 1792119302130124311,
+      "nlink": 1,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-failed-decoded-payload-retirement-r1/noetic-amd64-native-sdk-acquisition-r1-before.jsonl"
+    },
+    {
+      "bytes": 105900,
+      "ctime_ns": 1792119330271592276,
+      "device": 81,
+      "inode": 679478,
+      "kind": "regular",
+      "mode": 420,
+      "mtime_ns": 1792119330271592276,
+      "nlink": 1,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-failed-decoded-payload-retirement-r1/noetic-amd64-native-sdk-acquisition-r1-debs-after.jsonl"
+    },
+    {
+      "bytes": 105900,
+      "ctime_ns": 1792119302129124295,
+      "device": 81,
+      "inode": 679470,
+      "kind": "regular",
+      "mode": 420,
+      "mtime_ns": 1792119302129124295,
+      "nlink": 1,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-failed-decoded-payload-retirement-r1/noetic-amd64-native-sdk-acquisition-r1-debs-before.jsonl"
+    },
+    {
+      "bytes": 252204,
+      "ctime_ns": 1792119330800601055,
+      "device": 81,
+      "inode": 679479,
+      "kind": "regular",
+      "mode": 420,
+      "mtime_ns": 1792119330800601055,
+      "nlink": 1,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-failed-decoded-payload-retirement-r1/noetic-amd64-native-sdk-acquisition-r2-after.jsonl"
+    },
+    {
+      "bytes": 1026317,
+      "ctime_ns": 1792119306700200438,
+      "device": 81,
+      "inode": 679471,
+      "kind": "regular",
+      "mode": 420,
+      "mtime_ns": 1792119306700200438,
+      "nlink": 1,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-failed-decoded-payload-retirement-r1/noetic-amd64-native-sdk-acquisition-r2-before.jsonl"
+    },
+    {
+      "bytes": 11742,
+      "ctime_ns": 1792119330800601055,
+      "device": 81,
+      "inode": 679480,
+      "kind": "regular",
+      "mode": 420,
+      "mtime_ns": 1792119330800601055,
+      "nlink": 1,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-failed-decoded-payload-retirement-r1/noetic-amd64-native-sdk-acquisition-r2-debs-after.jsonl"
+    },
+    {
+      "bytes": 11742,
+      "ctime_ns": 1792119306700200438,
+      "device": 81,
+      "inode": 679472,
+      "kind": "regular",
+      "mode": 420,
+      "mtime_ns": 1792119306700200438,
+      "nlink": 1,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-failed-decoded-payload-retirement-r1/noetic-amd64-native-sdk-acquisition-r2-debs-before.jsonl"
+    },
+    {
+      "bytes": 570722,
+      "ctime_ns": 1792119331755616901,
+      "device": 81,
+      "inode": 679481,
+      "kind": "regular",
+      "mode": 420,
+      "mtime_ns": 1792119331755616901,
+      "nlink": 1,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-failed-decoded-payload-retirement-r1/noetic-amd64-native-sdk-acquisition-r3-after.jsonl"
+    },
+    {
+      "bytes": 2857667,
+      "ctime_ns": 1792119310132257574,
+      "device": 81,
+      "inode": 679473,
+      "kind": "regular",
+      "mode": 420,
+      "mtime_ns": 1792119310132257574,
+      "nlink": 1,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-failed-decoded-payload-retirement-r1/noetic-amd64-native-sdk-acquisition-r3-before.jsonl"
+    },
+    {
+      "bytes": 31447,
+      "ctime_ns": 1792119331755616901,
+      "device": 81,
+      "inode": 679482,
+      "kind": "regular",
+      "mode": 420,
+      "mtime_ns": 1792119331755616901,
+      "nlink": 1,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-failed-decoded-payload-retirement-r1/noetic-amd64-native-sdk-acquisition-r3-debs-after.jsonl"
+    },
+    {
+      "bytes": 31447,
+      "ctime_ns": 1792119310132257574,
+      "device": 81,
+      "inode": 679474,
+      "kind": "regular",
+      "mode": 420,
+      "mtime_ns": 1792119310132257574,
+      "nlink": 1,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-failed-decoded-payload-retirement-r1/noetic-amd64-native-sdk-acquisition-r3-debs-before.jsonl"
+    },
+    {
+      "bytes": 702907,
+      "ctime_ns": 1792119344502343823,
+      "device": 81,
+      "inode": 679484,
+      "kind": "regular",
+      "mode": 420,
+      "mtime_ns": 1792119344502343823,
+      "nlink": 1,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-failed-decoded-payload-retirement-r1/report.json",
+      "sha256": "2d7a09e25d91d0d45b6da5a12fe7de3b10c218ff68633851eda55fa8f6d130f8"
+    },
+    {
+      "bytes": 33078828,
+      "ctime_ns": 1792119327380544288,
+      "device": 81,
+      "inode": 679476,
+      "kind": "regular",
+      "mode": 420,
+      "mtime_ns": 1792119327380544288,
+      "nlink": 1,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-failed-decoded-payload-retirement-r1/retired-decoded-payloads.jsonl"
+    },
+    {
+      "bytes": 5878922,
+      "ctime_ns": 1792119344491828030,
+      "device": 81,
+      "inode": 679483,
+      "kind": "regular",
+      "mode": 420,
+      "mtime_ns": 1792119344491828030,
+      "nlink": 1,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-failed-decoded-payload-retirement-r1/source39-after.jsonl"
+    },
+    {
+      "bytes": 5878922,
+      "ctime_ns": 1792119289240909326,
+      "device": 81,
+      "inode": 679468,
+      "kind": "regular",
+      "mode": 420,
+      "mtime_ns": 1792119289240909326,
+      "nlink": 1,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/noetic-failed-decoded-payload-retirement-r1/source39-before.jsonl"
+    }
+  ],
+  "source_packet_bytes": 742665,
+  "source_packet_sha256": "95aa932863ee0e991ee94b27b7f889f18ba3e31c9836f73617b5409b67e10c26"
+}

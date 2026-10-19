@@ -1,0 +1,2 @@
+/* Genuine C++20 complete-value execution. */
+#include "contract_humble.c"

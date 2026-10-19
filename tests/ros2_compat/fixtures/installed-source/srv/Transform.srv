@@ -1,0 +1,14 @@
+# Owned protocol fixture, generated with the real selected SDK. No robot runs.
+# Exercise request constants, constructor defaults and complete nested values.
+uint64 LIMIT=18446744073709551615
+int32 count -17
+Child input
+string tag ""
+float64[3] scale
+---
+# A bounded native sequence must keep its actual bound independently of the
+# finite canonical string quotas selected by the caller's complete catalog.
+bool accepted true
+Child[<=2] results
+string reason "ok"
+uint8[<=16] digest

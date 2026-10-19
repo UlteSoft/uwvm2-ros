@@ -1,0 +1,370 @@
+{
+  "format": "uwvm-humanoid-complete-binding-v1",
+  "vendor": "limx",
+  "default_authority": [],
+  "origin_domains": [
+    "AUTHORED_ROS2_LIMX_BRIDGE"
+  ],
+  "required_generator": "sdk/robots/industrial/vendor_profile.py API with captured current parent/bounded/templates/helper; Root vendor28 selection only",
+  "old_vendor19_prepare_compatible": false,
+  "source_inputs": "Complete unchanged original definitions or the complete separately named authored bridge package; origin must be explicit, never substitute one for the other",
+  "record_type": "uwvm_custom::Ros2Uwvm_limx_bridgeMsgJointState",
+  "command_type": "uwvm_custom::Ros2Uwvm_limx_bridgeMsgJointCmd",
+  "generated_cpp_record": "bounded_records.hpp full generated C-backed structures and genuine roswasmcpp::Codec specializations",
+  "native_export_protocol": "uwvm-ros-industrial-native-v1; source_profile complete-bounded-v1 plus actual constant_schema_sha256, exact root and component metadata",
+  "native_ids": null,
+  "canonical_ids": null,
+  "generated_outputs": {
+    "limx-bridge-complete": [
+      "bounded_interfaces.h",
+      "bounded_interfaces.hpp",
+      "bounded_records.go",
+      "bounded_records.h",
+      "bounded_records.hpp",
+      "bounded_records.mjs",
+      "bounded_records.rs",
+      "bounded_records.ts",
+      "generation.vendor.json",
+      "native_constants.hpp",
+      "native_identity.cc"
+    ]
+  },
+  "require_before_compilation": [
+    "fresh bound catalog",
+    "every generation.vendor.json output hash and complete source_inputs",
+    "actual native export with full MD/link/ELF/SDK closure",
+    "actual Native full-value opposite peer",
+    "explicit Root policy and actual ROS2 aliases"
+  ],
+  "independent_cleanup": [
+    "Guest primary error",
+    "Guest capability close",
+    "Guest subscription rollback",
+    "each native owner close attempt/result",
+    "native process retirement",
+    "actual hardware watchdog/stop result"
+  ],
+  "qualification": {
+    "source_only": true,
+    "generated": true,
+    "compiled": false,
+    "executed": false,
+    "native": false,
+    "robot": false
+  },
+  "original_authoring_generation_milestone": {
+    "generated_outputs": null,
+    "canonical_ids": null,
+    "qualification": {
+      "source_only": true,
+      "generated": false,
+      "compiled": false,
+      "executed": false,
+      "native": false,
+      "robot": false
+    }
+  },
+  "source_materialization": {
+    "status": "ACTUAL_CURRENT_GUEST_ONLY_SOURCE_GENERATED_NOT_COMPILED_OR_NATIVE_BOUND",
+    "bundles": [
+      {
+        "name": "limx-bridge-complete",
+        "vendor": "limx",
+        "records": 5,
+        "types": [
+          {
+            "adapter_codec_identity": "UWVMROS1_d86b96b26db6c2a28dfa86e2255cb3cccd6cd24648e877746d8d75394d1635b2",
+            "components": {
+              "message": {
+                "adapter_codec_identity": "UWVMROS1_d86b96b26db6c2a28dfa86e2255cb3cccd6cd24648e877746d8d75394d1635b2",
+                "expanded_nodes": 5,
+                "maximum_wire_bytes": 144,
+                "minimum_wire_bytes": 16,
+                "native_identity": null,
+                "type": "uwvm_limx_bridge/msg/NativeHeader"
+              }
+            },
+            "kind": "message",
+            "native_identity": null,
+            "ros_version": 2,
+            "type": "uwvm_limx_bridge/msg/NativeHeader"
+          },
+          {
+            "adapter_codec_identity": "UWVMROS1_53ba9eb23b36de77e1793bdd19a31f708aca557b81f4ae72927b2a44f5ce097b",
+            "components": {
+              "message": {
+                "adapter_codec_identity": "UWVMROS1_53ba9eb23b36de77e1793bdd19a31f708aca557b81f4ae72927b2a44f5ce097b",
+                "expanded_nodes": 25,
+                "maximum_wire_bytes": 260,
+                "minimum_wire_bytes": 132,
+                "native_identity": null,
+                "type": "uwvm_limx_bridge/msg/ImuData"
+              }
+            },
+            "kind": "message",
+            "native_identity": null,
+            "ros_version": 2,
+            "type": "uwvm_limx_bridge/msg/ImuData"
+          },
+          {
+            "adapter_codec_identity": "UWVMROS1_d99e5855c0dd55d4d1b5a724ad5719734a668a512ea09e553c8f4a560b97a3a4",
+            "components": {
+              "message": {
+                "adapter_codec_identity": "UWVMROS1_d99e5855c0dd55d4d1b5a724ad5719734a668a512ea09e553c8f4a560b97a3a4",
+                "expanded_nodes": 332,
+                "maximum_wire_bytes": 5544,
+                "minimum_wire_bytes": 40,
+                "native_identity": null,
+                "type": "uwvm_limx_bridge/msg/JointState"
+              }
+            },
+            "kind": "message",
+            "native_identity": null,
+            "ros_version": 2,
+            "type": "uwvm_limx_bridge/msg/JointState"
+          },
+          {
+            "adapter_codec_identity": "UWVMROS1_8c477a93cc192cd3039b285f111a56eb1305707d798587ef7ab9504f714ce6f0",
+            "components": {
+              "message": {
+                "adapter_codec_identity": "UWVMROS1_8c477a93cc192cd3039b285f111a56eb1305707d798587ef7ab9504f714ce6f0",
+                "expanded_nodes": 399,
+                "maximum_wire_bytes": 5872,
+                "minimum_wire_bytes": 48,
+                "native_identity": null,
+                "type": "uwvm_limx_bridge/msg/JointCmd"
+              }
+            },
+            "kind": "message",
+            "native_identity": null,
+            "ros_version": 2,
+            "type": "uwvm_limx_bridge/msg/JointCmd"
+          },
+          {
+            "adapter_codec_identity": "UWVMROS1_d469dd32f446fb4013144b7e176cdb831c146b6a9279ea776ec4a0c053060be9",
+            "components": {
+              "message": {
+                "adapter_codec_identity": "UWVMROS1_d469dd32f446fb4013144b7e176cdb831c146b6a9279ea776ec4a0c053060be9",
+                "expanded_nodes": 401,
+                "maximum_wire_bytes": 5940,
+                "minimum_wire_bytes": 52,
+                "native_identity": null,
+                "type": "uwvm_limx_bridge/msg/JointCmdLimx"
+              }
+            },
+            "kind": "message",
+            "native_identity": null,
+            "ros_version": 2,
+            "type": "uwvm_limx_bridge/msg/JointCmdLimx"
+          }
+        ],
+        "declared_constants": 0,
+        "files": [
+          "bounded_interfaces.h",
+          "bounded_interfaces.hpp",
+          "bounded_records.go",
+          "bounded_records.h",
+          "bounded_records.hpp",
+          "bounded_records.mjs",
+          "bounded_records.rs",
+          "bounded_records.ts",
+          "generation.vendor.json",
+          "native_constants.hpp",
+          "native_identity.cc"
+        ],
+        "source_generation_receipt": {
+          "path": "/Users/liyinan/Documents/MacroModel/uwvm2-ros-recovery-archives/20261018/source-work/root/vendor-SDK-source-materialization-r3/actual-readback/source-generation.json",
+          "bytes": 243689,
+          "sha256": "bef4a82a3495f138ba766c94eba4928ad3f2d4dc45494352766256d4e3c0e86d",
+          "device": 16777231,
+          "inode": 87982694,
+          "mode": 33188,
+          "nlink": 1,
+          "mtime_ns": 1792325424471007201,
+          "ctime_ns": 1792325424471007201
+        },
+        "compiler_executed": false,
+        "native_identities": null
+      }
+    ],
+    "original_generation_provenance": [
+      {
+        "path": "/Users/liyinan/Documents/MacroModel/uwvm2-ros-recovery-archives/20261018/source-work/root/vendor-SDK-source-materialization-r3/actual-readback/source-generation.json",
+        "bytes": 243689,
+        "sha256": "bef4a82a3495f138ba766c94eba4928ad3f2d4dc45494352766256d4e3c0e86d",
+        "device": 16777231,
+        "inode": 87982694,
+        "mode": 33188,
+        "nlink": 1,
+        "mtime_ns": 1792325424471007201,
+        "ctime_ns": 1792325424471007201
+      }
+    ],
+    "independent_product_peer": {
+      "path": "/Users/liyinan/Documents/MacroModel/uwvm2-ros-recovery-archives/20261018/source-work/restart-default-control/peer-industrial-vendors-r1/full-source-peer.json",
+      "bytes": 3032,
+      "sha256": "10e8314265f0168d66ea92be3aa831fd1f7bc06fbeb3f94b22484ecaa2b73467",
+      "device": 16777231,
+      "inode": 87997590,
+      "mode": 33188,
+      "nlink": 1,
+      "mtime_ns": 1792325862870654473,
+      "ctime_ns": 1792325862870654473
+    },
+    "native_ids": null,
+    "default_authority": []
+  },
+  "source_materialization_history": [
+    {
+      "reason": "Actual producer Source successor; original JS/AS findings and prior generation receipts remain historical",
+      "materialization": {
+        "status": "ACTUAL_GUEST_ONLY_SOURCE_GENERATED_NOT_COMPILED_OR_NATIVE_BOUND",
+        "bundles": [
+          {
+            "name": "limx-bridge-complete",
+            "vendor": "limx",
+            "records": 5,
+            "types": [
+              {
+                "adapter_codec_identity": "UWVMROS1_d86b96b26db6c2a28dfa86e2255cb3cccd6cd24648e877746d8d75394d1635b2",
+                "components": {
+                  "message": {
+                    "adapter_codec_identity": "UWVMROS1_d86b96b26db6c2a28dfa86e2255cb3cccd6cd24648e877746d8d75394d1635b2",
+                    "expanded_nodes": 5,
+                    "maximum_wire_bytes": 144,
+                    "minimum_wire_bytes": 16,
+                    "native_identity": null,
+                    "type": "uwvm_limx_bridge/msg/NativeHeader"
+                  }
+                },
+                "kind": "message",
+                "native_identity": null,
+                "ros_version": 2,
+                "type": "uwvm_limx_bridge/msg/NativeHeader"
+              },
+              {
+                "adapter_codec_identity": "UWVMROS1_53ba9eb23b36de77e1793bdd19a31f708aca557b81f4ae72927b2a44f5ce097b",
+                "components": {
+                  "message": {
+                    "adapter_codec_identity": "UWVMROS1_53ba9eb23b36de77e1793bdd19a31f708aca557b81f4ae72927b2a44f5ce097b",
+                    "expanded_nodes": 25,
+                    "maximum_wire_bytes": 260,
+                    "minimum_wire_bytes": 132,
+                    "native_identity": null,
+                    "type": "uwvm_limx_bridge/msg/ImuData"
+                  }
+                },
+                "kind": "message",
+                "native_identity": null,
+                "ros_version": 2,
+                "type": "uwvm_limx_bridge/msg/ImuData"
+              },
+              {
+                "adapter_codec_identity": "UWVMROS1_d99e5855c0dd55d4d1b5a724ad5719734a668a512ea09e553c8f4a560b97a3a4",
+                "components": {
+                  "message": {
+                    "adapter_codec_identity": "UWVMROS1_d99e5855c0dd55d4d1b5a724ad5719734a668a512ea09e553c8f4a560b97a3a4",
+                    "expanded_nodes": 332,
+                    "maximum_wire_bytes": 5544,
+                    "minimum_wire_bytes": 40,
+                    "native_identity": null,
+                    "type": "uwvm_limx_bridge/msg/JointState"
+                  }
+                },
+                "kind": "message",
+                "native_identity": null,
+                "ros_version": 2,
+                "type": "uwvm_limx_bridge/msg/JointState"
+              },
+              {
+                "adapter_codec_identity": "UWVMROS1_8c477a93cc192cd3039b285f111a56eb1305707d798587ef7ab9504f714ce6f0",
+                "components": {
+                  "message": {
+                    "adapter_codec_identity": "UWVMROS1_8c477a93cc192cd3039b285f111a56eb1305707d798587ef7ab9504f714ce6f0",
+                    "expanded_nodes": 462,
+                    "maximum_wire_bytes": 5872,
+                    "minimum_wire_bytes": 48,
+                    "native_identity": null,
+                    "type": "uwvm_limx_bridge/msg/JointCmd"
+                  }
+                },
+                "kind": "message",
+                "native_identity": null,
+                "ros_version": 2,
+                "type": "uwvm_limx_bridge/msg/JointCmd"
+              },
+              {
+                "adapter_codec_identity": "UWVMROS1_d469dd32f446fb4013144b7e176cdb831c146b6a9279ea776ec4a0c053060be9",
+                "components": {
+                  "message": {
+                    "adapter_codec_identity": "UWVMROS1_d469dd32f446fb4013144b7e176cdb831c146b6a9279ea776ec4a0c053060be9",
+                    "expanded_nodes": 527,
+                    "maximum_wire_bytes": 5940,
+                    "minimum_wire_bytes": 52,
+                    "native_identity": null,
+                    "type": "uwvm_limx_bridge/msg/JointCmdLimx"
+                  }
+                },
+                "kind": "message",
+                "native_identity": null,
+                "ros_version": 2,
+                "type": "uwvm_limx_bridge/msg/JointCmdLimx"
+              }
+            ],
+            "declared_constants": 0,
+            "files": [
+              "bounded_interfaces.h",
+              "bounded_interfaces.hpp",
+              "bounded_records.go",
+              "bounded_records.h",
+              "bounded_records.hpp",
+              "bounded_records.mjs",
+              "bounded_records.rs",
+              "bounded_records.ts",
+              "generation.vendor.json",
+              "native_constants.hpp",
+              "native_identity.cc"
+            ],
+            "source_generation_receipt": {
+              "path": "/Users/liyinan/Documents/MacroModel/uwvm2-ros-recovery-archives/20261018/source-work/root/vendor-SDK-source-materialization-r1/actual-readback/source-generation.json",
+              "bytes": 42305,
+              "sha256": "9966bd0d6fa25158caf56407f184624d8051aaad1b9fd66b65ba6600bc49f41a",
+              "device": 16777231,
+              "inode": 87960042,
+              "mode": 33188,
+              "nlink": 1,
+              "mtime_ns": 1792321389159097187,
+              "ctime_ns": 1792321389159097187
+            },
+            "compiler_executed": false,
+            "native_identities": null
+          }
+        ],
+        "original_generation_provenance": {
+          "path": "/Users/liyinan/Documents/MacroModel/uwvm2-ros-recovery-archives/20261018/source-work/root/vendor-SDK-source-materialization-r1/actual-readback/source-generation.json",
+          "bytes": 42305,
+          "sha256": "9966bd0d6fa25158caf56407f184624d8051aaad1b9fd66b65ba6600bc49f41a",
+          "device": 16777231,
+          "inode": 87960042,
+          "mode": 33188,
+          "nlink": 1,
+          "mtime_ns": 1792321389159097187,
+          "ctime_ns": 1792321389159097187
+        },
+        "independent_product_peer": {
+          "path": "/Users/liyinan/Documents/MacroModel/uwvm2-ros-recovery-archives/20261018/source-work/recovery-humanoid-vendors-peer/r1/generated-products-publication-peer.json",
+          "bytes": 22085,
+          "sha256": "660dd42de7539ba1691082b9c399e0e72d8837036a9a9612c43c9818b4e6af3b",
+          "device": 16777231,
+          "inode": 87967802,
+          "mode": 33188,
+          "nlink": 1,
+          "mtime_ns": 1792323235354754645,
+          "ctime_ns": 1792323235354754645
+        },
+        "native_ids": null,
+        "default_authority": []
+      }
+    }
+  ]
+}

@@ -1,0 +1,492 @@
+{
+  "kind": "universal-robots-selected-original-source-lock-v1",
+  "vendor": "universal_robots",
+  "variant": "ros1",
+  "ros_version": 1,
+  "default_authority": [],
+  "definitions": [
+    {
+      "type": "geometry_msgs/Point",
+      "repository": "common_ros1",
+      "original_file": "geometry_msgs/msg/Point.msg",
+      "generation_file": "geometry_msgs/msg/Point.msg",
+      "bytes": 84,
+      "sha256": "eb4c07e591cf0269ccb17245dcd4f998162feb09cc8add85fa082c8a30bfc91d",
+      "git_blob_sha1": "f1d3a71a853c668f066de795ba5e0f4458f3f1c0"
+    },
+    {
+      "type": "geometry_msgs/Pose",
+      "repository": "common_ros1",
+      "original_file": "geometry_msgs/msg/Pose.msg",
+      "generation_file": "geometry_msgs/msg/Pose.msg",
+      "bytes": 119,
+      "sha256": "8a700245088b5f3184699d8963e3c62f73bd92e46acc00cfaca491c1ceea35e5",
+      "git_blob_sha1": "763708f7a98d12e0e27894bea3bdd0b085602f2f"
+    },
+    {
+      "type": "geometry_msgs/PoseStamped",
+      "repository": "common_ros1",
+      "original_file": "geometry_msgs/msg/PoseStamped.msg",
+      "generation_file": "geometry_msgs/msg/PoseStamped.msg",
+      "bytes": 79,
+      "sha256": "42b4c0b6b1a41d486df0ecec2c0857bc2812eff1fd5ae714255ac66f0969393f",
+      "git_blob_sha1": "7e3cdc57b7ba5856bce0cb954d20b7a74354bdc2"
+    },
+    {
+      "type": "geometry_msgs/Quaternion",
+      "repository": "common_ros1",
+      "original_file": "geometry_msgs/msg/Quaternion.msg",
+      "generation_file": "geometry_msgs/msg/Quaternion.msg",
+      "bytes": 108,
+      "sha256": "84f92e899c4d40fe49e7f823a8a73e5024bcf129d4aa97200a27ae4f9ff9ec6e",
+      "git_blob_sha1": "9f4fde2bf4c13dc86a95688e4b5254aaec186e2a"
+    },
+    {
+      "type": "geometry_msgs/Twist",
+      "repository": "common_ros1",
+      "original_file": "geometry_msgs/msg/Twist.msg",
+      "generation_file": "geometry_msgs/msg/Twist.msg",
+      "bytes": 113,
+      "sha256": "623b98db7d37911a50ef002a97973709c20441426c68d1134de352a2d022767b",
+      "git_blob_sha1": "f7bb216706de21be64ca064eca406026fdd4252b"
+    },
+    {
+      "type": "geometry_msgs/Vector3",
+      "repository": "common_ros1",
+      "original_file": "geometry_msgs/msg/Vector3.msg",
+      "generation_file": "geometry_msgs/msg/Vector3.msg",
+      "bytes": 382,
+      "sha256": "fa1d5b56a10a940afcfd312936dde90864a398aa2a35598f36943c570d391296",
+      "git_blob_sha1": "2877783d0a235620515987ce0604085041132312"
+    },
+    {
+      "type": "geometry_msgs/Wrench",
+      "repository": "common_ros1",
+      "original_file": "geometry_msgs/msg/Wrench.msg",
+      "generation_file": "geometry_msgs/msg/Wrench.msg",
+      "bytes": 117,
+      "sha256": "2a6eef4f4afa2da2e076fe3bfd16732e74074bb5d48a70eef5214e2b8caa8fe2",
+      "git_blob_sha1": "41201d4b844607ee2d3751f3f474774a2ae1e387"
+    },
+    {
+      "type": "std_msgs/Header",
+      "repository": "std_ros1",
+      "original_file": "msg/Header.msg",
+      "generation_file": "std_msgs/msg/Header.msg",
+      "bytes": 551,
+      "sha256": "5e64e71bb8d9d47019367f6a621934aab7e6ffedc6cfdcc912486aa5576ed693",
+      "git_blob_sha1": "2b3866d2cbcaa7c84d8341e541986da1d5a485a1"
+    },
+    {
+      "type": "ur_dashboard_msgs/AddToLog",
+      "repository": "driver_ros1",
+      "original_file": "ur_dashboard_msgs/srv/AddToLog.srv",
+      "generation_file": "ur_dashboard_msgs/srv/AddToLog.srv",
+      "bytes": 46,
+      "sha256": "bcc1fb2c252ffcecea329c59065cd5d54511c00d5586c8bee09cf503681d2ce7",
+      "git_blob_sha1": "230cee461cdd8bb27a884f20c394cd2e19d89ea1"
+    },
+    {
+      "type": "ur_dashboard_msgs/GetLoadedProgram",
+      "repository": "driver_ros1",
+      "original_file": "ur_dashboard_msgs/srv/GetLoadedProgram.srv",
+      "generation_file": "ur_dashboard_msgs/srv/GetLoadedProgram.srv",
+      "bytes": 51,
+      "sha256": "4c04e33fb4d77ecc5666e457ba5e5d9f08c667ef98aca95612387ce073dbd538",
+      "git_blob_sha1": "c564420c70ecc8e0d71da4b22e919939e1787de2"
+    },
+    {
+      "type": "ur_dashboard_msgs/GetProgramState",
+      "repository": "driver_ros1",
+      "original_file": "ur_dashboard_msgs/srv/GetProgramState.srv",
+      "generation_file": "ur_dashboard_msgs/srv/GetProgramState.srv",
+      "bytes": 70,
+      "sha256": "7c009c559280d058b23e5aefca97803677f2f4d06550cc41628981b76545380a",
+      "git_blob_sha1": "68a4b0862cabee345f8f7e9510309b117a9b444d"
+    },
+    {
+      "type": "ur_dashboard_msgs/GetRobotMode",
+      "repository": "driver_ros1",
+      "original_file": "ur_dashboard_msgs/srv/GetRobotMode.srv",
+      "generation_file": "ur_dashboard_msgs/srv/GetRobotMode.srv",
+      "bytes": 52,
+      "sha256": "7c1f4b74a92a3a98589ae4717d08b658a576393de7fffebf18f320920ccfb38e",
+      "git_blob_sha1": "7b419508b701b638ff08b107518290c7a9e40dfe"
+    },
+    {
+      "type": "ur_dashboard_msgs/GetSafetyMode",
+      "repository": "driver_ros1",
+      "original_file": "ur_dashboard_msgs/srv/GetSafetyMode.srv",
+      "generation_file": "ur_dashboard_msgs/srv/GetSafetyMode.srv",
+      "bytes": 54,
+      "sha256": "4f17600cab88c429c1802a4b55f8fb6a9eeb4e380a41ef81d932c37af1b12b9b",
+      "git_blob_sha1": "5b3874fba66eecffece1648483a5111c6650a046"
+    },
+    {
+      "type": "ur_dashboard_msgs/IsInRemoteControl",
+      "repository": "driver_ros1",
+      "original_file": "ur_dashboard_msgs/srv/IsInRemoteControl.srv",
+      "generation_file": "ur_dashboard_msgs/srv/IsInRemoteControl.srv",
+      "bytes": 144,
+      "sha256": "adf144c26a81ac44348f79dc4f0cdb4928db921f82ba2125b77af5f80266189a",
+      "git_blob_sha1": "3e44b4d395398e7e705dadeec0273d42371a1147"
+    },
+    {
+      "type": "ur_dashboard_msgs/IsProgramRunning",
+      "repository": "driver_ros1",
+      "original_file": "ur_dashboard_msgs/srv/IsProgramRunning.srv",
+      "generation_file": "ur_dashboard_msgs/srv/IsProgramRunning.srv",
+      "bytes": 117,
+      "sha256": "80b637790161e40284e19dde437ba920e02830a139cd98a57309031a3595393d",
+      "git_blob_sha1": "61d6067bc95242ba4d8c9a789ea5272b835202ba"
+    },
+    {
+      "type": "ur_dashboard_msgs/IsProgramSaved",
+      "repository": "driver_ros1",
+      "original_file": "ur_dashboard_msgs/srv/IsProgramSaved.srv",
+      "generation_file": "ur_dashboard_msgs/srv/IsProgramSaved.srv",
+      "bytes": 143,
+      "sha256": "b78a09dc0d9bac0731bf826c0d39249caef877f22d8b8cca299817c5bab5776b",
+      "git_blob_sha1": "065bbf6df083ce1dc7efe3de363ad06761e9db91"
+    },
+    {
+      "type": "ur_dashboard_msgs/Load",
+      "repository": "driver_ros1",
+      "original_file": "ur_dashboard_msgs/srv/Load.srv",
+      "generation_file": "ur_dashboard_msgs/srv/Load.srv",
+      "bytes": 91,
+      "sha256": "8bea2f082168ea6c954acf4d6a2880849939c3b67dd9937df382d1c42159b9f5",
+      "git_blob_sha1": "6883ab6531e67eca71f8fabeec5997769884be1d"
+    },
+    {
+      "type": "ur_dashboard_msgs/Popup",
+      "repository": "driver_ros1",
+      "original_file": "ur_dashboard_msgs/srv/Popup.srv",
+      "generation_file": "ur_dashboard_msgs/srv/Popup.srv",
+      "bytes": 46,
+      "sha256": "bcc1fb2c252ffcecea329c59065cd5d54511c00d5586c8bee09cf503681d2ce7",
+      "git_blob_sha1": "230cee461cdd8bb27a884f20c394cd2e19d89ea1"
+    },
+    {
+      "type": "ur_dashboard_msgs/ProgramState",
+      "repository": "driver_ros1",
+      "original_file": "ur_dashboard_msgs/msg/ProgramState.msg",
+      "generation_file": "ur_dashboard_msgs/msg/ProgramState.msg",
+      "bytes": 82,
+      "sha256": "6e15633513c877a22e1daba751819ff5cb1f663bce3f5cf09b0560d45bd6a91e",
+      "git_blob_sha1": "cd597bd30b3227db0c22b8e27490eb3d90ad38d0"
+    },
+    {
+      "type": "ur_dashboard_msgs/RawRequest",
+      "repository": "driver_ros1",
+      "original_file": "ur_dashboard_msgs/srv/RawRequest.srv",
+      "generation_file": "ur_dashboard_msgs/srv/RawRequest.srv",
+      "bytes": 111,
+      "sha256": "9a70e21d7bae70e5a865f3aa296e05aeedc8fbff0aaa41b054953034f69348ea",
+      "git_blob_sha1": "92712adcdd359a35113e4748a2a4496641f01c6c"
+    },
+    {
+      "type": "ur_dashboard_msgs/RobotMode",
+      "repository": "driver_ros1",
+      "original_file": "ur_dashboard_msgs/msg/RobotMode.msg",
+      "generation_file": "ur_dashboard_msgs/msg/RobotMode.msg",
+      "bytes": 193,
+      "sha256": "9fdad17b4ea58ca1ba83f097e25334d5b8a20933585bc7b57002e841131331aa",
+      "git_blob_sha1": "3acec31d491c53789d9a24bfb3564ed52f557b03"
+    },
+    {
+      "type": "ur_dashboard_msgs/SafetyMode",
+      "repository": "driver_ros1",
+      "original_file": "ur_dashboard_msgs/msg/SafetyMode.msg",
+      "generation_file": "ur_dashboard_msgs/msg/SafetyMode.msg",
+      "bytes": 340,
+      "sha256": "1c55f245ae2c99dda03537a2664f3924ccc74428cfc33f0fc4debb51889cb089",
+      "git_blob_sha1": "7db0851e928e7067f291335abf544f02d0034b4a"
+    },
+    {
+      "type": "ur_dashboard_msgs/SetMode",
+      "repository": "driver_ros1",
+      "original_file": "ur_dashboard_msgs/action/SetMode.action",
+      "generation_file": "ur_dashboard_msgs/action/SetMode.action",
+      "bytes": 969,
+      "sha256": "44b35d346177de422ef4f080fc1b72baea4f0c5dec7b5dda9dd43fbea8031ec8",
+      "git_blob_sha1": "4eac29152fd3c0292a6b2e1355b4b132edcd72fb"
+    },
+    {
+      "type": "ur_msgs/Analog",
+      "repository": "ur_msgs_ros1",
+      "original_file": "msg/Analog.msg",
+      "generation_file": "ur_msgs/msg/Analog.msg",
+      "bytes": 98,
+      "sha256": "39491d44711faed54ff877dc0d1f1991c28f1e0852cfe3a9601da5b5d5706c6c",
+      "git_blob_sha1": "f7400ca1c5868d4db15cd82b3b0705a44cb2d55c"
+    },
+    {
+      "type": "ur_msgs/Digital",
+      "repository": "ur_msgs_ros1",
+      "original_file": "msg/Digital.msg",
+      "generation_file": "ur_msgs/msg/Digital.msg",
+      "bytes": 21,
+      "sha256": "d0497cd504a632e323f13952188672a59396e70ed0e4fb5ddb35db51a70d1b5b",
+      "git_blob_sha1": "6183945954e683178d10d2fde80da6ed1d314de9"
+    },
+    {
+      "type": "ur_msgs/GetRobotSoftwareVersion",
+      "repository": "ur_msgs_ros1",
+      "original_file": "srv/GetRobotSoftwareVersion.srv",
+      "generation_file": "ur_msgs/srv/GetRobotSoftwareVersion.srv",
+      "bytes": 153,
+      "sha256": "f07b92f85bc82df84344e4e0d8b99fcb57e46e58d8fd6efc3be3363927e4f6e2",
+      "git_blob_sha1": "d9dfc2a184e72b14bf4ff8c883275943dcf7f300"
+    },
+    {
+      "type": "ur_msgs/IOStates",
+      "repository": "ur_msgs_ros1",
+      "original_file": "msg/IOStates.msg",
+      "generation_file": "ur_msgs/msg/IOStates.msg",
+      "bytes": 132,
+      "sha256": "da5dc3c9f3c4cdc31d058ac99183a841c1e81934239a17a9fb69c14b07d4bbdc",
+      "git_blob_sha1": "e7195735371cd94d40d749828776b6afd3b5b9b5"
+    },
+    {
+      "type": "ur_msgs/MasterboardDataMsg",
+      "repository": "ur_msgs_ros1",
+      "original_file": "msg/MasterboardDataMsg.msg",
+      "generation_file": "ur_msgs/msg/MasterboardDataMsg.msg",
+      "bytes": 775,
+      "sha256": "645dfd77774808e6779cff3cf08836fb84fc5f1dd0383cbdb46891caa10b8f64",
+      "git_blob_sha1": "18b6bbea7f3f404a95c3dfc946a8d941b817ca32"
+    },
+    {
+      "type": "ur_msgs/RobotModeDataMsg",
+      "repository": "ur_msgs_ros1",
+      "original_file": "msg/RobotModeDataMsg.msg",
+      "generation_file": "ur_msgs/msg/RobotModeDataMsg.msg",
+      "bytes": 486,
+      "sha256": "09e926c9a4e0a7063ce62837c014a0846dac9fa7531f020be4fc0545a086e1bc",
+      "git_blob_sha1": "5c443f7b6cbc590201c0cceaebdd3bd6488b8075"
+    },
+    {
+      "type": "ur_msgs/RobotStateRTMsg",
+      "repository": "ur_msgs_ros1",
+      "original_file": "msg/RobotStateRTMsg.msg",
+      "generation_file": "ur_msgs/msg/RobotStateRTMsg.msg",
+      "bytes": 722,
+      "sha256": "90721371ce7c5e0be82ff816bbe3d208c947f9183251857771eb6ec7411cec1f",
+      "git_blob_sha1": "2741463973e0c1ed1d052f885e274fb912efc860"
+    },
+    {
+      "type": "ur_msgs/SetAnalogOutput",
+      "repository": "ur_msgs_ros1",
+      "original_file": "srv/SetAnalogOutput.srv",
+      "generation_file": "ur_msgs/srv/SetAnalogOutput.srv",
+      "bytes": 29,
+      "sha256": "96a726fe9f333413adc08abfb9c1a88fc611f936927d1c7e30a222c897c0250c",
+      "git_blob_sha1": "b7b934c8a8525fc85fbaeaaad0a4cc626ac9dbe5"
+    },
+    {
+      "type": "ur_msgs/SetForceMode",
+      "repository": "ur_msgs_ros1",
+      "original_file": "srv/SetForceMode.srv",
+      "generation_file": "ur_msgs/srv/SetForceMode.srv",
+      "bytes": 2011,
+      "sha256": "73a3ef918fe8053a05daffce4fd8bcb2a4dc7e5cc72f298f40fcd317db76a9d9",
+      "git_blob_sha1": "c75412e0e2420f14957ccd966a3975df38b3e9fb"
+    },
+    {
+      "type": "ur_msgs/SetIO",
+      "repository": "ur_msgs_ros1",
+      "original_file": "srv/SetIO.srv",
+      "generation_file": "ur_msgs/srv/SetIO.srv",
+      "bytes": 1629,
+      "sha256": "c24889e18171e2235c108a546dd7fc5e7d7592c687ffeeb661430a6bc53fe76d",
+      "git_blob_sha1": "b1c83e6bc97b436a9047266d3d0d872bec45a83b"
+    },
+    {
+      "type": "ur_msgs/SetPayload",
+      "repository": "ur_msgs_ros1",
+      "original_file": "srv/SetPayload.srv",
+      "generation_file": "ur_msgs/srv/SetPayload.srv",
+      "bytes": 70,
+      "sha256": "d9a54eb056ac7a8843433a61741b9216f956e9168345e69a375a19a3ba3fec86",
+      "git_blob_sha1": "3361c7ae17bc0c7cba6cd39141ce6be5235707ff"
+    },
+    {
+      "type": "ur_msgs/SetSpeedSliderFraction",
+      "repository": "ur_msgs_ros1",
+      "original_file": "srv/SetSpeedSliderFraction.srv",
+      "generation_file": "ur_msgs/srv/SetSpeedSliderFraction.srv",
+      "bytes": 266,
+      "sha256": "d29f0d61a35f1ce5d0cf8cfb07c9bde99f2595fa96e02befeeed428085d386ea",
+      "git_blob_sha1": "263a375973a2c93a1e12688628385703cbfa50b8"
+    },
+    {
+      "type": "ur_msgs/ToolDataMsg",
+      "repository": "ur_msgs_ros1",
+      "original_file": "msg/ToolDataMsg.msg",
+      "generation_file": "ur_msgs/msg/ToolDataMsg.msg",
+      "bytes": 545,
+      "sha256": "7662a7f32d187bfcfe50db3190131fef75250208b13faa79e078fc4700498f95",
+      "git_blob_sha1": "83d782ab96e14e588f11319fb93b5254df63ac23"
+    }
+  ],
+  "original_custom_roots": [
+    "ur_dashboard_msgs/AddToLog",
+    "ur_dashboard_msgs/GetLoadedProgram",
+    "ur_dashboard_msgs/GetProgramState",
+    "ur_dashboard_msgs/GetRobotMode",
+    "ur_dashboard_msgs/GetSafetyMode",
+    "ur_dashboard_msgs/IsInRemoteControl",
+    "ur_dashboard_msgs/IsProgramRunning",
+    "ur_dashboard_msgs/IsProgramSaved",
+    "ur_dashboard_msgs/Load",
+    "ur_dashboard_msgs/Popup",
+    "ur_dashboard_msgs/ProgramState",
+    "ur_dashboard_msgs/RawRequest",
+    "ur_dashboard_msgs/RobotMode",
+    "ur_dashboard_msgs/SafetyMode",
+    "ur_dashboard_msgs/SetMode",
+    "ur_msgs/Analog",
+    "ur_msgs/Digital",
+    "ur_msgs/GetRobotSoftwareVersion",
+    "ur_msgs/IOStates",
+    "ur_msgs/MasterboardDataMsg",
+    "ur_msgs/RobotModeDataMsg",
+    "ur_msgs/RobotStateRTMsg",
+    "ur_msgs/SetAnalogOutput",
+    "ur_msgs/SetForceMode",
+    "ur_msgs/SetIO",
+    "ur_msgs/SetPayload",
+    "ur_msgs/SetSpeedSliderFraction",
+    "ur_msgs/ToolDataMsg"
+  ],
+  "repositories": [
+    {
+      "id": "common_ros1",
+      "repository": "ros/common_msgs",
+      "url": "https://github.com/ros/common_msgs",
+      "branch": "noetic-devel",
+      "commit": "092bc230c8153dd4cfee0c84c9796cc7e6b09fdb",
+      "tree_git_sha1": "dd72cef60b6f589b398d37934be2971382d4340f",
+      "default_authority": [],
+      "qualification": "Original standard source capture, no installed ROS or native identity qualification."
+    },
+    {
+      "id": "driver_ros1",
+      "repository": "UniversalRobots/Universal_Robots_ROS_Driver",
+      "branch": "master",
+      "commit": "bd14b5c533135886f4f85ef0cabd097a5e1b8d0f",
+      "tree_git_sha1": "313539d9de7b6583e5635571cea2dba0d7930c7b",
+      "interface_inventory": [
+        {
+          "path": "ur_dashboard_msgs/action/SetMode.action",
+          "bytes": 969,
+          "git_blob_sha1": "4eac29152fd3c0292a6b2e1355b4b132edcd72fb"
+        },
+        {
+          "path": "ur_dashboard_msgs/msg/ProgramState.msg",
+          "bytes": 82,
+          "git_blob_sha1": "cd597bd30b3227db0c22b8e27490eb3d90ad38d0"
+        },
+        {
+          "path": "ur_dashboard_msgs/msg/RobotMode.msg",
+          "bytes": 193,
+          "git_blob_sha1": "3acec31d491c53789d9a24bfb3564ed52f557b03"
+        },
+        {
+          "path": "ur_dashboard_msgs/msg/SafetyMode.msg",
+          "bytes": 340,
+          "git_blob_sha1": "7db0851e928e7067f291335abf544f02d0034b4a"
+        },
+        {
+          "path": "ur_dashboard_msgs/srv/AddToLog.srv",
+          "bytes": 46,
+          "git_blob_sha1": "230cee461cdd8bb27a884f20c394cd2e19d89ea1"
+        },
+        {
+          "path": "ur_dashboard_msgs/srv/GetLoadedProgram.srv",
+          "bytes": 51,
+          "git_blob_sha1": "c564420c70ecc8e0d71da4b22e919939e1787de2"
+        },
+        {
+          "path": "ur_dashboard_msgs/srv/GetProgramState.srv",
+          "bytes": 70,
+          "git_blob_sha1": "68a4b0862cabee345f8f7e9510309b117a9b444d"
+        },
+        {
+          "path": "ur_dashboard_msgs/srv/GetRobotMode.srv",
+          "bytes": 52,
+          "git_blob_sha1": "7b419508b701b638ff08b107518290c7a9e40dfe"
+        },
+        {
+          "path": "ur_dashboard_msgs/srv/GetSafetyMode.srv",
+          "bytes": 54,
+          "git_blob_sha1": "5b3874fba66eecffece1648483a5111c6650a046"
+        },
+        {
+          "path": "ur_dashboard_msgs/srv/IsInRemoteControl.srv",
+          "bytes": 144,
+          "git_blob_sha1": "3e44b4d395398e7e705dadeec0273d42371a1147"
+        },
+        {
+          "path": "ur_dashboard_msgs/srv/IsProgramRunning.srv",
+          "bytes": 117,
+          "git_blob_sha1": "61d6067bc95242ba4d8c9a789ea5272b835202ba"
+        },
+        {
+          "path": "ur_dashboard_msgs/srv/IsProgramSaved.srv",
+          "bytes": 143,
+          "git_blob_sha1": "065bbf6df083ce1dc7efe3de363ad06761e9db91"
+        },
+        {
+          "path": "ur_dashboard_msgs/srv/Load.srv",
+          "bytes": 91,
+          "git_blob_sha1": "6883ab6531e67eca71f8fabeec5997769884be1d"
+        },
+        {
+          "path": "ur_dashboard_msgs/srv/Popup.srv",
+          "bytes": 46,
+          "git_blob_sha1": "230cee461cdd8bb27a884f20c394cd2e19d89ea1"
+        },
+        {
+          "path": "ur_dashboard_msgs/srv/RawRequest.srv",
+          "bytes": 111,
+          "git_blob_sha1": "92712adcdd359a35113e4748a2a4496641f01c6c"
+        }
+      ],
+      "default_authority": [],
+      "scope": "Whole original declared interface files and selected original native implementation/documentation, not native execution or all releases.",
+      "archive": {
+        "url": "https://codeload.github.com/UniversalRobots/Universal_Robots_ROS_Driver/tar.gz/bd14b5c533135886f4f85ef0cabd097a5e1b8d0f",
+        "bytes": 2149381,
+        "sha256": "137ab883404f996524c3b42cf4b1b7366ccaa31d6a4ec5eb9b34847ec03a7098"
+      }
+    },
+    {
+      "id": "std_ros1",
+      "repository": "ros/std_msgs",
+      "url": "https://github.com/ros/std_msgs",
+      "branch": "noetic-devel",
+      "commit": "34198520757d1aab358118a0ef294fe2609fde33",
+      "tree_git_sha1": "c6ce9f1fbbbe6a4310f237726df491359c874519",
+      "default_authority": [],
+      "qualification": "Original standard source capture, no installed ROS or native identity qualification."
+    },
+    {
+      "id": "ur_msgs_ros1",
+      "repository": "ros-industrial/ur_msgs",
+      "branch": "noetic-devel",
+      "commit": "6c6dc66c63bd551e3985281739add762bfaa3aa9",
+      "tree_git_sha1": "41dd6b850776d49f8269c415085a16f401abb0a0",
+      "archive": {
+        "url": "https://codeload.github.com/ros-industrial/ur_msgs/tar.gz/6c6dc66c63bd551e3985281739add762bfaa3aa9",
+        "bytes": 6272,
+        "sha256": "478c31fb5c52a98c98874a24c09144de0ec01fe743bf84c26f99cb8c1de85ec6"
+      },
+      "default_authority": [],
+      "scope": "Whole original declared interface files and selected original native implementation/documentation, not native execution or all releases."
+    }
+  ],
+  "catalog_sha256": "6cc428586464c0cc472e8139c810dd912ffbbf82dc95cc5544ba16beb80bae76",
+  "scope": "Every declared custom message/service/action in these pinned UR packages plus complete dependency closure. Source only; not every release, native metadata, installed SDK or controller acceptance."
+}

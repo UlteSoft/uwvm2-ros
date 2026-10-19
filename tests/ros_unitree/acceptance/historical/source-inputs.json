@@ -1,0 +1,32 @@
+{
+  "kind": "typed40-historical-source-factory-inputs",
+  "status": "SOURCE_DATA_ONLY",
+  "files": [
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/historical/command14-continuation-baa933.py.txt",
+      "bytes": 90333,
+      "sha256": "baa93383374811af5ff76bae8be1fd356b32c1c1fb9512a9a382cc03286b2fa9",
+      "scope": "HISTORICAL_SOURCE_DATA_NOT_AN_EXECUTION_ENTRYPOINT"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/historical/command14-schema-fixed-0693fb.py.txt",
+      "bytes": 100789,
+      "sha256": "0693fb2246605e0676ec0c165da2fd7a0972e9123f25a129f401a9b48a6af60e",
+      "scope": "HISTORICAL_SOURCE_DATA_NOT_AN_EXECUTION_ENTRYPOINT"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/historical/official-cpp-qualifier-91420b.py.txt",
+      "bytes": 22036,
+      "sha256": "91420bd98a6bf3e16dfafaa6d3f247822f5e25ea22f5cbbdbb3a169199cc1b69",
+      "scope": "HISTORICAL_SOURCE_DATA_NOT_AN_EXECUTION_ENTRYPOINT"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/historical/command14-utilities-a7e892.py.txt",
+      "bytes": 48461,
+      "sha256": "a7e89266486dba5ada416a31841b12646482001089b45765b3e05ec7b24c050f",
+      "scope": "HISTORICAL_SOURCE_DATA_NOT_AN_EXECUTION_ENTRYPOINT"
+    }
+  ],
+  "old_cgroup_facts": "Historical only; never current admission.",
+  "tests_compilers_Runtime_executed": false
+}

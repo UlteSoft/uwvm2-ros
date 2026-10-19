@@ -1,0 +1,47 @@
+{
+  "format_version": 1,
+  "kind": "official-upstream-scope-inventory-source-only-data-package",
+  "status": "SOURCE_OBSERVED_UNEXECUTED_NOT_A_TEST_PASS",
+  "files": [
+    {
+      "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/official-suite-project-inventory.json",
+      "bytes": 159441,
+      "sha256": "c0e4a800f101ea6ac64271a66f61869f49f5cb3272fd1c7e820bf269a045e8e7"
+    },
+    {
+      "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/all-distro-repository-metadata.json",
+      "bytes": 6413277,
+      "sha256": "ff840dc8172d8936e6d822c13a352893f01506ecadcac76e1f71cb06f34f5c45"
+    },
+    {
+      "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/unitree-tree-observations.json",
+      "bytes": 82495,
+      "sha256": "d7832a5cb3a8047008217885c96116375318630b796acc1006023539b615a0f7"
+    },
+    {
+      "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/unitree-official-file-observations.json",
+      "bytes": 66637,
+      "sha256": "6fa5dd7876ae7c38037026a3ce38da43df2db86d117654794b5f57e6d423af67"
+    },
+    {
+      "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/unitree-package-manifest-observations.json",
+      "bytes": 18519,
+      "sha256": "0ff57a89e90e4c52f898aaa96dfd674b4fec16765d02cd7eddf713568f7b6f15"
+    },
+    {
+      "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/distribution-authority-observations.json",
+      "bytes": 1285,
+      "sha256": "e064153983a4c4d104f753a67112cb3acca6a7d11431bd0909e3ffc313039e90"
+    },
+    {
+      "path": "/tmp/uwvm-official-suite-upstream-inventory-source-only-20261017-r1/README.md",
+      "bytes": 5342,
+      "sha256": "71bd94620b61ddd2ba493f032915e7f0cca5428098ddab34415648ffd34ab5c7"
+    }
+  ],
+  "candidate_imported": false,
+  "SDK_or_source_checkouts_created": false,
+  "SSH_compiler_or_tests_executed": false,
+  "archive_or_retirement_performed": false,
+  "root_execution_prerequisites": "Actual source/SDK/tool locks and independently reviewed full-suite runner controls remain required."
+}

@@ -1,0 +1,98 @@
+{
+  "schema": "uwvm-javascript-guest-recipes-v1",
+  "common": {
+    "schema": "uwvm-embedded-javascript-build-v1",
+    "mode": "command",
+    "backend": 2,
+    "entry": "sdk/robots/arms/elephant/mycobot/examples/guest_humble_ultraarm.mjs",
+    "modules": [
+      {
+        "name": "sdk/javascript/abi.mjs",
+        "source": "sdk/javascript/abi.mjs"
+      },
+      {
+        "name": "sdk/javascript/raw.mjs",
+        "source": "sdk/javascript/raw.mjs"
+      },
+      {
+        "name": "sdk/javascript/roswasm.mjs",
+        "source": "sdk/javascript/roswasm.mjs"
+      },
+      {
+        "name": "sdk/javascript/async.mjs",
+        "source": "sdk/javascript/async.mjs"
+      },
+      {
+        "name": "sdk/javascript/relay.mjs",
+        "source": "sdk/javascript/relay.mjs"
+      },
+      {
+        "name": "sdk/javascript/codecs.mjs",
+        "source": "sdk/javascript/codecs.mjs"
+      },
+      {
+        "name": "sdk/javascript/scheduling.mjs",
+        "source": "sdk/javascript/scheduling.mjs"
+      },
+      {
+        "name": "sdk/javascript/ownership.mjs",
+        "source": "sdk/javascript/ownership.mjs"
+      },
+      {
+        "name": "sdk/javascript/events.mjs",
+        "source": "sdk/javascript/events.mjs"
+      },
+      {
+        "name": "sdk/javascript/copied_transport.mjs",
+        "source": "sdk/javascript/copied_transport.mjs"
+      },
+      {
+        "name": "sdk/javascript/guest.mjs",
+        "source": "sdk/javascript/guest.mjs"
+      },
+      {
+        "name": "sdk/javascript/guest/bootstrap.mjs",
+        "source": "sdk/javascript/guest/bootstrap.mjs"
+      },
+      {
+        "name": "sdk/custom-types/elephant-mycobot-humble-complete/bounded_records.mjs",
+        "source": "sdk/custom-types/elephant-mycobot-humble-complete/bounded_records.mjs"
+      },
+      {
+        "name": "sdk/custom-types/elephant-mycobot-humble-complete/bounded_interfaces.mjs",
+        "source": "sdk/custom-types/elephant-mycobot-humble-complete/bounded_interfaces.mjs"
+      },
+      {
+        "name": "sdk/robots/arms/elephant/mycobot/examples/telemetry_humble_ultraarm.mjs",
+        "source": "sdk/robots/arms/elephant/mycobot/examples/telemetry_humble_ultraarm.mjs"
+      },
+      {
+        "name": "sdk/robots/arms/elephant/mycobot/examples/guest_humble_ultraarm.mjs",
+        "source": "sdk/robots/arms/elephant/mycobot/examples/guest_humble_ultraarm.mjs"
+      }
+    ],
+    "imports": [],
+    "exports": [],
+    "random_seed": 261019,
+    "optimization": "-O2",
+    "initial_memory": 16777216,
+    "maximum_memory": 67108864,
+    "limits": {
+      "heap_bytes": 33554432,
+      "stack_bytes": 524288,
+      "max_jobs": 4096,
+      "interrupt_polls": 1000000,
+      "input_bytes": 4096,
+      "output_bytes": 32,
+      "print_bytes": 4096,
+      "max_text_bytes": 1048576,
+      "max_modules": 64,
+      "max_source_bytes": 2097152
+    }
+  },
+  "variants": {
+    "selection": {
+      "backend": 2
+    }
+  }
+}

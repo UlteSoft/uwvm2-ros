@@ -1,0 +1,42 @@
+{
+  "format_version": 1,
+  "kind": "cpp-catalog-observed-targets-literal-unchanged-check",
+  "status": "AST_AND_LITERAL_SOURCE_ONLY_NOT_EXECUTED",
+  "literal_unchanged_original_functions": {
+    "official_sources": {
+      "bytes": 11781,
+      "sha256": "03fbc74975491bcc86739af80859c4f3abb30f9234393b3fd9bdaba0d2f232d7"
+    },
+    "compile_association": {
+      "bytes": 1620,
+      "sha256": "f48d5f9375dbab36a5c69d8f4604f9e64d89f5b68ff94324452e4efe2d718951"
+    },
+    "reopen": {
+      "bytes": 446,
+      "sha256": "54dfc69fc075f174b7cb98e75ae474a39c3772ad125f2b8326299ef3b01330c6"
+    },
+    "terminal": {
+      "bytes": 1075,
+      "sha256": "1d488c4e4d251ccf4a610cb6701d7acf7ef228dbe82bad69400660d797aa7b1c"
+    },
+    "same_device": {
+      "bytes": 565,
+      "sha256": "c2010320212b9ac3d563c9298fcebcb759207469a0ddf937cefac6dbaae37153"
+    }
+  },
+  "existing_function_AST_changes": [
+    "catalog_pair",
+    "compare_row",
+    "qualify"
+  ],
+  "new_functions": [
+    "_current_catalog_link",
+    "_observe_catalog_target",
+    "preserve_catalog_observations"
+  ],
+  "authored_case_count": 14,
+  "existing11_CPP_case_source_unchanged": true,
+  "ordinary_Evidence_source_unchanged": true,
+  "Root_source49_frozen_unchanged_by_this_author": true,
+  "source_only": true
+}

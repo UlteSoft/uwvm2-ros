@@ -1,0 +1,8 @@
+{
+  "repository": "https://github.com/ros2/rclcpp",
+  "requested_ref": "jazzy",
+  "actual_commit": "53fa7aeea86e8ed484f9465fa14059faf13a71f1",
+  "actual_tree": "8ba691f837b5c0368b0d6d8b3900e7b111d9257c",
+  "whole_materialized_source_tree": false,
+  "git_commit_object_sha1_verified": true
+}

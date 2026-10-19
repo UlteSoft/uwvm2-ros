@@ -1,4 +1,4 @@
-/*************************************************************
+﻿/*************************************************************
  * UlteSoft WebAssembly Virtual Machine (Version 2)          *
  * Copyright (c) 2025-present UlteSoft. All rights reserved. *
  * Licensed under the APL-2.0 License (see LICENSE file).    *
@@ -52,13 +52,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
             ::std::addressof(::uwvm2::uwvm::cmdline::params::run),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::help),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::mode),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::runtime_debug_jit),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::debug_jit_control_fd),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::debug_jit_control_handle),
 
         // debug
 #ifdef _DEBUG
             ::std::addressof(::uwvm2::uwvm::cmdline::params::debug_test),
 #endif
 
+            // ROS parameters use the existing hash-table registration.
+# include "params/ros1_registry.inc"
+# include "params/ros2_registry.inc"
+
             // wasm
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::secure),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_set_main_module_name),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_set_start_func),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_preload_library),
@@ -90,6 +98,28 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_disable_nontrapping_float_to_int),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_enable_simd),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_disable_simd),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_enable_extended_const),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_enable_table_initializer),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_enable_relaxed_simd),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_enable_multi_memory),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_enable_threads),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_disable_extended_const),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_disable_table_initializer),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_disable_relaxed_simd),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_disable_multi_memory),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_disable_threads),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_enable_tail_call),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_disable_tail_call),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_enable_memory64),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_enable_table64),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_disable_memory64),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_disable_table64),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_enable_function_references),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_enable_gc),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_enable_exceptions),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_disable_function_references),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_disable_gc),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_disable_exceptions),
 #if defined(UWVM_SUPPORT_WEAK_SYMBOL)
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_list_weak_symbol_module),
 #endif
@@ -112,12 +142,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
 # endif
             ::std::addressof(::uwvm2::uwvm::cmdline::params::runtime_compiler_log),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::runtime_compile_threads),
+# if defined(UWVM2_HAS_THREADED_PROFILE_HOST_API) && UWVM2_HAS_THREADED_PROFILE_HOST_API
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasi_threads),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasi_thread_signals),
+# endif
             ::std::addressof(::uwvm2::uwvm::cmdline::params::runtime_scheduling_policy),
 # if defined(UWVM_RUNTIME_LLVM_JIT)
             ::std::addressof(::uwvm2::uwvm::cmdline::params::runtime_llvm_jit_policy),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::runtime_llvm_jit_full_policy),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::runtime_llvm_jit_exception_dispatch),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::runtime_llvm_jit_call_stack),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::runtime_llvm_jit_cache_path),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::runtime_llvm_jit_cache_seal_process),
 # endif
 #endif
 
@@ -138,6 +174,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_global_set_argv0),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_global_force_args),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_global_noinherit_system_environment),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_global_inherit_system_environment),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_global_grant),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_global_deny),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_single_grant),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_single_deny),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_group_grant),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_group_deny),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_global_delete_system_environment),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_global_add_or_replace_environment),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_single_create),

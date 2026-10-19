@@ -1,0 +1,55 @@
+{
+  "format": "assemblyscript-owned-rmw-service-source-recipe-v1",
+  "status": "SOURCE_ONLY_ALL_COMMANDS_UNEXECUTED",
+  "implicit_authority": [],
+  "roles": [
+    "SOURCE: exact coherent private staged SDK including this new-only source",
+    "ASC: actual admitted AssemblyScript executable and complete compiler/runtime closure",
+    "PYTHON: actual admitted native interpreter, not a Guest language substitute",
+    "WASM_TOOLS: actual admitted full validator",
+    "OUT: fresh owned output directory, no public/source overwrite",
+    "One actual external finite process/heap/cgroup owner per serial stage"
+  ],
+  "substitution": "Each ${ROLE} is one actual argv element; no eval shell text or tool version guess.",
+  "working_directory": "${SOURCE}",
+  "compile_raw_inventory": [
+    "${ASC}", "${SOURCE}/sdk/assemblyscript/ros2/rmw_service/contracts/raw_inventory.ts",
+    "--outFile", "${OUT}/raw12.wasm", "--runtime", "incremental",
+    "--use", "abort=sdk/assemblyscript/api/abortGuest"
+  ],
+  "validate_raw_inventory": ["${WASM_TOOLS}", "validate", "${OUT}/raw12.wasm"],
+  "inspect_raw_inventory": [
+    "${PYTHON}", "-B", "${SOURCE}/sdk/tools/check_rmw_service_imports.py",
+    "${OUT}/raw12.wasm", "--require-all", "--report", "${OUT}/raw12-imports.json"
+  ],
+  "compile_empty_client": [
+    "${ASC}", "${SOURCE}/sdk/assemblyscript/ros2/rmw_service/examples/empty_client.ts",
+    "--outFile", "${OUT}/empty-client.wasm", "--runtime", "incremental",
+    "--use", "abort=sdk/assemblyscript/api/abortGuest"
+  ],
+  "compile_add_server": [
+    "${ASC}", "${SOURCE}/sdk/assemblyscript/ros2/rmw_service/examples/add_two_ints_server.ts",
+    "--outFile", "${OUT}/add-server.wasm", "--runtime", "incremental",
+    "--use", "abort=sdk/assemblyscript/api/abortGuest"
+  ],
+  "inspect_each_real_application": [
+    "${PYTHON}", "-B", "${SOURCE}/sdk/tools/check_rmw_service_imports.py",
+    "${ACTUAL_APPLICATION_WASM}", "--report", "${ACTUAL_FRESH_REPORT}"
+  ],
+  "local_contract_entries": [
+    "sdk/assemblyscript/ros2/rmw_service/contracts/wire_contract.ts",
+    "sdk/assemblyscript/ros2/rmw_service/contracts/lifecycle_contract.ts"
+  ],
+  "local_contract_gate": "Compile each actual source, validate, inventory all actual imports, then separately invoke its actual _start in an explicitly admitted finite local harness. No native import or authorization/Native proof may be inferred from the synthetic local adapters. No execution occurred here.",
+  "full_control_precondition": {
+    "actual_operator": "sdk/rmw_wasm/default_control/managed/generate_managed.py --records-only",
+    "required_arguments": ["--source-root", "--catalog", "--canonical", "--out", "--parent-sha256", "--bounded-sha256", "--records-only"],
+    "actual_fresh_output": "${SOURCE}/sdk/custom-types/generated-control-managed/bounded_records.ts",
+    "required_proof": "generation.control-managed.json from the actual complete records-only operator; actual catalog/canonical/parent/bounded capture associations. Never substitute handwritten generated types.",
+    "consumer": "examples/control_client.ts imported by a real application main with explicit actual aliases and requested type/hash DATA",
+    "native_profile": "Independent actual full Native control graph/identities/source/default/QoS and explicit Host/Gateway grants remain mandatory. Preparation source facts cannot create a Native profile."
+  },
+  "execution_contract": "Actual externally bounded driver invokes begin/step/finish with independently provisioned aliases; only actual same-record committed values establish delivery. Idle11 is not completion. No polling iteration is time, no implicit Clock/wait or detached worker.",
+  "source_qualification": "Original81, old six outputs and all existing SDK files unchanged; this new optional source requires independent full peer and real producer/MD/import/Runtime/Native qualification before any compatibility claim.",
+  "candidate_invocations": 0
+}

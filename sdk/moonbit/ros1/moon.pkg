@@ -1,0 +1,4 @@
+import { "uwvm/ros/linear", "uwvm/ros/wire", "moonbitlang/core/encoding/utf8" }
+
+// Test-producer-only reservation; SDK implementation/test bodies remain exact.
+options(link: { "wasm": { "export-memory-name": "memory", "heap-start-address": 8519680, "memory-limits": { "min": 256, "max": 1024 } }, "wasm-gc": { "export-memory-name": "memory", "use-js-builtin-string": false, "memory-limits": { "min": 256, "max": 1024 } }, },)

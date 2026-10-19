@@ -221,15 +221,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         ::uwvm2::imported::wasi::wasip1::abi::wasi_size_t nsubscriptions,
         ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_t nevents) noexcept
     {
-# if (defined(_DEBUG) || defined(DEBUG)) && defined(UWVM_ENABLE_DETAILED_DEBUG_CHECK)
-        if(env.wasip1_memory == nullptr) [[unlikely]]
-        {
-            // Security issues inherent to virtual machines
-            ::uwvm2::utils::debug::trap_and_inform_bug_pos();
-        }
-# endif
 
-        auto& memory{*env.wasip1_memory};
+        auto const memory_pointer{env.get_memory()};
+        if(memory_pointer == nullptr) [[unlikely]] { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
+        auto& memory{*memory_pointer};
 
         check_wasip1_guest_pointer_alignment<8uz>(in, u8"poll_oneoff.in (subscription)");
         check_wasip1_guest_pointer_alignment<8uz>(out, u8"poll_oneoff.out (event)");
@@ -391,6 +386,24 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         }
 
         // subscriptions.size() == nsubscriptions
+
+        // Preflight the entire decoded array before any timer creation, native clock
+        // query, sleep, FD registration, or output write. An authorized first entry
+        // must never let a later denied clock cause partial effects. Relative timers
+        // require their clock's authority too, even when no clock query is needed.
+        for(auto const& sub : subscriptions)
+        {
+            if(sub.u.tag != ::uwvm2::imported::wasi::wasip1::abi::eventtype_t::eventtype_clock) { continue; }
+            auto const requested{::uwvm2::imported::wasi::wasip1::environment::clock_permission(sub.u.u.clock.id)};
+            if(requested == ::uwvm2::imported::wasi::wasip1::environment::permission_t{}) [[unlikely]]
+            {
+                return ::uwvm2::imported::wasi::wasip1::abi::errno_t::einval;
+            }
+            if(!env.permits(requested)) [[unlikely]]
+            {
+                return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable;
+            }
+        }
 
         if(nsubscriptions == 1u && subscriptions.front_unchecked().u.tag == ::uwvm2::imported::wasi::wasip1::abi::eventtype_t::eventtype_clock)
         {
@@ -748,8 +761,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             // linux
 
 #  if (defined(__NR_epoll_create1) || defined(__NR_epoll_create)) && defined(__NR_epoll_ctl) && defined(__NR_timerfd_create) &&                                \
-      defined(__NR_timerfd_settime) && defined(__NR_epoll_wait)
-            // syscall __NR_epoll_create1 or __NR_epoll_create, __NR_epoll_ctl, __NR_timerfd_create, __NR_timerfd_settime, __NR_epoll_wait
+      defined(__NR_timerfd_settime) && (defined(__NR_epoll_wait) || defined(__NR_epoll_pwait))
+            // syscall __NR_epoll_create1 or __NR_epoll_create, __NR_epoll_ctl, __NR_timerfd_create, __NR_timerfd_settime, epoll wait
 
             ::uwvm2::utils::container::vector<::fast_io::posix_file> fds{};  // RAII Close
             bool has_epoll_interest{};
@@ -801,9 +814,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                             continue;
                         }
 
-                        // Rights check: poll need right_poll_fd_readwrite
-                        if((curr_fd.rights_base & ::uwvm2::imported::wasi::wasip1::abi::rights_t::right_poll_fd_readwrite) !=
-                           ::uwvm2::imported::wasi::wasip1::abi::rights_t::right_poll_fd_readwrite) [[unlikely]]
+                        // Rights check: require polling and the subscribed read/write direction.
+                        // Readiness exposes read/write information and therefore requires both
+                        // polling authority and the corresponding direction's authority.
+                        auto const required_rights{::uwvm2::imported::wasi::wasip1::abi::rights_t::right_poll_fd_readwrite |
+                                                   (sub.u.tag == ::uwvm2::imported::wasi::wasip1::abi::eventtype_t::eventtype_fd_read
+                                                        ? ::uwvm2::imported::wasi::wasip1::abi::rights_t::right_fd_read
+                                                        : ::uwvm2::imported::wasi::wasip1::abi::rights_t::right_fd_write)};
+                        if((curr_fd.rights_base & required_rights) != required_rights) [[unlikely]]
                         {
                             push_immediate_event(sub, ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable);
                             continue;
@@ -1097,7 +1115,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 
             for(;;)
             {
+#   if defined(__NR_epoll_wait)
                 ready = ::fast_io::system_call<__NR_epoll_wait, int>(epfd, ep_events.data(), static_cast<int>(ep_events.size()), -1);
+#   else
+                // AArch64 exposes epoll_pwait instead of epoll_wait. A null
+                // signal mask preserves the current mask; Linux ignores its
+                // size when the mask is null. Keep the existing infinite wait.
+                ready = ::fast_io::system_call<__NR_epoll_pwait, int>(
+                    epfd, ep_events.data(), static_cast<int>(ep_events.size()), -1, static_cast<void const*>(nullptr), ::std::size_t{});
+#   endif
                 if(!::uwvm2::imported::wasi::wasip1::func::posix::linux_raw_system_call_failed(ready)) { break; }
 
                 auto err{-ready};
@@ -1262,8 +1288,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                             continue;
                         }
 
-                        if((curr_fd.rights_base & ::uwvm2::imported::wasi::wasip1::abi::rights_t::right_poll_fd_readwrite) !=
-                           ::uwvm2::imported::wasi::wasip1::abi::rights_t::right_poll_fd_readwrite) [[unlikely]]
+                        // Readiness exposes read/write information and therefore requires both
+                        // polling authority and the corresponding direction's authority.
+                        auto const required_rights{::uwvm2::imported::wasi::wasip1::abi::rights_t::right_poll_fd_readwrite |
+                                                   (sub.u.tag == ::uwvm2::imported::wasi::wasip1::abi::eventtype_t::eventtype_fd_read
+                                                        ? ::uwvm2::imported::wasi::wasip1::abi::rights_t::right_fd_read
+                                                        : ::uwvm2::imported::wasi::wasip1::abi::rights_t::right_fd_write)};
+                        if((curr_fd.rights_base & required_rights) != required_rights) [[unlikely]]
                         {
                             push_immediate_event(sub, ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable);
                             continue;
@@ -2010,8 +2041,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                             continue;
                         }
 
-                        if((curr_fd.rights_base & ::uwvm2::imported::wasi::wasip1::abi::rights_t::right_poll_fd_readwrite) !=
-                           ::uwvm2::imported::wasi::wasip1::abi::rights_t::right_poll_fd_readwrite) [[unlikely]]
+                        // Readiness exposes read/write information and therefore requires both
+                        // polling authority and the corresponding direction's authority.
+                        auto const required_rights{::uwvm2::imported::wasi::wasip1::abi::rights_t::right_poll_fd_readwrite |
+                                                   (sub.u.tag == ::uwvm2::imported::wasi::wasip1::abi::eventtype_t::eventtype_fd_read
+                                                        ? ::uwvm2::imported::wasi::wasip1::abi::rights_t::right_fd_read
+                                                        : ::uwvm2::imported::wasi::wasip1::abi::rights_t::right_fd_write)};
+                        if((curr_fd.rights_base & required_rights) != required_rights) [[unlikely]]
                         {
                             push_immediate_event(sub, ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable);
                             continue;
@@ -2561,8 +2597,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                             continue;
                         }
 
-                        if((curr_fd.rights_base & ::uwvm2::imported::wasi::wasip1::abi::rights_t::right_poll_fd_readwrite) !=
-                           ::uwvm2::imported::wasi::wasip1::abi::rights_t::right_poll_fd_readwrite) [[unlikely]]
+                        // Readiness exposes read/write information and therefore requires both
+                        // polling authority and the corresponding direction's authority.
+                        auto const required_rights{::uwvm2::imported::wasi::wasip1::abi::rights_t::right_poll_fd_readwrite |
+                                                   (sub.u.tag == ::uwvm2::imported::wasi::wasip1::abi::eventtype_t::eventtype_fd_read
+                                                        ? ::uwvm2::imported::wasi::wasip1::abi::rights_t::right_fd_read
+                                                        : ::uwvm2::imported::wasi::wasip1::abi::rights_t::right_fd_write)};
+                        if((curr_fd.rights_base & required_rights) != required_rights) [[unlikely]]
                         {
                             push_immediate_event(sub, ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable);
                             continue;
@@ -3153,8 +3194,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                             continue;
                         }
 
-                        if((curr_fd.rights_base & ::uwvm2::imported::wasi::wasip1::abi::rights_t::right_poll_fd_readwrite) !=
-                           ::uwvm2::imported::wasi::wasip1::abi::rights_t::right_poll_fd_readwrite) [[unlikely]]
+                        // Readiness exposes read/write information and therefore requires both
+                        // polling authority and the corresponding direction's authority.
+                        auto const required_rights{::uwvm2::imported::wasi::wasip1::abi::rights_t::right_poll_fd_readwrite |
+                                                   (sub.u.tag == ::uwvm2::imported::wasi::wasip1::abi::eventtype_t::eventtype_fd_read
+                                                        ? ::uwvm2::imported::wasi::wasip1::abi::rights_t::right_fd_read
+                                                        : ::uwvm2::imported::wasi::wasip1::abi::rights_t::right_fd_write)};
+                        if((curr_fd.rights_base & required_rights) != required_rights) [[unlikely]]
                         {
                             push_immediate_event(sub, ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable);
                             continue;
@@ -3668,8 +3714,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                             continue;
                         }
 
-                        if((curr_fd.rights_base & ::uwvm2::imported::wasi::wasip1::abi::rights_t::right_poll_fd_readwrite) !=
-                           ::uwvm2::imported::wasi::wasip1::abi::rights_t::right_poll_fd_readwrite) [[unlikely]]
+                        // Readiness exposes read/write information and therefore requires both
+                        // polling authority and the corresponding direction's authority.
+                        auto const required_rights{::uwvm2::imported::wasi::wasip1::abi::rights_t::right_poll_fd_readwrite |
+                                                   (sub.u.tag == ::uwvm2::imported::wasi::wasip1::abi::eventtype_t::eventtype_fd_read
+                                                        ? ::uwvm2::imported::wasi::wasip1::abi::rights_t::right_fd_read
+                                                        : ::uwvm2::imported::wasi::wasip1::abi::rights_t::right_fd_write)};
+                        if((curr_fd.rights_base & required_rights) != required_rights) [[unlikely]]
                         {
                             push_immediate_event(sub, ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable);
                             continue;

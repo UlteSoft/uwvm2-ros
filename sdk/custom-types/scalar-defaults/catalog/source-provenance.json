@@ -1,0 +1,175 @@
+{
+  "format_version": 1,
+  "source_only": true,
+  "original_definition": {
+    "repository": "xArm-Developer/xarm_ros2",
+    "commit": "3dc2b5e8294758d96b54b15fa5920d581b7cbb3d",
+    "relative": "xarm_msgs/srv/GetSetModbusData.srv",
+    "immutable_url": "https://raw.githubusercontent.com/xArm-Developer/xarm_ros2/3dc2b5e8294758d96b54b15fa5920d581b7cbb3d/xarm_msgs/srv/GetSetModbusData.srv",
+    "git_blob_sha1": "99fa5f2be5947eaf96c868e9acf03933c014c224",
+    "bytes": 774,
+    "sha256": "8c7acf64e39b19296f9697875eefe6960065b5068f94469b4d339211d065ab2b",
+    "ros_version": 2,
+    "source_copy": "sdk/robots/xarm/source-definitions/ros2/xarm_msgs/srv/GetSetModbusData.srv",
+    "fields": [
+      {
+        "section": 0,
+        "line": 5,
+        "raw": "uint8[] modbus_data",
+        "tokens": [
+          "uint8[]",
+          "modbus_data"
+        ]
+      },
+      {
+        "section": 0,
+        "line": 8,
+        "raw": "int16 modbus_length 0",
+        "tokens": [
+          "int16",
+          "modbus_length",
+          "0"
+        ]
+      },
+      {
+        "section": 0,
+        "line": 11,
+        "raw": "int16 ret_length",
+        "tokens": [
+          "int16",
+          "ret_length"
+        ]
+      },
+      {
+        "section": 0,
+        "line": 14,
+        "raw": "uint8 host_id 9",
+        "tokens": [
+          "uint8",
+          "host_id",
+          "9"
+        ]
+      },
+      {
+        "section": 0,
+        "line": 17,
+        "raw": "bool is_transparent_transmission false",
+        "tokens": [
+          "bool",
+          "is_transparent_transmission",
+          "false"
+        ]
+      },
+      {
+        "section": 0,
+        "line": 21,
+        "raw": "bool use_503_port false",
+        "tokens": [
+          "bool",
+          "use_503_port",
+          "false"
+        ]
+      },
+      {
+        "section": 1,
+        "line": 25,
+        "raw": "int16 ret",
+        "tokens": [
+          "int16",
+          "ret"
+        ]
+      },
+      {
+        "section": 1,
+        "line": 26,
+        "raw": "string message",
+        "tokens": [
+          "string",
+          "message"
+        ]
+      },
+      {
+        "section": 1,
+        "line": 28,
+        "raw": "uint8[] ret_data",
+        "tokens": [
+          "uint8[]",
+          "ret_data"
+        ]
+      }
+    ],
+    "section_count": 2,
+    "explicit_defaults": [
+      {
+        "line": 8,
+        "raw": "int16 modbus_length 0"
+      },
+      {
+        "line": 14,
+        "raw": "uint8 host_id 9"
+      },
+      {
+        "line": 17,
+        "raw": "bool is_transparent_transmission false"
+      },
+      {
+        "line": 21,
+        "raw": "bool use_503_port false"
+      }
+    ],
+    "constants": [],
+    "noncanonical_separators": [],
+    "dynamic_fields": [
+      {
+        "section": 0,
+        "field": "modbus_data",
+        "declared_type": "uint8[]",
+        "bound": "REQUIRES_EXPLICIT_PER_FIELD_CANONICAL_BOUND_NOT_ASSUMED"
+      },
+      {
+        "section": 1,
+        "field": "message",
+        "declared_type": "string",
+        "bound": "REQUIRES_EXPLICIT_PER_FIELD_CANONICAL_BOUND_NOT_ASSUMED"
+      },
+      {
+        "section": 1,
+        "field": "ret_data",
+        "declared_type": "uint8[]",
+        "bound": "REQUIRES_EXPLICIT_PER_FIELD_CANONICAL_BOUND_NOT_ASSUMED"
+      }
+    ],
+    "external_type_spellings": [],
+    "gaps": [
+      "DECLARED_DEFAULT_SYNTAX_REFUSED_BY_CURRENT_GENERATOR_REQUIRES_SEPARATE_EXPLICIT_SOURCE_MODE_NOT_STRIPPING",
+      "EXPLICIT_FIELD_BOUNDS_AND_ACTUAL_NATIVE_CAPACITY_ASSOCIATION_REQUIRED",
+      "FULL_NATIVE_ROOT_AND_BOTH_REQUEST_RESPONSE_COMPONENT_IDENTITIES_REQUIRED",
+      "ACTUAL_OPERATION_ROUTE_ACTIVATION_CONTROLLER_SEMANTICS_AND_EXPLICIT_SERVICE_AUTHORITY_REQUIRED_NO_SAFETY_FROM_NAME"
+    ],
+    "source_implementation": "NO_ADAPTER_OR_LESSON_IMPLEMENTED",
+    "default_authority": [],
+    "actual_native_delivery_cases": 0
+  },
+  "copy": "xarm_msgs/srv/GetSetModbusData.srv",
+  "copy_policy": "Complete original bytes, comments, all fields/defaults unchanged. Canonical capacities live only in the separate unbound catalog.",
+  "license": "LICENSE.xarm",
+  "native_identity": "UNBOUND_REQUIRES_INDEPENDENT_ACTUAL_SDK_EXPORT",
+  "source_or_native_execution": 0,
+  "historical_acquisition_record": {
+    "field": "original_definition",
+    "policy": "The complete original fixed-commit acquisition ledger row is preserved verbatim as DATA. Its gaps and NO_ADAPTER_OR_LESSON_IMPLEMENTED describe that historical acquisition, not current source implementation or native acceptance."
+  },
+  "current_source_cohort": {
+    "contract": "../README.md",
+    "implemented_source": [
+      "Complete unchanged original declaration, comments and all four scalar defaults",
+      "Explicit canonical-only capacities, full nine-language record initialization and complete modern native root/component/default proof requirements",
+      "Authored original-generated Native default/value/strict-wire contract; no synthetic native metadata or identity"
+    ],
+    "native_identity": "UNBOUND_REQUIRES_INDEPENDENT_ACTUAL_SDK_EXPORT",
+    "owned_service_factory_default_admission": "SEPARATE_IMPLEMENTATION_AND_REVIEW_REQUIRED",
+    "actual_generations": 0,
+    "actual_tests": 0,
+    "default_authority": []
+  }
+}

@@ -1,0 +1,446 @@
+{
+  "AST_scope": [
+    {
+      "added": [],
+      "changed": [
+        "main"
+      ],
+      "relative": "sdk/javascript/guest/prepare.py",
+      "removed": []
+    },
+    {
+      "added": [],
+      "changed": [
+        "main"
+      ],
+      "relative": "tests/ros_unitree/acceptance/cp310_physics_current/owner.py",
+      "removed": []
+    },
+    {
+      "added": [],
+      "changed": [
+        "main"
+      ],
+      "relative": "tests/ros_unitree/acceptance/cp310_physics_current/stage.py",
+      "removed": []
+    },
+    {
+      "added": [],
+      "changed": [
+        "main"
+      ],
+      "relative": "tests/ros_unitree/acceptance/make_direct_build_configuration.py",
+      "removed": []
+    },
+    {
+      "added": [],
+      "changed": [
+        "select_case"
+      ],
+      "relative": "tests/ros_unitree/direct3_profile.py",
+      "removed": []
+    },
+    {
+      "added": [
+        "current_family"
+      ],
+      "changed": [
+        "guest",
+        "receipt"
+      ],
+      "relative": "tests/ros_unitree/direct_guest_receipts.py",
+      "removed": []
+    },
+    {
+      "added": [
+        "protocol_boundary",
+        "provider_boundary"
+      ],
+      "changed": [
+        "boundary",
+        "build",
+        "main",
+        "prerequisite"
+      ],
+      "relative": "tests/ros_unitree/prepare_direct_guests.py",
+      "removed": []
+    },
+    {
+      "added": [],
+      "changed": [
+        "direct3_collect"
+      ],
+      "relative": "tests/ros_unitree/profile_vtune.py",
+      "removed": []
+    },
+    {
+      "added": [
+        "runtime_argv"
+      ],
+      "changed": [
+        "Hooks",
+        "main",
+        "prepare"
+      ],
+      "relative": "tests/ros_unitree/run_direct_physics.py",
+      "removed": []
+    },
+    {
+      "added": [],
+      "changed": [
+        "bind_modular_libraries",
+        "direct_contract",
+        "direct_runtime"
+      ],
+      "relative": "tests/ros_unitree/run_simulation.py",
+      "removed": []
+    },
+    {
+      "added": [],
+      "changed": [
+        "runtime_argv"
+      ],
+      "relative": "tests/ros_unitree/typed_transport_session.py",
+      "removed": []
+    }
+  ],
+  "actual_compilation_or_Runtime_or_DDS_or_physics_or_performance_qualification": false,
+  "authored_policy_tests": [
+    "test_exact_ordered_graph",
+    "test_missing_provider",
+    "test_reordered_dependency",
+    "test_unlisted_provider",
+    "test_duplicate_artifact_receipt_label",
+    "test_unknown_graph_field",
+    "test_all_three_real_boundary_shapes",
+    "test_provider_wasi_import",
+    "test_provider_ros_import",
+    "test_provider_imported_memory",
+    "test_provider_memory_growth",
+    "test_provider_implicit_start",
+    "test_provider_extra_export",
+    "test_motion_callback_signature",
+    "test_motion_cannot_import_main",
+    "test_nonfunction_provider_import",
+    "test_positive_main_exact_scalar_imports",
+    "test_denied_main_has_no_preload_imports",
+    "test_positive_main_missing_perception",
+    "test_positive_main_duplicate_import",
+    "test_current_emitter_change_needs_actual_same_output_contract",
+    "test_changed_generated_provider_body_refused",
+    "test_changed_native_identity_refused",
+    "test_changed_canonical_codec_refused",
+    "test_changed_official_definition_inputs_refused",
+    "test_generation_missing_complete_output_refused"
+  ],
+  "candidate_imports_or_generation_or_tests_or_SSH": false,
+  "cross_module_guard_modified": false,
+  "default_standalone_policy_preserved": true,
+  "files": [
+    {
+      "baseline": null,
+      "candidate": {
+        "bytes": 2545,
+        "path": "/tmp/uwvm-direct3-modular-source-only-20261017-r1/sdk/examples/robotics_modular/unitree_composition_protocol.c",
+        "sha256": "4d5bab3bf63bd2cb4dbfad805d2a89c4f7e7b1ebea00e4c4d5b0f8c4ea68e92f"
+      },
+      "relative": "sdk/examples/robotics_modular/unitree_composition_protocol.c"
+    },
+    {
+      "baseline": null,
+      "candidate": {
+        "bytes": 2751,
+        "path": "/tmp/uwvm-direct3-modular-source-only-20261017-r1/sdk/examples/robotics_modular/unitree_modular_control.h",
+        "sha256": "2d351c60ecf3a7c45c1fc5908ceca4e84104c8a6debae7d277866d5e4c747b77"
+      },
+      "relative": "sdk/examples/robotics_modular/unitree_modular_control.h"
+    },
+    {
+      "baseline": null,
+      "candidate": {
+        "bytes": 1743,
+        "path": "/tmp/uwvm-direct3-modular-source-only-20261017-r1/sdk/examples/robotics_modular/unitree_perception.c",
+        "sha256": "9aecb5c950c2d0b96aa4e09f30076d0939029f5c5a881fb43d7ef6d7759d7fc8"
+      },
+      "relative": "sdk/examples/robotics_modular/unitree_perception.c"
+    },
+    {
+      "baseline": null,
+      "candidate": {
+        "bytes": 1713,
+        "path": "/tmp/uwvm-direct3-modular-source-only-20261017-r1/sdk/examples/robotics_modular/unitree_perception_abi.h",
+        "sha256": "3df7ef3c541c6bcc2fa5819bc1592d37b66024109866e0e9e9d06951175955a3"
+      },
+      "relative": "sdk/examples/robotics_modular/unitree_perception_abi.h"
+    },
+    {
+      "baseline": {
+        "bytes": 5103,
+        "relative": "sdk/javascript/guest/engine.h",
+        "sha256": "0699eb7f139f864f6fdc4ad7078623fa04c0c34d7972efe2115a43f7e53e0efb"
+      },
+      "candidate": {
+        "bytes": 5165,
+        "path": "/tmp/uwvm-direct3-modular-source-only-20261017-r1/sdk/javascript/guest/engine.h",
+        "sha256": "cfaaf5e4c7246ecf299eea481209d75161644869cc8f48f47350cf4df823f879"
+      },
+      "relative": "sdk/javascript/guest/engine.h"
+    },
+    {
+      "baseline": {
+        "bytes": 28460,
+        "relative": "sdk/javascript/guest/prepare.py",
+        "sha256": "d70e5cbab001486d5d5bebad3b3504de42f60822096706b47a317b3caf95361d"
+      },
+      "candidate": {
+        "bytes": 29595,
+        "path": "/tmp/uwvm-direct3-modular-source-only-20261017-r1/sdk/javascript/guest/prepare.py",
+        "sha256": "33de267f4226e91f71e0b6b1ca526dfe5f2fd9989bb71dda1151275919ff4564"
+      },
+      "relative": "sdk/javascript/guest/prepare.py"
+    },
+    {
+      "baseline": {
+        "bytes": 7336,
+        "relative": "sdk/robots/unitree/examples/direct_go2.c",
+        "sha256": "7fb67e3c7a75e3212cd767e2acd0ff95427e61a657e357050613435ba96f4087"
+      },
+      "candidate": {
+        "bytes": 7671,
+        "path": "/tmp/uwvm-direct3-modular-source-only-20261017-r1/sdk/robots/unitree/examples/direct_go2.c",
+        "sha256": "726c4f748f2d1cc4daa49805047b9cf9fb6d31f45ad19a83b76d0fb4c98e12ce"
+      },
+      "relative": "sdk/robots/unitree/examples/direct_go2.c"
+    },
+    {
+      "baseline": {
+        "bytes": 7251,
+        "relative": "sdk/robots/unitree/examples/direct_go2.cpp",
+        "sha256": "c52fedb5e771c7e159110b953431ac7a7127c8c149389d2fa51bc4b0c51485a2"
+      },
+      "candidate": {
+        "bytes": 6614,
+        "path": "/tmp/uwvm-direct3-modular-source-only-20261017-r1/sdk/robots/unitree/examples/direct_go2.cpp",
+        "sha256": "65638273060c60a7836b3bdf5f8149220f6be877564ba2fc767e57a97db30f47"
+      },
+      "relative": "sdk/robots/unitree/examples/direct_go2.cpp"
+    },
+    {
+      "baseline": {
+        "bytes": 3822,
+        "relative": "sdk/robots/unitree/examples/javascript/control_kernel.c",
+        "sha256": "d812f8d0492a902f8e50fe876774fb87cd3bb9201d6cfe557e3e4687169c9ffd"
+      },
+      "candidate": {
+        "bytes": 5043,
+        "path": "/tmp/uwvm-direct3-modular-source-only-20261017-r1/sdk/robots/unitree/examples/javascript/control_kernel.c",
+        "sha256": "39c90e4372a85f7cb2f808c51910900ff1eaacf34ef4327900913a8f0880fe52"
+      },
+      "relative": "sdk/robots/unitree/examples/javascript/control_kernel.c"
+    },
+    {
+      "baseline": {
+        "bytes": 5406,
+        "relative": "sdk/robots/unitree/examples/javascript/direct_go2.mjs",
+        "sha256": "d90650b795e3c240fd36a9235ff3a3b4587fee4308dc5472b7aa53328a9dd624"
+      },
+      "candidate": {
+        "bytes": 5893,
+        "path": "/tmp/uwvm-direct3-modular-source-only-20261017-r1/sdk/robots/unitree/examples/javascript/direct_go2.mjs",
+        "sha256": "7ce76481568886abfa3b9bd684dc3c6141bcef2c3d203044f698547d82ee71f7"
+      },
+      "relative": "sdk/robots/unitree/examples/javascript/direct_go2.mjs"
+    },
+    {
+      "baseline": null,
+      "candidate": {
+        "bytes": 10745,
+        "path": "/tmp/uwvm-direct3-modular-source-only-20261017-r1/tests/ros_unitree/DIRECT3_MODULAR.md",
+        "sha256": "fd9590f6dfdaa448d7bc24449b428132eaad7c8326e302ff56770b92e2258267"
+      },
+      "relative": "tests/ros_unitree/DIRECT3_MODULAR.md"
+    },
+    {
+      "baseline": {
+        "bytes": 48354,
+        "relative": "tests/ros_unitree/acceptance/cp310_physics_current/owner.py",
+        "sha256": "3ddbe99e950bd5ea5344702d0bc8675238d167c9fde3fc97e13bf67c521b6f1d"
+      },
+      "candidate": {
+        "bytes": 48849,
+        "path": "/tmp/uwvm-direct3-modular-source-only-20261017-r1/tests/ros_unitree/acceptance/cp310_physics_current/owner.py",
+        "sha256": "f1209d206ca1dc9db8d43a0a0f51733ec990d1e047f2cf6d2b3824823ab48892"
+      },
+      "relative": "tests/ros_unitree/acceptance/cp310_physics_current/owner.py"
+    },
+    {
+      "baseline": {
+        "bytes": 27614,
+        "relative": "tests/ros_unitree/acceptance/cp310_physics_current/stage.py",
+        "sha256": "5d553da0efbeb90cab9ae4617e30cfae3e7af9d24557170029e01b3f01042cff"
+      },
+      "candidate": {
+        "bytes": 27662,
+        "path": "/tmp/uwvm-direct3-modular-source-only-20261017-r1/tests/ros_unitree/acceptance/cp310_physics_current/stage.py",
+        "sha256": "6914afc686c4b61579cf0df260f69b24ca9aa2145454578ac966ccba060a5cd9"
+      },
+      "relative": "tests/ros_unitree/acceptance/cp310_physics_current/stage.py"
+    },
+    {
+      "baseline": {
+        "bytes": 19529,
+        "relative": "tests/ros_unitree/acceptance/make_direct_build_configuration.py",
+        "sha256": "46b00baf346291599c79e8d19e69d2539c465ace6714f04c38367f42ea60e030"
+      },
+      "candidate": {
+        "bytes": 20071,
+        "path": "/tmp/uwvm-direct3-modular-source-only-20261017-r1/tests/ros_unitree/acceptance/make_direct_build_configuration.py",
+        "sha256": "9f02a59f487e602f359f7e04323639f829a08ed17ded46721483ac851dcbd3bd"
+      },
+      "relative": "tests/ros_unitree/acceptance/make_direct_build_configuration.py"
+    },
+    {
+      "baseline": {
+        "bytes": 13504,
+        "relative": "tests/ros_unitree/config.schema.json",
+        "sha256": "2a2a07b93d459e189c9f3be24c19ce7332d2e11714f0c2759ad5cdd2bcb30269"
+      },
+      "candidate": {
+        "bytes": 13661,
+        "path": "/tmp/uwvm-direct3-modular-source-only-20261017-r1/tests/ros_unitree/config.schema.json",
+        "sha256": "04a1a69cf1a8ff14ae293a80dde52d2d30d067ea86322369a74304e824c10d84"
+      },
+      "relative": "tests/ros_unitree/config.schema.json"
+    },
+    {
+      "baseline": {
+        "bytes": 10678,
+        "relative": "tests/ros_unitree/direct3_profile.py",
+        "sha256": "20c652fe12255bf571d8222e68594443f866faa01fe48ff4b226779dd76a327b"
+      },
+      "candidate": {
+        "bytes": 11501,
+        "path": "/tmp/uwvm-direct3-modular-source-only-20261017-r1/tests/ros_unitree/direct3_profile.py",
+        "sha256": "4f1ce8994891bad34fac5555118d20b7d18bf671a81e837657fbeaaf504c2f63"
+      },
+      "relative": "tests/ros_unitree/direct3_profile.py"
+    },
+    {
+      "baseline": {
+        "bytes": 14987,
+        "relative": "tests/ros_unitree/direct_guest_receipts.py",
+        "sha256": "f521b56e850ad0217601d6fcdd8a17fb8b9309c3ab09a27c3427f1d28a8e4cf2"
+      },
+      "candidate": {
+        "bytes": 22278,
+        "path": "/tmp/uwvm-direct3-modular-source-only-20261017-r1/tests/ros_unitree/direct_guest_receipts.py",
+        "sha256": "a589c4ee73edccae1eb047549db79e33cd5752678695b978a769d460b64422b3"
+      },
+      "relative": "tests/ros_unitree/direct_guest_receipts.py"
+    },
+    {
+      "baseline": null,
+      "candidate": {
+        "bytes": 15560,
+        "path": "/tmp/uwvm-direct3-modular-source-only-20261017-r1/tests/ros_unitree/direct_modular.py",
+        "sha256": "9f3cf573e4a2f5304125b5985829186d619877f615bd35fc861e68c209379b12"
+      },
+      "relative": "tests/ros_unitree/direct_modular.py"
+    },
+    {
+      "baseline": {
+        "bytes": 31507,
+        "relative": "tests/ros_unitree/prepare_direct_guests.py",
+        "sha256": "39426b0d7d953d2d637d5818ef5a89ba9d57d1c7e0091f36afdb6456cbd35845"
+      },
+      "candidate": {
+        "bytes": 44558,
+        "path": "/tmp/uwvm-direct3-modular-source-only-20261017-r1/tests/ros_unitree/prepare_direct_guests.py",
+        "sha256": "ca151c45c3324c373a447e0e78c3a4725db53d423fa4c4e2ee3c5722d9cfdeae"
+      },
+      "relative": "tests/ros_unitree/prepare_direct_guests.py"
+    },
+    {
+      "baseline": {
+        "bytes": 34385,
+        "relative": "tests/ros_unitree/profile_vtune.py",
+        "sha256": "16b17cff9e256ff11f8d2600a2496bc51621703a6a589681c02b4a493fbcd244"
+      },
+      "candidate": {
+        "bytes": 34402,
+        "path": "/tmp/uwvm-direct3-modular-source-only-20261017-r1/tests/ros_unitree/profile_vtune.py",
+        "sha256": "370afb98548731b1f9355a86a2afb9defdc88cf6d7080d76c5507ca8cca48fe8"
+      },
+      "relative": "tests/ros_unitree/profile_vtune.py"
+    },
+    {
+      "baseline": {
+        "bytes": 29554,
+        "relative": "tests/ros_unitree/run_direct_physics.py",
+        "sha256": "c06634af4458afaf2044fa3e8552b9fa97109caf0f807d643bb9f7e020720886"
+      },
+      "candidate": {
+        "bytes": 33692,
+        "path": "/tmp/uwvm-direct3-modular-source-only-20261017-r1/tests/ros_unitree/run_direct_physics.py",
+        "sha256": "ffd09b6f77bce501df46a26ee647c27c29e6fc8ea872f9efc6131ae6b149dd55"
+      },
+      "relative": "tests/ros_unitree/run_direct_physics.py"
+    },
+    {
+      "baseline": {
+        "bytes": 45399,
+        "relative": "tests/ros_unitree/run_simulation.py",
+        "sha256": "797db2aa243af70aa300492d743a72e52ce0acf886630fa3439b45acb5e190c8"
+      },
+      "candidate": {
+        "bytes": 45550,
+        "path": "/tmp/uwvm-direct3-modular-source-only-20261017-r1/tests/ros_unitree/run_simulation.py",
+        "sha256": "1837462ca2f7017309ed60df65c784e7c84ad80c04806442cdfa87d03754f728"
+      },
+      "relative": "tests/ros_unitree/run_simulation.py"
+    },
+    {
+      "baseline": null,
+      "candidate": {
+        "bytes": 7663,
+        "path": "/tmp/uwvm-direct3-modular-source-only-20261017-r1/tests/ros_unitree/test_direct_modular_policy.py",
+        "sha256": "747225cc7f4b460820415baa155e5bb49860fefdc3d9891a1ccb2851ef95a199"
+      },
+      "relative": "tests/ros_unitree/test_direct_modular_policy.py"
+    },
+    {
+      "baseline": {
+        "bytes": 15945,
+        "relative": "tests/ros_unitree/typed_transport_session.py",
+        "sha256": "e88f174687cd6cfaf00289c01cccfabd78503bd356caa767aab08acd8759f469"
+      },
+      "candidate": {
+        "bytes": 16218,
+        "path": "/tmp/uwvm-direct3-modular-source-only-20261017-r1/tests/ros_unitree/typed_transport_session.py",
+        "sha256": "39f7ae290a895e78763e11a4349d666b3ca988022b3c3ea4297ae79cbfda0e79"
+      },
+      "relative": "tests/ros_unitree/typed_transport_session.py"
+    }
+  ],
+  "format_version": 1,
+  "image_vision_qualified": false,
+  "kind": "direct3-modular-source-only-candidate",
+  "patch": {
+    "bytes": 126085,
+    "path": "/tmp/uwvm-direct3-modular-source-only-20261017-r1/direct3-modular.patch",
+    "sha256": "23894d7523da27bc29e1982b9a4c23a288c93940b2b79ce3f8133fbf0633c240"
+  },
+  "pending": [
+    "Independent source peer",
+    "Root source freeze and actual current GO24 source regeneration",
+    "All real compiler/fullMD/link/validator/binary checks",
+    "26 DATA policies and actual no-host-import Wasm protocol fixture",
+    "Three positive/denied Guest/native DDS/MuJoCo comparisons",
+    "Matched unprofiled performance, then genuine hardware profiles if actually slow"
+  ],
+  "physical_robot_access": false,
+  "preloaded_application": false,
+  "real_Wasm_protocol_fixture": "sdk/examples/robotics_modular/unitree_composition_protocol.c",
+  "repository_modified": false,
+  "status": "HELD_FOR_INDEPENDENT_SOURCE_REVIEW_NOT_APPLIED_NOT_EXECUTED"
+}

@@ -1,0 +1,128 @@
+{
+  "format_version": 1,
+  "kind": "unitree-legacy-twelve-real-tcpros-source-package",
+  "status": "SOURCE_READY_INDEPENDENTLY_REVIEWED_NOT_EXECUTED",
+  "files": [
+    {
+      "role": "runner",
+      "path": "tests/ros_unitree/run_legacy_transport.py",
+      "bytes": 16329,
+      "sha256": "85c5949b920a412c2e252f27b81778aff121d2d8996b710bd59d281124eb1ced"
+    },
+    {
+      "role": "admission",
+      "path": "tests/ros_unitree/legacy_transport_inputs.py",
+      "bytes": 46404,
+      "sha256": "df136015852fba79c5ff4b38dee9a0466a631f08978adac77075f59ec85aaf8a"
+    },
+    {
+      "role": "sessions",
+      "path": "tests/ros_unitree/legacy_transport_session.py",
+      "bytes": 23655,
+      "sha256": "a8255fd4ac8732a052d3981b7f9391a4c33b16a5a94c1e151948356c128fd8b1"
+    },
+    {
+      "role": "documentation",
+      "path": "tests/ros_unitree/LEGACY_TRANSPORT.md",
+      "bytes": 16206,
+      "sha256": "3abf2f74cc260fc26bfaa8e2eb019aebe0126ebb223f66fc596fd6cdb75655d4"
+    },
+    {
+      "role": "selection_template",
+      "path": "tests/ros_unitree/legacy-transport-selection.template.json",
+      "bytes": 1834,
+      "sha256": "7028495fd7bfaee3e986c0f4a90c5bbe58ff5cff102c05d5e1191b3f5af7c78c"
+    },
+    {
+      "role": "guarded_format_regressions",
+      "path": "tests/ros_unitree/test_legacy_transport_protocol.py",
+      "bytes": 15540,
+      "sha256": "1a58862bdf6746193e26a9891f2dfa1ecc3f608fd4177abfe64291cb583dc094"
+    },
+    {
+      "role": "baseline_independent_peer",
+      "path": "tests/ros_unitree/legacy-transport-independent-source-peer.json",
+      "bytes": 6369,
+      "sha256": "07c69ae882c5cd2fef4341212c2242ecb85362f43f733f1f6f418e7a60cf469b"
+    },
+    {
+      "role": "reuse_independent_peer",
+      "path": "tests/ros_unitree/acceptance/legacy12/original-source-reuse-independent-source-peer.json",
+      "bytes": 5541,
+      "sha256": "055d75a005c1a8a7c3bc1372434eee5b56e31f9b8e628e5112dc4f6e3442f0a5"
+    }
+  ],
+  "actual_Runtime_cases_executed": 0,
+  "actual_ROS_cases_executed": 0,
+  "actual_regressions_executed": 0,
+  "source_only_validation": [
+    "STDLIB_AST_PARSE",
+    "JSON_DECODE",
+    "EXACT_SOURCE_SHA256",
+    "INDEPENDENT_SOURCE_PEER_BASELINE_AND_REUSE_DELTA"
+  ],
+  "required_future_freeze": "Complete Root-selected source containing these exact sources and the fixed monotonic Actors retirement ordinal; no future MF hash is forecast",
+  "required_shared_source": [
+    "tests/ros_unitree/common.py",
+    "tests/ros_unitree/noetic_native_support.py",
+    "tests/ros_unitree/typed_transport_inputs.py",
+    "tests/ros_javascript_guest/run.py",
+    "tests/ros_javascript_guest/native.py",
+    "tests/ros_aarch64/runtime.py",
+    "tools/ros_distro/common.py",
+    "tests/ros_cgroup/probe.py"
+  ],
+  "behavioral_scope": "Six actual same-main language commands times fresh default-denied and exact ROS1-topic grants; actual Focal master/native witness/Worker/Gateway and full physical descriptor evidence required",
+  "original_compilation_scope": "Genuine new full11-bound original roles may be content-qualified across later harness-only freezes only with full original source+MF and actual consumed source/header byte equality; raw original sources/statuses/labels unchanged",
+  "required_actual_prerequisites": [
+    "Completed authenticated Noetic SDK and independently qualified native3/official11 report",
+    "Fresh four-profile interpreter producer with full11 registry for ros1+dual",
+    "Six freshly compiled+validated same-main Guest command report and receipts",
+    "Actual retained held-exec gate provenance and complete current host/native execution catalogs"
+  ],
+  "commands": {
+    "transport": [
+      "ROOT_PINNED_PYTHON",
+      "-B",
+      "ACTUAL_SOURCE/tests/ros_unitree/run_legacy_transport.py",
+      "--source",
+      "ACTUAL_SOURCE",
+      "--manifest",
+      "ACTUAL_MF",
+      "--manifest-sha256",
+      "ACTUAL_MF_SHA",
+      "--config",
+      "ACTUAL_CONFIG",
+      "--config-sha256",
+      "ACTUAL_CONFIG_SHA",
+      "--out",
+      "FRESH_SHORT_OWNED_OUTPUT",
+      "--selection-input",
+      "legacy-transport-selection"
+    ],
+    "format_regressions": [
+      "ROOT_PINNED_PYTHON",
+      "-B",
+      "ACTUAL_SOURCE/tests/ros_unitree/test_legacy_transport_protocol.py",
+      "--source",
+      "ACTUAL_SOURCE",
+      "--manifest",
+      "ACTUAL_MF",
+      "--manifest-sha256",
+      "ACTUAL_MF_SHA",
+      "--config",
+      "ACTUAL_METADATA_ONLY_CONFIG",
+      "--config-sha256",
+      "ACTUAL_CONFIG_SHA",
+      "--out",
+      "FRESH_OWNED_REGRESSION_OUTPUT"
+    ]
+  },
+  "scope_limits": [
+    "No compiler/import/test/SSH/network/Runtime/ROS execution by author",
+    "No physical robot, firmware CRC, simulation, performance or cross-architecture result",
+    "Source43 and all staged/frozen historical artifacts unchanged",
+    "No status promotion or arbitrary old-pin projection"
+  ],
+  "preserved_baseline": "tests/ros_unitree/acceptance/legacy12/baseline-source-only/manifest.json"
+}

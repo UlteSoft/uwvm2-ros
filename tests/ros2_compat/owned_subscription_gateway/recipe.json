@@ -1,0 +1,79 @@
+{
+  "format_version": 1,
+  "source_only": true,
+  "executed": 0,
+  "prerequisites": [
+    "independent full source review and same-byte integration by Root",
+    "independently closed registry r3 and custom subscription factory successor, exact Native D4/queue/GID/QoS/source identity closure",
+    "actual Gateway Host/raw protocol counterparts independently integrated; no forecast current MF or SDK",
+    "whole actual source/SDK inventories and full system-inclusive MD/objects/link/ELF, actual original SDK compile/link features",
+    "external whole process/thread/pidfd/cgroup/deadline/backing/namespace/input/cleanup owner"
+  ],
+  "configure_wire": [
+    "cmake",
+    "-S",
+    "<source>/tests/ros2_compat/owned_subscription_gateway",
+    "-B",
+    "<fresh-owned>/wire",
+    "-DUWVM_SOURCE_ROOT=<actual-composed-source>",
+    "-DCMAKE_CXX_STANDARD=<actual17-20-23-26>",
+    "-DCMAKE_BUILD_TYPE=Release",
+    "-DUWVM_OWNED_SUBSCRIPTION_WIRE_MODELS=ON"
+  ],
+  "build_wire": [
+    "cmake",
+    "--build",
+    "<fresh-owned>/wire",
+    "--target",
+    "owned-subscription-gateway-wire",
+    "--parallel",
+    "1"
+  ],
+  "run_wire_only_by_owner": [
+    "<fresh-owned>/wire/owned-subscription-gateway-wire"
+  ],
+  "configure_native_extra": [
+    "-DUWVM_OWNED_SUBSCRIPTION_NATIVE_WITNESS=ON",
+    "-DUWVM_ROS2_GATEWAY_FEATURE_DIR=<actual-feature-directory>",
+    "-DCMAKE_PREFIX_PATH=<actual-complete-original-SDK-prefix>"
+  ],
+  "build_native": [
+    "cmake",
+    "--build",
+    "<fresh-owned>/native",
+    "--target",
+    "owned-subscription-gateway-native",
+    "--parallel",
+    "1"
+  ],
+  "native_worker": [
+    "<fresh-owned>/native/owned-subscription-gateway-native",
+    "--trusted-native-fixture",
+    "<actual-immutable-Gateway-config>",
+    "<exact-ROS2-subscription-alias>"
+  ],
+  "native_gate": [
+    "read actual READY pid/uid under external gate deadline",
+    "materialize full exact config with THIS real worker pid/uid, same real Gateway uid, actual socket, grant/hash/full QoS/domain/security and limits",
+    "independently start and retain real Gateway from actual frozen product/Native SDK",
+    "write exactly G to THIS worker stdin once; do not shell-evaluate output"
+  ],
+  "required_native_limits": {
+    "max-message-bytes": ">=11 under unchanged config max_payload-518 ceiling",
+    "max-queue-bytes": ">=203 plus actual declared queue depth budget",
+    "burst": ">=2 for actual two peek admissions and mixed-route rejection attempt",
+    "max-bytes-per-second": ">=22",
+    "max-subscribers": ">=1, actual bounded declared count",
+    "all_other_limits": "unchanged mandatory audit/time/rate/QoS/resource/identity rules"
+  },
+  "required_matrix": [
+    "synthetic wire model groups are not native metadata/type/ROS proof",
+    "real configured denied alias creates no endpoint",
+    "real source activation/inspect + old/new route mutual exclusion",
+    "one actual original String full7embeddedNUL, canonical11, same native GID/times/whole UMRS+URMI",
+    "cancel/repeek independent nonce, commit once, empty11, private retire, actual native disappearance",
+    "real revoked-alias private known-row cleanup, close/worker death/disconnect/dropped peek/late ACK and all failure ledgers",
+    "complete custom generated families/current fullprovider shards, all actual supported SDKs, default-denial and Guest copy/ABI/Host source lease remain independent"
+  ],
+  "credit_boundary": "Zero author execution. Actual wire ceiling4MiB is distinct from unchanged production config body ceiling4MiB-518. Direct synthetic4MiB frame is not proof of a granted production body. Native client pass would not be Guest/Wasm or whole SDK/vendor/architecture acceptance."
+}

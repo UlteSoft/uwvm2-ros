@@ -1,0 +1,14 @@
+{
+  "view_receipt": null,
+  "baseline_report": null,
+  "baseline_config": null,
+  "physics_template": null,
+  "readonly_bind_roots": [],
+  "profiler": {
+    "language": "cpp",
+    "vtune": null,
+    "roots": [],
+    "seconds": 30,
+    "collection_policy": "required-hardware"
+  }
+}

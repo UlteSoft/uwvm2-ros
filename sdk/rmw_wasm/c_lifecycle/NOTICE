@@ -1,0 +1,15 @@
+Original rclcpp source portions:
+Copyright 2014, 2015 Open Source Robotics Foundation, Inc. (as retained verbatim
+in each complete original header). Apache License, Version 2.0; see LICENSE.
+
+Changed source notice: the complete fixed-original Service and
+AnyServiceCallback headers carry an explicit opt-in allocation branch for the
+exact genuine C GetTypeDescription Request/Response types. All other original
+statements are retained. The patch, original hashes and changed-source hashes
+are in upstream/port-plan.json. The newly authored ownership helper, build
+attachment, contracts and documentation are provided under Apache-2.0.
+
+ROSIDL/RCL source discussed and preserved as independent source evidence is
+owned by its original copyright holders; original notices and licenses remain
+in the primary/reference copies. No native binary or generated SDK header is
+redistributed or fabricated by this package.

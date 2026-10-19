@@ -1,0 +1,10 @@
+{
+  "format": "uwvm-ros-custom-fixed-v1",
+  "types": [
+    {
+      "ros_version": 1,
+      "type": "uwvm_custom_ros1_fixture/Packet",
+      "file": "uwvm_custom_ros1_fixture/msg/Packet.msg"
+    }
+  ]
+}

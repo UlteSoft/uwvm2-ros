@@ -1,0 +1,110 @@
+{
+  "format_version": 1,
+  "kind": "uwvm-unitree-same-main-typed-dds-selection-v1",
+  "reports": {
+    "commands": "typed-command-build",
+    "workers": "worker-build",
+    "native_products": "native-products",
+    "native_interfaces": "native-interfaces"
+  },
+  "workers": {
+    "ros2": "worker-ros2",
+    "dual": "worker-dual"
+  },
+  "products": {
+    "rust-lowstate-go-command": {
+      "binary": "rust-lowstate-go-command-wasm",
+      "receipt": "rust-lowstate-go-command-receipt"
+    },
+    "rust-lowstate-hg-command": {
+      "binary": "rust-lowstate-hg-command-wasm",
+      "receipt": "rust-lowstate-hg-command-receipt"
+    },
+    "rust-topic-rpc-api-command": {
+      "binary": "rust-topic-rpc-api-command-wasm",
+      "receipt": "rust-topic-rpc-api-command-receipt"
+    },
+    "javascript-lowstate-go-command": {
+      "binary": "javascript-lowstate-go-command-wasm",
+      "receipt": "javascript-lowstate-go-command-receipt"
+    },
+    "javascript-lowstate-hg-command": {
+      "binary": "javascript-lowstate-hg-command-wasm",
+      "receipt": "javascript-lowstate-hg-command-receipt"
+    },
+    "javascript-topic-rpc-api-command": {
+      "binary": "javascript-topic-rpc-api-command-wasm",
+      "receipt": "javascript-topic-rpc-api-command-receipt"
+    },
+    "assemblyscript-lowstate-go-command": {
+      "binary": "assemblyscript-lowstate-go-command-wasm",
+      "receipt": "assemblyscript-lowstate-go-command-receipt"
+    },
+    "assemblyscript-lowstate-hg-command": {
+      "binary": "assemblyscript-lowstate-hg-command-wasm",
+      "receipt": "assemblyscript-lowstate-hg-command-receipt"
+    },
+    "assemblyscript-topic-rpc-api-command": {
+      "binary": "assemblyscript-topic-rpc-api-command-wasm",
+      "receipt": "assemblyscript-topic-rpc-api-command-receipt"
+    },
+    "tinygo-lowstate-go-command": {
+      "binary": "tinygo-lowstate-go-command-wasm",
+      "receipt": "tinygo-lowstate-go-command-receipt"
+    },
+    "tinygo-lowstate-hg-command": {
+      "binary": "tinygo-lowstate-hg-command-wasm",
+      "receipt": "tinygo-lowstate-hg-command-receipt"
+    },
+    "tinygo-topic-rpc-api-command": {
+      "binary": "tinygo-topic-rpc-api-command-wasm",
+      "receipt": "tinygo-topic-rpc-api-command-receipt"
+    },
+    "c-topic-rpc-api-command": {
+      "binary": "c-topic-rpc-api-command-wasm",
+      "receipt": "c-topic-rpc-api-command-receipt"
+    },
+    "cpp-topic-rpc-api-command": {
+      "binary": "cpp-topic-rpc-api-command-wasm",
+      "receipt": "cpp-topic-rpc-api-command-receipt"
+    }
+  },
+  "families": {
+    "unitree_go": {
+      "generation": "unitree_go-generation",
+      "native_export": "unitree_go-native-export",
+      "gateway": "gateway-go-api",
+      "worker_registry_generation": "go-api-registry-generation",
+      "peer_mappings": [],
+      "worker_mappings": [],
+      "gateway_mappings": [],
+      "gateway_context_mappings": []
+    },
+    "unitree_hg": {
+      "generation": "unitree_hg-generation",
+      "native_export": "unitree_hg-native-export",
+      "gateway": "gateway-hg",
+      "worker_registry_generation": "hg-registry-generation",
+      "peer_mappings": [],
+      "worker_mappings": [],
+      "gateway_mappings": [],
+      "gateway_context_mappings": []
+    },
+    "unitree_api": {
+      "generation": "unitree_api-generation",
+      "native_export": "unitree_api-native-export",
+      "gateway": "gateway-go-api",
+      "worker_registry_generation": "go-api-registry-generation",
+      "peer_mappings": [],
+      "worker_mappings": [],
+      "gateway_mappings": [],
+      "gateway_context_mappings": []
+    }
+  },
+  "native_peer": "native-typed-peer",
+  "exec_gate": "exec-gate",
+  "restart_mappings": [],
+  "worker_catalog_roots": [],
+  "expected_network_namespace": null,
+  "cyclonedds_xml": "cyclonedds-xml"
+}

@@ -1,0 +1,34 @@
+{
+  "format_version": 1,
+  "kind": "uwvm-unitree-legacy-same-main-tcpros-selection-v1",
+  "reports": {
+    "native_products": "legacy-native-products",
+    "workers": "legacy-fresh-workers",
+    "commands": "legacy-command-products",
+    "exec_gate": "retained-native-gate-admission"
+  },
+  "workers": {"ros1": "legacy-worker-ros1", "dual": "legacy-worker-dual"},
+  "products": {
+    "c-legacy-lowlevel-command": {"binary": "legacy-c-command", "receipt": "legacy-c-receipt", "worker_profile": "ros1"},
+    "cpp-legacy-lowlevel-command": {"binary": "legacy-cpp-command", "receipt": "legacy-cpp-receipt", "worker_profile": "ros1"},
+    "rust-legacy-lowlevel-command": {"binary": "legacy-rust-command", "receipt": "legacy-rust-receipt", "worker_profile": "ros1"},
+    "tinygo-legacy-lowlevel-command": {"binary": "legacy-tinygo-command", "receipt": "legacy-tinygo-receipt", "worker_profile": "dual"},
+    "assemblyscript-legacy-lowlevel-command": {"binary": "legacy-as-command", "receipt": "legacy-as-receipt", "worker_profile": "dual"},
+    "javascript-legacy-lowlevel-command": {"binary": "legacy-js-command", "receipt": "legacy-js-receipt", "worker_profile": "dual"}
+  },
+  "exec_gate": "legacy-exec-gate",
+  "worker_catalog_roots": [],
+  "mappings": {
+    "master": ["legacy-native-python", "legacy-native-libc"],
+    "peer": ["legacy-native-roscpp", "legacy-native-libc"],
+    "peer_context": ["legacy-native-roscpp", "legacy-native-libc"],
+    "gateway": ["legacy-native-roscpp", "legacy-native-libc"],
+    "gateway_context": ["legacy-native-roscpp", "legacy-native-libc"],
+    "gate": ["legacy-gate-libc"],
+    "worker_ros1": ["legacy-host-libc", "legacy-host-libstdcxx"],
+    "worker_dual": ["legacy-host-libc", "legacy-host-libstdcxx"]
+  },
+  "parent_network_namespace": null,
+  "master_port": 11881,
+  "restart_mappings": []
+}

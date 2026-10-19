@@ -1,0 +1,32 @@
+{
+  "format_version": 1,
+  "kind": "unexecuted-trusted-selection-role-plan-not-a-Host-manifest",
+  "rights": [],
+  "capabilities": [],
+  "default_denied": true,
+  "notes": [
+    "Not accepted as a live Host policy. Root must construct and qualify the actual closed configuration from current APIs and true native identities/QoS/quotas.",
+    "Client source/observer and server advertise/respond require independent exact grants; steady time is separate.",
+    "AddTwoInts actual native and canonical codec identity are required future exporter/binder products; no placeholder identities authorize anything."
+  ],
+  "role_pairs": {
+    "AddTwoInts": [
+      "add-call/add-observe",
+      "add-advertise/add-respond"
+    ],
+    "Trigger": [
+      "trigger-call/trigger-observe",
+      "trigger-advertise/trigger-respond"
+    ],
+    "SetBool": [
+      "bool-call/bool-observe",
+      "bool-advertise/bool-respond"
+    ],
+    "original_AddTwoInts": [
+      "original-call/original-observe",
+      "original-advertise/original-respond"
+    ],
+    "clock": "service-steady"
+  },
+  "actual": false
+}

@@ -1,0 +1,1249 @@
+{
+  "compiler_execution": "NOT_RUN",
+  "declared_constants": {
+    "scout_msgs/msg/ScoutLightCmd": [
+      {
+        "literal": "0",
+        "name": "LIGHT_CONST_OFF",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "0"
+      },
+      {
+        "literal": "1",
+        "name": "LIGHT_CONST_ON",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "1"
+      },
+      {
+        "literal": "2",
+        "name": "LIGHT_BREATH",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "2"
+      },
+      {
+        "literal": "3",
+        "name": "LIGHT_CUSTOM",
+        "native_type": "uint8",
+        "type": "uint8",
+        "value": "3"
+      }
+    ],
+    "scout_msgs/msg/ScoutStatus": [
+      {
+        "literal": "0",
+        "name": "MOTOR_ID_FRONT_RIGHT",
+        "native_type": "int8",
+        "type": "int8",
+        "value": "0"
+      },
+      {
+        "literal": "1",
+        "name": "MOTOR_ID_FRONT_LEFT",
+        "native_type": "int8",
+        "type": "int8",
+        "value": "1"
+      },
+      {
+        "literal": "2",
+        "name": "MOTOR_ID_REAR_RIGHT",
+        "native_type": "int8",
+        "type": "int8",
+        "value": "2"
+      },
+      {
+        "literal": "3",
+        "name": "MOTOR_ID_REAR_LEFT",
+        "native_type": "int8",
+        "type": "int8",
+        "value": "3"
+      },
+      {
+        "literal": "0",
+        "name": "LIGHT_ID_FRONT",
+        "native_type": "int8",
+        "type": "int8",
+        "value": "0"
+      },
+      {
+        "literal": "1",
+        "name": "LIGHT_ID_REAR",
+        "native_type": "int8",
+        "type": "int8",
+        "value": "1"
+      }
+    ]
+  },
+  "declared_defaults": {
+    "geometry_msgs/msg/Quaternion": {
+      "w": "1.0",
+      "x": "0.0",
+      "y": "0.0",
+      "z": "0.0"
+    }
+  },
+  "declared_empty_default_native_binding": "MODERN_METADATA_REFUSED; EXPLICIT_INSTALLED_IDL_MESSAGE_SOURCE_PROOF_REQUIRED",
+  "default_authority": [],
+  "facade_template_inputs": [],
+  "format": "uwvm-ros-vendor-complete-bounded-v1",
+  "implemented_record_outputs": [
+    "c",
+    "cpp",
+    "rust",
+    "javascript",
+    "assemblyscript",
+    "tinygo"
+  ],
+  "implicit_permissions": [],
+  "member_map": {
+    "builtin_interfaces/msg/Time": {
+      "assemblyscript": {
+        "nanosec": "nanosec",
+        "sec": "sec"
+      },
+      "c": {
+        "nanosec": "nanosec",
+        "sec": "sec"
+      },
+      "cpp": {
+        "nanosec": "nanosec",
+        "sec": "sec"
+      },
+      "javascript": {
+        "nanosec": "nanosec",
+        "sec": "sec"
+      },
+      "rust": {
+        "nanosec": "nanosec",
+        "sec": "sec"
+      },
+      "tinygo": {
+        "nanosec": "Nanosec",
+        "sec": "Sec"
+      }
+    },
+    "geometry_msgs/msg/Point": {
+      "assemblyscript": {
+        "x": "x",
+        "y": "y",
+        "z": "z"
+      },
+      "c": {
+        "x": "x",
+        "y": "y",
+        "z": "z"
+      },
+      "cpp": {
+        "x": "x",
+        "y": "y",
+        "z": "z"
+      },
+      "javascript": {
+        "x": "x",
+        "y": "y",
+        "z": "z"
+      },
+      "rust": {
+        "x": "x",
+        "y": "y",
+        "z": "z"
+      },
+      "tinygo": {
+        "x": "X",
+        "y": "Y",
+        "z": "Z"
+      }
+    },
+    "geometry_msgs/msg/Pose": {
+      "assemblyscript": {
+        "orientation": "orientation",
+        "position": "position"
+      },
+      "c": {
+        "orientation": "orientation",
+        "position": "position"
+      },
+      "cpp": {
+        "orientation": "orientation",
+        "position": "position"
+      },
+      "javascript": {
+        "orientation": "orientation",
+        "position": "position"
+      },
+      "rust": {
+        "orientation": "orientation",
+        "position": "position"
+      },
+      "tinygo": {
+        "orientation": "Orientation",
+        "position": "Position"
+      }
+    },
+    "geometry_msgs/msg/PoseWithCovariance": {
+      "assemblyscript": {
+        "covariance": "covariance",
+        "pose": "pose"
+      },
+      "c": {
+        "covariance": "covariance",
+        "pose": "pose"
+      },
+      "cpp": {
+        "covariance": "covariance",
+        "pose": "pose"
+      },
+      "javascript": {
+        "covariance": "covariance",
+        "pose": "pose"
+      },
+      "rust": {
+        "covariance": "covariance",
+        "pose": "pose"
+      },
+      "tinygo": {
+        "covariance": "Covariance",
+        "pose": "Pose"
+      }
+    },
+    "geometry_msgs/msg/Quaternion": {
+      "assemblyscript": {
+        "w": "w",
+        "x": "x",
+        "y": "y",
+        "z": "z"
+      },
+      "c": {
+        "w": "w",
+        "x": "x",
+        "y": "y",
+        "z": "z"
+      },
+      "cpp": {
+        "w": "w",
+        "x": "x",
+        "y": "y",
+        "z": "z"
+      },
+      "javascript": {
+        "w": "w",
+        "x": "x",
+        "y": "y",
+        "z": "z"
+      },
+      "rust": {
+        "w": "w",
+        "x": "x",
+        "y": "y",
+        "z": "z"
+      },
+      "tinygo": {
+        "w": "W",
+        "x": "X",
+        "y": "Y",
+        "z": "Z"
+      }
+    },
+    "geometry_msgs/msg/Twist": {
+      "assemblyscript": {
+        "angular": "angular",
+        "linear": "linear"
+      },
+      "c": {
+        "angular": "angular",
+        "linear": "linear"
+      },
+      "cpp": {
+        "angular": "angular",
+        "linear": "linear"
+      },
+      "javascript": {
+        "angular": "angular",
+        "linear": "linear"
+      },
+      "rust": {
+        "angular": "angular",
+        "linear": "linear"
+      },
+      "tinygo": {
+        "angular": "Angular",
+        "linear": "Linear"
+      }
+    },
+    "geometry_msgs/msg/TwistWithCovariance": {
+      "assemblyscript": {
+        "covariance": "covariance",
+        "twist": "twist"
+      },
+      "c": {
+        "covariance": "covariance",
+        "twist": "twist"
+      },
+      "cpp": {
+        "covariance": "covariance",
+        "twist": "twist"
+      },
+      "javascript": {
+        "covariance": "covariance",
+        "twist": "twist"
+      },
+      "rust": {
+        "covariance": "covariance",
+        "twist": "twist"
+      },
+      "tinygo": {
+        "covariance": "Covariance",
+        "twist": "Twist"
+      }
+    },
+    "geometry_msgs/msg/Vector3": {
+      "assemblyscript": {
+        "x": "x",
+        "y": "y",
+        "z": "z"
+      },
+      "c": {
+        "x": "x",
+        "y": "y",
+        "z": "z"
+      },
+      "cpp": {
+        "x": "x",
+        "y": "y",
+        "z": "z"
+      },
+      "javascript": {
+        "x": "x",
+        "y": "y",
+        "z": "z"
+      },
+      "rust": {
+        "x": "x",
+        "y": "y",
+        "z": "z"
+      },
+      "tinygo": {
+        "x": "X",
+        "y": "Y",
+        "z": "Z"
+      }
+    },
+    "nav_msgs/msg/Odometry": {
+      "assemblyscript": {
+        "child_frame_id": "child_frame_id",
+        "header": "header",
+        "pose": "pose",
+        "twist": "twist"
+      },
+      "c": {
+        "child_frame_id": "child_frame_id",
+        "header": "header",
+        "pose": "pose",
+        "twist": "twist"
+      },
+      "cpp": {
+        "child_frame_id": "child_frame_id",
+        "header": "header",
+        "pose": "pose",
+        "twist": "twist"
+      },
+      "javascript": {
+        "child_frame_id": "child_frame_id",
+        "header": "header",
+        "pose": "pose",
+        "twist": "twist"
+      },
+      "rust": {
+        "child_frame_id": "child_frame_id",
+        "header": "header",
+        "pose": "pose",
+        "twist": "twist"
+      },
+      "tinygo": {
+        "child_frame_id": "Child_frame_id",
+        "header": "Header",
+        "pose": "Pose",
+        "twist": "Twist"
+      }
+    },
+    "scout_msgs/msg/ScoutActuatorState": {
+      "assemblyscript": {
+        "current": "current",
+        "driver_temperature": "driver_temperature",
+        "driver_voltage": "driver_voltage",
+        "motor_temperature": "motor_temperature",
+        "rpm": "rpm"
+      },
+      "c": {
+        "current": "current",
+        "driver_temperature": "driver_temperature",
+        "driver_voltage": "driver_voltage",
+        "motor_temperature": "motor_temperature",
+        "rpm": "rpm"
+      },
+      "cpp": {
+        "current": "current",
+        "driver_temperature": "driver_temperature",
+        "driver_voltage": "driver_voltage",
+        "motor_temperature": "motor_temperature",
+        "rpm": "rpm"
+      },
+      "javascript": {
+        "current": "current",
+        "driver_temperature": "driver_temperature",
+        "driver_voltage": "driver_voltage",
+        "motor_temperature": "motor_temperature",
+        "rpm": "rpm"
+      },
+      "rust": {
+        "current": "current",
+        "driver_temperature": "driver_temperature",
+        "driver_voltage": "driver_voltage",
+        "motor_temperature": "motor_temperature",
+        "rpm": "rpm"
+      },
+      "tinygo": {
+        "current": "Current",
+        "driver_temperature": "Driver_temperature",
+        "driver_voltage": "Driver_voltage",
+        "motor_temperature": "Motor_temperature",
+        "rpm": "Rpm"
+      }
+    },
+    "scout_msgs/msg/ScoutLightCmd": {
+      "assemblyscript": {
+        "cmd_ctrl_allowed": "cmd_ctrl_allowed",
+        "front_custom_value": "front_custom_value",
+        "front_mode": "front_mode",
+        "rear_custom_value": "rear_custom_value",
+        "rear_mode": "rear_mode"
+      },
+      "c": {
+        "cmd_ctrl_allowed": "cmd_ctrl_allowed",
+        "front_custom_value": "front_custom_value",
+        "front_mode": "front_mode",
+        "rear_custom_value": "rear_custom_value",
+        "rear_mode": "rear_mode"
+      },
+      "cpp": {
+        "cmd_ctrl_allowed": "cmd_ctrl_allowed",
+        "front_custom_value": "front_custom_value",
+        "front_mode": "front_mode",
+        "rear_custom_value": "rear_custom_value",
+        "rear_mode": "rear_mode"
+      },
+      "javascript": {
+        "cmd_ctrl_allowed": "cmd_ctrl_allowed",
+        "front_custom_value": "front_custom_value",
+        "front_mode": "front_mode",
+        "rear_custom_value": "rear_custom_value",
+        "rear_mode": "rear_mode"
+      },
+      "rust": {
+        "cmd_ctrl_allowed": "cmd_ctrl_allowed",
+        "front_custom_value": "front_custom_value",
+        "front_mode": "front_mode",
+        "rear_custom_value": "rear_custom_value",
+        "rear_mode": "rear_mode"
+      },
+      "tinygo": {
+        "cmd_ctrl_allowed": "Cmd_ctrl_allowed",
+        "front_custom_value": "Front_custom_value",
+        "front_mode": "Front_mode",
+        "rear_custom_value": "Rear_custom_value",
+        "rear_mode": "Rear_mode"
+      }
+    },
+    "scout_msgs/msg/ScoutLightState": {
+      "assemblyscript": {
+        "custom_value": "custom_value",
+        "mode": "mode"
+      },
+      "c": {
+        "custom_value": "custom_value",
+        "mode": "mode"
+      },
+      "cpp": {
+        "custom_value": "custom_value",
+        "mode": "mode"
+      },
+      "javascript": {
+        "custom_value": "custom_value",
+        "mode": "mode"
+      },
+      "rust": {
+        "custom_value": "custom_value",
+        "mode": "mode"
+      },
+      "tinygo": {
+        "custom_value": "Custom_value",
+        "mode": "Mode"
+      }
+    },
+    "scout_msgs/msg/ScoutRCState": {
+      "assemblyscript": {
+        "stick_left_h": "stick_left_h",
+        "stick_left_v": "stick_left_v",
+        "stick_right_h": "stick_right_h",
+        "stick_right_v": "stick_right_v",
+        "swa": "swa",
+        "swb": "swb",
+        "swc": "swc",
+        "swd": "swd",
+        "var_a": "var_a"
+      },
+      "c": {
+        "stick_left_h": "stick_left_h",
+        "stick_left_v": "stick_left_v",
+        "stick_right_h": "stick_right_h",
+        "stick_right_v": "stick_right_v",
+        "swa": "swa",
+        "swb": "swb",
+        "swc": "swc",
+        "swd": "swd",
+        "var_a": "var_a"
+      },
+      "cpp": {
+        "stick_left_h": "stick_left_h",
+        "stick_left_v": "stick_left_v",
+        "stick_right_h": "stick_right_h",
+        "stick_right_v": "stick_right_v",
+        "swa": "swa",
+        "swb": "swb",
+        "swc": "swc",
+        "swd": "swd",
+        "var_a": "var_a"
+      },
+      "javascript": {
+        "stick_left_h": "stick_left_h",
+        "stick_left_v": "stick_left_v",
+        "stick_right_h": "stick_right_h",
+        "stick_right_v": "stick_right_v",
+        "swa": "swa",
+        "swb": "swb",
+        "swc": "swc",
+        "swd": "swd",
+        "var_a": "var_a"
+      },
+      "rust": {
+        "stick_left_h": "stick_left_h",
+        "stick_left_v": "stick_left_v",
+        "stick_right_h": "stick_right_h",
+        "stick_right_v": "stick_right_v",
+        "swa": "swa",
+        "swb": "swb",
+        "swc": "swc",
+        "swd": "swd",
+        "var_a": "var_a"
+      },
+      "tinygo": {
+        "stick_left_h": "Stick_left_h",
+        "stick_left_v": "Stick_left_v",
+        "stick_right_h": "Stick_right_h",
+        "stick_right_v": "Stick_right_v",
+        "swa": "Swa",
+        "swb": "Swb",
+        "swc": "Swc",
+        "swd": "Swd",
+        "var_a": "Var_a"
+      }
+    },
+    "scout_msgs/msg/ScoutStatus": {
+      "assemblyscript": {
+        "actuator_states": "actuator_states",
+        "angular_velocity": "angular_velocity",
+        "battery_voltage": "battery_voltage",
+        "control_mode": "control_mode",
+        "error_code": "error_code",
+        "front_light_state": "front_light_state",
+        "header": "header",
+        "light_control_enabled": "light_control_enabled",
+        "linear_velocity": "linear_velocity",
+        "rear_light_state": "rear_light_state",
+        "vehicle_state": "vehicle_state"
+      },
+      "c": {
+        "actuator_states": "actuator_states",
+        "angular_velocity": "angular_velocity",
+        "battery_voltage": "battery_voltage",
+        "control_mode": "control_mode",
+        "error_code": "error_code",
+        "front_light_state": "front_light_state",
+        "header": "header",
+        "light_control_enabled": "light_control_enabled",
+        "linear_velocity": "linear_velocity",
+        "rear_light_state": "rear_light_state",
+        "vehicle_state": "vehicle_state"
+      },
+      "cpp": {
+        "actuator_states": "actuator_states",
+        "angular_velocity": "angular_velocity",
+        "battery_voltage": "battery_voltage",
+        "control_mode": "control_mode",
+        "error_code": "error_code",
+        "front_light_state": "front_light_state",
+        "header": "header",
+        "light_control_enabled": "light_control_enabled",
+        "linear_velocity": "linear_velocity",
+        "rear_light_state": "rear_light_state",
+        "vehicle_state": "vehicle_state"
+      },
+      "javascript": {
+        "actuator_states": "actuator_states",
+        "angular_velocity": "angular_velocity",
+        "battery_voltage": "battery_voltage",
+        "control_mode": "control_mode",
+        "error_code": "error_code",
+        "front_light_state": "front_light_state",
+        "header": "header",
+        "light_control_enabled": "light_control_enabled",
+        "linear_velocity": "linear_velocity",
+        "rear_light_state": "rear_light_state",
+        "vehicle_state": "vehicle_state"
+      },
+      "rust": {
+        "actuator_states": "actuator_states",
+        "angular_velocity": "angular_velocity",
+        "battery_voltage": "battery_voltage",
+        "control_mode": "control_mode",
+        "error_code": "error_code",
+        "front_light_state": "front_light_state",
+        "header": "header",
+        "light_control_enabled": "light_control_enabled",
+        "linear_velocity": "linear_velocity",
+        "rear_light_state": "rear_light_state",
+        "vehicle_state": "vehicle_state"
+      },
+      "tinygo": {
+        "actuator_states": "Actuator_states",
+        "angular_velocity": "Angular_velocity",
+        "battery_voltage": "Battery_voltage",
+        "control_mode": "Control_mode",
+        "error_code": "Error_code",
+        "front_light_state": "Front_light_state",
+        "header": "Header",
+        "light_control_enabled": "Light_control_enabled",
+        "linear_velocity": "Linear_velocity",
+        "rear_light_state": "Rear_light_state",
+        "vehicle_state": "Vehicle_state"
+      }
+    },
+    "std_msgs/msg/Header": {
+      "assemblyscript": {
+        "frame_id": "frame_id",
+        "stamp": "stamp"
+      },
+      "c": {
+        "frame_id": "frame_id",
+        "stamp": "stamp"
+      },
+      "cpp": {
+        "frame_id": "frame_id",
+        "stamp": "stamp"
+      },
+      "javascript": {
+        "frame_id": "frame_id",
+        "stamp": "stamp"
+      },
+      "rust": {
+        "frame_id": "frame_id",
+        "stamp": "stamp"
+      },
+      "tinygo": {
+        "frame_id": "Frame_id",
+        "stamp": "Stamp"
+      }
+    }
+  },
+  "native_execution": "NOT_RUN",
+  "native_exporter_helper_source": {
+    "bytes": 10784,
+    "sha256": "55c5e504a1d61a648f73dd732aa0561f4b4dc0adf54dbe631857edf1564f3ac6"
+  },
+  "native_registry_emitted": false,
+  "outputs": {
+    "bounded_interfaces.h": {
+      "bytes": 1332,
+      "sha256": "d9c8b1a22bd5c3877398d05fa5c545b331041cf1cd741ff356bbacda32f64150"
+    },
+    "bounded_interfaces.hpp": {
+      "bytes": 3923,
+      "sha256": "2ddbcf92699a416b8dab0a2264ba3dfba6a1dc786dbb476b881c77ee9e508842"
+    },
+    "bounded_records.go": {
+      "bytes": 54470,
+      "sha256": "0e3fbe7845531881d7e8c3eb81fa9b14a81d97481109ba927262814903ca30e8"
+    },
+    "bounded_records.h": {
+      "bytes": 79949,
+      "sha256": "ceb2c965f1ca8c92c9a6b6f0478162dd432e51f0643ae6a9469832bbc8a39143"
+    },
+    "bounded_records.hpp": {
+      "bytes": 18723,
+      "sha256": "cacd3d9036c60846efcd67888195a7ad9ecf580eee32279b56b6d884bb77e646"
+    },
+    "bounded_records.mjs": {
+      "bytes": 42807,
+      "sha256": "ed9831bf9717e0c468dda023eb7ea038a91deb4c6b5306eef9b24e1d215215ae"
+    },
+    "bounded_records.rs": {
+      "bytes": 46932,
+      "sha256": "0e38f55e53b99e73143ec8af4e1a23d17c884ebd7768cad5597ad8bd90eac6d6"
+    },
+    "bounded_records.ts": {
+      "bytes": 52962,
+      "sha256": "7ea10fad2020d87ee68a718aa4647a732c9815185d671b84662a2bbedb4922c0"
+    },
+    "native_constants.hpp": {
+      "bytes": 1055,
+      "sha256": "d8f1dae79b9a32bf82af09b57e6b9abfc7ed89df42a778ba6315dc867a44d5ff"
+    },
+    "native_identity.cc": {
+      "bytes": 18370,
+      "sha256": "c0fe35b3d14d39321135337a4fcdfa2e9ab7c636bb014951d763f1294f76d0de"
+    }
+  },
+  "records": [
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 8,
+      "codec_identity": "UWVMROS1_0fd520c23fd8cb06e2c27292fdc20694732fa9332d452fc3fa31da90f7605fb7",
+      "expanded_nodes": 3,
+      "maximum_wire_bytes": 8,
+      "minimum_wire_bytes": 8,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "builtin_interfaces/msg/Time"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 24,
+      "codec_identity": "UWVMROS1_80f43d054abe333673c940c6d0fd88e8e26cea4a1cff53ff789cccaa38240616",
+      "expanded_nodes": 4,
+      "maximum_wire_bytes": 24,
+      "minimum_wire_bytes": 24,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Point"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 32,
+      "codec_identity": "UWVMROS1_34a32c3470cbfe2ff12340781a5bf22f6c370a8f5c06669f25a34321ade81672",
+      "expanded_nodes": 5,
+      "maximum_wire_bytes": 32,
+      "minimum_wire_bytes": 32,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Quaternion"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 56,
+      "codec_identity": "UWVMROS1_9468a10b8b2728fe71a370b4348ffe5e81b884ff957533f8700aa16e70b12777",
+      "expanded_nodes": 10,
+      "maximum_wire_bytes": 56,
+      "minimum_wire_bytes": 56,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Pose"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 344,
+      "codec_identity": "UWVMROS1_8eb3e25c45769eb29691011c05315ed50f2b97eff488f9e8ee2dc70bddab4dc2",
+      "expanded_nodes": 48,
+      "maximum_wire_bytes": 344,
+      "minimum_wire_bytes": 344,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/PoseWithCovariance"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 24,
+      "codec_identity": "UWVMROS1_5adebf211fe375fba92c0628f9b8ebf05bff9ab22ddc4bbf00629167af295d5e",
+      "expanded_nodes": 4,
+      "maximum_wire_bytes": 24,
+      "minimum_wire_bytes": 24,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Vector3"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 48,
+      "codec_identity": "UWVMROS1_1a6c18d19bb6853a2cff3b775974ba31f8e3674c1bbe566444ccabf0ef9d117e",
+      "expanded_nodes": 9,
+      "maximum_wire_bytes": 48,
+      "minimum_wire_bytes": 48,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Twist"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 336,
+      "codec_identity": "UWVMROS1_96c9fddad7b7c240e850d8c27ddb5f8343764cac791ef9e210196f7941aaf404",
+      "expanded_nodes": 47,
+      "maximum_wire_bytes": 336,
+      "minimum_wire_bytes": 336,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/TwistWithCovariance"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 140,
+      "codec_identity": "UWVMROS1_ce081e9caac05e464c4cff0da5e94cad44014652c0ddf244ee6c35ac3b0d1e96",
+      "expanded_nodes": 5,
+      "maximum_wire_bytes": 140,
+      "minimum_wire_bytes": 12,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "std_msgs/msg/Header"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 952,
+      "codec_identity": "UWVMROS1_fdfdd74c211c22bfd167c3e33a098fe21198cb095bbd0313fc765f38b1f334ec",
+      "expanded_nodes": 102,
+      "maximum_wire_bytes": 952,
+      "minimum_wire_bytes": 696,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "nav_msgs/msg/Odometry"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 19,
+      "codec_identity": "UWVMROS1_e7955c07aedaf42f8d97f873d60ae5c0dfc562faa1d64848f11b333f797350c6",
+      "expanded_nodes": 6,
+      "maximum_wire_bytes": 19,
+      "minimum_wire_bytes": 19,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "scout_msgs/msg/ScoutActuatorState"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 5,
+      "codec_identity": "UWVMROS1_a82206813682fbf1a6b41009c12191ad9ce47c98444d8ea9792e7b212ee602d7",
+      "expanded_nodes": 6,
+      "maximum_wire_bytes": 5,
+      "minimum_wire_bytes": 5,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "scout_msgs/msg/ScoutLightCmd"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 2,
+      "codec_identity": "UWVMROS1_4f42b9365cc76673b156e725aac9448e0f0d806105d3717cdb2628c384a6d76a",
+      "expanded_nodes": 3,
+      "maximum_wire_bytes": 2,
+      "minimum_wire_bytes": 2,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "scout_msgs/msg/ScoutLightState"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 9,
+      "codec_identity": "UWVMROS1_ba13e4c728041d14352c021fe5c1c5eee5d531c84ac64c61d944d6192dcd4298",
+      "expanded_nodes": 10,
+      "maximum_wire_bytes": 9,
+      "minimum_wire_bytes": 9,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "scout_msgs/msg/ScoutRCState"
+    },
+    {
+      "aggregate_wire_bytes": 0,
+      "cartesian_maximum_wire_bytes": 249,
+      "codec_identity": "UWVMROS1_75db4db1dcc07210d543b8e6bd6b6a7aadbf23db8043ff372a3b224c5c235b86",
+      "expanded_nodes": 44,
+      "maximum_wire_bytes": 249,
+      "minimum_wire_bytes": 121,
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "scout_msgs/msg/ScoutStatus"
+    }
+  ],
+  "required_native_domain_provider": "paired complete_vendor descriptor/Native trait/source-metadata admission; requires actual Root implementation and full rebuild; old refusal is preserved",
+  "source_generator_pair": {
+    "bounded": {
+      "bytes": 239137,
+      "sha256": "3c40ed90910bde0ec15ae8976b0e34c37061c2eeacc121259604e7eaeba89f2d"
+    },
+    "industrial_adapter": {
+      "bytes": 83521,
+      "sha256": "dd80fe9d1931edf1b4856fce7adfb031ac799186bdaaaa13ea5fc278d5cf4b5d"
+    },
+    "parent": {
+      "bytes": 61312,
+      "sha256": "1a73d6a87624e563bbb6be2624e77b51d7dba0f0f2fb524cda4079f493381826"
+    }
+  },
+  "source_inputs": {
+    "catalog": {
+      "bytes": 2594,
+      "sha256": "6500da1c3fe62ec5239c65767f260121d132e174f4c95b5be6092ba0bc198220"
+    },
+    "definitions": [
+      {
+        "bytes": 420,
+        "file": "builtin_interfaces/msg/Time.msg",
+        "sha256": "0e6f429967a29ba34b224c5c0236c938084e82ee1279deeaf0666768cba220ae"
+      },
+      {
+        "bytes": 84,
+        "file": "geometry_msgs/msg/Point.msg",
+        "sha256": "eb4c07e591cf0269ccb17245dcd4f998162feb09cc8add85fa082c8a30bfc91d"
+      },
+      {
+        "bytes": 119,
+        "file": "geometry_msgs/msg/Pose.msg",
+        "sha256": "3eceb77c63ebbb544c11d7f991e475e9819e0cf534deb1a879392c1b3dc997de"
+      },
+      {
+        "bytes": 323,
+        "file": "geometry_msgs/msg/PoseWithCovariance.msg",
+        "sha256": "a22f234e91b9fcd4ba0c5b533496b43c62d7f6ade39082212ac9835679d29f94"
+      },
+      {
+        "bytes": 116,
+        "file": "geometry_msgs/msg/Quaternion.msg",
+        "sha256": "298495eb67a139642ffd37cc9029eae085e6c39a8789828b7517868a487939ed"
+      },
+      {
+        "bytes": 116,
+        "file": "geometry_msgs/msg/Twist.msg",
+        "sha256": "ed471ef861f65af991b1f64d66ef941dd41dd4c0702f6222512b1a16c62d58b0"
+      },
+      {
+        "bytes": 326,
+        "file": "geometry_msgs/msg/TwistWithCovariance.msg",
+        "sha256": "5690a1f109d4962c73b5ca7f3673c48052d02f37b6a38fe2fb37c899cf555c45"
+      },
+      {
+        "bytes": 251,
+        "file": "geometry_msgs/msg/Vector3.msg",
+        "sha256": "d8b9ea9aad1f424faf4d2b94dae1e1368af1e5d59de11aeed019399cff7f9e1d"
+      },
+      {
+        "bytes": 645,
+        "file": "nav_msgs/msg/Odometry.msg",
+        "sha256": "bb00547ddf498cdbae46fd991d9d85a59f507e12e7cf01fb18a86f1111524f4f"
+      },
+      {
+        "bytes": 611,
+        "file": "scout_msgs/msg/ScoutActuatorState.msg",
+        "sha256": "9cf3fd50d46433647dd02e8e0f012ea1f5b3fe8e04aec43fe914fca2f5e4332b"
+      },
+      {
+        "bytes": 202,
+        "file": "scout_msgs/msg/ScoutLightCmd.msg",
+        "sha256": "09b1a206b99b7eb101fcf79fe6b61d1cd60ac4a3f90a231f44dbed88cdd6b860"
+      },
+      {
+        "bytes": 29,
+        "file": "scout_msgs/msg/ScoutLightState.msg",
+        "sha256": "f5fc087bf0be8333c6e57baa633152667a60d3167819cef79c7e505a32c68d5f"
+      },
+      {
+        "bytes": 125,
+        "file": "scout_msgs/msg/ScoutRCState.msg",
+        "sha256": "f20789a77f045981274fef30b63e60e2a7d8c6294cc741f407c16c6cef95dded"
+      },
+      {
+        "bytes": 510,
+        "file": "scout_msgs/msg/ScoutStatus.msg",
+        "sha256": "d3ad630a13178396c8f29c0a86a838cc8d5310246b1f4eee52e1ee1e7d51f923"
+      },
+      {
+        "bytes": 322,
+        "file": "std_msgs/msg/Header.msg",
+        "sha256": "d2cea14630e39ed0fa5b432ba9160a7c38855b9427d3344f99e83e83facb53c2"
+      }
+    ]
+  },
+  "source_template_inputs": {
+    "interface_templates/bounded_interfaces.go.in": {
+      "bytes": 9692,
+      "sha256": "c9e7893ccedc67b91a3aebc51c1e0c3c65263f03b2769aa07c34fcfb6befa1f7"
+    },
+    "interface_templates/bounded_interfaces.mjs.in": {
+      "bytes": 17046,
+      "sha256": "10986eddd766435dde89b0d3046ef7f48705e2c3e21301c99163c3a7d4ea62fe"
+    },
+    "interface_templates/bounded_interfaces.rs.in": {
+      "bytes": 15514,
+      "sha256": "063130e797684df0530aa1882f8082a10d5756ceb892677d8082e980c7b29b18"
+    },
+    "interface_templates/bounded_interfaces.ts.in": {
+      "bytes": 16626,
+      "sha256": "a61a7b7eb3b5464648577f3ab44629a5c6140d04effff6e4099509f68b204ac5"
+    }
+  },
+  "status": "GENERATED_SOURCE_ONLY_NOT_COMPILED_OR_EXECUTED",
+  "types": [
+    {
+      "adapter_codec_identity": "UWVMROS1_0fd520c23fd8cb06e2c27292fdc20694732fa9332d452fc3fa31da90f7605fb7",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_0fd520c23fd8cb06e2c27292fdc20694732fa9332d452fc3fa31da90f7605fb7",
+          "expanded_nodes": 3,
+          "maximum_wire_bytes": 8,
+          "minimum_wire_bytes": 8,
+          "native_identity": null,
+          "type": "builtin_interfaces/msg/Time"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "builtin_interfaces/msg/Time"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_80f43d054abe333673c940c6d0fd88e8e26cea4a1cff53ff789cccaa38240616",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_80f43d054abe333673c940c6d0fd88e8e26cea4a1cff53ff789cccaa38240616",
+          "expanded_nodes": 4,
+          "maximum_wire_bytes": 24,
+          "minimum_wire_bytes": 24,
+          "native_identity": null,
+          "type": "geometry_msgs/msg/Point"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Point"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_9468a10b8b2728fe71a370b4348ffe5e81b884ff957533f8700aa16e70b12777",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_9468a10b8b2728fe71a370b4348ffe5e81b884ff957533f8700aa16e70b12777",
+          "expanded_nodes": 10,
+          "maximum_wire_bytes": 56,
+          "minimum_wire_bytes": 56,
+          "native_identity": null,
+          "type": "geometry_msgs/msg/Pose"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Pose"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_8eb3e25c45769eb29691011c05315ed50f2b97eff488f9e8ee2dc70bddab4dc2",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_8eb3e25c45769eb29691011c05315ed50f2b97eff488f9e8ee2dc70bddab4dc2",
+          "expanded_nodes": 48,
+          "maximum_wire_bytes": 344,
+          "minimum_wire_bytes": 344,
+          "native_identity": null,
+          "type": "geometry_msgs/msg/PoseWithCovariance"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/PoseWithCovariance"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_34a32c3470cbfe2ff12340781a5bf22f6c370a8f5c06669f25a34321ade81672",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_34a32c3470cbfe2ff12340781a5bf22f6c370a8f5c06669f25a34321ade81672",
+          "expanded_nodes": 5,
+          "maximum_wire_bytes": 32,
+          "minimum_wire_bytes": 32,
+          "native_identity": null,
+          "type": "geometry_msgs/msg/Quaternion"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Quaternion"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_1a6c18d19bb6853a2cff3b775974ba31f8e3674c1bbe566444ccabf0ef9d117e",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_1a6c18d19bb6853a2cff3b775974ba31f8e3674c1bbe566444ccabf0ef9d117e",
+          "expanded_nodes": 9,
+          "maximum_wire_bytes": 48,
+          "minimum_wire_bytes": 48,
+          "native_identity": null,
+          "type": "geometry_msgs/msg/Twist"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Twist"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_96c9fddad7b7c240e850d8c27ddb5f8343764cac791ef9e210196f7941aaf404",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_96c9fddad7b7c240e850d8c27ddb5f8343764cac791ef9e210196f7941aaf404",
+          "expanded_nodes": 47,
+          "maximum_wire_bytes": 336,
+          "minimum_wire_bytes": 336,
+          "native_identity": null,
+          "type": "geometry_msgs/msg/TwistWithCovariance"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/TwistWithCovariance"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_5adebf211fe375fba92c0628f9b8ebf05bff9ab22ddc4bbf00629167af295d5e",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_5adebf211fe375fba92c0628f9b8ebf05bff9ab22ddc4bbf00629167af295d5e",
+          "expanded_nodes": 4,
+          "maximum_wire_bytes": 24,
+          "minimum_wire_bytes": 24,
+          "native_identity": null,
+          "type": "geometry_msgs/msg/Vector3"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "geometry_msgs/msg/Vector3"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_fdfdd74c211c22bfd167c3e33a098fe21198cb095bbd0313fc765f38b1f334ec",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_fdfdd74c211c22bfd167c3e33a098fe21198cb095bbd0313fc765f38b1f334ec",
+          "expanded_nodes": 102,
+          "maximum_wire_bytes": 952,
+          "minimum_wire_bytes": 696,
+          "native_identity": null,
+          "type": "nav_msgs/msg/Odometry"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "nav_msgs/msg/Odometry"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_e7955c07aedaf42f8d97f873d60ae5c0dfc562faa1d64848f11b333f797350c6",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_e7955c07aedaf42f8d97f873d60ae5c0dfc562faa1d64848f11b333f797350c6",
+          "expanded_nodes": 6,
+          "maximum_wire_bytes": 19,
+          "minimum_wire_bytes": 19,
+          "native_identity": null,
+          "type": "scout_msgs/msg/ScoutActuatorState"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "scout_msgs/msg/ScoutActuatorState"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_a82206813682fbf1a6b41009c12191ad9ce47c98444d8ea9792e7b212ee602d7",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_a82206813682fbf1a6b41009c12191ad9ce47c98444d8ea9792e7b212ee602d7",
+          "expanded_nodes": 6,
+          "maximum_wire_bytes": 5,
+          "minimum_wire_bytes": 5,
+          "native_identity": null,
+          "type": "scout_msgs/msg/ScoutLightCmd"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "scout_msgs/msg/ScoutLightCmd"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_4f42b9365cc76673b156e725aac9448e0f0d806105d3717cdb2628c384a6d76a",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_4f42b9365cc76673b156e725aac9448e0f0d806105d3717cdb2628c384a6d76a",
+          "expanded_nodes": 3,
+          "maximum_wire_bytes": 2,
+          "minimum_wire_bytes": 2,
+          "native_identity": null,
+          "type": "scout_msgs/msg/ScoutLightState"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "scout_msgs/msg/ScoutLightState"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_ba13e4c728041d14352c021fe5c1c5eee5d531c84ac64c61d944d6192dcd4298",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_ba13e4c728041d14352c021fe5c1c5eee5d531c84ac64c61d944d6192dcd4298",
+          "expanded_nodes": 10,
+          "maximum_wire_bytes": 9,
+          "minimum_wire_bytes": 9,
+          "native_identity": null,
+          "type": "scout_msgs/msg/ScoutRCState"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "scout_msgs/msg/ScoutRCState"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_75db4db1dcc07210d543b8e6bd6b6a7aadbf23db8043ff372a3b224c5c235b86",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_75db4db1dcc07210d543b8e6bd6b6a7aadbf23db8043ff372a3b224c5c235b86",
+          "expanded_nodes": 44,
+          "maximum_wire_bytes": 249,
+          "minimum_wire_bytes": 121,
+          "native_identity": null,
+          "type": "scout_msgs/msg/ScoutStatus"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "scout_msgs/msg/ScoutStatus"
+    },
+    {
+      "adapter_codec_identity": "UWVMROS1_ce081e9caac05e464c4cff0da5e94cad44014652c0ddf244ee6c35ac3b0d1e96",
+      "components": {
+        "message": {
+          "adapter_codec_identity": "UWVMROS1_ce081e9caac05e464c4cff0da5e94cad44014652c0ddf244ee6c35ac3b0d1e96",
+          "expanded_nodes": 5,
+          "maximum_wire_bytes": 140,
+          "minimum_wire_bytes": 12,
+          "native_identity": null,
+          "type": "std_msgs/msg/Header"
+        }
+      },
+      "kind": "message",
+      "native_identity": null,
+      "ros_version": 2,
+      "type": "std_msgs/msg/Header"
+    }
+  ]
+}

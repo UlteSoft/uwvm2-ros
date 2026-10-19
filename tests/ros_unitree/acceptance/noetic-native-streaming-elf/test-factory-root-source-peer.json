@@ -1,0 +1,20 @@
+{
+  "kind": "independent-source-review-of-physical-streaming-ELF-fixtures",
+  "status": "SOURCE_REVIEWED_ACTUAL_TESTS_PENDING",
+  "test_factory": {
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/test_noetic_elf.py",
+    "bytes": 11053,
+    "sha256": "1a6bb366f3c2c9d406fae84bf864e537fc4a0d2f214ac06bf33e1385c2d67bbf"
+  },
+  "reviewed_by": "Root independently reviewed complete SourceState-authored factory",
+  "cases_authored": 25,
+  "scope": [
+    "No candidate imports or process creation; actual Root owned scratch and live guard are supplied.",
+    "65MiB17 sparse valid ELF complete streamed hash independently compared; actual layout fields checked.",
+    "Malformed geometry/dynamic/string/identity, symlink/FIFO/oversize sparse2GiB1 rejection and cancellation descriptor closure cases.",
+    "Only bounded4096-byte layout construction and1MiB streamed data; logical owned budget3GiB required.",
+    "No ROS/Gateway/Runtime/official upstream coverage claim."
+  ],
+  "candidate_imported": false,
+  "tests_executed": false
+}

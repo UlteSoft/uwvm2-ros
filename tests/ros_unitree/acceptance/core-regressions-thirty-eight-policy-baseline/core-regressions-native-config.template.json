@@ -1,0 +1,39 @@
+{
+  "format_version": 1,
+  "source_root": null,
+  "tools": {
+    "cc": null,
+    "cxx": null,
+    "cmake": null,
+    "ninja": null,
+    "ar": null,
+    "ranlib": null,
+    "linker": null,
+    "python": null
+  },
+  "target": {
+    "triple": "x86_64-unknown-linux-gnu",
+    "machine": 62,
+    "bits": 64,
+    "endian": "little",
+    "host_machine": "x86_64"
+  },
+  "stdlib": "libstdc++",
+  "cflags": null,
+  "cxxflags": null,
+  "link_flags": null,
+  "sysroot": null,
+  "input_roots": [],
+  "environment": {"PATH": null, "LANG": "C", "LC_ALL": "C"},
+  "cgroup": {
+    "memory_max": 68719476736,
+    "memory_swap_max": 0,
+    "expected_leaf": null,
+    "expected_device": null,
+    "expected_inode": null,
+    "expected_boot_id": null,
+    "expected_cpus": null
+  },
+  "build_seconds": 1800,
+  "profile_compile_flags": {"none": [], "ros1": [], "ros2": [], "dual": []}
+}

@@ -1,0 +1,86 @@
+{
+  "format": "uwvm-moonbit-owned-service-source-recipe-v1",
+  "status": "SOURCE_ONLY_NOT_GENERATED_COMPILED_OR_EXECUTED",
+  "default_enabled": false,
+  "backend": 2,
+  "module": "uwvm_ros2_rmw_srv_v1",
+  "optional_numeric_import_count": 12,
+  "example_mandatory_ros_imports": 55,
+  "whole_wasm_validator_required": true,
+  "toolchain": {
+    "moonbit_version_label": "0.10.15+943464bfa",
+    "moon_version_label": "0.1.20261012",
+    "core_archive_sha256": "96d30f4dbcc6a9e1736ef26fbdd0e8fb0e97cb01d50e55d2a0072208b8061ae5",
+    "actual_executable_core_package_admission": "REQUIRED_AGAIN_BEFORE_USE",
+    "targets": ["wasm", "wasm-gc"],
+    "modes": ["debug", "release"],
+    "local_workspace_only": true,
+    "frozen_dependencies": true
+  },
+  "source_preparation": {
+    "catalog": "sdk/rmw_wasm/default_control/catalog.preparation.json",
+    "complete_original_definitions": 25,
+    "complete_resolved_records": 32,
+    "complete_service_roots": 7,
+    "authoritative_parent": "sdk/tools/custom_types.py",
+    "authoritative_bounded_ir": "sdk/custom-types/bounded_profile.py",
+    "record_emitter": "sdk/custom-types/moonbit_profile.py",
+    "runtime_source": "sdk/custom-types/moonbit_runtime.mbt.in",
+    "typed_service_emitter": "sdk/moonbit/tools/control_services_moonbit.py",
+    "operator": "sdk/moonbit/tools/generate_control_moonbit.py",
+    "canonical_products": "SEPARATE_FRESH_SAME_SOURCE_COMPLETE_C_CPP_PROOF_REQUIRED",
+    "output": "FRESH_ABSOLUTE_DIRECTORY_OUTSIDE_SOURCE_AND_CANONICAL",
+    "products": ["moonbit/bounded_records.mbt", "moonbit/moon.pkg", "moonbit/control_services.mbt", "moonbit/default_contracts.mbt", "generation.control-moonbit.json"],
+    "native_registry_emitted": false
+  },
+  "entry_selection": {
+    "renderer": "sdk/moonbit/tools/write_owned_selection.py",
+    "caller_input": "BOUNDED_EXPLICIT_JSON_WITH_INDEPENDENT_SHA256",
+    "outputs": ["selection.mbt", "selection-proof.json"],
+    "implicit_permissions": [],
+    "native_qos": "TWO_EXACT_INDEPENDENTLY_OBSERVED_PROTOCOL80_ROWS",
+    "finite_poll_limit_is_wall_clock_deadline": false
+  },
+  "applications": [
+    {"package": "sdk/examples/moonbit_owned_service/description_client", "role": "client", "native_type": "type_description_interfaces/srv/GetTypeDescription", "grants": ["service.call", "event.poll_v1"], "optional_grants": ["service.available"]},
+    {"package": "sdk/examples/moonbit_owned_service/parameter_server", "role": "server", "native_type": "rcl_interfaces/srv/GetParameterTypes", "grants": ["service.advertise", "service.respond"], "optional_grants": []}
+  ],
+  "memory": {
+    "index": 0,
+    "wasm32": true,
+    "shared": false,
+    "imported": false,
+    "minimum_pages": 256,
+    "maximum_pages": 1024,
+    "reserved_half_open_ranges": [[0, 289], [65536, 8454160]],
+    "input_offset": 65536,
+    "output_offset": 4259840,
+    "slot_offset": 8454144,
+    "heap_start_source_option": 8519680,
+    "actual_static_data_and_allocator_codegen_evidence_required": true,
+    "source_constant_or_manifest_is_heap_proof": false
+  },
+  "final_subcheck": {
+    "entry": "sdk/moonbit/owned_service/check_final_imports.py",
+    "entry_sha_and_exact_external_full_signatures": "INDEPENDENTLY_ADMITTED_REQUIRED",
+    "without_external_compiler_link_receipt": "HOLD_EXIT_3",
+    "with_external_receipt": "SIGNATURE_STATIC_LAYOUT_SUBCHECK_ONLY",
+    "full_memory_safety_pass": false,
+    "heap_start_proved_by_binary": false,
+    "keeper_authority_verified": false
+  },
+  "future_source_fixtures": [
+    "sdk/moonbit/owned_service/protocol_contract_wbtest.mbt",
+    "tests/ros_moonbit_owned_service/guest/main.mbt",
+    "generated moonbit/default_contracts.mbt"
+  ],
+  "execution": {
+    "where": "SSH_LINUX_EXISTING_64_GIB_CGROUP_SWAP0_COORDINATED_KEEPER_ONLY",
+    "candidate_parse_import_generate_compile_tests": "NOT_RUN",
+    "guest_native_debug_cache_qemu_vtune": "NOT_RUN",
+    "architecture_requirements": ["x86_64-linux", "aarch64-linux", "additional_actual_ROS_supported_architectures"],
+    "profiling_requirements": ["VTune hardware timing and counters", "VTune Hotspots", "VTune Microarchitecture Exploration"],
+    "comparisons": ["equivalent eligible wasmtime", "equivalent eligible WAVM", "equivalent eligible WasmEdge"],
+    "clean_only_owned_artifacts_after_evidence_preservation": true
+  }
+}

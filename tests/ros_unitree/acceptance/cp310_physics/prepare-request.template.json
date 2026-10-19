@@ -1,0 +1,122 @@
+{
+  "cached_view": {
+    "catalog": {
+      "bytes": 10017870,
+      "ctime_ns": 1792102948867019452,
+      "device": 81,
+      "inode": 372309,
+      "mtime_ns": 1792102948867019452,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/unitree-native-model-preflights-r1/view-copy-after.jsonl",
+      "sha256": "fcc3fab45c47f64565b046d6ea586f24f239b5d2a722f401e2df62aa47659e01"
+    },
+    "report": {
+      "bytes": 7051404,
+      "ctime_ns": 1792102949034021821,
+      "device": 68,
+      "inode": 372310,
+      "mtime_ns": 1792102949025021694,
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/unitree-native-model-preflights-r1/report.json",
+      "sha256": "8c281ba2eec9ea5f7e83ae4a6eb8e1721f9f184c66b227e88894eb9b73905697"
+    },
+    "root": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/unitree-native-model-preflights-r1/rootfs"
+  },
+  "cgroup": {
+    "expected_boot_id": "ec0d5f0f-3060-4220-bee2-2a7791ed4e72",
+    "expected_cpus": "0-31",
+    "expected_device": 29,
+    "expected_inode": 18315,
+    "expected_leaf": "/sys/fs/cgroup/system.slice/docker-4dd58ad4560fde2ab9b539e4ef9cab1fac531654e99ad554aff1fce8ae0eae37.scope",
+    "memory_max": 68719476736,
+    "memory_swap_max": 0
+  },
+  "format_version": 1,
+  "host_tools": {
+    "chroot": {
+      "historical_pin": {
+        "bytes": 10832184,
+        "ctime_ns": 1779281703662549108,
+        "device": 66307,
+        "inode": 12321529,
+        "mtime_ns": 1761129551000000000,
+        "path": "/usr/lib/cargo/bin/coreutils/chroot",
+        "sha256": "2a9b9ccf4e9724a6d6d8c97c835c9932223fbdefc9706fef9d0dfef7a9076739"
+      },
+      "invocation": "/usr/bin/chroot"
+    },
+    "ip": {
+      "current_pin": {
+        "bytes": 795616,
+        "ctime_ns": 1779281701350473146,
+        "device": 66308,
+        "inode": 12342006,
+        "mtime_ns": 1762331061000000000,
+        "path": "/usr/bin/ip",
+        "sha256": "76d88153dc8980dd0dd251357f548880699e25bfa3048c799534f533d01830a1"
+      },
+      "invocation": "/usr/bin/ip"
+    },
+    "mount": {
+      "historical_pin": {
+        "bytes": 51736,
+        "ctime_ns": 1779281661532170761,
+        "device": 66307,
+        "inode": 12322033,
+        "mtime_ns": 1772812563000000000,
+        "path": "/usr/bin/mount",
+        "sha256": "6b542b025af529e54f65d3fdd5534313735dfa3df63bf69e5b4ee65be2c47d46"
+      },
+      "invocation": "/usr/bin/mount"
+    },
+    "python": {
+      "historical_pin": {
+        "bytes": 7481192,
+        "ctime_ns": 1784917205940892038,
+        "device": 66307,
+        "inode": 12359920,
+        "mtime_ns": 1781792702000000000,
+        "path": "/usr/bin/python3.14",
+        "sha256": "b8d8288faefdd300201f43fcf00f6f539a27218eeed3a3dff5ab10b9c4c99700"
+      },
+      "invocation": "/usr/bin/python3.14"
+    },
+    "umount": {
+      "historical_pin": {
+        "bytes": 39448,
+        "ctime_ns": 1779281661532170761,
+        "device": 66307,
+        "inode": 12323041,
+        "mtime_ns": 1772812563000000000,
+        "path": "/usr/bin/umount",
+        "sha256": "0e54aad5607bb14260f4f059d5ceac8a5a27e8b8cab22cf4a45853e20262fa7f"
+      },
+      "invocation": "/usr/bin/umount"
+    },
+    "unshare": {
+      "current_pin": {
+        "bytes": 47872,
+        "ctime_ns": 1779281661593172747,
+        "device": 66308,
+        "inode": 12324131,
+        "mtime_ns": 1772812563000000000,
+        "path": "/usr/bin/unshare",
+        "sha256": "3568cbd5652923d43a080e4e4edbd516edc1aa9978744f2b035c004a704de93c"
+      },
+      "invocation": "/usr/bin/unshare"
+    }
+  },
+  "kind": "unitree-cp310-physics-staging-request-v1",
+  "manifest": "/var/tmp/uwvm-ros-complete-20261015-r1/inputs-r42/source-manifest.json",
+  "manifest_sha256": null,
+  "paths": {
+    "code": "/var/tmp/uwvm-ros-unitree-20261016-r1/source42-unitree-go2-cp310-physics-controls-r1",
+    "namespace_out": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/source42-unitree-go2-cp310-physics-namespace-r1",
+    "prepare_out": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/source42-unitree-go2-cp310-physics-view-preparation-r1",
+    "run_out": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/source42-unitree-go2-cp310-physics-runs-r1/run",
+    "run_owner_out": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/source42-unitree-go2-cp310-physics-root-run-r1",
+    "run_parent": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/source42-unitree-go2-cp310-physics-runs-r1",
+    "runtime_controls": "/var/tmp/uwvm-ros-unitree-20261016-r1/source42-unitree-go2-cp310-physics-runtime-controls-r1",
+    "view_root": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/source42-unitree-go2-cp310-physics-view-rootfs-r1"
+  },
+  "run_inputs": null,
+  "source": "/var/tmp/uwvm-ros-complete-20261015-r1/inputs-r42/source"
+}

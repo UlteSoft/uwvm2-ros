@@ -1,0 +1,263 @@
+{
+  "format": "uwvm-authored-bridge-complete-sdk-value-mapping-v1",
+  "source_only": true,
+  "official_repository": "https://github.com/limxdynamics/limxsdk-lowlevel",
+  "sdk_commit": "61624b58663b47928717069ff0eab2f1c85ec733",
+  "actual_installed_header_and_library_qualification": false,
+  "native_ros2_bridge_identity_export_required": true,
+  "default_authority": [],
+  "types": [
+    {
+      "bridge_type": "uwvm_limx_bridge/msg/ImuData",
+      "source": "AUTHORED_BRIDGE",
+      "bridge_definition": "bridge_interfaces/msg/ImuData.msg",
+      "bytes": 192,
+      "sha256": "3973c188b163f8632c69f9095b4d9843ba79a25e89b00c54057baeacaafe1307",
+      "whole_ordered_declarations": [
+        {
+          "type": "NativeHeader",
+          "declaration": "header"
+        },
+        {
+          "type": "uint64",
+          "declaration": "imustamp"
+        },
+        {
+          "type": "uint32",
+          "declaration": "status"
+        },
+        {
+          "type": "float64[3]",
+          "declaration": "euler"
+        },
+        {
+          "type": "float64[4]",
+          "declaration": "quat"
+        },
+        {
+          "type": "float64[3]",
+          "declaration": "acc"
+        },
+        {
+          "type": "float64[3]",
+          "declaration": "gyro"
+        }
+      ],
+      "actual_native_identity": null,
+      "canonical_identity": null,
+      "actual_sdk_value_source": {
+        "repository": "https://github.com/limxdynamics/limxsdk-lowlevel",
+        "commit": "61624b58663b47928717069ff0eab2f1c85ec733",
+        "path": "include/limxsdk/msg/controller_msgs/IMUData.h",
+        "git_blob_sha1": "57b68a940a1497e32398eb7f3cbe1f79575f9d8c",
+        "bytes": 3842,
+        "sha256": "de7d071bd819da345e70bc572b3feed61d20c7a4951960b71520a75b76a374d8"
+      },
+      "copy_rule": "Every declared value field is copied in order via native/conversion.hpp; no struct-image cast, prefix projection or identity substitution."
+    },
+    {
+      "bridge_type": "uwvm_limx_bridge/msg/JointCmd",
+      "source": "AUTHORED_BRIDGE",
+      "bridge_definition": "bridge_interfaces/msg/JointCmd.msg",
+      "bytes": 200,
+      "sha256": "2fa558b00161ab6b9c79b92d95002a88f938f01982bc1eadf38d38a2e87d53da",
+      "whole_ordered_declarations": [
+        {
+          "type": "NativeHeader",
+          "declaration": "header"
+        },
+        {
+          "type": "string[]",
+          "declaration": "names"
+        },
+        {
+          "type": "float32[]",
+          "declaration": "q"
+        },
+        {
+          "type": "float32[]",
+          "declaration": "v"
+        },
+        {
+          "type": "float32[]",
+          "declaration": "tau"
+        },
+        {
+          "type": "float32[]",
+          "declaration": "kp"
+        },
+        {
+          "type": "float32[]",
+          "declaration": "kd"
+        },
+        {
+          "type": "uint8[]",
+          "declaration": "mode"
+        },
+        {
+          "type": "uint32",
+          "declaration": "na"
+        }
+      ],
+      "actual_native_identity": null,
+      "canonical_identity": null,
+      "actual_sdk_value_source": {
+        "repository": "https://github.com/limxdynamics/limxsdk-lowlevel",
+        "commit": "61624b58663b47928717069ff0eab2f1c85ec733",
+        "path": "include/limxsdk/msg/controller_msgs/JointCmd.h",
+        "git_blob_sha1": "68beb1b83dfce3246ac005b8db8c0beedbbe331a",
+        "bytes": 4485,
+        "sha256": "b5f2cbe9c6e21049f534e956245363e180baba01d526a494b7bae919141303b0"
+      },
+      "copy_rule": "Every declared value field is copied in order via native/conversion.hpp; no struct-image cast, prefix projection or identity substitution."
+    },
+    {
+      "bridge_type": "uwvm_limx_bridge/msg/JointCmdLimx",
+      "source": "AUTHORED_BRIDGE",
+      "bridge_definition": "bridge_interfaces/msg/JointCmdLimx.msg",
+      "bytes": 229,
+      "sha256": "0f3d3ef0d9da77566c636baaa62e7a460e7c31a16c991214e0d8761f05dda6d1",
+      "whole_ordered_declarations": [
+        {
+          "type": "NativeHeader",
+          "declaration": "header"
+        },
+        {
+          "type": "string[]",
+          "declaration": "names"
+        },
+        {
+          "type": "float32[]",
+          "declaration": "q"
+        },
+        {
+          "type": "float32[]",
+          "declaration": "v"
+        },
+        {
+          "type": "float32[]",
+          "declaration": "tau"
+        },
+        {
+          "type": "float32[]",
+          "declaration": "kp"
+        },
+        {
+          "type": "float32[]",
+          "declaration": "kd"
+        },
+        {
+          "type": "uint8[]",
+          "declaration": "mode"
+        },
+        {
+          "type": "uint32",
+          "declaration": "na"
+        },
+        {
+          "type": "uint8[]",
+          "declaration": "parallel_solver_mode"
+        }
+      ],
+      "actual_native_identity": null,
+      "canonical_identity": null,
+      "actual_sdk_value_source": {
+        "repository": "https://github.com/limxdynamics/limxsdk-lowlevel",
+        "commit": "61624b58663b47928717069ff0eab2f1c85ec733",
+        "path": "include/limxsdk/msg/controller_msgs/JointCmdLimx.h",
+        "git_blob_sha1": "de1241a9dba7d901b0a1829509489ad57416a43c",
+        "bytes": 4867,
+        "sha256": "b74e5b82888823390e9235f4f49944fa133803c99251677689301a39b7a48a17"
+      },
+      "copy_rule": "Every declared value field is copied in order via native/conversion.hpp; no struct-image cast, prefix projection or identity substitution."
+    },
+    {
+      "bridge_type": "uwvm_limx_bridge/msg/JointState",
+      "source": "AUTHORED_BRIDGE",
+      "bridge_definition": "bridge_interfaces/msg/JointState.msg",
+      "bytes": 174,
+      "sha256": "399b78d9335108d2c85bdb0928dfac77c93959106b99b82478111b5dbab03f90",
+      "whole_ordered_declarations": [
+        {
+          "type": "NativeHeader",
+          "declaration": "header"
+        },
+        {
+          "type": "string[]",
+          "declaration": "names"
+        },
+        {
+          "type": "float32[]",
+          "declaration": "q"
+        },
+        {
+          "type": "float32[]",
+          "declaration": "v"
+        },
+        {
+          "type": "float32[]",
+          "declaration": "vd"
+        },
+        {
+          "type": "float32[]",
+          "declaration": "tau"
+        },
+        {
+          "type": "uint32",
+          "declaration": "na"
+        }
+      ],
+      "actual_native_identity": null,
+      "canonical_identity": null,
+      "actual_sdk_value_source": {
+        "repository": "https://github.com/limxdynamics/limxsdk-lowlevel",
+        "commit": "61624b58663b47928717069ff0eab2f1c85ec733",
+        "path": "include/limxsdk/msg/controller_msgs/JointState.h",
+        "git_blob_sha1": "8b8f94fbd7363a119939c02d90e1c20677ae318b",
+        "bytes": 3971,
+        "sha256": "89fdf872ada8751fb6cf75e1364bb5d10f25fbdac3831fe61db6ed0c74dc26a3"
+      },
+      "copy_rule": "Every declared value field is copied in order via native/conversion.hpp; no struct-image cast, prefix projection or identity substitution."
+    },
+    {
+      "bridge_type": "uwvm_limx_bridge/msg/NativeHeader",
+      "source": "AUTHORED_BRIDGE",
+      "bridge_definition": "bridge_interfaces/msg/NativeHeader.msg",
+      "bytes": 140,
+      "sha256": "fbe3be9e2d1085b2c2dca9b4b9885099b42ef3de06cf75c43b842eca23d9a87f",
+      "whole_ordered_declarations": [
+        {
+          "type": "uint32",
+          "declaration": "seq"
+        },
+        {
+          "type": "uint32",
+          "declaration": "stamp_sec"
+        },
+        {
+          "type": "uint32",
+          "declaration": "stamp_nsec"
+        },
+        {
+          "type": "string",
+          "declaration": "frame_id"
+        }
+      ],
+      "actual_native_identity": null,
+      "canonical_identity": null,
+      "actual_sdk_value_source": {
+        "repository": "https://github.com/limxdynamics/limxsdk-lowlevel",
+        "commit": "61624b58663b47928717069ff0eab2f1c85ec733",
+        "path": "include/limxsdk/msg/std_msgs/Header.h",
+        "git_blob_sha1": "a21acd1355fd117a2973c80780834fd4764d0e31",
+        "bytes": 2499,
+        "sha256": "cd3b39390ef24ec237d66cf862ea6c87ec3f3d87d015223ce952fa9c6e23bf35"
+      },
+      "copy_rule": "Every declared value field is copied in order via native/conversion.hpp; no struct-image cast, prefix projection or identity substitution."
+    }
+  ],
+  "separate_source_semantics": [
+    "Native Header.seq and u32 time are retained in a distinct NativeHeader type.",
+    "Native ROS1 mros TYPE/MD5 values never substitute for the NEW ROS2 bridge RIHS."
+  ]
+}

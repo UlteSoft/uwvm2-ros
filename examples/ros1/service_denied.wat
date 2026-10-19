@@ -1,0 +1,12 @@
+(module
+ (import "uwvm_ros1_v1" "capability_open" (func $open (param i32 i64 i64 i64) (result i32)))
+ (import "wasi_snapshot_preview1" "proc_exit" (func $exit (param i32)))
+ (import "uwvm_ros1_v1" "service_call" (func $op (param i64 i32 i64 i64 i64 i64 i64) (result i32)))
+ (memory (export "memory") 1)
+ (data (i32.const 0) "server") (data (i32.const 8192) "\05\00\00\00hello")
+ (func $check (param $e i32) (if (local.get $e) (then (call $exit (local.get $e)))))
+ (func (export "_start")
+  (call $check (call $open (i32.const 0) (i64.const 0) (i64.const 6) (i64.const 8)))
+  (i64.store (i32.const 16) (i64.const -1)) (i64.store (i32.const 128) (i64.const -1))
+  (if (i32.ne (call $op (i64.load (i32.const 8)) (i32.const 0) (i64.const 8192) (i64.const 0) (i64.const 128) (i64.const 4096) (i64.const 16)) (i32.const 13)) (then (call $exit (i32.const 210))))
+  (if (i32.or (i64.ne (i64.load (i32.const 16)) (i64.const -1)) (i64.ne (i64.load (i32.const 128)) (i64.const -1))) (then (call $exit (i32.const 211))))) )

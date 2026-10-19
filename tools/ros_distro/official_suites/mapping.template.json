@@ -1,0 +1,7 @@
+{
+  "format_version": 1,
+  "kind": "official-case-Wasm-Gateway-mapping-v1",
+  "adapters": [],
+  "cases": [],
+  "coverage_gaps": ["No API-specific official-case Wasm ports have been selected or qualified."]
+}

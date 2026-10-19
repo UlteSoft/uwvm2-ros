@@ -1,0 +1,17 @@
+[package]
+name="uwvm-ur-example"
+version="0.1.0"
+edition="2021"
+publish=false
+[lib]
+path="lib.rs"
+[[bin]]
+name="ur-io"
+path="main.rs"
+[features]
+default=[]
+ros1=["roswasm/ros1"]
+ros2=["roswasm/ros2"]
+polyscopex=["roswasm/ros2"]
+[dependencies]
+roswasm={path="../../../../../rust",default-features=false,features=["alloc"]}

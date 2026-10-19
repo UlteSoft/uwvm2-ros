@@ -1,0 +1,204 @@
+{
+  "status": "SOURCE_AND_SYNTHETIC_GUARD_MODEL_PASS",
+  "scope": "Python AST, prepared inventories and synthetic evidence/input guard models only; no CMake/compiler/native binary/Wasm/ROS execution",
+  "checks": [
+    {
+      "name": "Fixed 17 row full inventory",
+      "status": "PASS"
+    },
+    {
+      "name": "Three C installed fixtures",
+      "status": "PASS"
+    },
+    {
+      "name": "Four C++ installed fixtures",
+      "status": "PASS"
+    },
+    {
+      "name": "Explicit NDEBUG cancellation",
+      "status": "PASS"
+    },
+    {
+      "name": "Fixtures compile from relocated installation",
+      "status": "PASS"
+    },
+    {
+      "name": "Rust expected 5 distinct tests",
+      "status": "PASS"
+    },
+    {
+      "name": "Go expected 9 distinct tests",
+      "status": "PASS"
+    },
+    {
+      "name": "AS expected 294 assertions",
+      "status": "PASS"
+    },
+    {
+      "name": "C/C++ require relocation",
+      "status": "PASS"
+    },
+    {
+      "name": "AS subset has 7 required rows",
+      "status": "PASS"
+    },
+    {
+      "name": "Native language subset fixed",
+      "status": "PASS"
+    },
+    {
+      "name": "Synthetic AS consistency model has seven admitted rows",
+      "status": "PASS"
+    },
+    {
+      "name": "Manifest/report bindings retained",
+      "status": "PASS"
+    },
+    {
+      "name": "Prepared report refused",
+      "status": "PASS"
+    },
+    {
+      "name": "Stale source digest refused",
+      "status": "PASS"
+    },
+    {
+      "name": "Missing AS row refused",
+      "status": "PASS"
+    },
+    {
+      "name": "Duplicate AS row refused",
+      "status": "PASS"
+    },
+    {
+      "name": "Failed compile refused",
+      "status": "PASS"
+    },
+    {
+      "name": "Wrong full-validation artifact refused",
+      "status": "PASS"
+    },
+    {
+      "name": "Compiler script mutation refused",
+      "status": "PASS"
+    },
+    {
+      "name": "Unproved cleanup refused",
+      "status": "PASS"
+    },
+    {
+      "name": "Stale per-row source refused",
+      "status": "PASS"
+    },
+    {
+      "name": "Inconsistent counter delta refused",
+      "status": "PASS"
+    },
+    {
+      "name": "Declared nonempty import inventory refused",
+      "status": "PASS"
+    },
+    {
+      "name": "Wrong fixture source role refused",
+      "status": "PASS"
+    },
+    {
+      "name": "Missing full artifact binding refused",
+      "status": "PASS"
+    },
+    {
+      "name": "Other boot compiler evidence refused",
+      "status": "PASS"
+    },
+    {
+      "name": "OOM after compiler run refused",
+      "status": "PASS"
+    },
+    {
+      "name": "Explicit report SHA mismatch refused",
+      "status": "PASS"
+    },
+    {
+      "name": "Foreign tool ELF architecture refused",
+      "status": "PASS"
+    },
+    {
+      "name": "Actual synthetic binary import refused",
+      "status": "PASS"
+    },
+    {
+      "name": "Synthetic current input guard",
+      "status": "PASS"
+    },
+    {
+      "name": "OOM between commands is fatal",
+      "status": "PASS"
+    },
+    {
+      "name": "Cgroup incarnation change is fatal",
+      "status": "PASS"
+    },
+    {
+      "name": "Whole-run counter reset is fatal",
+      "status": "PASS"
+    },
+    {
+      "name": "SDK source mutation is fatal",
+      "status": "PASS"
+    },
+    {
+      "name": "Only named new lock file allowed",
+      "status": "PASS"
+    },
+    {
+      "name": "Added copied source is fatal",
+      "status": "PASS"
+    },
+    {
+      "name": "Copied original source mutation is fatal",
+      "status": "PASS"
+    },
+    {
+      "name": "Artifact mutation before tool pin aborts before launch",
+      "status": "PASS"
+    },
+    {
+      "name": "Mutated artifact launched no command",
+      "status": "PASS"
+    },
+    {
+      "name": "Non-Linux actual run refused before outputs",
+      "status": "PASS"
+    },
+    {
+      "name": "Rejected actual run creates no directory",
+      "status": "PASS"
+    }
+  ],
+  "checks_count": 43,
+  "inputs": [
+    {
+      "path": "sdk/tools/run_cgroup_models.py",
+      "sha256": "4086d0e70461795923abeda43855d3b57826c81423a8b79cdfdd983b44034179"
+    },
+    {
+      "path": "sdk/docs/model-matrix.md",
+      "sha256": "5861d0815f309316c20340c0817e3701ff69b281b1e13c100d3680c8ee1db7db"
+    },
+    {
+      "path": "sdk/tools/build_cgroup_matrix.py",
+      "sha256": "7c76588b54fb94950b832896a3b5d704f363722ffe2fdc5139bc5ed4b16ca2b7"
+    },
+    {
+      "path": "sdk/javascript/tests/run_pure_wasm.mjs",
+      "sha256": "a316223d41d445e5af3fe694ffd8124b6bbe563223448c6eb59fa864d8aa6ee1"
+    }
+  ],
+  "native_execution": "NOT_PERFORMED",
+  "Wasm_execution": "NOT_PERFORMED",
+  "ROS_execution": "NOT_PERFORMED",
+  "earlier_attempt": {
+    "status": "FAIL_TEST_SETUP_ENOSPC",
+    "scope": "No native or Wasm execution; temp-directory creation failed before synthetic admission cases"
+  }
+}

@@ -1,0 +1,286 @@
+{
+  "id": "msgs_jazzy",
+  "url": "https://github.com/clearpathrobotics/clearpath_msgs",
+  "branch": "jazzy",
+  "commit": "11aa5eb22a84bd38443c180b1218b5c35486ba19",
+  "tree_git_sha1": "72e73cf1dce18ec7dafcd76c464c6bc23f9f49c7",
+  "files": [
+    {
+      "path": "LICENSE",
+      "bytes": 1504,
+      "sha256": "c5b036522ecf21b207daad625d10aff273d170b5cb46e3cae89129f67a6603c7",
+      "git_blob_sha1": "6080cef2f56b73d44611824fcc29dd336d63b3f9"
+    },
+    {
+      "path": "README.md",
+      "bytes": 2559,
+      "sha256": "5d2c5ea3905f4ea81986685350503d351f215202871b11c39d3972c72663e4cc",
+      "git_blob_sha1": "1b431662e165199c0775cafb11156e53264fccc4"
+    },
+    {
+      "path": "clearpath_control_msgs/CMakeLists.txt",
+      "bytes": 412,
+      "sha256": "9c5ec5d789217391ce6645165bd5649c3422f5097c313688bb1c5d10cba80901",
+      "git_blob_sha1": "084b5c352a21e0cc22f7261a0015fe1882df3e2b"
+    },
+    {
+      "path": "clearpath_control_msgs/msg/DeviceInfo.msg",
+      "bytes": 480,
+      "sha256": "568433cf2f66a5eaf0e6a6bb664fd8d8d741f77998616e31d4c5281d340a7069",
+      "git_blob_sha1": "66903a58483ef3a4bb50f6b64c99ff208a70a047"
+    },
+    {
+      "path": "clearpath_control_msgs/msg/StreamControl.msg",
+      "bytes": 169,
+      "sha256": "63b6434809cf2d8fb8d7ce205dfa1ce08a70f0799fc07c33ec0a302c907df5d5",
+      "git_blob_sha1": "1d64adab99351b421a2d6fe770fd5f1feb85f0de"
+    },
+    {
+      "path": "clearpath_control_msgs/package.xml",
+      "bytes": 707,
+      "sha256": "18d6d2a0ce553a12bda7ed3b161c91c9f7cfddead2fa8ddc302f90443a127b99",
+      "git_blob_sha1": "8459698b4368248a4eac3dc813806d696331865a"
+    },
+    {
+      "path": "clearpath_control_msgs/srv/PowerControl.srv",
+      "bytes": 157,
+      "sha256": "2be028098f42945bf3e7eebc52541ed1a49e30b9ccd622382e497d4163dd19df",
+      "git_blob_sha1": "b6f6b8cdf07c70f3a34dfa9f7017107558206208"
+    },
+    {
+      "path": "clearpath_motor_msgs/CHANGELOG.rst",
+      "bytes": 1683,
+      "sha256": "eb2b4ee0a16ca5836717c21b006e941f545025d3e7da3527cf442ed02bc1d333",
+      "git_blob_sha1": "6908c986de58b160b32054a8480dcf3d8426d235"
+    },
+    {
+      "path": "clearpath_motor_msgs/CMakeLists.txt",
+      "bytes": 999,
+      "sha256": "81605662fb2dd2198ae89b9992881fef8ea9ca6d319a2536d76f54a8ce2adf07",
+      "git_blob_sha1": "8d9d3217c52a53da6953799aa53d73d04aa0364b"
+    },
+    {
+      "path": "clearpath_motor_msgs/action/LynxCalibrate.action",
+      "bytes": 74,
+      "sha256": "707c09a63ffcb41306e2da300e51e175300d65933bb4a3922f896e6eb8a7f995",
+      "git_blob_sha1": "6d123466c706c4a6329a696c3ddd16c339beb006"
+    },
+    {
+      "path": "clearpath_motor_msgs/action/LynxUpdate.action",
+      "bytes": 84,
+      "sha256": "e13ff23019e08a3ebe330edf6d358bd4658fb9b846c1c56b43f11deaebf1fc99",
+      "git_blob_sha1": "1065a6898cb808fb48b9b1006a786fb2fefdfafb"
+    },
+    {
+      "path": "clearpath_motor_msgs/msg/LynxDebug.msg",
+      "bytes": 1471,
+      "sha256": "d18ebcd7b3a2a019e0392a4693e0a73ac3ec4f5eef313d4c5a51f8182cbb9e3c",
+      "git_blob_sha1": "4904d8884eef8ef1d54eaeaef7db0f0aa18e7d98"
+    },
+    {
+      "path": "clearpath_motor_msgs/msg/LynxFeedback.msg",
+      "bytes": 311,
+      "sha256": "c8b44f0514fefda3dfaf46819c1d1f4c3a876d34e94f0410079d9871052bd6b7",
+      "git_blob_sha1": "e66a5d14c81815c9f6efcf9413fc028e85c18761"
+    },
+    {
+      "path": "clearpath_motor_msgs/msg/LynxMotorProtection.msg",
+      "bytes": 230,
+      "sha256": "f2379013faceb7fed19ea01098ede5506d9b8661c4f070a85c9fe655eb2b3899",
+      "git_blob_sha1": "da7f44d4169b001f1f8f35b76933c3ae31ff68f6"
+    },
+    {
+      "path": "clearpath_motor_msgs/msg/LynxMultiDebug.msg",
+      "bytes": 65,
+      "sha256": "22bc7d20f2a95a7568a1c75cf54dfc2dc3df15e33b85e1df07b2e858427d1493",
+      "git_blob_sha1": "062f432beac636e7a8e860b2df1ebd01b62fb52c"
+    },
+    {
+      "path": "clearpath_motor_msgs/msg/LynxMultiFeedback.msg",
+      "bytes": 68,
+      "sha256": "8721e7ae66cc732d2651b8e393c4f21df4c3e89f41ce47e9830bb3e773b3c118",
+      "git_blob_sha1": "5567b17e974b125814d096195f71b3065f5262e0"
+    },
+    {
+      "path": "clearpath_motor_msgs/msg/LynxMultiStatus.msg",
+      "bytes": 66,
+      "sha256": "26526fa91edb6783e61e2ba43038429d5eec7a3279c24acad8b247da662d2c46",
+      "git_blob_sha1": "6dcb584cc2886a347703cfc340812003baef2023"
+    },
+    {
+      "path": "clearpath_motor_msgs/msg/LynxStatus.msg",
+      "bytes": 1374,
+      "sha256": "fc7c2d410060652b3e5a1a9ee23d635d1ec0a8cd1d6e02031c91878dd9ad314b",
+      "git_blob_sha1": "18c7421952779a0f6c09b83a7a25181f9e066c1c"
+    },
+    {
+      "path": "clearpath_motor_msgs/msg/LynxSystemProtection.msg",
+      "bytes": 196,
+      "sha256": "41b52250a2a22b93b5e61fb16a31cc08f3c8d02de7bf69eac47cb559769305c2",
+      "git_blob_sha1": "f049dddbf16909bb65a65360ccd348ea318afa39"
+    },
+    {
+      "path": "clearpath_motor_msgs/msg/PumaFeedback.msg",
+      "bytes": 714,
+      "sha256": "8fbd5178423e8a6f2621d478de05d9822918cfe214b84456d26cd6fe3c4bb592",
+      "git_blob_sha1": "743a64bcfad863c6a138871d4f9a568dce742875"
+    },
+    {
+      "path": "clearpath_motor_msgs/msg/PumaMultiFeedback.msg",
+      "bytes": 77,
+      "sha256": "a627a8f9d97cb79db1bd0205ea5e750e2c28f46242497f590233f408c63e2394",
+      "git_blob_sha1": "6dfe8746d1fc54e793f639fc534fdd7ab51b12a2"
+    },
+    {
+      "path": "clearpath_motor_msgs/msg/PumaMultiStatus.msg",
+      "bytes": 66,
+      "sha256": "ac12c5d724c97e90df48ece5b6b8eadfc1d319a33747556d5fb9eb469b3aed93",
+      "git_blob_sha1": "45c660029e13125830a90afb9c9b457f65dd64cf"
+    },
+    {
+      "path": "clearpath_motor_msgs/msg/PumaStatus.msg",
+      "bytes": 732,
+      "sha256": "2daf3182282aeef3a6862986c15c796ab148579a7d79e1b0d8996b8ac68f5a4c",
+      "git_blob_sha1": "57ace405e6ed157ba5b64d308f8338f6e333e1f1"
+    },
+    {
+      "path": "clearpath_motor_msgs/package.xml",
+      "bytes": 953,
+      "sha256": "646809b415715085d6ebf08b7e18e306b8950994ec9b7cf4b7f5fa4673b9d8a6",
+      "git_blob_sha1": "522b3c9f2ceff0aa3d868f32974a76ea0f1d63fd"
+    },
+    {
+      "path": "clearpath_msgs/CHANGELOG.rst",
+      "bytes": 1203,
+      "sha256": "12654373f2f587e773c0e3e9b50a93ce348f673cebf6f62997c263863135d521",
+      "git_blob_sha1": "2755d5d7f3c7f0f53030076995b0cbd61cbe9adc"
+    },
+    {
+      "path": "clearpath_msgs/CMakeLists.txt",
+      "bytes": 114,
+      "sha256": "194a278db56f369a48c8b262f39ddcb2b1467b08113f3970d287c94b134716cb",
+      "git_blob_sha1": "a1d3823b4349fff2f0e9ef11cf69ce4b914db3ba"
+    },
+    {
+      "path": "clearpath_msgs/package.xml",
+      "bytes": 705,
+      "sha256": "258d269d11b4fe282fdaf840fe48be35fa9f3008a4d57d0534e12825d42a7745",
+      "git_blob_sha1": "ff24259f2fdabf3c122d2bc64e764fe6a5bf3af9"
+    },
+    {
+      "path": "clearpath_platform_msgs/CHANGELOG.rst",
+      "bytes": 2623,
+      "sha256": "2a22045ce450903786035678bb9e61e77d7fff2a1bfb6c455b7eb83c20787d56",
+      "git_blob_sha1": "697a367aff5fc923733b4672d33e72a89ac3fd14"
+    },
+    {
+      "path": "clearpath_platform_msgs/CMakeLists.txt",
+      "bytes": 891,
+      "sha256": "9cf2fec46efce2b54f8fbeca0565208a1f5e605052aa37168f187e3247621e37",
+      "git_blob_sha1": "c6507af08d71bdfc835ab083e06b920f1a75a0b4"
+    },
+    {
+      "path": "clearpath_platform_msgs/msg/DisplayStatus.msg",
+      "bytes": 125,
+      "sha256": "3cd75d4efec3786ff41ab450d8f118e2d748353eab852835d6040b64f54b72ff",
+      "git_blob_sha1": "407bb8ca5b0b3a303190aabbe019d8ae9b83dd96"
+    },
+    {
+      "path": "clearpath_platform_msgs/msg/Drive.msg",
+      "bytes": 424,
+      "sha256": "3fa1e5b58c5e1b75ad03cd67bf078acdf381ce8aae47658c316e90ddedb98ff9",
+      "git_blob_sha1": "1fb33df72d81931de7d0c43354aff3dd4f118ac8"
+    },
+    {
+      "path": "clearpath_platform_msgs/msg/DriveFeedback.msg",
+      "bytes": 523,
+      "sha256": "0fc22caa433a843651712d78c6a3d614384e4411c32b4de551a914b29ff15e81",
+      "git_blob_sha1": "22b8a489e02388a2df673a095b3e5425f2abb2f6"
+    },
+    {
+      "path": "clearpath_platform_msgs/msg/Fans.msg",
+      "bytes": 514,
+      "sha256": "5afad108053e5ab4b2286291633b27c41d3dc9f69e3a904c9989d15e3a869fe7",
+      "git_blob_sha1": "0524fd58e726117c3866d15185909b30936d565b"
+    },
+    {
+      "path": "clearpath_platform_msgs/msg/Feedback.msg",
+      "bytes": 471,
+      "sha256": "bf446c69cf377a623596f61676ade433da74ef6ae83cca2637d5d0e5a865f068",
+      "git_blob_sha1": "3843ca03bcf9d4db0745d7c68312a5d9ea33ac39"
+    },
+    {
+      "path": "clearpath_platform_msgs/msg/Lights.msg",
+      "bytes": 988,
+      "sha256": "5376249f04c944ee5150023d46a889ee4c63d3f36a7db7c4b77961cb8eb32b13",
+      "git_blob_sha1": "ed8ac650ed833085800cd73ce77aa2d46547ee27"
+    },
+    {
+      "path": "clearpath_platform_msgs/msg/PinoutCommand.msg",
+      "bytes": 687,
+      "sha256": "9f9d245985a2e8c4a5d1a96a61988ba9784a59c57731fb6b1565c8d6f97d3318",
+      "git_blob_sha1": "31be707555fd9651d7381f338c6feb21de32b046"
+    },
+    {
+      "path": "clearpath_platform_msgs/msg/PinoutState.msg",
+      "bytes": 878,
+      "sha256": "eaa9c02c1fd2f6bfcd817fe398518cb3ce17c5bc3421e78849363b5cb4c9724c",
+      "git_blob_sha1": "ccdb23d45d8c1513e9c682222d8b4248a897e66b"
+    },
+    {
+      "path": "clearpath_platform_msgs/msg/Power.msg",
+      "bytes": 2953,
+      "sha256": "2e536ce890649e8efe8b97dfbd1d0ce3228bd600aaeadfb49f777542c1134f91",
+      "git_blob_sha1": "3932e3c189e28cb90d0ad810e51f84390d9d458b"
+    },
+    {
+      "path": "clearpath_platform_msgs/msg/RGB.msg",
+      "bytes": 161,
+      "sha256": "bc66b218bd99dd786fe9a821abe9262b4ebe7e7943d62fe57470415995119547",
+      "git_blob_sha1": "66da198f768acf1c0975fc5c4f6ab4d9e06333b8"
+    },
+    {
+      "path": "clearpath_platform_msgs/msg/Status.msg",
+      "bytes": 315,
+      "sha256": "c66713eeee179f34b72a58e548aa6a02271940466d1667b4e0a3d3430087a126",
+      "git_blob_sha1": "44ecae3940a7417586db6af99df81fbe1ee4e3cc"
+    },
+    {
+      "path": "clearpath_platform_msgs/msg/StopStatus.msg",
+      "bytes": 294,
+      "sha256": "7c84f0c1b9eb5086d28d709bd3e3ba5e523e33376dcb67f9d6d871f3cc35ddde",
+      "git_blob_sha1": "7e869461693933ba909036df9b21938756b22bbc"
+    },
+    {
+      "path": "clearpath_platform_msgs/msg/Temperature.msg",
+      "bytes": 785,
+      "sha256": "cd594f879029ada6f9413a242e006848ce5afd14bb4257da21fb1cc1b0e4fa95",
+      "git_blob_sha1": "51d123639525973ecdb691371e061032e5bd162d"
+    },
+    {
+      "path": "clearpath_platform_msgs/package.xml",
+      "bytes": 920,
+      "sha256": "cff803902ca3cc0075218af8e1b9ca7ba01b171ab811fc93abaf67831898fdf9",
+      "git_blob_sha1": "138cb3578563cec1e98221a07a4a707d5bc2d374"
+    },
+    {
+      "path": "clearpath_platform_msgs/srv/ConfigureMcu.srv",
+      "bytes": 160,
+      "sha256": "20237a8ac3b67af802beaee23c4c3f7fffdc4bb7b9280add86d125513be6ed7f",
+      "git_blob_sha1": "9a129d65befb419dfd4c0c5309d2fb4e1f337527"
+    },
+    {
+      "path": "clearpath_platform_msgs/srv/SetPinout.srv",
+      "bytes": 249,
+      "sha256": "78ee9c198acf1a333f8e2ef2c0676a7b54924eb5f439664348f282e5fb5cc125",
+      "git_blob_sha1": "6f54a49b1a0e55f45613f014c5a65f42d2002cfe"
+    }
+  ],
+  "archive": {
+    "url": "https://codeload.github.com/clearpathrobotics/clearpath_msgs/tar.gz/11aa5eb22a84bd38443c180b1218b5c35486ba19",
+    "bytes": 14080,
+    "sha256": "8b40f7882e02e3fe2c203deaee2228d72a39c667a8e5536f4743908a687fb4d1"
+  },
+  "default_authority": [],
+  "scope": "Original source and complete acquisition archive only; no compatibility, compiler, Guest, native or physical robot result."
+}

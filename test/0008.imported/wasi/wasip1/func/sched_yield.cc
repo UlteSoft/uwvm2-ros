@@ -60,6 +60,10 @@ int main()
                                             .mount_dir_roots = {},
                                             .trace_wasip1_call = false};
 
+    // This positive native API fixture explicitly grants only the facility it tests.
+    // New environments intentionally start without non-FD authority.
+    env.non_fd_permissions = ::uwvm2::imported::wasi::wasip1::environment::permission_t::sched_yield;
+
     // Case 0: default implementation (no callback) should return esuccess
     {
         env.wasip1_sched_yield_func_ptr = nullptr;

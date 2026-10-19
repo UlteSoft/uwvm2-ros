@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<!-- Official ROS2 fixture package; build only in the verified Linux cgroup. -->
+<package format="3">
+  <name>uwvm_ros_custom_test_msgs</name>
+  <version>0.1.0</version>
+  <description>Fixed-layout official ROS2 message for trusted uwvm custom topic acceptance.</description>
+  <maintainer email="noreply@example.invalid">uwvm fixture maintainers</maintainer>
+  <license>APL-2.0</license>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>rosidl_default_generators</buildtool_depend>
+  <exec_depend>rosidl_default_runtime</exec_depend>
+  <member_of_group>rosidl_interface_packages</member_of_group>
+  <export><build_type>ament_cmake</build_type></export>
+</package>

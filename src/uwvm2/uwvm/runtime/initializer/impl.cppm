@@ -25,6 +25,9 @@ module;
 export module uwvm2.uwvm.runtime.initializer;
 export import :init_limit;
 export import :init;
+export import :threaded_registry_view;
+export import :threaded_child_world;
+export import :threaded_bootstrap;
 
 #ifndef UWVM_MODULE
 # define UWVM_MODULE

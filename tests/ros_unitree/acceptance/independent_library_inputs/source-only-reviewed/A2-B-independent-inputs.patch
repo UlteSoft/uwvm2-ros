@@ -1,0 +1,1582 @@
+--- /dev/null
++++ b/tests/ros_unitree/INDEPENDENT_DIRECT_INPUTS.md
+@@ -0,0 +1,182 @@
++# Independently prepared Direct inputs (A1, A2, B)
++
++This route prepares real library inputs in separate bounded stages. It avoids
++making the Direct compiler depend on Typed14's complete multi-language output
++preservation, and does not increase the maximum of64 selected roots. It makes
++no C++ source-compatibility, native execution, DDS, simulation or performance
++claim. The v1 Typed14, standalone, modular and profiler routes remain available.
++All examples below are argument shapes: Root must supply actual observed full7
++pins and fresh paths. There is no prospective inode, future manifest or copied
++success status in these examples.
++
++## A1: official C++ input
++
++Follow `CPP_LIBRARY_INPUTS.md`. `prepare_cpp_library.py` requalifies the genuine
++successful standalone object under its full original58-root closure, copies the
++object and finite official proof leaves to exclusive real new inodes, and lets
++normal `Frame.finish` publish the terminal report. The original `.d` retains its
++old absolute target and names; explicit copy associations are not a new compile.
++An inner qualifier sidecar is metadata only and is insufficient as an A1 result.
++A1 must finish successfully with source/input/root preservation and no owned
++copy descriptors left open. The original CPP report stays unchanged.
++
++## A2: terminal native GO24 input
++
++Run the *new frozen source's* `tests/ros_unitree/prepare_native_family_library.py`
++with `--source`, `--manifest`, `--manifest-sha256`, `--config`,
++`--config-sha256`, `--selection-input` and `--out`, exactly like A1. The selected
++JSON has format_version1, kind `uwvm-native-go24-library-selection-v1`, a
++`native_report` input label, an `upstream` name from Frame.upstreams, and finite
++explicit `restart_mappings`. The source-bound entry first proves the actual
++closed current64GiB/swap0/original CPU/leaf incarnation before importing helpers.
++No compiler, exporter, process or Guest starts in A2. Its metadata coordinator
++has a768MiB RSS ceiling and3600-second deadline; parent/current cgroup and all
++ancestor backing reserves remain enforced by Frame/Root ownership.
++
++A2's historical root is the **real terminal C52 report**:
++
++- Actual raw bytes40,555,414; SHA256
++  `c52bc5ed98e52904f52e1f8dac7031cd65a53f94d5128375d8de2eea23ae4d73`.
++- Its original full7 retains device68, inode326925 and actual original times.
++  The selected current report has its independently observed real full7. Any
++  device-only bridge is explicit; equal bytes do not excuse changed inode/times.
++- All forty original commands, three family statuses, normal/mount cleanup and
++  preservation facts must be genuinely successful. Native6's later raw failure
++  is never selected as a terminal native build or relabelled.
++- Whole original Source30 and its actual manifest, all23 original selected
++  roots, complete execution SDK, complete GO-derived tree and native prefix are
++  requalified. The execution SDK must additionally be an exact Frame root
++  with its saved complete admission catalog; the GO-derived/prefix subtrees
++  have genuinely zero symlinks. The additional complete metadata parents needed to read the SDK
++  acquisition report, old native control files and Source30 manifest must be
++  explicitly selected too. Root must construct the actual finite root union;
++  A2 never widens a root from an arbitrary embedded file name.
++- External regular targets already recorded by a complete original/current
++  source-root symlink catalog use the separately reviewed finite observational
++  ledger in `independent_cpp_object.catalog_pair(observed_targets=...)`. Each
++  actual source alias, original/current row, full target stream and explicit
++  source-root device bridge remains attached to that observation. A2 calls
++  `preserve_catalog_observations` after all proof/copy work. These targets never
++  enter Frame inputs/pins or Evidence.cache, cannot authorize parent/provider
++  roots, and cannot satisfy actually consumed compiler MD/official leaf access.
++  Those ordinary inputs retain exact selected-root admission. Default catalog
++  callers remain strict; a dynamic subtree inventory cannot grant this role.
++- The selected Unitree upstream has the real exact Git commit, complete whole
++  repository, actual all-blob acquisition proof and lock. Frame validates every
++  recorded official blob; profile strings alone are not acquisition evidence.
++- All195 package TUs and the one identity-export TU have their real configured
++  database, actual Make cwd/argv bijection, last-MF/all-MT semantics, complete
++  ordered system/header MD closure, fresh-before-build objects, GNU trace inputs,
++  original link scripts, eleven package DSOs and exporter ELF reopened.
++- Original stopped exporter proof binds actual opened map_files, same process
++  birth, physical executable/DSOs and one resume/`I` gate to actual metadata
++  stdout. It is historical process evidence. A2 only reopens physical files at
++  rest, never `/proc` paths from the retired process. Raw maps device numbers
++  stay separate from actual st_dev. DT_NEEDED aliases resolve to actual mapped
++  files, including real versioned SONAME symlinks; basename guesses are refused.
++- C52 captured no CMake FileAPI. A2 explicitly states NOT_CAPTURED and makes no
++  FileAPI qualification claim. Requiring FileAPI needs a genuine fresh build.
++
++The actual materialization, source selection, binder and generation receipts
++must associate every one of the24 complete definitions, bounds, native root and
++component IDs and adapter codec IDs. All eleven generated message-only files
++are carried forward unchanged. No schema, RIHS or field is invented to fill a
++missing metadata record. Original Source30 emitter digests and complete manifest
++remain separate from the later actual current emitter used by B.
++
++A2 exclusively copies the catalog,24 definitions, all eleven provider files,
++generation receipt and finite immutable proof documents into `out/library`.
++Each ordinary copied file is mode0400, nlink1, separately allocated, completely
++stream-hashed and fsynced through held nofollow source/destination descriptors.
++No hardlink, source chmod, SDK mutation or hidden fallback copy is permitted.
++Normal Frame.finish really reopens every distinct consumed full7 and complete
++input root before writing terminal kind
++`uwvm-independent-native-go24-library-input-v1`, status
++`PASS_INDEPENDENT_NATIVE_GO24_LIBRARY_INPUT_COPIED_AND_PRESERVED_NOT_EXECUTED`.
++Its old whole-root observations are facts at A2's stage only.
++
++**Generated-provider scope:** C52 compiled the official native package and
++identity exporter, then emitted native conversion/registry source. It did not
++compile those newly emitted headers into a Gateway. A2 says so explicitly.
++Native74's distinct completed at-rest qualification and the downstream current
++provider/full-MD Gateway check remain mandatory for owned physics/transport.
++A2 is not a substitute for that independent Runtime input chain.
++
++## B: actual standalone or modular Guest compilation
++
++First create a small real current Frame for the new source and actual used
++WASI/compiler/archive/QuickJS directories, completed A1 and A2 output roots, and
++fresh request controls. Do not copy A1's58-root list or A2's native root list into
++B. All actual consumed headers/tool archives still need complete selected root
++coverage. The new metadata-only entry
++`tests/ros_unitree/prepare_direct_library_configuration.py` consumes the closed
++v2 request template in `acceptance/independent_library_inputs`.
++
++Its ten tool labels and four SDK paths are explicit. It independently consumes
++completed same-source/current64 A1/A2, reruns the official copied source parser,
++reopens the unchanged original full-MD rule with explicit original→copied leaf
++associations, and checks actual compiler/sysroot/archive association. It writes
++an actual read-only selection/configuration and an **unexecuted literal argv**
++under its output controls. Root only uses this after normal terminal finish.
++There is no tool discovery, package fetch, guessed tool version or Typed14 input.
++
++The published selection kind is one of:
++
++- `unitree-direct-go2-standalone-independent-build-selection-v2`;
++- `unitree-direct-go2-modular-independent-build-selection-v2`.
++
++Root then invokes the actual `prepare_direct_guests.py` argv. This is a real B
++build, not metadata qualification. It always runs the actual current generator
++in a fresh directory, requires exactly the same24 native/codec identities and
++all eleven original generated output bodies, and retains its actual argv,
++complete definitions and source-bound emitter pins. Its generation admission
++kind is `uwvm-unitree-independent-go24-current-generation-admission-v2`.
++It honestly marks C52 generated-provider bytes as source-only and requires the
++separate native Gateway qualification before execution.
++
++C, C++ and embedded-JS denied/positive mains are all really compiled, linked,
++full-MD/trace checked and binary-validated. Standalone remains same-main with no
++preloads. Explicit modular mode builds three pure Wasm providers for actual
++LowState perception, motion and ordered Wasm callbacks, and the protocol root;
++it retains the existing native matched simulation kernel and profiler features.
++There is no physical robot, camera/image-vision claim, optional WASI grant,
++automatic ROS right or conversion of a multiprocess design into one process.
++
++## Owned physics and profiling
++
++After B actually completes, call
++`direct_independent_inputs.configuration(frame, api, base_config_input,
++base_physics_input, build_input)` from an admitted metadata-only Frame. It checks
++all actual B receipts, copied A1 object/MD closure and A2 lineage. The original
++C52 generation role, not its copy's path, must match the baseline native family.
++It adds B's actual minimal consumed whole roots and output root to the existing
++native/Worker/MuJoCo base configuration, requiring at most63 roots so CP310's
++exact runtime-control root still fits. It never adds preparation-only roots.
++
++Modular mode uses the existing modular adapter. Standalone keeps the original
++physics selection schema and empty preload route. Both return actual published
++configuration/template full7 pins, without forecasting a namespace or starting
++an actor. The ordinary CP310 `--phase run`/`--phase profile` owners remain in
++charge of actual private namespace, real Worker/Native opened mappings, actual
++VTune attach/lifetime, matched native replay, rights and cleanup. Those owners
++still independently require Native74-at-rest8503/current-provider full MD;
++no claim is inferred from A2's source-only provider copy.
++
++## Regression and execution status
++
++A1 has ten authored policy/kernel-copy regressions. The additional
++`test_native_family_inputs_policy.py::suite` returns eighteen DATA regressions
++using the real pinned original C52 report, actual GO documents/current profile
++and actual original export verbose log. It checks genuine terminal/cleanup,
++refusal to promote Native6 failure, raw hash/partial commands, all24 identities,
++component/codec/bounds mismatches, output inventory, and the actual Make argv
++bijection including missing/duplicate commands and altered cwd evidence. Root
++must supply the current64 guard and genuinely pinned data; suite construction
++runs no test. None of these tests, A1/A2, real generation, B compilation, DDS,
++physics or profiling was executed by this source author.
++
++All new source, patch and manifest hashes are review artifacts. Only actual
++Root runs after a complete fresh source freeze can establish terminal A1/A2/B
++results. Existing frozen sources and original raw success/failure reports stay
++unchanged. A failed preparation/output remains visible and cannot be reused as
++a success by copying a status string.
+--- /dev/null
++++ b/tests/ros_unitree/acceptance/independent_library_inputs/direct-v2-request.template.json
+@@ -0,0 +1,26 @@
++{
++  "format_version": 2,
++  "kind": "uwvm-direct-independent-build-configuration-request-v2",
++  "composition": "standalone",
++  "tools": {
++    "cc": "actual-wasi-cc",
++    "cxx": "actual-wasi-cxx",
++    "python": "actual-python",
++    "validator": "actual-validator",
++    "libc": "actual-wasi-libc",
++    "libm": "actual-wasi-libm",
++    "printscan": "actual-wasi-printscan",
++    "builtins": "actual-wasi-builtins",
++    "libcxx": "actual-wasi-libcxx",
++    "libcxxabi": "actual-wasi-libcxxabi"
++  },
++  "paths": {
++    "sysroot": null,
++    "resource_dir": null,
++    "wasm_ld_alias": null,
++    "quickjs": null
++  },
++  "cpp_library": "actual-terminal-A1",
++  "native_family_library": "actual-terminal-A2",
++  "build_out": null
++}
+--- /dev/null
++++ b/tests/ros_unitree/acceptance/independent_library_inputs/native-go-selection.template.json
+@@ -0,0 +1,7 @@
++{
++  "format_version": 1,
++  "kind": "uwvm-native-go24-library-selection-v1",
++  "native_report": "actual-terminal-c52",
++  "upstream": "unitree_ros2",
++  "restart_mappings": []
++}
+--- a/tests/ros_unitree/direct_guest_receipts.py
++++ b/tests/ros_unitree/direct_guest_receipts.py
+@@ -102,14 +102,23 @@
+         pin(value);body,actual=frame.common.document(Path(value['path']))
+         require(actual==value,'current-family document changed while parsing');return body
+     body=doc(selected)
+-    require(body.get('kind')=='uwvm-unitree-current-go24-generation-admission-v1' and
++    independent=body.get('kind')=='uwvm-unitree-independent-go24-current-generation-admission-v2'
++    require(body.get('kind') in ('uwvm-unitree-current-go24-generation-admission-v1',
++            'uwvm-unitree-independent-go24-current-generation-admission-v2') and
+             body.get('status')=='CURRENT_SOURCE_GENERATION_IDENTICAL_NATIVE_PROVIDER_BYTES_NOT_EXECUTED' and
+             body.get('source')==str(frame.source) and body.get('source_manifest_sha256')==frame.report['source_manifest_sha256'] and
+-            body.get('original_native_identities_preserved') is body.get('compiled_provider_output_bytes_equal') is
+-            body.get('current_emitter_executed') is True and body.get('old_reports_rewritten') is body.get('Runtime_executed') is False,
++            body.get('original_native_identities_preserved') is body.get('current_emitter_executed') is True and
++            ((not independent and body.get('compiled_provider_output_bytes_equal') is True) or
++             (independent and body.get('compiled_provider_output_bytes_equal') is False and
++              body.get('original_generated_provider_output_bytes_equal') is True and
++              body.get('generated_provider_compilation_qualification')=='REQUIRES_SEPARATE_CURRENT_NATIVE_GATEWAY_FULL_MD_ADMISSION')) and body.get('old_reports_rewritten') is body.get('Runtime_executed') is False,
+             'actual current source-only family admission required')
+     fresh,old=doc(body['generation']),doc(body['historical_generation'])
+-    catalog,profile=doc(body['catalog']),doc(body['profile']);pin(body['original_typed_report'])
++    catalog,profile=doc(body['catalog']),doc(body['profile'])
++    if independent:
++        library_api=api.frozen_module(frame.source,frame.frozen,'tests/ros_unitree/direct_independent_inputs.py','direct_actual_A2_generation_consumer')
++        library_api.verify_generation(frame,api,body)
++    else:pin(body['original_typed_report'])
+     for key,relative in (('generator','sdk/tools/custom_types.py'),('bounded_generator','sdk/custom-types/bounded_profile.py')):
+         value=pin(body[key]);require(value['path']==str(frame.source/relative) and
+             frame.frozen.get(relative)=={part:value[part] for part in ('bytes','sha256')}, 'actual current emitter differs from complete MF')
+@@ -171,7 +180,10 @@
+             'maintained actual standalone producer required')
+     tools=body['tools'];require(type(tools) is dict and tools,'complete selected standalone tool closure required')
+     for value in tools.values():pin(value)
+-    generated=current_family(frame,api,body['current_family']) if modular else None
++    if 'independent_library_prerequisites' in body:
++        inputs_api=api.frozen_module(frame.source,frame.frozen,'tests/ros_unitree/direct_independent_inputs.py','direct_actual_A1_A2_prerequisite_consumer')
++        inputs_api.verify_cpp(frame,api,body['independent_library_prerequisites'],tools)
++    generated=current_family(frame,api,body['current_family']) if modular or 'independent_library_prerequisites' in body else None
+     sources={value['path']:pin(value) for value in body['source_inputs']}
+     for relative in required:
+         require(str(frame.source/relative) in sources,'required real Guest/kernel source absent')
+--- /dev/null
++++ b/tests/ros_unitree/direct_independent_inputs.py
+@@ -0,0 +1,220 @@
++"""Explicit Direct v2 admission for separately completed A1/A2 library inputs.
++
++The v1 Typed14 route remains unchanged. An A1/A2 preparer's original wide root
++observations do not become Direct input roots. This consumer reopens only real
++finished same-source/current64 library outputs and actual tool/sysroot/MD input
++closure. Native execution/physics still requires its independent full Native
++and Worker receipts; no source-provider copy authorizes execution or ROS rights.
++"""
++from __future__ import annotations
++import copy
++import os
++from pathlib import Path
++
++STANDALONE='unitree-direct-go2-standalone-independent-build-selection-v2'
++MODULAR='unitree-direct-go2-modular-independent-build-selection-v2'
++KINDS=(STANDALONE,MODULAR)
++GENERATION='uwvm-unitree-independent-go24-current-generation-admission-v2'
++
++
++def need(value,message):
++    if not value:raise ValueError(message)
++
++
++def prerequisite(frame,api,admission,selection):
++    library=api.frozen_module(frame.source,frame.frozen,'tests/ros_unitree/library_inputs.py','direct_A1_consumed_library_contract')
++    native=api.frozen_module(frame.source,frame.frozen,'tests/ros_unitree/native_family_inputs.py','direct_A2_consumed_library_contract')
++    library.closed(selection,('format_version','kind','tools','paths','cpp_library','native_family_library','generated_go','restart_mappings'),
++        'independent Direct selection')
++    need(selection['format_version']==2 and selection['kind'] in KINDS and selection['restart_mappings']==[],
++        'explicit v2 uses completed current library leaves, never historical root projection')
++    compiler=frame.inputs[selection['tools']['cxx']]
++    cpp=library.consume_cpp(frame,api,selection['cpp_library'],compiler,Path(selection['paths']['sysroot']))
++    family=native.consume(frame,api,selection['native_family_library'],library)
++    directory=Path(family['historical_generation']['path']).parent
++    need(str(directory)==selection['generated_go'],'explicit selected actual copied GO generation differs')
++    frame.direct_regeneration=family
++    frame.report['independent_library_prerequisites']={'kind':'uwvm-direct-independent-library-prerequisites-v2',
++        'cpp':cpp,'native_family':{key:value for key,value in family.items() if key!='original_generation_body'},
++        'Typed14_required':False,'old_root_observations_current_here':False,'original_reports_rewritten':False,
++        'Runtime_executed':False,'default_authority':[]}
++    evidence=admission.Evidence(api,frame,[])
++    return cpp['object'],directory,evidence,cpp
++
++
++def verify_cpp(frame,api,prerequisite,tools):
++    """Reopen the actually consumed A1 object and finite MD/official closure."""
++    library=api.frozen_module(frame.source,frame.frozen,'tests/ros_unitree/library_inputs.py','direct_actual_A1_leaf_consumer')
++    need(prerequisite['kind']=='uwvm-direct-independent-library-prerequisites-v2' and
++        prerequisite['Typed14_required'] is prerequisite['old_root_observations_current_here'] is
++        prerequisite['original_reports_rewritten'] is prerequisite['Runtime_executed'] is False and
++        prerequisite['default_authority']==[],'explicit binary-only A1/A2 prerequisite scope required')
++    selected=prerequisite['cpp'];pin=selected['prepared_library_report'];library.current(frame,pin)
++    class SelectedView:
++        def __init__(self,parent):self.parent=parent;self.inputs={'actual-A1-library':pin}
++        def __getattr__(self,name):return getattr(self.parent,name)
++    actual=library.consume_cpp(SelectedView(frame),api,'actual-A1-library',tools['cxx'],Path(selected['sysroot']))
++    need(actual==selected,'actual independently copied CPP object/MD/official source association differs')
++    return actual
++
++
++def verify_generation(frame,api,body):
++    """Re-admit actual A2 leaves for a real fresh current-emitter receipt."""
++    library=api.frozen_module(frame.source,frame.frozen,'tests/ros_unitree/library_inputs.py','physics_A1A2_finite_leaf_contract')
++    native=api.frozen_module(frame.source,frame.frozen,'tests/ros_unitree/native_family_inputs.py','physics_A2_finite_provider_contract')
++    need(body['kind']==GENERATION,'explicit independent generation v2 required')
++    actual=native.consume(frame,api,None,library,selected_pin=body['native_family_library_report'])
++    need(all(body[key]==actual[key] for key in ('catalog','historical_generation','original_generation',
++        'profile','native_family_library_report','original_native_report','original_source','original_manifest_sha256')),
++        'actual completed A2 copied provider lineage differs')
++    need(body['original_complete_family']==actual['original_complete_family'],
++        'original C52 family row must remain unchanged historical data')
++    return actual
++
++
++def configuration(frame,api,base_config_input,base_physics_input,build_input):
++    """Publish actual unexecuted Direct metadata after B really completed.
++
++    The regular CP310 run/profile routes consume the published same schemas.
++    No namespace, actor or simulator is started here. A modular B uses the
++    existing three-provider adapter; a standalone B retains libraries=[] and
++    the original three same-main controllers. Only B's actual minimal consumed
++    whole roots are added, never A1/A2's historical preparation-root lists.
++    """
++    graph=api.frozen_module(frame.source,frame.frozen,'tests/ros_unitree/direct_modular.py','independent_direct_metadata_graph')
++    def doc(label):
++        body,pin=frame.common.document(frame.input(label));need(pin==frame.inputs[label],'selected current metadata changed');return body,pin
++    base,base_pin=doc(base_config_input);physics,physics_pin=doc(base_physics_input);build,build_pin=doc(build_input)
++    if build.get('kind')==graph.BUILD_KIND:
++        return graph.configuration(frame,api,base_config_input,base_physics_input,build_input)
++    need(build.get('kind')=='unitree-direct-go2-standalone-Guest-builds' and
++        build.get('status')=='PASS_SIX_DIRECT_GO2_COMMANDS_COMPILED_VALIDATED_NOT_EXECUTED' and
++        build.get('source')==str(frame.source) and build.get('source_manifest_sha256')==frame.report['source_manifest_sha256'] and
++        all(build.get(key) is True for key in ('source_preserved','input_pins_preserved','whole_roots_preserved')) and
++        not build.get('error') and not build.get('finalization_errors') and
++        len(build.get('products',[]))==6 and build.get('providers')==[] and
++        build.get('Runtime_executed') is build.get('ROS_DDS_initialized') is build.get('simulator_executed') is False and
++        build.get('independent_library_prerequisites',{}).get('kind')=='uwvm-direct-independent-library-prerequisites-v2',
++        'actual completed independent six-main standalone B build required')
++    need(physics.get('kind')=='unitree-go2-three-direct-physics-v1' and physics.get('expected_network_namespace') is None and
++        'libraries' not in physics and base['cgroup']==frame.config['cgroup'] and
++        base['benchmark'] is base['profiler'] is None and base['simulation']['controllers'] is
++        base['simulation']['direct_runtime'] is None and 'physics_selection' not in base['inputs'],
++        'actual unexecuted baseline standalone metadata required')
++    cleanup=build.get('cleanup',[]);cleanup=[cleanup] if type(cleanup) is dict else cleanup
++    need(cleanup and all(row.get('status')=='PASS' and not row.get('errors') and not row.get('remaining') for row in cleanup),
++        'B cleanup must really have completed')
++    consumer=api.frozen_module(frame.source,frame.frozen,'tests/ros_unitree/direct_guest_receipts.py','independent_standalone_receipt_admission')
++    config,selected=copy.deepcopy(base),copy.deepcopy(physics);labels={};selected['reports']['guests']='direct-independent-products'
++    labels['direct-independent-products']=build_pin;selected['guests']={}
++    shared='sdk/robots/unitree/include/roswasm_unitree/simulation_control.h'
++    required={'c':['sdk/robots/unitree/examples/direct_go2.c','sdk/robots/unitree/examples/direct_go2_output.cpp',shared],
++        'cpp':['sdk/robots/unitree/examples/direct_go2.cpp',shared],
++        'javascript':['sdk/robots/unitree/examples/javascript/direct_go2.mjs','sdk/robots/unitree/examples/javascript/control_kernel.c',shared]}
++    for language in ('c','cpp','javascript'):
++        chosen={}
++        for positive,mode in ((False,'denied'),(True,'positive')):
++            matches=[row for row in build['products'] if row['language']==language and row['positive'] is positive]
++            need(len(matches)==1,'one actual independent language/mode B product required');row=matches[0]
++            artifact,receipt=row['artifact'],row['receipt'];need(frame.pin(artifact['path'])==artifact and frame.pin(receipt['path'])==receipt,
++                'actual completed B artifact/receipt changed')
++            body,actual=frame.common.document(Path(receipt['path']));need(actual==receipt,'B receipt changed while parsing')
++            current=consumer.current_family(frame,api,body['current_family'])
++            original=base['inputs'][physics['families']['unitree_go']['generation']]
++            need({k:current['original_generation'][k] for k in ('path','bytes','sha256')}==original,
++                'independent C52 generation differs from selected native physics family')
++            definitions={'UWVM_UNITREE_DIRECT_ENABLED':int(positive)}
++            if language=='cpp':definitions['UWVM_UNITREE_MODULAR_MOTION']=0
++            if language=='javascript':definitions['UWVM_JS_UNITREE_CONTROL']=1
++            consumer.guest(frame,api,body,build_input,build_input,required[language],definitions,
++                selection_pins={'artifact':artifact,'receipt':receipt})
++            label='direct-independent-'+language+'-'+mode
++            labels[label]=artifact;labels[label+'-receipt']=receipt;chosen[mode]=label;chosen[mode+'_receipt']=label+'-receipt'
++        selected['guests'][language]=chosen
++    need(not(set(labels)&set(config['inputs'])),'actual independent labels must not overwrite baseline roles')
++    for label,pin in labels.items():config['inputs'][label]={k:pin[k] for k in ('path','bytes','sha256')}
++    builder_config,pin=frame.common.document(Path(build['configuration']['path']))
++    need(pin==build['configuration'] and builder_config['cgroup']==frame.config['cgroup'],
++        'actual completed B configuration/current64 association differs')
++    roots=[Path(p) for p in builder_config['input_roots']];root=Path(build_pin['path']).parent
++    need(root in frame.roots and all(p in frame.roots for p in roots),'every actual consumed B root must be whole selected current metadata input')
++    config['input_roots']=list(dict.fromkeys([*config['input_roots'],*[str(r) for r in roots],str(root)]))
++    need(len(config['input_roots'])<=63,'leave one exact CP310 runtime-control root')
++    config_path=frame.out/'independent-baseline-config.json';selection_path=frame.out/'independent-physics-unforecast.json'
++    frame.common.atomic_json(config_path,config);frame.common.atomic_json(selection_path,selected)
++    result={'configuration':frame.pin(config_path),'physics_template':frame.pin(selection_path),'base_configuration':base_pin,
++        'base_physics_template':physics_pin,'actual_independent_build':build_pin,'namespace_forecast':False,
++        'actors_started':0,'Runtime_executed':False,'image_vision_qualified':False}
++    frame.report['independent_metadata_adaptation']=result;frame.save();return result
++
++
++def stage_configuration(frame,api,admission,request):
++    """Real metadata-only B constructor; Root supplies actual completed A1/A2.
++
++    The input Frame already selects only the actual B-consumed complete roots.
++    All ten tool/archive labels and four SDK paths are explicit. No discovery
++    from an old preparation config and no expansion of its historical roots is
++    performed. Normal Frame.finish is required before using this constructor's
++    output report. The published argv is literal and remains unexecuted.
++    """
++    library=api.frozen_module(frame.source,frame.frozen,'tests/ros_unitree/library_inputs.py','independent_metadata_finite_contract')
++    library.closed(request,('format_version','kind','composition','tools','paths','cpp_library','native_family_library','build_out'),
++        'independent Direct configuration request')
++    need(request['format_version']==2 and request['kind']=='uwvm-direct-independent-build-configuration-request-v2' and
++        request['composition'] in ('standalone','modular') and len(frame.roots)<=63 and
++        frame.limits['jobs']==1 and frame.limits['rss_bytes']<=2*1024**3 and frame.limits['command_seconds']<=600 and
++        frame.config['simulation'] is frame.config['benchmark'] is frame.config['profiler'] is None,
++        'current compiler-free independent constructor with one controls-root slot required')
++    library.closed(request['tools'],('cc','cxx','python','validator','libc','libm','printscan','builtins','libcxx','libcxxabi'),'explicit ten actual tool/archive labels')
++    library.closed(request['paths'],('sysroot','resource_dir','wasm_ld_alias','quickjs'),'explicit complete SDK paths')
++    for label in request['tools'].values():library.current(frame,frame.inputs[label])
++    for name in ('sysroot','resource_dir','quickjs'):
++        path=Path(request['paths'][name]);need(path.is_absolute() and path.resolve(strict=True)==path and path.is_dir() and
++            any(path==r or path.is_relative_to(r) for r in frame.roots),'whole actual selected SDK directory required')
++    alias=Path(request['paths']['wasm_ld_alias']);need(alias.is_absolute() and alias.name.startswith('wasm-ld') and
++        alias.parent.resolve(strict=True)==alias.parent,'explicit physical Wasm linker spelling required')
++    library.selected(frame,alias.resolve(strict=True))
++    raw,pin=frame.common.document(frame.input(request['native_family_library']))
++    need(pin==frame.inputs[request['native_family_library']],'selected A2 report changed')
++    # This spelling is read only as a prospective argument. prerequisite() below
++    # independently proves its actual terminal A2 and all finite copied leaves.
++    generated=str(Path(raw['library']['generation']['path']).parent)
++    selection={'format_version':2,'kind':MODULAR if request['composition']=='modular' else STANDALONE,
++        'tools':request['tools'],'paths':request['paths'],'cpp_library':request['cpp_library'],
++        'native_family_library':request['native_family_library'],'generated_go':generated,'restart_mappings':[]}
++    obj,directory,evidence,cpp=prerequisite(frame,api,admission,selection)
++    need(str(directory)==generated and cpp['compiler']['physical']==frame.inputs[request['tools']['cxx']]['path'] and
++        cpp['sysroot']==request['paths']['sysroot'],'actual copied official object/compiler/sysroot association differs')
++    for key,name in (('libc','libc.a'),('libm','libm.a'),('printscan','libc-printscan-long-double.a'),
++        ('libcxx','libc++.a'),('libcxxabi','libc++abi.a')):
++        need(Path(frame.inputs[request['tools'][key]]['path'])==
++            (Path(request['paths']['sysroot'])/'lib/wasm32-wasip1'/name).resolve(strict=True),
++            'actual matching WASI SDK archive required: '+key)
++    output=Path(request['build_out'])
++    need(output.is_absolute() and not output.exists() and not output.is_symlink() and output.parent.resolve(strict=True)==output.parent and
++        all(not(output==p or output.is_relative_to(p) or p.is_relative_to(output)) for p in [frame.source,frame.out,*frame.roots]),
++        'fresh disjoint actual owned B build output required')
++    controls=frame.out/'build-controls';controls.mkdir(mode=0o700)
++    selection_path=controls/'selection.json';frame.common.atomic_json(selection_path,selection)
++    selection_path.chmod(0o400);selection_pin=frame.pin(selection_path)
++    inputs=dict(frame.config['inputs']);need('independent-direct-selection' not in inputs,'fresh selection input label required')
++    inputs['independent-direct-selection']={k:selection_pin[k] for k in ('path','bytes','sha256')}
++    config={**frame.config,'input_roots':[*[str(r) for r in frame.roots],str(frame.out)],'inputs':inputs}
++    need(len(config['input_roots'])<=64,'actual selected B roots must fit unchanged64-root limit')
++    config_path=controls/'frame-config.json';frame.common.atomic_json(config_path,config);config_path.chmod(0o400)
++    config_pin=frame.pin(config_path)
++    argv=[frame.inputs[request['tools']['python']]['path'],'-B',str(frame.source/'tests/ros_unitree/prepare_direct_guests.py'),
++        '--source',str(frame.source),'--manifest',str(frame.manifest),'--manifest-sha256',frame.report['source_manifest_sha256'],
++        '--config',config_pin['path'],'--config-sha256',config_pin['sha256'],'--selection-input','independent-direct-selection','--out',str(output)]
++    invocation_path=controls/'invocation.json';frame.common.atomic_json(invocation_path,{'argv':argv,'execution_performed':False})
++    invocation_path.chmod(0o400);invocation=frame.pin(invocation_path)
++    descriptor=os.open(controls,os.O_RDONLY|os.O_DIRECTORY|os.O_NOFOLLOW)
++    try:
++        os.fsync(descriptor);os.fchmod(descriptor,0o500);os.fsync(descriptor)
++    finally:os.close(descriptor)
++    need(not frame.actors and not output.exists(),'metadata constructor cannot start a compiler or create build output')
++    frame.report.update(derived_selection=selection_pin,derived_configuration=config_pin,future_invocation=invocation,
++        observed_cpp_object=obj,observed_actual_A2_generation=frame.pin(directory/'generation.json'),
++        metadata_only=True,actors_started=0,compilation_performed=False,Runtime_executed=False,default_authority=[],
++        original_reports_rewritten=False,original_preparation_roots_projected=False,cleanup=[])
++    return 'PASS_DIRECT_INDEPENDENT_BUILD_CONFIGURATION_REAL_A1_A2_ADMITTED_NOT_COMPILED'
+--- a/tests/ros_unitree/direct_modular.py
++++ b/tests/ros_unitree/direct_modular.py
+@@ -171,7 +171,7 @@
+                 body.get('composition',{}).get('providers')==build['providers'], 'actual modular command receipt association differs')
+             current=consumer.current_family(frame,api,body['current_family'])
+             original=base['inputs'][physics['families']['unitree_go']['generation']]
+-            require({key:current['historical_generation'][key] for key in ('path','bytes','sha256')}==original,
++            require({key:current.get('original_generation',current['historical_generation'])[key] for key in ('path','bytes','sha256')}==original,
+                     'current generation differs from the selected original native family')
+             shared='sdk/robots/unitree/include/roswasm_unitree/simulation_control.h'
+             required=({'c':['sdk/robots/unitree/examples/direct_go2.c','sdk/robots/unitree/examples/direct_go2_output.cpp',shared],
+@@ -208,7 +208,16 @@
+     # root. Never derive a wider parent from an individual product pathname.
+     root=Path(build_pin['path']).parent
+     require(root in frame.roots, 'complete actual modular producer root must be explicitly selected')
+-    config['input_roots']=list(dict.fromkeys([*config['input_roots'],str(root)]))
++    consumed=[]
++    if build.get('independent_library_prerequisites',{}).get('kind')=='uwvm-direct-independent-library-prerequisites-v2':
++        build_config,actual=frame.common.document(Path(build['configuration']['path']))
++        require(actual==build['configuration'] and build_config['cgroup']==frame.config['cgroup'],
++            'actual completed independent build configuration/current64 association differs')
++        # Only actual v2 B roots are consumed here. A1/A2 historical preparation
++        # roots are not B roots and are never projected into this configuration.
++        consumed=[Path(value) for value in build_config['input_roots']]
++        require(all(value in frame.roots for value in consumed), 'actual consumed v2 B roots must remain whole selected inputs')
++    config['input_roots']=list(dict.fromkeys([*config['input_roots'],*[str(value) for value in consumed],str(root)]))
+     require(len(config['input_roots'])<=63, 'leave one exact CP310 runtime-control root')
+     configuration=frame.out/'modular-baseline-config.json';selection=frame.out/'modular-physics-unforecast.json'
+     frame.common.atomic_json(configuration,config);frame.common.atomic_json(selection,selected)
+--- /dev/null
++++ b/tests/ros_unitree/native_family_inputs.py
+@@ -0,0 +1,646 @@
++"""A2: a terminal copied GO24 input, independent of Typed14's main build.
++
++Only the genuine terminal C52 package/export record is an original build root.
++The later Native6 failure is never upgraded. A2 reopens the original complete
++source, every original selected input root, execution SDK and GO derived tree,
++then reparses actual full-MD/Make/link/map evidence. Exclusive new-inode copies
++carry forward just the consumed catalog, definitions, generated provider bytes
++and unchanged proof documents. A2 executes no compiler, exporter or Guest.
++
++B accepts A2 only after its normal Frame.finish preservation and cleanup. Its
++old roots remain observations made by A2; B does not open unused historical
++host/SDK roots or pretend to have observed them again. B really runs the current
++emitter and requires all eleven message-only outputs to be byte-identical.
++"""
++from __future__ import annotations
++import hashlib
++import json
++import os
++from pathlib import Path
++import posixpath
++import re
++import shlex
++import types
++
++MIB=1024**2
++PIN=frozenset(('path','bytes','sha256','device','inode','mtime_ns','ctime_ns'))
++KIND='uwvm-independent-native-go24-library-input-v1'
++STATUS='PASS_INDEPENDENT_NATIVE_GO24_LIBRARY_INPUT_COPIED_AND_PRESERVED_NOT_EXECUTED'
++ORIGINAL_SHA='c52bc5ed98e52904f52e1f8dac7031cd65a53f94d5128375d8de2eea23ae4d73'
++ORIGINAL_BYTES=40555414
++# Actual original pin retained by the genuine Native6/C52 export observation.
++# This is an immutable historical role, not a prediction of a future device.
++ORIGINAL_PIN={'path':'/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/unitree-native-humble-build-export-20261016-r6/report.json',
++    'bytes':40555414,'sha256':ORIGINAL_SHA,'device':68,'inode':326925,
++    'mtime_ns':1792099813587285821,'ctime_ns':1792099813604286079}
++OUTPUTS=frozenset(('bounded_records.h','bounded_records.hpp','bounded_records.rs','bounded_records.go',
++    'bounded_records.ts','bounded_records.mjs','bounded_interfaces.h','bounded_interfaces.hpp',
++    'manifest.hpp','native_ros1.hpp','native_ros2.hpp'))
++COMMIT='668d1ec5a05d1c38d3306bdca7d59f2ba3581a88'
++
++
++def need(value,reason):
++    if not value:raise ValueError(reason)
++
++
++def terminal_original(report,pin):
++    """The original success is fixed actual data, never an inferred status."""
++    need(pin['bytes']==ORIGINAL_BYTES and pin['sha256']==ORIGINAL_SHA and
++        report.get('kind')=='unitree-native-amd64-package-export' and
++        report.get('status')=='PREPARED_NATIVE_INTERFACES_IDENTITIES_AND_SOURCE_PROVIDERS' and
++        all(report.get(key) is True for key in ('source_preserved','inputs_preserved','products_preserved',
++            'execution_sdk_preserved','derived_products_preserved','preparation_complete')) and
++        report.get('reuse') is False and report.get('runtime_or_robot_qualification') is False and
++        report.get('cleanup')=={'status':'PASS','remaining':[]} and
++        report.get('mount_cleanup_processes')=={'status':'PASS','remaining':[]} and
++        report.get('remaining_mounts')==[] and report.get('finalization_errors')==[],
++        'genuine terminal C52 native-interface preparation and cleanup required')
++    commands=report['commands']
++    need(type(commands) is list and len(commands)==40 and len({row['label'] for row in commands})==40 and
++        all(row['status']=='PASS' and row['returncode']==0 and row['expected_returncode']==0 for row in commands),
++        'all forty original actual commands must have completed successfully')
++    families=report['families'];need(type(families) is list and
++        {row['family'] for row in families}=={'unitree_go','unitree_hg','unitree_api'} and len(families)==3 and
++        all(row['status']=='PREPARED_NATIVE_PACKAGE_IDENTITIES_AND_SOURCE_PROVIDER' for row in families),
++        'the unchanged three-family successful original report is required')
++    return next(row for row in families if row['family']=='unitree_go')
++
++
++def without_dependencies(argv):
++    """Remove only actual -MD/-MF/-MT for compile-database bijection."""
++    result=[];at=0
++    while at<len(argv):
++        token=argv[at]
++        if token=='-MD':at+=1;continue
++        if token in ('-MF','-MT'):
++            need(at+1<len(argv) and argv[at+1] and not argv[at+1].startswith('-'),'actual dependency operand required')
++            at+=2;continue
++        need(not token.startswith(('-MF','-MT')),'joined dependency options outside original scope')
++        result.append(token);at+=1
++    return tuple(result)
++
++
++def make_witness(database,log,logical_build,expected_events):
++    """Reconstruct actual argv/cwd from the retained GNU Make verbose log."""
++    configured={};actual={};stack={};events=[]
++    for row in database:
++        argv=row.get('arguments') or shlex.split(row['command']);key=without_dependencies(argv)
++        need(argv[0] in ('/usr/bin/gcc','/usr/bin/g++') and row['directory']==logical_build and key not in configured,
++            'one configured original compiler row per translation unit required')
++        configured[key]=row
++    for number,line in enumerate(log.splitlines(),1):
++        text=line.strip();match=re.fullmatch(r"(?:make|gmake)(?:\[(\d+)\])?: (Entering|Leaving) directory '([^']+)'",text)
++        if match:
++            level=int(match[1] or 0);directory=posixpath.normpath(match[3])
++            need(directory==logical_build or directory.startswith(logical_build+'/'),'Make cwd outside original build')
++            if match[2]=='Entering':
++                need(level not in stack and (not stack or level==max(stack)+1),'ambiguous Make entry');stack[level]=directory
++            else:
++                need(stack and level==max(stack) and stack[level]==directory,'unmatched Make exit');del stack[level]
++            events.append({'line_number':number,'raw':line,'level':level,'operation':match[2],'cwd':directory});continue
++        if not text.startswith(('/usr/bin/gcc ','/usr/bin/g++ ','cd ')):continue
++        argv=shlex.split(text)
++        if argv[0]=='cd':
++            need(not(len(argv)>=4 and argv[2]=='&&' and argv[3] in ('/usr/bin/gcc','/usr/bin/g++')),
++                'unreviewed cd-prefixed compile');continue
++        if argv[0] not in ('/usr/bin/gcc','/usr/bin/g++') or '-c' not in argv:continue
++        need(stack and stack[max(stack)]==logical_build and not any(v in ('&&',';','|','>','>>','<') for v in argv),
++            'actual compiler lacks retained Make cwd witness')
++        key=without_dependencies(argv);need(key in configured and key not in actual,'extra, duplicate or unmatched actual compile')
++        actual[key]={'argv':argv,'cwd':logical_build,'make_level':max(stack),'raw':line,'line_number':number,
++            'cwd_basis':'ACTUAL_RETAINED_MAKE_ENTER_LEAVE_CURRENT_DIRECTORY'}
++    need(not stack and set(actual)==set(configured) and events==expected_events,
++        'complete original Make/compiler database bijection required')
++    return [actual[without_dependencies(row.get('arguments') or shlex.split(row['command']))] for row in database]
++
++
++def message_contract(generation,catalog,profile,metadata,binding):
++    """Compare all native IDs, bounds and codec identities, without inventing IDs."""
++    wanted={row['type']:row for row in profile['definitions']}
++    need(profile['family']=='unitree_go' and profile['ros_version']==2 and profile['default_authority']==[] and
++        profile['repository']=='unitreerobotics/unitree_ros2' and profile['commit']==COMMIT and len(wanted)==24,
++        'the complete official GO24 ROS2 profile required')
++    need(generation['format']=='uwvm-ros-custom-bounded-v2' and generation['status']=='GENERATED_SOURCE_ONLY' and
++        generation['native_registry_emitted'] is True and generation['implicit_permissions']==[] and
++        generation['packages']=={'ros1':[],'ros2':['unitree_go']} and set(generation['outputs'])==OUTPUTS and
++        catalog['format']=='uwvm-ros-custom-bounded-v2' and len(catalog['types'])==24 and
++        metadata['format']=='uwvm-ros-official-bounded-native-v2' and metadata['ros_version']==2 and
++        set(metadata['types'])==set(wanted),'complete original native-bound message-only provider required')
++    types={row['type']:row for row in generation['types']};records={row['type']:row for row in generation['records']}
++    bound={row['type']:row for row in catalog['types']}
++    need(len(types)==len(records)==len(bound)==24 and set(types)==set(records)==set(bound)==set(wanted),
++        'exact GO24 interface/record/catalog inventory required')
++    for name,row in bound.items():
++        native=metadata['types'][name];identity=native['native_identity'];component=native['components']['message']
++        need(row['ros_version']==2 and row['bounds']==wanted[name]['bounds'] and Path(row['file']).suffix=='.msg' and
++            re.fullmatch(r'RIHS01_[0-9a-f]{64}',identity) and row['native_identity']==identity==component['native_identity']==
++                types[name]['native_identity']==records[name]['native_identity'] and
++            set(native['components'])=={'message'} and component['official_type']==name and
++            types[name]['kind']=='message' and types[name]['ros_version']==records[name]['ros_version']==2 and
++            types[name]['adapter_codec_identity']==records[name]['adapter_codec_identity'] and
++            re.fullmatch(r'UWVMROS1_[0-9a-f]{64}',records[name]['adapter_codec_identity']),
++            'official native identity, component, bounds or codec association differs: '+name)
++    need(binding['status']=='NATIVE_IDENTITY_BINDING_SOURCE_ONLY' and binding['native_registration']=='NOT_ESTABLISHED' and
++        binding['implicit_permissions']==[],'the genuine source-only binder receipt required')
++    return wanted
++
++
++class NativeFamily:
++    """Qualify actual old build records against current physical selected roots."""
++    def __init__(self,frame,api,admission,selection,library):
++        self.frame,self.api,self.admission,self.library=frame,api,admission,library
++        self.evidence=admission.Evidence(api,frame,selection['restart_mappings'])
++        self.raw_pin=frame.inputs[selection['native_report']]
++        need(self.evidence.pin(ORIGINAL_PIN)==self.raw_pin,'actual current original C52 report differs from its separately retained historical pin')
++        self.report=self.evidence.selected(selection['native_report']);self.family=terminal_original(self.report,self.raw_pin)
++        self.source,self.frozen=self.evidence.source(self.report)
++        self.root=Path(self.raw_pin['path']).parent;self.work=self.root/'work';self.rootfs=Path(self.report['execution_sdk_after']['root'])
++        self.upstream=Path(frame.config['upstreams'][selection['upstream']]['root'])
++        self.derived=Path(self.family['derived_tree']['root'])
++        need(self.derived==self.work/'unitree_go' and self.rootfs==self.root/'rootfs' and
++            self.root in frame.roots and self.rootfs in frame.roots and
++            self.family['derived_tree']['symlinks']==self.family['native_prefix']['symlinks']==0,
++            'complete original C52 output and exact saved execution-SDK root required; GO subtrees have no symlinks')
++        self.native=api.frozen_module(frame.source,frame.frozen,'tests/ros_unitree/noetic_native_support.py','A2_actual_native_ELF_reader')
++        self.catalogs=api.frozen_module(frame.source,frame.frozen,'tests/ros_unitree/independent_cpp_object.py','A2_actual_catalog_comparator')
++        self.products={};self.old_rows={};self.leaves={};self.elf_cache={}
++        self.catalog_scope=[];self.observed_targets={}
++        frame.common.cgroup_preserved(self.report['cgroup_before'],self.report['cgroup_after'])
++        old=self.report['cgroup_before'];cg=frame.config['cgroup']
++        need(old['memory_max']==64*1024**3 and old['memory_swap_max']==0 and old['path']==cg['expected_leaf'] and
++            old['cpus']==cg['expected_cpus'],'original64/swap0 leaf is historical provenance, not current continuity')
++        frame.common.cgroup_preserved(frame.before,frame.common.cgroup_state(cg))
++
++    def body(self,old,maximum=64*MIB):
++        actual=self.evidence.pin(old);raw=self.api.bounded(Path(actual['path']),maximum)
++        need(len(raw)==actual['bytes'] and hashlib.sha256(raw).hexdigest()==actual['sha256'],'retained proof bytes changed');return raw
++
++    def document(self,old,maximum=64*MIB):return self.library.decode(self.body(old,maximum))
++
++    def original(self,path):
++        path=str(path);rows=[p for p in self.report['input_pins']+self.report['product_pins'] if p['path']==path]
++        if path in self.old_rows:rows.append(self.old_rows[path])
++        need(rows and all(p==rows[0] for p in rows),'one authentic full7 required for consumed original file: '+path)
++        return rows[0]
++
++    def translate(self,name,cwd='/owned/unitree_go'):
++        need(type(name) is str and name and '\0' not in name and '\n' not in name,'clean original compiler pathname required')
++        logical=posixpath.normpath(name if name.startswith('/') else posixpath.join(cwd,name))
++        for prefix,physical in ((str(self.source),self.source),(str(self.work),self.work),(str(self.rootfs),self.rootfs),
++                                ('/source',self.source),('/owned',self.work),('/upstream',self.upstream)):
++            if logical==prefix or logical.startswith(prefix+'/'):
++                path=physical/logical[len(prefix):].lstrip('/');break
++        else:
++            need(any(logical==p or logical.startswith(p+'/') for p in ('/usr','/opt','/lib','/lib64','/bin','/sbin','/etc')),
++                'compiler pathname outside original explicit chroot mappings')
++            path=self.native.rooted(self.rootfs,logical)
++        actual=path.resolve(strict=True)
++        need(any(actual==r or actual.is_relative_to(r) for r in (self.source,self.work,self.rootfs,self.upstream)) and
++            any(actual.is_relative_to(r) for r in self.frame.roots),'resolved original dependency outside selected roots')
++        return actual
++
++    def elf(self,old,kinds):
++        actual_pin=self.evidence.pin(old['input']);key=actual_pin['path']
++        if key not in self.elf_cache:
++            self.elf_cache[key]=self.native.elf(self.frame.common,Path(key),kinds,guard=self.frame.guard)
++        actual=self.elf_cache[key]
++        need(actual['input']==actual_pin and actual['type'] in kinds and
++            all(actual[k]==old[k] for k in ('machine','bits','endian','type')),
++            'actual retained ELF/header differs from genuine original summary')
++        # C52 recorded only these header fields, not a fabricated old PT_INTERP.
++        return actual
++
++    def tree(self,old):
++        root=Path(old['root']);need(any(root==r or root.is_relative_to(r) for r in self.frame.roots),
++            'complete original selected root must remain inventoried')
++        rows=[row for row in self.frame.catalogs if row['root']==str(root)]
++        if not rows:
++            rows=[self.frame.common.catalog(root,self.frame.out/('A2-tree-%03d.jsonl'%len(self.catalog_scope)),self.frame.roots)]
++            self.frame.pin(rows[0]['catalog']['path'])
++        need(len(rows)==1,'one complete current catalog per original root required')
++        proof=self.catalogs.catalog_pair(self.frame,self.evidence,old,rows[0],observed_targets=self.observed_targets)
++        self.catalog_scope.append(proof)
++        if root==self.derived:
++            for raw in self.body(old['catalog'],16*MIB).splitlines():
++                need(len(raw)<=65536,'bounded original family catalog row required');row=self.library.decode(raw)
++                if row['kind']=='file':
++                    pin={'path':str(root/row['relative']),**{k:row[k] for k in PIN-{'path'}}}
++                    need(pin['path'] not in self.old_rows,'duplicate original GO file name');self.old_rows[pin['path']]=pin
++        return proof
++
++    def inventories(self):
++        before,after=self.report['input_roots_before'],self.report['input_roots_after']
++        need(len(before)==len(after)==23 and len({r['root'] for r in before})==23 and
++            [r['root'] for r in before]==[r['root'] for r in after],'all original twenty-three selected root catalogs required')
++        for a,b in zip(before,after):
++            need(all(a[k]==b[k] for k in ('root','files','bytes','symlinks','content_sha256')),
++                'original selected root changed during original build')
++            need(Path(b['root']) in self.frame.roots,'every original input root must be a whole A2 input')
++            self.evidence.pin(a['catalog']);self.tree(b)
++        a,b=self.report['execution_sdk_before'],self.report['execution_sdk_after']
++        need(all(a[k]==b[k] for k in ('root','files','bytes','symlinks','content_sha256')),
++            'original independent execution SDK preservation differs')
++        self.evidence.pin(a['catalog']);self.tree(b)
++        later=[r for r in self.report['derived_roots_after'] if r['root']==str(self.derived)]
++        need(len(later)==1 and all(later[0][k]==self.family['derived_tree'][k] for k in
++            ('root','files','bytes','symlinks','content_sha256')),'complete genuine GO derived-tree preservation required')
++        self.tree(later[0]);self.tree(self.family['native_prefix'])
++        # No bind mount may currently cover the old ordinary-file evidence.
++        for line in Path('/proc/self/mountinfo').read_text().splitlines():
++            target=Path(re.sub(r'\\([0-7]{3})',lambda m:chr(int(m[1],8)),line.split()[4]))
++            need(not(target==self.rootfs or target.is_relative_to(self.rootfs) or target==self.work or target.is_relative_to(self.work)),
++                'original SDK/build evidence must be at rest without selected active mounts')
++
++    def compile(self,role,section,fresh,count):
++        database=self.document(section['compile_database']);need(type(database) is list and len(database)==count and
++            len(section['compile_records'])==count and fresh['compile_database']==section['compile_database'],
++            'complete real GO package/export compilation inventory required')
++        logical=section['compile_records'][0]['actual_compile']['cwd'];build=self.translate(logical)
++        need(Path(section['compile_database']['path']).parent==build and build.is_relative_to(self.derived),
++            'original database/build ownership differs')
++        log=self.body(section['verbose_build_log']).decode('utf-8','strict')
++        witnesses=make_witness(database,log,logical,section['actual_make_directory_events'])
++        objects=set();deps={};proofs=[]
++        for full,configured,witness in zip(section['compile_records'],database,witnesses):
++            self.frame.guard();argv=witness['argv']
++            need(full['actual_compile']==witness and full['configured_compile_database_row']==configured and
++                full['physical_compile_cwd']==str(build) and '-UNDEBUG' in argv and
++                not any(x.startswith('-DNDEBUG') for x in argv),'original actual compile/assertion association changed')
++            for flag in (('-O3','-g0','-fno-fast-math','-ffp-contract=off') if role=='official-package' else ('-O1','-g0')):
++                need(flag in argv,'original package/export optimization flag absent')
++            flags=lambda option:[argv[i+1] for i,t in enumerate(argv) if t==option]
++            need(argv.count('-o')==argv.count('-c')==1 and '-MD' in argv and '-MMD' not in argv and
++                flags('-MF') and flags('-MT'),'real full-MD source/object/target operands required')
++            obj=self.translate(flags('-o')[0],logical);source=self.translate(flags('-c')[0],logical)
++            need(source==self.translate(configured['file'],logical) and
++                self.translate(flags('-MF')[-1],logical)==Path(full['depfile']['path']),
++                'last-MF actual dependency file or primary source differs')
++            raw=self.body(full['depfile'],16*MIB).decode('utf-8').replace('\\\n','')
++            need('$' not in raw and raw.count(':')==1,'closed original compiler Make dependency grammar required')
++            targets,names=raw.split(':',1)
++            emitted=[self.translate(n,logical) for n in shlex.split(targets)]
++            requested=[self.translate(n,logical) for value in flags('-MT') for n in shlex.split(value)]
++            need(obj in emitted and requested and all(n in emitted for n in requested),'complete accumulated MD targets differ')
++            options={'requested':{'MD_count':argv.count('-MD'),'MF':flags('-MF'),'MT':flags('-MT')},
++                'effective':{'MF_last_argument':flags('-MF')[-1],'MF_physical_depfile':str(Path(full['depfile']['path'])),
++                    'MT_accumulated_arguments':flags('-MT'),'MT_last_argument':flags('-MT')[-1],
++                    'MT_requested_physical_targets':[str(n) for n in requested],
++                    'emitted_physical_targets':[str(n) for n in emitted]},
++                'semantics':'LAST_MF_FILENAME_ALL_MT_TARGET_OPERANDS_ACCUMULATE'}
++            need(options==full['dependency_options'],'original recorded dependency option semantics differ')
++            actual=[self.frame.pin(self.translate(n,logical)) for n in shlex.split(names)]
++            need(actual==[self.evidence.pin(p) for p in full['dependencies']] and
++                self.frame.pin(source)==self.evidence.pin(full['source']) and self.frame.pin(source) in actual and
++                full['object']['input']['path']==str(obj) and str(obj) not in objects,
++                'every actual ordered MD input and original source/object must match')
++            self.elf(full['object'],{1});objects.add(str(obj))
++            for pin in actual:deps[pin['path']]=pin
++            proofs.append({'source':self.evidence.pin(full['source']),'object':self.evidence.pin(full['object']['input']),
++                'dependency_file':self.evidence.pin(full['depfile']),'dependency_count':len(actual)})
++        fresh_objects=fresh['objects']
++        need(len(fresh_objects)==len(objects) and {r['physical'] for r in fresh_objects}==objects and
++            all(r['existed_before_build'] is False and str(self.translate(r['logical']))==r['physical'] for r in fresh_objects),
++            'every genuine original object must have original fresh-before-build evidence')
++        trace=[];resolved={}
++        for line in log.splitlines():
++            if re.fullmatch(r'[^\s]+\.(?:o|a|so(?:\.[0-9]+)*)',line.strip()):
++                pin=self.frame.pin(self.translate(line.strip(),logical));trace.append({'raw':line,'physical_input':pin});resolved[pin['path']]=pin
++        need(len(trace)==len(section['actual_link_trace']) and all(a['raw']==b['raw'] and
++            a['physical_input']==self.evidence.pin(b['physical_input']) for a,b in zip(trace,section['actual_link_trace'])) and
++            list(resolved.values())==[self.evidence.pin(p) for p in section['resolved_link_inputs']] and objects<=set(resolved) and
++            any(Path(p).is_relative_to(self.rootfs) for p in resolved),'complete actual original GNU link trace differs')
++        outputs={}
++        for script in section['link_commands']:
++            commands=self.body(script['link_script']).decode('utf-8').splitlines()
++            need(commands==script['actual_command_lines'] and commands and all(not x.strip() or x.strip() in log for x in commands),
++                'actual original link script and retained verbose log differ')
++            for line in commands:
++                if not line.strip():continue
++                argv=shlex.split(line)
++                need(argv[0] in ('/usr/bin/gcc','/usr/bin/g++') and argv.count('-o')==1 and '-Wl,--trace' in argv and
++                    not any(v in ('&&',';','|','>','>>','<') for v in argv),'original direct native linker argv required')
++                output=self.translate(argv[argv.index('-o')+1],logical)
++                need(output.is_relative_to(build) and str(output) not in outputs,'unique owned actual native link output required')
++                old=self.original(output);actual=self.native.elf(self.frame.common,output,{2,3},guard=self.frame.guard)
++                need(actual['input']==self.evidence.pin(old),'actual linked original ELF identity differs')
++                outputs[str(output)]=actual
++        need(len(outputs)==(11 if role=='official-package' else 1),'complete original linked package/export output set required')
++        return {'role':role,'translation_units':count,'complete_MD':proofs,'actual_link_input_count':len(resolved),
++            'linked_outputs':list(outputs.values()),'compile_database':self.evidence.pin(section['compile_database']),
++            'verbose_build_log':self.evidence.pin(section['verbose_build_log']),
++            'file_api':'NOT_CAPTURED_BY_ORIGINAL_C52_ROLE_NO_FILE_API_QUALIFICATION_CLAIM',
++            'scope':'ORIGINAL_COMPLETE_FULL_MD_AND_LINK_REOPENED_NOT_A_NEW_COMPILATION'}
++
++    def mapped_export(self):
++        rows=[r for r in self.report['commands'] if r['label']=='unitree_go-actual-mapped-export']
++        need(len(rows)==1,'one original real mapped GO exporter command required');row=rows[0];proof=row['mapped_proof']
++        need(row['argv'][-3:]==['/owned/unitree_go/prefix','/owned/unitree_go/export-build/unitree-native-identities','--mapped-stop'] and
++            row['argv'][0]=='/usr/bin/chroot' and row['argv'][1]==str(self.rootfs) and row['resume_count']==1 and row['gate_bytes_hex']=='49' and
++            proof['status']=='VERIFIED_ACTUAL_OPENED_NATIVE_MAPS' and proof['cooperative_barrier'] is True and
++            proof['source']=='ACTUAL_MAP_FILES_DESCRIPTOR_FSTAT_AND_FULL_SHA256_TO_PHYSICAL_KNOWN_CATALOG; RAW_MAPS_DEVICE_KEPT_SEPARATE',
++            'real stopped original exporter mapping/gate evidence required')
++        binary=self.family['binary'];actual=self.elf(binary,{2,3});selected=proof['stopped']
++        need(selected['state']=='T' and selected['pid']==proof['selected_pid'] and selected['starttime']>0 and
++            proof['stopped_after_mapping_proof']==selected and
++            all(proof[k]['pid']==selected['pid'] and proof[k]['starttime']==selected['starttime']
++                for k in ('first_ancestry','after_pidfd')) and
++            proof['popen_root_pid']==row['pid']==row['first_identity']['pid'] and
++            (proof['is_popen_root'] is True or selected['parent_pid']==row['pid']) and
++            proof['actual_exe']==proof['actual_exe_after'] and
++            proof['actual_exe']['target_facts']=={k:binary['input'][k] for k in PIN-{'path'}},
++            'same original stopped process birth/executable evidence required')
++        maps={}
++        for item in proof['map_files']:
++            need(item['status']=='OPENED_FULL_HASH_AND_PHYSICAL_PIN_VERIFIED' and
++                all(item[k]['state']=='T' and item[k]['pid']==selected['pid'] and item[k]['starttime']==selected['starttime']
++                    for k in ('stopped_before','stopped_after')) and
++                item['opened_target_facts']=={k:item['physical_input'][k] for k in PIN-{'path'}},
++                'actual original map descriptor/full-SHA/process witness differs')
++            fields=item['raw'].split(maxsplit=5)
++            need(len(fields)==6 and fields[3]==item['raw_maps_device'] and int(fields[4])==item['raw_maps_inode']==item['physical_input']['inode'] and
++                fields[5]==item['link_text'] and item['raw'] in proof['raw_maps'],
++                'original maps raw-device/inode/path association differs')
++            old=item['physical_input'];current=self.evidence.pin(old)
++            need(any(Path(current['path']).is_relative_to(r) for r in (self.derived,self.rootfs)),
++                'original mapped leaf outside selected GO/SDK physical closure')
++            if current['path'] not in maps:
++                value=self.native.elf(self.frame.common,Path(current['path']),{2,3},guard=self.frame.guard)
++                need(value['input']==current,'current mapped leaf ELF/full7 changed');maps[current['path']]=value
++        need(actual['input']['path'] in maps and len(actual['PT_INTERP'])==1 and
++            str(self.translate(actual['PT_INTERP'][0])) in maps,'actual retained exporter and loader must appear in original maps')
++        # DT_NEEDED is a SONAME: a real 'libstdc++.so.6' alias may map the
++        # physical 'libstdc++.so.6.0.30' inode. Resolve only finite directories
++        # actually represented by this process's retained selected mappings;
++        # never compare basenames as a substitute for actual physical proof.
++        parents={Path(path).parent for path in maps};needed=[]
++        for value in maps.values():
++            for name in value['DT_NEEDED']:
++                need('/' not in name and name not in ('.','..'),'bare bounded actual DT_NEEDED required')
++                matches={}
++                for parent in parents:
++                    try:
++                        if parent.is_relative_to(self.rootfs):
++                            resolved=self.native.rooted(self.rootfs,'/'+str((parent/name).relative_to(self.rootfs)))
++                        else:resolved=(parent/name).resolve(strict=True)
++                    except FileNotFoundError:continue
++                    need(any(resolved.is_relative_to(r) for r in (self.rootfs,self.derived)),
++                        'selected needed-library alias escaped original physical closure')
++                    if str(resolved) in maps:matches[str(resolved)]=maps[str(resolved)]['input']
++                need(len(matches)==1,'each actual needed library must resolve uniquely to a retained mapped physical file')
++                needed.append({'requester':value['input'],'DT_NEEDED':name,'mapped_physical':next(iter(matches.values()))})
++        output=row['stdout'];need(output['path']==str(self.derived/'native-metadata.json') and row['stderr']['bytes']==0,
++            'actual original native metadata stdout and empty stderr required')
++        self.evidence.pin(row['stderr']);self.evidence.pin(output)
++        return {'original_command_label':row['label'],'original_stdout':output,'original_binary':binary['input'],
++            'original_stopped_process':selected,'current_at_rest_ELFs':list(maps.values()),
++            'raw_device_equated_with_physical_st_dev':False,'original_process_reexecuted':False,'current_needed_alias_bindings':needed}
++
++    def copy(self,role,old,relative):
++        now=self.evidence.pin(old)
++        return self.library.leaf(self.frame,self.evidence.restart,self.leaves,role,old,now,self.frame.out/'library'/relative)
++
++
++def stage(frame,api,admission,selection,library):
++    """A2 performs only finite physical qualification and exclusive byte copies."""
++    library.closed(selection,('format_version','kind','native_report','upstream','restart_mappings'),'GO library selection')
++    need(selection['format_version']==1 and selection['kind']=='uwvm-native-go24-library-selection-v1' and
++        frame.config['simulation'] is frame.config['benchmark'] is frame.config['profiler'] is None and
++        frame.config['cgroup']['memory_max']==64*1024**3 and frame.config['cgroup']['memory_swap_max']==0,
++        'explicit compiler-free current64/swap0 GO24 library preparation required')
++    native=NativeFamily(frame,api,admission,selection,library);native.inventories()
++    report,family,evidence=native.report,native.family,native.evidence
++    # Frame.validate_upstreams already reopened this exact complete official
++    # Git tree and all original lock-selected blobs. A bare commit string or a
++    # definition-only directory cannot replace that whole-root qualification.
++    upstream=frame.config['upstreams'][selection['upstream']]
++    need(upstream['repository'].removeprefix('https://github.com/').removesuffix('.git')=='unitreerobotics/unitree_ros2' and
++        upstream['commit']==COMMIT and frame.inputs[upstream['lock_input']]==evidence.pin(report['upstream_proof']),
++        'actual complete official Unitree upstream proof must be a selected Frame role')
++    metadata_input=native.document(report['metadata_input'])
++    sdk_parent=native.document(report['sdk_parent'])
++    acquisition=metadata_input['acquisition']
++    need(sdk_parent.get('status')=='PREPARED_AUTHENTICATED_EXTRACTED_SYSROOT' and
++        acquisition['status']==sdk_parent['status'] and all(sdk_parent.get(k) is True for k in
++        ('source_preserved','inputs_preserved','products_preserved')) and sdk_parent.get('cleanup')=={'status':'PASS','remaining':[]} and
++        metadata_input['report']=={'path':report['sdk_parent']['path'],'sha256':report['sdk_parent']['sha256']} and
++        acquisition['sdk']==sdk_parent['sdk'] and acquisition['source']==sdk_parent['source'] and
++        acquisition['source_manifest_sha256']==sdk_parent['source_manifest_sha256'],
++        'actual original authenticated SDK report/metadata association required')
++    # Complete original SDK source bytes were already checked in the23-root
++    # comparison. Acquisition Source27 is preserved as an original report role;
++    # only the actual C52 Source30 compilation is asserted current above.
++    original_tools=report['selected_original_sdk_tools'];execution_tools=report['selected_execution_sdk_tools']
++    need(len(original_tools)==len(execution_tools)==12 and
++        [r['logical'] for r in original_tools]==[r['logical'] for r in execution_tools],
++        'complete twelve actual original/execution SDK tool associations required')
++    tool_proofs=[]
++    for original,execution in zip(original_tools,execution_tools):
++        old=evidence.pin(original['original']);new=evidence.pin(execution['copy']['input'])
++        need(original['original']==execution['original'] and library.body_equal(old,new) and
++            (old['device'],old['inode'])!=(new['device'],new['inode']) and
++            str(native.translate(execution['logical']))==new['path'],
++            'original SDK tool and independent execution copy association differs')
++        tool_proofs.append(native.elf(execution['copy'],{2,3}))
++    upstream_root=Path(upstream['root'])
++    bind=[row for row in report['commands'] if row['argv']==['/usr/bin/mount','--bind',str(upstream_root),str(native.rootfs/'upstream')]]
++    need(len(bind)==1,'actual original immutable upstream bind mapping required')
++    configured=next(row for row in report['commands'] if row['label']=='unitree_go-package-configure')['argv']
++    need(configured[configured.index('-S')+1]=='/upstream/cyclonedds_ws/src/unitree/unitree_go' and
++        configured[configured.index('-B')+1]=='/owned/unitree_go/package-build' and
++        '-DCMAKE_INSTALL_PREFIX=/owned/unitree_go/prefix' in configured,
++        'actual official package source/build/install command association differs')
++    for name in ('CMakeLists.txt','package.xml'):
++        physical=upstream_root/'cyclonedds_ws/src/unitree/unitree_go'/name
++        selected=metadata_input['package_sources'][str(physical)];raw=selected['text'].encode('utf-8')
++        actual=frame.pin(physical)
++        need(len(raw)==actual['bytes'] and hashlib.sha256(raw).hexdigest()==actual['sha256']==selected['sha256'],
++            'retained actual official CMake/package source snapshot differs')
++    source_profile=native.source/'sdk/robots/unitree/profiles/unitree_go.json'
++    old_profile=native.original(native.derived/'selection/profile.json')
++    current_profile=library.selected(frame,frame.source/'sdk/robots/unitree/profiles/unitree_go.json')
++    need(library.body_equal(evidence.pin(old_profile),current_profile) and
++        frame.pin(source_profile)['sha256']==current_profile['sha256'] and
++        frame.frozen.get('sdk/robots/unitree/profiles/unitree_go.json')=={k:current_profile[k] for k in ('bytes','sha256')},
++        'original and current complete GO profile bytes must agree')
++    profile=native.document(old_profile)
++    prepared=native.document(family['source_selection']);material=native.document(family['materialization'])
++    need(prepared['kind']=='unitree-native-export-preparation' and prepared['status']=='PREPARED_SOURCE_ONLY' and
++        prepared['source']==str(native.source) and prepared['source_manifest_sha256']==report['source_manifest_sha256'] and
++        prepared['family']=='unitree_go' and prepared['ros_version']==2 and prepared['inputs_preserved'] is True and
++        prepared['native_identity_export_executed'] is prepared['compilers_generators_executed'] is False and
++        prepared['runtime_permissions']==[],'original exact source-selection role required')
++    evidence.retained(prepared['input_pins']);evidence.retained(prepared['outputs'])
++    need(material['status']=='PREPARED_NOT_EXECUTED' and material['scope']=='SOURCE_CATALOG_ONLY' and
++        material['family']=='unitree_go' and material['repository']==profile['repository'] and material['commit']==COMMIT and
++        material['inputs_preserved'] is True and material['native_identity']=='NOT_ACQUIRED' and material['runtime_permissions']==[] and
++        material['generators_compilers_tests_executed'] is False and len(material['inputs'])==26,
++        'genuine lock-checked materialization of all24 original definitions required')
++    evidence.retained(material['inputs']);evidence.retained(material['outputs'])
++    build_proofs=[native.compile('official-package',family['official_package_build'],family['fresh_package_objects'],195),
++                  native.compile('identity-exporter',family['export_build'],family['fresh_export_objects'],1)]
++    mapping=native.mapped_export()
++    gen_pin=family['generation'];generation=native.document(gen_pin)
++    catalog_pin=native.original(native.derived/'bound/catalog.json');catalog=native.document(catalog_pin)
++    metadata_pin=native.original(native.derived/'native-metadata.json');metadata=native.document(metadata_pin)
++    binding=native.document(family['binding_receipt'])
++    wanted=message_contract(generation,catalog,profile,metadata,binding)
++    def body_pin(pin):return {k:pin[k] for k in ('bytes','sha256')}
++    need(generation['source_inputs']['catalog']==body_pin(catalog_pin) and binding['output']=={
++        'path':catalog_pin['path'],**body_pin(catalog_pin)} and binding['official_export']=={
++        'path':metadata_pin['path'],**body_pin(metadata_pin)} and mapping['original_stdout']==metadata_pin,
++        'actual binder output/native-export/generation catalog association differs')
++    template_pin=native.original(native.derived/'selection/catalog/catalog.preparation.json')
++    need(binding['template']=={'path':template_pin['path'],**body_pin(template_pin)},'actual original binder template differs')
++    template=native.document(template_pin)
++    expected_bound=json.loads(json.dumps(template))
++    for row in expected_bound['types']:row['native_identity']=metadata['types'][row['type']]['native_identity']
++    need(expected_bound==catalog,'bound catalog differs beyond exactly exported native identities')
++    rows=generation['source_inputs']['definitions'];need(len(rows)==24 and
++        {row['file'] for row in rows}==set(binding['definition_copies'])=={row['file'] for row in catalog['types']},
++        'all24 exact copied definitions must belong to original binder/generator')
++    definitions={};upstream_root=Path(upstream['root'])
++    for index,row in enumerate(rows):
++        relative=Path(row['file']);need(not relative.is_absolute() and '..' not in relative.parts and str(relative)==row['file'],
++            'clean catalog-relative complete definition required')
++        old=native.original(Path(catalog_pin['path']).parent/relative)
++        name=next(value['type'] for value in catalog['types'] if value['file']==row['file'])
++        declared=wanted[name];official=frame.pin(upstream_root/declared['path'])
++        need(body_pin(old)==body_pin(official)=={k:row[k] for k in ('bytes','sha256')}==binding['definition_copies'][row['file']] and
++            any(p['path']==official['path'] and library.body_equal(p,official) for p in material['inputs']),
++            'actual original official definition/lock/binder/generator byte closure differs')
++        definitions[row['file']]=native.copy('definition-%03d'%index,old,'catalog/'+row['file'])
++    output_pins={}
++    for index,name in enumerate(sorted(OUTPUTS)):
++        old=native.original(Path(gen_pin['path']).parent/name)
++        need(generation['outputs'][name]==body_pin(old),'all11 actual generated provider bytes required')
++        output_pins[name]=native.copy('generated-%03d'%index,old,'generated/'+name)
++    copied={}
++    for role,pin,name in (('original-report',ORIGINAL_PIN,'proof/original-c52-report.json'),
++        ('original-generation',gen_pin,'generated/generation.json'),('native-catalog',catalog_pin,'catalog/catalog.json'),
++        ('profile',old_profile,'proof/profile.json'),('official-native-metadata',metadata_pin,'proof/native-metadata.json'),
++        ('binding-receipt',family['binding_receipt'],'proof/binding-receipt.json'),
++        ('source-selection',family['source_selection'],'proof/source-selection.json'),
++        ('materialization',family['materialization'],'proof/materialization.json'),
++        ('unbound-template',template_pin,'proof/unbound-template.json'),
++        ('original-source-manifest',report['source_before']['manifest'],'proof/original-source-manifest.json')):
++        copied[role]=native.copy(role,pin,name)
++    # Historical generator digests are tied to the complete original MF. B
++    # genuinely runs its current emitter; this is never relabelled as current.
++    for role,relative,key in (('original-generator','sdk/tools/custom_types.py','generator_sha256'),
++        ('original-bounded-generator','sdk/custom-types/bounded_profile.py','bounded_generator_sha256')):
++        old=frame.pin(native.source/relative)
++        need(native.frozen[relative]==body_pin(old) and generation[key]==old['sha256'],'actual original emitter/MF provenance differs')
++        copied[role]=native.copy(role,old,'proof/'+role+'.py')
++    config=library.leaf(frame,evidence.restart,native.leaves,'preparation-configuration',frame.report['configuration'],
++        frame.report['configuration'],frame.out/'library/proof/preparation-configuration.json')
++    # These are exactly catalog-observed external regular aliases, not selected
++    # MD/tool/library inputs. The reviewed comparator owns the finite held-FD
++    # ledger and reopens every source alias/target; normal Frame.finish then
++    # independently repeats all actual saved complete source-root catalogs.
++    catalog_observations=native.catalogs.preserve_catalog_observations(frame,evidence,native.observed_targets)
++    frame.report.update(producer=library.selected(frame,frame.source/'tests/ros_unitree/prepare_native_family_library.py'),
++        helper=library.selected(frame,frame.source/'tests/ros_unitree/library_inputs.py'),
++        native_family_helper=library.selected(frame,frame.source/'tests/ros_unitree/native_family_inputs.py'),
++        preparation_configuration_copy=config,library={'leaves':native.leaves,'original_report':ORIGINAL_PIN,'preparation_original_report_current':native.raw_pin,
++            'original_source':str(native.source),'original_source_manifest_sha256':report['source_manifest_sha256'],
++            'original_generation':gen_pin,'generation':copied['original-generation'],'catalog':copied['native-catalog'],
++            'profile':copied['profile'],'native_metadata':copied['official-native-metadata'],'binding_receipt':copied['binding-receipt'],
++            'outputs':output_pins,'definitions':definitions,'all24_native_types':sorted(wanted),
++            'preparation_complete_original_root_observations':native.catalog_scope,
++            'preparation_catalog_observed_external_regular_targets':catalog_observations,
++            'preparation_retained_compilation':build_proofs,'preparation_retained_exporter_mapping':mapping,
++            'preparation_original_SDK_report':evidence.pin(report['sdk_parent']),
++            'preparation_actual_execution_SDK_tools':tool_proofs,
++            'generated_native_provider_compilation':'NOT_CLAIMED_C52_EMITTED_SOURCE_ONLY_SUBSEQUENT_GATEWAY_QUALIFIER_REQUIRED',
++            'other_family_current_requalification':'NOT_SELECTED_NOT_CLAIMED'},
++        original_roots_observed_during_preparation=True,original_roots_claimed_current_during_later_build=False,
++        SDK_modified=False,compilation_performed=False,Runtime_executed=False,actors_started=0,guest_authority=[],commands=[],cleanup=[],
++        copy_descriptor_cleanup={'status':'PASS','remaining':[],'owned_copy_descriptors':getattr(frame,'_library_open_descriptors',0)},
++        library_output_state='CONSUMABLE_ONLY_IF_ENCLOSING_REPORT_FINISHES_PASS',original_reports_rewritten=False,
++        Typed14_required_or_promoted=False,Native6_failed_batch_promoted=False,selected_pin_bridges=evidence.bridges,
++        scope='ORIGINAL_C52_NATIVE_PACKAGE_AND_EXPORT_QUALIFIED_COPIED_INPUT_NOT_NEW_COMPILATION_OR_RUNTIME')
++    need(not frame.actors and frame.report['copy_descriptor_cleanup']['owned_copy_descriptors']==0,
++        'all owned copy descriptors must close and no actor may start')
++    # Preserve every distinct actual input exactly once. Shared headers occur
++    # in many complete MD rules; conflicting pins still fail, and Frame.finish
++    # really reopens every unique full7 plus all complete roots after this step.
++    unique={}
++    for pin in frame.pins:
++        need(pin['path'] not in unique or unique[pin['path']]==pin,'conflicting repeated actual A2 input pin')
++        unique[pin['path']]=pin
++    frame.pins[:]=unique.values()
++    return STATUS
++
++
++def consume(frame,api,label,library,*,selected_pin=None):
++    """B reads terminal A2's copied leaves, not its unused original whole roots."""
++    if selected_pin is not None:
++        # A receipt is an explicit finite current input, even when a physics
++        # caller obtains it through the actual main receipt rather than a CLI
++        # label. This view does not mutate Frame.inputs or enlarge its roots.
++        library.current(frame,selected_pin)
++        class SelectedView:
++            def __init__(self,parent):self.parent=parent;self.inputs={'exact-A2-report':selected_pin}
++            def __getattr__(self,name):return getattr(self.parent,name)
++        frame=SelectedView(frame);label='exact-A2-report'
++    report,pin=library.terminal_stage(frame,api,label,KIND,STATUS,
++        producer_relative='tests/ros_unitree/prepare_native_family_library.py')
++    helper=library.current(frame,report['native_family_helper'])
++    need(helper['path']==str(frame.source/'tests/ros_unitree/native_family_inputs.py') and
++        frame.frozen['tests/ros_unitree/native_family_inputs.py']=={k:helper[k] for k in ('bytes','sha256')},
++        'A2 producer/consumer helper must be current complete-MF source')
++    value=report['library'];root=Path(pin['path']).parent
++    library.copied_leaves(frame,value['leaves'],root)
++    need(all(row['copy'] in report['input_pins'] for row in value['leaves'].values()) and
++        report['Native6_failed_batch_promoted'] is False and report['Typed14_required_or_promoted'] is False,
++        'every copied A2 leaf must have passed actual normal terminal preservation')
++    copies=value['leaves']
++    def doc(role):
++        actual=copies[role]['copy'];library.current(frame,actual)
++        return library.decode(api.bounded(Path(actual['path']),64*MIB))
++    original=doc('original-report');family=terminal_original(original,copies['original-report']['historical'])
++    need(value['original_report']==ORIGINAL_PIN==copies['original-report']['historical'] and
++        value['original_generation']==family['generation']==copies['original-generation']['historical'] and
++        value['original_source']==original['source'] and value['original_source_manifest_sha256']==original['source_manifest_sha256'],
++        'A2 immutable original C52/generation/source association differs')
++    generation,catalog,profile,metadata,binding=(doc(key) for key in
++        ('original-generation','native-catalog','profile','official-native-metadata','binding-receipt'))
++    wanted=message_contract(generation,catalog,profile,metadata,binding)
++    need(len(value['preparation_complete_original_root_observations'])==26 and
++        [(x['role'],x['translation_units']) for x in value['preparation_retained_compilation']]==
++            [('official-package',195),('identity-exporter',1)] and
++        value['generated_native_provider_compilation']==
++            'NOT_CLAIMED_C52_EMITTED_SOURCE_ONLY_SUBSEQUENT_GATEWAY_QUALIFIER_REQUIRED',
++        'completed original A2 scope must retain true package/export and source-provider distinction')
++    need(value['generation']==copies['original-generation']['copy'] and value['catalog']==copies['native-catalog']['copy'] and
++        value['profile']==copies['profile']['copy'] and value['native_metadata']==copies['official-native-metadata']['copy'] and
++        value['binding_receipt']==copies['binding-receipt']['copy'] and set(value['outputs'])==OUTPUTS and
++        set(value['definitions'])=={row['file'] for row in generation['source_inputs']['definitions']},
++        'finite copied provider role association differs')
++    current_profile=library.selected(frame,frame.source/'sdk/robots/unitree/profiles/unitree_go.json')
++    need(library.body_equal(current_profile,value['profile']) and
++        generation['source_inputs']['catalog']=={k:value['catalog'][k] for k in ('bytes','sha256')},
++        'actual copied catalog and current complete profile bytes differ')
++    old_manifest=doc('original-source-manifest')
++    for role,relative,key in (('original-generator','sdk/tools/custom_types.py','generator_sha256'),
++        ('original-bounded-generator','sdk/custom-types/bounded_profile.py','bounded_generator_sha256')):
++        old=copies[role]['copy'];need(old_manifest[relative]=={k:old[k] for k in ('bytes','sha256')} and
++            generation[key]==old['sha256'],'copied actual original emitter/complete MF relation differs')
++    for name,actual in value['outputs'].items():
++        library.current(frame,actual);need(Path(actual['path'])==Path(value['generation']['path']).parent/name and
++            generation['outputs'][name]=={k:actual[k] for k in ('bytes','sha256')},'all11 current copied provider bytes required')
++    for row in generation['source_inputs']['definitions']:
++        relative=Path(row['file']);actual=value['definitions'][row['file']]
++        need(not relative.is_absolute() and '..' not in relative.parts and
++            Path(actual['path'])==Path(value['catalog']['path']).parent/relative and
++            {k:actual[k] for k in ('bytes','sha256')}=={k:row[k] for k in ('bytes','sha256')}==binding['definition_copies'][row['file']],
++            'all24 finite copied complete definition bytes required')
++        library.current(frame,actual)
++    return {'catalog':value['catalog'],'historical_generation':value['generation'],
++        'original_generation':value['original_generation'],'original_generation_body':generation,
++        'original_complete_family':{'family':'unitree_go','original_report':ORIGINAL_PIN,
++            'original_generation':family['generation'],
++            'scope':'ORIGINAL_C52_SOURCE_PROVIDER_ROW_FULL_BUILD_RECORDS_RETAINED_IN_UNCHANGED_REPORT'},'profile':current_profile,'native_family_library_report':pin,
++        'original_native_report':value['original_report'],'original_source':value['original_source'],
++        'original_manifest_sha256':value['original_source_manifest_sha256'],
++        'library_scope':'TERMINAL_A2_COPIED_INPUTS_ONLY_ORIGINAL_ROOTS_NOT_CURRENT_B_OBSERVATIONS'}
+--- a/tests/ros_unitree/prepare_direct_guests.py
++++ b/tests/ros_unitree/prepare_direct_guests.py
+@@ -255,10 +255,17 @@
+ 
+ 
+ def build(frame,api,unitree,selection):
+-    unitree.exact(selection,('format_version','kind','tools','paths','typed_build','generated_go','restart_mappings'), 'direct Guest build selection')
++    independent=selection.get('kind') in ('unitree-direct-go2-standalone-independent-build-selection-v2',
++        'unitree-direct-go2-modular-independent-build-selection-v2')
++    if independent:
++        unitree.exact(selection,('format_version','kind','tools','paths','cpp_library','native_family_library','generated_go','restart_mappings'),
++            'independent Direct v2 selection')
++    else:
++        unitree.exact(selection,('format_version','kind','tools','paths','typed_build','generated_go','restart_mappings'), 'direct Guest build selection')
+     graph = api.frozen_module(frame.source,frame.frozen,'tests/ros_unitree/direct_modular.py','direct_actual_modular_build_contract')
+-    modular = selection['kind'] == graph.BUILD_SELECTION
+-    require(selection['format_version'] == 1 and (modular or selection['kind'] == 'unitree-direct-go2-standalone-build-selection-v1'), 'closed current build selection required')
++    modular = selection['kind'] in (graph.BUILD_SELECTION,'unitree-direct-go2-modular-independent-build-selection-v2')
++    require((independent and selection['format_version']==2) or (not independent and selection['format_version']==1 and
++        (modular or selection['kind']=='unitree-direct-go2-standalone-build-selection-v1')), 'closed current build selection required')
+     unitree.exact(selection['tools'],('cc','cxx','python','validator','libc','libm','printscan','builtins','libcxx','libcxxabi'), 'actual selected tool/archive labels')
+     unitree.exact(selection['paths'],('sysroot','resource_dir','wasm_ld_alias','quickjs'), 'complete selected SDK paths')
+     cg = frame.config['cgroup']
+@@ -285,7 +292,11 @@
+     require(alias.parent.resolve(strict=True) == alias.parent and alias.resolve(strict=True) == paths['wasm_ld_alias'], 'actual canonical selected linker alias required')
+     utilities = api.frozen_module(frame.source,frame.frozen,'tests/ros_unitree/acceptance/typed40_boot2/command14-utilities.py','direct_guest_full_md_and_binary')
+     admission = api.frozen_module(frame.source,frame.frozen,'tests/ros_unitree/typed_transport_inputs.py','direct_guest_selected_current_inputs')
+-    official,generated,evidence,official_proof = prerequisite(frame,admission,api,selection)
++    if independent:
++        independent_api=api.frozen_module(frame.source,frame.frozen,'tests/ros_unitree/direct_independent_inputs.py','direct_completed_A1_A2_inputs')
++        official,generated,evidence,official_proof=independent_api.prerequisite(frame,api,admission,selection)
++    else:
++        official,generated,evidence,official_proof = prerequisite(frame,admission,api,selection)
+     require(official_proof['compiler']['physical']==str(Path(tools['cxx']).resolve(strict=True)) and
+             official_proof['sysroot']==str(paths['sysroot']) and
+             official_proof['Guest_compile_flags']==['-UNDEBUG',TRAP],
+@@ -313,7 +324,7 @@
+         deps = utilities.full_md(frame,dep,obj,source,folder)
+         return obj,command(row,deps,role='compile',source=frame.pin(source),object=frame.pin(obj),dependency_file=frame.pin(dep))
+     current_family=None
+-    if modular:
++    if modular or independent:
+         previous=frame.direct_regeneration;old=previous['original_generation_body']
+         generated=frame.out/'current-go24-generated'
+         generator=source_pin(frame,'sdk/tools/custom_types.py')
+@@ -332,11 +343,18 @@
+             require(all(pin[key]==definition[key] for key in ('bytes','sha256')),'official retained definition changed during fresh generation')
+             dependencies.append(pin)
+         body={key:value for key,value in previous.items() if key!='original_generation_body'}
+-        body.update(kind='uwvm-unitree-current-go24-generation-admission-v1',status='CURRENT_SOURCE_GENERATION_IDENTICAL_NATIVE_PROVIDER_BYTES_NOT_EXECUTED',
++        body.update(kind=(independent_api.GENERATION if independent else 'uwvm-unitree-current-go24-generation-admission-v1'),status='CURRENT_SOURCE_GENERATION_IDENTICAL_NATIVE_PROVIDER_BYTES_NOT_EXECUTED',
+             source=str(frame.source),source_manifest_sha256=frame.report['source_manifest_sha256'],
+             generation=generation_pin,generator=generator,bounded_generator=bounded_generator,outputs=outputs,python=frame.inputs[selection['tools']['python']],
+             original_native_identities_preserved=True,compiled_provider_output_bytes_equal=True,old_reports_rewritten=False,
+             current_emitter_executed=True,Runtime_executed=False,commands=[command(row,dependencies,role='generate')])
++        if independent:
++            # C52 compiled the native package/exporter before source emission.
++            # Its generated conversion header is source-only here; the owned
++            # physics consumer independently requires the Gateway full-MD role.
++            body['compiled_provider_output_bytes_equal']=False
++            body['original_generated_provider_output_bytes_equal']=True
++            body['generated_provider_compilation_qualification']='REQUIRES_SEPARATE_CURRENT_NATIVE_GATEWAY_FULL_MD_ADMISSION'
+         path=frame.out/'current-go24-generation-admission.json';frame.common.atomic_json(path,body)
+         current_family=frame.pin(path);frame.report['current_GO24_generation_admission']=current_family
+     base = ['--target=wasm32-wasip1','--sysroot='+str(paths['sysroot']),'-resource-dir='+str(paths['resource_dir']),
+@@ -520,8 +538,11 @@
+                 'tools':{key:frame.inputs[label] for key,label in selection['tools'].items()},
+                 'source_inputs':source_inputs,'commands':records,'binary_boundary':inspected,'embedded':embedded,
+                 'full_dependencies_verified':True,'default_authority':[],'Runtime_executed':False}
++            if modular or independent:
++                proof['current_family']=current_family
++            if independent:
++                proof['independent_library_prerequisites']=frame.report['independent_library_prerequisites']
+             if modular:
+-                proof['current_family']=current_family
+                 proof['composition']={'providers':frame.report['providers'],
+                     'observed_input':'REAL_DECODED_LOWSTATE_36_BINARY32_WORDS',
+                     'motion_kernel':'EXACT_NATIVE_SIMULATION_CONTROL_HEADER',
+@@ -546,7 +567,7 @@
+         frame.frozen=frozen
+         selection,pin=frame.common.document(frame.input(args.selection_input))
+         require(pin==frame.inputs[args.selection_input],'actual direct build selection changed')
+-        if selection.get('kind')=='unitree-direct-go2-modular-build-selection-v1':
++        if selection.get('kind') in ('unitree-direct-go2-modular-build-selection-v1','unitree-direct-go2-modular-independent-build-selection-v2'):
+             frame.report['kind']='unitree-direct-go2-modular-Guest-builds'
+         status=build(frame,api,unitree,selection);return frame.finish(status)
+     except BaseException as error:
+--- /dev/null
++++ b/tests/ros_unitree/prepare_direct_library_configuration.py
+@@ -0,0 +1,120 @@
++#!/usr/bin/env python3
++"""Publish an actual Direct v2 configuration from completed A1/A2 inputs.
++
++Root supplies the actual current64-GiB/zero-swap closed Frame configuration,
++completed same-source A1/A2 output roots and only the actual tool/sysroot/MD
++closure consumed by B. Historical58/23-root preparation lists are not projected
++into this stage. This constructor compiles nothing and publishes literal argv
++only after genuine prerequisite admission; normal Frame.finish is mandatory.
++"""
++from __future__ import annotations
++import argparse
++import hashlib
++import json
++import os
++from pathlib import Path
++import re
++import stat
++import sys
++import traceback
++import time
++import types
++
++sys.dont_write_bytecode=True
++ROOT=Path(__file__).resolve().parents[2]
++MIB=1024**2
++CG_LEAF='/sys/fs/cgroup/system.slice/docker-4dd58ad4560fde2ab9b539e4ef9cab1fac531654e99ad554aff1fce8ae0eae37.scope'
++
++
++def need(value,reason):
++    if not value:raise ValueError(reason)
++
++
++def bounded(path,maximum):
++    path=Path(path);need(path.is_absolute() and path.resolve(strict=True)==path,'physical metadata required')
++    fd=os.open(path,os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK|os.O_CLOEXEC)
++    try:
++        before=os.fstat(fd);need(stat.S_ISREG(before.st_mode) and 0<=before.st_size<=maximum,'bounded ordinary metadata required')
++        body=bytearray()
++        while True:
++            part=os.read(fd,min(65536,maximum-len(body)+1))
++            if not part:break
++            body.extend(part);need(len(body)<=maximum,'metadata grew')
++        need(len(body)==before.st_size and all(getattr(before,k)==getattr(os.fstat(fd),k)==getattr(path.lstat(),k)
++             for k in ('st_dev','st_ino','st_size','st_mtime_ns','st_ctime_ns','st_mode','st_nlink')),'opened metadata changed')
++        return bytes(body)
++    finally:os.close(fd)
++
++
++def decode(raw):
++    def pairs(rows):
++        result={}
++        for key,value in rows:need(key not in result,'duplicate library metadata key');result[key]=value
++        return result
++    return json.loads(raw,object_pairs_hook=pairs,parse_constant=lambda _:need(False,'nonfinite metadata'))
++
++
++def frozen_module(source,frozen,relative,name):
++    path=source/relative;raw=bounded(path,2*MIB)
++    need(frozen.get(relative)=={'bytes':len(raw),'sha256':hashlib.sha256(raw).hexdigest()},'helper absent from current complete source')
++    value=types.ModuleType(name);value.__file__=str(path);sys.modules[name]=value
++    exec(compile(raw,str(path),'exec'),value.__dict__);return value
++
++
++def bootstrap(args,own='tests/ros_unitree/prepare_direct_library_configuration.py'):
++    need(sys.platform=='linux' and os.geteuid()==0 and args.source.resolve(strict=True)==ROOT and
++         Path(__file__).absolute()==ROOT/own,'actual frozen Linux Root entry required')
++    for key in ('source','manifest','config','out'):need(getattr(args,key).is_absolute(),'absolute actual path required')
++    for key in ('manifest_sha256','config_sha256'):need(re.fullmatch('[0-9a-f]{64}',getattr(args,key)),'complete actual SHA required')
++    raw=bounded(args.manifest,16*MIB);need(hashlib.sha256(raw).hexdigest()==args.manifest_sha256,'current source MF changed')
++    frozen=decode(raw);body=bounded(ROOT/own,MIB)
++    need(type(frozen) is dict and frozen.get(own)=={'bytes':len(body),'sha256':hashlib.sha256(body).hexdigest()},'actual entry absent from MF')
++    raw=bounded(args.config,16*MIB);need(hashlib.sha256(raw).hexdigest()==args.config_sha256,'actual config changed')
++    cg=decode(raw)['cgroup'];keys={'memory_max','memory_swap_max','expected_leaf','expected_device','expected_inode','expected_boot_id','expected_cpus'}
++    need(type(cg) is dict and set(cg)==keys and type(cg['memory_max']) is int and cg['memory_max']==64*1024**3 and
++         type(cg['memory_swap_max']) is int and cg['memory_swap_max']==0 and cg['expected_leaf']==CG_LEAF and
++         cg['expected_cpus']=='0-31','unchanged original64/swap0/CPU leaf required')
++    leaf=Path(CG_LEAF);info=leaf.stat()
++    need(leaf.resolve(strict=True)==leaf and (info.st_dev,info.st_ino)==(cg['expected_device'],cg['expected_inode']) and
++         Path('/proc/sys/kernel/random/boot_id').read_text().strip()==cg['expected_boot_id'] and
++         Path('/proc/self/cgroup').read_text().splitlines()==['0::'+CG_LEAF.removeprefix('/sys/fs/cgroup')] and
++         (leaf/'memory.max').read_text().strip()==str(64*1024**3) and (leaf/'memory.swap.max').read_text().strip()=='0' and
++         (leaf/'cpuset.cpus.effective').read_text().strip()=='0-31','actual selected cgroup incarnation differs')
++    api=types.SimpleNamespace(frozen_module=frozen_module,bounded=bounded)
++    unitree=frozen_module(ROOT,frozen,'tests/ros_unitree/common.py','library_current_owners')
++    return frozen,api,unitree
++
++
++def main():
++    parser=argparse.ArgumentParser(description=__doc__)
++    for key in ('source','manifest','config','out'):parser.add_argument('--'+key,type=Path,required=True)
++    for key in ('manifest-sha256','config-sha256','selection-input'):parser.add_argument('--'+key,required=True)
++    args=parser.parse_args();frame=None
++    try:
++        frozen,api,unitree=bootstrap(args)
++        library=api.frozen_module(ROOT,frozen,'tests/ros_unitree/library_inputs.py','library_input_copy_contract')
++        independent=api.frozen_module(ROOT,frozen,'tests/ros_unitree/direct_independent_inputs.py','direct_independent_metadata_builder')
++        class LibraryFrame(unitree.Frame):
++            def __init__(self,selection_args):
++                self.library_deadline=time.monotonic()+3600
++                super().__init__(selection_args,'uwvm-direct-independent-build-configuration-preparation-v2')
++            def guard(self):
++                super().guard()
++                need(time.monotonic()<self.library_deadline,'finite3600s library preparation deadline exceeded')
++                raw=Path('/proc/self/status').read_text()
++                rows=re.findall(r'^VmRSS:\s+([0-9]+) kB$',raw,re.M)
++                need(len(raw)<=128*1024 and len(rows)==1 and int(rows[0])*1024<=768*MIB,
++                     'independent metadata coordinator RSS exceeds768MiB')
++        frame=LibraryFrame(args);frame.frozen=frozen;frame.unitree=unitree
++        admission=api.frozen_module(ROOT,frozen,'tests/ros_unitree/typed_transport_inputs.py','library_finite_original_evidence')
++        selection,pin=frame.common.document(frame.input(args.selection_input))
++        need(pin==frame.inputs[args.selection_input],'selected library metadata changed')
++        status=independent.stage_configuration(frame,api,admission,selection)
++        return frame.finish(status)
++    except BaseException as error:
++        if frame is not None:
++            frame.report['traceback']=traceback.format_exc();return frame.finish('FAIL',repr(error))
++        print(traceback.format_exc(),file=sys.stderr);return 1
++
++
++if __name__=='__main__':raise SystemExit(main())
+--- /dev/null
++++ b/tests/ros_unitree/prepare_native_family_library.py
+@@ -0,0 +1,118 @@
++#!/usr/bin/env python3
++"""A2: independently qualify/copy the genuine terminal native GO24 family.
++
++Root supplies a real current64-GiB/zero-swap closed Frame config, original
++terminal report and all original23 roots, execution SDK and complete GO family. Success is written only by normal
++Frame.finish after preservation and cleanup. A new inode is not a new compile.
++"""
++from __future__ import annotations
++import argparse
++import hashlib
++import json
++import os
++from pathlib import Path
++import re
++import stat
++import sys
++import traceback
++import time
++import types
++
++sys.dont_write_bytecode=True
++ROOT=Path(__file__).resolve().parents[2]
++MIB=1024**2
++CG_LEAF='/sys/fs/cgroup/system.slice/docker-4dd58ad4560fde2ab9b539e4ef9cab1fac531654e99ad554aff1fce8ae0eae37.scope'
++
++
++def need(value,reason):
++    if not value:raise ValueError(reason)
++
++
++def bounded(path,maximum):
++    path=Path(path);need(path.is_absolute() and path.resolve(strict=True)==path,'physical metadata required')
++    fd=os.open(path,os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK|os.O_CLOEXEC)
++    try:
++        before=os.fstat(fd);need(stat.S_ISREG(before.st_mode) and 0<=before.st_size<=maximum,'bounded ordinary metadata required')
++        body=bytearray()
++        while True:
++            part=os.read(fd,min(65536,maximum-len(body)+1))
++            if not part:break
++            body.extend(part);need(len(body)<=maximum,'metadata grew')
++        need(len(body)==before.st_size and all(getattr(before,k)==getattr(os.fstat(fd),k)==getattr(path.lstat(),k)
++             for k in ('st_dev','st_ino','st_size','st_mtime_ns','st_ctime_ns','st_mode','st_nlink')),'opened metadata changed')
++        return bytes(body)
++    finally:os.close(fd)
++
++
++def decode(raw):
++    def pairs(rows):
++        result={}
++        for key,value in rows:need(key not in result,'duplicate library metadata key');result[key]=value
++        return result
++    return json.loads(raw,object_pairs_hook=pairs,parse_constant=lambda _:need(False,'nonfinite metadata'))
++
++
++def frozen_module(source,frozen,relative,name):
++    path=source/relative;raw=bounded(path,2*MIB)
++    need(frozen.get(relative)=={'bytes':len(raw),'sha256':hashlib.sha256(raw).hexdigest()},'helper absent from current complete source')
++    value=types.ModuleType(name);value.__file__=str(path);sys.modules[name]=value
++    exec(compile(raw,str(path),'exec'),value.__dict__);return value
++
++
++def bootstrap(args,own='tests/ros_unitree/prepare_native_family_library.py'):
++    need(sys.platform=='linux' and os.geteuid()==0 and args.source.resolve(strict=True)==ROOT and
++         Path(__file__).absolute()==ROOT/own,'actual frozen Linux Root entry required')
++    for key in ('source','manifest','config','out'):need(getattr(args,key).is_absolute(),'absolute actual path required')
++    for key in ('manifest_sha256','config_sha256'):need(re.fullmatch('[0-9a-f]{64}',getattr(args,key)),'complete actual SHA required')
++    raw=bounded(args.manifest,16*MIB);need(hashlib.sha256(raw).hexdigest()==args.manifest_sha256,'current source MF changed')
++    frozen=decode(raw);body=bounded(ROOT/own,MIB)
++    need(type(frozen) is dict and frozen.get(own)=={'bytes':len(body),'sha256':hashlib.sha256(body).hexdigest()},'actual entry absent from MF')
++    raw=bounded(args.config,16*MIB);need(hashlib.sha256(raw).hexdigest()==args.config_sha256,'actual config changed')
++    cg=decode(raw)['cgroup'];keys={'memory_max','memory_swap_max','expected_leaf','expected_device','expected_inode','expected_boot_id','expected_cpus'}
++    need(type(cg) is dict and set(cg)==keys and type(cg['memory_max']) is int and cg['memory_max']==64*1024**3 and
++         type(cg['memory_swap_max']) is int and cg['memory_swap_max']==0 and cg['expected_leaf']==CG_LEAF and
++         cg['expected_cpus']=='0-31','unchanged original64/swap0/CPU leaf required')
++    leaf=Path(CG_LEAF);info=leaf.stat()
++    need(leaf.resolve(strict=True)==leaf and (info.st_dev,info.st_ino)==(cg['expected_device'],cg['expected_inode']) and
++         Path('/proc/sys/kernel/random/boot_id').read_text().strip()==cg['expected_boot_id'] and
++         Path('/proc/self/cgroup').read_text().splitlines()==['0::'+CG_LEAF.removeprefix('/sys/fs/cgroup')] and
++         (leaf/'memory.max').read_text().strip()==str(64*1024**3) and (leaf/'memory.swap.max').read_text().strip()=='0' and
++         (leaf/'cpuset.cpus.effective').read_text().strip()=='0-31','actual selected cgroup incarnation differs')
++    api=types.SimpleNamespace(frozen_module=frozen_module,bounded=bounded)
++    unitree=frozen_module(ROOT,frozen,'tests/ros_unitree/common.py','library_current_owners')
++    return frozen,api,unitree
++
++
++def main():
++    parser=argparse.ArgumentParser(description=__doc__)
++    for key in ('source','manifest','config','out'):parser.add_argument('--'+key,type=Path,required=True)
++    for key in ('manifest-sha256','config-sha256','selection-input'):parser.add_argument('--'+key,required=True)
++    args=parser.parse_args();frame=None
++    try:
++        frozen,api,unitree=bootstrap(args)
++        library=api.frozen_module(ROOT,frozen,'tests/ros_unitree/library_inputs.py','library_input_copy_contract')
++        native=api.frozen_module(ROOT,frozen,'tests/ros_unitree/native_family_inputs.py','native_family_input_qualification')
++        class LibraryFrame(unitree.Frame):
++            def __init__(self,selection_args):
++                self.library_deadline=time.monotonic()+3600
++                super().__init__(selection_args,native.KIND)
++            def guard(self):
++                super().guard()
++                need(time.monotonic()<self.library_deadline,'finite3600s library preparation deadline exceeded')
++                raw=Path('/proc/self/status').read_text()
++                rows=re.findall(r'^VmRSS:\s+([0-9]+) kB$',raw,re.M)
++                need(len(raw)<=128*1024 and len(rows)==1 and int(rows[0])*1024<=768*MIB,
++                     'independent metadata coordinator RSS exceeds768MiB')
++        frame=LibraryFrame(args);frame.frozen=frozen;frame.unitree=unitree
++        admission=api.frozen_module(ROOT,frozen,'tests/ros_unitree/typed_transport_inputs.py','library_finite_original_evidence')
++        selection,pin=frame.common.document(frame.input(args.selection_input))
++        need(pin==frame.inputs[args.selection_input],'selected library metadata changed')
++        status=native.stage(frame,api,admission,selection,library)
++        return frame.finish(status)
++    except BaseException as error:
++        if frame is not None:
++            frame.report['traceback']=traceback.format_exc();return frame.finish('FAIL',repr(error))
++        print(traceback.format_exc(),file=sys.stderr);return 1
++
++
++if __name__=='__main__':raise SystemExit(main())
+--- /dev/null
++++ b/tests/ros_unitree/test_native_family_inputs_policy.py
+@@ -0,0 +1,81 @@
++"""Guarded DATA regressions for A2's real original C52 contract.
++
++These are not native compilation or execution tests. The Root-only caller
++supplies genuinely pinned C52 raw data and its six actual GO documents, plus the
++original export verbose log read through the selected current Frame. The same
++current64 guard runs before/after every test. This module creates no actor and
++executes no test on import. It has no fabricated successful build fixture.
++"""
++from __future__ import annotations
++import copy
++import unittest
++
++
++def suite(native,*,original,original_pin,generation,catalog,profile,metadata,binding,export_verbose,guard):
++    """Return18 tests; supplying data never starts a Runtime or compiler."""
++    class Policy(unittest.TestCase):
++        def setUp(self):
++            guard();self.addCleanup(guard)
++        def documents(self):
++            return copy.deepcopy((generation,catalog,profile,metadata,binding))
++        def accepted(self,rows):return native.message_contract(*rows)
++        def refused(self,rows):
++            with self.assertRaises((ValueError,KeyError)):self.accepted(rows)
++        def test_genuine_original_terminal_and_all_three_families(self):
++            row=native.terminal_original(original,original_pin)
++            self.assertEqual(row['family'],'unitree_go')
++        def test_native6_failure_is_never_promoted(self):
++            body=copy.deepcopy(original);body['status']='FAIL'
++            with self.assertRaises(ValueError):native.terminal_original(body,original_pin)
++        def test_changed_original_raw_digest_is_refused(self):
++            pin=dict(original_pin);pin['sha256']='0'*64
++            with self.assertRaises(ValueError):native.terminal_original(original,pin)
++        def test_incomplete_original_command_batch_is_refused(self):
++            body=copy.deepcopy(original);body['commands'].pop()
++            with self.assertRaises(ValueError):native.terminal_original(body,original_pin)
++        def test_original_remaining_mount_is_refused(self):
++            body=copy.deepcopy(original);body['remaining_mounts']=['/not-clean']
++            with self.assertRaises(ValueError):native.terminal_original(body,original_pin)
++        def test_original_incomplete_cleanup_is_refused(self):
++            body=copy.deepcopy(original);body['cleanup']['remaining']=[{'pid':1}]
++            with self.assertRaises(ValueError):native.terminal_original(body,original_pin)
++        def test_actual_complete_go24_documents_are_accepted(self):
++            self.assertEqual(len(self.accepted(self.documents())),24)
++        def test_missing_complete_definition_is_refused(self):
++            rows=self.documents();rows[2]['definitions'].pop();self.refused(rows)
++        def test_native_root_identity_mismatch_is_refused(self):
++            rows=self.documents();name=rows[1]['types'][0]['type'];rows[3]['types'][name]['native_identity']='RIHS01_'+'0'*64
++            self.refused(rows)
++        def test_component_identity_mismatch_is_refused(self):
++            rows=self.documents();name=rows[1]['types'][0]['type']
++            rows[3]['types'][name]['components']['message']['native_identity']='RIHS01_'+'0'*64;self.refused(rows)
++        def test_codec_identity_mismatch_is_refused(self):
++            rows=self.documents();rows[0]['records'][0]['adapter_codec_identity']='UWVMROS1_'+'0'*64;self.refused(rows)
++        def test_bounds_mismatch_is_refused(self):
++            rows=self.documents();rows[1]['types'][0]['bounds']={'made_up':{'sequence':1}};self.refused(rows)
++        def test_missing_provider_output_is_refused(self):
++            rows=self.documents();rows[0]['outputs'].pop('native_ros2.hpp');self.refused(rows)
++        def test_extra_native_type_is_refused(self):
++            rows=self.documents();rows[3]['types']['unrelated/msg/Other']={};self.refused(rows)
++        def test_real_export_make_log_reconstructs_exact_actual_argv(self):
++            family=next(row for row in original['families'] if row['family']=='unitree_go');section=family['export_build']
++            database=[row['configured_compile_database_row'] for row in section['compile_records']]
++            actual=native.make_witness(database,export_verbose,section['compile_records'][0]['actual_compile']['cwd'],
++                section['actual_make_directory_events'])
++            self.assertEqual(actual,[row['actual_compile'] for row in section['compile_records']])
++        def test_missing_actual_compile_line_is_refused(self):
++            family=next(row for row in original['families'] if row['family']=='unitree_go');section=family['export_build']
++            record=section['compile_records'][0];changed=export_verbose.replace(record['actual_compile']['raw'],'',1)
++            with self.assertRaises(ValueError):native.make_witness([record['configured_compile_database_row']],changed,
++                record['actual_compile']['cwd'],section['actual_make_directory_events'])
++        def test_duplicate_actual_compile_line_is_refused(self):
++            family=next(row for row in original['families'] if row['family']=='unitree_go');section=family['export_build']
++            record=section['compile_records'][0];raw=record['actual_compile']['raw'];changed=export_verbose.replace(raw,raw+'\n'+raw,1)
++            with self.assertRaises(ValueError):native.make_witness([record['configured_compile_database_row']],changed,
++                record['actual_compile']['cwd'],section['actual_make_directory_events'])
++        def test_unmatched_make_directory_event_is_refused(self):
++            family=next(row for row in original['families'] if row['family']=='unitree_go');section=family['export_build']
++            record=section['compile_records'][0];events=copy.deepcopy(section['actual_make_directory_events']);events[0]['cwd']='/wrong'
++            with self.assertRaises(ValueError):native.make_witness([record['configured_compile_database_row']],export_verbose,
++                record['actual_compile']['cwd'],events)
++    return unittest.defaultTestLoader.loadTestsFromTestCase(Policy)

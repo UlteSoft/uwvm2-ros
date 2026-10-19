@@ -1,0 +1,106 @@
+{
+  "format": "uwvm-nvidia-future-source-recipes-v1",
+  "executed": false,
+  "stages": [
+    {
+      "stage": "prepare each exact catalog",
+      "tool": "sdk/robots/industrial/prepare.py",
+      "argv": [
+        "--mode",
+        "prepare",
+        "--source-root",
+        "ACTUAL_CURRENT_ROOT",
+        "--catalog",
+        "ACTUAL_CATALOG",
+        "--out",
+        "FRESH_EXTERNAL_BUNDLE",
+        "--parent-sha256",
+        "ACTUAL_CAPTURED_PARENT_SHA",
+        "--bounded-sha256",
+        "ACTUAL_CAPTURED_BOUNDED_SHA",
+        "--adapter-sha256",
+        "ACTUAL_CAPTURED_VENDOR_ADAPTER_SHA"
+      ]
+    },
+    {
+      "stage": "real native interface producer",
+      "tool": "actual selected ROS2 rosidl C/C++/Python build",
+      "input": "whole exact original catalog sources or authored uwvm_groot_bridge package",
+      "qualification": "actual SDK targets/full-MD/link/export owner closure required; not invoked"
+    },
+    {
+      "stage": "actual modern native exporter",
+      "tool": "per-lane native/CMakeLists.txt",
+      "cmake_inputs": [
+        "UWVM_SOURCE_ROOT",
+        "UWVM_NVIDIA_BUNDLE",
+        "actual installed native SDK packages/toolchain"
+      ],
+      "qualification": "source/constant/default/layout/fullroot+refs/Event/hash proof before effects"
+    },
+    {
+      "stage": "bind independently exported inputs",
+      "tool": "sdk/robots/industrial/prepare.py",
+      "argv": [
+        "--mode",
+        "bind",
+        "--source-root",
+        "ACTUAL_CURRENT_ROOT",
+        "--catalog",
+        "ACTUAL_CATALOG",
+        "--out",
+        "FRESH_BOUND_BUNDLE",
+        "--parent-sha256",
+        "ACTUAL_PARENT_SHA",
+        "--bounded-sha256",
+        "ACTUAL_BOUNDED_SHA",
+        "--adapter-sha256",
+        "ACTUAL_ADAPTER_SHA",
+        "--native-metadata",
+        "ACTUAL_METADATA",
+        "--native-owner-report",
+        "ACTUAL_OWNER_REPORT"
+      ]
+    },
+    {
+      "stage": "C++ Guest source build",
+      "tool": "actual WASI CMake",
+      "inputs": [
+        "per-lane examples/CMakeLists.txt",
+        "UWVM_SOURCE_ROOT",
+        "UWVM_NVIDIA_BOUND_BUNDLE",
+        "real wasm32 WASI toolchain",
+        "UWVM_NVIDIA_POSITIVE=OFF or distinct ON"
+      ],
+      "qualified": false
+    },
+    {
+      "stage": "GR00T Guest source build",
+      "tool": "actual TinyGo",
+      "inputs": [
+        "groot/examples/client.go",
+        "actual complete bounded Go records in customtypes",
+        "real local SDK module replacement",
+        "wasm32 WASI",
+        "tags ros2 rmw_service_v1"
+      ],
+      "qualified": false
+    },
+    {
+      "stage": "finite native owners",
+      "tools": [
+        "isaac_ros/native/detector_owner.cpp",
+        "isaac_sim/native_graph.py",
+        "groot/run_captured.py",
+        "jetson/admit_platform.py"
+      ],
+      "default_code": 13,
+      "authority": "explicit native process options and separate Guest grants; no implicit grant"
+    },
+    {
+      "stage": "actual denied / positive / typed DBG / native effect / cleanup qualification",
+      "tool": "independently selected current Runtime/Gateway/Native products",
+      "status": "not run; no success receipt or invented model data"
+    }
+  ]
+}

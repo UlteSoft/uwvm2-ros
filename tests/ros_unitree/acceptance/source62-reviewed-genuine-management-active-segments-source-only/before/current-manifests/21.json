@@ -1,0 +1,63 @@
+{
+  "kind": "source54-reviewed-runtime-reset-and-guest-management-negative-fixtures",
+  "status": "CURRENT_SOURCE_INDEPENDENT_REVIEW_CLOSED_NOT_EXECUTED",
+  "current_files": {
+    "tests/ros_debugger/host_retirement_contract.cc": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/host_retirement_contract.cc",
+      "bytes": 19689,
+      "sha256": "0ea343824ab9e98383cc6b31e539c414eeab1e98b119211d3e41d04c2a6bd2bf"
+    },
+    "tests/ros_debugger/README.management.md": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/README.management.md",
+      "bytes": 11839,
+      "sha256": "61dd5d2bb1e1523a845a1009f1adae56bb26a53f290a3b2f5f7ea2277ce92e61"
+    },
+    "tests/ros_debugger/management-recipes.json": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management-recipes.json",
+      "bytes": 11387,
+      "sha256": "9b2b27dfed578551335034c85bd43771ebb639e7335f5cec602f3eb17d682646"
+    },
+    "tests/ros_debugger/management_negative_imports/ros1-debug_configure.wat": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_negative_imports/ros1-debug_configure.wat",
+      "bytes": 911,
+      "sha256": "dd85aa6ec124f2660698dceaed9fa9fdb5907faeccac3e47e8936f9bf4580199"
+    },
+    "tests/ros_debugger/management_negative_imports/ros1-policy_set.wat": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_negative_imports/ros1-policy_set.wat",
+      "bytes": 901,
+      "sha256": "1ccd8c98ac0311bb211eb2fb74d6a5ac869b15aefb9b9a95e446e42d61096f3a"
+    },
+    "tests/ros_debugger/management_negative_imports/ros1-runtime_update.wat": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_negative_imports/ros1-runtime_update.wat",
+      "bytes": 909,
+      "sha256": "732dd8e54f07f84f15de74ea85a9969837f95fc964563c8ec8563ca7f8db75e5"
+    },
+    "tests/ros_debugger/management_negative_imports/ros2-debug_configure.wat": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_negative_imports/ros2-debug_configure.wat",
+      "bytes": 911,
+      "sha256": "02c0a97109c8378507fca78706d517b59de908b924f48421ce4900a7cc0d1afc"
+    },
+    "tests/ros_debugger/management_negative_imports/ros2-policy_set.wat": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_negative_imports/ros2-policy_set.wat",
+      "bytes": 901,
+      "sha256": "67870d52019bfdc190afbe8a8de51c6dd736417ca2af3bf7d0f50e069a2923de"
+    },
+    "tests/ros_debugger/management_negative_imports/ros2-runtime_update.wat": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_negative_imports/ros2-runtime_update.wat",
+      "bytes": 909,
+      "sha256": "c5fbc8c996fd3ecb6f46cae52e020cf4ac4a318dbb8b7eb97fdfe3627d90dc99"
+    }
+  },
+  "author_source_ready": {
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source54-generated-input-and-management-fixtures-source-only/runtime-reset-and-guest-management-negative-fixtures/author-source-ready.json",
+    "bytes": 11735,
+    "sha256": "a505663991d9d739a150d27cc3fc87448a58203bd1bc03c8b9938e743a6db1dd"
+  },
+  "independent_source_peer": {
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source54-generated-input-and-management-fixtures-source-only/runtime-reset-and-guest-management-negative-fixtures/independent-source-peer.json",
+    "bytes": 10386,
+    "sha256": "dd5aaa69b203ab839981d2f3c3314fe1a7c13f3e709f24d827cc5125af4fbd17"
+  },
+  "tests_or_compilers_or_Runtime_executed": false,
+  "scope": "Current source only; no historical test or peer result is promoted to changed bytes."
+}

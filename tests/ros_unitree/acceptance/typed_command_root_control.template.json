@@ -1,0 +1,55 @@
+{
+  "format_version": 1,
+  "kind": "typed-command-postboot-root-control-v1",
+  "source": "/var/tmp/uwvm-ros-complete-20261015-r1/inputs-r40/source",
+  "manifest": "/var/tmp/uwvm-ros-complete-20261015-r1/inputs-r40/source-manifest.json",
+  "manifest_sha256": "a1c302c830b9965c73d3a9f1fa775056ff60cb7b252ec2af15c8c73ee0969afd",
+  "manifest_pin": null,
+  "source_files": 17928,
+  "cgroup": {
+    "memory_max": 68719476736,
+    "memory_swap_max": 0,
+    "expected_device": 29,
+    "expected_inode": 18315,
+    "expected_boot_id": "ec0d5f0f-3060-4220-bee2-2a7791ed4e72",
+    "expected_leaf": "/sys/fs/cgroup/system.slice/docker-4dd58ad4560fde2ab9b539e4ef9cab1fac531654e99ad554aff1fce8ae0eae37.scope",
+    "expected_cpus": "0-31"
+  },
+  "code_root": "/var/tmp/uwvm-ros-unitree-20261016-r1/source40-unitree-command14-boot2-controls-r1",
+  "metadata_out": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/source40-unitree-command14-boot2-inputs-r1",
+  "actor_out": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/source40-unitree-command14-boot2-build-r1",
+  "owner_out": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/source40-unitree-command14-boot2-owner-r1",
+  "python": null,
+  "helpers": {
+    "maker": null,
+    "builder": null,
+    "adapter": null,
+    "restart": null,
+    "cpp_qualifier": null,
+    "utilities": null,
+    "outer": null
+  },
+  "helper_selection": null,
+  "inputs": {
+    "seed_config": {
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/source40-unitree-command14-input-admission-r2/controls/frame-config.json",
+      "bytes": 18803,
+      "sha256": "ed31e25026685a3e18f760c28dbc713468d66555c0984cdb306683ca1d86a8bd"
+    },
+    "original_batch": {
+      "path": "/var/tmp/uwvm-ros-complete-20261015-r1/acceptance-storage-r1/source40-unitree-command14-build-r1/report.json",
+      "bytes": 3911428,
+      "sha256": "b7c07cc7b83bf5996d85e1e812c7e4bc5221358d6dafcb69c3601d261af86747"
+    }
+  },
+  "outer": {
+    "self_rss_bytes": 536870912,
+    "tree_rss_bytes": 1610612736,
+    "prepare_command_seconds": 3600,
+    "build_command_seconds": 19800,
+    "active_seconds": 20400,
+    "whole_seconds": 21600,
+    "cleanup_seconds": 600,
+    "reserve_bytes": 8589934592
+  }
+}

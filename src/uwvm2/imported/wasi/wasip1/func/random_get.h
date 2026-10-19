@@ -92,7 +92,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             ::uwvm2::imported::wasi::wasip1::func::print_wasip1_trace_message(env, u8"random_get(", ::fast_io::mnp::addrvw(buf), u8", ", buf_len, u8")");
         }
 
-        auto& memory{*env.wasip1_memory};
+        // Even an empty request requires explicit randomness authority. Denial must
+        // precede constructing native_white_hole and must leave guest bytes untouched.
+        if(!env.permits(::uwvm2::imported::wasi::wasip1::environment::permission_t::random)) [[unlikely]]
+        {
+            return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable;
+        }
+
+        auto const memory_pointer{env.get_memory()};
+        if(memory_pointer == nullptr) [[unlikely]] { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
+        auto& memory{*memory_pointer};
 
         {
             // Full locking is required during reading.

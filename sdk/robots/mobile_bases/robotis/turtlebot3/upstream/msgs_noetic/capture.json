@@ -1,0 +1,64 @@
+{
+  "id": "msgs_noetic",
+  "url": "https://github.com/ROBOTIS-GIT/turtlebot3_msgs",
+  "branch": "noetic",
+  "commit": "76e78b0a34e07cf1dd16dafdc54c44f35c5b83eb",
+  "tree_git_sha1": "fe24193f29cd1059779395fb17354d8f11fb8fef",
+  "files": [
+    {
+      "path": "CHANGELOG.rst",
+      "bytes": 1018,
+      "sha256": "fc46bee04ed442ff9c5d83c486f40cad5c74e598d16a1004580e845896c0f749",
+      "git_blob_sha1": "99481fd2ceca2879e639d78cdcba079e3de66709"
+    },
+    {
+      "path": "CMakeLists.txt",
+      "bytes": 2163,
+      "sha256": "69de0fa3e63b5a0f25862077e62f3efc133db5b83b58f32a9242de14812e22c5",
+      "git_blob_sha1": "32f7fe17eeb91c424655511076628b013cf2a6d1"
+    },
+    {
+      "path": "LICENSE",
+      "bytes": 11357,
+      "sha256": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1",
+      "git_blob_sha1": "8dada3edaf50dbc082c9a125058f25def75e625a"
+    },
+    {
+      "path": "README.md",
+      "bytes": 3468,
+      "sha256": "ff87ebb50e02f043a0394a9162f24bfd17aa86e78cebaf8b44b0b8f2ba2bca76",
+      "git_blob_sha1": "e7086d3e6e765e43434078bde0d783c6fc6dfb64"
+    },
+    {
+      "path": "msg/SensorState.msg",
+      "bytes": 1132,
+      "sha256": "1a9e0c633878fbe28695f1a5490a5655acbfaf871df3d58d197b7f2d51ded8c1",
+      "git_blob_sha1": "7e75eb2c3df756a04251b01e106998ce7f5d2515"
+    },
+    {
+      "path": "msg/Sound.msg",
+      "bytes": 344,
+      "sha256": "eb4861a35e75b7b4a04baf8beb171b527e0d7a382c0db969f5b32a2cb97b8bdf",
+      "git_blob_sha1": "8cfe5a059a4ed8749ff26003705a8890ee9daf72"
+    },
+    {
+      "path": "msg/VersionInfo.msg",
+      "bytes": 350,
+      "sha256": "27497e6e84c079319860ad6444ff2b738a2d75243f46b637559d7c297f38ef68",
+      "git_blob_sha1": "5dc94653418d52dc78978ac47d28915ae18f5f1a"
+    },
+    {
+      "path": "package.xml",
+      "bytes": 995,
+      "sha256": "a30b821c5373d1591c3ec8e14881b0a724f8697de22fbbeacd2e5ed8e4a602c7",
+      "git_blob_sha1": "e484774f374a990ed29ebe66c98e5bec28952b74"
+    }
+  ],
+  "archive": {
+    "url": "https://codeload.github.com/ROBOTIS-GIT/turtlebot3_msgs/tar.gz/76e78b0a34e07cf1dd16dafdc54c44f35c5b83eb",
+    "bytes": 7641,
+    "sha256": "dd1f4b78c0efdbaf48caf41e882504994cd98958a9b85b1ce85749b1dfef7405"
+  },
+  "default_authority": [],
+  "scope": "Original source and complete acquisition archive only; no compatibility, compiler, Guest, native or physical robot result."
+}

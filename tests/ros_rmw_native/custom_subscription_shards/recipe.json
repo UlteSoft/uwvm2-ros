@@ -1,0 +1,82 @@
+{
+  "format_version": 1,
+  "source_only": true,
+  "actual_executed": 0,
+  "prerequisites": [
+    "independent full source peer and same-byte composed source integration",
+    "actual complete generated catalog/common manifest/native provider and full original SDK/header/library roots",
+    "actual selected Gateway feature compile/link results; no enabling feature by hand",
+    "independent bounded external build/native process ownership, resource guards and full MD/object/link/source closure"
+  ],
+  "configure_empty": [
+    "cmake",
+    "-S",
+    "<source>/tests/ros_rmw_native/custom_subscription_shards",
+    "-B",
+    "<owned-build>/empty",
+    "-DUWVM_SOURCE_ROOT=<actual-source>",
+    "-DUWVM_ROS2_GATEWAY_FEATURE_DIR=<actual-features>",
+    "-DCMAKE_CXX_STANDARD=<actual-17-20-23-26>",
+    "-DCMAKE_BUILD_TYPE=Release",
+    "-DCMAKE_PREFIX_PATH=<actual-SDK-prefix>"
+  ],
+  "configure_custom_extra": [
+    "-DUWVM_ROS_CUSTOM_REGISTRY_HEADER=<actual-whole-generated-manifest>",
+    "-DUWVM_ROS_CUSTOM_ROS2_HEADER=<actual-whole-generated-native-provider>",
+    "-DUWVM_ROS_CUSTOM_ROS2_PACKAGES=<complete-package-list>",
+    "-DUWVM_ROS2_CUSTOM_TOPIC_SHARDS=<actual-1..256>"
+  ],
+  "build": [
+    "cmake",
+    "--build",
+    "<owned-build>/<empty-or-full>",
+    "--target",
+    "custom-owned-subscription-contract",
+    "--parallel",
+    "1"
+  ],
+  "run_metadata_contract_only_by_owner": [
+    "<owned-build>/<empty-or-full>/custom-owned-subscription-contract"
+  ],
+  "negative_configure_extra": [
+    "-DUWVM_CUSTOM_SUBSCRIPTION_OMIT_SHARD=0"
+  ],
+  "negative_build_must_fail_at_link": [
+    "cmake",
+    "--build",
+    "<fresh-negative-owned-build>",
+    "--target",
+    "custom-owned-subscription-contract",
+    "--parallel",
+    "1"
+  ],
+  "negative_required_result": "All retained objects compile with the same real SDK; final link alone fails for missing topic_shard<0,S> symbols. A configure/compile failure is not this negative result. No runnable or qualifying incomplete product.",
+  "native_configure_extra": [
+    "-DUWVM_CUSTOM_SUBSCRIPTION_NATIVE_WITNESS=ON",
+    "-DUWVM_CUSTOM_SUBSCRIPTION_TEST_ROW=<actual-row-ordinal>"
+  ],
+  "native_build": [
+    "cmake",
+    "--build",
+    "<owned-native-build>",
+    "--target",
+    "custom-owned-subscription-native",
+    "--parallel",
+    "1"
+  ],
+  "native_run_only_by_owner": [
+    "<owned-native-build>/custom-owned-subscription-native",
+    "--trusted-native-fixture",
+    "<unused-absolute-topic>",
+    "<actual-independent-whole-canonical-fixture-file>"
+  ],
+  "required_matrix": [
+    "empty provider without dispatcher/shards",
+    "complete provider S32/default plus S1 and S above row count, every source/object/dependency linked",
+    "missing one shard, including an empty shard, refuses at real link",
+    "real selected-row native whole-value/actual-QoS/GID/URMI/ABA/retirement for every requested schema family and actual supported SDK, not one sample for the entire provider",
+    "four builtin selector routes retain original native witness requirements",
+    "Host registry/transport/default-denial/Guest/Wasm/permissions remain separately required"
+  ],
+  "credit_boundary": "No command executed by author. Metadata/link contract is not native publication. Native witness is not Host/Guest acceptance or broad SDK/vendor completion."
+}

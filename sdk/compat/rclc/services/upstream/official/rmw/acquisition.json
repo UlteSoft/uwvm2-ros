@@ -1,0 +1,72 @@
+{
+  "source_only": true,
+  "actual_source": [
+    {
+      "original": {
+        "repository": "ros2/rmw",
+        "requested_ref": "jazzy",
+        "commit": "8cb94a87cf3f4049abe2d563af893517bf336930",
+        "tree": "50ec4606e143cf91683400f441ba5ee660b27f4d",
+        "path": "LICENSE",
+        "git_blob": "d645695673349e3947e8e5ae42332d0ac3164cd7",
+        "bytes": 11358,
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+        "url": "https://raw.githubusercontent.com/ros2/rmw/8cb94a87cf3f4049abe2d563af893517bf336930/LICENSE"
+      },
+      "copy": {
+        "path": "/private/tmp/uwvm-rclc-service-profile-source-only-restart-20261018-r1/files/sdk/compat/rclc/services/upstream/official/rmw/LICENSE",
+        "bytes": 11358,
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+        "device": 16777231,
+        "inode": 87288371,
+        "mtime_ns": 1792259627259180926,
+        "ctime_ns": 1792269508257436602
+      }
+    },
+    {
+      "original": {
+        "repository": "ros2/rmw",
+        "requested_ref": "jazzy",
+        "commit": "8cb94a87cf3f4049abe2d563af893517bf336930",
+        "tree": "50ec4606e143cf91683400f441ba5ee660b27f4d",
+        "path": "rmw/include/rmw/qos_profiles.h",
+        "git_blob": "8bcad7bf28d9d85f1edfe7184580b40013cb8c68",
+        "bytes": 7265,
+        "sha256": "0502801c68adbd61bc884aafea5c5bbfa4deb326aacb4d0fdbab3a32aab3539c",
+        "url": "https://raw.githubusercontent.com/ros2/rmw/8cb94a87cf3f4049abe2d563af893517bf336930/rmw/include/rmw/qos_profiles.h"
+      },
+      "copy": {
+        "path": "/private/tmp/uwvm-rclc-service-profile-source-only-restart-20261018-r1/files/sdk/compat/rclc/services/upstream/official/rmw/rmw/include/rmw/qos_profiles.h",
+        "bytes": 7265,
+        "sha256": "0502801c68adbd61bc884aafea5c5bbfa4deb326aacb4d0fdbab3a32aab3539c",
+        "device": 16777231,
+        "inode": 87288375,
+        "mtime_ns": 1792259627099336194,
+        "ctime_ns": 1792269508257919308
+      }
+    },
+    {
+      "original": {
+        "repository": "ros2/rmw",
+        "requested_ref": "jazzy",
+        "commit": "8cb94a87cf3f4049abe2d563af893517bf336930",
+        "tree": "50ec4606e143cf91683400f441ba5ee660b27f4d",
+        "path": "rmw/include/rmw/types.h",
+        "git_blob": "6a59ae823e24d3a716fe52ab90b6eb245b71dce4",
+        "bytes": 29478,
+        "sha256": "c1e7be9e420d3c32cf6b24db62c3fbd6b97d0518811f6f4677db09d835cf3830",
+        "url": "https://raw.githubusercontent.com/ros2/rmw/8cb94a87cf3f4049abe2d563af893517bf336930/rmw/include/rmw/types.h"
+      },
+      "copy": {
+        "path": "/private/tmp/uwvm-rclc-service-profile-source-only-restart-20261018-r1/files/sdk/compat/rclc/services/upstream/official/rmw/rmw/include/rmw/types.h",
+        "bytes": 29478,
+        "sha256": "c1e7be9e420d3c32cf6b24db62c3fbd6b97d0518811f6f4677db09d835cf3830",
+        "device": 16777231,
+        "inode": 87288376,
+        "mtime_ns": 1792259627510632864,
+        "ctime_ns": 1792269508258339141
+      }
+    }
+  ],
+  "native_use": "public structure/QoS source reference only; no native ABI compatibility claim"
+}

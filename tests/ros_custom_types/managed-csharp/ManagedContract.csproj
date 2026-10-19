@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings><Nullable>enable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <DefineConstants>$(DefineConstants);$(FamilyDefine)</DefineConstants>
+  </PropertyGroup>
+  <Target Name="RequireExplicitSources" BeforeTargets="CoreCompile">
+    <Error Condition="'$(GeneratedRecords)' == '' Or !Exists('$(GeneratedRecords)')" Text="actual generated C# record source required" />
+    <Error Condition="'$(ContractSource)' == '' Or !Exists('$(ContractSource)')" Text="one actual contract source required" />
+    <Error Condition="'$(RosWasmSdkRoot)' == '' Or !Exists('$(RosWasmSdkRoot)/Codecs.cs') Or !Exists('$(RosWasmSdkRoot)/Result.cs') Or !Exists('$(RosWasmSdkRoot)/Retirement.cs')" Text="actual selected SDK Codecs.cs, Result.cs and Retirement.cs required" />
+  </Target>
+  <ItemGroup>
+    <Compile Include="$(GeneratedRecords)" /><Compile Include="$(ContractSource)" />
+    <Compile Include="$(RosWasmSdkRoot)/Codecs.cs" /><Compile Include="$(RosWasmSdkRoot)/Result.cs" />
+    <Compile Include="$(RosWasmSdkRoot)/Retirement.cs" />
+  </ItemGroup>
+</Project>

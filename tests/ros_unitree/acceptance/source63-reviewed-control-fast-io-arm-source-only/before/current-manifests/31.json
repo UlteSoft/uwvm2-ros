@@ -1,0 +1,89 @@
+{
+  "kind": "source62-reviewed-current-declaration-successor",
+  "status": "CURRENT_SOURCE_INDEPENDENT_REVIEW_CLOSED_RETEST_PENDING",
+  "historical_manifest": {
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source61-reviewed-genuine-management-fixture-compile-source-only/current-declarations/31-source-ready.json",
+    "bytes": 4801,
+    "sha256": "d7b5e095ccc52eafdb38c9f5f46cd46665cf3f3f1a956981c836bb85a417d542"
+  },
+  "preserved_historical_manifest": {
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/before/current-manifests/31.json",
+    "bytes": 4801,
+    "sha256": "d7b5e095ccc52eafdb38c9f5f46cd46665cf3f3f1a956981c836bb85a417d542"
+  },
+  "current_files": {
+    "tests/ros_debugger/management_runtime_contract.cc": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_runtime_contract.cc",
+      "bytes": 35869,
+      "sha256": "dda45eafba7fbf3c2fd3f77248f0f00b2b2a7c5a34278ee0d27f4cc6bb47f957"
+    },
+    "tests/ros_debugger/management_runtime_ros1.wat": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_runtime_ros1.wat",
+      "bytes": 3554,
+      "sha256": "6c268c720736d1ceb424f70730f58a2148ff18774cb0521ceffbc259ac476274"
+    },
+    "tests/ros_debugger/management_runtime_ros2.wat": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_runtime_ros2.wat",
+      "bytes": 3554,
+      "sha256": "e27ebcd40fa87c202c2e98b197a48fc00702f63743f83a88e1a114838efbaa19"
+    },
+    "tests/ros_debugger/management_runtime_replacement.wat": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_runtime_replacement.wat",
+      "bytes": 305,
+      "sha256": "40e4868bfaee0eb9a6db3ed40f8ecf72d2c27ca153fa7a085da8098c4fa22d27"
+    },
+    "tests/ros_debugger/management_runtime_dap.py": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_runtime_dap.py",
+      "bytes": 11544,
+      "sha256": "e951359d8479e5bde3bf589e675e7106c31355bee7d5c79e9a0e1042190eac2f"
+    },
+    "tests/ros_debugger/README.management-runtime.md": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/README.management-runtime.md",
+      "bytes": 11151,
+      "sha256": "1b472e40eda3f294b71585f761fb6d9cfa266933049b94b1dcfed34b0f4397db"
+    },
+    "tests/ros_debugger/management-runtime-recipes.json": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management-runtime-recipes.json",
+      "bytes": 7289,
+      "sha256": "c1d9d5e2098615575c297cb8377b4e09c965b995d4bca70a4cb774688538061c"
+    }
+  },
+  "changed_current_files": [
+    {
+      "previous": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_runtime_contract.cc",
+        "bytes": 35263,
+        "sha256": "f249b147d253574d6e88bc3e9b73bfa283b43e10065d72668f4034557abd85fb"
+      },
+      "current": {
+        "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_runtime_contract.cc",
+        "bytes": 35869,
+        "sha256": "dda45eafba7fbf3c2fd3f77248f0f00b2b2a7c5a34278ee0d27f4cc6bb47f957"
+      }
+    }
+  ],
+  "review_evidence": {
+    "original_package": {
+      "path": "/private/tmp/uwvm-source62-management-active-segments-fixture-source-only-20261017-r1/root-applied-source-ready.json",
+      "bytes": 1176,
+      "sha256": "d712ef5eb6e042b76c7d1b883b124ddf9db9d75d426a3dbdb594e901349cdddb"
+    },
+    "saved_package": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/review-evidence/source-ready.original.json",
+      "bytes": 1176,
+      "sha256": "d712ef5eb6e042b76c7d1b883b124ddf9db9d75d426a3dbdb594e901349cdddb"
+    },
+    "original_independent_peer": {
+      "path": "/private/tmp/uwvm-source62-management-active-segments-independent-source-peer-recovery-20261017-r1.json",
+      "bytes": 10596,
+      "sha256": "0c8cd7b67d69fc3d7244c8545a286d09acbe380cc042321d03e4d396752038d3"
+    },
+    "saved_independent_peer": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source62-reviewed-genuine-management-active-segments-source-only/review-evidence/independent-source-peer.json",
+      "bytes": 10596,
+      "sha256": "0c8cd7b67d69fc3d7244c8545a286d09acbe380cc042321d03e4d396752038d3"
+    }
+  },
+  "scope": "Genuine management fixture active-segment installation after actual full validation, in real CLI preload-then-main order; original package/results stay historical.",
+  "execution_performed": false
+}

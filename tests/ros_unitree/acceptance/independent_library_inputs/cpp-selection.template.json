@@ -1,0 +1,8 @@
+{
+  "format_version": 1,
+  "kind": "uwvm-official-cpp-library-selection-v1",
+  "official_cpp_report": "official-cpp-report",
+  "compiler": "wasi-clangxx",
+  "sysroot": null,
+  "restart_mappings": []
+}

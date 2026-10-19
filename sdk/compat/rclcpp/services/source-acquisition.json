@@ -1,0 +1,206 @@
+{
+  "kind": "actual-immutable-source-acquisition-not-qualification",
+  "source_review": "PENDING_INDEPENDENT_REVIEW",
+  "files": [
+    {
+      "repository": "https://github.com/ros2/examples",
+      "requested_ref": "jazzy",
+      "commit": "07008852303f2a35a91c65d78046b274a35477ea",
+      "tree": "cc1f17d44a88c740e4ed580be99ead013bcb1afd",
+      "relative": "LICENSE",
+      "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/LICENSE",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "git_blob_sha1": "d645695673349e3947e8e5ae42332d0ac3164cd7"
+    },
+    {
+      "repository": "https://github.com/ros2/examples",
+      "requested_ref": "jazzy",
+      "commit": "07008852303f2a35a91c65d78046b274a35477ea",
+      "tree": "cc1f17d44a88c740e4ed580be99ead013bcb1afd",
+      "relative": "rclcpp/services/minimal_service/main.cpp",
+      "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclcpp/services/minimal_service/main.cpp",
+      "bytes": 1485,
+      "sha256": "9b0c4ccb884ff75772101c028158c1c1153a34d26a8c6a5481a24ba0600aa055",
+      "git_blob_sha1": "3cf38fb33db6619b4c6011cec57c48a175ffd0c4"
+    },
+    {
+      "repository": "https://github.com/ros2/examples",
+      "requested_ref": "jazzy",
+      "commit": "07008852303f2a35a91c65d78046b274a35477ea",
+      "tree": "cc1f17d44a88c740e4ed580be99ead013bcb1afd",
+      "relative": "rclcpp/services/minimal_service/CMakeLists.txt",
+      "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclcpp/services/minimal_service/CMakeLists.txt",
+      "bytes": 732,
+      "sha256": "d0842030b8376943e226f0afc2d73005a271584e7287edb6a6fe893ab9b9ad8b",
+      "git_blob_sha1": "0ecfe3fb7bdf4753d20f802795d36382e0ba1a18"
+    },
+    {
+      "repository": "https://github.com/ros2/examples",
+      "requested_ref": "jazzy",
+      "commit": "07008852303f2a35a91c65d78046b274a35477ea",
+      "tree": "cc1f17d44a88c740e4ed580be99ead013bcb1afd",
+      "relative": "rclcpp/services/minimal_service/package.xml",
+      "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclcpp/services/minimal_service/package.xml",
+      "bytes": 1118,
+      "sha256": "c3cf898427e952dd2e9f93b84069cdda96d464a772eafdde87f4d044ef022889",
+      "git_blob_sha1": "4fd631f1135c32780b771e04232ec2f8846d0b2c"
+    },
+    {
+      "repository": "https://github.com/ros2/examples",
+      "requested_ref": "jazzy",
+      "commit": "07008852303f2a35a91c65d78046b274a35477ea",
+      "tree": "cc1f17d44a88c740e4ed580be99ead013bcb1afd",
+      "relative": "rclcpp/services/minimal_service/README.md",
+      "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclcpp/services/minimal_service/README.md",
+      "bytes": 119,
+      "sha256": "edbec771d696ee45f6de8813f200954fa982cc66797086167320e26597b5df1b",
+      "git_blob_sha1": "a1b7123ba1468235732aeb16f560df7457d652ad"
+    },
+    {
+      "repository": "https://github.com/ros2/examples",
+      "requested_ref": "jazzy",
+      "commit": "07008852303f2a35a91c65d78046b274a35477ea",
+      "tree": "cc1f17d44a88c740e4ed580be99ead013bcb1afd",
+      "relative": "rclcpp/services/minimal_client/main.cpp",
+      "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclcpp/services/minimal_client/main.cpp",
+      "bytes": 1885,
+      "sha256": "f29b513b0e3944db56428320e5f9a2ff2ce3b3e8e374baf1406be621c059accc",
+      "git_blob_sha1": "34b0ed2f5a519960b0fa9cd43cf3bc74e90c48a4"
+    },
+    {
+      "repository": "https://github.com/ros2/examples",
+      "requested_ref": "jazzy",
+      "commit": "07008852303f2a35a91c65d78046b274a35477ea",
+      "tree": "cc1f17d44a88c740e4ed580be99ead013bcb1afd",
+      "relative": "rclcpp/services/minimal_client/CMakeLists.txt",
+      "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclcpp/services/minimal_client/CMakeLists.txt",
+      "bytes": 728,
+      "sha256": "0d146fcfe570877ebfa011462ad4ca9aae43c9ef007734b7094bcb1233eafb00",
+      "git_blob_sha1": "ddc4d6087a02c126b18c93dd64d62e57d00f4d28"
+    },
+    {
+      "repository": "https://github.com/ros2/examples",
+      "requested_ref": "jazzy",
+      "commit": "07008852303f2a35a91c65d78046b274a35477ea",
+      "tree": "cc1f17d44a88c740e4ed580be99ead013bcb1afd",
+      "relative": "rclcpp/services/minimal_client/package.xml",
+      "url": "https://raw.githubusercontent.com/ros2/examples/07008852303f2a35a91c65d78046b274a35477ea/rclcpp/services/minimal_client/package.xml",
+      "bytes": 1105,
+      "sha256": "33665fc07335c3f8f795274881637145461a6b9c490ad25a054c1f633cb5aa1e",
+      "git_blob_sha1": "baff2d6b12797737e16436ff28c7795003df86ec"
+    },
+    {
+      "repository": "https://github.com/ros2/example_interfaces",
+      "requested_ref": "jazzy",
+      "commit": "4ed406d1277df78be01a31005306d69e7592a993",
+      "tree": "e052b44c4ec48a966d71af9a5185c6549c67fc8e",
+      "relative": "LICENSE",
+      "url": "https://raw.githubusercontent.com/ros2/example_interfaces/4ed406d1277df78be01a31005306d69e7592a993/LICENSE",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "git_blob_sha1": "d645695673349e3947e8e5ae42332d0ac3164cd7"
+    },
+    {
+      "repository": "https://github.com/ros2/example_interfaces",
+      "requested_ref": "jazzy",
+      "commit": "4ed406d1277df78be01a31005306d69e7592a993",
+      "tree": "e052b44c4ec48a966d71af9a5185c6549c67fc8e",
+      "relative": "package.xml",
+      "url": "https://raw.githubusercontent.com/ros2/example_interfaces/4ed406d1277df78be01a31005306d69e7592a993/package.xml",
+      "bytes": 987,
+      "sha256": "1b25a6f8e4953a450fa5d5718d60b8fa201995d475bb905a9894d9d8856ec2ad",
+      "git_blob_sha1": "f127a53137805b039870ac94f44aba69292f9d63"
+    },
+    {
+      "repository": "https://github.com/ros2/example_interfaces",
+      "requested_ref": "jazzy",
+      "commit": "4ed406d1277df78be01a31005306d69e7592a993",
+      "tree": "e052b44c4ec48a966d71af9a5185c6549c67fc8e",
+      "relative": "srv/AddTwoInts.srv",
+      "url": "https://raw.githubusercontent.com/ros2/example_interfaces/4ed406d1277df78be01a31005306d69e7592a993/srv/AddTwoInts.srv",
+      "bytes": 30,
+      "sha256": "4ef4cbc2558b4dd05b438dbd063d5732acd6e4eb0886f0738340274a43d9affb",
+      "git_blob_sha1": "3a68808ee591a3623cbf5e553eed28bac5233be8"
+    },
+    {
+      "repository": "https://github.com/ros2/rclcpp",
+      "requested_ref": "jazzy",
+      "commit": "53fa7aeea86e8ed484f9465fa14059faf13a71f1",
+      "tree": "8ba691f837b5c0368b0d6d8b3900e7b111d9257c",
+      "relative": "LICENSE",
+      "url": "https://raw.githubusercontent.com/ros2/rclcpp/53fa7aeea86e8ed484f9465fa14059faf13a71f1/LICENSE",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "git_blob_sha1": "d645695673349e3947e8e5ae42332d0ac3164cd7"
+    },
+    {
+      "repository": "https://github.com/ros2/rclcpp",
+      "requested_ref": "jazzy",
+      "commit": "53fa7aeea86e8ed484f9465fa14059faf13a71f1",
+      "tree": "8ba691f837b5c0368b0d6d8b3900e7b111d9257c",
+      "relative": "rclcpp/include/rclcpp/create_service.hpp",
+      "url": "https://raw.githubusercontent.com/ros2/rclcpp/53fa7aeea86e8ed484f9465fa14059faf13a71f1/rclcpp/include/rclcpp/create_service.hpp",
+      "bytes": 3132,
+      "sha256": "f6a2f6e1301144aa0f52b8df4c405619828ee50f28d7e3b8cf287ab48c237b28",
+      "git_blob_sha1": "42c253a526266cab4dff00647fb32c3a54dd5882"
+    },
+    {
+      "repository": "https://github.com/ros2/rclcpp",
+      "requested_ref": "jazzy",
+      "commit": "53fa7aeea86e8ed484f9465fa14059faf13a71f1",
+      "tree": "8ba691f837b5c0368b0d6d8b3900e7b111d9257c",
+      "relative": "rclcpp/include/rclcpp/node_impl.hpp",
+      "url": "https://raw.githubusercontent.com/ros2/rclcpp/53fa7aeea86e8ed484f9465fa14059faf13a71f1/rclcpp/include/rclcpp/node_impl.hpp",
+      "bytes": 11092,
+      "sha256": "7c80bca8f7bc36dc5cdbac8d0ae2e9b6676c4c84a92f12da9204bdefcc2056f9",
+      "git_blob_sha1": "d55a23f9c14a5a0040b16643ff827456f9e7033c"
+    },
+    {
+      "repository": "https://github.com/ros2/rclcpp",
+      "requested_ref": "jazzy",
+      "commit": "53fa7aeea86e8ed484f9465fa14059faf13a71f1",
+      "tree": "8ba691f837b5c0368b0d6d8b3900e7b111d9257c",
+      "relative": "rclcpp/include/rclcpp/service.hpp",
+      "url": "https://raw.githubusercontent.com/ros2/rclcpp/53fa7aeea86e8ed484f9465fa14059faf13a71f1/rclcpp/include/rclcpp/service.hpp",
+      "bytes": 18646,
+      "sha256": "d1c1ecedd27015c8d64f91ba7b7573efc5b09087724db9e59d1400adc0b9e6e4",
+      "git_blob_sha1": "925c5f6286ce8c3737bde7efea7dc4d0664b7157"
+    },
+    {
+      "repository": "https://github.com/ros2/rclcpp",
+      "requested_ref": "jazzy",
+      "commit": "53fa7aeea86e8ed484f9465fa14059faf13a71f1",
+      "tree": "8ba691f837b5c0368b0d6d8b3900e7b111d9257c",
+      "relative": "rclcpp/include/rclcpp/any_service_callback.hpp",
+      "url": "https://raw.githubusercontent.com/ros2/rclcpp/53fa7aeea86e8ed484f9465fa14059faf13a71f1/rclcpp/include/rclcpp/any_service_callback.hpp",
+      "bytes": 8141,
+      "sha256": "aae11292c4d4f24a231175cd605ee3e4c341c6ee7ce3b6f43100c34c339b786d",
+      "git_blob_sha1": "918d8e5a294efe168aa902c48f4f84c1c5a37e5e"
+    },
+    {
+      "repository": "https://github.com/ros2/rclcpp",
+      "requested_ref": "jazzy",
+      "commit": "53fa7aeea86e8ed484f9465fa14059faf13a71f1",
+      "tree": "8ba691f837b5c0368b0d6d8b3900e7b111d9257c",
+      "relative": "rclcpp/include/rclcpp/client.hpp",
+      "url": "https://raw.githubusercontent.com/ros2/rclcpp/53fa7aeea86e8ed484f9465fa14059faf13a71f1/rclcpp/include/rclcpp/client.hpp",
+      "bytes": 30795,
+      "sha256": "1e0ceff9c36df3e3f950451a55a709951f0ccd58a742208a3e347dd459c667d2",
+      "git_blob_sha1": "fdba5160a834291601ed1b3e9807980f5d2df28d"
+    },
+    {
+      "repository": "https://github.com/ros2/rclcpp",
+      "requested_ref": "jazzy",
+      "commit": "53fa7aeea86e8ed484f9465fa14059faf13a71f1",
+      "tree": "8ba691f837b5c0368b0d6d8b3900e7b111d9257c",
+      "relative": "rclcpp/include/rclcpp/executors.hpp",
+      "url": "https://raw.githubusercontent.com/ros2/rclcpp/53fa7aeea86e8ed484f9465fa14059faf13a71f1/rclcpp/include/rclcpp/executors.hpp",
+      "bytes": 5228,
+      "sha256": "b9b4b1043ac8377813920ac3df28ad7906a227b0073cb0e6ac1f75fe3fd92eb9",
+      "git_blob_sha1": "93a15658db8b8ada6effdad8e0e57858e322c646"
+    }
+  ],
+  "whole_materialized_tree": false,
+  "executed_candidates": 0
+}

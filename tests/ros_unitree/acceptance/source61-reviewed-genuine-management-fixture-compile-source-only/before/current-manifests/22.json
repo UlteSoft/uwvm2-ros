@@ -1,0 +1,23 @@
+{
+  "kind": "source54-reviewed-component-policy-fixture",
+  "status": "CURRENT_SOURCE_INDEPENDENT_REVIEW_CLOSED_NOT_EXECUTED",
+  "current_files": {
+    "tests/ros_debugger/management_test_policy.h": {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_debugger/management_test_policy.h",
+      "bytes": 2930,
+      "sha256": "4c1f6f40f259f9be8621e81e1ba54eda5ef7ca0555888d6f79a6aecc71923988"
+    }
+  },
+  "author_source_ready": {
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source54-generated-input-and-management-fixtures-source-only/component-policy-fixture/author-source-ready.json",
+    "bytes": 1256,
+    "sha256": "7ca48f7d7f7a2f81cc4145f863833abf45bd7a32716cbeea29cb320d4bd7577f"
+  },
+  "independent_source_peer": {
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/tests/ros_unitree/acceptance/source54-generated-input-and-management-fixtures-source-only/component-policy-fixture/independent-source-peer.json",
+    "bytes": 7102,
+    "sha256": "17a8280cc7c71c2dbd959d6df1ed5653ffa6d577b2f2b0e32c9bf3b2fc64c1ee"
+  },
+  "tests_or_compilers_or_Runtime_executed": false,
+  "scope": "Current source only; no historical test or peer result is promoted to changed bytes."
+}

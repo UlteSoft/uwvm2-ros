@@ -1,0 +1,172 @@
+{
+  "format": "uwvm-ros-vendor-complete-bounded-v1",
+  "types": [
+    {
+      "ros_version": 1,
+      "type": "franka_example_controllers/JointTorqueComparison",
+      "file": "franka_example_controllers/msg/JointTorqueComparison.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "franka_gripper/Grasp",
+      "file": "franka_gripper/action/Grasp.action",
+      "registered": true,
+      "bounds": {
+        "result.error": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "franka_gripper/GraspEpsilon",
+      "file": "franka_gripper/msg/GraspEpsilon.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "franka_gripper/Homing",
+      "file": "franka_gripper/action/Homing.action",
+      "registered": true,
+      "bounds": {
+        "result.error": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "franka_gripper/Move",
+      "file": "franka_gripper/action/Move.action",
+      "registered": true,
+      "bounds": {
+        "result.error": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "franka_gripper/Stop",
+      "file": "franka_gripper/action/Stop.action",
+      "registered": true,
+      "bounds": {
+        "result.error": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "franka_msgs/ErrorRecovery",
+      "file": "franka_msgs/action/ErrorRecovery.action",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "franka_msgs/Errors",
+      "file": "franka_msgs/msg/Errors.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "franka_msgs/FrankaState",
+      "file": "franka_msgs/msg/FrankaState.msg",
+      "registered": true,
+      "bounds": {}
+    },
+    {
+      "ros_version": 1,
+      "type": "franka_msgs/SetCartesianImpedance",
+      "file": "franka_msgs/srv/SetCartesianImpedance.srv",
+      "registered": true,
+      "bounds": {
+        "response.error": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "franka_msgs/SetEEFrame",
+      "file": "franka_msgs/srv/SetEEFrame.srv",
+      "registered": true,
+      "bounds": {
+        "response.error": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "franka_msgs/SetForceTorqueCollisionBehavior",
+      "file": "franka_msgs/srv/SetForceTorqueCollisionBehavior.srv",
+      "registered": true,
+      "bounds": {
+        "response.error": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "franka_msgs/SetFullCollisionBehavior",
+      "file": "franka_msgs/srv/SetFullCollisionBehavior.srv",
+      "registered": true,
+      "bounds": {
+        "response.error": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "franka_msgs/SetJointImpedance",
+      "file": "franka_msgs/srv/SetJointImpedance.srv",
+      "registered": true,
+      "bounds": {
+        "response.error": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "franka_msgs/SetKFrame",
+      "file": "franka_msgs/srv/SetKFrame.srv",
+      "registered": true,
+      "bounds": {
+        "response.error": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "franka_msgs/SetLoad",
+      "file": "franka_msgs/srv/SetLoad.srv",
+      "registered": true,
+      "bounds": {
+        "response.error": {
+          "string": 256
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "std_msgs/Header",
+      "file": "std_msgs/msg/Header.msg",
+      "registered": false,
+      "bounds": {
+        "frame_id": {
+          "string": 128
+        }
+      }
+    }
+  ]
+}

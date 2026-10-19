@@ -1,0 +1,456 @@
+{
+  "kind": "clearpath-selected-original-source-lock-v1",
+  "vendor": "clearpath",
+  "profile": "humble",
+  "ros_version": 2,
+  "default_authority": [],
+  "definitions": [
+    {
+      "type": "builtin_interfaces/msg/Duration",
+      "kind": "msg",
+      "repository": "rcl_humble",
+      "original_file": "builtin_interfaces/msg/Duration.msg",
+      "generation_file": "builtin_interfaces/msg/Duration.msg",
+      "bytes": 497,
+      "sha256": "a8f4349a6332f8576f9dfe24cf77a751abb115cfd1310dab9b774e3602516f39",
+      "git_blob_sha1": "d604335d61634728fdf7984ac9ed4baa8ba65b17"
+    },
+    {
+      "type": "builtin_interfaces/msg/Time",
+      "kind": "msg",
+      "repository": "rcl_humble",
+      "original_file": "builtin_interfaces/msg/Time.msg",
+      "generation_file": "builtin_interfaces/msg/Time.msg",
+      "bytes": 420,
+      "sha256": "0e6f429967a29ba34b224c5c0236c938084e82ee1279deeaf0666768cba220ae",
+      "git_blob_sha1": "c61b0b5d40502bb17fce99e2736897bcbb94bee1"
+    },
+    {
+      "type": "clearpath_motor_msgs/msg/PumaFeedback",
+      "kind": "msg",
+      "repository": "msgs_humble",
+      "original_file": "clearpath_motor_msgs/msg/PumaFeedback.msg",
+      "generation_file": "clearpath_motor_msgs/msg/PumaFeedback.msg",
+      "bytes": 714,
+      "sha256": "8fbd5178423e8a6f2621d478de05d9822918cfe214b84456d26cd6fe3c4bb592",
+      "git_blob_sha1": "743a64bcfad863c6a138871d4f9a568dce742875"
+    },
+    {
+      "type": "clearpath_motor_msgs/msg/PumaMultiFeedback",
+      "kind": "msg",
+      "repository": "msgs_humble",
+      "original_file": "clearpath_motor_msgs/msg/PumaMultiFeedback.msg",
+      "generation_file": "clearpath_motor_msgs/msg/PumaMultiFeedback.msg",
+      "bytes": 77,
+      "sha256": "a627a8f9d97cb79db1bd0205ea5e750e2c28f46242497f590233f408c63e2394",
+      "git_blob_sha1": "6dfe8746d1fc54e793f639fc534fdd7ab51b12a2"
+    },
+    {
+      "type": "clearpath_motor_msgs/msg/PumaMultiStatus",
+      "kind": "msg",
+      "repository": "msgs_humble",
+      "original_file": "clearpath_motor_msgs/msg/PumaMultiStatus.msg",
+      "generation_file": "clearpath_motor_msgs/msg/PumaMultiStatus.msg",
+      "bytes": 66,
+      "sha256": "ac12c5d724c97e90df48ece5b6b8eadfc1d319a33747556d5fb9eb469b3aed93",
+      "git_blob_sha1": "45c660029e13125830a90afb9c9b457f65dd64cf"
+    },
+    {
+      "type": "clearpath_motor_msgs/msg/PumaStatus",
+      "kind": "msg",
+      "repository": "msgs_humble",
+      "original_file": "clearpath_motor_msgs/msg/PumaStatus.msg",
+      "generation_file": "clearpath_motor_msgs/msg/PumaStatus.msg",
+      "bytes": 732,
+      "sha256": "2daf3182282aeef3a6862986c15c796ab148579a7d79e1b0d8996b8ac68f5a4c",
+      "git_blob_sha1": "57ace405e6ed157ba5b64d308f8338f6e333e1f1"
+    },
+    {
+      "type": "clearpath_platform_msgs/msg/Drive",
+      "kind": "msg",
+      "repository": "msgs_humble",
+      "original_file": "clearpath_platform_msgs/msg/Drive.msg",
+      "generation_file": "clearpath_platform_msgs/msg/Drive.msg",
+      "bytes": 424,
+      "sha256": "3fa1e5b58c5e1b75ad03cd67bf078acdf381ce8aae47658c316e90ddedb98ff9",
+      "git_blob_sha1": "1fb33df72d81931de7d0c43354aff3dd4f118ac8"
+    },
+    {
+      "type": "clearpath_platform_msgs/msg/DriveFeedback",
+      "kind": "msg",
+      "repository": "msgs_humble",
+      "original_file": "clearpath_platform_msgs/msg/DriveFeedback.msg",
+      "generation_file": "clearpath_platform_msgs/msg/DriveFeedback.msg",
+      "bytes": 523,
+      "sha256": "0fc22caa433a843651712d78c6a3d614384e4411c32b4de551a914b29ff15e81",
+      "git_blob_sha1": "22b8a489e02388a2df673a095b3e5425f2abb2f6"
+    },
+    {
+      "type": "clearpath_platform_msgs/msg/Fans",
+      "kind": "msg",
+      "repository": "msgs_humble",
+      "original_file": "clearpath_platform_msgs/msg/Fans.msg",
+      "generation_file": "clearpath_platform_msgs/msg/Fans.msg",
+      "bytes": 347,
+      "sha256": "b52e2815b725a19f95f952c5f60fb3b93517e861c21e71efb88ecc9893127d73",
+      "git_blob_sha1": "b07a77cb120e10f7eb728bb99c27a488aa851b0b"
+    },
+    {
+      "type": "clearpath_platform_msgs/msg/Feedback",
+      "kind": "msg",
+      "repository": "msgs_humble",
+      "original_file": "clearpath_platform_msgs/msg/Feedback.msg",
+      "generation_file": "clearpath_platform_msgs/msg/Feedback.msg",
+      "bytes": 471,
+      "sha256": "bf446c69cf377a623596f61676ade433da74ef6ae83cca2637d5d0e5a865f068",
+      "git_blob_sha1": "3843ca03bcf9d4db0745d7c68312a5d9ea33ac39"
+    },
+    {
+      "type": "clearpath_platform_msgs/msg/Lights",
+      "kind": "msg",
+      "repository": "msgs_humble",
+      "original_file": "clearpath_platform_msgs/msg/Lights.msg",
+      "generation_file": "clearpath_platform_msgs/msg/Lights.msg",
+      "bytes": 848,
+      "sha256": "311f0115dfcfb696bb795bdf1c5f447818c1a4777a3545efb7b170197b78705f",
+      "git_blob_sha1": "31a9d708c9efd15cbdaf628ac6aee36e123b2c61"
+    },
+    {
+      "type": "clearpath_platform_msgs/msg/Power",
+      "kind": "msg",
+      "repository": "msgs_humble",
+      "original_file": "clearpath_platform_msgs/msg/Power.msg",
+      "generation_file": "clearpath_platform_msgs/msg/Power.msg",
+      "bytes": 2014,
+      "sha256": "4634a26576446f9c5b48976dc65e7f9b4cfad852fe09319bc07e022c0d9a255b",
+      "git_blob_sha1": "d3b1ff01db649ed9c1451ffae1001e80f4ee6101"
+    },
+    {
+      "type": "clearpath_platform_msgs/msg/RGB",
+      "kind": "msg",
+      "repository": "msgs_humble",
+      "original_file": "clearpath_platform_msgs/msg/RGB.msg",
+      "generation_file": "clearpath_platform_msgs/msg/RGB.msg",
+      "bytes": 161,
+      "sha256": "bc66b218bd99dd786fe9a821abe9262b4ebe7e7943d62fe57470415995119547",
+      "git_blob_sha1": "66da198f768acf1c0975fc5c4f6ab4d9e06333b8"
+    },
+    {
+      "type": "clearpath_platform_msgs/msg/Status",
+      "kind": "msg",
+      "repository": "msgs_humble",
+      "original_file": "clearpath_platform_msgs/msg/Status.msg",
+      "generation_file": "clearpath_platform_msgs/msg/Status.msg",
+      "bytes": 403,
+      "sha256": "d683e935dd0acb08ec4a5ddadeb6ccc12b98ab19f138ff2c9804e4a952d5eb6e",
+      "git_blob_sha1": "686591d2ce01a5b4b4b03cb98bd7cc751469b957"
+    },
+    {
+      "type": "clearpath_platform_msgs/msg/StopStatus",
+      "kind": "msg",
+      "repository": "msgs_humble",
+      "original_file": "clearpath_platform_msgs/msg/StopStatus.msg",
+      "generation_file": "clearpath_platform_msgs/msg/StopStatus.msg",
+      "bytes": 293,
+      "sha256": "b11814c36f5b46a9b91b71db02a56674686a80d628a42643f17656dce7d64979",
+      "git_blob_sha1": "b4ba7fc96955eedfee6dbbc6583d01e4d3f72892"
+    },
+    {
+      "type": "std_msgs/msg/Header",
+      "kind": "msg",
+      "repository": "common_humble",
+      "original_file": "std_msgs/msg/Header.msg",
+      "generation_file": "std_msgs/msg/Header.msg",
+      "bytes": 322,
+      "sha256": "d2cea14630e39ed0fa5b432ba9160a7c38855b9427d3344f99e83e83facb53c2",
+      "git_blob_sha1": "6966bb98863c237131a2bd2822298df9511ce948"
+    },
+    {
+      "type": "clearpath_platform_msgs/srv/ConfigureMcu",
+      "kind": "srv",
+      "repository": "msgs_humble",
+      "original_file": "clearpath_platform_msgs/srv/ConfigureMcu.srv",
+      "generation_file": "clearpath_platform_msgs/srv/ConfigureMcu.srv",
+      "bytes": 159,
+      "sha256": "af9132e00215431507386e8eb5edbaa016067657982bb7104ba43905256bfbc9",
+      "git_blob_sha1": "498c2b0beaf2349556dcbecac43ce7f355f2a00d"
+    }
+  ],
+  "original_custom_roots": [
+    {
+      "kind": "msg",
+      "type": "clearpath_motor_msgs/msg/PumaFeedback"
+    },
+    {
+      "kind": "msg",
+      "type": "clearpath_motor_msgs/msg/PumaMultiFeedback"
+    },
+    {
+      "kind": "msg",
+      "type": "clearpath_motor_msgs/msg/PumaMultiStatus"
+    },
+    {
+      "kind": "msg",
+      "type": "clearpath_motor_msgs/msg/PumaStatus"
+    },
+    {
+      "kind": "msg",
+      "type": "clearpath_platform_msgs/msg/Drive"
+    },
+    {
+      "kind": "msg",
+      "type": "clearpath_platform_msgs/msg/DriveFeedback"
+    },
+    {
+      "kind": "msg",
+      "type": "clearpath_platform_msgs/msg/Fans"
+    },
+    {
+      "kind": "msg",
+      "type": "clearpath_platform_msgs/msg/Feedback"
+    },
+    {
+      "kind": "msg",
+      "type": "clearpath_platform_msgs/msg/Lights"
+    },
+    {
+      "kind": "msg",
+      "type": "clearpath_platform_msgs/msg/Power"
+    },
+    {
+      "kind": "msg",
+      "type": "clearpath_platform_msgs/msg/RGB"
+    },
+    {
+      "kind": "msg",
+      "type": "clearpath_platform_msgs/msg/Status"
+    },
+    {
+      "kind": "msg",
+      "type": "clearpath_platform_msgs/msg/StopStatus"
+    },
+    {
+      "kind": "srv",
+      "type": "clearpath_platform_msgs/srv/ConfigureMcu"
+    }
+  ],
+  "additional_standard_roots": [],
+  "repositories": [
+    {
+      "id": "common_humble",
+      "repository": "ros2/common_interfaces",
+      "url": "https://github.com/ros2/common_interfaces",
+      "branch": "humble",
+      "commit": "08434490d3e4abd37ccc5462cdde69b88853b5b8",
+      "tree_git_sha1": "c7cb0ba488266ded0627d8b3c96ee19bf5590b46",
+      "default_authority": [],
+      "qualification": "Original standard source capture, no installed ROS or native identity qualification.",
+      "retained_archive_augmentation": {
+        "files": [
+          {
+            "path": "diagnostic_msgs/srv/AddDiagnostics.srv",
+            "bytes": 1458,
+            "sha256": "e88df6a6769a9ee85480aa2b1adac052fa368b4a00016f1a9b8422fdacdf1767",
+            "git_blob_sha1": "413c4019d73e3860dd09c51b5d6a078bf57a7bcb"
+          },
+          {
+            "path": "diagnostic_msgs/srv/SelfTest.srv",
+            "bytes": 52,
+            "sha256": "3a95f0dfd99d48a34b58608a80443e9bcd343ebd76d8865f58f8b9b312b6d38f",
+            "git_blob_sha1": "ee2974d4270d5c37aedd4b2253d0075b91582f74"
+          },
+          {
+            "path": "nav_msgs/srv/GetMap.srv",
+            "bytes": 110,
+            "sha256": "b4bdbb1875bfd2b22596e238cb9571f0baec6505032f7df8cc7e5cd47bfd3adc",
+            "git_blob_sha1": "91be6a7bdf5593b58a1815be2e5f2096f654d68d"
+          },
+          {
+            "path": "nav_msgs/srv/GetPlan.srv",
+            "bytes": 400,
+            "sha256": "84582c21447bd35286bbf93b9ca80de69e964cad577fa6ac44aabdbba43cba2e",
+            "git_blob_sha1": "689290a632bef9aff8f5186211b387e03f237b64"
+          },
+          {
+            "path": "nav_msgs/srv/LoadMap.srv",
+            "bytes": 473,
+            "sha256": "301ea2a2226e8723ae8a421eefc4dfbc0e3ed7819402583bd13c034f0802d3aa",
+            "git_blob_sha1": "3b9caaad47004e34d800ef84aae0553a8e2e5077"
+          },
+          {
+            "path": "nav_msgs/srv/SetMap.srv",
+            "bytes": 280,
+            "sha256": "14b58f196f2eafdeb75d2b913af3687665cce880aef970e03e6a6c014cd6fbed",
+            "git_blob_sha1": "5270d458bd409ad922289e457388af8930afd2f5"
+          },
+          {
+            "path": "sensor_msgs/srv/SetCameraInfo.srv",
+            "bytes": 597,
+            "sha256": "d7e720e522387083ff70c0b9e8aacec379c416d8d04f3cdca55de2008beba1f3",
+            "git_blob_sha1": "98b5b261d409d1b44fd7b50586777d380ed46249"
+          },
+          {
+            "path": "std_srvs/srv/Empty.srv",
+            "bytes": 4,
+            "sha256": "f52d711103d50a437830c6fbcd04fb4bab49a0f82f6d26d1c791c6e8488dd090",
+            "git_blob_sha1": "ed97d539c095cf1413af30cc23dea272095b97dd"
+          },
+          {
+            "path": "std_srvs/srv/SetBool.srv",
+            "bytes": 173,
+            "sha256": "a36d99cd5f0467a58a5b06b1443e9ffc0fcb59977190def5ef677fd16f05a664",
+            "git_blob_sha1": "93003477744daee97782eeafe272eccece948b7b"
+          },
+          {
+            "path": "std_srvs/srv/Trigger.srv",
+            "bytes": 122,
+            "sha256": "81e80d26771d0c0af8783938720c763cacc429e68d9d6b9c1f912474db0d8dca",
+            "git_blob_sha1": "371dfd22e1508994dacdf1fa93290f46d138fcaa"
+          },
+          {
+            "path": "visualization_msgs/srv/GetInteractiveMarkers.srv",
+            "bytes": 287,
+            "sha256": "a5291d771d7568d176844b2322c5d91b389370e8c25015a5ae00d63fac4471ea",
+            "git_blob_sha1": "493e885ec305e7d0beadda281c3297ea341fdfba"
+          }
+        ],
+        "scope": "Unchanged bodies recovered from the previously verified original archive, not newly downloaded."
+      }
+    },
+    {
+      "id": "driver_humble",
+      "url": "https://github.com/clearpathrobotics/clearpath_robot",
+      "branch": "humble",
+      "commit": "baf3aa4ef81f5614b1c1898d5a58c11e9e28d7a5",
+      "tree_git_sha1": "bdc8ad46652b71619bfc1cfc67027382b239bc02",
+      "archive": {
+        "url": "https://codeload.github.com/clearpathrobotics/clearpath_robot/tar.gz/baf3aa4ef81f5614b1c1898d5a58c11e9e28d7a5",
+        "bytes": 132443,
+        "sha256": "a287541e160e8be504a1ae9545b16e2771e172b7b4a83c0dd7fd54b5d4ebe880"
+      },
+      "default_authority": [],
+      "scope": "Original source and complete acquisition archive only; no compatibility, compiler, Guest, native or physical robot result."
+    },
+    {
+      "id": "msgs_humble",
+      "url": "https://github.com/clearpathrobotics/clearpath_msgs",
+      "branch": "humble",
+      "commit": "37d701812e9980b4722664d4ada2f484bd36af93",
+      "tree_git_sha1": "9d1df121e3214a04d2175f155dffb7adb6bd1139",
+      "archive": {
+        "url": "https://codeload.github.com/clearpathrobotics/clearpath_msgs/tar.gz/37d701812e9980b4722664d4ada2f484bd36af93",
+        "bytes": 6744,
+        "sha256": "8dba2e9ee055d8ef5bdb538818609a4142b519f33bff659d23dd71f031281bc4"
+      },
+      "default_authority": [],
+      "scope": "Original source and complete acquisition archive only; no compatibility, compiler, Guest, native or physical robot result."
+    },
+    {
+      "id": "rcl_humble",
+      "repository": "ros2/rcl_interfaces",
+      "url": "https://github.com/ros2/rcl_interfaces",
+      "branch": "humble",
+      "commit": "82776fc9068d1e0cd4af11c2e2700195994b2eb1",
+      "tree_git_sha1": "6baa0af441f3f9b1a1c3f6d118373f3c92f5973e",
+      "default_authority": [],
+      "qualification": "Original standard source capture, no installed ROS or native identity qualification.",
+      "retained_archive_augmentation": {
+        "files": [
+          {
+            "path": "action_msgs/srv/CancelGoal.srv",
+            "bytes": 1453,
+            "sha256": "5f4dc57f41cab2fd1987a61d5821282ece5075e38e5044f90126ab62c98fac20",
+            "git_blob_sha1": "86afbdbf4eacb2c55c1faf8da3a17946c5f0fa9b"
+          },
+          {
+            "path": "composition_interfaces/srv/ListNodes.srv",
+            "bytes": 167,
+            "sha256": "7b01c631b25d12e91315098748bb526f19101c70041613704ac8f09b7482db63",
+            "git_blob_sha1": "4b1421eb4031b37e38cd90f614cd303e66b5d9e3"
+          },
+          {
+            "path": "composition_interfaces/srv/LoadNode.srv",
+            "bytes": 1253,
+            "sha256": "db83f2776f37bf2cbe94ba8d3e8fefb0bca5b3edaa978e2b151c16f41bb47f11",
+            "git_blob_sha1": "ffd243f3a518362e11ccf059417b5a6bd037a8d1"
+          },
+          {
+            "path": "composition_interfaces/srv/UnloadNode.srv",
+            "bytes": 221,
+            "sha256": "6b6106bb2ba8ec9c8fd3812ab57a57775da388d12754bc6b266e1a883618f4d9",
+            "git_blob_sha1": "0fa36a516759a491a799a7f15a84a54f30ff5189"
+          },
+          {
+            "path": "lifecycle_msgs/srv/ChangeState.srv",
+            "bytes": 217,
+            "sha256": "a724c2437f5dc7eda1120f79ac30f945fea1475ac62654936f0d04530b1aef23",
+            "git_blob_sha1": "1bad3d1012bcd67269d05c893770be9b4dfa48d5"
+          },
+          {
+            "path": "lifecycle_msgs/srv/GetAvailableStates.srv",
+            "bytes": 85,
+            "sha256": "ab291560449fc5914c35cb9a9ec14cedfa67f6b643d4b7abb6c98cfb29e76f0d",
+            "git_blob_sha1": "2faa79b03d1f094781b03ced38e553fe984196e2"
+          },
+          {
+            "path": "lifecycle_msgs/srv/GetAvailableTransitions.srv",
+            "bytes": 112,
+            "sha256": "b6081c35e61f405e999e10044e9a68f862347da3c133070fe04dad9b54f2ecea",
+            "git_blob_sha1": "a7f4e506626903c8b90d1297415e51004ada8a17"
+          },
+          {
+            "path": "lifecycle_msgs/srv/GetState.srv",
+            "bytes": 71,
+            "sha256": "fc5e96531728baa4fcbc78d79b93e4c84e5787e288cc49d8c76ce8fcfef67292",
+            "git_blob_sha1": "b2569fa65ba13d3de35c482587332bd8fcb98458"
+          },
+          {
+            "path": "rcl_interfaces/srv/DescribeParameters.srv",
+            "bytes": 278,
+            "sha256": "6047a59261d6c19a4e8e921f06702cc0672e0e8b6a6854fe601b30edf02e5981",
+            "git_blob_sha1": "a8f0b9162c4bb92b0eb003ef9d8248394c53bec7"
+          },
+          {
+            "path": "rcl_interfaces/srv/GetParameterTypes.srv",
+            "bytes": 322,
+            "sha256": "e5745ed79201f3ea515c13917f8d28780d16ed53c35f1b8d0f27c89945777bbe",
+            "git_blob_sha1": "cdf0e78d8727c6304d0baab30fc3c8ee886046fe"
+          },
+          {
+            "path": "rcl_interfaces/srv/GetParameters.srv",
+            "bytes": 518,
+            "sha256": "3ae49531812d8813350fad5261905a88939f8352f8a08fd238dcae19a08e59f7",
+            "git_blob_sha1": "1822479bca1c947446fda9b4a158cfdb723b8e61"
+          },
+          {
+            "path": "rcl_interfaces/srv/ListParameters.srv",
+            "bytes": 369,
+            "sha256": "8254b67551049b2dc477d2fad286b645588227188482436d1b3bc0041731ed8b",
+            "git_blob_sha1": "ee1b7a6ffa6f40d27f59d369e24e4eccca9c378f"
+          },
+          {
+            "path": "rcl_interfaces/srv/SetParameters.srv",
+            "bytes": 158,
+            "sha256": "6a0dcce330e51f954350e4ca3095fff7a7c0a0fa1c9d986b1dad340afb05f70a",
+            "git_blob_sha1": "97d11796b67e2c6deb0deafb12dbadc87546cd9e"
+          },
+          {
+            "path": "rcl_interfaces/srv/SetParametersAtomically.srv",
+            "bytes": 238,
+            "sha256": "8593b435156b70299a4664839dc1b799ff22a7b7c0c27cec7b33bcc336389954",
+            "git_blob_sha1": "2df928a4fddd5a2accd9363821ca1bf9abe9b956"
+          },
+          {
+            "path": "test_msgs/action/NestedMessage.action",
+            "bytes": 381,
+            "sha256": "cb976305a0af5bc92868e74e9d0e9d088285608c668b09195c8e7d53089ae835",
+            "git_blob_sha1": "f0c7cf279cfbfe5210212cd3f3297bd605792d16"
+          }
+        ],
+        "scope": "Unchanged bodies recovered from the previously verified original archive, not newly downloaded."
+      }
+    }
+  ],
+  "catalog_sha256": "b1e2ee77e79a3671fe52790b1cfe451ffc4fd7c2bfdea2edf8d42fb2c76be848",
+  "scope": "Complete original custom declarations and all reached unchanged dependencies plus explicit full standard data roots. Main is a development snapshot. No native ROS, model, controller, official-suite or other-release qualification."
+}

@@ -1,0 +1,11 @@
+[package]
+name = "roswasm-custom-rpc-example"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+path = "example.rs"
+
+[dependencies]
+roswasm = { path = "../../rust", default-features = false, features = ["alloc", "ros2"] }

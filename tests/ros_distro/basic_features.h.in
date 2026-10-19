@@ -1,0 +1,3 @@
+#pragma once
+/* Actual selected-SDK compile observation, never a distribution-name guess. */
+#cmakedefine01 UWVM_BASIC_HAVE_QOS

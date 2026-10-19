@@ -1,0 +1,373 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Explicit native v1 or foreign-QEMU v2 patched LLVM-full debugger build inputs",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format_version",
+    "compiler",
+    "linker",
+    "target",
+    "stdlib",
+    "sysroot",
+    "roots",
+    "include_directories",
+    "compile_flags",
+    "link_flags",
+    "library_inputs",
+    "profile_compile_flags",
+    "environment",
+    "llvm",
+    "cgroup"
+  ],
+  "properties": {
+    "format_version": {
+      "enum": [
+        1,
+        2
+      ]
+    },
+    "compiler": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "items": {
+        "$ref": "#/$defs/absolute"
+      }
+    },
+    "linker": {
+      "$ref": "#/$defs/absolute"
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "triple",
+        "machine",
+        "bits",
+        "endian",
+        "host_machine"
+      ],
+      "properties": {
+        "triple": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.+-]+$"
+        },
+        "machine": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "bits": {
+          "enum": [
+            32,
+            64
+          ]
+        },
+        "endian": {
+          "enum": [
+            "little",
+            "big"
+          ]
+        },
+        "host_machine": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "sysroot": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/absolute"
+        }
+      ]
+    },
+    "roots": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "toolchain",
+        "llvm",
+        "sdk",
+        "stdlib"
+      ],
+      "properties": {
+        "toolchain": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/absolute"
+          }
+        },
+        "llvm": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/absolute"
+          }
+        },
+        "sdk": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/absolute"
+          }
+        },
+        "stdlib": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/absolute"
+          }
+        }
+      }
+    },
+    "include_directories": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/absolute"
+      }
+    },
+    "compile_flags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "link_flags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "library_inputs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/absolute"
+      }
+    },
+    "profile_compile_flags": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ros1",
+        "ros2",
+        "dual"
+      ],
+      "properties": {
+        "ros1": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "ros2": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "dual": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "PATH"
+      ],
+      "properties": {
+        "PATH": {
+          "type": "string"
+        },
+        "LD_LIBRARY_PATH": {
+          "type": "string"
+        },
+        "LANG": {
+          "type": "string"
+        },
+        "LC_ALL": {
+          "type": "string"
+        }
+      }
+    },
+    "llvm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "package_manifest",
+        "package_sha256",
+        "source_lock",
+        "contract",
+        "generated_include",
+        "public_include",
+        "configuration",
+        "consumer_response_file",
+        "shared_library",
+        "build_root",
+        "source_root"
+      ],
+      "properties": {
+        "mode": {
+          "const": "static-response"
+        },
+        "package_manifest": {
+          "$ref": "#/$defs/absolute"
+        },
+        "package_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "source_lock": {
+          "$ref": "#/$defs/absolute"
+        },
+        "contract": {
+          "$ref": "#/$defs/absolute"
+        },
+        "generated_include": {
+          "$ref": "#/$defs/absolute"
+        },
+        "public_include": {
+          "$ref": "#/$defs/absolute"
+        },
+        "configuration": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/absolute"
+          }
+        },
+        "consumer_response_file": {
+          "$ref": "#/$defs/absolute"
+        },
+        "shared_library": {
+          "type": "null"
+        },
+        "build_root": {
+          "$ref": "#/$defs/absolute"
+        },
+        "source_root": {
+          "$ref": "#/$defs/absolute"
+        }
+      }
+    },
+    "cgroup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "memory_max",
+        "memory_swap_max",
+        "expected_leaf",
+        "expected_device",
+        "expected_inode",
+        "expected_boot_id",
+        "expected_cpus"
+      ],
+      "properties": {
+        "memory_max": {
+          "const": 68719476736
+        },
+        "memory_swap_max": {
+          "const": 0
+        },
+        "expected_leaf": {
+          "$ref": "#/$defs/absolute"
+        },
+        "expected_device": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "expected_inode": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "expected_boot_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$"
+        },
+        "expected_cpus": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "stdlib": {
+      "enum": [
+        "libc++",
+        "libstdc++"
+      ]
+    },
+    "execution": {
+      "$ref": "target-execution.schema.json#/$defs/configuration"
+    }
+  },
+  "$defs": {
+    "absolute": {
+      "type": "string",
+      "pattern": "^/",
+      "minLength": 2
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "$comment": "This is configuration shape only. Runtime producer additionally checks actual original64GiB leaf/boot/OOM, complete existing roots, native compiler/objects/archives ELF, exact current frozen patched version/source contract, real Release CMake file-API static consumer and response, physical before/after pins and cleanup. Profile declaration is not PASS. No tool installation, implicit grants, Worker execution, LLVM shared-provider fallback, or object reuse. V1 native remains unchanged. V2 explicitly separates actual host compiler/linker/QEMU ELF from foreign objects/archives/Worker/loader, requires the same compile/runtime sysroot, and preserves all patched LLVM/MD/cgroup proofs. Missing per-target providers fail closed.",
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "format_version": {
+            "const": 1
+          }
+        }
+      },
+      "then": {
+        "not": {
+          "required": [
+            "execution"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "format_version": {
+            "const": 2
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "execution"
+        ],
+        "properties": {
+          "sysroot": {
+            "$ref": "#/$defs/absolute"
+          }
+        }
+      }
+    }
+  ]
+}

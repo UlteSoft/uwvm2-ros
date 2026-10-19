@@ -1,0 +1,73 @@
+{
+  "format_version": 1,
+  "kind": "official-upstream-suite-source-only-successor",
+  "revision": "r2",
+  "status": "SOURCE_ONLY_NOT_IMPORTED_OR_EXECUTED",
+  "files": [
+    {
+      "path": "tools/ros_distro/official_suites/README.md",
+      "bytes": 22225,
+      "sha256": "6b4f11ddecc1af7508b272300fd344fc6ce27af560df3bd4d1e8f2ec2a8f1446"
+    },
+    {
+      "path": "tools/ros_distro/official_suites/differential.py",
+      "bytes": 41455,
+      "sha256": "450fd75f4b2788d13535eb195f9fa861e6b261562523ba0afbcec0d543aa4094"
+    },
+    {
+      "path": "tools/ros_distro/official_suites/formats.py",
+      "bytes": 10666,
+      "sha256": "ce33d3a9d30ef0734f0a896991e307606d3fd00cd5c25316bb613e82f57702f5"
+    },
+    {
+      "path": "tools/ros_distro/official_suites/mapping.template.json",
+      "bytes": 208,
+      "sha256": "df0b53850790f478f0746a85d399787c3fea3a5108a905c40e7be0b99857fb36"
+    },
+    {
+      "path": "tools/ros_distro/official_suites/plan.template.json",
+      "bytes": 609,
+      "sha256": "16dd386eadce0205c1f8196e345f99458f9df2d58d85d9525f09349157639ff0"
+    },
+    {
+      "path": "tools/ros_distro/official_suites/runner.py",
+      "bytes": 42965,
+      "sha256": "1a3c76d7d366e8bfb15bbbe490077f419ffe82ab1279ec4eaf96feaf728582dc"
+    },
+    {
+      "path": "tools/ros_distro/official_suites/source-lock.template.json",
+      "bytes": 134,
+      "sha256": "0e019065c427a57d239956133e8ecd88d7ea9356afab9e983ccb602cfbe6f1d0"
+    },
+    {
+      "path": "tools/ros_distro/official_suites/test_formats.py",
+      "bytes": 9730,
+      "sha256": "25f381d49a9760c3d46abaae0d415a239059586e6b5926303174528ef0471719"
+    },
+    {
+      "path": "tools/ros_distro/official_suites/uwvm_official_pytest.py",
+      "bytes": 1786,
+      "sha256": "8dc49685d21530e5eb5c870ce353531c0a6855c1e6d3a2703bc6a89da495563c"
+    }
+  ],
+  "patch": {
+    "path": "/tmp/uwvm-official-upstream-suite-source-only-20261017-r2/official-native-suite-runner.patch",
+    "bytes": 132353,
+    "sha256": "ced3fc3cb07fa7d433034b20c9446dab8835f41db6650b48e171145e938cac3e"
+  },
+  "preserved_r1": {
+    "manifest": "/tmp/uwvm-official-upstream-suite-source-only-20261017-r1/source-ready-before-peer.json",
+    "sha256": "f8689267fc5a92a95535d291c3363873876da7bf6a56948559320fb41db0b27f"
+  },
+  "scope": [
+    "Explicit actual locked official core/Unitree source suites, not all third-party index repositories",
+    "Real native discovery and per-file JUnit accounting remain separate",
+    "Executable source-bound per-case Wasm/Gateway owner requires real API-specific ports; no port is fabricated",
+    "All official qualification remains false while any lock, SDK, feature, hardware, discovery or mapping gap remains"
+  ],
+  "authored_unexecuted_data_tests": 27,
+  "candidate_imports": 0,
+  "tests_executed": 0,
+  "SSH_operations": 0,
+  "repository_files_modified": 0
+}

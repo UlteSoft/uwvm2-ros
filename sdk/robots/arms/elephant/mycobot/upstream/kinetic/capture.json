@@ -1,0 +1,201 @@
+{
+  "profile": "kinetic",
+  "repository": "elephantrobotics/mycobot_ros",
+  "ros_version": 1,
+  "commit": "9ec3e2ec29024a55150e7f3893b3d6e344f1caff",
+  "tree_git_sha1": "dc8263b63e2476874c6596ed1fefd5745b104c57",
+  "definitions": [
+    {
+      "path": "mycobot_communication/msg/MycobotAngles.msg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9aa7d97bdca20c2ca6b7e10f53ec09a3b05a6565",
+      "size": 96,
+      "url": "https://api.github.com/repos/elephantrobotics/mycobot_ros/git/blobs/9aa7d97bdca20c2ca6b7e10f53ec09a3b05a6565"
+    },
+    {
+      "path": "mycobot_communication/msg/MycobotCoords.msg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "08f6dbda3c15688247ed72b95f9c627c1f64f2fe",
+      "size": 62,
+      "url": "https://api.github.com/repos/elephantrobotics/mycobot_ros/git/blobs/08f6dbda3c15688247ed72b95f9c627c1f64f2fe"
+    },
+    {
+      "path": "mycobot_communication/msg/MycobotGripperStatus.msg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "18d6277216b815bfff7e963ea48b637e04021dc7",
+      "size": 11,
+      "url": "https://api.github.com/repos/elephantrobotics/mycobot_ros/git/blobs/18d6277216b815bfff7e963ea48b637e04021dc7"
+    },
+    {
+      "path": "mycobot_communication/msg/MycobotPumpStatus.msg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2373241cadb79efccec24b212bb5045c3d315373",
+      "size": 32,
+      "url": "https://api.github.com/repos/elephantrobotics/mycobot_ros/git/blobs/2373241cadb79efccec24b212bb5045c3d315373"
+    },
+    {
+      "path": "mycobot_communication/msg/MycobotSetAngles.msg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3888b50f9e299ac601250ca6d21ba5ddcf6d116d",
+      "size": 108,
+      "url": "https://api.github.com/repos/elephantrobotics/mycobot_ros/git/blobs/3888b50f9e299ac601250ca6d21ba5ddcf6d116d"
+    },
+    {
+      "path": "mycobot_communication/msg/MycobotSetCoords.msg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d4c7e54652d98e7a7224358f74d3c08b202b345d",
+      "size": 86,
+      "url": "https://api.github.com/repos/elephantrobotics/mycobot_ros/git/blobs/d4c7e54652d98e7a7224358f74d3c08b202b345d"
+    },
+    {
+      "path": "mycobot_communication/srv/GetAngles.srv",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "699269943dec272e8e6be5aaad9c5e4b3b658b81",
+      "size": 102,
+      "url": "https://api.github.com/repos/elephantrobotics/mycobot_ros/git/blobs/699269943dec272e8e6be5aaad9c5e4b3b658b81"
+    },
+    {
+      "path": "mycobot_communication/srv/GetCoords.srv",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c1f9bbcc21e463b0621c2f7d71aa7e94403ea17c",
+      "size": 69,
+      "url": "https://api.github.com/repos/elephantrobotics/mycobot_ros/git/blobs/c1f9bbcc21e463b0621c2f7d71aa7e94403ea17c"
+    },
+    {
+      "path": "mycobot_communication/srv/GripperStatus.srv",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3887d75b2f78418c77c4501e817771551801e783",
+      "size": 27,
+      "url": "https://api.github.com/repos/elephantrobotics/mycobot_ros/git/blobs/3887d75b2f78418c77c4501e817771551801e783"
+    },
+    {
+      "path": "mycobot_communication/srv/PumpStatus.srv",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8bd4b530d3a170428af6e3faec909afb347fe1a6",
+      "size": 47,
+      "url": "https://api.github.com/repos/elephantrobotics/mycobot_ros/git/blobs/8bd4b530d3a170428af6e3faec909afb347fe1a6"
+    },
+    {
+      "path": "mycobot_communication/srv/SetAngles.srv",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6f8d8776e4f892a054e1d8765494da7e3471cac7",
+      "size": 123,
+      "url": "https://api.github.com/repos/elephantrobotics/mycobot_ros/git/blobs/6f8d8776e4f892a054e1d8765494da7e3471cac7"
+    },
+    {
+      "path": "mycobot_communication/srv/SetCoords.srv",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e5b1e528e1916226fd8548fc73146a3992376c28",
+      "size": 101,
+      "url": "https://api.github.com/repos/elephantrobotics/mycobot_ros/git/blobs/e5b1e528e1916226fd8548fc73146a3992376c28"
+    },
+    {
+      "path": "mypalletizer_communication/msg/MypalAngles.msg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "bba21813c864d3ead999a5130ba34a48648a8959",
+      "size": 115,
+      "url": "https://api.github.com/repos/elephantrobotics/mycobot_ros/git/blobs/bba21813c864d3ead999a5130ba34a48648a8959"
+    },
+    {
+      "path": "mypalletizer_communication/msg/MypalCoords.msg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f2e98b9b86b930e708f9828af0c740891a99e1ac",
+      "size": 66,
+      "url": "https://api.github.com/repos/elephantrobotics/mycobot_ros/git/blobs/f2e98b9b86b930e708f9828af0c740891a99e1ac"
+    },
+    {
+      "path": "mypalletizer_communication/msg/MypalGripperStatus.msg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "18d6277216b815bfff7e963ea48b637e04021dc7",
+      "size": 11,
+      "url": "https://api.github.com/repos/elephantrobotics/mycobot_ros/git/blobs/18d6277216b815bfff7e963ea48b637e04021dc7"
+    },
+    {
+      "path": "mypalletizer_communication/msg/MypalPumpStatus.msg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2373241cadb79efccec24b212bb5045c3d315373",
+      "size": 32,
+      "url": "https://api.github.com/repos/elephantrobotics/mycobot_ros/git/blobs/2373241cadb79efccec24b212bb5045c3d315373"
+    },
+    {
+      "path": "mypalletizer_communication/msg/MypalSetAngles.msg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3580a2e810c61cb6fce21d3caabb25e0c43dca86",
+      "size": 127,
+      "url": "https://api.github.com/repos/elephantrobotics/mycobot_ros/git/blobs/3580a2e810c61cb6fce21d3caabb25e0c43dca86"
+    },
+    {
+      "path": "mypalletizer_communication/msg/MypalSetCoords.msg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "15c601fd9f4a4452a139886c69828006218ab103",
+      "size": 90,
+      "url": "https://api.github.com/repos/elephantrobotics/mycobot_ros/git/blobs/15c601fd9f4a4452a139886c69828006218ab103"
+    },
+    {
+      "path": "mypalletizer_communication/srv/GetAngles.srv",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "dcf5f2aab042fd8cea0cbb151d556aecc90d6486",
+      "size": 122,
+      "url": "https://api.github.com/repos/elephantrobotics/mycobot_ros/git/blobs/dcf5f2aab042fd8cea0cbb151d556aecc90d6486"
+    },
+    {
+      "path": "mypalletizer_communication/srv/GetCoords.srv",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "aabe929d05ddfb12f51d59ff21106eb33542962e",
+      "size": 73,
+      "url": "https://api.github.com/repos/elephantrobotics/mycobot_ros/git/blobs/aabe929d05ddfb12f51d59ff21106eb33542962e"
+    },
+    {
+      "path": "mypalletizer_communication/srv/GripperStatus.srv",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3887d75b2f78418c77c4501e817771551801e783",
+      "size": 27,
+      "url": "https://api.github.com/repos/elephantrobotics/mycobot_ros/git/blobs/3887d75b2f78418c77c4501e817771551801e783"
+    },
+    {
+      "path": "mypalletizer_communication/srv/PumpStatus.srv",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8bd4b530d3a170428af6e3faec909afb347fe1a6",
+      "size": 47,
+      "url": "https://api.github.com/repos/elephantrobotics/mycobot_ros/git/blobs/8bd4b530d3a170428af6e3faec909afb347fe1a6"
+    },
+    {
+      "path": "mypalletizer_communication/srv/SetAngles.srv",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "539dcc3b80d021471250509cf398f44beb5a0d20",
+      "size": 144,
+      "url": "https://api.github.com/repos/elephantrobotics/mycobot_ros/git/blobs/539dcc3b80d021471250509cf398f44beb5a0d20"
+    },
+    {
+      "path": "mypalletizer_communication/srv/SetCoords.srv",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "39893737442c3f898b3a68749cce9503d4b20a53",
+      "size": 105,
+      "url": "https://api.github.com/repos/elephantrobotics/mycobot_ros/git/blobs/39893737442c3f898b3a68749cce9503d4b20a53"
+    }
+  ]
+}

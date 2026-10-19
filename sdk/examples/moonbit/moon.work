@@ -1,0 +1,3 @@
+// Copy the reviewed SDK into ros-sdk before building. Both members are local;
+// this workspace intentionally needs no package-registry resolution.
+members = [".", "ros-sdk"]

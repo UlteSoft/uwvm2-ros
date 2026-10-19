@@ -1,0 +1,33 @@
+{
+  "lesson": "application",
+  "aliases": {
+    "pub": "pub",
+    "sub": "sub",
+    "client": "trigger-call",
+    "service": { "advertise": "trigger-advertise", "respond": "trigger-respond" },
+    "actionClient": { "send": "fib-send", "cancelOwn": "fib-cancel-own", "feedback": "fib-feedback", "result": "fib-result" },
+    "actionServer": { "advertise": "fib-advertise", "respond": "fib-respond" },
+    "parameters": { "get": "counter-get", "set": "counter-set", "list": "counter-list", "exists": "counter-exists", "search": "counter-search", "delete": "counter-delete" },
+    "graph": { "alias": "graph-topics", "operation": "graph_list_topics" },
+    "clocks": [ { "alias": "clock-ros", "operation": "time_read_ros" }, { "alias": "clock-wall", "operation": "time_read_wall" } ],
+    "tf": { "lookup": "map-base-lookup", "broadcast": "map-base-broadcast" },
+    "logger": "log-info"
+  },
+  "handlers": { "serviceResponse": { "success": true, "message": "explicit local response" }, "actionResponse": { "kind": 3, "values": [] } },
+  "timer": { "ready": false },
+  "actions": [
+    { "object": "publisher", "method": "publish", "args": ["explicit application publication"] },
+    { "object": "client", "method": "callDeferred", "args": [] },
+    { "object": "executor", "method": "spinOnce" },
+    { "object": "parameters", "method": "get" },
+    { "object": "parameters", "method": "exists" },
+    { "object": "parameters", "method": "search" },
+    { "object": "parameters", "method": "list" },
+    { "object": "graph", "method": "read" },
+    { "object": "clock", "method": "now", "index": 0 },
+    { "object": "clock", "method": "now", "index": 1 },
+    { "object": "tf", "method": "lookup", "args": [ { "$u64": "0" } ] },
+    { "object": "logger", "method": "write", "args": ["explicit application log"] }
+  ],
+  "steps": 1
+}

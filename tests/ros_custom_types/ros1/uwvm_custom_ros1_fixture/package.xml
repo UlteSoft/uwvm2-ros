@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<!-- Official catkin package for the fixed-layout topic interoperability fixture.
+     This package supplies native generated ROS1 types only. Installing or
+     generating it does not grant any UWVM capability or create any ROS entity. -->
+<package format="2">
+  <name>uwvm_custom_ros1_fixture</name>
+  <version>0.1.0</version>
+  <description>Fixed-layout generated ROS1 topic fixture for UWVM custom adapters.</description>
+  <!-- Fixture-only placeholder contact; this package is not a published release. -->
+  <maintainer email="fixture@example.invalid">UWVM fixture maintainers</maintainer>
+  <license>APL-2.0</license>
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>message_generation</build_depend>
+  <build_export_depend>message_runtime</build_export_depend>
+  <exec_depend>message_runtime</exec_depend>
+</package>

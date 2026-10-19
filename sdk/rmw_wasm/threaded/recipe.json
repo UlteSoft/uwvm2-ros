@@ -1,0 +1,138 @@
+{
+  "format_version": 1,
+  "kind": "rmw-threaded-source-recipe-not-executed",
+  "default_enabled": false,
+  "source_recompile_all_consumers": true,
+  "authority": [],
+  "actual_toolchain_required": true,
+  "root_owns_process_cgroup_and_physical_joins": true,
+  "candidate_execution_count": 0,
+  "compile_configure_link_probe_count": 0,
+  "build_stages": [
+    {
+      "source": "sdk/rmw_wasm/threaded",
+      "argv": [
+        "cmake",
+        "-S",
+        "${SDK}/rmw_wasm/threaded",
+        "-B",
+        "${FRESH}/dispatch",
+        "-DCMAKE_TOOLCHAIN_FILE=${ACTUAL_SDK33_PTHREAD_TOOLCHAIN}",
+        "-DCMAKE_INSTALL_PREFIX=${FRESH}/prefix"
+      ],
+      "build_argv": [
+        "cmake",
+        "--build",
+        "${FRESH}/dispatch",
+        "--parallel",
+        "1"
+      ],
+      "install_argv": [
+        "cmake",
+        "--install",
+        "${FRESH}/dispatch"
+      ]
+    },
+    {
+      "source": "sdk/rmw_wasm/platform",
+      "argv": [
+        "cmake",
+        "-S",
+        "${SDK}/rmw_wasm/platform",
+        "-B",
+        "${FRESH}/platform",
+        "-DCMAKE_TOOLCHAIN_FILE=${ACTUAL_SDK33_PTHREAD_TOOLCHAIN}",
+        "-DCMAKE_INSTALL_PREFIX=${FRESH}/prefix",
+        "-DCMAKE_PREFIX_PATH=${ADMITTED_PREFIX};${FRESH}/prefix",
+        "-DUWVM_SDK_INCLUDE=${SDK}/include",
+        "-DUWVM_RMW_ENABLE_THREADED_PROFILE=ON"
+      ],
+      "build_argv": [
+        "cmake",
+        "--build",
+        "${FRESH}/platform",
+        "--parallel",
+        "1"
+      ],
+      "install_argv": [
+        "cmake",
+        "--install",
+        "${FRESH}/platform"
+      ]
+    },
+    {
+      "source": "sdk/rmw_wasm/cmake",
+      "argv": [
+        "cmake",
+        "-S",
+        "${SDK}/rmw_wasm/cmake",
+        "-B",
+        "${FRESH}/core",
+        "-DCMAKE_TOOLCHAIN_FILE=${ACTUAL_SDK33_PTHREAD_TOOLCHAIN}",
+        "-DCMAKE_INSTALL_PREFIX=${FRESH}/prefix",
+        "-DCMAKE_PREFIX_PATH=${ADMITTED_PREFIX};${FRESH}/prefix",
+        "-DUWVM_RMW_ENABLE_THREADED_PROFILE=ON"
+      ],
+      "build_argv": [
+        "cmake",
+        "--build",
+        "${FRESH}/core",
+        "--parallel",
+        "1"
+      ],
+      "install_argv": [
+        "cmake",
+        "--install",
+        "${FRESH}/core"
+      ]
+    }
+  ],
+  "guard_groups": [
+    "infinite-guard",
+    "trigger-before-wait",
+    "shutdown-before-join",
+    "retired-guard-pin",
+    "retired-waitset-pin",
+    "same-set-busy",
+    "same-entity-busy",
+    "two-contexts",
+    "cross-context",
+    "allocator-reentry",
+    "no-clock",
+    "fini-borrowed"
+  ],
+  "queue_model_groups": [
+    "queue-full-info",
+    "idle-shutdown",
+    "retire-pinned-once",
+    "elapsed-timeout",
+    "clock-regression",
+    "platform-parallel"
+  ],
+  "separate_required_execution": [
+    "actual SDK33 executable link",
+    "actual Linux pthread local models",
+    "actual Guest shared-memory guard and join",
+    "actual original rclcpp GraphListener shutdown",
+    "actual Native String/Empty/AddTwoInts peers with same-record metadata",
+    "actual Host default-deny and separately granted positive capabilities",
+    "actual group stop and full physical drain",
+    "actual original default NodeOptions endpoint closure"
+  ],
+  "unsupported_target_behavior": "configure/source refusal; never fallback to single-thread mode when ON was selected",
+  "original_graph_executable_argv": [
+    "${ACTUAL_LINKED_ORIGINAL_GRAPH_EXECUTABLE}",
+    "${EXPLICIT_SYSTEM_CLOCK_ALIAS}",
+    "${EXPLICIT_STEADY_CLOCK_ALIAS}"
+  ],
+  "original_graph_application_options": {
+    "auto_initialize_logging": false,
+    "enable_rosout": false,
+    "start_parameter_services": false,
+    "start_parameter_event_publisher": false,
+    "parameter_overrides": {
+      "start_type_description_service": false
+    },
+    "scope": "Only this explicitly quiet graph fixture chooses these original APIs; original upstream defaults and every other application remain unchanged."
+  }
+}

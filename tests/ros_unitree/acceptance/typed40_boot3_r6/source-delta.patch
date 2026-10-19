@@ -1,0 +1,36 @@
+--- typed40_boot3_r5/root_owner.py
++++ typed40_boot3_r6/root_owner.py
+@@ -32,10 +32,10 @@
+ SOURCE = P / "inputs-r40/source"
+ MANIFEST = SOURCE.parent / "source-manifest.json"
+ MANIFEST_SHA = "a1c302c830b9965c73d3a9f1fa775056ff60cb7b252ec2af15c8c73ee0969afd"
+-CODE = B / "source40-unitree-command14-boot3-controls-r5"
+-META = M / "source40-unitree-command14-boot3-inputs-r5"
+-ACTOR = M / "source40-unitree-command14-boot3-build-r5"
+-OWNER = M / "source40-unitree-command14-boot3-owner-r5"
++CODE = B / "source40-unitree-command14-boot3-controls-r6"
++META = M / "source40-unitree-command14-boot3-inputs-r6"
++ACTOR = M / "source40-unitree-command14-boot3-build-r6"
++OWNER = M / "source40-unitree-command14-boot3-owner-r6"
+ ORIGINAL = M / "source40-unitree-command14-build-r1/report.json"
+ ORIGINAL_SHA = "b7c07cc7b83bf5996d85e1e812c7e4bc5221358d6dafcb69c3601d261af86747"
+ # Exact current observations supplied by Root; no debug parent/sibling is an input.
+--- typed40_boot3_r5/stage.py
++++ typed40_boot3_r6/stage.py
+@@ -31,11 +31,11 @@
+ SOURCE = P / "inputs-r40/source"
+ MANIFEST = SOURCE.parent / "source-manifest.json"
+ MANIFEST_SHA = "a1c302c830b9965c73d3a9f1fa775056ff60cb7b252ec2af15c8c73ee0969afd"
+-CODE = B / "source40-unitree-command14-boot3-controls-r5"
+-META = M / "source40-unitree-command14-boot3-inputs-r5"
+-ACTOR = M / "source40-unitree-command14-boot3-build-r5"
+-OWNER = M / "source40-unitree-command14-boot3-owner-r5"
+-RECEIPT = B / "source40-unitree-command14-boot3-stage-r5.json"
++CODE = B / "source40-unitree-command14-boot3-controls-r6"
++META = M / "source40-unitree-command14-boot3-inputs-r6"
++ACTOR = M / "source40-unitree-command14-boot3-build-r6"
++OWNER = M / "source40-unitree-command14-boot3-owner-r6"
++RECEIPT = B / "source40-unitree-command14-boot3-stage-r6.json"
+ SEED = M / "source40-unitree-command14-input-admission-r2/controls/frame-config.json"
+ SEED_SHA = "ed31e25026685a3e18f760c28dbc713468d66555c0984cdb306683ca1d86a8bd"
+ ORIGINAL = M / "source40-unitree-command14-build-r1/report.json"

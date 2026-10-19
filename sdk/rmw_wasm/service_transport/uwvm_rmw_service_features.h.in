@@ -1,0 +1,4 @@
+#pragma once
+/* Actual selected original SDK compile/link observation only. No distro label,
+ * fake rmw type, manual version gate or copied source proves native population. */
+#cmakedefine01 UWVM_RMW_SERVICE_INFO_API

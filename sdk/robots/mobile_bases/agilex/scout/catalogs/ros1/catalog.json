@@ -1,0 +1,111 @@
+{
+  "format": "uwvm-ros-vendor-complete-bounded-v1",
+  "types": [
+    {
+      "ros_version": 1,
+      "type": "geometry_msgs/Point",
+      "file": "geometry_msgs/msg/Point.msg",
+      "registered": false
+    },
+    {
+      "ros_version": 1,
+      "type": "geometry_msgs/Pose",
+      "file": "geometry_msgs/msg/Pose.msg",
+      "registered": false
+    },
+    {
+      "ros_version": 1,
+      "type": "geometry_msgs/PoseWithCovariance",
+      "file": "geometry_msgs/msg/PoseWithCovariance.msg",
+      "registered": false
+    },
+    {
+      "ros_version": 1,
+      "type": "geometry_msgs/Quaternion",
+      "file": "geometry_msgs/msg/Quaternion.msg",
+      "registered": false
+    },
+    {
+      "ros_version": 1,
+      "type": "geometry_msgs/Twist",
+      "file": "geometry_msgs/msg/Twist.msg",
+      "registered": false
+    },
+    {
+      "ros_version": 1,
+      "type": "geometry_msgs/TwistWithCovariance",
+      "file": "geometry_msgs/msg/TwistWithCovariance.msg",
+      "registered": false
+    },
+    {
+      "ros_version": 1,
+      "type": "geometry_msgs/Vector3",
+      "file": "geometry_msgs/msg/Vector3.msg",
+      "registered": false
+    },
+    {
+      "ros_version": 1,
+      "type": "nav_msgs/Odometry",
+      "file": "nav_msgs/msg/Odometry.msg",
+      "registered": true,
+      "bounds": {
+        "child_frame_id": {
+          "string": 128
+        }
+      }
+    },
+    {
+      "ros_version": 1,
+      "type": "scout_msgs/ScoutBmsStatus",
+      "file": "scout_msgs/msg/ScoutBmsStatus.msg",
+      "registered": true
+    },
+    {
+      "ros_version": 1,
+      "type": "scout_msgs/ScoutDriverState",
+      "file": "scout_msgs/msg/ScoutDriverState.msg",
+      "registered": false
+    },
+    {
+      "ros_version": 1,
+      "type": "scout_msgs/ScoutLightCmd",
+      "file": "scout_msgs/msg/ScoutLightCmd.msg",
+      "registered": true
+    },
+    {
+      "ros_version": 1,
+      "type": "scout_msgs/ScoutLightState",
+      "file": "scout_msgs/msg/ScoutLightState.msg",
+      "registered": false
+    },
+    {
+      "ros_version": 1,
+      "type": "scout_msgs/ScoutMotorState",
+      "file": "scout_msgs/msg/ScoutMotorState.msg",
+      "registered": false
+    },
+    {
+      "ros_version": 1,
+      "type": "scout_msgs/ScoutRsStatus",
+      "file": "scout_msgs/msg/ScoutRsStatus.msg",
+      "registered": true
+    },
+    {
+      "ros_version": 1,
+      "type": "scout_msgs/ScoutStatus",
+      "file": "scout_msgs/msg/ScoutStatus.msg",
+      "registered": true
+    },
+    {
+      "ros_version": 1,
+      "type": "std_msgs/Header",
+      "file": "std_msgs/msg/Header.msg",
+      "registered": false,
+      "bounds": {
+        "frame_id": {
+          "string": 128
+        }
+      }
+    }
+  ]
+}
