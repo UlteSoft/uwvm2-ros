@@ -55,7 +55,7 @@ jobs:
           xmake b -rv
           export UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1
       - name: Check UWVM version
-        run: xmake run uwvm --version
+        run: xmake run uwvm2-ros --version
       - name: Unit tests
         run: xmake test -v
 
@@ -102,7 +102,7 @@ jobs:
           xmake b -rv
           export UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1
       - name: Check UWVM version
-        run: xmake run uwvm --version
+        run: xmake run uwvm2-ros --version
       - name: Unit tests
         run: xmake test -v
 
@@ -182,8 +182,8 @@ jobs:
             --test-libfuzzer=n
       - name: Check UWVM version
         run: |
-          xmake b -rv -j "${XMAKE_JOBS}" uwvm
-          xmake run uwvm --version
+          xmake b -rv -j "${XMAKE_JOBS}" uwvm2-ros
+          xmake run uwvm2-ros --version
       - name: Run uwvm-int strict tests
         run: UWVM_XMAKE_JOBS="${XMAKE_JOBS}" bash test/0013.uwvm_int/strict/run_strict_basic_full.sh
       - name: Run LLVM AOT tests
@@ -238,7 +238,7 @@ jobs:
         run: |
           BIN_DIR="build/linux/x86_64/${{ matrix.mode }}"
           echo "Running uwvm from ${BIN_DIR} under SDE"
-          /opt/intel-sde/sde64 -dmr -- "${BIN_DIR}/uwvm" --version
+          /opt/intel-sde/sde64 -dmr -- "${BIN_DIR}/uwvm2-ros" --version
       - name: Run all test executables (via SDE)
         run: |
           BIN_DIR="build/linux/x86_64/${{ matrix.mode }}"
@@ -297,7 +297,7 @@ jobs:
       - name: Build
         run: xmake b -rv
       - name: Check UWVM version
-        run: xmake run uwvm --version
+        run: xmake run uwvm2-ros --version
       - name: Unit tests
         run: xmake test -v
 
@@ -333,7 +333,7 @@ jobs:
           xmake b -rv
           export UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1
       - name: Check UWVM version
-        run: xmake run uwvm --version
+        run: xmake run uwvm2-ros --version
 
   # ---------------------------------------------------------------------------
   x86_64-windows-gnu:
@@ -387,7 +387,7 @@ jobs:
       - name: Build
         run: xmake b -rv
       - name: Check UWVM version
-        run: xmake run uwvm --version
+        run: xmake run uwvm2-ros --version
       - name: Unit tests
         run: xmake test -v
 
@@ -427,7 +427,7 @@ jobs:
       - name: Build
         run: xmake b -rv
       - name: Check UWVM version
-        run: xmake run uwvm --version
+        run: xmake run uwvm2-ros --version
       - name: Unit tests
         run: xmake test -v
 
@@ -518,8 +518,8 @@ jobs:
             df -h / /usr || true
             FREEBSD_CI_SWAP
             bash -c "source ~/.xmake/profile && xmake b -rv -j1 || { rc=\$?; swapinfo || true; df -h / /usr || true; dmesg | tail -n 80 || true; exit \$rc; }"
-            bash -c "source ~/.xmake/profile && export UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 && xmake run uwvm --version"
-            bash -c "source ~/.xmake/profile && xmake clean -y uwvm || true"
+            bash -c "source ~/.xmake/profile && export UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 && xmake run uwvm2-ros --version"
+            bash -c "source ~/.xmake/profile && xmake clean -y uwvm2-ros || true"
             bash -c "source ~/.xmake/profile && xmake clean -y uwvm_runtime || true"
             bash -c "df -h / /usr || true"
             bash -c "source ~/.xmake/profile && export UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 && xmake test -v -j1"

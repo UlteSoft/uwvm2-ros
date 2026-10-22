@@ -1,9 +1,9 @@
 name: ROS extension build and policy
 on:
   push:
-    paths: ['src/uwvm2/imported/ros/**', 'src/uwvm2/uwvm/imported/ros/**', 'src/uwvm2/uwvm/cmdline/**', 'src/uwvm2/runtime/**', 'tests/ros*/**', 'sdk/**', 'gateways/**', '.github/workflows/ros-extension.yml']
+    paths: ['src/uwvm2/imported/ros/**', 'src/uwvm2/uwvm/imported/ros/**', 'src/uwvm2/uwvm/cmdline/**', 'src/uwvm2/runtime/**', 'test/0073.ros-tests/support/source/ros*/**', 'sdk/**', 'gateways/**', '.github/workflows/ros-extension.yml']
   pull_request:
-    paths: ['src/uwvm2/imported/ros/**', 'src/uwvm2/uwvm/imported/ros/**', 'src/uwvm2/uwvm/cmdline/**', 'src/uwvm2/runtime/**', 'tests/ros*/**', 'sdk/**', 'gateways/**', '.github/workflows/ros-extension.yml']
+    paths: ['src/uwvm2/imported/ros/**', 'src/uwvm2/uwvm/imported/ros/**', 'src/uwvm2/uwvm/cmdline/**', 'src/uwvm2/runtime/**', 'test/0073.ros-tests/support/source/ros*/**', 'sdk/**', 'gateways/**', '.github/workflows/ros-extension.yml']
 jobs:
   interpreter-products:
     runs-on: ubuntu-24.04
@@ -24,19 +24,19 @@ jobs:
       - name: Independent product, without ROS development libraries
         env:
           CXX: clang++-23
-        run: python3 tests/ros/build_product.py --profile '${{ matrix.profile }}' --out "$RUNNER_TEMP/ros-product"
+        run: python3 test/0073.ros-tests/support/source/ros/build_product.py --profile '${{ matrix.profile }}' --out "$RUNNER_TEMP/ros-product"
       - name: Policy, handle, message and IPC unit tests
         if: matrix.profile == 'dual'
         env:
           CXX: clang++-23
           ROS_TEST_CXXFLAGS: -std=c++26 -stdlib=libc++ -O1 -g0
         run: |
-          python3 tests/ros/run_unit.py --out "$RUNNER_TEMP/ros-unit"
-          python3 tests/ros_cli/run.py --uwvm "$RUNNER_TEMP/ros-product/dual/uwvm" --output "$RUNNER_TEMP/ros-cli.json"
+          python3 test/0073.ros-tests/support/source/ros/run_unit.py --out "$RUNNER_TEMP/ros-unit"
+          python3 test/0073.ros-tests/support/source/ros_cli/run.py --uwvm "$RUNNER_TEMP/ros-product/dual/uwvm2-ros" --output "$RUNNER_TEMP/ros-cli.json"
       - name: Existing WASI, Memory64, tail-call and Trusted DL regression
         env:
           CC: clang-23
-        run: python3 tests/ros/regression.py --uwvm "$RUNNER_TEMP/ros-product/${{ matrix.profile }}/uwvm" --out "$RUNNER_TEMP/ros-regression"
+        run: python3 test/0073.ros-tests/support/source/ros/regression.py --uwvm "$RUNNER_TEMP/ros-product/${{ matrix.profile }}/uwvm2-ros" --out "$RUNNER_TEMP/ros-regression"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

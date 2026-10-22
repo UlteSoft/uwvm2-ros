@@ -8,7 +8,7 @@ name: Explicit native ROS distribution matrix
 # performed by the native job, and it never changes the existing baseline lane.
 on:
   pull_request:
-    paths: ['tools/ros_distro/**', 'tests/ros_distro/**', 'gateways/**', '.github/workflows/ros-distro-matrix.yml']
+    paths: ['tools/ros_distro/**', 'test/0073.ros-tests/support/source/ros_distro/**', 'gateways/**', '.github/workflows/ros-distro-matrix.yml']
   workflow_dispatch:
     inputs:
       profiles:
@@ -29,7 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Pure configuration contracts; no native compatibility claim
-        run: PYTHONDONTWRITEBYTECODE=1 python3 -B tests/ros_distro/test_profiles.py
+        run: PYTHONDONTWRITEBYTECODE=1 python3 -B test/0073.ros-tests/support/source/ros_distro/test_profiles.py
 
   actual-native-matrix:
     if: github.event_name == 'workflow_dispatch'
@@ -52,7 +52,7 @@ jobs:
           submodules: recursive
       - name: Freeze all source, including the new tools
         run: |
-          python3 -B tests/ros_acceptance/freeze_source.py --source "$GITHUB_WORKSPACE" --out "$RUNNER_TEMP/ros-distro-source-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" --extra "tools/ros_distro=$GITHUB_WORKSPACE/tools/ros_distro"
+          python3 -B test/0073.ros-tests/support/source/ros_acceptance/freeze_source.py --source "$GITHUB_WORKSPACE" --out "$RUNNER_TEMP/ros-distro-source-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" --extra "tools/ros_distro=$GITHUB_WORKSPACE/tools/ros_distro"
       - name: Actual Gateway build and native SDK topic per selected distribution
         run: |
           FROZEN="$RUNNER_TEMP/ros-distro-source-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
