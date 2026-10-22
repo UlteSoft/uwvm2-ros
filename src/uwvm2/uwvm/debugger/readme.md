@@ -23,7 +23,7 @@ owning observer before publication, using instruction safe-point granularity.
 `-m debug` calls `arm_initial_pause` after `prepare_debug_host_api` and before
 starting its guest worker. This prepared state has no fabricated PC or stack.
 
-Launch with `uwvm -Rdbg --run app.wasm` (`--runtime-debug` is the long
+Launch with `uwvm2-ros -Rdbg --run app.wasm` (`--runtime-debug` is the long
 spelling; `R` is uppercase). At the initial Wasm stop, `run`/`r` starts
 execution. On subsequent use it retires the actual old guest/native/compiler
 workers, reloads the configured module/preload files and creates fresh Wasm
@@ -242,7 +242,7 @@ Commands:
   `help run` select a category or command; `help TOPIC N` explicitly reads page
   N. Every command page explains its purpose, arguments and examples. Tab
   completes the next topic/command, and command aliases select the same pages.
-  Ordinary interactive help uses the `uwvm -h` ANSI palette and diagnostic
+  Ordinary interactive help uses the `uwvm2-ros -h` ANSI palette and diagnostic
   color policy (`NO_COLOR`, `--log-color no`). TUI, piped input and authenticated
   control transports receive plain text. Pages contain at most 18 body rows,
   wrap to the terminal width and never dump the entire catalogue.

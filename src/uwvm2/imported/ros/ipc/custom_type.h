@@ -15,6 +15,7 @@
 #include <string_view>
 #include "custom_wire.h"
 #include "complete_vendor_domain.h"
+#include "custom_registry_limits.h"
 
 namespace uwvm2::imported::ros::ipc
 {
@@ -333,7 +334,7 @@ namespace uwvm2::imported::ros::ipc
     }
     inline constexpr bool custom_topic_registry_well_formed(custom_topic_registry registry) noexcept
     {
-        if(registry.size > 128 || (registry.size && !registry.data)) { return false; }
+        if(!custom_registry_counts_fit(registry.size,0,0) || (registry.size && !registry.data)) { return false; }
         ::std::uint64_t total_cells{};
         for(::std::size_t i{}; i != registry.size; ++i)
         {
@@ -349,13 +350,13 @@ namespace uwvm2::imported::ros::ipc
             {
                 custom_wire_extent extent{};
                 if(!custom_wire_extent_of(*descriptor.bounded_layout,extent)) { return false; }
+                if(!custom_registry_cells_fit(total_cells,extent.cells)) { return false; }
                 total_cells+=extent.cells;
-                if(total_cells>16384) { return false; }
             }
             for(::std::size_t field{}; field != descriptor.layout_count; ++field)
             {
+                if(!custom_registry_cells_fit(total_cells,descriptor.layout[field].count)) { return false; }
                 total_cells += descriptor.layout[field].count;
-                if(total_cells > 16384) { return false; }
             }
             auto identity{descriptor.native_identity};
             if(descriptor.ros_version == 1)
@@ -404,10 +405,10 @@ namespace uwvm2::imported::ros::ipc
         // Check bounds before instantiating storage or dereferencing either
         // trusted table. Invalid input remains a whole-registry poison; it is
         // never truncated into an apparently valid prefix. Counts sum only
-        // after both are <=128, so arithmetic cannot wrap.
+        // after the explicit compiled ceiling check, so arithmetic cannot wrap.
         template<class Registry>inline constexpr bool mergeable(Registry a,Registry b) noexcept
         {
-            return a.size<=128&&b.size<=128&&a.size<=128-b.size&&
+            return custom_registry_counts_fit(a.size,b.size,0)&&
                 (!a.size||a.data)&&(!b.size||b.data);
         }
         template<class Descriptor,::std::size_t N,class Registry>
@@ -439,7 +440,7 @@ namespace uwvm2::imported::ros::ipc
     inline constexpr custom_topic_registry effective_custom_topic_entries() noexcept
     {
 #if defined(UWVM_ROS_ORIGINAL_CONTROL_MANIFEST)
-        if(!custom_registry_detail::topic_sources_valid)return {nullptr,129};
+        if(!custom_registry_detail::topic_sources_valid)return {nullptr,custom_registry_max_interfaces+1};
         return {custom_registry_detail::topics.data(),custom_registry_detail::topics.size()};
 #else
         return custom_topic_entries();

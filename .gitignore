@@ -76,3 +76,8 @@ __pycache__/
 !third-parties/llvm/**
 !third-parties/llvm-runtimes/**
 !third-parties/openssl/**
+
+# The delivered WASI sysroot intentionally contains official target CRT and
+# libraries. They are SDK inputs, not local compiler intermediates.
+!sdk/lib/wasm32-wasip1/
+!sdk/lib/wasm32-wasip1/**

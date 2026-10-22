@@ -122,7 +122,7 @@ separate ROS-off consumer probe.
 ## Verification status
 
 The source increment includes the focused components documented in
-[`tests/ros_debugger/README.md`](../../../../tests/ros_debugger/README.md).
+[`test/0073.ros-tests/support/source/ros_debugger/README.md`](../../../../test/0073.ros-tests/support/source/ros_debugger/README.md).
 Their presence is not a compilation, execution, Runtime authentication or
 native ROS acceptance result. Root must run current-source components and
 platform/backend integration serially and retain the actual reports before

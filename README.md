@@ -53,44 +53,39 @@ WebAssembly System Interface Preview 1 (WASI P1) host bindings for `wasm32-wasip
 Preload modules (dynamic libraries / weak-symbol plugins) can consume a stable host-side API for linear-memory access, and can optionally consume the UWVM2 WASI Preview 1 host API as well. The WASI table is disabled by default and must be explicitly enabled from the command line. When enabled for a single target or named group, plugin-facing WASI calls are resolved against that target's WASI environment rather than one process-wide table. Native dynamic libraries still execute as host code and must be treated as trusted host extensions.
 
 ### ROS 1 and ROS 2 runtime extensions
-Optional Linux interpreter extensions expose independently configured ROS 1 and ROS 2 capabilities through separate native Gateways. Each Wasm instance receives its own capability table; explicit Global, Single and Group configuration controls Topic, Service, Parameter, Graph, Action, TF, Time, Logging and ROS 2 Lifecycle access. The core build requires no ROS libraries. See the [architecture](documents/ros/architecture.md), [build instructions](documents/ros/build.md), [ROS 1 CLI](documents/command-line/ros1.md), [ROS 2 CLI](documents/command-line/ros2.md) and [test instructions](documents/ros/testing.md) for supported adapters and reproducible validation.
-
-The [vendor build options](documents/ros/vendor-build-options.md) independently
-select all28 vendor schema targets and the separate NVIDIA platform layers.
-Every switch defaults off; only an explicitly supplied coherent registry is
-compiled, and Native SDKs remain outside the Wasm execution binary.
-
-Actual SSH Linux results, artifact hashes and limitations are recorded in the [delivery report](documents/ros/test-report.md), [55 attack cases](documents/ros/acceptance-matrix.md) and [original 50 acceptance items](documents/ros/final-checklist.md).
+Optional Linux interpreter extensions expose independently configured ROS 1 and ROS 2 capabilities through separate native Gateways. Each Wasm instance receives its own capability table; explicit Global, Single and Group configuration controls Topic, Service, Parameter, Graph, Action, TF, Time, Logging and ROS 2 Lifecycle access. The core build requires no ROS libraries. See the [ROS 1 CLI](documents/command-line/ros1.md), [ROS 2 CLI](documents/command-line/ros2.md) and [numbered ROS test suites](test/0073.ros-tests/README.md).
 
 The [WasmROS guest SDK](sdk/README.md) provides C/C++, Rust, JavaScript,
 AssemblyScript and TinyGo libraries, from complete raw imports to typed
 Node/resource/executor APIs and detailed English application examples. SDK
-construction grants no ROS authority. The
-[current SDK delivery record](documents/ros/sdk-client-libraries-20261015-r1.md)
-binds 334 validated Wasm products and serial local models; native ROS delivery
-and the original Runtime acceptance matrix retain their separate scopes.
+construction grants no ROS authority.
+
+See the [platform SDK build and test guide](documents/how-to-build/ros-platform-sdk.md)
+for explicit vendor selections, source-only imports and numbered test entry points.
 
 ### Flexible linear memory models
 uwvm2 provides three host-side models for implementing WebAssembly linear memory (mmap-based, multi-threaded allocator-based, and single-thread allocator-based backends), allowing efficient execution on platforms with or without virtual memory support. See [readme.md](src/uwvm2/object/memory/readme.md) for a detailed description.
 
+The executable and Xmake target are named `uwvm2-ros` to allow installation alongside upstream uwvm2. Build with `xmake build uwvm2-ros` and run with `xmake run uwvm2-ros --version`.
+
 ## Commandline interface
 * Get version information
 ```bash
-$ uwvm --version
+$ uwvm2-ros --version
 ```
 * Get a list of commands
 ```bash
-$ uwvm --help
+$ uwvm2-ros --help
 ```
 * Running uwvm2 virtual machine
 ```bash
-$ uwvm <param0> <param1> ... --run <wasm:path> <argv1:str> <argv2:str> ...
-$ uwvm <param0> <param1> ... <wasm:path> <argv1:str> <argv2:str> ...
+$ uwvm2-ros <param0> <param1> ... --run <wasm:path> <argv1:str> <argv2:str> ...
+$ uwvm2-ros <param0> <param1> ... <wasm:path> <argv1:str> <argv2:str> ...
 ```
 When `--run`, `-r`, or `--` is omitted, trailing plain arguments are treated as the Wasm path and guest argv.
 * WASI mount dir (wasip1)
 ```bash
-$ uwvm --wasip1-mount-dir <wasi dir> <system dir> ... --run ...
+$ uwvm2-ros --wasip1-mount-dir <wasi dir> <system dir> ... --run ...
 ```
 
 ## How to build

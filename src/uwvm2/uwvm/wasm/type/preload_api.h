@@ -43,11 +43,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::type
 
         1. Register a preload dynamic library and allow copy-based access to every memory:
 
-           uwvm --wasm-register-dl ./libdemo.so demo --wasm-set-preload-module-attribute demo copy all
+           uwvm2-ros --wasm-register-dl ./libdemo.so demo --wasm-set-preload-module-attribute demo copy all
 
         2. Request direct mmap-backed access for memory indices 0 and 1 when the active platform/runtime supports it:
 
-           uwvm --wasm-register-dl ./libinspect.so inspect --wasm-set-preload-module-attribute inspect mmap 0,1
+           uwvm2-ros --wasm-register-dl ./libinspect.so inspect --wasm-set-preload-module-attribute inspect mmap 0,1
 
         3. The descriptor delivery state tells the preload module which mmap contract is active for each memory:
            - copy

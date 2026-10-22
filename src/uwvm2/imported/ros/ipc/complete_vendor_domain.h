@@ -44,7 +44,11 @@ namespace uwvm2::imported::ros::ipc
                (!category.empty()&&actual!=category))return false;
             tail.remove_prefix(next+1);
         }
-        if(tail.empty()||tail.front()<'A'||tail.front()>'Z')return false;
+        // ROS1 genmsg accepts an original resource base beginning with either
+        // ASCII letter (for example kuavo_msgs/sensorsData). ROS2 interface
+        // declarations retain their separate uppercase initial requirement.
+        if(tail.empty()||!((tail.front()>='A'&&tail.front()<='Z')||
+            (version==1&&tail.front()>='a'&&tail.front()<='z')))return false;
         for(char c:tail)
             if(!((c>='a'&&c<='z')||(c>='A'&&c<='Z')||
                  (c>='0'&&c<='9')||c=='_'))return false;

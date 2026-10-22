@@ -353,8 +353,8 @@ semantic clarity**, not for micro-optimizing a path that is cold by design.
 
 Example:
 
-- `uwvm --wasm-memory-grow-strict ...`
-- `uwvm -Wmemstrict ...`
+- `uwvm2-ros --wasm-memory-grow-strict ...`
+- `uwvm2-ros -Wmemstrict ...`
 
 ---
 

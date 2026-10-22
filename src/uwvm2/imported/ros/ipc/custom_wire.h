@@ -15,7 +15,11 @@ namespace uwvm2::imported::ros::ipc
      * Records and fixed arrays have no envelope/padding. Scalar widths/signs
      * are explicit, and every integer/count uses little endian. */
     enum class custom_wire_kind : ::std::uint8_t
-    { boolean,u8,i8,u16,i16,u32,i32,u64,i64,f32,f64,utf8,record,array,sequence,raw_bytes,bounded_record };
+    {
+        boolean,u8,i8,u16,i16,u32,i32,u64,i64,f32,f64,utf8,record,array,sequence,raw_bytes,bounded_record,
+        // Trusted generated field opt-in only. Existing numeric enum values stay fixed.
+        f32_positive_infinity,f64_positive_infinity
+    };
     struct custom_wire_node
     {
         custom_wire_kind kind{};
@@ -33,8 +37,8 @@ namespace uwvm2::imported::ros::ipc
         {
             case custom_wire_kind::boolean:case custom_wire_kind::u8:case custom_wire_kind::i8:return 1;
             case custom_wire_kind::u16:case custom_wire_kind::i16:return 2;
-            case custom_wire_kind::u32:case custom_wire_kind::i32:case custom_wire_kind::f32:return 4;
-            case custom_wire_kind::u64:case custom_wire_kind::i64:case custom_wire_kind::f64:return 8;
+            case custom_wire_kind::u32:case custom_wire_kind::i32:case custom_wire_kind::f32:case custom_wire_kind::f32_positive_infinity:return 4;
+            case custom_wire_kind::u64:case custom_wire_kind::i64:case custom_wire_kind::f64:case custom_wire_kind::f64_positive_infinity:return 8;
             default:return 0;
         }
     }
@@ -158,6 +162,8 @@ namespace uwvm2::imported::ros::ipc
             if(node.kind==custom_wire_kind::boolean&&bits>1) { return false; }
             if(node.kind==custom_wire_kind::f32&&(bits&0x7f800000u)==0x7f800000u) { return false; }
             if(node.kind==custom_wire_kind::f64&&(bits&0x7ff0000000000000ULL)==0x7ff0000000000000ULL) { return false; }
+            if(node.kind==custom_wire_kind::f32_positive_infinity&&(bits&0x7f800000u)==0x7f800000u&&bits!=0x7f800000u) { return false; }
+            if(node.kind==custom_wire_kind::f64_positive_infinity&&(bits&0x7ff0000000000000ULL)==0x7ff0000000000000ULL&&bits!=0x7ff0000000000000ULL) { return false; }
             offset+=width;return true;
         }
         if(node.kind==custom_wire_kind::utf8||node.kind==custom_wire_kind::raw_bytes)

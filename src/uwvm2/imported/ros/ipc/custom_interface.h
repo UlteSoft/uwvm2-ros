@@ -34,7 +34,7 @@ namespace uwvm2::imported::ros::ipc
     inline constexpr custom_service_registry effective_custom_service_entries() noexcept
     {
 #if defined(UWVM_ROS_ORIGINAL_CONTROL_MANIFEST)
-        if(!custom_registry_detail::service_sources_valid)return {nullptr,129};
+        if(!custom_registry_detail::service_sources_valid)return {nullptr,custom_registry_max_interfaces+1};
         return {custom_registry_detail::services.data(),custom_registry_detail::services.size()};
 #else
         return custom_service_entries();
@@ -43,7 +43,7 @@ namespace uwvm2::imported::ros::ipc
     inline constexpr custom_action_registry effective_custom_action_entries() noexcept
     {
 #if defined(UWVM_ROS_ORIGINAL_CONTROL_MANIFEST)
-        if(!custom_registry_detail::action_sources_valid)return {nullptr,129};
+        if(!custom_registry_detail::action_sources_valid)return {nullptr,custom_registry_max_interfaces+1};
         return {custom_registry_detail::actions.data(),custom_registry_detail::actions.size()};
 #else
         return custom_action_entries();
@@ -123,13 +123,13 @@ namespace uwvm2::imported::ros::ipc
     {
         custom_wire_extent extent{};::std::size_t count{};
         if(part.bounded_layout) {if(!custom_wire_extent_of(*part.bounded_layout,extent)) {return false;}count=extent.cells;}
-        else {for(::std::size_t i{};i!=part.layout_count;++i) {if(part.layout[i].count>16384||count>16384-part.layout[i].count) {return false;}count+=part.layout[i].count;}}
-        if(count>16384||total>16384-count) {return false;}total+=count;return true;
+        else {for(::std::size_t i{};i!=part.layout_count;++i) {if(!custom_registry_cells_fit(count,part.layout[i].count)) {return false;}count+=part.layout[i].count;}}
+        if(!custom_registry_cells_fit(total,count)) {return false;}total+=count;return true;
     }
     inline constexpr bool custom_interface_registries_valid() noexcept
     {
         auto services{effective_custom_service_entries()};auto actions{effective_custom_action_entries()};auto topics{effective_custom_topic_entries()};
-        if(!custom_topic_registry_valid||services.size>128||actions.size>128||topics.size+services.size+actions.size>128||
+        if(!custom_topic_registry_valid||!custom_registry_counts_fit(topics.size,services.size,actions.size)||
            (services.size&&!services.data)||(actions.size&&!actions.data)) {return false;}
         ::std::size_t expanded{};
         for(::std::size_t i{};i!=topics.size;++i) {if(!custom_component_charge(topics.data[i],expanded)) {return false;}}

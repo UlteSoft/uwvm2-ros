@@ -647,19 +647,22 @@ namespace uwvm2::uwvm::imported::ros
             else { r=capabilities.authorize(caller.runtime_instance,caller.generation,Version,handle,actual_op,{},ticket,false,false); }
             if(!r) { return finish(code(r)); }
             if(auto error{backend.connect(Version)}) { return finish(error); }
-            auto request_timeout{backend.timeout};
-            if(spec.limits.contains("timeout-ms"))
-            {
-                ::std::uint64_t explicit_timeout{};
-                if(!core::parse_u64(spec.limits.at("timeout-ms"),explicit_timeout)) { return finish(22); }
-                request_timeout=static_cast<::std::uint32_t>(explicit_timeout);
-            }
+            // The capability deadline bounds the Native operation at Gateway.
+            // Keep the explicitly configured IPC budget independent so that a
+            // Native timeout response can arrive before the control channel
+            // expires. Reusing timeout-ms here loses that response and can
+            // prevent the Guest's subsequent explicit capability retirement.
+            auto const request_timeout{backend.timeout};
             // A receive capability cannot redirect delivery to another owned goal ID.
             // Keep the scalar request identity before moving the bounded copied request to IPC.
             bool const receives_goal{op == "action.receive-feedback" || op == "action.receive-result"};
             ::std::uint64_t const requested_goal{receives_goal && payload.size() == 8 ? core::ipc::get(payload.data(),8) : 0};
             native_admitted=true;auto result{backend.connection.call(op,spec.alias,::std::move(payload),request_timeout)};
-            if(result.error == 107 || result.error == 110) { backend.connected=false;backend.retire_observations(result.error); }
+            // A well-formed Native reply may itself report ENOTCONN or
+            // ETIMEDOUT while the owned IPC session remains usable. Only an
+            // actual disconnected transport retires the session; otherwise
+            // preserve it for close/revoke and other admitted control calls.
+            if(!backend.connection.session_id()) { backend.connected=false;backend.retire_observations(result.error?result.error:107); }
             if(result.error) {native_reported_failure=true; return finish(result.error); }
             if(receives_goal && (!requested_goal || result.payload.size() < 8 || core::ipc::get(result.payload.data(),8) != requested_goal))
             { return finish(13); }
