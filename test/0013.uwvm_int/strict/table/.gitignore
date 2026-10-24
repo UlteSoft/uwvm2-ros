@@ -1,0 +1,8 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/uwvm_int_translate_wasm1p1_externref_table_strict
+/uwvm_int_translate_wasm1p1_table_ref_bulk_strict
+/uwvm_int_translate_wasm2_externref_table_strict
+/uwvm_int_translate_wasm2_feature_gate_strict

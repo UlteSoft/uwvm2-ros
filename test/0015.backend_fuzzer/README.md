@@ -1,7 +1,7 @@
 # 0015 Backend Fuzzer
 
 This folder is a pure shell/Python differential fuzzer for uwvm2 backend codegen.
-It does not use xmake and does not run the `uwvm` CLI.
+It does not use xmake and does not run the `uwvm2-ros` CLI.
 
 `generate_cases.py` creates two views of the same random corpus:
 

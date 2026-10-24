@@ -1,3 +1,11 @@
 .incoming/
 __pycache__/
 target/
+
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/embedded_main
+/.venv/
+/.pytest_cache/

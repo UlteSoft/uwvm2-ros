@@ -28,7 +28,7 @@ terminals reduce the row count and wrap text to their width. There is no implici
 full-catalogue dump. Example IDs are illustrative; use current IDs from `status`.
 
 Ordinary interactive help uses the same palette and `diagnostic_color` policy
-as `uwvm -h` and verbose logging. `NO_COLOR` (including an empty value) and
+as `uwvm2-ros -h` and verbose logging. `NO_COLOR` (including an empty value) and
 `--log-color no` suppress colors. TUI and authenticated management transports
 receive plain text; the existing TUI sanitizer remains in effect. FastIO handles
 strings, formatting and page-number scanning.

@@ -1,0 +1,1414 @@
+{
+  "cases": [
+    {
+      "type": "uwvm_fourier_bridge/ExecuteMoveRequest",
+      "wire": "39b83ef880c109660100000069070000007639663361ceb2010000000000000000206f4001010000000000000000a861c0c3d964ee",
+      "value": {
+        "record": "uwvm_fourier_bridge/ExecuteMoveRequest",
+        "members": {
+          "sequence": {
+            "scalar": "uint64",
+            "value": 7352620626323879993,
+            "wire": "39b83ef880c10966"
+          },
+          "moves": {
+            "array": [
+              {
+                "record": "uwvm_fourier_bridge/MotionRecipe",
+                "members": {
+                  "move_type": {
+                    "scalar": "uint8",
+                    "value": 105,
+                    "wire": "69"
+                  },
+                  "group": {
+                    "scalar": "string",
+                    "value": "v9f3a\u03b2"
+                  },
+                  "position": {
+                    "array": [
+                      {
+                        "scalar": "float64",
+                        "value": 249.0,
+                        "wire": "0000000000206f40"
+                      }
+                    ]
+                  },
+                  "has_velocity": {
+                    "scalar": "bool",
+                    "value": true,
+                    "wire": "01"
+                  },
+                  "velocity": {
+                    "array": [
+                      {
+                        "scalar": "float64",
+                        "value": -141.25,
+                        "wire": "0000000000a861c0"
+                      }
+                    ]
+                  },
+                  "expected_velocity": {
+                    "scalar": "int32",
+                    "value": -295380541,
+                    "wire": "c3d964ee"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/ExecuteMoveResponse",
+      "wire": "d0c1d4a1070000007665396331ceb2",
+      "value": {
+        "record": "uwvm_fourier_bridge/ExecuteMoveResponse",
+        "members": {
+          "status": {
+            "scalar": "uint32",
+            "value": 2715075024,
+            "wire": "d0c1d4a1"
+          },
+          "error": {
+            "scalar": "string",
+            "value": "ve9c1\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/GetBaseDataRequest",
+      "wire": "bddb14e204a2237c070000007639323631ceb2",
+      "value": {
+        "record": "uwvm_fourier_bridge/GetBaseDataRequest",
+        "members": {
+          "sequence": {
+            "scalar": "uint64",
+            "value": 8945171426744523709,
+            "wire": "bddb14e204a2237c"
+          },
+          "key": {
+            "scalar": "string",
+            "value": "v9261\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/GetBaseDataResponse",
+      "wire": "c4386351070000007635316162ceb2010000000000000000402f40",
+      "value": {
+        "record": "uwvm_fourier_bridge/GetBaseDataResponse",
+        "members": {
+          "status": {
+            "scalar": "uint32",
+            "value": 1365457092,
+            "wire": "c4386351"
+          },
+          "error": {
+            "scalar": "string",
+            "value": "v51ab\u03b2"
+          },
+          "values": {
+            "array": [
+              {
+                "scalar": "float64",
+                "value": 15.625,
+                "wire": "0000000000402f40"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/GetCartesianStateRequest",
+      "wire": "f029e24d4950d5d3070000007639386664ceb2070000007638656432ceb2",
+      "value": {
+        "record": "uwvm_fourier_bridge/GetCartesianStateRequest",
+        "members": {
+          "sequence": {
+            "scalar": "uint64",
+            "value": 15264194787811666416,
+            "wire": "f029e24d4950d5d3"
+          },
+          "group": {
+            "scalar": "string",
+            "value": "v98fd\u03b2"
+          },
+          "key": {
+            "scalar": "string",
+            "value": "v8ed2\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/GetCartesianStateResponse",
+      "wire": "6d398aad070000007630313232ceb2010000000000000000546c40",
+      "value": {
+        "record": "uwvm_fourier_bridge/GetCartesianStateResponse",
+        "members": {
+          "status": {
+            "scalar": "uint32",
+            "value": 2911517037,
+            "wire": "6d398aad"
+          },
+          "error": {
+            "scalar": "string",
+            "value": "v0122\u03b2"
+          },
+          "values": {
+            "array": [
+              {
+                "scalar": "float64",
+                "value": 226.625,
+                "wire": "0000000000546c40"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/GetContactDataRequest",
+      "wire": "83295c483a506bd6070000007637643231ceb2",
+      "value": {
+        "record": "uwvm_fourier_bridge/GetContactDataRequest",
+        "members": {
+          "sequence": {
+            "scalar": "uint64",
+            "value": 15450531157876943235,
+            "wire": "83295c483a506bd6"
+          },
+          "key": {
+            "scalar": "string",
+            "value": "v7d21\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/GetContactDataResponse",
+      "wire": "aa59dd13070000007635643532ceb2010000000000000000f04dc0",
+      "value": {
+        "record": "uwvm_fourier_bridge/GetContactDataResponse",
+        "members": {
+          "status": {
+            "scalar": "uint32",
+            "value": 333273514,
+            "wire": "aa59dd13"
+          },
+          "error": {
+            "scalar": "string",
+            "value": "v5d52\u03b2"
+          },
+          "values": {
+            "array": [
+              {
+                "scalar": "float64",
+                "value": -59.875,
+                "wire": "0000000000f04dc0"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/GetFsmNameRequest",
+      "wire": "fda878d544d14f4b",
+      "value": {
+        "record": "uwvm_fourier_bridge/GetFsmNameRequest",
+        "members": {
+          "sequence": {
+            "scalar": "uint64",
+            "value": 5426786169574172925,
+            "wire": "fda878d544d14f4b"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/GetFsmNameResponse",
+      "wire": "2f882be5070000007631326135ceb2070000007635323066ceb2",
+      "value": {
+        "record": "uwvm_fourier_bridge/GetFsmNameResponse",
+        "members": {
+          "status": {
+            "scalar": "uint32",
+            "value": 3844835375,
+            "wire": "2f882be5"
+          },
+          "error": {
+            "scalar": "string",
+            "value": "v12a5\u03b2"
+          },
+          "value": {
+            "scalar": "string",
+            "value": "v520f\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/GetFsmStateRequest",
+      "wire": "554b99c1ec32ae5f",
+      "value": {
+        "record": "uwvm_fourier_bridge/GetFsmStateRequest",
+        "members": {
+          "sequence": {
+            "scalar": "uint64",
+            "value": 6894504071992527701,
+            "wire": "554b99c1ec32ae5f"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/GetFsmStateResponse",
+      "wire": "336f9405070000007637386162ceb239ca0138",
+      "value": {
+        "record": "uwvm_fourier_bridge/GetFsmStateResponse",
+        "members": {
+          "status": {
+            "scalar": "uint32",
+            "value": 93613875,
+            "wire": "336f9405"
+          },
+          "error": {
+            "scalar": "string",
+            "value": "v78ab\u03b2"
+          },
+          "value": {
+            "scalar": "int32",
+            "value": 939641401,
+            "wire": "39ca0138"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/GetGroupMotionStateRequest",
+      "wire": "00be22f4b9c7156a070000007633393836ceb2",
+      "value": {
+        "record": "uwvm_fourier_bridge/GetGroupMotionStateRequest",
+        "members": {
+          "sequence": {
+            "scalar": "uint64",
+            "value": 7644235544010079744,
+            "wire": "00be22f4b9c7156a"
+          },
+          "group": {
+            "scalar": "string",
+            "value": "v3986\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/GetGroupMotionStateResponse",
+      "wire": "1bc0c90b070000007666653863ceb231d026be",
+      "value": {
+        "record": "uwvm_fourier_bridge/GetGroupMotionStateResponse",
+        "members": {
+          "status": {
+            "scalar": "uint32",
+            "value": 197771291,
+            "wire": "1bc0c90b"
+          },
+          "error": {
+            "scalar": "string",
+            "value": "vfe8c\u03b2"
+          },
+          "value": {
+            "scalar": "int32",
+            "value": -1104752591,
+            "wire": "31d026be"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/GetGroupMotorCfgRequest",
+      "wire": "972834432e5103dd070000007661393034ceb2070000007635333638ceb2",
+      "value": {
+        "record": "uwvm_fourier_bridge/GetGroupMotorCfgRequest",
+        "members": {
+          "sequence": {
+            "scalar": "uint64",
+            "value": 15925661966450043031,
+            "wire": "972834432e5103dd"
+          },
+          "group": {
+            "scalar": "string",
+            "value": "va904\u03b2"
+          },
+          "key": {
+            "scalar": "string",
+            "value": "v5368\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/GetGroupMotorCfgResponse",
+      "wire": "656c03a0070000007665353164ceb2010000000000000000d06fc0",
+      "value": {
+        "record": "uwvm_fourier_bridge/GetGroupMotorCfgResponse",
+        "members": {
+          "status": {
+            "scalar": "uint32",
+            "value": 2684578917,
+            "wire": "656c03a0"
+          },
+          "error": {
+            "scalar": "string",
+            "value": "ve51d\u03b2"
+          },
+          "values": {
+            "array": [
+              {
+                "scalar": "float64",
+                "value": -254.5,
+                "wire": "0000000000d06fc0"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/GetGroupStateRequest",
+      "wire": "a3572aa91a2e1d37070000007661343331ceb2070000007666363636ceb2",
+      "value": {
+        "record": "uwvm_fourier_bridge/GetGroupStateRequest",
+        "members": {
+          "sequence": {
+            "scalar": "uint64",
+            "value": 3971381138452797347,
+            "wire": "a3572aa91a2e1d37"
+          },
+          "group": {
+            "scalar": "string",
+            "value": "va431\u03b2"
+          },
+          "key": {
+            "scalar": "string",
+            "value": "vf666\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/GetGroupStateResponse",
+      "wire": "e1613b6b070000007662636133ceb2010000000000000000c05b40",
+      "value": {
+        "record": "uwvm_fourier_bridge/GetGroupStateResponse",
+        "members": {
+          "status": {
+            "scalar": "uint32",
+            "value": 1799053793,
+            "wire": "e1613b6b"
+          },
+          "error": {
+            "scalar": "string",
+            "value": "vbca3\u03b2"
+          },
+          "values": {
+            "array": [
+              {
+                "scalar": "float64",
+                "value": 111.0,
+                "wire": "0000000000c05b40"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/GetSnapshotRequest",
+      "wire": "8ed7fffe37aec860",
+      "value": {
+        "record": "uwvm_fourier_bridge/GetSnapshotRequest",
+        "members": {
+          "sequence": {
+            "scalar": "uint64",
+            "value": 6974015578507827086,
+            "wire": "8ed7fffe37aec860"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/GetSnapshotResponse",
+      "wire": "95690ed6070000007633343539ceb234f95aad070000007634633830ceb279ad4789070000007665353737ceb265081fee070000007634306537ceb20100000000000000009864c001000000070000007663383864ceb20100000000000000007c6dc00100000000000000008036c00100000000000000001861c09cb73da0",
+      "value": {
+        "record": "uwvm_fourier_bridge/GetSnapshotResponse",
+        "members": {
+          "status": {
+            "scalar": "uint32",
+            "value": 3591268757,
+            "wire": "95690ed6"
+          },
+          "error": {
+            "scalar": "string",
+            "value": "v3459\u03b2"
+          },
+          "value": {
+            "record": "uwvm_fourier_bridge/Status",
+            "members": {
+              "fsm_state": {
+                "scalar": "int32",
+                "value": -1386546892,
+                "wire": "34f95aad"
+              },
+              "fsm_name": {
+                "scalar": "string",
+                "value": "v4c80\u03b2"
+              },
+              "upper_fsm_state": {
+                "scalar": "int32",
+                "value": -1991791239,
+                "wire": "79ad4789"
+              },
+              "upper_fsm_name": {
+                "scalar": "string",
+                "value": "ve577\u03b2"
+              },
+              "velocity_source": {
+                "scalar": "int32",
+                "value": -299956123,
+                "wire": "65081fee"
+              },
+              "velocity_source_name": {
+                "scalar": "string",
+                "value": "v40e7\u03b2"
+              },
+              "stand_pose": {
+                "array": [
+                  {
+                    "scalar": "float64",
+                    "value": -164.75,
+                    "wire": "00000000009864c0"
+                  }
+                ]
+              },
+              "groups": {
+                "array": [
+                  {
+                    "record": "uwvm_fourier_bridge/GroupState",
+                    "members": {
+                      "group": {
+                        "scalar": "string",
+                        "value": "vc88d\u03b2"
+                      },
+                      "position": {
+                        "array": [
+                          {
+                            "scalar": "float64",
+                            "value": -235.875,
+                            "wire": "00000000007c6dc0"
+                          }
+                        ]
+                      },
+                      "velocity": {
+                        "array": [
+                          {
+                            "scalar": "float64",
+                            "value": -22.5,
+                            "wire": "00000000008036c0"
+                          }
+                        ]
+                      },
+                      "effort": {
+                        "array": [
+                          {
+                            "scalar": "float64",
+                            "value": -136.75,
+                            "wire": "00000000001861c0"
+                          }
+                        ]
+                      },
+                      "motion_state": {
+                        "scalar": "int32",
+                        "value": -1606568036,
+                        "wire": "9cb73da0"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/GetStandPoseRequest",
+      "wire": "5ca6d38ae5dfe414",
+      "value": {
+        "record": "uwvm_fourier_bridge/GetStandPoseRequest",
+        "members": {
+          "sequence": {
+            "scalar": "uint64",
+            "value": 1505574352418219612,
+            "wire": "5ca6d38ae5dfe414"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/GetStandPoseResponse",
+      "wire": "1621ad4b070000007634353636ceb20100000000000000001858c0",
+      "value": {
+        "record": "uwvm_fourier_bridge/GetStandPoseResponse",
+        "members": {
+          "status": {
+            "scalar": "uint32",
+            "value": 1269637398,
+            "wire": "1621ad4b"
+          },
+          "error": {
+            "scalar": "string",
+            "value": "v4566\u03b2"
+          },
+          "values": {
+            "array": [
+              {
+                "scalar": "float64",
+                "value": -96.375,
+                "wire": "00000000001858c0"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/GetUpperFsmNameRequest",
+      "wire": "9f3bf1e92642c677",
+      "value": {
+        "record": "uwvm_fourier_bridge/GetUpperFsmNameRequest",
+        "members": {
+          "sequence": {
+            "scalar": "uint64",
+            "value": 8630658470803225503,
+            "wire": "9f3bf1e92642c677"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/GetUpperFsmNameResponse",
+      "wire": "0b3b5c6f070000007630306466ceb2070000007634303735ceb2",
+      "value": {
+        "record": "uwvm_fourier_bridge/GetUpperFsmNameResponse",
+        "members": {
+          "status": {
+            "scalar": "uint32",
+            "value": 1868315403,
+            "wire": "0b3b5c6f"
+          },
+          "error": {
+            "scalar": "string",
+            "value": "v00df\u03b2"
+          },
+          "value": {
+            "scalar": "string",
+            "value": "v4075\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/GetUpperFsmStateRequest",
+      "wire": "b2c219620bbb2efc",
+      "value": {
+        "record": "uwvm_fourier_bridge/GetUpperFsmStateRequest",
+        "members": {
+          "sequence": {
+            "scalar": "uint64",
+            "value": 18171667204051419826,
+            "wire": "b2c219620bbb2efc"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/GetUpperFsmStateResponse",
+      "wire": "51fc1d39070000007666326463ceb21d7976b2",
+      "value": {
+        "record": "uwvm_fourier_bridge/GetUpperFsmStateResponse",
+        "members": {
+          "status": {
+            "scalar": "uint32",
+            "value": 958266449,
+            "wire": "51fc1d39"
+          },
+          "error": {
+            "scalar": "string",
+            "value": "vf2dc\u03b2"
+          },
+          "value": {
+            "scalar": "int32",
+            "value": -1300858595,
+            "wire": "1d7976b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/GetVelocitySourceNameRequest",
+      "wire": "7ac866f7c3b15169",
+      "value": {
+        "record": "uwvm_fourier_bridge/GetVelocitySourceNameRequest",
+        "members": {
+          "sequence": {
+            "scalar": "uint64",
+            "value": 7589042302323443834,
+            "wire": "7ac866f7c3b15169"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/GetVelocitySourceNameResponse",
+      "wire": "99b65df9070000007630386661ceb2070000007634383530ceb2",
+      "value": {
+        "record": "uwvm_fourier_bridge/GetVelocitySourceNameResponse",
+        "members": {
+          "status": {
+            "scalar": "uint32",
+            "value": 4183668377,
+            "wire": "99b65df9"
+          },
+          "error": {
+            "scalar": "string",
+            "value": "v08fa\u03b2"
+          },
+          "value": {
+            "scalar": "string",
+            "value": "v4850\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/GetVelocitySourceRequest",
+      "wire": "81926f8938eb5817",
+      "value": {
+        "record": "uwvm_fourier_bridge/GetVelocitySourceRequest",
+        "members": {
+          "sequence": {
+            "scalar": "uint64",
+            "value": 1682353088879366785,
+            "wire": "81926f8938eb5817"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/GetVelocitySourceResponse",
+      "wire": "94f07b41070000007639333139ceb2551eb3d3",
+      "value": {
+        "record": "uwvm_fourier_bridge/GetVelocitySourceResponse",
+        "members": {
+          "status": {
+            "scalar": "uint32",
+            "value": 1098641556,
+            "wire": "94f07b41"
+          },
+          "error": {
+            "scalar": "string",
+            "value": "v9319\u03b2"
+          },
+          "value": {
+            "scalar": "int32",
+            "value": -743236011,
+            "wire": "551eb3d3"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/GroupState",
+      "wire": "070000007666313031ceb2010000000000000000f04440010000000000000000e05fc00100000000000000006c6340dfce3c49",
+      "value": {
+        "record": "uwvm_fourier_bridge/GroupState",
+        "members": {
+          "group": {
+            "scalar": "string",
+            "value": "vf101\u03b2"
+          },
+          "position": {
+            "array": [
+              {
+                "scalar": "float64",
+                "value": 41.875,
+                "wire": "0000000000f04440"
+              }
+            ]
+          },
+          "velocity": {
+            "array": [
+              {
+                "scalar": "float64",
+                "value": -127.5,
+                "wire": "0000000000e05fc0"
+              }
+            ]
+          },
+          "effort": {
+            "array": [
+              {
+                "scalar": "float64",
+                "value": 155.375,
+                "wire": "00000000006c6340"
+              }
+            ]
+          },
+          "motion_state": {
+            "scalar": "int32",
+            "value": 1228721887,
+            "wire": "dfce3c49"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/GroupValues",
+      "wire": "070000007666373530ceb20100000000000000007c6440",
+      "value": {
+        "record": "uwvm_fourier_bridge/GroupValues",
+        "members": {
+          "group": {
+            "scalar": "string",
+            "value": "vf750\u03b2"
+          },
+          "values": {
+            "array": [
+              {
+                "scalar": "float64",
+                "value": 163.875,
+                "wire": "00000000007c6440"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/MotionRecipe",
+      "wire": "e4070000007634333463ceb20100000000000000008049c001010000000000000000b460403aa5eba5",
+      "value": {
+        "record": "uwvm_fourier_bridge/MotionRecipe",
+        "members": {
+          "move_type": {
+            "scalar": "uint8",
+            "value": 228,
+            "wire": "e4"
+          },
+          "group": {
+            "scalar": "string",
+            "value": "v434c\u03b2"
+          },
+          "position": {
+            "array": [
+              {
+                "scalar": "float64",
+                "value": -51.0,
+                "wire": "00000000008049c0"
+              }
+            ]
+          },
+          "has_velocity": {
+            "scalar": "bool",
+            "value": true,
+            "wire": "01"
+          },
+          "velocity": {
+            "array": [
+              {
+                "scalar": "float64",
+                "value": 133.625,
+                "wire": "0000000000b46040"
+              }
+            ]
+          },
+          "expected_velocity": {
+            "scalar": "int32",
+            "value": -1511283398,
+            "wire": "3aa5eba5"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/SetFsmStateRequest",
+      "wire": "9e7188182708bf86f5831c01",
+      "value": {
+        "record": "uwvm_fourier_bridge/SetFsmStateRequest",
+        "members": {
+          "sequence": {
+            "scalar": "uint64",
+            "value": 9709488285642420638,
+            "wire": "9e7188182708bf86"
+          },
+          "state": {
+            "scalar": "int32",
+            "value": 18646005,
+            "wire": "f5831c01"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/SetFsmStateResponse",
+      "wire": "da78f4c2070000007663663134ceb2",
+      "value": {
+        "record": "uwvm_fourier_bridge/SetFsmStateResponse",
+        "members": {
+          "status": {
+            "scalar": "uint32",
+            "value": 3270801626,
+            "wire": "da78f4c2"
+          },
+          "error": {
+            "scalar": "string",
+            "value": "vcf14\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/SetGroupCommandRequest",
+      "wire": "889be04f31e2d7d101000000070000007661343237ceb2010000000000000000604d4001000000070000007639653539ceb20100000000000000002038c001000000070000007639303463ceb20100000000000000003462c0",
+      "value": {
+        "record": "uwvm_fourier_bridge/SetGroupCommandRequest",
+        "members": {
+          "sequence": {
+            "scalar": "uint64",
+            "value": 15120802975341124488,
+            "wire": "889be04f31e2d7d1"
+          },
+          "position": {
+            "array": [
+              {
+                "record": "uwvm_fourier_bridge/GroupValues",
+                "members": {
+                  "group": {
+                    "scalar": "string",
+                    "value": "va427\u03b2"
+                  },
+                  "values": {
+                    "array": [
+                      {
+                        "scalar": "float64",
+                        "value": 58.75,
+                        "wire": "0000000000604d40"
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          "velocity": {
+            "array": [
+              {
+                "record": "uwvm_fourier_bridge/GroupValues",
+                "members": {
+                  "group": {
+                    "scalar": "string",
+                    "value": "v9e59\u03b2"
+                  },
+                  "values": {
+                    "array": [
+                      {
+                        "scalar": "float64",
+                        "value": -24.125,
+                        "wire": "00000000002038c0"
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          "torque": {
+            "array": [
+              {
+                "record": "uwvm_fourier_bridge/GroupValues",
+                "members": {
+                  "group": {
+                    "scalar": "string",
+                    "value": "v904c\u03b2"
+                  },
+                  "values": {
+                    "array": [
+                      {
+                        "scalar": "float64",
+                        "value": -145.625,
+                        "wire": "00000000003462c0"
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/SetGroupCommandResponse",
+      "wire": "ae4babc2070000007639303237ceb2",
+      "value": {
+        "record": "uwvm_fourier_bridge/SetGroupCommandResponse",
+        "members": {
+          "status": {
+            "scalar": "uint32",
+            "value": 3266005934,
+            "wire": "ae4babc2"
+          },
+          "error": {
+            "scalar": "string",
+            "value": "v9027\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/SetMotorCfgPdRequest",
+      "wire": "e071229f5908150101000000070000007637373634ceb2010000000000000000801dc001000000070000007635393231ceb2010000000000000000a049c0",
+      "value": {
+        "record": "uwvm_fourier_bridge/SetMotorCfgPdRequest",
+        "members": {
+          "sequence": {
+            "scalar": "uint64",
+            "value": 77977749563797984,
+            "wire": "e071229f59081501"
+          },
+          "kp": {
+            "array": [
+              {
+                "record": "uwvm_fourier_bridge/GroupValues",
+                "members": {
+                  "group": {
+                    "scalar": "string",
+                    "value": "v7764\u03b2"
+                  },
+                  "values": {
+                    "array": [
+                      {
+                        "scalar": "float64",
+                        "value": -7.375,
+                        "wire": "0000000000801dc0"
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          "kd": {
+            "array": [
+              {
+                "record": "uwvm_fourier_bridge/GroupValues",
+                "members": {
+                  "group": {
+                    "scalar": "string",
+                    "value": "v5921\u03b2"
+                  },
+                  "values": {
+                    "array": [
+                      {
+                        "scalar": "float64",
+                        "value": -51.25,
+                        "wire": "0000000000a049c0"
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/SetMotorCfgPdResponse",
+      "wire": "4bd45760070000007630626339ceb2",
+      "value": {
+        "record": "uwvm_fourier_bridge/SetMotorCfgPdResponse",
+        "members": {
+          "status": {
+            "scalar": "uint32",
+            "value": 1616368715,
+            "wire": "4bd45760"
+          },
+          "error": {
+            "scalar": "string",
+            "value": "v0bc9\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/SetStandPoseRequest",
+      "wire": "5eacbc86e7d58b180000000000c034c00000000000802e400000000000ac6440",
+      "value": {
+        "record": "uwvm_fourier_bridge/SetStandPoseRequest",
+        "members": {
+          "sequence": {
+            "scalar": "uint64",
+            "value": 1768742469047725150,
+            "wire": "5eacbc86e7d58b18"
+          },
+          "delta_z": {
+            "scalar": "float64",
+            "value": -20.75,
+            "wire": "0000000000c034c0"
+          },
+          "delta_pitch": {
+            "scalar": "float64",
+            "value": 15.25,
+            "wire": "0000000000802e40"
+          },
+          "delta_yaw": {
+            "scalar": "float64",
+            "value": 165.375,
+            "wire": "0000000000ac6440"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/SetStandPoseResponse",
+      "wire": "dd1bbc92070000007638323036ceb2",
+      "value": {
+        "record": "uwvm_fourier_bridge/SetStandPoseResponse",
+        "members": {
+          "status": {
+            "scalar": "uint32",
+            "value": 2461801437,
+            "wire": "dd1bbc92"
+          },
+          "error": {
+            "scalar": "string",
+            "value": "v8206\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/SetUpperFsmStateRequest",
+      "wire": "acb4542e15cd63b0b60565ff",
+      "value": {
+        "record": "uwvm_fourier_bridge/SetUpperFsmStateRequest",
+        "members": {
+          "sequence": {
+            "scalar": "uint64",
+            "value": 12710228064224982188,
+            "wire": "acb4542e15cd63b0"
+          },
+          "state": {
+            "scalar": "int32",
+            "value": -10156618,
+            "wire": "b60565ff"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/SetUpperFsmStateResponse",
+      "wire": "70bc7b1d070000007632303366ceb2",
+      "value": {
+        "record": "uwvm_fourier_bridge/SetUpperFsmStateResponse",
+        "members": {
+          "status": {
+            "scalar": "uint32",
+            "value": 494648432,
+            "wire": "70bc7b1d"
+          },
+          "error": {
+            "scalar": "string",
+            "value": "v203f\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/SetVelocityRequest",
+      "wire": "46b99d6fffc0aaf10000000000f466c00000000000bc6cc00000000000386bc00000000000446840",
+      "value": {
+        "record": "uwvm_fourier_bridge/SetVelocityRequest",
+        "members": {
+          "sequence": {
+            "scalar": "uint64",
+            "value": 17413943112503245126,
+            "wire": "46b99d6fffc0aaf1"
+          },
+          "vx": {
+            "scalar": "float64",
+            "value": -183.625,
+            "wire": "0000000000f466c0"
+          },
+          "vy": {
+            "scalar": "float64",
+            "value": -229.875,
+            "wire": "0000000000bc6cc0"
+          },
+          "yaw": {
+            "scalar": "float64",
+            "value": -217.75,
+            "wire": "0000000000386bc0"
+          },
+          "duration": {
+            "scalar": "float64",
+            "value": 194.125,
+            "wire": "0000000000446840"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/SetVelocityResponse",
+      "wire": "db360cd0070000007638306233ceb2",
+      "value": {
+        "record": "uwvm_fourier_bridge/SetVelocityResponse",
+        "members": {
+          "status": {
+            "scalar": "uint32",
+            "value": 3490461403,
+            "wire": "db360cd0"
+          },
+          "error": {
+            "scalar": "string",
+            "value": "v80b3\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/SetVelocitySourceRequest",
+      "wire": "94e22c732d9b1bed1314fbc0",
+      "value": {
+        "record": "uwvm_fourier_bridge/SetVelocitySourceRequest",
+        "members": {
+          "sequence": {
+            "scalar": "uint64",
+            "value": 17085420230868263572,
+            "wire": "94e22c732d9b1bed"
+          },
+          "source": {
+            "scalar": "int32",
+            "value": -1057287149,
+            "wire": "1314fbc0"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/SetVelocitySourceResponse",
+      "wire": "8a86360d070000007662373766ceb2",
+      "value": {
+        "record": "uwvm_fourier_bridge/SetVelocitySourceResponse",
+        "members": {
+          "status": {
+            "scalar": "uint32",
+            "value": 221677194,
+            "wire": "8a86360d"
+          },
+          "error": {
+            "scalar": "string",
+            "value": "vb77f\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/Status",
+      "wire": "345117e9070000007630353035ceb2d2dcfdd7070000007638316666ceb2ce79a5b0070000007637383632ceb2010000000000000000f05bc001000000070000007639363337ceb2010000000000000000005a400100000000000000002461c00100000000000000006c67c048864a54",
+      "value": {
+        "record": "uwvm_fourier_bridge/Status",
+        "members": {
+          "fsm_state": {
+            "scalar": "int32",
+            "value": -384347852,
+            "wire": "345117e9"
+          },
+          "fsm_name": {
+            "scalar": "string",
+            "value": "v0505\u03b2"
+          },
+          "upper_fsm_state": {
+            "scalar": "int32",
+            "value": -671228718,
+            "wire": "d2dcfdd7"
+          },
+          "upper_fsm_name": {
+            "scalar": "string",
+            "value": "v81ff\u03b2"
+          },
+          "velocity_source": {
+            "scalar": "int32",
+            "value": -1331332658,
+            "wire": "ce79a5b0"
+          },
+          "velocity_source_name": {
+            "scalar": "string",
+            "value": "v7862\u03b2"
+          },
+          "stand_pose": {
+            "array": [
+              {
+                "scalar": "float64",
+                "value": -111.75,
+                "wire": "0000000000f05bc0"
+              }
+            ]
+          },
+          "groups": {
+            "array": [
+              {
+                "record": "uwvm_fourier_bridge/GroupState",
+                "members": {
+                  "group": {
+                    "scalar": "string",
+                    "value": "v9637\u03b2"
+                  },
+                  "position": {
+                    "array": [
+                      {
+                        "scalar": "float64",
+                        "value": 104.0,
+                        "wire": "0000000000005a40"
+                      }
+                    ]
+                  },
+                  "velocity": {
+                    "array": [
+                      {
+                        "scalar": "float64",
+                        "value": -137.125,
+                        "wire": "00000000002461c0"
+                      }
+                    ]
+                  },
+                  "effort": {
+                    "array": [
+                      {
+                        "scalar": "float64",
+                        "value": -187.375,
+                        "wire": "00000000006c67c0"
+                      }
+                    ]
+                  },
+                  "motion_state": {
+                    "scalar": "int32",
+                    "value": 1414170184,
+                    "wire": "48864a54"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/VelocityCommand",
+      "wire": "534074feea3943600000000000dc60400000000000ec6f400000000000405ac00000000000b86ac0",
+      "value": {
+        "record": "uwvm_fourier_bridge/VelocityCommand",
+        "members": {
+          "sequence": {
+            "scalar": "uint64",
+            "value": 6936451532534857811,
+            "wire": "534074feea394360"
+          },
+          "vx": {
+            "scalar": "float64",
+            "value": 134.875,
+            "wire": "0000000000dc6040"
+          },
+          "vy": {
+            "scalar": "float64",
+            "value": 255.375,
+            "wire": "0000000000ec6f40"
+          },
+          "yaw": {
+            "scalar": "float64",
+            "value": -105.0,
+            "wire": "0000000000405ac0"
+          },
+          "duration": {
+            "scalar": "float64",
+            "value": -213.75,
+            "wire": "0000000000b86ac0"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/WaitGroupsMotionCompleteRequest",
+      "wire": "683d4c02d1447b9c01000000070000007636316534ceb20000000000904cc00000000000205340",
+      "value": {
+        "record": "uwvm_fourier_bridge/WaitGroupsMotionCompleteRequest",
+        "members": {
+          "sequence": {
+            "scalar": "uint64",
+            "value": 11275681756529573224,
+            "wire": "683d4c02d1447b9c"
+          },
+          "groups": {
+            "array": [
+              {
+                "scalar": "string",
+                "value": "v61e4\u03b2"
+              }
+            ]
+          },
+          "timeout_seconds": {
+            "scalar": "float64",
+            "value": -57.125,
+            "wire": "0000000000904cc0"
+          },
+          "poll_seconds": {
+            "scalar": "float64",
+            "value": 76.5,
+            "wire": "0000000000205340"
+          }
+        }
+      }
+    },
+    {
+      "type": "uwvm_fourier_bridge/WaitGroupsMotionCompleteResponse",
+      "wire": "cef36cdc070000007635363664ceb201",
+      "value": {
+        "record": "uwvm_fourier_bridge/WaitGroupsMotionCompleteResponse",
+        "members": {
+          "status": {
+            "scalar": "uint32",
+            "value": 3698127822,
+            "wire": "cef36cdc"
+          },
+          "error": {
+            "scalar": "string",
+            "value": "v566d\u03b2"
+          },
+          "complete": {
+            "scalar": "bool",
+            "value": true,
+            "wire": "01"
+          }
+        }
+      }
+    }
+  ]
+}

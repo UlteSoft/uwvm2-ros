@@ -1,0 +1,9 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/allocator_memory_mt
+/mmap_grow_rollback_fail_closed
+/mmap_memory_mt
+/mmap_memory_multi_instance
+/mmap_wasm32_guard_domain

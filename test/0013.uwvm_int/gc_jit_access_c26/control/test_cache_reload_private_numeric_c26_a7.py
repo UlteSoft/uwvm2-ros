@@ -10,7 +10,7 @@ class PrivateLease:
 N.lease=PrivateLease
 with N.lease():
  for repo in ['uwvm2','uwvm2-stable','uwvm2-ros']:
-  elf=R/'build/repo-sync-c26-a5'/repo/'uwvm';b=json.loads((elf.parent/'build-binding.json').read_text());assert N.sha(elf)==b['ELF_sha'] and b['verified_source_id']==b['input_sha'];flags=(['-Rcc','jit','-Rcm','full'] if repo=='uwvm2' else ['-Raot','-Rllvm-full-policy','pb-o3'])+['-Rct','0','-Rclog','err','-WFE-gc','-WFE-function-references','-WFE-tail-call']
+  elf=R/'build/repo-sync-c26-a5'/repo/'uwvm2-ros';b=json.loads((elf.parent/'build-binding.json').read_text());assert N.sha(elf)==b['ELF_sha'] and b['verified_source_id']==b['input_sha'];flags=(['-Rcc','jit','-Rcm','full'] if repo=='uwvm2' else ['-Raot','-Rllvm-full-policy','pb-o3'])+['-Rct','0','-Rclog','err','-WFE-gc','-WFE-function-references','-WFE-tail-call']
   for c in cs:
    D=R/'tmp/cache-reload-c26-a7'/repo/c['name'];D.mkdir(parents=True,exist_ok=False)
    pair=[]

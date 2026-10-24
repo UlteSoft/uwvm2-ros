@@ -240,7 +240,7 @@ def engine_command(engine, recipes, arena, case, prepared, row, out, products_ro
     wasm, args = case['wasm'], case.get('args', [])
     env = dict(os.environ)
     if engine in ['uwvm2', 'uwvm2-stable', 'uwvm2-ros']:
-        binary = (Path(products_root) if products_root is not None else arena / 'products') / engine / 'uwvm'
+        binary = (Path(products_root) if products_root is not None else arena / 'products') / engine / 'uwvm2-ros'
         return argv_for(binary, engine, case), env, str(binary)
     if engine == 'wasmtime':
         item = recipes[engine]

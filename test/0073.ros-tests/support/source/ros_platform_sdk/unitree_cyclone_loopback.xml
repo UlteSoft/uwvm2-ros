@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Explicit native-only domain209 fixture with unicast loopback discovery.
+     No Guest authority, physical interface or robot address is supplied.
+     ROS_LOCALHOST_ONLY=1 supplies RMW's interface selection. The parent also
+     proves that the private network namespace contains only loopback. Mixing
+     deprecated NetworkInterfaceAddress with RMW's modern Interfaces fails. -->
+<CycloneDDS xmlns="https://cdds.io/config">
+  <Domain id="209">
+    <General>
+      <AllowMulticast>false</AllowMulticast>
+    </General>
+    <Discovery>
+      <ParticipantIndex>auto</ParticipantIndex>
+      <MaxAutoParticipantIndex>16</MaxAutoParticipantIndex>
+      <Peers><Peer Address="127.0.0.1"/></Peers>
+    </Discovery>
+  </Domain>
+</CycloneDDS>

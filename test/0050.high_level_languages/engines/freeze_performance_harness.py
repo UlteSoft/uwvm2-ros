@@ -173,7 +173,7 @@ def main():
             for path, dependency in executable['dependencies'].items():
                 external[path] = {'sha256': checked(path, dependency['sha256']), 'role': name + ':dependency'}
         for repo in ('uwvm2', 'uwvm2-stable', 'uwvm2-ros'):
-            binary = args.arena / 'products' / repo / 'uwvm'
+            binary = args.arena / 'products' / repo / 'uwvm2-ros'
             identity = snapshot(binary.parent / 'identity.json', 'inputs/products/' + repo + '-identity.json')
             checked(binary, identity['binary_sha256'])
             require(identity['binary_sha256'] == old['products'][repo]['binary_sha256'], 'base product changed')

@@ -1,0 +1,9 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/capability_benchmark
+/capability_policy_test
+/guest_enforce_witness_ros2
+/native_secure_ros2
+/schema_dump

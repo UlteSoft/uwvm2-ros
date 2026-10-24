@@ -28,7 +28,7 @@ class StageCounterexamples(unittest.TestCase):
     def test_file_arguments_exclude_output_but_keep_consumed_object(self):
         with tempfile.TemporaryDirectory() as directory:
             cwd = Path(directory)
-            obj, output = cwd / 'runtime.o', cwd / 'uwvm.exe'
+            obj, output = cwd / 'runtime.o', cwd / 'uwvm2-ros.exe'
             obj.write_bytes(b'synthetic object data'); output.write_bytes(b'synthetic output data')
             self.assertEqual(stage.file_arguments(['clang++', str(obj), '-o', str(output)], cwd), {obj.resolve()})
 

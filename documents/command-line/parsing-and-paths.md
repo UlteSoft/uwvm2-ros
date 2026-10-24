@@ -44,13 +44,13 @@ When the parser sees `--run`:
 Examples:
 
 ```bash
-uwvm --runtime-aot --run app.wasm --guest-flag -x
+uwvm2-ros --runtime-aot --run app.wasm --guest-flag -x
 ```
 
 `--guest-flag` and `-x` are guest arguments.
 
 ```bash
-uwvm --run app.wasm --runtime-aot
+uwvm2-ros --run app.wasm --runtime-aot
 ```
 
 `--runtime-aot` is not a runtime selector here; it is guest `argv[1]`.
@@ -68,15 +68,15 @@ For simple execution commands, `--run`, `-r`, and `--` may be omitted. When no e
 Examples:
 
 ```bash
-uwvm --runtime-aot app.wasm hello world
-uwvm -Raot app.wasm hello world
+uwvm2-ros --runtime-aot app.wasm hello world
+uwvm2-ros -Raot app.wasm hello world
 ```
 
 These are equivalent to:
 
 ```bash
-uwvm --runtime-aot --run app.wasm hello world
-uwvm -Raot -- app.wasm hello world
+uwvm2-ros --runtime-aot --run app.wasm hello world
+uwvm2-ros -Raot -- app.wasm hello world
 ```
 
 Only plain tokens participate in the implicit suffix. Use an explicit `--run`, `-r`, or `--` when any guest argument starts with `-`, when the Wasm file path itself starts with `-`, or when you want the parser to stop interpreting later tokens as host options immediately.
@@ -94,8 +94,8 @@ Some options define a `pretreatment` hook for value-shaped tokens that would oth
 Supported:
 
 ```bash
-uwvm --runtime-compile-threads -1 --run app.wasm
-uwvm --wasm-set-start-func 0 -1 -3.0e4 --run app.wasm
+uwvm2-ros --runtime-compile-threads -1 --run app.wasm
+uwvm2-ros --wasm-set-start-func 0 -1 -3.0e4 --run app.wasm
 ```
 
 Do not assume other numeric options accept negative-looking tokens in the same way. `size_t` options are unsigned anyway, and options without pretreatment cannot consume a `-...` token as data.

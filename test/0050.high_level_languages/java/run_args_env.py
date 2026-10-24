@@ -170,7 +170,7 @@ def main():
 
     try:
         for repo, (source_id, binary_sha) in PINS.items():
-            binary = args.arena / 'products' / repo / 'uwvm'
+            binary = args.arena / 'products' / repo / 'uwvm2-ros'
             identity = json.loads((binary.parent / 'identity.json').read_text())
             assert identity['source_id'] == source_id and identity['binary_sha256'] == binary_sha
             assert digest(binary) == binary_sha, 'not the current frozen native-budget product'

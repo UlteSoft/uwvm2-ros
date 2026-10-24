@@ -3,7 +3,7 @@ import sys,json,fcntl
 R=Path('/tmp/uwvm-gc-perf-20261011-r74');sys.path.insert(0,str(R/'control'));import native as N
 cs=json.loads((R/'source/foreign-typed-store-c21/cases.json').read_text())['cases'];rows=[];f=open(N.BASE/'control/native-c21-repo-foreign-feature.lock','a+');fcntl.flock(f,fcntl.LOCK_EX|fcntl.LOCK_NB)
 for repo in ['uwvm2','uwvm2-stable','uwvm2-ros']:
- elf=R/'build/repo-sync-c21-a1'/repo/'uwvm';flags=(['-Rcc','jit','-Rcm','full'] if repo=='uwvm2' else ['-Raot','-Rllvm-full-policy','pb-o3'])+['-Rct','0','-WFE-gc','-WFE-function-references','-Rllvm-cache-path','disable']
+ elf=R/'build/repo-sync-c21-a1'/repo/'uwvm2-ros';flags=(['-Rcc','jit','-Rcm','full'] if repo=='uwvm2' else ['-Raot','-Rllvm-full-policy','pb-o3'])+['-Rct','0','-WFE-gc','-WFE-function-references','-Rllvm-cache-path','disable']
  for c in cs:
   lab='foreign-typed-store-c21-a1-'+repo+'-'+c['name'];args=[elf,*flags,'-Wpre',c['provider']['path'],'provider','--run',c['importer']['path']]
   try:r=N.run(lab,args,cpu=6,timeout=45)

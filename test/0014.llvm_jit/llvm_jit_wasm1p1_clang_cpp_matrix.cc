@@ -118,10 +118,10 @@ int main()
     {
         for(;;)
         {
-            auto const candidate{dir / "uwvm"};
+            auto const candidate{dir / "uwvm2-ros"};
             if(::std::filesystem::exists(candidate)) [[likely]] { return candidate; }
 #ifdef _WIN32
-            auto const windows_candidate{dir / "uwvm.exe"};
+            auto const windows_candidate{dir / "uwvm2-ros.exe"};
             if(::std::filesystem::exists(windows_candidate)) [[likely]] { return windows_candidate; }
 #endif
             if(dir == dir.root_path()) [[unlikely]] { return {}; }

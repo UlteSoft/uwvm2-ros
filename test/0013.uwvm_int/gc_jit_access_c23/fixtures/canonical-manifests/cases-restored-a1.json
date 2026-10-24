@@ -1,0 +1,552 @@
+[
+  {
+    "name": "bench-eh-cross",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/retained-corpus/bench-eh-cross.wat",
+    "class": "EH/GC automatic admission recorded separately",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/bench-eh-cross.wasm",
+    "wasm_sha": "240abb40df3919b594d36dfe454e7ac0132ebda94ad1999a253e4cfccce519f4",
+    "wat_sha": "905719c0e7eb959bf328a5414d59b868a34e0fa50bf02ebaf7fee6bb4d5ed53a"
+  },
+  {
+    "name": "bench-eh-nested",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/retained-corpus/bench-eh-nested.wat",
+    "class": "EH/GC automatic admission recorded separately",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/bench-eh-nested.wasm",
+    "wasm_sha": "35d387b791fdbfc7441acd5a7080e1fc016e4616f738ddc8ac81899f113cab9d",
+    "wat_sha": "97863545212262a5583048ad8b10be2d172805f620f7b1b52ecb0de8ac5f25ec"
+  },
+  {
+    "name": "bench-eh-nothrow",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/retained-corpus/bench-eh-nothrow.wat",
+    "class": "EH/GC automatic admission recorded separately",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/bench-eh-nothrow.wasm",
+    "wasm_sha": "6d9ad9c474785915d5e1e536c714a7d2baf5a353b70715893d481ed78f1575a7",
+    "wat_sha": "ebb2bc0454800e6b3a73b95cd5586d94019ec0ff76c974f2473c4969720f8fcd"
+  },
+  {
+    "name": "bench-eh-plain",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/retained-corpus/bench-eh-plain.wat",
+    "class": "EH/GC automatic admission recorded separately",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/bench-eh-plain.wasm",
+    "wasm_sha": "8203c766418ef939e3abe68c9c31bcef15944c18fa8af730b6d8b1e15542b8f3",
+    "wat_sha": "2c6ebe56a03eddfcf7b07054f6b9540a91e18705488c9a3e3d5116c85580ceaf"
+  },
+  {
+    "name": "bench-eh-raw-nan",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/retained-corpus/bench-eh-raw-nan.wat",
+    "class": "EH/GC automatic admission recorded separately",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/bench-eh-raw-nan.wasm",
+    "wasm_sha": "9611f9743676597ff8100d36c0eb7eb4cdb20e5baeffdf634382cb1a28a5c596",
+    "wat_sha": "dff01c4c5ceda186a50664b483fcc3a54cdffecd90ce83058f93e41d3595884d"
+  },
+  {
+    "name": "bench-eh-same-tag",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/retained-corpus/bench-eh-same-tag.wat",
+    "class": "EH/GC automatic admission recorded separately",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/bench-eh-same-tag.wasm",
+    "wasm_sha": "9ffa98c5b4dbff79aeb002d19e16142b7186cbda3ae2edd374f65fb63d86a63a",
+    "wat_sha": "a96c076f33ca331b076d99d27ffca9cdf97838f01ebc6e22c998b266002d858f"
+  },
+  {
+    "name": "bench-eh-v128",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/retained-corpus/bench-eh-v128.wat",
+    "class": "EH/GC automatic admission recorded separately",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/bench-eh-v128.wasm",
+    "wasm_sha": "0fdc25c97d05de80a24efece6c7407ff8bbc15ae90fd108aeaf742783d1e7b5c",
+    "wat_sha": "bf430712c20b87622840cb843615eebfc692b1b9c18197c85cbcdc04081a7552"
+  },
+  {
+    "name": "bench-eq-16-r16",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/retained-corpus/bench-eq-16-r16.wat",
+    "class": "EH/GC automatic admission recorded separately",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/bench-eq-16-r16.wasm",
+    "wasm_sha": "49b57f3f0f366e6e9ecd4533aeca4c4ec17ff6ba82f53d1dadb0693be691a4bd",
+    "wat_sha": "a43975c0c754de2a76a8d5a8bad2f3b6ffcb45116d3db7971f4dc742164a1cc0"
+  },
+  {
+    "name": "bench-eq-16-r256",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/retained-corpus/bench-eq-16-r256.wat",
+    "class": "EH/GC automatic admission recorded separately",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/bench-eq-16-r256.wasm",
+    "wasm_sha": "88317f2ac507c80b5caf2910da0bac3f61ff15714e45f0b8471a71e7dfefc6d1",
+    "wat_sha": "67198ea5a74165fbfe10329032d3870d58a21409c44879df82b09ed1ed88b706"
+  },
+  {
+    "name": "bench-eq-256-r16",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/retained-corpus/bench-eq-256-r16.wat",
+    "class": "EH/GC automatic admission recorded separately",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/bench-eq-256-r16.wasm",
+    "wasm_sha": "d4edb9e8567392a2d1ae631a943b5a034b92c9b89fa557c005079fa0d7803a78",
+    "wat_sha": "796bff3723be6cfd64ca579e689c606ccdb9636241afa53eeda0393f43fcffbc"
+  },
+  {
+    "name": "bench-eq-256-r256",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/retained-corpus/bench-eq-256-r256.wat",
+    "class": "EH/GC automatic admission recorded separately",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/bench-eq-256-r256.wasm",
+    "wasm_sha": "d77f14da7544915ae375f0874c57a24aee8488d6e4575dee21a069c0241470ab",
+    "wat_sha": "b3796e57fb6a3f0a7870f660ae9bc58970f41d678660330bc476be0729226273"
+  },
+  {
+    "name": "bench-eq-4096-r16",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/retained-corpus/bench-eq-4096-r16.wat",
+    "class": "EH/GC automatic admission recorded separately",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/bench-eq-4096-r16.wasm",
+    "wasm_sha": "849be189875f769c0be89c74b3a10c2cd58245f8f17e0887824a84e179e424cc",
+    "wat_sha": "f9115e7b76591826668ee3ce78b7e56053d50952e5cdf3687714abb3d92ffa82"
+  },
+  {
+    "name": "bench-eq-4096-r256",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/retained-corpus/bench-eq-4096-r256.wat",
+    "class": "EH/GC automatic admission recorded separately",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/bench-eq-4096-r256.wasm",
+    "wasm_sha": "c5d676ab50878d60333db48d21f1633f43b72bca23d6380b1193feb5f213ec7c",
+    "wat_sha": "ccc8724bbebe857368c507f05225243b569728bf08ef32e4ba9202002d7dfc40"
+  },
+  {
+    "name": "bench-i64-16-r16",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/retained-corpus/bench-i64-16-r16.wat",
+    "class": "EH/GC automatic admission recorded separately",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/bench-i64-16-r16.wasm",
+    "wasm_sha": "c700342274a5d416be547157d5c45ff3db7f831ad968e312d0f16fa830972bca",
+    "wat_sha": "00613caa99fdd4b479d5671478fd4c04e750adc24f5a88c42f6296551242262b"
+  },
+  {
+    "name": "bench-i64-16-r256",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/retained-corpus/bench-i64-16-r256.wat",
+    "class": "EH/GC automatic admission recorded separately",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/bench-i64-16-r256.wasm",
+    "wasm_sha": "a5c16988134f6d29f7e1efbce679101ee4293f9ea126c30aaffccc48d554f6a4",
+    "wat_sha": "ed76634491348dec90034693159214fef5e873d18e4e879092d54fb071491c6d"
+  },
+  {
+    "name": "bench-i64-256-r16",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/retained-corpus/bench-i64-256-r16.wat",
+    "class": "EH/GC automatic admission recorded separately",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/bench-i64-256-r16.wasm",
+    "wasm_sha": "dab2b1cb901a15a19bb8c6a29d24ce04dec21515ef903fc4a9f0b65bafff8cae",
+    "wat_sha": "318b966f48af3cc621a3770d565eeb959da47f0eff076833c44b63e33da13091"
+  },
+  {
+    "name": "bench-i64-256-r256",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/retained-corpus/bench-i64-256-r256.wat",
+    "class": "EH/GC automatic admission recorded separately",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/bench-i64-256-r256.wasm",
+    "wasm_sha": "09d37d3d8c23f51f8a1b1b45952e0b83bb551ca891e273f0d3e8e344baa60fbe",
+    "wat_sha": "6969b9143905a513ba3d2ad790a05a15a15708ff2c7ae7e0c614aa2071875cc6"
+  },
+  {
+    "name": "bench-i64-4096-r16",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/retained-corpus/bench-i64-4096-r16.wat",
+    "class": "EH/GC automatic admission recorded separately",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/bench-i64-4096-r16.wasm",
+    "wasm_sha": "631cc255c67b5e2eedc05ac1f1393f4eddae36779760fe6dda4621271e1c36e6",
+    "wat_sha": "e16c93ca6d21e000ef27a501cf9290d36d594eecea5fe78ef1784640ec36e937"
+  },
+  {
+    "name": "bench-i64-4096-r256",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/retained-corpus/bench-i64-4096-r256.wat",
+    "class": "EH/GC automatic admission recorded separately",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/bench-i64-4096-r256.wasm",
+    "wasm_sha": "79020644b3d93cc6f4dd6779ee84d2dda498de8d5a4d17ebd75a3ac8316b229a",
+    "wat_sha": "3851dc9604bf87d28384d4cabe2a7f553224317d21901e673d1451991e36286f"
+  },
+  {
+    "name": "bench-i8-16-r16",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/retained-corpus/bench-i8-16-r16.wat",
+    "class": "EH/GC automatic admission recorded separately",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/bench-i8-16-r16.wasm",
+    "wasm_sha": "54bf2f5cc2d0bf78571334b54d5dcadc77d746a30d646dc9d855e753efd2ef3b",
+    "wat_sha": "f3baaf5f1a49651c9ca0918478c9a5af4863261666b03905a6ed653c1af4d1cd"
+  },
+  {
+    "name": "bench-i8-16-r256",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/retained-corpus/bench-i8-16-r256.wat",
+    "class": "EH/GC automatic admission recorded separately",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/bench-i8-16-r256.wasm",
+    "wasm_sha": "e0124fa77021ff5cd582eca7abf83c3d48d8d268ad2a95454ccf6449baf6158e",
+    "wat_sha": "02bd6777b8d19f75827133408b31a770a6187f15fbd8831a1e34f84eeabd118c"
+  },
+  {
+    "name": "bench-i8-256-r16",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/retained-corpus/bench-i8-256-r16.wat",
+    "class": "EH/GC automatic admission recorded separately",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/bench-i8-256-r16.wasm",
+    "wasm_sha": "0600838fe24edadd0bdff9eec3537974d7ad14c2ff11ebf4be6e21562bdca599",
+    "wat_sha": "46510cc5343ce1573f7ae626ac4d90285c330d625fd3563a5bb4f3f0995c33af"
+  },
+  {
+    "name": "bench-i8-256-r256",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/retained-corpus/bench-i8-256-r256.wat",
+    "class": "EH/GC automatic admission recorded separately",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/bench-i8-256-r256.wasm",
+    "wasm_sha": "c71d5fbdb12d63e1e3e1bace5510b4279c3e274befb44a9f20ba40d5c22d6be4",
+    "wat_sha": "1af979079b45753c2ff7cba3ef12de6d9b4b6447da66b3cfb83606748e7e2354"
+  },
+  {
+    "name": "bench-i8-4096-r16",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/retained-corpus/bench-i8-4096-r16.wat",
+    "class": "EH/GC automatic admission recorded separately",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/bench-i8-4096-r16.wasm",
+    "wasm_sha": "c660d2796e9321f02a7f5962e0ca2799775f7b9db4596769a2bf85b2f2e259fe",
+    "wat_sha": "339336d54968e41cd356813ee6c5246a63ce55ac4eb1c051751044125a26e8c7"
+  },
+  {
+    "name": "bench-i8-4096-r256",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/retained-corpus/bench-i8-4096-r256.wat",
+    "class": "EH/GC automatic admission recorded separately",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/bench-i8-4096-r256.wasm",
+    "wasm_sha": "77a1f1a9e592d5a04220e37fac6e257a86b1bb093592c86d9eead4025190ede2",
+    "wat_sha": "a3d4b936f03fe8b21932e8af09627ca2f751c78a57715cd19de86b1bad8b236e"
+  },
+  {
+    "name": "bench-v128-16-r16",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/retained-corpus/bench-v128-16-r16.wat",
+    "class": "EH/GC automatic admission recorded separately",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/bench-v128-16-r16.wasm",
+    "wasm_sha": "f4c36189fc4ef5e0de9e6a5d0ac1ad9b03fb0c0cc7195624b7fd1d4a2d8f26a4",
+    "wat_sha": "931f00d5161ebd86873937de34bb2ea894a164f863c84d3b53bc34f4ea109ac8"
+  },
+  {
+    "name": "bench-v128-16-r256",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/retained-corpus/bench-v128-16-r256.wat",
+    "class": "EH/GC automatic admission recorded separately",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/bench-v128-16-r256.wasm",
+    "wasm_sha": "5218b625ed405d3b6553eb13a9794de04675eec76c2b5f4f4b80844513d017b6",
+    "wat_sha": "e53cc8128a74ae61fab3ab5303ea973d56f33dab2ac33053b098576eaa66bf6a"
+  },
+  {
+    "name": "bench-v128-256-r16",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/retained-corpus/bench-v128-256-r16.wat",
+    "class": "EH/GC automatic admission recorded separately",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/bench-v128-256-r16.wasm",
+    "wasm_sha": "518732bdf5c8b4c127b19d76105675b867d1c168bb9c8e95bb1bd8267b10a48d",
+    "wat_sha": "470233241420d0af7cf83fafc950e0fe8c52d357bc1e382be843f61beaa22983"
+  },
+  {
+    "name": "bench-v128-256-r256",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/retained-corpus/bench-v128-256-r256.wat",
+    "class": "EH/GC automatic admission recorded separately",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/bench-v128-256-r256.wasm",
+    "wasm_sha": "28131520ae3999c0e935ba8bd6ac330fe50c356905aa896ddb8c989fa052b610",
+    "wat_sha": "7c09bcb786b0f3551dc587a28d8bb5187dff086cfc864a37d7675ad083c182ce"
+  },
+  {
+    "name": "bench-v128-4096-r16",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/retained-corpus/bench-v128-4096-r16.wat",
+    "class": "EH/GC automatic admission recorded separately",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/bench-v128-4096-r16.wasm",
+    "wasm_sha": "b0577b9b91ab3f1b7010bd6f87a5f3e569502c94690030c5c1b2fba5b7e0183a",
+    "wat_sha": "7b8a54e4a4ec427c9aa9ee51244f3ba948a6aa926fc71d52851a466de062d240"
+  },
+  {
+    "name": "bench-v128-4096-r256",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/retained-corpus/bench-v128-4096-r256.wat",
+    "class": "EH/GC automatic admission recorded separately",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/bench-v128-4096-r256.wasm",
+    "wasm_sha": "8fbec8d3e0f6a27fb4d788b8be314bed1d079b543c051866ed69d814cdd6e8d7",
+    "wat_sha": "6c88a6cbe5218d1325c1f77334160c30b959971372d0ab8b316b88b94e4727b7"
+  },
+  {
+    "name": "bench-vector-global-parameter-result",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/retained-corpus/bench-vector-global-parameter-result.wat",
+    "class": "EH/GC automatic admission recorded separately",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/bench-vector-global-parameter-result.wasm",
+    "wasm_sha": "9a546932a9814413b1db0703265a04d691e25ac5beb1faebe9abe6a1e91304a5",
+    "wat_sha": "6672a9534a869686371997887f31982a3a91a4ef7e849fbc2b01caf3ae8b30e0"
+  },
+  {
+    "name": "bench-vector-owned-memory",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/retained-corpus/bench-vector-owned-memory.wat",
+    "class": "EH/GC automatic admission recorded separately",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/bench-vector-owned-memory.wasm",
+    "wasm_sha": "6eddff94b26559a7df13f42b30f85aa28d4149e6ef541f14f9f768cd5a9a4c69",
+    "wat_sha": "a916f1ca5ce556a048d2e26d7ebfe92ea7891d221fa20ec13288d8a17e039593"
+  },
+  {
+    "name": "root-dynamic_locals_16",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/root-corpus/dynamic_locals_16.wat",
+    "class": "precise native root correctness and allocation pressure",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/root-dynamic_locals_16.wasm",
+    "wasm_sha": "4ec4259f2df5621de9971539f0e8e7a2cee9a1c031c877d203d53a7989c52b3f",
+    "wat_sha": "28b061b1d87a53da8303b3379fb1e0173cd95e81f7de276bed7e5eea963c6508"
+  },
+  {
+    "name": "root-dynamic_locals_256",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/root-corpus/dynamic_locals_256.wat",
+    "class": "precise native root correctness and allocation pressure",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/root-dynamic_locals_256.wasm",
+    "wasm_sha": "dcbedc9bffbc8be69b404b334b8e9b2b982f2b3f51b1b14a65625a32039f4477",
+    "wat_sha": "f09f6c437c9b41b789cd226d04a81e91c02143d0ff7f463cb7e64efa006e0d5f"
+  },
+  {
+    "name": "root-dynamic_locals_32",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/root-corpus/dynamic_locals_32.wat",
+    "class": "precise native root correctness and allocation pressure",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/root-dynamic_locals_32.wasm",
+    "wasm_sha": "c553887d54cf952910575f9face5616d9e73eca4b3672e4b5d2d127920131e88",
+    "wat_sha": "205e43b7dfe421f3e341d041b9d19f03f4c18e892300075c0c8ccf0289796ebe"
+  },
+  {
+    "name": "root-dynamic_locals_64",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/root-corpus/dynamic_locals_64.wat",
+    "class": "precise native root correctness and allocation pressure",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/root-dynamic_locals_64.wasm",
+    "wasm_sha": "cba193bfc40fbd90789e3127ded9e2f89028fa40687437287a90be51c8623b1c",
+    "wat_sha": "5be943bb0d0e1e4b9072c5f3762d10cfc339f7990b2555a42da57fe3c169c2d9"
+  },
+  {
+    "name": "root-mixed_count_and_wide_byte_pressure",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/root-corpus/mixed_count_and_wide_byte_pressure.wat",
+    "class": "precise native root correctness and allocation pressure",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/root-mixed_count_and_wide_byte_pressure.wasm",
+    "wasm_sha": "8b1d82ff632a19d9b10ff3147c62dcf86300eb56fc40ef2edc78da90f21a46ac",
+    "wat_sha": "7713ce376252cb25eb8ecb7dd016d6f2024585c10c2973379efbd555c342c85d"
+  },
+  {
+    "name": "root-nested_tail_exception_roots",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/root-corpus/nested_tail_exception_roots.wat",
+    "class": "precise native root correctness and allocation pressure",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/root-nested_tail_exception_roots.wasm",
+    "wasm_sha": "f718439788f06bbf66270797a2130f7afcf4af20e0ee7de866fe5d5580848a37",
+    "wat_sha": "c2fb87a959f5f65133207d9b97e2bb86ed8bbde0f3a855753c4a64db6d723034"
+  },
+  {
+    "name": "root-operand_prefix_24",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/root-corpus/operand_prefix_24.wat",
+    "class": "precise native root correctness and allocation pressure",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/root-operand_prefix_24.wasm",
+    "wasm_sha": "87f84dea4fcd3765d4bf60c722a19d80b39c462e3d0d09754ed41a9cf3e85006",
+    "wat_sha": "242b1bbfbddf93c1e01f2ca0753225ef08908348aa8b5d4d40126a8190ba746e"
+  },
+  {
+    "name": "root-short_entry_32_allocations",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/root-corpus/short_entry_32_allocations.wat",
+    "class": "precise native root correctness and allocation pressure",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/root-short_entry_32_allocations.wasm",
+    "wasm_sha": "a80d7c8ba803d82d8c2b36f765308ab280ea7810a0abda4a9809b7438eaacbd0",
+    "wat_sha": "9710e6b9b0d7389a7830915aea302a0588e337d1432f3410300e557edd6cc409"
+  },
+  {
+    "name": "root-sole_local_array_4096",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/root-corpus/sole_local_array_4096.wat",
+    "class": "precise native root correctness and allocation pressure",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/root-sole_local_array_4096.wasm",
+    "wasm_sha": "5d04cef3763ea09b673bc24e199f59a43b367efcece5a72b092879266b3568d7",
+    "wat_sha": "1d30a3a5fe4788e0c6de2cb08c87f8c7726c44bcb38bcb9d36e1726e3b944a14"
+  },
+  {
+    "name": "root-sole_local_subtype_4094",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/root-corpus/sole_local_subtype_4094.wat",
+    "class": "precise native root correctness and allocation pressure",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/root-sole_local_subtype_4094.wasm",
+    "wasm_sha": "11f4e966362b1866161dedf12e2ceb42ae733aaa1c86dfd53a971fbc118f581f",
+    "wat_sha": "2390e309d2bf3a55bcbfb41c5fec19386fd01d1a56f649d9251bb639ed8067b2"
+  },
+  {
+    "name": "root-sole_local_subtype_4095",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/root-corpus/sole_local_subtype_4095.wat",
+    "class": "precise native root correctness and allocation pressure",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/root-sole_local_subtype_4095.wasm",
+    "wasm_sha": "9ba21af562d0548fcd3ddeec4c2f060f2720739576221750d05bb80880a6fe11",
+    "wat_sha": "1890de201a1ab3b88b443a0e259c067c363300d8261e15a15e3fd82d4e780126"
+  },
+  {
+    "name": "root-sole_local_subtype_4096",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/root-corpus/sole_local_subtype_4096.wat",
+    "class": "precise native root correctness and allocation pressure",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/root-sole_local_subtype_4096.wasm",
+    "wasm_sha": "ec6b1d4eceb7fd72a4f36523b617a79aed0f2e1385de5a6f701b0e832e02c831",
+    "wat_sha": "e748b8e465b11deca6aa8a1880b10aca6b7059046061362d7e90e0c5bb794642"
+  },
+  {
+    "name": "feature-mvp",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/feature-tests-a1/mvp.wat",
+    "extra": [],
+    "class": "feature conformance; pure kernels/metadata may fold, no instruction-cost claim",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/feature-mvp.wasm",
+    "wasm_sha": "8194457d30043ad35b41ec237b0cdc3f49153c29a229fd816ae8496c5da56b60",
+    "wat_sha": "0170d58986b8467846b5f2cbd4c879fb4c79aac039db0a05feeb75050c2bf414"
+  },
+  {
+    "name": "feature-mutable-global-export",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/feature-tests-a1/mutable-global-export.wat",
+    "extra": [],
+    "class": "feature conformance; pure kernels/metadata may fold, no instruction-cost claim",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/feature-mutable-global-export.wasm",
+    "wasm_sha": "fa06906b1ed7e64d995d23d8d962b02a00a1637168cef3114960a2460945c593",
+    "wat_sha": "8fa4521a3056354bfe7b28c4847170e288d6b9a40e256980257a0fa8d081324f"
+  },
+  {
+    "name": "feature-nontrapping-float-to-int",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/feature-tests-a1/nontrapping-float-to-int.wat",
+    "extra": [],
+    "class": "feature conformance; pure kernels/metadata may fold, no instruction-cost claim",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/feature-nontrapping-float-to-int.wasm",
+    "wasm_sha": "63c69a0960d5362f2d2aaa947c0ceaf75786cb148d2af35e353bdcc9829f9e35",
+    "wat_sha": "817dc188937f151bf5020e0386b92e0616ae94e5f25b40df792321ecc9b9e595"
+  },
+  {
+    "name": "feature-sign-extension",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/feature-tests-a1/sign-extension.wat",
+    "extra": [],
+    "class": "feature conformance; pure kernels/metadata may fold, no instruction-cost claim",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/feature-sign-extension.wasm",
+    "wasm_sha": "188f1564048d7d725d78f5afedaa417aa0271bde649ace4201418f378e91ef07",
+    "wat_sha": "8b1ade216e3a2e3f2b83c2abf52ffc3bf3df60c036659431947039638dcba195"
+  },
+  {
+    "name": "feature-multi-value",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/feature-tests-a1/multi-value.wat",
+    "extra": [],
+    "class": "feature conformance; pure kernels/metadata may fold, no instruction-cost claim",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/feature-multi-value.wasm",
+    "wasm_sha": "77434386fe0543adc25c0247a5cc803e2538a8f391fcefddea9f7f5d3d21f51b",
+    "wat_sha": "410e9fca665a557fae0032bfda0244cb62d196a85999c969eb559f0aee47a54a"
+  },
+  {
+    "name": "feature-reference-types",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/feature-tests-a1/reference-types.wat",
+    "extra": [],
+    "class": "feature conformance; pure kernels/metadata may fold, no instruction-cost claim",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/feature-reference-types.wasm",
+    "wasm_sha": "2300e3ec498d13576272aa72532566ea152ebbe15f43c9aefdb8f7161f3c493c",
+    "wat_sha": "b03c7d1deebb444536c91163e3d97b4e2057409ace5c6bc387675fbfb862cabc"
+  },
+  {
+    "name": "feature-bulk-memory",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/feature-tests-a1/bulk-memory.wat",
+    "extra": [],
+    "class": "feature conformance; pure kernels/metadata may fold, no instruction-cost claim",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/feature-bulk-memory.wasm",
+    "wasm_sha": "d4ed173d0ec112237983285f5984d734f89f4dff219f5ea0df4f6ceb85ad5dd0",
+    "wat_sha": "5908c09e669d7d69a942d86844076834fa58304f6df48b5079d2afb72a95cb19"
+  },
+  {
+    "name": "feature-fixed-simd",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/feature-tests-a1/fixed-simd.wat",
+    "extra": [],
+    "class": "feature conformance; pure kernels/metadata may fold, no instruction-cost claim",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/feature-fixed-simd.wasm",
+    "wasm_sha": "c2727727f12aed0a98a17a28fe408324225090a163a60359e8a7dc13db8416d3",
+    "wat_sha": "26ebefe2172e33a9d4a267cc4f1d7999a8668b09c7dabcd9159fbcca05f46f46"
+  },
+  {
+    "name": "feature-relaxed-simd",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/feature-tests-a1/relaxed-simd.wat",
+    "extra": [],
+    "class": "feature conformance; pure kernels/metadata may fold, no instruction-cost claim",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/feature-relaxed-simd.wasm",
+    "wasm_sha": "0c2887f779eb33ba9d80d659c3593e15970936fc8c519e1b2c09a8b5685066c7",
+    "wat_sha": "ba55daff2dd739c04034289c5fcefb47a5deb1f21f8ffe6ba78cd3b433b64fd5"
+  },
+  {
+    "name": "feature-tail-call",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/feature-tests-a1/tail-call.wat",
+    "extra": [],
+    "class": "feature conformance; pure kernels/metadata may fold, no instruction-cost claim",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/feature-tail-call.wasm",
+    "wasm_sha": "c32ed74177ac13e47083a66a3b6f73b4ded03a1477bf0df15ae13ada47499a0d",
+    "wat_sha": "fa585964cdd2d8b653fecf453b0a37c781b6eeb8114338094aae7cc7a8a42905"
+  },
+  {
+    "name": "feature-typed-function-reference",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/feature-tests-a1/typed-function-reference.wat",
+    "extra": [],
+    "class": "feature conformance; pure kernels/metadata may fold, no instruction-cost claim",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/feature-typed-function-reference.wasm",
+    "wasm_sha": "0146f6a45b7cef03ff8bcfd270f2274c598a9ea9810f68c5a7490b3c00d0eb65",
+    "wat_sha": "197b699983eca4c18b3565b19031bc1722c2761265d81b7d00a9cf49bcbd9023"
+  },
+  {
+    "name": "feature-gc-struct-array-i31",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/feature-tests-a1/gc-struct-array-i31.wat",
+    "extra": [],
+    "class": "feature conformance; pure kernels/metadata may fold, no instruction-cost claim",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/feature-gc-struct-array-i31.wasm",
+    "wasm_sha": "46910656bf64f5927e7182566ae98f03320bf993700ea350078c724504e11b15",
+    "wat_sha": "7d6ff901f2e5d43d8310d9723b880c3c7e275d680fa8206ae0b787f409417321"
+  },
+  {
+    "name": "feature-exceptions-exnref",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/feature-tests-a1/exceptions-exnref.wat",
+    "extra": [],
+    "class": "feature conformance; pure kernels/metadata may fold, no instruction-cost claim",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/feature-exceptions-exnref.wasm",
+    "wasm_sha": "0ce471be5f2ecc89762c91ee1ed9195997a3eef727e6aaaf407d6a566789d238",
+    "wat_sha": "73d735b2df5e0603855edfc2421dd0d05fa2c0fb41936f2e622f3d27805cbffd"
+  },
+  {
+    "name": "feature-multi-memory",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/feature-tests-a1/multi-memory.wat",
+    "extra": [
+      "-WFE-multi-memory"
+    ],
+    "class": "feature conformance; pure kernels/metadata may fold, no instruction-cost claim",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/feature-multi-memory.wasm",
+    "wasm_sha": "d74fe7c687ffcde51859cfc050f2c6abc108f0b56a150cff1f33d0727eae0a72",
+    "wat_sha": "e56cc525b60c7e771ab36477d26673da662e30564fc72d2bc60cc5228032a7dd"
+  },
+  {
+    "name": "feature-memory64",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/feature-tests-a1/memory64.wat",
+    "extra": [
+      "-WFE-memory64"
+    ],
+    "class": "feature conformance; pure kernels/metadata may fold, no instruction-cost claim",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/feature-memory64.wasm",
+    "wasm_sha": "c74175a4ae93f2d6102d50ddcb96d95f1f921283e5fd317dafebbbfd8621d33f",
+    "wat_sha": "f136843f78bf0d321b9d57f70e9fdf66b534f820bd88345bbf974bdff60e16d4"
+  },
+  {
+    "name": "feature-table64",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/feature-tests-a1/table64.wat",
+    "extra": [
+      "-WFE-table64"
+    ],
+    "class": "feature conformance; pure kernels/metadata may fold, no instruction-cost claim",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/feature-table64.wasm",
+    "wasm_sha": "6d27810124f888b8c2be844df90c42682dd56ad014776173ca440a2f2d753ce2",
+    "wat_sha": "a66bc981458cb8909b3961147788d15b0cc7687f6ba200f6fbc1693613860202"
+  },
+  {
+    "name": "feature-extended-constant-expressions",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/feature-tests-a1/extended-constant-expressions.wat",
+    "extra": [
+      "-WFE-extended-const"
+    ],
+    "class": "feature conformance; pure kernels/metadata may fold, no instruction-cost claim",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/feature-extended-constant-expressions.wasm",
+    "wasm_sha": "14ecea778751656708085a685ab058a7e00043fd019b88a1c66d6f66808e7ead",
+    "wat_sha": "62601fcda9bd8d7e0565251ce57646aaa259ee5fdd1af3072876864ca1e41acb"
+  },
+  {
+    "name": "feature-custom-annotation",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/feature-tests-a1/custom-annotation.wat",
+    "extra": [],
+    "class": "feature conformance; pure kernels/metadata may fold, no instruction-cost claim",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/feature-custom-annotation.wasm",
+    "wasm_sha": "e4b19d302c5b3c84001e6f95e0a8dcd56aa3c979b78a51062db0727660fa4f9e",
+    "wat_sha": "bc52ce869ee2b3881fcf1746537a9a57c38746faf99d840efd1fc14e9c69db66"
+  },
+  {
+    "name": "feature-branch-hint",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/feature-tests-a1/branch-hint.wat",
+    "extra": [],
+    "class": "feature conformance; pure kernels/metadata may fold, no instruction-cost claim",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/feature-branch-hint.wasm",
+    "wasm_sha": "4fa25d76afd281757e8e328a43a9cd0508999f76a96c7afd91e96de3d5410b4b",
+    "wat_sha": "979a08afeb8e5fcd39ad8f7858f5ccb0ec8af49232d9f02003ce04001276c6b8"
+  },
+  {
+    "name": "feature-threads-atomic-semantics",
+    "wat": "/tmp/uwvm-gc-perf-20261011-r72/source/feature-tests-a1/threads-atomic-semantics.wat",
+    "extra": [
+      "-WFE-threads"
+    ],
+    "class": "feature conformance; pure kernels/metadata may fold, no instruction-cost claim",
+    "wasm": "/tmp/uwvm-gc-perf-20261011-r73/source/native-wasm/feature-threads-atomic-semantics.wasm",
+    "wasm_sha": "914e872d02ccd7bd3f2100b3e56de18136dc0524e45391447f9f530cf27f69f2",
+    "wat_sha": "29e9d7183aef11d85760b0d4ed75fec4cd792b1051a8ce96b836102136a4f9be"
+  }
+]

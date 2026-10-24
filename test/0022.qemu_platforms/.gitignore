@@ -1,0 +1,13 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/freebsd151_sdk_kernel_oracle
+/windows_raii_regular_launcher
+/*_actual_*.json
+/*_actual.json
+/*_qualification_*.json
+/*_status_*.json
+/*_inventory_*.json
+/source_queue_*.json
+/*_continuation_*.json

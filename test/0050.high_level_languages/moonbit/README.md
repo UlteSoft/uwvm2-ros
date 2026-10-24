@@ -68,3 +68,13 @@ Official references: [Wasm FFI and host ABI](https://docs.moonbitlang.com/en/lat
 [build system](https://docs.moonbitlang.com/en/latest/toolchain/moon/tutorial.html),
 [link settings](https://docs.moonbitlang.com/en/latest/toolchain/moon/package.html),
 [error handling](https://docs.moonbitlang.com/en/latest/language/error-handling.html).
+
+## Retained local dependency input
+
+The pinned Linux compiler pair and core source are retained at
+`toolchain/moon-home`; the final packaged native headers, source and unique
+prebuilt objects are in `toolchain/native-runtime`. Stage these dependency inputs
+in the selected Linux test environment and set `MOON_HOME`, `MOON` and `MOONC`
+for that location. Regenerate compiler output there using the commands above.
+Reusable Image/Transform contracts and native runners are in
+[the stable integration tests](../../0073.ros-tests/support/source/ros_language_integration/README.md).

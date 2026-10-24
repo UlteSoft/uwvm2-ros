@@ -2,3 +2,8 @@ _build/
 build/
 *.wasm
 *.wasm.map
+
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/

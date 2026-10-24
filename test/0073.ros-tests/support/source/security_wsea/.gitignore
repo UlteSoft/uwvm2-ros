@@ -1,0 +1,17 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/algorithm_fixture_signer
+/algorithm_matrix_runner
+/arm_empty_concurrent_map
+/cli_host_api_stub
+/cli_initializer_runner
+/cli_loader_runner
+/concurrent_verifier
+/embedded_receipt_runner
+/multisig_receipt
+/native_sqrt
+/openssl_dependency_smoke
+/openssl_kat
+/verifier_runner

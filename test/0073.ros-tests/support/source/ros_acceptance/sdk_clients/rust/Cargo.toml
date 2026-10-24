@@ -1,0 +1,24 @@
+[package]
+name = "roswasm-native-delivery"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+path = "delivery.rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+roswasm = { path = "../../../../sdk/origin/rust", default-features = false }
+
+[features]
+default = []
+ros1 = ["roswasm/ros1"]
+ros2 = ["roswasm/ros2"]
+denied = []
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+opt-level = 0
+debug = 0

@@ -112,11 +112,11 @@ def main():
     require(metadata["source_id"] == a.expected_source_id and Path(metadata["source"]).resolve() == source,
             "product/runtime belong to a different source snapshot")
     require(sha(build / "runtime.o") == metadata["runtime_object_sha256"] and
-            sha(build / "uwvm") == metadata["binary_sha256"], "actual product/object hash changed")
+            sha(build / "uwvm2-ros") == metadata["binary_sha256"], "actual product/object hash changed")
     commands, summary = [], {"passed": False, "scope": "actual whole CLI full-LLVM managed GC correctness",
         "repository": a.repository, "source_id": a.expected_source_id, "resources_before": before,
         "selected": selected, "build_manifest_sha256": sha(build / "build.json"),
-        "binary_sha256": sha(build / "uwvm"), "runtime_object_sha256": sha(build / "runtime.o"),
+        "binary_sha256": sha(build / "uwvm2-ros"), "runtime_object_sha256": sha(build / "runtime.o"),
         "wasm_tools_path": str(a.wasm_tools.absolute()), "wasm_tools_sha256": sha(a.wasm_tools),
         "commands": commands, "performance_qualification": False}
 
@@ -180,7 +180,7 @@ def main():
         run("parse-tag", ["taskset", "-c", "16", str(a.wasm_tools), "parse", str(negative), "-o", str(out / "tag.wasm")])
         run("validate-tag", ["taskset", "-c", "16", str(a.wasm_tools), "validate", str(out / "tag.wasm")])
         options = ["-Raot"] if a.repository == "uwvm2-ros" else ["-Rcc", "jit", "-Rcm", "full"]
-        base = ["taskset", "-c", "16", str(build / "uwvm"), *options,
+        base = ["taskset", "-c", "16", str(build / "uwvm2-ros"), *options,
                 "-Rllvm-cache-path", "disable", "-Rclog", "err", "-WFE-gc"]
         metrics = {}
         for mode in ("instruction", "unwind"):

@@ -1,0 +1,6 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/uwvm_int_translate_big_leb_call_strict
+/uwvm_int_translate_big_leb_indices_strict

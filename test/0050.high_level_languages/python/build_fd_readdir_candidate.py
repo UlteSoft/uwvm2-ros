@@ -160,7 +160,7 @@ def input_inventory(arena, sdk, helper, system_files):
         identity = json.loads(identity_path.read_bytes())
         source_id, binary = BASELINES[repo]
         assert identity['source_id'] == source_id and identity['binary_sha256'] == binary
-        assert digest(arena / 'products' / repo / 'uwvm') == binary
+        assert digest(arena / 'products' / repo / 'uwvm2-ros') == binary
         for p in (fp, identity_path, arena / 'products' / repo / 'sources-before.json', original_build_receipt(arena, repo)):
             result['baseline_receipts'][str(p)] = digest(p)
     assert digest(sdk / 'bin/clang++') == COMPILER_SHA
@@ -296,7 +296,7 @@ def main():
             # binaries; none of these commands executes a Wasm guest or a build.
             env = dict(os.environ, LD_LIBRARY_PATH=str(args.sdk / 'lib/x86_64-unknown-linux-gnu') + ':' + str(args.sdk / 'lib'))
             targets = [args.sdk / 'bin/clang++', args.sdk / 'bin/ld.lld',
-                       *[arena / 'products' / r / 'uwvm' for r in REPOS]]
+                       *[arena / 'products' / r / 'uwvm2-ros' for r in REPOS]]
             for i, target in enumerate(targets):
                 output = run(['/usr/bin/ldd', target], 'host-dependencies-' + str(i), env=env)
                 assert 'not found' not in output
@@ -409,7 +409,7 @@ def main():
                 assert canon_commands(metadata, repo) == canon_commands(baseline, repo), 'build flags or backend drift'
                 identity = json.loads((candidate / 'products' / repo / 'identity.json').read_bytes())
                 assert identity['source_id'] == new['source_id'] and identity['compiler_sha256'] == COMPILER_SHA
-                assert identity['binary_sha256'] == digest(candidate / 'products' / repo / 'uwvm')
+                assert identity['binary_sha256'] == digest(candidate / 'products' / repo / 'uwvm2-ros')
                 assert fingerprint(candidate / repo, repo + '-candidate-after') == new
                 assert fingerprint(arena / repo, repo + '-original-after') == old
                 record.setdefault('products', {})[repo] = identity

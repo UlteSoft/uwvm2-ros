@@ -8,7 +8,7 @@ ROS2 is disabled by default, even in a ROS2-enabled build. Its initial Global Ta
 
 ## Registered parameters
 
-These parameters use uwvm2's existing parameter registry, hash lookup and argument occupancy mechanism. They are also listed by `uwvm --help ros2`.
+These parameters use uwvm2's existing parameter registry, hash lookup and argument occupancy mechanism. They are also listed by `uwvm2-ros --help ros2`.
 
 | Parameter | Arguments |
 | --- | --- |
@@ -32,6 +32,7 @@ These parameters use uwvm2's existing parameter registry, hash lookup and argume
 | `--ros2-global-set` | `<capability:str> <key:str> <value:str>` |
 | `--ros2-single-create` | `<module:str>` |
 | `--ros2-single-enable` | `<module:str>` |
+| `--ros2-single-call-boundary` | `<module:str> <same-module\|module-exports>` |
 | `--ros2-single-disable` | `<module:str>` |
 | `--ros2-single-gateway-socket` | `<module:str> <value:str>` |
 | `--ros2-single-gateway-uid` | `<module:str> <value:str>` |
@@ -80,6 +81,23 @@ An explicitly bound Target receives no Global capabilities, connection fields or
 
 `check-policy` and `dump-effective-policy` complete after all configuration options, regardless of where the diagnostic switch appeared. With `--run file.wasm`, the file is parsed for actual module-name binding but Guest code does not execute. Without `--run`, only already loaded preload artifacts can satisfy module bindings. Dump produces one sorted JSON record per requested ROS version on stdout.
 
+## Explicit library export delegation
+
+ROS calls with cross-module ancestry are denied by default (`same-module`).
+A trusted deployment can opt one explicitly named Single module into
+`--ros2-single-call-boundary ros_comm module-exports`. Calls performed inside
+that module's reviewed exports then use its own ROS capabilities. Calling
+modules receive no capabilities or transferable handles. Direct imports from
+an ungranted algorithm module still fail, and module generation, revocation and
+permanent retirement checks remain active.
+
+This policy delegates the exported operations to callers; it is not a caller
+allowlist. Validate the library's export arguments and retained ownership.
+Global and Group policies cannot select this option. The setting is worker-local
+and does not change the native gateway capability manifest or network identity.
+See the [SDK deployment guide](https://github.com/UlteSoft/uwvm2-ros-sdk/blob/main/document/native-run.en_US.md) for the
+explicit io/algorithm/ros_comm Preload configuration and current acceptance.
+
 ## Explicit connection fields
 
 `gateway-socket` is a canonical absolute AF_UNIX path, at most 107 bytes. `gateway-uid` is the expected Linux peer UID, 0 through 4294967294; SO_PEERCRED verifies the connected endpoint. `node-name` is a ROS basename, `namespace` a canonical absolute ROS namespace, and `connect-timeout-ms` is an integer 1 through 60000. Gateway configuration additionally specifies the authorized worker UID and exact PID. A Gateway belongs to one explicitly configured backend identity. The socket path, expected UID and connection timeout are worker-local; the ROS network identity and complete resource grants must match its authoritative policy manifest.
@@ -90,12 +108,12 @@ An explicitly bound Target receives no Global capabilities, connection fields or
 
 `grant <alias> <operation> <resource> <type> <type-identity>` declares exactly one operation on exactly one resource. Resource names must already be canonical absolute names: relative names, private names, empty segments and remapping syntax are rejected. Aliases are ASCII letters, digits, underscore, dot and hyphen, with a maximum of 255 bytes. No wildcard, role, level or preset expands authority.
 
-`set <alias> <key> <value>` supplies one required limit or semantic field. A key may be assigned only once. All fields, accepted values, hard protocol ceilings and unsupported operation status are listed in [capabilities.md](../ros/capabilities.md). Trusted ROS1 MD5 and ROS2 RIHS01 hashes come from the generated adapters; Guest declarations cannot establish a trusted type identity.
+`set <alias> <key> <value>` supplies one required limit or semantic field. A key may be assigned only once. Trusted ROS1 MD5 and ROS2 RIHS01 hashes come from the generated adapters; Guest declarations cannot establish a trusted type identity.
 
 `service.call`, `service.advertise`, `service.respond`, `param.get`, `param.set`, `param.describe`, `param.list`, `lifecycle.get-state` and `lifecycle.change-state` each require eight explicit fields: `qos.reliability`, `qos.durability`, `qos.history`, `qos.depth`, `qos.deadline`, `qos.lifespan`, `qos.liveliness` and `qos.liveliness-lease-duration`. Missing fields reject configuration. Gateway-owned client and server request/response effective QoS must match the configured profile. Advertise/respond grants for the same service resource and generated type must declare equal profiles; respond never implicitly grants advertise. Local get/set/describe/list still require the fields but create no DDS client when `parameter-node` names the Gateway itself. The local-only `param.declare` and `param.undeclare` operations create no DDS endpoint and reject these fields as inapplicable. Parameter-event QoS remains independent.
 
 ## Worker isolation
 
-Enabled ROS execution requires the interpreter and rejects additional native DL/weak-symbol plugins and socket standard streams. Every loaded Wasm module whose WASIp1 support is enabled requires explicit host environment inheritance disablement and no directory or socket preopens, including modules with no ROS grants. WASIp1 normally inherits the host environment: use `--wasip1-global-noinherit-system-environment` and ensure applicable WASIp1 Single/Group overrides also disable inheritance. ROS enable/grant options do not alter WASIp1 permissions, and extra WASIp1 host connections reject ROS startup. [security.md](../ros/security.md) describes the remaining process and network boundary.
+Enabled ROS execution requires the interpreter and rejects additional native DL/weak-symbol plugins and socket standard streams. Every loaded Wasm module whose WASIp1 support is enabled requires explicit host environment inheritance disablement and no directory or socket preopens, including modules with no ROS grants. WASIp1 normally inherits the host environment: use `--wasip1-global-noinherit-system-environment` and ensure applicable WASIp1 Single/Group overrides also disable inheritance. ROS enable/grant options do not alter WASIp1 permissions, and extra WASIp1 host connections reject ROS startup. The [SDK deployment guide](https://github.com/UlteSoft/uwvm2-ros-sdk/blob/main/document/native-run.en_US.md) describes process and network trust boundaries.
 
 `audit-deny-max-rate-hz`, `audit-deny-burst`, `audit-deny-max-records` and `audit-deny-max-bytes` explicitly bound the worker audit sink for unknown aliases, forged handles and refused proxy calls. Every enabled Target requires all four fields. They are worker-local and do not affect ROS network identity. The rate must be finite and positive (at most 1000000), burst/records are positive integers (at most 1048576), and bytes are at most 67108864. No unauthenticated request can choose its own audit budget.

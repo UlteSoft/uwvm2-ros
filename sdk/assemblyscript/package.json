@@ -1,8 +1,0 @@
-{
-  "name": "@uwvm2/roswasm-assemblyscript",
-  "version": "0.1.0",
-  "private": true,
-  "description": "Real AssemblyScript Wasm guest imports and capability-scoped ROS ABI v1 client concepts",
-  "peerDependencies": { "assemblyscript": ">=0.27 <1" },
-  "license": "SEE LICENSE IN ../LICENSE"
-}

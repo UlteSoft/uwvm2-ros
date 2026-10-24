@@ -5,7 +5,7 @@ import disjoint_pmu_read_lock_c20_v1
 c=next(c for c in json.loads((R/'source/typed-array-store-bench-c21/cases.json').read_text())['cases'] if c['name']=='i32-write');clock=json.loads((R/'evidence/typed-store-clock-c21-a1.json').read_text());times=next(x for x in clock['summary'] if x['case']==c['name'])['ns'];vs=['typed-array-load','typed-array-access','wasmtime-drc'];F=R/'source/hardware-specs-typed-store-c21-a2';F.mkdir(exist_ok=False);rows=[];flags=['-Rcc','jit','-Rcm','full','-Rct','0','-WFE-gc','-WFE-exceptions','-WFE-tail-call','-WFE-function-references']
 with N.lease():
  for v in vs:
-  elf=O/'build/wasmtime-bench' if v==vs[-1] else R/('build/deferred-'+v+'/uwvm')
+  elf=O/'build/wasmtime-bench' if v==vs[-1] else R/('build/deferred-'+v+'/uwvm2-ros')
   for analysis in ['hotspots','uarch-exploration']:
    template=json.loads((R/'source/read-lock-hardware-specs-c20'/('read-lock-hw-c20-f32-immutable-'+('wasmtime-drc' if v==vs[-1] else 'typed-array-load')+'-'+analysis+'.json')).read_text());reps=math.ceil(1_200_000_000/times[v]/16)*16;label='typed-store-c21-i32-write-'+v+'-'+analysis+'-a2';pd=R/'profiles'/label;sp=F/(label+'.json');cmd=[elf,c['wasm']] if v==vs[-1] else [elf,*flags,'--run',c['wasm']]
    s=dict(template,label=label,case=c['name'],kind='typed-numeric-store',variant=v,elf=str(elf),elf_sha=N.sha(elf),dir=str(pd),cmd=list(map(str,cmd)),wasm=c['wasm'],wasm_sha=c['wasm_sha'],reps=reps,interval=25,source_clock_sha=N.sha(R/'evidence/typed-store-clock-c21-a1.json'),scope='Same Wasm numeric store; reps separately calibrated>=1.2s. No raw total crossVMcounter ratio claim.')

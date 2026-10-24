@@ -14,7 +14,7 @@ zig build-exe zig_language.zig -O ReleaseSafe -lc -fsingle-threaded \
 zig build-exe zig_language.zig -O Debug -lc -fsingle-threaded \
   -femit-bin=zig-debug.native
 ./zig-debug.native 17
-uwvm --run zig-debug.wasm 17
+uwvm2-ros --run zig-debug.wasm 17
 ```
 
 Select the backend required by your UWVM product before `--run`. For the manual
@@ -40,3 +40,6 @@ The pinned compiler and actual commands follow the official
 All task qualification runs on SSH Linux in the original 64 GiB/swap-zero
 cgroup. This fixture is a basic non-ROS example and makes no SDK/API or native
 performance parity claim.
+
+The reusable Zig resource witness and codec checks remain in
+[the stable integration tests](../../0073.ros-tests/support/source/ros_language_integration/README.md).

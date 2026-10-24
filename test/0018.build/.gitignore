@@ -1,3 +1,9 @@
 /bundled_jobs_*/
 /local_xmake_*/
 /version_output_*/
+
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/callback_full_policy_fixture

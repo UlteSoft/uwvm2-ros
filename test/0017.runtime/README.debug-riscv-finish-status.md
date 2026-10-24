@@ -28,7 +28,7 @@ full interpreter plus full LLVM; they add no ROS basic, lazy or tiered mode.
 
 For an ordinary full LLVM build:
 
-    uwvm -Rdbg -Rcc jit -Rcm full -Rct 0 -Rllvm-cache-path disable \
+    uwvm2-ros -Rdbg -Rcc jit -Rcm full -Rct 0 -Rllvm-cache-path disable \
       -Rllvm-call-stack instruction --run PROGRAM.wasm
 
 ROS selects full mode with `-Raot`. `unwind` is the other tested call-stack

@@ -16,3 +16,9 @@
 /bindings/
 /candidate/
 /frozen-private-source*/
+
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+!cases-*.json

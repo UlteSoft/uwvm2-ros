@@ -25,13 +25,13 @@ stdout, stderr, exit codes, test fixture hashes, and the executable's embedded
 source ID for each accepted run.
 
 Before making an ISO or starting the guest, inspect both linked PE import
-tables. Bind `uwvm.exe` to its embedded source ID and the broker to its build
+tables. Bind `uwvm2-ros.exe` to its embedded source ID and the broker to its build
 manifest SHA-256. A PE that imports `libgcc_s_seh-1.dll` cannot run from an
 artifact set without that exact runtime; the qualification gate rejects it.
 
 ```sh
 python3 test/0017.runtime/verify_windows_pe_imports.py \
-  --pe /path/to/uwvm.exe --source-id sha256:SOURCE_FINGERPRINT \
+  --pe /path/to/uwvm2-ros.exe --source-id sha256:SOURCE_FINGERPRINT \
   --output /path/to/qualification/uwvm-imports.json
 python3 test/0017.runtime/verify_windows_pe_imports.py \
   --pe /path/to/uwvm-debug-server.exe --expected-sha256 BROKER_SHA256 \
@@ -48,7 +48,7 @@ the PE/build/guest result. A loader exit such as `0xC0000135` happens before
 Wasm execution and must be reported separately from a Wasm semantic failure.
 
 For a short Win64 SEH qualification before the full debugger matrix, stage
-`uwvm.exe`, `eh-cross-function-catch-ref.wasm`,
+`uwvm2-ros.exe`, `eh-cross-function-catch-ref.wasm`,
 `eh-cross-function-win64-seh.wasm`, and
 `run_windows_cross_eh_smoke_vm.ps1`. Its `qualification.json` contains schema
 `1`, the exact `source_id`, `product_sha256`, `build_sha256`,

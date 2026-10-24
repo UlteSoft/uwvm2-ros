@@ -32,7 +32,7 @@ def main():
         data['settings'][name] = path.read_text().strip() if path.is_file() else None
     data['cpu_info_first'] = Path('/proc/cpuinfo').read_text().split('\n\n')[0]
     recipes = json.loads(a.recipes.read_text())
-    binaries = {name: {'binary': str(products_root / name / 'uwvm')}
+    binaries = {name: {'binary': str(products_root / name / 'uwvm2-ros')}
                 for name in ['uwvm2', 'uwvm2-stable', 'uwvm2-ros']}
     binaries.update({name: recipes[name] for name in ['wasmtime', 'wavm', 'wasmedge']})
     binaries['vtune'] = {'binary': '/opt/intel/oneapi/vtune/latest/bin64/vtune'}

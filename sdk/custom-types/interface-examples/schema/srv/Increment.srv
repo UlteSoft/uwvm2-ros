@@ -1,5 +1,0 @@
-# Complete canonical request; no implicit defaults or native identity.
-int32 value
----
-# Complete response.
-int32 value

@@ -1,1 +1,14 @@
 __pycache__
+
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/backend_fuzzer_runner
+/backend_libfuzzer
+/win32_abi_probe
+/crash-*
+/timeout-*
+/leak-*
+/oom-*
+/slow-unit-*

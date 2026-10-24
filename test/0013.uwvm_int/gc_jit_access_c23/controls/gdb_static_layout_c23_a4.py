@@ -1,7 +1,7 @@
 from pathlib import Path
 import sys,json,os
 R=Path('/tmp/uwvm-gc-perf-20261011-r74');sys.path.insert(0,str(R/'control'));import native as N
-ELF=R/'build/deferred-typed-array-access-inline-static32/uwvm'
+ELF=R/'build/deferred-typed-array-access-inline-static32/uwvm2-ros'
 N.run('c23-inline-native-symbols-a3',['nm','--defined-only',ELF],cpu=20,timeout=30)
 actual={l.split()[-1]:int(l.split()[0],16) for l in (R/'evidence/c23-inline-native-symbols-a3.stdout').read_text().splitlines() if len(l.split())==3}
 S=json.loads((R/'source/inline-auth-native-symbols-c22-a2.json').read_text());S['ELF_sha']=N.sha(ELF)

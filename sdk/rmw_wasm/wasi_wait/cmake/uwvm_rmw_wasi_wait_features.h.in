@@ -1,7 +1,0 @@
-/* SPDX-License-Identifier: Apache-2.0 */
-#ifndef UWVM_RMW_WASI_WAIT_FEATURES_H
-#define UWVM_RMW_WASI_WAIT_FEATURES_H
-/* Generated ONLY from actual selected original-header compile AND link.
- * No import execution, runtime rights or concrete Runtime qualification proved. */
-#cmakedefine01 UWVM_RMW_WASI_WAIT_P1_API
-#endif

@@ -1,6 +1,0 @@
-# Service definition to reset the localization
-
-bool require_gnss
-uint32 gnss_samples
----
-bool success

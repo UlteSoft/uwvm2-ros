@@ -67,7 +67,7 @@ namespace uwvm2::uwvm::imported::ros::host
 #endif
         {
             runtime::ros_caller_identity caller{};::std::shared_ptr<instance> state{};
-            if(auto error{identify(caller,state)}){return audit_denial(version,error);}
+            if(auto error{identify(version, caller, state)}){return audit_denial(version,error);}
             auto& backend{state->backends[1]};::std::unique_lock lock{backend.mutex,::std::try_to_lock};
             if(!lock.owns_lock()){return audit_denial(version,11);}
             core::authorization source;
@@ -147,7 +147,7 @@ namespace uwvm2::uwvm::imported::ros::host
 #endif
         {
             runtime::ros_caller_identity caller{};::std::shared_ptr<instance> state{};
-            if(auto error{identify(caller,state)}){return audit_denial(version,error);}
+            if(auto error{identify(version, caller, state)}){return audit_denial(version,error);}
             auto& backend{state->backends[1]};::std::unique_lock lock{backend.mutex,::std::try_to_lock};
             if(!lock.owns_lock()){return audit_denial(version,11);}
             core::authorization source;

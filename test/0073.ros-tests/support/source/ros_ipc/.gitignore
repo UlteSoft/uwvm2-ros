@@ -1,0 +1,11 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/admission_deadline_test
+/client_handshake_contract
+/image_encode_test
+/image_native_ros2
+/protocol_test
+/request_encode_view_test
+/response_deadline_ros2

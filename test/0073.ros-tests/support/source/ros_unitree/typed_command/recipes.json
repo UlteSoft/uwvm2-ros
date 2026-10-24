@@ -1,0 +1,369 @@
+{
+  "format_version": 1,
+  "kind": "uwvm-unitree-same-main-command-recipes-v1",
+  "status": "SOURCE_RECIPES_NOT_EXECUTED",
+  "reactor_recipe": "sdk/origin/robots/unitree/recipes/closedtyped-example-recipes.json",
+  "reactor_products_preserved": true,
+  "command_products": 14,
+  "future_actual_cases": 28,
+  "default_authority": [],
+  "cross_module_ROS_guard": "UNCHANGED_DENIAL",
+  "products": [
+    {
+      "id": "rust-lowstate-go-command",
+      "reactor_id": "rust-lowstate-go",
+      "language": "rust",
+      "family": "unitree_go",
+      "family_code": 1,
+      "actual_example": "sdk/origin/robots/unitree/examples/rust/lowstate.rs",
+      "complete_record_count": 24,
+      "observed_entry_execution": "NOT_EXECUTED",
+      "rights": {
+        "main_basic_stdio": true,
+        "optional_WASI": [],
+        "ROS": "EMPTY_UNLESS_EXPLICIT_OWNER_FIXTURE_ALIASES"
+      },
+      "protocol": "UTM1/R/S/C/F",
+      "poll_limit": 4096,
+      "command_source": "test/0073.ros-tests/support/source/ros_unitree/typed_command/entry.c",
+      "entry_export": "_start",
+      "compile_definitions": {
+        "UWVM_TYPED_FAMILY": 1,
+        "UWVM_TYPED_JAVASCRIPT": 0
+      },
+      "staging_change": "Fresh freestanding C object linked into SAME actual Wasm module; no preload or rewritten reactor binary"
+    },
+    {
+      "id": "rust-lowstate-hg-command",
+      "reactor_id": "rust-lowstate-hg",
+      "language": "rust",
+      "family": "unitree_hg",
+      "family_code": 2,
+      "actual_example": "sdk/origin/robots/unitree/examples/rust/lowstate.rs",
+      "complete_record_count": 11,
+      "observed_entry_execution": "NOT_EXECUTED",
+      "rights": {
+        "main_basic_stdio": true,
+        "optional_WASI": [],
+        "ROS": "EMPTY_UNLESS_EXPLICIT_OWNER_FIXTURE_ALIASES"
+      },
+      "protocol": "UTM1/R/S/C/F",
+      "poll_limit": 4096,
+      "command_source": "test/0073.ros-tests/support/source/ros_unitree/typed_command/entry.c",
+      "entry_export": "_start",
+      "compile_definitions": {
+        "UWVM_TYPED_FAMILY": 2,
+        "UWVM_TYPED_JAVASCRIPT": 0
+      },
+      "staging_change": "Fresh freestanding C object linked into SAME actual Wasm module; no preload or rewritten reactor binary"
+    },
+    {
+      "id": "rust-topic-rpc-api-command",
+      "reactor_id": "rust-topic-rpc-api",
+      "language": "rust",
+      "family": "unitree_api",
+      "family_code": 3,
+      "actual_example": "sdk/origin/robots/unitree/examples/rust/topic_rpc.rs",
+      "complete_record_count": 8,
+      "observed_entry_execution": "NOT_EXECUTED",
+      "rights": {
+        "main_basic_stdio": true,
+        "optional_WASI": [],
+        "ROS": "EMPTY_UNLESS_EXPLICIT_OWNER_FIXTURE_ALIASES"
+      },
+      "protocol": "UTM1/R/S/C/F",
+      "poll_limit": 4096,
+      "command_source": "test/0073.ros-tests/support/source/ros_unitree/typed_command/entry.c",
+      "entry_export": "_start",
+      "compile_definitions": {
+        "UWVM_TYPED_FAMILY": 3,
+        "UWVM_TYPED_JAVASCRIPT": 0
+      },
+      "staging_change": "Fresh freestanding C object linked into SAME actual Wasm module; no preload or rewritten reactor binary"
+    },
+    {
+      "id": "javascript-lowstate-go-command",
+      "reactor_id": "javascript-lowstate-go",
+      "language": "javascript",
+      "family": "unitree_go",
+      "family_code": 1,
+      "actual_example": "sdk/origin/robots/unitree/examples/javascript/lowstate.mjs",
+      "complete_record_count": 24,
+      "observed_entry_execution": "NOT_EXECUTED",
+      "rights": {
+        "main_basic_stdio": true,
+        "optional_WASI": [],
+        "ROS": "EMPTY_UNLESS_EXPLICIT_OWNER_FIXTURE_ALIASES"
+      },
+      "protocol": "UTM1/R/S/C/F",
+      "poll_limit": 4096,
+      "command_source": "test/0073.ros-tests/support/source/ros_unitree/typed_command/entry.c",
+      "entry_export": "_start",
+      "compile_definitions": {
+        "UWVM_TYPED_FAMILY": 1,
+        "UWVM_TYPED_JAVASCRIPT": 1
+      },
+      "staging_change": "Fresh freestanding C object linked into SAME actual Wasm module; no preload or rewritten reactor binary"
+    },
+    {
+      "id": "javascript-lowstate-hg-command",
+      "reactor_id": "javascript-lowstate-hg",
+      "language": "javascript",
+      "family": "unitree_hg",
+      "family_code": 2,
+      "actual_example": "sdk/origin/robots/unitree/examples/javascript/lowstate.mjs",
+      "complete_record_count": 11,
+      "observed_entry_execution": "NOT_EXECUTED",
+      "rights": {
+        "main_basic_stdio": true,
+        "optional_WASI": [],
+        "ROS": "EMPTY_UNLESS_EXPLICIT_OWNER_FIXTURE_ALIASES"
+      },
+      "protocol": "UTM1/R/S/C/F",
+      "poll_limit": 4096,
+      "command_source": "test/0073.ros-tests/support/source/ros_unitree/typed_command/entry.c",
+      "entry_export": "_start",
+      "compile_definitions": {
+        "UWVM_TYPED_FAMILY": 2,
+        "UWVM_TYPED_JAVASCRIPT": 1
+      },
+      "staging_change": "Fresh freestanding C object linked into SAME actual Wasm module; no preload or rewritten reactor binary"
+    },
+    {
+      "id": "javascript-topic-rpc-api-command",
+      "reactor_id": "javascript-topic-rpc-api",
+      "language": "javascript",
+      "family": "unitree_api",
+      "family_code": 3,
+      "actual_example": "sdk/origin/robots/unitree/examples/javascript/topic_rpc.mjs",
+      "complete_record_count": 8,
+      "observed_entry_execution": "NOT_EXECUTED",
+      "rights": {
+        "main_basic_stdio": true,
+        "optional_WASI": [],
+        "ROS": "EMPTY_UNLESS_EXPLICIT_OWNER_FIXTURE_ALIASES"
+      },
+      "protocol": "UTM1/R/S/C/F",
+      "poll_limit": 4096,
+      "command_source": "test/0073.ros-tests/support/source/ros_unitree/typed_command/entry.c",
+      "entry_export": "_start",
+      "compile_definitions": {
+        "UWVM_TYPED_FAMILY": 3,
+        "UWVM_TYPED_JAVASCRIPT": 1
+      },
+      "staging_change": "Fresh freestanding C object linked into SAME actual Wasm module; no preload or rewritten reactor binary"
+    },
+    {
+      "id": "assemblyscript-lowstate-go-command",
+      "reactor_id": "assemblyscript-lowstate-go",
+      "language": "assemblyscript",
+      "family": "unitree_go",
+      "family_code": 1,
+      "actual_example": "sdk/origin/robots/unitree/examples/assemblyscript/lowstate_go.ts",
+      "complete_record_count": 24,
+      "observed_entry_execution": "NOT_EXECUTED",
+      "rights": {
+        "main_basic_stdio": true,
+        "optional_WASI": [],
+        "ROS": "EMPTY_UNLESS_EXPLICIT_OWNER_FIXTURE_ALIASES"
+      },
+      "protocol": "UTM1/R/S/C/F",
+      "poll_limit": 4096,
+      "command_source": "test/0073.ros-tests/support/source/ros_unitree/typed_command/assemblyscript_lowstate.ts",
+      "shared_source": "test/0073.ros-tests/support/source/ros_unitree/typed_command/protocol.ts",
+      "entry_export": "typed_command_entry",
+      "export_start": "typed_command_entry",
+      "staging_change": "Literal selected_case re-export of the exact actual example; literal selected_family1/2 for LowState; actual AS runtime initializer contains finite top-level command"
+    },
+    {
+      "id": "assemblyscript-lowstate-hg-command",
+      "reactor_id": "assemblyscript-lowstate-hg",
+      "language": "assemblyscript",
+      "family": "unitree_hg",
+      "family_code": 2,
+      "actual_example": "sdk/origin/robots/unitree/examples/assemblyscript/lowstate_hg.ts",
+      "complete_record_count": 11,
+      "observed_entry_execution": "NOT_EXECUTED",
+      "rights": {
+        "main_basic_stdio": true,
+        "optional_WASI": [],
+        "ROS": "EMPTY_UNLESS_EXPLICIT_OWNER_FIXTURE_ALIASES"
+      },
+      "protocol": "UTM1/R/S/C/F",
+      "poll_limit": 4096,
+      "command_source": "test/0073.ros-tests/support/source/ros_unitree/typed_command/assemblyscript_lowstate.ts",
+      "shared_source": "test/0073.ros-tests/support/source/ros_unitree/typed_command/protocol.ts",
+      "entry_export": "typed_command_entry",
+      "export_start": "typed_command_entry",
+      "staging_change": "Literal selected_case re-export of the exact actual example; literal selected_family1/2 for LowState; actual AS runtime initializer contains finite top-level command"
+    },
+    {
+      "id": "assemblyscript-topic-rpc-api-command",
+      "reactor_id": "assemblyscript-topic-rpc-api",
+      "language": "assemblyscript",
+      "family": "unitree_api",
+      "family_code": 3,
+      "actual_example": "sdk/origin/robots/unitree/examples/assemblyscript/topic_rpc.ts",
+      "complete_record_count": 8,
+      "observed_entry_execution": "NOT_EXECUTED",
+      "rights": {
+        "main_basic_stdio": true,
+        "optional_WASI": [],
+        "ROS": "EMPTY_UNLESS_EXPLICIT_OWNER_FIXTURE_ALIASES"
+      },
+      "protocol": "UTM1/R/S/C/F",
+      "poll_limit": 4096,
+      "command_source": "test/0073.ros-tests/support/source/ros_unitree/typed_command/assemblyscript_topic_rpc.ts",
+      "shared_source": "test/0073.ros-tests/support/source/ros_unitree/typed_command/protocol.ts",
+      "entry_export": "typed_command_entry",
+      "export_start": "typed_command_entry",
+      "staging_change": "Literal selected_case re-export of the exact actual example; literal selected_family1/2 for LowState; actual AS runtime initializer contains finite top-level command"
+    },
+    {
+      "id": "tinygo-lowstate-go-command",
+      "reactor_id": "tinygo-lowstate-go",
+      "language": "tinygo",
+      "family": "unitree_go",
+      "family_code": 1,
+      "actual_example": "sdk/origin/robots/unitree/examples/tinygo/lowstate.go",
+      "complete_record_count": 24,
+      "observed_entry_execution": "NOT_EXECUTED",
+      "rights": {
+        "main_basic_stdio": true,
+        "optional_WASI": [],
+        "ROS": "EMPTY_UNLESS_EXPLICIT_OWNER_FIXTURE_ALIASES"
+      },
+      "protocol": "UTM1/R/S/C/F",
+      "poll_limit": 4096,
+      "command_source": "test/0073.ros-tests/support/source/ros_unitree/typed_command/command_lowstate.go",
+      "shared_source": "test/0073.ros-tests/support/source/ros_unitree/typed_command/protocol.go",
+      "entry_export": "_start",
+      "owned_target_changes": {
+        "buildmode": "default",
+        "ldflags_append": [
+          "--max-memory=67108864"
+        ]
+      },
+      "staging_change": "Remove ONLY one exact empty func main() {} from selected owned example copy; separate actual command main calls unchanged typed functions; original SDK/target/example unchanged"
+    },
+    {
+      "id": "tinygo-lowstate-hg-command",
+      "reactor_id": "tinygo-lowstate-hg",
+      "language": "tinygo",
+      "family": "unitree_hg",
+      "family_code": 2,
+      "actual_example": "sdk/origin/robots/unitree/examples/tinygo/lowstate.go",
+      "complete_record_count": 11,
+      "observed_entry_execution": "NOT_EXECUTED",
+      "rights": {
+        "main_basic_stdio": true,
+        "optional_WASI": [],
+        "ROS": "EMPTY_UNLESS_EXPLICIT_OWNER_FIXTURE_ALIASES"
+      },
+      "protocol": "UTM1/R/S/C/F",
+      "poll_limit": 4096,
+      "command_source": "test/0073.ros-tests/support/source/ros_unitree/typed_command/command_lowstate.go",
+      "shared_source": "test/0073.ros-tests/support/source/ros_unitree/typed_command/protocol.go",
+      "entry_export": "_start",
+      "owned_target_changes": {
+        "buildmode": "default",
+        "ldflags_append": [
+          "--max-memory=67108864"
+        ]
+      },
+      "staging_change": "Remove ONLY one exact empty func main() {} from selected owned example copy; separate actual command main calls unchanged typed functions; original SDK/target/example unchanged"
+    },
+    {
+      "id": "tinygo-topic-rpc-api-command",
+      "reactor_id": "tinygo-topic-rpc-api",
+      "language": "tinygo",
+      "family": "unitree_api",
+      "family_code": 3,
+      "actual_example": "sdk/origin/robots/unitree/examples/tinygo/topic_rpc.go",
+      "complete_record_count": 8,
+      "observed_entry_execution": "NOT_EXECUTED",
+      "rights": {
+        "main_basic_stdio": true,
+        "optional_WASI": [],
+        "ROS": "EMPTY_UNLESS_EXPLICIT_OWNER_FIXTURE_ALIASES"
+      },
+      "protocol": "UTM1/R/S/C/F",
+      "poll_limit": 4096,
+      "command_source": "test/0073.ros-tests/support/source/ros_unitree/typed_command/command_topic_rpc.go",
+      "shared_source": "test/0073.ros-tests/support/source/ros_unitree/typed_command/protocol.go",
+      "entry_export": "_start",
+      "owned_target_changes": {
+        "buildmode": "default",
+        "ldflags_append": [
+          "--max-memory=67108864"
+        ]
+      },
+      "staging_change": "Remove ONLY one exact empty func main() {} from selected owned example copy; separate actual command main calls unchanged typed functions; original SDK/target/example unchanged"
+    },
+    {
+      "id": "c-topic-rpc-api-command",
+      "reactor_id": "c-topic-rpc-api",
+      "language": "c",
+      "family": "unitree_api",
+      "family_code": 3,
+      "actual_example": "sdk/origin/robots/unitree/examples/topic_rpc.c",
+      "complete_record_count": 8,
+      "observed_entry_execution": "NOT_EXECUTED",
+      "rights": {
+        "main_basic_stdio": true,
+        "optional_WASI": [],
+        "ROS": "EMPTY_UNLESS_EXPLICIT_OWNER_FIXTURE_ALIASES"
+      },
+      "protocol": "UTM1/R/S/C/F",
+      "poll_limit": 4096,
+      "command_source": "test/0073.ros-tests/support/source/ros_unitree/typed_command/entry.c",
+      "entry_export": "_start",
+      "compile_definitions": {
+        "UWVM_TYPED_FAMILY": 3,
+        "UWVM_TYPED_JAVASCRIPT": 0
+      },
+      "staging_change": "Fresh freestanding C object linked into SAME actual Wasm module; no preload or rewritten reactor binary"
+    },
+    {
+      "id": "cpp-topic-rpc-api-command",
+      "reactor_id": "cpp-topic-rpc-api",
+      "language": "cpp",
+      "family": "unitree_api",
+      "family_code": 3,
+      "actual_example": "sdk/origin/robots/unitree/examples/topic_rpc.cpp",
+      "complete_record_count": 8,
+      "observed_entry_execution": "NOT_EXECUTED",
+      "rights": {
+        "main_basic_stdio": true,
+        "optional_WASI": [],
+        "ROS": "EMPTY_UNLESS_EXPLICIT_OWNER_FIXTURE_ALIASES"
+      },
+      "protocol": "UTM1/R/S/C/F",
+      "poll_limit": 4096,
+      "command_source": "test/0073.ros-tests/support/source/ros_unitree/typed_command/entry.c",
+      "entry_export": "_start",
+      "compile_definitions": {
+        "UWVM_TYPED_FAMILY": 3,
+        "UWVM_TYPED_JAVASCRIPT": 0
+      },
+      "staging_change": "Fresh freestanding C object linked into SAME actual Wasm module; no preload or rewritten reactor binary"
+    }
+  ],
+  "actual_binary_requirements": {
+    "full_validation": true,
+    "start_section": false,
+    "entry_void": true,
+    "own_memory_max_pages": 1024,
+    "optional_WASI_imports": [],
+    "basic_WASI_imports": [
+      "fd_read",
+      "fd_write",
+      "proc_exit"
+    ],
+    "ROS_backend": 2,
+    "no_preloaded_application": true
+  },
+  "native_witness": "test/0073.ros-tests/support/source/ros_unitree/native_typed_ros2_peer.cpp",
+  "native_protocol": "UTN1/M/Q/P/A/Z/F",
+  "notes": "These are NEW same-main command products, never historical reactor results relabeled. Actual source/MF/compiler/native/fullMD/link/import/entry/runtime/native-delivery proofs remain mandatory."
+}

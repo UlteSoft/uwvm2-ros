@@ -1,7 +1,7 @@
 from pathlib import Path
 import sys,json,os
 R=Path('/tmp/uwvm-gc-perf-20261011-r74');sys.path.insert(0,str(R/'control'));import native as N
-S=json.loads((R/'source/inline-auth-native-symbols-c22-a1.json').read_text());ELF=R/'build/deferred-typed-array-access-inline/uwvm';assert N.sha(ELF)==S['ELF_sha']
+S=json.loads((R/'source/inline-auth-native-symbols-c22-a1.json').read_text());ELF=R/'build/deferred-typed-array-access-inline/uwvm2-ros';assert N.sha(ELF)==S['ELF_sha']
 domain=next(n for n in S['symbols'] if 'index_domain_bridge(' in n);borrow=next(n for n in S['symbols'] if 'typed_array_borrow_bridge<4ul, true, false>(' in n)
 D=R/'source/inline-auth-gdb-c22-a1';D.mkdir(exist_ok=False);rows=[]
 with N.lease():

@@ -328,7 +328,7 @@ def main():
     report = {'passed': False, 'admission_before': guard, 'manifest_sha256': digest(a.manifest),
               'script_sha256': digest(__file__), 'runs': []}
     for repo in a.repository or ['uwvm2', 'uwvm2-stable', 'uwvm2-ros']:
-        binary = a.arena / 'products' / repo / 'uwvm'
+        binary = a.arena / 'products' / repo / 'uwvm2-ros'
         identity = json.loads((binary.parent / 'identity.json').read_text())
         assert identity['binary_sha256'] == digest(binary)
         for case in cases:

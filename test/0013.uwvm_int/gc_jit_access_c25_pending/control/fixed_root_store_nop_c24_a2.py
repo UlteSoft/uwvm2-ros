@@ -4,7 +4,7 @@ R=Path('/tmp/uwvm-gc-perf-20261011-r74');O=Path('/tmp/uwvm-gc-perf-20261011-r73'
 import disjoint_pmu_c20_fixed_v2
 vs=['typed-array-access-inline-static32','root-store-nop-probe','wasmtime-drc']
 cs={c['name']:c for c in json.loads((R/'source/typed-array-store-bench-c21/cases.json').read_text())['cases']}
-UW=R/'build/deferred-typed-array-access-inline-static32/uwvm';WT=O/'build/wasmtime-bench';worker=R/'control/fixed_counter_root_nop_c24_a1.py';recipe=R/'source/root-nop-probe-c24-a1/recipes.json'
+UW=R/'build/deferred-typed-array-access-inline-static32/uwvm2-ros';WT=O/'build/wasmtime-bench';worker=R/'control/fixed_counter_root_nop_c24_a1.py';recipe=R/'source/root-nop-probe-c24-a1/recipes.json'
 F=R/'source/fixed-root-store-nop-c24-a1';F.mkdir(exist_ok=True);rows=[]
 flags=['-Rcc','jit','-Rcm','full','-Rct','0','-Rllvm-cache-path','disable','-WFE-gc','-WFE-exceptions','-WFE-tail-call','-WFE-function-references']
 with N.lease():

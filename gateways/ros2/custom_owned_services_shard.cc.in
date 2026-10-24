@@ -1,7 +1,0 @@
-/* SPDX-License-Identifier: Apache-2.0 */
-// Generated ONLY by future genuine CMake configure, never executed by author.
-#define UWVM_CUSTOM_OWNED_SERVICE_SHARD_IMPLEMENTATION 1
-#include "custom_owned_services_impl.h"
-#undef UWVM_CUSTOM_OWNED_SERVICE_SHARD_IMPLEMENTATION
-namespace uwvm2::ros_gateway::custom_owned_services::detail
-{template struct service_shard<@UWVM_ROS2_CUSTOM_SERVICE_SHARD_INDEX@,@UWVM_ROS2_CUSTOM_SERVICE_SHARDS@>;}

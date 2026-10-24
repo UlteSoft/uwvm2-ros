@@ -1,0 +1,162 @@
+/* Authored complete records and transactional malformed/capacity cases.
+ * These are SDK contracts, not original upstream or hardware tests. */
+#include <assert.h>
+#include <stdint.h>
+#include <string.h>
+#include "state.h"
+#define INIT_0(P,v) ((void)0)
+#define INIT_1(P,v) assert(P##_default(&(v))==0)
+#define CHECK(P,D) do{P a={0},out,before;unsigned char wire[32769];size_t n=0,i;INIT_##D(P,a);assert(P##_encode(&a,wire,32768,&n)==0);assert(P##_decode(wire,n,&out)==0);memset(&out,0x55,sizeof out);memcpy(&before,&out,sizeof out);for(i=0;i<n;++i){assert(P##_decode(wire,i,&out)!=0);assert(!memcmp(&out,&before,sizeof out));}wire[n]=0xff;assert(P##_decode(wire,n+1,&out)!=0);assert(!memcmp(&out,&before,sizeof out));if(n){size_t used=99;memset(wire,0x66,n);assert(P##_encode(&a,wire,n-1,&used)!=0);for(i=0;i<n;++i)assert(wire[i]==0x66);}}while(0)
+#if defined(__GNUC__)
+#define UWVM_AGIBOT_TEST_NOINLINE __attribute__((noinline))
+#else
+#define UWVM_AGIBOT_TEST_NOINLINE
+#endif
+/* One finite frame per record also works in unoptimized native CMake builds. */
+#define DECL(P,D) static UWVM_AGIBOT_TEST_NOINLINE void check_##P(void){CHECK(P,D);}
+DECL(roswasmc_bounded_2_aimdk_msgs_msg_AgentPropertyIdType,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_msg_AgentPropertiesValue,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_msg_AgentProperties,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_msg_AudioVadStateType,0);
+DECL(roswasmc_bounded_2_builtin_interfaces_msg_Time,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_msg_RequestHeader,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_msg_CommonRequest,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_msg_ResponseHeader,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_msg_CommonState,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_msg_CommonResponse,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_msg_CommonTaskResponse,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_msg_MessageHeader,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_msg_FaceEmojiStatus,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_msg_HandCommand,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_msg_HandType,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_msg_HandCommandArray,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_msg_HandState,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_msg_HandStateArray,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_msg_JointCommand,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_msg_JointCommandArray,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_msg_JointState,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_msg_JointStateArray,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_msg_McAction,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_msg_McActionCommand,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_msg_McActionStatus,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_msg_McActionInfo,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_msg_McControlArea,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_msg_McInputAction,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_msg_McInputSource,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_msg_McLocomotionVelocity,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_msg_McPresetMotion,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_msg_TtsPriorityLevel,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_msg_PlayMediaFileRequest,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_msg_PlayTtsRequest,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_msg_PlayTtsResponse,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_msg_PmuState,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_msg_ProcessedAudioOutput,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_msg_TouchState,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_srv_GetAllJointState_Request,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_srv_GetAllJointState_Response,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_srv_GetCurrentInputSource_Request,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_srv_GetCurrentInputSource_Response,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_srv_GetHandType_Request,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_srv_GetHandType_Response,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_srv_GetMcAction_Request,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_srv_GetMcAction_Response,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_srv_GetMute_Request,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_srv_GetMute_Response,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_srv_GetVolume_Request,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_srv_GetVolume_Response,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_srv_LedStripCommand_Request,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_srv_LedStripCommand_Response,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_srv_PlayEmoji_Request,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_srv_PlayEmoji_Response,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_srv_PlayMediaFile_Request,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_srv_PlayMediaFile_Response,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_srv_PlayTts_Request,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_srv_PlayTts_Response,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_srv_PlayVideo_Request,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_srv_PlayVideo_Response,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_srv_SetAgentPropertiesRequest_Request,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_srv_SetAgentPropertiesRequest_Response,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_srv_SetMcAction_Request,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_srv_SetMcAction_Response,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_srv_SetMcInputSource_Request,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_srv_SetMcInputSource_Response,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_srv_SetMcPresetMotion_Request,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_srv_SetMcPresetMotion_Response,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_srv_SetMute_Request,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_srv_SetMute_Response,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_srv_SetVolume_Request,0);
+DECL(roswasmc_bounded_2_aimdk_msgs_srv_SetVolume_Response,0);
+int main(void){
+check_roswasmc_bounded_2_aimdk_msgs_msg_AgentPropertyIdType();
+check_roswasmc_bounded_2_aimdk_msgs_msg_AgentPropertiesValue();
+check_roswasmc_bounded_2_aimdk_msgs_msg_AgentProperties();
+check_roswasmc_bounded_2_aimdk_msgs_msg_AudioVadStateType();
+check_roswasmc_bounded_2_builtin_interfaces_msg_Time();
+check_roswasmc_bounded_2_aimdk_msgs_msg_RequestHeader();
+check_roswasmc_bounded_2_aimdk_msgs_msg_CommonRequest();
+check_roswasmc_bounded_2_aimdk_msgs_msg_ResponseHeader();
+check_roswasmc_bounded_2_aimdk_msgs_msg_CommonState();
+check_roswasmc_bounded_2_aimdk_msgs_msg_CommonResponse();
+check_roswasmc_bounded_2_aimdk_msgs_msg_CommonTaskResponse();
+check_roswasmc_bounded_2_aimdk_msgs_msg_MessageHeader();
+check_roswasmc_bounded_2_aimdk_msgs_msg_FaceEmojiStatus();
+check_roswasmc_bounded_2_aimdk_msgs_msg_HandCommand();
+check_roswasmc_bounded_2_aimdk_msgs_msg_HandType();
+check_roswasmc_bounded_2_aimdk_msgs_msg_HandCommandArray();
+check_roswasmc_bounded_2_aimdk_msgs_msg_HandState();
+check_roswasmc_bounded_2_aimdk_msgs_msg_HandStateArray();
+check_roswasmc_bounded_2_aimdk_msgs_msg_JointCommand();
+check_roswasmc_bounded_2_aimdk_msgs_msg_JointCommandArray();
+check_roswasmc_bounded_2_aimdk_msgs_msg_JointState();
+check_roswasmc_bounded_2_aimdk_msgs_msg_JointStateArray();
+check_roswasmc_bounded_2_aimdk_msgs_msg_McAction();
+check_roswasmc_bounded_2_aimdk_msgs_msg_McActionCommand();
+check_roswasmc_bounded_2_aimdk_msgs_msg_McActionStatus();
+check_roswasmc_bounded_2_aimdk_msgs_msg_McActionInfo();
+check_roswasmc_bounded_2_aimdk_msgs_msg_McControlArea();
+check_roswasmc_bounded_2_aimdk_msgs_msg_McInputAction();
+check_roswasmc_bounded_2_aimdk_msgs_msg_McInputSource();
+check_roswasmc_bounded_2_aimdk_msgs_msg_McLocomotionVelocity();
+check_roswasmc_bounded_2_aimdk_msgs_msg_McPresetMotion();
+check_roswasmc_bounded_2_aimdk_msgs_msg_TtsPriorityLevel();
+check_roswasmc_bounded_2_aimdk_msgs_msg_PlayMediaFileRequest();
+check_roswasmc_bounded_2_aimdk_msgs_msg_PlayTtsRequest();
+check_roswasmc_bounded_2_aimdk_msgs_msg_PlayTtsResponse();
+check_roswasmc_bounded_2_aimdk_msgs_msg_PmuState();
+check_roswasmc_bounded_2_aimdk_msgs_msg_ProcessedAudioOutput();
+check_roswasmc_bounded_2_aimdk_msgs_msg_TouchState();
+check_roswasmc_bounded_2_aimdk_msgs_srv_GetAllJointState_Request();
+check_roswasmc_bounded_2_aimdk_msgs_srv_GetAllJointState_Response();
+check_roswasmc_bounded_2_aimdk_msgs_srv_GetCurrentInputSource_Request();
+check_roswasmc_bounded_2_aimdk_msgs_srv_GetCurrentInputSource_Response();
+check_roswasmc_bounded_2_aimdk_msgs_srv_GetHandType_Request();
+check_roswasmc_bounded_2_aimdk_msgs_srv_GetHandType_Response();
+check_roswasmc_bounded_2_aimdk_msgs_srv_GetMcAction_Request();
+check_roswasmc_bounded_2_aimdk_msgs_srv_GetMcAction_Response();
+check_roswasmc_bounded_2_aimdk_msgs_srv_GetMute_Request();
+check_roswasmc_bounded_2_aimdk_msgs_srv_GetMute_Response();
+check_roswasmc_bounded_2_aimdk_msgs_srv_GetVolume_Request();
+check_roswasmc_bounded_2_aimdk_msgs_srv_GetVolume_Response();
+check_roswasmc_bounded_2_aimdk_msgs_srv_LedStripCommand_Request();
+check_roswasmc_bounded_2_aimdk_msgs_srv_LedStripCommand_Response();
+check_roswasmc_bounded_2_aimdk_msgs_srv_PlayEmoji_Request();
+check_roswasmc_bounded_2_aimdk_msgs_srv_PlayEmoji_Response();
+check_roswasmc_bounded_2_aimdk_msgs_srv_PlayMediaFile_Request();
+check_roswasmc_bounded_2_aimdk_msgs_srv_PlayMediaFile_Response();
+check_roswasmc_bounded_2_aimdk_msgs_srv_PlayTts_Request();
+check_roswasmc_bounded_2_aimdk_msgs_srv_PlayTts_Response();
+check_roswasmc_bounded_2_aimdk_msgs_srv_PlayVideo_Request();
+check_roswasmc_bounded_2_aimdk_msgs_srv_PlayVideo_Response();
+check_roswasmc_bounded_2_aimdk_msgs_srv_SetAgentPropertiesRequest_Request();
+check_roswasmc_bounded_2_aimdk_msgs_srv_SetAgentPropertiesRequest_Response();
+check_roswasmc_bounded_2_aimdk_msgs_srv_SetMcAction_Request();
+check_roswasmc_bounded_2_aimdk_msgs_srv_SetMcAction_Response();
+check_roswasmc_bounded_2_aimdk_msgs_srv_SetMcInputSource_Request();
+check_roswasmc_bounded_2_aimdk_msgs_srv_SetMcInputSource_Response();
+check_roswasmc_bounded_2_aimdk_msgs_srv_SetMcPresetMotion_Request();
+check_roswasmc_bounded_2_aimdk_msgs_srv_SetMcPresetMotion_Response();
+check_roswasmc_bounded_2_aimdk_msgs_srv_SetMute_Request();
+check_roswasmc_bounded_2_aimdk_msgs_srv_SetMute_Response();
+check_roswasmc_bounded_2_aimdk_msgs_srv_SetVolume_Request();
+check_roswasmc_bounded_2_aimdk_msgs_srv_SetVolume_Response();
+return 0;}

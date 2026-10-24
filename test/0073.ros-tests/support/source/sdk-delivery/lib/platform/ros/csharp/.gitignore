@@ -1,0 +1,13 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+!/build/
+/build/*
+!/build/dotnet/
+/build/dotnet/*
+!/build/dotnet/mono-wasi-aot/
+/build/dotnet/mono-wasi-aot/*
+!/build/dotnet/mono-wasi-aot/tests/
+/build/dotnet/mono-wasi-aot/tests/*
+!/build/dotnet/mono-wasi-aot/tests/GuestFaults.csproj

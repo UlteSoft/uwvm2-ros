@@ -1,1 +1,9 @@
 /target/
+
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/*.class
+/*.jar
+!/perf-expected-1000000.stdout

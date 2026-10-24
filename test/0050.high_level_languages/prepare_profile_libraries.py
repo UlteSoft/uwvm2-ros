@@ -85,10 +85,10 @@ def main():
             return {'original': str(source), 'public': str(public), 'sha256': checksum,
                     'device': public.stat().st_dev, 'inode': public.stat().st_ino}
         for name in ['uwvm2', 'uwvm2-stable', 'uwvm2-ros']:
-            source = products_root / name / 'uwvm'
+            source = products_root / name / 'uwvm2-ros'
             assert digest(source) == environment['executables'][name]['sha256'], 'environment belongs to a different product'
             assert source.resolve(strict=True) == Path(environment['executables'][name]['path']).resolve(strict=True), 'environment product path differs'
-            data['binaries'][name] = alias(source, Path('products') / name / 'uwvm')
+            data['binaries'][name] = alias(source, Path('products') / name / 'uwvm2-ros')
         manifest = json.loads(a.manifest.read_text())
         cases = manifest if isinstance(manifest, list) else manifest['cases']
         for case in cases:

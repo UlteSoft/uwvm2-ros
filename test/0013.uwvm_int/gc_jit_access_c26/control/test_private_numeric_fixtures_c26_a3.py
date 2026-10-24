@@ -6,7 +6,7 @@ cs=json.loads((R/'source/typed-known-length-fixtures-c25-a1/cases.json').read_te
 flags=['-Rcc','jit','-Rcm','full','-Rct','0','-Rllvm-cache-path','disable','-WFE-gc','-WFE-function-references','-WFE-tail-call','-WFE-exceptions','-WFE-simd','-WFE-relaxed-simd']
 with N.lease():
  for v in vs:
-  elf=O/'build/wasmtime-bench' if v=='wasmtime-drc' else R/('build/deferred-'+v+'/uwvm')
+  elf=O/'build/wasmtime-bench' if v=='wasmtime-drc' else R/('build/deferred-'+v+'/uwvm2-ros')
   for c in cs:
    assert N.sha(c['wasm'])==c['wasm_sha'] and N.sha(c['wat'])==c['wat_sha'];lab='length-facts-c26-a3-'+v+'-'+c['name'];out=R/'evidence'/(lab+'.qualified.json');cmd=[elf,c['wasm']] if v=='wasmtime-drc' else [elf,*flags,'--run',c['wasm']]
    if out.exists():

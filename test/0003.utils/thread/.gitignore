@@ -1,0 +1,14 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/checkpoint_host_admission
+/cooperative_external_resume
+/cooperative_pause_transition
+/cooperative_stopped_cohort
+/creation_performance
+/execution_maintenance_transition
+/execution_quiescent_configuration
+/native_thread_oneshot_abort
+/native_thread_tsan
+/parallel_compile_failure_state

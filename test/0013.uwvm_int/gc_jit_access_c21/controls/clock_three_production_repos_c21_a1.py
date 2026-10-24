@@ -1,7 +1,7 @@
 from pathlib import Path
 import sys,json,os,re,statistics
 R=Path('/tmp/uwvm-gc-perf-20261011-r74');sys.path.insert(0,str(R/'control'));import native as N
-cs=json.loads((R/'source/typed-store-integrated-clock-c21/cases.json').read_text())['cases'];vs=['uwvm2','uwvm2-stable','uwvm2-ros','wasmtime-cli49-drc'];elves={r:R/'build/repo-sync-c21-a1'/r/'uwvm' for r in vs[:3]};elves[vs[-1]]=R/'source/wasmtime-codegen-analysis-a1/wasmtime-v49.0.2-x86_64-linux/wasmtime';rows=[]
+cs=json.loads((R/'source/typed-store-integrated-clock-c21/cases.json').read_text())['cases'];vs=['uwvm2','uwvm2-stable','uwvm2-ros','wasmtime-cli49-drc'];elves={r:R/'build/repo-sync-c21-a1'/r/'uwvm2-ros' for r in vs[:3]};elves[vs[-1]]=R/'source/wasmtime-codegen-analysis-a1/wasmtime-v49.0.2-x86_64-linux/wasmtime';rows=[]
 with N.lease():
  for rd in range(3):
   for ci,c in enumerate(cs):

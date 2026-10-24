@@ -31,14 +31,14 @@ The reference is derived from the current source tree, primarily:
 Some commands are conditionally compiled. The authoritative list for a particular binary is always the binary itself:
 
 ```bash
-uwvm --help
-uwvm --help all
-uwvm --help global
-uwvm --help debug
-uwvm --help wasm
-uwvm --help runtime
-uwvm --help log
-uwvm --help wasi
+uwvm2-ros --help
+uwvm2-ros --help all
+uwvm2-ros --help global
+uwvm2-ros --help debug
+uwvm2-ros --help wasm
+uwvm2-ros --help runtime
+uwvm2-ros --help log
+uwvm2-ros --help wasi
 ```
 
 ## Fast Orientation

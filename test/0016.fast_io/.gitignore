@@ -1,0 +1,17 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/char_category_public_api
+/chvw_public_api
+/concat_forwarding
+/lebe_public_api
+/nt_readonly_sync_nothrow_public_api
+/nt_standard_information_sdk_layout
+/parse_result_public_api
+/posix_file_loader_padding
+/scan_precise_batch
+/sha_scalar_unaligned_public_api
+/shared_memory_mapping_raii
+/std_string_public_api
+/windows_file_loader_padding

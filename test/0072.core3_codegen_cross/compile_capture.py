@@ -41,7 +41,7 @@ def main():
     verify(config['pins'])
     verify(deps)
     assert digest(a.config) == config_hash
-    product = out / 'uwvm'
+    product = out / 'uwvm2-ros'
     assert product.read_bytes()[:4] == b'\x7fELF'
     save(out / 'qualification.json', dict(test_capture_macro_qualified=True,
         product=str(product), product_sha256=digest(product),

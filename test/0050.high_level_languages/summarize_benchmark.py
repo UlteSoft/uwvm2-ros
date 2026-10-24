@@ -161,36 +161,36 @@ def main():
                'engines': ENGINES, 'samples_per_pair': 5,
                'report_sha256': sha(args.report), 'manifest_sha256': sha(args.manifest),
                'helper_sha256': sha(__file__), 'cases': derived, 'failures': failures}
-    lines = ['# 普通执行：相同 Wasm 的引擎对比', '',
-             'CPU21；每对一个预热、五个随机交错的独立进程样本；磁盘引擎缓存禁用，OS 页缓存保留。',
-             f'{len(cases)} 条路线 × {len(ENGINES)} 种引擎/模式 = {len(pairs)} 对；三仓 UWVM 与 Wasmtime 为必测资格，状态见派生 JSON。',
-             '不同路线的工作量不同；仅比较同一行。guest 内核与冷进程耗时分别记录；时钟种类保留在每条路线的派生 JSON。', '',
-             '内核中位数（毫秒）；N/A 表示该对未通过运行/计时资格，不产生比值。', '',
+    lines = ['# Ordinary execution: engine comparison using identical Wasm', '',
+             'CPU21; one warmup and five randomly interleaved fresh-process samples per pair; disk engine caches disabled and OS page cache retained.',
+             f'{len(cases)} routes x {len(ENGINES)} engines/modes = {len(pairs)} pairs; all three UWVM products and Wasmtime are mandatory; see derived JSON for status.',
+             'Workloads differ between routes; compare only within a row. Guest-kernel and cold-process durations are separate; each route retains its clock kind in derived JSON.', '',
+             'Kernel median in milliseconds; N/A means the pair failed execution/timing qualification and receives no ratio.', '',
              '| case | ' + ' | '.join(ENGINES) + ' |', '| --- | ' + ' | '.join(['---:'] * len(ENGINES)) + ' |']
     for row in derived:
         lines.append('| ' + cell(row['case']) + ' | ' + ' | '.join(
             f"{row['engines'][engine]['metrics']['kernel_seconds']['median'] * 1000:.3f}"
             if row['engines'][engine]['qualified'] else 'N/A' for engine in ENGINES) + ' |')
-    lines += ['', 'UWVM / Wasmtime 内核耗时比（越小越快，仅同一行）：', '',
+    lines += ['', 'UWVM / Wasmtime kernel-duration ratio; lower is faster, compare only within a row:', '',
               '| case | uwvm2 | uwvm2-stable | uwvm2-ros |', '| --- | ---: | ---: | ---: |']
     for row in derived:
         lines.append('| ' + cell(row['case']) + ' | ' + ' | '.join(
             f"{row['engines'][engine]['kernel_time_over_wasmtime']:.3f}"
             if 'kernel_time_over_wasmtime' in row['engines'][engine] else 'N/A' for engine in ENGINES[:3]) + ' |')
-    lines += ['', '冷进程 wall 中位数（秒），包含加载/编译、初始化、内核与退出；不等于单独编译时间。WasmEdge AOT 的离线构建另列。', '',
+    lines += ['', 'Cold-process wall median in seconds includes load/compile, initialization, kernel and exit; it is not isolated compilation time. WasmEdge AOT offline build is separate.', '',
               '| case | ' + ' | '.join(ENGINES) + ' |', '| --- | ' + ' | '.join(['---:'] * len(ENGINES)) + ' |']
     for row in derived:
         lines.append('| ' + cell(row['case']) + ' | ' + ' | '.join(
             f"{row['engines'][engine]['metrics']['process_wall_seconds']['median']:.3f}"
             if row['engines'][engine]['qualified'] else 'N/A' for engine in ENGINES) + ' |')
-    lines += ['', 'WasmEdge AOT 离线构建（秒，不计入运行样本）：', '']
+    lines += ['', 'WasmEdge AOT offline build in seconds, excluded from execution samples:', '']
     lines += ['- ' + cell(row['case']) + ': ' + f"{row['engines']['wasmedge-aot']['offline_compilation_seconds']:.3f}"
               for row in derived if row['engines']['wasmedge-aot']['qualified']]
-    lines += ['', '失败对的完整 stderr/stdout、退出码与身份保留在原始报告及对应 runs 目录。', '',
+    lines += ['', 'Failed pairs retain complete stderr/stdout, exit status and identity in the original report and corresponding runs directory.', '',
               '| case | engine | failure |', '| --- | --- | --- |']
     lines += ['| ' + cell(row['case']) + ' | ' + cell(row['engine']) + ' | ' + cell(row['failure'])[:240] + ' |'
               for row in failures]
-    lines += ['', '[原始 JSON](' + os.path.relpath(args.report, args.out) + ')；[派生 JSON](summary.json)。', '']
+    lines += ['', '[Original JSON](' + os.path.relpath(args.report, args.out) + '); [Derived JSON](summary.json).', '']
     args.out.mkdir(parents=True, exist_ok=False)
     (args.out / 'summary.json').write_text(json.dumps(summary, indent=2, allow_nan=False) + '\n')
     (args.out / 'tables.md').write_text('\n'.join(lines))

@@ -8,7 +8,7 @@ from pathlib import Path
 import shutil
 
 
-FILES = ('uwvm.exe', 'uwvm-debug-server.exe',
+FILES = ('uwvm2-ros.exe', 'uwvm-debug-server.exe',
          'windows_control_broker_child.exe', 'native-step-fixture.wasm',
          'run_windows_control_broker_vm.ps1', 'run_windows_broker_host_vm.ps1',
          'dap_adapter.py', 'run_dap_windows_guest.py')
@@ -37,7 +37,7 @@ def main() -> None:
     require(main_stage['source_id'] == build['source_id'] and
             main_stage['llvm_certificate_sha256'] == build['llvm_certificate_sha256'],
             'broker staging source/LLVM differs from the qualified main stage')
-    for name in ('uwvm.exe', 'uwvm-debug-server.exe'):
+    for name in ('uwvm2-ros.exe', 'uwvm-debug-server.exe'):
         require(main_stage['files'][name].lower() ==
                 build['products'][name]['sha256'].lower(),
                 f'broker staging product differs from the build certificate: {name}')

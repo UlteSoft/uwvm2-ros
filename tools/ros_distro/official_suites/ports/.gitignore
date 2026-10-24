@@ -1,0 +1,5 @@
+# Local build/run products; shared artifact rules are in tools/.gitignore.
+/build/
+/out/
+/tmp/
+/rospy_pubsub_order_guest

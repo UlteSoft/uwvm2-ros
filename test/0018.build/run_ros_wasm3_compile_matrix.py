@@ -110,7 +110,7 @@ def main():
                 continue
             defines = [f"-D{value}" for value in (*combine_defines, *delay_defines)]
             artifacts = {name: output / f"{profile}-{name}.o" for name in sources}
-            binary = output / f"{profile}-uwvm"
+            binary = output / f"{profile}-uwvm2-ros"
             row = {
                 "profile": profile, "defines": defines, "source": str(source),
                 "source_sha256": source_hashes, "oracle_sha256": sha256(args.oracle),

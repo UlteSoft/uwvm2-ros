@@ -1,0 +1,21 @@
+
+#[cfg(test)]
+mod binding_tests {
+    use super::*;
+    fn record(sequence:u64)->[u8;64]{let mut b=[0;64];b[..4].copy_from_slice(b"UWRE");b[4]=1;b[6]=1;b[8]=2;
+        for (at,n) in [(16,2u64),(32,sequence),(40,17),(48,19)]{b[at..at+8].copy_from_slice(&n.to_le_bytes());}b}
+    #[test]
+    fn binding_commits_only_complete_exact_source_session_sequence(){
+        let mut binding=Binding::new(2,2,0).unwrap();assert_eq!(binding.decode(&record(1)).unwrap().sequence,1);
+        let previous=binding;assert!(binding.decode(&record(1)).is_err());assert_eq!(binding,previous);
+        for (offset,value) in [(16,3u64),(48,20),(56,1)]{let mut bad=record(2);bad[offset..offset+8].copy_from_slice(&value.to_le_bytes());
+            assert_eq!(binding.decode(&bad).unwrap_err().code,codes::INVALID);assert_eq!(binding,previous);}
+        assert_eq!(binding.decode(&record(2)).unwrap().sequence,2);
+    }
+    #[test]
+    fn true_sequence_exhaustion_does_not_wrap(){
+        let mut binding=Binding::new(2,2,0).unwrap();binding.sequence=u64::MAX;let previous=binding;
+        assert!(binding.decode(&record(1)).is_err());assert_eq!(binding,previous);
+        assert!(Binding::new(0,2,0).is_err());assert!(Binding::new(2,0,0).is_err());
+    }
+}

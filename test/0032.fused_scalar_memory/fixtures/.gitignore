@@ -4,3 +4,9 @@
 !/memarg_reserved_bit7.wasm
 !/memarg_u64_overflow.wasm
 !/memarg_u64_unterminated.wasm
+
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/scalar_memory_event_component

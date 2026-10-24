@@ -1,0 +1,8 @@
+# Local build/run products; shared artifact rules are in tools/.gitignore.
+/build/
+/out/
+/tmp/
+/secure_server_windows
+/*.vsix
+/dist/
+/sessions/

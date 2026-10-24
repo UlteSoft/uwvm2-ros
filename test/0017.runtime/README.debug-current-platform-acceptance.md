@@ -123,7 +123,7 @@ bash "$SOURCE/tools/ci/require_wasm3_test_cgroup.sh"
 python3 "$SOURCE/test/0017.runtime/test_windows_debug_current_stage.py"
 python3 "$SOURCE/test/0017.runtime/stage_windows_debug_current_vm.py" \
   --source-root "$SOURCE" --repository ros \
-  --product "$BUILD/uwvm.exe" \
+  --product "$BUILD/uwvm2-ros.exe" \
   --launcher "$BUILD/windows_debug_current_launcher.exe" \
   --build-receipt "$BUILD/current-debug-build-receipt.json" \
   --wasm-clang "$WASM_CLANG" --wasm-ld "$WASM_LD" \

@@ -41,6 +41,75 @@ end
 declare_selection("ros-vendor-", ros_vendor_options)
 declare_selection("ros-platform-", ros_platform_options)
 
+-- Project-description helpers cannot throw script-sandbox exceptions. Parse
+-- without effects; after_check and target on_load reject the returned reason.
+local function parse_registry_max_interfaces(raw)
+    if raw == nil then raw = "128" end
+    raw = tostring(raw)
+    local value = tonumber(raw)
+    if not raw:match("^%d+$") or not value or value < 1 or value > 512 then
+        return 128, "--ros-registry-max-interfaces requires an explicit integer 1..512"
+    end
+    return value
+end
+
+option("ros-registry-max-interfaces", function()
+    set_default("128")
+    set_showmenu(true)
+    set_description("Explicit compiled Topic/Service/Action schema count ceiling, integer 1..512. Default 128; grants no permissions and changes no byte/node budgets.")
+    after_check(function(option)
+        local _, reason = parse_registry_max_interfaces(option:value())
+        if reason then raise(reason) end
+    end)
+end)
+
+function uwvm_ros_registry_max_interfaces()
+    return parse_registry_max_interfaces(get_config("ros-registry-max-interfaces"))
+end
+
+local function parse_registry_max_cells(raw)
+    if raw == nil then raw = "16384" end
+    raw = tostring(raw)
+    local value = tonumber(raw)
+    if not raw:match("^%d+$") or not value or value < 1 or value > 1048576 then
+        return 16384, "--ros-registry-max-cells requires an explicit integer 1..1048576"
+    end
+    return value
+end
+
+option("ros-registry-max-cells", function()
+    set_default("16384")
+    set_showmenu(true)
+    set_description("Aggregate compiled schema cell ceiling, integer 1..1048576. Default 16384; per-record byte/node/depth checks and Guest permissions remain separate.")
+    after_check(function(option)
+        local _, reason = parse_registry_max_cells(option:value())
+        if reason then raise(reason) end
+    end)
+end)
+
+function uwvm_ros_registry_max_cells()
+    return parse_registry_max_cells(get_config("ros-registry-max-cells"))
+end
+
+-- @brief Reject invalid registry capacities before loading a production target.
+-- @details Option checks cover normal configuration. This rule also checks a
+-- restored configuration when loading its targets. Project-description helpers
+-- return safe numeric values; diagnostics belong to this script callback, where
+-- raise() is available. A rule preserves the target's existing on_load callback.
+rule("uwvm.ros.registry_capacity")
+    on_load(function(target)
+        import("core.project.config")
+        local _, interfaces_reason = parse_registry_max_interfaces(config.get("ros-registry-max-interfaces"))
+        local _, cells_reason = parse_registry_max_cells(config.get("ros-registry-max-cells"))
+        if interfaces_reason then
+            raise(interfaces_reason)
+        end
+        if cells_reason then
+            raise(cells_reason)
+        end
+    end)
+rule_end()
+
 option("ros-platform-jetson", function()
     set_default(false)
     set_showmenu(true)

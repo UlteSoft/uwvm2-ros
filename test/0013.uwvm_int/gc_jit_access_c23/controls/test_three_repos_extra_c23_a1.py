@@ -3,7 +3,7 @@ import sys,json,os,fcntl
 R=Path('/tmp/uwvm-gc-perf-20261011-r74');sys.path.insert(0,str(R/'control'));import native as N
 Q=R/'source/repo-sync-c20-fixtures-export-v2';manifest=json.loads((Q/'cases.json').read_text());lock=open(N.BASE/'control/native-c21-repo-foreign-feature.lock','a+');fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB);N.check();assert (R/'evidence/repo-sync-c23-a1-all-three-qualified.json').exists();rows=[]
 for repo in ['uwvm2','uwvm2-stable','uwvm2-ros']:
- elf=R/'build/repo-sync-c23-a1'/repo/'uwvm';b=json.loads((elf.parent/'build-binding.json').read_text());assert N.sha(elf)==b['ELF_sha'];flags=(['-Rcc','jit','-Rcm','full'] if repo=='uwvm2' else ['-Raot','-Rllvm-full-policy','pb-o3'])+['-Rct','0','-WFE-gc','-WFE-function-references','-WFE-tail-call','-WFE-exceptions','-WFE-simd','-WFE-relaxed-simd','-Rllvm-cache-path','disable']
+ elf=R/'build/repo-sync-c23-a1'/repo/'uwvm2-ros';b=json.loads((elf.parent/'build-binding.json').read_text());assert N.sha(elf)==b['ELF_sha'];flags=(['-Rcc','jit','-Rcm','full'] if repo=='uwvm2' else ['-Raot','-Rllvm-full-policy','pb-o3'])+['-Rct','0','-WFE-gc','-WFE-function-references','-WFE-tail-call','-WFE-exceptions','-WFE-simd','-WFE-relaxed-simd','-Rllvm-cache-path','disable']
  for kind in ['foreign','features']:
   for c in manifest[kind]:
    label='repo-sync-c23-a1-'+repo+'-'+kind+'-'+c['name'];w=Q/(c['importer'] if kind=='foreign' else c['wasm']);assert N.sha(w)==c[('importer_sha' if kind=='foreign' else 'wasm_sha')];args=flags+c.get('flags',[])

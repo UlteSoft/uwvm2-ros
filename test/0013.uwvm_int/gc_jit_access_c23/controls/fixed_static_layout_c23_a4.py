@@ -5,7 +5,7 @@ import disjoint_pmu_c20_fixed_v2
 cs={c['name']:c for c in json.loads((R/'source/typed-array-store-bench-c21/cases.json').read_text())['cases']}
 for f in [O/'source/cases-restored-a1.json',R/'source/repeated-array-types-native-a1.json',R/'source/observable-features-native-a1.json']:
  for c in json.loads(f.read_text()):cs[c['name']]=c
-vs=['typed-array-access-inline','typed-array-access-inline-static','wasmtime-drc'];elves={v:R/('build/deferred-'+v+'/uwvm') for v in vs[:-1]};elves[vs[-1]]=O/'build/wasmtime-bench';flags=['-Rcc','jit','-Rcm','full','-Rct','0','-WFE-gc','-WFE-exceptions','-WFE-tail-call','-WFE-function-references','-WFE-simd','-WFE-relaxed-simd'];rows=[];F=R/'source/fixed-inline-auth-c23-a4';F.mkdir(exist_ok=False);template=json.loads(next((R/'source/fixed-counter-specs-c20-v2').glob('*.json')).read_text())
+vs=['typed-array-access-inline','typed-array-access-inline-static','wasmtime-drc'];elves={v:R/('build/deferred-'+v+'/uwvm2-ros') for v in vs[:-1]};elves[vs[-1]]=O/'build/wasmtime-bench';flags=['-Rcc','jit','-Rcm','full','-Rct','0','-WFE-gc','-WFE-exceptions','-WFE-tail-call','-WFE-function-references','-WFE-simd','-WFE-relaxed-simd'];rows=[];F=R/'source/fixed-inline-auth-c23-a4';F.mkdir(exist_ok=False);template=json.loads(next((R/'source/fixed-counter-specs-c20-v2').glob('*.json')).read_text())
 with N.lease():
  for rd in range(2):
   for ci,(name,reps) in enumerate([('i8-write',8192),('i32-write',8192),('i32-write-read',8192),('observable-tail-call',65536),('repeat-init-func',128)]):

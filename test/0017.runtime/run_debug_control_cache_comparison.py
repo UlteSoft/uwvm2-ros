@@ -81,7 +81,7 @@ def main():
     tests = Path(__file__).resolve().parent
     argv = [sys.executable, str(tests / 'run_debug_workload_matrix.py'), '--uwvm', str(a.uwvm),
             '--baseline', str(a.baseline), '--baseline-codegen', 'less', '--baseline-pipeline', 'debug-local-ssa',
-            '--fixtures', str(a.fixtures), '--out', str(a.out / 'uwvm'), '--repeats', '3',
+            '--fixtures', str(a.fixtures), '--out', str(a.out / 'uwvm2-ros'), '--repeats', '3',
             '--case', 'none', '--case', 'cold', '--case', 'disabled', *(['--ros'] if a.ros else ['--native'])]
     for name in NAMES:
         argv += ['--only', name]

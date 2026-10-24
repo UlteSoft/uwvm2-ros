@@ -69,3 +69,17 @@ locals or operands, coordinate concurrent guest/host readers, collect foreign
 stores/extern bridges/exnrefs, or implement Windows SEH cleanup. The product
 GC release gate must continue to fail. Formal Linux replay requires the
 64 GiB, zero-swap cgroup and `--cgroup` pointing to its visible directory.
+
+## Local-reference authentication fixtures
+
+`gc_array_set_local_ref_auth.cc` and related edge/compact fixtures exercise the
+explicit `UWVM_EXPERIMENTAL_ARRAY_SET_LOCAL_REF_AUTH=1` path. Keep undefined,
+zero and other values as separate disabled configurations. The compact fallback
+fixture also needs `UWVM_EXPERIMENTAL_COMPACT_NUMERIC=1` and the selected full
+policy/native TLS configuration. Preserve owner, generation/admission, foreign,
+stale and invalid-reference checks.
+
+The `gc_struct_set_local_ref_auth.cc` and `gc_struct_set_edge_liveness.cc` sources
+exercise `UWVM_EXPERIMENTAL_STRUCT_SET_LOCAL_REF_AUTH=1`, separately from the
+default configuration. These focused cases do not certify a complete concurrent
+collector or a new cross-platform performance result.

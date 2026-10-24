@@ -221,17 +221,33 @@ namespace uwvm2::uwvm::cmdline::params
         .usage{u8"<module:str> <value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::single, details::ros_details::action::connection, 2>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
+    /// @brief Select the explicitly named module's ROS export delegation boundary.
+    /// @details same-module is the default. module-exports allows ROS operations
+    /// performed inside this module's exports while preserving its local owners.
+    inline constexpr ::uwvm2::utils::cmdline::parameter ros2_single_call_boundary{
+        .name{u8"--ros2-single-call-boundary"},
+        .describe{u8"Select same-module or explicit module-exports ROS delegation for one Single target."},
+        .usage{u8"<module:str> <boundary:str>"},
+        .handle{::std::addressof(
+            details::ros_details::
+                callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::single, details::ros_details::action::connection, 2>)},
+        .cate{::uwvm2::utils::cmdline::categorization::ros2}};
+
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_single_connect_timeout_ms{
         .name{u8"--ros2-single-connect-timeout-ms"},
         .describe{u8"Explicit ROS2 single connect-timeout-ms configuration; default deny."},
         .usage{u8"<module:str> <value:str>"},
-        .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::single, details::ros_details::action::connection, 2>)},
+        .handle{::std::addressof(
+            details::ros_details::
+                callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::single, details::ros_details::action::connection, 2>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_single_grant{
         .name{u8"--ros2-single-grant"},
         .describe{u8"Explicit ROS2 single grant configuration; default deny."},
         .usage{u8"<module:str> <capability:str> <operation:str> <resource:str> <type:str> <type-identity:str>"},
-        .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::single, details::ros_details::action::grant, 6>)},
+        .handle{::std::addressof(
+            details::ros_details::
+                callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::single, details::ros_details::action::grant, 6>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_single_set{
         .name{u8"--ros2-single-set"},

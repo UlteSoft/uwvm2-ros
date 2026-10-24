@@ -75,7 +75,7 @@ def main():
     core = cpu_set(Path('/sys/devices/cpu_core/cpus').read_text())
     atom = cpu_set(Path('/sys/devices/cpu_atom/cpus').read_text())
     assert ((a.cpu in core and a.companion in atom) or (a.cpu in atom and a.companion in core)), 'target and companion must belong to opposite hybrid PMUs'
-    binary = a.arena / 'products' / a.repository / 'uwvm'
+    binary = a.arena / 'products' / a.repository / 'uwvm2-ros'
     identity = json.loads((binary.parent / 'identity.json').read_text())
     assert identity['binary_sha256'] == digest(binary)
     a.out.mkdir(parents=True, exist_ok=False)

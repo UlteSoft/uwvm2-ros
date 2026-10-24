@@ -15,7 +15,7 @@ SOURCE_STEMS = ('source-c-dwarf4', 'source-c-dwarf5',
 FIXTURES = ('native-step-fixture.wasm', 'replace.wasm',
             'good4.bin', 'good5.bin', 'malformed.bin', 'wrong_result.bin') + tuple(
                 name + suffix for name in SOURCE_STEMS for suffix in ('.wasm', '.meta.json'))
-PRODUCTS = ('uwvm.exe', 'uwvm-debug-server.exe',
+PRODUCTS = ('uwvm2-ros.exe', 'uwvm-debug-server.exe',
             'windows_debug_product_launcher.exe', 'windows_control_broker_child.exe')
 SCRIPTS = ('run_native_step_windows_product_vm.ps1', 'run_windows_control_broker_vm.ps1',
            'run_windows_broker_host_vm.ps1')
@@ -76,7 +76,7 @@ def main() -> None:
     # Xmake can reuse a compiled module carrying an older build-source-id
     # even when this run's source tree and command line are current. Require
     # the linked PE itself to contain this exact cache provenance string.
-    product_bytes = Path(origins['uwvm.exe']).read_bytes()
+    product_bytes = Path(origins['uwvm2-ros.exe']).read_bytes()
     if current.encode('ascii') not in product_bytes:
         raise ValueError('linked Windows PE does not embed its source ID')
     for stale in (
@@ -143,7 +143,7 @@ def main() -> None:
     # The guest receives this manifest hash through the trusted bootstrap.
     # Its own entry is intentionally omitted to avoid self-reference.
     qualification = {'schema': 1, 'source_id': current,
-                     'product_sha256': built['products']['uwvm.exe']['sha256'],
+                     'product_sha256': built['products']['uwvm2-ros.exe']['sha256'],
                      'llvm_certificate_sha256': built['llvm_certificate_sha256'],
                      'fixture_summary_sha256': digest(fixtures / 'fixture-summary.json'),
                      'eh_replacement_oracle_sha256': digest(eh_manifest_path),

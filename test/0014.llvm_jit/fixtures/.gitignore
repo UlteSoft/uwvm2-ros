@@ -1,0 +1,27 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/fp_bits_lowering
+/fp_bits_runner
+/fp_legacy_nan_bridge
+/fp_legacy_nan_input
+/fp_legacy_nan_lowering
+/fp_legacy_nan_runner
+/fp_native_rounding_input
+/fp_native_rounding_runner
+/llvm23-systemz-load-trap
+/llvm_jit_target_contract
+/llvm_stack_probes_runner
+/mcjit_remote_unwind_control
+/mcjit_remote_unwind_dump
+/mcjit_remote_unwind_emit
+/mcjit_remote_unwind_guest
+/memory_address_trap_stub
+/mipsr6_fp_select_backend
+/mipsr6_fp_select_runner
+/mipsr6_wasm_select_emit
+/native_target_selection
+/posix_unwind_probe_native
+/simd_cross_finalize
+/simd_direct_cross_runner

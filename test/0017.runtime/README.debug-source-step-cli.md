@@ -16,9 +16,9 @@ The required build receipt must be assembled from the keeper's actual completed 
 
 ```json
 {
-  "binary_path": "/actual/fresh/uwvm",
+  "binary_path": "/actual/fresh/uwvm2-ros",
   "binary_sha256": "actual linked file SHA256",
-  "link_argv": ["/actual/linker", "...", "-o", "/actual/fresh/uwvm"],
+  "link_argv": ["/actual/linker", "...", "-o", "/actual/fresh/uwvm2-ros"],
   "link_cwd": "/actual/build/working/directory",
   "link_returncode": 0,
   "source_before_file": "/actual/build/source-before.json",

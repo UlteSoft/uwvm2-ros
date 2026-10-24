@@ -1,0 +1,6 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/initializer_exact_declarations
+/zero_body_exact_declarations

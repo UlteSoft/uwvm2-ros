@@ -62,7 +62,7 @@ def run_with_progress(cmd: list[str]) -> int:
 
 def main() -> int:
     script_dir = Path(__file__).resolve().parent
-    root = script_dir.parents[1]
+    root = Path(__file__).resolve().parents[2]
 
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", required=True, type=Path)

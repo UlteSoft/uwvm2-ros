@@ -89,11 +89,11 @@ def main() -> None:
     for relative, expected in build.get('build_recipe_files_sha256', {}).items():
         require(digest(source / relative) == expected,
                 f'Windows build recipe changed before staging: {relative}')
-    product = Path(build['products']['uwvm.exe']['path']).resolve(strict=True)
-    require(digest(product) == build['products']['uwvm.exe']['sha256'] and
+    product = Path(build['products']['uwvm2-ros.exe']['path']).resolve(strict=True)
+    require(digest(product) == build['products']['uwvm2-ros.exe']['sha256'] and
             current.encode('ascii') in product.read_bytes(),
             'linked Windows PE lacks its exact embedded source ID')
-    origins = {'uwvm.exe': product,
+    origins = {'uwvm2-ros.exe': product,
                RUNNER: source / 'test/0017.runtime' / RUNNER}
     origins.update({stem + '.wasm': oracle_dir / (stem + '.wasm') for stem in STEMS})
     files = {}
@@ -105,7 +105,7 @@ def main() -> None:
         files[name] = digest(destination)
         require(files[name] == digest(origin), f'changed stage input: {name}')
     qualification = {'schema': 1, 'source_id': current,
-                     'product_sha256': files['uwvm.exe'],
+                     'product_sha256': files['uwvm2-ros.exe'],
                      'build_sha256': digest(build_file),
                      'oracle_sha256': digest(oracle_file),
                      'files_sha256': files.copy()}
@@ -128,12 +128,12 @@ def main() -> None:
         text=True).strip()
     require(after == current, 'source changed during Core 3 syntax staging')
     manifest = {'schema': 1, 'source_id': current,
-                'product_sha256': files['uwvm.exe'],
+                'product_sha256': files['uwvm2-ros.exe'],
                 'oracle_sha256': qualification['oracle_sha256'],
                 'files': files, 'port': args.port, 'prefix': args.prefix,
                 'bootstrap_command_sha256': digest(output / 'bootstrap-command.txt')}
     (output / 'stage.json').write_text(json.dumps(manifest, indent=2, sort_keys=True) + '\n')
-    print(json.dumps({'source_id': current, 'product_sha256': files['uwvm.exe'],
+    print(json.dumps({'source_id': current, 'product_sha256': files['uwvm2-ros.exe'],
                       'stage_sha256': digest(output / 'stage.json'),
                       'bootstrap_sha256': manifest['bootstrap_command_sha256']}, sort_keys=True))
 

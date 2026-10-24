@@ -88,7 +88,7 @@ def main():
     atom = cpu_set(Path('/sys/devices/cpu_atom/cpus').read_text())
     assert ((a.cpu in core and a.companion in atom) or (a.cpu in atom and a.companion in core))
     products_root = a.products_root if a.products_root is not None else a.arena / 'products'
-    binary = products_root / a.repository / 'uwvm'
+    binary = products_root / a.repository / 'uwvm2-ros'
     identity = json.loads((binary.parent / 'identity.json').read_text())
     assert identity['binary_sha256'] == digest(binary)
     target_environment, library_proof = profile_environment(a.arena, a.profile_libraries)

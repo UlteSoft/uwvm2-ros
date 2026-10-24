@@ -53,8 +53,8 @@ When multiple production backends are compiled, LLVM AOT is the default; otherwi
 Examples:
 
 ```bash
-uwvm --runtime-int --run app.wasm
-uwvm --runtime-aot --run app.wasm
+uwvm2-ros --runtime-int --run app.wasm
+uwvm2-ros --runtime-aot --run app.wasm
 ```
 
 Removed commands such as `--runtime-jit`, `--runtime-tiered`, `--runtime-custom-mode`, and `--runtime-custom-compiler` are command-line errors rather than aliases for AOT.
@@ -62,9 +62,9 @@ Removed commands such as `--runtime-jit`, `--runtime-tiered`, `--runtime-custom-
 ## Compiler Log
 
 ```bash
-uwvm --runtime-compiler-log out --runtime-int --run app.wasm
-uwvm --runtime-compiler-log err --runtime-aot --run app.wasm
-uwvm --runtime-compiler-log file compiler.log --runtime-aot --run app.wasm
+uwvm2-ros --runtime-compiler-log out --runtime-int --run app.wasm
+uwvm2-ros --runtime-compiler-log err --runtime-aot --run app.wasm
+uwvm2-ros --runtime-compiler-log file compiler.log --runtime-aot --run app.wasm
 ```
 
 The compiler log is independent of the main diagnostic destination selected by `--log-output`. The file form requires the literal `file` argument.
@@ -82,8 +82,8 @@ The retained high-level presets are:
 The scoped full-module policies map directly to `auto`, `debug`, `legacy-light`, `pb-o1`, `pb-o2`, and `pb-o3`. The high-level and scoped policy commands are mutually exclusive.
 
 ```bash
-uwvm --runtime-aot --runtime-llvm-jit-policy max --run app.wasm
-uwvm --runtime-aot --runtime-llvm-jit-full-policy pb-o2 --run app.wasm
+uwvm2-ros --runtime-aot --runtime-llvm-jit-policy max --run app.wasm
+uwvm2-ros --runtime-aot --runtime-llvm-jit-full-policy pb-o2 --run app.wasm
 ```
 
 All generated Wasm functions carry LLVM `NoInline`, including under `max`/`pb-o3`. Optimizers may still transform code inside each function, but they do not merge one Wasm function body into another. This keeps patchable AOT boundaries and native stack identities stable.
@@ -115,8 +115,8 @@ Dirty Git worktrees and builds with neither identity fail closed even when an ex
 The signing identity is deterministically derived from the local execution context. It detects damaged entries, incompatible-context substitution, and accidental cache reuse; it is not a secret-key trust boundary and does not protect against an attacker who can act as the same OS account. Put the cache in an account-private directory, and use `disable` whenever that ownership boundary is not sufficient.
 
 ```bash
-uwvm --runtime-aot --runtime-llvm-jit-cache-path default --run app.wasm
-uwvm --runtime-aot --runtime-llvm-jit-cache-path path ./uwvm-cache --run app.wasm
+uwvm2-ros --runtime-aot --runtime-llvm-jit-cache-path default --run app.wasm
+uwvm2-ros --runtime-aot --runtime-llvm-jit-cache-path path ./uwvm-cache --run app.wasm
 ```
 
 ## Compile Threads and Scheduling

@@ -97,7 +97,7 @@ def main():
         sidecar, source, expected = producer_source(wasm, suffix)
         expected_stdout = args.arena / 'other/test/0050.high_level_languages' / ('moonbit' if language == 'moonbit-gc' else language) / 'expected.stdout'
         for repository in args.repository or ['uwvm2', 'uwvm2-stable', 'uwvm2-ros']:
-            binary = args.arena / 'products' / repository / 'uwvm'
+            binary = args.arena / 'products' / repository / 'uwvm2-ros'
             destination = args.out / (language + '-' + repository)
             argv = [sys.executable, str(runner), '--binary', str(binary), '--wasm', str(wasm),
                     '--source', str(source), '--expected-source', expected, '--line', '18',
@@ -119,7 +119,7 @@ def main():
     try:
         # All product identities are admitted before the first VM starts.
         for plan in report['plans']:
-            binary = args.arena / 'products' / plan['repository'] / 'uwvm'
+            binary = args.arena / 'products' / plan['repository'] / 'uwvm2-ros'
             identity = json.loads((binary.parent / 'identity.json').read_text())
             assert identity['binary_sha256'] == digest(binary)
             plan['binary_sha256'] = identity['binary_sha256']

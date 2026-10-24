@@ -31,10 +31,10 @@ with N.lease():
      if not pp.exists():N.save(pp,{'SHA':N.sha(BD/(str(i)+'.o')),'source_sha':N.sha(S/tu),'source_manifest_sha':N.sha(S/'current-source-binding.json'),'receipt_sha':N.sha(previous)})
      print('RESUMED_VERIFIED_OBJECT',repo,i,flush=True);continue
     N.run('repo-sync-c21-a2-'+repo+'-compile-'+str(i),[plan['compiler'],*flags,'-c',S/tu,'-o',BD/(str(i)+'.o')],cpu=4,timeout=600,build=True,env=env);print('REPO_SYNC_COMPILED',repo,i,flush=True)
-   elf=BD/'uwvm';N.run('repo-sync-c21-a1-'+repo+'-link',[plan['compiler'],*[BD/(str(i)+'.o') for i in range(3)],'@'+plan['link_rsp'],'-stdlib=libc++','-pthread','-ldl','-lz','-l:libzstd.so.1','-lm','-lcrypto','-lssl','-Wl,--gc-sections','-Wl,--strip-debug','-o',elf],cpu=4,timeout=120,build=True,env=env);N.persist(elf)
+   elf=BD/'uwvm2-ros';N.run('repo-sync-c21-a1-'+repo+'-link',[plan['compiler'],*[BD/(str(i)+'.o') for i in range(3)],'@'+plan['link_rsp'],'-stdlib=libc++','-pthread','-ldl','-lz','-l:libzstd.so.1','-lm','-lcrypto','-lssl','-Wl,--gc-sections','-Wl,--strip-debug','-o',elf],cpu=4,timeout=120,build=True,env=env);N.persist(elf)
    N.save(BD/'build-binding.json',{'ELF_sha':N.sha(elf),'input_sha':N.sha(S/'current-source-binding.json'),'common':plan['common'],'optimization_flags':newflags,'translation_units':{tu:N.sha(S/tu) for tu in plan['tus']},'scope':'Full3TUs current merged Mac source compiled with native LLVM verifier enabled; benchmark-only driver/publication instrumentation absent. No performance claims from these correctness binaries.'})
   else:
-   elf=BD/'uwvm';binding=json.loads((BD/'build-binding.json').read_text());assert binding['ELF_sha']==N.sha(elf) and binding['input_sha']==N.sha(S/'current-source-binding.json')
+   elf=BD/'uwvm2-ros';binding=json.loads((BD/'build-binding.json').read_text());assert binding['ELF_sha']==N.sha(elf) and binding['input_sha']==N.sha(S/'current-source-binding.json')
   rows=[]
   for ci,c in enumerate(cases):
    assert N.sha(c['wasm'])==c['wasm_sha'];label='repo-sync-c21-a1-'+repo+'-case-'+str(ci);env=dict(os.environ)

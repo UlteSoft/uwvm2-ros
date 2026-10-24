@@ -54,7 +54,7 @@ def main() -> None:
             'tamper target is not an exact staged basename')
     require(args.tamper_file in ('qualification.json',
                                 bootstrap.RUNNERS[args.kind],
-                                'uwvm.exe', 'uwvm-debug-server.exe',
+                                'uwvm2-ros.exe', 'uwvm-debug-server.exe',
                                 'native-step-fixture.wasm'),
             'tamper target is outside the execution-before-hash cases')
     require((args.tamper_file != 'qualification.json' or args.kind != 'broker') and

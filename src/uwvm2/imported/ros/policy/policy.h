@@ -18,6 +18,7 @@ namespace uwvm2::imported::ros
 {
     inline bool connection_key(version v, ::std::string_view key) noexcept
     {
+        if(key == "call-boundary") { return true; }
         if(key == "audit-deny-max-rate-hz" || key == "audit-deny-burst" || key == "audit-deny-max-records" || key == "audit-deny-max-bytes") { return true; }
         if(key == "gateway-socket" || key == "gateway-uid" || key == "node-name" || key == "namespace" || key == "connect-timeout-ms") { return true; }
         if(v == version::ros1) { return key == "master-uri" || key == "advertise-host" || key == "transport"; }
@@ -27,9 +28,18 @@ namespace uwvm2::imported::ros
     inline result validate_connection_value(version v, ::std::string_view key, ::std::string_view value)
     {
         if(!valid_version(v) || !connection_key(v, key) || value.empty() || value.size() > 1024 || value.find('\0') != ::std::string_view::npos)
-        { return {errc::invalid_argument, "unknown or empty connection field"}; }
-        if(key == "audit-deny-max-rate-hz")
-        { double n{}; if(!parse_positive_double(value, n) || n > 1000000.) { return {errc::invalid_argument, "denial audit rate must be finite positive <=1000000"}; } }
+        {
+            return {errc::invalid_argument, "unknown or empty connection field"};
+        }
+        if(key == "call-boundary")
+        {
+            if(value != "same-module" && value != "module-exports") { return {errc::invalid_argument, "call-boundary requires same-module or module-exports"}; }
+        }
+        else if(key == "audit-deny-max-rate-hz")
+        {
+            double n{};
+            if(!parse_positive_double(value, n) || n > 1000000.) { return {errc::invalid_argument, "denial audit rate must be finite positive <=1000000"}; }
+        }
         else if(key == "audit-deny-burst" || key == "audit-deny-max-records" || key == "audit-deny-max-bytes")
         {
             ::std::uint64_t n{}; auto maximum{key == "audit-deny-max-bytes" ? 67108864ULL : 1048576ULL};
@@ -78,22 +88,48 @@ namespace uwvm2::imported::ros
     {
         if(!valid_version(target.ros_version) || (target.target_scope == scope::single ? !valid_module_name(target.name) : target.target_scope == scope::group ? !valid_identifier(target.name) : target.target_scope != scope::global))
         { return {errc::invalid_argument, "invalid target identity"}; }
-        for(auto const& [key, value] : target.connection)
-        { if(auto r{validate_connection_value(target.ros_version, key, value)}; !r) { return r; } }
+        // Delegation belongs to one explicitly named library module. A Global
+        // or Group policy cannot turn every member's exports into ROS authority.
+        if(target.connection.contains("call-boundary") && target.target_scope != scope::single)
+        {
+            return {errc::invalid_argument, "call-boundary requires a Single module target"};
+        }
+        for(auto const& [key, value]: target.connection)
+        {
+            if(auto r{validate_connection_value(target.ros_version, key, value)}; !r) { return r; }
+        }
         if(target.enabled)
         {
-            ::std::vector<::std::string_view> required{"gateway-socket", "gateway-uid", "node-name", "namespace", "connect-timeout-ms", "audit-deny-max-rate-hz", "audit-deny-burst", "audit-deny-max-records", "audit-deny-max-bytes"};
+            ::std::vector<::std::string_view> required{"gateway-socket",
+                                                       "gateway-uid",
+                                                       "node-name",
+                                                       "namespace",
+                                                       "connect-timeout-ms",
+                                                       "audit-deny-max-rate-hz",
+                                                       "audit-deny-burst",
+                                                       "audit-deny-max-records",
+                                                       "audit-deny-max-bytes"};
             if(target.ros_version == version::ros1) { required.insert(required.end(), {"master-uri", "advertise-host", "transport"}); }
-            else { required.insert(required.end(), {"domain-id", "rmw-implementation", "security-mode", "keystore", "enclave"}); }
-            for(auto key : required)
-            { if(!target.connection.contains(key)) { return {errc::invalid_argument, ::fast_io::concat_std("enabled target missing explicit connection field: ",::std::string_view{key})}; } }
+            else
+            {
+                required.insert(required.end(), {"domain-id", "rmw-implementation", "security-mode", "keystore", "enclave"});
+            }
+            for(auto key: required)
+            {
+                if(!target.connection.contains(key))
+                {
+                    return {errc::invalid_argument, ::fast_io::concat_std("enabled target missing explicit connection field: ", ::std::string_view{key})};
+                }
+            }
             if(target.ros_version == version::ros2)
             {
                 bool enforce{target.connection.at("security-mode") == "enforce"};
                 bool keystore_unused{target.connection.at("keystore") == "not-applicable"};
                 bool enclave_unused{target.connection.at("enclave") == "not-applicable"};
                 if((enforce && (keystore_unused || enclave_unused)) || (!enforce && (!keystore_unused || !enclave_unused)))
-                { return {errc::invalid_argument, "ROS2 security mode and explicit keystore/enclave conflict"}; }
+                {
+                    return {errc::invalid_argument, "ROS2 security mode and explicit keystore/enclave conflict"};
+                }
             }
         }
         if(!target.enabled)

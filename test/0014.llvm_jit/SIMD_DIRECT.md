@@ -83,8 +83,8 @@ This is evidence for these workloads/host, not a universal performance guarantee
 Build the ROS uwvm executable with LLVM full enabled. Test artifacts stay outside the source tree.
 
 ```sh
-python3 test/0014.llvm_jit/check_simd_memory_boundaries.py /absolute/path/to/uwvm --jobs 4
-python3 test/0014.llvm_jit/check_full_feature_integration.py /absolute/path/to/uwvm
+python3 test/0014.llvm_jit/check_simd_memory_boundaries.py /absolute/path/to/uwvm2-ros --jobs 4
+python3 test/0014.llvm_jit/check_full_feature_integration.py /absolute/path/to/uwvm2-ros
 ```
 
 The ordinary xmake test targets include llvm_jit_verify_compile, llvm_jit_cache_integration,

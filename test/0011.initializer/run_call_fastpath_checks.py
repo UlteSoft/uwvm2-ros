@@ -38,7 +38,7 @@ def _compile_wat(case_root: Path) -> None:
 
 def _xmake_show_uwvm_targetfile(repo_root: Path) -> Path:
     proc = subprocess.run(
-        ["xmake", "show", "-t", "uwvm"],
+        ["xmake", "show", "-t", "uwvm2-ros"],
         cwd=repo_root,
         check=True,
         text=True,
@@ -49,11 +49,11 @@ def _xmake_show_uwvm_targetfile(repo_root: Path) -> Path:
     for line in clean.splitlines():
         if "targetfile:" in line:
             return (repo_root / line.split("targetfile:", 1)[1].strip()).resolve()
-    raise RuntimeError("could not locate uwvm targetfile from `xmake show -t uwvm`")
+    raise RuntimeError("could not locate uwvm targetfile from `xmake show -t uwvm2-ros`")
 
 
 def _build_uwvm(repo_root: Path) -> Path:
-    subprocess.run(["xmake", "build", "uwvm"], cwd=repo_root, check=True)
+    subprocess.run(["xmake", "build", "uwvm2-ros"], cwd=repo_root, check=True)
     targetfile = _xmake_show_uwvm_targetfile(repo_root)
     if not targetfile.is_file():
         raise RuntimeError(f"uwvm targetfile does not exist: {targetfile}")

@@ -3,7 +3,7 @@ import sys,json,os,math,runpy
 sys.path.insert(0,'/tmp/uwvm-gc-perf-20261011-r74/control');import native as N
 import disjoint_pmu_read_lock_c20_v1
 R=N.ROOT;O=Path('/tmp/uwvm-gc-perf-20261011-r73');D=R/'source/wasmtime-codegen-analysis-a1';c=json.loads((D/'fixtures/cases.json').read_text())['cases'][0];clock=json.loads((D/'reference-clock-c20-a1.json').read_text());times=next(x for x in clock['summary'] if x['case']==c['name'])['ns_per_start'];F=D/'hardware-specs-a1';F.mkdir(exist_ok=False);probes=[]
-elves={'typed-array-load':R/'build/deferred-typed-array-load/uwvm','wasmtime-drc':O/'build/wasmtime-bench'};flags=['-Rcc','jit','-Rcm','full','-Rct','0','-WFE-gc','-WFE-exceptions','-WFE-tail-call','-WFE-function-references']
+elves={'typed-array-load':R/'build/deferred-typed-array-load/uwvm2-ros','wasmtime-drc':O/'build/wasmtime-bench'};flags=['-Rcc','jit','-Rcm','full','-Rct','0','-WFE-gc','-WFE-exceptions','-WFE-tail-call','-WFE-function-references']
 with N.lease():
  for v in ['typed-array-load','wasmtime-drc']:
   for analysis in ['hotspots','uarch-exploration']:

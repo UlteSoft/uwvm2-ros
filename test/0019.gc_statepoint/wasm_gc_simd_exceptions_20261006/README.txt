@@ -16,7 +16,7 @@ compilers or profilers during the timed comparison.
 Example, from inside the recovered cgroup entry shell:
 python3 "$UWVM_TASK_DIR/control/resource_guard.py" --label corpus-replay \
   --kind test --timeout 1800 -- python3 run.py \
-  --uwvm /tmp/path/to/uwvm --wasm-tools /path/to/wasm-tools \
+  --uwvm /tmp/path/to/uwvm2-ros --wasm-tools /path/to/wasm-tools \
   --out /tmp/bounded-workspace/replay --cgroup "$TASK_CGROUP" --cpu 6
 
 Add --ros for the ROS CLI. Output directories must not already exist. --only

@@ -1,6 +1,0 @@
-# Complete custom goal, unrelated to the builtin Fibonacci route.
-uint32 count
----
-uint32 total
----
-uint32 progress

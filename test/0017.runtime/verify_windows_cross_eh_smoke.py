@@ -94,7 +94,7 @@ def main() -> None:
     require(digest(root / "run_windows_cross_eh_smoke_vm.ps1") ==
             qualification["runner_sha256"], "guest runner differs from qualification")
     files = qualification.get("files_sha256", {})
-    names = {"uwvm.exe", *(stem + ".wasm" for stem in FIXTURES)}
+    names = {"uwvm2-ros.exe", *(stem + ".wasm" for stem in FIXTURES)}
     if schema == 2:
         require(qualification.get("repository") in ("ordinary", "ros") and
                 qualification.get("multi_object_required") is True,
@@ -103,12 +103,12 @@ def main() -> None:
     require(set(files) == names, "EH qualification has missing or unexpected artifacts")
     for name in names:
         require(digest(root / name) == files[name], f"qualified artifact changed: {name}")
-    require(files["uwvm.exe"] == qualification.get("product_sha256") and
-            contains(root / "uwvm.exe", source_id.encode("ascii")),
+    require(files["uwvm2-ros.exe"] == qualification.get("product_sha256") and
+            contains(root / "uwvm2-ros.exe", source_id.encode("ascii")),
             "PE hash or embedded source fingerprint differs from qualification")
     require(result.get("passed") is True and
             result.get("source_id") == source_id and
-            result.get("product_sha256", "").lower() == files["uwvm.exe"] and
+            result.get("product_sha256", "").lower() == files["uwvm2-ros.exe"] and
             result.get("oracle_sha256", "").lower() == qualification["oracle_sha256"] and
             result.get("build_sha256", "").lower() == qualification["build_sha256"] and
             result.get("runner_sha256", "").lower() == qualification["runner_sha256"] and
@@ -141,7 +141,7 @@ def main() -> None:
             {row.get("name") for row in rows} == set(expected),
             "Win11 EH instruction/unwind and feature-off cases are incomplete")
     for row in rows:
-        validate_case_boundary(row, files["uwvm.exe"])
+        validate_case_boundary(row, files["uwvm2-ros.exe"])
         success, diagnostic = expected[row["name"]]
         require(row.get("passed") is True and
                 row.get("expected_success") is success and
@@ -182,7 +182,7 @@ def main() -> None:
                     require(row.get("cache_store_present") is True,
                             f"cache bytes were not persisted: {row['name']}")
     print(json.dumps({"passed": True, "source_id": source_id,
-                      "product_sha256": files["uwvm.exe"],
+                      "product_sha256": files["uwvm2-ros.exe"],
                       "qualification_sha256": digest(qualification_path),
                       "result_sha256": digest(args.result),
                       "guest_cases": len(rows)}, sort_keys=True))

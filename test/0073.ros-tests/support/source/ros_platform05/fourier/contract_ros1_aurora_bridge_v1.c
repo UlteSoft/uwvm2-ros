@@ -1,0 +1,120 @@
+/* Authored complete records and transactional malformed/capacity cases.
+ * These are SDK contracts, not original upstream or hardware tests. */
+#include <assert.h>
+#include <stdint.h>
+#include <string.h>
+#include "state.h"
+#define INIT_0(P,v) ((void)0)
+#define INIT_1(P,v) assert(P##_default(&(v))==0)
+#define CHECK(P,D) do{P a={0},out,before;unsigned char wire[32769];size_t n=0,i;INIT_##D(P,a);assert(P##_encode(&a,wire,32768,&n)==0);assert(P##_decode(wire,n,&out)==0);memset(&out,0x55,sizeof out);memcpy(&before,&out,sizeof out);for(i=0;i<n;++i){assert(P##_decode(wire,i,&out)!=0);assert(!memcmp(&out,&before,sizeof out));}wire[n]=0xff;assert(P##_decode(wire,n+1,&out)!=0);assert(!memcmp(&out,&before,sizeof out));if(n){size_t used=99;memset(wire,0x66,n);assert(P##_encode(&a,wire,n-1,&used)!=0);for(i=0;i<n;++i)assert(wire[i]==0x66);}}while(0)
+#if defined(__GNUC__)
+#define UWVM_FOURIER_TEST_NOINLINE __attribute__((noinline))
+#else
+#define UWVM_FOURIER_TEST_NOINLINE
+#endif
+/* One finite frame per record also works in unoptimized native CMake builds. */
+#define DECL(P,D) static UWVM_FOURIER_TEST_NOINLINE void check_##P(void){CHECK(P,D);}
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_MotionRecipe,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_ExecuteMoveRequest,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_ExecuteMoveResponse,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_GetBaseDataRequest,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_GetBaseDataResponse,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_GetCartesianStateRequest,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_GetCartesianStateResponse,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_GetContactDataRequest,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_GetContactDataResponse,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_GetFsmNameRequest,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_GetFsmNameResponse,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_GetFsmStateRequest,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_GetFsmStateResponse,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_GetGroupMotionStateRequest,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_GetGroupMotionStateResponse,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_GetGroupMotorCfgRequest,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_GetGroupMotorCfgResponse,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_GetGroupStateRequest,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_GetGroupStateResponse,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_GetSnapshotRequest,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_GroupState,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_Status,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_GetSnapshotResponse,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_GetStandPoseRequest,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_GetStandPoseResponse,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_GetUpperFsmNameRequest,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_GetUpperFsmNameResponse,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_GetUpperFsmStateRequest,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_GetUpperFsmStateResponse,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_GetVelocitySourceRequest,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_GetVelocitySourceResponse,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_GetVelocitySourceNameRequest,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_GetVelocitySourceNameResponse,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_GroupValues,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_SetFsmStateRequest,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_SetFsmStateResponse,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_SetGroupCommandRequest,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_SetGroupCommandResponse,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_SetMotorCfgPdRequest,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_SetMotorCfgPdResponse,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_SetStandPoseRequest,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_SetStandPoseResponse,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_SetUpperFsmStateRequest,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_SetUpperFsmStateResponse,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_SetVelocityRequest,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_SetVelocityResponse,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_SetVelocitySourceRequest,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_SetVelocitySourceResponse,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_VelocityCommand,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_WaitGroupsMotionCompleteRequest,0);
+DECL(roswasmc_bounded_1_uwvm_fourier_bridge_WaitGroupsMotionCompleteResponse,0);
+int main(void){
+check_roswasmc_bounded_1_uwvm_fourier_bridge_MotionRecipe();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_ExecuteMoveRequest();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_ExecuteMoveResponse();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_GetBaseDataRequest();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_GetBaseDataResponse();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_GetCartesianStateRequest();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_GetCartesianStateResponse();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_GetContactDataRequest();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_GetContactDataResponse();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_GetFsmNameRequest();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_GetFsmNameResponse();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_GetFsmStateRequest();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_GetFsmStateResponse();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_GetGroupMotionStateRequest();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_GetGroupMotionStateResponse();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_GetGroupMotorCfgRequest();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_GetGroupMotorCfgResponse();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_GetGroupStateRequest();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_GetGroupStateResponse();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_GetSnapshotRequest();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_GroupState();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_Status();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_GetSnapshotResponse();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_GetStandPoseRequest();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_GetStandPoseResponse();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_GetUpperFsmNameRequest();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_GetUpperFsmNameResponse();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_GetUpperFsmStateRequest();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_GetUpperFsmStateResponse();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_GetVelocitySourceRequest();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_GetVelocitySourceResponse();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_GetVelocitySourceNameRequest();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_GetVelocitySourceNameResponse();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_GroupValues();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_SetFsmStateRequest();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_SetFsmStateResponse();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_SetGroupCommandRequest();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_SetGroupCommandResponse();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_SetMotorCfgPdRequest();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_SetMotorCfgPdResponse();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_SetStandPoseRequest();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_SetStandPoseResponse();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_SetUpperFsmStateRequest();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_SetUpperFsmStateResponse();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_SetVelocityRequest();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_SetVelocityResponse();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_SetVelocitySourceRequest();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_SetVelocitySourceResponse();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_VelocityCommand();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_WaitGroupsMotionCompleteRequest();
+check_roswasmc_bounded_1_uwvm_fourier_bridge_WaitGroupsMotionCompleteResponse();
+return 0;}

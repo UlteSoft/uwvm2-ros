@@ -40,8 +40,8 @@ marker. The complete declared range must fit the Wasm address width even when
 only a prefix is displayed. Empty strings need no memory read; failed, short or
 oversized copies leave text unavailable. C/C++ character pointers retain their
 separate bounded string path. Terminal control bytes are escaped through the
-existing metadata formatter. The [2026-10-06 regression record](README.debug-string-preview-20261006.md) distinguishes owned DATA checks from actual
-producer and VM qualification. The [sequence provenance/range record](README.debug-sequence-provenance-20261006.md) adds language-CU gates and whole-slice address-width checks.
+existing metadata formatter. The [2026-10-06 regression record](README.md) distinguishes owned DATA checks from actual
+producer and VM qualification. The [sequence provenance/range record](README.md) adds language-CU gates and whole-slice address-width checks.
 
 Rust numeric tuple/tuple-struct selectors map `.0`, `.1`, etc. to the actual
 rustc `__0`, `__1` DWARF fields only in an original Rust compilation unit.
@@ -330,7 +330,7 @@ operand without mandatory parentheses. Binary/conditional precedence, metadata-o
 compound typing and direct declaration extent routes are preserved. DAP reserved
 sizeof roots cannot bypass the scalar grammar; identifier prefixes remain valid.
 Exact size_t/full native/live product/all-architecture parity remain unfinished.
-See [unary sizeof implementation and qualification](README.debug-sizeof-unary-20261007.md).
+See [unary sizeof implementation and qualification](README.md).
 
 
 ASCII character escapes followup (2026-10-07): ordinary ASCII numeric octal/hex
@@ -338,7 +338,7 @@ escapes and standard simple escapes now use one complete bounded character token
 for scalar parsing and sizeof delimiters, mirrored by DAP before broker IO.
 Independent native/Wasm compiler witnesses and real metadata/QEMU components
 cover the finite C/C++ profile; Unicode/full native/live/all-architecture parity
-remain partial. See [implementation and qualification](README.debug-character-escape-20261007.md).
+remain partial. See [implementation and qualification](README.md).
 
 
 Native C/C++/C23 logical operands now use bounded declaration preflight before
@@ -357,46 +357,9 @@ Extent contract followup (2026-10-07): native declaration-only and evaluated siz
 Fresh full-product regression (R32, 2026-10-07): paired real LLVM-full -Rdbg Wasm32/64 stops now qualify the stated C-family sizeof/type subset, including 4000 sustained sessions and actual replacement validation/stale metadata refusal. This is a finite frozen-source result; native language parity, other language/architecture products and merged DWARF5 verification remain unfinished. See [full product evidence](README.debug-language-product-r32-20261007.md).
 
 
-Go/TinyGo string/slice len/cap followup (R33, 2026-10-07): paired finite builtins and DAP grammar now have original compiler-oracle CLI/soak qualification, plus native/QEMU component checks. Ordinary len/cap variable-name whitespace lookahead is now freshly linked into both final frozen-source full VM products and qualified by TinyGo replay, authentic C variable stops and the original C-family matrix (88 sessions / 1508 comparisons across the pair). The preceding 197-session soak retains its preceding source-cut scope. Array/map/channel/Rust .len and full native Go semantics are unfinished. See [the R33 report](README.debug-go-builtins-r33-20261007.md).
+Go/TinyGo string/slice len/cap followup (R33, 2026-10-07): paired finite builtins and DAP grammar now have original compiler-oracle CLI/soak qualification, plus native/QEMU component checks. Ordinary len/cap variable-name whitespace lookahead is now freshly linked into both final frozen-source full VM products and qualified by TinyGo replay, authentic C variable stops and the original C-family matrix (88 sessions / 1508 comparisons across the pair). The preceding 197-session soak retains its preceding source-cut scope. Array/map/channel/Rust .len and full native Go semantics are unfinished. See [the R33 report](README.md).
 
-Go/TinyGo fixed-array and pointer-array len/cap followup (R34, 2026-10-07): both freshly linked frozen full LLVM products now qualify finite named/nested/zero-length/zero-size-element arrays and nil pointer-array constant queries with original TinyGo O0 compiler oracles. The same final products pass 92 short sessions / 1628 comparisons and a further 177 sustained sessions / 5310 comparisons (10 minutes per repository). Real QEMU DATA components pass 450 array + 145 descriptor assertions per profile across 16 Linux profiles in each repo, 64 target ELFs total. Array constant evaluator paths do not read operand values; controller stop/frame/root authentication remains required. Map/channel, shadowing, general native Go/Rust semantics, full Go DAP IDE sessions, current ROS provider parity and full architecture VM/JIT parity remain unfinished. R33 qualification remains historical to its source cut. See [the R34 report](README.debug-go-arrays-r34-20261007.md).
-
-
-TinyGo runtime-backed map/channel followup (R35, 2026-10-07): finite map len and no-scheduler channel len/cap, including original named/nil/empty/closed/directional channel cases, now pass paired frozen full-product source stops and same-product 10-minute soaks (131 sessions / 3930 value comparisons), plus 96 short regression sessions / 1748 comparisons. Six original compiler arguments and fixture/Go-spec invariants are distinguished. Sixteen Linux QEMU profiles per repo execute 96 real target ELFs with 1402 collection + 450 array + 145 descriptor DATA assertions per profile. Nil and type component paths do not read headers; nonnil copies use the existing qualified guest-pointer transaction and never follow bucket/buffer/queue/function pointers. Other layouts/producers, map entries, shadowing, full native Go/Rust semantics, Go DAP IDE, current ROS provider and full architecture VM/JIT parity remain unfinished. Historical R33/R34 results retain their own source scopes. See [the R35 report](README.debug-go-collections-r35-20261007.md).
+Go/TinyGo fixed-array and pointer-array len/cap followup (R34, 2026-10-07): both freshly linked frozen full LLVM products now qualify finite named/nested/zero-length/zero-size-element arrays and nil pointer-array constant queries with original TinyGo O0 compiler oracles. The same final products pass 92 short sessions / 1628 comparisons and a further 177 sustained sessions / 5310 comparisons (10 minutes per repository). Real QEMU DATA components pass 450 array + 145 descriptor assertions per profile across 16 Linux profiles in each repo, 64 target ELFs total. Array constant evaluator paths do not read operand values; controller stop/frame/root authentication remains required. Map/channel, shadowing, general native Go/Rust semantics, full Go DAP IDE sessions, current ROS provider parity and full architecture VM/JIT parity remain unfinished. R33 qualification remains historical to its source cut. See [the R34 report](README.md).
 
 
-R36（2026-10-07）补齐并实际验证有限 TinyGo map/channel DAP prepared-attach：三种 evaluate context 返回有限整数显示，Hover/type 协商、首条 JIT 有界等待及失步 VM 通道退休；两仓库各 82 单元测试和超过 10 分钟实际 DAP 测试通过。Go aggregate/完整 IDE/native/cross-VM 仍未完成。详见 [README.debug-go-dap-r36-20261007.md](README.debug-go-dap-r36-20261007.md)。
-
-R37（2026-10-07）补齐有限复制对象 DAP 展开：真实 TinyGo *box Watch/Hover/Variables 展开 11 字段、只读分页与停点退休；两仓库各 96 项回归及超过10分钟真实 DAP 测试通过。自动 aggregate Source variables/完整 Go/其他 producer 和 native/cross-VM 仍未完成。详见 [README.debug-source-objects-dap-r37-20261007.md](README.debug-source-objects-dap-r37-20261007.md)。
-
-R38（2026-10-07）补齐实际 TinyGo 当前源码帧 box 的 Source variables 根指针显示与按需 11 字段只读展开，两仓库各 110 项回归及超过10分钟真实 DAP 测试通过；不从 guest bits 或复制字段名追踪对象。其他语言布局/map entries/完整 Go/native/cross-VM 仍未完成。详见 [README.debug-source-scope-dap-r38-20261007.md](README.debug-source-scope-dap-r38-20261007.md)。
-
-R39（2026-10-07）补齐实际 TinyGo 固定/具名/二维/零尺寸数组 DAP 元素与分页资格，并修复完整复制字符串在 Watch/Hover/Variables evaluation 中显示协议文本的问题。两仓库各 118 项回归和超过10分钟真实 DAP 测试通过。其他语言/自动字段 payload/map entries/native/cross-VM 仍未完成。详见 [README.debug-array-text-dap-r39-20261007.md](README.debug-array-text-dap-r39-20261007.md)。
-
-R40（2026-10-07）补齐有限整数枚举的 DAP 数值/名称叶子与含枚举对象展开，C/C++ 实际 Wasm32/64、DWARF4/5、双调用栈策略和超过10分钟持续测试通过。另修复 Objective-C/Objective-C++ 缺省数组下界，真实 LLVM metadata component 通过；新完整 VM/DAP 尚待验证。详见 [README.debug-enum-dap-r40-20261007.md](README.debug-enum-dap-r40-20261007.md)。
-
-
-R41 后续：Objective-C / Objective-C++ 默认数组下界修复已在 R35 frozen full source + 修复的新完整 VM 上通过实际 Wasm32/64、DWARF4/5 DAP 和长测。当前全部工作区及最新 ROS provider 仍待资格化。参见 README.debug-objc-full-dap-r41-20261007.md 和 debug_objc_full_dap_qualification_20261007.json。
-
-
-R42（2026-10-07）：官方 Rust Wasm32 O0 DWARF4/5 的负判别值载荷、空变体、Option<NonZeroU32> Some/None 已通过原 R41 两完整 VM 的实际 DAP 展开、分页、真单步退役与超过10分钟会话。132 unit tests/仓库及 C 系语言、TinyGo 回归通过。完整 Rust native、优化/Wasm64 和完整跨架构 VM/JIT/DAP 仍未资格化。见 [README.debug-rust-variants-dap-r42-20261007.md](README.debug-rust-variants-dap-r42-20261007.md)。
-
-
-### R43 Rust 活动变体摘要
-
-折叠变量和直接 object.FIELD 求值现在显示已复制活动 case/完整有限载荷，例如 Negative { signed: -3 }、Some { __0.__0.__0: 13 }、None；原类型、只读属性及全部子树保留。超过有限摘要预算时仅显示已证实的 case，不增加查询或标签派生 selector。真实 Rust Wasm32 O0 DWARF4/5 两栈策略、持续会话和最终整合回归见 [R43 报告](../../test/0017.runtime/README.debug-rust-variant-summaries-dap-r43-20261007.md)。完整 Rust pretty-printer/native 等价、优化布局、Wasm64 和全架构 VM 仍未资格化。
-
-
-### R44 Rust 嵌套活动变体
-
-有限嵌套enum/Option复制摘要已支持两层/三层实际活动case，例如 Carry { payload: Negative { signed: -3 } }，数组载荷显示items[0]。每层都验证实际复制selection，整个外层共享节点/深度/值/UTF-8预算；完整子树保留，不生成查询或指针权限。真实编译器样例、两栈策略、持续会话与回归见 [R44报告](../../test/0017.runtime/README.debug-rust-nested-variants-dap-r44-20261007.md)。完整Rust pretty-printer/native、其他layout、Wasm64和全架构VM仍未资格化。
-
-R45实际Wasm32 O0 DWARF4/5 DAP验证支持 object.pair.0、object.nested.0.1、object.arrays[1].1、(*object.next).pair.0、Rust as i32及tuple子对象展开/分页；真实C/C++同名__0/__1字段不会跨语言启用数字别名。computed unsigned int现在在合法32位范围内呈现标量，其他C primitive/未知ABI不新增资格。参见[R45报告](README.debug-rust-tuples-unsigned-dap-r45-20261007.md)。
-
-R46真实C系O0 DWARF4/5 Wasm32/64 DAP检查八种copied整数primitive及其有符号/无符号边界；原guest编译表达式自检对照，完整短测矩阵与600秒持续测试通过。保留明确guest位宽和只读属性，不推导未知ABI或增加写权限。参见[R46报告](README.debug-c-integer-dap-r46-20261007.md).
-
-R47完成C系canonical copied bool/float/double的DAP显示。真实原Clang guest表达式自检对照包含次正规数、最大有限值、Inf/NaN、负零及C/C++比较结果类型；完整矩阵和至少600秒持续测试通过。不据此声称其他语言native布尔语义完成。参见[R47报告](README.debug-c-scalar-dap-r47-20261007.md).
-
-R48 已补 Rust/Go/TinyGo/Zig 的有限 primitive bool 谓词、严格逻辑操作数、Rust整数 !、Go/Rust优先级，以及DAP的Zig and/or语法。两仓原始类型组件及genuine Rust/TinyGo会话已验证；完整native语言/类型推断、其他producer和full QEMU仍未完成。见 [README.debug-native-predicate-r48-20261008.md](README.debug-native-predicate-r48-20261008.md)。
-
-R49 最新primitive谓词在16个Linux QEMU profile的组件覆盖及公共SDK/linker入口修复见[跨架构报告](README.debug-native-predicate-cross-r49-20261008.md)；完整VM/JIT/DAP与native体验仍未资格化。
+TinyGo runtime-backed map/channel followup (R35, 2026-10-07): finite map len and no-scheduler channel len/cap, including original named/nil/empty/closed/directional channel cases, now pass paired frozen full-product source stops and same-product 10-minute soaks (131 sessions / 3930 value comparisons), plus 96 short regression sessions / 1748 comparisons. Six original compiler arguments and fixture/Go-spec invariants are distinguished. Sixteen Linux QEMU profiles per repo execute 96 real target ELFs with 1402 collection + 450 array + 145 descriptor DATA assertions per profile. Nil and type component paths do not read headers; nonnil copies use the existing qualified guest-pointer transaction and never follow bucket/buffer/queue/function pointers. Other layouts/producers, map entries, shadowing, full native Go/Rust semantics, Go DAP IDE, current ROS provider and full architecture VM/JIT parity remain unfinished. Historical R33/R34 results retain their own source scopes. See [the R35 report](README.md).

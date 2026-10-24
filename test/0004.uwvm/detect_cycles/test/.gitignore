@@ -1,0 +1,9 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/benchmark_detect_cycles
+/correctness_detect_cycles
+/detect_cycles_memory_fuzzer
+/exhaustive_small_graphs_fuzzer
+/recursion_limit_detect_cycles

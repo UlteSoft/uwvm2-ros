@@ -1,0 +1,13 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/mips_debug_long_branch_mcjit
+/mips_simd_rounding_harness
+/mips_simd_rounding_ir
+/mips_tailcc_native
+/nearest_native
+/provider_probe
+/tailcc_native
+/target_census
+/termination_native

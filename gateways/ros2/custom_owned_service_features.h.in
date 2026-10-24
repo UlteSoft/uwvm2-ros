@@ -1,3 +1,0 @@
-#pragma once
-/* Actual original SDK compile AND link probe, no try_run. */
-#cmakedefine01 UWVM_NATIVE_CUSTOM_SERVICE_METADATA_API

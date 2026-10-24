@@ -42,7 +42,7 @@ Example invocation, run inside the established Linux 64 GiB test cgroup:
 
 ```sh
 python3 test/0018.debugger/run_wasm_operand_preview_cli.py \
-  --source-root "$PWD" --binary /absolute/path/to/fresh/uwvm \
+  --source-root "$PWD" --binary /absolute/path/to/fresh/uwvm2-ros \
   --wasm-tools /absolute/path/to/wasm-tools --out /absolute/new/results \
   --case atomic-all-widths-i32-address \
   --case atomic-all-widths-i64-address --jit-policy max

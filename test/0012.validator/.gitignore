@@ -1,0 +1,21 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/call_indirect_reserved_zero_encoding
+/compile
+/if_without_else_identity
+/unsupported_post_wasm2_proposals
+/validation_policy_corpus
+/wasm1p1_blocktype_direct_encoding
+/wasm1p1_select_polymorphic_unknown_result
+/wasm1p1_select_t_empty_result_types
+/wasm1p1_select_t_empty_result_types_without_multi_value
+/wasm1p1_select_t_reference_types_feature
+/wasm1p1_table_feature_split
+/wasm1p1_table_fill_bulk_memory_feature
+/wasm2_blocktype_direct_encoding
+/wasm2_corpus_check
+/wasm2_feature_gate_matrix
+/wasm2_select_t_result_arity
+/wasm2_table_feature_split

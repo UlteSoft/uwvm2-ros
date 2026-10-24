@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RosSdkSource Condition="'$(RosSdkSource)' == '' And Exists('$(MSBuildThisFileDirectory)../../Uwvm.RosWasm.csproj')">$(MSBuildThisFileDirectory)../..</RosSdkSource>
+    <RosOwnedExampleSource Condition="'$(RosOwnedExampleSource)' == '' And Exists('$(RosSdkSource)/owned/examples/AppCommon.cs')">$(RosSdkSource)/owned/examples</RosOwnedExampleSource>
+  </PropertyGroup>
+  <PropertyGroup><TargetFramework>net8.0</TargetFramework><OutputType>Exe</OutputType><Nullable>enable</Nullable><RuntimeIdentifier>wasi-wasm</RuntimeIdentifier><RuntimeFrameworkVersion>8.0.15</RuntimeFrameworkVersion><EnableDefaultCompileItems>false</EnableDefaultCompileItems><AllowUnsafeBlocks>false</AllowUnsafeBlocks><DefineConstants>UWVM_ROS2;UWVM_ROSWASM_OWNED_SERVICE;UWVM_ROSWASM_OWNED_GUEST_FAULTS</DefineConstants><WasmBuildNative>true</WasmBuildNative><WasmSingleFileBundle>true</WasmSingleFileBundle><WasmNativeStrip>false</WasmNativeStrip><WasmNativeDebugSymbols>true</WasmNativeDebugSymbols><DebugType>portable</DebugType></PropertyGroup>
+  <ItemGroup><Compile Include="$(RosSdkSource)/RosWasm/**/*.cs" /><Compile Include="$(RosSdkSource)/owned/NativeOwned.cs;$(RosSdkSource)/owned/PreparedSession.cs;$(RosSdkSource)/owned/OwnedWire.cs;$(RosSdkSource)/owned/OwnedGroup.cs;$(RosSdkSource)/owned/ControlWire.cs;$(RosOwnedExampleSource)/AppCommon.cs;GuestFaultFixture.cs;$(RosOwnedGeneratedDir)/BoundedRecords.cs;$(RosOwnedGeneratedDir)/ControlRoots.cs" /></ItemGroup>
+  <Import Project="$(RosSdkSource)/owned/NativeOwned.targets" Condition="'$(RosSdkSource)' != ''" />
+  <Target Name="RequireExplicitSdkSource" BeforeTargets="PrepareForBuild"><Error Condition="'$(RosSdkSource)' == '' Or !Exists('$(RosOwnedExampleSource)/AppCommon.cs')" Text="Supply actual RosSdkSource and RosOwnedExampleSource roots after test relocation." /></Target>
+  <Target Name="RequireGuestFixtureSource" BeforeTargets="CoreCompile"><Error Condition="'$(RosOwnedGeneratedDir)' == '' Or !Exists('$(RosOwnedGeneratedDir)/generation.control-csharp.json')" Text="Complete fresh paired generated records required." /><Error Condition="'$(RosBuildRoot)' == ''" Text="Fresh external build root required." /></Target>
+</Project>

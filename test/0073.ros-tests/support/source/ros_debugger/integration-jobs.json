@@ -1,0 +1,43 @@
+{
+  "format_version": 1,
+  "status": "SOURCE_RECIPES_NOT_EXECUTED",
+  "driver": "test/0073.ros-tests/support/source/ros_debugger/integration_runtime.py",
+  "required_serial_jobs": [
+    {"id": "ros1-default-deny", "version": "1", "mode": "default-deny", "runtime_profile": "ros1"},
+    {"id": "ros1-retained", "version": "1", "mode": "retained", "runtime_profile": "ros1"},
+    {"id": "ros2-default-deny", "version": "2", "mode": "default-deny", "runtime_profile": "ros2"},
+    {"id": "ros2-retained", "version": "2", "mode": "retained", "runtime_profile": "ros2"},
+    {"id": "dual-default-deny", "version": "dual", "mode": "default-deny", "runtime_profile": "dual"},
+    {"id": "dual-retained", "version": "dual", "mode": "retained", "runtime_profile": "dual"}
+  ],
+  "argv_template": [
+    "{python}", "-B", "{source}/test/0073.ros-tests/support/source/ros_debugger/integration_runtime.py",
+    "--source", "{source}", "--manifest", "{manifest}", "--sdk-workspace", "{derived_sdk}",
+    "--out", "{fresh_job_out}", "--qemu", "{native_sdk_qemu}", "--binfmt-evidence", "{live_parent_lease_input}",
+    "--container-started-at", "{actual_current_started_at}",
+    "--worker", "{current_native_llvm_runtime}", "--runtime-build-report", "{current_runtime_profile_report}",
+    "--worker-config", "{current_native_sdk_qemu_config}",
+    "--ros1-gateway", "{current_ros1_gateway}", "--ros1-gateway-report", "{current_strict_ros1_report}",
+    "--ros2-gateway", "{current_ros2_gateway}", "--ros2-gateway-report", "{current_strict_ros2_report}",
+    "--prepared-native", "{current_sdk_peer_prepare_report}", "--wat2wasm", "{qualified_wat2wasm}",
+    "--version", "{version}", "--mode", "{mode}", "--native-step", "required"
+  ],
+  "launch_context": "Root's live original64GiB swap-zero cgroup/binfmt lease; private mount namespace; current frozen source and derived SDK; one invocation at a time",
+  "runtime_adapter": "Native Linux ELF62 LLVM-full Runtime only. The two native SDK Gateway/peer sides separately retain actual ARM/QEMU/full-MD/SDK qualifications. A matching-target Runtime adapter needs its own real executable/map proof; it must not be relabeled ELF62 or ARM.",
+  "runtime_build_contract": "test/0073.ros-tests/support/source/ros_debugger/runtime-build.schema.json",
+  "mandatory_source_prerequisites": ["tools/debug/secure_server.py", "src/uwvm2/uwvm/debugger/linux_control_fd.h", "src/uwvm2/uwvm/run/run.h", "test/0073.ros-tests/support/source/ros_acceptance/lane.py", "test/0073.ros-tests/support/source/ros_acceptance/run_delivery.py", "test/0073.ros-tests/support/source/ros_acceptance/prepare_native.py", "test/0073.ros-tests/support/source/ros_sdk_relay/native_ros1_peer.cc", "test/0073.ros-tests/support/source/ros_sdk_relay/native_ros2_peer.cc"],
+  "actual_success_requirements": [
+    "Current Runtime build report PASS, llvm-full, no reuse, same source/MF, every physical compile/link/LLVM/log pin retained",
+    "Actual current native Runtime executable/birth stopped proof, explicitly no ARM execution claim for this Worker",
+    "Actual production kernel-authenticated console and real Guest Host-call identity/module generation",
+    "Nine info ros selectors plus trace ros repeated and unchanged over the complete cooperative-stop observation window",
+    "Default mode actual ungranted alias errno13 and protected output/length sentinels, independent native zero endpoints/effects",
+    "Retained mode independent exact String exchange, actual source close creates local64B retirement record, untouched queue/quota/audit/trace counters across reads",
+    "Actual earlier stop rejected, running queries rejected, native instruction stop rejected when required",
+    "Actual Guest consumes exact retained resource-closed header once after queries, small90 retains, next11 leaves sentinels unchanged, Guest exits0",
+    "Independent native final exact effect counts and bounded quiet window; normal Gateway0 only after Worker0",
+    "Source/SDK/input/product preservation, current64GiB/swap0/same incarnation and zeroOOM, all owned process/mount/socket cleanup PASS"
+  ],
+  "not_replaced": ["Original4interpreter profiles", "Original core96", "Full SDK345", "Original3073configurations/3200actualinvocations", "ROS-off header/module components", "Existing Linux/macOS/Windows debugger transport acceptance"],
+  "native_step_optional_scope": "Only an explicitly selected unsupported target may use --native-step not-applicable --native-step-reason TEXT. The report records NOT_APPLICABLE_SELECTED_BACKEND/acceptance_claimed=false; it supplies no native-step PASS and cannot satisfy a separately required native-step row. Current supported x86_64 Root jobs select required."
+}

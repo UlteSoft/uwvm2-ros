@@ -1,0 +1,73 @@
+{
+  "cases": [
+    {
+      "type": "interbotix_uxarm_joy/ArmJoy",
+      "wire": "10a07080b93e496ff78927b6",
+      "value": {
+        "record": "interbotix_uxarm_joy/ArmJoy",
+        "members": {
+          "ee_x_cmd": {
+            "scalar": "int8",
+            "value": 16,
+            "wire": "10"
+          },
+          "ee_y_cmd": {
+            "scalar": "int8",
+            "value": -96,
+            "wire": "a0"
+          },
+          "ee_z_cmd": {
+            "scalar": "int8",
+            "value": 112,
+            "wire": "70"
+          },
+          "ee_yaw_cmd": {
+            "scalar": "int8",
+            "value": -128,
+            "wire": "80"
+          },
+          "ee_pitch_cmd": {
+            "scalar": "int8",
+            "value": -71,
+            "wire": "b9"
+          },
+          "waist_cmd": {
+            "scalar": "int8",
+            "value": 62,
+            "wire": "3e"
+          },
+          "gripper_cmd": {
+            "scalar": "int8",
+            "value": 73,
+            "wire": "49"
+          },
+          "pose_cmd": {
+            "scalar": "int8",
+            "value": 111,
+            "wire": "6f"
+          },
+          "speed_cmd": {
+            "scalar": "int8",
+            "value": -9,
+            "wire": "f7"
+          },
+          "speed_toggle_cmd": {
+            "scalar": "int8",
+            "value": -119,
+            "wire": "89"
+          },
+          "gripper_speed_cmd": {
+            "scalar": "int8",
+            "value": 39,
+            "wire": "27"
+          },
+          "mode_cmd": {
+            "scalar": "int8",
+            "value": -74,
+            "wire": "b6"
+          }
+        }
+      }
+    }
+  ]
+}

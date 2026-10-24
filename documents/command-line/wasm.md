@@ -70,8 +70,8 @@ Verbose mode (`--log-verbose`) adds progress messages for loading, format detect
 Syntax:
 
 ```bash
-uwvm --wasm-set-start-func <local-func:u32-dec> [arg ...] --run app.wasm
-uwvm -Wstart <local-func:u32-dec> [arg ...] -r app.wasm
+uwvm2-ros --wasm-set-start-func <local-func:u32-dec> [arg ...] --run app.wasm
+uwvm2-ros -Wstart <local-func:u32-dec> [arg ...] -r app.wasm
 ```
 
 Behavior:
@@ -113,9 +113,9 @@ C/C++-style `f`/`F` suffixes are not accepted. For example, `0.3f` cannot be use
 Examples:
 
 ```bash
-uwvm --wasm-set-start-func 0 --run app.wasm
-uwvm --wasm-set-start-func 3 -1 0xffffffffffffffff 3.5 0x1.2p1 --log-verbose --run app.wasm
-uwvm -Wstart 353 0xfffffffgff -r app.wasm
+uwvm2-ros --wasm-set-start-func 0 --run app.wasm
+uwvm2-ros --wasm-set-start-func 3 -1 0xffffffffffffffff 3.5 0x1.2p1 --log-verbose --run app.wasm
+uwvm2-ros -Wstart 353 0xfffffffgff -r app.wasm
 ```
 
 In the last example, `0xfffffffgff` is collected as an entry-function argument. If local function `353` expects `i32`, the runtime-entry parser reports it as an invalid `i32` argument.
@@ -125,7 +125,7 @@ In the last example, `0xfffffffgff` is collected as an entry-function argument. 
 Syntax:
 
 ```bash
-uwvm --wasm-preload-library <wasm:path> [rename]
+uwvm2-ros --wasm-preload-library <wasm:path> [rename]
 ```
 
 Behavior:
@@ -145,8 +145,8 @@ Optional rename rules:
 Examples:
 
 ```bash
-uwvm --wasm-preload-library lib.wasm --run app.wasm
-uwvm --wasm-preload-library lib.wasm lib.math --run app.wasm
+uwvm2-ros --wasm-preload-library lib.wasm --run app.wasm
+uwvm2-ros --wasm-preload-library lib.wasm lib.math --run app.wasm
 ```
 
 ## `--wasm-register-dl`
@@ -154,7 +154,7 @@ uwvm --wasm-preload-library lib.wasm lib.math --run app.wasm
 Syntax:
 
 ```bash
-uwvm --wasm-register-dl <dl:path> [rename]
+uwvm2-ros --wasm-register-dl <dl:path> [rename]
 ```
 
 Behavior:
@@ -195,7 +195,7 @@ Use it to inspect weak-symbol registration in the current binary/runtime environ
 Syntax:
 
 ```bash
-uwvm --wasm-reset-import <module> <import-module> <import-extern> <new-import-module> <new-import-extern>
+uwvm2-ros --wasm-reset-import <module> <import-module> <import-extern> <new-import-module> <new-import-extern>
 ```
 
 Behavior:
@@ -236,7 +236,7 @@ The `app` module still has its original parsed import in the parser result. Runt
 Syntax:
 
 ```bash
-uwvm --wasm-depend-recursion-limit <depth:size_t>
+uwvm2-ros --wasm-depend-recursion-limit <depth:size_t>
 ```
 
 Behavior:
@@ -253,8 +253,8 @@ This limit applies to dependency traversal/checking, not to Wasm call-stack dept
 Syntax:
 
 ```bash
-uwvm --wasm-set-memory-limit <module> all <min> [max]
-uwvm --wasm-set-memory-limit <module> <index> <min> [max]
+uwvm2-ros --wasm-set-memory-limit <module> all <min> [max]
+uwvm2-ros --wasm-set-memory-limit <module> <index> <min> [max]
 ```
 
 Behavior:
@@ -279,8 +279,8 @@ Combination rules:
 Examples:
 
 ```bash
-uwvm --wasm-set-memory-limit app all 1 256 --run app.wasm
-uwvm --wasm-set-memory-limit app 0 4 --wasm-set-memory-limit app 1 16 64 --run app.wasm
+uwvm2-ros --wasm-set-memory-limit app all 1 256 --run app.wasm
+uwvm2-ros --wasm-set-memory-limit app 0 4 --wasm-set-memory-limit app 1 16 64 --run app.wasm
 ```
 
 ## `--wasm-set-preload-module-attribute`
@@ -288,9 +288,9 @@ uwvm --wasm-set-memory-limit app 0 4 --wasm-set-memory-limit app 1 16 64 --run a
 Syntax:
 
 ```bash
-uwvm --wasm-set-preload-module-attribute <module> none [all|0,1,2]
-uwvm --wasm-set-preload-module-attribute <module> copy [all|0,1,2]
-uwvm --wasm-set-preload-module-attribute <module> mmap [all|0,1,2]
+uwvm2-ros --wasm-set-preload-module-attribute <module> none [all|0,1,2]
+uwvm2-ros --wasm-set-preload-module-attribute <module> copy [all|0,1,2]
+uwvm2-ros --wasm-set-preload-module-attribute <module> mmap [all|0,1,2]
 ```
 
 Behavior:
@@ -316,13 +316,13 @@ Access-mode meaning:
 Order matters when modules are already loaded:
 
 ```bash
-uwvm --wasm-preload-library lib.wasm lib --wasm-set-preload-module-attribute lib copy
+uwvm2-ros --wasm-preload-library lib.wasm lib --wasm-set-preload-module-attribute lib copy
 ```
 
 The attribute is applied to the already loaded `lib`.
 
 ```bash
-uwvm --wasm-set-preload-module-attribute lib copy --wasm-preload-library lib.wasm lib
+uwvm2-ros --wasm-set-preload-module-attribute lib copy --wasm-preload-library lib.wasm lib
 ```
 
 The attribute is stored first and picked up when `lib` is loaded.
@@ -332,7 +332,7 @@ The attribute is stored first and picked up when `lib` is loaded.
 Syntax:
 
 ```bash
-uwvm --wasm-set-parser-limit <type> <limit:size_t>
+uwvm2-ros --wasm-set-parser-limit <type> <limit:size_t>
 ```
 
 Behavior:
@@ -371,7 +371,7 @@ Place parser-limit overrides before any command that loads a Wasm module if you 
 Syntax:
 
 ```bash
-uwvm --wasm-set-initializer-limit <type> <limit:size_t>
+uwvm2-ros --wasm-set-initializer-limit <type> <limit:size_t>
 ```
 
 Behavior:
@@ -417,13 +417,13 @@ Behavior:
 Parser limit before preload:
 
 ```bash
-uwvm --wasm-set-parser-limit codesec_codes 100000 --wasm-preload-library lib.wasm lib --run app.wasm
+uwvm2-ros --wasm-set-parser-limit codesec_codes 100000 --wasm-preload-library lib.wasm lib --run app.wasm
 ```
 
 Parser limit after preload affects later loads only:
 
 ```bash
-uwvm --wasm-preload-library lib.wasm lib --wasm-set-parser-limit codesec_codes 100000 --run app.wasm
+uwvm2-ros --wasm-preload-library lib.wasm lib --wasm-set-parser-limit codesec_codes 100000 --run app.wasm
 ```
 
 Preload with module-specific WASI configuration:
@@ -439,13 +439,13 @@ uwvm \
 NT path on Windows NT:
 
 ```bash
-uwvm --wasm-preload-library ::NT::\??\C:\mods\lib.wasm lib --run app.wasm
+uwvm2-ros --wasm-preload-library ::NT::\??\C:\mods\lib.wasm lib --run app.wasm
 ```
 
 Native DLL NT-path rejection on Windows NT:
 
 ```bash
-uwvm --wasm-register-dl ::NT::\??\C:\mods\lib.dll lib
+uwvm2-ros --wasm-register-dl ::NT::\??\C:\mods\lib.dll lib
 ```
 
 This enters the NT-path warning path and then fatally rejects DLL loading from NT paths.

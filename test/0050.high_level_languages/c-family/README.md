@@ -12,8 +12,8 @@ Using an installed WASI SDK, build and run the basic command:
 
     "$WASI_SDK/bin/clang" --target=wasm32-wasip1 -O2 -g c_language.c -o c_language.wasm
     "$WASI_SDK/bin/clang++" --target=wasm32-wasip1 -std=c++20 -O2 -g -fno-exceptions -fno-rtti cpp_language.cpp -o cpp_language.wasm
-    uwvm --run c_language.wasm
-    uwvm --run cpp_language.wasm
+    uwvm2-ros --run c_language.wasm
+    uwvm2-ros --run cpp_language.wasm
 
 Use the runtime/backend options appropriate to the selected product. Its
 supported Wasm features and admitted WASI resources still apply. These examples

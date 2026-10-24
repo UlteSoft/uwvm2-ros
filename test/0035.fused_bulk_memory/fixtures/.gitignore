@@ -4,3 +4,9 @@
 !/bulk_copy_missing_source.wasm
 !/bulk_fill_missing_memidx.wasm
 !/bulk_fill_u32_overflow.wasm
+
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/bulk_memory_event_component

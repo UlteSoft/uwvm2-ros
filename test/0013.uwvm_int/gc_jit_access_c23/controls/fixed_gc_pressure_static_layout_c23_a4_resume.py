@@ -3,7 +3,7 @@ import sys,json,statistics
 R=Path('/tmp/uwvm-gc-perf-20261011-r74');O=Path('/tmp/uwvm-gc-perf-20261011-r73');sys.path.insert(0,str(R/'control'));import native as N
 import disjoint_pmu_c20_fixed_v2
 cs={c['name']:c for c in json.loads((R/'source/typed-store-gc-pressure-c21/cases.json').read_text())['cases']}
-vs=['typed-array-access-inline','typed-array-access-inline-static32','wasmtime-drc'];elves={v:R/('build/deferred-'+v+'/uwvm') for v in vs[:-1]};elves[vs[-1]]=O/'build/wasmtime-bench';flags=['-Rcc','jit','-Rcm','full','-Rct','0','-WFE-gc','-WFE-exceptions','-WFE-tail-call','-WFE-function-references','-WFE-simd','-WFE-relaxed-simd'];rows=[];F=R/'source/fixed-gc-pressure-inline-auth-c23-a3';F.mkdir(exist_ok=True);template=json.loads(next((R/'source/fixed-counter-specs-c20-v2').glob('*.json')).read_text())
+vs=['typed-array-access-inline','typed-array-access-inline-static32','wasmtime-drc'];elves={v:R/('build/deferred-'+v+'/uwvm2-ros') for v in vs[:-1]};elves[vs[-1]]=O/'build/wasmtime-bench';flags=['-Rcc','jit','-Rcm','full','-Rct','0','-WFE-gc','-WFE-exceptions','-WFE-tail-call','-WFE-function-references','-WFE-simd','-WFE-relaxed-simd'];rows=[];F=R/'source/fixed-gc-pressure-inline-auth-c23-a3';F.mkdir(exist_ok=True);template=json.loads(next((R/'source/fixed-counter-specs-c20-v2').glob('*.json')).read_text())
 with N.lease():
  for rd in range(2):
   for ci,(name,reps) in enumerate([(ty+'-write-read-gc-pressure',256) for ty in ['i8','i16','i32','f32']]):

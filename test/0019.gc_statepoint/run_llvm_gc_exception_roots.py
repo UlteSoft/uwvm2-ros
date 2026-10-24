@@ -125,7 +125,7 @@ def main():
     metadata = json.loads((build / "build.json").read_text())
     if metadata["source_id"] != args.expected_source_id or Path(metadata["source"]).resolve() != source:
         raise RuntimeError("actual CLI/runtime build belongs to a different source snapshot")
-    if sha(build / "runtime.o") != metadata["runtime_object_sha256"] or sha(build / "uwvm") != metadata["binary_sha256"]:
+    if sha(build / "runtime.o") != metadata["runtime_object_sha256"] or sha(build / "uwvm2-ros") != metadata["binary_sha256"]:
         raise RuntimeError("matched product runtime/binary no longer matches its qualification")
     runtime = shlex.split((build / "runtime.command").read_text())
     cli = shlex.split((build / "cli.command").read_text())
@@ -168,7 +168,7 @@ def main():
                    prepared_only=False)
     inputs = dict(source_id=args.expected_source_id, headers_and_fixtures=selected,
                   build_json_sha256=sha(build / "build.json"),
-                  runtime_object_sha256=sha(build / "runtime.o"), binary_sha256=sha(build / "uwvm"),
+                  runtime_object_sha256=sha(build / "runtime.o"), binary_sha256=sha(build / "uwvm2-ros"),
                   runner_sha256=sha(Path(__file__)), adapter_sha256=sha(Path(adapter.__file__)),
                   compiler_invocation=str(compiler_invocation), compiler_realpath=str(compiler_invocation.resolve(strict=True)),
                   compiler_bytes_sha256=sha(compiler_invocation),

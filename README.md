@@ -1,7 +1,7 @@
 <div align="center">
-  <img src="documents/logo/uwvm2.svg" alt="uwvm2 logo" width="240"/>
+  <img src="documents/logo/uwvm2-ros.svg" alt="uwvm2-ros robot logo" width="240"/>
   <br/>
-  <h1>UlteSoft WebAssembly Virtual Machine 2</h1>
+  <h1>UlteSoft WebAssembly Virtual Machine 2 for ROS</h1>
   <p>
     <img src="https://img.shields.io/badge/DEV-1f6feb?style=for-the-badge" alt="DEV"/>
     <img src="https://img.shields.io/badge/V2.0.3.0-ffffff?style=for-the-badge" alt="V2.0.3.0"/>
@@ -21,7 +21,7 @@
 </div>
 
 ## Introduction
-UlteSoft WebAssembly Virtual Machine 2
+UlteSoft WebAssembly Virtual Machine 2 for ROS
 
 ## Features
 ### WASM Feature Extensions
@@ -55,10 +55,12 @@ Preload modules (dynamic libraries / weak-symbol plugins) can consume a stable h
 ### ROS 1 and ROS 2 runtime extensions
 Optional Linux interpreter extensions expose independently configured ROS 1 and ROS 2 capabilities through separate native Gateways. Each Wasm instance receives its own capability table; explicit Global, Single and Group configuration controls Topic, Service, Parameter, Graph, Action, TF, Time, Logging and ROS 2 Lifecycle access. The core build requires no ROS libraries. See the [ROS 1 CLI](documents/command-line/ros1.md), [ROS 2 CLI](documents/command-line/ros2.md) and [numbered ROS test suites](test/0073.ros-tests/README.md).
 
-The [WasmROS guest SDK](sdk/README.md) provides C/C++, Rust, JavaScript,
-AssemblyScript and TinyGo libraries, from complete raw imports to typed
-Node/resource/executor APIs and detailed English application examples. SDK
-construction grants no ROS authority.
+The [uwvm2-ros SDK](https://github.com/UlteSoft/uwvm2-ros-sdk) is maintained
+in a separate MIT-licensed repository. It provides language bindings, platform
+SDKs, Xmake examples, bilingual manuals and precompiled development inputs
+distributed with Git LFS. This repository provides the underlying virtual
+machine. See the SDK review documents for qualified language and platform
+scopes. SDK construction grants no ROS authority.
 
 See the [platform SDK build and test guide](documents/how-to-build/ros-platform-sdk.md)
 for explicit vendor selections, source-only imports and numbered test entry points.

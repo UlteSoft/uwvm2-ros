@@ -16,6 +16,6 @@ with N.lease():
   if i==0:
    resume=json.loads((R/'source/resume-static32-tu0-c23-a3.json').read_text());assert N.sha(BD/'0.o')==resume['object_sha'];assert N.sha(R/'evidence/typed-array-access-compile-c23-a3-0.json')==resume['receipt_sha'];print('C23_TU0_RETAINED',flush=True);continue
   N.run('typed-array-access-compile-c23-a3-'+str(i),[plan['compiler'],*flags,'-c',S/tu,'-o',BD/(str(i)+'.o')],cpu=8,timeout=600,build=True,env=env);print('C23_COMPILED',i,flush=True)
- elf=BD/'uwvm';N.run('typed-array-access-link-c23-a3',[plan['compiler'],*[BD/(str(i)+'.o') for i in range(3)],'@'+plan['link_rsp'],'-stdlib=libc++','-pthread','-ldl','-lz','-l:libzstd.so.1','-lm','-lcrypto','-lssl','-Wl,--gc-sections','-Wl,--strip-debug','-o',elf],cpu=8,timeout=120,build=True,env=env);N.persist(elf)
+ elf=BD/'uwvm2-ros';N.run('typed-array-access-link-c23-a3',[plan['compiler'],*[BD/(str(i)+'.o') for i in range(3)],'@'+plan['link_rsp'],'-stdlib=libc++','-pthread','-ldl','-lz','-l:libzstd.so.1','-lm','-lcrypto','-lssl','-Wl,--gc-sections','-Wl,--strip-debug','-o',elf],cpu=8,timeout=120,build=True,env=env);N.persist(elf)
  N.save(BD/'build-binding-c23-a3.json',{'ELF_sha':N.sha(elf),'plan_sha':N.sha(pp),'source_binding_sha':N.sha(S/'source-binding-c23-a3.json'),'source_archive_sha':N.sha(archive),'flags':flags,'objects':{str(i):N.sha(BD/(str(i)+'.o')) for i in range(3)},'status':'all three TUs rebuilt; qualification pending'})
  print('C23_ELF',N.sha(elf),flush=True)

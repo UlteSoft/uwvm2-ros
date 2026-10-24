@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RosSdkSource Condition="'$(RosSdkSource)' == '' And Exists('$(MSBuildThisFileDirectory)../../Uwvm.RosWasm.csproj')">$(MSBuildThisFileDirectory)../..</RosSdkSource>
+  </PropertyGroup>
+  <PropertyGroup><TargetFramework>net8.0</TargetFramework><OutputType>Exe</OutputType><Nullable>enable</Nullable><ImplicitUsings>disable</ImplicitUsings><EnableDefaultCompileItems>false</EnableDefaultCompileItems><DefineConstants>UWVM_ROS2;UWVM_ROSWASM_OWNED_SERVICE;UWVM_ROSWASM_OWNED_SOURCE_FIXTURES</DefineConstants></PropertyGroup>
+  <ItemGroup><Compile Include="$(RosSdkSource)/RosWasm/**/*.cs" /><Compile Include="$(RosSdkSource)/owned/NativeOwned.cs;$(RosSdkSource)/owned/PreparedSession.cs;$(RosSdkSource)/owned/OwnedWire.cs;$(RosSdkSource)/owned/OwnedGroup.cs;$(RosSdkSource)/owned/ControlWire.cs;OwnedSourceFixtures.cs" /></ItemGroup>
+  <Target Name="RequireExplicitSdkSource" BeforeTargets="PrepareForBuild"><Error Condition="'$(RosSdkSource)' == '' Or !Exists('$(RosSdkSource)/RosWasm/Codecs.cs')" Text="Supply RosSdkSource pointing to the actual C# SDK source package after test relocation." /></Target>
+</Project>

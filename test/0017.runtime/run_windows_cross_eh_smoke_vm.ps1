@@ -523,7 +523,7 @@ try {
     $result.runner_sha256 = (Get-FileHash $PSCommandPath -Algorithm SHA256).Hash.ToLowerInvariant()
     Require ($result.runner_sha256 -ieq $qualification.runner_sha256) `
         'cross-function EH guest runner differs from qualification'
-    $names = @('uwvm.exe', 'eh-cross-function-catch-ref.wasm',
+    $names = @('uwvm2-ros.exe', 'eh-cross-function-catch-ref.wasm',
                'eh-cross-function-win64-seh.wasm')
     if ($qualification.schema -eq 2) { $names += 'eh-multi-object-win64-seh.wasm' }
     foreach ($name in $names) {
@@ -531,12 +531,12 @@ try {
         Require ($null -ne $property) "qualification lacks $name"
         $expected = [string]$property.Value
         Require ($expected -match '^[0-9a-fA-F]{64}$') "invalid $name SHA"
-        $target = if ($ArtifactRoot -and $name -eq 'uwvm.exe') {
+        $target = if ($ArtifactRoot -and $name -eq 'uwvm2-ros.exe') {
             Join-Path $ArtifactRoot $name
         } else {
             Join-Path $work $name
         }
-        if ($ArtifactRoot -and $name -ne 'uwvm.exe') {
+        if ($ArtifactRoot -and $name -ne 'uwvm2-ros.exe') {
             Copy-Item -LiteralPath (Join-Path $ArtifactRoot $name) -Destination $target -Force
         } elseif (-not $ArtifactRoot) {
             Invoke-WebRequest -UseBasicParsing -TimeoutSec 30 "$BaseUrl/$name" -OutFile $target | Out-Null
@@ -545,9 +545,9 @@ try {
             "cross-function EH artifact changed: $name"
     }
     $script:uwvm = if ($ArtifactRoot) {
-        Join-Path $ArtifactRoot 'uwvm.exe'
+        Join-Path $ArtifactRoot 'uwvm2-ros.exe'
     } else {
-        Join-Path $work 'uwvm.exe'
+        Join-Path $work 'uwvm2-ros.exe'
     }
     $result.product_sha256 = (Get-FileHash $script:uwvm -Algorithm SHA256).Hash.ToLowerInvariant()
     Require ($result.product_sha256 -ieq $qualification.product_sha256) `

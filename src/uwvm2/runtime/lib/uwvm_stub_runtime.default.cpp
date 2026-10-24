@@ -46,7 +46,7 @@ namespace uwvm2::runtime::lib
 #endif
 
     extern "C++" bool ros_execution_backend_supported_host_api() noexcept { return false; }
-    extern "C++" bool ros_caller_identity_host_api(ros_caller_identity& out) noexcept { out = {}; return false; }
+    extern "C++" bool ros_caller_identity_host_api(ros_caller_identity& out, bool) noexcept { out = {}; return false; }
     extern "C++" bool ros_observed_caller_identity_host_api(ros_caller_identity& out) noexcept { out = {}; return false; }
 
     extern "C++" ::std::size_t preload_memory_descriptor_count_host_api() noexcept { return 0uz; }

@@ -100,7 +100,7 @@ def main():
     inputs = {str(project / 'run_source_debug.py'): SOURCE_RUNNER_SHA256}
     identities = {}
     for repository, (source_id, binary_sha256) in PINS.items():
-        binary = (args.arena / 'products' / repository / 'uwvm').resolve(strict=True)
+        binary = (args.arena / 'products' / repository / 'uwvm2-ros').resolve(strict=True)
         identity = json.loads((binary.parent / 'identity.json').read_text())
         assert identity['source_id'] == source_id and identity['binary_sha256'] == binary_sha256
         assert digest(binary) == binary_sha256, 'requires current native-budget product'
@@ -163,7 +163,7 @@ def main():
     previous_argv = sys.argv
     try:
         for current_repository in PINS:
-            binary = (args.arena / 'products' / current_repository / 'uwvm').resolve(strict=True)
+            binary = (args.arena / 'products' / current_repository / 'uwvm2-ros').resolve(strict=True)
             for fixture in FIXTURES:
                 current_fixture = fixture['name']
                 folder = args.out / (current_repository + '-' + current_fixture)

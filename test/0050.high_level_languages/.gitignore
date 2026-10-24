@@ -32,3 +32,20 @@
 /engines/*.txt
 **/*-source-review-r*/
 **/*-source-analysis-r*/
+
+# Historical run packets use dated names; maintained fixtures live in language directories.
+/go-resource-native-20[0-9]*/
+/go-sdk-resources-20[0-9]*/
+/tinygo-examples-*-20[0-9]*/
+/zig-sdk-resources-20[0-9]*/
+/moonbit-image-pipeline-20[0-9]*/
+/moonbit-image-pipeline-ros1-20[0-9]*/
+/moonbit-native-*-20[0-9]*/
+/moonbit-transform-sdk-20[0-9]*/
+/python-native-*-20[0-9]*/
+/python-transform-*-20[0-9]*/
+
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/

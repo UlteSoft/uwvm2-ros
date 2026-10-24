@@ -1,0 +1,10 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/custom_section_hash_table_test
+/element_declarative_feature_split
+/full_module_fuzzer
+/handle_all_binfmt_ver1_extensible_section
+/handle_all_binfmt_ver1_extensible_section_test_jmp_table
+/table_reference_feature_split

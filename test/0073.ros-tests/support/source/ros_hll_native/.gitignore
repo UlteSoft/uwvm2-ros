@@ -1,0 +1,11 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/image_peer
+/image_peer_ros1
+/image_pipeline_peer
+/image_pipeline_peer_ros1
+/telemetry_peer
+/transform_pipeline_peer
+/transform_pipeline_peer_ros1

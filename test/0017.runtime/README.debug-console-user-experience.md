@@ -1,6 +1,6 @@
 # Debugger command experience
 
-Start an LLVM-full build with `uwvm -Rdbg --run app.wasm`. Build the guest with
+Start an LLVM-full build with `uwvm2-ros -Rdbg --run app.wasm`. Build the guest with
 `-g` to use source frames, variables and source stepping. The initial prompt is
 prepared: it has not run a Wasm instruction and has no call stack.
 

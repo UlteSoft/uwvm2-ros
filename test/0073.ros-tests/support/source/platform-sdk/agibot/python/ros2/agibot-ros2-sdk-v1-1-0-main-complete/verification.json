@@ -1,0 +1,10 @@
+{
+  "records": 166,
+  "populated_scalar_or_string_instances": 1754,
+  "completed_codec_methods": 1162,
+  "status": "NATIVE_PYTHON_COMPLETE_ORIGINAL_FIELD_VECTORS_PASS",
+  "execution_mode": "NATIVE_PYTHON_NOT_A_WASM_OR_NATIVE_ROS_RESULT",
+  "default_authority": [],
+  "source_sha256": "228d5fe2c9305e37b0860948441ab659a213c163ac42c72cf4aef9848c86115d",
+  "original_official_cases_run": 0
+}

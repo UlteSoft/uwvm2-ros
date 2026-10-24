@@ -1,2 +1,0 @@
-// Only the fresh project and exact reviewed local SDK copy; no registry fallback.
-members = [".", "ros-sdk"]

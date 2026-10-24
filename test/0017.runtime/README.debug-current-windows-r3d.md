@@ -44,7 +44,7 @@ retiring previous build/test children:
 python3 "$SOURCE/test/0017.runtime/stage_windows_debug_current_r3d_vm.py" \
   --source-root "$SOURCE" --repository ros \
   --r3c-source-manifest "$R3C_MANIFEST" \
-  --product "$BUILD/uwvm.exe" --launcher "$BUILD/windows_debug_current_launcher.exe" \
+  --product "$BUILD/uwvm2-ros.exe" --launcher "$BUILD/windows_debug_current_launcher.exe" \
   --build-receipt "$BUILD/current-debug-build-receipt.json" \
   --wasm-clang "$WASM_CLANG" --wasm-ld "$WASM_LD" --wasm-tools "$WASM_TOOLS" \
   --llvm-dwarfdump "$DWARFDUMP" --llvm-readobj "$READOBJ" --out "$NEW_STAGE"

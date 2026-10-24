@@ -1,0 +1,18 @@
+{
+  "format_version": 1,
+  "status": "SOURCE_RECIPES_NOT_EXECUTED",
+  "execution_owner": "Root serial runner only",
+  "default_jobs": 1,
+  "environment_policy": "Explicit selected compiler/toolchain and current 64 GiB swap-zero group; no ROS rights or ambient SDK injected by these recipes",
+  "common_compile_argv": ["{cxx}", "-std=c++26", "-O0", "-pthread", "-I{source}/src", "-I{source}/third-parties/fast_io/include", "-I{source}/third-parties/bizwen/include", "-I{source}/third-parties/boost_unordered/include"],
+  "standalone": [
+    {"source": "test/0073.ros-tests/support/source/ros_debugger/core_contract.cc", "append_argv": ["{source}/test/0073.ros-tests/support/source/ros_debugger/core_contract.cc", "-o", "{out}/core-contract"], "marker": "PASS_ROS_DEBUG_CORE checks=35"},
+    {"source": "test/0073.ros-tests/support/source/ros_debugger/console_contract.cc", "append_argv": ["{source}/test/0073.ros-tests/support/source/ros_debugger/console_contract.cc", "-o", "{out}/console-contract"], "marker": "PASS_ROS_DEBUG_CONSOLE checks=47"}
+  ],
+  "runtime_closure_components": [
+    {"source": "test/0073.ros-tests/support/source/ros_debugger/controller_contract.cc", "base_recipe_source": "test/0017.runtime/debug_management_interrupt_timeout.cc", "marker": "PASS_ROS_DEBUG_CONTROLLER checks=14", "requirements": ["Actual current Runtime/control link closure", "Do not substitute identity/JIT/control link stubs"]},
+    {"source": "test/0073.ros-tests/support/source/ros_debugger/host_contract.cc", "base_recipe": "Actual current header Runtime ROS build; same selected real Runtime link inputs", "profiles": [{"defines": ["UWVM_IMPORT_ROS1"], "marker": "PASS_ROS_DEBUG_HOST checks=20 calls=2"}, {"defines": ["UWVM_IMPORT_ROS2"], "marker": "PASS_ROS_DEBUG_HOST checks=20 calls=2"}, {"defines": ["UWVM_IMPORT_ROS1", "UWVM_IMPORT_ROS2"], "marker": "PASS_ROS_DEBUG_HOST checks=24 calls=4"}], "requirements": ["Fresh process outside every actual Runtime call context", "No fake Runtime identity, memory or ROS imports", "No native ROS process or Gateway needed"]}
+  ],
+  "named_module_component": {"source": "test/0073.ros-tests/support/source/ros_debugger/module_probe.cpp", "imports": ["uwvm2.uwvm.debugger.ros_state", "uwvm2.uwvm.debugger"], "exit_code": 0, "requirements": ["Actual current complete named-module debugger DAG", "ROS disabled", "No native ROS SDK header/library"]},
+  "integration_remaining": ["Current real Runtime cooperative-stop ROS1/ROS2/dual queries", "Current native-instruction stop rejection", "Current Linux/macOS/Windows authenticated console transport coverage", "Existing original/core/SDK acceptance remains mandatory and is not replaced"]
+}

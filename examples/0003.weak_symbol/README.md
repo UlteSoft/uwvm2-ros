@@ -33,13 +33,13 @@ That means this example is intended for Linux / other ELF platforms and is **not
 clang -std=c17 -c weak_symbol.c -o weak_symbol.o
 wat2wasm main.wat -o main.wasm
 xmake f --ldflags="$(pwd)/weak_symbol.o"
-xmake build uwvm
+xmake build uwvm2-ros
 ```
 
 ## Run (ELF only)
 
 ```sh
-./build/.../uwvm -Rint \
+./build/.../uwvm2-ros -Rint \
   --wasip1-expose-host-api \
   --wasm-set-preload-module-attribute weak.example copy all \
   --run ./main.wasm hello world
@@ -48,7 +48,7 @@ xmake build uwvm
 Module-specific exposure works the same way:
 
 ```sh
-./build/.../uwvm -Rint \
+./build/.../uwvm2-ros -Rint \
   --wasip1-module weak.example expose-host-api \
   --wasm-set-preload-module-attribute weak.example copy all \
   --run ./main.wasm hello world

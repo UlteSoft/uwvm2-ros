@@ -6,13 +6,13 @@ select its dependencies: a program may contain several independently selected
 or unselected WASM modules.
 
 ```sh
-uwvm --secure help
-uwvm --help secure
-uwvm --secure status
-uwvm --secure module /apps/main.wasm /secure/main.policy --run /apps/main.wasm
+uwvm2-ros --secure help
+uwvm2-ros --help secure
+uwvm2-ros --secure status
+uwvm2-ros --secure module /apps/main.wasm /secure/main.policy --run /apps/main.wasm
 
 # Select both modules; registration happens before any preload callback.
-uwvm --wasm-preload-library /apps/library.wasm library \
+uwvm2-ros --wasm-preload-library /apps/library.wasm library \
   --secure named-module /apps/main.wasm /secure/application.policy com.example.main \
   --secure named-module /apps/library.wasm /secure/application.policy com.example.library \
   --run /apps/main.wasm
@@ -116,7 +116,7 @@ cosign wasm secure verify /release/app.wasm --policy /secure/app.policy
 # Publish that signed file at the release HTTPS origin, then on the consumer:
 cosign wasm secure fetch /apps/app.wasm --policy /secure/app.policy \
   --url https://releases.example.test/app.wasm
-uwvm --secure module /apps/app.wasm /secure/app.policy --run /apps/app.wasm
+uwvm2-ros --secure module /apps/app.wasm /secure/app.policy --run /apps/app.wasm
 ```
 
 Choose actual release validity dates and a certificate/CRL valid for that period.
@@ -193,7 +193,7 @@ cosign wasm secure sign /release/app.wasm --policy /secure/two-key.policy \
   --not-before 2026-10-19T00:00:00Z --not-after 2026-10-20T00:00:00Z
 
 cosign wasm secure verify /release/app.wasm --policy /secure/two-key.policy
-uwvm --secure module /release/app.wasm /secure/two-key.policy --run /release/app.wasm
+uwvm2-ros --secure module /release/app.wasm /secure/two-key.policy --run /release/app.wasm
 ```
 
 Use actual validity dates supported by both certificate/CRL bundles. The first
@@ -491,7 +491,7 @@ module/state rollback, `POL_002` policy, `POL_003` capabilities, `POL_004` time,
 and `VM_003` missing/stale execution receipt. Errors never turn into an unsigned
 retry for a selected module.
 
-The historical detached-v1 `tests/security_wsea/run.py` exercised its production verifier with disposable
+The historical detached-v1 `test/0073.ros-tests/support/source/security_wsea/run.py` exercised its production verifier with disposable
 OpenSSL PKI and adversarial COSE/evidence/state fixtures. The CLI/loader runner
 used production parsing, preload loading and initialization but deliberately
 did not execute a guest backend. Run it only in the designated SSH Linux
@@ -502,11 +502,11 @@ OpenSSL enabled, `UWVM_USE_THREAD_LOCAL` absent and the LLVM backend disabled.
 The corresponding engine options are `--execution-int=uwvm-int`,
 `--execution-jit=none` and `--use-thread-local=n`. Exact direct-compiler commands,
 frozen input hashes, guest-entry witnesses and resource receipts are in
-[`tests/security_wsea/results/20261018`](../../tests/security_wsea/results/20261018/).
+[`test/0073.ros-tests/support/source/security_wsea/results/20261018`](../../test/0073.ros-tests/support/source/security_wsea/results/20261018).
 That historical run does not qualify the thread-local profile, C++ language-module
 builds or LLVM checkpoint/cache execution. Their signature gates were reviewed as source.
 Those historical detached-v1 receipts do not qualify embedded-v2 builds. New
-results are recorded separately under `tests/security_wsea/results/20261018-embedded-v2`.
+results are recorded separately under `test/0073.ros-tests/support/source/security_wsea/results/20261018-embedded-v2`.
 The embedded matrix checks every algorithm through actual guest output and
 forged-signature rejection. HTTPS simulation checks deployment refusal, direct
 VM refusal when the upper gate is bypassed, and tampering after Go acceptance.
@@ -517,7 +517,7 @@ actual QEMU/ELF/ABI/OpenSSL identity, rather than reusing a different product
 under another target label. ROS qualification is limited to x86 and ARM series,
 including their tested big-endian ARM profiles.
 
-The separate [clock-commit and thread-local qualification](../../tests/security_wsea/results/20261019-multisignature/SUMMARY.md)
+The separate [clock-commit and thread-local qualification](../../test/0073.ros-tests/support/source/security_wsea/results/20261019-multisignature/SUMMARY.md)
 records the concurrent-request clock regression and updated default TLS builds.
 `concurrent_verifier.cpp` tests eight callers against all thirteen profiles and
 RSA4096/8192 boundaries, genuine signatures and forged copies, plus explicit

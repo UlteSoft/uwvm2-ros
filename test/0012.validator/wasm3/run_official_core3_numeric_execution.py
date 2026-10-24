@@ -416,7 +416,7 @@ def main():
         raise RuntimeError("requested frozen source ID mismatch; no Wasm conversion or execution started")
     build_path = args.build_json.resolve(strict=True)
     build = json.loads(build_path.read_text())
-    binary = build_path.parent / "uwvm"
+    binary = build_path.parent / "uwvm2-ros"
     binary_sha = sha(binary)
     if (build.get("source_id") != source_id or
             Path(build.get("source", "")).resolve() != source or

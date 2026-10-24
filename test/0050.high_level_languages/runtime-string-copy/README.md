@@ -25,11 +25,11 @@ source/tool/product cohort and the task's owned-process/resource runner:
 ```sh
 wasm-tools parse live_memory_base_if_loop.wat -o live_memory_base_if_loop.wasm
 wasm-tools validate live_memory_base_if_loop.wasm
-uwvm -Rint --run live_memory_base_if_loop.wasm
+uwvm2-ros -Rint --run live_memory_base_if_loop.wasm
 
 wasm-tools parse packed_array_strings.wat -o packed_array_strings.wasm
 wasm-tools validate packed_array_strings.wasm
-uwvm -Rint -WFE-gc -WFE-reference-types -WFE-function-references \
+uwvm2-ros -Rint -WFE-gc -WFE-reference-types -WFE-function-references \
   --run packed_array_strings.wasm
 ```
 

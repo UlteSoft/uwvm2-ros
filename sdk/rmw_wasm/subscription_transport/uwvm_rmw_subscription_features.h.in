@@ -1,5 +1,0 @@
-#pragma once
-/* Only the actual complete selected-SDK compile/link observation enables this
- * layout. Version labels and our retained primary source do not qualify a tool
- * output or provide an RMW ABI. Missing fields/extent/sentinel refuses95. */
-#cmakedefine01 UWVM_RMW_SUBSCRIPTION_MESSAGE_INFO_API

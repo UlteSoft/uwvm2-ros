@@ -17114,19 +17114,25 @@ namespace uwvm2::runtime::lib
 #endif
     }
 
-    extern "C++" bool ros_caller_identity_host_api(ros_caller_identity& out) noexcept
+    extern "C++" bool ros_caller_identity_host_api(ros_caller_identity& out, bool allow_module_exports) noexcept
     {
-        if(!ros_observed_caller_identity_host_api(out) || out.cross_module_ancestry)
-        { out = {}; return false; }
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+        if(!ros_observed_caller_identity_host_api(out) || (out.cross_module_ancestry && !allow_module_exports))
+        {
+            out = {};
+            return false;
+        }
+    #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
         auto const module_id{get_preload_call_context().module_id};
         if(module_id >= g_runtime.modules.size() ||
-           ::std::atomic_ref<bool>{g_runtime.modules.index_unchecked(module_id).ros_authority_retired}.load(
-               ::std::memory_order_acquire))
-        { out = {}; return false; }
-#endif
+           ::std::atomic_ref<bool>{g_runtime.modules.index_unchecked(module_id).ros_authority_retired}.load(::std::memory_order_acquire))
+        {
+            out = {};
+            return false;
+        }
+    #endif
         return true;
     }
+
 
     extern "C++" void ros_retire_replaced_module_host_api(::std::size_t module_id) noexcept
     {

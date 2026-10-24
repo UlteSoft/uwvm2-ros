@@ -25,7 +25,7 @@ import subprocess
 def check_registration(text):
     # This is intentionally a narrow guard for these target registrations, not
     # a Lua parser. The real compiler/linker controls below test their semantics.
-    cli = text.split('target("uwvm")\n', 1)[1].split('\ntarget_end()', 1)[0]
+    cli = text.split('target("uwvm2-ros")\n', 1)[1].split('\ntarget_end()', 1)[0]
     runtime = text.split('target("uwvm_runtime")\n', 1)[1].split('\ntarget_end()', 1)[0]
     code = lambda value: re.sub(r'--[^\n]*', '', value)
     cli, runtime = code(cli), code(runtime)
@@ -87,7 +87,7 @@ def main():
     # Both old registration mistakes must be rejected, not merely absent from
     # today's source. These controls do not claim to execute omitted suites.
     negative_sources = {
-        'duplicate ownership': text.replace('target("uwvm")\n', 'target("uwvm")\nadd_files("ownership.cppm")\n', 1),
+        'duplicate ownership': text.replace('target("uwvm2-ros")\n', 'target("uwvm2-ros")\nadd_files("ownership.cppm")\n', 1),
         'filtered strict inventory': text.replace('local llvm_jit_strict_files = os.files("test/0013.uwvm_int/strict/**.cc")',
                                                  'local llvm_jit_strict_files = {}', 1),
     }

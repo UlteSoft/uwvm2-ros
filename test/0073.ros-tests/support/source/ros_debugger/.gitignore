@@ -1,0 +1,17 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/ancestry_reentry
+/console_contract
+/control_module_metadata_contract
+/controller_contract
+/core_contract
+/fast_io_console_tf_contract
+/fast_io_tui_contract
+/host_contract
+/host_retirement_contract
+/interface_statistics
+/management_contract
+/management_runtime_contract
+/module_probe

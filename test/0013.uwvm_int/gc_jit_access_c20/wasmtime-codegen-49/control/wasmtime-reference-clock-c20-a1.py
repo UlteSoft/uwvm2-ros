@@ -1,7 +1,7 @@
 from pathlib import Path
 import sys,json,os,statistics
 sys.path.insert(0,'/tmp/uwvm-gc-perf-20261011-r74/control');import native as N
-R=N.ROOT;O=Path('/tmp/uwvm-gc-perf-20261011-r73');D=R/'source/wasmtime-codegen-analysis-a1';cases=json.loads((D/'fixtures/cases.json').read_text())['cases'];variants=['immutable-array-length-values','typed-array-load','wasmtime-drc'];elves={v:R/('build/deferred-'+v+'/uwvm') for v in variants[:-1]};elves[variants[-1]]=O/'build/wasmtime-bench';flags=['-Rcc','jit','-Rcm','full','-Rct','0','-WFE-gc','-WFE-exceptions','-WFE-tail-call','-WFE-function-references'];rows=[];reps=32
+R=N.ROOT;O=Path('/tmp/uwvm-gc-perf-20261011-r73');D=R/'source/wasmtime-codegen-analysis-a1';cases=json.loads((D/'fixtures/cases.json').read_text())['cases'];variants=['immutable-array-length-values','typed-array-load','wasmtime-drc'];elves={v:R/('build/deferred-'+v+'/uwvm2-ros') for v in variants[:-1]};elves[variants[-1]]=O/'build/wasmtime-bench';flags=['-Rcc','jit','-Rcm','full','-Rct','0','-WFE-gc','-WFE-exceptions','-WFE-tail-call','-WFE-function-references'];rows=[];reps=32
 with N.lease():
  for rd in range(3):
   for ci,c in enumerate(cases[rd:]+cases[:rd]):

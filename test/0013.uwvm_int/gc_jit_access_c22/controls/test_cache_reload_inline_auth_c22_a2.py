@@ -4,7 +4,7 @@ R=Path('/tmp/uwvm-gc-perf-20261011-r74');sys.path.insert(0,str(R/'control'));imp
 cs=[c for c in json.loads((R/'source/inline-array-auth-fixtures-c22-a1/cases.json').read_text())['cases'] if c['name'].endswith('-collection-domain')];rows=[]
 with N.lease():
  for repo in ['uwvm2','uwvm2-stable','uwvm2-ros']:
-  elf=R/'build/repo-sync-c22-a1'/repo/'uwvm';b=json.loads((elf.parent/'build-binding.json').read_text());assert N.sha(elf)==b['ELF_sha'] and b['verified_source_id']==b['input_sha'];flags=(['-Rcc','jit','-Rcm','full'] if repo=='uwvm2' else ['-Raot','-Rllvm-full-policy','pb-o3'])+['-Rct','0','-Rclog','err','-WFE-gc','-WFE-function-references']
+  elf=R/'build/repo-sync-c22-a1'/repo/'uwvm2-ros';b=json.loads((elf.parent/'build-binding.json').read_text());assert N.sha(elf)==b['ELF_sha'] and b['verified_source_id']==b['input_sha'];flags=(['-Rcc','jit','-Rcm','full'] if repo=='uwvm2' else ['-Raot','-Rllvm-full-policy','pb-o3'])+['-Rct','0','-Rclog','err','-WFE-gc','-WFE-function-references']
   for c in cs:
    D=R/'tmp/cache-reload-c22-a2'/repo/c['name'];D.mkdir(parents=True,exist_ok=False)
    pair=[]

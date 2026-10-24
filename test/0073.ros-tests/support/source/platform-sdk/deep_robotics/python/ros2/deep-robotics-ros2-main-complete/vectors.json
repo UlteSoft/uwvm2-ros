@@ -1,0 +1,5832 @@
+{
+  "cases": [
+    {
+      "type": "builtin_interfaces/msg/Time",
+      "wire": "072b89b550057009",
+      "value": {
+        "record": "builtin_interfaces/msg/Time",
+        "members": {
+          "sec": {
+            "scalar": "int32",
+            "value": -1249301753,
+            "wire": "072b89b5"
+          },
+          "nanosec": {
+            "scalar": "uint32",
+            "value": 158336336,
+            "wire": "50057009"
+          }
+        }
+      }
+    },
+    {
+      "type": "drdds/msg/BatteryData",
+      "wire": "929ea15d2be796c39d76d7f9127a8b310100000069bba56cc8ed0a7c0f65ccdbccfb3305dcf234f0b115470100000000802bc23a7bb8f93e7fbcfd32732061a2e32465a6e728697938fbba7d3cffbe71304e0f",
+      "value": {
+        "record": "drdds/msg/BatteryData",
+        "members": {
+          "header": {
+            "record": "drdds/msg/MetaType",
+            "members": {
+              "frame_id": {
+                "scalar": "uint64",
+                "value": 14093706257343028882,
+                "wire": "929ea15d2be796c3"
+              },
+              "stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": -103319907,
+                    "wire": "9d76d7f9"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 831224338,
+                    "wire": "127a8b31"
+                  }
+                }
+              }
+            }
+          },
+          "data": {
+            "array": [
+              {
+                "record": "drdds/msg/BatteryDataValue",
+                "members": {
+                  "voltage": {
+                    "scalar": "uint16",
+                    "value": 47977,
+                    "wire": "69bb"
+                  },
+                  "current": {
+                    "scalar": "int16",
+                    "value": 27813,
+                    "wire": "a56c"
+                  },
+                  "remaining_capacity": {
+                    "scalar": "uint16",
+                    "value": 60872,
+                    "wire": "c8ed"
+                  },
+                  "nominal_capacity": {
+                    "scalar": "uint16",
+                    "value": 31754,
+                    "wire": "0a7c"
+                  },
+                  "cycles": {
+                    "scalar": "uint16",
+                    "value": 25871,
+                    "wire": "0f65"
+                  },
+                  "production_date": {
+                    "scalar": "uint16",
+                    "value": 56268,
+                    "wire": "ccdb"
+                  },
+                  "balanced_low": {
+                    "scalar": "uint16",
+                    "value": 64460,
+                    "wire": "ccfb"
+                  },
+                  "balanced_high": {
+                    "scalar": "uint16",
+                    "value": 1331,
+                    "wire": "3305"
+                  },
+                  "protected_state": {
+                    "scalar": "uint16",
+                    "value": 62172,
+                    "wire": "dcf2"
+                  },
+                  "software_version": {
+                    "scalar": "uint8",
+                    "value": 52,
+                    "wire": "34"
+                  },
+                  "battery_level": {
+                    "scalar": "uint8",
+                    "value": 240,
+                    "wire": "f0"
+                  },
+                  "mos_state": {
+                    "scalar": "uint8",
+                    "value": 177,
+                    "wire": "b1"
+                  },
+                  "battery_quantity": {
+                    "scalar": "uint8",
+                    "value": 21,
+                    "wire": "15"
+                  },
+                  "battery_ntc": {
+                    "scalar": "uint8",
+                    "value": 71,
+                    "wire": "47"
+                  },
+                  "battery_temperature": {
+                    "array": [
+                      {
+                        "scalar": "float32",
+                        "value": -42.875,
+                        "wire": "00802bc2"
+                      }
+                    ]
+                  },
+                  "battery_serialnum": {
+                    "array": [
+                      {
+                        "scalar": "uint8",
+                        "value": 58,
+                        "wire": "3a"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 123,
+                        "wire": "7b"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 184,
+                        "wire": "b8"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 249,
+                        "wire": "f9"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 62,
+                        "wire": "3e"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 127,
+                        "wire": "7f"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 188,
+                        "wire": "bc"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 253,
+                        "wire": "fd"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 50,
+                        "wire": "32"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 115,
+                        "wire": "73"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 32,
+                        "wire": "20"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 97,
+                        "wire": "61"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 162,
+                        "wire": "a2"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 227,
+                        "wire": "e3"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 36,
+                        "wire": "24"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 101,
+                        "wire": "65"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 166,
+                        "wire": "a6"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 231,
+                        "wire": "e7"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 40,
+                        "wire": "28"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 105,
+                        "wire": "69"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 121,
+                        "wire": "79"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 56,
+                        "wire": "38"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 251,
+                        "wire": "fb"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 186,
+                        "wire": "ba"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 125,
+                        "wire": "7d"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 60,
+                        "wire": "3c"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 255,
+                        "wire": "ff"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 190,
+                        "wire": "be"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 113,
+                        "wire": "71"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 48,
+                        "wire": "30"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 78,
+                        "wire": "4e"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 15,
+                        "wire": "0f"
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "drdds/msg/BatteryDataValue",
+      "wire": "2a3ae6eda69b5d4560efe476ef6bd1bbf45f63126b4229010000000000b0c0e5a46726e1a06322edac5d1cdf9e5918db9a5514044586c7004182c30c4d3372",
+      "value": {
+        "record": "drdds/msg/BatteryDataValue",
+        "members": {
+          "voltage": {
+            "scalar": "uint16",
+            "value": 14890,
+            "wire": "2a3a"
+          },
+          "current": {
+            "scalar": "int16",
+            "value": -4634,
+            "wire": "e6ed"
+          },
+          "remaining_capacity": {
+            "scalar": "uint16",
+            "value": 39846,
+            "wire": "a69b"
+          },
+          "nominal_capacity": {
+            "scalar": "uint16",
+            "value": 17757,
+            "wire": "5d45"
+          },
+          "cycles": {
+            "scalar": "uint16",
+            "value": 61280,
+            "wire": "60ef"
+          },
+          "production_date": {
+            "scalar": "uint16",
+            "value": 30436,
+            "wire": "e476"
+          },
+          "balanced_low": {
+            "scalar": "uint16",
+            "value": 27631,
+            "wire": "ef6b"
+          },
+          "balanced_high": {
+            "scalar": "uint16",
+            "value": 48081,
+            "wire": "d1bb"
+          },
+          "protected_state": {
+            "scalar": "uint16",
+            "value": 24564,
+            "wire": "f45f"
+          },
+          "software_version": {
+            "scalar": "uint8",
+            "value": 99,
+            "wire": "63"
+          },
+          "battery_level": {
+            "scalar": "uint8",
+            "value": 18,
+            "wire": "12"
+          },
+          "mos_state": {
+            "scalar": "uint8",
+            "value": 107,
+            "wire": "6b"
+          },
+          "battery_quantity": {
+            "scalar": "uint8",
+            "value": 66,
+            "wire": "42"
+          },
+          "battery_ntc": {
+            "scalar": "uint8",
+            "value": 41,
+            "wire": "29"
+          },
+          "battery_temperature": {
+            "array": [
+              {
+                "scalar": "float32",
+                "value": -5.5,
+                "wire": "0000b0c0"
+              }
+            ]
+          },
+          "battery_serialnum": {
+            "array": [
+              {
+                "scalar": "uint8",
+                "value": 229,
+                "wire": "e5"
+              },
+              {
+                "scalar": "uint8",
+                "value": 164,
+                "wire": "a4"
+              },
+              {
+                "scalar": "uint8",
+                "value": 103,
+                "wire": "67"
+              },
+              {
+                "scalar": "uint8",
+                "value": 38,
+                "wire": "26"
+              },
+              {
+                "scalar": "uint8",
+                "value": 225,
+                "wire": "e1"
+              },
+              {
+                "scalar": "uint8",
+                "value": 160,
+                "wire": "a0"
+              },
+              {
+                "scalar": "uint8",
+                "value": 99,
+                "wire": "63"
+              },
+              {
+                "scalar": "uint8",
+                "value": 34,
+                "wire": "22"
+              },
+              {
+                "scalar": "uint8",
+                "value": 237,
+                "wire": "ed"
+              },
+              {
+                "scalar": "uint8",
+                "value": 172,
+                "wire": "ac"
+              },
+              {
+                "scalar": "uint8",
+                "value": 93,
+                "wire": "5d"
+              },
+              {
+                "scalar": "uint8",
+                "value": 28,
+                "wire": "1c"
+              },
+              {
+                "scalar": "uint8",
+                "value": 223,
+                "wire": "df"
+              },
+              {
+                "scalar": "uint8",
+                "value": 158,
+                "wire": "9e"
+              },
+              {
+                "scalar": "uint8",
+                "value": 89,
+                "wire": "59"
+              },
+              {
+                "scalar": "uint8",
+                "value": 24,
+                "wire": "18"
+              },
+              {
+                "scalar": "uint8",
+                "value": 219,
+                "wire": "db"
+              },
+              {
+                "scalar": "uint8",
+                "value": 154,
+                "wire": "9a"
+              },
+              {
+                "scalar": "uint8",
+                "value": 85,
+                "wire": "55"
+              },
+              {
+                "scalar": "uint8",
+                "value": 20,
+                "wire": "14"
+              },
+              {
+                "scalar": "uint8",
+                "value": 4,
+                "wire": "04"
+              },
+              {
+                "scalar": "uint8",
+                "value": 69,
+                "wire": "45"
+              },
+              {
+                "scalar": "uint8",
+                "value": 134,
+                "wire": "86"
+              },
+              {
+                "scalar": "uint8",
+                "value": 199,
+                "wire": "c7"
+              },
+              {
+                "scalar": "uint8",
+                "value": 0,
+                "wire": "00"
+              },
+              {
+                "scalar": "uint8",
+                "value": 65,
+                "wire": "41"
+              },
+              {
+                "scalar": "uint8",
+                "value": 130,
+                "wire": "82"
+              },
+              {
+                "scalar": "uint8",
+                "value": 195,
+                "wire": "c3"
+              },
+              {
+                "scalar": "uint8",
+                "value": 12,
+                "wire": "0c"
+              },
+              {
+                "scalar": "uint8",
+                "value": 77,
+                "wire": "4d"
+              },
+              {
+                "scalar": "uint8",
+                "value": 51,
+                "wire": "33"
+              },
+              {
+                "scalar": "uint8",
+                "value": 114,
+                "wire": "72"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "drdds/msg/GamepadData",
+      "wire": "94cec9042db7fe9af8bbed10952a610e002029c30000b7c100c0eac20000d3c1e0a8",
+      "value": {
+        "record": "drdds/msg/GamepadData",
+        "members": {
+          "header": {
+            "record": "drdds/msg/MetaType",
+            "members": {
+              "frame_id": {
+                "scalar": "uint64",
+                "value": 11168565529907154580,
+                "wire": "94cec9042db7fe9a"
+              },
+              "stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": 284015608,
+                    "wire": "f8bbed10"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 241248917,
+                    "wire": "952a610e"
+                  }
+                }
+              }
+            }
+          },
+          "left_axis_x": {
+            "scalar": "float32",
+            "value": -169.125,
+            "wire": "002029c3"
+          },
+          "left_axis_y": {
+            "scalar": "float32",
+            "value": -22.875,
+            "wire": "0000b7c1"
+          },
+          "right_axis_x": {
+            "scalar": "float32",
+            "value": -117.375,
+            "wire": "00c0eac2"
+          },
+          "right_axis_y": {
+            "scalar": "float32",
+            "value": -26.375,
+            "wire": "0000d3c1"
+          },
+          "buttons": {
+            "scalar": "uint16",
+            "value": 43232,
+            "wire": "e0a8"
+          }
+        }
+      }
+    },
+    {
+      "type": "drdds/msg/ImuData",
+      "wire": "b51f36cc0c66015277544c5c7639c31e00203ac300c09bc200005ac300806dc300a07f430000b0bf0000ac410080b9c200801ac3",
+      "value": {
+        "record": "drdds/msg/ImuData",
+        "members": {
+          "header": {
+            "record": "drdds/msg/MetaType",
+            "members": {
+              "frame_id": {
+                "scalar": "uint64",
+                "value": 5909116391238541237,
+                "wire": "b51f36cc0c660152"
+              },
+              "stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": 1548506231,
+                    "wire": "77544c5c"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 516110710,
+                    "wire": "7639c31e"
+                  }
+                }
+              }
+            }
+          },
+          "data": {
+            "record": "drdds/msg/ImuDataValue",
+            "members": {
+              "roll": {
+                "scalar": "float32",
+                "value": -186.125,
+                "wire": "00203ac3"
+              },
+              "pitch": {
+                "scalar": "float32",
+                "value": -77.875,
+                "wire": "00c09bc2"
+              },
+              "yaw": {
+                "scalar": "float32",
+                "value": -218.0,
+                "wire": "00005ac3"
+              },
+              "omega_x": {
+                "scalar": "float32",
+                "value": -237.5,
+                "wire": "00806dc3"
+              },
+              "omega_y": {
+                "scalar": "float32",
+                "value": 255.625,
+                "wire": "00a07f43"
+              },
+              "omega_z": {
+                "scalar": "float32",
+                "value": -1.375,
+                "wire": "0000b0bf"
+              },
+              "acc_x": {
+                "scalar": "float32",
+                "value": 21.5,
+                "wire": "0000ac41"
+              },
+              "acc_y": {
+                "scalar": "float32",
+                "value": -92.75,
+                "wire": "0080b9c2"
+              },
+              "acc_z": {
+                "scalar": "float32",
+                "value": -154.5,
+                "wire": "00801ac3"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "drdds/msg/ImuDataValue",
+      "wire": "0060134300606ec300002243008072c200e002c30080794300e0654300e0474300006dc2",
+      "value": {
+        "record": "drdds/msg/ImuDataValue",
+        "members": {
+          "roll": {
+            "scalar": "float32",
+            "value": 147.375,
+            "wire": "00601343"
+          },
+          "pitch": {
+            "scalar": "float32",
+            "value": -238.375,
+            "wire": "00606ec3"
+          },
+          "yaw": {
+            "scalar": "float32",
+            "value": 162.0,
+            "wire": "00002243"
+          },
+          "omega_x": {
+            "scalar": "float32",
+            "value": -60.625,
+            "wire": "008072c2"
+          },
+          "omega_y": {
+            "scalar": "float32",
+            "value": -130.875,
+            "wire": "00e002c3"
+          },
+          "omega_z": {
+            "scalar": "float32",
+            "value": 249.5,
+            "wire": "00807943"
+          },
+          "acc_x": {
+            "scalar": "float32",
+            "value": 229.875,
+            "wire": "00e06543"
+          },
+          "acc_y": {
+            "scalar": "float32",
+            "value": 199.875,
+            "wire": "00e04743"
+          },
+          "acc_z": {
+            "scalar": "float32",
+            "value": -59.25,
+            "wire": "00006dc2"
+          }
+        }
+      }
+    },
+    {
+      "type": "drdds/msg/JointCmdValue",
+      "wire": "010000006744013238000071430020474300001143000086c2000090c1",
+      "value": {
+        "record": "drdds/msg/JointCmdValue",
+        "members": {
+          "name": {
+            "array": [
+              {
+                "scalar": "uint8",
+                "value": 103,
+                "wire": "67"
+              }
+            ]
+          },
+          "data_id": {
+            "scalar": "uint16",
+            "value": 324,
+            "wire": "4401"
+          },
+          "control_word": {
+            "scalar": "uint16",
+            "value": 14386,
+            "wire": "3238"
+          },
+          "position": {
+            "scalar": "float32",
+            "value": 241.0,
+            "wire": "00007143"
+          },
+          "torque": {
+            "scalar": "float32",
+            "value": 199.125,
+            "wire": "00204743"
+          },
+          "velocity": {
+            "scalar": "float32",
+            "value": 145.0,
+            "wire": "00001143"
+          },
+          "kp": {
+            "scalar": "float32",
+            "value": -67.0,
+            "wire": "000086c2"
+          },
+          "kd": {
+            "scalar": "float32",
+            "value": -18.0,
+            "wire": "000090c1"
+          }
+        }
+      }
+    },
+    {
+      "type": "drdds/msg/JointData",
+      "wire": "de9f5c1dfdffa8330040ee4200c0ff4200e05343004043c300207343",
+      "value": {
+        "record": "drdds/msg/JointData",
+        "members": {
+          "name": {
+            "array": [
+              {
+                "scalar": "uint8",
+                "value": 222,
+                "wire": "de"
+              },
+              {
+                "scalar": "uint8",
+                "value": 159,
+                "wire": "9f"
+              },
+              {
+                "scalar": "uint8",
+                "value": 92,
+                "wire": "5c"
+              },
+              {
+                "scalar": "uint8",
+                "value": 29,
+                "wire": "1d"
+              }
+            ]
+          },
+          "data_id": {
+            "scalar": "uint16",
+            "value": 65533,
+            "wire": "fdff"
+          },
+          "status_word": {
+            "scalar": "uint16",
+            "value": 13224,
+            "wire": "a833"
+          },
+          "position": {
+            "scalar": "float32",
+            "value": 119.125,
+            "wire": "0040ee42"
+          },
+          "torque": {
+            "scalar": "float32",
+            "value": 127.875,
+            "wire": "00c0ff42"
+          },
+          "velocity": {
+            "scalar": "float32",
+            "value": 211.875,
+            "wire": "00e05343"
+          },
+          "motion_temp": {
+            "scalar": "float32",
+            "value": -195.25,
+            "wire": "004043c3"
+          },
+          "driver_temp": {
+            "scalar": "float32",
+            "value": 243.125,
+            "wire": "00207343"
+          }
+        }
+      }
+    },
+    {
+      "type": "drdds/msg/JointDataCmd",
+      "wire": "7130f3b252857cfa00c098c2000066c100008c41004095420000b4c1",
+      "value": {
+        "record": "drdds/msg/JointDataCmd",
+        "members": {
+          "name": {
+            "array": [
+              {
+                "scalar": "uint8",
+                "value": 113,
+                "wire": "71"
+              },
+              {
+                "scalar": "uint8",
+                "value": 48,
+                "wire": "30"
+              },
+              {
+                "scalar": "uint8",
+                "value": 243,
+                "wire": "f3"
+              },
+              {
+                "scalar": "uint8",
+                "value": 178,
+                "wire": "b2"
+              }
+            ]
+          },
+          "data_id": {
+            "scalar": "uint16",
+            "value": 34130,
+            "wire": "5285"
+          },
+          "control_word": {
+            "scalar": "uint16",
+            "value": 64124,
+            "wire": "7cfa"
+          },
+          "position": {
+            "scalar": "float32",
+            "value": -76.375,
+            "wire": "00c098c2"
+          },
+          "torque": {
+            "scalar": "float32",
+            "value": -14.375,
+            "wire": "000066c1"
+          },
+          "velocity": {
+            "scalar": "float32",
+            "value": 17.5,
+            "wire": "00008c41"
+          },
+          "kp": {
+            "scalar": "float32",
+            "value": 74.625,
+            "wire": "00409542"
+          },
+          "kd": {
+            "scalar": "float32",
+            "value": -22.5,
+            "wire": "0000b4c1"
+          }
+        }
+      }
+    },
+    {
+      "type": "drdds/msg/JointValue",
+      "wire": "01000000ac8f2122df006001c30020504300c0744300803dc20040acc2",
+      "value": {
+        "record": "drdds/msg/JointValue",
+        "members": {
+          "name": {
+            "array": [
+              {
+                "scalar": "uint8",
+                "value": 172,
+                "wire": "ac"
+              }
+            ]
+          },
+          "data_id": {
+            "scalar": "uint16",
+            "value": 8591,
+            "wire": "8f21"
+          },
+          "status_word": {
+            "scalar": "uint16",
+            "value": 57122,
+            "wire": "22df"
+          },
+          "position": {
+            "scalar": "float32",
+            "value": -129.375,
+            "wire": "006001c3"
+          },
+          "torque": {
+            "scalar": "float32",
+            "value": 208.125,
+            "wire": "00205043"
+          },
+          "velocity": {
+            "scalar": "float32",
+            "value": 244.75,
+            "wire": "00c07443"
+          },
+          "motion_temp": {
+            "scalar": "float32",
+            "value": -47.375,
+            "wire": "00803dc2"
+          },
+          "driver_temp": {
+            "scalar": "float32",
+            "value": -86.125,
+            "wire": "0040acc2"
+          }
+        }
+      }
+    },
+    {
+      "type": "drdds/msg/JointsData",
+      "wire": "ebefb356529684c874ad05d0801b3c387839fabb5bca363b00c0c1420000dcc00080674300807ec300c0a6424607c48565a140da00a040430040264300005d4200806cc20000dac24504c786661a9bff00c0a7420080844200008ac20000cf410000ea417b3af9b85871ed1e000042c300009b410040734300805cc300a07e43024380c1216a2db400002f4200601cc300009cc1006066c300800a423c7dbeff1f015b55008017c300c072c300e058430080a8c2000072c23f7ebdfc1cba8070004001430000504000c05c43000054c300a07dc3014083c222d1f691008064c20000e6c100c04bc300206cc3008062c38ccd0e4faf8a0025008005430080ed4200807bc3004020c300604c43b2f3307191e176c40000e4c1006011c300a073430000a9c100401e43ecad6e2fcf88e5e50080e542000089c200205e4300e052430000c0c0d2935011f1e3930400e01dc30000a8c100c0c5c200e01bc300e061c3d1905312f2584821004008c30080b6c2002020430000264300c082c2efae6d2ccc333ec000008941000018c100801e4200c0b1c200802e4396d71455b528fe6a000021420060264300001ac200a0634300c08fc2a8e92a6b8b43888b00408cc200a04e430000f74200602dc3008021c3",
+      "value": {
+        "record": "drdds/msg/JointsData",
+        "members": {
+          "header": {
+            "record": "drdds/msg/MetaType",
+            "members": {
+              "frame_id": {
+                "scalar": "uint64",
+                "value": 14448838784897511403,
+                "wire": "ebefb356529684c8"
+              },
+              "stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": -804934284,
+                    "wire": "74ad05d0"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 943463296,
+                    "wire": "801b3c38"
+                  }
+                }
+              }
+            }
+          },
+          "data": {
+            "record": "drdds/msg/JointsDataValue",
+            "members": {
+              "joints_data": {
+                "array": [
+                  {
+                    "record": "drdds/msg/JointData",
+                    "members": {
+                      "name": {
+                        "array": [
+                          {
+                            "scalar": "uint8",
+                            "value": 120,
+                            "wire": "78"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 57,
+                            "wire": "39"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 250,
+                            "wire": "fa"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 187,
+                            "wire": "bb"
+                          }
+                        ]
+                      },
+                      "data_id": {
+                        "scalar": "uint16",
+                        "value": 51803,
+                        "wire": "5bca"
+                      },
+                      "status_word": {
+                        "scalar": "uint16",
+                        "value": 15158,
+                        "wire": "363b"
+                      },
+                      "position": {
+                        "scalar": "float32",
+                        "value": 96.875,
+                        "wire": "00c0c142"
+                      },
+                      "torque": {
+                        "scalar": "float32",
+                        "value": -6.875,
+                        "wire": "0000dcc0"
+                      },
+                      "velocity": {
+                        "scalar": "float32",
+                        "value": 231.5,
+                        "wire": "00806743"
+                      },
+                      "motion_temp": {
+                        "scalar": "float32",
+                        "value": -254.5,
+                        "wire": "00807ec3"
+                      },
+                      "driver_temp": {
+                        "scalar": "float32",
+                        "value": 83.375,
+                        "wire": "00c0a642"
+                      }
+                    }
+                  },
+                  {
+                    "record": "drdds/msg/JointData",
+                    "members": {
+                      "name": {
+                        "array": [
+                          {
+                            "scalar": "uint8",
+                            "value": 70,
+                            "wire": "46"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 7,
+                            "wire": "07"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 196,
+                            "wire": "c4"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 133,
+                            "wire": "85"
+                          }
+                        ]
+                      },
+                      "data_id": {
+                        "scalar": "uint16",
+                        "value": 41317,
+                        "wire": "65a1"
+                      },
+                      "status_word": {
+                        "scalar": "uint16",
+                        "value": 55872,
+                        "wire": "40da"
+                      },
+                      "position": {
+                        "scalar": "float32",
+                        "value": 192.625,
+                        "wire": "00a04043"
+                      },
+                      "torque": {
+                        "scalar": "float32",
+                        "value": 166.25,
+                        "wire": "00402643"
+                      },
+                      "velocity": {
+                        "scalar": "float32",
+                        "value": 55.25,
+                        "wire": "00005d42"
+                      },
+                      "motion_temp": {
+                        "scalar": "float32",
+                        "value": -59.125,
+                        "wire": "00806cc2"
+                      },
+                      "driver_temp": {
+                        "scalar": "float32",
+                        "value": -109.0,
+                        "wire": "0000dac2"
+                      }
+                    }
+                  },
+                  {
+                    "record": "drdds/msg/JointData",
+                    "members": {
+                      "name": {
+                        "array": [
+                          {
+                            "scalar": "uint8",
+                            "value": 69,
+                            "wire": "45"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 4,
+                            "wire": "04"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 199,
+                            "wire": "c7"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 134,
+                            "wire": "86"
+                          }
+                        ]
+                      },
+                      "data_id": {
+                        "scalar": "uint16",
+                        "value": 6758,
+                        "wire": "661a"
+                      },
+                      "status_word": {
+                        "scalar": "uint16",
+                        "value": 65435,
+                        "wire": "9bff"
+                      },
+                      "position": {
+                        "scalar": "float32",
+                        "value": 83.875,
+                        "wire": "00c0a742"
+                      },
+                      "torque": {
+                        "scalar": "float32",
+                        "value": 66.25,
+                        "wire": "00808442"
+                      },
+                      "velocity": {
+                        "scalar": "float32",
+                        "value": -69.0,
+                        "wire": "00008ac2"
+                      },
+                      "motion_temp": {
+                        "scalar": "float32",
+                        "value": 25.875,
+                        "wire": "0000cf41"
+                      },
+                      "driver_temp": {
+                        "scalar": "float32",
+                        "value": 29.25,
+                        "wire": "0000ea41"
+                      }
+                    }
+                  },
+                  {
+                    "record": "drdds/msg/JointData",
+                    "members": {
+                      "name": {
+                        "array": [
+                          {
+                            "scalar": "uint8",
+                            "value": 123,
+                            "wire": "7b"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 58,
+                            "wire": "3a"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 249,
+                            "wire": "f9"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 184,
+                            "wire": "b8"
+                          }
+                        ]
+                      },
+                      "data_id": {
+                        "scalar": "uint16",
+                        "value": 29016,
+                        "wire": "5871"
+                      },
+                      "status_word": {
+                        "scalar": "uint16",
+                        "value": 7917,
+                        "wire": "ed1e"
+                      },
+                      "position": {
+                        "scalar": "float32",
+                        "value": -194.0,
+                        "wire": "000042c3"
+                      },
+                      "torque": {
+                        "scalar": "float32",
+                        "value": 19.375,
+                        "wire": "00009b41"
+                      },
+                      "velocity": {
+                        "scalar": "float32",
+                        "value": 243.25,
+                        "wire": "00407343"
+                      },
+                      "motion_temp": {
+                        "scalar": "float32",
+                        "value": -220.5,
+                        "wire": "00805cc3"
+                      },
+                      "driver_temp": {
+                        "scalar": "float32",
+                        "value": 254.625,
+                        "wire": "00a07e43"
+                      }
+                    }
+                  },
+                  {
+                    "record": "drdds/msg/JointData",
+                    "members": {
+                      "name": {
+                        "array": [
+                          {
+                            "scalar": "uint8",
+                            "value": 2,
+                            "wire": "02"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 67,
+                            "wire": "43"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 128,
+                            "wire": "80"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 193,
+                            "wire": "c1"
+                          }
+                        ]
+                      },
+                      "data_id": {
+                        "scalar": "uint16",
+                        "value": 27169,
+                        "wire": "216a"
+                      },
+                      "status_word": {
+                        "scalar": "uint16",
+                        "value": 46125,
+                        "wire": "2db4"
+                      },
+                      "position": {
+                        "scalar": "float32",
+                        "value": 43.75,
+                        "wire": "00002f42"
+                      },
+                      "torque": {
+                        "scalar": "float32",
+                        "value": -156.375,
+                        "wire": "00601cc3"
+                      },
+                      "velocity": {
+                        "scalar": "float32",
+                        "value": -19.5,
+                        "wire": "00009cc1"
+                      },
+                      "motion_temp": {
+                        "scalar": "float32",
+                        "value": -230.375,
+                        "wire": "006066c3"
+                      },
+                      "driver_temp": {
+                        "scalar": "float32",
+                        "value": 34.625,
+                        "wire": "00800a42"
+                      }
+                    }
+                  },
+                  {
+                    "record": "drdds/msg/JointData",
+                    "members": {
+                      "name": {
+                        "array": [
+                          {
+                            "scalar": "uint8",
+                            "value": 60,
+                            "wire": "3c"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 125,
+                            "wire": "7d"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 190,
+                            "wire": "be"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 255,
+                            "wire": "ff"
+                          }
+                        ]
+                      },
+                      "data_id": {
+                        "scalar": "uint16",
+                        "value": 287,
+                        "wire": "1f01"
+                      },
+                      "status_word": {
+                        "scalar": "uint16",
+                        "value": 21851,
+                        "wire": "5b55"
+                      },
+                      "position": {
+                        "scalar": "float32",
+                        "value": -151.5,
+                        "wire": "008017c3"
+                      },
+                      "torque": {
+                        "scalar": "float32",
+                        "value": -242.75,
+                        "wire": "00c072c3"
+                      },
+                      "velocity": {
+                        "scalar": "float32",
+                        "value": 216.875,
+                        "wire": "00e05843"
+                      },
+                      "motion_temp": {
+                        "scalar": "float32",
+                        "value": -84.25,
+                        "wire": "0080a8c2"
+                      },
+                      "driver_temp": {
+                        "scalar": "float32",
+                        "value": -60.5,
+                        "wire": "000072c2"
+                      }
+                    }
+                  },
+                  {
+                    "record": "drdds/msg/JointData",
+                    "members": {
+                      "name": {
+                        "array": [
+                          {
+                            "scalar": "uint8",
+                            "value": 63,
+                            "wire": "3f"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 126,
+                            "wire": "7e"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 189,
+                            "wire": "bd"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 252,
+                            "wire": "fc"
+                          }
+                        ]
+                      },
+                      "data_id": {
+                        "scalar": "uint16",
+                        "value": 47644,
+                        "wire": "1cba"
+                      },
+                      "status_word": {
+                        "scalar": "uint16",
+                        "value": 28800,
+                        "wire": "8070"
+                      },
+                      "position": {
+                        "scalar": "float32",
+                        "value": 129.25,
+                        "wire": "00400143"
+                      },
+                      "torque": {
+                        "scalar": "float32",
+                        "value": 3.25,
+                        "wire": "00005040"
+                      },
+                      "velocity": {
+                        "scalar": "float32",
+                        "value": 220.75,
+                        "wire": "00c05c43"
+                      },
+                      "motion_temp": {
+                        "scalar": "float32",
+                        "value": -212.0,
+                        "wire": "000054c3"
+                      },
+                      "driver_temp": {
+                        "scalar": "float32",
+                        "value": -253.625,
+                        "wire": "00a07dc3"
+                      }
+                    }
+                  },
+                  {
+                    "record": "drdds/msg/JointData",
+                    "members": {
+                      "name": {
+                        "array": [
+                          {
+                            "scalar": "uint8",
+                            "value": 1,
+                            "wire": "01"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 64,
+                            "wire": "40"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 131,
+                            "wire": "83"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 194,
+                            "wire": "c2"
+                          }
+                        ]
+                      },
+                      "data_id": {
+                        "scalar": "uint16",
+                        "value": 53538,
+                        "wire": "22d1"
+                      },
+                      "status_word": {
+                        "scalar": "uint16",
+                        "value": 37366,
+                        "wire": "f691"
+                      },
+                      "position": {
+                        "scalar": "float32",
+                        "value": -57.125,
+                        "wire": "008064c2"
+                      },
+                      "torque": {
+                        "scalar": "float32",
+                        "value": -28.75,
+                        "wire": "0000e6c1"
+                      },
+                      "velocity": {
+                        "scalar": "float32",
+                        "value": -203.75,
+                        "wire": "00c04bc3"
+                      },
+                      "motion_temp": {
+                        "scalar": "float32",
+                        "value": -236.125,
+                        "wire": "00206cc3"
+                      },
+                      "driver_temp": {
+                        "scalar": "float32",
+                        "value": -226.5,
+                        "wire": "008062c3"
+                      }
+                    }
+                  },
+                  {
+                    "record": "drdds/msg/JointData",
+                    "members": {
+                      "name": {
+                        "array": [
+                          {
+                            "scalar": "uint8",
+                            "value": 140,
+                            "wire": "8c"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 205,
+                            "wire": "cd"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 14,
+                            "wire": "0e"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 79,
+                            "wire": "4f"
+                          }
+                        ]
+                      },
+                      "data_id": {
+                        "scalar": "uint16",
+                        "value": 35503,
+                        "wire": "af8a"
+                      },
+                      "status_word": {
+                        "scalar": "uint16",
+                        "value": 9472,
+                        "wire": "0025"
+                      },
+                      "position": {
+                        "scalar": "float32",
+                        "value": 133.5,
+                        "wire": "00800543"
+                      },
+                      "torque": {
+                        "scalar": "float32",
+                        "value": 118.75,
+                        "wire": "0080ed42"
+                      },
+                      "velocity": {
+                        "scalar": "float32",
+                        "value": -251.5,
+                        "wire": "00807bc3"
+                      },
+                      "motion_temp": {
+                        "scalar": "float32",
+                        "value": -160.25,
+                        "wire": "004020c3"
+                      },
+                      "driver_temp": {
+                        "scalar": "float32",
+                        "value": 204.375,
+                        "wire": "00604c43"
+                      }
+                    }
+                  },
+                  {
+                    "record": "drdds/msg/JointData",
+                    "members": {
+                      "name": {
+                        "array": [
+                          {
+                            "scalar": "uint8",
+                            "value": 178,
+                            "wire": "b2"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 243,
+                            "wire": "f3"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 48,
+                            "wire": "30"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 113,
+                            "wire": "71"
+                          }
+                        ]
+                      },
+                      "data_id": {
+                        "scalar": "uint16",
+                        "value": 57745,
+                        "wire": "91e1"
+                      },
+                      "status_word": {
+                        "scalar": "uint16",
+                        "value": 50294,
+                        "wire": "76c4"
+                      },
+                      "position": {
+                        "scalar": "float32",
+                        "value": -28.5,
+                        "wire": "0000e4c1"
+                      },
+                      "torque": {
+                        "scalar": "float32",
+                        "value": -145.375,
+                        "wire": "006011c3"
+                      },
+                      "velocity": {
+                        "scalar": "float32",
+                        "value": 243.625,
+                        "wire": "00a07343"
+                      },
+                      "motion_temp": {
+                        "scalar": "float32",
+                        "value": -21.125,
+                        "wire": "0000a9c1"
+                      },
+                      "driver_temp": {
+                        "scalar": "float32",
+                        "value": 158.25,
+                        "wire": "00401e43"
+                      }
+                    }
+                  },
+                  {
+                    "record": "drdds/msg/JointData",
+                    "members": {
+                      "name": {
+                        "array": [
+                          {
+                            "scalar": "uint8",
+                            "value": 236,
+                            "wire": "ec"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 173,
+                            "wire": "ad"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 110,
+                            "wire": "6e"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 47,
+                            "wire": "2f"
+                          }
+                        ]
+                      },
+                      "data_id": {
+                        "scalar": "uint16",
+                        "value": 35023,
+                        "wire": "cf88"
+                      },
+                      "status_word": {
+                        "scalar": "uint16",
+                        "value": 58853,
+                        "wire": "e5e5"
+                      },
+                      "position": {
+                        "scalar": "float32",
+                        "value": 114.75,
+                        "wire": "0080e542"
+                      },
+                      "torque": {
+                        "scalar": "float32",
+                        "value": -68.5,
+                        "wire": "000089c2"
+                      },
+                      "velocity": {
+                        "scalar": "float32",
+                        "value": 222.125,
+                        "wire": "00205e43"
+                      },
+                      "motion_temp": {
+                        "scalar": "float32",
+                        "value": 210.875,
+                        "wire": "00e05243"
+                      },
+                      "driver_temp": {
+                        "scalar": "float32",
+                        "value": -6.0,
+                        "wire": "0000c0c0"
+                      }
+                    }
+                  },
+                  {
+                    "record": "drdds/msg/JointData",
+                    "members": {
+                      "name": {
+                        "array": [
+                          {
+                            "scalar": "uint8",
+                            "value": 210,
+                            "wire": "d2"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 147,
+                            "wire": "93"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 80,
+                            "wire": "50"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 17,
+                            "wire": "11"
+                          }
+                        ]
+                      },
+                      "data_id": {
+                        "scalar": "uint16",
+                        "value": 58353,
+                        "wire": "f1e3"
+                      },
+                      "status_word": {
+                        "scalar": "uint16",
+                        "value": 1171,
+                        "wire": "9304"
+                      },
+                      "position": {
+                        "scalar": "float32",
+                        "value": -157.875,
+                        "wire": "00e01dc3"
+                      },
+                      "torque": {
+                        "scalar": "float32",
+                        "value": -21.0,
+                        "wire": "0000a8c1"
+                      },
+                      "velocity": {
+                        "scalar": "float32",
+                        "value": -98.875,
+                        "wire": "00c0c5c2"
+                      },
+                      "motion_temp": {
+                        "scalar": "float32",
+                        "value": -155.875,
+                        "wire": "00e01bc3"
+                      },
+                      "driver_temp": {
+                        "scalar": "float32",
+                        "value": -225.875,
+                        "wire": "00e061c3"
+                      }
+                    }
+                  },
+                  {
+                    "record": "drdds/msg/JointData",
+                    "members": {
+                      "name": {
+                        "array": [
+                          {
+                            "scalar": "uint8",
+                            "value": 209,
+                            "wire": "d1"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 144,
+                            "wire": "90"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 83,
+                            "wire": "53"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 18,
+                            "wire": "12"
+                          }
+                        ]
+                      },
+                      "data_id": {
+                        "scalar": "uint16",
+                        "value": 22770,
+                        "wire": "f258"
+                      },
+                      "status_word": {
+                        "scalar": "uint16",
+                        "value": 8520,
+                        "wire": "4821"
+                      },
+                      "position": {
+                        "scalar": "float32",
+                        "value": -136.25,
+                        "wire": "004008c3"
+                      },
+                      "torque": {
+                        "scalar": "float32",
+                        "value": -91.25,
+                        "wire": "0080b6c2"
+                      },
+                      "velocity": {
+                        "scalar": "float32",
+                        "value": 160.125,
+                        "wire": "00202043"
+                      },
+                      "motion_temp": {
+                        "scalar": "float32",
+                        "value": 166.0,
+                        "wire": "00002643"
+                      },
+                      "driver_temp": {
+                        "scalar": "float32",
+                        "value": -65.375,
+                        "wire": "00c082c2"
+                      }
+                    }
+                  },
+                  {
+                    "record": "drdds/msg/JointData",
+                    "members": {
+                      "name": {
+                        "array": [
+                          {
+                            "scalar": "uint8",
+                            "value": 239,
+                            "wire": "ef"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 174,
+                            "wire": "ae"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 109,
+                            "wire": "6d"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 44,
+                            "wire": "2c"
+                          }
+                        ]
+                      },
+                      "data_id": {
+                        "scalar": "uint16",
+                        "value": 13260,
+                        "wire": "cc33"
+                      },
+                      "status_word": {
+                        "scalar": "uint16",
+                        "value": 49214,
+                        "wire": "3ec0"
+                      },
+                      "position": {
+                        "scalar": "float32",
+                        "value": 17.125,
+                        "wire": "00008941"
+                      },
+                      "torque": {
+                        "scalar": "float32",
+                        "value": -9.5,
+                        "wire": "000018c1"
+                      },
+                      "velocity": {
+                        "scalar": "float32",
+                        "value": 39.625,
+                        "wire": "00801e42"
+                      },
+                      "motion_temp": {
+                        "scalar": "float32",
+                        "value": -88.875,
+                        "wire": "00c0b1c2"
+                      },
+                      "driver_temp": {
+                        "scalar": "float32",
+                        "value": 174.5,
+                        "wire": "00802e43"
+                      }
+                    }
+                  },
+                  {
+                    "record": "drdds/msg/JointData",
+                    "members": {
+                      "name": {
+                        "array": [
+                          {
+                            "scalar": "uint8",
+                            "value": 150,
+                            "wire": "96"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 215,
+                            "wire": "d7"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 20,
+                            "wire": "14"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 85,
+                            "wire": "55"
+                          }
+                        ]
+                      },
+                      "data_id": {
+                        "scalar": "uint16",
+                        "value": 10421,
+                        "wire": "b528"
+                      },
+                      "status_word": {
+                        "scalar": "uint16",
+                        "value": 27390,
+                        "wire": "fe6a"
+                      },
+                      "position": {
+                        "scalar": "float32",
+                        "value": 40.25,
+                        "wire": "00002142"
+                      },
+                      "torque": {
+                        "scalar": "float32",
+                        "value": 166.375,
+                        "wire": "00602643"
+                      },
+                      "velocity": {
+                        "scalar": "float32",
+                        "value": -38.5,
+                        "wire": "00001ac2"
+                      },
+                      "motion_temp": {
+                        "scalar": "float32",
+                        "value": 227.625,
+                        "wire": "00a06343"
+                      },
+                      "driver_temp": {
+                        "scalar": "float32",
+                        "value": -71.875,
+                        "wire": "00c08fc2"
+                      }
+                    }
+                  },
+                  {
+                    "record": "drdds/msg/JointData",
+                    "members": {
+                      "name": {
+                        "array": [
+                          {
+                            "scalar": "uint8",
+                            "value": 168,
+                            "wire": "a8"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 233,
+                            "wire": "e9"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 42,
+                            "wire": "2a"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 107,
+                            "wire": "6b"
+                          }
+                        ]
+                      },
+                      "data_id": {
+                        "scalar": "uint16",
+                        "value": 17291,
+                        "wire": "8b43"
+                      },
+                      "status_word": {
+                        "scalar": "uint16",
+                        "value": 35720,
+                        "wire": "888b"
+                      },
+                      "position": {
+                        "scalar": "float32",
+                        "value": -70.125,
+                        "wire": "00408cc2"
+                      },
+                      "torque": {
+                        "scalar": "float32",
+                        "value": 206.625,
+                        "wire": "00a04e43"
+                      },
+                      "velocity": {
+                        "scalar": "float32",
+                        "value": 123.5,
+                        "wire": "0000f742"
+                      },
+                      "motion_temp": {
+                        "scalar": "float32",
+                        "value": -173.375,
+                        "wire": "00602dc3"
+                      },
+                      "driver_temp": {
+                        "scalar": "float32",
+                        "value": -161.5,
+                        "wire": "008021c3"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "drdds/msg/JointsDataCmd",
+      "wire": "d60425726f7d12ec8e7749886a7a6f237031f2b353f2ef5200c08ec20040aa4200e005c300201343000078c04e0fcc8d6d9907890040f64200e029c300c00a430000ac4100c027434d0ccf8e6e227ee30040c44200803ec20080eac200e032c3000016c27332f1b0504996380000cc41008018420000474200400bc3008050430a4b88c929528c3700207ec300c02fc300607f4300002ac200c0ae423475b6f7173964ec0000c1c200200e4300e02e43006071c30080e3423776b5f414821d860000844100e01ec3002055c300009442008054c209488bca2ae9f55d00205bc300607bc3000086c100c0e042000078c384c50647a7b2689e00805643008067430020384300c003c300c03b43bafb387999d980450080e64200000cc300c089420000dcc00000db41e6a76425c53a8dae00c03cc30000a0420080aec200a035c300c0a642d8995a1bfb51657500c0e4420000044200c0494300009c4100006d42db9a5918f8ea1c1f00406cc300a014c300e06dc300e03dc300000cc3e5a46726c681f4c40000b44200005fc300c0adc2000062c3008064429cdd1e5fbf9aeecb0000a5c200c0904200a0064300a07e4300c03ec3a2e3206181f1061000c083420000fc4100805bc200a005c300001343",
+      "value": {
+        "record": "drdds/msg/JointsDataCmd",
+        "members": {
+          "header": {
+            "record": "drdds/msg/MetaType",
+            "members": {
+              "frame_id": {
+                "scalar": "uint64",
+                "value": 17010796660141655254,
+                "wire": "d60425726f7d12ec"
+              },
+              "stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": -2008451186,
+                    "wire": "8e774988"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 594508394,
+                    "wire": "6a7a6f23"
+                  }
+                }
+              }
+            }
+          },
+          "data": {
+            "record": "drdds/msg/JointsDataCmdValue",
+            "members": {
+              "joints_data": {
+                "array": [
+                  {
+                    "record": "drdds/msg/JointDataCmd",
+                    "members": {
+                      "name": {
+                        "array": [
+                          {
+                            "scalar": "uint8",
+                            "value": 112,
+                            "wire": "70"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 49,
+                            "wire": "31"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 242,
+                            "wire": "f2"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 179,
+                            "wire": "b3"
+                          }
+                        ]
+                      },
+                      "data_id": {
+                        "scalar": "uint16",
+                        "value": 62035,
+                        "wire": "53f2"
+                      },
+                      "control_word": {
+                        "scalar": "uint16",
+                        "value": 21231,
+                        "wire": "ef52"
+                      },
+                      "position": {
+                        "scalar": "float32",
+                        "value": -71.375,
+                        "wire": "00c08ec2"
+                      },
+                      "torque": {
+                        "scalar": "float32",
+                        "value": 85.125,
+                        "wire": "0040aa42"
+                      },
+                      "velocity": {
+                        "scalar": "float32",
+                        "value": -133.875,
+                        "wire": "00e005c3"
+                      },
+                      "kp": {
+                        "scalar": "float32",
+                        "value": 147.125,
+                        "wire": "00201343"
+                      },
+                      "kd": {
+                        "scalar": "float32",
+                        "value": -3.875,
+                        "wire": "000078c0"
+                      }
+                    }
+                  },
+                  {
+                    "record": "drdds/msg/JointDataCmd",
+                    "members": {
+                      "name": {
+                        "array": [
+                          {
+                            "scalar": "uint8",
+                            "value": 78,
+                            "wire": "4e"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 15,
+                            "wire": "0f"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 204,
+                            "wire": "cc"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 141,
+                            "wire": "8d"
+                          }
+                        ]
+                      },
+                      "data_id": {
+                        "scalar": "uint16",
+                        "value": 39277,
+                        "wire": "6d99"
+                      },
+                      "control_word": {
+                        "scalar": "uint16",
+                        "value": 35079,
+                        "wire": "0789"
+                      },
+                      "position": {
+                        "scalar": "float32",
+                        "value": 123.125,
+                        "wire": "0040f642"
+                      },
+                      "torque": {
+                        "scalar": "float32",
+                        "value": -169.875,
+                        "wire": "00e029c3"
+                      },
+                      "velocity": {
+                        "scalar": "float32",
+                        "value": 138.75,
+                        "wire": "00c00a43"
+                      },
+                      "kp": {
+                        "scalar": "float32",
+                        "value": 21.5,
+                        "wire": "0000ac41"
+                      },
+                      "kd": {
+                        "scalar": "float32",
+                        "value": 167.75,
+                        "wire": "00c02743"
+                      }
+                    }
+                  },
+                  {
+                    "record": "drdds/msg/JointDataCmd",
+                    "members": {
+                      "name": {
+                        "array": [
+                          {
+                            "scalar": "uint8",
+                            "value": 77,
+                            "wire": "4d"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 12,
+                            "wire": "0c"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 207,
+                            "wire": "cf"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 142,
+                            "wire": "8e"
+                          }
+                        ]
+                      },
+                      "data_id": {
+                        "scalar": "uint16",
+                        "value": 8814,
+                        "wire": "6e22"
+                      },
+                      "control_word": {
+                        "scalar": "uint16",
+                        "value": 58238,
+                        "wire": "7ee3"
+                      },
+                      "position": {
+                        "scalar": "float32",
+                        "value": 98.125,
+                        "wire": "0040c442"
+                      },
+                      "torque": {
+                        "scalar": "float32",
+                        "value": -47.625,
+                        "wire": "00803ec2"
+                      },
+                      "velocity": {
+                        "scalar": "float32",
+                        "value": -117.25,
+                        "wire": "0080eac2"
+                      },
+                      "kp": {
+                        "scalar": "float32",
+                        "value": -178.875,
+                        "wire": "00e032c3"
+                      },
+                      "kd": {
+                        "scalar": "float32",
+                        "value": -37.5,
+                        "wire": "000016c2"
+                      }
+                    }
+                  },
+                  {
+                    "record": "drdds/msg/JointDataCmd",
+                    "members": {
+                      "name": {
+                        "array": [
+                          {
+                            "scalar": "uint8",
+                            "value": 115,
+                            "wire": "73"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 50,
+                            "wire": "32"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 241,
+                            "wire": "f1"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 176,
+                            "wire": "b0"
+                          }
+                        ]
+                      },
+                      "data_id": {
+                        "scalar": "uint16",
+                        "value": 18768,
+                        "wire": "5049"
+                      },
+                      "control_word": {
+                        "scalar": "uint16",
+                        "value": 14486,
+                        "wire": "9638"
+                      },
+                      "position": {
+                        "scalar": "float32",
+                        "value": 25.5,
+                        "wire": "0000cc41"
+                      },
+                      "torque": {
+                        "scalar": "float32",
+                        "value": 38.125,
+                        "wire": "00801842"
+                      },
+                      "velocity": {
+                        "scalar": "float32",
+                        "value": 49.75,
+                        "wire": "00004742"
+                      },
+                      "kp": {
+                        "scalar": "float32",
+                        "value": -139.25,
+                        "wire": "00400bc3"
+                      },
+                      "kd": {
+                        "scalar": "float32",
+                        "value": 208.5,
+                        "wire": "00805043"
+                      }
+                    }
+                  },
+                  {
+                    "record": "drdds/msg/JointDataCmd",
+                    "members": {
+                      "name": {
+                        "array": [
+                          {
+                            "scalar": "uint8",
+                            "value": 10,
+                            "wire": "0a"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 75,
+                            "wire": "4b"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 136,
+                            "wire": "88"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 201,
+                            "wire": "c9"
+                          }
+                        ]
+                      },
+                      "data_id": {
+                        "scalar": "uint16",
+                        "value": 21033,
+                        "wire": "2952"
+                      },
+                      "control_word": {
+                        "scalar": "uint16",
+                        "value": 14220,
+                        "wire": "8c37"
+                      },
+                      "position": {
+                        "scalar": "float32",
+                        "value": -254.125,
+                        "wire": "00207ec3"
+                      },
+                      "torque": {
+                        "scalar": "float32",
+                        "value": -175.75,
+                        "wire": "00c02fc3"
+                      },
+                      "velocity": {
+                        "scalar": "float32",
+                        "value": 255.375,
+                        "wire": "00607f43"
+                      },
+                      "kp": {
+                        "scalar": "float32",
+                        "value": -42.5,
+                        "wire": "00002ac2"
+                      },
+                      "kd": {
+                        "scalar": "float32",
+                        "value": 87.375,
+                        "wire": "00c0ae42"
+                      }
+                    }
+                  },
+                  {
+                    "record": "drdds/msg/JointDataCmd",
+                    "members": {
+                      "name": {
+                        "array": [
+                          {
+                            "scalar": "uint8",
+                            "value": 52,
+                            "wire": "34"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 117,
+                            "wire": "75"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 182,
+                            "wire": "b6"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 247,
+                            "wire": "f7"
+                          }
+                        ]
+                      },
+                      "data_id": {
+                        "scalar": "uint16",
+                        "value": 14615,
+                        "wire": "1739"
+                      },
+                      "control_word": {
+                        "scalar": "uint16",
+                        "value": 60516,
+                        "wire": "64ec"
+                      },
+                      "position": {
+                        "scalar": "float32",
+                        "value": -96.5,
+                        "wire": "0000c1c2"
+                      },
+                      "torque": {
+                        "scalar": "float32",
+                        "value": 142.125,
+                        "wire": "00200e43"
+                      },
+                      "velocity": {
+                        "scalar": "float32",
+                        "value": 174.875,
+                        "wire": "00e02e43"
+                      },
+                      "kp": {
+                        "scalar": "float32",
+                        "value": -241.375,
+                        "wire": "006071c3"
+                      },
+                      "kd": {
+                        "scalar": "float32",
+                        "value": 113.75,
+                        "wire": "0080e342"
+                      }
+                    }
+                  },
+                  {
+                    "record": "drdds/msg/JointDataCmd",
+                    "members": {
+                      "name": {
+                        "array": [
+                          {
+                            "scalar": "uint8",
+                            "value": 55,
+                            "wire": "37"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 118,
+                            "wire": "76"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 181,
+                            "wire": "b5"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 244,
+                            "wire": "f4"
+                          }
+                        ]
+                      },
+                      "data_id": {
+                        "scalar": "uint16",
+                        "value": 33300,
+                        "wire": "1482"
+                      },
+                      "control_word": {
+                        "scalar": "uint16",
+                        "value": 34333,
+                        "wire": "1d86"
+                      },
+                      "position": {
+                        "scalar": "float32",
+                        "value": 16.5,
+                        "wire": "00008441"
+                      },
+                      "torque": {
+                        "scalar": "float32",
+                        "value": -158.875,
+                        "wire": "00e01ec3"
+                      },
+                      "velocity": {
+                        "scalar": "float32",
+                        "value": -213.125,
+                        "wire": "002055c3"
+                      },
+                      "kp": {
+                        "scalar": "float32",
+                        "value": 74.0,
+                        "wire": "00009442"
+                      },
+                      "kd": {
+                        "scalar": "float32",
+                        "value": -53.125,
+                        "wire": "008054c2"
+                      }
+                    }
+                  },
+                  {
+                    "record": "drdds/msg/JointDataCmd",
+                    "members": {
+                      "name": {
+                        "array": [
+                          {
+                            "scalar": "uint8",
+                            "value": 9,
+                            "wire": "09"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 72,
+                            "wire": "48"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 139,
+                            "wire": "8b"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 202,
+                            "wire": "ca"
+                          }
+                        ]
+                      },
+                      "data_id": {
+                        "scalar": "uint16",
+                        "value": 59690,
+                        "wire": "2ae9"
+                      },
+                      "control_word": {
+                        "scalar": "uint16",
+                        "value": 24053,
+                        "wire": "f55d"
+                      },
+                      "position": {
+                        "scalar": "float32",
+                        "value": -219.125,
+                        "wire": "00205bc3"
+                      },
+                      "torque": {
+                        "scalar": "float32",
+                        "value": -251.375,
+                        "wire": "00607bc3"
+                      },
+                      "velocity": {
+                        "scalar": "float32",
+                        "value": -16.75,
+                        "wire": "000086c1"
+                      },
+                      "kp": {
+                        "scalar": "float32",
+                        "value": 112.375,
+                        "wire": "00c0e042"
+                      },
+                      "kd": {
+                        "scalar": "float32",
+                        "value": -248.0,
+                        "wire": "000078c3"
+                      }
+                    }
+                  },
+                  {
+                    "record": "drdds/msg/JointDataCmd",
+                    "members": {
+                      "name": {
+                        "array": [
+                          {
+                            "scalar": "uint8",
+                            "value": 132,
+                            "wire": "84"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 197,
+                            "wire": "c5"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 6,
+                            "wire": "06"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 71,
+                            "wire": "47"
+                          }
+                        ]
+                      },
+                      "data_id": {
+                        "scalar": "uint16",
+                        "value": 45735,
+                        "wire": "a7b2"
+                      },
+                      "control_word": {
+                        "scalar": "uint16",
+                        "value": 40552,
+                        "wire": "689e"
+                      },
+                      "position": {
+                        "scalar": "float32",
+                        "value": 214.5,
+                        "wire": "00805643"
+                      },
+                      "torque": {
+                        "scalar": "float32",
+                        "value": 231.5,
+                        "wire": "00806743"
+                      },
+                      "velocity": {
+                        "scalar": "float32",
+                        "value": 184.125,
+                        "wire": "00203843"
+                      },
+                      "kp": {
+                        "scalar": "float32",
+                        "value": -131.75,
+                        "wire": "00c003c3"
+                      },
+                      "kd": {
+                        "scalar": "float32",
+                        "value": 187.75,
+                        "wire": "00c03b43"
+                      }
+                    }
+                  },
+                  {
+                    "record": "drdds/msg/JointDataCmd",
+                    "members": {
+                      "name": {
+                        "array": [
+                          {
+                            "scalar": "uint8",
+                            "value": 186,
+                            "wire": "ba"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 251,
+                            "wire": "fb"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 56,
+                            "wire": "38"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 121,
+                            "wire": "79"
+                          }
+                        ]
+                      },
+                      "data_id": {
+                        "scalar": "uint16",
+                        "value": 55705,
+                        "wire": "99d9"
+                      },
+                      "control_word": {
+                        "scalar": "uint16",
+                        "value": 17792,
+                        "wire": "8045"
+                      },
+                      "position": {
+                        "scalar": "float32",
+                        "value": 115.25,
+                        "wire": "0080e642"
+                      },
+                      "torque": {
+                        "scalar": "float32",
+                        "value": -140.0,
+                        "wire": "00000cc3"
+                      },
+                      "velocity": {
+                        "scalar": "float32",
+                        "value": 68.875,
+                        "wire": "00c08942"
+                      },
+                      "kp": {
+                        "scalar": "float32",
+                        "value": -6.875,
+                        "wire": "0000dcc0"
+                      },
+                      "kd": {
+                        "scalar": "float32",
+                        "value": 27.375,
+                        "wire": "0000db41"
+                      }
+                    }
+                  },
+                  {
+                    "record": "drdds/msg/JointDataCmd",
+                    "members": {
+                      "name": {
+                        "array": [
+                          {
+                            "scalar": "uint8",
+                            "value": 230,
+                            "wire": "e6"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 167,
+                            "wire": "a7"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 100,
+                            "wire": "64"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 37,
+                            "wire": "25"
+                          }
+                        ]
+                      },
+                      "data_id": {
+                        "scalar": "uint16",
+                        "value": 15045,
+                        "wire": "c53a"
+                      },
+                      "control_word": {
+                        "scalar": "uint16",
+                        "value": 44685,
+                        "wire": "8dae"
+                      },
+                      "position": {
+                        "scalar": "float32",
+                        "value": -188.75,
+                        "wire": "00c03cc3"
+                      },
+                      "torque": {
+                        "scalar": "float32",
+                        "value": 80.0,
+                        "wire": "0000a042"
+                      },
+                      "velocity": {
+                        "scalar": "float32",
+                        "value": -87.25,
+                        "wire": "0080aec2"
+                      },
+                      "kp": {
+                        "scalar": "float32",
+                        "value": -181.625,
+                        "wire": "00a035c3"
+                      },
+                      "kd": {
+                        "scalar": "float32",
+                        "value": 83.375,
+                        "wire": "00c0a642"
+                      }
+                    }
+                  },
+                  {
+                    "record": "drdds/msg/JointDataCmd",
+                    "members": {
+                      "name": {
+                        "array": [
+                          {
+                            "scalar": "uint8",
+                            "value": 216,
+                            "wire": "d8"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 153,
+                            "wire": "99"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 90,
+                            "wire": "5a"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 27,
+                            "wire": "1b"
+                          }
+                        ]
+                      },
+                      "data_id": {
+                        "scalar": "uint16",
+                        "value": 20987,
+                        "wire": "fb51"
+                      },
+                      "control_word": {
+                        "scalar": "uint16",
+                        "value": 30053,
+                        "wire": "6575"
+                      },
+                      "position": {
+                        "scalar": "float32",
+                        "value": 114.375,
+                        "wire": "00c0e442"
+                      },
+                      "torque": {
+                        "scalar": "float32",
+                        "value": 33.0,
+                        "wire": "00000442"
+                      },
+                      "velocity": {
+                        "scalar": "float32",
+                        "value": 201.75,
+                        "wire": "00c04943"
+                      },
+                      "kp": {
+                        "scalar": "float32",
+                        "value": 19.5,
+                        "wire": "00009c41"
+                      },
+                      "kd": {
+                        "scalar": "float32",
+                        "value": 59.25,
+                        "wire": "00006d42"
+                      }
+                    }
+                  },
+                  {
+                    "record": "drdds/msg/JointDataCmd",
+                    "members": {
+                      "name": {
+                        "array": [
+                          {
+                            "scalar": "uint8",
+                            "value": 219,
+                            "wire": "db"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 154,
+                            "wire": "9a"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 89,
+                            "wire": "59"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 24,
+                            "wire": "18"
+                          }
+                        ]
+                      },
+                      "data_id": {
+                        "scalar": "uint16",
+                        "value": 60152,
+                        "wire": "f8ea"
+                      },
+                      "control_word": {
+                        "scalar": "uint16",
+                        "value": 7964,
+                        "wire": "1c1f"
+                      },
+                      "position": {
+                        "scalar": "float32",
+                        "value": -236.25,
+                        "wire": "00406cc3"
+                      },
+                      "torque": {
+                        "scalar": "float32",
+                        "value": -148.625,
+                        "wire": "00a014c3"
+                      },
+                      "velocity": {
+                        "scalar": "float32",
+                        "value": -237.875,
+                        "wire": "00e06dc3"
+                      },
+                      "kp": {
+                        "scalar": "float32",
+                        "value": -189.875,
+                        "wire": "00e03dc3"
+                      },
+                      "kd": {
+                        "scalar": "float32",
+                        "value": -140.0,
+                        "wire": "00000cc3"
+                      }
+                    }
+                  },
+                  {
+                    "record": "drdds/msg/JointDataCmd",
+                    "members": {
+                      "name": {
+                        "array": [
+                          {
+                            "scalar": "uint8",
+                            "value": 229,
+                            "wire": "e5"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 164,
+                            "wire": "a4"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 103,
+                            "wire": "67"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 38,
+                            "wire": "26"
+                          }
+                        ]
+                      },
+                      "data_id": {
+                        "scalar": "uint16",
+                        "value": 33222,
+                        "wire": "c681"
+                      },
+                      "control_word": {
+                        "scalar": "uint16",
+                        "value": 50420,
+                        "wire": "f4c4"
+                      },
+                      "position": {
+                        "scalar": "float32",
+                        "value": 90.0,
+                        "wire": "0000b442"
+                      },
+                      "torque": {
+                        "scalar": "float32",
+                        "value": -223.0,
+                        "wire": "00005fc3"
+                      },
+                      "velocity": {
+                        "scalar": "float32",
+                        "value": -86.875,
+                        "wire": "00c0adc2"
+                      },
+                      "kp": {
+                        "scalar": "float32",
+                        "value": -226.0,
+                        "wire": "000062c3"
+                      },
+                      "kd": {
+                        "scalar": "float32",
+                        "value": 57.125,
+                        "wire": "00806442"
+                      }
+                    }
+                  },
+                  {
+                    "record": "drdds/msg/JointDataCmd",
+                    "members": {
+                      "name": {
+                        "array": [
+                          {
+                            "scalar": "uint8",
+                            "value": 156,
+                            "wire": "9c"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 221,
+                            "wire": "dd"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 30,
+                            "wire": "1e"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 95,
+                            "wire": "5f"
+                          }
+                        ]
+                      },
+                      "data_id": {
+                        "scalar": "uint16",
+                        "value": 39615,
+                        "wire": "bf9a"
+                      },
+                      "control_word": {
+                        "scalar": "uint16",
+                        "value": 52206,
+                        "wire": "eecb"
+                      },
+                      "position": {
+                        "scalar": "float32",
+                        "value": -82.5,
+                        "wire": "0000a5c2"
+                      },
+                      "torque": {
+                        "scalar": "float32",
+                        "value": 72.375,
+                        "wire": "00c09042"
+                      },
+                      "velocity": {
+                        "scalar": "float32",
+                        "value": 134.625,
+                        "wire": "00a00643"
+                      },
+                      "kp": {
+                        "scalar": "float32",
+                        "value": 254.625,
+                        "wire": "00a07e43"
+                      },
+                      "kd": {
+                        "scalar": "float32",
+                        "value": -190.75,
+                        "wire": "00c03ec3"
+                      }
+                    }
+                  },
+                  {
+                    "record": "drdds/msg/JointDataCmd",
+                    "members": {
+                      "name": {
+                        "array": [
+                          {
+                            "scalar": "uint8",
+                            "value": 162,
+                            "wire": "a2"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 227,
+                            "wire": "e3"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 32,
+                            "wire": "20"
+                          },
+                          {
+                            "scalar": "uint8",
+                            "value": 97,
+                            "wire": "61"
+                          }
+                        ]
+                      },
+                      "data_id": {
+                        "scalar": "uint16",
+                        "value": 61825,
+                        "wire": "81f1"
+                      },
+                      "control_word": {
+                        "scalar": "uint16",
+                        "value": 4102,
+                        "wire": "0610"
+                      },
+                      "position": {
+                        "scalar": "float32",
+                        "value": 65.875,
+                        "wire": "00c08342"
+                      },
+                      "torque": {
+                        "scalar": "float32",
+                        "value": 31.5,
+                        "wire": "0000fc41"
+                      },
+                      "velocity": {
+                        "scalar": "float32",
+                        "value": -54.875,
+                        "wire": "00805bc2"
+                      },
+                      "kp": {
+                        "scalar": "float32",
+                        "value": -133.625,
+                        "wire": "00a005c3"
+                      },
+                      "kd": {
+                        "scalar": "float32",
+                        "value": 147.0,
+                        "wire": "00001343"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "drdds/msg/JointsDataCmdValue",
+      "wire": "ebaa6928c868199500c014c300a034430040104300a0604300009ec2d5945716f603f14e00205cc30080c4c2006046c3000029c20000a7c2d6975415f5b8882400405bc3002073c300c0a142000063c300a072c3e8a96a2bcbd360ff00809bc200803e4300604fc30020144300e009c391d01352b2c87af0000087c20080fac200009fc2008025c3004028c3afee2d6c8ca3922b008018430080c542008070420000864200a07e43aced2e6f8f18eb41008064c3004011c300a04b430000e242002057c392d31051b173039a008048c200002e4200200c43000011420000ab411f5e9ddc3c289e5900008cc10000de420080b7c20000cec20000c2422160a3e202437682006066c30000a54100c0c5c200204a4300809f42b0f13273937b630a0000f3420080fbc2000047c200206643004091428ecf0c4dad108bd1002045430060764300c055c30000e24200c04c438dcc0f4eaeabf2bb006026c300a0194300c0adc20040184300207e43b3f2317090c01a6000c0194300808ac200201b430080bec200a06ac3ca8b4809e9db006f000046c30040f8c200806dc200401cc300c0a9c2f4b57637d7b0e8b400800a420000004100e07c4300807a4300800343",
+      "value": {
+        "record": "drdds/msg/JointsDataCmdValue",
+        "members": {
+          "joints_data": {
+            "array": [
+              {
+                "record": "drdds/msg/JointDataCmd",
+                "members": {
+                  "name": {
+                    "array": [
+                      {
+                        "scalar": "uint8",
+                        "value": 235,
+                        "wire": "eb"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 170,
+                        "wire": "aa"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 105,
+                        "wire": "69"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 40,
+                        "wire": "28"
+                      }
+                    ]
+                  },
+                  "data_id": {
+                    "scalar": "uint16",
+                    "value": 26824,
+                    "wire": "c868"
+                  },
+                  "control_word": {
+                    "scalar": "uint16",
+                    "value": 38169,
+                    "wire": "1995"
+                  },
+                  "position": {
+                    "scalar": "float32",
+                    "value": -148.75,
+                    "wire": "00c014c3"
+                  },
+                  "torque": {
+                    "scalar": "float32",
+                    "value": 180.625,
+                    "wire": "00a03443"
+                  },
+                  "velocity": {
+                    "scalar": "float32",
+                    "value": 144.25,
+                    "wire": "00401043"
+                  },
+                  "kp": {
+                    "scalar": "float32",
+                    "value": 224.625,
+                    "wire": "00a06043"
+                  },
+                  "kd": {
+                    "scalar": "float32",
+                    "value": -79.0,
+                    "wire": "00009ec2"
+                  }
+                }
+              },
+              {
+                "record": "drdds/msg/JointDataCmd",
+                "members": {
+                  "name": {
+                    "array": [
+                      {
+                        "scalar": "uint8",
+                        "value": 213,
+                        "wire": "d5"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 148,
+                        "wire": "94"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 87,
+                        "wire": "57"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 22,
+                        "wire": "16"
+                      }
+                    ]
+                  },
+                  "data_id": {
+                    "scalar": "uint16",
+                    "value": 1014,
+                    "wire": "f603"
+                  },
+                  "control_word": {
+                    "scalar": "uint16",
+                    "value": 20209,
+                    "wire": "f14e"
+                  },
+                  "position": {
+                    "scalar": "float32",
+                    "value": -220.125,
+                    "wire": "00205cc3"
+                  },
+                  "torque": {
+                    "scalar": "float32",
+                    "value": -98.25,
+                    "wire": "0080c4c2"
+                  },
+                  "velocity": {
+                    "scalar": "float32",
+                    "value": -198.375,
+                    "wire": "006046c3"
+                  },
+                  "kp": {
+                    "scalar": "float32",
+                    "value": -42.25,
+                    "wire": "000029c2"
+                  },
+                  "kd": {
+                    "scalar": "float32",
+                    "value": -83.5,
+                    "wire": "0000a7c2"
+                  }
+                }
+              },
+              {
+                "record": "drdds/msg/JointDataCmd",
+                "members": {
+                  "name": {
+                    "array": [
+                      {
+                        "scalar": "uint8",
+                        "value": 214,
+                        "wire": "d6"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 151,
+                        "wire": "97"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 84,
+                        "wire": "54"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 21,
+                        "wire": "15"
+                      }
+                    ]
+                  },
+                  "data_id": {
+                    "scalar": "uint16",
+                    "value": 47349,
+                    "wire": "f5b8"
+                  },
+                  "control_word": {
+                    "scalar": "uint16",
+                    "value": 9352,
+                    "wire": "8824"
+                  },
+                  "position": {
+                    "scalar": "float32",
+                    "value": -219.25,
+                    "wire": "00405bc3"
+                  },
+                  "torque": {
+                    "scalar": "float32",
+                    "value": -243.125,
+                    "wire": "002073c3"
+                  },
+                  "velocity": {
+                    "scalar": "float32",
+                    "value": 80.875,
+                    "wire": "00c0a142"
+                  },
+                  "kp": {
+                    "scalar": "float32",
+                    "value": -227.0,
+                    "wire": "000063c3"
+                  },
+                  "kd": {
+                    "scalar": "float32",
+                    "value": -242.625,
+                    "wire": "00a072c3"
+                  }
+                }
+              },
+              {
+                "record": "drdds/msg/JointDataCmd",
+                "members": {
+                  "name": {
+                    "array": [
+                      {
+                        "scalar": "uint8",
+                        "value": 232,
+                        "wire": "e8"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 169,
+                        "wire": "a9"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 106,
+                        "wire": "6a"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 43,
+                        "wire": "2b"
+                      }
+                    ]
+                  },
+                  "data_id": {
+                    "scalar": "uint16",
+                    "value": 54219,
+                    "wire": "cbd3"
+                  },
+                  "control_word": {
+                    "scalar": "uint16",
+                    "value": 65376,
+                    "wire": "60ff"
+                  },
+                  "position": {
+                    "scalar": "float32",
+                    "value": -77.75,
+                    "wire": "00809bc2"
+                  },
+                  "torque": {
+                    "scalar": "float32",
+                    "value": 190.5,
+                    "wire": "00803e43"
+                  },
+                  "velocity": {
+                    "scalar": "float32",
+                    "value": -207.375,
+                    "wire": "00604fc3"
+                  },
+                  "kp": {
+                    "scalar": "float32",
+                    "value": 148.125,
+                    "wire": "00201443"
+                  },
+                  "kd": {
+                    "scalar": "float32",
+                    "value": -137.875,
+                    "wire": "00e009c3"
+                  }
+                }
+              },
+              {
+                "record": "drdds/msg/JointDataCmd",
+                "members": {
+                  "name": {
+                    "array": [
+                      {
+                        "scalar": "uint8",
+                        "value": 145,
+                        "wire": "91"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 208,
+                        "wire": "d0"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 19,
+                        "wire": "13"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 82,
+                        "wire": "52"
+                      }
+                    ]
+                  },
+                  "data_id": {
+                    "scalar": "uint16",
+                    "value": 51378,
+                    "wire": "b2c8"
+                  },
+                  "control_word": {
+                    "scalar": "uint16",
+                    "value": 61562,
+                    "wire": "7af0"
+                  },
+                  "position": {
+                    "scalar": "float32",
+                    "value": -67.5,
+                    "wire": "000087c2"
+                  },
+                  "torque": {
+                    "scalar": "float32",
+                    "value": -125.25,
+                    "wire": "0080fac2"
+                  },
+                  "velocity": {
+                    "scalar": "float32",
+                    "value": -79.5,
+                    "wire": "00009fc2"
+                  },
+                  "kp": {
+                    "scalar": "float32",
+                    "value": -165.5,
+                    "wire": "008025c3"
+                  },
+                  "kd": {
+                    "scalar": "float32",
+                    "value": -168.25,
+                    "wire": "004028c3"
+                  }
+                }
+              },
+              {
+                "record": "drdds/msg/JointDataCmd",
+                "members": {
+                  "name": {
+                    "array": [
+                      {
+                        "scalar": "uint8",
+                        "value": 175,
+                        "wire": "af"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 238,
+                        "wire": "ee"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 45,
+                        "wire": "2d"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 108,
+                        "wire": "6c"
+                      }
+                    ]
+                  },
+                  "data_id": {
+                    "scalar": "uint16",
+                    "value": 41868,
+                    "wire": "8ca3"
+                  },
+                  "control_word": {
+                    "scalar": "uint16",
+                    "value": 11154,
+                    "wire": "922b"
+                  },
+                  "position": {
+                    "scalar": "float32",
+                    "value": 152.5,
+                    "wire": "00801843"
+                  },
+                  "torque": {
+                    "scalar": "float32",
+                    "value": 98.75,
+                    "wire": "0080c542"
+                  },
+                  "velocity": {
+                    "scalar": "float32",
+                    "value": 60.125,
+                    "wire": "00807042"
+                  },
+                  "kp": {
+                    "scalar": "float32",
+                    "value": 67.0,
+                    "wire": "00008642"
+                  },
+                  "kd": {
+                    "scalar": "float32",
+                    "value": 254.625,
+                    "wire": "00a07e43"
+                  }
+                }
+              },
+              {
+                "record": "drdds/msg/JointDataCmd",
+                "members": {
+                  "name": {
+                    "array": [
+                      {
+                        "scalar": "uint8",
+                        "value": 172,
+                        "wire": "ac"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 237,
+                        "wire": "ed"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 46,
+                        "wire": "2e"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 111,
+                        "wire": "6f"
+                      }
+                    ]
+                  },
+                  "data_id": {
+                    "scalar": "uint16",
+                    "value": 6287,
+                    "wire": "8f18"
+                  },
+                  "control_word": {
+                    "scalar": "uint16",
+                    "value": 16875,
+                    "wire": "eb41"
+                  },
+                  "position": {
+                    "scalar": "float32",
+                    "value": -228.5,
+                    "wire": "008064c3"
+                  },
+                  "torque": {
+                    "scalar": "float32",
+                    "value": -145.25,
+                    "wire": "004011c3"
+                  },
+                  "velocity": {
+                    "scalar": "float32",
+                    "value": 203.625,
+                    "wire": "00a04b43"
+                  },
+                  "kp": {
+                    "scalar": "float32",
+                    "value": 113.0,
+                    "wire": "0000e242"
+                  },
+                  "kd": {
+                    "scalar": "float32",
+                    "value": -215.125,
+                    "wire": "002057c3"
+                  }
+                }
+              },
+              {
+                "record": "drdds/msg/JointDataCmd",
+                "members": {
+                  "name": {
+                    "array": [
+                      {
+                        "scalar": "uint8",
+                        "value": 146,
+                        "wire": "92"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 211,
+                        "wire": "d3"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 16,
+                        "wire": "10"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 81,
+                        "wire": "51"
+                      }
+                    ]
+                  },
+                  "data_id": {
+                    "scalar": "uint16",
+                    "value": 29617,
+                    "wire": "b173"
+                  },
+                  "control_word": {
+                    "scalar": "uint16",
+                    "value": 39427,
+                    "wire": "039a"
+                  },
+                  "position": {
+                    "scalar": "float32",
+                    "value": -50.125,
+                    "wire": "008048c2"
+                  },
+                  "torque": {
+                    "scalar": "float32",
+                    "value": 43.5,
+                    "wire": "00002e42"
+                  },
+                  "velocity": {
+                    "scalar": "float32",
+                    "value": 140.125,
+                    "wire": "00200c43"
+                  },
+                  "kp": {
+                    "scalar": "float32",
+                    "value": 36.25,
+                    "wire": "00001142"
+                  },
+                  "kd": {
+                    "scalar": "float32",
+                    "value": 21.375,
+                    "wire": "0000ab41"
+                  }
+                }
+              },
+              {
+                "record": "drdds/msg/JointDataCmd",
+                "members": {
+                  "name": {
+                    "array": [
+                      {
+                        "scalar": "uint8",
+                        "value": 31,
+                        "wire": "1f"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 94,
+                        "wire": "5e"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 157,
+                        "wire": "9d"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 220,
+                        "wire": "dc"
+                      }
+                    ]
+                  },
+                  "data_id": {
+                    "scalar": "uint16",
+                    "value": 10300,
+                    "wire": "3c28"
+                  },
+                  "control_word": {
+                    "scalar": "uint16",
+                    "value": 22942,
+                    "wire": "9e59"
+                  },
+                  "position": {
+                    "scalar": "float32",
+                    "value": -17.5,
+                    "wire": "00008cc1"
+                  },
+                  "torque": {
+                    "scalar": "float32",
+                    "value": 111.0,
+                    "wire": "0000de42"
+                  },
+                  "velocity": {
+                    "scalar": "float32",
+                    "value": -91.75,
+                    "wire": "0080b7c2"
+                  },
+                  "kp": {
+                    "scalar": "float32",
+                    "value": -103.0,
+                    "wire": "0000cec2"
+                  },
+                  "kd": {
+                    "scalar": "float32",
+                    "value": 97.0,
+                    "wire": "0000c242"
+                  }
+                }
+              },
+              {
+                "record": "drdds/msg/JointDataCmd",
+                "members": {
+                  "name": {
+                    "array": [
+                      {
+                        "scalar": "uint8",
+                        "value": 33,
+                        "wire": "21"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 96,
+                        "wire": "60"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 163,
+                        "wire": "a3"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 226,
+                        "wire": "e2"
+                      }
+                    ]
+                  },
+                  "data_id": {
+                    "scalar": "uint16",
+                    "value": 17154,
+                    "wire": "0243"
+                  },
+                  "control_word": {
+                    "scalar": "uint16",
+                    "value": 33398,
+                    "wire": "7682"
+                  },
+                  "position": {
+                    "scalar": "float32",
+                    "value": -230.375,
+                    "wire": "006066c3"
+                  },
+                  "torque": {
+                    "scalar": "float32",
+                    "value": 20.625,
+                    "wire": "0000a541"
+                  },
+                  "velocity": {
+                    "scalar": "float32",
+                    "value": -98.875,
+                    "wire": "00c0c5c2"
+                  },
+                  "kp": {
+                    "scalar": "float32",
+                    "value": 202.125,
+                    "wire": "00204a43"
+                  },
+                  "kd": {
+                    "scalar": "float32",
+                    "value": 79.75,
+                    "wire": "00809f42"
+                  }
+                }
+              },
+              {
+                "record": "drdds/msg/JointDataCmd",
+                "members": {
+                  "name": {
+                    "array": [
+                      {
+                        "scalar": "uint8",
+                        "value": 176,
+                        "wire": "b0"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 241,
+                        "wire": "f1"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 50,
+                        "wire": "32"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 115,
+                        "wire": "73"
+                      }
+                    ]
+                  },
+                  "data_id": {
+                    "scalar": "uint16",
+                    "value": 31635,
+                    "wire": "937b"
+                  },
+                  "control_word": {
+                    "scalar": "uint16",
+                    "value": 2659,
+                    "wire": "630a"
+                  },
+                  "position": {
+                    "scalar": "float32",
+                    "value": 121.5,
+                    "wire": "0000f342"
+                  },
+                  "torque": {
+                    "scalar": "float32",
+                    "value": -125.75,
+                    "wire": "0080fbc2"
+                  },
+                  "velocity": {
+                    "scalar": "float32",
+                    "value": -49.75,
+                    "wire": "000047c2"
+                  },
+                  "kp": {
+                    "scalar": "float32",
+                    "value": 230.125,
+                    "wire": "00206643"
+                  },
+                  "kd": {
+                    "scalar": "float32",
+                    "value": 72.625,
+                    "wire": "00409142"
+                  }
+                }
+              },
+              {
+                "record": "drdds/msg/JointDataCmd",
+                "members": {
+                  "name": {
+                    "array": [
+                      {
+                        "scalar": "uint8",
+                        "value": 142,
+                        "wire": "8e"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 207,
+                        "wire": "cf"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 12,
+                        "wire": "0c"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 77,
+                        "wire": "4d"
+                      }
+                    ]
+                  },
+                  "data_id": {
+                    "scalar": "uint16",
+                    "value": 4269,
+                    "wire": "ad10"
+                  },
+                  "control_word": {
+                    "scalar": "uint16",
+                    "value": 53643,
+                    "wire": "8bd1"
+                  },
+                  "position": {
+                    "scalar": "float32",
+                    "value": 197.125,
+                    "wire": "00204543"
+                  },
+                  "torque": {
+                    "scalar": "float32",
+                    "value": 246.375,
+                    "wire": "00607643"
+                  },
+                  "velocity": {
+                    "scalar": "float32",
+                    "value": -213.75,
+                    "wire": "00c055c3"
+                  },
+                  "kp": {
+                    "scalar": "float32",
+                    "value": 113.0,
+                    "wire": "0000e242"
+                  },
+                  "kd": {
+                    "scalar": "float32",
+                    "value": 204.75,
+                    "wire": "00c04c43"
+                  }
+                }
+              },
+              {
+                "record": "drdds/msg/JointDataCmd",
+                "members": {
+                  "name": {
+                    "array": [
+                      {
+                        "scalar": "uint8",
+                        "value": 141,
+                        "wire": "8d"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 204,
+                        "wire": "cc"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 15,
+                        "wire": "0f"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 78,
+                        "wire": "4e"
+                      }
+                    ]
+                  },
+                  "data_id": {
+                    "scalar": "uint16",
+                    "value": 43950,
+                    "wire": "aeab"
+                  },
+                  "control_word": {
+                    "scalar": "uint16",
+                    "value": 48114,
+                    "wire": "f2bb"
+                  },
+                  "position": {
+                    "scalar": "float32",
+                    "value": -166.375,
+                    "wire": "006026c3"
+                  },
+                  "torque": {
+                    "scalar": "float32",
+                    "value": 153.625,
+                    "wire": "00a01943"
+                  },
+                  "velocity": {
+                    "scalar": "float32",
+                    "value": -86.875,
+                    "wire": "00c0adc2"
+                  },
+                  "kp": {
+                    "scalar": "float32",
+                    "value": 152.25,
+                    "wire": "00401843"
+                  },
+                  "kd": {
+                    "scalar": "float32",
+                    "value": 254.125,
+                    "wire": "00207e43"
+                  }
+                }
+              },
+              {
+                "record": "drdds/msg/JointDataCmd",
+                "members": {
+                  "name": {
+                    "array": [
+                      {
+                        "scalar": "uint8",
+                        "value": 179,
+                        "wire": "b3"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 242,
+                        "wire": "f2"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 49,
+                        "wire": "31"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 112,
+                        "wire": "70"
+                      }
+                    ]
+                  },
+                  "data_id": {
+                    "scalar": "uint16",
+                    "value": 49296,
+                    "wire": "90c0"
+                  },
+                  "control_word": {
+                    "scalar": "uint16",
+                    "value": 24602,
+                    "wire": "1a60"
+                  },
+                  "position": {
+                    "scalar": "float32",
+                    "value": 153.75,
+                    "wire": "00c01943"
+                  },
+                  "torque": {
+                    "scalar": "float32",
+                    "value": -69.25,
+                    "wire": "00808ac2"
+                  },
+                  "velocity": {
+                    "scalar": "float32",
+                    "value": 155.125,
+                    "wire": "00201b43"
+                  },
+                  "kp": {
+                    "scalar": "float32",
+                    "value": -95.25,
+                    "wire": "0080bec2"
+                  },
+                  "kd": {
+                    "scalar": "float32",
+                    "value": -234.625,
+                    "wire": "00a06ac3"
+                  }
+                }
+              },
+              {
+                "record": "drdds/msg/JointDataCmd",
+                "members": {
+                  "name": {
+                    "array": [
+                      {
+                        "scalar": "uint8",
+                        "value": 202,
+                        "wire": "ca"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 139,
+                        "wire": "8b"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 72,
+                        "wire": "48"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 9,
+                        "wire": "09"
+                      }
+                    ]
+                  },
+                  "data_id": {
+                    "scalar": "uint16",
+                    "value": 56297,
+                    "wire": "e9db"
+                  },
+                  "control_word": {
+                    "scalar": "uint16",
+                    "value": 28416,
+                    "wire": "006f"
+                  },
+                  "position": {
+                    "scalar": "float32",
+                    "value": -198.0,
+                    "wire": "000046c3"
+                  },
+                  "torque": {
+                    "scalar": "float32",
+                    "value": -124.125,
+                    "wire": "0040f8c2"
+                  },
+                  "velocity": {
+                    "scalar": "float32",
+                    "value": -59.375,
+                    "wire": "00806dc2"
+                  },
+                  "kp": {
+                    "scalar": "float32",
+                    "value": -156.25,
+                    "wire": "00401cc3"
+                  },
+                  "kd": {
+                    "scalar": "float32",
+                    "value": -84.875,
+                    "wire": "00c0a9c2"
+                  }
+                }
+              },
+              {
+                "record": "drdds/msg/JointDataCmd",
+                "members": {
+                  "name": {
+                    "array": [
+                      {
+                        "scalar": "uint8",
+                        "value": 244,
+                        "wire": "f4"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 181,
+                        "wire": "b5"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 118,
+                        "wire": "76"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 55,
+                        "wire": "37"
+                      }
+                    ]
+                  },
+                  "data_id": {
+                    "scalar": "uint16",
+                    "value": 45271,
+                    "wire": "d7b0"
+                  },
+                  "control_word": {
+                    "scalar": "uint16",
+                    "value": 46312,
+                    "wire": "e8b4"
+                  },
+                  "position": {
+                    "scalar": "float32",
+                    "value": 34.625,
+                    "wire": "00800a42"
+                  },
+                  "torque": {
+                    "scalar": "float32",
+                    "value": 8.0,
+                    "wire": "00000041"
+                  },
+                  "velocity": {
+                    "scalar": "float32",
+                    "value": 252.875,
+                    "wire": "00e07c43"
+                  },
+                  "kp": {
+                    "scalar": "float32",
+                    "value": 250.5,
+                    "wire": "00807a43"
+                  },
+                  "kd": {
+                    "scalar": "float32",
+                    "value": 131.5,
+                    "wire": "00800343"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "drdds/msg/JointsDataValue",
+      "wire": "e3a26120c050a68900001e4200603ac300009cc2000088c200005dc3dd9c5f1efe3bd06800a032c300e0194300e055c300203cc300c087c2de9f5c1dfd800b4d00204a43006042c30020154300c0dcc200400b43e0a16223c3eb7dac004065c300c053c3008027c2000044c10000d14199d81b5abaf0bd06006079430000f0c10080a0420040804200e03543a7e62564849bcbe7000089420040dd4200202943008082c2006057c3a4e52667872010c200c040c300c04ec300e0104300401cc3000048439adb1859b94b662300e03243008016c300c097c2008010420000fbc1175695d43410909700001ec200804442000053c200c0384300604cc32968abea0a7be676000052420040f9c200c0ad4200408fc20000f841bafb387999c913220000e1c10000fe420000104000c070c30080e94284c50647a7a265c300c021c3002054c300c06a4300607ec300603b4387c60544a419bee60040f64200804f4200803043008061c200800042b9f83b7a9a72c807008000c3000055c30000f7c200003942000093c2c0814203e36908ad000035c3000001430000b3c100a007c30000a241febf7c3ddd027e4c000002420000e6410000714300201543008067c3",
+      "value": {
+        "record": "drdds/msg/JointsDataValue",
+        "members": {
+          "joints_data": {
+            "array": [
+              {
+                "record": "drdds/msg/JointData",
+                "members": {
+                  "name": {
+                    "array": [
+                      {
+                        "scalar": "uint8",
+                        "value": 227,
+                        "wire": "e3"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 162,
+                        "wire": "a2"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 97,
+                        "wire": "61"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 32,
+                        "wire": "20"
+                      }
+                    ]
+                  },
+                  "data_id": {
+                    "scalar": "uint16",
+                    "value": 20672,
+                    "wire": "c050"
+                  },
+                  "status_word": {
+                    "scalar": "uint16",
+                    "value": 35238,
+                    "wire": "a689"
+                  },
+                  "position": {
+                    "scalar": "float32",
+                    "value": 39.5,
+                    "wire": "00001e42"
+                  },
+                  "torque": {
+                    "scalar": "float32",
+                    "value": -186.375,
+                    "wire": "00603ac3"
+                  },
+                  "velocity": {
+                    "scalar": "float32",
+                    "value": -78.0,
+                    "wire": "00009cc2"
+                  },
+                  "motion_temp": {
+                    "scalar": "float32",
+                    "value": -68.0,
+                    "wire": "000088c2"
+                  },
+                  "driver_temp": {
+                    "scalar": "float32",
+                    "value": -221.0,
+                    "wire": "00005dc3"
+                  }
+                }
+              },
+              {
+                "record": "drdds/msg/JointData",
+                "members": {
+                  "name": {
+                    "array": [
+                      {
+                        "scalar": "uint8",
+                        "value": 221,
+                        "wire": "dd"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 156,
+                        "wire": "9c"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 95,
+                        "wire": "5f"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 30,
+                        "wire": "1e"
+                      }
+                    ]
+                  },
+                  "data_id": {
+                    "scalar": "uint16",
+                    "value": 15358,
+                    "wire": "fe3b"
+                  },
+                  "status_word": {
+                    "scalar": "uint16",
+                    "value": 26832,
+                    "wire": "d068"
+                  },
+                  "position": {
+                    "scalar": "float32",
+                    "value": -178.625,
+                    "wire": "00a032c3"
+                  },
+                  "torque": {
+                    "scalar": "float32",
+                    "value": 153.875,
+                    "wire": "00e01943"
+                  },
+                  "velocity": {
+                    "scalar": "float32",
+                    "value": -213.875,
+                    "wire": "00e055c3"
+                  },
+                  "motion_temp": {
+                    "scalar": "float32",
+                    "value": -188.125,
+                    "wire": "00203cc3"
+                  },
+                  "driver_temp": {
+                    "scalar": "float32",
+                    "value": -67.875,
+                    "wire": "00c087c2"
+                  }
+                }
+              },
+              {
+                "record": "drdds/msg/JointData",
+                "members": {
+                  "name": {
+                    "array": [
+                      {
+                        "scalar": "uint8",
+                        "value": 222,
+                        "wire": "de"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 159,
+                        "wire": "9f"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 92,
+                        "wire": "5c"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 29,
+                        "wire": "1d"
+                      }
+                    ]
+                  },
+                  "data_id": {
+                    "scalar": "uint16",
+                    "value": 33021,
+                    "wire": "fd80"
+                  },
+                  "status_word": {
+                    "scalar": "uint16",
+                    "value": 19723,
+                    "wire": "0b4d"
+                  },
+                  "position": {
+                    "scalar": "float32",
+                    "value": 202.125,
+                    "wire": "00204a43"
+                  },
+                  "torque": {
+                    "scalar": "float32",
+                    "value": -194.375,
+                    "wire": "006042c3"
+                  },
+                  "velocity": {
+                    "scalar": "float32",
+                    "value": 149.125,
+                    "wire": "00201543"
+                  },
+                  "motion_temp": {
+                    "scalar": "float32",
+                    "value": -110.375,
+                    "wire": "00c0dcc2"
+                  },
+                  "driver_temp": {
+                    "scalar": "float32",
+                    "value": 139.25,
+                    "wire": "00400b43"
+                  }
+                }
+              },
+              {
+                "record": "drdds/msg/JointData",
+                "members": {
+                  "name": {
+                    "array": [
+                      {
+                        "scalar": "uint8",
+                        "value": 224,
+                        "wire": "e0"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 161,
+                        "wire": "a1"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 98,
+                        "wire": "62"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 35,
+                        "wire": "23"
+                      }
+                    ]
+                  },
+                  "data_id": {
+                    "scalar": "uint16",
+                    "value": 60355,
+                    "wire": "c3eb"
+                  },
+                  "status_word": {
+                    "scalar": "uint16",
+                    "value": 44157,
+                    "wire": "7dac"
+                  },
+                  "position": {
+                    "scalar": "float32",
+                    "value": -229.25,
+                    "wire": "004065c3"
+                  },
+                  "torque": {
+                    "scalar": "float32",
+                    "value": -211.75,
+                    "wire": "00c053c3"
+                  },
+                  "velocity": {
+                    "scalar": "float32",
+                    "value": -41.875,
+                    "wire": "008027c2"
+                  },
+                  "motion_temp": {
+                    "scalar": "float32",
+                    "value": -12.25,
+                    "wire": "000044c1"
+                  },
+                  "driver_temp": {
+                    "scalar": "float32",
+                    "value": 26.125,
+                    "wire": "0000d141"
+                  }
+                }
+              },
+              {
+                "record": "drdds/msg/JointData",
+                "members": {
+                  "name": {
+                    "array": [
+                      {
+                        "scalar": "uint8",
+                        "value": 153,
+                        "wire": "99"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 216,
+                        "wire": "d8"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 27,
+                        "wire": "1b"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 90,
+                        "wire": "5a"
+                      }
+                    ]
+                  },
+                  "data_id": {
+                    "scalar": "uint16",
+                    "value": 61626,
+                    "wire": "baf0"
+                  },
+                  "status_word": {
+                    "scalar": "uint16",
+                    "value": 1725,
+                    "wire": "bd06"
+                  },
+                  "position": {
+                    "scalar": "float32",
+                    "value": 249.375,
+                    "wire": "00607943"
+                  },
+                  "torque": {
+                    "scalar": "float32",
+                    "value": -30.0,
+                    "wire": "0000f0c1"
+                  },
+                  "velocity": {
+                    "scalar": "float32",
+                    "value": 80.25,
+                    "wire": "0080a042"
+                  },
+                  "motion_temp": {
+                    "scalar": "float32",
+                    "value": 64.125,
+                    "wire": "00408042"
+                  },
+                  "driver_temp": {
+                    "scalar": "float32",
+                    "value": 181.875,
+                    "wire": "00e03543"
+                  }
+                }
+              },
+              {
+                "record": "drdds/msg/JointData",
+                "members": {
+                  "name": {
+                    "array": [
+                      {
+                        "scalar": "uint8",
+                        "value": 167,
+                        "wire": "a7"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 230,
+                        "wire": "e6"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 37,
+                        "wire": "25"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 100,
+                        "wire": "64"
+                      }
+                    ]
+                  },
+                  "data_id": {
+                    "scalar": "uint16",
+                    "value": 39812,
+                    "wire": "849b"
+                  },
+                  "status_word": {
+                    "scalar": "uint16",
+                    "value": 59339,
+                    "wire": "cbe7"
+                  },
+                  "position": {
+                    "scalar": "float32",
+                    "value": 68.5,
+                    "wire": "00008942"
+                  },
+                  "torque": {
+                    "scalar": "float32",
+                    "value": 110.625,
+                    "wire": "0040dd42"
+                  },
+                  "velocity": {
+                    "scalar": "float32",
+                    "value": 169.125,
+                    "wire": "00202943"
+                  },
+                  "motion_temp": {
+                    "scalar": "float32",
+                    "value": -65.25,
+                    "wire": "008082c2"
+                  },
+                  "driver_temp": {
+                    "scalar": "float32",
+                    "value": -215.375,
+                    "wire": "006057c3"
+                  }
+                }
+              },
+              {
+                "record": "drdds/msg/JointData",
+                "members": {
+                  "name": {
+                    "array": [
+                      {
+                        "scalar": "uint8",
+                        "value": 164,
+                        "wire": "a4"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 229,
+                        "wire": "e5"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 38,
+                        "wire": "26"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 103,
+                        "wire": "67"
+                      }
+                    ]
+                  },
+                  "data_id": {
+                    "scalar": "uint16",
+                    "value": 8327,
+                    "wire": "8720"
+                  },
+                  "status_word": {
+                    "scalar": "uint16",
+                    "value": 49680,
+                    "wire": "10c2"
+                  },
+                  "position": {
+                    "scalar": "float32",
+                    "value": -192.75,
+                    "wire": "00c040c3"
+                  },
+                  "torque": {
+                    "scalar": "float32",
+                    "value": -206.75,
+                    "wire": "00c04ec3"
+                  },
+                  "velocity": {
+                    "scalar": "float32",
+                    "value": 144.875,
+                    "wire": "00e01043"
+                  },
+                  "motion_temp": {
+                    "scalar": "float32",
+                    "value": -156.25,
+                    "wire": "00401cc3"
+                  },
+                  "driver_temp": {
+                    "scalar": "float32",
+                    "value": 200.0,
+                    "wire": "00004843"
+                  }
+                }
+              },
+              {
+                "record": "drdds/msg/JointData",
+                "members": {
+                  "name": {
+                    "array": [
+                      {
+                        "scalar": "uint8",
+                        "value": 154,
+                        "wire": "9a"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 219,
+                        "wire": "db"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 24,
+                        "wire": "18"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 89,
+                        "wire": "59"
+                      }
+                    ]
+                  },
+                  "data_id": {
+                    "scalar": "uint16",
+                    "value": 19385,
+                    "wire": "b94b"
+                  },
+                  "status_word": {
+                    "scalar": "uint16",
+                    "value": 9062,
+                    "wire": "6623"
+                  },
+                  "position": {
+                    "scalar": "float32",
+                    "value": 178.875,
+                    "wire": "00e03243"
+                  },
+                  "torque": {
+                    "scalar": "float32",
+                    "value": -150.5,
+                    "wire": "008016c3"
+                  },
+                  "velocity": {
+                    "scalar": "float32",
+                    "value": -75.875,
+                    "wire": "00c097c2"
+                  },
+                  "motion_temp": {
+                    "scalar": "float32",
+                    "value": 36.125,
+                    "wire": "00801042"
+                  },
+                  "driver_temp": {
+                    "scalar": "float32",
+                    "value": -31.375,
+                    "wire": "0000fbc1"
+                  }
+                }
+              },
+              {
+                "record": "drdds/msg/JointData",
+                "members": {
+                  "name": {
+                    "array": [
+                      {
+                        "scalar": "uint8",
+                        "value": 23,
+                        "wire": "17"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 86,
+                        "wire": "56"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 149,
+                        "wire": "95"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 212,
+                        "wire": "d4"
+                      }
+                    ]
+                  },
+                  "data_id": {
+                    "scalar": "uint16",
+                    "value": 4148,
+                    "wire": "3410"
+                  },
+                  "status_word": {
+                    "scalar": "uint16",
+                    "value": 38800,
+                    "wire": "9097"
+                  },
+                  "position": {
+                    "scalar": "float32",
+                    "value": -39.5,
+                    "wire": "00001ec2"
+                  },
+                  "torque": {
+                    "scalar": "float32",
+                    "value": 49.125,
+                    "wire": "00804442"
+                  },
+                  "velocity": {
+                    "scalar": "float32",
+                    "value": -52.75,
+                    "wire": "000053c2"
+                  },
+                  "motion_temp": {
+                    "scalar": "float32",
+                    "value": 184.75,
+                    "wire": "00c03843"
+                  },
+                  "driver_temp": {
+                    "scalar": "float32",
+                    "value": -204.375,
+                    "wire": "00604cc3"
+                  }
+                }
+              },
+              {
+                "record": "drdds/msg/JointData",
+                "members": {
+                  "name": {
+                    "array": [
+                      {
+                        "scalar": "uint8",
+                        "value": 41,
+                        "wire": "29"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 104,
+                        "wire": "68"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 171,
+                        "wire": "ab"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 234,
+                        "wire": "ea"
+                      }
+                    ]
+                  },
+                  "data_id": {
+                    "scalar": "uint16",
+                    "value": 31498,
+                    "wire": "0a7b"
+                  },
+                  "status_word": {
+                    "scalar": "uint16",
+                    "value": 30438,
+                    "wire": "e676"
+                  },
+                  "position": {
+                    "scalar": "float32",
+                    "value": 52.5,
+                    "wire": "00005242"
+                  },
+                  "torque": {
+                    "scalar": "float32",
+                    "value": -124.625,
+                    "wire": "0040f9c2"
+                  },
+                  "velocity": {
+                    "scalar": "float32",
+                    "value": 86.875,
+                    "wire": "00c0ad42"
+                  },
+                  "motion_temp": {
+                    "scalar": "float32",
+                    "value": -71.625,
+                    "wire": "00408fc2"
+                  },
+                  "driver_temp": {
+                    "scalar": "float32",
+                    "value": 31.0,
+                    "wire": "0000f841"
+                  }
+                }
+              },
+              {
+                "record": "drdds/msg/JointData",
+                "members": {
+                  "name": {
+                    "array": [
+                      {
+                        "scalar": "uint8",
+                        "value": 186,
+                        "wire": "ba"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 251,
+                        "wire": "fb"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 56,
+                        "wire": "38"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 121,
+                        "wire": "79"
+                      }
+                    ]
+                  },
+                  "data_id": {
+                    "scalar": "uint16",
+                    "value": 51609,
+                    "wire": "99c9"
+                  },
+                  "status_word": {
+                    "scalar": "uint16",
+                    "value": 8723,
+                    "wire": "1322"
+                  },
+                  "position": {
+                    "scalar": "float32",
+                    "value": -28.125,
+                    "wire": "0000e1c1"
+                  },
+                  "torque": {
+                    "scalar": "float32",
+                    "value": 127.0,
+                    "wire": "0000fe42"
+                  },
+                  "velocity": {
+                    "scalar": "float32",
+                    "value": 2.25,
+                    "wire": "00001040"
+                  },
+                  "motion_temp": {
+                    "scalar": "float32",
+                    "value": -240.75,
+                    "wire": "00c070c3"
+                  },
+                  "driver_temp": {
+                    "scalar": "float32",
+                    "value": 116.75,
+                    "wire": "0080e942"
+                  }
+                }
+              },
+              {
+                "record": "drdds/msg/JointData",
+                "members": {
+                  "name": {
+                    "array": [
+                      {
+                        "scalar": "uint8",
+                        "value": 132,
+                        "wire": "84"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 197,
+                        "wire": "c5"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 6,
+                        "wire": "06"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 71,
+                        "wire": "47"
+                      }
+                    ]
+                  },
+                  "data_id": {
+                    "scalar": "uint16",
+                    "value": 41639,
+                    "wire": "a7a2"
+                  },
+                  "status_word": {
+                    "scalar": "uint16",
+                    "value": 50021,
+                    "wire": "65c3"
+                  },
+                  "position": {
+                    "scalar": "float32",
+                    "value": -161.75,
+                    "wire": "00c021c3"
+                  },
+                  "torque": {
+                    "scalar": "float32",
+                    "value": -212.125,
+                    "wire": "002054c3"
+                  },
+                  "velocity": {
+                    "scalar": "float32",
+                    "value": 234.75,
+                    "wire": "00c06a43"
+                  },
+                  "motion_temp": {
+                    "scalar": "float32",
+                    "value": -254.375,
+                    "wire": "00607ec3"
+                  },
+                  "driver_temp": {
+                    "scalar": "float32",
+                    "value": 187.375,
+                    "wire": "00603b43"
+                  }
+                }
+              },
+              {
+                "record": "drdds/msg/JointData",
+                "members": {
+                  "name": {
+                    "array": [
+                      {
+                        "scalar": "uint8",
+                        "value": 135,
+                        "wire": "87"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 198,
+                        "wire": "c6"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 5,
+                        "wire": "05"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 68,
+                        "wire": "44"
+                      }
+                    ]
+                  },
+                  "data_id": {
+                    "scalar": "uint16",
+                    "value": 6564,
+                    "wire": "a419"
+                  },
+                  "status_word": {
+                    "scalar": "uint16",
+                    "value": 59070,
+                    "wire": "bee6"
+                  },
+                  "position": {
+                    "scalar": "float32",
+                    "value": 123.125,
+                    "wire": "0040f642"
+                  },
+                  "torque": {
+                    "scalar": "float32",
+                    "value": 51.875,
+                    "wire": "00804f42"
+                  },
+                  "velocity": {
+                    "scalar": "float32",
+                    "value": 176.5,
+                    "wire": "00803043"
+                  },
+                  "motion_temp": {
+                    "scalar": "float32",
+                    "value": -56.375,
+                    "wire": "008061c2"
+                  },
+                  "driver_temp": {
+                    "scalar": "float32",
+                    "value": 32.125,
+                    "wire": "00800042"
+                  }
+                }
+              },
+              {
+                "record": "drdds/msg/JointData",
+                "members": {
+                  "name": {
+                    "array": [
+                      {
+                        "scalar": "uint8",
+                        "value": 185,
+                        "wire": "b9"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 248,
+                        "wire": "f8"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 59,
+                        "wire": "3b"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 122,
+                        "wire": "7a"
+                      }
+                    ]
+                  },
+                  "data_id": {
+                    "scalar": "uint16",
+                    "value": 29338,
+                    "wire": "9a72"
+                  },
+                  "status_word": {
+                    "scalar": "uint16",
+                    "value": 1992,
+                    "wire": "c807"
+                  },
+                  "position": {
+                    "scalar": "float32",
+                    "value": -128.5,
+                    "wire": "008000c3"
+                  },
+                  "torque": {
+                    "scalar": "float32",
+                    "value": -213.0,
+                    "wire": "000055c3"
+                  },
+                  "velocity": {
+                    "scalar": "float32",
+                    "value": -123.5,
+                    "wire": "0000f7c2"
+                  },
+                  "motion_temp": {
+                    "scalar": "float32",
+                    "value": 46.25,
+                    "wire": "00003942"
+                  },
+                  "driver_temp": {
+                    "scalar": "float32",
+                    "value": -73.5,
+                    "wire": "000093c2"
+                  }
+                }
+              },
+              {
+                "record": "drdds/msg/JointData",
+                "members": {
+                  "name": {
+                    "array": [
+                      {
+                        "scalar": "uint8",
+                        "value": 192,
+                        "wire": "c0"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 129,
+                        "wire": "81"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 66,
+                        "wire": "42"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 3,
+                        "wire": "03"
+                      }
+                    ]
+                  },
+                  "data_id": {
+                    "scalar": "uint16",
+                    "value": 27107,
+                    "wire": "e369"
+                  },
+                  "status_word": {
+                    "scalar": "uint16",
+                    "value": 44296,
+                    "wire": "08ad"
+                  },
+                  "position": {
+                    "scalar": "float32",
+                    "value": -181.0,
+                    "wire": "000035c3"
+                  },
+                  "torque": {
+                    "scalar": "float32",
+                    "value": 129.0,
+                    "wire": "00000143"
+                  },
+                  "velocity": {
+                    "scalar": "float32",
+                    "value": -22.375,
+                    "wire": "0000b3c1"
+                  },
+                  "motion_temp": {
+                    "scalar": "float32",
+                    "value": -135.625,
+                    "wire": "00a007c3"
+                  },
+                  "driver_temp": {
+                    "scalar": "float32",
+                    "value": 20.25,
+                    "wire": "0000a241"
+                  }
+                }
+              },
+              {
+                "record": "drdds/msg/JointData",
+                "members": {
+                  "name": {
+                    "array": [
+                      {
+                        "scalar": "uint8",
+                        "value": 254,
+                        "wire": "fe"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 191,
+                        "wire": "bf"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 124,
+                        "wire": "7c"
+                      },
+                      {
+                        "scalar": "uint8",
+                        "value": 61,
+                        "wire": "3d"
+                      }
+                    ]
+                  },
+                  "data_id": {
+                    "scalar": "uint16",
+                    "value": 733,
+                    "wire": "dd02"
+                  },
+                  "status_word": {
+                    "scalar": "uint16",
+                    "value": 19582,
+                    "wire": "7e4c"
+                  },
+                  "position": {
+                    "scalar": "float32",
+                    "value": 32.5,
+                    "wire": "00000242"
+                  },
+                  "torque": {
+                    "scalar": "float32",
+                    "value": 28.75,
+                    "wire": "0000e641"
+                  },
+                  "velocity": {
+                    "scalar": "float32",
+                    "value": 241.0,
+                    "wire": "00007143"
+                  },
+                  "motion_temp": {
+                    "scalar": "float32",
+                    "value": 149.125,
+                    "wire": "00201543"
+                  },
+                  "driver_temp": {
+                    "scalar": "float32",
+                    "value": -231.5,
+                    "wire": "008067c3"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "drdds/msg/MetaType",
+      "wire": "66d84f42dfa178dcdeae18435aae5b12",
+      "value": {
+        "record": "drdds/msg/MetaType",
+        "members": {
+          "frame_id": {
+            "scalar": "uint64",
+            "value": 15886625665811732582,
+            "wire": "66d84f42dfa178dc"
+          },
+          "stamp": {
+            "record": "builtin_interfaces/msg/Time",
+            "members": {
+              "sec": {
+                "scalar": "int32",
+                "value": 1125691102,
+                "wire": "deae1843"
+              },
+              "nanosec": {
+                "scalar": "uint32",
+                "value": 307998298,
+                "wire": "5aae5b12"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "drdds/msg/RobotStatus",
+      "wire": "f030a06c44301607070000007630623961ceb2070000007637356464ceb2070000007630316339ceb2070000007630393832ceb254070000007632366539ceb2d05e0000000000f04a400000000000d858400000000000603d4000000000002031400000000000485ec0000000000090404000f144aced483d9b73222429569b5d1ec800000000005057c000000000003862c000f9379ca02f2c4d31070000007633626561ceb201000000070000007666356635ceb2010000000000000000203a40010000000000000000e064400100000000000000004067c00000000000185e400000000000f045400000000000104fc0000000000000f8bf0000000000c056400000000000004cc0",
+      "value": {
+        "record": "drdds/msg/RobotStatus",
+        "members": {
+          "header": {
+            "record": "std_msgs/msg/Header",
+            "members": {
+              "stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": 1822437616,
+                    "wire": "f030a06c"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 118894660,
+                    "wire": "44301607"
+                  }
+                }
+              },
+              "frame_id": {
+                "scalar": "string",
+                "value": "v0b9a\u03b2"
+              }
+            }
+          },
+          "robot": {
+            "scalar": "string",
+            "value": "v75dd\u03b2"
+          },
+          "command_source": {
+            "scalar": "string",
+            "value": "v01c9\u03b2"
+          },
+          "current_state": {
+            "scalar": "string",
+            "value": "v0982\u03b2"
+          },
+          "current_state_id": {
+            "scalar": "uint8",
+            "value": 84,
+            "wire": "54"
+          },
+          "requested_state": {
+            "scalar": "string",
+            "value": "v26e9\u03b2"
+          },
+          "requested_state_id": {
+            "scalar": "uint8",
+            "value": 208,
+            "wire": "d0"
+          },
+          "safety_mode": {
+            "scalar": "uint8",
+            "value": 94,
+            "wire": "5e"
+          },
+          "command": {
+            "record": "geometry_msgs/msg/Twist",
+            "members": {
+              "linear": {
+                "record": "geometry_msgs/msg/Vector3",
+                "members": {
+                  "x": {
+                    "scalar": "float64",
+                    "value": 53.875,
+                    "wire": "0000000000f04a40"
+                  },
+                  "y": {
+                    "scalar": "float64",
+                    "value": 99.375,
+                    "wire": "0000000000d85840"
+                  },
+                  "z": {
+                    "scalar": "float64",
+                    "value": 29.375,
+                    "wire": "0000000000603d40"
+                  }
+                }
+              },
+              "angular": {
+                "record": "geometry_msgs/msg/Vector3",
+                "members": {
+                  "x": {
+                    "scalar": "float64",
+                    "value": 17.125,
+                    "wire": "0000000000203140"
+                  },
+                  "y": {
+                    "scalar": "float64",
+                    "value": -121.125,
+                    "wire": "0000000000485ec0"
+                  },
+                  "z": {
+                    "scalar": "float64",
+                    "value": 33.125,
+                    "wire": "0000000000904040"
+                  }
+                }
+              }
+            }
+          },
+          "command_timed_out": {
+            "scalar": "bool",
+            "value": false,
+            "wire": "00"
+          },
+          "rejected_commands": {
+            "scalar": "uint64",
+            "value": 8330319319186294001,
+            "wire": "f144aced483d9b73"
+          },
+          "command_updates": {
+            "scalar": "uint64",
+            "value": 14420065978633757730,
+            "wire": "222429569b5d1ec8"
+          },
+          "joint_stamp": {
+            "scalar": "float64",
+            "value": -93.25,
+            "wire": "00000000005057c0"
+          },
+          "imu_stamp": {
+            "scalar": "float64",
+            "value": -145.75,
+            "wire": "00000000003862c0"
+          },
+          "telemetry_fresh": {
+            "scalar": "bool",
+            "value": false,
+            "wire": "00"
+          },
+          "joints": {
+            "record": "sensor_msgs/msg/JointState",
+            "members": {
+              "header": {
+                "record": "std_msgs/msg/Header",
+                "members": {
+                  "stamp": {
+                    "record": "builtin_interfaces/msg/Time",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": -1600374791,
+                        "wire": "f9379ca0"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 827141167,
+                        "wire": "2f2c4d31"
+                      }
+                    }
+                  },
+                  "frame_id": {
+                    "scalar": "string",
+                    "value": "v3bea\u03b2"
+                  }
+                }
+              },
+              "name": {
+                "array": [
+                  {
+                    "scalar": "string",
+                    "value": "vf5f5\u03b2"
+                  }
+                ]
+              },
+              "position": {
+                "array": [
+                  {
+                    "scalar": "float64",
+                    "value": 26.125,
+                    "wire": "0000000000203a40"
+                  }
+                ]
+              },
+              "velocity": {
+                "array": [
+                  {
+                    "scalar": "float64",
+                    "value": 167.0,
+                    "wire": "0000000000e06440"
+                  }
+                ]
+              },
+              "effort": {
+                "array": [
+                  {
+                    "scalar": "float64",
+                    "value": -186.0,
+                    "wire": "00000000004067c0"
+                  }
+                ]
+              }
+            }
+          },
+          "base_rpy": {
+            "record": "geometry_msgs/msg/Vector3",
+            "members": {
+              "x": {
+                "scalar": "float64",
+                "value": 120.375,
+                "wire": "0000000000185e40"
+              },
+              "y": {
+                "scalar": "float64",
+                "value": 43.875,
+                "wire": "0000000000f04540"
+              },
+              "z": {
+                "scalar": "float64",
+                "value": -62.125,
+                "wire": "0000000000104fc0"
+              }
+            }
+          },
+          "base_angular_velocity": {
+            "record": "geometry_msgs/msg/Vector3",
+            "members": {
+              "x": {
+                "scalar": "float64",
+                "value": -1.5,
+                "wire": "000000000000f8bf"
+              },
+              "y": {
+                "scalar": "float64",
+                "value": 91.0,
+                "wire": "0000000000c05640"
+              },
+              "z": {
+                "scalar": "float64",
+                "value": -56.0,
+                "wire": "0000000000004cc0"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "drdds/msg/StdMsgFloat32",
+      "wire": "00602043",
+      "value": {
+        "record": "drdds/msg/StdMsgFloat32",
+        "members": {
+          "value": {
+            "scalar": "float32",
+            "value": 160.375,
+            "wire": "00602043"
+          }
+        }
+      }
+    },
+    {
+      "type": "drdds/msg/StdMsgInt32",
+      "wire": "7dabbf97",
+      "value": {
+        "record": "drdds/msg/StdMsgInt32",
+        "members": {
+          "value": {
+            "scalar": "int32",
+            "value": -1749046403,
+            "wire": "7dabbf97"
+          }
+        }
+      }
+    },
+    {
+      "type": "drdds/msg/StdStatus",
+      "wire": "8473bbf2978fc928",
+      "value": {
+        "record": "drdds/msg/StdStatus",
+        "members": {
+          "state": {
+            "scalar": "int32",
+            "value": -222596220,
+            "wire": "8473bbf2"
+          },
+          "error_code": {
+            "scalar": "uint32",
+            "value": 684298135,
+            "wire": "978fc928"
+          }
+        }
+      }
+    },
+    {
+      "type": "drdds/msg/Steer",
+      "wire": "9db8a64324c191dd2a6c76697bac900700003742000098c100c076c3000034420040cc42000016c2",
+      "value": {
+        "record": "drdds/msg/Steer",
+        "members": {
+          "header": {
+            "record": "drdds/msg/MetaType",
+            "members": {
+              "frame_id": {
+                "scalar": "uint64",
+                "value": 15965754515503102109,
+                "wire": "9db8a64324c191dd"
+              },
+              "stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": 1769368618,
+                    "wire": "2a6c7669"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 126921851,
+                    "wire": "7bac9007"
+                  }
+                }
+              }
+            }
+          },
+          "data": {
+            "record": "drdds/msg/SteerValue",
+            "members": {
+              "x": {
+                "scalar": "float32",
+                "value": 45.75,
+                "wire": "00003742"
+              },
+              "y": {
+                "scalar": "float32",
+                "value": -19.0,
+                "wire": "000098c1"
+              },
+              "z": {
+                "scalar": "float32",
+                "value": -246.75,
+                "wire": "00c076c3"
+              },
+              "roll": {
+                "scalar": "float32",
+                "value": 45.0,
+                "wire": "00003442"
+              },
+              "pitch": {
+                "scalar": "float32",
+                "value": 102.125,
+                "wire": "0040cc42"
+              },
+              "yaw": {
+                "scalar": "float32",
+                "value": -37.5,
+                "wire": "000016c2"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "drdds/msg/SteerValue",
+      "wire": "000000c30080b5c2008026430040444300801d420000a7c2",
+      "value": {
+        "record": "drdds/msg/SteerValue",
+        "members": {
+          "x": {
+            "scalar": "float32",
+            "value": -128.0,
+            "wire": "000000c3"
+          },
+          "y": {
+            "scalar": "float32",
+            "value": -90.75,
+            "wire": "0080b5c2"
+          },
+          "z": {
+            "scalar": "float32",
+            "value": 166.5,
+            "wire": "00802643"
+          },
+          "roll": {
+            "scalar": "float32",
+            "value": 196.25,
+            "wire": "00404443"
+          },
+          "pitch": {
+            "scalar": "float32",
+            "value": 39.375,
+            "wire": "00801d42"
+          },
+          "yaw": {
+            "scalar": "float32",
+            "value": -83.5,
+            "wire": "0000a7c2"
+          }
+        }
+      }
+    },
+    {
+      "type": "drdds/srv/StdSrvInt32_Request",
+      "wire": "2332e082",
+      "value": {
+        "record": "drdds/srv/StdSrvInt32_Request",
+        "members": {
+          "command": {
+            "scalar": "int32",
+            "value": -2099236317,
+            "wire": "2332e082"
+          }
+        }
+      }
+    },
+    {
+      "type": "drdds/srv/StdSrvInt32_Response",
+      "wire": "41ea5b24",
+      "value": {
+        "record": "drdds/srv/StdSrvInt32_Response",
+        "members": {
+          "result": {
+            "scalar": "int32",
+            "value": 610003521,
+            "wire": "41ea5b24"
+          }
+        }
+      }
+    },
+    {
+      "type": "geometry_msgs/msg/Twist",
+      "wire": "0000000000e053c00000000000f063c00000000000306cc00000000000a06d4000000000000c60c00000000000906840",
+      "value": {
+        "record": "geometry_msgs/msg/Twist",
+        "members": {
+          "linear": {
+            "record": "geometry_msgs/msg/Vector3",
+            "members": {
+              "x": {
+                "scalar": "float64",
+                "value": -79.5,
+                "wire": "0000000000e053c0"
+              },
+              "y": {
+                "scalar": "float64",
+                "value": -159.5,
+                "wire": "0000000000f063c0"
+              },
+              "z": {
+                "scalar": "float64",
+                "value": -225.5,
+                "wire": "0000000000306cc0"
+              }
+            }
+          },
+          "angular": {
+            "record": "geometry_msgs/msg/Vector3",
+            "members": {
+              "x": {
+                "scalar": "float64",
+                "value": 237.0,
+                "wire": "0000000000a06d40"
+              },
+              "y": {
+                "scalar": "float64",
+                "value": -128.375,
+                "wire": "00000000000c60c0"
+              },
+              "z": {
+                "scalar": "float64",
+                "value": 196.5,
+                "wire": "0000000000906840"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "geometry_msgs/msg/Vector3",
+      "wire": "0000000000546c400000000000e062c00000000000246a40",
+      "value": {
+        "record": "geometry_msgs/msg/Vector3",
+        "members": {
+          "x": {
+            "scalar": "float64",
+            "value": 226.625,
+            "wire": "0000000000546c40"
+          },
+          "y": {
+            "scalar": "float64",
+            "value": -151.0,
+            "wire": "0000000000e062c0"
+          },
+          "z": {
+            "scalar": "float64",
+            "value": 209.125,
+            "wire": "0000000000246a40"
+          }
+        }
+      }
+    },
+    {
+      "type": "sensor_msgs/msg/JointState",
+      "wire": "735aeca75614571f070000007632363433ceb201000000070000007663343031ceb2010000000000000000f05e40010000000000000000b46440010000000000000000ac64c0",
+      "value": {
+        "record": "sensor_msgs/msg/JointState",
+        "members": {
+          "header": {
+            "record": "std_msgs/msg/Header",
+            "members": {
+              "stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": -1477682573,
+                    "wire": "735aeca7"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 525800534,
+                    "wire": "5614571f"
+                  }
+                }
+              },
+              "frame_id": {
+                "scalar": "string",
+                "value": "v2643\u03b2"
+              }
+            }
+          },
+          "name": {
+            "array": [
+              {
+                "scalar": "string",
+                "value": "vc401\u03b2"
+              }
+            ]
+          },
+          "position": {
+            "array": [
+              {
+                "scalar": "float64",
+                "value": 123.75,
+                "wire": "0000000000f05e40"
+              }
+            ]
+          },
+          "velocity": {
+            "array": [
+              {
+                "scalar": "float64",
+                "value": 165.625,
+                "wire": "0000000000b46440"
+              }
+            ]
+          },
+          "effort": {
+            "array": [
+              {
+                "scalar": "float64",
+                "value": -165.375,
+                "wire": "0000000000ac64c0"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "std_msgs/msg/Header",
+      "wire": "681252e4acc1ba37070000007666316532ceb2",
+      "value": {
+        "record": "std_msgs/msg/Header",
+        "members": {
+          "stamp": {
+            "record": "builtin_interfaces/msg/Time",
+            "members": {
+              "sec": {
+                "scalar": "int32",
+                "value": -464383384,
+                "wire": "681252e4"
+              },
+              "nanosec": {
+                "scalar": "uint32",
+                "value": 934986156,
+                "wire": "acc1ba37"
+              }
+            }
+          },
+          "frame_id": {
+            "scalar": "string",
+            "value": "vf1e2\u03b2"
+          }
+        }
+      }
+    }
+  ]
+}

@@ -399,7 +399,7 @@ char const* raw_example = R"example(
         self.assertEqual(MODULE_CHECKER.find_feature_macro_tests(header_text), [])
 
     def test_actual_madvise_partition_has_its_own_feature_provider(self) -> None:
-        source_dir = THIS_DIR.parent.parent / "src/uwvm2/utils/madvise"
+        source_dir = Path(__file__).resolve().parents[2] / "src/uwvm2/utils/madvise"
         module_text = (source_dir / "madvise.cppm").read_text(encoding="utf-8")
         header_text = (source_dir / "madvise.h").read_text(encoding="utf-8")
         self.assertIn("UWVM_HAS_BUILTIN", MODULE_CHECKER.find_feature_macro_tests(header_text))

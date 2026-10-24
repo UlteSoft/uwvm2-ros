@@ -1,0 +1,9 @@
+# Pipeline scratch state; generated fixture headers/catalogs remain test inputs.
+/deployment-final/derivation/
+
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/contract_test
+/policy_test

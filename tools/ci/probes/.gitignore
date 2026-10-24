@@ -1,0 +1,10 @@
+# Local build/run products; shared artifact rules are in tools/.gitignore.
+/build/
+/out/
+/tmp/
+/strict_float_benchmark
+/strict_float_oracle
+/wasm_fp_aux_mips_freestanding
+/wasm_fp_excess_precision
+/wasm_fp_fixed_codegen
+/wasm_fp_native_codegen

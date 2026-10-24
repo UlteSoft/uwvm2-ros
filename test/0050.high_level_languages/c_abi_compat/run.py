@@ -37,7 +37,7 @@ def main():
     before = admission(args.expected_cgroup)
     args.out.mkdir(parents=True, exist_ok=False)
     report = {'passed': False, 'admission_before': before, 'runs': [], 'artifacts': {}, 'runners': {}}
-    runners = [(repo, args.arena / 'products' / repo / 'uwvm') for repo in ['uwvm2', 'uwvm2-stable', 'uwvm2-ros']]
+    runners = [(repo, args.arena / 'products' / repo / 'uwvm2-ros') for repo in ['uwvm2', 'uwvm2-stable', 'uwvm2-ros']]
     runners.append(('wasmtime', args.wasmtime))
     if args.runner:
         runners = [(runner, binary) for runner, binary in runners if runner in args.runner]

@@ -1,0 +1,59 @@
+cmake_minimum_required(VERSION 3.16)
+project(uwvm_unitree_native_legacy_ros1 LANGUAGES CXX)
+# This file is staged unchanged as CMakeLists.txt in a fresh owned project.
+# It never downloads packages, runs a target, or mutates the official package.
+set(BUILD_TESTING OFF CACHE BOOL "Only the explicit witness target" FORCE)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(UWVM_SOURCE "" CACHE PATH "Explicit frozen complete project source")
+set(UWVM_NOETIC_PREFIX "" CACHE PATH "Actual qualified SDK Noetic install prefix")
+set(UWVM_LEGACY_PREFIX "" CACHE PATH "Actual freshly validated official11 install prefix")
+foreach(item IN ITEMS UWVM_SOURCE UWVM_NOETIC_PREFIX UWVM_LEGACY_PREFIX)
+  if(NOT IS_ABSOLUTE "${${item}}" OR NOT IS_DIRECTORY "${${item}}")
+    message(FATAL_ERROR "Explicit existing absolute ${item} is required")
+  endif()
+endforeach()
+foreach(file IN ITEMS native_legacy_ros1_peer.cpp native_legacy_ros1_values.h native_legacy_ros1_contract.h)
+  if(NOT EXISTS "${UWVM_SOURCE}/test/0073.ros-tests/support/source/ros_unitree/${file}")
+    message(FATAL_ERROR "Complete selected witness source is missing: ${file}")
+  endif()
+endforeach()
+if(NOT EXISTS "${UWVM_SOURCE}/src/ros/gateway/common/native_io.h" OR
+   NOT EXISTS "${UWVM_NOETIC_PREFIX}/share/catkin/cmake/catkinConfig.cmake" OR
+   NOT EXISTS "${UWVM_NOETIC_PREFIX}/share/roscpp/cmake/roscppConfig.cmake" OR
+   NOT EXISTS "${UWVM_LEGACY_PREFIX}/share/unitree_legged_msgs/cmake/unitree_legged_msgsConfig.cmake")
+  message(FATAL_ERROR "Actual Noetic/official fresh legacy package exports are required")
+endif()
+# Root must already compare every installed header to its fresh devel output.
+# Checking existence here cannot replace that original-generation qualification.
+foreach(message IN ITEMS BmsCmd BmsState Cartesian HighCmd HighState IMU LED LowCmd LowState MotorCmd MotorState)
+  if(NOT EXISTS "${UWVM_LEGACY_PREFIX}/include/unitree_legged_msgs/${message}.h" OR
+     IS_SYMLINK "${UWVM_LEGACY_PREFIX}/include/unitree_legged_msgs/${message}.h")
+    message(FATAL_ERROR "Actual installed ordinary legacy header is required: ${message}")
+  endif()
+endforeach()
+set(catkin_DIR "${UWVM_NOETIC_PREFIX}/share/catkin/cmake" CACHE PATH "Actual catkin" FORCE)
+set(roscpp_DIR "${UWVM_NOETIC_PREFIX}/share/roscpp/cmake" CACHE PATH "Actual roscpp" FORCE)
+set(unitree_legged_msgs_DIR "${UWVM_LEGACY_PREFIX}/share/unitree_legged_msgs/cmake" CACHE PATH "Actual legacy package" FORCE)
+find_package(catkin REQUIRED COMPONENTS roscpp unitree_legged_msgs CONFIG
+  PATHS "${UWVM_NOETIC_PREFIX}/share/catkin/cmake" NO_DEFAULT_PATH)
+find_package(Threads REQUIRED)
+if(NOT CMAKE_CXX_COMPILER_ID MATCHES "^(GNU|Clang)$")
+  message(FATAL_ERROR "Actual full-MD/link trace requires an explicitly admitted GNU/Clang compiler")
+endif()
+add_executable(unitree-native-legacy-ros1-peer "${UWVM_SOURCE}/test/0073.ros-tests/support/source/ros_unitree/native_legacy_ros1_peer.cpp")
+set_target_properties(unitree-native-legacy-ros1-peer PROPERTIES
+  CXX_STANDARD 17 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS NO)
+# The fresh validated official11 prefix is first, never its committed include/.
+target_include_directories(unitree-native-legacy-ros1-peer BEFORE PRIVATE
+  "${UWVM_LEGACY_PREFIX}/include" "${UWVM_SOURCE}")
+target_include_directories(unitree-native-legacy-ros1-peer SYSTEM PRIVATE ${catkin_INCLUDE_DIRS})
+target_link_libraries(unitree-native-legacy-ros1-peer ${catkin_LIBRARIES} Threads::Threads)
+target_compile_options(unitree-native-legacy-ros1-peer PRIVATE
+  -O3 -g0 -UNDEBUG -fno-fast-math -ffp-contract=off -MD
+  -MF "${CMAKE_CURRENT_BINARY_DIR}/native-legacy-ros1-peer.full.d")
+# Actual GNU Make's dependency rule supplies -MT for the real object. The Root
+# producer must retain verbose argv, require full -MD/-MF/-MT, and reconcile its
+# exact emitted targets/source/system headers with compileDB and fresh objects.
+target_link_options(unitree-native-legacy-ros1-peer PRIVATE -Wl,--trace)
+file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/native-legacy-contract.txt" CONTENT
+"status=CONFIGURED_NOT_BUILT_OR_EXECUTED\nbackend=ROS1\nfamily=unitree_legged_msgs\nofficial_message_count=11\ntransport_types=LowState,LowCmd\nprimary_translation_units=1\ncxx_standard=17\nrole=NATIVE_ROS1_NOT_WASM\nprotocol=ULN1/M/P/A/Z-or-Q/F\nhardware_crc_authenticated=false\nartifact=$<TARGET_FILE:unitree-native-legacy-ros1-peer>\n")

@@ -1,0 +1,5 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/call_ref_shared_policy

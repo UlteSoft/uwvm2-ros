@@ -31,13 +31,13 @@ close with `quit` and actual exit0.
 For a qualified full LLVM build, start ordinary uwvm2 with:
 
 ```sh
-uwvm -Rdbg -Rcc jit -Rcm full -Rct 0 -Rllvm-call-stack instruction -Rllvm-cache-path disable --run program.wasm
+uwvm2-ros -Rdbg -Rcc jit -Rcm full -Rct 0 -Rllvm-call-stack instruction -Rllvm-cache-path disable --run program.wasm
 ```
 
 For uwvm2-ros, use its full LLVM selector:
 
 ```sh
-uwvm -Rdbg -Raot -Rct 0 -Rllvm-call-stack instruction -Rllvm-cache-path disable --run program.wasm
+uwvm2-ros -Rdbg -Raot -Rct 0 -Rllvm-call-stack instruction -Rllvm-cache-path disable --run program.wasm
 ```
 
 Use the actual thread and stop IDs printed by that process:

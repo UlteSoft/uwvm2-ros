@@ -95,7 +95,7 @@ clang++ COMMON -c CURRENT/src/uwvm2/runtime/lib/uwvm_runtime.default.cpp -o NEW/
 clang++ COMMON -c CURRENT/src/uwvm2/uwvm/main.default.cpp -o NEW/main.obj
 clang++ LINK_PREFIX NEW/main.obj NEW/runtime.obj [other fresh actual objects]
         [actual SDK LLVM23 COFF archives including DebugInfoDWARF]
-        [actual crypto/compression/system inputs] -o NEW/uwvm.exe
+        [actual crypto/compression/system inputs] -o NEW/uwvm2-ros.exe
 clang++ LAUNCHER_PREFIX -municode CURRENT/test/0017.runtime/windows_debug_current_launcher.cc
         [actual C++/system inputs] -o NEW/windows_debug_current_launcher.exe
 llvm-readobj --file-headers ACTUAL/DebugInfoDWARF_ARCHIVE
@@ -141,7 +141,7 @@ In the same admitted cgroup, then run:
 python3 "$SOURCE/test/0017.runtime/stage_windows_debug_current_r5_vm.py" \
   --source-root "$SOURCE" --repository ros \
   --r5-source-manifest "$R5/source-manifest.json" \
-  --product "$BUILD/uwvm.exe" --launcher "$BUILD/windows_debug_current_launcher.exe" \
+  --product "$BUILD/uwvm2-ros.exe" --launcher "$BUILD/windows_debug_current_launcher.exe" \
   --build-receipt "$BUILD/current-debug-build-receipt.json" \
   --wasm-clang "$WASM_CLANG" --wasm-ld "$WASM_LD" \
   --wasm-tools "$WASM_TOOLS" --llvm-dwarfdump "$DWARFDUMP" \

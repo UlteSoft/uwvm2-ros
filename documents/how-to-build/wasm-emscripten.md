@@ -70,14 +70,14 @@ Manual em++ examples
   em++ -std=c++26 -O2 -DNDEBUG \
     -sSTANDALONE_WASM=1 -sWASI=1 -sBULK_MEMORY=0 \
     --target=wasm32-unknown-emscripten -fuse-ld=lld \
-    @objects.rsp -o uwvm.wasm
+    @objects.rsp -o uwvm2-ros.wasm
   ```
 - wasm64 (standalone command-style):
   ```sh
   em++ -std=c++26 -O2 -DNDEBUG \
     -sSTANDALONE_WASM=1 -sWASI=1 -sMEMORY64=1 -sBULK_MEMORY=0 \
     --target=wasm64-unknown-emscripten -fuse-ld=lld \
-    @objects.rsp -o uwvm.wasm
+    @objects.rsp -o uwvm2-ros.wasm
   ```
 
 Tips

@@ -1,0 +1,9 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/checkpoint_binding
+/checkpoint_continuation_ownership
+/checkpoint_envelope
+/checkpoint_state_identity
+/owned_source_digest

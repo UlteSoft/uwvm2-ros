@@ -33,7 +33,7 @@ def main():
     parser.add_argument("--ros", action="store_true")
     parser.add_argument("--configuration")
     args = parser.parse_args()
-    here = pathlib.Path(__file__).resolve().parent; root = here.parents[1]
+    here = pathlib.Path(__file__).resolve().parent; root = pathlib.Path(__file__).resolve().parents[2]
     subprocess.run(["bash", str(root / "tools/ci/require_wasm3_test_cgroup.sh")], check=True)
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
     args.output.mkdir(exist_ok=False)

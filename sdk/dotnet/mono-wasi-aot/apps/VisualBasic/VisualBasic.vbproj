@@ -1,6 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="../../Aot.props" />
-  <PropertyGroup><OutputType>Exe</OutputType><AssemblyName>uwvm-aot-visualbasic</AssemblyName><OptionStrict>On</OptionStrict><OptionExplicit>On</OptionExplicit><OptionInfer>On</OptionInfer><RootNamespace>UwvmAotVisualBasic</RootNamespace></PropertyGroup>
-  <ItemGroup><Compile Include="Program.vb" /><ProjectReference Include="../../Uwvm.RosWasm.Aot.csproj" /></ItemGroup>
-  <Import Project="../../Aot.targets" />
-</Project>

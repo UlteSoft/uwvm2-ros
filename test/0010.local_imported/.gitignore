@@ -1,0 +1,9 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/concept
+/func
+/global
+/memory
+/module

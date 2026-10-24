@@ -1,5 +1,13 @@
 ﻿Tools
 
+Keep scripts, CI patches, profile schemas and execution templates in this
+directory. Write generated builds, logs, inventories and run reports to an
+explicit output directory; [shared ignore rules](.gitignore) and each tool's
+local `.gitignore` cover these products.
+
+The original Unitree API package build files used by the native SDK check are
+maintained as [test fixtures](../test/0073.ros-tests/support/source/ros_platform_sdk/fixtures/unitree_api/).
+
 - `tools/ci/patch_llvm_libcxx_hash_memory.py`: CI helper script to work around an upstream LLVM libc++ issue in `__functional/hash.h` related to `_LIBCPP_AVAILABILITY_HAS_HASH_MEMORY`.
 - `tools/wasm_opcode_counter/opcode_counter.py`: Count opcode occurrences in the Wasm code section (e.g. `i32.const` count).
 - `tools/wasm_operand_stack_stats/stack_stats.py`: Count operand stack height after each opcode in the Wasm code section; reports `> threshold` vs `<= threshold`.

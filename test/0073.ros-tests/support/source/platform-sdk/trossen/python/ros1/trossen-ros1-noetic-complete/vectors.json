@@ -1,0 +1,1811 @@
+{
+  "cases": [
+    {
+      "type": "duration",
+      "wire": "41a82588c71e9838",
+      "value": {
+        "record": "duration",
+        "members": {
+          "sec": {
+            "scalar": "int32",
+            "value": -2010798015,
+            "wire": "41a82588"
+          },
+          "nsec": {
+            "scalar": "int32",
+            "value": 949493447,
+            "wire": "c71e9838"
+          }
+        }
+      }
+    },
+    {
+      "type": "interbotix_slate_msgs/SetStringRequest",
+      "wire": "070000007633613163ceb2",
+      "value": {
+        "record": "interbotix_slate_msgs/SetStringRequest",
+        "members": {
+          "data": {
+            "scalar": "string",
+            "value": "v3a1c\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "interbotix_slate_msgs/SetStringResponse",
+      "wire": "01070000007639373336ceb2",
+      "value": {
+        "record": "interbotix_slate_msgs/SetStringResponse",
+        "members": {
+          "success": {
+            "scalar": "bool",
+            "value": true,
+            "wire": "01"
+          },
+          "message": {
+            "scalar": "string",
+            "value": "v9736\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "interbotix_xs_msgs/ArmJoy",
+      "wire": "5fef3f4f200e3620c74aacfe",
+      "value": {
+        "record": "interbotix_xs_msgs/ArmJoy",
+        "members": {
+          "ee_x_cmd": {
+            "scalar": "int8",
+            "value": 95,
+            "wire": "5f"
+          },
+          "ee_y_cmd": {
+            "scalar": "int8",
+            "value": -17,
+            "wire": "ef"
+          },
+          "ee_z_cmd": {
+            "scalar": "int8",
+            "value": 63,
+            "wire": "3f"
+          },
+          "ee_roll_cmd": {
+            "scalar": "int8",
+            "value": 79,
+            "wire": "4f"
+          },
+          "ee_pitch_cmd": {
+            "scalar": "int8",
+            "value": 32,
+            "wire": "20"
+          },
+          "waist_cmd": {
+            "scalar": "int8",
+            "value": 14,
+            "wire": "0e"
+          },
+          "gripper_cmd": {
+            "scalar": "int8",
+            "value": 54,
+            "wire": "36"
+          },
+          "pose_cmd": {
+            "scalar": "int8",
+            "value": 32,
+            "wire": "20"
+          },
+          "speed_cmd": {
+            "scalar": "int8",
+            "value": -57,
+            "wire": "c7"
+          },
+          "speed_toggle_cmd": {
+            "scalar": "int8",
+            "value": 74,
+            "wire": "4a"
+          },
+          "gripper_pwm_cmd": {
+            "scalar": "int8",
+            "value": -84,
+            "wire": "ac"
+          },
+          "torque_cmd": {
+            "scalar": "int8",
+            "value": -2,
+            "wire": "fe"
+          }
+        }
+      }
+    },
+    {
+      "type": "interbotix_xs_msgs/HexJoy",
+      "wire": "d464edf84898010dda8a07ceeaf8ac3fb9",
+      "value": {
+        "record": "interbotix_xs_msgs/HexJoy",
+        "members": {
+          "world_x_cmd": {
+            "scalar": "int8",
+            "value": -44,
+            "wire": "d4"
+          },
+          "world_y_cmd": {
+            "scalar": "int8",
+            "value": 100,
+            "wire": "64"
+          },
+          "world_yaw_cmd": {
+            "scalar": "int8",
+            "value": -19,
+            "wire": "ed"
+          },
+          "place_x_cmd": {
+            "scalar": "int8",
+            "value": -8,
+            "wire": "f8"
+          },
+          "place_y_cmd": {
+            "scalar": "int8",
+            "value": 72,
+            "wire": "48"
+          },
+          "place_z_cmd": {
+            "scalar": "int8",
+            "value": -104,
+            "wire": "98"
+          },
+          "place_roll_cmd": {
+            "scalar": "int8",
+            "value": 1,
+            "wire": "01"
+          },
+          "place_pitch_cmd": {
+            "scalar": "int8",
+            "value": 13,
+            "wire": "0d"
+          },
+          "pose_cmd": {
+            "scalar": "int8",
+            "value": -38,
+            "wire": "da"
+          },
+          "move_type_cmd": {
+            "scalar": "int8",
+            "value": -118,
+            "wire": "8a"
+          },
+          "gait_toggle_cmd": {
+            "scalar": "int8",
+            "value": 7,
+            "wire": "07"
+          },
+          "leg_toggle_cmd": {
+            "scalar": "int8",
+            "value": -50,
+            "wire": "ce"
+          },
+          "stance_cmd": {
+            "scalar": "int8",
+            "value": -22,
+            "wire": "ea"
+          },
+          "reboot_cmd": {
+            "scalar": "int8",
+            "value": -8,
+            "wire": "f8"
+          },
+          "set_home_pose_cmd": {
+            "scalar": "int8",
+            "value": -84,
+            "wire": "ac"
+          },
+          "speed_cmd": {
+            "scalar": "int8",
+            "value": 63,
+            "wire": "3f"
+          },
+          "speed_toggle_cmd": {
+            "scalar": "int8",
+            "value": -71,
+            "wire": "b9"
+          }
+        }
+      }
+    },
+    {
+      "type": "interbotix_xs_msgs/JointGroupCommand",
+      "wire": "070000007630383663ceb201000000008020c3",
+      "value": {
+        "record": "interbotix_xs_msgs/JointGroupCommand",
+        "members": {
+          "name": {
+            "scalar": "string",
+            "value": "v086c\u03b2"
+          },
+          "cmd": {
+            "array": [
+              {
+                "scalar": "float32",
+                "value": -160.5,
+                "wire": "008020c3"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "interbotix_xs_msgs/JointSingleCommand",
+      "wire": "070000007666663037ceb200402143",
+      "value": {
+        "record": "interbotix_xs_msgs/JointSingleCommand",
+        "members": {
+          "name": {
+            "scalar": "string",
+            "value": "vff07\u03b2"
+          },
+          "cmd": {
+            "scalar": "float32",
+            "value": 161.25,
+            "wire": "00402143"
+          }
+        }
+      }
+    },
+    {
+      "type": "interbotix_xs_msgs/JointTemps",
+      "wire": "01000000070000007666323433ceb20100000062f87743",
+      "value": {
+        "record": "interbotix_xs_msgs/JointTemps",
+        "members": {
+          "names": {
+            "array": [
+              {
+                "scalar": "string",
+                "value": "vf243\u03b2"
+              }
+            ]
+          },
+          "temps": {
+            "array": [
+              {
+                "scalar": "int32",
+                "value": 1131935842,
+                "wire": "62f87743"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "interbotix_xs_msgs/JointTrajectoryCommand",
+      "wire": "070000007662626536ceb2070000007635343830ceb20d0a486d49725f192f305232070000007639653762ceb201000000070000007632323461ceb201000000010000000000000000286d40010000000000000000000ec0010000000000000000ec61400100000000000000000049c006397c9f65f1c703",
+      "value": {
+        "record": "interbotix_xs_msgs/JointTrajectoryCommand",
+        "members": {
+          "cmd_type": {
+            "scalar": "string",
+            "value": "vbbe6\u03b2"
+          },
+          "name": {
+            "scalar": "string",
+            "value": "v5480\u03b2"
+          },
+          "traj": {
+            "record": "trajectory_msgs/JointTrajectory",
+            "members": {
+              "header": {
+                "record": "std_msgs/Header",
+                "members": {
+                  "seq": {
+                    "scalar": "uint32",
+                    "value": 1833437709,
+                    "wire": "0d0a486d"
+                  },
+                  "stamp": {
+                    "record": "time",
+                    "members": {
+                      "sec": {
+                        "scalar": "uint32",
+                        "value": 425685577,
+                        "wire": "49725f19"
+                      },
+                      "nsec": {
+                        "scalar": "uint32",
+                        "value": 844247087,
+                        "wire": "2f305232"
+                      }
+                    }
+                  },
+                  "frame_id": {
+                    "scalar": "string",
+                    "value": "v9e7b\u03b2"
+                  }
+                }
+              },
+              "joint_names": {
+                "array": [
+                  {
+                    "scalar": "string",
+                    "value": "v224a\u03b2"
+                  }
+                ]
+              },
+              "points": {
+                "array": [
+                  {
+                    "record": "trajectory_msgs/JointTrajectoryPoint",
+                    "members": {
+                      "positions": {
+                        "array": [
+                          {
+                            "scalar": "float64",
+                            "value": 233.25,
+                            "wire": "0000000000286d40"
+                          }
+                        ]
+                      },
+                      "velocities": {
+                        "array": [
+                          {
+                            "scalar": "float64",
+                            "value": -3.75,
+                            "wire": "0000000000000ec0"
+                          }
+                        ]
+                      },
+                      "accelerations": {
+                        "array": [
+                          {
+                            "scalar": "float64",
+                            "value": 143.375,
+                            "wire": "0000000000ec6140"
+                          }
+                        ]
+                      },
+                      "effort": {
+                        "array": [
+                          {
+                            "scalar": "float64",
+                            "value": -50.0,
+                            "wire": "00000000000049c0"
+                          }
+                        ]
+                      },
+                      "time_from_start": {
+                        "record": "duration",
+                        "members": {
+                          "sec": {
+                            "scalar": "int32",
+                            "value": -1619248890,
+                            "wire": "06397c9f"
+                          },
+                          "nsec": {
+                            "scalar": "int32",
+                            "value": 63435109,
+                            "wire": "65f1c703"
+                          }
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "interbotix_xs_msgs/LocobotJoy",
+      "wire": "0000000000385840000000000040574016198c4fff2f0cec677530ae626f",
+      "value": {
+        "record": "interbotix_xs_msgs/LocobotJoy",
+        "members": {
+          "base_x_cmd": {
+            "scalar": "float64",
+            "value": 96.875,
+            "wire": "0000000000385840"
+          },
+          "base_theta_cmd": {
+            "scalar": "float64",
+            "value": 93.0,
+            "wire": "0000000000405740"
+          },
+          "base_reset_odom_cmd": {
+            "scalar": "int8",
+            "value": 22,
+            "wire": "16"
+          },
+          "pan_cmd": {
+            "scalar": "int8",
+            "value": 25,
+            "wire": "19"
+          },
+          "tilt_cmd": {
+            "scalar": "int8",
+            "value": -116,
+            "wire": "8c"
+          },
+          "ee_x_cmd": {
+            "scalar": "int8",
+            "value": 79,
+            "wire": "4f"
+          },
+          "ee_y_cmd": {
+            "scalar": "int8",
+            "value": -1,
+            "wire": "ff"
+          },
+          "ee_z_cmd": {
+            "scalar": "int8",
+            "value": 47,
+            "wire": "2f"
+          },
+          "ee_roll_cmd": {
+            "scalar": "int8",
+            "value": 12,
+            "wire": "0c"
+          },
+          "ee_pitch_cmd": {
+            "scalar": "int8",
+            "value": -20,
+            "wire": "ec"
+          },
+          "waist_cmd": {
+            "scalar": "int8",
+            "value": 103,
+            "wire": "67"
+          },
+          "gripper_cmd": {
+            "scalar": "int8",
+            "value": 117,
+            "wire": "75"
+          },
+          "pose_cmd": {
+            "scalar": "int8",
+            "value": 48,
+            "wire": "30"
+          },
+          "speed_cmd": {
+            "scalar": "int8",
+            "value": -82,
+            "wire": "ae"
+          },
+          "speed_toggle_cmd": {
+            "scalar": "int8",
+            "value": 98,
+            "wire": "62"
+          },
+          "gripper_pwm_cmd": {
+            "scalar": "int8",
+            "value": 111,
+            "wire": "6f"
+          }
+        }
+      }
+    },
+    {
+      "type": "interbotix_xs_msgs/MotorGainsRequest",
+      "wire": "070000007663336535ceb2070000007638333865ceb2be42029a4db7f2f7fc73620f49b73c9bf3e6350273db68e9802e9884",
+      "value": {
+        "record": "interbotix_xs_msgs/MotorGainsRequest",
+        "members": {
+          "cmd_type": {
+            "scalar": "string",
+            "value": "vc3e5\u03b2"
+          },
+          "name": {
+            "scalar": "string",
+            "value": "v838e\u03b2"
+          },
+          "kp_pos": {
+            "scalar": "int32",
+            "value": -1711127874,
+            "wire": "be42029a"
+          },
+          "ki_pos": {
+            "scalar": "int32",
+            "value": -135088307,
+            "wire": "4db7f2f7"
+          },
+          "kd_pos": {
+            "scalar": "int32",
+            "value": 258110460,
+            "wire": "fc73620f"
+          },
+          "k1": {
+            "scalar": "int32",
+            "value": -1690519735,
+            "wire": "49b73c9b"
+          },
+          "k2": {
+            "scalar": "int32",
+            "value": 37086963,
+            "wire": "f3e63502"
+          },
+          "kp_vel": {
+            "scalar": "int32",
+            "value": -379004045,
+            "wire": "73db68e9"
+          },
+          "ki_vel": {
+            "scalar": "int32",
+            "value": -2070401408,
+            "wire": "802e9884"
+          }
+        }
+      }
+    },
+    {
+      "type": "interbotix_xs_msgs/MotorGainsResponse",
+      "wire": "",
+      "value": {
+        "record": "interbotix_xs_msgs/MotorGainsResponse",
+        "members": {}
+      }
+    },
+    {
+      "type": "interbotix_xs_msgs/OperatingModesRequest",
+      "wire": "070000007662393232ceb2070000007666326536ceb2070000007633623066ceb2070000007666626334ceb243dd31b6513b864e",
+      "value": {
+        "record": "interbotix_xs_msgs/OperatingModesRequest",
+        "members": {
+          "cmd_type": {
+            "scalar": "string",
+            "value": "vb922\u03b2"
+          },
+          "name": {
+            "scalar": "string",
+            "value": "vf2e6\u03b2"
+          },
+          "mode": {
+            "scalar": "string",
+            "value": "v3b0f\u03b2"
+          },
+          "profile_type": {
+            "scalar": "string",
+            "value": "vfbc4\u03b2"
+          },
+          "profile_velocity": {
+            "scalar": "int32",
+            "value": -1238246077,
+            "wire": "43dd31b6"
+          },
+          "profile_acceleration": {
+            "scalar": "int32",
+            "value": 1317419857,
+            "wire": "513b864e"
+          }
+        }
+      }
+    },
+    {
+      "type": "interbotix_xs_msgs/OperatingModesResponse",
+      "wire": "",
+      "value": {
+        "record": "interbotix_xs_msgs/OperatingModesResponse",
+        "members": {}
+      }
+    },
+    {
+      "type": "interbotix_xs_msgs/RebootRequest",
+      "wire": "070000007638613737ceb2070000007632346531ceb20001",
+      "value": {
+        "record": "interbotix_xs_msgs/RebootRequest",
+        "members": {
+          "cmd_type": {
+            "scalar": "string",
+            "value": "v8a77\u03b2"
+          },
+          "name": {
+            "scalar": "string",
+            "value": "v24e1\u03b2"
+          },
+          "enable": {
+            "scalar": "bool",
+            "value": false,
+            "wire": "00"
+          },
+          "smart_reboot": {
+            "scalar": "bool",
+            "value": true,
+            "wire": "01"
+          }
+        }
+      }
+    },
+    {
+      "type": "interbotix_xs_msgs/RebootResponse",
+      "wire": "",
+      "value": {
+        "record": "interbotix_xs_msgs/RebootResponse",
+        "members": {}
+      }
+    },
+    {
+      "type": "interbotix_xs_msgs/RegisterValuesRequest",
+      "wire": "070000007633333063ceb2070000007635343239ceb2070000007636396638ceb27f0ea258",
+      "value": {
+        "record": "interbotix_xs_msgs/RegisterValuesRequest",
+        "members": {
+          "cmd_type": {
+            "scalar": "string",
+            "value": "v330c\u03b2"
+          },
+          "name": {
+            "scalar": "string",
+            "value": "v5429\u03b2"
+          },
+          "reg": {
+            "scalar": "string",
+            "value": "v69f8\u03b2"
+          },
+          "value": {
+            "scalar": "int32",
+            "value": 1487015551,
+            "wire": "7f0ea258"
+          }
+        }
+      }
+    },
+    {
+      "type": "interbotix_xs_msgs/RegisterValuesResponse",
+      "wire": "010000000c086b41",
+      "value": {
+        "record": "interbotix_xs_msgs/RegisterValuesResponse",
+        "members": {
+          "values": {
+            "array": [
+              {
+                "scalar": "int32",
+                "value": 1097533452,
+                "wire": "0c086b41"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "interbotix_xs_msgs/RobotInfoRequest",
+      "wire": "070000007639616439ceb2070000007662393966ceb2",
+      "value": {
+        "record": "interbotix_xs_msgs/RobotInfoRequest",
+        "members": {
+          "cmd_type": {
+            "scalar": "string",
+            "value": "v9ad9\u03b2"
+          },
+          "name": {
+            "scalar": "string",
+            "value": "vb99f\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "interbotix_xs_msgs/RobotInfoResponse",
+      "wire": "070000007634646535ceb2070000007639613966ceb201000000070000007666393963ceb201000000e0ed0100000000c0d0c20100000000a041c30100000000000d420100000000204b4301000000e58b7bdf01000000070000007632626137ceb2",
+      "value": {
+        "record": "interbotix_xs_msgs/RobotInfoResponse",
+        "members": {
+          "mode": {
+            "scalar": "string",
+            "value": "v4de5\u03b2"
+          },
+          "profile_type": {
+            "scalar": "string",
+            "value": "v9a9f\u03b2"
+          },
+          "joint_names": {
+            "array": [
+              {
+                "scalar": "string",
+                "value": "vf99c\u03b2"
+              }
+            ]
+          },
+          "joint_ids": {
+            "array": [
+              {
+                "scalar": "int16",
+                "value": -4640,
+                "wire": "e0ed"
+              }
+            ]
+          },
+          "joint_lower_limits": {
+            "array": [
+              {
+                "scalar": "float32",
+                "value": -104.375,
+                "wire": "00c0d0c2"
+              }
+            ]
+          },
+          "joint_upper_limits": {
+            "array": [
+              {
+                "scalar": "float32",
+                "value": -193.625,
+                "wire": "00a041c3"
+              }
+            ]
+          },
+          "joint_velocity_limits": {
+            "array": [
+              {
+                "scalar": "float32",
+                "value": 35.25,
+                "wire": "00000d42"
+              }
+            ]
+          },
+          "joint_sleep_positions": {
+            "array": [
+              {
+                "scalar": "float32",
+                "value": 203.125,
+                "wire": "00204b43"
+              }
+            ]
+          },
+          "joint_state_indices": {
+            "array": [
+              {
+                "scalar": "int16",
+                "value": -29723,
+                "wire": "e58b"
+              }
+            ]
+          },
+          "num_joints": {
+            "scalar": "int16",
+            "value": -8325,
+            "wire": "7bdf"
+          },
+          "name": {
+            "array": [
+              {
+                "scalar": "string",
+                "value": "v2ba7\u03b2"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "interbotix_xs_msgs/TorqueEnableRequest",
+      "wire": "070000007666376231ceb2070000007665623164ceb200",
+      "value": {
+        "record": "interbotix_xs_msgs/TorqueEnableRequest",
+        "members": {
+          "cmd_type": {
+            "scalar": "string",
+            "value": "vf7b1\u03b2"
+          },
+          "name": {
+            "scalar": "string",
+            "value": "veb1d\u03b2"
+          },
+          "enable": {
+            "scalar": "bool",
+            "value": false,
+            "wire": "00"
+          }
+        }
+      }
+    },
+    {
+      "type": "interbotix_xs_msgs/TorqueEnableResponse",
+      "wire": "",
+      "value": {
+        "record": "interbotix_xs_msgs/TorqueEnableResponse",
+        "members": {}
+      }
+    },
+    {
+      "type": "interbotix_xs_msgs/TurretJoy",
+      "wire": "352a8eb4",
+      "value": {
+        "record": "interbotix_xs_msgs/TurretJoy",
+        "members": {
+          "pan_cmd": {
+            "scalar": "int8",
+            "value": 53,
+            "wire": "35"
+          },
+          "tilt_cmd": {
+            "scalar": "int8",
+            "value": 42,
+            "wire": "2a"
+          },
+          "speed_cmd": {
+            "scalar": "int8",
+            "value": -114,
+            "wire": "8e"
+          },
+          "speed_toggle_cmd": {
+            "scalar": "int8",
+            "value": -76,
+            "wire": "b4"
+          }
+        }
+      }
+    },
+    {
+      "type": "std_msgs/Header",
+      "wire": "a949162e20488fdde929b81e070000007632663062ceb2",
+      "value": {
+        "record": "std_msgs/Header",
+        "members": {
+          "seq": {
+            "scalar": "uint32",
+            "value": 773212585,
+            "wire": "a949162e"
+          },
+          "stamp": {
+            "record": "time",
+            "members": {
+              "sec": {
+                "scalar": "uint32",
+                "value": 3717154848,
+                "wire": "20488fdd"
+              },
+              "nsec": {
+                "scalar": "uint32",
+                "value": 515385833,
+                "wire": "e929b81e"
+              }
+            }
+          },
+          "frame_id": {
+            "scalar": "string",
+            "value": "v2f0b\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "time",
+      "wire": "c8280b76c3d5bc08",
+      "value": {
+        "record": "time",
+        "members": {
+          "sec": {
+            "scalar": "uint32",
+            "value": 1980442824,
+            "wire": "c8280b76"
+          },
+          "nsec": {
+            "scalar": "uint32",
+            "value": 146593219,
+            "wire": "c3d5bc08"
+          }
+        }
+      }
+    },
+    {
+      "type": "trajectory_msgs/JointTrajectory",
+      "wire": "87c81e0ba0199d97984cdf00070000007665326666ceb201000000070000007637616235ceb201000000010000000000000000785ac0010000000000000000e034c0010000000000000000805240010000000000000000385bc0a2a8b9ee05f53c1f",
+      "value": {
+        "record": "trajectory_msgs/JointTrajectory",
+        "members": {
+          "header": {
+            "record": "std_msgs/Header",
+            "members": {
+              "seq": {
+                "scalar": "uint32",
+                "value": 186566791,
+                "wire": "87c81e0b"
+              },
+              "stamp": {
+                "record": "time",
+                "members": {
+                  "sec": {
+                    "scalar": "uint32",
+                    "value": 2543655328,
+                    "wire": "a0199d97"
+                  },
+                  "nsec": {
+                    "scalar": "uint32",
+                    "value": 14634136,
+                    "wire": "984cdf00"
+                  }
+                }
+              },
+              "frame_id": {
+                "scalar": "string",
+                "value": "ve2ff\u03b2"
+              }
+            }
+          },
+          "joint_names": {
+            "array": [
+              {
+                "scalar": "string",
+                "value": "v7ab5\u03b2"
+              }
+            ]
+          },
+          "points": {
+            "array": [
+              {
+                "record": "trajectory_msgs/JointTrajectoryPoint",
+                "members": {
+                  "positions": {
+                    "array": [
+                      {
+                        "scalar": "float64",
+                        "value": -105.875,
+                        "wire": "0000000000785ac0"
+                      }
+                    ]
+                  },
+                  "velocities": {
+                    "array": [
+                      {
+                        "scalar": "float64",
+                        "value": -20.875,
+                        "wire": "0000000000e034c0"
+                      }
+                    ]
+                  },
+                  "accelerations": {
+                    "array": [
+                      {
+                        "scalar": "float64",
+                        "value": 74.0,
+                        "wire": "0000000000805240"
+                      }
+                    ]
+                  },
+                  "effort": {
+                    "array": [
+                      {
+                        "scalar": "float64",
+                        "value": -108.875,
+                        "wire": "0000000000385bc0"
+                      }
+                    ]
+                  },
+                  "time_from_start": {
+                    "record": "duration",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": -289822558,
+                        "wire": "a2a8b9ee"
+                      },
+                      "nsec": {
+                        "scalar": "int32",
+                        "value": 524088581,
+                        "wire": "05f53c1f"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "trajectory_msgs/JointTrajectoryPoint",
+      "wire": "010000000000000000c046c00100000000000000000008c00100000000000000004858400100000000000000008c64c02fd5b9dce5e29b05",
+      "value": {
+        "record": "trajectory_msgs/JointTrajectoryPoint",
+        "members": {
+          "positions": {
+            "array": [
+              {
+                "scalar": "float64",
+                "value": -45.5,
+                "wire": "0000000000c046c0"
+              }
+            ]
+          },
+          "velocities": {
+            "array": [
+              {
+                "scalar": "float64",
+                "value": -3.0,
+                "wire": "00000000000008c0"
+              }
+            ]
+          },
+          "accelerations": {
+            "array": [
+              {
+                "scalar": "float64",
+                "value": 97.125,
+                "wire": "0000000000485840"
+              }
+            ]
+          },
+          "effort": {
+            "array": [
+              {
+                "scalar": "float64",
+                "value": -164.375,
+                "wire": "00000000008c64c0"
+              }
+            ]
+          },
+          "time_from_start": {
+            "record": "duration",
+            "members": {
+              "sec": {
+                "scalar": "int32",
+                "value": -591801041,
+                "wire": "2fd5b9dc"
+              },
+              "nsec": {
+                "scalar": "int32",
+                "value": 94102245,
+                "wire": "e5e29b05"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "xarm_msgs/ClearErrRequest",
+      "wire": "",
+      "value": {
+        "record": "xarm_msgs/ClearErrRequest",
+        "members": {}
+      }
+    },
+    {
+      "type": "xarm_msgs/ClearErrResponse",
+      "wire": "04c2070000007633393261ceb2",
+      "value": {
+        "record": "xarm_msgs/ClearErrResponse",
+        "members": {
+          "ret": {
+            "scalar": "int16",
+            "value": -15868,
+            "wire": "04c2"
+          },
+          "message": {
+            "scalar": "string",
+            "value": "v392a\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "xarm_msgs/ConfigToolModbusRequest",
+      "wire": "79c12017d60bdd87",
+      "value": {
+        "record": "xarm_msgs/ConfigToolModbusRequest",
+        "members": {
+          "baud_rate": {
+            "scalar": "int32",
+            "value": 388022649,
+            "wire": "79c12017"
+          },
+          "timeout_ms": {
+            "scalar": "int32",
+            "value": -2015556650,
+            "wire": "d60bdd87"
+          }
+        }
+      }
+    },
+    {
+      "type": "xarm_msgs/ConfigToolModbusResponse",
+      "wire": "070000007638616361ceb2adff",
+      "value": {
+        "record": "xarm_msgs/ConfigToolModbusResponse",
+        "members": {
+          "message": {
+            "scalar": "string",
+            "value": "v8aca\u03b2"
+          },
+          "ret": {
+            "scalar": "int16",
+            "value": -83,
+            "wire": "adff"
+          }
+        }
+      }
+    },
+    {
+      "type": "xarm_msgs/GetAnalogIORequest",
+      "wire": "427a",
+      "value": {
+        "record": "xarm_msgs/GetAnalogIORequest",
+        "members": {
+          "port_num": {
+            "scalar": "int16",
+            "value": 31298,
+            "wire": "427a"
+          }
+        }
+      }
+    },
+    {
+      "type": "xarm_msgs/GetAnalogIOResponse",
+      "wire": "00808542f15e070000007665366165ceb2",
+      "value": {
+        "record": "xarm_msgs/GetAnalogIOResponse",
+        "members": {
+          "analog_value": {
+            "scalar": "float32",
+            "value": 66.75,
+            "wire": "00808542"
+          },
+          "ret": {
+            "scalar": "int16",
+            "value": 24305,
+            "wire": "f15e"
+          },
+          "message": {
+            "scalar": "string",
+            "value": "ve6ae\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "xarm_msgs/GetControllerDigitalIORequest",
+      "wire": "1edc",
+      "value": {
+        "record": "xarm_msgs/GetControllerDigitalIORequest",
+        "members": {
+          "io_num": {
+            "scalar": "int16",
+            "value": -9186,
+            "wire": "1edc"
+          }
+        }
+      }
+    },
+    {
+      "type": "xarm_msgs/GetControllerDigitalIOResponse",
+      "wire": "f77f2f9f070000007631613862ceb2",
+      "value": {
+        "record": "xarm_msgs/GetControllerDigitalIOResponse",
+        "members": {
+          "ret": {
+            "scalar": "int16",
+            "value": 32759,
+            "wire": "f77f"
+          },
+          "value": {
+            "scalar": "int16",
+            "value": -24785,
+            "wire": "2f9f"
+          },
+          "message": {
+            "scalar": "string",
+            "value": "v1a8b\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "xarm_msgs/GetDigitalIORequest",
+      "wire": "",
+      "value": {
+        "record": "xarm_msgs/GetDigitalIORequest",
+        "members": {}
+      }
+    },
+    {
+      "type": "xarm_msgs/GetDigitalIOResponse",
+      "wire": "853edd303f6fd4a9a446070000007630346339ceb2",
+      "value": {
+        "record": "xarm_msgs/GetDigitalIOResponse",
+        "members": {
+          "digital_1": {
+            "scalar": "int32",
+            "value": 819805829,
+            "wire": "853edd30"
+          },
+          "digital_2": {
+            "scalar": "int32",
+            "value": -1445695681,
+            "wire": "3f6fd4a9"
+          },
+          "ret": {
+            "scalar": "int16",
+            "value": 18084,
+            "wire": "a446"
+          },
+          "message": {
+            "scalar": "string",
+            "value": "v04c9\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "xarm_msgs/GetErrRequest",
+      "wire": "",
+      "value": {
+        "record": "xarm_msgs/GetErrRequest",
+        "members": {}
+      }
+    },
+    {
+      "type": "xarm_msgs/GetErrResponse",
+      "wire": "f045070000007636353464ceb2",
+      "value": {
+        "record": "xarm_msgs/GetErrResponse",
+        "members": {
+          "err": {
+            "scalar": "int16",
+            "value": 17904,
+            "wire": "f045"
+          },
+          "message": {
+            "scalar": "string",
+            "value": "v654d\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "xarm_msgs/GripperConfigRequest",
+      "wire": "00402543",
+      "value": {
+        "record": "xarm_msgs/GripperConfigRequest",
+        "members": {
+          "pulse_vel": {
+            "scalar": "float32",
+            "value": 165.25,
+            "wire": "00402543"
+          }
+        }
+      }
+    },
+    {
+      "type": "xarm_msgs/GripperConfigResponse",
+      "wire": "7e09070000007636376264ceb2",
+      "value": {
+        "record": "xarm_msgs/GripperConfigResponse",
+        "members": {
+          "ret": {
+            "scalar": "int16",
+            "value": 2430,
+            "wire": "7e09"
+          },
+          "message": {
+            "scalar": "string",
+            "value": "v67bd\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "xarm_msgs/GripperMoveRequest",
+      "wire": "00803ac2",
+      "value": {
+        "record": "xarm_msgs/GripperMoveRequest",
+        "members": {
+          "pulse_pos": {
+            "scalar": "float32",
+            "value": -46.625,
+            "wire": "00803ac2"
+          }
+        }
+      }
+    },
+    {
+      "type": "xarm_msgs/GripperMoveResponse",
+      "wire": "f1c3070000007632636534ceb2",
+      "value": {
+        "record": "xarm_msgs/GripperMoveResponse",
+        "members": {
+          "ret": {
+            "scalar": "int16",
+            "value": -15375,
+            "wire": "f1c3"
+          },
+          "message": {
+            "scalar": "string",
+            "value": "v2ce4\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "xarm_msgs/GripperStateRequest",
+      "wire": "",
+      "value": {
+        "record": "xarm_msgs/GripperStateRequest",
+        "members": {}
+      }
+    },
+    {
+      "type": "xarm_msgs/GripperStateResponse",
+      "wire": "00802bc25fd4",
+      "value": {
+        "record": "xarm_msgs/GripperStateResponse",
+        "members": {
+          "curr_pos": {
+            "scalar": "float32",
+            "value": -42.875,
+            "wire": "00802bc2"
+          },
+          "err_code": {
+            "scalar": "int16",
+            "value": -11169,
+            "wire": "5fd4"
+          }
+        }
+      }
+    },
+    {
+      "type": "xarm_msgs/IOState",
+      "wire": "4e02582cf45351b500602ec300805f43",
+      "value": {
+        "record": "xarm_msgs/IOState",
+        "members": {
+          "digital_1": {
+            "scalar": "int32",
+            "value": 743965262,
+            "wire": "4e02582c"
+          },
+          "digital_2": {
+            "scalar": "int32",
+            "value": -1252961292,
+            "wire": "f45351b5"
+          },
+          "analog_1": {
+            "scalar": "float32",
+            "value": -174.375,
+            "wire": "00602ec3"
+          },
+          "analog_2": {
+            "scalar": "float32",
+            "value": 223.5,
+            "wire": "00805f43"
+          }
+        }
+      }
+    },
+    {
+      "type": "xarm_msgs/MoveRequest",
+      "wire": "01000000000081c10000b6c10000a4c1000009420040c9c2",
+      "value": {
+        "record": "xarm_msgs/MoveRequest",
+        "members": {
+          "pose": {
+            "array": [
+              {
+                "scalar": "float32",
+                "value": -16.125,
+                "wire": "000081c1"
+              }
+            ]
+          },
+          "mvvelo": {
+            "scalar": "float32",
+            "value": -22.75,
+            "wire": "0000b6c1"
+          },
+          "mvacc": {
+            "scalar": "float32",
+            "value": -20.5,
+            "wire": "0000a4c1"
+          },
+          "mvtime": {
+            "scalar": "float32",
+            "value": 34.25,
+            "wire": "00000942"
+          },
+          "mvradii": {
+            "scalar": "float32",
+            "value": -100.625,
+            "wire": "0040c9c2"
+          }
+        }
+      }
+    },
+    {
+      "type": "xarm_msgs/MoveResponse",
+      "wire": "55ee070000007635653732ceb2",
+      "value": {
+        "record": "xarm_msgs/MoveResponse",
+        "members": {
+          "ret": {
+            "scalar": "int16",
+            "value": -4523,
+            "wire": "55ee"
+          },
+          "message": {
+            "scalar": "string",
+            "value": "v5e72\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "xarm_msgs/RobotMsg",
+      "wire": "2bf13c7074b05c65b401b8c39286010000000000c3c1008010c200004d420040e14200008b42000079c20000dcc000a023430000354200e01f4300a058c3008027430040a242",
+      "value": {
+        "record": "xarm_msgs/RobotMsg",
+        "members": {
+          "state": {
+            "scalar": "int16",
+            "value": -3797,
+            "wire": "2bf1"
+          },
+          "mode": {
+            "scalar": "int16",
+            "value": 28732,
+            "wire": "3c70"
+          },
+          "cmdnum": {
+            "scalar": "int16",
+            "value": -20364,
+            "wire": "74b0"
+          },
+          "mt_brake": {
+            "scalar": "int16",
+            "value": 25948,
+            "wire": "5c65"
+          },
+          "mt_able": {
+            "scalar": "int16",
+            "value": 436,
+            "wire": "b401"
+          },
+          "err": {
+            "scalar": "int16",
+            "value": -15432,
+            "wire": "b8c3"
+          },
+          "warn": {
+            "scalar": "int16",
+            "value": -31086,
+            "wire": "9286"
+          },
+          "angle": {
+            "array": [
+              {
+                "scalar": "float32",
+                "value": -24.375,
+                "wire": "0000c3c1"
+              }
+            ]
+          },
+          "pose": {
+            "array": [
+              {
+                "scalar": "float32",
+                "value": -36.125,
+                "wire": "008010c2"
+              },
+              {
+                "scalar": "float32",
+                "value": 51.25,
+                "wire": "00004d42"
+              },
+              {
+                "scalar": "float32",
+                "value": 112.625,
+                "wire": "0040e142"
+              },
+              {
+                "scalar": "float32",
+                "value": 69.5,
+                "wire": "00008b42"
+              },
+              {
+                "scalar": "float32",
+                "value": -62.25,
+                "wire": "000079c2"
+              },
+              {
+                "scalar": "float32",
+                "value": -6.875,
+                "wire": "0000dcc0"
+              }
+            ]
+          },
+          "offset": {
+            "array": [
+              {
+                "scalar": "float32",
+                "value": 163.625,
+                "wire": "00a02343"
+              },
+              {
+                "scalar": "float32",
+                "value": 45.25,
+                "wire": "00003542"
+              },
+              {
+                "scalar": "float32",
+                "value": 159.875,
+                "wire": "00e01f43"
+              },
+              {
+                "scalar": "float32",
+                "value": -216.625,
+                "wire": "00a058c3"
+              },
+              {
+                "scalar": "float32",
+                "value": 167.5,
+                "wire": "00802743"
+              },
+              {
+                "scalar": "float32",
+                "value": 81.125,
+                "wire": "0040a242"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "xarm_msgs/SetAxisRequest",
+      "wire": "259884ae",
+      "value": {
+        "record": "xarm_msgs/SetAxisRequest",
+        "members": {
+          "id": {
+            "scalar": "int16",
+            "value": -26587,
+            "wire": "2598"
+          },
+          "data": {
+            "scalar": "int16",
+            "value": -20860,
+            "wire": "84ae"
+          }
+        }
+      }
+    },
+    {
+      "type": "xarm_msgs/SetAxisResponse",
+      "wire": "7ad9070000007666356461ceb2",
+      "value": {
+        "record": "xarm_msgs/SetAxisResponse",
+        "members": {
+          "ret": {
+            "scalar": "int16",
+            "value": -9862,
+            "wire": "7ad9"
+          },
+          "message": {
+            "scalar": "string",
+            "value": "vf5da\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "xarm_msgs/SetDigitalIORequest",
+      "wire": "9f3385f8",
+      "value": {
+        "record": "xarm_msgs/SetDigitalIORequest",
+        "members": {
+          "io_num": {
+            "scalar": "int16",
+            "value": 13215,
+            "wire": "9f33"
+          },
+          "value": {
+            "scalar": "int16",
+            "value": -1915,
+            "wire": "85f8"
+          }
+        }
+      }
+    },
+    {
+      "type": "xarm_msgs/SetDigitalIOResponse",
+      "wire": "da06070000007630386136ceb2",
+      "value": {
+        "record": "xarm_msgs/SetDigitalIOResponse",
+        "members": {
+          "ret": {
+            "scalar": "int16",
+            "value": 1754,
+            "wire": "da06"
+          },
+          "message": {
+            "scalar": "string",
+            "value": "v08a6\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "xarm_msgs/SetInt16Request",
+      "wire": "9b8a",
+      "value": {
+        "record": "xarm_msgs/SetInt16Request",
+        "members": {
+          "data": {
+            "scalar": "int16",
+            "value": -30053,
+            "wire": "9b8a"
+          }
+        }
+      }
+    },
+    {
+      "type": "xarm_msgs/SetInt16Response",
+      "wire": "65fd070000007636373465ceb2",
+      "value": {
+        "record": "xarm_msgs/SetInt16Response",
+        "members": {
+          "ret": {
+            "scalar": "int16",
+            "value": -667,
+            "wire": "65fd"
+          },
+          "message": {
+            "scalar": "string",
+            "value": "v674e\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "xarm_msgs/SetLoadRequest",
+      "wire": "00c008c30040e5c200000ec300e007c3",
+      "value": {
+        "record": "xarm_msgs/SetLoadRequest",
+        "members": {
+          "mass": {
+            "scalar": "float32",
+            "value": -136.75,
+            "wire": "00c008c3"
+          },
+          "xc": {
+            "scalar": "float32",
+            "value": -114.625,
+            "wire": "0040e5c2"
+          },
+          "yc": {
+            "scalar": "float32",
+            "value": -142.0,
+            "wire": "00000ec3"
+          },
+          "zc": {
+            "scalar": "float32",
+            "value": -135.875,
+            "wire": "00e007c3"
+          }
+        }
+      }
+    },
+    {
+      "type": "xarm_msgs/SetLoadResponse",
+      "wire": "55ef070000007663303261ceb2",
+      "value": {
+        "record": "xarm_msgs/SetLoadResponse",
+        "members": {
+          "ret": {
+            "scalar": "int16",
+            "value": -4267,
+            "wire": "55ef"
+          },
+          "message": {
+            "scalar": "string",
+            "value": "vc02a\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "xarm_msgs/SetToolModbusRequest",
+      "wire": "01000000f9a734",
+      "value": {
+        "record": "xarm_msgs/SetToolModbusRequest",
+        "members": {
+          "send_data": {
+            "array": [
+              {
+                "scalar": "uint8",
+                "value": 249,
+                "wire": "f9"
+              }
+            ]
+          },
+          "respond_len": {
+            "scalar": "int16",
+            "value": 13479,
+            "wire": "a734"
+          }
+        }
+      }
+    },
+    {
+      "type": "xarm_msgs/SetToolModbusResponse",
+      "wire": "91890100000067",
+      "value": {
+        "record": "xarm_msgs/SetToolModbusResponse",
+        "members": {
+          "ret": {
+            "scalar": "int16",
+            "value": -30319,
+            "wire": "9189"
+          },
+          "respond_data": {
+            "array": [
+              {
+                "scalar": "uint8",
+                "value": 103,
+                "wire": "67"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "xarm_msgs/TCPOffsetRequest",
+      "wire": "0000dac2004064c300801ec30000d44200c02fc30000f541",
+      "value": {
+        "record": "xarm_msgs/TCPOffsetRequest",
+        "members": {
+          "x": {
+            "scalar": "float32",
+            "value": -109.0,
+            "wire": "0000dac2"
+          },
+          "y": {
+            "scalar": "float32",
+            "value": -228.25,
+            "wire": "004064c3"
+          },
+          "z": {
+            "scalar": "float32",
+            "value": -158.5,
+            "wire": "00801ec3"
+          },
+          "roll": {
+            "scalar": "float32",
+            "value": 106.0,
+            "wire": "0000d442"
+          },
+          "pitch": {
+            "scalar": "float32",
+            "value": -175.75,
+            "wire": "00c02fc3"
+          },
+          "yaw": {
+            "scalar": "float32",
+            "value": 30.625,
+            "wire": "0000f541"
+          }
+        }
+      }
+    },
+    {
+      "type": "xarm_msgs/TCPOffsetResponse",
+      "wire": "283d070000007662626330ceb2",
+      "value": {
+        "record": "xarm_msgs/TCPOffsetResponse",
+        "members": {
+          "ret": {
+            "scalar": "int16",
+            "value": 15656,
+            "wire": "283d"
+          },
+          "message": {
+            "scalar": "string",
+            "value": "vbbc0\u03b2"
+          }
+        }
+      }
+    }
+  ]
+}

@@ -5,7 +5,7 @@ actual source-owned Runtime embedding entry, canonical imported shared memory,
 native workers and public debug/retirement APIs. No test constructs a fake
 Group, admission, provider or pause participant.
 
-Read the [native control API guide](../../../../sdk/docs/threaded-debug-control.md)
+Read the [native control API guide](../../../../sdk/origin/docs/threaded-debug-control.md)
 and the [existing profile qualification](../qualification-r3/README.md). Build
 this main with the final Runtime's actual object/header/feature/link closure;
 do not link it alongside the ordinary CLI main. Compile both WAT files with the

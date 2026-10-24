@@ -1,0 +1,12 @@
+# Local build/run products; shared artifact rules are in tools/.gitignore.
+/build/
+/out/
+/tmp/
+/captures/
+/downloads/
+/images/
+/rootfs/
+*.qcow2
+*.vhd
+*.vhdx
+*.iso

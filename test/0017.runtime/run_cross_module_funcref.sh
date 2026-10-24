@@ -2,7 +2,7 @@
 set -euo pipefail
 
 if [[ "$#" -lt 1 || "$#" -gt 2 ]]; then
-  echo "usage: $0 /absolute/path/to/uwvm [int|aot]" >&2
+  echo "usage: $0 /absolute/path/to/uwvm2-ros [int|aot]" >&2
   exit 2
 fi
 

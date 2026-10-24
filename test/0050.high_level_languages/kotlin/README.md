@@ -103,7 +103,7 @@ taskset -c 20 python3 -I -B "$SUITE/java/jar-input/produce_jar.py" \
   --toolchain-receipt-sha256 "$TEAVM_RECEIPT_SHA" --patch-root "$TEAVM_PATCHED" \
   --maven "$MVN" --java-home "$JAVA_HOME" --helpers "$SUITE" \
   --cpu 20 --optimization SIMPLE --max-heap-mib 128 --out "$OUTPUT/simple"
-uwvm --run "$OUTPUT/simple/project/target/wasi/application.wasm" 17
+uwvm2-ros --run "$OUTPUT/simple/project/target/wasi/application.wasm" 17
 ```
 
 Select the UWVM backend appropriate to your build before `--run`. The manual

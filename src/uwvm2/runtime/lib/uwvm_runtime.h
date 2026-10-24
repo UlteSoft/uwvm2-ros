@@ -1368,10 +1368,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
     };
     // Host-only admission of actual execution/compiler mode. It grants no module capability.
     extern "C++" bool ros_execution_backend_supported_host_api() noexcept;
-    extern "C++" bool ros_caller_identity_host_api(ros_caller_identity& out) noexcept;
+    /// @brief Admit the actual builtin caller, including permanent retirement checks.
+    /// @param allow_module_exports True only after the host selects the current
+    ///        module's explicit Single call-boundary=module-exports policy.
+    /// @details The default rejects cross-module ancestry. Opting in delegates
+    ///          only operations performed inside that module's reviewed exports;
+    ///          it transfers neither handles nor permissions to calling modules.
+    extern "C++" bool ros_caller_identity_host_api(ros_caller_identity & out, bool allow_module_exports = false) noexcept;
     // Observation only: denied cross-module ancestry may be returned for bounded audit records.
     // Never use this query to authorize a Guest operation or to register a capability owner.
-    extern "C++" bool ros_observed_caller_identity_host_api(ros_caller_identity& out) noexcept;
+    extern "C++" bool ros_observed_caller_identity_host_api(ros_caller_identity & out) noexcept;
     /// @brief Drain the replaced module's local ROS owners after a genuine
     ///        committed update, outside pause/publication locks while still
     ///        stopped. This native management API is never a Wasm import.

@@ -27,7 +27,7 @@ uncaught stop or trace event.
 ```sh
 python3 test/0018.debugger/run_wasm_uncaught_import_cli.py \
   --source-root /absolute/frozen/uwvm2 \
-  --binary /absolute/qualified/uwvm \
+  --binary /absolute/qualified/uwvm2-ros \
   --wasm-tools /absolute/wasm-tools \
   --out /absolute/new-result-directory \
   --jit-policy default

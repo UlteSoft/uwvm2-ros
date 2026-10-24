@@ -10,7 +10,7 @@ The freestanding environment is described at a high level in [`documents/support
   - ✅ WebAssembly parser (`src/uwvm2/parser/**`)
   - 🚧 Future interpreter (INT) – planned; see [`documents/development-status.md`](../development-status.md)
 - **Not supported in freestanding mode**
-  - CLI front‑end (`uwvm` binary)
+  - CLI front‑end (`uwvm2-ros` binary)
   - WASI host / OS integration
   - Dynamic loading, threads, processes, filesystems, etc.
 - **You are responsible for**
@@ -97,7 +97,7 @@ Without this macro, fast_io will fall back to its own native allocator (or other
 
 ## Building only the parser (and future interpreter)
 
-In freestanding mode you normally do **not** build the full `uwvm` CLI. Instead, you embed only the components you need:
+In freestanding mode you normally do **not** build the full `uwvm2-ros` CLI. Instead, you embed only the components you need:
 
 - **Today**
   - Embed the **parser** as a library (headers/modules under `src/uwvm2/parser/**` plus supporting utilities under `src/uwvm2/utils/**` and `src/uwvm2/object/**`).

@@ -54,7 +54,7 @@ def main() -> None:
         path = args.dap_stage / name
         require(path.is_file() and not path.is_symlink() and digest(path) == expected,
                 f'DAP stage input changed: {name}')
-    require(files['uwvm.exe'] == build['products']['uwvm.exe']['sha256'] and
+    require(files['uwvm2-ros.exe'] == build['products']['uwvm2-ros.exe']['sha256'] and
             files['uwvm-debug-server.exe'] ==
             build['products']['uwvm-debug-server.exe']['sha256'],
             'DAP stage PE differs from build certificate')
@@ -74,7 +74,7 @@ def main() -> None:
     ]
     invoke = f'& $p -BaseUrl $u -Engine {quoted(args.engine)}'
     for parameter, name in (
-        ('ProductSha256', 'uwvm.exe'),
+        ('ProductSha256', 'uwvm2-ros.exe'),
         ('BrokerSha256', 'uwvm-debug-server.exe'),
         ('WasmSha256', 'native-step-fixture.wasm'),
         ('SourceWasmSha256', 'source-c-dwarf4.wasm'),
@@ -91,7 +91,7 @@ def main() -> None:
     output.mkdir(mode=0o700, parents=True, exist_ok=False)
     (output / 'dap.command.txt').write_text(command + '\n')
     record = {'schema': 1, 'engine': args.engine, 'source_id': build['source_id'],
-              'product_sha256': files['uwvm.exe'],
+              'product_sha256': files['uwvm2-ros.exe'],
               'broker_sha256': files['uwvm-debug-server.exe'],
               'dap_stage_sha256': digest(args.dap_stage / 'stage.json'),
               'runner_sha256': files[RUNNER],

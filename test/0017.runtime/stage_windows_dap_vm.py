@@ -10,7 +10,7 @@ import subprocess
 import sys
 
 
-SHARED = ('uwvm.exe', 'uwvm-debug-server.exe', 'native-step-fixture.wasm',
+SHARED = ('uwvm2-ros.exe', 'uwvm-debug-server.exe', 'native-step-fixture.wasm',
           'source-c-dwarf4.wasm', 'dap_adapter.py', 'run_dap_windows_guest.py')
 RUNNER = 'run_windows_dap_host_vm.ps1'
 
@@ -60,7 +60,7 @@ def main() -> None:
             shutil.copyfileobj(incoming, outgoing)
         files[name] = digest(target)
         require(files[name] == main['files'][name], f'DAP copy changed: {name}')
-    require(files['uwvm.exe'] == build['products']['uwvm.exe']['sha256'] and
+    require(files['uwvm2-ros.exe'] == build['products']['uwvm2-ros.exe']['sha256'] and
             files['uwvm-debug-server.exe'] ==
             build['products']['uwvm-debug-server.exe']['sha256'],
             'DAP stage PE differs from product certificate')

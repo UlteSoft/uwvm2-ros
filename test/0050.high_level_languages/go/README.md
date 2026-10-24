@@ -24,7 +24,7 @@ GOOS=linux GOARCH=amd64 go build -p 1 -trimpath \
   '-gcflags=all=-N -l' '-ldflags=-compressdwarf=false' \
   -o go-debug.native go_language.go
 ./go-debug.native 17
-uwvm --wasip1-global-grant monotonic-clock \
+uwvm2-ros --wasip1-global-grant monotonic-clock \
      --wasip1-global-grant realtime-clock --run go-debug.wasm 17
 ```
 
@@ -82,7 +82,7 @@ tinygo build -p 1 -opt=0 -target=wasi -o tinygo-debug.wasm tinygo_language.go
 tinygo build -p 1 -opt=2 -target=wasi -o tinygo-release.wasm tinygo_language.go
 tinygo build -p 1 -opt=0 -o tinygo-debug.native tinygo_language.go
 ./tinygo-debug.native 17
-uwvm --run tinygo-debug.wasm 17
+uwvm2-ros --run tinygo-debug.wasm 17
 ```
 
 The unmodified full Go fixture was also offered to TinyGo. Its runtime bounds
@@ -106,3 +106,7 @@ All task compilation, program execution, DBG and hardware profiling happens
 on SSH Linux in the original 64 GiB/swap-zero cgroup. The Go producer's twenty
 passing native/Wasmtime outcomes are correctness results. They do not establish
 current UWVM DBG, native timing parity, ROS delivery or SDK/API parity.
+
+The reusable ROS resource witnesses and SDK contracts are in
+[the stable integration tests](../../0073.ros-tests/support/source/ros_language_integration/README.md).
+The pinned Linux Wasm validator is retained at `toolchain/wasm-tools`.

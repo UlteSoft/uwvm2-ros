@@ -135,7 +135,7 @@ def main() -> None:
     require(runner_path.name == RUNNER, "wrong guest EH runner")
     oracle_rows = {row.get("stem"): row for row in oracle.get("fixtures", [])}
     require(set(stems) <= set(oracle_rows), "cross-function/multi-object EH oracle cases missing")
-    origins = {"uwvm.exe": product, RUNNER: runner_path}
+    origins = {"uwvm2-ros.exe": product, RUNNER: runner_path}
     for stem in stems:
         row = oracle_rows[stem]
         wasm = oracle_path.parent / (stem + ".wasm")
@@ -155,12 +155,12 @@ def main() -> None:
         files[name] = digest(target)
         require(files[name] == digest(origin), f"artifact changed during stage: {name}")
     qualification = {"schema": args.schema, "source_id": source_id,
-                     "product_sha256": files["uwvm.exe"],
+                     "product_sha256": files["uwvm2-ros.exe"],
                      "build_sha256": build_sha256,
                      "runner_sha256": files[RUNNER],
                      "oracle_sha256": digest(oracle_path),
                      "files_sha256": {name: files[name] for name in
-                                      ("uwvm.exe", *(stem + ".wasm" for stem in stems))}}
+                                      ("uwvm2-ros.exe", *(stem + ".wasm" for stem in stems))}}
     if args.schema == 2:
         qualification.update(repository=args.repository, multi_object_required=True)
     qualification_path = output / "qualification.json"

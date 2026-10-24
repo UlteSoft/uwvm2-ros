@@ -1,0 +1,8 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/dds_profile_check
+/rpc_reader_diagnostic
+/topic_observer_ros1
+/topic_observer_ros2

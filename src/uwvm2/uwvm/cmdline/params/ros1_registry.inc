@@ -29,6 +29,7 @@
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros1_single_namespace),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros1_single_advertise_host),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros1_single_transport),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::ros1_single_call_boundary),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros1_single_connect_timeout_ms),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros1_single_grant),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros1_single_set),

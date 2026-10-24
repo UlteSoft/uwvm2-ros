@@ -1,0 +1,15 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/binfmt
+/binfmt_strategy
+/call_indirect_trailing_immediate
+/feature_name
+/feature_parameters
+/get_handler_funcp
+/splice_section_storage_structure
+/wasm1p1_feature_list
+/wasm1p1_parser_section_details
+/wasm2_feature_list
+/wasm2_feature_parameter_api

@@ -51,7 +51,7 @@ keeper and all compilation/runtime tasks remain in its <=64 GiB cgroup:
 
 ```
 python3 test/0017.runtime/run_uncaught_exception_tag_diagnostics.py \
-  --uwvm /absolute/fresh/uwvm --wasm-tools /absolute/wasm-tools \
+  --uwvm /absolute/fresh/uwvm2-ros --wasm-tools /absolute/wasm-tools \
   --compiler llvm-jit --mode full --out /absolute/new/result-dir
 ```
 

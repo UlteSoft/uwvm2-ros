@@ -1,0 +1,10 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/custom_publisher_factory_contract
+/custom_subscription_factory_contract
+/custom_subscription_native_contract
+/image_policy_contract
+/native_publisher_contract
+/wire_contract

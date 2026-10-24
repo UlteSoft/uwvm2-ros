@@ -18,7 +18,7 @@ using /tmp/wasm3-perf-20261004-host/enter.sh to enter that cgroup:
 python3 "$UWVM_TASK_DIR/control/resource_guard.py" \
   --label YOUR_UNIQUE_LABEL --kind test --timeout 240 -- \
   python3 PATH_TO_THIS_DIRECTORY/run.py \
-    --uwvm "$UWVM_TASK_DIR/build/r13/cli-uwvm2-candidate/uwvm" \
+    --uwvm "$UWVM_TASK_DIR/build/r13/cli-uwvm2-candidate/uwvm2-ros" \
     --wasm-tools /home/macromodel/Documents/uwvm-debug-recovery-20261006-r2/assets/wasm-tools/wasm-tools \
     --out "$UWVM_TASK_DIR/build/YOUR_NEW_OUTPUT_DIRECTORY" \
     --cgroup "$TASK_CGROUP" --cpu 6

@@ -1,0 +1,1284 @@
+{
+  "cases": [
+    {
+      "type": "aimdk_msgs/msg/CommonRequest",
+      "wire": "16bb4308af59a921",
+      "value": {
+        "record": "aimdk_msgs/msg/CommonRequest",
+        "members": {
+          "header": {
+            "record": "aimdk_msgs/msg/RequestHeader",
+            "members": {
+              "stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": 138656534,
+                    "wire": "16bb4308"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 564746671,
+                    "wire": "af59a921"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/CommonResponse",
+      "wire": "7e48d16d857af630efb3162656ca21b86ea99a05070000007634616561ceb2",
+      "value": {
+        "record": "aimdk_msgs/msg/CommonResponse",
+        "members": {
+          "header": {
+            "record": "aimdk_msgs/msg/ResponseHeader",
+            "members": {
+              "stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": 1842432126,
+                    "wire": "7e48d16d"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 821459589,
+                    "wire": "857af630"
+                  }
+                }
+              },
+              "code": {
+                "scalar": "int64",
+                "value": -5178635625144339473,
+                "wire": "efb3162656ca21b8"
+              }
+            }
+          },
+          "status": {
+            "record": "aimdk_msgs/msg/CommonState",
+            "members": {
+              "value": {
+                "scalar": "int32",
+                "value": 94021998,
+                "wire": "6ea99a05"
+              }
+            }
+          },
+          "message": {
+            "scalar": "string",
+            "value": "v4aea\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/CommonState",
+      "wire": "d226915e",
+      "value": {
+        "record": "aimdk_msgs/msg/CommonState",
+        "members": {
+          "value": {
+            "scalar": "int32",
+            "value": 1586570962,
+            "wire": "d226915e"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/CommonTaskResponse",
+      "wire": "0e92b1f4b82af9317ff79a4fc68eadd1888295fa31fba264f00f1460",
+      "value": {
+        "record": "aimdk_msgs/msg/CommonTaskResponse",
+        "members": {
+          "header": {
+            "record": "aimdk_msgs/msg/ResponseHeader",
+            "members": {
+              "stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": -189689330,
+                    "wire": "0e92b1f4"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 838412984,
+                    "wire": "b82af931"
+                  }
+                }
+              },
+              "code": {
+                "scalar": "int64",
+                "value": -3337854766421444737,
+                "wire": "7ff79a4fc68eadd1"
+              }
+            }
+          },
+          "task_id": {
+            "scalar": "uint64",
+            "value": 7251634542095991432,
+            "wire": "888295fa31fba264"
+          },
+          "state": {
+            "record": "aimdk_msgs/msg/CommonState",
+            "members": {
+              "value": {
+                "scalar": "int32",
+                "value": 1611927536,
+                "wire": "f00f1460"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/DomainErrorState",
+      "wire": "e1",
+      "value": {
+        "record": "aimdk_msgs/msg/DomainErrorState",
+        "members": {
+          "value": {
+            "scalar": "uint8",
+            "value": 225,
+            "wire": "e1"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/JointCommand",
+      "wire": "070000007666396635ceb2000000000030644000000000006059c000000000006856400000000000b4654000000000003043c0",
+      "value": {
+        "record": "aimdk_msgs/msg/JointCommand",
+        "members": {
+          "name": {
+            "scalar": "string",
+            "value": "vf9f5\u03b2"
+          },
+          "position": {
+            "scalar": "float64",
+            "value": 161.5,
+            "wire": "0000000000306440"
+          },
+          "velocity": {
+            "scalar": "float64",
+            "value": -101.5,
+            "wire": "00000000006059c0"
+          },
+          "effort": {
+            "scalar": "float64",
+            "value": 89.625,
+            "wire": "0000000000685640"
+          },
+          "stiffness": {
+            "scalar": "float64",
+            "value": 173.625,
+            "wire": "0000000000b46540"
+          },
+          "damping": {
+            "scalar": "float64",
+            "value": -38.375,
+            "wire": "00000000003043c0"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/JointCommandArray",
+      "wire": "c4e2ccfa36661122070000007636656530ceb2c5a6c503155c6d32fa7a343001000000070000007631646364ceb200000000002855c00000000000fc62400000000000886dc0000000000028644000000000004866c0",
+      "value": {
+        "record": "aimdk_msgs/msg/JointCommandArray",
+        "members": {
+          "header": {
+            "record": "aimdk_msgs/msg/MessageHeader",
+            "members": {
+              "stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": -87235900,
+                    "wire": "c4e2ccfa"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 571565622,
+                    "wire": "36661122"
+                  }
+                }
+              },
+              "frame_id": {
+                "scalar": "string",
+                "value": "v6ee0\u03b2"
+              },
+              "sequence": {
+                "scalar": "uint32",
+                "value": 63284933,
+                "wire": "c5a6c503"
+              },
+              "meas_stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": 846027797,
+                    "wire": "155c6d32"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 808745722,
+                    "wire": "fa7a3430"
+                  }
+                }
+              }
+            }
+          },
+          "joints": {
+            "array": [
+              {
+                "record": "aimdk_msgs/msg/JointCommand",
+                "members": {
+                  "name": {
+                    "scalar": "string",
+                    "value": "v1dcd\u03b2"
+                  },
+                  "position": {
+                    "scalar": "float64",
+                    "value": -84.625,
+                    "wire": "00000000002855c0"
+                  },
+                  "velocity": {
+                    "scalar": "float64",
+                    "value": 151.875,
+                    "wire": "0000000000fc6240"
+                  },
+                  "effort": {
+                    "scalar": "float64",
+                    "value": -236.25,
+                    "wire": "0000000000886dc0"
+                  },
+                  "stiffness": {
+                    "scalar": "float64",
+                    "value": 161.25,
+                    "wire": "0000000000286440"
+                  },
+                  "damping": {
+                    "scalar": "float64",
+                    "value": -178.25,
+                    "wire": "00000000004866c0"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/JointState",
+      "wire": "070000007634386539ceb200000000008041c00000000000bc64400000000000bc6540cce1",
+      "value": {
+        "record": "aimdk_msgs/msg/JointState",
+        "members": {
+          "name": {
+            "scalar": "string",
+            "value": "v48e9\u03b2"
+          },
+          "position": {
+            "scalar": "float64",
+            "value": -35.0,
+            "wire": "00000000008041c0"
+          },
+          "velocity": {
+            "scalar": "float64",
+            "value": 165.875,
+            "wire": "0000000000bc6440"
+          },
+          "effort": {
+            "scalar": "float64",
+            "value": 173.875,
+            "wire": "0000000000bc6540"
+          },
+          "error_code": {
+            "scalar": "uint16",
+            "value": 57804,
+            "wire": "cce1"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/JointStateArray",
+      "wire": "1952db78f8dfe310070000007637316134ceb293ba811c5be6a64ea09f3a2a7401000000070000007638333532ceb20000000000c855c000000000003867400000000000c038c02b6c",
+      "value": {
+        "record": "aimdk_msgs/msg/JointStateArray",
+        "members": {
+          "header": {
+            "record": "aimdk_msgs/msg/MessageHeader",
+            "members": {
+              "stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": 2027639321,
+                    "wire": "1952db78"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 283369464,
+                    "wire": "f8dfe310"
+                  }
+                }
+              },
+              "frame_id": {
+                "scalar": "string",
+                "value": "v71a4\u03b2"
+              },
+              "sequence": {
+                "scalar": "uint32",
+                "value": 478263955,
+                "wire": "93ba811c"
+              },
+              "meas_stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": 1319560795,
+                    "wire": "5be6a64e"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 708485024,
+                    "wire": "a09f3a2a"
+                  }
+                }
+              }
+            }
+          },
+          "state": {
+            "record": "aimdk_msgs/msg/DomainErrorState",
+            "members": {
+              "value": {
+                "scalar": "uint8",
+                "value": 116,
+                "wire": "74"
+              }
+            }
+          },
+          "joints": {
+            "array": [
+              {
+                "record": "aimdk_msgs/msg/JointState",
+                "members": {
+                  "name": {
+                    "scalar": "string",
+                    "value": "v8352\u03b2"
+                  },
+                  "position": {
+                    "scalar": "float64",
+                    "value": -87.125,
+                    "wire": "0000000000c855c0"
+                  },
+                  "velocity": {
+                    "scalar": "float64",
+                    "value": 185.75,
+                    "wire": "0000000000386740"
+                  },
+                  "effort": {
+                    "scalar": "float64",
+                    "value": -24.75,
+                    "wire": "0000000000c038c0"
+                  },
+                  "error_code": {
+                    "scalar": "uint16",
+                    "value": 27691,
+                    "wire": "2b6c"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/MessageHeader",
+      "wire": "5455aec10663d513070000007636323737ceb2e5fe520f50fd2f14d8db8710",
+      "value": {
+        "record": "aimdk_msgs/msg/MessageHeader",
+        "members": {
+          "stamp": {
+            "record": "builtin_interfaces/msg/Time",
+            "members": {
+              "sec": {
+                "scalar": "int32",
+                "value": -1045539500,
+                "wire": "5455aec1"
+              },
+              "nanosec": {
+                "scalar": "uint32",
+                "value": 332751622,
+                "wire": "0663d513"
+              }
+            }
+          },
+          "frame_id": {
+            "scalar": "string",
+            "value": "v6277\u03b2"
+          },
+          "sequence": {
+            "scalar": "uint32",
+            "value": 257097445,
+            "wire": "e5fe520f"
+          },
+          "meas_stamp": {
+            "record": "builtin_interfaces/msg/Time",
+            "members": {
+              "sec": {
+                "scalar": "int32",
+                "value": 338689360,
+                "wire": "50fd2f14"
+              },
+              "nanosec": {
+                "scalar": "uint32",
+                "value": 277339096,
+                "wire": "d8db8710"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/ModuleChannelInfo",
+      "wire": "070000007661353766ceb2070000007637373832ceb20000000000306f4000000000002c6b400000000000fc6c400000000000c0594084977d530000000000306dc0000101000000070000007665343437ceb2",
+      "value": {
+        "record": "aimdk_msgs/msg/ModuleChannelInfo",
+        "members": {
+          "name": {
+            "scalar": "string",
+            "value": "va57f\u03b2"
+          },
+          "type": {
+            "scalar": "string",
+            "value": "v7782\u03b2"
+          },
+          "frequency": {
+            "scalar": "float64",
+            "value": 249.5,
+            "wire": "0000000000306f40"
+          },
+          "min_time_diff": {
+            "scalar": "float64",
+            "value": 217.375,
+            "wire": "00000000002c6b40"
+          },
+          "max_time_diff": {
+            "scalar": "float64",
+            "value": 231.875,
+            "wire": "0000000000fc6c40"
+          },
+          "std_dev": {
+            "scalar": "float64",
+            "value": 103.0,
+            "wire": "0000000000c05940"
+          },
+          "window_size": {
+            "scalar": "int32",
+            "value": 1400739716,
+            "wire": "84977d53"
+          },
+          "timeout_threshold": {
+            "scalar": "float64",
+            "value": -233.5,
+            "wire": "0000000000306dc0"
+          },
+          "is_active": {
+            "scalar": "bool",
+            "value": false,
+            "wire": "00"
+          },
+          "is_timeout": {
+            "scalar": "bool",
+            "value": true,
+            "wire": "01"
+          },
+          "backends": {
+            "array": [
+              {
+                "scalar": "string",
+                "value": "ve447\u03b2"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/ModuleResourceInfo",
+      "wire": "070000007637383665ceb201000000070000007635323338ceb2070000007638653130ceb2070000007663336438ceb201000000070000007638663834ceb201000000070000007665356532ceb2070000007664666565ceb2070000007639323236ceb201000000070000007666393431ceb201000000070000007637303332ceb2070000007661326366ceb2000000000000634000000000000856c0000000000000444000000000004064c00bfaca6000000000009065c0000001000000070000007664376630ceb201000000070000007664663962ceb2070000007630643636ceb20000000000b85b400000000000486ac000000000004867c000000000006468c0c8d75ed300000000001461c0010001000000070000007636343634ceb2",
+      "value": {
+        "record": "aimdk_msgs/msg/ModuleResourceInfo",
+        "members": {
+          "module_name": {
+            "scalar": "string",
+            "value": "v786e\u03b2"
+          },
+          "rpc_clients": {
+            "array": [
+              {
+                "record": "aimdk_msgs/msg/ModuleRpcInfo",
+                "members": {
+                  "name": {
+                    "scalar": "string",
+                    "value": "v5238\u03b2"
+                  },
+                  "req_type": {
+                    "scalar": "string",
+                    "value": "v8e10\u03b2"
+                  },
+                  "res_type": {
+                    "scalar": "string",
+                    "value": "vc3d8\u03b2"
+                  },
+                  "backends": {
+                    "array": [
+                      {
+                        "scalar": "string",
+                        "value": "v8f84\u03b2"
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          "rpc_services": {
+            "array": [
+              {
+                "record": "aimdk_msgs/msg/ModuleRpcInfo",
+                "members": {
+                  "name": {
+                    "scalar": "string",
+                    "value": "ve5e2\u03b2"
+                  },
+                  "req_type": {
+                    "scalar": "string",
+                    "value": "vdfee\u03b2"
+                  },
+                  "res_type": {
+                    "scalar": "string",
+                    "value": "v9226\u03b2"
+                  },
+                  "backends": {
+                    "array": [
+                      {
+                        "scalar": "string",
+                        "value": "vf941\u03b2"
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          "pub_channels": {
+            "array": [
+              {
+                "record": "aimdk_msgs/msg/ModuleChannelInfo",
+                "members": {
+                  "name": {
+                    "scalar": "string",
+                    "value": "v7032\u03b2"
+                  },
+                  "type": {
+                    "scalar": "string",
+                    "value": "va2cf\u03b2"
+                  },
+                  "frequency": {
+                    "scalar": "float64",
+                    "value": 152.0,
+                    "wire": "0000000000006340"
+                  },
+                  "min_time_diff": {
+                    "scalar": "float64",
+                    "value": -88.125,
+                    "wire": "00000000000856c0"
+                  },
+                  "max_time_diff": {
+                    "scalar": "float64",
+                    "value": 40.0,
+                    "wire": "0000000000004440"
+                  },
+                  "std_dev": {
+                    "scalar": "float64",
+                    "value": -162.0,
+                    "wire": "00000000004064c0"
+                  },
+                  "window_size": {
+                    "scalar": "int32",
+                    "value": 1623915019,
+                    "wire": "0bfaca60"
+                  },
+                  "timeout_threshold": {
+                    "scalar": "float64",
+                    "value": -172.5,
+                    "wire": "00000000009065c0"
+                  },
+                  "is_active": {
+                    "scalar": "bool",
+                    "value": false,
+                    "wire": "00"
+                  },
+                  "is_timeout": {
+                    "scalar": "bool",
+                    "value": false,
+                    "wire": "00"
+                  },
+                  "backends": {
+                    "array": [
+                      {
+                        "scalar": "string",
+                        "value": "vd7f0\u03b2"
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          "sub_channels": {
+            "array": [
+              {
+                "record": "aimdk_msgs/msg/ModuleChannelInfo",
+                "members": {
+                  "name": {
+                    "scalar": "string",
+                    "value": "vdf9b\u03b2"
+                  },
+                  "type": {
+                    "scalar": "string",
+                    "value": "v0d66\u03b2"
+                  },
+                  "frequency": {
+                    "scalar": "float64",
+                    "value": 110.875,
+                    "wire": "0000000000b85b40"
+                  },
+                  "min_time_diff": {
+                    "scalar": "float64",
+                    "value": -210.25,
+                    "wire": "0000000000486ac0"
+                  },
+                  "max_time_diff": {
+                    "scalar": "float64",
+                    "value": -186.25,
+                    "wire": "00000000004867c0"
+                  },
+                  "std_dev": {
+                    "scalar": "float64",
+                    "value": -195.125,
+                    "wire": "00000000006468c0"
+                  },
+                  "window_size": {
+                    "scalar": "int32",
+                    "value": -748759096,
+                    "wire": "c8d75ed3"
+                  },
+                  "timeout_threshold": {
+                    "scalar": "float64",
+                    "value": -136.625,
+                    "wire": "00000000001461c0"
+                  },
+                  "is_active": {
+                    "scalar": "bool",
+                    "value": true,
+                    "wire": "01"
+                  },
+                  "is_timeout": {
+                    "scalar": "bool",
+                    "value": false,
+                    "wire": "00"
+                  },
+                  "backends": {
+                    "array": [
+                      {
+                        "scalar": "string",
+                        "value": "v6464\u03b2"
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/ModuleRpcInfo",
+      "wire": "070000007666383631ceb2070000007664323333ceb2070000007639666662ceb201000000070000007638323634ceb2",
+      "value": {
+        "record": "aimdk_msgs/msg/ModuleRpcInfo",
+        "members": {
+          "name": {
+            "scalar": "string",
+            "value": "vf861\u03b2"
+          },
+          "req_type": {
+            "scalar": "string",
+            "value": "vd233\u03b2"
+          },
+          "res_type": {
+            "scalar": "string",
+            "value": "v9ffb\u03b2"
+          },
+          "backends": {
+            "array": [
+              {
+                "scalar": "string",
+                "value": "v8264\u03b2"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/ProcessInfo",
+      "wire": "679360fe46e90229070000007631396237ceb243109274aa1f6762d1da2301070000007662383664ceb27ffc42c3c685755d070000007633373363ceb2255e887a9c27bfe40000000000c02cc00000000000685bc051bc9c97e8c5ab0901000000e216f9b45b6fce2a070000007662333063ceb200000000003c6e40070000007632353439ceb28521267701000000682dd7e701000000070000007664333964ceb201000000070000007630333162ceb2070000007664386236ceb2070000007639353765ceb201000000070000007665376238ceb201000000070000007637323631ceb2070000007634656463ceb2070000007630333134ceb201000000070000007637633463ceb201000000070000007665376231ceb2070000007633353463ceb20000000000c02ec000000000001854400000000000e050400000000000c04f40fff6c7e50000000000a46140000001000000070000007635326664ceb201000000070000007634383138ceb2070000007639616535ceb200000000001460c00000000000104bc000000000005c65c000000000003065c03cdb535600000000005c6ac0010001000000070000007665313639ceb2",
+      "value": {
+        "record": "aimdk_msgs/msg/ProcessInfo",
+        "members": {
+          "header": {
+            "record": "aimdk_msgs/msg/MessageHeader",
+            "members": {
+              "stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": -27225241,
+                    "wire": "679360fe"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 688056646,
+                    "wire": "46e90229"
+                  }
+                }
+              },
+              "frame_id": {
+                "scalar": "string",
+                "value": "v19b7\u03b2"
+              },
+              "sequence": {
+                "scalar": "uint32",
+                "value": 1955729475,
+                "wire": "43109274"
+              },
+              "meas_stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": 1650925482,
+                    "wire": "aa1f6762"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 19126993,
+                    "wire": "d1da2301"
+                  }
+                }
+              }
+            }
+          },
+          "app_name": {
+            "scalar": "string",
+            "value": "vb86d\u03b2"
+          },
+          "resource": {
+            "record": "aimdk_msgs/msg/ProcessResourceInfo",
+            "members": {
+              "process_id": {
+                "scalar": "uint64",
+                "value": 6734435906528410751,
+                "wire": "7ffc42c3c685755d"
+              },
+              "process_name": {
+                "scalar": "string",
+                "value": "v373c\u03b2"
+              },
+              "process_mem_usage": {
+                "scalar": "uint64",
+                "value": 16482936714223443493,
+                "wire": "255e887a9c27bfe4"
+              },
+              "process_mem_usage_ratio": {
+                "scalar": "float64",
+                "value": -14.375,
+                "wire": "0000000000c02cc0"
+              },
+              "process_cpu_usage_ratio": {
+                "scalar": "float64",
+                "value": -109.625,
+                "wire": "0000000000685bc0"
+              },
+              "thread_count": {
+                "scalar": "uint64",
+                "value": 696868170125589585,
+                "wire": "51bc9c97e8c5ab09"
+              },
+              "threads": {
+                "array": [
+                  {
+                    "record": "aimdk_msgs/msg/ThreadResourceInfo",
+                    "members": {
+                      "thread_id": {
+                        "scalar": "uint64",
+                        "value": 3084525234464298722,
+                        "wire": "e216f9b45b6fce2a"
+                      },
+                      "thread_name": {
+                        "scalar": "string",
+                        "value": "vb30c\u03b2"
+                      },
+                      "cpu_usage_ratio": {
+                        "scalar": "float64",
+                        "value": 241.875,
+                        "wire": "00000000003c6e40"
+                      },
+                      "cpu_sched_policy": {
+                        "scalar": "string",
+                        "value": "v2549\u03b2"
+                      },
+                      "cpu_sched_priority": {
+                        "scalar": "int32",
+                        "value": 1998987653,
+                        "wire": "85212677"
+                      },
+                      "bounding_cpus": {
+                        "array": [
+                          {
+                            "scalar": "int32",
+                            "value": -405328536,
+                            "wire": "682dd7e7"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "modules": {
+            "array": [
+              {
+                "record": "aimdk_msgs/msg/ModuleResourceInfo",
+                "members": {
+                  "module_name": {
+                    "scalar": "string",
+                    "value": "vd39d\u03b2"
+                  },
+                  "rpc_clients": {
+                    "array": [
+                      {
+                        "record": "aimdk_msgs/msg/ModuleRpcInfo",
+                        "members": {
+                          "name": {
+                            "scalar": "string",
+                            "value": "v031b\u03b2"
+                          },
+                          "req_type": {
+                            "scalar": "string",
+                            "value": "vd8b6\u03b2"
+                          },
+                          "res_type": {
+                            "scalar": "string",
+                            "value": "v957e\u03b2"
+                          },
+                          "backends": {
+                            "array": [
+                              {
+                                "scalar": "string",
+                                "value": "ve7b8\u03b2"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "rpc_services": {
+                    "array": [
+                      {
+                        "record": "aimdk_msgs/msg/ModuleRpcInfo",
+                        "members": {
+                          "name": {
+                            "scalar": "string",
+                            "value": "v7261\u03b2"
+                          },
+                          "req_type": {
+                            "scalar": "string",
+                            "value": "v4edc\u03b2"
+                          },
+                          "res_type": {
+                            "scalar": "string",
+                            "value": "v0314\u03b2"
+                          },
+                          "backends": {
+                            "array": [
+                              {
+                                "scalar": "string",
+                                "value": "v7c4c\u03b2"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "pub_channels": {
+                    "array": [
+                      {
+                        "record": "aimdk_msgs/msg/ModuleChannelInfo",
+                        "members": {
+                          "name": {
+                            "scalar": "string",
+                            "value": "ve7b1\u03b2"
+                          },
+                          "type": {
+                            "scalar": "string",
+                            "value": "v354c\u03b2"
+                          },
+                          "frequency": {
+                            "scalar": "float64",
+                            "value": -15.375,
+                            "wire": "0000000000c02ec0"
+                          },
+                          "min_time_diff": {
+                            "scalar": "float64",
+                            "value": 80.375,
+                            "wire": "0000000000185440"
+                          },
+                          "max_time_diff": {
+                            "scalar": "float64",
+                            "value": 67.5,
+                            "wire": "0000000000e05040"
+                          },
+                          "std_dev": {
+                            "scalar": "float64",
+                            "value": 63.5,
+                            "wire": "0000000000c04f40"
+                          },
+                          "window_size": {
+                            "scalar": "int32",
+                            "value": -439879937,
+                            "wire": "fff6c7e5"
+                          },
+                          "timeout_threshold": {
+                            "scalar": "float64",
+                            "value": 141.125,
+                            "wire": "0000000000a46140"
+                          },
+                          "is_active": {
+                            "scalar": "bool",
+                            "value": false,
+                            "wire": "00"
+                          },
+                          "is_timeout": {
+                            "scalar": "bool",
+                            "value": false,
+                            "wire": "00"
+                          },
+                          "backends": {
+                            "array": [
+                              {
+                                "scalar": "string",
+                                "value": "v52fd\u03b2"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "sub_channels": {
+                    "array": [
+                      {
+                        "record": "aimdk_msgs/msg/ModuleChannelInfo",
+                        "members": {
+                          "name": {
+                            "scalar": "string",
+                            "value": "v4818\u03b2"
+                          },
+                          "type": {
+                            "scalar": "string",
+                            "value": "v9ae5\u03b2"
+                          },
+                          "frequency": {
+                            "scalar": "float64",
+                            "value": -128.625,
+                            "wire": "00000000001460c0"
+                          },
+                          "min_time_diff": {
+                            "scalar": "float64",
+                            "value": -54.125,
+                            "wire": "0000000000104bc0"
+                          },
+                          "max_time_diff": {
+                            "scalar": "float64",
+                            "value": -170.875,
+                            "wire": "00000000005c65c0"
+                          },
+                          "std_dev": {
+                            "scalar": "float64",
+                            "value": -169.5,
+                            "wire": "00000000003065c0"
+                          },
+                          "window_size": {
+                            "scalar": "int32",
+                            "value": 1448336188,
+                            "wire": "3cdb5356"
+                          },
+                          "timeout_threshold": {
+                            "scalar": "float64",
+                            "value": -210.875,
+                            "wire": "00000000005c6ac0"
+                          },
+                          "is_active": {
+                            "scalar": "bool",
+                            "value": true,
+                            "wire": "01"
+                          },
+                          "is_timeout": {
+                            "scalar": "bool",
+                            "value": false,
+                            "wire": "00"
+                          },
+                          "backends": {
+                            "array": [
+                              {
+                                "scalar": "string",
+                                "value": "ve169\u03b2"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/ProcessResourceInfo",
+      "wire": "59d85f80e0a1681e070000007663386531ceb243b1095bfac83ec500000000003058400000000000b866c0b998416800e176f601000000c4fdfabb7d84cd25070000007634373061ceb20000000000806740070000007665613634ceb2d34bc9980100000009a0fa28",
+      "value": {
+        "record": "aimdk_msgs/msg/ProcessResourceInfo",
+        "members": {
+          "process_id": {
+            "scalar": "uint64",
+            "value": 2191179204314257497,
+            "wire": "59d85f80e0a1681e"
+          },
+          "process_name": {
+            "scalar": "string",
+            "value": "vc8e1\u03b2"
+          },
+          "process_mem_usage": {
+            "scalar": "uint64",
+            "value": 14213018451622605123,
+            "wire": "43b1095bfac83ec5"
+          },
+          "process_mem_usage_ratio": {
+            "scalar": "float64",
+            "value": 96.75,
+            "wire": "0000000000305840"
+          },
+          "process_cpu_usage_ratio": {
+            "scalar": "float64",
+            "value": -181.75,
+            "wire": "0000000000b866c0"
+          },
+          "thread_count": {
+            "scalar": "uint64",
+            "value": 17759629572447508665,
+            "wire": "b998416800e176f6"
+          },
+          "threads": {
+            "array": [
+              {
+                "record": "aimdk_msgs/msg/ThreadResourceInfo",
+                "members": {
+                  "thread_id": {
+                    "scalar": "uint64",
+                    "value": 2723979025188584900,
+                    "wire": "c4fdfabb7d84cd25"
+                  },
+                  "thread_name": {
+                    "scalar": "string",
+                    "value": "v470a\u03b2"
+                  },
+                  "cpu_usage_ratio": {
+                    "scalar": "float64",
+                    "value": 188.0,
+                    "wire": "0000000000806740"
+                  },
+                  "cpu_sched_policy": {
+                    "scalar": "string",
+                    "value": "vea64\u03b2"
+                  },
+                  "cpu_sched_priority": {
+                    "scalar": "int32",
+                    "value": -1731638317,
+                    "wire": "d34bc998"
+                  },
+                  "bounding_cpus": {
+                    "array": [
+                      {
+                        "scalar": "int32",
+                        "value": 687513609,
+                        "wire": "09a0fa28"
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/RequestHeader",
+      "wire": "7ec27b1a2f62b81e",
+      "value": {
+        "record": "aimdk_msgs/msg/RequestHeader",
+        "members": {
+          "stamp": {
+            "record": "builtin_interfaces/msg/Time",
+            "members": {
+              "sec": {
+                "scalar": "int32",
+                "value": 444318334,
+                "wire": "7ec27b1a"
+              },
+              "nanosec": {
+                "scalar": "uint32",
+                "value": 515400239,
+                "wire": "2f62b81e"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/ResponseHeader",
+      "wire": "55c42dd4c7edd33a863659073f4f6e99",
+      "value": {
+        "record": "aimdk_msgs/msg/ResponseHeader",
+        "members": {
+          "stamp": {
+            "record": "builtin_interfaces/msg/Time",
+            "members": {
+              "sec": {
+                "scalar": "int32",
+                "value": -735198123,
+                "wire": "55c42dd4"
+              },
+              "nanosec": {
+                "scalar": "uint32",
+                "value": 986967495,
+                "wire": "c7edd33a"
+              }
+            }
+          },
+          "code": {
+            "scalar": "int64",
+            "value": -7390882806343584122,
+            "wire": "863659073f4f6e99"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/ThreadResourceInfo",
+      "wire": "8aea70843393471a070000007661613233ceb20000000000406e40070000007662333964ceb2b0abad2101000000cadc0371",
+      "value": {
+        "record": "aimdk_msgs/msg/ThreadResourceInfo",
+        "members": {
+          "thread_id": {
+            "scalar": "uint64",
+            "value": 1893644017807190666,
+            "wire": "8aea70843393471a"
+          },
+          "thread_name": {
+            "scalar": "string",
+            "value": "vaa23\u03b2"
+          },
+          "cpu_usage_ratio": {
+            "scalar": "float64",
+            "value": 242.0,
+            "wire": "0000000000406e40"
+          },
+          "cpu_sched_policy": {
+            "scalar": "string",
+            "value": "vb39d\u03b2"
+          },
+          "cpu_sched_priority": {
+            "scalar": "int32",
+            "value": 565029808,
+            "wire": "b0abad21"
+          },
+          "bounding_cpus": {
+            "array": [
+              {
+                "scalar": "int32",
+                "value": 1896078538,
+                "wire": "cadc0371"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "builtin_interfaces/msg/Time",
+      "wire": "072b89b550057009",
+      "value": {
+        "record": "builtin_interfaces/msg/Time",
+        "members": {
+          "sec": {
+            "scalar": "int32",
+            "value": -1249301753,
+            "wire": "072b89b5"
+          },
+          "nanosec": {
+            "scalar": "uint32",
+            "value": 158336336,
+            "wire": "50057009"
+          }
+        }
+      }
+    }
+  ]
+}

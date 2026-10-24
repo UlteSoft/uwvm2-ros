@@ -77,7 +77,7 @@ def self_test():
     common = ["clang++", "-O3", "-DUWVM_USE_LLVM_JIT", "-I", "src"]
     runtime = common + ["-c", "src/uwvm2/runtime/lib/uwvm_runtime.default.cpp", "-o", "/build/runtime.o"]
     cli = common + ["src/uwvm2/uwvm/main.default.cpp", "src/uwvm2/uwvm/host_api.default.cpp",
-                    "/build/runtime.o", "@/sdk/consumer-link.rsp", "-pthread", "-o", "/build/uwvm"]
+                    "/build/runtime.o", "@/sdk/consumer-link.rsp", "-pthread", "-o", "/build/uwvm2-ros"]
     before = (runtime.copy(), cli.copy())
     compile_, link = commands_from_product(runtime, cli, Path("/test/fixture.cc"), Path("/out"), True)
     assert runtime == before[0] and cli == before[1]
@@ -171,14 +171,14 @@ def main():
     if runtime.count(source_flag) != 1 or cli.count(source_flag) != 1:
         raise ValueError("qualified commands do not embed the same exact source ID")
     runtime_hash = sha(build / "runtime.o")
-    if runtime_hash != metadata["runtime_object_sha256"] or sha(build / "uwvm") != metadata["binary_sha256"]:
+    if runtime_hash != metadata["runtime_object_sha256"] or sha(build / "uwvm2-ros") != metadata["binary_sha256"]:
         raise ValueError("qualified runtime or product binary changed after build")
     compile_, link = commands_from_product(runtime, cli, fixture, out, legacy)
     inputs = {"scope": SCOPE, "source_id": args.expected_source_id,
               "header": {"path": str(header), "sha256": sha(header)},
               "fixture": {"path": str(fixture), "sha256": sha(fixture)},
               "runner_sha256": sha(Path(__file__)), "build_json_sha256": sha(build / "build.json"),
-              "runtime_object_sha256": runtime_hash, "product_binary_sha256": sha(build / "uwvm"),
+              "runtime_object_sha256": runtime_hash, "product_binary_sha256": sha(build / "uwvm2-ros"),
               "abi": "legacy7" if legacy else "fixed5-with-large-generic7",
               "commands": {"compile": compile_, "link": link},
               "response_files": {argument[1:]: sha(argument[1:]) for argument in cli if argument.startswith("@")},

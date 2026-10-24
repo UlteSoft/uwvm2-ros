@@ -1,0 +1,7 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/committed_integer_add_batch_component
+/i64_numeric_event_component
+/real_i64_numeric_dual_sink

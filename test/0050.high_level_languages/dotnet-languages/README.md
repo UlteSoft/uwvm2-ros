@@ -33,8 +33,8 @@ bash build.sh vb Debug native /absolute/output/vb-debug-native
 
 "$DOTNET_ROOT/dotnet" /absolute/output/fsharp-release-native/publish/highlevel-fsharp.dll
 "$DOTNET_ROOT/dotnet" /absolute/output/vb-debug-native/publish/highlevel-vb.dll 17
-uwvm --run /absolute/output/fsharp-release-wasi/AppBundle/highlevel-fsharp.wasm
-uwvm --run /absolute/output/vb-debug-wasi/AppBundle/highlevel-vb.wasm 17
+uwvm2-ros --run /absolute/output/fsharp-release-wasi/AppBundle/highlevel-fsharp.wasm
+uwvm2-ros --run /absolute/output/vb-debug-wasi/AppBundle/highlevel-vb.wasm 17
 ```
 
 Select the ordinary execution backend required by your UWVM build. For the

@@ -25,7 +25,7 @@ cache, archive SHA values and original objects if a repair was needed.
 source copy, qualified LLVM directory, Windows SDK, OpenSSL root, bootstrap
 Clang directory, COFF-capable `ld.lld`, xmake binary, exact Docker scope, and a
 fresh output directory in `/tmp` or on sufficiently free persistent disk. It checks the source before/after, invokes the
-explicit qualified-LLVM route, builds and installs `uwvm.exe` and
+explicit qualified-LLVM route, builds and installs `uwvm2-ros.exe` and
 `uwvm-debug-server.exe`, and builds the two test-only Windows launchers. Its
 `--configure-only` option exercises the source/LLVM/module-compiler contract
 without compiling the product. Use `--allow-persistent-output` to put the
@@ -75,7 +75,7 @@ console input/handle alias rejection. It also replaces the inactive throwing
 function before entry and checks both instruction/unwind cross-function catches
 and the independent exceptions-off gate. For host-authorized late attach, start
 the installed `uwvm-debug-server.exe` from a real Windows host console with
-`uwvm.exe -m run -Rct 0 ... --run program.wasm`; keep its printed pipe name
+`uwvm2-ros.exe -m run -Rct 0 ... --run program.wasm`; keep its printed pipe name
 and capability in that console. Use `stage_windows_broker_vm.py` to create a
 separate SHA-checked broker stage and artifact server on port 18019; the main
 debugger stage accepts only one result POST. Invoke

@@ -1,6 +1,6 @@
 # Composable debugger windows
 
-Start with `uwvm -Rdbg app.wasm`. `tui enable` enters the full-screen view;
+Start with `uwvm2-ros -Rdbg app.wasm`. `tui enable` enters the full-screen view;
 `tui disable` restores the ordinary command prompt. `run`, `start`, `startw`,
 and `starti` preserve the editor, history, colors, and TUI state while retiring
 the previous guest and loading fresh Wasm memories and WASIp1 state.

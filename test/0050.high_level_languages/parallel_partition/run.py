@@ -121,7 +121,7 @@ def main():
         from run_debug_run_cli import Console
         os.environ.update(TERM='dumb', NO_COLOR='1')
         for repo in args.repository or ['uwvm2', 'uwvm2-stable', 'uwvm2-ros']:
-            binary = args.arena / 'products' / repo / 'uwvm'
+            binary = args.arena / 'products' / repo / 'uwvm2-ros'
             identity = json.loads((binary.parent / 'identity.json').read_text())
             assert identity['binary_sha256'] == digest(binary)
             mode = ['-Rcm', 'full', '-Rcc', 'jit'] if repo == 'uwvm2' else ['-Raot']

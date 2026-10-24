@@ -1,2 +1,0 @@
-/* Actual selected-header compile/LINK result; no caller Boolean. */
-#cmakedefine01 UWVM_RMW_C_CODECS_COMPLETE_API

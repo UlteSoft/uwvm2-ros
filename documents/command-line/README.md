@@ -1,6 +1,6 @@
 # UWVM Command-Line Reference
 
-This directory is the source-driven command-line reference for the `uwvm` executable. It expands the compact `uwvm --help` output into behavior notes, parameter interaction rules, platform gates, path handling details, and practical combinations.
+This directory is the source-driven command-line reference for the `uwvm2-ros` executable. It expands the compact `uwvm2-ros --help` output into behavior notes, parameter interaction rules, platform gates, path handling details, and practical combinations.
 
 The command registry and callbacks used for this reference are primarily in:
 
@@ -39,13 +39,13 @@ The command set is compiled conditionally. A binary may omit a command entirely 
 The binary itself is always authoritative:
 
 ```bash
-uwvm --help all
-uwvm --help global
-uwvm --help debug
-uwvm --help wasm
-uwvm --help runtime
-uwvm --help log
-uwvm --help wasi
+uwvm2-ros --help all
+uwvm2-ros --help global
+uwvm2-ros --help debug
+uwvm2-ros --help wasm
+uwvm2-ros --help runtime
+uwvm2-ros --help log
+uwvm2-ros --help wasi
 ```
 
 ## Syntax Conventions

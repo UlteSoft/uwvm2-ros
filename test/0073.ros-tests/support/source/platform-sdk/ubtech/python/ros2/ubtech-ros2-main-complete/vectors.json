@@ -1,0 +1,428 @@
+{
+  "cases": [
+    {
+      "type": "builtin_interfaces/msg/Time",
+      "wire": "072b89b550057009",
+      "value": {
+        "record": "builtin_interfaces/msg/Time",
+        "members": {
+          "sec": {
+            "scalar": "int32",
+            "value": -1249301753,
+            "wire": "072b89b5"
+          },
+          "nanosec": {
+            "scalar": "uint32",
+            "value": 158336336,
+            "wire": "50057009"
+          }
+        }
+      }
+    },
+    {
+      "type": "geometry_msgs/msg/Point",
+      "wire": "0000000000e86dc00000000000d054c000000000002042c0",
+      "value": {
+        "record": "geometry_msgs/msg/Point",
+        "members": {
+          "x": {
+            "scalar": "float64",
+            "value": -239.25,
+            "wire": "0000000000e86dc0"
+          },
+          "y": {
+            "scalar": "float64",
+            "value": -83.25,
+            "wire": "0000000000d054c0"
+          },
+          "z": {
+            "scalar": "float64",
+            "value": -36.25,
+            "wire": "00000000002042c0"
+          }
+        }
+      }
+    },
+    {
+      "type": "geometry_msgs/msg/Pose",
+      "wire": "0000000000c02ec000000000003047c00000000000203d4000000000004857c000000000007049400000000000986dc00000000000585340",
+      "value": {
+        "record": "geometry_msgs/msg/Pose",
+        "members": {
+          "position": {
+            "record": "geometry_msgs/msg/Point",
+            "members": {
+              "x": {
+                "scalar": "float64",
+                "value": -15.375,
+                "wire": "0000000000c02ec0"
+              },
+              "y": {
+                "scalar": "float64",
+                "value": -46.375,
+                "wire": "00000000003047c0"
+              },
+              "z": {
+                "scalar": "float64",
+                "value": 29.125,
+                "wire": "0000000000203d40"
+              }
+            }
+          },
+          "orientation": {
+            "record": "geometry_msgs/msg/Quaternion",
+            "members": {
+              "x": {
+                "scalar": "float64",
+                "value": -93.125,
+                "wire": "00000000004857c0"
+              },
+              "y": {
+                "scalar": "float64",
+                "value": 50.875,
+                "wire": "0000000000704940"
+              },
+              "z": {
+                "scalar": "float64",
+                "value": -236.75,
+                "wire": "0000000000986dc0"
+              },
+              "w": {
+                "scalar": "float64",
+                "value": 77.375,
+                "wire": "0000000000585340"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "geometry_msgs/msg/PoseStamped",
+      "wire": "72e71f7fe898242b070000007664386435ceb200000000003854c000000000006c66c00000000000f8654000000000001869c00000000000b06dc00000000000d053c00000000000e85dc0",
+      "value": {
+        "record": "geometry_msgs/msg/PoseStamped",
+        "members": {
+          "header": {
+            "record": "std_msgs/msg/Header",
+            "members": {
+              "stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": 2132797298,
+                    "wire": "72e71f7f"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 723818728,
+                    "wire": "e898242b"
+                  }
+                }
+              },
+              "frame_id": {
+                "scalar": "string",
+                "value": "vd8d5\u03b2"
+              }
+            }
+          },
+          "pose": {
+            "record": "geometry_msgs/msg/Pose",
+            "members": {
+              "position": {
+                "record": "geometry_msgs/msg/Point",
+                "members": {
+                  "x": {
+                    "scalar": "float64",
+                    "value": -80.875,
+                    "wire": "00000000003854c0"
+                  },
+                  "y": {
+                    "scalar": "float64",
+                    "value": -179.375,
+                    "wire": "00000000006c66c0"
+                  },
+                  "z": {
+                    "scalar": "float64",
+                    "value": 175.75,
+                    "wire": "0000000000f86540"
+                  }
+                }
+              },
+              "orientation": {
+                "record": "geometry_msgs/msg/Quaternion",
+                "members": {
+                  "x": {
+                    "scalar": "float64",
+                    "value": -200.75,
+                    "wire": "00000000001869c0"
+                  },
+                  "y": {
+                    "scalar": "float64",
+                    "value": -237.5,
+                    "wire": "0000000000b06dc0"
+                  },
+                  "z": {
+                    "scalar": "float64",
+                    "value": -79.25,
+                    "wire": "0000000000d053c0"
+                  },
+                  "w": {
+                    "scalar": "float64",
+                    "value": -119.625,
+                    "wire": "0000000000e85dc0"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "geometry_msgs/msg/Quaternion",
+      "wire": "0000000000a85cc00000000000046dc00000000000d045c00000000000005340",
+      "value": {
+        "record": "geometry_msgs/msg/Quaternion",
+        "members": {
+          "x": {
+            "scalar": "float64",
+            "value": -114.625,
+            "wire": "0000000000a85cc0"
+          },
+          "y": {
+            "scalar": "float64",
+            "value": -232.125,
+            "wire": "0000000000046dc0"
+          },
+          "z": {
+            "scalar": "float64",
+            "value": -43.625,
+            "wire": "0000000000d045c0"
+          },
+          "w": {
+            "scalar": "float64",
+            "value": 76.0,
+            "wire": "0000000000005340"
+          }
+        }
+      }
+    },
+    {
+      "type": "grab_demo_msgs/msg/GraspCandidate",
+      "wire": "01172a7241d6691a070000007638303466ceb2aa39858f285bdb17070000007634643938ceb200000000005859400000000000d041c000000000005853400000000000e046c000000000000033400000000000fc6bc00000000000106440070000007662333937ceb200202643070000007634626166ceb2",
+      "value": {
+        "record": "grab_demo_msgs/msg/GraspCandidate",
+        "members": {
+          "header": {
+            "record": "std_msgs/msg/Header",
+            "members": {
+              "stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": 1915361025,
+                    "wire": "01172a72"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 443143745,
+                    "wire": "41d6691a"
+                  }
+                }
+              },
+              "frame_id": {
+                "scalar": "string",
+                "value": "v804f\u03b2"
+              }
+            }
+          },
+          "pose": {
+            "record": "geometry_msgs/msg/PoseStamped",
+            "members": {
+              "header": {
+                "record": "std_msgs/msg/Header",
+                "members": {
+                  "stamp": {
+                    "record": "builtin_interfaces/msg/Time",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": -1887094358,
+                        "wire": "aa39858f"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 400251688,
+                        "wire": "285bdb17"
+                      }
+                    }
+                  },
+                  "frame_id": {
+                    "scalar": "string",
+                    "value": "v4d98\u03b2"
+                  }
+                }
+              },
+              "pose": {
+                "record": "geometry_msgs/msg/Pose",
+                "members": {
+                  "position": {
+                    "record": "geometry_msgs/msg/Point",
+                    "members": {
+                      "x": {
+                        "scalar": "float64",
+                        "value": 101.375,
+                        "wire": "0000000000585940"
+                      },
+                      "y": {
+                        "scalar": "float64",
+                        "value": -35.625,
+                        "wire": "0000000000d041c0"
+                      },
+                      "z": {
+                        "scalar": "float64",
+                        "value": 77.375,
+                        "wire": "0000000000585340"
+                      }
+                    }
+                  },
+                  "orientation": {
+                    "record": "geometry_msgs/msg/Quaternion",
+                    "members": {
+                      "x": {
+                        "scalar": "float64",
+                        "value": -45.75,
+                        "wire": "0000000000e046c0"
+                      },
+                      "y": {
+                        "scalar": "float64",
+                        "value": 19.0,
+                        "wire": "0000000000003340"
+                      },
+                      "z": {
+                        "scalar": "float64",
+                        "value": -223.875,
+                        "wire": "0000000000fc6bc0"
+                      },
+                      "w": {
+                        "scalar": "float64",
+                        "value": 160.5,
+                        "wire": "0000000000106440"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "group_name": {
+            "scalar": "string",
+            "value": "vb397\u03b2"
+          },
+          "confidence": {
+            "scalar": "float32",
+            "value": 166.125,
+            "wire": "00202643"
+          },
+          "object_class": {
+            "scalar": "string",
+            "value": "v4baf\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "grab_demo_msgs/msg/IKRequest",
+      "wire": "070000007663323866ceb2070000007634613137ceb20000000000604d4000000000004044c00000000000d05240000000000020344000000000002031c00000000000bc64c00000000000cc6d40",
+      "value": {
+        "record": "grab_demo_msgs/msg/IKRequest",
+        "members": {
+          "group_name": {
+            "scalar": "string",
+            "value": "vc28f\u03b2"
+          },
+          "frame_id": {
+            "scalar": "string",
+            "value": "v4a17\u03b2"
+          },
+          "position": {
+            "record": "geometry_msgs/msg/Point",
+            "members": {
+              "x": {
+                "scalar": "float64",
+                "value": 58.75,
+                "wire": "0000000000604d40"
+              },
+              "y": {
+                "scalar": "float64",
+                "value": -40.5,
+                "wire": "00000000004044c0"
+              },
+              "z": {
+                "scalar": "float64",
+                "value": 75.25,
+                "wire": "0000000000d05240"
+              }
+            }
+          },
+          "orientation": {
+            "record": "geometry_msgs/msg/Quaternion",
+            "members": {
+              "x": {
+                "scalar": "float64",
+                "value": 20.125,
+                "wire": "0000000000203440"
+              },
+              "y": {
+                "scalar": "float64",
+                "value": -17.125,
+                "wire": "00000000002031c0"
+              },
+              "z": {
+                "scalar": "float64",
+                "value": -165.875,
+                "wire": "0000000000bc64c0"
+              },
+              "w": {
+                "scalar": "float64",
+                "value": 238.375,
+                "wire": "0000000000cc6d40"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "std_msgs/msg/Header",
+      "wire": "681252e4acc1ba37070000007666316532ceb2",
+      "value": {
+        "record": "std_msgs/msg/Header",
+        "members": {
+          "stamp": {
+            "record": "builtin_interfaces/msg/Time",
+            "members": {
+              "sec": {
+                "scalar": "int32",
+                "value": -464383384,
+                "wire": "681252e4"
+              },
+              "nanosec": {
+                "scalar": "uint32",
+                "value": 934986156,
+                "wire": "acc1ba37"
+              }
+            }
+          },
+          "frame_id": {
+            "scalar": "string",
+            "value": "vf1e2\u03b2"
+          }
+        }
+      }
+    }
+  ]
+}

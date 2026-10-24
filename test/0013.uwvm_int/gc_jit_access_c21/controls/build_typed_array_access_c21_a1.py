@@ -13,6 +13,6 @@ with N.lease():
  N.persist(archive);assert N.sha(archive)==N.sha(N.BASE/'recovery/source'/archive.name)
  for i,tu in enumerate(plan['tus']):
   N.run('typed-array-access-compile-c21-a1-'+str(i),[plan['compiler'],*flags,'-c',S/tu,'-o',BD/(str(i)+'.o')],cpu=4,timeout=600,build=True,env=env);print('C21_COMPILED',i,flush=True)
- elf=BD/'uwvm';N.run('typed-array-access-link-c21-a1',[plan['compiler'],*[BD/(str(i)+'.o') for i in range(3)],'@'+plan['link_rsp'],'-stdlib=libc++','-pthread','-ldl','-lz','-l:libzstd.so.1','-lm','-lcrypto','-lssl','-Wl,--gc-sections','-Wl,--strip-debug','-o',elf],cpu=4,timeout=120,build=True,env=env);N.persist(elf)
+ elf=BD/'uwvm2-ros';N.run('typed-array-access-link-c21-a1',[plan['compiler'],*[BD/(str(i)+'.o') for i in range(3)],'@'+plan['link_rsp'],'-stdlib=libc++','-pthread','-ldl','-lz','-l:libzstd.so.1','-lm','-lcrypto','-lssl','-Wl,--gc-sections','-Wl,--strip-debug','-o',elf],cpu=4,timeout=120,build=True,env=env);N.persist(elf)
  N.save(BD/'build-binding-c21.json',{'ELF_sha':N.sha(elf),'plan_sha':N.sha(pp),'source_binding_sha':N.sha(S/'source-binding-c21.json'),'source_archive_sha':N.sha(archive),'flags':flags,'objects':{str(i):N.sha(BD/(str(i)+'.o')) for i in range(3)},'status':'all three TUs rebuilt; qualification pending'})
  print('C21_ELF',N.sha(elf),flush=True)

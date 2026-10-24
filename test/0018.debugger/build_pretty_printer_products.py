@@ -336,7 +336,7 @@ def main():
                 row['components'][label] = component
                 publish(dest / (label + '-receipt.json'), component)
                 objects.append(object_path)
-            binary = dest / 'uwvm'
+            binary = dest / 'uwvm2-ros'
             proof = run([args.sdk / 'bin/clang++', *link, *objects, '@' + str(args.llvm_link_response),
                          args.ssl, args.crypto, '-ldl', '-pthread', '-o', binary], dest / 'link.log', 1200)
             row.update(main_link_returncode=proof['returncode'], product=pin(binary), product_path=str(binary),

@@ -135,7 +135,7 @@ def windows_msvc_compile_matrix(script_dir: Path, root: Path, cxx: str, sysroot:
 
 def main() -> int:
     script_dir = Path(__file__).resolve().parent
-    root = script_dir.parents[1]
+    root = Path(__file__).resolve().parents[2]
 
     ap = argparse.ArgumentParser()
     ap.add_argument("--cxx", default=None)

@@ -1,0 +1,13 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/action_catalog_contract
+/action_client_lease_contract
+/installed_protocol_binding
+/installed_protocol_contract
+/installed_source_binding
+/installed_source_contract
+/legacy_native_metadata_contract
+/rihs_contract
+/rihs_no_crypto_contract

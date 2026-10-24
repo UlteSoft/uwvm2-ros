@@ -13,7 +13,7 @@ def main():
     parser.add_argument("--configuration")
     parser.add_argument("--source-id",required=True)
     args=parser.parse_args()
-    here=Path(__file__).resolve().parent; root=here.parents[1]
+    here=Path(__file__).resolve().parent; root=Path(__file__).resolve().parents[2]
     subprocess.run(["bash",str(root/"tools/ci/require_wasm3_test_cgroup.sh")],check=True)
     resource.setrlimit(resource.RLIMIT_CORE,(0,0))
     output=args.output.resolve(); output.mkdir(parents=True,exist_ok=False)

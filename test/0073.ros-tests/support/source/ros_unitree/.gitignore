@@ -1,0 +1,19 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/controller
+/native_legacy_ros1_peer
+/native_math
+/native_ros2_controller
+/native_typed_ros2_peer
+/acceptance/**/before/
+/acceptance/**/review-evidence/
+/acceptance/**/current-declarations/
+/acceptance/**/reviewed-source-package.json
+/acceptance/**/*independent*peer*.json
+/acceptance/**/*source-peer*.json
+/acceptance/**/*source-ready*.json
+/acceptance/**/*source-delta-review*.json
+/acceptance/**/current-batch-source-cross-seal*.json
+/acceptance/**/source-integration*.json

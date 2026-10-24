@@ -325,7 +325,7 @@ def captured_owned_source(path, expected, maximum=2*1024*1024):
 
 def owned_binary_check(root,wasm,policy,policy_sha,catalog,catalog_sha,inspector_sha,checker_sha,checker_raw,client_contract):
     name='_uwvm_java_owned_checker_'+os.urandom(16).hex();require(name not in sys.modules,'fresh private checker module')
-    module=types.ModuleType(name);path=root/'sdk/java/owned-service/check_imports.py';module.__file__=str(path);module.__package__='';module.__loader__=module.__spec__=module.__cached__=None;sys.modules[name]=module
+    module=types.ModuleType(name);path=root/'sdk/origin/java/owned-service/check_imports.py';module.__file__=str(path);module.__package__='';module.__loader__=module.__spec__=module.__cached__=None;sys.modules[name]=module
     try:
         require(hashlib.sha256(checker_raw).hexdigest()==checker_sha,'captured checker pairing changed')
         exec(compile(checker_raw,str(path),'exec',dont_inherit=True),module.__dict__)
@@ -405,7 +405,7 @@ def main():
         if a.ros_rmw_service_enabled=='1':
             require(a.ros_backend=='2' and all(v is not None for v in rmw_values),'owned12 requires explicit backend2 and complete pinned inputs')
             root=a.ros_rmw_source_root.resolve(strict=True);catalog=bind(a.ros_rmw_service_abi);policy=bind(a.ros_rmw_imports)
-            checker=root/'sdk/java/owned-service/check_imports.py';inspector=root/'sdk/tools/check_wasm_imports.py'
+            checker=root/'sdk/origin/java/owned-service/check_imports.py';inspector=root/'sdk/origin/tools/check_wasm_imports.py'
             checker_raw=captured_owned_source(bind(checker),a.ros_rmw_checker_sha256)
             captured_owned_source(bind(inspector),a.ros_rmw_inspector_sha256)
             captured_owned_source(catalog,a.ros_rmw_service_abi_sha256);captured_owned_source(policy,a.ros_rmw_imports_sha256)

@@ -1,6 +1,6 @@
-﻿set_xmakever("2.9.8")
+set_xmakever("2.9.8")
 
-set_project("uwvm")
+set_project("uwvm2-ros")
 set_policy("check.auto_ignore_flags", false)
 
 -- Version
@@ -107,6 +107,15 @@ function def_build(opt)
 			add_defines("UWVM_IMPORT_ROS" .. ros_version)
 		end
 	end
+	-- @brief Apply the selected SDK registry capacities to every translation unit.
+	-- @details Runtime, CLI and test targets must share these compile-time limits.
+	-- Vendor catalogs can exceed the defaults; option declarations alone do not
+	-- override custom_registry_limits.h. These limits grant no ROS permissions.
+	local ros_registry_interfaces = uwvm_ros_registry_max_interfaces()
+	local ros_registry_cells = uwvm_ros_registry_max_cells()
+	add_rules("uwvm.ros.registry_capacity")
+	add_defines("UWVM_ROS_MAX_CUSTOM_INTERFACES=" .. tostring(ros_registry_interfaces))
+	add_defines("UWVM_ROS_MAX_CUSTOM_CELLS=" .. tostring(ros_registry_cells))
 	local custom_ros_registry = uwvm_ros_selected_vendor_registry()
 	if custom_ros_registry and custom_ros_registry ~= "none" then
 		if not (get_config("import-ros1") or get_config("import-ros2")) then
@@ -623,7 +632,7 @@ end
 
 includes("xmake/openssl.lua")
 
-target("uwvm")
+target("uwvm2-ros")
 	set_kind("binary")
 	def_build({ skip_static_libcxx = uwvm_uses_llvm_jit })
 
@@ -750,7 +759,7 @@ target("uwvm_runtime")
 		(is_arch("x86_64", "x64", "amd64") and get_config("macos-x64-native-step"))) then
 		-- One SDK-generated MIG server object serves the protected native
 		-- exception-state callback, independent of C++ module mode.
-		add_files("xmake/mach_exc_protected.uwvm_mig", {rule = "uwvm.mach_exc_protected"})
+		add_files("xmake/mach_exc_protected.lua", {rule = "uwvm.mach_exc_protected"})
 	end
 	-- Own every production interface once, including backend-neutral frontend
 	-- partitions. Public here means available to dependent xmake targets in
@@ -858,7 +867,7 @@ for _, file in ipairs(os.files("test/**.cc")) do
 
 		if uwvm_uses_llvm_jit and is_llvm_jit_test then
 			add_deps("uwvm_runtime")
-			add_deps("uwvm")
+			add_deps("uwvm2-ros")
 		end
 
 		-- In a combined interpreter/LLVM build, interpreter optables route local-imported provider access through
@@ -870,7 +879,7 @@ for _, file in ipairs(os.files("test/**.cc")) do
 
 		if string.find(file, "uwvm_int_fp_bit_environment.cc", 1, true) ~= nil then
 			add_deps("uwvm_runtime")
-			add_deps("uwvm")
+			add_deps("uwvm2-ros")
 		end
 		-- This regression calls the production entry even in interpreter-only builds.
 		if is_uwvm_int_fp_environment then
@@ -1366,7 +1375,7 @@ if get_config("enable-test-llvm-jit") and uwvm_uses_uwvm_int and uwvm_uses_llvm_
 			def_build({ skip_static_libcxx = true })
 
 			add_deps("uwvm_runtime")
-			add_deps("uwvm")
+			add_deps("uwvm2-ros")
 
 			-- uwvm uses precise floating-point model to ensure determinism.
 			set_fpmodels("precise")

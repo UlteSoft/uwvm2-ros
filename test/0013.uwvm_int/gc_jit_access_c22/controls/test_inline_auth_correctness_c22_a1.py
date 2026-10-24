@@ -10,7 +10,7 @@ assert len(cases)==279,len(cases)
 runflags=['-Rcc','jit','-Rcm','full','-Rct','0','-WFE-gc','-WFE-function-references','-WFE-tail-call','-WFE-exceptions','-WFE-simd','-WFE-relaxed-simd']
 
 cases += [dict(c,expected_trap=c['trap']) for c in json.loads((R/'source/typed-array-store-c21-a2/cases.json').read_text())['cases']]
-rows=[];elf=R/'build/deferred-typed-array-access-inline/uwvm'
+rows=[];elf=R/'build/deferred-typed-array-access-inline/uwvm2-ros'
 with N.lease():
  for i,c in enumerate(cases):
   assert N.sha(c['wasm'])==c['wasm_sha'];lab='inline-auth-correctness-c22-a1-'+str(i);env=dict(os.environ)

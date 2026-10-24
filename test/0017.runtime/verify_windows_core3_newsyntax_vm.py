@@ -51,7 +51,7 @@ def main() -> None:
     source_id = subprocess.check_output(
         [sys.executable, str(source / 'tools/ci/wasm3_source_fingerprint.py'),
          str(source), str(args.output.with_suffix('.source.json'))], text=True).strip()
-    pe_sha = build['products']['uwvm.exe']['sha256']
+    pe_sha = build['products']['uwvm2-ros.exe']['sha256']
     require(build['status'] == 'cross-built-awaiting-real-windows-vm' and
             source_id == build['source_id'] == oracle['source_id'] ==
             stage['source_id'] == qualification['source_id'] == result['source_id'] and

@@ -12,7 +12,7 @@ def read(p,n):
  return b
 for name in ['i8-write-read','i32-write-read']:
  for v in ['typed-array-access-inline','typed-array-access-inline-static']:
-  c=cs[name];elf=R/('build/deferred-'+v+'/uwvm');env=dict(os.environ,WASM_PERF_NATIVE_PROFILE='1',WASM_PERF_NATIVE_REPS='1');env.pop('WASM_PERF_NATIVE_CLI',None)
+  c=cs[name];elf=R/('build/deferred-'+v+'/uwvm2-ros');env=dict(os.environ,WASM_PERF_NATIVE_PROFILE='1',WASM_PERF_NATIVE_REPS='1');env.pop('WASM_PERF_NATIVE_CLI',None)
   def setup():os.sched_setaffinity(0,{6})
   stderr=D/(name+'-'+v+'.stderr')
   with stderr.open('wb') as err:

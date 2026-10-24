@@ -72,7 +72,7 @@ def main():
     assert dependencies, 'Missing actual compiler dependencies'
     verify(source_pins)
     verify(config['pins'])
-    product = str(out / 'uwvm')
+    product = str(out / 'uwvm2-ros')
     product_hash = digest(product)
     execution = {**config['execution'], 'product': product,
                  'pins': {**config['pins'], product: product_hash}}

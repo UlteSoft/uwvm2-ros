@@ -1,0 +1,7 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/real_typed_select_dual_sink
+/real_typed_select_translation
+/typed_select_event_component

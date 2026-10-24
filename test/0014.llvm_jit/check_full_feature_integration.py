@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """ROS full-only execution: Wasm2 features, imported vector ABI/table aliases, and DataCount.
 
-Usage: python3 check_full_feature_integration.py /absolute/path/to/uwvm
+Usage: python3 check_full_feature_integration.py /absolute/path/to/uwvm2-ros
 All generated modules and logs stay in /tmp (or --out). Requires wat2wasm.
 """
 import argparse

@@ -6,7 +6,7 @@ old=json.loads((R/'source/alternating-long-clock-design-c20.json').read_text());
 cases={x['name']:x for p in [O/'source/cases-restored-a1.json']+[R/'source'/n for n in ['repeated-array-types-native-a1.json','gc-scalar-graph-native-a1.json','observable-features-native-a1.json','gc-phase-feedback-native-c1.json']] for x in json.loads(p.read_text())}
 w=R/'source/array-length-hot-reads-c20/array-length-hot-reads.wasm';cases['array-length-hot-reads']=dict(name='array-length-hot-reads',wasm=str(w),wasm_sha=N.sha(w))
 for c in json.loads((R/'source/typed-array-store-bench-c21/cases.json').read_text())['cases']+json.loads((R/'source/wasmtime-codegen-analysis-a1/fixtures/cases.json').read_text())['cases'][:3]:cases[c['name']]=c;jobs[c['name']]=32
-vs=['typed-array-access-inline','typed-array-access-inline-static32','wasmtime-drc'];elves={v:R/('build/deferred-'+v+'/uwvm') for v in vs[:-1]};elves[vs[-1]]=O/'build/wasmtime-bench';flags=['-Rcc','jit','-Rcm','full','-Rct','0','-WFE-gc','-WFE-exceptions','-WFE-tail-call','-WFE-function-references','-WFE-simd','-WFE-relaxed-simd'];rows=[]
+vs=['typed-array-access-inline','typed-array-access-inline-static32','wasmtime-drc'];elves={v:R/('build/deferred-'+v+'/uwvm2-ros') for v in vs[:-1]};elves[vs[-1]]=O/'build/wasmtime-bench';flags=['-Rcc','jit','-Rcm','full','-Rct','0','-WFE-gc','-WFE-exceptions','-WFE-tail-call','-WFE-function-references','-WFE-simd','-WFE-relaxed-simd'];rows=[]
 with N.lease():
  for rd in range(3):
   for ci,(name,reps) in enumerate(jobs.items()):

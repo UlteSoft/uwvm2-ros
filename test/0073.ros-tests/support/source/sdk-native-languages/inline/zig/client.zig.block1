@@ -1,0 +1,19 @@
+
+test "length sentinel and quarantine" {
+    var out = [_]u8{42} ** 8;
+    var slot = [_]u8{255} ** 8;
+    var result = finish(too_large, slot, &out);
+    try std.testing.expect(result.required == null and result.data.len == 0);
+    try std.testing.expectEqualSlices(u8, &([_]u8{0} ** 8), &out);
+    std.mem.writeInt(u64, &slot, 0, .little);
+    result = finish(too_large, slot, &out);
+    try std.testing.expect(result.required != null and result.required.? == 0);
+    std.mem.writeInt(u64, &slot, 9, .little);
+    result = finish(ok, slot, &out);
+    try std.testing.expect(result.code == invalid and result.data.len == 0);
+    std.mem.writeInt(u64, &slot, 8, .little);
+    result = finish(ok, slot, &out);
+    try std.testing.expect(result.code == ok and result.data.len == 8);
+    slot = [_]u8{255} ** 8;
+    try std.testing.expectEqual(invalid, finish(ok, slot, &out).code);
+}

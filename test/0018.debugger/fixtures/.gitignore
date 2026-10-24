@@ -1,0 +1,13 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/pretty_commands_live
+/pretty_containers
+/pretty_coroutine
+/pretty_references
+/pretty_ros_imports
+/pretty_sequences
+/pretty_sequences_stateful
+/pretty_values_live
+/source_print_configuration

@@ -83,7 +83,7 @@ def main():
               if policy_bytes is not None else {})
     # Assemble arguments only: the shared validator checks the entire mapping,
     # including entries for repositories not selected in this invocation.
-    argv_for(args.products / 'uwvm2/uwvm', 'uwvm2',
+    argv_for(args.products / 'uwvm2/uwvm2-ros', 'uwvm2',
              {'wasm': str(args.build / 'artifacts/cpython-3.14.8-standard.wasm'),
               'load_args_by_repository': policy}, False)
     policy_sha256 = hashlib.sha256(policy_bytes).hexdigest() if policy_bytes is not None else None
@@ -202,7 +202,7 @@ def main():
                         str(wasm), *guest_arguments]
             else:
                 assert engine in {'uwvm2', 'uwvm2-stable', 'uwvm2-ros'}
-                binary = args.products / engine / 'uwvm'
+                binary = args.products / engine / 'uwvm2-ros'
                 load = ['--wasip1-noinherit-system-environment', '--wasip1-mount-dir', '/python', str(bundle),
                         *[token for pair in guest_env.items()
                           for token in ['--wasip1-add-or-replace-environment', *pair]]]

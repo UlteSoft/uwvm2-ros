@@ -1,0 +1,179 @@
+#include "state.hpp"
+/* Authored complete records and transactional malformed/capacity cases.
+ * These are SDK contracts, not original upstream or hardware tests. */
+#include <assert.h>
+#include <stdint.h>
+#include <string.h>
+#include "state.h"
+#define INIT_0(P,v) ((void)0)
+#define INIT_1(P,v) assert(P##_default(&(v))==0)
+#define CHECK(P,D) do{P a={0},out,before;unsigned char wire[32769];size_t n=0,i;INIT_##D(P,a);assert(P##_encode(&a,wire,32768,&n)==0);assert(P##_decode(wire,n,&out)==0);memset(&out,0x55,sizeof out);memcpy(&before,&out,sizeof out);for(i=0;i<n;++i){assert(P##_decode(wire,i,&out)!=0);assert(!memcmp(&out,&before,sizeof out));}wire[n]=0xff;assert(P##_decode(wire,n+1,&out)!=0);assert(!memcmp(&out,&before,sizeof out));if(n){size_t used=99;memset(wire,0x66,n);assert(P##_encode(&a,wire,n-1,&used)!=0);for(i=0;i<n;++i)assert(wire[i]==0x66);}}while(0)
+#if defined(__GNUC__)
+#define UWVM_REALMAN_TEST_NOINLINE __attribute__((noinline))
+#else
+#define UWVM_REALMAN_TEST_NOINLINE
+#endif
+/* One finite frame per record also works in unoptimized native CMake builds. */
+#define DECL(P,D) static UWVM_REALMAN_TEST_NOINLINE void check_##P(void){CHECK(P,D);}
+DECL(roswasmc_bounded_2_geometry_msgs_msg_Point,0);
+DECL(roswasmc_bounded_2_geometry_msgs_msg_Quaternion,1);
+DECL(roswasmc_bounded_2_geometry_msgs_msg_Pose,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Alohastate,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Armcurrentstatus,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Armoriginalstate,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Softwarebuildinfo,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Armsoftversion,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Armsoftversionv3,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Armsoftversionv4,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Armstate,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Cartepos,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Carteposcustom,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Expandpos,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Expandstate,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Flowchartrunstate,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Force_Position_State,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Forcepositionmove,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Forcepositionmovejoint,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Forcepositionmovepose,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_GetArmState_Command,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Getallframe,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Getmodbustcpmasterlist,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Gettrajectorylist,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Gripperpick,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Gripperset,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Handangle,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Handforce,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Handposture,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Handseq,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Handspeed,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Handstatus,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Jointcurrent,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Jointenflag,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Jointerrclear,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Jointerrorcode,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Jointpos,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Jointposcustom,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Jointposeeuler,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Jointspeed,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Jointteach,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Jointtemperature,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Jointversion,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Jointvoltage,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Liftheight,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Liftspeed,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Liftstate,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Mastername,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Modbusreaddata,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Modbusrtureadparams,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Modbusrtuwriteparams,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Modbustcpmasterinfo,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Modbustcpmasterlist,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Modbustcpmasterupdata,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Modbustcpreadparams,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Modbustcpwriteparams,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Movec,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Movej,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Movejp,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Movel,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Moveloffset,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Ortteach,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Posteach,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Programrunstate,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_RS485params,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Rmerr,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Rmplusbase,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Rmplusstate,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Rmversion,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_RobotInfo,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Sendproject,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Setforceposition,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Setrealtimepush,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Sixforce,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Stop,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Toolsoftwareversionv4,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Trajectoryinfo,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Trajectorylist,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Udpexpandstate,0);
+DECL(roswasmc_bounded_2_rm_ros_interfaces_msg_Udpliftstate,0);
+int main(void){
+check_roswasmc_bounded_2_geometry_msgs_msg_Point();
+check_roswasmc_bounded_2_geometry_msgs_msg_Quaternion();
+check_roswasmc_bounded_2_geometry_msgs_msg_Pose();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Alohastate();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Armcurrentstatus();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Armoriginalstate();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Softwarebuildinfo();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Armsoftversion();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Armsoftversionv3();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Armsoftversionv4();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Armstate();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Cartepos();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Carteposcustom();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Expandpos();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Expandstate();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Flowchartrunstate();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Force_Position_State();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Forcepositionmove();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Forcepositionmovejoint();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Forcepositionmovepose();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_GetArmState_Command();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Getallframe();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Getmodbustcpmasterlist();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Gettrajectorylist();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Gripperpick();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Gripperset();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Handangle();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Handforce();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Handposture();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Handseq();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Handspeed();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Handstatus();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Jointcurrent();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Jointenflag();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Jointerrclear();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Jointerrorcode();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Jointpos();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Jointposcustom();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Jointposeeuler();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Jointspeed();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Jointteach();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Jointtemperature();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Jointversion();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Jointvoltage();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Liftheight();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Liftspeed();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Liftstate();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Mastername();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Modbusreaddata();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Modbusrtureadparams();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Modbusrtuwriteparams();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Modbustcpmasterinfo();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Modbustcpmasterlist();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Modbustcpmasterupdata();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Modbustcpreadparams();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Modbustcpwriteparams();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Movec();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Movej();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Movejp();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Movel();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Moveloffset();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Ortteach();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Posteach();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Programrunstate();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_RS485params();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Rmerr();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Rmplusbase();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Rmplusstate();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Rmversion();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_RobotInfo();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Sendproject();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Setforceposition();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Setrealtimepush();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Sixforce();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Stop();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Toolsoftwareversionv4();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Trajectoryinfo();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Trajectorylist();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Udpexpandstate();
+check_roswasmc_bounded_2_rm_ros_interfaces_msg_Udpliftstate();
+return 0;}

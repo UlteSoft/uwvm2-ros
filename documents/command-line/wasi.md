@@ -41,7 +41,7 @@ This changes the previous permissive defaults. Applications that need an
 operation must request it explicitly. Positive clock/random unit fixtures and
 applications that use a WASI sleep timer must grant their exact required
 permission. The new implementation and prepared tests are documented in
-[the default-authority configuration tests](../../tests/wasip1_default_deny/README.configuration.md);
+[the default-authority configuration tests](../../test/0073.ros-tests/support/source/wasip1_default_deny/README.configuration.md);
 source-model checks do not establish compiled runtime acceptance.
 
 ## Explicit Permission Commands
@@ -209,7 +209,7 @@ For WASI mount paths, this flag changes command-line validation from "valid UTF-
 | `--wasip1-global-socket-udp-bind` | `--wasip1-socket-udp-bind`, `-I1udpbind` | `<fd:i32> [<ipv4|ipv6>:<port>|unix <path>]` | Repeatable | Create a default bound UDP socket. |
 | `--wasip1-global-socket-udp-connect` | `--wasip1-socket-udp-connect`, `-I1udpcon` | `<fd:i32> [<ipv4|ipv6|dns>:<port>|unix <path>]` | Repeatable | Create a default connected UDP socket. |
 
-The socket aliases above are available only when socket support is compiled. The exact alias strings come from the socket parameter headers; use `uwvm --help wasi` on the built binary if you need the authoritative compiled list.
+The socket aliases above are available only when socket support is compiled. The exact alias strings come from the socket parameter headers; use `uwvm2-ros --help wasi` on the built binary if you need the authoritative compiled list.
 
 Mount guest paths are normalized by default before they are stored and before overlap checks run. Normalization collapses repeated slashes, removes `.` path components, resolves `..` within the preopen root, and removes trailing slashes except for `/`; a relative path that normalizes to empty becomes `.`.
 
@@ -429,7 +429,7 @@ If a target has no argv override, it uses that default vector. This default vect
 `set-argv0` is a first-argument replacement for one target. For example:
 
 ```bash
-uwvm --wasip1-single-create app \
+uwvm2-ros --wasip1-single-create app \
   --wasip1-single-set-argv0 app testhh \
   --wasm-set-main-module-name app \
   --run app.wasm arg0
@@ -440,7 +440,7 @@ For module `app`, the final WASI argv is `["testhh", "arg0"]`.
 `force-args` is a complete argv replacement for one target. It ignores both the `--run` Wasm path and the trailing `--run` arguments for that target. The first operand is a `size_t` count, followed by exactly that many argument strings, so `0` is a valid empty argv vector and arguments that look like uwvm options can still be passed unambiguously:
 
 ```bash
-uwvm --wasip1-global-force-args 3 tool --literal -x --run app.wasm ignored
+uwvm2-ros --wasip1-global-force-args 3 tool --literal -x --run app.wasm ignored
 ```
 
 For the global-default target, the final WASI argv is `["tool", "--literal", "-x"]`.
@@ -481,20 +481,20 @@ The socket is assigned fd 10. Directory mounts use the next available fd startin
 Global trace syntax:
 
 ```bash
-uwvm --wasip1-global-trace none
-uwvm --wasip1-global-trace out
-uwvm --wasip1-global-trace err
-uwvm --wasip1-global-trace file wasi.trace
+uwvm2-ros --wasip1-global-trace none
+uwvm2-ros --wasip1-global-trace out
+uwvm2-ros --wasip1-global-trace err
+uwvm2-ros --wasip1-global-trace file wasi.trace
 ```
 
 Single/group trace syntax:
 
 ```bash
-uwvm --wasip1-single-trace app none
-uwvm --wasip1-single-trace app out
-uwvm --wasip1-single-trace app err
-uwvm --wasip1-single-trace app file app.trace
-uwvm --wasip1-single-trace app app.trace
+uwvm2-ros --wasip1-single-trace app none
+uwvm2-ros --wasip1-single-trace app out
+uwvm2-ros --wasip1-single-trace app err
+uwvm2-ros --wasip1-single-trace app file app.trace
+uwvm2-ros --wasip1-single-trace app app.trace
 ```
 
 Differences:
@@ -512,9 +512,9 @@ Differences:
 Syntax:
 
 ```bash
-uwvm --wasip1-global-mount-dir <wasi-dir> <system-dir>
-uwvm --wasip1-single-mount-dir <module> <wasi-dir> <system-dir>
-uwvm --wasip1-group-mount-dir <group> <wasi-dir> <system-dir>
+uwvm2-ros --wasip1-global-mount-dir <wasi-dir> <system-dir>
+uwvm2-ros --wasip1-single-mount-dir <module> <wasi-dir> <system-dir>
+uwvm2-ros --wasip1-group-mount-dir <group> <wasi-dir> <system-dir>
 ```
 
 Mount parsing opens the host system directory immediately and stores a directory handle. It follows symlinks when opening. Runtime environment initialization later duplicates or observes that handle depending on the platform.
@@ -557,18 +557,18 @@ Target mounts are validated by temporarily combining global mounts and the targe
 Examples:
 
 ```bash
-uwvm --wasip1-global-mount-dir /data ./data --run app.wasm
-uwvm --wasip1-global-mount-dir data ./data --run app.wasm
-uwvm --wasip1-global-mount-dir . ./sandbox --run app.wasm
+uwvm2-ros --wasip1-global-mount-dir /data ./data --run app.wasm
+uwvm2-ros --wasip1-global-mount-dir data ./data --run app.wasm
+uwvm2-ros --wasip1-global-mount-dir . ./sandbox --run app.wasm
 ```
 
 Invalid combinations:
 
 ```bash
-uwvm --wasip1-global-mount-dir /data ./data --wasip1-global-mount-dir /data/cache ./cache
-uwvm --wasip1-global-mount-dir ./data ./data
-uwvm --wasip1-global-mount-dir /data/../secret ./secret
-uwvm --wasip1-global-mount-dir /data//cache ./cache
+uwvm2-ros --wasip1-global-mount-dir /data ./data --wasip1-global-mount-dir /data/cache ./cache
+uwvm2-ros --wasip1-global-mount-dir ./data ./data
+uwvm2-ros --wasip1-global-mount-dir /data/../secret ./secret
+uwvm2-ros --wasip1-global-mount-dir /data//cache ./cache
 ```
 
 ## Socket Semantics
@@ -631,18 +631,18 @@ Protocol mapping:
 Examples:
 
 ```bash
-uwvm --wasip1-global-socket-tcp-listen 3 127.0.0.1:8080 --run server.wasm
-uwvm --wasip1-global-socket-tcp-connect 3 example.com:443 --run client.wasm
-uwvm --wasip1-global-socket-udp-bind 5 0.0.0.0:5353 --run dns.wasm
-uwvm --wasip1-global-socket-udp-connect 6 example.com:53 --run dns-client.wasm
+uwvm2-ros --wasip1-global-socket-tcp-listen 3 127.0.0.1:8080 --run server.wasm
+uwvm2-ros --wasip1-global-socket-tcp-connect 3 example.com:443 --run client.wasm
+uwvm2-ros --wasip1-global-socket-udp-bind 5 0.0.0.0:5353 --run dns.wasm
+uwvm2-ros --wasip1-global-socket-udp-connect 6 example.com:53 --run dns-client.wasm
 ```
 
 Unix socket examples when compiled:
 
 ```bash
-uwvm --wasip1-global-socket-tcp-listen 3 unix ./server.sock --run server.wasm
-uwvm --wasip1-global-socket-tcp-connect 3 unix ./server.sock --run client.wasm
-uwvm --wasip1-global-socket-udp-bind 4 unix @abstract-name --run app.wasm
+uwvm2-ros --wasip1-global-socket-tcp-listen 3 unix ./server.sock --run server.wasm
+uwvm2-ros --wasip1-global-socket-tcp-connect 3 unix ./server.sock --run client.wasm
+uwvm2-ros --wasip1-global-socket-udp-bind 4 unix @abstract-name --run app.wasm
 ```
 
 ## Initialization And Combination Order
@@ -678,31 +678,31 @@ Because callbacks run from left to right, order matters when a command performs 
 Examples:
 
 ```bash
-uwvm --wasi-disable-utf8-check --wasip1-global-mount-dir data ./data --run app.wasm
+uwvm2-ros --wasi-disable-utf8-check --wasip1-global-mount-dir data ./data --run app.wasm
 ```
 
 The mount's guest path is parsed under relaxed UTF-8 checking.
 
 ```bash
-uwvm --wasip1-global-mount-dir data ./data --wasi-disable-utf8-check --run app.wasm
+uwvm2-ros --wasip1-global-mount-dir data ./data --wasi-disable-utf8-check --run app.wasm
 ```
 
 The mount was already validated before UTF-8 relaxation was enabled.
 
 ```bash
-uwvm --wasip1-global-trace file wasi.trace --run app.wasm
+uwvm2-ros --wasip1-global-trace file wasi.trace --run app.wasm
 ```
 
 The trace file is opened during parsing. If it cannot be opened, normal execution never starts.
 
 ```bash
-uwvm --wasip1-single-enable app --wasip1-single-create app --run app.wasm
+uwvm2-ros --wasip1-single-enable app --wasip1-single-create app --run app.wasm
 ```
 
 Invalid: the single target does not exist when the enable command is processed.
 
 ```bash
-uwvm --wasip1-single-create app --wasip1-single-enable app --run app.wasm
+uwvm2-ros --wasip1-single-create app --wasip1-single-enable app --run app.wasm
 ```
 
 Valid: the target exists before the action.
@@ -755,7 +755,7 @@ uwvm \
 Windows NT mount path:
 
 ```bash
-uwvm --wasip1-global-mount-dir /data ::NT::\??\C:\sandbox\data --run app.wasm
+uwvm2-ros --wasip1-global-mount-dir /data ::NT::\??\C:\sandbox\data --run app.wasm
 ```
 
 On Windows NT, this strips `::NT::`, uses the NT opener, and can emit or fatalize the `nt-path` warning according to logging configuration.

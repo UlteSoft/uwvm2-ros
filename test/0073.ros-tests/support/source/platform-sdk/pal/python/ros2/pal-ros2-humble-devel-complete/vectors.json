@@ -1,0 +1,1851 @@
+{
+  "cases": [
+    {
+      "type": "builtin_interfaces/msg/Duration",
+      "wire": "8b8195af42ba7f2d",
+      "value": {
+        "record": "builtin_interfaces/msg/Duration",
+        "members": {
+          "sec": {
+            "scalar": "int32",
+            "value": -1349156469,
+            "wire": "8b8195af"
+          },
+          "nanosec": {
+            "scalar": "uint32",
+            "value": 763345474,
+            "wire": "42ba7f2d"
+          }
+        }
+      }
+    },
+    {
+      "type": "builtin_interfaces/msg/Time",
+      "wire": "072b89b550057009",
+      "value": {
+        "record": "builtin_interfaces/msg/Time",
+        "members": {
+          "sec": {
+            "scalar": "int32",
+            "value": -1249301753,
+            "wire": "072b89b5"
+          },
+          "nanosec": {
+            "scalar": "uint32",
+            "value": 158336336,
+            "wire": "50057009"
+          }
+        }
+      }
+    },
+    {
+      "type": "pal_device_msgs/action/DoTimedLedEffect_Feedback",
+      "wire": "",
+      "value": {
+        "record": "pal_device_msgs/action/DoTimedLedEffect_Feedback",
+        "members": {}
+      }
+    },
+    {
+      "type": "pal_device_msgs/action/DoTimedLedEffect_Goal",
+      "wire": "01000000af2de815f9008057c300a0314300a07ac300003d421fce0279706d2b350040d742008064c200408ac200c0fdc200c0e642000022c100c06ec30080f8c25e7b66172ff857070100409d4200207fc3000048420000264300c045c30040ed420000264300000142910ae54548f725193eefa9cd4b07a01e0040604300c0dd4200a03c4300207e4300008cc2000085c20000e0c200803fc300c01c4300403d43000072c100401d4300003ec30000414200405f4300000ec10080704300e023c300000fc300c061c3de070000007639626435ceb2010000000080844200c0ce4200003441000007424eff4e84b8dc870eb1",
+      "value": {
+        "record": "pal_device_msgs/action/DoTimedLedEffect_Goal",
+        "members": {
+          "devices": {
+            "array": [
+              {
+                "scalar": "uint32",
+                "value": 367537583,
+                "wire": "af2de815"
+              }
+            ]
+          },
+          "params": {
+            "record": "pal_device_msgs/msg/LedEffectParams",
+            "members": {
+              "effect_type": {
+                "scalar": "uint8",
+                "value": 249,
+                "wire": "f9"
+              },
+              "fixed_color": {
+                "record": "pal_device_msgs/msg/LedFixedColorParams",
+                "members": {
+                  "color": {
+                    "record": "std_msgs/msg/ColorRGBA",
+                    "members": {
+                      "r": {
+                        "scalar": "float32",
+                        "value": -215.5,
+                        "wire": "008057c3"
+                      },
+                      "g": {
+                        "scalar": "float32",
+                        "value": 177.625,
+                        "wire": "00a03143"
+                      },
+                      "b": {
+                        "scalar": "float32",
+                        "value": -250.625,
+                        "wire": "00a07ac3"
+                      },
+                      "a": {
+                        "scalar": "float32",
+                        "value": 47.25,
+                        "wire": "00003d42"
+                      }
+                    }
+                  }
+                }
+              },
+              "rainbow": {
+                "record": "pal_device_msgs/msg/LedRainbowParams",
+                "members": {
+                  "transition_duration": {
+                    "record": "builtin_interfaces/msg/Duration",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": 2030226975,
+                        "wire": "1fce0279"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 892038512,
+                        "wire": "706d2b35"
+                      }
+                    }
+                  }
+                }
+              },
+              "fade": {
+                "record": "pal_device_msgs/msg/LedFadeParams",
+                "members": {
+                  "first_color": {
+                    "record": "std_msgs/msg/ColorRGBA",
+                    "members": {
+                      "r": {
+                        "scalar": "float32",
+                        "value": 107.625,
+                        "wire": "0040d742"
+                      },
+                      "g": {
+                        "scalar": "float32",
+                        "value": -57.125,
+                        "wire": "008064c2"
+                      },
+                      "b": {
+                        "scalar": "float32",
+                        "value": -69.125,
+                        "wire": "00408ac2"
+                      },
+                      "a": {
+                        "scalar": "float32",
+                        "value": -126.875,
+                        "wire": "00c0fdc2"
+                      }
+                    }
+                  },
+                  "second_color": {
+                    "record": "std_msgs/msg/ColorRGBA",
+                    "members": {
+                      "r": {
+                        "scalar": "float32",
+                        "value": 115.375,
+                        "wire": "00c0e642"
+                      },
+                      "g": {
+                        "scalar": "float32",
+                        "value": -10.125,
+                        "wire": "000022c1"
+                      },
+                      "b": {
+                        "scalar": "float32",
+                        "value": -238.75,
+                        "wire": "00c06ec3"
+                      },
+                      "a": {
+                        "scalar": "float32",
+                        "value": -124.25,
+                        "wire": "0080f8c2"
+                      }
+                    }
+                  },
+                  "transition_duration": {
+                    "record": "builtin_interfaces/msg/Duration",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": 392592222,
+                        "wire": "5e7b6617"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 123205679,
+                        "wire": "2ff85707"
+                      }
+                    }
+                  },
+                  "reverse_fade": {
+                    "scalar": "bool",
+                    "value": true,
+                    "wire": "01"
+                  }
+                }
+              },
+              "blink": {
+                "record": "pal_device_msgs/msg/LedBlinkParams",
+                "members": {
+                  "first_color": {
+                    "record": "std_msgs/msg/ColorRGBA",
+                    "members": {
+                      "r": {
+                        "scalar": "float32",
+                        "value": 78.625,
+                        "wire": "00409d42"
+                      },
+                      "g": {
+                        "scalar": "float32",
+                        "value": -255.125,
+                        "wire": "00207fc3"
+                      },
+                      "b": {
+                        "scalar": "float32",
+                        "value": 50.0,
+                        "wire": "00004842"
+                      },
+                      "a": {
+                        "scalar": "float32",
+                        "value": 166.0,
+                        "wire": "00002643"
+                      }
+                    }
+                  },
+                  "second_color": {
+                    "record": "std_msgs/msg/ColorRGBA",
+                    "members": {
+                      "r": {
+                        "scalar": "float32",
+                        "value": -197.75,
+                        "wire": "00c045c3"
+                      },
+                      "g": {
+                        "scalar": "float32",
+                        "value": 118.625,
+                        "wire": "0040ed42"
+                      },
+                      "b": {
+                        "scalar": "float32",
+                        "value": 166.0,
+                        "wire": "00002643"
+                      },
+                      "a": {
+                        "scalar": "float32",
+                        "value": 32.25,
+                        "wire": "00000142"
+                      }
+                    }
+                  },
+                  "first_color_duration": {
+                    "record": "builtin_interfaces/msg/Duration",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": 1172638353,
+                        "wire": "910ae545"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 421918536,
+                        "wire": "48f72519"
+                      }
+                    }
+                  },
+                  "second_color_duration": {
+                    "record": "builtin_interfaces/msg/Duration",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": -844501186,
+                        "wire": "3eefa9cd"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 513804107,
+                        "wire": "4b07a01e"
+                      }
+                    }
+                  }
+                }
+              },
+              "progress": {
+                "record": "pal_device_msgs/msg/LedProgressParams",
+                "members": {
+                  "first_color": {
+                    "record": "std_msgs/msg/ColorRGBA",
+                    "members": {
+                      "r": {
+                        "scalar": "float32",
+                        "value": 224.25,
+                        "wire": "00406043"
+                      },
+                      "g": {
+                        "scalar": "float32",
+                        "value": 110.875,
+                        "wire": "00c0dd42"
+                      },
+                      "b": {
+                        "scalar": "float32",
+                        "value": 188.625,
+                        "wire": "00a03c43"
+                      },
+                      "a": {
+                        "scalar": "float32",
+                        "value": 254.125,
+                        "wire": "00207e43"
+                      }
+                    }
+                  },
+                  "second_color": {
+                    "record": "std_msgs/msg/ColorRGBA",
+                    "members": {
+                      "r": {
+                        "scalar": "float32",
+                        "value": -70.0,
+                        "wire": "00008cc2"
+                      },
+                      "g": {
+                        "scalar": "float32",
+                        "value": -66.5,
+                        "wire": "000085c2"
+                      },
+                      "b": {
+                        "scalar": "float32",
+                        "value": -112.0,
+                        "wire": "0000e0c2"
+                      },
+                      "a": {
+                        "scalar": "float32",
+                        "value": -191.5,
+                        "wire": "00803fc3"
+                      }
+                    }
+                  },
+                  "percentage": {
+                    "scalar": "float32",
+                    "value": 156.75,
+                    "wire": "00c01c43"
+                  },
+                  "led_offset": {
+                    "scalar": "float32",
+                    "value": 189.25,
+                    "wire": "00403d43"
+                  }
+                }
+              },
+              "flow": {
+                "record": "pal_device_msgs/msg/LedFlowParams",
+                "members": {
+                  "first_color": {
+                    "record": "std_msgs/msg/ColorRGBA",
+                    "members": {
+                      "r": {
+                        "scalar": "float32",
+                        "value": -15.125,
+                        "wire": "000072c1"
+                      },
+                      "g": {
+                        "scalar": "float32",
+                        "value": 157.25,
+                        "wire": "00401d43"
+                      },
+                      "b": {
+                        "scalar": "float32",
+                        "value": -190.0,
+                        "wire": "00003ec3"
+                      },
+                      "a": {
+                        "scalar": "float32",
+                        "value": 48.25,
+                        "wire": "00004142"
+                      }
+                    }
+                  },
+                  "second_color": {
+                    "record": "std_msgs/msg/ColorRGBA",
+                    "members": {
+                      "r": {
+                        "scalar": "float32",
+                        "value": 223.25,
+                        "wire": "00405f43"
+                      },
+                      "g": {
+                        "scalar": "float32",
+                        "value": -8.875,
+                        "wire": "00000ec1"
+                      },
+                      "b": {
+                        "scalar": "float32",
+                        "value": 240.5,
+                        "wire": "00807043"
+                      },
+                      "a": {
+                        "scalar": "float32",
+                        "value": -163.875,
+                        "wire": "00e023c3"
+                      }
+                    }
+                  },
+                  "percentage": {
+                    "scalar": "float32",
+                    "value": -143.0,
+                    "wire": "00000fc3"
+                  },
+                  "velocity": {
+                    "scalar": "float32",
+                    "value": -225.75,
+                    "wire": "00c061c3"
+                  }
+                }
+              },
+              "preprogrammed": {
+                "record": "pal_device_msgs/msg/LedPreProgrammedParams",
+                "members": {
+                  "preprogrammed_id": {
+                    "scalar": "uint8",
+                    "value": 222,
+                    "wire": "de"
+                  }
+                }
+              },
+              "effect_via_topic": {
+                "record": "pal_device_msgs/msg/LedEffectViaTopicParams",
+                "members": {
+                  "topic_name": {
+                    "scalar": "string",
+                    "value": "v9bd5\u03b2"
+                  }
+                }
+              },
+              "data_array": {
+                "record": "pal_device_msgs/msg/LedDataArrayParams",
+                "members": {
+                  "data": {
+                    "array": [
+                      {
+                        "record": "std_msgs/msg/ColorRGBA",
+                        "members": {
+                          "r": {
+                            "scalar": "float32",
+                            "value": 66.25,
+                            "wire": "00808442"
+                          },
+                          "g": {
+                            "scalar": "float32",
+                            "value": 103.375,
+                            "wire": "00c0ce42"
+                          },
+                          "b": {
+                            "scalar": "float32",
+                            "value": 11.25,
+                            "wire": "00003441"
+                          },
+                          "a": {
+                            "scalar": "float32",
+                            "value": 33.75,
+                            "wire": "00000742"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "effect_duration": {
+            "record": "builtin_interfaces/msg/Duration",
+            "members": {
+              "sec": {
+                "scalar": "int32",
+                "value": -2075197618,
+                "wire": "4eff4e84"
+              },
+              "nanosec": {
+                "scalar": "uint32",
+                "value": 243784888,
+                "wire": "b8dc870e"
+              }
+            }
+          },
+          "priority": {
+            "scalar": "uint8",
+            "value": 177,
+            "wire": "b1"
+          }
+        }
+      }
+    },
+    {
+      "type": "pal_device_msgs/action/DoTimedLedEffect_Result",
+      "wire": "",
+      "value": {
+        "record": "pal_device_msgs/action/DoTimedLedEffect_Result",
+        "members": {}
+      }
+    },
+    {
+      "type": "pal_device_msgs/msg/BatteryState",
+      "wire": "0d00001543",
+      "value": {
+        "record": "pal_device_msgs/msg/BatteryState",
+        "members": {
+          "charge_state": {
+            "scalar": "int8",
+            "value": 13,
+            "wire": "0d"
+          },
+          "battery_percentage": {
+            "scalar": "float32",
+            "value": 149.0,
+            "wire": "00001543"
+          }
+        }
+      }
+    },
+    {
+      "type": "pal_device_msgs/msg/Bumper",
+      "wire": "0ea7b8eae9cbd33a070000007663306466ceb201",
+      "value": {
+        "record": "pal_device_msgs/msg/Bumper",
+        "members": {
+          "header": {
+            "record": "std_msgs/msg/Header",
+            "members": {
+              "stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": -356997362,
+                    "wire": "0ea7b8ea"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 986958825,
+                    "wire": "e9cbd33a"
+                  }
+                }
+              },
+              "frame_id": {
+                "scalar": "string",
+                "value": "vc0df\u03b2"
+              }
+            }
+          },
+          "is_pressed": {
+            "scalar": "bool",
+            "value": true,
+            "wire": "01"
+          }
+        }
+      }
+    },
+    {
+      "type": "pal_device_msgs/msg/LedBlinkParams",
+      "wire": "00c0b24200806c4300206243008018c20080f24200c0d7c20080214300007cc1bb8255b4184e58276096e316d6f44410",
+      "value": {
+        "record": "pal_device_msgs/msg/LedBlinkParams",
+        "members": {
+          "first_color": {
+            "record": "std_msgs/msg/ColorRGBA",
+            "members": {
+              "r": {
+                "scalar": "float32",
+                "value": 89.375,
+                "wire": "00c0b242"
+              },
+              "g": {
+                "scalar": "float32",
+                "value": 236.5,
+                "wire": "00806c43"
+              },
+              "b": {
+                "scalar": "float32",
+                "value": 226.125,
+                "wire": "00206243"
+              },
+              "a": {
+                "scalar": "float32",
+                "value": -38.125,
+                "wire": "008018c2"
+              }
+            }
+          },
+          "second_color": {
+            "record": "std_msgs/msg/ColorRGBA",
+            "members": {
+              "r": {
+                "scalar": "float32",
+                "value": 121.25,
+                "wire": "0080f242"
+              },
+              "g": {
+                "scalar": "float32",
+                "value": -107.875,
+                "wire": "00c0d7c2"
+              },
+              "b": {
+                "scalar": "float32",
+                "value": 161.5,
+                "wire": "00802143"
+              },
+              "a": {
+                "scalar": "float32",
+                "value": -15.75,
+                "wire": "00007cc1"
+              }
+            }
+          },
+          "first_color_duration": {
+            "record": "builtin_interfaces/msg/Duration",
+            "members": {
+              "sec": {
+                "scalar": "int32",
+                "value": -1269464389,
+                "wire": "bb8255b4"
+              },
+              "nanosec": {
+                "scalar": "uint32",
+                "value": 660098584,
+                "wire": "184e5827"
+              }
+            }
+          },
+          "second_color_duration": {
+            "record": "builtin_interfaces/msg/Duration",
+            "members": {
+              "sec": {
+                "scalar": "int32",
+                "value": 384013920,
+                "wire": "6096e316"
+              },
+              "nanosec": {
+                "scalar": "uint32",
+                "value": 272954582,
+                "wire": "d6f44410"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "pal_device_msgs/msg/LedDataArrayParams",
+      "wire": "010000000080b0c2004035c300005ac2004078c3",
+      "value": {
+        "record": "pal_device_msgs/msg/LedDataArrayParams",
+        "members": {
+          "data": {
+            "array": [
+              {
+                "record": "std_msgs/msg/ColorRGBA",
+                "members": {
+                  "r": {
+                    "scalar": "float32",
+                    "value": -88.25,
+                    "wire": "0080b0c2"
+                  },
+                  "g": {
+                    "scalar": "float32",
+                    "value": -181.25,
+                    "wire": "004035c3"
+                  },
+                  "b": {
+                    "scalar": "float32",
+                    "value": -54.5,
+                    "wire": "00005ac2"
+                  },
+                  "a": {
+                    "scalar": "float32",
+                    "value": -248.25,
+                    "wire": "004078c3"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "pal_device_msgs/msg/LedEffectParams",
+      "wire": "cf0000e14100000ac100e0354300008ac22820961a3e2f3d3a0000f841008070c3000041430000644200a01fc3000034c20000fdc200a075432e8b9172ce5f83130100e055c30040d7420080df420000334200001f430040e04200e06bc30000ce428ce467d7015dab0f09013dae05458e23008089c200c092c200e03ec300c005430000e84200a012430000e642000080420080b04200005ac200c058c300c014c300804ac200c0ca420000abc10000e1c1004035c30020404300805a4200402843c3070000007664636663ceb20100000000e0634300005ec100e05fc300005ec1",
+      "value": {
+        "record": "pal_device_msgs/msg/LedEffectParams",
+        "members": {
+          "effect_type": {
+            "scalar": "uint8",
+            "value": 207,
+            "wire": "cf"
+          },
+          "fixed_color": {
+            "record": "pal_device_msgs/msg/LedFixedColorParams",
+            "members": {
+              "color": {
+                "record": "std_msgs/msg/ColorRGBA",
+                "members": {
+                  "r": {
+                    "scalar": "float32",
+                    "value": 28.125,
+                    "wire": "0000e141"
+                  },
+                  "g": {
+                    "scalar": "float32",
+                    "value": -8.625,
+                    "wire": "00000ac1"
+                  },
+                  "b": {
+                    "scalar": "float32",
+                    "value": 181.875,
+                    "wire": "00e03543"
+                  },
+                  "a": {
+                    "scalar": "float32",
+                    "value": -69.0,
+                    "wire": "00008ac2"
+                  }
+                }
+              }
+            }
+          },
+          "rainbow": {
+            "record": "pal_device_msgs/msg/LedRainbowParams",
+            "members": {
+              "transition_duration": {
+                "record": "builtin_interfaces/msg/Duration",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": 446046248,
+                    "wire": "2820961a"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 977088318,
+                    "wire": "3e2f3d3a"
+                  }
+                }
+              }
+            }
+          },
+          "fade": {
+            "record": "pal_device_msgs/msg/LedFadeParams",
+            "members": {
+              "first_color": {
+                "record": "std_msgs/msg/ColorRGBA",
+                "members": {
+                  "r": {
+                    "scalar": "float32",
+                    "value": 31.0,
+                    "wire": "0000f841"
+                  },
+                  "g": {
+                    "scalar": "float32",
+                    "value": -240.5,
+                    "wire": "008070c3"
+                  },
+                  "b": {
+                    "scalar": "float32",
+                    "value": 193.0,
+                    "wire": "00004143"
+                  },
+                  "a": {
+                    "scalar": "float32",
+                    "value": 57.0,
+                    "wire": "00006442"
+                  }
+                }
+              },
+              "second_color": {
+                "record": "std_msgs/msg/ColorRGBA",
+                "members": {
+                  "r": {
+                    "scalar": "float32",
+                    "value": -159.625,
+                    "wire": "00a01fc3"
+                  },
+                  "g": {
+                    "scalar": "float32",
+                    "value": -45.0,
+                    "wire": "000034c2"
+                  },
+                  "b": {
+                    "scalar": "float32",
+                    "value": -126.5,
+                    "wire": "0000fdc2"
+                  },
+                  "a": {
+                    "scalar": "float32",
+                    "value": 245.625,
+                    "wire": "00a07543"
+                  }
+                }
+              },
+              "transition_duration": {
+                "record": "builtin_interfaces/msg/Duration",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": 1922140974,
+                    "wire": "2e8b9172"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 327376846,
+                    "wire": "ce5f8313"
+                  }
+                }
+              },
+              "reverse_fade": {
+                "scalar": "bool",
+                "value": true,
+                "wire": "01"
+              }
+            }
+          },
+          "blink": {
+            "record": "pal_device_msgs/msg/LedBlinkParams",
+            "members": {
+              "first_color": {
+                "record": "std_msgs/msg/ColorRGBA",
+                "members": {
+                  "r": {
+                    "scalar": "float32",
+                    "value": -213.875,
+                    "wire": "00e055c3"
+                  },
+                  "g": {
+                    "scalar": "float32",
+                    "value": 107.625,
+                    "wire": "0040d742"
+                  },
+                  "b": {
+                    "scalar": "float32",
+                    "value": 111.75,
+                    "wire": "0080df42"
+                  },
+                  "a": {
+                    "scalar": "float32",
+                    "value": 44.75,
+                    "wire": "00003342"
+                  }
+                }
+              },
+              "second_color": {
+                "record": "std_msgs/msg/ColorRGBA",
+                "members": {
+                  "r": {
+                    "scalar": "float32",
+                    "value": 159.0,
+                    "wire": "00001f43"
+                  },
+                  "g": {
+                    "scalar": "float32",
+                    "value": 112.125,
+                    "wire": "0040e042"
+                  },
+                  "b": {
+                    "scalar": "float32",
+                    "value": -235.875,
+                    "wire": "00e06bc3"
+                  },
+                  "a": {
+                    "scalar": "float32",
+                    "value": 103.0,
+                    "wire": "0000ce42"
+                  }
+                }
+              },
+              "first_color_duration": {
+                "record": "builtin_interfaces/msg/Duration",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": -681057140,
+                    "wire": "8ce467d7"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 262888705,
+                    "wire": "015dab0f"
+                  }
+                }
+              },
+              "second_color_duration": {
+                "record": "builtin_interfaces/msg/Duration",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": -1371733751,
+                    "wire": "09013dae"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 596526341,
+                    "wire": "05458e23"
+                  }
+                }
+              }
+            }
+          },
+          "progress": {
+            "record": "pal_device_msgs/msg/LedProgressParams",
+            "members": {
+              "first_color": {
+                "record": "std_msgs/msg/ColorRGBA",
+                "members": {
+                  "r": {
+                    "scalar": "float32",
+                    "value": -68.75,
+                    "wire": "008089c2"
+                  },
+                  "g": {
+                    "scalar": "float32",
+                    "value": -73.375,
+                    "wire": "00c092c2"
+                  },
+                  "b": {
+                    "scalar": "float32",
+                    "value": -190.875,
+                    "wire": "00e03ec3"
+                  },
+                  "a": {
+                    "scalar": "float32",
+                    "value": 133.75,
+                    "wire": "00c00543"
+                  }
+                }
+              },
+              "second_color": {
+                "record": "std_msgs/msg/ColorRGBA",
+                "members": {
+                  "r": {
+                    "scalar": "float32",
+                    "value": 116.0,
+                    "wire": "0000e842"
+                  },
+                  "g": {
+                    "scalar": "float32",
+                    "value": 146.625,
+                    "wire": "00a01243"
+                  },
+                  "b": {
+                    "scalar": "float32",
+                    "value": 115.0,
+                    "wire": "0000e642"
+                  },
+                  "a": {
+                    "scalar": "float32",
+                    "value": 64.0,
+                    "wire": "00008042"
+                  }
+                }
+              },
+              "percentage": {
+                "scalar": "float32",
+                "value": 88.25,
+                "wire": "0080b042"
+              },
+              "led_offset": {
+                "scalar": "float32",
+                "value": -54.5,
+                "wire": "00005ac2"
+              }
+            }
+          },
+          "flow": {
+            "record": "pal_device_msgs/msg/LedFlowParams",
+            "members": {
+              "first_color": {
+                "record": "std_msgs/msg/ColorRGBA",
+                "members": {
+                  "r": {
+                    "scalar": "float32",
+                    "value": -216.75,
+                    "wire": "00c058c3"
+                  },
+                  "g": {
+                    "scalar": "float32",
+                    "value": -148.75,
+                    "wire": "00c014c3"
+                  },
+                  "b": {
+                    "scalar": "float32",
+                    "value": -50.625,
+                    "wire": "00804ac2"
+                  },
+                  "a": {
+                    "scalar": "float32",
+                    "value": 101.375,
+                    "wire": "00c0ca42"
+                  }
+                }
+              },
+              "second_color": {
+                "record": "std_msgs/msg/ColorRGBA",
+                "members": {
+                  "r": {
+                    "scalar": "float32",
+                    "value": -21.375,
+                    "wire": "0000abc1"
+                  },
+                  "g": {
+                    "scalar": "float32",
+                    "value": -28.125,
+                    "wire": "0000e1c1"
+                  },
+                  "b": {
+                    "scalar": "float32",
+                    "value": -181.25,
+                    "wire": "004035c3"
+                  },
+                  "a": {
+                    "scalar": "float32",
+                    "value": 192.125,
+                    "wire": "00204043"
+                  }
+                }
+              },
+              "percentage": {
+                "scalar": "float32",
+                "value": 54.625,
+                "wire": "00805a42"
+              },
+              "velocity": {
+                "scalar": "float32",
+                "value": 168.25,
+                "wire": "00402843"
+              }
+            }
+          },
+          "preprogrammed": {
+            "record": "pal_device_msgs/msg/LedPreProgrammedParams",
+            "members": {
+              "preprogrammed_id": {
+                "scalar": "uint8",
+                "value": 195,
+                "wire": "c3"
+              }
+            }
+          },
+          "effect_via_topic": {
+            "record": "pal_device_msgs/msg/LedEffectViaTopicParams",
+            "members": {
+              "topic_name": {
+                "scalar": "string",
+                "value": "vdcfc\u03b2"
+              }
+            }
+          },
+          "data_array": {
+            "record": "pal_device_msgs/msg/LedDataArrayParams",
+            "members": {
+              "data": {
+                "array": [
+                  {
+                    "record": "std_msgs/msg/ColorRGBA",
+                    "members": {
+                      "r": {
+                        "scalar": "float32",
+                        "value": 227.875,
+                        "wire": "00e06343"
+                      },
+                      "g": {
+                        "scalar": "float32",
+                        "value": -13.875,
+                        "wire": "00005ec1"
+                      },
+                      "b": {
+                        "scalar": "float32",
+                        "value": -223.875,
+                        "wire": "00e05fc3"
+                      },
+                      "a": {
+                        "scalar": "float32",
+                        "value": -13.875,
+                        "wire": "00005ec1"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "pal_device_msgs/msg/LedEffectViaTopicParams",
+      "wire": "070000007664356264ceb2",
+      "value": {
+        "record": "pal_device_msgs/msg/LedEffectViaTopicParams",
+        "members": {
+          "topic_name": {
+            "scalar": "string",
+            "value": "vd5bd\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "pal_device_msgs/msg/LedFadeParams",
+      "wire": "004047c300c041c30000acc100404a430080bcc20040e8c200c006c300e01a4390890716d40e241a01",
+      "value": {
+        "record": "pal_device_msgs/msg/LedFadeParams",
+        "members": {
+          "first_color": {
+            "record": "std_msgs/msg/ColorRGBA",
+            "members": {
+              "r": {
+                "scalar": "float32",
+                "value": -199.25,
+                "wire": "004047c3"
+              },
+              "g": {
+                "scalar": "float32",
+                "value": -193.75,
+                "wire": "00c041c3"
+              },
+              "b": {
+                "scalar": "float32",
+                "value": -21.5,
+                "wire": "0000acc1"
+              },
+              "a": {
+                "scalar": "float32",
+                "value": 202.25,
+                "wire": "00404a43"
+              }
+            }
+          },
+          "second_color": {
+            "record": "std_msgs/msg/ColorRGBA",
+            "members": {
+              "r": {
+                "scalar": "float32",
+                "value": -94.25,
+                "wire": "0080bcc2"
+              },
+              "g": {
+                "scalar": "float32",
+                "value": -116.125,
+                "wire": "0040e8c2"
+              },
+              "b": {
+                "scalar": "float32",
+                "value": -134.75,
+                "wire": "00c006c3"
+              },
+              "a": {
+                "scalar": "float32",
+                "value": 154.875,
+                "wire": "00e01a43"
+              }
+            }
+          },
+          "transition_duration": {
+            "record": "builtin_interfaces/msg/Duration",
+            "members": {
+              "sec": {
+                "scalar": "int32",
+                "value": 369592720,
+                "wire": "90890716"
+              },
+              "nanosec": {
+                "scalar": "uint32",
+                "value": 438570708,
+                "wire": "d40e241a"
+              }
+            }
+          },
+          "reverse_fade": {
+            "scalar": "bool",
+            "value": true,
+            "wire": "01"
+          }
+        }
+      }
+    },
+    {
+      "type": "pal_device_msgs/msg/LedFixedColorParams",
+      "wire": "0000624300404b43008084420000d9c2",
+      "value": {
+        "record": "pal_device_msgs/msg/LedFixedColorParams",
+        "members": {
+          "color": {
+            "record": "std_msgs/msg/ColorRGBA",
+            "members": {
+              "r": {
+                "scalar": "float32",
+                "value": 226.0,
+                "wire": "00006243"
+              },
+              "g": {
+                "scalar": "float32",
+                "value": 203.25,
+                "wire": "00404b43"
+              },
+              "b": {
+                "scalar": "float32",
+                "value": 66.25,
+                "wire": "00808442"
+              },
+              "a": {
+                "scalar": "float32",
+                "value": -108.5,
+                "wire": "0000d9c2"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "pal_device_msgs/msg/LedFlowParams",
+      "wire": "00008fc100002043008065c30000b0c200600fc300607e4300603c43008001c200002cc30040f3c2",
+      "value": {
+        "record": "pal_device_msgs/msg/LedFlowParams",
+        "members": {
+          "first_color": {
+            "record": "std_msgs/msg/ColorRGBA",
+            "members": {
+              "r": {
+                "scalar": "float32",
+                "value": -17.875,
+                "wire": "00008fc1"
+              },
+              "g": {
+                "scalar": "float32",
+                "value": 160.0,
+                "wire": "00002043"
+              },
+              "b": {
+                "scalar": "float32",
+                "value": -229.5,
+                "wire": "008065c3"
+              },
+              "a": {
+                "scalar": "float32",
+                "value": -88.0,
+                "wire": "0000b0c2"
+              }
+            }
+          },
+          "second_color": {
+            "record": "std_msgs/msg/ColorRGBA",
+            "members": {
+              "r": {
+                "scalar": "float32",
+                "value": -143.375,
+                "wire": "00600fc3"
+              },
+              "g": {
+                "scalar": "float32",
+                "value": 254.375,
+                "wire": "00607e43"
+              },
+              "b": {
+                "scalar": "float32",
+                "value": 188.375,
+                "wire": "00603c43"
+              },
+              "a": {
+                "scalar": "float32",
+                "value": -32.375,
+                "wire": "008001c2"
+              }
+            }
+          },
+          "percentage": {
+            "scalar": "float32",
+            "value": -172.0,
+            "wire": "00002cc3"
+          },
+          "velocity": {
+            "scalar": "float32",
+            "value": -121.625,
+            "wire": "0040f3c2"
+          }
+        }
+      }
+    },
+    {
+      "type": "pal_device_msgs/msg/LedGroup",
+      "wire": "2b00cefa",
+      "value": {
+        "record": "pal_device_msgs/msg/LedGroup",
+        "members": {
+          "led_mask": {
+            "scalar": "uint32",
+            "value": 4207804459,
+            "wire": "2b00cefa"
+          }
+        }
+      }
+    },
+    {
+      "type": "pal_device_msgs/msg/LedPreProgrammedParams",
+      "wire": "42",
+      "value": {
+        "record": "pal_device_msgs/msg/LedPreProgrammedParams",
+        "members": {
+          "preprogrammed_id": {
+            "scalar": "uint8",
+            "value": 66,
+            "wire": "42"
+          }
+        }
+      }
+    },
+    {
+      "type": "pal_device_msgs/msg/LedProgressParams",
+      "wire": "002007430000a0c20000e541006052c300406043006075430080f8c200c06dc300602dc300a04c43",
+      "value": {
+        "record": "pal_device_msgs/msg/LedProgressParams",
+        "members": {
+          "first_color": {
+            "record": "std_msgs/msg/ColorRGBA",
+            "members": {
+              "r": {
+                "scalar": "float32",
+                "value": 135.125,
+                "wire": "00200743"
+              },
+              "g": {
+                "scalar": "float32",
+                "value": -80.0,
+                "wire": "0000a0c2"
+              },
+              "b": {
+                "scalar": "float32",
+                "value": 28.625,
+                "wire": "0000e541"
+              },
+              "a": {
+                "scalar": "float32",
+                "value": -210.375,
+                "wire": "006052c3"
+              }
+            }
+          },
+          "second_color": {
+            "record": "std_msgs/msg/ColorRGBA",
+            "members": {
+              "r": {
+                "scalar": "float32",
+                "value": 224.25,
+                "wire": "00406043"
+              },
+              "g": {
+                "scalar": "float32",
+                "value": 245.375,
+                "wire": "00607543"
+              },
+              "b": {
+                "scalar": "float32",
+                "value": -124.25,
+                "wire": "0080f8c2"
+              },
+              "a": {
+                "scalar": "float32",
+                "value": -237.75,
+                "wire": "00c06dc3"
+              }
+            }
+          },
+          "percentage": {
+            "scalar": "float32",
+            "value": -173.375,
+            "wire": "00602dc3"
+          },
+          "led_offset": {
+            "scalar": "float32",
+            "value": 204.625,
+            "wire": "00a04c43"
+          }
+        }
+      }
+    },
+    {
+      "type": "pal_device_msgs/msg/LedRainbowParams",
+      "wire": "60c352a8ff27260a",
+      "value": {
+        "record": "pal_device_msgs/msg/LedRainbowParams",
+        "members": {
+          "transition_duration": {
+            "record": "builtin_interfaces/msg/Duration",
+            "members": {
+              "sec": {
+                "scalar": "int32",
+                "value": -1470971040,
+                "wire": "60c352a8"
+              },
+              "nanosec": {
+                "scalar": "uint32",
+                "value": 170272767,
+                "wire": "ff27260a"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "pal_device_msgs/srv/CancelEffect_Request",
+      "wire": "43ae8e6c",
+      "value": {
+        "record": "pal_device_msgs/srv/CancelEffect_Request",
+        "members": {
+          "effect_id": {
+            "scalar": "uint32",
+            "value": 1821290051,
+            "wire": "43ae8e6c"
+          }
+        }
+      }
+    },
+    {
+      "type": "pal_device_msgs/srv/CancelEffect_Response",
+      "wire": "",
+      "value": {
+        "record": "pal_device_msgs/srv/CancelEffect_Response",
+        "members": {}
+      }
+    },
+    {
+      "type": "pal_device_msgs/srv/ShutdownAndWakeUpRobot_Request",
+      "wire": "ff69128671d0081d",
+      "value": {
+        "record": "pal_device_msgs/srv/ShutdownAndWakeUpRobot_Request",
+        "members": {
+          "shutdown_duration": {
+            "record": "builtin_interfaces/msg/Duration",
+            "members": {
+              "sec": {
+                "scalar": "int32",
+                "value": -2045613569,
+                "wire": "ff691286"
+              },
+              "nanosec": {
+                "scalar": "uint32",
+                "value": 487116913,
+                "wire": "71d0081d"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "pal_device_msgs/srv/ShutdownAndWakeUpRobot_Response",
+      "wire": "",
+      "value": {
+        "record": "pal_device_msgs/srv/ShutdownAndWakeUpRobot_Response",
+        "members": {}
+      }
+    },
+    {
+      "type": "pal_device_msgs/srv/TimedBlinkEffect_Request",
+      "wire": "5a4b1f69008036c300807bc200c073c300a02743000026410000334200800f4200a05fc38b7d7260fcf60f143381ee30df28281e8db3f85dbabee5347f",
+      "value": {
+        "record": "pal_device_msgs/srv/TimedBlinkEffect_Request",
+        "members": {
+          "leds": {
+            "record": "pal_device_msgs/msg/LedGroup",
+            "members": {
+              "led_mask": {
+                "scalar": "uint32",
+                "value": 1763658586,
+                "wire": "5a4b1f69"
+              }
+            }
+          },
+          "first_color": {
+            "record": "std_msgs/msg/ColorRGBA",
+            "members": {
+              "r": {
+                "scalar": "float32",
+                "value": -182.5,
+                "wire": "008036c3"
+              },
+              "g": {
+                "scalar": "float32",
+                "value": -62.875,
+                "wire": "00807bc2"
+              },
+              "b": {
+                "scalar": "float32",
+                "value": -243.75,
+                "wire": "00c073c3"
+              },
+              "a": {
+                "scalar": "float32",
+                "value": 167.625,
+                "wire": "00a02743"
+              }
+            }
+          },
+          "second_color": {
+            "record": "std_msgs/msg/ColorRGBA",
+            "members": {
+              "r": {
+                "scalar": "float32",
+                "value": 10.375,
+                "wire": "00002641"
+              },
+              "g": {
+                "scalar": "float32",
+                "value": 44.75,
+                "wire": "00003342"
+              },
+              "b": {
+                "scalar": "float32",
+                "value": 35.875,
+                "wire": "00800f42"
+              },
+              "a": {
+                "scalar": "float32",
+                "value": -223.625,
+                "wire": "00a05fc3"
+              }
+            }
+          },
+          "first_color_duration": {
+            "record": "builtin_interfaces/msg/Duration",
+            "members": {
+              "sec": {
+                "scalar": "int32",
+                "value": 1618115979,
+                "wire": "8b7d7260"
+              },
+              "nanosec": {
+                "scalar": "uint32",
+                "value": 336590588,
+                "wire": "fcf60f14"
+              }
+            }
+          },
+          "second_color_duration": {
+            "record": "builtin_interfaces/msg/Duration",
+            "members": {
+              "sec": {
+                "scalar": "int32",
+                "value": 820937011,
+                "wire": "3381ee30"
+              },
+              "nanosec": {
+                "scalar": "uint32",
+                "value": 505948383,
+                "wire": "df28281e"
+              }
+            }
+          },
+          "effect_duration": {
+            "record": "builtin_interfaces/msg/Duration",
+            "members": {
+              "sec": {
+                "scalar": "int32",
+                "value": 1576579981,
+                "wire": "8db3f85d"
+              },
+              "nanosec": {
+                "scalar": "uint32",
+                "value": 887471802,
+                "wire": "babee534"
+              }
+            }
+          },
+          "priority": {
+            "scalar": "uint8",
+            "value": 127,
+            "wire": "7f"
+          }
+        }
+      }
+    },
+    {
+      "type": "pal_device_msgs/srv/TimedBlinkEffect_Response",
+      "wire": "e687ae1f",
+      "value": {
+        "record": "pal_device_msgs/srv/TimedBlinkEffect_Response",
+        "members": {
+          "effect_id": {
+            "scalar": "uint32",
+            "value": 531531750,
+            "wire": "e687ae1f"
+          }
+        }
+      }
+    },
+    {
+      "type": "pal_device_msgs/srv/TimedColourEffect_Request",
+      "wire": "72f54d350040e542002064c3000077c3008066425e92521de9e90b0c9f",
+      "value": {
+        "record": "pal_device_msgs/srv/TimedColourEffect_Request",
+        "members": {
+          "leds": {
+            "record": "pal_device_msgs/msg/LedGroup",
+            "members": {
+              "led_mask": {
+                "scalar": "uint32",
+                "value": 894301554,
+                "wire": "72f54d35"
+              }
+            }
+          },
+          "color": {
+            "record": "std_msgs/msg/ColorRGBA",
+            "members": {
+              "r": {
+                "scalar": "float32",
+                "value": 114.625,
+                "wire": "0040e542"
+              },
+              "g": {
+                "scalar": "float32",
+                "value": -228.125,
+                "wire": "002064c3"
+              },
+              "b": {
+                "scalar": "float32",
+                "value": -247.0,
+                "wire": "000077c3"
+              },
+              "a": {
+                "scalar": "float32",
+                "value": 57.625,
+                "wire": "00806642"
+              }
+            }
+          },
+          "effect_duration": {
+            "record": "builtin_interfaces/msg/Duration",
+            "members": {
+              "sec": {
+                "scalar": "int32",
+                "value": 491950686,
+                "wire": "5e92521d"
+              },
+              "nanosec": {
+                "scalar": "uint32",
+                "value": 202107369,
+                "wire": "e9e90b0c"
+              }
+            }
+          },
+          "priority": {
+            "scalar": "uint8",
+            "value": 159,
+            "wire": "9f"
+          }
+        }
+      }
+    },
+    {
+      "type": "pal_device_msgs/srv/TimedColourEffect_Response",
+      "wire": "8d1cb5cb",
+      "value": {
+        "record": "pal_device_msgs/srv/TimedColourEffect_Response",
+        "members": {
+          "effect_id": {
+            "scalar": "uint32",
+            "value": 3417644173,
+            "wire": "8d1cb5cb"
+          }
+        }
+      }
+    },
+    {
+      "type": "pal_device_msgs/srv/TimedFadeEffect_Request",
+      "wire": "22f11a0300008842008038c3000088420000dcc100800dc2000030c100807ac200e073c3a94ac4332cb9d62d01509260921a987e051e",
+      "value": {
+        "record": "pal_device_msgs/srv/TimedFadeEffect_Request",
+        "members": {
+          "leds": {
+            "record": "pal_device_msgs/msg/LedGroup",
+            "members": {
+              "led_mask": {
+                "scalar": "uint32",
+                "value": 52097314,
+                "wire": "22f11a03"
+              }
+            }
+          },
+          "first_color": {
+            "record": "std_msgs/msg/ColorRGBA",
+            "members": {
+              "r": {
+                "scalar": "float32",
+                "value": 68.0,
+                "wire": "00008842"
+              },
+              "g": {
+                "scalar": "float32",
+                "value": -184.5,
+                "wire": "008038c3"
+              },
+              "b": {
+                "scalar": "float32",
+                "value": 68.0,
+                "wire": "00008842"
+              },
+              "a": {
+                "scalar": "float32",
+                "value": -27.5,
+                "wire": "0000dcc1"
+              }
+            }
+          },
+          "second_color": {
+            "record": "std_msgs/msg/ColorRGBA",
+            "members": {
+              "r": {
+                "scalar": "float32",
+                "value": -35.375,
+                "wire": "00800dc2"
+              },
+              "g": {
+                "scalar": "float32",
+                "value": -11.0,
+                "wire": "000030c1"
+              },
+              "b": {
+                "scalar": "float32",
+                "value": -62.625,
+                "wire": "00807ac2"
+              },
+              "a": {
+                "scalar": "float32",
+                "value": -243.875,
+                "wire": "00e073c3"
+              }
+            }
+          },
+          "color_change_duration": {
+            "record": "builtin_interfaces/msg/Duration",
+            "members": {
+              "sec": {
+                "scalar": "int32",
+                "value": 868502185,
+                "wire": "a94ac433"
+              },
+              "nanosec": {
+                "scalar": "uint32",
+                "value": 769046828,
+                "wire": "2cb9d62d"
+              }
+            }
+          },
+          "reverse_fade": {
+            "scalar": "bool",
+            "value": true,
+            "wire": "01"
+          },
+          "effect_duration": {
+            "record": "builtin_interfaces/msg/Duration",
+            "members": {
+              "sec": {
+                "scalar": "int32",
+                "value": -1839164848,
+                "wire": "50926092"
+              },
+              "nanosec": {
+                "scalar": "uint32",
+                "value": 92182554,
+                "wire": "1a987e05"
+              }
+            }
+          },
+          "priority": {
+            "scalar": "uint8",
+            "value": 30,
+            "wire": "1e"
+          }
+        }
+      }
+    },
+    {
+      "type": "pal_device_msgs/srv/TimedFadeEffect_Response",
+      "wire": "827b2b85",
+      "value": {
+        "record": "pal_device_msgs/srv/TimedFadeEffect_Response",
+        "members": {
+          "effect_id": {
+            "scalar": "uint32",
+            "value": 2234219394,
+            "wire": "827b2b85"
+          }
+        }
+      }
+    },
+    {
+      "type": "std_msgs/msg/ColorRGBA",
+      "wire": "00e06dc300c06ac30000a8c200809942",
+      "value": {
+        "record": "std_msgs/msg/ColorRGBA",
+        "members": {
+          "r": {
+            "scalar": "float32",
+            "value": -237.875,
+            "wire": "00e06dc3"
+          },
+          "g": {
+            "scalar": "float32",
+            "value": -234.75,
+            "wire": "00c06ac3"
+          },
+          "b": {
+            "scalar": "float32",
+            "value": -84.0,
+            "wire": "0000a8c2"
+          },
+          "a": {
+            "scalar": "float32",
+            "value": 76.75,
+            "wire": "00809942"
+          }
+        }
+      }
+    },
+    {
+      "type": "std_msgs/msg/Header",
+      "wire": "681252e4acc1ba37070000007666316532ceb2",
+      "value": {
+        "record": "std_msgs/msg/Header",
+        "members": {
+          "stamp": {
+            "record": "builtin_interfaces/msg/Time",
+            "members": {
+              "sec": {
+                "scalar": "int32",
+                "value": -464383384,
+                "wire": "681252e4"
+              },
+              "nanosec": {
+                "scalar": "uint32",
+                "value": 934986156,
+                "wire": "acc1ba37"
+              }
+            }
+          },
+          "frame_id": {
+            "scalar": "string",
+            "value": "vf1e2\u03b2"
+          }
+        }
+      }
+    }
+  ]
+}

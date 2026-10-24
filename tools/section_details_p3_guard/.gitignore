@@ -1,1 +1,8 @@
 __pycache__
+
+# Local build/run products; shared artifact rules are in tools/.gitignore.
+/build/
+/out/
+/tmp/
+/summary.txt
+*.su

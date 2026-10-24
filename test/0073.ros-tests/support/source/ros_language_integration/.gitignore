@@ -1,0 +1,14 @@
+# Regenerated language integration run records.
+/results/
+
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/go_resource_peer
+/moonbit_image_contract
+/moonbit_transform_contract
+/native_peer
+/native_ros1_peer
+/tinygo_resource_peer
+/zig_resource_peer

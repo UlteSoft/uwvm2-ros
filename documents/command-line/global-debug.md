@@ -35,9 +35,9 @@ The extra help name is a normal argument and is marked occupied by the callback.
 Examples:
 
 ```bash
-uwvm --help
-uwvm --help all
-uwvm -h runtime
+uwvm2-ros --help
+uwvm2-ros --help all
+uwvm2-ros -h runtime
 ```
 
 ## `--mode`
@@ -60,8 +60,8 @@ Notes:
 Examples:
 
 ```bash
-uwvm --mode validation --run app.wasm
-uwvm -m section-details -r app.wasm
+uwvm2-ros --mode validation --run app.wasm
+uwvm2-ros -m section-details -r app.wasm
 ```
 
 ## `--run`
@@ -82,22 +82,22 @@ The first token after `--run` is documented as `<file argv[0]:path>` because it 
 Examples:
 
 ```bash
-uwvm --run app.wasm
-uwvm -r app.wasm hello world
-uwvm --runtime-aot -- app.wasm --guest-option
-uwvm --runtime-aot app.wasm hello world
+uwvm2-ros --run app.wasm
+uwvm2-ros -r app.wasm hello world
+uwvm2-ros --runtime-aot -- app.wasm --guest-option
+uwvm2-ros --runtime-aot app.wasm hello world
 ```
 
 Host option placement:
 
 ```bash
-uwvm --runtime-aot --run app.wasm
+uwvm2-ros --runtime-aot --run app.wasm
 ```
 
 This selects full-module LLVM AOT.
 
 ```bash
-uwvm --run app.wasm --runtime-aot
+uwvm2-ros --run app.wasm --runtime-aot
 ```
 
 This passes `--runtime-aot` to the guest.
@@ -122,8 +122,8 @@ Because it is immediate, it is best used alone or after only output-routing opti
 Example:
 
 ```bash
-uwvm --version
-uwvm --log-output file version.txt --version
+uwvm2-ros --version
+uwvm2-ros --log-output file version.txt --version
 ```
 
 ## `--debug-test`

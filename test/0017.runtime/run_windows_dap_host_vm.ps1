@@ -442,7 +442,7 @@ function Invoke-BoundedNative([string]$Executable, [string[]]$NativeArguments,
 
 try {
     $expected = @{
-        'uwvm.exe' = $ProductSha256
+        'uwvm2-ros.exe' = $ProductSha256
         'uwvm-debug-server.exe' = $BrokerSha256
         'native-step-fixture.wasm' = $WasmSha256
         'source-c-dwarf4.wasm' = $SourceWasmSha256
@@ -525,7 +525,7 @@ public static class UwvmDapConsoleTail {
         throw 'Python runtime unavailable in Win11 guest'
     }
 
-    $product = Join-Path $work 'uwvm.exe'
+    $product = Join-Path $work 'uwvm2-ros.exe'
     $broker = Join-Path $work 'uwvm-debug-server.exe'
     $adapter = Join-Path $work 'dap_adapter.py'
     $probe = Join-Path $work 'run_dap_windows_guest.py'

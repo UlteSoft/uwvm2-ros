@@ -14,7 +14,7 @@ with N.lease():
   for analysis in ['hotspots','uarch-exploration']:
    for v in vs:
     if name.endswith('-pressure') and v=='typed-array-access-known-length':continue
-    elf=O/'build/wasmtime-bench' if v=='wasmtime-drc' else R/('build/deferred-'+v+'/uwvm')
+    elf=O/'build/wasmtime-bench' if v=='wasmtime-drc' else R/('build/deferred-'+v+'/uwvm2-ros')
     tf=R/('source/hardware-specs-root-store-nop-c24-a1/root-store-nop-c24-a1-i32-write-typed-array-access-inline-static32-hotspots.json' if analysis=='hotspots' else 'source/read-lock-hardware-specs-c20/read-lock-hw-c20-f32-immutable-typed-array-load-uarch-exploration.json');template=json.loads(tf.read_text())
     target_ns=2_000_000_000 if analysis=='hotspots' else 8_000_000_000
     ns=statistics.median(times[name][v]);reps=math.ceil(target_ns/ns/16)*16;label='private-numeric-c26-a3-'+name+'-'+v+'-'+analysis;D=R/'profiles'/label;sp=F/(label+'.json')

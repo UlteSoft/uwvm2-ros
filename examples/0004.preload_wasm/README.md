@@ -51,7 +51,7 @@ This run demonstrates both features together:
 - `lib.test` overrides its own `argv[0]` to `pre`.
 
 ```sh
-uwvm -Rint \
+uwvm2-ros -Rint \
   --wasip1-disable \
   --wasip1-set-argv0 global-entry \
   --wasip1-module lib.test enable \

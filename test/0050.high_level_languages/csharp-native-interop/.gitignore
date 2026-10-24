@@ -1,0 +1,9 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/hll_native_bridge
+/bin/
+/obj/
+!/expected-native.stdout
+!/expected-wasi.stdout

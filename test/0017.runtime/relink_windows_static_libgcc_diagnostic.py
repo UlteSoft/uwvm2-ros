@@ -100,7 +100,7 @@ def main() -> None:
     if manifest.get("returncode") != 0 or \
        digest(Path(manifest["output"])) != manifest.get("output_sha256"):
         raise ValueError("historical diagnostic PE link artifact changed")
-    if Path(manifest["output"]).name == "uwvm.exe":
+    if Path(manifest["output"]).name == "uwvm2-ros.exe":
         raise ValueError("original wrapper could have changed the link inputs")
     main_original = manifest["argv"]
     lines = args.broker_build_log.read_text().splitlines()
@@ -125,7 +125,7 @@ def main() -> None:
     for name, original in (("broker", broker_original), ("uwvm", main_original)):
         if original[0] != main_original[0]:
             raise ValueError("historical PE and broker used different wrappers")
-        executable = output / ("uwvm-debug-server.exe" if name == "broker" else "uwvm.exe")
+        executable = output / ("uwvm-debug-server.exe" if name == "broker" else "uwvm2-ros.exe")
         static = changed_link(original, driver, executable)
         normalized = [str(driver), *original[1:]]
         verify = static.copy()

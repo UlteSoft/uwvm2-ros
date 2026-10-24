@@ -5,3 +5,8 @@
 !/atomic_fence_reserved.wasm
 !/atomic_u64_offset_overflow.wasm
 !/atomic_unknown_subopcode.wasm
+
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/

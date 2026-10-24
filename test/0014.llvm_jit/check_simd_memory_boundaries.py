@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run exact-width SIMD accesses against real guard pages, under all ROS full LLVM optimization policies.
 
-Usage: python3 check_simd_memory_boundaries.py /absolute/path/to/uwvm [--out /tmp/directory]
+Usage: python3 check_simd_memory_boundaries.py /absolute/path/to/uwvm2-ros [--out /tmp/directory]
 All generated Wasm, logs, and result metadata stay in the temporary output directory.
 Run again with mmap, single-thread-alloc, and multi-thread-alloc builds.
 """

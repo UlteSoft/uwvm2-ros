@@ -1,0 +1,10 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/uwvm_int_translate_runtime_log_conbine_flush_update_local_polymorphic_f32_f64_strict
+/uwvm_int_translate_runtime_log_conbine_flush_update_local_polymorphic_i32_i64_strict
+/uwvm_int_translate_runtime_log_conbine_kinds_strict
+/uwvm_int_translate_runtime_log_conbine_missing_kinds_strict
+/uwvm_int_translate_runtime_log_full_mvp_strict
+/uwvm_int_translate_runtime_log_smoke_strict

@@ -261,7 +261,7 @@ def split_env_words(name: str) -> list[str]:
 
 def main() -> int:
     script_dir = Path(__file__).resolve().parent
-    root = script_dir.parents[1]
+    root = Path(__file__).resolve().parents[2]
 
     ap = argparse.ArgumentParser()
     ap.add_argument("--generated-dir", required=True, type=Path)

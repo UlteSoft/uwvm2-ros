@@ -1,0 +1,26 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/address_limits
+/atomic_memory64
+/element_value_parser
+/exception_immediate
+/exception_pure
+/exception_validation
+/external_value_parser
+/function_signature
+/gc_i31_transition
+/gc_immediate
+/heap_immediate
+/initializer_reference_policy
+/local_declarations
+/local_value_parser
+/memory64_code
+/memory_validation
+/recursive_type_binary
+/recursive_type_validation
+/reference_validation
+/tag_section
+/typed_gc_eh_stack
+/value_immediate

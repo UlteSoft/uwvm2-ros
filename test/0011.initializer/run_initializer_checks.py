@@ -43,7 +43,7 @@ def _run_uwvm(
     args = [
         "xmake",
         "run",
-        "uwvm",
+        "uwvm2-ros",
         "--log-verbose",
         "--wasm-preload-library",
         str(provider_wasm),

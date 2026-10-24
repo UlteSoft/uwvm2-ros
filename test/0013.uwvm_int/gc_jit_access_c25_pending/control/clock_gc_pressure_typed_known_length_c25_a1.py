@@ -1,7 +1,7 @@
 from pathlib import Path
 import sys,json,os,statistics
 R=Path('/tmp/uwvm-gc-perf-20261011-r74');O=Path('/tmp/uwvm-gc-perf-20261011-r73');sys.path.insert(0,str(R/'control'));import native as N
-cs=json.loads((R/'source/typed-store-gc-pressure-c21/cases.json').read_text())['cases'];vs=['typed-array-access-inline-static32','typed-array-access-known-length','wasmtime-drc'];elves={v:R/('build/deferred-'+v+'/uwvm') for v in vs[:-1]};elves[vs[-1]]=O/'build/wasmtime-bench';flags=['-Rcc','jit','-Rcm','full','-Rct','0','-WFE-gc','-WFE-function-references','-WFE-exceptions','-WFE-tail-call'];rows=[];reps=4
+cs=json.loads((R/'source/typed-store-gc-pressure-c21/cases.json').read_text())['cases'];vs=['typed-array-access-inline-static32','typed-array-access-known-length','wasmtime-drc'];elves={v:R/('build/deferred-'+v+'/uwvm2-ros') for v in vs[:-1]};elves[vs[-1]]=O/'build/wasmtime-bench';flags=['-Rcc','jit','-Rcm','full','-Rct','0','-WFE-gc','-WFE-function-references','-WFE-exceptions','-WFE-tail-call'];rows=[];reps=4
 with N.lease():
  for rd in range(3):
   for ci,c in enumerate(cs):

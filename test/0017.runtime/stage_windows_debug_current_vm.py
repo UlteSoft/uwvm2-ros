@@ -303,7 +303,7 @@ def main() -> None:
         oracle_path = out / 'c-dwarf5-O1.oracle.json'
         with oracle_path.open('x') as stream:
             json.dump(oracle, stream, indent=2); stream.write('\n')
-        origins = {'uwvm.exe': pe, 'windows_debug_current_launcher.exe': launcher, 'build-receipt.json': build_path,
+        origins = {'uwvm2-ros.exe': pe, 'windows_debug_current_launcher.exe': launcher, 'build-receipt.json': build_path,
                    **{name: root / 'test/0017.runtime' / name for name in driver_names},
                    **{path.name: path for path in dlls.values()}}
         generated_hashes[str(oracle_path)] = sha(oracle_path)

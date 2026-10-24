@@ -93,7 +93,7 @@ symbol/help/layout tests in both repositories. The long-loop physical finish
 and Ctrl+C test passed separately with `--finite-return`. Final macOS native
 interaction, breakpoint intervals and cancellation passed in both repositories;
 the earlier full matrix also passed. The qualified primary macOS binary was
-installed at `~/.local/bin/uwvm` with its hash recorded in the receipt.
+installed at `~/.local/bin/uwvm2-ros` with its hash recorded in the receipt.
 
 ## Intel VTune hardware observations
 

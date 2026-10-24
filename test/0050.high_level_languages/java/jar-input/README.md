@@ -37,7 +37,7 @@ require the real SDK/provider and configured default-deny permissions. This
 ordinary WASI producer does not enable the separate WASI Threads profile.
 
 The optional service-client extension needs three explicit arguments:
-`--ros-backend 2 --ros-client-abi /absolute/sdk/abi/service-client-v1.json
+`--ros-backend 2 --ros-client-abi /absolute/sdk/origin/abi/service-client-v1.json
 --ros-client-abi-sha256 <actual-64-character-lowercase-SHA256>` (select backend
 `1` for ROS1). The catalog is an independently pinned input; it does not replace
 the original business ABI. The producer admits only that backend's

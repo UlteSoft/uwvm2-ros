@@ -125,10 +125,10 @@ def main():
             obj = dest / f'{i}.o'
             run([cxx, *flags, '-c', root / unit, '-o', obj], name + f'-{i}.log', timeout=2400)
             objects.append(obj)
-        run([cxx, *link_flags, *objects, *libraries, '-lssl', '-lcrypto', '-ldl', '-pthread', '-o', dest / 'uwvm'], name + '-link.log')
+        run([cxx, *link_flags, *objects, *libraries, '-lssl', '-lcrypto', '-ldl', '-pthread', '-o', dest / 'uwvm2-ros'], name + '-link.log')
         after = subprocess.check_output(['python3', fp, root, dest / 'sources-after.json'], text=True).strip()
         assert before == after
-        (dest / 'identity.json').write_text(json.dumps({'source_id': before, 'binary_sha256': digest(dest / 'uwvm'),
+        (dest / 'identity.json').write_text(json.dumps({'source_id': before, 'binary_sha256': digest(dest / 'uwvm2-ros'),
                                                         'compiler_sha256': digest(cxx), 'admission': admission()}, indent=2))
         for obj in objects:
             obj.unlink()

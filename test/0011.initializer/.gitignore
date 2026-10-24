@@ -1,0 +1,11 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/active_segment_implicit_drop
+/memory64_binary
+/memory64_initializer
+/memory64_metadata
+/table64_binary
+/threads_shared_memory
+/wasm3_extended_const

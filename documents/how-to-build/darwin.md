@@ -102,8 +102,8 @@ xmake f -y -c -m release \
   --openssl-root=/opt/homebrew \
   --ccache=n \
   --ldflags="-nostdlib++"
-xmake -j1 uwvm
-cp build/macosx/arm64/release/uwvm build/aarch64-apple-darwin-uwvm2
+xmake -j1 uwvm2-ros
+cp build/macosx/arm64/release/uwvm2-ros build/aarch64-apple-darwin-uwvm2
 ```
 
 Intel macOS release tiers:
@@ -132,8 +132,8 @@ xmake f -y -c -m release \
   --ccache=n \
   --cxflags="-mavx2 -mbmi -mbmi2" \
   --ldflags="-nostdlib++"
-xmake -j1 uwvm
-cp build/macosx/x86_64/release/uwvm build/x86_64_AVX2-apple-darwin-uwvm2
+xmake -j1 uwvm2-ros
+cp build/macosx/x86_64/release/uwvm2-ros build/x86_64_AVX2-apple-darwin-uwvm2
 ```
 
 Check that only Apple system libraries remain dynamic:
@@ -223,3 +223,119 @@ xmake i -o <install_path>
 ## Caveat
 1. Add `--use-llvm-compiler` when you want to build with the LLVM/Clang compiler toolchain. This only selects the compiler toolchain and does not enable the LLVM AOT backend by itself.
 2. Darwin does not support the global `-static` strategy used by `--static=compiler`. Use `--static=non-system` for release builds when your non-platform dependencies, such as LLVM, provide static archives.
+
+## ROS development from macOS
+
+The repository's native macOS Runtime can run ordinary Wasm applications, but
+the current ROS host imports require a **Linux Runtime target**. The check is
+explicit in [`xmake.lua`](../../xmake.lua): `--import-ros1=y` or
+`--import-ros2=y` on `macosx` fails with
+`ROS runtime host imports require Linux SO_PEERCRED`. Installing a macOS ROS
+SDK does not change that transport and peer-authentication boundary.
+
+| Workflow | Configuration |
+| --- | --- |
+| Native macOS Runtime | `-p macosx`, the Mac's native architecture, and both ROS import switches `n` |
+| ROS-enabled Runtime and Gateway | Build and execute both in Linux, using an SSH host or Linux VM |
+| Wasm application | Use its SDK example project and a qualified compiler/runtime bundle for the actual build host |
+| Native ROS middleware | Install the selected distribution and native interface packages in the Linux Gateway environment |
+
+### Native macOS Runtime without ROS imports
+
+Select `arm64` for an Apple Silicon target or `x86_64` for an Intel target.
+Run from the repository root with a compatible bootstrap compiler:
+
+```sh
+xmake f -y -c -m release -p macosx -a arm64 -o build/macos-runtime \
+  --use-llvm-compiler=y --use-cxx-module=n --march=none \
+  --execution-int=uwvm-int --execution-jit=none \
+  --import-ros1=n --import-ros2=n
+xmake -j1 uwvm2-ros
+```
+
+For the LLVM execution backend, select `--execution-jit=llvm` and an explicit
+dependency build budget such as `--llvm-build-jobs=1`. The pinned LLVM
+dependency and the bootstrap compiler are separate selections. Use the Darwin
+static-linking and CPU-baseline guidance above for release packaging.
+
+Do not add `--ros-vendor-*`, `--ros-platform-isaac-*`,
+`--ros-platform-groot=y` or `--ros-platform-jetson=y` to this macOS Runtime
+configuration. Those selections require the Linux ROS deployment boundary;
+the Jetson profile additionally requires Linux ARM64 and ROS2.
+
+### Build the ROS products on an SSH Linux host
+
+Author changes locally, transfer the complete source folder, and build in the
+Linux copy. Substitute your host alias and an existing parent directory; the
+destination folder below must be dedicated to this checkout:
+
+```sh
+LINUX_HOST=linux
+scp -r ./uwvm2-ros "$LINUX_HOST:Documents/"
+ssh "$LINUX_HOST"
+```
+
+Run the `scp` command from the local parent of `uwvm2-ros`, not from inside it.
+For a large development checkout, prepare a clean source snapshot first so
+build outputs and tool caches are not uploaded. Then, in the Linux shell:
+
+```sh
+cd "$HOME/Documents/uwvm2-ros"
+xmake f -y -c -m release -p linux -a x86_64 -o build/ros2 \
+  --use-llvm-compiler=y --use-cxx-module=n --march=none \
+  --execution-int=uwvm-int --execution-jit=none \
+  --import-ros1=n --import-ros2=y
+xmake -j1 uwvm2-ros
+```
+
+Use `-a arm64` on a native ARM64 Linux builder. A Linux VM on Apple Silicon
+does not require an x86_64 Runtime merely because the editor runs on macOS.
+An x86_64-to-ARM64 cross build still requires its explicit target compiler,
+sysroot, native ROS libraries and a separately tested execution environment.
+
+In that Linux environment, choose the imports deliberately:
+
+| Intended Runtime | Root Xmake configuration |
+| --- | --- |
+| ROS1 only | `--import-ros1=y --import-ros2=n` |
+| ROS2 only | `--import-ros1=n --import-ros2=y` |
+| Both namespaces | `--import-ros1=y --import-ros2=y` |
+| Reviewed vendor schemas | Add the vendor switch and matching absolute `-registry-header` path |
+| Larger merged registry | Select explicit in-range `--ros-registry-max-interfaces` and `--ros-registry-max-cells` |
+
+See the [Linux ROS configuration guide](linux.md#ros-build-configuration) for
+complete vendor switches, merged-manifest rules, Gateway CMake commands,
+original ROS2 control selection and ARM64 examples. Root Runtime switches do
+not replace the SDK declarations `ros1_version` or `ros2_version`.
+
+### Guest applications and runtime permissions
+
+Each installed SDK example owns an `xmake.lua`. Its `set_language` and
+`set_ros_platform` declarations select actual source code, while
+`set_arch("wasm32")`/`set_arch("wasm64")` and `set_plat("wasm-wasip1")`
+select the Guest ABI. A supported Linux compiler bundle does not imply that
+the same SDK route already has a macOS-host compiler bundle. Check the
+[current SDK scope](https://github.com/UlteSoft/uwvm2-ros-sdk/blob/main/document/REVIEW.en_US.md) and use the Linux builder
+for routes without a qualified Darwin producer.
+
+`xmake run` needs an installed Runtime and an explicit deployment. Keep the
+ROS-enabled Runtime, its Gateway and their authenticated Unix socket inside
+the same Linux environment. An SSH port forward is not a substitute for the
+Linux peer-credential protocol. Configure [ROS1](../command-line/ros1.md) or
+[ROS2](../command-line/ros2.md) connection fields and exact grants manually;
+for preload deployments, bind grants to the exact loaded module name.
+
+### Generated Mach exception server
+
+The macOS native instruction-step debugger needs Apple's protected Mach
+exception server. [`xmake/mach_exc_protected.lua`](../../xmake/mach_exc_protected.lua)
+runs `xcrun mig` against the selected SDK's `mach/mach_exc.defs`, then compiles
+the generated C server. The Lua rule itself is the explicit file dependency;
+there is no separate checked-in `.uwvm_mig` placeholder.
+
+The root build attaches this rule for macOS ARM64, and for Intel macOS when
+`--macos-x64-native-step=y` is selected. Generated `mach_exc_server.c`,
+`mach_exc.h` and their object stay below the target-specific build/autogen
+directory. Editing the rule or changing the SDK definition invalidates that
+object. Deleting generated build outputs is safe: the next applicable build
+regenerates them. Keep the Lua rule and the SDK's original definition.

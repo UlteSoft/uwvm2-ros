@@ -130,19 +130,19 @@ def main() -> None:
     broker_result = read(args.broker_result)
     vm = read(args.vm_cgroup)
     source_id = build['source_id']
-    product_sha = build['products']['uwvm.exe']['sha256'].lower()
+    product_sha = build['products']['uwvm2-ros.exe']['sha256'].lower()
     broker_sha = build['products']['uwvm-debug-server.exe']['sha256'].lower()
     require(build['status'] == 'cross-built-awaiting-real-windows-vm',
             'ROS Windows LLVM-full PE build did not complete')
     require(main_stage['source_id'] == core3_stage['source_id'] ==
             broker_stage['source_id'] == source_id,
             'main/Core 3/broker stage source IDs differ from the PE')
-    require(main_stage['files']['uwvm.exe'].lower() ==
-            core3_stage['files']['uwvm.exe'].lower() == product_sha,
+    require(main_stage['files']['uwvm2-ros.exe'].lower() ==
+            core3_stage['files']['uwvm2-ros.exe'].lower() == product_sha,
             'main/Core 3 staged PE hashes differ')
     require(main_stage['files']['uwvm-debug-server.exe'].lower() == broker_sha,
             'staged Windows debug broker differs from the PE build')
-    require(broker_stage['files']['uwvm.exe'].lower() == product_sha and
+    require(broker_stage['files']['uwvm2-ros.exe'].lower() == product_sha and
             broker_stage['files']['uwvm-debug-server.exe'].lower() == broker_sha,
             'broker stage has different Windows executables')
     require(main_stage['llvm_certificate_sha256'] ==

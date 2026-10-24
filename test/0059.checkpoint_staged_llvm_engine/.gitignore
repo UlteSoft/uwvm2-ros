@@ -1,0 +1,12 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/checkpoint_first_storage_declaration_consumer
+/checkpoint_module_topology_consumer
+/checkpoint_qualified_api_friends_consumer
+/pending_range_allocation_failure
+/pending_range_retirement
+/real_ppc64_elfv1_object_ranges
+/scope_api
+/typed_slot_transfer

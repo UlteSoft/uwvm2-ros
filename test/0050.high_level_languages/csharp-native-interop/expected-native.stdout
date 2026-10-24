@@ -1,0 +1,6 @@
+interop generic-c-abi memory=0 bytes=13
+interop token=0xFEDCBA9876543210
+interop roundtrip cases=5 high=0xFEDCBA9876543210
+interop copy=utf8+nul exact=true input-unchanged=true
+interop rejected=cap-short,memory-one,input-overflow,output-overflow,high-length canary=true
+interop wasm32-high-arguments=not-applicable

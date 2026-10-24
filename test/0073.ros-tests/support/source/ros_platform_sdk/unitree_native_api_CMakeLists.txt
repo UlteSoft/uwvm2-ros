@@ -1,0 +1,18 @@
+cmake_minimum_required(VERSION 3.16)
+project(uwvm_unitree_native_api_fixture LANGUAGES CXX)
+# Explicit parent-selected source and actual original package installation.
+# No downloads, generated message substitute or native target execution occurs.
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(unitree_api REQUIRED)
+find_package(Threads REQUIRED)
+if(NOT IS_ABSOLUTE "${UWVM_SOURCE}" OR NOT EXISTS "${UWVM_SOURCE}/sdk/origin/custom-types/unitree-api-complete/bounded_records.h")
+  message(FATAL_ERROR "Complete immutable source with actual canonical codec required")
+endif()
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+add_executable(unitree-native-api "${UWVM_SOURCE}/test/0073.ros-tests/support/source/ros_platform_sdk/unitree_native_api_peer.cpp")
+target_compile_features(unitree-native-api PRIVATE cxx_std_20)
+target_include_directories(unitree-native-api PRIVATE "${UWVM_SOURCE}" "${UWVM_SOURCE}/third-parties/fast_io/include")
+ament_target_dependencies(unitree-native-api rclcpp unitree_api)
+target_link_libraries(unitree-native-api Threads::Threads)
+target_compile_options(unitree-native-api PRIVATE -O1 -g0 -UNDEBUG -MD)

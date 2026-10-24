@@ -3,5 +3,5 @@ This test builds small `.wasm` modules from `.wat` and verifies runtime initiali
 Generate `.wasm`:
 - `python3 test/0011.initializer/compile_wat.py`
 
-Run initializer checks (calls `xmake run uwvm -- ...`):
+Run initializer checks (calls `xmake run uwvm2-ros -- ...`):
 - `python3 test/0011.initializer/run_initializer_checks.py`

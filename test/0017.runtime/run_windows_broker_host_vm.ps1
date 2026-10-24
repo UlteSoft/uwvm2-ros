@@ -14,13 +14,13 @@ $ErrorActionPreference = 'Stop'
 $work = Join-Path $env:USERPROFILE 'Documents\uwvm-broker-host'
 New-Item -ItemType Directory -Force $work | Out-Null
 try {
-    foreach ($name in @('uwvm.exe', 'uwvm-debug-server.exe',
+    foreach ($name in @('uwvm2-ros.exe', 'uwvm-debug-server.exe',
                         'windows_control_broker_child.exe', 'native-step-fixture.wasm',
                         'run_windows_control_broker_vm.ps1')) {
         Invoke-WebRequest -UseBasicParsing "$BaseUrl/$name" -OutFile (Join-Path $work $name)
     }
     $expected = @{
-        'uwvm.exe' = $ProductSha256
+        'uwvm2-ros.exe' = $ProductSha256
         'uwvm-debug-server.exe' = $BrokerSha256
         'windows_control_broker_child.exe' = $ChildSha256
         'native-step-fixture.wasm' = $WasmSha256
@@ -108,7 +108,7 @@ public static class UwvmHostConsoleTail {
 }
 '@
 
-$product = Join-Path $work 'uwvm.exe'
+$product = Join-Path $work 'uwvm2-ros.exe'
 $broker = Join-Path $work 'uwvm-debug-server.exe'
 $wasm = Join-Path $work 'native-step-fixture.wasm'
 $probe = Join-Path $work 'run_windows_control_broker_vm.ps1'
@@ -142,7 +142,7 @@ try {
     }
     if (-not $pipe -or -not $token) { throw 'broker did not publish a console-only capability' }
     $guest = @(Get-CimInstance Win32_Process -Filter "ParentProcessId = $($server.Id)" |
-               Where-Object { $_.Name -ieq 'uwvm.exe' })
+               Where-Object { $_.Name -ieq 'uwvm2-ros.exe' })
     if ($guest.Count -eq 1) { $guestPid = [int]$guest[0].ProcessId }
     $probeOutput = & $probe -PipeName $pipe -Token $token -ProductExe $product `
         -BrokerExe $broker | Out-String

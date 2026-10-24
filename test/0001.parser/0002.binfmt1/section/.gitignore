@@ -1,0 +1,19 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/code_section_fuzzer
+/custom_section_fuzzer
+/data_section_fuzzer
+/element_section_fuzzer
+/export_section_fuzzer
+/function_section_fuzzer
+/global_section_fuzzer
+/import_section
+/memory_section
+/memory_section_fuzzer
+/start_section_fuzzer
+/table_section
+/table_section_fuzzer
+/type_section
+/type_section_fuzzer

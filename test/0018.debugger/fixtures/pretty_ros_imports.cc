@@ -4,11 +4,11 @@
 # error "The ROS import qualification fixture requires actual WebAssembly imports"
 #endif
 #if defined(PRETTY_ROS1) && !defined(PRETTY_ROS2)
-# include "../../../sdk/ros1/abi.h"
+# include "../../../sdk/origin/ros1/abi.h"
 # define PRETTY_ROS_ABI_VERSION uwvm_ros1_abi_version
 # define PRETTY_ROS_IMPORT_MODULE "uwvm_ros1_v1"
 #elif defined(PRETTY_ROS2) && !defined(PRETTY_ROS1)
-# include "../../../sdk/ros2/abi.h"
+# include "../../../sdk/origin/ros2/abi.h"
 # define PRETTY_ROS_ABI_VERSION uwvm_ros2_abi_version
 # define PRETTY_ROS_IMPORT_MODULE "uwvm_ros2_v1"
 #else

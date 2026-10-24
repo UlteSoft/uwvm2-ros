@@ -48,8 +48,8 @@ def main() -> None:
     require('$result.source_id = [string]$qualification.source_id' in guest_script and
             'Require ($result.product_sha256 -ieq $qualification.product_sha256)' in guest_script,
             'guest Core 3 script must bind its source ID and PE to the qualification')
-    product = Path(build['products']['uwvm.exe']['path'])
-    require(digest(product).lower() == build['products']['uwvm.exe']['sha256'].lower(),
+    product = Path(build['products']['uwvm2-ros.exe']['path'])
+    require(digest(product).lower() == build['products']['uwvm2-ros.exe']['sha256'].lower(),
             'cross-built Windows PE changed before Core 3 staging')
     require(digest(args.gc_const) == GC_CONST_SHA256,
             'single-op GC constant fixture differs from Wasmtime-validated bytes')
@@ -102,7 +102,7 @@ def main() -> None:
             'Windows VM staging must stay on temporary storage')
     output.mkdir(mode=0o700, parents=True, exist_ok=False)
     origins = {
-        'uwvm.exe': product,
+        'uwvm2-ros.exe': product,
         'core3-eh-threads.wasm': args.eh,
         'core3-typed-ref.wasm': args.typed,
         'core3-throw-ref-bottom.wasm': args.throw_ref,
@@ -119,7 +119,7 @@ def main() -> None:
     origins.update({stem + '.wasm': args.gap_dir / (stem + '.wasm')
                     for stem in GAP_STEMS})
     qualification = {'schema': 1, 'source_id': build['source_id'],
-                     'product_sha256': build['products']['uwvm.exe']['sha256'],
+                     'product_sha256': build['products']['uwvm2-ros.exe']['sha256'],
                      'llvm_certificate_sha256': build['llvm_certificate_sha256'],
                      'branch_reference_sha256': digest(branch_summary_path),
                      'gap_oracle_sha256': digest(gap_manifest_path),
@@ -142,7 +142,7 @@ def main() -> None:
             require(files[name] == qualification['files_sha256'][name],
                     f'Core 3 input changed between qualification and staging: {name}')
     manifest = {'schema': 1, 'source_id': build['source_id'],
-                'product_sha256': files['uwvm.exe'],
+                'product_sha256': files['uwvm2-ros.exe'],
                 'llvm_certificate_sha256': build['llvm_certificate_sha256'],
                 'branch_reference_sha256': digest(branch_summary_path),
                 'gap_oracle_sha256': digest(gap_manifest_path),

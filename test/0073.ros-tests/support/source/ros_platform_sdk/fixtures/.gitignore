@@ -1,0 +1,4 @@
+# Test fixture inputs remain visible; generated products stay local.
+/build/
+/out/
+/tmp/

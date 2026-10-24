@@ -8,7 +8,7 @@ with N.lease():
   c=cs[name];times=next(x for x in summary if x['case']==name)['medians']
   for analysis in ['hotspots','uarch-exploration']:
    for v in vs:
-    elf=O/'build/wasmtime-bench' if v=='wasmtime-drc' else R/'build/deferred-typed-array-access-inline-static32/uwvm'
+    elf=O/'build/wasmtime-bench' if v=='wasmtime-drc' else R/'build/deferred-typed-array-access-inline-static32/uwvm2-ros'
     template=json.loads((R/'source/read-lock-hardware-specs-c20'/('read-lock-hw-c20-f32-immutable-'+('wasmtime-drc' if v=='wasmtime-drc' else 'typed-array-load')+'-'+analysis+'.json')).read_text());reps=math.ceil(1_500_000_000/times[v]['ns']/16)*16;label='root-store-nop-c24-a1-'+name+'-'+v+'-'+analysis;pd=R/'profiles'/label;sp=F/(label+'.json');cmd=[elf,c['wasm']] if v=='wasmtime-drc' else [elf,*flags,'--run',c['wasm']]
     rp=R/'evidence'/(label+'.json')
     if rp.exists() and (json.loads(rp.read_text())['returncode']!=0 or json.loads(rp.read_text())['guard'] is not None):label+='-retry-a2';pd=R/'profiles'/label;sp=F/(label+'.json')

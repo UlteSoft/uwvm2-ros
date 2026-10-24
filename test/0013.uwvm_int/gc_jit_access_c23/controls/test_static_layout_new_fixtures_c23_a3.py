@@ -4,7 +4,7 @@ R=Path('/tmp/uwvm-gc-perf-20261011-r74');O=Path('/tmp/uwvm-gc-perf-20261011-r73'
 cs=json.loads((R/'source/static-layout-fixtures-c23-a2/cases.json').read_text())['cases'];rows=[]
 with N.lease():
  for v in ['typed-array-access-inline','typed-array-access-inline-static32','wasmtime-drc']:
-  elf=O/'build/wasmtime-bench' if v=='wasmtime-drc' else R/('build/deferred-'+v+'/uwvm')
+  elf=O/'build/wasmtime-bench' if v=='wasmtime-drc' else R/('build/deferred-'+v+'/uwvm2-ros')
   for c in cs:
    env=dict(os.environ,LD_LIBRARY_PATH=str(O/'source/wasmtime-capi/lib'))
    for k in list(env):

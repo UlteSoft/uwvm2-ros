@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><RosAotSource Condition="'$(RosAotSource)' == '' And Exists('$(MSBuildThisFileDirectory)../Aot.props')">$(MSBuildThisFileDirectory)..</RosAotSource></PropertyGroup>
+  <Import Project="$(RosAotSource)/Aot.props" Condition="'$(RosAotSource)' != ''" />
+  <PropertyGroup><OutputType>Exe</OutputType><AssemblyName>uwvm-aot-owned-faults</AssemblyName><DefineConstants>$(DefineConstants);UWVM_ROS2;UWVM_ROSWASM_OWNED_SERVICE;UWVM_ROSWASM_OWNED_GUEST_FAULTS</DefineConstants></PropertyGroup>
+  <ItemGroup>
+    <TrimmerRootAssembly Remove="Uwvm.RosWasm.Aot" /><TrimmerRootAssembly Include="uwvm-aot-owned-faults" />
+    <Compile Include="$(RosSourceRoot)/sdk/origin/csharp/RosWasm/*.cs" />
+    <Compile Include="$(RosSourceRoot)/sdk/origin/csharp/owned/NativeOwned.cs;$(RosSourceRoot)/sdk/origin/csharp/owned/PreparedSession.cs;$(RosSourceRoot)/sdk/origin/csharp/owned/OwnedWire.cs;$(RosSourceRoot)/sdk/origin/csharp/owned/OwnedGroup.cs;$(RosSourceRoot)/sdk/origin/csharp/owned/ControlWire.cs" />
+    <Compile Include="$(RosSourceRoot)/sdk/origin/csharp/owned/examples/AppCommon.cs;$(RosOwnedFaultSource)/GuestFaultFixture.cs" />
+    <Compile Include="$(RosOwnedGeneratedDir)/BoundedRecords.cs;$(RosOwnedGeneratedDir)/ControlRoots.cs" />
+  </ItemGroup>
+  <Import Project="$(RosAotSource)/Aot.targets" Condition="'$(RosAotSource)' != ''" />
+  <Target Name="RequireRelocatedSources" BeforeTargets="PrepareForBuild"><Error Condition="'$(RosAotSource)' == '' Or !Exists('$(RosOwnedFaultSource)/GuestFaultFixture.cs')" Text="Supply actual RosAotSource and RosOwnedFaultSource roots for the relocated Guest-only fault project." /></Target>
+</Project>

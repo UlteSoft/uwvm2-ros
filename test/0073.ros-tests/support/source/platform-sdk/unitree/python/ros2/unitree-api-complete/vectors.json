@@ -1,0 +1,256 @@
+{
+  "cases": [
+    {
+      "type": "unitree_api/msg/Request",
+      "wire": "f1f71e5f00000000da4c44010000000004f3c0eb00000000c6afd309010b000000763133353932343235ceb20200000063fa",
+      "value": {
+        "record": "unitree_api/msg/Request",
+        "members": {
+          "header": {
+            "record": "unitree_api/msg/RequestHeader",
+            "members": {
+              "identity": {
+                "record": "unitree_api/msg/RequestIdentity",
+                "members": {
+                  "id": {
+                    "scalar": "int64",
+                    "value": 1595865073
+                  },
+                  "api_id": {
+                    "scalar": "int64",
+                    "value": 21253338
+                  }
+                }
+              },
+              "lease": {
+                "record": "unitree_api/msg/RequestLease",
+                "members": {
+                  "id": {
+                    "scalar": "int64",
+                    "value": 3955290884
+                  }
+                }
+              },
+              "policy": {
+                "record": "unitree_api/msg/RequestPolicy",
+                "members": {
+                  "priority": {
+                    "scalar": "int32",
+                    "value": 164868038
+                  },
+                  "noreply": {
+                    "scalar": "bool",
+                    "value": true
+                  }
+                }
+              }
+            }
+          },
+          "parameter": {
+            "scalar": "string",
+            "value": "v13592425\u03b2"
+          },
+          "binary": {
+            "array": [
+              {
+                "scalar": "uint8",
+                "value": 99
+              },
+              {
+                "scalar": "uint8",
+                "value": 250
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "unitree_api/msg/RequestHeader",
+      "wire": "5814668f00000000ec46b3d6000000002f50455f0000000050192f7401",
+      "value": {
+        "record": "unitree_api/msg/RequestHeader",
+        "members": {
+          "identity": {
+            "record": "unitree_api/msg/RequestIdentity",
+            "members": {
+              "id": {
+                "scalar": "int64",
+                "value": 2405831768
+              },
+              "api_id": {
+                "scalar": "int64",
+                "value": 3602073324
+              }
+            }
+          },
+          "lease": {
+            "record": "unitree_api/msg/RequestLease",
+            "members": {
+              "id": {
+                "scalar": "int64",
+                "value": 1598378031
+              }
+            }
+          },
+          "policy": {
+            "record": "unitree_api/msg/RequestPolicy",
+            "members": {
+              "priority": {
+                "scalar": "int32",
+                "value": 1949243728
+              },
+              "noreply": {
+                "scalar": "bool",
+                "value": true
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "unitree_api/msg/RequestIdentity",
+      "wire": "7f7f010c0000000029644f6500000000",
+      "value": {
+        "record": "unitree_api/msg/RequestIdentity",
+        "members": {
+          "id": {
+            "scalar": "int64",
+            "value": 201424767
+          },
+          "api_id": {
+            "scalar": "int64",
+            "value": 1699701801
+          }
+        }
+      }
+    },
+    {
+      "type": "unitree_api/msg/RequestLease",
+      "wire": "df05335400000000",
+      "value": {
+        "record": "unitree_api/msg/RequestLease",
+        "members": {
+          "id": {
+            "scalar": "int64",
+            "value": 1412629983
+          }
+        }
+      }
+    },
+    {
+      "type": "unitree_api/msg/RequestPolicy",
+      "wire": "50f5bc0c00",
+      "value": {
+        "record": "unitree_api/msg/RequestPolicy",
+        "members": {
+          "priority": {
+            "scalar": "int32",
+            "value": 213710160
+          },
+          "noreply": {
+            "scalar": "bool",
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "type": "unitree_api/msg/Response",
+      "wire": "7c9cd363000000003402241b0000000070b47b550b000000763033316661396265ceb202000000bc44",
+      "value": {
+        "record": "unitree_api/msg/Response",
+        "members": {
+          "header": {
+            "record": "unitree_api/msg/ResponseHeader",
+            "members": {
+              "identity": {
+                "record": "unitree_api/msg/RequestIdentity",
+                "members": {
+                  "id": {
+                    "scalar": "int64",
+                    "value": 1674812540
+                  },
+                  "api_id": {
+                    "scalar": "int64",
+                    "value": 455344692
+                  }
+                }
+              },
+              "status": {
+                "record": "unitree_api/msg/ResponseStatus",
+                "members": {
+                  "code": {
+                    "scalar": "int32",
+                    "value": 1434170480
+                  }
+                }
+              }
+            }
+          },
+          "data": {
+            "scalar": "string",
+            "value": "v031fa9be\u03b2"
+          },
+          "binary": {
+            "array": [
+              {
+                "scalar": "int8",
+                "value": -68
+              },
+              {
+                "scalar": "int8",
+                "value": 68
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "unitree_api/msg/ResponseHeader",
+      "wire": "ba1859b300000000d7b57afc000000005717eaa8",
+      "value": {
+        "record": "unitree_api/msg/ResponseHeader",
+        "members": {
+          "identity": {
+            "record": "unitree_api/msg/RequestIdentity",
+            "members": {
+              "id": {
+                "scalar": "int64",
+                "value": 3008960698
+              },
+              "api_id": {
+                "scalar": "int64",
+                "value": 4235900375
+              }
+            }
+          },
+          "status": {
+            "record": "unitree_api/msg/ResponseStatus",
+            "members": {
+              "code": {
+                "scalar": "int32",
+                "value": -1461053609
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "unitree_api/msg/ResponseStatus",
+      "wire": "f2e4122f",
+      "value": {
+        "record": "unitree_api/msg/ResponseStatus",
+        "members": {
+          "code": {
+            "scalar": "int32",
+            "value": 789767410
+          }
+        }
+      }
+    }
+  ]
+}

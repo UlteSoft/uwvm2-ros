@@ -467,7 +467,7 @@ function Get-VerifiedArtifact([string]$Name, [string]$Destination) {
     Require ($expected -match '^[0-9a-fA-F]{64}$') "invalid staged SHA-256: $Name"
     if ($ArtifactRoot) {
         $source = Join-Path $ArtifactRoot $Name
-        if ($Name -eq 'uwvm.exe') {
+        if ($Name -eq 'uwvm2-ros.exe') {
             Require ($Destination -eq $source) 'PE must execute from the verified read-only root'
         } else {
             Copy-Item -LiteralPath $source -Destination $Destination -Force
@@ -497,13 +497,13 @@ try {
     $result.source_id = [string]$script:qualification.source_id
     $result.llvm_certificate_sha256 = [string]$script:qualification.llvm_certificate_sha256
     $result.qualification_sha256 = (Get-FileHash $qualificationFile -Algorithm SHA256).Hash
-    $uwvm = if ($ArtifactRoot) { Join-Path $ArtifactRoot 'uwvm.exe' } else { Join-Path $work 'uwvm.exe' }
+    $uwvm = if ($ArtifactRoot) { Join-Path $ArtifactRoot 'uwvm2-ros.exe' } else { Join-Path $work 'uwvm2-ros.exe' }
     $launcher = Join-Path $work 'windows_debug_product_launcher.exe'
     $wasm = Join-Path $work 'native-step-fixture.wasm'
-    Get-VerifiedArtifact 'uwvm.exe' $uwvm
+    Get-VerifiedArtifact 'uwvm2-ros.exe' $uwvm
     Get-VerifiedArtifact 'windows_debug_product_launcher.exe' $launcher
     Get-VerifiedArtifact 'native-step-fixture.wasm' $wasm
-    $result.product_sha256 = (Get-FileHash $uwvm -Algorithm SHA256).Hash
+    $result.product_sha256 = (Get-FileHash $uwvm2-ros -Algorithm SHA256).Hash
     $result.launcher_sha256 = (Get-FileHash $launcher -Algorithm SHA256).Hash
     $result.fixture_sha256 = (Get-FileHash $wasm -Algorithm SHA256).Hash
 

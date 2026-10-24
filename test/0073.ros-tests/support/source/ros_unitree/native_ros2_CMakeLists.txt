@@ -1,0 +1,109 @@
+cmake_minimum_required(VERSION 3.16)
+project(uwvm_unitree_native_controller LANGUAGES CXX)
+# Root stages this exact file as CMakeLists.txt in a fresh owned source directory.
+# UWVM_SOURCE is the explicit immutable complete project root. No package is
+# downloaded/installed; no target executable or try_run is executed by configure.
+set(BUILD_TESTING OFF CACHE BOOL "Only the explicit native baseline" FORCE)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(UWVM_SOURCE "" CACHE PATH "Complete frozen project root")
+set(UWVM_UNITREE_NATIVE_CXX_STANDARD "20" CACHE STRING "Explicit actual SDK C++17 or20")
+set(UWVM_UNITREE_NATIVE_FAMILY "unitree_go" CACHE STRING "Explicit native carrier unitree_go or unitree_hg")
+set(UWVM_UNITREE_NATIVE_MODE "go2-stand" CACHE STRING "Explicit go2-stand or sampled-hold controller")
+if(NOT UWVM_UNITREE_NATIVE_FAMILY MATCHES "^(unitree_go|unitree_hg)$" OR
+   NOT UWVM_UNITREE_NATIVE_MODE MATCHES "^(go2-stand|sampled-hold)$" OR
+   (UWVM_UNITREE_NATIVE_FAMILY STREQUAL "unitree_hg" AND NOT UWVM_UNITREE_NATIVE_MODE STREQUAL "sampled-hold"))
+  message(FATAL_ERROR "Select an explicit carrier/controller pair; Go2 stand is not an HG policy")
+endif()
+if(NOT UWVM_UNITREE_NATIVE_CXX_STANDARD MATCHES "^(17|20)$")
+  message(FATAL_ERROR "Select actual C++17 or20 without weakening source/float flags")
+endif()
+if(NOT IS_ABSOLUTE "${UWVM_SOURCE}" OR
+   NOT EXISTS "${UWVM_SOURCE}/test/0073.ros-tests/support/source/ros_unitree/native_ros2_controller.cpp" OR
+   NOT EXISTS "${UWVM_SOURCE}/sdk/origin/robots/unitree/include/roswasm_unitree/simulation_control.h" OR
+   NOT EXISTS "${UWVM_SOURCE}/sdk/origin/robots/unitree/include/roswasm_unitree/simulation_hold.h")
+  message(FATAL_ERROR "An explicit frozen source with the single shared controller kernel is required")
+endif()
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(${UWVM_UNITREE_NATIVE_FAMILY} REQUIRED)
+find_package(Threads REQUIRED)
+if(NOT CMAKE_CXX_COMPILER_ID MATCHES "^(GNU|Clang|AppleClang)$")
+  message(FATAL_ERROR "Actual full-MD/link-trace requires a selected GNU/Clang compiler")
+endif()
+set(CMAKE_CXX_STANDARD "${UWVM_UNITREE_NATIVE_CXX_STANDARD}")
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+include(CheckCXXSourceCompiles)
+set(CMAKE_REQUIRED_INCLUDES ${rclcpp_INCLUDE_DIRS})
+if(TARGET rclcpp::rclcpp)
+  set(CMAKE_REQUIRED_LIBRARIES rclcpp::rclcpp)
+else()
+  set(CMAKE_REQUIRED_LIBRARIES ${rclcpp_LIBRARIES})
+endif()
+# Re-evaluate the actual selected SDK/compiler, not a stale cache from another
+# SDK. This is a compile+link feature probe only; it never constructs a live Node.
+unset(UWVM_UNITREE_NATIVE_QUIET_NODE CACHE)
+check_cxx_source_compiles("#include <rclcpp/rclcpp.hpp>
+#include <chrono>
+#include <memory>
+int main(){auto context=std::make_shared<rclcpp::Context>();
+rclcpp::NodeOptions options;options.context(context).use_global_arguments(false).enable_rosout(false);
+options.start_parameter_services(false).start_parameter_event_publisher(false).use_intra_process_comms(false);
+options.parameter_overrides({rclcpp::Parameter(\"start_type_description_service\",false)});
+auto node=std::make_shared<rclcpp::Node>(\"compile_only\",\"/uwvm_unitree\",options);
+rclcpp::ExecutorOptions eo;eo.context=context;rclcpp::executors::SingleThreadedExecutor executor{eo};
+executor.add_node(node);executor.spin_once(std::chrono::nanoseconds{0});executor.remove_node(node);return 0;}"
+ UWVM_UNITREE_NATIVE_QUIET_NODE)
+if(NOT UWVM_UNITREE_NATIVE_QUIET_NODE)
+  message(FATAL_ERROR "Selected SDK cannot link the explicit quiet/single-context bounded-executor contract")
+endif()
+unset(CMAKE_REQUIRED_INCLUDES)
+unset(CMAKE_REQUIRED_LIBRARIES)
+add_executable(unitree-native-ros2-controller "${UWVM_SOURCE}/test/0073.ros-tests/support/source/ros_unitree/native_ros2_controller.cpp")
+if(UWVM_UNITREE_NATIVE_FAMILY STREQUAL "unitree_hg")
+  target_compile_definitions(unitree-native-ros2-controller PRIVATE UWVM_UNITREE_NATIVE_HG=1)
+else()
+  target_compile_definitions(unitree-native-ros2-controller PRIVATE UWVM_UNITREE_NATIVE_HG=0)
+endif()
+if(UWVM_UNITREE_NATIVE_MODE STREQUAL "sampled-hold")
+  target_compile_definitions(unitree-native-ros2-controller PRIVATE UWVM_UNITREE_NATIVE_HOLD=1)
+else()
+  target_compile_definitions(unitree-native-ros2-controller PRIVATE UWVM_UNITREE_NATIVE_HOLD=0)
+endif()
+target_include_directories(unitree-native-ros2-controller PRIVATE "${UWVM_SOURCE}"
+  "${UWVM_SOURCE}/sdk/origin/robots/unitree/include")
+if(UWVM_UNITREE_NATIVE_CXX_STANDARD STREQUAL "20")
+  target_include_directories(unitree-native-ros2-controller PRIVATE
+    "${UWVM_SOURCE}/third-parties/fast_io/include"
+    "${UWVM_SOURCE}/third-parties/bizwen/include"
+    "${UWVM_SOURCE}/third-parties/boost_unordered/include")
+endif()
+# Use plain link signature consistently with older ament_target_dependencies.
+if(COMMAND ament_target_dependencies)
+  ament_target_dependencies(unitree-native-ros2-controller rclcpp ${UWVM_UNITREE_NATIVE_FAMILY})
+else()
+  # Recent ament can omit that macro. Reuse the actual selected package's
+  # public export, never guess a distro path or invent missing libraries.
+  foreach(package IN ITEMS rclcpp ${UWVM_UNITREE_NATIVE_FAMILY})
+    if(TARGET ${package}::${package})
+      target_link_libraries(unitree-native-ros2-controller ${package}::${package})
+    elseif(DEFINED ${package}_TARGETS AND NOT "${${package}_TARGETS}" STREQUAL "")
+      target_link_libraries(unitree-native-ros2-controller ${${package}_TARGETS})
+    elseif(DEFINED ${package}_LIBRARIES AND NOT "${${package}_LIBRARIES}" STREQUAL "")
+      target_include_directories(unitree-native-ros2-controller SYSTEM PRIVATE ${${package}_INCLUDE_DIRS})
+      target_link_libraries(unitree-native-ros2-controller ${${package}_LIBRARIES})
+    else()
+      message(FATAL_ERROR "Selected ${package} lacks an explicit supported link export")
+    endif()
+  endforeach()
+endif()
+target_link_libraries(unitree-native-ros2-controller Threads::Threads)
+target_compile_options(unitree-native-ros2-controller PRIVATE -O3 -g0 -UNDEBUG
+  -fno-fast-math -ffp-contract=off -MD
+  -MF "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/unitree-native-ros2-controller.dir/native_ros2_controller.cpp.o.d")
+target_link_options(unitree-native-ros2-controller PRIVATE -Wl,--trace)
+# Configure data is never an actual build or native delivery receipt. Root
+# retains effective verbose argv, complete deps/system headers, actual ELF/maps,
+# SDK/tool/source before-after pins and independent physics/DDS observations.
+file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/native-controller-contract.txt" CONTENT
+"status=CONFIGURED_NOT_EXECUTED\nfamily=${UWVM_UNITREE_NATIVE_FAMILY}\nmode=${UWVM_UNITREE_NATIVE_MODE}\ncxx_standard=${UWVM_UNITREE_NATIVE_CXX_STANDARD}\nshared_headers=${UWVM_SOURCE}/sdk/origin/robots/unitree/include/roswasm_unitree\nartifact=$<TARGET_FILE:unitree-native-ros2-controller>\nprotocol=UCK1-stand-or-UHL1-hold/R/Q\nrole=NATIVE_ROS2_NOT_WASM\n")

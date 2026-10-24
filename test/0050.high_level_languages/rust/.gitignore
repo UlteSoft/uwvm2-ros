@@ -1,0 +1,7 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/check_linked_dwarf_budget
+/check_linked_dwarf_queries
+/target/

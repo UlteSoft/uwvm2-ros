@@ -52,7 +52,7 @@ def main():
                     binary = args.wasmtime
                     argv = [str(binary), 'run', '-C', 'cache=n', str(wasm)]
                 else:
-                    binary = args.arena / 'products' / engine / 'uwvm'
+                    binary = args.arena / 'products' / engine / 'uwvm2-ros'
                     identity = json.loads((binary.parent / 'identity.json').read_text())
                     require(digest(binary) == identity['binary_sha256'], 'wrong UWVM product identity')
                     row['product'] = identity

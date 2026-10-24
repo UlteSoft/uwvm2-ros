@@ -373,10 +373,10 @@ namespace
     {
         for(;;)
         {
-            auto const candidate{directory / "uwvm"};
+            auto const candidate{directory / "uwvm2-ros"};
             if(::std::filesystem::exists(candidate)) { return candidate; }
 #ifdef _WIN32
-            auto const windows_candidate{directory / "uwvm.exe"};
+            auto const windows_candidate{directory / "uwvm2-ros.exe"};
             if(::std::filesystem::exists(windows_candidate)) { return windows_candidate; }
 #endif
             if(directory == directory.root_path()) { return {}; }

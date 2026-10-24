@@ -1,9 +1,0 @@
-{
-  "format": "uwvm-ros-custom-fixed-v1",
-  "types": [
-    {"ros_version": 1, "type": "example_interfaces_custom/Packet", "file": "Packet.msg"},
-    {"ros_version": 1, "type": "example_interfaces_custom/ScalarRecord", "file": "ScalarRecord.msg"},
-    {"ros_version": 1, "type": "example_interfaces_custom/NestedRecord", "file": "NestedRecord.msg"},
-    {"ros_version": 2, "type": "example_interfaces_custom/msg/FixedSample", "file": "FixedSample.idl"}
-  ]
-}

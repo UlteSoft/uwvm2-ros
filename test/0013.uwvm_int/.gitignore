@@ -1,0 +1,25 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/uwvm_int_control
+/uwvm_int_fp_bit_environment
+/uwvm_int_fp_bits
+/uwvm_int_fp_environment
+/uwvm_int_fp_fused_bits
+/uwvm_int_fp_nan_encoding
+/uwvm_int_fp_parser_bits
+/uwvm_int_fp_provider_bits
+/uwvm_int_fp_rounding
+/uwvm_int_fp_tail_chain
+/uwvm_int_memory_guarded_store
+/uwvm_int_register_ring_spill
+/uwvm_int_rounding_nan
+/uwvm_int_simd_conversion_bits
+/uwvm_int_simd_cross
+/uwvm_int_simd_fp_bits
+/uwvm_int_simd_lane_bits
+/uwvm_int_simd_nan_encoding
+/uwvm_int_simd_no_sse_arithmetic
+/uwvm_int_simd_rounding
+/uwvm_int_stacktop

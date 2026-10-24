@@ -1,3 +1,0 @@
-WatchdogConfigCommon base_config
-string node_name
-uint8 num_requests

@@ -4220,7 +4220,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                                                     ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
                             }
 #endif
-                            ::fast_io::fast_terminate();
+                            ::fast_io::fast_exit(1);
                         }
                     }
                     else if(imp.link_kind == func_link_kind::defined)
@@ -4308,7 +4308,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                                                     ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
                             }
 #endif
-                            ::fast_io::fast_terminate();
+                            ::fast_io::fast_exit(1);
                         }
                     }
 #if defined(UWVM_SUPPORT_PRELOAD_DL)
@@ -4402,7 +4402,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                                                     ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
                             }
 # endif
-                            ::fast_io::fast_terminate();
+                            ::fast_io::fast_exit(1);
                         }
                     }
 #endif
@@ -4497,7 +4497,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                                                     ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
                             }
 # endif
-                            ::fast_io::fast_terminate();
+                            ::fast_io::fast_exit(1);
                         }
                     }
 #endif
@@ -4595,7 +4595,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                                                     ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
                             }
 #endif
-                            ::fast_io::fast_terminate();
+                            ::fast_io::fast_exit(1);
                         }
                     }
                     else [[unlikely]]

@@ -1,0 +1,1089 @@
+{
+  "common": {
+    "backend": 2,
+    "entry": "sdk/origin/examples/javascript_guest/00-raw.mjs",
+    "exports": [],
+    "imports": [],
+    "initial_memory": 16777216,
+    "limits": {
+      "heap_bytes": 33554432,
+      "input_bytes": 4096,
+      "interrupt_polls": 1024,
+      "max_jobs": 4096,
+      "max_modules": 64,
+      "max_source_bytes": 1048576,
+      "max_text_bytes": 4193786,
+      "output_bytes": 4096,
+      "print_bytes": 4096,
+      "stack_bytes": 524288
+    },
+    "maximum_memory": 67108864,
+    "mode": "command",
+    "modules": [
+      {
+        "name": "sdk/origin/javascript/abi.mjs",
+        "source": "sdk/origin/javascript/abi.mjs"
+      },
+      {
+        "name": "sdk/origin/javascript/raw.mjs",
+        "source": "sdk/origin/javascript/raw.mjs"
+      },
+      {
+        "name": "sdk/origin/javascript/roswasm.mjs",
+        "source": "sdk/origin/javascript/roswasm.mjs"
+      },
+      {
+        "name": "sdk/origin/javascript/async.mjs",
+        "source": "sdk/origin/javascript/async.mjs"
+      },
+      {
+        "name": "sdk/origin/javascript/relay.mjs",
+        "source": "sdk/origin/javascript/relay.mjs"
+      },
+      {
+        "name": "sdk/origin/javascript/codecs.mjs",
+        "source": "sdk/origin/javascript/codecs.mjs"
+      },
+      {
+        "name": "sdk/origin/javascript/scheduling.mjs",
+        "source": "sdk/origin/javascript/scheduling.mjs"
+      },
+      {
+        "name": "sdk/origin/javascript/ownership.mjs",
+        "source": "sdk/origin/javascript/ownership.mjs"
+      },
+      {
+        "name": "sdk/origin/javascript/events.mjs",
+        "source": "sdk/origin/javascript/events.mjs"
+      },
+      {
+        "name": "sdk/origin/javascript/copied_transport.mjs",
+        "source": "sdk/origin/javascript/copied_transport.mjs"
+      },
+      {
+        "name": "sdk/origin/javascript/guest.mjs",
+        "source": "sdk/origin/javascript/guest.mjs"
+      },
+      {
+        "name": "sdk/origin/javascript/guest/bootstrap.mjs",
+        "source": "sdk/origin/javascript/guest/bootstrap.mjs"
+      },
+      {
+        "name": "sdk/origin/examples/javascript/07-sync-application.mjs",
+        "source": "sdk/origin/examples/javascript/07-sync-application.mjs"
+      },
+      {
+        "name": "sdk/origin/examples/javascript/06-async-application.mjs",
+        "source": "sdk/origin/examples/javascript/06-async-application.mjs"
+      },
+      {
+        "name": "sdk/origin/examples/javascript/09-unified-events.mjs",
+        "source": "sdk/origin/examples/javascript/09-unified-events.mjs"
+      },
+      {
+        "name": "sdk/origin/custom-types/generated-r3/fixed_records.mjs",
+        "source": "sdk/origin/custom-types/generated-r3/fixed_records.mjs"
+      },
+      {
+        "name": "sdk/origin/examples/javascript_guest/support.mjs",
+        "source": "sdk/origin/examples/javascript_guest/support.mjs"
+      },
+      {
+        "name": "sdk/origin/examples/javascript_guest/config.mjs",
+        "source": "sdk/origin/examples/javascript_guest/config.mjs"
+      },
+      {
+        "name": "sdk/origin/examples/javascript_guest/actions.mjs",
+        "source": "sdk/origin/examples/javascript_guest/actions.mjs"
+      },
+      {
+        "name": "sdk/origin/examples/javascript_guest/00-raw.mjs",
+        "source": "sdk/origin/examples/javascript_guest/00-raw.mjs"
+      },
+      {
+        "name": "sdk/origin/examples/javascript_guest/01-codecs.mjs",
+        "source": "sdk/origin/examples/javascript_guest/01-codecs.mjs"
+      },
+      {
+        "name": "sdk/origin/examples/javascript_guest/02-node.mjs",
+        "source": "sdk/origin/examples/javascript_guest/02-node.mjs"
+      },
+      {
+        "name": "sdk/origin/examples/javascript_guest/03-application.mjs",
+        "source": "sdk/origin/examples/javascript_guest/03-application.mjs"
+      },
+      {
+        "name": "sdk/origin/examples/javascript_guest/04-async-application.mjs",
+        "source": "sdk/origin/examples/javascript_guest/04-async-application.mjs"
+      },
+      {
+        "name": "sdk/origin/examples/javascript_guest/05-ownership-scheduling.mjs",
+        "source": "sdk/origin/examples/javascript_guest/05-ownership-scheduling.mjs"
+      },
+      {
+        "name": "sdk/origin/examples/javascript_guest/06-custom-codec.mjs",
+        "source": "sdk/origin/examples/javascript_guest/06-custom-codec.mjs"
+      },
+      {
+        "name": "sdk/origin/examples/javascript_guest/07-complete-denied-abi.mjs",
+        "source": "sdk/origin/examples/javascript_guest/07-complete-denied-abi.mjs"
+      },
+      {
+        "name": "sdk/origin/examples/javascript_guest/08-unified-events.mjs",
+        "source": "sdk/origin/examples/javascript_guest/08-unified-events.mjs"
+      },
+      {
+        "name": "sdk/origin/examples/javascript_guest/09-boundary-refusals.mjs",
+        "source": "sdk/origin/examples/javascript_guest/09-boundary-refusals.mjs"
+      },
+      {
+        "name": "sdk/origin/examples/javascript_guest/limit-interrupt.mjs",
+        "source": "sdk/origin/examples/javascript_guest/limit-interrupt.mjs"
+      },
+      {
+        "name": "sdk/origin/examples/javascript_guest/limit-heap.mjs",
+        "source": "sdk/origin/examples/javascript_guest/limit-heap.mjs"
+      },
+      {
+        "name": "sdk/origin/examples/javascript_guest/limit-jobs.mjs",
+        "source": "sdk/origin/examples/javascript_guest/limit-jobs.mjs"
+      }
+    ],
+    "optimization": "-O2",
+    "random_seed": 1,
+    "schema": "uwvm-embedded-javascript-build-v1"
+  },
+  "schema": "uwvm-javascript-guest-recipes-v1",
+  "variants": {
+    "00-raw-ros1": {
+      "backend": 1,
+      "entry": "sdk/origin/examples/javascript_guest/00-raw.mjs"
+    },
+    "00-raw-ros2": {
+      "backend": 2,
+      "entry": "sdk/origin/examples/javascript_guest/00-raw.mjs"
+    },
+    "01-codecs-ros1": {
+      "backend": 1,
+      "entry": "sdk/origin/examples/javascript_guest/01-codecs.mjs"
+    },
+    "01-codecs-ros2": {
+      "backend": 2,
+      "entry": "sdk/origin/examples/javascript_guest/01-codecs.mjs"
+    },
+    "02-node-ros1": {
+      "backend": 1,
+      "entry": "sdk/origin/examples/javascript_guest/02-node.mjs"
+    },
+    "02-node-ros2": {
+      "backend": 2,
+      "entry": "sdk/origin/examples/javascript_guest/02-node.mjs"
+    },
+    "03-application-ros1": {
+      "backend": 1,
+      "entry": "sdk/origin/examples/javascript_guest/03-application.mjs"
+    },
+    "03-application-ros2": {
+      "backend": 2,
+      "entry": "sdk/origin/examples/javascript_guest/03-application.mjs"
+    },
+    "04-async-application-ros1": {
+      "backend": 1,
+      "entry": "sdk/origin/examples/javascript_guest/04-async-application.mjs"
+    },
+    "04-async-application-ros2": {
+      "backend": 2,
+      "entry": "sdk/origin/examples/javascript_guest/04-async-application.mjs"
+    },
+    "05-ownership-scheduling-ros1": {
+      "backend": 1,
+      "entry": "sdk/origin/examples/javascript_guest/05-ownership-scheduling.mjs"
+    },
+    "05-ownership-scheduling-ros2": {
+      "backend": 2,
+      "entry": "sdk/origin/examples/javascript_guest/05-ownership-scheduling.mjs"
+    },
+    "06-custom-codec-ros1": {
+      "backend": 1,
+      "entry": "sdk/origin/examples/javascript_guest/06-custom-codec.mjs"
+    },
+    "06-custom-codec-ros2": {
+      "backend": 2,
+      "entry": "sdk/origin/examples/javascript_guest/06-custom-codec.mjs"
+    },
+    "07-complete-denied-abi-ros1": {
+      "backend": 1,
+      "entry": "sdk/origin/examples/javascript_guest/07-complete-denied-abi.mjs"
+    },
+    "07-complete-denied-abi-ros2": {
+      "backend": 2,
+      "entry": "sdk/origin/examples/javascript_guest/07-complete-denied-abi.mjs"
+    },
+    "08-unified-events-ros1": {
+      "backend": 1,
+      "entry": "sdk/origin/examples/javascript_guest/08-unified-events.mjs"
+    },
+    "08-unified-events-ros2": {
+      "backend": 2,
+      "entry": "sdk/origin/examples/javascript_guest/08-unified-events.mjs"
+    },
+    "09-boundary-refusals-ros1": {
+      "backend": 1,
+      "entry": "sdk/origin/examples/javascript_guest/09-boundary-refusals.mjs"
+    },
+    "09-boundary-refusals-ros2": {
+      "backend": 2,
+      "entry": "sdk/origin/examples/javascript_guest/09-boundary-refusals.mjs"
+    },
+    "10-floating-modules": {
+      "backend": 2,
+      "entry": "sdk/origin/examples/javascript_guest/10-floating-modules.mjs",
+      "imports": [
+        {
+          "module": "floating",
+          "name": "identity32",
+          "parameters": [
+            "f32"
+          ],
+          "result": "f32"
+        },
+        {
+          "module": "floating",
+          "name": "identity64",
+          "parameters": [
+            "f64"
+          ],
+          "result": "f64"
+        },
+        {
+          "module": "floating",
+          "name": "sum32",
+          "parameters": [
+            "f32",
+            "f32"
+          ],
+          "result": "f32"
+        },
+        {
+          "module": "floating",
+          "name": "sum64",
+          "parameters": [
+            "f64",
+            "f64"
+          ],
+          "result": "f64"
+        }
+      ],
+      "modules": [
+        {
+          "name": "sdk/origin/javascript/abi.mjs",
+          "source": "sdk/origin/javascript/abi.mjs"
+        },
+        {
+          "name": "sdk/origin/javascript/raw.mjs",
+          "source": "sdk/origin/javascript/raw.mjs"
+        },
+        {
+          "name": "sdk/origin/javascript/roswasm.mjs",
+          "source": "sdk/origin/javascript/roswasm.mjs"
+        },
+        {
+          "name": "sdk/origin/javascript/async.mjs",
+          "source": "sdk/origin/javascript/async.mjs"
+        },
+        {
+          "name": "sdk/origin/javascript/relay.mjs",
+          "source": "sdk/origin/javascript/relay.mjs"
+        },
+        {
+          "name": "sdk/origin/javascript/codecs.mjs",
+          "source": "sdk/origin/javascript/codecs.mjs"
+        },
+        {
+          "name": "sdk/origin/javascript/scheduling.mjs",
+          "source": "sdk/origin/javascript/scheduling.mjs"
+        },
+        {
+          "name": "sdk/origin/javascript/ownership.mjs",
+          "source": "sdk/origin/javascript/ownership.mjs"
+        },
+        {
+          "name": "sdk/origin/javascript/events.mjs",
+          "source": "sdk/origin/javascript/events.mjs"
+        },
+        {
+          "name": "sdk/origin/javascript/copied_transport.mjs",
+          "source": "sdk/origin/javascript/copied_transport.mjs"
+        },
+        {
+          "name": "sdk/origin/javascript/guest.mjs",
+          "source": "sdk/origin/javascript/guest.mjs"
+        },
+        {
+          "name": "sdk/origin/javascript/guest/bootstrap.mjs",
+          "source": "sdk/origin/javascript/guest/bootstrap.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript/07-sync-application.mjs",
+          "source": "sdk/origin/examples/javascript/07-sync-application.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript/06-async-application.mjs",
+          "source": "sdk/origin/examples/javascript/06-async-application.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript/09-unified-events.mjs",
+          "source": "sdk/origin/examples/javascript/09-unified-events.mjs"
+        },
+        {
+          "name": "sdk/origin/custom-types/generated-r3/fixed_records.mjs",
+          "source": "sdk/origin/custom-types/generated-r3/fixed_records.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/support.mjs",
+          "source": "sdk/origin/examples/javascript_guest/support.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/config.mjs",
+          "source": "sdk/origin/examples/javascript_guest/config.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/actions.mjs",
+          "source": "sdk/origin/examples/javascript_guest/actions.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/00-raw.mjs",
+          "source": "sdk/origin/examples/javascript_guest/00-raw.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/01-codecs.mjs",
+          "source": "sdk/origin/examples/javascript_guest/01-codecs.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/02-node.mjs",
+          "source": "sdk/origin/examples/javascript_guest/02-node.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/03-application.mjs",
+          "source": "sdk/origin/examples/javascript_guest/03-application.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/04-async-application.mjs",
+          "source": "sdk/origin/examples/javascript_guest/04-async-application.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/05-ownership-scheduling.mjs",
+          "source": "sdk/origin/examples/javascript_guest/05-ownership-scheduling.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/06-custom-codec.mjs",
+          "source": "sdk/origin/examples/javascript_guest/06-custom-codec.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/07-complete-denied-abi.mjs",
+          "source": "sdk/origin/examples/javascript_guest/07-complete-denied-abi.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/08-unified-events.mjs",
+          "source": "sdk/origin/examples/javascript_guest/08-unified-events.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/09-boundary-refusals.mjs",
+          "source": "sdk/origin/examples/javascript_guest/09-boundary-refusals.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/limit-interrupt.mjs",
+          "source": "sdk/origin/examples/javascript_guest/limit-interrupt.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/limit-heap.mjs",
+          "source": "sdk/origin/examples/javascript_guest/limit-heap.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/limit-jobs.mjs",
+          "source": "sdk/origin/examples/javascript_guest/limit-jobs.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/10-floating-modules.mjs",
+          "source": "sdk/origin/examples/javascript_guest/10-floating-modules.mjs"
+        }
+      ]
+    },
+    "benchmark_guest": {
+      "entry": "sdk/origin/examples/robotics_modular/benchmark_guest.mjs",
+      "imports": [
+        {
+          "module": "vision",
+          "name": "vision_initialize",
+          "parameters": [],
+          "result": "u32"
+        },
+        {
+          "module": "vision",
+          "name": "vision_clearance_mm",
+          "parameters": [
+            "i32",
+            "i32",
+            "i32",
+            "i32"
+          ],
+          "result": "i32"
+        },
+        {
+          "module": "callbacks",
+          "name": "callback_begin",
+          "parameters": [
+            "u32"
+          ],
+          "result": "u32"
+        },
+        {
+          "module": "callbacks",
+          "name": "callback_end",
+          "parameters": [
+            "u32",
+            "u32"
+          ],
+          "result": "u32"
+        },
+        {
+          "module": "callbacks",
+          "name": "callback_count",
+          "parameters": [
+            "u32",
+            "u32"
+          ],
+          "result": "u32"
+        },
+        {
+          "module": "motion",
+          "name": "motion_step",
+          "parameters": [
+            "u32",
+            "u32",
+            "i32",
+            "i32"
+          ],
+          "result": "i32"
+        }
+      ],
+      "modules": [
+        {
+          "name": "sdk/origin/javascript/abi.mjs",
+          "source": "sdk/origin/javascript/abi.mjs"
+        },
+        {
+          "name": "sdk/origin/javascript/raw.mjs",
+          "source": "sdk/origin/javascript/raw.mjs"
+        },
+        {
+          "name": "sdk/origin/javascript/roswasm.mjs",
+          "source": "sdk/origin/javascript/roswasm.mjs"
+        },
+        {
+          "name": "sdk/origin/javascript/async.mjs",
+          "source": "sdk/origin/javascript/async.mjs"
+        },
+        {
+          "name": "sdk/origin/javascript/relay.mjs",
+          "source": "sdk/origin/javascript/relay.mjs"
+        },
+        {
+          "name": "sdk/origin/javascript/codecs.mjs",
+          "source": "sdk/origin/javascript/codecs.mjs"
+        },
+        {
+          "name": "sdk/origin/javascript/scheduling.mjs",
+          "source": "sdk/origin/javascript/scheduling.mjs"
+        },
+        {
+          "name": "sdk/origin/javascript/ownership.mjs",
+          "source": "sdk/origin/javascript/ownership.mjs"
+        },
+        {
+          "name": "sdk/origin/javascript/events.mjs",
+          "source": "sdk/origin/javascript/events.mjs"
+        },
+        {
+          "name": "sdk/origin/javascript/copied_transport.mjs",
+          "source": "sdk/origin/javascript/copied_transport.mjs"
+        },
+        {
+          "name": "sdk/origin/javascript/guest.mjs",
+          "source": "sdk/origin/javascript/guest.mjs"
+        },
+        {
+          "name": "sdk/origin/javascript/guest/bootstrap.mjs",
+          "source": "sdk/origin/javascript/guest/bootstrap.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript/07-sync-application.mjs",
+          "source": "sdk/origin/examples/javascript/07-sync-application.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript/06-async-application.mjs",
+          "source": "sdk/origin/examples/javascript/06-async-application.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript/09-unified-events.mjs",
+          "source": "sdk/origin/examples/javascript/09-unified-events.mjs"
+        },
+        {
+          "name": "sdk/origin/custom-types/generated-r3/fixed_records.mjs",
+          "source": "sdk/origin/custom-types/generated-r3/fixed_records.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/support.mjs",
+          "source": "sdk/origin/examples/javascript_guest/support.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/config.mjs",
+          "source": "sdk/origin/examples/javascript_guest/config.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/actions.mjs",
+          "source": "sdk/origin/examples/javascript_guest/actions.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/00-raw.mjs",
+          "source": "sdk/origin/examples/javascript_guest/00-raw.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/01-codecs.mjs",
+          "source": "sdk/origin/examples/javascript_guest/01-codecs.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/02-node.mjs",
+          "source": "sdk/origin/examples/javascript_guest/02-node.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/03-application.mjs",
+          "source": "sdk/origin/examples/javascript_guest/03-application.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/04-async-application.mjs",
+          "source": "sdk/origin/examples/javascript_guest/04-async-application.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/05-ownership-scheduling.mjs",
+          "source": "sdk/origin/examples/javascript_guest/05-ownership-scheduling.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/06-custom-codec.mjs",
+          "source": "sdk/origin/examples/javascript_guest/06-custom-codec.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/07-complete-denied-abi.mjs",
+          "source": "sdk/origin/examples/javascript_guest/07-complete-denied-abi.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/08-unified-events.mjs",
+          "source": "sdk/origin/examples/javascript_guest/08-unified-events.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/robotics_modular/benchmark_guest.mjs",
+          "source": "sdk/origin/examples/robotics_modular/benchmark_guest.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/robotics_modular/benchmark_session_guest.mjs",
+          "source": "sdk/origin/examples/robotics_modular/benchmark_session_guest.mjs"
+        }
+      ]
+    },
+    "benchmark_session_guest": {
+      "entry": "sdk/origin/examples/robotics_modular/benchmark_session_guest.mjs",
+      "imports": [
+        {
+          "module": "vision",
+          "name": "vision_initialize",
+          "parameters": [],
+          "result": "u32"
+        },
+        {
+          "module": "vision",
+          "name": "vision_clearance_mm",
+          "parameters": [
+            "i32",
+            "i32",
+            "i32",
+            "i32"
+          ],
+          "result": "i32"
+        },
+        {
+          "module": "callbacks",
+          "name": "callback_begin",
+          "parameters": [
+            "u32"
+          ],
+          "result": "u32"
+        },
+        {
+          "module": "callbacks",
+          "name": "callback_end",
+          "parameters": [
+            "u32",
+            "u32"
+          ],
+          "result": "u32"
+        },
+        {
+          "module": "callbacks",
+          "name": "callback_count",
+          "parameters": [
+            "u32",
+            "u32"
+          ],
+          "result": "u32"
+        },
+        {
+          "module": "motion",
+          "name": "motion_step",
+          "parameters": [
+            "u32",
+            "u32",
+            "i32",
+            "i32"
+          ],
+          "result": "i32"
+        }
+      ],
+      "modules": [
+        {
+          "name": "sdk/origin/javascript/abi.mjs",
+          "source": "sdk/origin/javascript/abi.mjs"
+        },
+        {
+          "name": "sdk/origin/javascript/raw.mjs",
+          "source": "sdk/origin/javascript/raw.mjs"
+        },
+        {
+          "name": "sdk/origin/javascript/roswasm.mjs",
+          "source": "sdk/origin/javascript/roswasm.mjs"
+        },
+        {
+          "name": "sdk/origin/javascript/async.mjs",
+          "source": "sdk/origin/javascript/async.mjs"
+        },
+        {
+          "name": "sdk/origin/javascript/relay.mjs",
+          "source": "sdk/origin/javascript/relay.mjs"
+        },
+        {
+          "name": "sdk/origin/javascript/codecs.mjs",
+          "source": "sdk/origin/javascript/codecs.mjs"
+        },
+        {
+          "name": "sdk/origin/javascript/scheduling.mjs",
+          "source": "sdk/origin/javascript/scheduling.mjs"
+        },
+        {
+          "name": "sdk/origin/javascript/ownership.mjs",
+          "source": "sdk/origin/javascript/ownership.mjs"
+        },
+        {
+          "name": "sdk/origin/javascript/events.mjs",
+          "source": "sdk/origin/javascript/events.mjs"
+        },
+        {
+          "name": "sdk/origin/javascript/copied_transport.mjs",
+          "source": "sdk/origin/javascript/copied_transport.mjs"
+        },
+        {
+          "name": "sdk/origin/javascript/guest.mjs",
+          "source": "sdk/origin/javascript/guest.mjs"
+        },
+        {
+          "name": "sdk/origin/javascript/guest/bootstrap.mjs",
+          "source": "sdk/origin/javascript/guest/bootstrap.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript/07-sync-application.mjs",
+          "source": "sdk/origin/examples/javascript/07-sync-application.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript/06-async-application.mjs",
+          "source": "sdk/origin/examples/javascript/06-async-application.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript/09-unified-events.mjs",
+          "source": "sdk/origin/examples/javascript/09-unified-events.mjs"
+        },
+        {
+          "name": "sdk/origin/custom-types/generated-r3/fixed_records.mjs",
+          "source": "sdk/origin/custom-types/generated-r3/fixed_records.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/support.mjs",
+          "source": "sdk/origin/examples/javascript_guest/support.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/config.mjs",
+          "source": "sdk/origin/examples/javascript_guest/config.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/actions.mjs",
+          "source": "sdk/origin/examples/javascript_guest/actions.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/00-raw.mjs",
+          "source": "sdk/origin/examples/javascript_guest/00-raw.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/01-codecs.mjs",
+          "source": "sdk/origin/examples/javascript_guest/01-codecs.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/02-node.mjs",
+          "source": "sdk/origin/examples/javascript_guest/02-node.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/03-application.mjs",
+          "source": "sdk/origin/examples/javascript_guest/03-application.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/04-async-application.mjs",
+          "source": "sdk/origin/examples/javascript_guest/04-async-application.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/05-ownership-scheduling.mjs",
+          "source": "sdk/origin/examples/javascript_guest/05-ownership-scheduling.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/06-custom-codec.mjs",
+          "source": "sdk/origin/examples/javascript_guest/06-custom-codec.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/07-complete-denied-abi.mjs",
+          "source": "sdk/origin/examples/javascript_guest/07-complete-denied-abi.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/javascript_guest/08-unified-events.mjs",
+          "source": "sdk/origin/examples/javascript_guest/08-unified-events.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/robotics_modular/benchmark_guest.mjs",
+          "source": "sdk/origin/examples/robotics_modular/benchmark_guest.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/robotics_modular/benchmark_session_guest.mjs",
+          "source": "sdk/origin/examples/robotics_modular/benchmark_session_guest.mjs"
+        }
+      ]
+    },
+    "float_guest": {
+      "backend": 0,
+      "entry": "sdk/origin/examples/robotics_modular/float_guest.mjs",
+      "exports": [
+        {
+          "failure": 0.0,
+          "function": "identity32",
+          "initialize": true,
+          "name": "identity32",
+          "parameters": [
+            "f32"
+          ],
+          "result": "f32"
+        },
+        {
+          "failure": 0.0,
+          "function": "identity64",
+          "initialize": true,
+          "name": "identity64",
+          "parameters": [
+            "f64"
+          ],
+          "result": "f64"
+        },
+        {
+          "failure": 0.0,
+          "function": "sum32",
+          "initialize": true,
+          "name": "sum32",
+          "parameters": [
+            "f32",
+            "f32"
+          ],
+          "result": "f32"
+        },
+        {
+          "failure": 0.0,
+          "function": "sum64",
+          "initialize": true,
+          "name": "sum64",
+          "parameters": [
+            "f64",
+            "f64"
+          ],
+          "result": "f64"
+        }
+      ],
+      "imports": [],
+      "initial_memory": 4194304,
+      "limits": {
+        "heap_bytes": 8388608,
+        "input_bytes": 4096,
+        "interrupt_polls": 1024,
+        "max_jobs": 4096,
+        "max_modules": 64,
+        "max_source_bytes": 1048576,
+        "max_text_bytes": 4193786,
+        "output_bytes": 4096,
+        "print_bytes": 4096,
+        "stack_bytes": 262144
+      },
+      "maximum_memory": 16777216,
+      "mode": "reactor",
+      "modules": [
+        {
+          "name": "sdk/origin/javascript/guest/bootstrap.mjs",
+          "source": "sdk/origin/javascript/guest/bootstrap.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/robotics_modular/float_guest.mjs",
+          "source": "sdk/origin/examples/robotics_modular/float_guest.mjs"
+        }
+      ]
+    },
+    "limit-heap": {
+      "entry": "sdk/origin/examples/javascript_guest/limit-heap.mjs",
+      "limits": {
+        "heap_bytes": 4194304,
+        "input_bytes": 4096,
+        "interrupt_polls": 1024,
+        "max_jobs": 4096,
+        "max_modules": 64,
+        "max_source_bytes": 1048576,
+        "max_text_bytes": 4193786,
+        "output_bytes": 4096,
+        "print_bytes": 4096,
+        "stack_bytes": 262144
+      }
+    },
+    "limit-interrupt": {
+      "entry": "sdk/origin/examples/javascript_guest/limit-interrupt.mjs",
+      "limits": {
+        "heap_bytes": 33554432,
+        "input_bytes": 4096,
+        "interrupt_polls": 8,
+        "max_jobs": 4096,
+        "max_modules": 64,
+        "max_source_bytes": 1048576,
+        "max_text_bytes": 4193786,
+        "output_bytes": 4096,
+        "print_bytes": 4096,
+        "stack_bytes": 524288
+      }
+    },
+    "limit-jobs": {
+      "entry": "sdk/origin/examples/javascript_guest/limit-jobs.mjs",
+      "limits": {
+        "heap_bytes": 33554432,
+        "input_bytes": 4096,
+        "interrupt_polls": 1024,
+        "max_jobs": 32,
+        "max_modules": 64,
+        "max_source_bytes": 1048576,
+        "max_text_bytes": 4193786,
+        "output_bytes": 4096,
+        "print_bytes": 4096,
+        "stack_bytes": 524288
+      }
+    },
+    "reactor-callback": {
+      "backend": 0,
+      "entry": "sdk/origin/examples/robotics_modular/callback_guest.mjs",
+      "exports": [
+        {
+          "failure": 0,
+          "function": "begin",
+          "initialize": true,
+          "name": "callback_begin",
+          "parameters": [
+            "u32"
+          ],
+          "result": "u32"
+        },
+        {
+          "failure": 22,
+          "function": "end",
+          "initialize": false,
+          "name": "callback_end",
+          "parameters": [
+            "u32",
+            "u32"
+          ],
+          "result": "u32"
+        },
+        {
+          "failure": 4294967295,
+          "function": "count",
+          "initialize": false,
+          "name": "callback_count",
+          "parameters": [
+            "u32",
+            "u32"
+          ],
+          "result": "u32"
+        },
+        {
+          "failure": 4294967295,
+          "function": "denials",
+          "initialize": false,
+          "name": "callback_denials",
+          "parameters": [],
+          "result": "u32"
+        },
+        {
+          "failure": -2147483626,
+          "function": "onMotion",
+          "initialize": false,
+          "name": "on_motion",
+          "parameters": [
+            "u32",
+            "u32",
+            "i32",
+            "i32"
+          ],
+          "result": "i32"
+        }
+      ],
+      "imports": [],
+      "initial_memory": 4194304,
+      "limits": {
+        "heap_bytes": 8388608,
+        "input_bytes": 4096,
+        "interrupt_polls": 100000,
+        "max_jobs": 1024,
+        "max_modules": 8,
+        "max_source_bytes": 65536,
+        "max_text_bytes": 4193786,
+        "output_bytes": 4096,
+        "print_bytes": 4096,
+        "stack_bytes": 262144
+      },
+      "maximum_memory": 16777216,
+      "mode": "reactor",
+      "modules": [
+        {
+          "name": "sdk/origin/javascript/guest/bootstrap.mjs",
+          "source": "sdk/origin/javascript/guest/bootstrap.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/robotics_modular/callback_guest.mjs",
+          "source": "sdk/origin/examples/robotics_modular/callback_guest.mjs"
+        }
+      ]
+    },
+    "reactor-motion": {
+      "backend": 0,
+      "entry": "sdk/origin/examples/robotics_modular/motion_guest.mjs",
+      "exports": [
+        {
+          "failure": -2147483626,
+          "function": "step",
+          "initialize": true,
+          "name": "motion_step",
+          "parameters": [
+            "u32",
+            "u32",
+            "i32",
+            "i32"
+          ],
+          "result": "i32"
+        }
+      ],
+      "imports": [
+        {
+          "module": "callbacks",
+          "name": "on_motion",
+          "parameters": [
+            "u32",
+            "u32",
+            "i32",
+            "i32"
+          ],
+          "result": "i32"
+        }
+      ],
+      "initial_memory": 4194304,
+      "limits": {
+        "heap_bytes": 8388608,
+        "input_bytes": 4096,
+        "interrupt_polls": 100000,
+        "max_jobs": 1024,
+        "max_modules": 8,
+        "max_source_bytes": 65536,
+        "max_text_bytes": 4193786,
+        "output_bytes": 4096,
+        "print_bytes": 4096,
+        "stack_bytes": 262144
+      },
+      "maximum_memory": 16777216,
+      "mode": "reactor",
+      "modules": [
+        {
+          "name": "sdk/origin/javascript/guest/bootstrap.mjs",
+          "source": "sdk/origin/javascript/guest/bootstrap.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/robotics_modular/motion_guest.mjs",
+          "source": "sdk/origin/examples/robotics_modular/motion_guest.mjs"
+        }
+      ]
+    },
+    "reactor-vision": {
+      "backend": 0,
+      "entry": "sdk/origin/examples/robotics_modular/vision_guest.mjs",
+      "exports": [
+        {
+          "failure": 22,
+          "function": "initialize",
+          "initialize": true,
+          "name": "vision_initialize",
+          "parameters": [],
+          "result": "u32"
+        },
+        {
+          "failure": -2147483626,
+          "function": "clearance",
+          "initialize": false,
+          "name": "vision_clearance_mm",
+          "parameters": [
+            "i32",
+            "i32",
+            "i32",
+            "i32"
+          ],
+          "result": "i32"
+        }
+      ],
+      "imports": [],
+      "initial_memory": 4194304,
+      "limits": {
+        "heap_bytes": 8388608,
+        "input_bytes": 4096,
+        "interrupt_polls": 100000,
+        "max_jobs": 1024,
+        "max_modules": 8,
+        "max_source_bytes": 65536,
+        "max_text_bytes": 4193786,
+        "output_bytes": 4096,
+        "print_bytes": 4096,
+        "stack_bytes": 262144
+      },
+      "maximum_memory": 16777216,
+      "mode": "reactor",
+      "modules": [
+        {
+          "name": "sdk/origin/javascript/guest/bootstrap.mjs",
+          "source": "sdk/origin/javascript/guest/bootstrap.mjs"
+        },
+        {
+          "name": "sdk/origin/examples/robotics_modular/vision_guest.mjs",
+          "source": "sdk/origin/examples/robotics_modular/vision_guest.mjs"
+        }
+      ]
+    }
+  }
+}

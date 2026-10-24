@@ -2,7 +2,7 @@ import sys,pathlib,json,os
 sys.path.insert(0,'/tmp/uwvm-gc-perf-20261011-r74/control');import native as N
 D=N.ROOT/'source/wasmtime-codegen-analysis-a1';CLI=D/'wasmtime-v49.0.2-x86_64-linux/wasmtime';new=json.loads((D/'fixtures/cases.json').read_text())['cases'];old=json.loads((N.ROOT/'source/read-lock-isolation-c20/cases.json').read_text())['cases'];rows=[]
 env=os.environ.copy();env.update(WASM_PERF_NATIVE_CLI='1',WASM_PERF_REPS='1',LD_LIBRARY_PATH='/tmp/uwvm-gc-perf-20261011-r73/source/wasmtime-capi/lib');env.pop('WASM_PERF_PROFILE',None)
-variants=[('primary',N.ROOT/'build/repo-sync-c20-v4/uwvm2/uwvm',['-Rcc','jit','-Rcm','full']),('stable',N.ROOT/'build/repo-sync-c20-v4/uwvm2-stable/uwvm',['-Raot','-Rllvm-full-policy','pb-o3']),('ros',N.ROOT/'build/repo-sync-c20-v4/uwvm2-ros/uwvm',['-Raot','-Rllvm-full-policy','pb-o3'])]
+variants=[('primary',N.ROOT/'build/repo-sync-c20-v4/uwvm2/uwvm',['-Rcc','jit','-Rcm','full']),('stable',N.ROOT/'build/repo-sync-c20-v4/uwvm2-stable/uwvm',['-Raot','-Rllvm-full-policy','pb-o3']),('ros',N.ROOT/'build/repo-sync-c20-v4/uwvm2-ros/uwvm2-ros',['-Raot','-Rllvm-full-policy','pb-o3'])]
 def run_or_reuse(label,argv,**kw):
  p=N.ROOT/'evidence'/(label+'.json')
  if p.exists():

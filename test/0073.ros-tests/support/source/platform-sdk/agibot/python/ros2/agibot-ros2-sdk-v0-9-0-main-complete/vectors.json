@@ -1,0 +1,4093 @@
+{
+  "cases": [
+    {
+      "type": "aimdk_msgs/msg/AgentProperties",
+      "wire": "010000002a070000007635303531ceb2",
+      "value": {
+        "record": "aimdk_msgs/msg/AgentProperties",
+        "members": {
+          "properties": {
+            "array": [
+              {
+                "record": "aimdk_msgs/msg/AgentPropertiesValue",
+                "members": {
+                  "key": {
+                    "record": "aimdk_msgs/msg/AgentPropertyIdType",
+                    "members": {
+                      "value": {
+                        "scalar": "uint8",
+                        "value": 42,
+                        "wire": "2a"
+                      }
+                    }
+                  },
+                  "value": {
+                    "scalar": "string",
+                    "value": "v5051\u03b2"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/AgentPropertiesValue",
+      "wire": "49070000007633356565ceb2",
+      "value": {
+        "record": "aimdk_msgs/msg/AgentPropertiesValue",
+        "members": {
+          "key": {
+            "record": "aimdk_msgs/msg/AgentPropertyIdType",
+            "members": {
+              "value": {
+                "scalar": "uint8",
+                "value": 73,
+                "wire": "49"
+              }
+            }
+          },
+          "value": {
+            "scalar": "string",
+            "value": "v35ee\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/AgentPropertyIdType",
+      "wire": "d8",
+      "value": {
+        "record": "aimdk_msgs/msg/AgentPropertyIdType",
+        "members": {
+          "value": {
+            "scalar": "uint8",
+            "value": 216,
+            "wire": "d8"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/AudioVadStateType",
+      "wire": "9b",
+      "value": {
+        "record": "aimdk_msgs/msg/AudioVadStateType",
+        "members": {
+          "value": {
+            "scalar": "uint8",
+            "value": 155,
+            "wire": "9b"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/CommonRequest",
+      "wire": "16bb4308af59a921",
+      "value": {
+        "record": "aimdk_msgs/msg/CommonRequest",
+        "members": {
+          "header": {
+            "record": "aimdk_msgs/msg/RequestHeader",
+            "members": {
+              "stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": 138656534,
+                    "wire": "16bb4308"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 564746671,
+                    "wire": "af59a921"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/CommonResponse",
+      "wire": "7e48d16d857af630efb3162656ca21b86ea99a05070000007634616561ceb2",
+      "value": {
+        "record": "aimdk_msgs/msg/CommonResponse",
+        "members": {
+          "header": {
+            "record": "aimdk_msgs/msg/ResponseHeader",
+            "members": {
+              "stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": 1842432126,
+                    "wire": "7e48d16d"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 821459589,
+                    "wire": "857af630"
+                  }
+                }
+              },
+              "code": {
+                "scalar": "int64",
+                "value": -5178635625144339473,
+                "wire": "efb3162656ca21b8"
+              }
+            }
+          },
+          "status": {
+            "record": "aimdk_msgs/msg/CommonState",
+            "members": {
+              "value": {
+                "scalar": "int32",
+                "value": 94021998,
+                "wire": "6ea99a05"
+              }
+            }
+          },
+          "message": {
+            "scalar": "string",
+            "value": "v4aea\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/CommonState",
+      "wire": "d226915e",
+      "value": {
+        "record": "aimdk_msgs/msg/CommonState",
+        "members": {
+          "value": {
+            "scalar": "int32",
+            "value": 1586570962,
+            "wire": "d226915e"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/CommonTaskResponse",
+      "wire": "0e92b1f4b82af9317ff79a4fc68eadd1888295fa31fba264f00f1460",
+      "value": {
+        "record": "aimdk_msgs/msg/CommonTaskResponse",
+        "members": {
+          "header": {
+            "record": "aimdk_msgs/msg/ResponseHeader",
+            "members": {
+              "stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": -189689330,
+                    "wire": "0e92b1f4"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 838412984,
+                    "wire": "b82af931"
+                  }
+                }
+              },
+              "code": {
+                "scalar": "int64",
+                "value": -3337854766421444737,
+                "wire": "7ff79a4fc68eadd1"
+              }
+            }
+          },
+          "task_id": {
+            "scalar": "uint64",
+            "value": 7251634542095991432,
+            "wire": "888295fa31fba264"
+          },
+          "state": {
+            "record": "aimdk_msgs/msg/CommonState",
+            "members": {
+              "value": {
+                "scalar": "int32",
+                "value": 1611927536,
+                "wire": "f00f1460"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/DomainErrorState",
+      "wire": "e1",
+      "value": {
+        "record": "aimdk_msgs/msg/DomainErrorState",
+        "members": {
+          "value": {
+            "scalar": "uint8",
+            "value": 225,
+            "wire": "e1"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/FaceEmojiStatus",
+      "wire": "1c4abca49d92eb07070000007663306231ceb2bd7094aded41fe734e14bc34070000007666313762ceb201000000070000007665653538ceb22581536c49895700000000000c6140",
+      "value": {
+        "record": "aimdk_msgs/msg/FaceEmojiStatus",
+        "members": {
+          "header": {
+            "record": "aimdk_msgs/msg/MessageHeader",
+            "members": {
+              "stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": -1531164132,
+                    "wire": "1c4abca4"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 132879005,
+                    "wire": "9d92eb07"
+                  }
+                }
+              },
+              "frame_id": {
+                "scalar": "string",
+                "value": "vc0b1\u03b2"
+              },
+              "sequence": {
+                "scalar": "uint32",
+                "value": 2912186557,
+                "wire": "bd7094ad"
+              },
+              "meas_stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": 1946042861,
+                    "wire": "ed41fe73"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 884741198,
+                    "wire": "4e14bc34"
+                  }
+                }
+              }
+            }
+          },
+          "e_path": {
+            "scalar": "string",
+            "value": "vf17b\u03b2"
+          },
+          "e_path_list": {
+            "array": [
+              {
+                "scalar": "string",
+                "value": "vee58\u03b2"
+              }
+            ]
+          },
+          "e_id": {
+            "scalar": "uint8",
+            "value": 37,
+            "wire": "25"
+          },
+          "mode": {
+            "scalar": "uint8",
+            "value": 129,
+            "wire": "81"
+          },
+          "priority": {
+            "scalar": "int32",
+            "value": -1991676845,
+            "wire": "536c4989"
+          },
+          "status": {
+            "scalar": "uint8",
+            "value": 87,
+            "wire": "57"
+          },
+          "time_to_end_ms": {
+            "scalar": "float64",
+            "value": 136.375,
+            "wire": "00000000000c6140"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/HandCommand",
+      "wire": "070000007636623363ceb20000000000e054c00000000000b46e400000000000a037c0000000000028624000000000002c6b40",
+      "value": {
+        "record": "aimdk_msgs/msg/HandCommand",
+        "members": {
+          "name": {
+            "scalar": "string",
+            "value": "v6b3c\u03b2"
+          },
+          "position": {
+            "scalar": "float64",
+            "value": -83.5,
+            "wire": "0000000000e054c0"
+          },
+          "velocity": {
+            "scalar": "float64",
+            "value": 245.625,
+            "wire": "0000000000b46e40"
+          },
+          "acceleration": {
+            "scalar": "float64",
+            "value": -23.625,
+            "wire": "0000000000a037c0"
+          },
+          "deceleration": {
+            "scalar": "float64",
+            "value": 145.25,
+            "wire": "0000000000286240"
+          },
+          "effort": {
+            "scalar": "float64",
+            "value": 217.375,
+            "wire": "00000000002c6b40"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/HandCommandArray",
+      "wire": "0a807d12feed941e070000007636373536ceb2825b730ae4d85ca71dacb439fa01000000070000007665323962ceb20000000000000ec0000000000038604000000000004c6ac00000000000946ac00000000000e068c09a01000000070000007666366562ceb20000000000905c40000000000090504000000000006469c000000000008047c000000000000c62c0",
+      "value": {
+        "record": "aimdk_msgs/msg/HandCommandArray",
+        "members": {
+          "header": {
+            "record": "aimdk_msgs/msg/MessageHeader",
+            "members": {
+              "stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": 310214666,
+                    "wire": "0a807d12"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 513076734,
+                    "wire": "feed941e"
+                  }
+                }
+              },
+              "frame_id": {
+                "scalar": "string",
+                "value": "v6756\u03b2"
+              },
+              "sequence": {
+                "scalar": "uint32",
+                "value": 175332226,
+                "wire": "825b730a"
+              },
+              "meas_stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": -1487087388,
+                    "wire": "e4d85ca7"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 968141853,
+                    "wire": "1dacb439"
+                  }
+                }
+              }
+            }
+          },
+          "left_hand_type": {
+            "record": "aimdk_msgs/msg/HandType",
+            "members": {
+              "value": {
+                "scalar": "uint8",
+                "value": 250,
+                "wire": "fa"
+              }
+            }
+          },
+          "left_hands": {
+            "array": [
+              {
+                "record": "aimdk_msgs/msg/HandCommand",
+                "members": {
+                  "name": {
+                    "scalar": "string",
+                    "value": "ve29b\u03b2"
+                  },
+                  "position": {
+                    "scalar": "float64",
+                    "value": -3.75,
+                    "wire": "0000000000000ec0"
+                  },
+                  "velocity": {
+                    "scalar": "float64",
+                    "value": 129.75,
+                    "wire": "0000000000386040"
+                  },
+                  "acceleration": {
+                    "scalar": "float64",
+                    "value": -210.375,
+                    "wire": "00000000004c6ac0"
+                  },
+                  "deceleration": {
+                    "scalar": "float64",
+                    "value": -212.625,
+                    "wire": "0000000000946ac0"
+                  },
+                  "effort": {
+                    "scalar": "float64",
+                    "value": -199.0,
+                    "wire": "0000000000e068c0"
+                  }
+                }
+              }
+            ]
+          },
+          "right_hand_type": {
+            "record": "aimdk_msgs/msg/HandType",
+            "members": {
+              "value": {
+                "scalar": "uint8",
+                "value": 154,
+                "wire": "9a"
+              }
+            }
+          },
+          "right_hands": {
+            "array": [
+              {
+                "record": "aimdk_msgs/msg/HandCommand",
+                "members": {
+                  "name": {
+                    "scalar": "string",
+                    "value": "vf6eb\u03b2"
+                  },
+                  "position": {
+                    "scalar": "float64",
+                    "value": 114.25,
+                    "wire": "0000000000905c40"
+                  },
+                  "velocity": {
+                    "scalar": "float64",
+                    "value": 66.25,
+                    "wire": "0000000000905040"
+                  },
+                  "acceleration": {
+                    "scalar": "float64",
+                    "value": -203.125,
+                    "wire": "00000000006469c0"
+                  },
+                  "deceleration": {
+                    "scalar": "float64",
+                    "value": -47.0,
+                    "wire": "00000000008047c0"
+                  },
+                  "effort": {
+                    "scalar": "float64",
+                    "value": -144.375,
+                    "wire": "00000000000c62c0"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/HandState",
+      "wire": "070000007663636334ceb20000000000f8574000000000000c614000000000009c6840f0e70c745ba49b55",
+      "value": {
+        "record": "aimdk_msgs/msg/HandState",
+        "members": {
+          "name": {
+            "scalar": "string",
+            "value": "vccc4\u03b2"
+          },
+          "position": {
+            "scalar": "float64",
+            "value": 95.875,
+            "wire": "0000000000f85740"
+          },
+          "velocity": {
+            "scalar": "float64",
+            "value": 136.375,
+            "wire": "00000000000c6140"
+          },
+          "effort": {
+            "scalar": "float64",
+            "value": 196.875,
+            "wire": "00000000009c6840"
+          },
+          "state": {
+            "scalar": "int32",
+            "value": 1947002864,
+            "wire": "f0e70c74"
+          },
+          "faultcode": {
+            "scalar": "int32",
+            "value": 1436263515,
+            "wire": "5ba49b55"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/HandStateArray",
+      "wire": "153e6a78fd2f7135070000007663306338ceb293b6edadc6d73a3e54d7710bf901000000070000007630333138ceb20000000000e03b400000000000b04ec00000000000346240434ccfb8b8fd74fdb801000000070000007631383034ceb20000000000286e4000000000000017c00000000000b064401dfed4b2d38d9f59",
+      "value": {
+        "record": "aimdk_msgs/msg/HandStateArray",
+        "members": {
+          "header": {
+            "record": "aimdk_msgs/msg/MessageHeader",
+            "members": {
+              "stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": 2020228629,
+                    "wire": "153e6a78"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 896610301,
+                    "wire": "fd2f7135"
+                  }
+                }
+              },
+              "frame_id": {
+                "scalar": "string",
+                "value": "vc0c8\u03b2"
+              },
+              "sequence": {
+                "scalar": "uint32",
+                "value": 2918037139,
+                "wire": "93b6edad"
+              },
+              "meas_stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": 1044043718,
+                    "wire": "c6d73a3e"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 192010068,
+                    "wire": "54d7710b"
+                  }
+                }
+              }
+            }
+          },
+          "left_hand_type": {
+            "record": "aimdk_msgs/msg/HandType",
+            "members": {
+              "value": {
+                "scalar": "uint8",
+                "value": 249,
+                "wire": "f9"
+              }
+            }
+          },
+          "left_hands": {
+            "array": [
+              {
+                "record": "aimdk_msgs/msg/HandState",
+                "members": {
+                  "name": {
+                    "scalar": "string",
+                    "value": "v0318\u03b2"
+                  },
+                  "position": {
+                    "scalar": "float64",
+                    "value": 27.875,
+                    "wire": "0000000000e03b40"
+                  },
+                  "velocity": {
+                    "scalar": "float64",
+                    "value": -61.375,
+                    "wire": "0000000000b04ec0"
+                  },
+                  "effort": {
+                    "scalar": "float64",
+                    "value": 145.625,
+                    "wire": "0000000000346240"
+                  },
+                  "state": {
+                    "scalar": "int32",
+                    "value": -1194374077,
+                    "wire": "434ccfb8"
+                  },
+                  "faultcode": {
+                    "scalar": "int32",
+                    "value": -42664520,
+                    "wire": "b8fd74fd"
+                  }
+                }
+              }
+            ]
+          },
+          "right_hand_type": {
+            "record": "aimdk_msgs/msg/HandType",
+            "members": {
+              "value": {
+                "scalar": "uint8",
+                "value": 184,
+                "wire": "b8"
+              }
+            }
+          },
+          "right_hands": {
+            "array": [
+              {
+                "record": "aimdk_msgs/msg/HandState",
+                "members": {
+                  "name": {
+                    "scalar": "string",
+                    "value": "v1804\u03b2"
+                  },
+                  "position": {
+                    "scalar": "float64",
+                    "value": 241.25,
+                    "wire": "0000000000286e40"
+                  },
+                  "velocity": {
+                    "scalar": "float64",
+                    "value": -5.75,
+                    "wire": "00000000000017c0"
+                  },
+                  "effort": {
+                    "scalar": "float64",
+                    "value": 165.5,
+                    "wire": "0000000000b06440"
+                  },
+                  "state": {
+                    "scalar": "int32",
+                    "value": -1294664163,
+                    "wire": "1dfed4b2"
+                  },
+                  "faultcode": {
+                    "scalar": "int32",
+                    "value": 1503628755,
+                    "wire": "d38d9f59"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/HandType",
+      "wire": "25",
+      "value": {
+        "record": "aimdk_msgs/msg/HandType",
+        "members": {
+          "value": {
+            "scalar": "uint8",
+            "value": 37,
+            "wire": "25"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/JointCommand",
+      "wire": "070000007666396635ceb2000000000030644000000000006059c000000000006856400000000000b4654000000000003043c0",
+      "value": {
+        "record": "aimdk_msgs/msg/JointCommand",
+        "members": {
+          "name": {
+            "scalar": "string",
+            "value": "vf9f5\u03b2"
+          },
+          "position": {
+            "scalar": "float64",
+            "value": 161.5,
+            "wire": "0000000000306440"
+          },
+          "velocity": {
+            "scalar": "float64",
+            "value": -101.5,
+            "wire": "00000000006059c0"
+          },
+          "effort": {
+            "scalar": "float64",
+            "value": 89.625,
+            "wire": "0000000000685640"
+          },
+          "stiffness": {
+            "scalar": "float64",
+            "value": 173.625,
+            "wire": "0000000000b46540"
+          },
+          "damping": {
+            "scalar": "float64",
+            "value": -38.375,
+            "wire": "00000000003043c0"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/JointCommandArray",
+      "wire": "c4e2ccfa36661122070000007636656530ceb2c5a6c503155c6d32fa7a343001000000070000007631646364ceb200000000002855c00000000000fc62400000000000886dc0000000000028644000000000004866c0",
+      "value": {
+        "record": "aimdk_msgs/msg/JointCommandArray",
+        "members": {
+          "header": {
+            "record": "aimdk_msgs/msg/MessageHeader",
+            "members": {
+              "stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": -87235900,
+                    "wire": "c4e2ccfa"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 571565622,
+                    "wire": "36661122"
+                  }
+                }
+              },
+              "frame_id": {
+                "scalar": "string",
+                "value": "v6ee0\u03b2"
+              },
+              "sequence": {
+                "scalar": "uint32",
+                "value": 63284933,
+                "wire": "c5a6c503"
+              },
+              "meas_stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": 846027797,
+                    "wire": "155c6d32"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 808745722,
+                    "wire": "fa7a3430"
+                  }
+                }
+              }
+            }
+          },
+          "joints": {
+            "array": [
+              {
+                "record": "aimdk_msgs/msg/JointCommand",
+                "members": {
+                  "name": {
+                    "scalar": "string",
+                    "value": "v1dcd\u03b2"
+                  },
+                  "position": {
+                    "scalar": "float64",
+                    "value": -84.625,
+                    "wire": "00000000002855c0"
+                  },
+                  "velocity": {
+                    "scalar": "float64",
+                    "value": 151.875,
+                    "wire": "0000000000fc6240"
+                  },
+                  "effort": {
+                    "scalar": "float64",
+                    "value": -236.25,
+                    "wire": "0000000000886dc0"
+                  },
+                  "stiffness": {
+                    "scalar": "float64",
+                    "value": 161.25,
+                    "wire": "0000000000286440"
+                  },
+                  "damping": {
+                    "scalar": "float64",
+                    "value": -178.25,
+                    "wire": "00000000004866c0"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/JointState",
+      "wire": "070000007634386539ceb200000000008041c00000000000bc64400000000000bc6540bfcbe3",
+      "value": {
+        "record": "aimdk_msgs/msg/JointState",
+        "members": {
+          "name": {
+            "scalar": "string",
+            "value": "v48e9\u03b2"
+          },
+          "position": {
+            "scalar": "float64",
+            "value": -35.0,
+            "wire": "00000000008041c0"
+          },
+          "velocity": {
+            "scalar": "float64",
+            "value": 165.875,
+            "wire": "0000000000bc6440"
+          },
+          "effort": {
+            "scalar": "float64",
+            "value": 173.875,
+            "wire": "0000000000bc6540"
+          },
+          "coil_temp": {
+            "scalar": "uint8",
+            "value": 191,
+            "wire": "bf"
+          },
+          "motor_temp": {
+            "scalar": "uint8",
+            "value": 203,
+            "wire": "cb"
+          },
+          "motor_vol": {
+            "scalar": "uint8",
+            "value": 227,
+            "wire": "e3"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/JointStateArray",
+      "wire": "1952db78f8dfe310070000007637316134ceb293ba811c5be6a64ea09f3a2a7401000000070000007638333532ceb20000000000c855c000000000003867400000000000c038c05a2c06",
+      "value": {
+        "record": "aimdk_msgs/msg/JointStateArray",
+        "members": {
+          "header": {
+            "record": "aimdk_msgs/msg/MessageHeader",
+            "members": {
+              "stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": 2027639321,
+                    "wire": "1952db78"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 283369464,
+                    "wire": "f8dfe310"
+                  }
+                }
+              },
+              "frame_id": {
+                "scalar": "string",
+                "value": "v71a4\u03b2"
+              },
+              "sequence": {
+                "scalar": "uint32",
+                "value": 478263955,
+                "wire": "93ba811c"
+              },
+              "meas_stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": 1319560795,
+                    "wire": "5be6a64e"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 708485024,
+                    "wire": "a09f3a2a"
+                  }
+                }
+              }
+            }
+          },
+          "state": {
+            "record": "aimdk_msgs/msg/DomainErrorState",
+            "members": {
+              "value": {
+                "scalar": "uint8",
+                "value": 116,
+                "wire": "74"
+              }
+            }
+          },
+          "joints": {
+            "array": [
+              {
+                "record": "aimdk_msgs/msg/JointState",
+                "members": {
+                  "name": {
+                    "scalar": "string",
+                    "value": "v8352\u03b2"
+                  },
+                  "position": {
+                    "scalar": "float64",
+                    "value": -87.125,
+                    "wire": "0000000000c855c0"
+                  },
+                  "velocity": {
+                    "scalar": "float64",
+                    "value": 185.75,
+                    "wire": "0000000000386740"
+                  },
+                  "effort": {
+                    "scalar": "float64",
+                    "value": -24.75,
+                    "wire": "0000000000c038c0"
+                  },
+                  "coil_temp": {
+                    "scalar": "uint8",
+                    "value": 90,
+                    "wire": "5a"
+                  },
+                  "motor_temp": {
+                    "scalar": "uint8",
+                    "value": 44,
+                    "wire": "2c"
+                  },
+                  "motor_vol": {
+                    "scalar": "uint8",
+                    "value": 6,
+                    "wire": "06"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/McAction",
+      "wire": "9e616d45",
+      "value": {
+        "record": "aimdk_msgs/msg/McAction",
+        "members": {
+          "value": {
+            "scalar": "int32",
+            "value": 1164796318,
+            "wire": "9e616d45"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/McActionCommand",
+      "wire": "6ff83014070000007633656562ceb2",
+      "value": {
+        "record": "aimdk_msgs/msg/McActionCommand",
+        "members": {
+          "action": {
+            "record": "aimdk_msgs/msg/McAction",
+            "members": {
+              "value": {
+                "scalar": "int32",
+                "value": 338753647,
+                "wire": "6ff83014"
+              }
+            }
+          },
+          "action_desc": {
+            "scalar": "string",
+            "value": "v3eeb\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/McActionInfo",
+      "wire": "091b656e070000007630343534ceb2543effca",
+      "value": {
+        "record": "aimdk_msgs/msg/McActionInfo",
+        "members": {
+          "current_action": {
+            "record": "aimdk_msgs/msg/McAction",
+            "members": {
+              "value": {
+                "scalar": "int32",
+                "value": 1852119817,
+                "wire": "091b656e"
+              }
+            }
+          },
+          "action_desc": {
+            "scalar": "string",
+            "value": "v0454\u03b2"
+          },
+          "status": {
+            "record": "aimdk_msgs/msg/McActionStatus",
+            "members": {
+              "value": {
+                "scalar": "int32",
+                "value": -889242028,
+                "wire": "543effca"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/McActionStatus",
+      "wire": "03a0131b",
+      "value": {
+        "record": "aimdk_msgs/msg/McActionStatus",
+        "members": {
+          "value": {
+            "scalar": "int32",
+            "value": 454270979,
+            "wire": "03a0131b"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/McControlArea",
+      "wire": "c61a340d",
+      "value": {
+        "record": "aimdk_msgs/msg/McControlArea",
+        "members": {
+          "value": {
+            "scalar": "int32",
+            "value": 221518534,
+            "wire": "c61a340d"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/McInputAction",
+      "wire": "64436340",
+      "value": {
+        "record": "aimdk_msgs/msg/McInputAction",
+        "members": {
+          "value": {
+            "scalar": "int32",
+            "value": 1080247140,
+            "wire": "64436340"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/McInputSource",
+      "wire": "070000007664636264ceb2d4e7a260518ce9e8",
+      "value": {
+        "record": "aimdk_msgs/msg/McInputSource",
+        "members": {
+          "name": {
+            "scalar": "string",
+            "value": "vdcbd\u03b2"
+          },
+          "priority": {
+            "scalar": "int32",
+            "value": 1621288916,
+            "wire": "d4e7a260"
+          },
+          "timeout": {
+            "scalar": "int32",
+            "value": -387347375,
+            "wire": "518ce9e8"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/McLocomotionVelocity",
+      "wire": "1da7c0703c8e991c070000007630373663ceb2de93496a976034d2db683806070000007630363634ceb200000000000c69c0000000000038634000000000003064c0",
+      "value": {
+        "record": "aimdk_msgs/msg/McLocomotionVelocity",
+        "members": {
+          "header": {
+            "record": "aimdk_msgs/msg/MessageHeader",
+            "members": {
+              "stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": 1891673885,
+                    "wire": "1da7c070"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 479825468,
+                    "wire": "3c8e991c"
+                  }
+                }
+              },
+              "frame_id": {
+                "scalar": "string",
+                "value": "v076c\u03b2"
+              },
+              "sequence": {
+                "scalar": "uint32",
+                "value": 1783206878,
+                "wire": "de93496a"
+              },
+              "meas_stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": -768319337,
+                    "wire": "976034d2"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 104360155,
+                    "wire": "db683806"
+                  }
+                }
+              }
+            }
+          },
+          "source": {
+            "scalar": "string",
+            "value": "v0664\u03b2"
+          },
+          "forward_velocity": {
+            "scalar": "float64",
+            "value": -200.375,
+            "wire": "00000000000c69c0"
+          },
+          "lateral_velocity": {
+            "scalar": "float64",
+            "value": 153.75,
+            "wire": "0000000000386340"
+          },
+          "angular_velocity": {
+            "scalar": "float64",
+            "value": -161.5,
+            "wire": "00000000003064c0"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/McPresetMotion",
+      "wire": "bbd1e14c",
+      "value": {
+        "record": "aimdk_msgs/msg/McPresetMotion",
+        "members": {
+          "value": {
+            "scalar": "int32",
+            "value": 1289867707,
+            "wire": "bbd1e14c"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/MessageHeader",
+      "wire": "5455aec10663d513070000007636323737ceb2e5fe520f50fd2f14d8db8710",
+      "value": {
+        "record": "aimdk_msgs/msg/MessageHeader",
+        "members": {
+          "stamp": {
+            "record": "builtin_interfaces/msg/Time",
+            "members": {
+              "sec": {
+                "scalar": "int32",
+                "value": -1045539500,
+                "wire": "5455aec1"
+              },
+              "nanosec": {
+                "scalar": "uint32",
+                "value": 332751622,
+                "wire": "0663d513"
+              }
+            }
+          },
+          "frame_id": {
+            "scalar": "string",
+            "value": "v6277\u03b2"
+          },
+          "sequence": {
+            "scalar": "uint32",
+            "value": 257097445,
+            "wire": "e5fe520f"
+          },
+          "meas_stamp": {
+            "record": "builtin_interfaces/msg/Time",
+            "members": {
+              "sec": {
+                "scalar": "int32",
+                "value": 338689360,
+                "wire": "50fd2f14"
+              },
+              "nanosec": {
+                "scalar": "uint32",
+                "value": 277339096,
+                "wire": "d8db8710"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/PlayMediaFileRequest",
+      "wire": "070000007635663937ceb2f6cf1cd9128e891980070000007666626365ceb2070000007666656536ceb201",
+      "value": {
+        "record": "aimdk_msgs/msg/PlayMediaFileRequest",
+        "members": {
+          "file_name": {
+            "scalar": "string",
+            "value": "v5f97\u03b2"
+          },
+          "sample_rate": {
+            "scalar": "uint32",
+            "value": 3642544118,
+            "wire": "f6cf1cd9"
+          },
+          "priority_level": {
+            "record": "aimdk_msgs/msg/TtsPriorityLevel",
+            "members": {
+              "value": {
+                "scalar": "uint8",
+                "value": 18,
+                "wire": "12"
+              }
+            }
+          },
+          "priority_weight": {
+            "scalar": "uint32",
+            "value": 2149157262,
+            "wire": "8e891980"
+          },
+          "domain": {
+            "scalar": "string",
+            "value": "vfbce\u03b2"
+          },
+          "trace_id": {
+            "scalar": "string",
+            "value": "vfee6\u03b2"
+          },
+          "is_interrupted": {
+            "scalar": "bool",
+            "value": true,
+            "wire": "01"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/PlayTtsRequest",
+      "wire": "070000007637643533ceb29905780d6a070000007634396232ceb2070000007632646662ceb201",
+      "value": {
+        "record": "aimdk_msgs/msg/PlayTtsRequest",
+        "members": {
+          "text": {
+            "scalar": "string",
+            "value": "v7d53\u03b2"
+          },
+          "priority_level": {
+            "record": "aimdk_msgs/msg/TtsPriorityLevel",
+            "members": {
+              "value": {
+                "scalar": "uint8",
+                "value": 153,
+                "wire": "99"
+              }
+            }
+          },
+          "priority_weight": {
+            "scalar": "uint32",
+            "value": 1779267589,
+            "wire": "05780d6a"
+          },
+          "domain": {
+            "scalar": "string",
+            "value": "v49b2\u03b2"
+          },
+          "trace_id": {
+            "scalar": "string",
+            "value": "v2dfb\u03b2"
+          },
+          "is_interrupted": {
+            "scalar": "bool",
+            "value": true,
+            "wire": "01"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/PlayTtsResponse",
+      "wire": "070000007639376439ceb22d13a7109d070000007636333533ceb2070000007665306536ceb201070000007637663738ceb20f38fdc7",
+      "value": {
+        "record": "aimdk_msgs/msg/PlayTtsResponse",
+        "members": {
+          "text": {
+            "scalar": "string",
+            "value": "v97d9\u03b2"
+          },
+          "priority_level": {
+            "record": "aimdk_msgs/msg/TtsPriorityLevel",
+            "members": {
+              "value": {
+                "scalar": "uint8",
+                "value": 45,
+                "wire": "2d"
+              }
+            }
+          },
+          "priority_weight": {
+            "scalar": "uint32",
+            "value": 2635114259,
+            "wire": "13a7109d"
+          },
+          "domain": {
+            "scalar": "string",
+            "value": "v6353\u03b2"
+          },
+          "trace_id": {
+            "scalar": "string",
+            "value": "ve0e6\u03b2"
+          },
+          "is_success": {
+            "scalar": "bool",
+            "value": true,
+            "wire": "01"
+          },
+          "error_message": {
+            "scalar": "string",
+            "value": "v7f78\u03b2"
+          },
+          "estimated_duration": {
+            "scalar": "uint32",
+            "value": 3355260943,
+            "wire": "0f38fdc7"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/PmuState",
+      "wire": "070000007664623661ceb2070000007634316663ceb2070000007663383133ceb2a9e007c500000000008c6640000000000048584000000000003859c000000000002c63c00000000000203a4000000000004050c000000000004060c00000000000806cc00000000000cc644000000000003858400000000000504a40000000000048614000000000009c6b400000000000485bc000000000003c68c0070000007665386262ceb2070000007631333430ceb2070000007636353838ceb2070000007666663165ceb2f957209c893c0000000000685140000000000070404000000000007053400000000000b857403de21c6435561304202a24",
+      "value": {
+        "record": "aimdk_msgs/msg/PmuState",
+        "members": {
+          "pmu_software_version": {
+            "scalar": "string",
+            "value": "vdb6a\u03b2"
+          },
+          "pmu_hardware_version": {
+            "scalar": "string",
+            "value": "v41fc\u03b2"
+          },
+          "pmu_protocol_version": {
+            "scalar": "string",
+            "value": "vc813\u03b2"
+          },
+          "pmu_bool_status": {
+            "scalar": "uint32",
+            "value": 3305627817,
+            "wire": "a9e007c5"
+          },
+          "head_power_current": {
+            "scalar": "float64",
+            "value": 180.375,
+            "wire": "00000000008c6640"
+          },
+          "output_48v_current": {
+            "scalar": "float64",
+            "value": 97.125,
+            "wire": "0000000000485840"
+          },
+          "rk3588_current": {
+            "scalar": "float64",
+            "value": -100.875,
+            "wire": "00000000003859c0"
+          },
+          "output_12v_current": {
+            "scalar": "float64",
+            "value": -153.375,
+            "wire": "00000000002c63c0"
+          },
+          "bus_48v_current": {
+            "scalar": "float64",
+            "value": 26.125,
+            "wire": "0000000000203a40"
+          },
+          "orin_current": {
+            "scalar": "float64",
+            "value": -65.0,
+            "wire": "00000000004050c0"
+          },
+          "bus_48v_pmos_voltage": {
+            "scalar": "float64",
+            "value": -130.0,
+            "wire": "00000000004060c0"
+          },
+          "battery_voltage": {
+            "scalar": "float64",
+            "value": -228.0,
+            "wire": "0000000000806cc0"
+          },
+          "fan_voltage": {
+            "scalar": "float64",
+            "value": 166.375,
+            "wire": "0000000000cc6440"
+          },
+          "output_12v_voltage": {
+            "scalar": "float64",
+            "value": 96.875,
+            "wire": "0000000000385840"
+          },
+          "output_48v_voltage": {
+            "scalar": "float64",
+            "value": 52.625,
+            "wire": "0000000000504a40"
+          },
+          "bus_48v_voltage": {
+            "scalar": "float64",
+            "value": 138.25,
+            "wire": "0000000000486140"
+          },
+          "head_power_voltage": {
+            "scalar": "float64",
+            "value": 220.875,
+            "wire": "00000000009c6b40"
+          },
+          "orin_voltage": {
+            "scalar": "float64",
+            "value": -109.125,
+            "wire": "0000000000485bc0"
+          },
+          "rk3588_voltage": {
+            "scalar": "float64",
+            "value": -193.875,
+            "wire": "00000000003c68c0"
+          },
+          "bms_manufacturer": {
+            "scalar": "string",
+            "value": "ve8bb\u03b2"
+          },
+          "bms_serial_number": {
+            "scalar": "string",
+            "value": "v1340\u03b2"
+          },
+          "bms_hardware_version": {
+            "scalar": "string",
+            "value": "v6588\u03b2"
+          },
+          "bms_software_version": {
+            "scalar": "string",
+            "value": "vff1e\u03b2"
+          },
+          "bms_status_bits": {
+            "scalar": "uint32",
+            "value": 2619365369,
+            "wire": "f957209c"
+          },
+          "battery_balance_line_resistance": {
+            "scalar": "uint16",
+            "value": 15497,
+            "wire": "893c"
+          },
+          "battery_pack_voltage": {
+            "scalar": "float64",
+            "value": 69.625,
+            "wire": "0000000000685140"
+          },
+          "battery_current": {
+            "scalar": "float64",
+            "value": 32.875,
+            "wire": "0000000000704040"
+          },
+          "battery_output_power": {
+            "scalar": "float64",
+            "value": 77.75,
+            "wire": "0000000000705340"
+          },
+          "battery_temperature": {
+            "scalar": "float64",
+            "value": 94.875,
+            "wire": "0000000000b85740"
+          },
+          "battery_remaining_capacity": {
+            "scalar": "uint32",
+            "value": 1679614525,
+            "wire": "3de21c64"
+          },
+          "battery_remaining_capacity_percentage": {
+            "scalar": "uint8",
+            "value": 53,
+            "wire": "35"
+          },
+          "battery_cycle_count": {
+            "scalar": "uint16",
+            "value": 4950,
+            "wire": "5613"
+          },
+          "battery_cycle_total_capacity": {
+            "scalar": "uint32",
+            "value": 606740484,
+            "wire": "04202a24"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/ProcessedAudioOutput",
+      "wire": "74f6ac96d49fda04070000007630383631ceb291fb4465427b4e7c7214af30d8042faf470100000002",
+      "value": {
+        "record": "aimdk_msgs/msg/ProcessedAudioOutput",
+        "members": {
+          "header": {
+            "record": "aimdk_msgs/msg/MessageHeader",
+            "members": {
+              "stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": -1767049612,
+                    "wire": "74f6ac96"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 81436628,
+                    "wire": "d49fda04"
+                  }
+                }
+              },
+              "frame_id": {
+                "scalar": "string",
+                "value": "v0861\u03b2"
+              },
+              "sequence": {
+                "scalar": "uint32",
+                "value": 1699019665,
+                "wire": "91fb4465"
+              },
+              "meas_stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": 2085518146,
+                    "wire": "427b4e7c"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 816780402,
+                    "wire": "7214af30"
+                  }
+                }
+              }
+            }
+          },
+          "stream_id": {
+            "scalar": "uint32",
+            "value": 2939094232,
+            "wire": "d8042faf"
+          },
+          "audio_vad_state": {
+            "record": "aimdk_msgs/msg/AudioVadStateType",
+            "members": {
+              "value": {
+                "scalar": "uint8",
+                "value": 71,
+                "wire": "47"
+              }
+            }
+          },
+          "audio_data": {
+            "array": [
+              {
+                "scalar": "uint8",
+                "value": 2,
+                "wire": "02"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/RequestHeader",
+      "wire": "7ec27b1a2f62b81e",
+      "value": {
+        "record": "aimdk_msgs/msg/RequestHeader",
+        "members": {
+          "stamp": {
+            "record": "builtin_interfaces/msg/Time",
+            "members": {
+              "sec": {
+                "scalar": "int32",
+                "value": 444318334,
+                "wire": "7ec27b1a"
+              },
+              "nanosec": {
+                "scalar": "uint32",
+                "value": 515400239,
+                "wire": "2f62b81e"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/ResponseHeader",
+      "wire": "55c42dd4c7edd33a863659073f4f6e99",
+      "value": {
+        "record": "aimdk_msgs/msg/ResponseHeader",
+        "members": {
+          "stamp": {
+            "record": "builtin_interfaces/msg/Time",
+            "members": {
+              "sec": {
+                "scalar": "int32",
+                "value": -735198123,
+                "wire": "55c42dd4"
+              },
+              "nanosec": {
+                "scalar": "uint32",
+                "value": 986967495,
+                "wire": "c7edd33a"
+              }
+            }
+          },
+          "code": {
+            "scalar": "int64",
+            "value": -7390882806343584122,
+            "wire": "863659073f4f6e99"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/TouchState",
+      "wire": "d7825fed79ab2507070000007634613365ceb25bf61b277bc4ddd4778e3f220152585ca1136947b8d03a6a93910b718a569d30c517ac2bdcd4ff06f795ce1deed3bcbd4e928da65751de8b7c10ef9065d779d12a9648ca33551be718142afc010100010001000100",
+      "value": {
+        "record": "aimdk_msgs/msg/TouchState",
+        "members": {
+          "header": {
+            "record": "aimdk_msgs/msg/MessageHeader",
+            "members": {
+              "stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": -312507689,
+                    "wire": "d7825fed"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 119909241,
+                    "wire": "79ab2507"
+                  }
+                }
+              },
+              "frame_id": {
+                "scalar": "string",
+                "value": "v4a3e\u03b2"
+              },
+              "sequence": {
+                "scalar": "uint32",
+                "value": 656143963,
+                "wire": "5bf61b27"
+              },
+              "meas_stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": -723663749,
+                    "wire": "7bc4ddd4"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 574590583,
+                    "wire": "778e3f22"
+                  }
+                }
+              }
+            }
+          },
+          "event_type": {
+            "scalar": "uint8",
+            "value": 1,
+            "wire": "01"
+          },
+          "data": {
+            "array": [
+              {
+                "scalar": "uint32",
+                "value": 2707183698,
+                "wire": "52585ca1"
+              },
+              {
+                "scalar": "uint32",
+                "value": 3091687699,
+                "wire": "136947b8"
+              },
+              {
+                "scalar": "uint32",
+                "value": 2473212624,
+                "wire": "d03a6a93"
+              },
+              {
+                "scalar": "uint32",
+                "value": 2322664337,
+                "wire": "910b718a"
+              },
+              {
+                "scalar": "uint32",
+                "value": 3308297558,
+                "wire": "569d30c5"
+              },
+              {
+                "scalar": "uint32",
+                "value": 3693849623,
+                "wire": "17ac2bdc"
+              },
+              {
+                "scalar": "uint32",
+                "value": 4144431060,
+                "wire": "d4ff06f7"
+              },
+              {
+                "scalar": "uint32",
+                "value": 3994930837,
+                "wire": "95ce1dee"
+              }
+            ]
+          },
+          "threshold": {
+            "array": [
+              {
+                "scalar": "uint32",
+                "value": 1321057491,
+                "wire": "d3bcbd4e"
+              },
+              {
+                "scalar": "uint32",
+                "value": 1470533010,
+                "wire": "928da657"
+              },
+              {
+                "scalar": "uint32",
+                "value": 2089541201,
+                "wire": "51de8b7c"
+              },
+              {
+                "scalar": "uint32",
+                "value": 1703997200,
+                "wire": "10ef9065"
+              },
+              {
+                "scalar": "uint32",
+                "value": 718371287,
+                "wire": "d779d12a"
+              },
+              {
+                "scalar": "uint32",
+                "value": 868894870,
+                "wire": "9648ca33"
+              },
+              {
+                "scalar": "uint32",
+                "value": 417798997,
+                "wire": "551be718"
+              },
+              {
+                "scalar": "uint32",
+                "value": 33303060,
+                "wire": "142afc01"
+              }
+            ]
+          },
+          "is_touched": {
+            "array": [
+              {
+                "scalar": "bool",
+                "value": true,
+                "wire": "01"
+              },
+              {
+                "scalar": "bool",
+                "value": false,
+                "wire": "00"
+              },
+              {
+                "scalar": "bool",
+                "value": true,
+                "wire": "01"
+              },
+              {
+                "scalar": "bool",
+                "value": false,
+                "wire": "00"
+              },
+              {
+                "scalar": "bool",
+                "value": true,
+                "wire": "01"
+              },
+              {
+                "scalar": "bool",
+                "value": false,
+                "wire": "00"
+              },
+              {
+                "scalar": "bool",
+                "value": true,
+                "wire": "01"
+              },
+              {
+                "scalar": "bool",
+                "value": false,
+                "wire": "00"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/msg/TtsPriorityLevel",
+      "wire": "bc",
+      "value": {
+        "record": "aimdk_msgs/msg/TtsPriorityLevel",
+        "members": {
+          "value": {
+            "scalar": "uint8",
+            "value": 188,
+            "wire": "bc"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/srv/GetAllJointState_Request",
+      "wire": "42176be292645b22",
+      "value": {
+        "record": "aimdk_msgs/srv/GetAllJointState_Request",
+        "members": {
+          "request": {
+            "record": "aimdk_msgs/msg/CommonRequest",
+            "members": {
+              "header": {
+                "record": "aimdk_msgs/msg/RequestHeader",
+                "members": {
+                  "stamp": {
+                    "record": "builtin_interfaces/msg/Time",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": -496298174,
+                        "wire": "42176be2"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 576414866,
+                        "wire": "92645b22"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/srv/GetAllJointState_Response",
+      "wire": "cbb1e60319f8d70d158016abacf921355fb27f58070000007635353831ceb201000000070000007630323635ceb20000000000205ac000000000008018c0000000000090504080cddc01000000070000007634366630ceb20000000000e060c000000000001859400000000000c466c0a9abf501000000070000007665366135ceb200000000002064c000000000001054c0000000000020464078b92401000000070000007637363262ceb20000000000a8544000000000004057400000000000d05e40c20f9e",
+      "value": {
+        "record": "aimdk_msgs/srv/GetAllJointState_Response",
+        "members": {
+          "reponse": {
+            "record": "aimdk_msgs/msg/CommonResponse",
+            "members": {
+              "header": {
+                "record": "aimdk_msgs/msg/ResponseHeader",
+                "members": {
+                  "stamp": {
+                    "record": "builtin_interfaces/msg/Time",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": 65450443,
+                        "wire": "cbb1e603"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 232257561,
+                        "wire": "19f8d70d"
+                      }
+                    }
+                  },
+                  "code": {
+                    "scalar": "int64",
+                    "value": 3828615678241701909,
+                    "wire": "158016abacf92135"
+                  }
+                }
+              },
+              "status": {
+                "record": "aimdk_msgs/msg/CommonState",
+                "members": {
+                  "value": {
+                    "scalar": "int32",
+                    "value": 1484763743,
+                    "wire": "5fb27f58"
+                  }
+                }
+              },
+              "message": {
+                "scalar": "string",
+                "value": "v5581\u03b2"
+              }
+            }
+          },
+          "head_joints": {
+            "array": [
+              {
+                "record": "aimdk_msgs/msg/JointState",
+                "members": {
+                  "name": {
+                    "scalar": "string",
+                    "value": "v0265\u03b2"
+                  },
+                  "position": {
+                    "scalar": "float64",
+                    "value": -104.5,
+                    "wire": "0000000000205ac0"
+                  },
+                  "velocity": {
+                    "scalar": "float64",
+                    "value": -6.125,
+                    "wire": "00000000008018c0"
+                  },
+                  "effort": {
+                    "scalar": "float64",
+                    "value": 66.25,
+                    "wire": "0000000000905040"
+                  },
+                  "coil_temp": {
+                    "scalar": "uint8",
+                    "value": 128,
+                    "wire": "80"
+                  },
+                  "motor_temp": {
+                    "scalar": "uint8",
+                    "value": 205,
+                    "wire": "cd"
+                  },
+                  "motor_vol": {
+                    "scalar": "uint8",
+                    "value": 220,
+                    "wire": "dc"
+                  }
+                }
+              }
+            ]
+          },
+          "arm_joints": {
+            "array": [
+              {
+                "record": "aimdk_msgs/msg/JointState",
+                "members": {
+                  "name": {
+                    "scalar": "string",
+                    "value": "v46f0\u03b2"
+                  },
+                  "position": {
+                    "scalar": "float64",
+                    "value": -135.0,
+                    "wire": "0000000000e060c0"
+                  },
+                  "velocity": {
+                    "scalar": "float64",
+                    "value": 100.375,
+                    "wire": "0000000000185940"
+                  },
+                  "effort": {
+                    "scalar": "float64",
+                    "value": -182.125,
+                    "wire": "0000000000c466c0"
+                  },
+                  "coil_temp": {
+                    "scalar": "uint8",
+                    "value": 169,
+                    "wire": "a9"
+                  },
+                  "motor_temp": {
+                    "scalar": "uint8",
+                    "value": 171,
+                    "wire": "ab"
+                  },
+                  "motor_vol": {
+                    "scalar": "uint8",
+                    "value": 245,
+                    "wire": "f5"
+                  }
+                }
+              }
+            ]
+          },
+          "waist_joints": {
+            "array": [
+              {
+                "record": "aimdk_msgs/msg/JointState",
+                "members": {
+                  "name": {
+                    "scalar": "string",
+                    "value": "ve6a5\u03b2"
+                  },
+                  "position": {
+                    "scalar": "float64",
+                    "value": -161.0,
+                    "wire": "00000000002064c0"
+                  },
+                  "velocity": {
+                    "scalar": "float64",
+                    "value": -80.25,
+                    "wire": "00000000001054c0"
+                  },
+                  "effort": {
+                    "scalar": "float64",
+                    "value": 44.25,
+                    "wire": "0000000000204640"
+                  },
+                  "coil_temp": {
+                    "scalar": "uint8",
+                    "value": 120,
+                    "wire": "78"
+                  },
+                  "motor_temp": {
+                    "scalar": "uint8",
+                    "value": 185,
+                    "wire": "b9"
+                  },
+                  "motor_vol": {
+                    "scalar": "uint8",
+                    "value": 36,
+                    "wire": "24"
+                  }
+                }
+              }
+            ]
+          },
+          "leg_joints": {
+            "array": [
+              {
+                "record": "aimdk_msgs/msg/JointState",
+                "members": {
+                  "name": {
+                    "scalar": "string",
+                    "value": "v762b\u03b2"
+                  },
+                  "position": {
+                    "scalar": "float64",
+                    "value": 82.625,
+                    "wire": "0000000000a85440"
+                  },
+                  "velocity": {
+                    "scalar": "float64",
+                    "value": 93.0,
+                    "wire": "0000000000405740"
+                  },
+                  "effort": {
+                    "scalar": "float64",
+                    "value": 123.25,
+                    "wire": "0000000000d05e40"
+                  },
+                  "coil_temp": {
+                    "scalar": "uint8",
+                    "value": 194,
+                    "wire": "c2"
+                  },
+                  "motor_temp": {
+                    "scalar": "uint8",
+                    "value": 15,
+                    "wire": "0f"
+                  },
+                  "motor_vol": {
+                    "scalar": "uint8",
+                    "value": 158,
+                    "wire": "9e"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/srv/GetCurrentInputSource_Request",
+      "wire": "356cda9cc4940907",
+      "value": {
+        "record": "aimdk_msgs/srv/GetCurrentInputSource_Request",
+        "members": {
+          "request": {
+            "record": "aimdk_msgs/msg/CommonRequest",
+            "members": {
+              "header": {
+                "record": "aimdk_msgs/msg/RequestHeader",
+                "members": {
+                  "stamp": {
+                    "record": "builtin_interfaces/msg/Time",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": -1663407051,
+                        "wire": "356cda9c"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 118068420,
+                        "wire": "c4940907"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/srv/GetCurrentInputSource_Response",
+      "wire": "8f9e7c10e0656a2587abc65d3ed2f1c340b51964f9cc2efa08534872070000007666656432ceb2d91539cd3bc79314",
+      "value": {
+        "record": "aimdk_msgs/srv/GetCurrentInputSource_Response",
+        "members": {
+          "response": {
+            "record": "aimdk_msgs/msg/CommonTaskResponse",
+            "members": {
+              "header": {
+                "record": "aimdk_msgs/msg/ResponseHeader",
+                "members": {
+                  "stamp": {
+                    "record": "builtin_interfaces/msg/Time",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": 276602511,
+                        "wire": "8f9e7c10"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 627729888,
+                        "wire": "e0656a25"
+                      }
+                    }
+                  },
+                  "code": {
+                    "scalar": "int64",
+                    "value": -4327446601623229561,
+                    "wire": "87abc65d3ed2f1c3"
+                  }
+                }
+              },
+              "task_id": {
+                "scalar": "uint64",
+                "value": 18027571729909003584,
+                "wire": "40b51964f9cc2efa"
+              },
+              "state": {
+                "record": "aimdk_msgs/msg/CommonState",
+                "members": {
+                  "value": {
+                    "scalar": "int32",
+                    "value": 1917342472,
+                    "wire": "08534872"
+                  }
+                }
+              }
+            }
+          },
+          "input_source": {
+            "record": "aimdk_msgs/msg/McInputSource",
+            "members": {
+              "name": {
+                "scalar": "string",
+                "value": "vfed2\u03b2"
+              },
+              "priority": {
+                "scalar": "int32",
+                "value": -851896871,
+                "wire": "d91539cd"
+              },
+              "timeout": {
+                "scalar": "int32",
+                "value": 345229115,
+                "wire": "3bc79314"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/srv/GetHandType_Request",
+      "wire": "216fa6ac032ce70e",
+      "value": {
+        "record": "aimdk_msgs/srv/GetHandType_Request",
+        "members": {
+          "request": {
+            "record": "aimdk_msgs/msg/CommonRequest",
+            "members": {
+              "header": {
+                "record": "aimdk_msgs/msg/RequestHeader",
+                "members": {
+                  "stamp": {
+                    "record": "builtin_interfaces/msg/Time",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": -1398378719,
+                        "wire": "216fa6ac"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 250031107,
+                        "wire": "032ce70e"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/srv/GetHandType_Response",
+      "wire": "514c13d76fc2151cd7889bf26ef1ac6ccb9c4c2d070000007638303934ceb2a04f",
+      "value": {
+        "record": "aimdk_msgs/srv/GetHandType_Response",
+        "members": {
+          "reponse": {
+            "record": "aimdk_msgs/msg/CommonResponse",
+            "members": {
+              "header": {
+                "record": "aimdk_msgs/msg/ResponseHeader",
+                "members": {
+                  "stamp": {
+                    "record": "builtin_interfaces/msg/Time",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": -686601135,
+                        "wire": "514c13d7"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 471188079,
+                        "wire": "6fc2151c"
+                      }
+                    }
+                  },
+                  "code": {
+                    "scalar": "int64",
+                    "value": 7830899310909425879,
+                    "wire": "d7889bf26ef1ac6c"
+                  }
+                }
+              },
+              "status": {
+                "record": "aimdk_msgs/msg/CommonState",
+                "members": {
+                  "value": {
+                    "scalar": "int32",
+                    "value": 759995595,
+                    "wire": "cb9c4c2d"
+                  }
+                }
+              },
+              "message": {
+                "scalar": "string",
+                "value": "v8094\u03b2"
+              }
+            }
+          },
+          "left_hands_type": {
+            "record": "aimdk_msgs/msg/HandType",
+            "members": {
+              "value": {
+                "scalar": "uint8",
+                "value": 160,
+                "wire": "a0"
+              }
+            }
+          },
+          "right_hands_type": {
+            "record": "aimdk_msgs/msg/HandType",
+            "members": {
+              "value": {
+                "scalar": "uint8",
+                "value": 79,
+                "wire": "4f"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/srv/GetMcAction_Request",
+      "wire": "16b2cbc742412923",
+      "value": {
+        "record": "aimdk_msgs/srv/GetMcAction_Request",
+        "members": {
+          "request": {
+            "record": "aimdk_msgs/msg/CommonRequest",
+            "members": {
+              "header": {
+                "record": "aimdk_msgs/msg/RequestHeader",
+                "members": {
+                  "stamp": {
+                    "record": "builtin_interfaces/msg/Time",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": -942951914,
+                        "wire": "16b2cbc7"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 589906242,
+                        "wire": "42412923"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/srv/GetMcAction_Response",
+      "wire": "371ceb02ee57961fe9cb311a50b20684cb955833070000007630626164ceb2d172243e",
+      "value": {
+        "record": "aimdk_msgs/srv/GetMcAction_Response",
+        "members": {
+          "header": {
+            "record": "aimdk_msgs/msg/ResponseHeader",
+            "members": {
+              "stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": 48962615,
+                    "wire": "371ceb02"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 529946606,
+                    "wire": "ee57961f"
+                  }
+                }
+              },
+              "code": {
+                "scalar": "int64",
+                "value": -8933256753736201239,
+                "wire": "e9cb311a50b20684"
+              }
+            }
+          },
+          "info": {
+            "record": "aimdk_msgs/msg/McActionInfo",
+            "members": {
+              "current_action": {
+                "record": "aimdk_msgs/msg/McAction",
+                "members": {
+                  "value": {
+                    "scalar": "int32",
+                    "value": 861443531,
+                    "wire": "cb955833"
+                  }
+                }
+              },
+              "action_desc": {
+                "scalar": "string",
+                "value": "v0bad\u03b2"
+              },
+              "status": {
+                "record": "aimdk_msgs/msg/McActionStatus",
+                "members": {
+                  "value": {
+                    "scalar": "int32",
+                    "value": 1042576081,
+                    "wire": "d172243e"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/srv/GetMute_Request",
+      "wire": "40cabdd47aeddb2e",
+      "value": {
+        "record": "aimdk_msgs/srv/GetMute_Request",
+        "members": {
+          "request": {
+            "record": "aimdk_msgs/msg/CommonRequest",
+            "members": {
+              "header": {
+                "record": "aimdk_msgs/msg/RequestHeader",
+                "members": {
+                  "stamp": {
+                    "record": "builtin_interfaces/msg/Time",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": -725759424,
+                        "wire": "40cabdd4"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 786165114,
+                        "wire": "7aeddb2e"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/srv/GetMute_Response",
+      "wire": "3a06deedcacac334f4fabbbf4d838c21cbcd668f070000007630326338ceb201",
+      "value": {
+        "record": "aimdk_msgs/srv/GetMute_Response",
+        "members": {
+          "reponse": {
+            "record": "aimdk_msgs/msg/CommonResponse",
+            "members": {
+              "header": {
+                "record": "aimdk_msgs/msg/ResponseHeader",
+                "members": {
+                  "stamp": {
+                    "record": "builtin_interfaces/msg/Time",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": -304216518,
+                        "wire": "3a06deed"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 885246666,
+                        "wire": "cacac334"
+                      }
+                    }
+                  },
+                  "code": {
+                    "scalar": "int64",
+                    "value": 2417451469943601908,
+                    "wire": "f4fabbbf4d838c21"
+                  }
+                }
+              },
+              "status": {
+                "record": "aimdk_msgs/msg/CommonState",
+                "members": {
+                  "value": {
+                    "scalar": "int32",
+                    "value": -1889088053,
+                    "wire": "cbcd668f"
+                  }
+                }
+              },
+              "message": {
+                "scalar": "string",
+                "value": "v02c8\u03b2"
+              }
+            }
+          },
+          "is_mute": {
+            "scalar": "bool",
+            "value": true,
+            "wire": "01"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/srv/GetVolume_Request",
+      "wire": "3482754f43b7261d",
+      "value": {
+        "record": "aimdk_msgs/srv/GetVolume_Request",
+        "members": {
+          "request": {
+            "record": "aimdk_msgs/msg/CommonRequest",
+            "members": {
+              "header": {
+                "record": "aimdk_msgs/msg/RequestHeader",
+                "members": {
+                  "stamp": {
+                    "record": "builtin_interfaces/msg/Time",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": 1333101108,
+                        "wire": "3482754f"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 489076547,
+                        "wire": "43b7261d"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/srv/GetVolume_Response",
+      "wire": "577b2dba3e2c9f05138b111baaf226856110acb1070000007638363464ceb2a22c91c9",
+      "value": {
+        "record": "aimdk_msgs/srv/GetVolume_Response",
+        "members": {
+          "reponse": {
+            "record": "aimdk_msgs/msg/CommonResponse",
+            "members": {
+              "header": {
+                "record": "aimdk_msgs/msg/ResponseHeader",
+                "members": {
+                  "stamp": {
+                    "record": "builtin_interfaces/msg/Time",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": -1171424425,
+                        "wire": "577b2dba"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 94317630,
+                        "wire": "3e2c9f05"
+                      }
+                    }
+                  },
+                  "code": {
+                    "scalar": "int64",
+                    "value": -8852121205137634541,
+                    "wire": "138b111baaf22685"
+                  }
+                }
+              },
+              "status": {
+                "record": "aimdk_msgs/msg/CommonState",
+                "members": {
+                  "value": {
+                    "scalar": "int32",
+                    "value": -1314123679,
+                    "wire": "6110acb1"
+                  }
+                }
+              },
+              "message": {
+                "scalar": "string",
+                "value": "v864d\u03b2"
+              }
+            }
+          },
+          "audio_volume": {
+            "scalar": "uint32",
+            "value": 3381734562,
+            "wire": "a22c91c9"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/srv/LedStripCommand_Request",
+      "wire": "9a8f2cad6fd34d14c2907bf4",
+      "value": {
+        "record": "aimdk_msgs/srv/LedStripCommand_Request",
+        "members": {
+          "request": {
+            "record": "aimdk_msgs/msg/CommonRequest",
+            "members": {
+              "header": {
+                "record": "aimdk_msgs/msg/RequestHeader",
+                "members": {
+                  "stamp": {
+                    "record": "builtin_interfaces/msg/Time",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": -1389588582,
+                        "wire": "9a8f2cad"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 340644719,
+                        "wire": "6fd34d14"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "led_strip_mode": {
+            "scalar": "uint8",
+            "value": 194,
+            "wire": "c2"
+          },
+          "r": {
+            "scalar": "uint8",
+            "value": 144,
+            "wire": "90"
+          },
+          "g": {
+            "scalar": "uint8",
+            "value": 123,
+            "wire": "7b"
+          },
+          "b": {
+            "scalar": "uint8",
+            "value": 244,
+            "wire": "f4"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/srv/LedStripCommand_Response",
+      "wire": "8a74dbe32c035c37f42d67754d5450eb2b4a",
+      "value": {
+        "record": "aimdk_msgs/srv/LedStripCommand_Response",
+        "members": {
+          "header": {
+            "record": "aimdk_msgs/msg/ResponseHeader",
+            "members": {
+              "stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": -472157046,
+                    "wire": "8a74dbe3"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 928777004,
+                    "wire": "2c035c37"
+                  }
+                }
+              },
+              "code": {
+                "scalar": "int64",
+                "value": -1490598785000722956,
+                "wire": "f42d67754d5450eb"
+              }
+            }
+          },
+          "status_code": {
+            "scalar": "uint16",
+            "value": 18987,
+            "wire": "2b4a"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/srv/PlayEmoji_Request",
+      "wire": "fb206e27ed8a9b1302cbe66ca555",
+      "value": {
+        "record": "aimdk_msgs/srv/PlayEmoji_Request",
+        "members": {
+          "header": {
+            "record": "aimdk_msgs/msg/CommonRequest",
+            "members": {
+              "header": {
+                "record": "aimdk_msgs/msg/RequestHeader",
+                "members": {
+                  "stamp": {
+                    "record": "builtin_interfaces/msg/Time",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": 661528827,
+                        "wire": "fb206e27"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 328960749,
+                        "wire": "ed8a9b13"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "emotion_id": {
+            "scalar": "uint8",
+            "value": 2,
+            "wire": "02"
+          },
+          "mode": {
+            "scalar": "uint8",
+            "value": 203,
+            "wire": "cb"
+          },
+          "priority": {
+            "scalar": "int32",
+            "value": 1436904678,
+            "wire": "e66ca555"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/srv/PlayEmoji_Response",
+      "wire": "f6c43d030ac08f040abdee5cb3c4d9c2974780d5070000007635323838ceb201070000007632373339ceb2",
+      "value": {
+        "record": "aimdk_msgs/srv/PlayEmoji_Response",
+        "members": {
+          "header": {
+            "record": "aimdk_msgs/msg/CommonResponse",
+            "members": {
+              "header": {
+                "record": "aimdk_msgs/msg/ResponseHeader",
+                "members": {
+                  "stamp": {
+                    "record": "builtin_interfaces/msg/Time",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": 54379766,
+                        "wire": "f6c43d03"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 76529674,
+                        "wire": "0ac08f04"
+                      }
+                    }
+                  },
+                  "code": {
+                    "scalar": "int64",
+                    "value": -4406274485767979766,
+                    "wire": "0abdee5cb3c4d9c2"
+                  }
+                }
+              },
+              "status": {
+                "record": "aimdk_msgs/msg/CommonState",
+                "members": {
+                  "value": {
+                    "scalar": "int32",
+                    "value": -713013353,
+                    "wire": "974780d5"
+                  }
+                }
+              },
+              "message": {
+                "scalar": "string",
+                "value": "v5288\u03b2"
+              }
+            }
+          },
+          "success": {
+            "scalar": "bool",
+            "value": true,
+            "wire": "01"
+          },
+          "message": {
+            "scalar": "string",
+            "value": "v2739\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/srv/PlayMediaFile_Request",
+      "wire": "02d555892c399c1c070000007638313562ceb26af2beda7d802e045e070000007663636532ceb2070000007638396235ceb200",
+      "value": {
+        "record": "aimdk_msgs/srv/PlayMediaFile_Request",
+        "members": {
+          "header": {
+            "record": "aimdk_msgs/msg/CommonRequest",
+            "members": {
+              "header": {
+                "record": "aimdk_msgs/msg/RequestHeader",
+                "members": {
+                  "stamp": {
+                    "record": "builtin_interfaces/msg/Time",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": -1990863614,
+                        "wire": "02d55589"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 480000300,
+                        "wire": "2c399c1c"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "media_file_req": {
+            "record": "aimdk_msgs/msg/PlayMediaFileRequest",
+            "members": {
+              "file_name": {
+                "scalar": "string",
+                "value": "v815b\u03b2"
+              },
+              "sample_rate": {
+                "scalar": "uint32",
+                "value": 3669946986,
+                "wire": "6af2beda"
+              },
+              "priority_level": {
+                "record": "aimdk_msgs/msg/TtsPriorityLevel",
+                "members": {
+                  "value": {
+                    "scalar": "uint8",
+                    "value": 125,
+                    "wire": "7d"
+                  }
+                }
+              },
+              "priority_weight": {
+                "scalar": "uint32",
+                "value": 1577332352,
+                "wire": "802e045e"
+              },
+              "domain": {
+                "scalar": "string",
+                "value": "vcce2\u03b2"
+              },
+              "trace_id": {
+                "scalar": "string",
+                "value": "v89b5\u03b2"
+              },
+              "is_interrupted": {
+                "scalar": "bool",
+                "value": false,
+                "wire": "00"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/srv/PlayMediaFile_Response",
+      "wire": "bbb5f2c7a587ad20b04b719c09324602f382f4fe070000007666336166ceb2070000007633303462ceb299f05c1b6c070000007638316232ceb2070000007634646464ceb201070000007630363336ceb2f9b7c30c",
+      "value": {
+        "record": "aimdk_msgs/srv/PlayMediaFile_Response",
+        "members": {
+          "header": {
+            "record": "aimdk_msgs/msg/CommonResponse",
+            "members": {
+              "header": {
+                "record": "aimdk_msgs/msg/ResponseHeader",
+                "members": {
+                  "stamp": {
+                    "record": "builtin_interfaces/msg/Time",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": -940395077,
+                        "wire": "bbb5f2c7"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 548243365,
+                        "wire": "a587ad20"
+                      }
+                    }
+                  },
+                  "code": {
+                    "scalar": "int64",
+                    "value": 163873453306366896,
+                    "wire": "b04b719c09324602"
+                  }
+                }
+              },
+              "status": {
+                "record": "aimdk_msgs/msg/CommonState",
+                "members": {
+                  "value": {
+                    "scalar": "int32",
+                    "value": -17530125,
+                    "wire": "f382f4fe"
+                  }
+                }
+              },
+              "message": {
+                "scalar": "string",
+                "value": "vf3af\u03b2"
+              }
+            }
+          },
+          "tts_resp": {
+            "record": "aimdk_msgs/msg/PlayTtsResponse",
+            "members": {
+              "text": {
+                "scalar": "string",
+                "value": "v304b\u03b2"
+              },
+              "priority_level": {
+                "record": "aimdk_msgs/msg/TtsPriorityLevel",
+                "members": {
+                  "value": {
+                    "scalar": "uint8",
+                    "value": 153,
+                    "wire": "99"
+                  }
+                }
+              },
+              "priority_weight": {
+                "scalar": "uint32",
+                "value": 1813732592,
+                "wire": "f05c1b6c"
+              },
+              "domain": {
+                "scalar": "string",
+                "value": "v81b2\u03b2"
+              },
+              "trace_id": {
+                "scalar": "string",
+                "value": "v4ddd\u03b2"
+              },
+              "is_success": {
+                "scalar": "bool",
+                "value": true,
+                "wire": "01"
+              },
+              "error_message": {
+                "scalar": "string",
+                "value": "v0636\u03b2"
+              },
+              "estimated_duration": {
+                "scalar": "uint32",
+                "value": 214153209,
+                "wire": "f9b7c30c"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/srv/PlayTts_Request",
+      "wire": "16fddc490ed7d11b070000007639383961ceb213d9d1d86c070000007637343130ceb2070000007634343863ceb200",
+      "value": {
+        "record": "aimdk_msgs/srv/PlayTts_Request",
+        "members": {
+          "header": {
+            "record": "aimdk_msgs/msg/CommonRequest",
+            "members": {
+              "header": {
+                "record": "aimdk_msgs/msg/RequestHeader",
+                "members": {
+                  "stamp": {
+                    "record": "builtin_interfaces/msg/Time",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": 1239219478,
+                        "wire": "16fddc49"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 466736910,
+                        "wire": "0ed7d11b"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "tts_req": {
+            "record": "aimdk_msgs/msg/PlayTtsRequest",
+            "members": {
+              "text": {
+                "scalar": "string",
+                "value": "v989a\u03b2"
+              },
+              "priority_level": {
+                "record": "aimdk_msgs/msg/TtsPriorityLevel",
+                "members": {
+                  "value": {
+                    "scalar": "uint8",
+                    "value": 19,
+                    "wire": "13"
+                  }
+                }
+              },
+              "priority_weight": {
+                "scalar": "uint32",
+                "value": 1826148825,
+                "wire": "d9d1d86c"
+              },
+              "domain": {
+                "scalar": "string",
+                "value": "v7410\u03b2"
+              },
+              "trace_id": {
+                "scalar": "string",
+                "value": "v448c\u03b2"
+              },
+              "is_interrupted": {
+                "scalar": "bool",
+                "value": false,
+                "wire": "00"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/srv/PlayTts_Response",
+      "wire": "eee8e8dd779080066fe0aca5d6999b3b1d90a1e8070000007636303330ceb2070000007661363062ceb2fad6e30077070000007662653934ceb2070000007639336335ceb201070000007663366266ceb22bf63bd9",
+      "value": {
+        "record": "aimdk_msgs/srv/PlayTts_Response",
+        "members": {
+          "header": {
+            "record": "aimdk_msgs/msg/CommonResponse",
+            "members": {
+              "header": {
+                "record": "aimdk_msgs/msg/ResponseHeader",
+                "members": {
+                  "stamp": {
+                    "record": "builtin_interfaces/msg/Time",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": -571938578,
+                        "wire": "eee8e8dd"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 109088887,
+                        "wire": "77908006"
+                      }
+                    }
+                  },
+                  "code": {
+                    "scalar": "int64",
+                    "value": 4295195816809521263,
+                    "wire": "6fe0aca5d6999b3b"
+                  }
+                }
+              },
+              "status": {
+                "record": "aimdk_msgs/msg/CommonState",
+                "members": {
+                  "value": {
+                    "scalar": "int32",
+                    "value": -392064995,
+                    "wire": "1d90a1e8"
+                  }
+                }
+              },
+              "message": {
+                "scalar": "string",
+                "value": "v6030\u03b2"
+              }
+            }
+          },
+          "tts_resp": {
+            "record": "aimdk_msgs/msg/PlayTtsResponse",
+            "members": {
+              "text": {
+                "scalar": "string",
+                "value": "va60b\u03b2"
+              },
+              "priority_level": {
+                "record": "aimdk_msgs/msg/TtsPriorityLevel",
+                "members": {
+                  "value": {
+                    "scalar": "uint8",
+                    "value": 250,
+                    "wire": "fa"
+                  }
+                }
+              },
+              "priority_weight": {
+                "scalar": "uint32",
+                "value": 1996547030,
+                "wire": "d6e30077"
+              },
+              "domain": {
+                "scalar": "string",
+                "value": "vbe94\u03b2"
+              },
+              "trace_id": {
+                "scalar": "string",
+                "value": "v93c5\u03b2"
+              },
+              "is_success": {
+                "scalar": "bool",
+                "value": true,
+                "wire": "01"
+              },
+              "error_message": {
+                "scalar": "string",
+                "value": "vc6bf\u03b2"
+              },
+              "estimated_duration": {
+                "scalar": "uint32",
+                "value": 3644585515,
+                "wire": "2bf63bd9"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/srv/PlayVideoGroup_Request",
+      "wire": "1dffbbb536b15e1d01000000070000007662393735ceb2f19e4bf33a",
+      "value": {
+        "record": "aimdk_msgs/srv/PlayVideoGroup_Request",
+        "members": {
+          "header": {
+            "record": "aimdk_msgs/msg/CommonRequest",
+            "members": {
+              "header": {
+                "record": "aimdk_msgs/msg/RequestHeader",
+                "members": {
+                  "stamp": {
+                    "record": "builtin_interfaces/msg/Time",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": -1245970659,
+                        "wire": "1dffbbb5"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 492745014,
+                        "wire": "36b15e1d"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "video_path_list": {
+            "array": [
+              {
+                "scalar": "string",
+                "value": "vb975\u03b2"
+              }
+            ]
+          },
+          "mode": {
+            "scalar": "uint8",
+            "value": 241,
+            "wire": "f1"
+          },
+          "priority": {
+            "scalar": "int32",
+            "value": 989023134,
+            "wire": "9e4bf33a"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/srv/PlayVideoGroup_Response",
+      "wire": "6456c64af906b92efe9c0dbd47e53a23b392b16f070000007634336230ceb201070000007634383666ceb2",
+      "value": {
+        "record": "aimdk_msgs/srv/PlayVideoGroup_Response",
+        "members": {
+          "header": {
+            "record": "aimdk_msgs/msg/CommonResponse",
+            "members": {
+              "header": {
+                "record": "aimdk_msgs/msg/ResponseHeader",
+                "members": {
+                  "stamp": {
+                    "record": "builtin_interfaces/msg/Time",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": 1254512228,
+                        "wire": "6456c64a"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 783877881,
+                        "wire": "f906b92e"
+                      }
+                    }
+                  },
+                  "code": {
+                    "scalar": "int64",
+                    "value": 2538593436253920510,
+                    "wire": "fe9c0dbd47e53a23"
+                  }
+                }
+              },
+              "status": {
+                "record": "aimdk_msgs/msg/CommonState",
+                "members": {
+                  "value": {
+                    "scalar": "int32",
+                    "value": 1873908403,
+                    "wire": "b392b16f"
+                  }
+                }
+              },
+              "message": {
+                "scalar": "string",
+                "value": "v43b0\u03b2"
+              }
+            }
+          },
+          "success": {
+            "scalar": "bool",
+            "value": true,
+            "wire": "01"
+          },
+          "message": {
+            "scalar": "string",
+            "value": "v486f\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/srv/PlayVideo_Request",
+      "wire": "23679b0a535df030070000007639653337ceb2d417bc5be7",
+      "value": {
+        "record": "aimdk_msgs/srv/PlayVideo_Request",
+        "members": {
+          "header": {
+            "record": "aimdk_msgs/msg/CommonRequest",
+            "members": {
+              "header": {
+                "record": "aimdk_msgs/msg/RequestHeader",
+                "members": {
+                  "stamp": {
+                    "record": "builtin_interfaces/msg/Time",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": 177956643,
+                        "wire": "23679b0a"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 821058899,
+                        "wire": "535df030"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "video_path": {
+            "scalar": "string",
+            "value": "v9e37\u03b2"
+          },
+          "mode": {
+            "scalar": "uint8",
+            "value": 212,
+            "wire": "d4"
+          },
+          "priority": {
+            "scalar": "int32",
+            "value": -413418473,
+            "wire": "17bc5be7"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/srv/PlayVideo_Response",
+      "wire": "576b188bc2210c1c3d435581843a621f6659e06d070000007663326330ceb200070000007639356337ceb2",
+      "value": {
+        "record": "aimdk_msgs/srv/PlayVideo_Response",
+        "members": {
+          "header": {
+            "record": "aimdk_msgs/msg/CommonResponse",
+            "members": {
+              "header": {
+                "record": "aimdk_msgs/msg/ResponseHeader",
+                "members": {
+                  "stamp": {
+                    "record": "builtin_interfaces/msg/Time",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": -1961333929,
+                        "wire": "576b188b"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 470557122,
+                        "wire": "c2210c1c"
+                      }
+                    }
+                  },
+                  "code": {
+                    "scalar": "int64",
+                    "value": 2261434303673353021,
+                    "wire": "3d435581843a621f"
+                  }
+                }
+              },
+              "status": {
+                "record": "aimdk_msgs/msg/CommonState",
+                "members": {
+                  "value": {
+                    "scalar": "int32",
+                    "value": 1843419494,
+                    "wire": "6659e06d"
+                  }
+                }
+              },
+              "message": {
+                "scalar": "string",
+                "value": "vc2c0\u03b2"
+              }
+            }
+          },
+          "success": {
+            "scalar": "bool",
+            "value": false,
+            "wire": "00"
+          },
+          "message": {
+            "scalar": "string",
+            "value": "v95c7\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/srv/SetAgentPropertiesRequest_Request",
+      "wire": "38249d9b00ba66140100000035070000007635636336ceb2",
+      "value": {
+        "record": "aimdk_msgs/srv/SetAgentPropertiesRequest_Request",
+        "members": {
+          "header": {
+            "record": "aimdk_msgs/msg/CommonRequest",
+            "members": {
+              "header": {
+                "record": "aimdk_msgs/msg/RequestHeader",
+                "members": {
+                  "stamp": {
+                    "record": "builtin_interfaces/msg/Time",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": -1684200392,
+                        "wire": "38249d9b"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 342276608,
+                        "wire": "00ba6614"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "contents": {
+            "record": "aimdk_msgs/msg/AgentProperties",
+            "members": {
+              "properties": {
+                "array": [
+                  {
+                    "record": "aimdk_msgs/msg/AgentPropertiesValue",
+                    "members": {
+                      "key": {
+                        "record": "aimdk_msgs/msg/AgentPropertyIdType",
+                        "members": {
+                          "value": {
+                            "scalar": "uint8",
+                            "value": 53,
+                            "wire": "35"
+                          }
+                        }
+                      },
+                      "value": {
+                        "scalar": "string",
+                        "value": "v5cc6\u03b2"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/srv/SetAgentPropertiesRequest_Response",
+      "wire": "f8a4ec016be9aa2e2f5836a996210137354b719e070000007661393561ceb2",
+      "value": {
+        "record": "aimdk_msgs/srv/SetAgentPropertiesRequest_Response",
+        "members": {
+          "header": {
+            "record": "aimdk_msgs/msg/CommonResponse",
+            "members": {
+              "header": {
+                "record": "aimdk_msgs/msg/ResponseHeader",
+                "members": {
+                  "stamp": {
+                    "record": "builtin_interfaces/msg/Time",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": 32285944,
+                        "wire": "f8a4ec01"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 782952811,
+                        "wire": "6be9aa2e"
+                      }
+                    }
+                  },
+                  "code": {
+                    "scalar": "int64",
+                    "value": 3963486078030469167,
+                    "wire": "2f5836a996210137"
+                  }
+                }
+              },
+              "status": {
+                "record": "aimdk_msgs/msg/CommonState",
+                "members": {
+                  "value": {
+                    "scalar": "int32",
+                    "value": -1636742347,
+                    "wire": "354b719e"
+                  }
+                }
+              },
+              "message": {
+                "scalar": "string",
+                "value": "va95a\u03b2"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/srv/SetMcAction_Request",
+      "wire": "7d1b67589f966f04070000007638616439ceb2bba8a149070000007663376130ceb2",
+      "value": {
+        "record": "aimdk_msgs/srv/SetMcAction_Request",
+        "members": {
+          "header": {
+            "record": "aimdk_msgs/msg/RequestHeader",
+            "members": {
+              "stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": 1483152253,
+                    "wire": "7d1b6758"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 74421919,
+                    "wire": "9f966f04"
+                  }
+                }
+              }
+            }
+          },
+          "source": {
+            "scalar": "string",
+            "value": "v8ad9\u03b2"
+          },
+          "command": {
+            "record": "aimdk_msgs/msg/McActionCommand",
+            "members": {
+              "action": {
+                "record": "aimdk_msgs/msg/McAction",
+                "members": {
+                  "value": {
+                    "scalar": "int32",
+                    "value": 1235331259,
+                    "wire": "bba8a149"
+                  }
+                }
+              },
+              "action_desc": {
+                "scalar": "string",
+                "value": "vc7a0\u03b2"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/srv/SetMcAction_Response",
+      "wire": "afba180a3b3980022cc8591f95b16e811f75ce07070000007664656439ceb2",
+      "value": {
+        "record": "aimdk_msgs/srv/SetMcAction_Response",
+        "members": {
+          "response": {
+            "record": "aimdk_msgs/msg/CommonResponse",
+            "members": {
+              "header": {
+                "record": "aimdk_msgs/msg/ResponseHeader",
+                "members": {
+                  "stamp": {
+                    "record": "builtin_interfaces/msg/Time",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": 169392815,
+                        "wire": "afba180a"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 41957691,
+                        "wire": "3b398002"
+                      }
+                    }
+                  },
+                  "code": {
+                    "scalar": "int64",
+                    "value": -9120156941344454612,
+                    "wire": "2cc8591f95b16e81"
+                  }
+                }
+              },
+              "status": {
+                "record": "aimdk_msgs/msg/CommonState",
+                "members": {
+                  "value": {
+                    "scalar": "int32",
+                    "value": 130970911,
+                    "wire": "1f75ce07"
+                  }
+                }
+              },
+              "message": {
+                "scalar": "string",
+                "value": "vded9\u03b2"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/srv/SetMcInputSource_Request",
+      "wire": "e1dc1ed564ff8c3919eb0151070000007630386639ceb220845fcc7a3873a9",
+      "value": {
+        "record": "aimdk_msgs/srv/SetMcInputSource_Request",
+        "members": {
+          "request": {
+            "record": "aimdk_msgs/msg/CommonRequest",
+            "members": {
+              "header": {
+                "record": "aimdk_msgs/msg/RequestHeader",
+                "members": {
+                  "stamp": {
+                    "record": "builtin_interfaces/msg/Time",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": -719397663,
+                        "wire": "e1dc1ed5"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 965541732,
+                        "wire": "64ff8c39"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "action": {
+            "record": "aimdk_msgs/msg/McInputAction",
+            "members": {
+              "value": {
+                "scalar": "int32",
+                "value": 1359080217,
+                "wire": "19eb0151"
+              }
+            }
+          },
+          "input_source": {
+            "record": "aimdk_msgs/msg/McInputSource",
+            "members": {
+              "name": {
+                "scalar": "string",
+                "value": "v08f9\u03b2"
+              },
+              "priority": {
+                "scalar": "int32",
+                "value": -866155488,
+                "wire": "20845fcc"
+              },
+              "timeout": {
+                "scalar": "int32",
+                "value": -1452066694,
+                "wire": "7a3873a9"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/srv/SetMcInputSource_Response",
+      "wire": "dc64493ed322d40688507bf331294c6d83b456d53acd614b07a8f5dc",
+      "value": {
+        "record": "aimdk_msgs/srv/SetMcInputSource_Response",
+        "members": {
+          "response": {
+            "record": "aimdk_msgs/msg/CommonTaskResponse",
+            "members": {
+              "header": {
+                "record": "aimdk_msgs/msg/ResponseHeader",
+                "members": {
+                  "stamp": {
+                    "record": "builtin_interfaces/msg/Time",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": 1044997340,
+                        "wire": "dc64493e"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 114565843,
+                        "wire": "d322d406"
+                      }
+                    }
+                  },
+                  "code": {
+                    "scalar": "int64",
+                    "value": 7875715142879236232,
+                    "wire": "88507bf331294c6d"
+                  }
+                }
+              },
+              "task_id": {
+                "scalar": "uint64",
+                "value": 5431848278156555395,
+                "wire": "83b456d53acd614b"
+              },
+              "state": {
+                "record": "aimdk_msgs/msg/CommonState",
+                "members": {
+                  "value": {
+                    "scalar": "int32",
+                    "value": -587880441,
+                    "wire": "07a8f5dc"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/srv/SetMcPresetMotion_Request",
+      "wire": "dfe0f0a55c978a2517dd2cabccdb867500070000007632633961ceb2",
+      "value": {
+        "record": "aimdk_msgs/srv/SetMcPresetMotion_Request",
+        "members": {
+          "header": {
+            "record": "aimdk_msgs/msg/RequestHeader",
+            "members": {
+              "stamp": {
+                "record": "builtin_interfaces/msg/Time",
+                "members": {
+                  "sec": {
+                    "scalar": "int32",
+                    "value": -1510940449,
+                    "wire": "dfe0f0a5"
+                  },
+                  "nanosec": {
+                    "scalar": "uint32",
+                    "value": 629839708,
+                    "wire": "5c978a25"
+                  }
+                }
+              }
+            }
+          },
+          "area": {
+            "record": "aimdk_msgs/msg/McControlArea",
+            "members": {
+              "value": {
+                "scalar": "int32",
+                "value": -1423123177,
+                "wire": "17dd2cab"
+              }
+            }
+          },
+          "motion": {
+            "record": "aimdk_msgs/msg/McPresetMotion",
+            "members": {
+              "value": {
+                "scalar": "int32",
+                "value": 1971772364,
+                "wire": "ccdb8675"
+              }
+            }
+          },
+          "interrupt": {
+            "scalar": "bool",
+            "value": false,
+            "wire": "00"
+          },
+          "ani_path": {
+            "scalar": "string",
+            "value": "v2c9a\u03b2"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/srv/SetMcPresetMotion_Response",
+      "wire": "f5dbfa9364cdbe0af9a4971d40dda08331ebc0438892f7dd765c1932",
+      "value": {
+        "record": "aimdk_msgs/srv/SetMcPresetMotion_Response",
+        "members": {
+          "response": {
+            "record": "aimdk_msgs/msg/CommonTaskResponse",
+            "members": {
+              "header": {
+                "record": "aimdk_msgs/msg/ResponseHeader",
+                "members": {
+                  "stamp": {
+                    "record": "builtin_interfaces/msg/Time",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": -1812276235,
+                        "wire": "f5dbfa93"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 180276580,
+                        "wire": "64cdbe0a"
+                      }
+                    }
+                  },
+                  "code": {
+                    "scalar": "int64",
+                    "value": -8961919991023164167,
+                    "wire": "f9a4971d40dda083"
+                  }
+                }
+              },
+              "task_id": {
+                "scalar": "uint64",
+                "value": 15994413715579530033,
+                "wire": "31ebc0438892f7dd"
+              },
+              "state": {
+                "record": "aimdk_msgs/msg/CommonState",
+                "members": {
+                  "value": {
+                    "scalar": "int32",
+                    "value": 840522870,
+                    "wire": "765c1932"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/srv/SetMute_Request",
+      "wire": "b2a0f11c2b0f5a1701",
+      "value": {
+        "record": "aimdk_msgs/srv/SetMute_Request",
+        "members": {
+          "request": {
+            "record": "aimdk_msgs/msg/CommonRequest",
+            "members": {
+              "header": {
+                "record": "aimdk_msgs/msg/RequestHeader",
+                "members": {
+                  "stamp": {
+                    "record": "builtin_interfaces/msg/Time",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": 485597362,
+                        "wire": "b2a0f11c"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 391778091,
+                        "wire": "2b0f5a17"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "is_mute": {
+            "scalar": "bool",
+            "value": true,
+            "wire": "01"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/srv/SetMute_Response",
+      "wire": "60d9a5be72edec0c49f2bc65f08b8bfbf2056c3a070000007634653835ceb201",
+      "value": {
+        "record": "aimdk_msgs/srv/SetMute_Response",
+        "members": {
+          "reponse": {
+            "record": "aimdk_msgs/msg/CommonResponse",
+            "members": {
+              "header": {
+                "record": "aimdk_msgs/msg/ResponseHeader",
+                "members": {
+                  "stamp": {
+                    "record": "builtin_interfaces/msg/Time",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": -1096427168,
+                        "wire": "60d9a5be"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 216853874,
+                        "wire": "72edec0c"
+                      }
+                    }
+                  },
+                  "code": {
+                    "scalar": "int64",
+                    "value": -321009083811564983,
+                    "wire": "49f2bc65f08b8bfb"
+                  }
+                }
+              },
+              "status": {
+                "record": "aimdk_msgs/msg/CommonState",
+                "members": {
+                  "value": {
+                    "scalar": "int32",
+                    "value": 980157938,
+                    "wire": "f2056c3a"
+                  }
+                }
+              },
+              "message": {
+                "scalar": "string",
+                "value": "v4e85\u03b2"
+              }
+            }
+          },
+          "is_mute": {
+            "scalar": "bool",
+            "value": true,
+            "wire": "01"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/srv/SetVolume_Request",
+      "wire": "014198c4c0f25f164b1e246a",
+      "value": {
+        "record": "aimdk_msgs/srv/SetVolume_Request",
+        "members": {
+          "request": {
+            "record": "aimdk_msgs/msg/CommonRequest",
+            "members": {
+              "header": {
+                "record": "aimdk_msgs/msg/RequestHeader",
+                "members": {
+                  "stamp": {
+                    "record": "builtin_interfaces/msg/Time",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": -996654847,
+                        "wire": "014198c4"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 375386816,
+                        "wire": "c0f25f16"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "audio_volume": {
+            "scalar": "uint32",
+            "value": 1780751947,
+            "wire": "4b1e246a"
+          }
+        }
+      }
+    },
+    {
+      "type": "aimdk_msgs/srv/SetVolume_Response",
+      "wire": "b75215ec53a04b19d309a1446a7096da5362972a070000007665623661ceb2836cf7ed",
+      "value": {
+        "record": "aimdk_msgs/srv/SetVolume_Response",
+        "members": {
+          "reponse": {
+            "record": "aimdk_msgs/msg/CommonResponse",
+            "members": {
+              "header": {
+                "record": "aimdk_msgs/msg/ResponseHeader",
+                "members": {
+                  "stamp": {
+                    "record": "builtin_interfaces/msg/Time",
+                    "members": {
+                      "sec": {
+                        "scalar": "int32",
+                        "value": -334146889,
+                        "wire": "b75215ec"
+                      },
+                      "nanosec": {
+                        "scalar": "uint32",
+                        "value": 424386643,
+                        "wire": "53a04b19"
+                      }
+                    }
+                  },
+                  "code": {
+                    "scalar": "int64",
+                    "value": -2695843725214414381,
+                    "wire": "d309a1446a7096da"
+                  }
+                }
+              },
+              "status": {
+                "record": "aimdk_msgs/msg/CommonState",
+                "members": {
+                  "value": {
+                    "scalar": "int32",
+                    "value": 714564179,
+                    "wire": "5362972a"
+                  }
+                }
+              },
+              "message": {
+                "scalar": "string",
+                "value": "veb6a\u03b2"
+              }
+            }
+          },
+          "audio_volume": {
+            "scalar": "uint32",
+            "value": 3992415363,
+            "wire": "836cf7ed"
+          }
+        }
+      }
+    },
+    {
+      "type": "builtin_interfaces/msg/Time",
+      "wire": "072b89b550057009",
+      "value": {
+        "record": "builtin_interfaces/msg/Time",
+        "members": {
+          "sec": {
+            "scalar": "int32",
+            "value": -1249301753,
+            "wire": "072b89b5"
+          },
+          "nanosec": {
+            "scalar": "uint32",
+            "value": 158336336,
+            "wire": "50057009"
+          }
+        }
+      }
+    }
+  ]
+}

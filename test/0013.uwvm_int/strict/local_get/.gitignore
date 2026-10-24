@@ -1,0 +1,7 @@
+# Local build/run products; shared artifact rules are in test/.gitignore.
+/build/
+/out/
+/tmp/
+/uwvm_int_translate_localget_add_reduce_negative_strict
+/uwvm_int_translate_localget_heavy_fusions_strict
+/uwvm_int_translate_select_localget_strict

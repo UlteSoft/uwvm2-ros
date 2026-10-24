@@ -78,7 +78,7 @@ try {
     $result.source_id = [string]$qualification.source_id
     $result.qualification_sha256 = (Get-FileHash $qualificationFile -Algorithm SHA256).Hash
     $result.oracle_sha256 = [string]$qualification.oracle_sha256
-    $script:uwvm = Get-VerifiedArtifact 'uwvm.exe'
+    $script:uwvm = Get-VerifiedArtifact 'uwvm2-ros.exe'
     $result.product_sha256 = (Get-FileHash $script:uwvm -Algorithm SHA256).Hash
     Require ($result.product_sha256 -ieq $qualification.product_sha256) `
         'Core 3 new-syntax PE differs from qualification'

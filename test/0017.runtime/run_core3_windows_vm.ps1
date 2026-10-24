@@ -75,7 +75,7 @@ try {
         'br-on-cast-exn-null', 'exn-cast-retained', 'ref-cast-exn-null-trap',
         'exnref_call_retained', 'eh-cross-function-catch-ref',
         'eh-cross-function-win64-seh')
-    $files = @('uwvm.exe', 'core3-eh-threads.wasm', 'core3-typed-ref.wasm',
+    $files = @('uwvm2-ros.exe', 'core3-eh-threads.wasm', 'core3-typed-ref.wasm',
         'core3-throw-ref-bottom.wasm', 'core3-br-on-null-bottom.wasm',
         'gc_const_expr_execution.wasm', 'wasm3_initializers.wasm',
         'exnref_struct_payload_execution.wasm') +
@@ -87,12 +87,12 @@ try {
         Require ($null -ne $property) "Core 3 qualification lacks staged artifact: $name"
         $expected = [string]$property.Value
         Require ($expected -match '^[0-9a-fA-F]{64}$') "invalid staged SHA-256: $name"
-        $target = if ($ArtifactRoot -and $name -eq 'uwvm.exe') {
+        $target = if ($ArtifactRoot -and $name -eq 'uwvm2-ros.exe') {
             Join-Path $ArtifactRoot $name
         } else {
             Join-Path $work $name
         }
-        if ($ArtifactRoot -and $name -ne 'uwvm.exe') {
+        if ($ArtifactRoot -and $name -ne 'uwvm2-ros.exe') {
             Copy-Item -LiteralPath (Join-Path $ArtifactRoot $name) -Destination $target -Force
         } elseif (-not $ArtifactRoot) {
             Invoke-WebRequest -UseBasicParsing "$BaseUrl/$name" -OutFile $target
@@ -100,7 +100,7 @@ try {
         Require ((Get-FileHash $target -Algorithm SHA256).Hash -ieq $expected) `
             "staged Core 3 artifact changed before guest execution: $name"
     }
-    $script:uwvm = if ($ArtifactRoot) { Join-Path $ArtifactRoot 'uwvm.exe' } else { Join-Path $work 'uwvm.exe' }
+    $script:uwvm = if ($ArtifactRoot) { Join-Path $ArtifactRoot 'uwvm2-ros.exe' } else { Join-Path $work 'uwvm2-ros.exe' }
     $result.product_sha256 = (Get-FileHash $script:uwvm -Algorithm SHA256).Hash
     Require ($result.product_sha256 -ieq $qualification.product_sha256) `
         'Core 3 PE differs from qualification'

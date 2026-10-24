@@ -18,7 +18,7 @@ namespace uwvm2::imported::ros
         ::std::vector<::std::uint8_t> out{'U', 'W', 'R', 'P', 1, static_cast<::std::uint8_t>(target.ros_version), static_cast<::std::uint8_t>(target.enabled)};
         auto integer = [&](::std::uint32_t n) { for(unsigned i{}; i != 4; ++i) { out.push_back(static_cast<::std::uint8_t>(n >> (8 * i))); } };
         auto string = [&](::std::string_view text) { integer(static_cast<::std::uint32_t>(text.size())); out.insert(out.end(), text.begin(), text.end()); };
-        auto backend_field = [](::std::string_view key) { return key != "gateway-socket" && key != "gateway-uid" && key != "connect-timeout-ms" && key.substr(0, 11) != "audit-deny-"; };
+        auto backend_field = [](::std::string_view key) { return key != "gateway-socket" && key != "gateway-uid" && key != "connect-timeout-ms" && key != "call-boundary" && key.substr(0, 11) != "audit-deny-"; };
         ::std::uint32_t connection_count{};
         for(auto const& item : target.connection) { if(backend_field(item.first)) { ++connection_count; } }
         integer(connection_count);

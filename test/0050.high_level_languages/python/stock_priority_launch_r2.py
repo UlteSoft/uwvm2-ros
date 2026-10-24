@@ -19,7 +19,7 @@ assert linux_control.digest(helper) == '634d591afe6d843cc6c9756c014f9dd439f0123a
 assert linux_control.digest(P / 'run_matrix.py') == '97cb91ddfdb9d3cde1ae4419e3bcfe3a476c6f595c9bb205734f51a13a2000f3'
 assert linux_control.digest(policy) == '38bb55cd06ee91e4eb0cb480a189b6853457a6b21110cc157c8ba29b6bd9607e'
 assert linux_control.digest(P / 'python/stock_stdlib_probe.py') == 'cc1ed7faeb9b2a9eb56420f3deafe7db5fae7fda19b24047427e9fd54465b6ce'
-assert all(linux_control.digest(products / name / 'uwvm') == sha for name, sha in expected.items())
+assert all(linux_control.digest(products / name / 'uwvm2-ros') == sha for name, sha in expected.items())
 os.sched_setaffinity(0, {4})
 resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
 read_guard = linux_control.guard

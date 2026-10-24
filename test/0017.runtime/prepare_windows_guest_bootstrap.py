@@ -74,7 +74,7 @@ def command_for(kind: str, files: dict[str, str]) -> str:
         invoke += f" -QualificationSha256 {quoted(files['qualification.json'])}"
     if kind == 'broker':
         for parameter, name in (
-            ('ProductSha256', 'uwvm.exe'),
+            ('ProductSha256', 'uwvm2-ros.exe'),
             ('BrokerSha256', 'uwvm-debug-server.exe'),
             ('ChildSha256', 'windows_control_broker_child.exe'),
             ('WasmSha256', 'native-step-fixture.wasm'),
@@ -93,7 +93,7 @@ def main() -> None:
     args = parser.parse_args()
     build = load(args.build / 'build.json')
     source_id = build['source_id']
-    product_sha = build['products']['uwvm.exe']['sha256'].lower()
+    product_sha = build['products']['uwvm2-ros.exe']['sha256'].lower()
     llvm_sha = build['llvm_certificate_sha256']
     stages = {
         'main': args.main_stage,
@@ -106,7 +106,7 @@ def main() -> None:
         stage = load(manifest_path)
         require(stage['source_id'] == source_id and
                 stage['llvm_certificate_sha256'] == llvm_sha and
-                stage['files']['uwvm.exe'] == product_sha,
+                stage['files']['uwvm2-ros.exe'] == product_sha,
                 f'{kind} stage differs from the frozen ROS PE')
         files = stage['files']
         require(RUNNERS[kind] in files, f'{kind} stage lacks its guest runner')

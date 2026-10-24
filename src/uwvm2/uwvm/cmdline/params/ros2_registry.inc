@@ -33,6 +33,7 @@
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros2_single_security_mode),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros2_single_keystore),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros2_single_enclave),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::ros2_single_call_boundary),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros2_single_connect_timeout_ms),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros2_single_grant),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros2_single_set),

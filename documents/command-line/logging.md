@@ -25,9 +25,9 @@ Source focus:
 Syntax:
 
 ```bash
-uwvm --log-output out
-uwvm --log-output err
-uwvm --log-output file uwvm.log
+uwvm2-ros --log-output out
+uwvm2-ros --log-output err
+uwvm2-ros --log-output file uwvm.log
 ```
 
 Behavior:
@@ -51,8 +51,8 @@ Windows NT path behavior:
 Examples:
 
 ```bash
-uwvm --log-output err --run app.wasm
-uwvm --log-output file uwvm.log --version
+uwvm2-ros --log-output err --run app.wasm
+uwvm2-ros --log-output file uwvm.log --version
 ```
 
 ## Color Policy: `--log-color`
@@ -73,8 +73,8 @@ Command behavior:
 Examples:
 
 ```bash
-NO_COLOR=1 uwvm --log-color enable --run app.wasm
-uwvm --log-color disable --version
+NO_COLOR=1 uwvm2-ros --log-color enable --run app.wasm
+uwvm2-ros --log-color disable --version
 ```
 
 ## Warning Categories
@@ -114,7 +114,7 @@ The option is parser-repeatable. Repeating it with `parser` or `all` is harmless
 Example:
 
 ```bash
-uwvm --log-enable-warning parser --run app.wasm
+uwvm2-ros --log-enable-warning parser --run app.wasm
 ```
 
 ## `--log-disable-warning`
@@ -142,8 +142,8 @@ Behavior:
 Examples:
 
 ```bash
-uwvm --log-disable-warning runtime-compile-threads --runtime-compile-threads 999 --run app.wasm
-uwvm --log-disable-warning nt-path --log-output file ::NT::\??\C:\tmp\uwvm.log --run app.wasm
+uwvm2-ros --log-disable-warning runtime-compile-threads --runtime-compile-threads 999 --run app.wasm
+uwvm2-ros --log-disable-warning nt-path --log-output file ::NT::\??\C:\tmp\uwvm.log --run app.wasm
 ```
 
 ## `--log-convert-warn-to-fatal`
@@ -172,13 +172,13 @@ Behavior:
 Order matters when a warning-producing option appears on the same command line:
 
 ```bash
-uwvm --log-convert-warn-to-fatal nt-path --log-output file ::NT::\??\C:\tmp\uwvm.log
+uwvm2-ros --log-convert-warn-to-fatal nt-path --log-output file ::NT::\??\C:\tmp\uwvm.log
 ```
 
 The log-output NT warning is fatal.
 
 ```bash
-uwvm --log-output file ::NT::\??\C:\tmp\uwvm.log --log-convert-warn-to-fatal nt-path
+uwvm2-ros --log-output file ::NT::\??\C:\tmp\uwvm.log --log-convert-warn-to-fatal nt-path
 ```
 
 The log-output NT warning has already happened before fatal conversion is set.
