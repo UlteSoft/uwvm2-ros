@@ -17,6 +17,8 @@ LANGUAGES = (
     "zig", "fortran", "wat", "typescript",
 )
 
+PLATFORM_SECTIONS = ("include", "src", "lib", "tools", "share", "example")
+
 
 def check(root):
     """@brief Inspect actual public source paths without rewriting the checkout.
@@ -25,10 +27,15 @@ def check(root):
     @exception OSError An input cannot be read completely.
     """
     root = Path(root).resolve(strict=True)
-    platforms = sorted(path.name for path in (root / "include/platform").iterdir() if path.is_dir())
+    platforms = sorted({
+        path.name
+        for section in PLATFORM_SECTIONS
+        for path in (root / section / "platform").glob("*")
+        if path.is_dir()
+    })
     violations = []
     directory_count = 0
-    for section in ("include", "src", "lib", "tools"):
+    for section in PLATFORM_SECTIONS:
         base = root / section / "platform"
         for platform in platforms:
             for language in LANGUAGES:
@@ -41,11 +48,17 @@ def check(root):
                     directory_count += 1
                     if re.fullmatch(r"ros[_-]?[12][_-].+", path.name, re.IGNORECASE):
                         violations.append({"kind": "backend-directory", "path": str(path.relative_to(root))})
+                    elif section == "example" and platform == "ros" and (path / "xmake.lua").is_file():
+                        violations.append({"kind": "missing-example-backend", "path": str(path.relative_to(root))})
 
     vendor_pattern = "|".join(map(re.escape, platforms))
     language_pattern = "|".join(LANGUAGES)
     old_reference = re.compile(
         rf"(?<![A-Za-z0-9_])(?:{vendor_pattern})([/\.])(?:{language_pattern})\1ros[12]_[A-Za-z0-9_]+"
+    )
+    flat_ros_example = re.compile(
+        rf"example/platform/ros/(?:{language_pattern})/"
+        r"(?:call_trigger|publish_string|subscribe_string)(?:_memory64)?(?![A-Za-z0-9_])"
     )
     source_count = 0
     sections = ("include/platform", "src/platform", "tools", "share/platform", "example/platform", "document")
@@ -61,15 +74,14 @@ def check(root):
             except UnicodeDecodeError:
                 continue
             source_count += 1
-            if "ros1_" not in text and "ros2_" not in text:
-                continue
-            match = old_reference.search(text)
-            if match:
-                violations.append({
-                    "kind": "public-reference",
-                    "path": str(path.relative_to(root)),
-                    "reference": match.group(),
-                })
+            for reference_pattern in (old_reference, flat_ros_example):
+                match = reference_pattern.search(text)
+                if match:
+                    violations.append({
+                        "kind": "public-reference",
+                        "path": str(path.relative_to(root)),
+                        "reference": match.group(),
+                    })
 
     python_modules = 0
 
@@ -102,7 +114,7 @@ def check(root):
     for path in (root / "share/platform").glob("*/provider.json"):
         packages(json.loads(path.read_text()), str(path.relative_to(root)))
     return {
-        "schema": "sdk-backend-layout-check-v1",
+        "schema": "sdk-backend-layout-check-v2",
         "platforms": len(platforms),
         "directories": directory_count,
         "source_files": source_count,
