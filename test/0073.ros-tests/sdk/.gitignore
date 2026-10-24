@@ -1,0 +1,12 @@
+# Generated acceptance output is evidence, not reusable test source.
+__pycache__/
+*.py[cod]
+/evidence/
+/results/
+/build/
+/work/
+/outputs/
+*.stdout
+*.stderr
+*.log
+*.wasm
