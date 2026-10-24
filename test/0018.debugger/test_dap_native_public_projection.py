@@ -26,15 +26,25 @@ class Tests(unittest.TestCase):
                 self.assertEqual(rows, [dict(address="-1", instruction="<unavailable instruction>", presentationHint="invalid")])
 
     def test_current_hidden_row_cannot_resume_at_invented_boundary(self):
-        text = page.format(origin="origin=native-instruction-stop ") + "  instruction 0 unavailable\n  instruction 1 pc=0x1100 bytes=90  nop\n" + end
+        text = page.format(origin="origin=native-instruction-stop ") + "  instruction 0 unavailable\n  instruction 1 function-offset=256 pc=0x1100 bytes=90  nop\n" + end
         with self.assertRaises(ValueError):
             dap.parse_native_disassembly_range(text, location, 2, 0, 0, False)
 
     def test_unknown_origin_and_wrong_visible_current_pc_are_rejected(self):
         for text in (page.format(origin="origin=host-vm ") + "  instruction 0 unavailable\n" + end,
-                     page.format(origin="") + "  instruction 0 pc=0x1101 bytes=90  nop\n" + end):
+                     page.format(origin="") + "  instruction 0 function-offset=257 pc=0x1101 bytes=90  nop\n" + end):
             with self.assertRaises(ValueError):
                 dap.parse_native_disassembly_range(text, location, 1, 0, 0, False)
+
+    def test_current_function_offset_matches_the_owned_range(self):
+        """Current runtime rows carry an offset, which cannot name another owner."""
+        header = page.format(origin="origin=safepoint-code-view ")
+        row = "  instruction 0 function-offset=256 pc=0x1100 bytes=90  nop\n"
+        _, rows = dap.parse_native_disassembly_range(header + row + end, location, 1, 0, 0, False)
+        self.assertEqual(rows[0]["instructionBytes"], "90")
+        for invalid in (row.replace("offset=256", "offset=255"), row.replace("function-offset=256 ", "")):
+            with self.assertRaises(ValueError):
+                dap.parse_native_disassembly_range(header + invalid + end, location, 1, 0, 0, False)
 
 
 if __name__ == "__main__":

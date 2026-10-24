@@ -44,7 +44,7 @@ class Broker:
                 pc = 0x1100 + byte_offset + offset + index
                 if self.hide_current or (self.hide_tail_in_first_page and offset == 0 and index >= 1) or not 0x1000 <= 0x1100 + byte_offset < 0x1600 or not 0x1000 <= pc < 0x1600:
                     rows += f"  instruction {index} unavailable\n"
-                else: rows += f"  instruction {index} pc=0x{pc:x} bytes=90  nop\n"
+                else: rows += f"  instruction {index} function-offset={pc - 0x1000} pc=0x{pc:x} bytes=90  nop\n"
             self.pages += 1
             if self.after_page is not None and self.pages >= self.after_page:
                 self.status = self.status.replace("stop-id 17", "stop-id 18")
@@ -132,6 +132,23 @@ class Tests(unittest.TestCase):
         self.broker.fail_query = False; self.adapter.step_level = "source"; self.broker.commands.clear()
         frame = self.frame(); self.assertTrue(frame["instructionPointerReference"].startswith("wasm:"))
         self.assertFalse(any(value.startswith("disassemble-range ") for value in self.broker.commands))
+
+    def test_unavailable_runtime_range_reports_one_actionable_diagnostic(self):
+        """A protocol mismatch is visible without creating a native reference."""
+        self.broker.fail_query = True
+        events = []
+        self.adapter.event = lambda name, body: events.append((name, body))
+        for _ in range(2):
+            response = self.send("stackTrace", threadId=3)
+            self.assertFalse(response["success"])
+            self.assertFalse(self.adapter.native_code_refs)
+        diagnostics = [body for name, body in events
+                       if name == "output" and body.get("category") == "stderr"]
+        self.assertEqual(len(diagnostics), 1)
+        self.assertIn("same revision", diagnostics[0]["output"])
+        self.assertIn("native debug support", diagnostics[0]["output"])
+        self.broker.fail_query = False
+        self.assertTrue(self.frame()["instructionPointerReference"].startswith("uwvm-native-code:"))
     def test_external_same_site_repark_and_resume_retire_independent_code_ids(self):
         frame = self.frame(); reference = frame["instructionPointerReference"]
         self.broker.status = COOP.replace("stop-id 17", "stop-id 18")

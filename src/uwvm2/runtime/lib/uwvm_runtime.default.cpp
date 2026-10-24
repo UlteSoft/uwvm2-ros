@@ -9770,22 +9770,34 @@ namespace uwvm2::runtime::lib
             // `module-ir-hash` above covers every IR input consumed by both the ordinary and partitioned emitters.
             llvm_jit_cache_context.cache_key_is_complete = true;
             auto llvm_jit_cache_policy{::uwvm2::runtime::llvm_jit_cache::default_cache_policy()};
+            // Preserve the first real refusal. A selected cache directory must
+            // not turn a generation-specific or debugging restriction into the
+            // misleading generic "disabled" diagnostic.
+            auto disable_cache_for = [&](::uwvm2::runtime::llvm_jit_cache::cache_disable_reason reason) noexcept
+            {
+                if(llvm_jit_cache_policy.enable)
+                {
+                    llvm_jit_cache_policy.enable = false;
+                    llvm_jit_cache_policy.disabled_reason = reason;
+                }
+            };
 #if defined(UWVM_EXPERIMENTAL_LOCAL_FULL_GC_EXCEPTIONS) && UWVM_EXPERIMENTAL_LOCAL_FULL_GC_EXCEPTIONS == 1
             // This experimental actual-source protocol requires freshly fused
             // precise root plans and current runtime throw/catch/escape guards.
             // Never accept an old object's omitted population barrier or stale
             // source address, even through unsafe cache/provenance escape flags.
             // This single cold policy covers full and partition object loads.
-            llvm_jit_cache_policy.enable = false;
+            disable_cache_for(::uwvm2::runtime::llvm_jit_cache::cache_disable_reason::experimental_gc_exceptions);
 #endif
 #if defined(UWVM_EXPERIMENTAL_NATIVE_EH_PRIVATE_LEAF) && UWVM_EXPERIMENTAL_NATIVE_EH_PRIVATE_LEAF == 1
-            if(private_binding != nullptr) { llvm_jit_cache_policy.enable = false; }
+            if(private_binding != nullptr)
+            { disable_cache_for(::uwvm2::runtime::llvm_jit_cache::cache_disable_reason::native_eh_private_binding); }
 #endif
             if(rec.llvm_jit_full_publication->plan)
             {
                 // Objects contain this generation's actual plan address. A key
                 // cannot authenticate rebinding, so never read/write old objects.
-                llvm_jit_cache_policy.enable = false;
+                disable_cache_for(::uwvm2::runtime::llvm_jit_cache::cache_disable_reason::generation_bound_plan);
             }
 # if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
             bool const checkpoint_debug_cache_off_enforced{g_runtime.debug_pause_control != nullptr};
@@ -9796,7 +9808,7 @@ namespace uwvm2::runtime::lib
                 // full-object lookup and store even if a module's unsupported
                 // typed ABI leaves patchable slots off. A matching key is not
                 // proof that every MCJIT target rebinds a cached host address.
-                llvm_jit_cache_policy.enable = false;
+                disable_cache_for(::uwvm2::runtime::llvm_jit_cache::cache_disable_reason::debugger_active);
             }
 # endif
             // Host storage and bridge references use relocatable symbols;

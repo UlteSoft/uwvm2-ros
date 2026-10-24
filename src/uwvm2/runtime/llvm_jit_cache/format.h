@@ -65,10 +65,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
         unsupported_compression,  // The payload codec is unknown to this reader.
         decompression_failed,     // The compressed payload is invalid after all metadata checks passed.
         size_limit_exceeded,      // The object is larger than the caller's configured safety limit.
-        process_not_sealed,        // Actual PR_GET_DUMPABLE must be zero; process policy is never changed.
+        process_not_sealed,       // Actual PR_GET_DUMPABLE must be zero; process policy is never changed.
         origin_authentication_required,
         origin_admission_unavailable,
-        kernel_origin_unavailable
+        kernel_origin_unavailable,
+        executable_identity_unavailable,  // The actual running executable could not be hashed.
+        executable_identity_mismatch,     // The context names a different executable identity.
+        generation_bound_plan,
+        debugger_active,
+        experimental_gc_exceptions,
+        native_eh_private_binding
     };
 
     [[nodiscard]] inline constexpr ::uwvm2::utils::container::u8string_view cache_status_name(cache_status status) noexcept
@@ -92,6 +98,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
             case cache_status::origin_authentication_required: return u8"origin-authentication-required";
             case cache_status::origin_admission_unavailable: return u8"origin-admission-unavailable";
             case cache_status::kernel_origin_unavailable: return u8"kernel-origin-unavailable";
+            case cache_status::executable_identity_unavailable: return u8"executable-identity-unavailable";
+            case cache_status::executable_identity_mismatch: return u8"executable-identity-mismatch";
+            case cache_status::generation_bound_plan: return u8"generation-bound-plan";
+            case cache_status::debugger_active: return u8"debugger-active";
+            case cache_status::experimental_gc_exceptions: return u8"experimental-gc-exceptions";
+            case cache_status::native_eh_private_binding: return u8"native-eh-private-binding";
             case cache_status::size_limit_exceeded: return u8"size-limit-exceeded";
         }
         return u8"unknown";
@@ -114,16 +126,28 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
 
     inline constexpr ::std::size_t cache_ed25519_seed_size{32uz};
 
-    enum class cache_disable_reason { requested, process_not_sealed, authentication_required, admission_unavailable };
+    enum class cache_disable_reason
+    {
+        requested,
+        process_not_sealed,
+        authentication_required,
+        admission_unavailable,
+        executable_identity_unavailable,
+        signature_unavailable,
+        generation_bound_plan,
+        debugger_active,
+        experimental_gc_exceptions,
+        native_eh_private_binding
+    };
 
     struct cache_policy
     {
-        bool enable{true};                                               // A single switch keeps all cache I/O opt-in at call sites.
-        bool generate_signature{true};                                   // Writers sign by default so later runs can detect tampering.
-        bool verify_signature{true};                                     // Readers verify by default because cached code is executable native code.
-        compression_kind compression{compression_kind::uwvm_native_lz};  // Native-LZ is the default balance for object-file-like byte streams.
-        ::std::size_t max_object_bytes{512uz * 1024uz * 1024uz};         // The limit bounds memory use before allocation or decompression.
-        cache_disable_reason disabled_reason{cache_disable_reason::requested}; // Diagnostic DATA, never authority.
+        bool enable{true};                                                      // A single switch keeps all cache I/O opt-in at call sites.
+        bool generate_signature{true};                                          // Writers sign by default so later runs can detect tampering.
+        bool verify_signature{true};                                            // Readers verify by default because cached code is executable native code.
+        compression_kind compression{compression_kind::uwvm_native_lz};         // Native-LZ is the default balance for object-file-like byte streams.
+        ::std::size_t max_object_bytes{512uz * 1024uz * 1024uz};                // The limit bounds memory use before allocation or decompression.
+        cache_disable_reason disabled_reason{cache_disable_reason::requested};  // Diagnostic DATA, never authority.
     };
 
     [[nodiscard]] inline constexpr cache_status cache_disabled_status(cache_policy const& policy) noexcept
@@ -133,7 +157,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
             case cache_disable_reason::process_not_sealed: return cache_status::process_not_sealed;
             case cache_disable_reason::authentication_required: return cache_status::origin_authentication_required;
             case cache_disable_reason::admission_unavailable: return cache_status::origin_admission_unavailable;
-            default: return cache_status::disabled; // Cannot claim an accepted object via diagnostic DATA.
+            case cache_disable_reason::executable_identity_unavailable: return cache_status::executable_identity_unavailable;
+            case cache_disable_reason::signature_unavailable: return cache_status::unsupported_signature;
+            case cache_disable_reason::generation_bound_plan: return cache_status::generation_bound_plan;
+            case cache_disable_reason::debugger_active: return cache_status::debugger_active;
+            case cache_disable_reason::experimental_gc_exceptions: return cache_status::experimental_gc_exceptions;
+            case cache_disable_reason::native_eh_private_binding: return cache_status::native_eh_private_binding;
+            default: return cache_status::disabled;  // Cannot claim an accepted object via diagnostic DATA.
         }
     }
 
@@ -148,12 +178,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
         ::uwvm2::utils::container::u8string llvm_version{};    // LLVM upgrades can change object emission even for identical IR.
         ::uwvm2::utils::container::u8string uwvm_abi{};        // Runtime ABI changes invalidate calls, relocations, and imported symbols.
         ::uwvm2::utils::container::u8string codegen_policy{};  // Optimization policy participates because it affects emitted native code.
-        ::uwvm2::utils::container::array<::std::byte, cache_ed25519_seed_size> signature_seed{};  // Public context seed only; persistent I/O derives a temporary kernel-origin private seed.
+        ::uwvm2::utils::container::array<::std::byte, cache_ed25519_seed_size>
+            signature_seed{};  // Public context seed only; persistent I/O derives a temporary kernel-origin private seed.
         ::uwvm2::utils::container::array<::std::byte, 32uz> self_executable_sha256{};
-        bool has_self_executable_sha256{};  // Final store/load checks compare this against the authenticated process identity.
-        bool has_signature_seed{};     // A missing seed disables signing/verification instead of producing weak output.
-        bool cache_key_is_complete{};  // Complete keys skip module hashing when the caller already supplied full identity.
-        runtime_origin::reference origin{}; // Weak only; NEVER serialized, keyed, or source-owning.
+        bool has_self_executable_sha256{};   // Final store/load checks compare this against the authenticated process identity.
+        bool has_signature_seed{};           // A missing seed disables signing/verification instead of producing weak output.
+        bool cache_key_is_complete{};        // Complete keys skip module hashing when the caller already supplied full identity.
+        runtime_origin::reference origin{};  // Weak only; NEVER serialized, keyed, or source-owning.
     };
 
     struct cache_load_result
@@ -413,9 +444,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
     [[nodiscard]] inline constexpr ::uwvm2::utils::container::vector<::std::byte> make_context_metadata(cache_context const& ctx) noexcept
     {
         ::uwvm2::utils::container::vector<::std::byte> out{};
-        out.reserve(details::key_value_size(u8"origin-auth", sizeof(u8"kernel-user-keyring-hmac-sha256-ed25519-v1") - 1u) + details::key_value_size(u8"product", cache_product_name.size()) +
-                    details::key_value_size(u8"key", ctx.cache_key.size()) + details::key_value_size(u8"llvm", ctx.llvm_version.size()) +
-                    details::key_value_size(u8"uwvm_abi", ctx.uwvm_abi.size()) + details::key_value_size(u8"codegen", ctx.codegen_policy.size()) +
+        out.reserve(details::key_value_size(u8"origin-auth", sizeof(u8"kernel-user-keyring-hmac-sha256-ed25519-v1") - 1u) +
+                    details::key_value_size(u8"product", cache_product_name.size()) + details::key_value_size(u8"key", ctx.cache_key.size()) +
+                    details::key_value_size(u8"llvm", ctx.llvm_version.size()) + details::key_value_size(u8"uwvm_abi", ctx.uwvm_abi.size()) +
+                    details::key_value_size(u8"codegen", ctx.codegen_policy.size()) +
                     details::key_value_size(u8"self-executable-sha256", ctx.self_executable_sha256.size()));
         // This fixed product field is authenticated and included in the path
         // digest; changing only a filename or the public magic cannot bypass it.

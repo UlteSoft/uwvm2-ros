@@ -78,33 +78,47 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
 {
     namespace details
     {
-        [[nodiscard]] inline bool context_matches_self_executable(cache_context const& ctx) noexcept
+        // Preserve the reason for refusing identity before any cache filesystem I/O.
+        // Diagnostic statuses never substitute for the existing digest comparison.
+        [[nodiscard]] inline cache_status self_executable_status(cache_context const& ctx) noexcept
         {
-            if(!ctx.has_self_executable_sha256) { return false; }
+            if(!ctx.has_self_executable_sha256) { return cache_status::executable_identity_unavailable; }
             self_executable::digest_type digest{};
-            if(!self_executable::current_digest(digest)) { return false; }
+            if(!self_executable::current_digest(digest)) { return cache_status::executable_identity_unavailable; }
             for(::std::size_t i{}; i != digest.size(); ++i)
             {
-                if(digest[i] != ctx.self_executable_sha256.index_unchecked(i)) { return false; }
+                if(digest[i] != ctx.self_executable_sha256.index_unchecked(i)) { return cache_status::executable_identity_mismatch; }
             }
-            return true;
+            return cache_status::ok;
         }
 
         [[nodiscard]] inline bool origin_matches(cache_context const& ctx, runtime_origin::use const& actual) noexcept
         {
             auto named{ctx.origin.lock()};
-            return named && actual && named.get() == actual.get() && !named.owner_before(actual) &&
-                !actual.owner_before(named) && runtime_origin::authorized(actual);
+            return named && actual && named.get() == actual.get() && !named.owner_before(actual) && !actual.owner_before(named) &&
+                   runtime_origin::authorized(actual);
         }
-        [[nodiscard]] inline bool current_origin(cache_context const& ctx, runtime_origin::use const& actual) noexcept
+
+        [[nodiscard]] inline cache_status current_origin_status(cache_context const& ctx, runtime_origin::use const& actual) noexcept
         {
-            if(!context_matches_self_executable(ctx) || !origin_matches(ctx, actual)) { return false; }
-            return kernel_origin::check_binding(actual) && origin_matches(ctx, actual);
+            auto const identity{self_executable_status(ctx)};
+            if(identity != cache_status::ok) { return identity; }
+            if(!origin_matches(ctx, actual)) { return cache_status::origin_admission_unavailable; }
+            if(!kernel_origin::check_binding(actual))
+            {
+                // A concurrent real runtime stop can revoke admission during
+                // the kernel check. Preserve that cause instead of attributing
+                // the resulting refusal to the kernel's keyring policy.
+                return origin_matches(ctx, actual) ? cache_status::kernel_origin_unavailable : cache_status::origin_admission_unavailable;
+            }
+            return origin_matches(ctx, actual) ? cache_status::ok : cache_status::origin_admission_unavailable;
         }
+
         struct authenticated_context
         {
             cache_context value;
             bool ready{};
+
             authenticated_context(cache_context const& original, runtime_origin::use const& actual) noexcept : value{original}
             {
                 if(!original.has_signature_seed || !original.has_self_executable_sha256 || !origin_matches(original, actual)) { return; }
@@ -113,8 +127,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
                 ::std::memcpy(value.signature_seed.data(), private_seed.data(), cache_ed25519_seed_size);
                 ready = origin_matches(original, actual);
             }
+
             authenticated_context(authenticated_context const&) = delete;
-            authenticated_context& operator=(authenticated_context const&) = delete;
+            authenticated_context& operator= (authenticated_context const&) = delete;
+
             ~authenticated_context() { kernel_origin::erase(value.signature_seed.data(), value.signature_seed.size()); }
         };
 
@@ -719,29 +735,42 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
             return temp_name;
         }
 
-        inline cache_status write_cache_blob_atomic(cache_context const& ctx, ::uwvm2::utils::container::vector<::std::byte> const& blob, runtime_origin::use const& actual) noexcept
+        inline cache_status write_cache_blob_atomic(cache_context const& ctx,
+                                                    ::uwvm2::utils::container::vector<::std::byte> const& blob,
+                                                    runtime_origin::use const& actual) noexcept
         {
-            if(!current_origin(ctx, actual)) { return cache_status::disabled; }
+            if(auto status{current_origin_status(ctx, actual)}; status != cache_status::ok) { return status; }
             cache_blob_view encoded{};
             if(parse_cache_blob(blob.data(), blob.data() + blob.size(), encoded) != cache_status::ok ||
                encoded.header.signature_size != cache_ed25519_signature_size ||
                encoded.header.signature != static_cast<::std::uint_least32_t>(signature_kind::ed25519_identity))
-            { return cache_status::malformed; }
+            {
+                return cache_status::malformed;
+            }
 #if defined(__linux__)
             auto const key_hash{cache_key_hash(ctx)};
             auto const shard{cache_key_shard(key_hash)};
             auto const name{cache_file_name_from_hash(key_hash)};
             auto const temporary{cache_atomic_temp_file_name(name)};
-            auto as_view = [](auto const& text) noexcept
-            { return ::std::string_view{reinterpret_cast<char const*>(text.data()), text.size()}; };
+            auto as_view = [](auto const& text) noexcept { return ::std::string_view{reinterpret_cast<char const*>(text.data()), text.size()}; };
             auto dir{secure_file::object_directory(as_view(ctx.cache_dir), as_view(cache_product_name), as_view(shard), true)};
             if(!dir) { return cache_status::io_error; }
-            if(!current_origin(ctx, actual)) { return cache_status::disabled; }
-            return secure_file::write_atomic(dir.value, as_view(name), as_view(temporary), blob.data(), blob.size(), [&]() noexcept { return current_origin(ctx, actual); }) ?
-                   cache_status::ok : cache_status::io_error;
+            auto status{current_origin_status(ctx, actual)};
+            if(status != cache_status::ok) { return status; }
+            auto const written{secure_file::write_atomic(dir.value,
+                                                         as_view(name),
+                                                         as_view(temporary),
+                                                         blob.data(),
+                                                         blob.size(),
+                                                         [&]() noexcept
+                                                         {
+                                                             status = current_origin_status(ctx, actual);
+                                                             return status == cache_status::ok;
+                                                         })};
+            return written ? cache_status::ok : (status == cache_status::ok ? cache_status::io_error : status);
 #else
             (void)blob;
-            return cache_status::disabled;
+            return cache_status::kernel_origin_unavailable;
 #endif
         }
 
@@ -866,15 +895,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
         return path;
     }
 
-    [[nodiscard]] inline cache_status store_object(cache_context const& ctx,
-                                                             ::std::byte const* object,
-                                                             ::std::size_t size,
-                                                             cache_policy const& policy) noexcept
+    [[nodiscard]] inline cache_status store_object(cache_context const& ctx, ::std::byte const* object, ::std::size_t size, cache_policy const& policy) noexcept
     {
         if(!policy.enable) { return cache_disabled_status(policy); }
         if(!policy.generate_signature || !policy.verify_signature) { return cache_status::origin_authentication_required; }
         if(!kernel_origin::dumping_disabled()) { return cache_status::process_not_sealed; }
-        if(!details::context_matches_self_executable(ctx)) { return cache_status::disabled; }
+        if(auto status{details::self_executable_status(ctx)}; status != cache_status::ok) { return status; }
 
         auto actual{runtime_origin::acquire(ctx.origin)};
         if(!actual) { return cache_status::origin_admission_unavailable; }
@@ -882,7 +908,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
         if(!authenticated.ready) { return cache_status::kernel_origin_unavailable; }
         ::uwvm2::utils::container::vector<::std::byte> blob{};
         // Blob construction is separated from file publication so write failures cannot leave half-valid cache state.
-        if(auto const status{details::build_cache_blob(authenticated.value, object, size, policy, blob)}; status != cache_status::ok) [[unlikely]] { return status; }
+        if(auto const status{details::build_cache_blob(authenticated.value, object, size, policy, blob)}; status != cache_status::ok) [[unlikely]]
+        {
+            return status;
+        }
 
         return details::write_cache_blob_atomic(ctx, blob, actual);
     }
@@ -891,7 +920,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
     {
         struct cache_store_request
         {
-            runtime_origin::use origin{}; // Real per-request Source/generation use; released LAST.
+            runtime_origin::use origin{};  // Real per-request Source/generation use; released LAST.
             cache_context ctx{};
             ::uwvm2::utils::container::vector<::std::byte> blob{};
             ::uwvm2::utils::container::u8string log_module{};
@@ -944,7 +973,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
         struct async_cache_store_worker
         {
             ::std::mutex mutex{};
-            ::std::mutex lifecycle{}; // cold real native-owner join serialization
+            ::std::mutex lifecycle{};  // cold real native-owner join serialization
             ::std::condition_variable condition{};
 #if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
             using native_worker = ::fast_io::native_thread;
@@ -1060,9 +1089,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
             [[nodiscard]] inline bool flush_until(::std::chrono::steady_clock::time_point deadline) noexcept
             {
                 ::std::unique_lock lock{this->mutex};
-                return this->condition.wait_until(lock, deadline, [this]() noexcept
-                    { return this->requests.empty() && this->active_requests == 0uz; });
+                return this->condition.wait_until(lock, deadline, [this]() noexcept { return this->requests.empty() && this->active_requests == 0uz; });
             }
+
             inline constexpr void flush() noexcept
             {
                 ::std::unique_lock lock{this->mutex};
@@ -1077,11 +1106,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
             [[nodiscard]] inline bool stop_and_join_until(::std::chrono::steady_clock::time_point deadline) noexcept
             {
                 ::std::unique_lock owned{this->lifecycle, ::std::try_to_lock};
-                if(!owned.owns_lock()) { return false; } // pending, not a second OS join
+                if(!owned.owns_lock()) { return false; }  // pending, not a second OS join
                 {
                     ::std::lock_guard lock{this->mutex};
                     this->stop_requested = true;
-                    if(!this->worker_started) { return true; } // actually never started/already joined
+                    if(!this->worker_started) { return true; }  // actually never started/already joined
                 }
                 this->condition.notify_all();
 #if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
@@ -1096,9 +1125,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
                     return this->requests.empty() && this->active_requests == 0uz;
                 }
 #else
-                static_cast<void>(deadline); return false; // retain unqualified real std owner
+                static_cast<void>(deadline);
+                return false;  // retain unqualified real std owner
 #endif
             }
+
             inline constexpr void stop_and_join() noexcept
             {
                 ::std::unique_lock owned{this->lifecycle};
@@ -1111,7 +1142,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
                 if(this->worker.joinable()) { this->worker.join(); }
                 // Real synchronous join succeeded (or owner never started).
                 // Preserve that fact for a later qualified terminal query.
-                ::std::lock_guard lock{this->mutex}; this->worker_started = false;
+                ::std::lock_guard lock{this->mutex};
+                this->worker_started = false;
             }
         };
 
@@ -1123,18 +1155,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
     }  // namespace details
 
     [[nodiscard]] inline cache_status store_object_async(cache_context const& ctx,
-                                                                   ::std::byte const* object,
-                                                                   ::std::size_t size,
-                                                                   cache_policy const& policy,
-                                                                   ::uwvm2::utils::container::u8string_view log_module = {},
-                                                                   bool log_completion = false,
-                                                                   ::std::size_t object_index = 0uz,
-                                                                   ::std::size_t object_count = 0uz) noexcept
+                                                         ::std::byte const* object,
+                                                         ::std::size_t size,
+                                                         cache_policy const& policy,
+                                                         ::uwvm2::utils::container::u8string_view log_module = {},
+                                                         bool log_completion = false,
+                                                         ::std::size_t object_index = 0uz,
+                                                         ::std::size_t object_count = 0uz) noexcept
     {
         if(!policy.enable) { return cache_disabled_status(policy); }
         if(!policy.generate_signature || !policy.verify_signature) { return cache_status::origin_authentication_required; }
         if(!kernel_origin::dumping_disabled()) { return cache_status::process_not_sealed; }
-        if(!details::context_matches_self_executable(ctx)) { return cache_status::disabled; }
+        if(auto status{details::self_executable_status(ctx)}; status != cache_status::ok) { return status; }
 
         auto actual{runtime_origin::acquire(ctx.origin)};
         if(!actual) { return cache_status::origin_admission_unavailable; }
@@ -1155,9 +1187,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
             ::uwvm2::utils::container::u8string_ref_uwvm ref{::std::addressof(request.log_module)};
             ::fast_io::io::print(ref, log_module);
         }
-        if(auto const status{details::build_cache_blob(authenticated.value, object, size, policy, request.blob)}; status != cache_status::ok) [[unlikely]] { return status; }
+        if(auto const status{details::build_cache_blob(authenticated.value, object, size, policy, request.blob)}; status != cache_status::ok) [[unlikely]]
+        {
+            return status;
+        }
 
-        if(!details::current_origin(ctx, actual)) { return cache_status::disabled; }
+        if(auto status{details::current_origin_status(ctx, actual)}; status != cache_status::ok) { return status; }
         return details::async_cache_store_worker_instance().enqueue(::std::move(request));
     }
 
@@ -1183,18 +1218,36 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
     {
         cache_load_result result{};
 
-        if(!policy.enable || !details::context_matches_self_executable(ctx))
+        if(!policy.enable)
         {
-            result.status = !policy.enable ? cache_disabled_status(policy) : cache_status::disabled;
+            result.status = cache_disabled_status(policy);
             return result;
         }
+        result.status = details::self_executable_status(ctx);
+        if(result.status != cache_status::ok) { return result; }
 
-        if(!policy.generate_signature || !policy.verify_signature) { result.status = cache_status::origin_authentication_required; return result; }
-        if(!kernel_origin::dumping_disabled()) { result.status = cache_status::process_not_sealed; return result; }
+        if(!policy.generate_signature || !policy.verify_signature)
+        {
+            result.status = cache_status::origin_authentication_required;
+            return result;
+        }
+        if(!kernel_origin::dumping_disabled())
+        {
+            result.status = cache_status::process_not_sealed;
+            return result;
+        }
         auto actual{runtime_origin::acquire(ctx.origin)};
-        if(!actual) { result.status = cache_status::origin_admission_unavailable; return result; }
+        if(!actual)
+        {
+            result.status = cache_status::origin_admission_unavailable;
+            return result;
+        }
         details::authenticated_context authenticated{ctx, actual};
-        if(!authenticated.ready) { result.status = cache_status::kernel_origin_unavailable; return result; }
+        if(!authenticated.ready)
+        {
+            result.status = cache_status::kernel_origin_unavailable;
+            return result;
+        }
 
 #ifdef UWVM_CPP_EXCEPTIONS
         try
@@ -1206,20 +1259,30 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
             ::std::size_t maximum{cache_fixed_header_size};
             if(!details::checked_add(maximum, cache_ed25519_signature_size) || !details::checked_add(maximum, expected_isa.size()) ||
                !details::checked_add(maximum, expected_context.size()) || !details::checked_add(maximum, policy.max_object_bytes))
-            { result.status = cache_status::size_limit_exceeded; return result; }
+            {
+                result.status = cache_status::size_limit_exceeded;
+                return result;
+            }
 #if defined(__linux__)
-            auto as_view = [](auto const& text) noexcept
-            { return ::std::string_view{reinterpret_cast<char const*>(text.data()), text.size()}; };
+            auto as_view = [](auto const& text) noexcept { return ::std::string_view{reinterpret_cast<char const*>(text.data()), text.size()}; };
             auto const shard{details::cache_key_shard(key_hash)};
             auto cache_dir{secure_file::object_directory(as_view(ctx.cache_dir), as_view(cache_product_name), as_view(shard), false)};
-            if(!cache_dir) { result.status = cache_status::io_error; return result; }
+            if(!cache_dir)
+            {
+                result.status = cache_status::io_error;
+                return result;
+            }
             auto const file_name{details::cache_file_name_from_hash(key_hash)};
             auto file{secure_file::read_snapshot(cache_dir.value, as_view(file_name), maximum)};
-            if(!file.ok) { result.status = cache_status::io_error; return result; }
+            if(!file.ok)
+            {
+                result.status = cache_status::io_error;
+                return result;
+            }
             auto const first{file.bytes.get()};
             auto const last{first + file.size};
 #else
-            result.status = cache_status::disabled;
+            result.status = cache_status::kernel_origin_unavailable;
             return result;
             ::std::byte const* first{};
             ::std::byte const* last{};
@@ -1318,8 +1381,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
                 return result;
             }
 
-            if(!details::current_origin(ctx, actual))
-            { result.object = {}; result.status = cache_status::disabled; return result; }
+            result.status = details::current_origin_status(ctx, actual);
+            if(result.status != cache_status::ok)
+            {
+                result.object = {};
+                return result;
+            }
             result.status = cache_status::ok;
             return result;
         }

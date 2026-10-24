@@ -98,7 +98,7 @@
             // allowance and three native page groups. No null allocator is used
             // to pretend RuntimeDyld's fatal allocation path is recoverable.
             if(!object.isELF()||object.getArch()!=::llvm::Triple::x86_64||!object.isLittleEndian()||object.getBytesInAddress()!=8u)return false;
-            charge=3u*65536u;::std::size_t sections{},relocations{},symbols{},function_symbols{};
+            charge=3u*65536u;::std::size_t sections{},relocations{},symbols{};
             auto add=[&](::std::size_t value){if(charge>code_limit_||value>code_limit_-charge)return false;charge+=value;return true;};
             for(auto const& section:object.sections())
             {
@@ -136,7 +136,6 @@
                 {
                     definitions.push_back(name->str());
                     auto type=symbol.getType();if(!type){::llvm::consumeError(type.takeError());return false;}
-                    if(*type==::llvm::object::SymbolRef::ST_Function)++function_symbols;
                 }
             }
             if(!check_static_stack_object(object))return false;

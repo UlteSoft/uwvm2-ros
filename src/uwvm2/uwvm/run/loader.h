@@ -202,6 +202,57 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
         return static_cast<int>(::uwvm2::uwvm::run::retval::ok);
     }
 
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+    namespace details
+    {
+        /// @brief Test whether a parsed Wasm file needs a built-in namespace.
+        /// @details Apply the same target-specific import rewrites as the
+        /// dependency checker. Selection only registers an implementation;
+        /// the existing per-module ROS policy still authorizes every call.
+        [[nodiscard]] inline constexpr bool loaded_file_imports_namespace(
+            ::uwvm2::uwvm::wasm::type::wasm_file_t const& file,
+            ::uwvm2::utils::container::u8string_view requested) noexcept
+        {
+            if(file.binfmt_ver != 1u) { return false; }
+            auto const& module{file.wasm_module_storage.wasm_binfmt_ver1_storage};
+            auto get_imports{[&module]<::uwvm2::parser::wasm::concepts::wasm_feature... Fs>(
+                ::uwvm2::utils::container::tuple<Fs...>) constexpr noexcept -> decltype(auto)
+            {
+                return ::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<
+                    ::uwvm2::parser::wasm::standard::wasm1::features::import_section_storage_t<Fs...>>(module.sections);
+            }};
+            auto const& imports{get_imports(::uwvm2::uwvm::wasm::feature::all_features)};
+            for(auto const& entry: imports.imports)
+            {
+                auto name{entry.module_name};
+                if(auto const* rewrite{::uwvm2::uwvm::wasm::storage::find_configured_import_reset_const(
+                    file.module_name, name, entry.extern_name)}; rewrite != nullptr)
+                {
+                    name = ::uwvm2::utils::container::u8string_view{
+                        rewrite->new_import_module_name.data(), rewrite->new_import_module_name.size()};
+                }
+                if(name == requested) { return true; }
+            }
+            return false;
+        }
+
+        /// @brief Include both the executable and every parsed Wasm preload.
+        /// @details Unused ROS providers are not inserted into the finalized
+        /// native-provider census. In particular, a ROS-enabled VM can retain
+        /// the ordinary cache admission rules for a pure or WASI-only guest.
+        [[nodiscard]] inline constexpr bool loaded_wasm_imports_namespace(
+            ::uwvm2::utils::container::u8string_view requested) noexcept
+        {
+            if(loaded_file_imports_namespace(::uwvm2::uwvm::wasm::storage::active_execute_wasm(), requested)) { return true; }
+            for(auto const& file: ::uwvm2::uwvm::wasm::storage::active_preloaded_wasm())
+            {
+                if(loaded_file_imports_namespace(file, requested)) { return true; }
+            }
+            return false;
+        }
+    }
+#endif
+
     inline constexpr int load_local_modules() noexcept
     {
 #if UWVM2_HAS_THREADED_PROFILE_HOST_API
@@ -212,108 +263,115 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
             ::uwvm2::uwvm::imported::wasi::threads::local_imported_module))
         { return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error); }
 #endif
-        // Independent builtin imports do not initialize a gateway. Disabled
-        // Targets stay default-deny even though the import names can link.
+        // Register only namespaces referenced by a loaded Wasm import. A
+        // disabled ROS target still links and remains default-deny at dispatch.
 #if defined(UWVM_IMPORT_ROS1)
+        if(details::loaded_wasm_imports_namespace(::uwvm2::uwvm::imported::ros::ros1_local_imported_module.module_name))
+        {
 #if UWVM2_HAS_THREADED_PROFILE_HOST_API
-        if(threaded_requested)
-        {
-            if(!::uwvm2::uwvm::runtime::full::threaded_builtin_loader::append(
-                ::uwvm2::uwvm::imported::ros::ros1_local_imported_module))
-            { return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error); }
-        }
-        else
+            if(threaded_requested)
+            {
+                if(!::uwvm2::uwvm::runtime::full::threaded_builtin_loader::append(::uwvm2::uwvm::imported::ros::ros1_local_imported_module))
+                { return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error); }
+            }
+            else
 #endif
-        {
-        if(!::uwvm2::uwvm::imported::ros::append_sealed_ros_builtin(
-            ::uwvm2::uwvm::imported::ros::ros1_local_imported_module))
-        { return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error); }
+            {
+                if(!::uwvm2::uwvm::imported::ros::append_sealed_ros_builtin(::uwvm2::uwvm::imported::ros::ros1_local_imported_module))
+                { return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error); }
+            }
         }
+        if(details::loaded_wasm_imports_namespace(::uwvm2::uwvm::imported::ros::ros1_client_local_imported_module.module_name))
+        {
 #if UWVM2_HAS_THREADED_PROFILE_HOST_API
-        if(threaded_requested)
-        {
-            if(!::uwvm2::uwvm::runtime::full::threaded_builtin_loader::append(
-                ::uwvm2::uwvm::imported::ros::ros1_client_local_imported_module))
-            { return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error); }
-        }
-        else
+            if(threaded_requested)
+            {
+                if(!::uwvm2::uwvm::runtime::full::threaded_builtin_loader::append(::uwvm2::uwvm::imported::ros::ros1_client_local_imported_module))
+                { return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error); }
+            }
+            else
 #endif
-        {
-        if(!::uwvm2::uwvm::imported::ros::append_sealed_ros_builtin(
-            ::uwvm2::uwvm::imported::ros::ros1_client_local_imported_module))
-        { return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error); }
+            {
+                if(!::uwvm2::uwvm::imported::ros::append_sealed_ros_builtin(::uwvm2::uwvm::imported::ros::ros1_client_local_imported_module))
+                { return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error); }
+            }
         }
 #endif
 #if defined(UWVM_IMPORT_ROS2)
+        if(details::loaded_wasm_imports_namespace(::uwvm2::uwvm::imported::ros::ros2_local_imported_module.module_name))
+        {
 #if UWVM2_HAS_THREADED_PROFILE_HOST_API
-        if(threaded_requested)
-        {
-            if(!::uwvm2::uwvm::runtime::full::threaded_builtin_loader::append(
-                ::uwvm2::uwvm::imported::ros::ros2_local_imported_module))
-            { return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error); }
-        }
-        else
+            if(threaded_requested)
+            {
+                if(!::uwvm2::uwvm::runtime::full::threaded_builtin_loader::append(::uwvm2::uwvm::imported::ros::ros2_local_imported_module))
+                { return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error); }
+            }
+            else
 #endif
-        {
-        if(!::uwvm2::uwvm::imported::ros::append_sealed_ros_builtin(
-            ::uwvm2::uwvm::imported::ros::ros2_local_imported_module))
-        { return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error); }
+            {
+                if(!::uwvm2::uwvm::imported::ros::append_sealed_ros_builtin(::uwvm2::uwvm::imported::ros::ros2_local_imported_module))
+                { return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error); }
+            }
         }
+        if(details::loaded_wasm_imports_namespace(::uwvm2::uwvm::imported::ros::ros2_client_local_imported_module.module_name))
+        {
 #if UWVM2_HAS_THREADED_PROFILE_HOST_API
-        if(threaded_requested)
-        {
-            if(!::uwvm2::uwvm::runtime::full::threaded_builtin_loader::append(
-                ::uwvm2::uwvm::imported::ros::ros2_client_local_imported_module))
-            { return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error); }
-        }
-        else
+            if(threaded_requested)
+            {
+                if(!::uwvm2::uwvm::runtime::full::threaded_builtin_loader::append(::uwvm2::uwvm::imported::ros::ros2_client_local_imported_module))
+                { return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error); }
+            }
+            else
 #endif
-        {
-        if(!::uwvm2::uwvm::imported::ros::append_sealed_ros_builtin(
-            ::uwvm2::uwvm::imported::ros::ros2_client_local_imported_module))
-        { return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error); }
+            {
+                if(!::uwvm2::uwvm::imported::ros::append_sealed_ros_builtin(::uwvm2::uwvm::imported::ros::ros2_client_local_imported_module))
+                { return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error); }
+            }
         }
+        if(details::loaded_wasm_imports_namespace(::uwvm2::uwvm::imported::ros::ros2_rmw_local_imported_module.module_name))
+        {
 #if UWVM2_HAS_THREADED_PROFILE_HOST_API
-        if(threaded_requested)
-        {
-            if(!::uwvm2::uwvm::runtime::full::threaded_builtin_loader::append(
-                ::uwvm2::uwvm::imported::ros::ros2_rmw_local_imported_module))
-            { return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error); }
-        }
-        else
+            if(threaded_requested)
+            {
+                if(!::uwvm2::uwvm::runtime::full::threaded_builtin_loader::append(::uwvm2::uwvm::imported::ros::ros2_rmw_local_imported_module))
+                { return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error); }
+            }
+            else
 #endif
-        {
-        if(!::uwvm2::uwvm::imported::ros::append_sealed_ros_builtin(
-            ::uwvm2::uwvm::imported::ros::ros2_rmw_local_imported_module))
-        { return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error); }
+            {
+                if(!::uwvm2::uwvm::imported::ros::append_sealed_ros_builtin(::uwvm2::uwvm::imported::ros::ros2_rmw_local_imported_module))
+                { return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error); }
+            }
         }
+        if(details::loaded_wasm_imports_namespace(::uwvm2::uwvm::imported::ros::ros2_rmw_subscription_local_imported_module.module_name))
+        {
 #if UWVM2_HAS_THREADED_PROFILE_HOST_API
-        if(threaded_requested)
-        {
-            if(!::uwvm2::uwvm::runtime::full::threaded_builtin_loader::append(
-                ::uwvm2::uwvm::imported::ros::ros2_rmw_subscription_local_imported_module))
-            { return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error); }
-        }
-        else
+            if(threaded_requested)
+            {
+                if(!::uwvm2::uwvm::runtime::full::threaded_builtin_loader::append(::uwvm2::uwvm::imported::ros::ros2_rmw_subscription_local_imported_module))
+                { return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error); }
+            }
+            else
 #endif
-        {
-        if(!::uwvm2::uwvm::imported::ros::append_sealed_ros_builtin(
-            ::uwvm2::uwvm::imported::ros::ros2_rmw_subscription_local_imported_module))
-        { return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error); }
+            {
+                if(!::uwvm2::uwvm::imported::ros::append_sealed_ros_builtin(::uwvm2::uwvm::imported::ros::ros2_rmw_subscription_local_imported_module))
+                { return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error); }
+            }
         }
+        if(details::loaded_wasm_imports_namespace(::uwvm2::uwvm::imported::ros::ros2_rmw_service_local_imported_module.module_name))
+        {
 #if UWVM2_HAS_THREADED_PROFILE_HOST_API
-        if(threaded_requested)
-        {
-            if(!::uwvm2::uwvm::runtime::full::threaded_builtin_loader::append(
-                ::uwvm2::uwvm::imported::ros::ros2_rmw_service_local_imported_module))
-            { return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error); }
-        }
-        else
+            if(threaded_requested)
+            {
+                if(!::uwvm2::uwvm::runtime::full::threaded_builtin_loader::append(::uwvm2::uwvm::imported::ros::ros2_rmw_service_local_imported_module))
+                { return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error); }
+            }
+            else
 #endif
-        {
-        if(!::uwvm2::uwvm::imported::ros::append_sealed_ros_builtin(
-            ::uwvm2::uwvm::imported::ros::ros2_rmw_service_local_imported_module))
-        { return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error); }
+            {
+                if(!::uwvm2::uwvm::imported::ros::append_sealed_ros_builtin(::uwvm2::uwvm::imported::ros::ros2_rmw_service_local_imported_module))
+                { return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error); }
+            }
         }
 #endif
         // preload abi

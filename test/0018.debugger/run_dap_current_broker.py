@@ -357,7 +357,7 @@ def actual_location(client):
 
 def breakpoint_begin(client, function, offset=0):
     client.evaluate("pause")
-    point = client.evaluate(f"break 0 {function} {offset}")
+    point = client.evaluate(f"breakwasm 0 {function} {offset}")
     identifier = re.search(rb"breakpoint ([0-9]+)", point)
     require(identifier is not None, "actual breakpoint registration", point)
     client.evaluate("continue")

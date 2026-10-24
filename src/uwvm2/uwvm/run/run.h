@@ -2683,6 +2683,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
             }
         }
 
+#if defined(UWVM_RUNTIME_LLVM_JIT)
+        // A returning command must complete its accepted cache writes BEFORE
+        // reset revokes the real source/generation admission. This is the same
+        // completion boundary used by WASI proc_exit; no ticket outlives reset.
+        ::uwvm2::runtime::lib::runtime_stop_before_proc_exit_host_api();
+#endif
+
         // Normal executable-mode exit invalidates backend-neutral caches, stops
         // compilation workers, and releases selected-backend artifacts before their
         // runtime module storage is destroyed.

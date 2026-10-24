@@ -114,9 +114,24 @@ extern "C++"
                g_runtime.debug_pause_control || g_runtime.checkpoint_profile || g_runtime.modules.size() != 1u ||
                &g_runtime.modules.index_unchecked(0u) != &record || !record.llvm_jit_full_publication ||
                record.llvm_jit_full_publication->checkpoint_profile || record.llvm_jit_full_publication->plan)
-            { return {}; }
+            {
+                ::uwvm2::runtime::llvm_jit_cache::details::runtime_cache_log_line(
+                    u8"origin-admission-refused stage=runtime-state publication-depth=", get_runtime_state_publication_depth(),
+                    u8" execution-depth=", get_runtime_execution_entry_depth(),
+                    u8" execution-lease=", get_runtime_execution_lease() != nullptr,
+                    u8" compiled=", g_runtime.compiled_all.load(::std::memory_order_acquire),
+                    u8" published=", g_runtime.published_runtime_state.kind != details::runtime_state_kind::empty,
+                    u8" bridges=", g_runtime.bridges_initialized.load(::std::memory_order_acquire),
+                    u8" debugger=", g_runtime.debug_pause_control != nullptr,
+                    u8" checkpoint=", static_cast<bool>(g_runtime.checkpoint_profile), u8" modules=", g_runtime.modules.size());
+                return {};
+            }
 #if defined(UWVM2_HAS_THREADED_PROFILE_HOST_API) && UWVM2_HAS_THREADED_PROFILE_HOST_API
-            if(runtime_threaded_profile_builtin_requested_host_api()) { return {}; } // real atomic, never Root-lock recursion
+            if(runtime_threaded_profile_builtin_requested_host_api())
+            {
+                ::uwvm2::runtime::llvm_jit_cache::details::runtime_cache_log_line(u8"origin-admission-refused stage=threaded-profile");
+                return {};
+            } // real atomic, never Root-lock recursion
 #endif
             auto original{::uwvm2::uwvm::runtime::full::selected_full_source_owner_pin()};
             auto const* module{record.runtime_module};
@@ -126,19 +141,42 @@ extern "C++"
                original->registry().size() != 1u ||
                record.llvm_jit_full_publication->source.get() != original.get() ||
                record.llvm_jit_full_publication->source.owner_before(original) ||
-               original.owner_before(record.llvm_jit_full_publication->source)) { return {}; }
+               original.owner_before(record.llvm_jit_full_publication->source))
+            {
+                ::uwvm2::runtime::llvm_jit_cache::details::runtime_cache_log_line(
+                    u8"origin-admission-refused stage=source-identity canonical=", source::has_canonical_owner(original),
+                    u8" registry-size=", original ? original->registry().size() : 0u,
+                    u8" preloads=", original ? original->preloaded_file_count() : 0u);
+                return {};
+            }
             auto const census{original->actual_cache_native_provider_census()};
-            if(census == source::cache_native_provider_census::unsafe) { return {}; }
+            if(census == source::cache_native_provider_census::unsafe)
+            {
+                ::uwvm2::runtime::llvm_jit_cache::details::runtime_cache_log_line(u8"origin-admission-refused stage=native-provider-census");
+                return {};
+            }
 #if !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1) && defined(UWVM_IMPORT_WASI_WASIP1)
-            if(census == source::cache_native_provider_census::builtin_wasip1 && !safe_wasi_environments()) { return {}; }
+            if(census == source::cache_native_provider_census::builtin_wasip1 && !safe_wasi_environments())
+            {
+                ::uwvm2::runtime::llvm_jit_cache::details::runtime_cache_log_line(u8"origin-admission-refused stage=wasi-environment");
+                return {};
+            }
 #else
-            if(census != source::cache_native_provider_census::no_native) { return {}; }
+            if(census != source::cache_native_provider_census::no_native)
+            {
+                ::uwvm2::runtime::llvm_jit_cache::details::runtime_cache_log_line(u8"origin-admission-refused stage=unsupported-provider");
+                return {};
+            }
 #endif
             // Admission is acquired while the actual outer entry is still
             // admitted. It may now fail during stop: that is a cache miss,
             // never a fabricated private generation or a compile fallback.
             auto generation{g_runtime.execution_domain.try_enter()};
-            if(!generation || generation.stop_requested()) { return {}; }
+            if(!generation || generation.stop_requested())
+            {
+                ::uwvm2::runtime::llvm_jit_cache::details::runtime_cache_log_line(u8"origin-admission-refused stage=generation-lease");
+                return {};
+            }
             try { return ::std::shared_ptr<state>{new state{::std::move(generation), ::std::move(original), current_runtime_generation()}}; }
             catch(...) { return {}; }
         }

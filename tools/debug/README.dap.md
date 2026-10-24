@@ -168,6 +168,15 @@ frame a separate uwvm-native-code:ID, after genuine readonly owner-copy success
 and fresh matching complete status. Source/Wasm/inline references remain
 without code access. Native traps retain uwvm-native-stop:ID. Both are opaque
 display/query references, not memory/write/breakpoint/restart/locals authority.
+Build the runtime and adapter from the same revision when using this view.
+If the stopped runtime cannot return a valid current range, the adapter emits
+one actionable Debug Console diagnostic for the session and supplies no native
+code reference. A working extension activation alone does not establish ASM
+support in an older runtime.
+Decoded instruction rows include their `function-offset`. The adapter checks
+that offset against the copied function owner's bounds before exposing code;
+missing or inconsistent offsets are rejected. Rebuilding only the extension
+cannot upgrade an older runtime's console protocol.
 The new console grammar is
 disassemble-range THREAD STOP_ID COUNT BYTE_OFFSET INSTRUCTION_OFFSET SYMBOLS;
 numeric stop labels only reject stale requests. The runtime-private capture,

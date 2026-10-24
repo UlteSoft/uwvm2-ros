@@ -128,10 +128,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
                 bool valid{};
             };
             // C++ local-static initialization serializes concurrent first use.
-            // The two references are consumed only during initialization;
-            // neither reference nor the local lambda is retained in the cache.
+            // The copy reference is consumed only during initialization;
+            // neither that reference nor the local lambda is retained.
             static known_interface_fingerprint const interface_fingerprint{
-                [&known, &copy]() noexcept -> known_interface_fingerprint
+                [&copy]() noexcept -> known_interface_fingerprint
                 {
                     known_interface_fingerprint fingerprint{};
                     // Bind the complete ordered interface, including names

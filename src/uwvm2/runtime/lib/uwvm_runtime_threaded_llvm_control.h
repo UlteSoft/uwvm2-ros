@@ -205,7 +205,8 @@
             auto const len=static_cast<::std::uint32_t>(length_bits);
             // One stable native mmap snapshot; no provider callback and no guest
             // pointer survives the scope. All bounds precede the first write.
-            emit::llvm_jit_with_bulk_memory_snapshot(*memory,[&](::std::byte* begin,::std::size_t size) noexcept
+            // The callback records any bounds failure in the child trap state.
+            static_cast<void>(emit::llvm_jit_with_bulk_memory_snapshot(*memory,[&](::std::byte* begin,::std::size_t size) noexcept
             {
                 if(dst>size||len>size-dst||(!Fill&&(src>size||len>size-src))||(len!=0u&&begin==nullptr))
                 {fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::memory_out_of_bounds));return false;}
@@ -227,7 +228,7 @@
                     remaining-=count;
                 }
                 return true;
-            });
+            }));
         }
         static void bulk_copy(::std::uintptr_t a,::std::int32_t d,::std::int32_t s,::std::int32_t n) noexcept{bulk<false>(a,d,s,n);}
         static void bulk_fill(::std::uintptr_t a,::std::int32_t d,::std::int32_t v,::std::int32_t n) noexcept{bulk<true>(a,d,v,n);}
@@ -264,7 +265,8 @@
             if(source>bytes||length>bytes-source)
             {fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::memory_out_of_bounds));return;}
             namespace emit=::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details;
-            emit::llvm_jit_with_bulk_memory_snapshot(*memory,[&](::std::byte* target,::std::size_t size) noexcept
+            // The callback records any bounds failure in the child trap state.
+            static_cast<void>(emit::llvm_jit_with_bulk_memory_snapshot(*memory,[&](::std::byte* target,::std::size_t size) noexcept
             {
                 if(destination>size||length>size-destination||(length!=0u&&target==nullptr))
                 {fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::memory_out_of_bounds));return false;}
@@ -278,5 +280,5 @@
                     at+=chunk;
                 }
                 return true;
-            });
+            }));
         }

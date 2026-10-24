@@ -2285,24 +2285,32 @@ def parse_native_disassembly(text, location, count):
     pc = int(location["native_pc"], 16)
     instructions = []
     unavailable = False
+    owner_begin = None
     total_bytes = 0
     for index, line in enumerate(lines[1:-1]):
-        row = re.fullmatch(r"  instruction ([0-9]{1,2}) pc=0x([0-9a-fA-F]{1,16})(?: bytes=([0-9a-fA-F]{2}(?: [0-9a-fA-F]{2}){0,14})  (.{1,508})| (unavailable))", line)
+        row = re.fullmatch(r"  instruction ([0-9]{1,2}) pc=0x([0-9a-fA-F]{1,16})(?: function-offset=([0-9]{1,5}) bytes=([0-9a-fA-F]{2}(?: [0-9a-fA-F]{2}){0,31})  (.{1,1024})| (unavailable))", line)
         if row is None or int(row[1]) != index or int(row[2], 16) != pc or pc == 0:
             raise ValueError("invalid or noncontiguous native-disassembly row")
-        if row[5] is not None:
+        if row[6] is not None:
             unavailable = True
             instructions.append({"address": "-1", "instruction": "<unavailable instruction>",
                                  "presentationHint": "invalid"})
             continue
         if unavailable:
             raise ValueError("decoded row follows unavailable native boundary")
-        raw = row[3].split(" ")
+        function_offset = int(row[3])
+        if function_offset >= 65536 or function_offset >= pc:
+            raise ValueError("native instruction has an invalid function offset")
+        current_begin = pc - function_offset
+        if owner_begin is not None and current_begin != owner_begin:
+            raise ValueError("native instruction changed its function owner")
+        owner_begin = current_begin
+        raw = row[4].split(" ")
         total_bytes += len(raw)
-        if total_bytes > 480 or pc > (1 << 64) - 1 - len(raw):
+        if total_bytes > 1024 or pc > (1 << 64) - 1 - len(raw):
             raise ValueError("native-disassembly code extent overflow")
         instructions.append({"address": f"0x{pc:x}", "instructionBytes": " ".join(raw).lower(),
-                             "instruction": row[4], "presentationHint": "normal"})
+                             "instruction": row[5], "presentationHint": "normal"})
         pc += len(raw)
     return instructions
 
@@ -2356,16 +2364,18 @@ def parse_native_disassembly_range(text, location, count, byte_offset, instructi
                 trailing = True
             instructions.append({"address": "-1", "instruction": "<unavailable instruction>", "presentationHint": "invalid"})
             continue
-        row = re.fullmatch(r"  instruction ([0-9]{1,2}) pc=0x([0-9a-fA-F]{1,16}) bytes=([0-9a-fA-F]{2}(?: [0-9a-fA-F]{2}){0,14})  (.{1,508})", line)
+        row = re.fullmatch(r"  instruction ([0-9]{1,2}) function-offset=([0-9]{1,5}) pc=0x([0-9a-fA-F]{1,16}) bytes=([0-9a-fA-F]{2}(?: [0-9a-fA-F]{2}){0,31})  (.{1,1024})", line)
         if row is None or int(row[1]) != index or trailing:
             raise ValueError("malformed or resumed-after-gap instruction row")
-        address = int(row[2], 16)
-        raw = row[3].split(" ")
+        address = int(row[3], 16)
+        if int(row[2]) != address - begin:
+            raise ValueError("native function offset differs from its owner boundary")
+        raw = row[4].split(" ")
         if not begin <= address < end or len(raw) > end - address or (previous_end is not None and address != previous_end):
             raise ValueError("instruction extends outside actual owner or skips a boundary")
         previous_end, had_normal = address + len(raw), True
         instruction = {"address": f"0x{address:x}", "instructionBytes": " ".join(raw).lower(),
-                       "instruction": row[4], "presentationHint": "normal"}
+                       "instruction": row[5], "presentationHint": "normal"}
         if name is not None:
             instruction["symbol"] = name
         instructions.append(instruction)
@@ -2555,6 +2565,7 @@ class Adapter:
         self.native_frames = set()
         self.native_register_scopes = {}
         self.native_code_refs = {}
+        self.native_code_diagnostic_emitted = False
         self.source_frames = set()
         self.source_frame_ordinals = {}
         self.source_scope_stops = {}
@@ -2939,9 +2950,21 @@ class Adapter:
             reference = self.new_reference()
             self.native_code_refs[reference] = (location["id"], expected_key, identity)
             return f"uwvm-native-code:{reference}"
-        except (OSError, ValueError, RuntimeError, ConnectionError):
+        except (OSError, ValueError, RuntimeError, ConnectionError) as error:
             # No qualified owner/backend is an explicit lack of code reference;
             # it never becomes a source/locals/address capability.
+            if not self.native_code_diagnostic_emitted:
+                self.native_code_diagnostic_emitted = True
+                self.event("output", {
+                    "category": "stderr",
+                    "output": (
+                        "Native disassembly is unavailable: the runtime did not provide "
+                        "a valid stopped-code range. Build the runtime and debugger adapter "
+                        "from the same revision with native debug support enabled. "
+                        "An older runtime cannot supply the current range protocol. "
+                        f"Details: {str(error)[:256]}\n"
+                    ),
+                })
             return None
 
     def disassemble_owned_range(self, request, args, reference, count):

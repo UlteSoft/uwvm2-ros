@@ -1184,7 +1184,9 @@ namespace uwvm2::utils::security::wsea
         ::std::byte const* bytes_{};
         ::std::size_t size_{};
         detail::digest digest_{};
-        detail::digest manifest_digest_{};
+        // Retain the manifest fingerprint as receipt metadata. matches() checks
+        // the complete image digest, which also covers the embedded evidence.
+        [[maybe_unused]] detail::digest manifest_digest_{};
         ::std::string algorithm_{}; // owned profile names, never borrowed evidence
         ::std::vector<::std::string> signers_;
         ::std::uint64_t capabilities_{};

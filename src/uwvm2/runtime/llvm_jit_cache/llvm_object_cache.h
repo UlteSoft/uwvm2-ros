@@ -62,9 +62,9 @@
 #endif
 
 #if defined(UWVM_RUNTIME_LLVM_JIT)
-#if defined(__linux__) && (defined(__GNUC__) || defined(__clang__))
-# pragma GCC visibility push(hidden)
-#endif
+# if defined(__linux__) && (defined(__GNUC__) || defined(__clang__))
+#  pragma GCC visibility push(hidden)
+# endif
 
 UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
 {
@@ -131,7 +131,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
             auto const& layout{module.getDataLayoutStr()};
             ctx.data_layout.clear();
             ::fast_io::io::print(::uwvm2::utils::container::u8string_ref_uwvm{::std::addressof(ctx.data_layout)},
-                                ::uwvm2::utils::container::u8string_view{reinterpret_cast<char8_t const*>(layout.data()), layout.size()});
+                                 ::uwvm2::utils::container::u8string_view{reinterpret_cast<char8_t const*>(layout.data()), layout.size()});
             // Some callers already provide a fully qualified cache key, so avoid expensive bitcode hashing in that path.
             if(ctx.cache_key_is_complete) { return ctx; }
 
@@ -201,7 +201,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
         // symbol resolution, and synchronous receipt copy; the borrow never
         // escapes into the publication. This metadata copy explicitly strips the weak origin.
         [[nodiscard]] inline cache_context actual_materializer_base_context() const noexcept
-        { auto data{base_context}; data.origin.reset(); return data; }
+        {
+            auto data{base_context};
+            data.origin.reset();
+            return data;
+        }
+
         inline llvm_jit_object_cache() noexcept = default;
 
         inline explicit llvm_jit_object_cache(cache_context ctx, cache_policy pol = default_cache_policy()) noexcept :
@@ -251,10 +256,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
                     // partial write/error. No follow/inherit mode is supplied,
                     // so fast_io retains O_NOFOLLOW/O_CLOEXEC on POSIX.
                     ::fast_io::native_file capture{::fast_io::mnp::os_c_str(path),
-                        ::fast_io::open_mode::out | ::fast_io::open_mode::excl,
-                        static_cast<::fast_io::perms>(0600)};
-                    if(buffer.size() > static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)()))
-                    { ::fast_io::fast_terminate(); }
+                                                   ::fast_io::open_mode::out | ::fast_io::open_mode::excl,
+                                                   static_cast<::fast_io::perms>(0600)};
+                    if(buffer.size() > static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)())) { ::fast_io::fast_terminate(); }
                     if(!buffer.empty())
                     {
                         // [first, first + buffer.size()) is the live LLVM object.
@@ -270,7 +274,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
                 }
 #  if defined(UWVM_CPP_EXCEPTIONS)
                 catch(::fast_io::error const&)
-                { ::fast_io::fast_terminate(); }
+                {
+                    ::fast_io::fast_terminate();
+                }
 #  endif
             }
 # endif
@@ -291,6 +297,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
             if(load.status != cache_status::ok)
             {
                 // A miss returns nullptr so LLVM falls back to compiling the module normally.
+                // Report the actual refusal before compilation. A selected cache path alone
+                // does not establish a usable cache or qualify a warm-start measurement.
+                details::runtime_log_line(u8"object-cache-miss module=\"",
+                                          details::module_identifier_view(*module),
+                                          u8"\" status=",
+                                          cache_status_name(load.status));
                 if(load.status == cache_status::signature_missing) [[unlikely]] { warn_signature_missing_once(); }
                 return {};
             }

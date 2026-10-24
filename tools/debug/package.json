@@ -10,7 +10,7 @@
   },
   "categories": ["Debuggers"],
   "main": "./extension.js",
-  "activationEvents": ["onDebug:uwvm-llvm-full"],
+  "activationEvents": ["onDebug"],
   "capabilities": {
     "untrustedWorkspaces": {
       "supported": false

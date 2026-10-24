@@ -13,7 +13,7 @@ SPEC.loader.exec_module(dap)
 STATUS = ("stopped: native instruction step\nstop-id 17\n"
           "thread 3 module=0 function=2 byte-offset=4 generation=8\n  native-pc=0x0000000000001234\n")
 HEADER = "native-disassembly stop=17 thread=3 module=0 function=2 function-generation=2 runtime-epoch=8\n"
-ROWS = "  instruction 0 pc=0x0000000000001234 bytes=48 83 c0 01  addq $1, %rax\n"
+ROWS = "  instruction 0 pc=0x0000000000001234 function-offset=564 bytes=48 83 c0 01  addq $1, %rax\n"
 END = "native-disassembly-end\n"
 
 class Broker:
@@ -115,7 +115,7 @@ class Tests(unittest.TestCase):
         self.assertEqual(self.broker.commands, old)
     def test_filler_cannot_restart_decoding_or_move_to_fabricated_address(self):
         location = dap.parse_status(STATUS)[2][0]
-        for rows in ("  instruction 0 pc=0x1234 unavailable\n  instruction 1 pc=0x1234 bytes=90  nop\n",
+        for rows in ("  instruction 0 pc=0x1234 unavailable\n  instruction 1 pc=0x1234 function-offset=564 bytes=90  nop\n",
                      "  instruction 0 pc=0x1234 unavailable\n  instruction 1 pc=0x1235 unavailable\n"):
             with self.subTest(rows=rows):
                 with self.assertRaises(ValueError): dap.parse_native_disassembly(HEADER+rows+END, location, 2)
