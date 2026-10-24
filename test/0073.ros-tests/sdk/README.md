@@ -23,6 +23,13 @@ command from the VM repository root inside that container:
 python3 -B -m unittest discover -s test/0073.ros-tests/sdk/tests/aarch64 -v
 ```
 
+Check the selected SDK's backend directories, public references and frozen
+Python package parents in the same Linux environment:
+
+```sh
+python3 -B test/0073.ros-tests/sdk/tools/check_backend_layout.py --sdk-root /path/to/uwvm2-ros-sdk
+```
+
 Native acceptance additionally requires exact runtime, gateway, peer, QEMU and
 Wasm identities, explicit module permissions and observed ROS messages. The
 [English protocol](document/aarch64/en_US/README.md) describes those inputs.
