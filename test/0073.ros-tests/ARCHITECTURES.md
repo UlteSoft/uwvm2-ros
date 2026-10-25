@@ -19,11 +19,15 @@ Noetic is an archived release; its target list is retained to qualify the
 explicit SDK profile, not described as a currently maintained ROS release.
 Humble targets Ubuntu 22.04 and Jazzy targets Ubuntu 24.04 for Tier 1.
 
-ARM32 currently needs special attention: the native EHABI registration
-implementation uses glibc 2.35's `_dl_find_object`. Noetic's original Ubuntu
-20.04 environment has an older libc. An ARM executable built for a newer libc
-does not qualify that older deployment. Do not report this row as accepted
-until the actual target libc and generated native chain have passed.
+ARM32 uses the source-paired libunwind hook for owned JIT exidx tables and
+bounded `dl_iterate_phdr` lookup for loader-owned static images. LLVM provider
+revision 14 also repairs callee-pop alignment and early-return stack restoration.
+The exact ARMv7 hard-float build passed full-system QEMU cache, checked-unwind and
+24 native call ABI cases with target libc 2.35. This removes the implementation's
+previous `_dl_find_object` dependency, but does not qualify Noetic's stock Focal
+libc, ARM32 native debugging, or every native ROS endpoint. See the exact hashes
+and remaining limits in the
+[runtime qualification report](../../documents/toolchain/ros-runtime-qualification.md).
 
 NVIDIA support is a hardware/software tuple, not an extra generic CPU family.
 [Isaac ROS 3.2](https://nvidia-isaac-ros.github.io/v/release-3.2/getting_started/index.html)

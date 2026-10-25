@@ -43,15 +43,15 @@
 // availability also requires <unwind.h> (POSIX) and a successful generated-chain
 // probe: having an ELF object format does not prove that its provider works.
 // GNU/Linux ARM EHABI uses the opt-in actual .ARM.exidx registry and exported
-// libgcc lookup hook, with exact object extents and post-drain retirement. Its
-// glibc fallback requires 2.35 or newer. ARM builds using __ARM_DWARF_EH__ use
+// paired libunwind lookup hook, with exact object extents and post-drain
+// retirement. Static images use the selected loader's dl_iterate_phdr API. ARM builds using __ARM_DWARF_EH__ use
 // their separate DWARF registration. Neither route admits SjLj.
 // This capability is shared by the runtime, CLI parser, help, and version output.
 #if UWVM2_RUNTIME_LLVM_JIT_WIN64_SEH_PLATFORM_SUPPORTED ||                                                                                                 \
     (!defined(_WIN32) && !defined(__USING_SJLJ_EXCEPTIONS__) &&                                                                                            \
      (!(defined(__arm__) || defined(__thumb__)) || defined(__ARM_DWARF_EH__) || \
       (defined(UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT) && UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT == 1 && \
-       defined(__linux__) && defined(__GLIBC__) && (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 35)))) &&                                                                           \
+       defined(__linux__) && defined(__GLIBC__))) &&                                                                           \
      ((defined(__APPLE__) && defined(__MACH__)) || defined(__ELF__)))
 # define UWVM2_RUNTIME_LLVM_JIT_NATIVE_UNWIND_PLATFORM_SUPPORTED 1
 #else

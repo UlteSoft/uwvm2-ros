@@ -34,8 +34,13 @@
             result.old_length=old;result.old_pages=old>>16u;
             auto const base=reinterpret_cast<::std::uintptr_t>(memory_begin);
             if((old&(page_size-1u))!=0u||(base&(page_size-1u))!=0u||old>reservation_limit_bytes||
-               old>UINT64_C(4294967296)||base>UINTPTR_MAX-old)
+               base>UINTPTR_MAX-old)
                 return result;
+#if SIZE_MAX > UINT32_MAX
+            // A 32-bit native length cannot exceed the wasm32 4 GiB limit.
+            // Keep the independent Wasm bound on wider host address spaces.
+            if(old > UINT64_C(4294967296)) { return result; }
+#endif
             auto maximum=(::std::min)(original_maximum_bytes,reservation_limit_bytes);
             if constexpr(sizeof(::std::size_t)>=8u)maximum=(::std::min)(maximum,static_cast<::std::size_t>(UINT64_C(4294967296)));
             if(old>maximum)return result;

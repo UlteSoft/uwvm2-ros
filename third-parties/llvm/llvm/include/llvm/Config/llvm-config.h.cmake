@@ -75,7 +75,7 @@
 /* Patch version of the LLVM API */
 #define LLVM_VERSION_PATCH ${LLVM_VERSION_PATCH}
 
-/* Downstream RuntimeDyld loader capabilities, revision 13. Stock LLVM must
+/* Downstream RuntimeDyld loader capabilities, revision 14. Stock LLVM must
  * not acquire these by version-number inference or consumer flags. */
 #define LLVM_UWVM_ROS_ELF_PPC32_MCJIT 1
 #define LLVM_UWVM_ROS_ELF_SPARCV9_MCJIT 1
@@ -90,6 +90,10 @@
 /* X86 TailCC callee-pop includes the complete MaxStackArgAlign-rounded
  * call frame before return-address-slot alignment. */
 #define LLVM_UWVM_X86_TAILCC_ALIGNED_FRAME_FIXED 1
+
+/* ARM TailCC uses the target stack alignment and restores callee-popped
+ * arguments on every normal return, including shrink-wrap bypass paths. */
+#define LLVM_UWVM_ROS_ARM_TAILCC_STACK_RESTORE 1
 
 /* LLVM version string */
 #define LLVM_VERSION_STRING "${PACKAGE_VERSION}"

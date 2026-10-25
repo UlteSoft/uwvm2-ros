@@ -9,6 +9,22 @@
       "patched_sha256": "b45b505688bdf27ef326f1e2b824fde8b44b4b9776979e6ba8a542fef07411c4",
       "patch_sha256": "19a752e5ca9aa4eaa393782dcd5ccf97f0b233b45c707d0de7799f0b793e3b7c",
       "scope": "ELF datarel|sdata4 fixed-stride lookup; generic fallback unchanged; x86-64 Linux tested"
+    },
+    {
+      "upstream_commit": "6dfe1677ab8dffbc6ec13d53a1e0215d75147689",
+      "path": "libunwind/src/AddressSpace.hpp",
+      "upstream_sha256": "66ebbc93ca448bbac17cf5666e417fc8962e67298930d88ff5a3530550699bf3",
+      "patched_sha256": "9082371507c38c3b8a3e88bfbf262555bf62efdda10549e818425af5a9e39fc6",
+      "patch_sha256": "027ab0ca905e08ad25c810f7113fe2833a9afb7890ddaeb5a352c93f2c181592",
+      "scope": "Linux ARM EHABI owned JIT lookup and paired-provider ABI marker; exact target qualification recorded separately"
+    },
+    {
+      "upstream_commit": "6dfe1677ab8dffbc6ec13d53a1e0215d75147689",
+      "path": "libunwind/src/Unwind-EHABI.cpp",
+      "upstream_sha256": "352ab8ec8eaa93a790c261c418ffea18fc78d55ba805601df369a310dc086417",
+      "patched_sha256": "f644656d51b585241531ac859da7e462b1811e605f307a2d26a22fd613119fce",
+      "patch_sha256": "027ab0ca905e08ad25c810f7113fe2833a9afb7890ddaeb5a352c93f2c181592",
+      "scope": "Linux ARM EHABI owned JIT lookup and paired-provider ABI marker; exact target qualification recorded separately"
     }
   ]
 }

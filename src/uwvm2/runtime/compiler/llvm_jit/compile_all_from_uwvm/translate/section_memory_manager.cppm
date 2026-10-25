@@ -64,7 +64,7 @@ module;
 # endif
 # include <llvm/ExecutionEngine/SectionMemoryManager.h>
 # if defined(UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT) && UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT == 1 && \
-    defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__) && (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 35))
+    defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__)
 #  include <llvm/ExecutionEngine/ExecutionEngine.h>
 #  include <llvm/ExecutionEngine/JITEventListener.h>
 # endif

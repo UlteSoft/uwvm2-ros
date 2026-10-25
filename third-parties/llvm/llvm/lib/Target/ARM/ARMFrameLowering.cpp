@@ -2701,6 +2701,12 @@ checkNumAlignedDPRCS2Regs(MachineFunction &MF, BitVector &SavedRegs) {
 }
 
 bool ARMFrameLowering::enableShrinkWrapping(const MachineFunction &MF) const {
+  // Every normal return must release callee-popped arguments, including an
+  // early return that never enters the callee-save region. Shrink wrapping
+  // currently emits no epilogue on that path and would leave SP unbalanced.
+  if (MF.getInfo<ARMFunctionInfo>()->getArgumentStackToRestore() != 0)
+    return false;
+
   // For CMSE entry functions, we want to save the FPCXT_NS immediately
   // upon function entry (resp. restore it immediately before return)
   if (STI.hasV8_1MMainlineOps() &&

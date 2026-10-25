@@ -2651,8 +2651,15 @@ ARMTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
   // pop its own argument stack on return. But this call is *not* a tail call so
   // we need to undo that after it returns to restore the status-quo.
   bool TailCallOpt = getTargetMachine().Options.GuaranteedTailCallOpt;
-  uint64_t CalleePopBytes =
-      canGuaranteeTCO(CallConv, TailCallOpt) ? alignTo(NumBytes, 16) : -1U;
+  // Match LowerFormalArguments and the tail-call outgoing stack layout.
+  // AAPCS32 commonly uses eight-byte alignment; assuming sixteen here would
+  // restore a different number of bytes from those popped by the callee.
+  uint64_t CalleePopBytes = -1U;
+  if (canGuaranteeTCO(CallConv, TailCallOpt)) {
+    MaybeAlign StackAlign = DAG.getDataLayout().getStackAlignment();
+    assert(StackAlign && "data layout string is missing stack alignment");
+    CalleePopBytes = alignTo(NumBytes, *StackAlign);
+  }
 
   Chain = DAG.getCALLSEQ_END(Chain, NumBytes, CalleePopBytes, InGlue, dl);
   if (!Ins.empty())

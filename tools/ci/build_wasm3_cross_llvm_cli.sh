@@ -27,12 +27,12 @@ gcc=$deps/usr/lib/gcc-cross/$triple/15
 # A prior-revision native TableGen must not be silently reused by this ros.11 recipe.
 # The keeper still binds this binary to its actual source/build/dependency proof.
 [[ -x "$native_llvm/bin/llvm-tblgen" ]] || { echo 'Missing native ros.11 llvm-tblgen' >&2; exit 1; }
-grep -Fqx '#define LLVM_VERSION_STRING "23.1.1-uwvm-ros.13"' \
+grep -Fqx '#define LLVM_VERSION_STRING "23.1.1-uwvm-ros.14"' \
     "$native_llvm/include/llvm/Config/llvm-config.h" || { echo 'Wrong native TableGen version header' >&2; exit 1; }
 python3 - "$native_llvm/uwvm-llvm-version.json" <<'PY_NATIVE_LLVM_VERSION'
 import json, pathlib, sys
 metadata = json.loads(pathlib.Path(sys.argv[1]).read_text())
-if metadata.get('version') != '23.1.1-uwvm-ros.13':
+if metadata.get('version') != '23.1.1-uwvm-ros.14':
     raise SystemExit('Wrong native TableGen build version metadata')
 PY_NATIVE_LLVM_VERSION
 if [[ $backend == RISCV ]]; then
@@ -65,7 +65,7 @@ esac
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DLLVM_TARGETS_TO_BUILD="$backend" \
     -DLLVM_HOST_TRIPLE="$triple" -DLLVM_TABLEGEN="$native_llvm/bin/llvm-tblgen" \
     -DLLVM_NATIVE_TOOL_DIR="$native_llvm/bin" \
-    -DLLVM_VERSION_SUFFIX=-uwvm-ros.13 -DLLVM_APPEND_VC_REV=OFF \
+    -DLLVM_VERSION_SUFFIX=-uwvm-ros.14 -DLLVM_APPEND_VC_REV=OFF \
     -DLLVM_ENABLE_PROJECTS= -DLLVM_ENABLE_RUNTIMES= \
     -DLLVM_INCLUDE_TESTS=OFF -DLLVM_INCLUDE_BENCHMARKS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF \
     -DLLVM_INCLUDE_DOCS=OFF -DLLVM_ENABLE_BINDINGS=OFF -DLLVM_BUILD_TOOLS=OFF \
@@ -77,7 +77,7 @@ esac
     -DLLVM_PARALLEL_LINK_JOBS=1 -DLLVM_PARALLEL_COMPILE_JOBS="$jobs" \
     > "$output/llvm.configure.log" 2>&1
 "$cmake" --build "$target_llvm" --parallel "$jobs" --target uwvm_ros_llvm_contract_dependencies > "$output/llvm.build.log" 2>&1
-grep -Fqx '#define LLVM_VERSION_STRING "23.1.1-uwvm-ros.13"' "$target_llvm/include/llvm/Config/llvm-config.h"
+grep -Fqx '#define LLVM_VERSION_STRING "23.1.1-uwvm-ros.14"' "$target_llvm/include/llvm/Config/llvm-config.h"
 python3 - "$target_llvm" <<'PY'
 import json, pathlib, shlex, sys
 root = pathlib.Path(sys.argv[1]).resolve()

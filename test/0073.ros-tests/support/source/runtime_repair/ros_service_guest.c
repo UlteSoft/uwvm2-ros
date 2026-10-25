@@ -9,6 +9,9 @@
  */
 #include <stdint.h>
 #include <stddef.h>
+#if defined(UWVM_ROS_RESOURCE_CASE)
+# include "ros_resource_contract.h"
+#endif
 
 #ifndef UWVM_ROS_BENCH_ITERATIONS
 # define UWVM_ROS_BENCH_ITERATIONS 200
@@ -78,15 +81,27 @@ static void report(char const* label, uint64_t value)
 /** @brief Perform one real native service exchange and validate every reply byte. */
 static void exchange(uint64_t handle)
 {
+#if defined(UWVM_ROS_RESOURCE_CASE)
+    uint8_t response[16384];
+    uint8_t const request[] = {2, 0, 0, 0, 'o', 'k'};
+    uint64_t request_size = UWVM_ROS_RESOURCE_CASE == 8 ? sizeof(request) : 0;
+#else
     uint8_t response[64] = {0};
+#endif
     uint64_t length = 0;
+#if defined(UWVM_ROS_RESOURCE_CASE)
+    uint32_t status = ros_call(handle, 0, (uintptr_t)request, request_size, (uintptr_t)response, sizeof(response), (uintptr_t)&length);
+#else
     uint32_t status = ros_call(handle, 0, 0, 0, (uintptr_t)response, sizeof(response), (uintptr_t)&length);
+#endif
     if(status)
     {
         report("BENCH_ROS_ERROR=", status);
         __builtin_trap();
     }
-#if defined(UWVM_ROS_BENCH_CLOCK)
+#if defined(UWVM_ROS_RESOURCE_CASE)
+    if(!resource_valid(UWVM_ROS_RESOURCE_CASE, UWVM_ROS_BENCH_VERSION, response, length))
+#elif defined(UWVM_ROS_BENCH_CLOCK)
     /* Every clock reply is an actual canonical unsigned nanosecond value.
        Wall/ROS clocks may be adjusted, so only the steady clock can promise
        monotonic ordering; no artificial constant response is accepted. */
@@ -114,6 +129,26 @@ void _start(void)
         report("BENCH_ROS_OPEN_ERROR=", status);
         __builtin_trap();
     }
+#if defined(UWVM_ROS_RESOURCE_CASE) && UWVM_ROS_RESOURCE_CASE <= 6
+    /* Graph discovery is asynchronous. Only read-only discovery probes may
+       repeat, before warm-up and timing; any later failed query is fatal. */
+    begin = monotonic_ns();
+    uint64_t probes = 0;
+    for(;;)
+    {
+        uint8_t response[16384];
+        uint64_t length = 0;
+        status = ros_call(handle, 0, 0, 0, (uintptr_t)response, sizeof(response), (uintptr_t)&length);
+        ++probes;
+        if(status == 0 && resource_valid(UWVM_ROS_RESOURCE_CASE, UWVM_ROS_BENCH_VERSION, response, length)) { break; }
+        if((status != 0 && status != 2) || monotonic_ns() - begin >= UINT64_C(10000000000))
+        {
+            report("BENCH_DISCOVERY_ERROR=", status);
+            __builtin_trap();
+        }
+    }
+    report("BENCH_DISCOVERY_PROBES=", probes);
+#endif
     for(uint32_t i = 0; i != 20; ++i) { exchange(handle); }
     report("BENCH_READY=", UWVM_ROS_BENCH_ITERATIONS);
     char ready = 0;

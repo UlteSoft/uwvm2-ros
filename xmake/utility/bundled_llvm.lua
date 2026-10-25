@@ -18,7 +18,7 @@ local get_config = config.get
 -- suffix distinguishes generated native-object caches from unpatched upstream
 -- builds. A new code-generation patch must not silently reuse the old suffix.
 local release = "23.1.1"
-local version = release .. "-uwvm-ros.13"
+local version = release .. "-uwvm-ros.14"
 
 function msvc_runtime_library(crt)
     -- LLVM 23 removed LLVM_USE_CRT_RELEASE. Passing that unused option can
@@ -295,7 +295,7 @@ function ensure()
             cache_value("CMAKE_CXX_COMPILER_TARGET") == target and
             cache_value("CMAKE_ASM_COMPILER_TARGET") == target and
             cache_value("LLVM_HOST_TRIPLE") == target and
-            cache_value("LLVM_VERSION_SUFFIX") == "-uwvm-ros.13" and
+            cache_value("LLVM_VERSION_SUFFIX") == "-uwvm-ros.14" and
             cache_value("BUILD_SHARED_LIBS") == "OFF" and
             cache_value("LLVM_ENABLE_EH") == "OFF" and
             cache_value("LLVM_ENABLE_RTTI") == "OFF" and
@@ -493,7 +493,7 @@ function ensure()
                 "-DCMAKE_C_FLAGS=" .. cflags, "-DCMAKE_CXX_FLAGS=" .. cxxflags,
                 "-DCMAKE_EXE_LINKER_FLAGS=" .. linkflags, "-DCMAKE_SHARED_LINKER_FLAGS=" .. linkflags,
                 "-DCMAKE_POSITION_INDEPENDENT_CODE=ON", "-DLLVM_TARGETS_TO_BUILD=" .. targets,
-                "-DLLVM_VERSION_SUFFIX=-uwvm-ros.13", "-DLLVM_APPEND_VC_REV=OFF",
+                "-DLLVM_VERSION_SUFFIX=-uwvm-ros.14", "-DLLVM_APPEND_VC_REV=OFF",
                 "-DLLVM_ENABLE_PROJECTS=", "-DLLVM_ENABLE_RUNTIMES=",
                 "-DLLVM_INCLUDE_TESTS=OFF", "-DLLVM_INCLUDE_BENCHMARKS=OFF", "-DLLVM_INCLUDE_EXAMPLES=OFF",
                 "-DLLVM_INCLUDE_DOCS=OFF", "-DLLVM_ENABLE_BINDINGS=OFF", "-DLLVM_BUILD_TOOLS=OFF",

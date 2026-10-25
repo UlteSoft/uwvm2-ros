@@ -51,7 +51,7 @@ function(uwvm_ros_export_llvm_contract)
   if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
     message(FATAL_ERROR "ROS bundled LLVM must use the Release build configuration")
   endif()
-  if(NOT PACKAGE_VERSION STREQUAL "23.1.1-uwvm-ros.13")
+  if(NOT PACKAGE_VERSION STREQUAL "23.1.1-uwvm-ros.14")
     message(FATAL_ERROR "ROS LLVM contract requires the pinned patched release")
   endif()
   # LLVM itself only warns when Native is absent. That is useful for an AOT

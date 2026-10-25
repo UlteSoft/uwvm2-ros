@@ -128,7 +128,14 @@ def probe(spec, build: Path, env):
         result=identify_elf(obj.read_bytes(),arch)
     macros=subprocess.check_output([*cc,*flags,'-dM','-E','-x','c','-'],input=b'',env=env).decode()
     float_abi=spec.get('float_abi','auto')
-    if float_abi=='auto':float_abi='hard' if arch in ('armhf','armeb') else 'soft'
+    if float_abi == 'auto':
+        # Xmake names both ARM32 calling conventions "arm". Inspect the actual
+        # configured compiler PCS rather than assigning that generic name a
+        # soft-float ABI. Explicit hard/soft requests remain checked below.
+        if arch == 'arm':
+            float_abi = 'hard' if '#define __ARM_PCS_VFP 1' in macros else 'soft'
+        else:
+            float_abi = 'hard' if arch in ('armhf', 'armeb') else 'soft'
     if float_abi not in ('hard','soft'):raise ValueError('float_abi must be auto, hard or soft')
     if arch in ('arm','armhf','armeb') and float_abi=='hard' and '#define __ARM_PCS_VFP 1' not in macros:
         raise ValueError(arch+' requires actual hard-float PCS (__ARM_PCS_VFP)')

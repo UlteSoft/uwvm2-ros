@@ -68,7 +68,7 @@ public:
         }
         // At most one pre-op plus two call-edge sites per source opcode.
         // Divide before comparing so a large expression cannot overflow 3*N.
-        if(plan_->sites.size()/3u >= plan_->expression_bytes || plan_->sites.size() == UINT64_MAX)
+        if(plan_->sites.size()/3u >= plan_->expression_bytes || plan_->sites.size() == SIZE_MAX)
         { return true; }
         site.identifier = plan_->sites.size() + 1u;
         if((observing ? state_->checkpoint_observer_controls->validate_tentative(site) : checkpoint::validate_site(site,*plan_)) != checkpoint::status::ok)
@@ -85,7 +85,7 @@ public:
         namespace checkpoint = ::uwvm2::runtime::checkpoint;
         if(plan_ == nullptr) { return true; }
         if(committed_ || waiting.phase != checkpoint::frame_phase::awaiting_call_return ||
-           after.phase != checkpoint::frame_phase::before_opcode || plan_->sites.size() > UINT64_MAX-2u ||
+           after.phase != checkpoint::frame_phase::before_opcode || plan_->sites.size() > SIZE_MAX-2u ||
            waiting.identifier != plan_->sites.size()+1u || after.identifier != waiting.identifier+1u ||
            waiting.caller_return_offset != after.opcode_offset || waiting.opcode_offset >= after.opcode_offset ||
            (state_->checkpoint_observer_controls == nullptr ? checkpoint::validate_site(waiting,*plan_) :

@@ -1,2 +1,5 @@
 # Preserve the verified release-source bytes on Windows/autocrlf checkouts.
 third-parties/llvm/** -text
+
+# Unified diffs retain a context marker on otherwise blank source lines.
+third-parties/llvm-runtimes/*.patch -text whitespace=-blank-at-eol,-blank-at-eof

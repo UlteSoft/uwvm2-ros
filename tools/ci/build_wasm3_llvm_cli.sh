@@ -25,7 +25,7 @@ touch "$bundled/.cmake/api/v1/query/codemodel-v2"
     '-DCMAKE_SHARED_LINKER_FLAGS=-stdlib=libc++ -fuse-ld=lld -rtlib=compiler-rt -unwindlib=libunwind' \
     '-DCMAKE_MODULE_LINKER_FLAGS=-stdlib=libc++ -fuse-ld=lld -rtlib=compiler-rt -unwindlib=libunwind' \
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DLLVM_TARGETS_TO_BUILD="${UWVM_TEST_LLVM_TARGETS:-X86}" \
-    -DLLVM_VERSION_SUFFIX=-uwvm-ros.13 -DLLVM_APPEND_VC_REV=OFF \
+    -DLLVM_VERSION_SUFFIX=-uwvm-ros.14 -DLLVM_APPEND_VC_REV=OFF \
     -DLLVM_ENABLE_PROJECTS= -DLLVM_ENABLE_RUNTIMES= \
     -DLLVM_INCLUDE_TESTS=OFF -DLLVM_INCLUDE_BENCHMARKS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF \
     -DLLVM_INCLUDE_DOCS=OFF -DLLVM_ENABLE_BINDINGS=OFF -DLLVM_BUILD_TOOLS=OFF \
@@ -36,7 +36,7 @@ touch "$bundled/.cmake/api/v1/query/codemodel-v2"
     -DLLVM_ENABLE_EH=OFF -DLLVM_ENABLE_RTTI=OFF -DLLVM_ENABLE_LTO=OFF \
     -DLLVM_PARALLEL_LINK_JOBS=1 -DLLVM_PARALLEL_COMPILE_JOBS=16 >"$output/llvm.configure.log" 2>&1
 "$cmake" --build "$bundled" --parallel 16 --target llvm-libraries >"$output/llvm.build.log" 2>&1
-grep -Fqx '#define LLVM_VERSION_STRING "23.1.1-uwvm-ros.13"' "$bundled/include/llvm/Config/llvm-config.h"
+grep -Fqx '#define LLVM_VERSION_STRING "23.1.1-uwvm-ros.14"' "$bundled/include/llvm/Config/llvm-config.h"
 # Consume CMake's complete dependency order; never substitute a system LLVM or infer archive names.
 python3 - "$bundled" <<'PY'
 import json, pathlib, shlex, sys

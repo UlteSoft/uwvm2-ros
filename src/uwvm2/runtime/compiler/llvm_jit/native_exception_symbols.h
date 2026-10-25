@@ -175,7 +175,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::native_exceptio
             info->getWinEHEncodingType() == ::llvm::WinEH::EncodingType::Itanium;
 #else
 #if defined(UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT) && UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT == 1 && \
-    defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__) && (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 35))
+    defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__)
         if(triple.isOSLinux() && triple.isOSBinFormatELF() && triple.getArch() == ::llvm::Triple::arm &&
            info->getExceptionHandlingType() == ::llvm::ExceptionHandling::ARM)
         { return ::uwvm_llvm_arm_ehabi_target2_abi_v1 != nullptr && ::uwvm_llvm_arm_ehabi_target2_abi_v1() == 1u; }

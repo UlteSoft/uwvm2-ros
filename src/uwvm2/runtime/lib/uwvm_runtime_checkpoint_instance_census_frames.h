@@ -7,7 +7,7 @@
 {
     namespace native = ::uwvm2::runtime::checkpoint;
     if(!current_scope() || state.actual.modules.empty() || cohort_.size() != captures_.size() ||
-        cohort_.size() > state.cap.max_threads || cohort_.size() >= (::std::numeric_limits<::std::uint64_t>::max)())
+        cohort_.size() > state.cap.max_threads || ::std::cmp_greater_equal(cohort_.size(), (::std::numeric_limits<::std::uint64_t>::max)()))
     { return state.fail(census_error::unavailable_capability); }
     state.snapshot.next_logical_thread = static_cast<::std::uint64_t>(cohort_.size()) + 1u;
     ::std::uint64_t frame_count{};

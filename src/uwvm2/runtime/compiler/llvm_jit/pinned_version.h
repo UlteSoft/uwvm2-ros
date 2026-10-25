@@ -23,11 +23,19 @@
 # error "uwvm2-ros requires its bundled aligned-frame X86 TailCC capability; configure through xmake"
 #endif
 
+// Revision 14 repairs ARM callee-pop alignment and early-return restoration.
+// Keep this backend capability independent of the runtime EHABI registration
+// probe: successful stack walking alone cannot validate the call convention.
+#if (defined(__arm__) || defined(_M_ARM)) && \
+    (!defined(LLVM_UWVM_ROS_ARM_TAILCC_STACK_RESTORE) || LLVM_UWVM_ROS_ARM_TAILCC_STACK_RESTORE != 1)
+# error "uwvm2-ros ARM requires the rebuilt bundled TailCC stack-restoration capability"
+#endif
+
 // No standard-library include is needed in the header/module global fragment.
 // This is compile-time only, with no VM-entry or generated-Wasm overhead.
 static_assert([]() constexpr
 {
-    constexpr char expected[]{"23.1.1-uwvm-ros.13"};
+    constexpr char expected[]{"23.1.1-uwvm-ros.14"};
     constexpr char actual[]{LLVM_VERSION_STRING};
     if constexpr(sizeof(actual) != sizeof(expected)) { return false; }
     else
@@ -38,7 +46,7 @@ static_assert([]() constexpr
         }
         return true;
     }
-}(), "uwvm2-ros requires the exact bundled LLVM 23.1.1-uwvm-ros.13 headers; configure through xmake");
+}(), "uwvm2-ros requires the exact bundled LLVM 23.1.1-uwvm-ros.14 headers; configure through xmake");
 
 // Revision 9 includes the qualified RISC-V callee-pop TailCC ABI and the
 // incoming-stack musttail repair. Ordinary uwvm2 requires an explicit opt-in;

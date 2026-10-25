@@ -38,6 +38,13 @@
 #endif
 #endif
 
+#if defined(_LIBUNWIND_ARM_EHABI) && defined(__linux__)
+// The owned product registers anonymous JIT tables through the native ARM
+// lookup ABI. A weak hook keeps ordinary static-image clients unchanged.
+extern "C" uintptr_t __gnu_Unwind_Find_exidx(uintptr_t, int *) noexcept
+    __attribute__((weak));
+#endif
+
 #if defined(_LIBUNWIND_ARM_EHABI)
 struct EHABIIndexEntry {
   uint32_t functionOffset;
@@ -615,6 +622,18 @@ inline bool LocalAddressSpace::findUnwindSections(
   if (info.arm_section && info.arm_section_length)
     return true;
 #elif defined(_LIBUNWIND_USE_DL_ITERATE_PHDR)
+#if defined(_LIBUNWIND_ARM_EHABI) && defined(__linux__)
+  if (__gnu_Unwind_Find_exidx != nullptr) {
+    int entries = 0;
+    uintptr_t table = __gnu_Unwind_Find_exidx(targetAddr, &entries);
+    if (table != 0 && entries > 0 &&
+        static_cast<size_t>(entries) <= SIZE_MAX / sizeof(EHABIIndexEntry)) {
+      info.arm_section = table;
+      info.arm_section_length = static_cast<size_t>(entries) * sizeof(EHABIIndexEntry);
+      return true;
+    }
+  }
+#endif
   // Use DLFO_STRUCT_HAS_EH_DBASE to determine the existence of
   // `_dl_find_object`. Use _LIBUNWIND_SUPPORT_DWARF_INDEX, because libunwind
   // support for _dl_find_object on other unwind formats is not implemented,

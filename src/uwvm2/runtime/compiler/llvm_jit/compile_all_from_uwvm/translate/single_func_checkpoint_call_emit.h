@@ -17,7 +17,7 @@
     if(state.checkpoint_current_site > plan->sites.size() ||
        (state.checkpoint_resume.dispatch == nullptr && (!plan->profile ||
         plan->profile->purpose() != checkpoint::compilation_purpose::observe_values)) ||
-       plan->sites.size() > UINT64_MAX - 2u)
+       plan->sites.size() > SIZE_MAX - 2u)
     { return false; }
     // [same fused compiler's complete site vector0 ... id-1 ... N] end
     // [safe] nonzero ordinal <= N BEFORE taking an owning metadata copy. The

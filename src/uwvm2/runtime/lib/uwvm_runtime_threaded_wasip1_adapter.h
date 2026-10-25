@@ -115,7 +115,7 @@ extern "C++"
             if(concrete.parameter_count!=count)return false;
             auto const* signature=a.import_type_ptr->imports.storage.function;if(!signature)return false;
             if((count==0u ? signature->parameter.begin!=signature->parameter.end :
-                (signature->parameter.begin==nullptr||signature->parameter.end==nullptr||signature->parameter.end-signature->parameter.begin!=count))||
+                (signature->parameter.begin==nullptr||signature->parameter.end==nullptr||signature->parameter.end-signature->parameter.begin!=static_cast<::std::ptrdiff_t>(count)))||
                signature->result.begin==nullptr||signature->result.end==nullptr||signature->result.end-signature->result.begin!=1)return false;
             ::std::size_t bytes{};
             for(unsigned i{};i<count;++i)

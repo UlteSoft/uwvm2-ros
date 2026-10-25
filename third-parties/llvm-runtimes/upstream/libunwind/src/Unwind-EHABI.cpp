@@ -25,6 +25,10 @@
 #include "libunwind_ext.h"
 #include "unwind.h"
 
+// Runtime admission verifies the actually linked paired unwinder capability.
+extern "C" _LIBUNWIND_EXPORT uint32_t
+uwvm_libunwind_arm_exidx_lookup_abi_v1() noexcept { return 1u; }
+
 namespace {
 
 // Strange order: take words in order, but inside word, take from most to least

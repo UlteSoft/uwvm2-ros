@@ -41,7 +41,7 @@
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(__GXX_ABI_VERSION) && \
     (defined(__cpp_exceptions) || defined(__EXCEPTIONS)) && \
     !defined(__USING_SJLJ_EXCEPTIONS__) && \
-    (!(defined(__arm__) || defined(__thumb__)) || defined(__ARM_DWARF_EH__) || (defined(UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT) && UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT == 1 && defined(__linux__) && defined(__GLIBC__) && (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 35)))) && \
+    (!(defined(__arm__) || defined(__thumb__)) || defined(__ARM_DWARF_EH__) || (defined(UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT) && UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT == 1 && defined(__linux__) && defined(__GLIBC__))) && \
     __has_include(<cxxabi.h>) && __has_include(<unwind.h>) && \
     ((!defined(_WIN32)) || \
      (defined(_WIN64) && defined(__SEH__) && !defined(__CYGWIN__) && \

@@ -71,3 +71,40 @@ VS Code user-interface acceptance.
 Keep raw outputs outside tracked source directories. A source file or a mock
 DAP formatting test never establishes runtime cache, native ROS or live
 disassembly qualification; use the corresponding real execution receipt.
+
+## Resource transport and native comparison
+
+For ROS1, configure the `ros1` subdirectory against the matching SDK checkout
+after sourcing Noetic. The `ros1-xmlrpc-reuse` target needs a local ROS Master.
+It counts actual connections and completed XMLRPC requests, changes a live
+parameter through another native client, and checks that values are never
+cached. Contract changes, alias retirement, bounded failures, no replay and
+concurrent waiter deadlines are checked independently of timing. Run
+`ros1-connection-reuse` as well to preserve the TCPROS regression coverage.
+
+`ros-resource-peer` provides native and IPC comparison modes for graph and
+parameter operations. `ros_resource_cases.py` declares the exact manual grants;
+`ros_resource_contract.h` checks the canonical responses in both native and
+Wasm guests. The peer creates its own isolated endpoints and validates discovery
+before the measurement barrier. The test does not query a physical robot graph.
+
+`run_ros_service_benchmark.py --operation` selects a supported resource case.
+Build `ros_service_guest.c` with the same `UWVM_ROS_RESOURCE_CASE`, import name,
+backend version and iteration count. Compare native, IPC and Wasm modes with
+the same peer, CPU affinity, limits and audited session configuration. Optional
+baseline modes use separately built old adapters with the same VM executable.
+Every response must pass its contract check. Keep profiler collections separate
+from uninstrumented latency rounds, and preserve all original failure records.
+
+## SDK launch contract
+
+`run_sdk_deployment.py --sdk-root <sdk> --uwvm <runtime> --out <fresh-directory>`
+encodes a real Wasm command and passes it through the public SDK deployment
+serializer for both ROS families. It checks actual standard output, a denied
+WASI clock, a well-formed ungranted ROS alias and live checked native unwind.
+The test grants only its explicitly listed standard-stream permission.
+
+`xmake lua run_sdk_empty.lua <sdk> <runtime> <guest.wasm>` exercises the SDK's
+NVIDIA empty-authority launcher through actual Xmake, using one of those generated
+policy-checking guests. This verifies launch arguments and denials; it does not
+qualify a GPU, NVIDIA middleware, device access or a native vendor endpoint.

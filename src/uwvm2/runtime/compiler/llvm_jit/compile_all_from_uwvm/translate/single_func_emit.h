@@ -854,10 +854,11 @@ inline constexpr CallSite* apply_llvm_jit_calling_conv(CallSite* call_inst, ::ll
     if(constant == nullptr || constant->getValue()->getType() != incoming->getType()) { return nullptr; }
     auto const own{constant->getValue()};
     auto const integer{incoming->getType()};
-    auto const previous{builder.CreateAnd(incoming, ::llvm::ConstantInt::get(integer, ~::std::uintptr_t{1u}))};
-    auto const crossed{builder.CreateZExt(builder.CreateICmpNE(previous, own), integer)};
-    auto const retained{builder.CreateAnd(incoming, ::llvm::ConstantInt::get(integer, 1u))};
-    return builder.CreateOr(own, builder.CreateOr(crossed, retained));
+    // Module identities are even. Equality with the complete incoming token
+    // therefore proves both the same owner and an untainted call chain. Any
+    // different owner or retained crossing bit must keep the chain tainted.
+    auto const crossed{builder.CreateZExt(builder.CreateICmpNE(incoming, own), integer)};
+    return builder.CreateOr(own, crossed);
 }
 
 inline void publish_llvm_jit_ros_host_call(::llvm::CallBase* call) noexcept

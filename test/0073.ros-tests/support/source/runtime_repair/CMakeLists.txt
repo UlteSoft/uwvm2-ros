@@ -21,7 +21,7 @@ target_link_libraries(service-client-pool PRIVATE pthread)
 
 # Both witnesses include the production adapter and consume its exact feature
 # probes and dependency closure. Assertions are required even in Release builds.
-foreach(witness IN ITEMS native-service-reuse native-service-benchmark ros-service-peer)
+foreach(witness IN ITEMS native-service-reuse native-service-benchmark ros-service-peer ros-resource-peer)
   string(REPLACE "-" "_" source_name "${witness}")
   add_executable(${witness} "${source_name}.cc")
   target_compile_features(${witness} PRIVATE cxx_std_23)

@@ -46,10 +46,13 @@ namespace uwvm2::runtime::llvm_jit_cache::stdio_admission
             case TMPFS_MAGIC:
             case OVERLAYFS_SUPER_MAGIC:
             case NFS_SUPER_MAGIC:
-            case FUSE_SUPER_MAGIC:
-            case CIFS_SUPER_MAGIC:
-            case SMB2_SUPER_MAGIC:
-            case CEPH_SUPER_MAGIC:
+            // Stable Linux UAPI values; older ROS sysroot magic.h files do not
+            // publish these names. The reviewed allowlist is unchanged.
+            // include/uapi/linux/magic.h in the Linux v6.12 source tree.
+            case 0x65735546u: // FUSE_SUPER_MAGIC
+            case 0xFF534D42u: // CIFS_SUPER_MAGIC
+            case 0xFE534D42u: // SMB2_SUPER_MAGIC
+            case 0x00c36400u: // CEPH_SUPER_MAGIC
             case V9FS_MAGIC: return true;
             default: return false;
         }

@@ -55,7 +55,7 @@
 #   include <llvm/ExecutionEngine/JITEventListener.h>
 #  endif
 #  if defined(UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT) && UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT == 1 && \
-    defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__) && (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 35))
+    defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__)
 #   include <llvm/ExecutionEngine/ExecutionEngine.h>
 #   include <llvm/ExecutionEngine/JITEventListener.h>
 #  endif
@@ -377,11 +377,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::details
 
     class runtime_llvm_jit_section_memory_manager final : public ::llvm::SectionMemoryManager
 # if UWVM2_RUNTIME_DEBUG_REGISTERED_CFI || UWVM2_RUNTIME_LLVM_JIT_SECTION_MEMORY_MANAGER_HAS_WIN64_SEH || (defined(UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT) && UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT == 1 && \
-    defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__) && (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 35)))
+    defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__))
         , public ::llvm::JITEventListener
 # endif
 # if defined(UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT) && UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT == 1 && \
-    defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__) && (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 35))
+    defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__)
         , private arm_ehabi_registration_owner
 # endif
     {
@@ -409,7 +409,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::details
         inline constexpr ~runtime_llvm_jit_section_memory_manager() override { deregisterEHFrames(); }
 
 # if UWVM2_RUNTIME_DEBUG_REGISTERED_CFI && !(defined(UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT) && UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT == 1 && \
-    defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__) && (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 35)))
+    defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__))
         inline void notifyObjectLoaded(::llvm::ExecutionEngine* engine, ::llvm::object::ObjectFile const& object) override
         {
             debug_native_cfi_.observe_object(object.getArch(), object.getBytesInAddress(), object.isLittleEndian());
@@ -457,7 +457,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::details
 # endif
 
 # if defined(UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT) && UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT == 1 && \
-    defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__) && (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 35))
+    defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__)
         inline void notifyObjectLoaded(::llvm::ExecutionEngine* engine, ::llvm::object::ObjectFile const&) override
         {
             if(engine == nullptr || (arm_ehabi_listener_engine_ != nullptr && arm_ehabi_listener_engine_ != engine))
@@ -530,6 +530,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::details
 
         [[nodiscard]] inline ::llvm::JITSymbol findSymbol(::std::string const& name) override
         {
+# if defined(UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT) && UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT == 1 && \
+    defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__)
+            // Backend-generated compact unwind relocations refer to these
+            // paired static-library symbols even without an IR declaration.
+            // Resolve only the three exact EHABI helpers in this owned loader;
+            // do not export an arbitrary host symbol or global override.
+            ::std::uintptr_t personality{};
+            if(name == "__aeabi_unwind_cpp_pr0") { personality = reinterpret_cast<::std::uintptr_t>(&::__aeabi_unwind_cpp_pr0); }
+            else if(name == "__aeabi_unwind_cpp_pr1") { personality = reinterpret_cast<::std::uintptr_t>(&::__aeabi_unwind_cpp_pr1); }
+            else if(name == "__aeabi_unwind_cpp_pr2") { personality = reinterpret_cast<::std::uintptr_t>(&::__aeabi_unwind_cpp_pr2); }
+            if(personality != 0u) { return ::llvm::JITSymbol{personality, ::llvm::JITSymbolFlags::Exported}; }
+# endif
             auto const address{this->getSymbolAddress(name)};
             if(address == 0u) { return nullptr; }
             return ::llvm::JITSymbol{address, ::llvm::JITSymbolFlags::Exported};
@@ -608,7 +620,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::details
         {
             auto const addr{::llvm::SectionMemoryManager::allocateCodeSection(size, alignment, section_id, section_name)};
 # if defined(UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT) && UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT == 1 && \
-    defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__) && (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 35))
+    defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__)
             record_arm_ehabi_section(addr, size, section_name, true);
 # endif
             record_win64_loaded_section(addr, size, true);
@@ -623,7 +635,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::details
         {
             auto const addr{::llvm::SectionMemoryManager::allocateDataSection(size, alignment, section_id, section_name, is_read_only)};
 # if defined(UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT) && UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT == 1 && \
-    defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__) && (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 35))
+    defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__)
             record_arm_ehabi_section(addr, size, section_name, false);
 # endif
             record_win64_loaded_section(addr, size, false);
@@ -663,7 +675,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::details
             }
 # endif
 # if defined(UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT) && UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT == 1 && \
-    defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__) && (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 35))
+    defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__)
             if(!finalization_failure_ && !arm_ehabi_published_ && !publish_arm_ehabi_sections())
             { finalization_failure_ = true; }
             if(finalization_failure_ && error_message != nullptr && error_message->empty())
@@ -725,7 +737,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::details
         inline constexpr void deregisterEHFrames() noexcept override
         {
 # if defined(UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT) && UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT == 1 && \
-    defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__) && (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 35))
+    defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__)
             retire_arm_ehabi_tables(); arm_ehabi_published_ = false;
             arm_ehabi_sections_.clear();
 # endif
@@ -764,7 +776,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::details
 
     private:
 # if defined(UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT) && UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT == 1 && \
-    defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__) && (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 35))
+    defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__)
         struct arm_ehabi_section
         { ::std::uint8_t* address{}; ::std::size_t size{}, allocation_size{}; bool code{}, index{}, table{}, authenticated{}; };
         ::std::vector<arm_ehabi_section> arm_ehabi_sections_{};

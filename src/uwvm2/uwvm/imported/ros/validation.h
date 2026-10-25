@@ -31,7 +31,7 @@ namespace uwvm2::uwvm::imported::ros
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
 # if !defined(__linux__) || \
      !(defined(__x86_64__) || (defined(__aarch64__) && !defined(__AARCH64EB__)) || \
-       (defined(__arm__) && defined(__ARM_ARCH) && __ARM_ARCH >= 7 && defined(__ARM_PCS_VFP__) && !defined(__ARMEB__)))
+       (defined(__arm__) && defined(__ARM_ARCH) && __ARM_ARCH >= 7 && defined(__ARM_PCS_VFP) && !defined(__ARMEB__)))
 #  error "The selected ROS distributions require Linux amd64, little-endian arm64 or ARMv7 hard-float."
 # endif
 #endif

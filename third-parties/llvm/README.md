@@ -87,7 +87,7 @@ The hash distinguishes source/patch content, compiler binaries, ABI-affecting
 flags, target backends and cross configuration. LLVM archives are linked by
 absolute path even when the application's system libraries remain dynamic;
 runtime loader search paths cannot replace libLLVM with another installation.
-The version suffix `-uwvm-ros.13` separates the native-object cache from
+The version suffix `-uwvm-ros.14` separates the native-object cache from
 unpatched upstream LLVM and earlier downstream revisions. Revision 2 added
 VE/AVR/MSP430 repairs; revision 3 fixes FP-predicate inversion and MIPS R6
 strict comparison selection/exception preservation. Otherwise an old cache
@@ -140,6 +140,10 @@ LLVM_UWVM_X86_TAILCC_ALIGNED_FRAME_FIXED; every runtime cache context records it
 fixed/unfixed state. Provider qualification must include actual rebuilt archive
 hashes, caller/callee stack evidence and native Wasm execution. A version label,
 a successful source compile or earlier .11 evidence cannot replace these checks.
+Revision 14 repairs ARM TailCC callee-pop alignment and prevents shrink wrapping
+from bypassing incoming argument-stack restoration on early returns. The backend
+exports `LLVM_UWVM_ROS_ARM_TAILCC_STACK_RESTORE`; the product also independently
+checks the linked ARM EHABI provider and its live generated unwind chain.
 These revisions do not replace the official release base with trunk.
 A source/version mismatch fails closed.
 Source verification/Ninja checks run once per xmake process, not once per

@@ -1,6 +1,6 @@
 # LLVM 23.1.1 runtime source subset
 
-This directory contains a selectively imported official release source tree with one recorded local libunwind patch. Standalone CMake entry: `upstream/runtimes/CMakeLists.txt`. The LLVM source already in `../llvm` is untouched. `upstream-manifest.json` lists each retained monorepo-relative path, byte length, upstream mode and SHA-256; `sources.sha256` verifies current working files under `upstream/`; `local-patches.json` distinguishes local changes from the immutable upstream import receipt. `import_upstream.py` refuses to overwrite an existing subset and imports data only.
+This directory contains a selectively imported official release source tree with recorded local libunwind patches. Standalone CMake entry: `upstream/runtimes/CMakeLists.txt`. The LLVM compiler source and its separate inventory live in `../llvm`. `upstream-manifest.json` lists each retained monorepo-relative path, byte length, upstream mode and SHA-256; `sources.sha256` verifies current working files under `upstream/`; `local-patches.json` distinguishes local changes from the immutable upstream import receipt. `import_upstream.py` refuses to overwrite an existing subset and imports data only.
 
 Source: [LLVM 23.1.1 release](https://github.com/llvm/llvm-project/releases/tag/llvmorg-23.1.1), commit `6dfe1677ab8dffbc6ec13d53a1e0215d75147689`. The official `llvm-project-23.1.1.src.tar.xz` is 179168672 bytes, SHA-256 `ebe9be46fe8756d58c5b198ffad0fa2a766257add81a4dc52179bfacc7888ee6`. This import independently verified archive SHA and all retained file bytes; it did not perform a new GPG verification. The archive matches the provenance recorded for the existing ROS LLVM release.
 
@@ -16,8 +16,22 @@ Windows MSVC EH, Darwin system-provider constraints, BSD and cross-target ABI/sy
 
 Source subset revision 2 restores the required `libcxx/vendor/llvm/default_assertion_handler.in` (2399 original upstream bytes), identified by the first actual Linux configure failure at `libcxx/include/CMakeLists.txt`. The template comes unchanged from the same pinned 23.1.1 archive. The v1 freeze and configure failure remain historical evidence. Revision 2 was subsequently used for the Linux paired-static build described below. Upstream source count is 4284.
 
-The original upstream import manifest is unchanged. See `local-patches.json` and `../../tools/ci/llvm-runtimes-23.1.1/eh-fixed-encoding.json` for the one local patch.
+The original upstream import manifest is unchanged. See `local-patches.json` and `../../tools/ci/llvm-runtimes-23.1.1/eh-fixed-encoding.json` for the original fixed-stride lookup patch.
 
 The local `EHHeaderParser.hpp` patch specializes the usual ELF `datarel|sdata4` FDE table. It bounds the complete fixed-stride extent before binary search, preserves signed offsets and the final FDE PC-range check, and retains upstream fallback for every other encoding. Exact original/patched hashes and patch identity are in `eh-fixed-encoding.json`. Apply it to a fresh private source tree with `python3 apply-eh-fixed-encoding.py "$task_runtime_source"`; `--check` verifies identity without writing. Build all three paired archives and matching headers together. Actual installation targets are `install-cxx-headers`, `install-cxx`, `install-cxxabi`, `install-unwind`, and `install-unwind-headers`.
 
 On Linux x86-64, a fresh paired-static build in the 64 GiB cgroup passed actual JIT landing-pad tests (18,313 checks, 1,152 executions) and four-reader concurrent CFI publication/retirement tests (48 registrations and eight failed-publication rollbacks). Its ELF had no dynamic libc++/libc++abi/libunwind/libgcc EH provider. These results qualify the tested Linux build; other targets need separate tests. The patch changes table lookup, not cursor ABI, frame registration or CFI interpretation.
+
+The additional `arm-jit-exidx.patch` connects Linux ARM EHABI lookup to the
+product's owned JIT exidx registry and exports an exact paired-provider ABI
+marker. A missing weak hook retains the normal static-image lookup. The VM
+separately checks registered extents, the live provider and generated native
+frames; the marker alone grants no admission. `local-patches.json` records the
+original and patched source hashes and the complete patch digest. Vendored
+working sources already contain both patches.
+
+The source-paired revision-14 product passed all 24 call ABI guests on native
+x86_64 and full-system QEMU AArch64/ARMv7 hard-float, along with cache and checked
+unwind probes. The ARM32 target used libc 2.35; its native debugger and stock
+Focal remain unqualified. Exact executable hashes and the earlier failures are
+recorded in the [runtime qualification report](../../documents/toolchain/ros-runtime-qualification.md).

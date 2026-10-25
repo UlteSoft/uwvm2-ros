@@ -540,7 +540,7 @@
             auto owner{static_cast<::std::size_t>(requested.module)},local{static_cast<::std::size_t>(requested.index)};
             if(!mutation_resolve_memory(state,memory_records,owner,local)) { result.status=copy_status::out_of_range;return false; }
             auto const& module{*state.modules[owner].module};auto const imports{module.imported_memory_vec_storage.size()};
-            if(imports>UINT64_MAX || local>UINT64_MAX-static_cast<::std::uint64_t>(imports))
+            if(!::std::in_range<::std::uint64_t>(imports) || local>UINT64_MAX-static_cast<::std::uint64_t>(imports))
             { result.status=copy_status::out_of_range;return false; }
             result.module=state.modules[owner].id;result.index=static_cast<::std::uint64_t>(imports)+static_cast<::std::uint64_t>(local);
             auto const& actual{module.local_defined_memory_vec_storage.index_unchecked(local)}; // owned local bound above.
@@ -595,7 +595,7 @@
                 // real slot that a subsequent global/table query addresses.
                 auto const imported_count{table ? module.imported_table_vec_storage.size() : module.imported_global_vec_storage.size()};
                 if(index > (::std::numeric_limits<::std::size_t>::max)()-imported_count ||
-                   index > (::std::numeric_limits<::std::uint64_t>::max)() ||
+                   !::std::in_range<::std::uint64_t>(index) ||
                    imported_count > (::std::numeric_limits<::std::uint64_t>::max)()-static_cast<::std::uint64_t>(index))
                 { result.status=copy_status::out_of_range;return result; }
                 auto const resolved_logical_index{static_cast<::std::uint64_t>(imported_count)+static_cast<::std::uint64_t>(index)};

@@ -178,7 +178,7 @@ The ordinary repository supplies the same
   were not imported. Required libc shared math headers remain.
 - Three internal mlgo utility symlinks were materialized with identical target
   bytes for Windows checkouts. Vendor line-ending conversion is disabled.
-- ROS xmake builds Release static archives with suffix `-uwvm-ros.13` and
+- ROS xmake builds Release static archives with suffix `-uwvm-ros.14` and
   verifies `sources.sha256`. Its CMake metadata target exports include paths,
   definitions and the complete ordered static-library closure.
 - Separately from compiler-source edits, ROS native MIPS target selection uses
@@ -407,3 +407,20 @@ The revision change gives the bundled SDK and native-object cache a new identity
 No version guard, source check or system-LLVM fallback is relaxed. Historical
 component receipts remain immutable and do not claim a complete revision 13 SDK
 rebuild or execution on every ISA.
+
+## Revision 14: ARM TailCC stack ownership
+
+ARM normal calls to guaranteed TailCC functions now align the callee-pop byte
+count to the actual target stack alignment. The previous literal 16 disagreed
+with the eight-byte incoming and outgoing argument areas on ARMv7 EABI.
+ARM frame lowering disables shrink wrapping when a function owns incoming
+callee-popped argument bytes: every ordinary return, including an early return
+that bypasses the callee-save region, must restore those bytes. Tail transfers
+retain their existing argument-area delta and unwind metadata.
+
+The generated capability `LLVM_UWVM_ROS_ARM_TAILCC_STACK_RESTORE` accompanies
+the source, archive, version and product checks. ARMv7 hard-float full-system
+regressions exercise direct/indirect calls, million-step mutual tail recursion,
+different argument counts, scalar/vector arguments and traps. Qualification
+receipts and remaining target limits are recorded in
+[the ROS runtime report](../../documents/toolchain/ros-runtime-qualification.md).

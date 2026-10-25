@@ -16,7 +16,7 @@ import subprocess
 
 
 TARGET = 'x86_64-w64-windows-gnu'
-VERSION = '23.1.1-uwvm-ros.13'
+VERSION = '23.1.1-uwvm-ros.14'
 CPUS = [0, 2, 4, 6, *range(16, 32)]
 
 
@@ -113,7 +113,7 @@ def main() -> None:
         'CMAKE_BUILD_TYPE': 'Release', 'CMAKE_SYSTEM_NAME': 'Windows',
         'CMAKE_C_COMPILER_TARGET': TARGET, 'CMAKE_CXX_COMPILER_TARGET': TARGET,
         'CMAKE_ASM_COMPILER_TARGET': TARGET, 'LLVM_HOST_TRIPLE': TARGET,
-        'LLVM_VERSION_SUFFIX': '-uwvm-ros.13', 'BUILD_SHARED_LIBS': 'OFF',
+        'LLVM_VERSION_SUFFIX': '-uwvm-ros.14', 'BUILD_SHARED_LIBS': 'OFF',
         'LLVM_ENABLE_EH': 'OFF', 'LLVM_ENABLE_RTTI': 'OFF',
     }
     for name, value in expected.items():

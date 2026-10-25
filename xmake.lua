@@ -244,6 +244,15 @@ function def_build(opt)
 	-- The LLVM SDK option supplies its authenticated producer define to every
 	-- consumer (runtime and CLI), after resolving the exact SDK version.
 
+	-- Native unwind is an execution requirement, independent of debugger mode.
+	local unwind_arch = string.lower(tostring(get_config("arch") or os.arch() or ""))
+	if enable_llvm_jit and is_plat("linux") and string.sub(unwind_arch, 1, 3) == "arm" and
+		not string.find(unwind_arch, "64", 1, true) then
+		add_defines("UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT=1")
+		add_ldflags("-Wl,--export-dynamic-symbol=__gnu_Unwind_Find_exidx", {force = true})
+		add_shflags("-Wl,--export-dynamic-symbol=__gnu_Unwind_Find_exidx", {force = true})
+	end
+
 	if get_config("linux-native-debug") or get_config("linux-x64-native-debug") then
 		uwvm_require_build_config(enable_llvm_jit and is_plat("linux") and get_config("use-llvm-compiler"),
 			"linux-native-debug requires a Linux LLVM/Clang JIT build and the native-owner-table-v2 SDK")
@@ -253,14 +262,6 @@ function def_build(opt)
 		-- Runtime and CLI share the same authenticated owner/trap contract.
 		-- An SDK without the actual emitted owner table remains unavailable.
 		add_defines("UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2=1")
-		local native_debug_arch = string.lower(tostring(get_config("arch") or os.arch() or ""))
-		if string.sub(native_debug_arch, 1, 3) == "arm" and not string.find(native_debug_arch, "64", 1, true) then
-			-- Actual EHABI tables and the linked TARGET2 loader are checked at
-			-- runtime; compile-time ABI guards require glibc 2.35 or newer.
-			add_defines("UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT=1")
-			add_ldflags("-Wl,--export-dynamic-symbol=__gnu_Unwind_Find_exidx", { force = true })
-			add_shflags("-Wl,--export-dynamic-symbol=__gnu_Unwind_Find_exidx", { force = true })
-		end
 		local native_debug_target = string.lower(tostring(get_config("target") or ""))
 		local native_debug_llvm_target = string.lower(tostring(get_config("llvm-target") or ""))
 		if is_arch("x86_64", "x64", "amd64", "x86", "i386", "i686", "riscv64", "arm64", "aarch64", "loong64", "loongarch64", "mips64", "mips64el") or

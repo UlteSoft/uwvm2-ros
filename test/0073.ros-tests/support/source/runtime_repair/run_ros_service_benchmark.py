@@ -22,7 +22,9 @@ import signal
 import socket as socket_module
 import statistics
 import subprocess
+import tempfile
 import time
+from ros_resource_cases import CASES as RESOURCE_CASES, configuration as resource_configuration
 
 
 def main():
@@ -33,7 +35,7 @@ def main():
     parser.add_argument("--count", type=int, default=200)
     parser.add_argument("--call-timeout-ms", type=int, default=3000)
     parser.add_argument("--ros-version", type=int, choices=(1, 2), default=2)
-    parser.add_argument("--operation", choices=("trigger", "time-ros", "time-wall", "time-system", "time-steady"), default="trigger")
+    parser.add_argument("--operation", choices=("trigger", "time-ros", "time-wall", "time-system", "time-steady", *RESOURCE_CASES), default="trigger")
     parser.add_argument("--rounds", type=int, default=9)
     parser.add_argument("--warmup-rounds", type=int, default=2)
     parser.add_argument("--modes", default="native,ipc,wasm")
@@ -68,6 +70,7 @@ def main():
               "operation": args.operation}
     children = []
     server = None
+    sockets = None
 
     def persist():
         (args.out / "report.json").write_text(json.dumps(report, indent=2) + "\n")
@@ -130,8 +133,12 @@ def main():
                    ROS_SECURITY_ENABLE="false", RMW_IMPLEMENTATION="rmw_fastrtps_cpp",
                    ROS_LOG_DIR=str(args.out / "ros-logs"), ROS_HOME=str(args.out / "ros-logs"),
                    ROS_MASTER_URI="http://127.0.0.1:11391", ROS_IP="127.0.0.1")
-        socket_dir = args.out / "sockets"
-        socket_dir.mkdir(mode=0o700)
+        # Receipt paths can be arbitrarily deep; AF_UNIX addresses cannot.
+        # mkdtemp creates an exclusive private directory for this driver. Keep
+        # its lifetime until every owned worker and gateway has been reaped.
+        sockets = tempfile.TemporaryDirectory(prefix="uwvm-ros-bench-", dir="/tmp")
+        socket_dir = Path(sockets.name)
+        report["socket_directory"] = str(socket_dir)
         connection = {"node-name": "benchmark_gateway", "namespace": "/uwvm_perf", "domain-id": "191",
                       "rmw-implementation": "rmw_fastrtps_cpp", "security-mode": "disabled-test",
                       "keystore": "not-applicable", "enclave": "not-applicable"}
@@ -167,6 +174,10 @@ def main():
             limits = {key: value for key, value in limits.items()
                       if not key.startswith("qos.") and key not in ("timeout-ms", "max-request-bytes", "validator")}
             limits["max-response-bytes"] = "8"
+        if args.operation in RESOURCE_CASES:
+            grant, limits = resource_configuration(args.operation, args.ros_version, limits)
+            report["resource_case"] = {"number": RESOURCE_CASES[args.operation][0],
+                                       "import": RESOURCE_CASES[args.operation][1], "grant": grant, "limits": limits}
         option = f"--ros{args.ros_version}-global-"
         report["policy"] = {"connection": connection, "grant": grant, "limits": limits}
         server = start("server", [args.peer, "server"])
@@ -191,6 +202,8 @@ def main():
                         command.append(args.operation)
                 elif family == "ipc":
                     command = [peer_binary, "ipc", str(args.count), policy]
+                    if args.operation in RESOURCE_CASES:
+                        command.append(str(RESOURCE_CASES[args.operation][0]))
                 else:
                     command = [runtime_binary, "-Raot", "-Rct", "0", "-Rllvm-policy", "max",
                                "--runtime-llvm-jit-call-stack", "unwind", "--log-verbose",
@@ -277,6 +290,8 @@ def main():
     finally:
         for child in reversed(children):
             stop(child)
+        if sockets is not None:
+            sockets.cleanup()
         report["finished"] = time.time()
         persist()
     print(json.dumps(report["summary"], indent=2), flush=True)

@@ -14,7 +14,8 @@ from pathlib import Path
 import subprocess
 import sys
 
-ROOT = Path(__file__).resolve().parents[5]
+DRIVER = Path(__file__).resolve()
+ROOT = DRIVER.parents[5] if len(DRIVER.parents) > 5 else None
 
 
 def main():
@@ -27,6 +28,8 @@ def main():
     parser.add_argument("--source-root", type=Path, default=ROOT,
                         help="Immutable checkout used by the recorded build, independent of this driver's location")
     args = parser.parse_args()
+    if args.source_root is None:
+        parser.error("--source-root is required when the driver is outside the repository")
     root = args.source_root.resolve(strict=True)
     sys.path.insert(0, str(root / "test/0018.debugger"))
     import run_dap_current_broker as live
@@ -44,7 +47,7 @@ def main():
         build = json.loads(args.build_receipt.read_text())
         assert Path(build["runtime"]["path"]).resolve() == args.uwvm.resolve()
         assert live.sha(args.uwvm) == build["runtime"]["sha256"]
-        assert any(row["name"] in ("vm-build", "build") and row.get("returncode") == 0
+        assert any(row["name"] in ("vm-build", "native-build", "build") and row.get("returncode") == 0
                    for row in build["commands"])
         manifest = json.loads(args.source_manifest.read_text())
         identity = hashlib.sha256(json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
