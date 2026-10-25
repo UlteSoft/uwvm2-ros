@@ -12,6 +12,8 @@ from pathlib import Path
 import resource
 import subprocess
 
+from run_wasm3_multi_memory import llvm_stack_policies
+
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
@@ -23,7 +25,8 @@ def main():
     p.add_argument('--ros',action='store_true')
     p.add_argument('--spec-source',type=Path)
     a=p.parse_args()
-    if a.ros and a.backend=='tiered': p.error('ROS has no tiered backend')
+    if a.ros and a.backend != 'jit':
+        p.error('ROS requires the full AOT backend with checked native unwind')
     root=Path(__file__).resolve().parents[2]
     subprocess.run(['bash',str(root/'tools/ci/require_wasm3_test_cgroup.sh')],check=True)
     resource.setrlimit(resource.RLIMIT_CORE,(0,0))
@@ -95,7 +98,7 @@ def main():
     configs=[(mode,[]) for mode in modes]
     if a.backend=='tiered':
         configs=[('all',[]),('no-t0',['-Rtiered-disable-t0']),('no-t2',['-Rtiered-disable-t2']),('no-t0-no-t2',['-Rtiered-disable-t0','-Rtiered-disable-t2'])]
-    policies=['instruction'] if a.backend=='int' else ['instruction','unwind']
+    policies = ['instruction'] if a.backend == 'int' else list(llvm_stack_policies(a.ros))
     for name,wat,trap in cases:
         src=a.output/(name+'.wat'); wasm=src.with_suffix('.wasm'); src.write_text(wat+'\n')
         run(name+'-assemble',[a.wat2wasm,'--enable-tail-call',str(src),'-o',str(wasm)])
@@ -103,13 +106,17 @@ def main():
         for mode,extra in configs:
             for policy in policies:
                 label=f'{name}-{a.backend}-{mode}-{policy}'; log=a.output/(label+'.compile.log')
-                if a.ros: base=['-Raot' if a.backend=='jit' else '-Rint']
+                if a.ros: base=['-Raot']
                 elif a.backend=='tiered': base=['-Rtiered',*extra]
                 else: base=['-Rcc',a.backend,'-Rcm',mode]
                 if a.backend!='int': base+=['-Rllvm-cache-path','disable','-Rllvm-call-stack',policy]
                 run(label,[str(a.uwvm),*base,'-Rclog','file',str(log),'-WFE-tail-call','--run',str(wasm)],trap)
                 if trap is None and (not log.is_file() or not any(marker in log.read_text() for marker in ['event=stats.func','compile-end','optimize-start'])):
                     raise RuntimeError(label+': compilation evidence missing')
+                if a.ros:
+                    compilation = log.read_text()
+                    if 'call_stack=unwind ' not in compilation or 'unwind_check=live' not in compilation:
+                        raise RuntimeError(label + ': checked native unwind was not active')
         run(name+'-disabled',[str(a.uwvm),'-m','validation','-WFD-tail-call','--run',str(wasm)],'--wasm-feature-enable-tail-call')
     assert binary_hash==hashlib.sha256(a.uwvm.read_bytes()).hexdigest()
     subprocess.run(['bash',str(root/'tools/ci/require_wasm3_test_cgroup.sh')],check=True)

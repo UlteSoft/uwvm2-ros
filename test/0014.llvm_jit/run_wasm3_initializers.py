@@ -8,6 +8,8 @@ import re
 import resource
 import subprocess
 
+from run_wasm3_multi_memory import llvm_stack_policies
+
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -16,19 +18,23 @@ def main():
     parser.add_argument("output", type=pathlib.Path)
     parser.add_argument("--backend", choices=("jit", "int", "tiered"), default="jit")
     parser.add_argument("--modes", nargs="+")
-    parser.add_argument("--ros", action="store_true", help="use the reduced full-only ROS CLI")
+    parser.add_argument("--ros", action="store_true", help="require full AOT with checked native unwind")
     parser.add_argument("--tiered-variant", choices=("all", "no-t0", "no-t2", "no-t0-no-t2"), default="all")
     args = parser.parse_args()
     if args.modes is None:
         args.modes = ("full",) if args.ros else (("lazy", "lazy+verification") if args.backend == "tiered" else ("full", "lazy", "lazy+verification"))
-    if args.ros and (args.modes != ("full",) and args.modes != ["full"] or args.backend == "tiered"):
-        parser.error("ROS supports only full int/jit modes")
+    if args.ros and (tuple(args.modes) != ("full",) or args.backend != "jit"):
+        parser.error("ROS requires the full AOT backend with checked native unwind")
     args.output.mkdir(parents=True, exist_ok=True)
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
     rows = []
     ansi = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]")
     features = ["-WFE-extended-const", "-WFE-table-initializer"]
-    policies = ("instruction", "unwind", "none") if args.backend == "jit" else ("instruction",)
+    # Keep the ordinary product's diagnostic matrix. ROS has one qualified
+    # calling convention and must never fall back to instrumented frames.
+    policies = llvm_stack_policies(args.ros) if args.ros else (
+        ("instruction", "unwind", "none") if args.backend == "jit" else ("instruction",)
+    )
     for mode in args.modes:
         for policy in policies:
             for fixture, expected_trap in (("wasm3_initializers", False), ("wasm3_initializer_trap", True)):
@@ -37,7 +43,7 @@ def main():
                     name += f"-{args.tiered_variant}"
                 compile_log = args.output / f"{name}.compile.log"
                 command = [str(args.uwvm.resolve())]
-                command += (["-Raot" if args.backend == "jit" else "-Rint"] if args.ros else ["-Rcc", args.backend, "-Rcm", mode])
+                command += (["-Raot"] if args.ros else ["-Rcc", args.backend, "-Rcm", mode])
                 if args.backend == "tiered":
                     if "no-t0" in args.tiered_variant:
                         command += ["-Rtiered-disable-t0"]
@@ -64,6 +70,8 @@ def main():
                     expected_frames = "emit" if policy == "instruction" else "omit"
                     if mode == "full" and not all(f"call_stack={policy} " in line and f"call_stack_frames={expected_frames}" in line for line in declarations):
                         raise RuntimeError(f"{name}: effective call-stack policy differs: {declarations}")
+                    if args.ros and (not declarations or not all("unwind_check=live" in line for line in declarations)):
+                        raise RuntimeError(f"{name}: checked native unwind was not active")
                 if args.backend == "tiered" and "no-t0" in args.tiered_variant:
                     compilation = compile_log.read_text()
                     if "[llvm-jit-lazy] compile-end" not in compilation or "[uwvm-int-lazy] demand-request" in compilation:

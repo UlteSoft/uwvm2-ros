@@ -34,6 +34,8 @@ WAT = '''(module
 '''
 
 
+from run_wasm3_multi_memory import llvm_stack_policies
+
 def digest(path):
     with path.open('rb') as stream:
         return hashlib.file_digest(stream, 'sha256').hexdigest()
@@ -135,7 +137,8 @@ def main():
             '-L', a.sysroot, paths['uwvm']]
     modes = ['-Raot'] if a.ros else ['-Rcc', 'jit', '-Rcm', 'full']
     objects = []
-    for policy in ('instruction', 'unwind'):
+    policies = llvm_stack_policies(a.ros)
+    for policy in policies:
         cache = out / (policy + '-cache')
         cache.mkdir()
         captured_object = out / (policy + '.o')
@@ -250,7 +253,7 @@ def main():
     summary = {'passed': True, 'target': a.target, 'product': 'uwvm2-ros' if a.ros else 'uwvm2',
                'source_id': source_id, 'wasm_sha256': digest(wasm), 'objects': objects,
                'build_summary_sha256': digest(paths['build_summary']),
-               'execution_policies': ['instruction', 'unwind'], 'qemu_performance_result': False}
+               'execution_policies': list(policies), 'qemu_performance_result': False}
     (out / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n')
     print('PASS QEMU Core 3 cross-function exception and shared-memory atomic full JIT:', a.target)
 

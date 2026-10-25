@@ -12,6 +12,8 @@ from pathlib import Path
 import resource
 import subprocess
 
+from run_wasm3_multi_memory import configurations as runtime_configurations
+
 HASHES = {
 'i16x8_relaxed_q15mulr_s':'fa3885a95e4818e8aa9782dc8d9fb76a94b511114730ffc0b31d471ddab5b068',
 'i32x4_relaxed_trunc':'8f93d17c35f0a4076df7c32219f029ec4fc18a17562f783618d522c67f282126',
@@ -97,7 +99,11 @@ def main():
             path=args.output/f'{name}-{index}.wasm';path.write_bytes(wrap((args.spec/module['filename']).read_bytes(),assertions));fixtures.append((path,len(assertions)))
     configurations=[]
     if args.wasmtime:configurations.append(('wasmtime', [str(args.wasmtime),'-C','cache=n','-W','relaxed-simd=y']))
-    if args.uwvm:
+    if args.uwvm and args.ros:
+        for label, command in runtime_configurations(args.uwvm, True):
+            flags = [part for part in command[:-1] if part != '-WFE-multi-memory']
+            configurations.append((label, flags + ['-WFE-relaxed-simd', '--run']))
+    elif args.uwvm:
         for backend in ('int','jit','tiered'):
             if args.ros and backend=='tiered':continue
             modes=('full',) if args.ros else (('lazy','lazy+verification') if backend=='tiered' else ('full','lazy','lazy+verification'))

@@ -21,7 +21,9 @@ ORDINARY = (
     ("tiered-lazy-instruction", ("-Rcc", "tiered", "-Rcm", "lazy", "-Rct", "0", "-Rllvm-call-stack", "instruction")),
     ("tiered-lazy-unwind", ("-Rcc", "tiered", "-Rcm", "lazy", "-Rct", "0", "-Rllvm-call-stack", "unwind")),
 )
-ROS = (("int-full", ("-Rint",)), ("jit-full", ("-Raot",)))
+# ROS exposes a platform-qualified AOT backend. Request its native call-stack
+# contract explicitly so this semantic test cannot select a retired engine.
+ROS = (("jit-full-unwind", ("-Raot", "-Rllvm-call-stack", "unwind")),)
 
 
 def combine_modes():

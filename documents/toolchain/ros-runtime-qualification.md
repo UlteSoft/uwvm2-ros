@@ -42,6 +42,16 @@ belong to the retained pre-revision-14 executables and unchanged administrator
 helper. Fresh-process cache qualification of a later ELF is recorded separately;
 it is not relabeled as a new two-boot run.
 
+The revision-15 x86_64 and AArch64 products also passed a larger memory64
+QuickJS SDK cache cohort. Each target first compiled the exact KUKA program
+identified below, completed a signed cache write, and then obtained one
+signature-verified hit in each of two new processes. The second hit used an
+unchanged module copied to another path with a changed timestamp. Output,
+checked unwind, VM/Wasm hashes and complete cache bytes were verified; the warm
+runs did not enqueue a replacement object. AArch64 used a complete Linux guest,
+including its real keyring implementation. This is cache correctness evidence,
+not a cache-hit startup benchmark or a new two-boot qualification.
+
 ## Native execution and debugger
 
 | Target | Actual checks | Limit |
@@ -308,6 +318,65 @@ Both complete formal runs pass all twelve unchanged KUKA artifacts. This
 qualifies those finite codec programs under AOT and checked unwind; it does not
 qualify a native KUKA peer, physical controller, or every SDK language/library.
 
+The six standalone KUKA example projects also passed literal `xmake run` with
+their exact cold-built wasm32/wasm64 products and the revision-15 native ELF.
+Each submitted deployment explicitly disabled ROS and granted only its stated
+WASI streams. Launcher receipts checked the complete executable and application
+hashes, AOT/unwind arguments and exact output. No gateway was created. These
+finite codec examples require separate deployments and native witnesses before
+they can qualify ROS communication.
+
+### Core 3 execution-policy follow-up
+
+The maintained initializer, branch, self-tail and tail-transfer drivers now
+request only AOT with checked unwind for ROS. Unsupported interpreter requests
+fail before creating test output. Ordinary Uwvm2 keeps its existing broader
+comparison matrix. The actual updated drivers passed on native x86_64 and
+QEMU user-mode AArch64, using the reference engines and exact tail-call traps.
+The shared multi-memory/SIMD configuration and cross-function EH driver use
+the same explicit ROS stack policy.
+
+Another cohort exercised 47 maintained local-exception, memory64 and
+cross-function exception/shared-atomic cases. All passed natively on x86_64
+and in a complete AArch64 Linux guest. The AArch64 page-protection trap printed
+the required Wasm frame and exited with the expected fatal trap.
+
+The same page-protection case failed under QEMU user-mode: a second SIGSEGV
+occurred in native libunwind FDE lookup while printing the original memory
+trap. Its failed receipt and live debugger trace remain retained. It is not
+counted as a user-mode pass, and the successful full-system run does not erase
+that environment-specific failure. The other ordinary-trap and tail-call
+cohorts do not establish signal-frame coverage for user-mode QEMU.
+
+The shared SDK JavaScript emitter no longer requires browser UTF-8 globals.
+Its maintained [synthetic record fixture](../../test/0073.ros-tests/sdk/tests/js/generated_utf8/README.md)
+passed twelve positive and thirty-two negative cases across the bounded and
+original-control profiles in each real wasm32/wasm64 guest. The exact same
+Wasm bytes passed on native x86_64 and QEMU AArch64. The public preparation
+entry point reproduced both applications without modifying the source SDK.
+The original missing-`TextEncoder` failure is retained. This finite emitter
+test does not qualify every previously generated catalog or native ROS type.
+
+### Revision-15 native performance control
+
+An additional native comparison used the exact revision-14 and revision-15
+x86_64 products named above, CPU 0, two discarded warm-ups and fifteen
+interleaved measured rounds. The execution timer excludes compilation; cache
+was deliberately disabled. The ROS rows validate finite admission/error paths,
+not native ROS transport.
+
+| Workload | Revision 14 (ms) | Revision 15 (ms) | Ratio |
+| --- | ---: | ---: | ---: |
+| Direct calls | 23.122607 | 23.349666 | 1.0098 |
+| Indirect calls | 28.785272 | 28.702257 | 0.9971 |
+| ROS1 admission | 21.417537 | 21.406178 | 0.9995 |
+| ROS2 admission | 21.431519 | 21.461748 | 1.0014 |
+| WASI clock | 2.052767 | 2.050318 | 0.9988 |
+
+The observed medians differ by approximately one percent or less. These finite
+samples establish neither a statistically significant speedup nor complete
+ROS-interface performance coverage.
+
 A second private optimization that removed unused provenance operands produced
 no stable native latency improvement in fifteen measured, interleaved rounds
 against the formal revision-14 executable. It is not part of the product.
@@ -328,6 +397,14 @@ remain private test artifacts, outside the SDK and Git. Export archive digests:
 - `review-evidence-r8/results.tar.gz`: `1d4b249f79fd5e42288467f4acda363d5ad2e1d31d0e890aaa2dafc4baaa4d9f` (352 verified receipt members, including the AArch64 failure and SDK launcher checks)
 - `formal-aarch64-r15-r1/receipts.tar.gz`: `14bb66f260ea7715a9489da7a7ab543ddc997ae0ee2a468af46deb37a581db86` (32 verified receipt members; fresh paired build, machine/executable controls, full-system basic/24-ABI/12-SDK checks)
 - `formal-native-r15-r1/receipts.tar.gz`: `16440d1c59f8ab5afb4c3f45ab3ce0f813d2d3b33086087bf42f66fd17b06286` (225 verified receipt members; fresh paired build, basic/cache/ancestry/debugger/24-ABI/12-SDK checks)
+- `sdk-cache-r15-r1/receipts.tar.gz`: `2edb34e650051f7165ee5116defbd8bf65c84dd39eeb4c8d516ee8778b4be3db` (large memory64 SDK cache writes and verified warm/relocated hits on both targets)
+- `kuka-xmake-run-r15-r1/receipts.tar.gz`: `20181d3189d90a8ccba7c7359704e8bb30fe91531b4b93e6ae7888784cf82b4e` (six actual native Xmake launch hooks)
+- `core3-modes-r15-r1/receipts.tar.gz`: `bc67b9ed1f1fda62b7cfaea515c301f3a6515830072525bc75e17cb00551f86b` (maintained initializer/branch/self-tail/tail-transfer drivers on both targets)
+- `core3-r15-r2/receipts.tar.gz`: `c45eb119ef85db9cdcfd76885906d85403211971b023395faa5146b0b7f5b4df` (47 native passes and the original user-mode AArch64 signal-unwind failure)
+- `aarch64-signal-unwind-r1/receipts.tar.gz`: `13f521a9635d47ee74a2963d9b14a5394a2c8e400f4224d18a48a8d303dc0cc7` (unchanged 47-case full-system pass and live user-mode GDB diagnosis)
+- `native-perf-r15-r2/receipts.tar.gz`: `ae3c1ac222ffb8c3cd43ce6594d661bb81e9ad756402bfff46c697990919bd08` (five finite native revision-14/revision-15 execution comparisons)
+- `portable-js-generator-r3/receipts.tar.gz`: `1b0a9193b0591b235899eff0bc7758758fba29816536c3e038c0e793b504778f` (original failure and repaired native wasm32/wasm64 execution)
+- `portable-js-generator-r4/receipts.tar.gz`: `23c57cd26188b02c895b2360ffba137b7638196771e391c357e410125a576302` (maintained preparation/build entry point and identical AArch64 wasm32/wasm64 guests)
 
 Earlier aggregate failures remain failures in their original receipts. Examples
 include an unsupported WAT assembler grammar, an ANSI-stripping checker error,

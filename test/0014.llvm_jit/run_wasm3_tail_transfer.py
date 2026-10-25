@@ -14,6 +14,8 @@ import re
 import resource
 import subprocess
 
+from run_wasm3_multi_memory import llvm_stack_policies
+
 
 def fixtures(backend):
     mutual = '''(module
@@ -154,6 +156,8 @@ def main():
     p.add_argument('--wat2wasm', required=True)
     p.add_argument('--wasmtime', required=True)
     a = p.parse_args()
+    if a.ros and a.backend != 'jit':
+        p.error('ROS requires the full AOT backend with checked native unwind')
     root = Path(__file__).resolve().parents[2]
     subprocess.run(['bash', str(root / 'tools/ci/require_wasm3_test_cgroup.sh')], check=True)
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
@@ -161,7 +165,9 @@ def main():
     a.uwvm = a.uwvm.resolve()
     binary_hash = hashlib.sha256(a.uwvm.read_bytes()).hexdigest()
     modes = ['full'] if a.ros else ['full', 'lazy', 'lazy+verification']
-    policies = ['instruction', 'unwind', 'none'] if a.backend == 'jit' else ['instruction']
+    policies = list(llvm_stack_policies(True)) if a.ros else (
+        ['instruction', 'unwind', 'none'] if a.backend == 'jit' else ['instruction']
+    )
     if a.mode:
         if not set(a.mode) <= set(modes): p.error('invalid compilation mode for backend/product')
         modes = a.mode
@@ -189,7 +195,7 @@ def main():
         run(name + '-wasmtime', [a.wasmtime, '-C', 'cache=n', '-W', 'tail-call=y', str(wasm)], trap[0] if trap else None)
         for mode in modes:
             for policy in policies:
-                base = ['-Raot' if a.backend == 'jit' else '-Rint'] if a.ros else ['-Rcc', a.backend, '-Rcm', mode]
+                base = ['-Raot'] if a.ros else ['-Rcc', a.backend, '-Rcm', mode]
                 if a.backend == 'jit':
                     base += ['-Rct', '0', '-Rllvm-cache-path', 'disable', '-Rllvm-call-stack', policy]
                 run(f'{name}-{mode}-{policy}', [str(a.uwvm), *base, '-WFE-tail-call', '--run', str(wasm)],

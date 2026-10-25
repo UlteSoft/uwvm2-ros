@@ -12,21 +12,35 @@ import resource
 import subprocess
 
 
+def llvm_stack_policies(ros):
+    """@brief Select supported LLVM call-stack policies for the tested product.
+
+    @details ROS has a platform-qualified checked-unwind contract. Ordinary
+    Uwvm2 retains both policies for its broader engine comparison matrix.
+    """
+    return ('unwind',) if ros else ('instruction', 'unwind')
+
+
 def configurations(binary, ros):
-    rows=[]
-    for backend in ('int','jit','tiered'):
-        if ros and backend=='tiered':continue
-        modes=('full',) if ros else (('lazy','lazy+verification') if backend=='tiered' else ('full','lazy','lazy+verification'))
+    """@brief Build explicit execution commands without an unsupported ROS mode."""
+    if ros:
+        return [('jit-full-unwind', [str(binary), '-Raot', '-Rllvm-cache-path',
+                                     'disable', '-Rllvm-call-stack', 'unwind',
+                                     '-WFE-multi-memory', '--run'])]
+    rows = []
+    for backend in ('int', 'jit', 'tiered'):
+        modes = ('lazy', 'lazy+verification') if backend == 'tiered' else ('full', 'lazy', 'lazy+verification')
         for mode in modes:
-            policies=('instruction','unwind') if backend in ('jit','tiered') else ('instruction',)
-            variants=((),('-Rtiered-disable-t0',),('-Rtiered-disable-t2',),('-Rtiered-disable-t0','-Rtiered-disable-t2')) if backend=='tiered' else ((),)
+            policies = llvm_stack_policies(False) if backend in ('jit', 'tiered') else ('instruction',)
+            variants = ((), ('-Rtiered-disable-t0',), ('-Rtiered-disable-t2',),
+                        ('-Rtiered-disable-t0', '-Rtiered-disable-t2')) if backend == 'tiered' else ((),)
             for policy in policies:
                 for variant in variants:
-                    name=f'{backend}-{mode}-{policy}'+''.join(variant)
-                    command=[str(binary)]+(['-Raot' if backend=='jit' else '-Rint'] if ros else ['-Rcc',backend,'-Rcm',mode])
-                    command+=list(variant)
-                    if backend!='int':command+=['-Rllvm-cache-path','disable','-Rllvm-call-stack',policy]
-                    rows.append((name,command+['-WFE-multi-memory','--run']))
+                    name = f'{backend}-{mode}-{policy}' + ''.join(variant)
+                    command = [str(binary), '-Rcc', backend, '-Rcm', mode, *variant]
+                    if backend != 'int':
+                        command += ['-Rllvm-cache-path', 'disable', '-Rllvm-call-stack', policy]
+                    rows.append((name, command + ['-WFE-multi-memory', '--run']))
     return rows
 
 
