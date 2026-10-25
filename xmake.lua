@@ -20,6 +20,7 @@ includes("xmake/language_debug.lua")
 includes("xmake/impl.lua")
 includes("xmake/mach_exc_protected.lua")
 includes("xmake/platform/impl.lua")
+includes("xmake/basic_test.lua")
 add_moduledirs("xmake")
 
 -- Currently, there are no plugins.
@@ -104,6 +105,12 @@ function def_build(opt)
 			if not is_plat("linux") then
 				error("ROS runtime host imports require Linux SO_PEERCRED")
 			end
+			-- Noetic/Humble/Jazzy name amd64, arm64 and arm32, not every
+			-- member of the x86/ARM families. ARM32 must additionally satisfy
+			-- the compiler's little-endian ARMv7 hard-float ABI check.
+			uwvm_require_build_config(is_arch("x86_64", "x64", "amd64", "aarch64", "arm64",
+				"arm", "armhf", "armv7", "armv7a", "armv7-a"),
+				"ROS host imports support x86_64, AArch64 and little-endian ARMv7 hard-float; i686/armeb are outside the selected ROS distributions")
 			add_defines("UWVM_IMPORT_ROS" .. ros_version)
 		end
 	end

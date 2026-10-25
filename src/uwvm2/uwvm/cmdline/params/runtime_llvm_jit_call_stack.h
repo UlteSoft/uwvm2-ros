@@ -77,14 +77,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
 # endif
     inline constexpr ::uwvm2::utils::cmdline::parameter runtime_llvm_jit_call_stack{
         .name{u8"--runtime-llvm-jit-call-stack"},
-        .describe{u8"Select LLVM AOT generated-code call-stack tracking."},
-# ifdef UWVM2_UWVM_CMDLINE_RUNTIME_LLVM_JIT_CALL_STACK_HAS_AUTHORITATIVE_UNWIND
-        .usage{u8"[auto|instruction|none|unwind|unwind-uncheck]"},
-# elif defined(UWVM2_UWVM_CMDLINE_RUNTIME_LLVM_JIT_CALL_STACK_HAS_NATIVE_UNWIND)
-        .usage{u8"[auto|instruction|none|unwind-uncheck]"},
-# else
-        .usage{u8"[auto|instruction|none]"},
-# endif
+        .describe{u8"Require the platform's verified native unwind backend (the mandatory default)."},
+        .usage{u8"unwind"},
         .alias{::uwvm2::utils::cmdline::kns_u8_str_scatter_t{::std::addressof(details::runtime_llvm_jit_call_stack_alias), 1uz}},
         .handle{::std::addressof(details::runtime_llvm_jit_call_stack_callback)},
         .is_exist{::std::addressof(::uwvm2::uwvm::runtime::runtime_mode::runtime_llvm_jit_call_stack_existed)},

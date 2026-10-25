@@ -99,67 +99,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
         auto const currp1_str{currp1->str};
 
         using runtime_llvm_jit_call_stack_t = ::uwvm2::uwvm::runtime::runtime_mode::runtime_llvm_jit_call_stack_t;
-        if(currp1_str == u8"auto") { ::uwvm2::uwvm::runtime::runtime_mode::global_runtime_llvm_jit_call_stack = runtime_llvm_jit_call_stack_t::auto_policy; }
-        else if(currp1_str == u8"instruction")
+        if(currp1_str != u8"unwind") [[unlikely]]
         {
-            ::uwvm2::uwvm::runtime::runtime_mode::global_runtime_llvm_jit_call_stack = runtime_llvm_jit_call_stack_t::instruction;
-        }
-        else if(currp1_str == u8"none") { ::uwvm2::uwvm::runtime::runtime_mode::global_runtime_llvm_jit_call_stack = runtime_llvm_jit_call_stack_t::none; }
-# ifdef UWVM2_UWVM_CMDLINE_RUNTIME_LLVM_JIT_CALL_STACK_HAS_AUTHORITATIVE_UNWIND
-        else if(currp1_str == u8"unwind") { ::uwvm2::uwvm::runtime::runtime_mode::global_runtime_llvm_jit_call_stack = runtime_llvm_jit_call_stack_t::unwind; }
-# endif
-# ifdef UWVM2_UWVM_CMDLINE_RUNTIME_LLVM_JIT_CALL_STACK_HAS_NATIVE_UNWIND
-        else if(currp1_str == u8"unwind-uncheck" || currp1_str == u8"unwind-unchecked")
-        {
-            ::uwvm2::uwvm::runtime::runtime_mode::global_runtime_llvm_jit_call_stack = runtime_llvm_jit_call_stack_t::unwind_uncheck;
-        }
-# endif
-        else [[unlikely]]
-        {
-            ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
-                                u8"uwvm: ",
-                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RED),
-                                u8"[error] ",
-                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
-                                u8"Invalid LLVM AOT call-stack mode: \"",
-                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_CYAN),
-                                currp1_str);
-            ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
-                                u8"\". Expected ",
-                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_CYAN),
-                                u8"auto",
-                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
-                                u8", ",
-                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_CYAN),
-                                u8"instruction");
-            ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
-                                u8", ",
-                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_CYAN),
-                                u8"none");
-# ifdef UWVM2_UWVM_CMDLINE_RUNTIME_LLVM_JIT_CALL_STACK_HAS_AUTHORITATIVE_UNWIND
-            ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
-                                u8", ",
-                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_CYAN),
-                                u8"unwind");
-# endif
-# ifdef UWVM2_UWVM_CMDLINE_RUNTIME_LLVM_JIT_CALL_STACK_HAS_NATIVE_UNWIND
-            ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
-                                u8", or ",
-                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_CYAN),
-                                u8"unwind-uncheck");
-# endif
-            ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
-                                u8". Usage: ",
-                                ::uwvm2::utils::cmdline::print_usage(::uwvm2::uwvm::cmdline::params::runtime_llvm_jit_call_stack),
-                                u8"\n\n");
+            ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                u8"uwvm2-ros: only checked native unwind is supported; instruction tracking and unchecked fallback are unavailable.");
+            print_usage_error();
             return ::uwvm2::utils::cmdline::parameter_return_type::return_m1_imme;
         }
+        ::uwvm2::uwvm::runtime::runtime_mode::global_runtime_llvm_jit_call_stack = runtime_llvm_jit_call_stack_t::unwind;
 
         return ::uwvm2::utils::cmdline::parameter_return_type::def;
     }

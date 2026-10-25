@@ -101,6 +101,23 @@ function build_targets(cmake_program, build, jobs, targets, environment)
     os.vrunv(cmake_program, args, environment)
 end
 
+function verify_runtime_target(cxx, llvm_target, runtime_target)
+    -- LLVM's build contract retains the explicit triple, while the runtimes
+    -- configure step may expand an omitted vendor to "unknown". Ask the same
+    -- bootstrap Clang to canonicalize both spellings; do not erase architecture,
+    -- OS, environment or ABI components with string substitutions. This query
+    -- emits no object and never executes a target program during cross builds.
+    local function canonical(target)
+        assert(type(target) == "string" and target:match("^[%w_%.%-]+$"),
+            "Invalid LLVM/runtime target triple")
+        local value = os.iorunv(cxx, {"--target=" .. target, "--print-target-triple"}):trim()
+        assert(value:match("^[%w_%.%-]+$"), "Invalid canonical target from the bootstrap compiler")
+        return value
+    end
+    assert(canonical(llvm_target) == canonical(runtime_target),
+        "LLVM and bundled ROS runtimes target/ABI disagree: " .. llvm_target .. " / " .. runtime_target)
+end
+
 function verify_source(root)
     -- Verify every retained upstream file, not just LLVMVersion.cmake. Without
     -- this, a stale/unpatched checkout can reuse a trusted build-cache identity.
@@ -600,6 +617,7 @@ function ensure()
             -- unsafe resolved flags before spending resources building LLVM,
             -- not only after potentially miscompiled archives have been made.
             result = read_contract(build)
+            if runtimes then verify_runtime_target(cxx, result.host_target, runtimes.host_target) end
             -- Only real library targets are built. The metadata-only consumer
             -- target and llvm-config executable are never built or executed.
             build_targets(cmake.program, build, jobs, {"llvm-libraries"}, cmake_environment)
@@ -611,8 +629,7 @@ function ensure()
             result.stdlib = runtimes and "libc++" or selected("stdlib")
             result.runtimes = runtimes
             if runtimes then
-                assert(result.host_target == runtimes.host_target,
-                    "LLVM and bundled ROS runtimes target/ABI disagree")
+                verify_runtime_target(cxx, result.host_target, runtimes.host_target)
             end
             for _, fragment in ipairs(result.compile.compileCommandFragments or {}) do
                 for _, flag in ipairs(os.argv(fragment.fragment)) do

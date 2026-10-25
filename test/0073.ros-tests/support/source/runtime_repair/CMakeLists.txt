@@ -19,13 +19,18 @@ target_include_directories(service-client-pool PRIVATE
   "${UWVM_ROS_SOURCE_ROOT}/src" "${UWVM_ROS_SDK_ROOT}/src")
 target_link_libraries(service-client-pool PRIVATE pthread)
 
-add_executable(native-service-reuse native_service_reuse.cc)
-target_compile_features(native-service-reuse PRIVATE cxx_std_23)
-target_compile_options(native-service-reuse PRIVATE -UNDEBUG)
-target_compile_definitions(native-service-reuse PRIVATE
-  "$<TARGET_PROPERTY:uwvm-ros2-gateway,COMPILE_DEFINITIONS>")
-target_include_directories(native-service-reuse PRIVATE "${UWVM_ROS_SDK_ROOT}/src"
-  "$<TARGET_PROPERTY:uwvm-ros2-gateway,INCLUDE_DIRECTORIES>")
-target_link_libraries(native-service-reuse PRIVATE
-  "$<TARGET_PROPERTY:uwvm-ros2-gateway,LINK_LIBRARIES>" dl)
+# Both witnesses include the production adapter and consume its exact feature
+# probes and dependency closure. Assertions are required even in Release builds.
+foreach(witness IN ITEMS native-service-reuse native-service-benchmark ros-service-peer)
+  string(REPLACE "-" "_" source_name "${witness}")
+  add_executable(${witness} "${source_name}.cc")
+  target_compile_features(${witness} PRIVATE cxx_std_23)
+  target_compile_options(${witness} PRIVATE -UNDEBUG)
+  target_compile_definitions(${witness} PRIVATE
+    "$<TARGET_PROPERTY:uwvm-ros2-gateway,COMPILE_DEFINITIONS>")
+  target_include_directories(${witness} PRIVATE "${UWVM_ROS_SDK_ROOT}/src"
+    "$<TARGET_PROPERTY:uwvm-ros2-gateway,INCLUDE_DIRECTORIES>")
+  target_link_libraries(${witness} PRIVATE
+    "$<TARGET_PROPERTY:uwvm-ros2-gateway,LINK_LIBRARIES>" dl)
+endforeach()
 target_compile_options(service-client-pool PRIVATE -UNDEBUG)

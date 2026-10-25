@@ -73,14 +73,35 @@ def named_custom(payload: bytes) -> bytes:
     return payload[at:at + size]
 
 
-def function(path: Path, export: str) -> tuple[int, bytes]:
+def function(path: Path, export: str, *, function_imports: tuple = ()) -> tuple[int, bytes]:
+    """Decode an exported body with an explicitly checked function-import prefix.
+
+    Existing compiler fixtures still require no imports. ROS witnesses name
+    each expected function import and type index; tables, memories and globals
+    are not silently counted as functions or accepted by this focused oracle.
+    """
     target = None
     code = None
+    observed_imports = []
+    import_sections = 0
     for kind, payload in sections(path):
         if kind == 2:
-            count, _ = u32(payload, 0, len(payload))
-            if count:
-                raise ValueError('focused compiler fixtures must have no imports')
+            import_sections += 1
+            count, at = u32(payload, 0, len(payload))
+            for _ in range(count):
+                names = []
+                for _ in range(2):
+                    size, at = u32(payload, at, len(payload))
+                    if size > len(payload) - at:
+                        raise ValueError('fixture import name bounds')
+                    names.append(payload[at:at + size].decode('utf-8'))
+                    at += size
+                if at >= len(payload) or payload[at] != 0:
+                    raise ValueError('focused oracle requires function imports')
+                index, at = u32(payload, at + 1, len(payload))
+                observed_imports.append((*names, index))
+            if at != len(payload):
+                raise ValueError('complete fixture Import section required')
         if kind == 7:
             count, at = u32(payload, 0, len(payload))
             for _ in range(count):
@@ -95,7 +116,9 @@ def function(path: Path, export: str) -> tuple[int, bytes]:
                     target = index
         if kind == 10:
             code = payload
-    if target is None or code is None:
+    if import_sections > 1 or tuple(observed_imports) != function_imports:
+        raise ValueError('actual fixture imports differ from the explicit oracle')
+    if target is None or code is None or target < len(observed_imports):
         raise ValueError('fixture exported local function missing')
     count, at = u32(code, 0, len(code))
     bodies = []
@@ -105,9 +128,10 @@ def function(path: Path, export: str) -> tuple[int, bytes]:
             raise ValueError('fixture body bounds')
         bodies.append(code[at:at + size])
         at += size
-    if at != len(code) or target >= len(bodies):
+    local_index = target - len(observed_imports)
+    if at != len(code) or local_index >= len(bodies):
         raise ValueError('fixture body/count mismatch')
-    return target, bodies[target]
+    return target, bodies[local_index]
 
 
 def variant(path: Path, out: Path, kind: str) -> None:

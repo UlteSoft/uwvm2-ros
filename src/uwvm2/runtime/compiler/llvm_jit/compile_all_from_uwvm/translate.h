@@ -205,6 +205,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
         ::std::size_t begin,
         ::std::size_t count) noexcept;
 
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+    extern "C++" void llvm_jit_publish_ros_provenance(::std::uintptr_t provenance) noexcept;
+    extern "C++" ::std::uintptr_t llvm_jit_seed_ros_provenance(::std::uintptr_t own_module) noexcept;
+#endif
     extern "C++" void llvm_jit_push_call_stack_frame(::std::size_t module_id, ::std::size_t function_index) noexcept;
 
     extern "C++" void llvm_jit_pop_call_stack_frame() noexcept;

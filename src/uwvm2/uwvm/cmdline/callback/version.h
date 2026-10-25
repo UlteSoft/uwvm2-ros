@@ -235,12 +235,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
 # else
                             u8"    - LLVM Version: Unknown\n",
 # endif
-                            u8"    - Call Stack Modes Support: instruction"
-# ifdef UWVM2_UWVM_CMDLINE_VERSION_LLVM_JIT_CALL_STACK_HAS_AUTHORITATIVE_UNWIND
-                            u8", unwind, unwind-uncheck"
-# elif defined(UWVM2_UWVM_CMDLINE_VERSION_LLVM_JIT_CALL_STACK_HAS_NATIVE_UNWIND)
-                            u8", unwind-uncheck"
-# endif
+                            u8"    - Call Stack Modes Support: unwind (mandatory, live-checked)"
                             u8"\n");
     }
 #endif

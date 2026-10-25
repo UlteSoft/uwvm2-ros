@@ -644,11 +644,14 @@ namespace uwvm2::uwvm::imported::ros
             if(auto error{identify(Version,caller,state)}) { return audit_denial(Version,error); }
             auto& backend{state->backends[static_cast<unsigned>(Version)-1]};
             ::std::lock_guard<::std::mutex> backend_lock{backend.mutex};
-            core::capability_spec spec{};
             core::authorization description{};
             auto r{capabilities.describe(caller.runtime_instance,caller.generation,Version,handle,description)};
-            if(r) { spec=*description.capability(); }
             if(!r) { return audit_denial(Version,code(r)); }
+            // The description owns the instance and its recursive authority
+            // lock until this operation returns. Borrow the immutable policy
+            // under that lease instead of allocating a copy of every limit.
+            // Request/response authorization and revocation remain unchanged.
+            auto const& spec{*description.capability()};
             audit_result audit{caller.runtime_instance,caller.generation,Version,spec.alias};
             audit.function=op;
             bool native_admitted{},native_reported_failure{};

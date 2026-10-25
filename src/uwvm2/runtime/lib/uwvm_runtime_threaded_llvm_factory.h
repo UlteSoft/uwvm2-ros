@@ -143,7 +143,7 @@
         }
         [[nodiscard]] static preparation_result build(world_type::owner world,
             ::uwvm2::runtime::wasm_threads::ThreadedGroup::CompilerLease const& compiler,
-            ::std::size_t backend_storage_budget) noexcept
+            [[maybe_unused]] ::std::size_t backend_storage_budget) noexcept
         {
             namespace compile=::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm;
             namespace emit=::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details;

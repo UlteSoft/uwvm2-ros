@@ -26,35 +26,69 @@ namespace uwvm2::imported::ros::ipc
 #if defined(__linux__)
     using deadline=std::chrono::steady_clock::time_point;
     inline deadline after(std::uint32_t ms) { return std::chrono::steady_clock::now()+std::chrono::milliseconds(ms); }
-    inline bool transfer(int fd,std::uint8_t* bytes,std::size_t n,bool writing,deadline until,int cancellation_fd=-1)
+    /**
+     * @brief Transfer a bounded stream extent under the original absolute deadline.
+     * @details Attempt nonblocking I/O before waiting: ready sockets need no
+     * redundant readiness syscall. Cancellation is still checked before and
+     * after every successful transfer, and wins over simultaneous readiness.
+     * A failed transfer may have changed the peer; callers must retain their
+     * existing possible-peer-effects handling and discard incomplete frames.
+     */
+    inline bool transfer(int fd, std::uint8_t* bytes, std::size_t n, bool writing, deadline until, int cancellation_fd = -1)
     {
         if(cancellation_requested(cancellation_fd)) { return false; }
         while(n)
         {
             if(cancellation_requested(cancellation_fd)) { return false; }
-            auto left{std::chrono::duration_cast<std::chrono::milliseconds>(until-std::chrono::steady_clock::now()).count()};
-            if(left<=0) { errno=ETIMEDOUT; return false; }
-            pollfd p[2]{{fd,static_cast<short>(writing?POLLOUT:POLLIN),0},{cancellation_fd,POLLIN,0}};
-            int rc{::poll(p,cancellation_fd<0?1:2,static_cast<int>(left))};
-            if(rc<0&&errno==EINTR) { continue; }
-            if(rc==0) { errno=ETIMEDOUT; return false; }
-            if(rc<0) { return false; }
-            if(cancellation_fd>=0&&p[1].revents) { errno=ECANCELED;return false; }
-            ssize_t count{writing ? ::send(fd,bytes,n,MSG_NOSIGNAL|MSG_DONTWAIT) : ::recv(fd,bytes,n,MSG_DONTWAIT)};
-            if(count<0&&(errno==EINTR||errno==EAGAIN||errno==EWOULDBLOCK)) { continue; }
-            if(count<=0) { if(count==0) { errno=ECONNRESET; } return false; }
-            bytes+=count; n-=static_cast<std::size_t>(count);
+            auto left{std::chrono::duration_cast<std::chrono::milliseconds>(until - std::chrono::steady_clock::now()).count()};
+            if(left <= 0) { errno = ETIMEDOUT; return false; }
+            ssize_t const count{writing ? ::send(fd, bytes, n, MSG_NOSIGNAL | MSG_DONTWAIT) : ::recv(fd, bytes, n, MSG_DONTWAIT)};
+            if(count < 0)
+            {
+                if(errno == EINTR) { continue; }
+                if(errno != EAGAIN && errno != EWOULDBLOCK) { return false; }
+                // The attempted syscall and a scheduling interruption consume
+                // the same deadline; never restart its budget before waiting.
+                if(cancellation_requested(cancellation_fd)) { return false; }
+                left = std::chrono::duration_cast<std::chrono::milliseconds>(until - std::chrono::steady_clock::now()).count();
+                if(left <= 0) { errno = ETIMEDOUT; return false; }
+                pollfd watched[2]{{fd, static_cast<short>(writing ? POLLOUT : POLLIN), 0}, {cancellation_fd, POLLIN, 0}};
+                int const ready{::poll(watched, cancellation_fd < 0 ? 1 : 2, static_cast<int>(left))};
+                if(ready < 0 && errno == EINTR) { continue; }
+                if(ready == 0) { errno = ETIMEDOUT; return false; }
+                if(ready < 0) { return false; }
+                if(cancellation_fd >= 0 && watched[1].revents) { errno = ECANCELED; return false; }
+                continue;
+            }
+            if(count == 0) { errno = ECONNRESET; return false; }
+            bytes += count;
+            n -= static_cast<std::size_t>(count);
             // A failed whole transfer may already have sent/received a prefix.
             // Cancellation is observed without draining the level eventfd.
             if(cancellation_requested(cancellation_fd)) { return false; }
         }
         return !cancellation_requested(cancellation_fd);
     }
+    /**
+     * @brief Write one unchanged wire frame with a bounded small-message buffer.
+     * @details Small control requests and replies need one stream transfer instead
+     * of separate header and payload writes. The complete extent still uses the
+     * same deadline, nonblocking I/O and cancellation checks. Larger payloads use
+     * the existing segmented path; no allocation scales with an untrusted length.
+     */
     inline bool write_frame(int fd,frame const& f,deadline until,int cancellation_fd=-1)
     {
         if(cancellation_requested(cancellation_fd)) { return false; }
         if(f.payload.size()>max_payload_bytes||!f.timeout_ms||f.timeout_ms>max_timeout_ms) { errno=EINVAL; return false; }
         auto b{encode_header_fixed(f)};
+        if(!f.payload.empty() && f.payload.size() <= 1024u)
+        {
+            ::std::array<::std::uint8_t, header_bytes + 1024u> bytes;
+            ::std::memcpy(bytes.data(), b.data(), b.size());
+            ::std::memcpy(bytes.data() + b.size(), f.payload.data(), f.payload.size());
+            // Only the initialized header and payload prefix can reach send().
+            return transfer(fd, bytes.data(), b.size() + f.payload.size(), true, until, cancellation_fd);
+        }
         return transfer(fd,b.data(),b.size(),true,until,cancellation_fd)&&transfer(fd,const_cast<std::uint8_t*>(f.payload.data()),f.payload.size(),true,until,cancellation_fd);
     }
     inline bool read_frame(int fd,frame& f,deadline until,int cancellation_fd=-1)

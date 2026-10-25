@@ -169,6 +169,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
         ::uwvm2::uwvm::wasm::type::local_imported_t const* builtin_wasip1_member_{};
         ::uwvm2::uwvm::wasm::type::local_imported_t const* builtin_wasip1_vector_begin_{};
         ::std::size_t builtin_wasip1_vector_extent_{};
+        // Cache admission authenticates the concrete ROS loader independently
+        // of debugger permissions. It cannot restore resources or grant endpoints.
+        builtin_ros_loader_identity::census cache_ros_identities_{};
+        ::uwvm2::uwvm::wasm::type::local_imported_t const* cache_native_vector_begin_{};
+        ::std::size_t cache_native_vector_extent_{};
+        bool cache_foreign_native_at_seal_{};
         // Separate read-only debug closure. Never feeds generic mutation,
         // cache, checkpoint initializers/capsules or an external restorer.
         builtin_ros_loader_identity::census debug_ros_identities_{};
@@ -328,6 +334,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
             }
             // Capture final extent and actual factory owner control blocks,
             // not a supplied namespace/signature or a provider-ready flag.
+            cache_ros_identities_=builtin_ros_loader_identity::snapshot_current();
+            auto const& cache_providers{::uwvm2::uwvm::wasm::storage::preload_local_imported};
+            cache_native_vector_begin_=cache_providers.cbegin();
+            cache_native_vector_extent_=cache_providers.size();
+#if defined(UWVM_SUPPORT_PRELOAD_DL)
+            cache_foreign_native_at_seal_=!::uwvm2::uwvm::wasm::storage::preloaded_dl.empty();
+#endif
+#if defined(UWVM_SUPPORT_WEAK_SYMBOL)
+            cache_foreign_native_at_seal_=cache_foreign_native_at_seal_ || !::uwvm2::uwvm::wasm::storage::weak_symbol.empty();
+#endif
             debug_ros_identities_=builtin_ros_loader_identity::snapshot_current();
             auto const& debug_providers{::uwvm2::uwvm::wasm::storage::preload_local_imported};
             debug_native_vector_begin_=debug_providers.cbegin();debug_native_vector_extent_=debug_providers.size();
@@ -428,7 +444,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
             return false;
 #endif
         }
-        enum class cache_native_provider_census { unsafe, no_native, builtin_wasip1 };
+        enum class cache_native_provider_census { unsafe, no_native, builtin_wasip1, builtin_ros };
         // Initializer-sealed provider identity only. Unlike the debugger's method
         // below this does NOT claim a code-validation epoch: the first ordinary
         // materializer may perform its cache query before that publication.
@@ -444,23 +460,36 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
             if(!::uwvm2::uwvm::wasm::storage::weak_symbol.empty()) { return cache_native_provider_census::unsafe; }
 #endif
             auto const& providers{::uwvm2::uwvm::wasm::storage::preload_local_imported};
-            if(!builtin_wasip1_identity_) { return providers.empty() ? cache_native_provider_census::no_native : cache_native_provider_census::unsafe; }
-            if(!builtin_wasip1_loader_identity::canonical(builtin_wasip1_identity_)) { return cache_native_provider_census::unsafe; }
-            auto const& selected{builtin_wasip1_loader_identity::selected_};
-            if(!selected || selected.get()!=builtin_wasip1_identity_.get() ||
-               selected.owner_before(builtin_wasip1_identity_) || builtin_wasip1_identity_.owner_before(selected) ||
-               providers.size()!=builtin_wasip1_vector_extent_ || providers.cbegin()!=builtin_wasip1_vector_begin_ ||
-               builtin_wasip1_identity_->current_member()!=builtin_wasip1_member_) { return cache_native_provider_census::unsafe; }
-            for(::std::size_t i{};i!=providers.size();++i)
+            if(cache_foreign_native_at_seal_ || providers.size()!=cache_native_vector_extent_ ||
+               providers.cbegin()!=cache_native_vector_begin_) { return cache_native_provider_census::unsafe; }
+            if(builtin_wasip1_identity_)
             {
-                // [actual unchanged FINAL native vector][i<count] end
-                // [safe] compare its OWN member address, not a name/count or
-                // caller pointer. Only the original factory-certified builtin
-                // wrapper is exempt; actual host-import cache still refuses
-                // its byte operations without an independent real adapter.
-                if(::std::addressof(providers.index_unchecked(i))!=builtin_wasip1_member_) { return cache_native_provider_census::unsafe; }
+                if(!builtin_wasip1_loader_identity::canonical(builtin_wasip1_identity_)) { return cache_native_provider_census::unsafe; }
+                auto const& selected{builtin_wasip1_loader_identity::selected_};
+                if(!selected || selected.get()!=builtin_wasip1_identity_.get() ||
+                   selected.owner_before(builtin_wasip1_identity_) || builtin_wasip1_identity_.owner_before(selected) ||
+                   builtin_wasip1_identity_->current_member()!=builtin_wasip1_member_) { return cache_native_provider_census::unsafe; }
             }
-            return cache_native_provider_census::builtin_wasip1;
+            for(auto const& identity: cache_ros_identities_)
+            {
+                if(identity && (!builtin_ros_loader_identity::still_selected(identity) || identity->current_member()==nullptr))
+                { return cache_native_provider_census::unsafe; }
+            }
+            for(auto const& provider: providers)
+            {
+                // Only concrete loader-factory ownership is accepted. A copied
+                // ROS namespace/signature or arbitrary native callback is not.
+                auto const* member{::std::addressof(provider)};
+                if(builtin_wasip1_identity_ && member==builtin_wasip1_member_) { continue; }
+                bool authenticated{};
+                for(auto const& identity: cache_ros_identities_)
+                { if(identity && identity->current_member()==member) { authenticated=true; break; } }
+                if(!authenticated) { return cache_native_provider_census::unsafe; }
+            }
+            // The mixed ROS/WASI case still requires the independent safe-FD
+            // and callback census. No prior process capability enters an object.
+            if(builtin_wasip1_identity_) { return cache_native_provider_census::builtin_wasip1; }
+            return providers.empty() ? cache_native_provider_census::no_native : cache_native_provider_census::builtin_ros;
         }
         // Cold debug-byte exclusivity qualification ONLY. This authenticates
         // the actual finalized native provider census for this current source;

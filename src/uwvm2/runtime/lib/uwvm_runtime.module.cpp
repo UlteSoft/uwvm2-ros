@@ -63,6 +63,7 @@ module;
 #include "uwvm_runtime_local_imported_provider_callbacks.h"
 #include "uwvm_runtime_state_signature.h"
 #include "uwvm_runtime_wasip1_memory_bindings.h"
+#include <uwvm2/runtime/llvm_jit_cache/stdio_admission.h>
 #if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
 #include <fcntl.h>
 #endif

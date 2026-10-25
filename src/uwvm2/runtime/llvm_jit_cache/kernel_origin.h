@@ -28,6 +28,14 @@
 
 UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache::kernel_origin
 {
+    /// @brief Explain origin admission failure without retaining key material.
+    struct failure_info
+    {
+        ::std::u8string_view operation{u8"none"};
+        int system_error{};
+    };
+    inline thread_local failure_info last_failure{};
+
     [[nodiscard]] inline bool dumping_disabled() noexcept
     {
 #if defined(__linux__) && defined(PR_GET_DUMPABLE)
@@ -226,27 +234,38 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache::kernel_origin
             serial ring_{}, key_{};
             ::uid_t uid_{}; ::gid_t gid_{};
             ::std::array<::std::byte, 32u> fingerprint_{}; // not a secret or a signing seed
+            failure_info failure_{};
         public:
             [[nodiscard]] bool read(runtime_origin::use const& actual, secret_bytes<32u>& output) noexcept
             {
-                if(!dumping_disabled() || !runtime_origin::secret_reads_allowed(actual)) { return false; } // BEFORE any secret lookup/read
+                last_failure = {};
+                if(!dumping_disabled() || !runtime_origin::secret_reads_allowed(actual))
+                { last_failure = {u8"process-or-runtime-origin-not-sealed", 0}; return false; } // BEFORE any secret lookup/read
                 ::std::lock_guard lock{mutex_};
-                if(disabled_) { return false; }
-                auto fail{[&]() noexcept { disabled_ = true; erase(output.value.data(), output.value.size()); return false; }};
-                if(::getuid() != ::geteuid() || ::getgid() != ::getegid()) { return fail(); }
+                if(disabled_) { last_failure = failure_; return false; }
+                auto fail{[&](::std::u8string_view operation = u8"kernel-key-binding-changed", int system_error = 0) noexcept
+                {
+                    disabled_ = true;
+                    failure_ = {operation, system_error};
+                    last_failure = failure_;
+                    erase(output.value.data(), output.value.size());
+                    return false;
+                }};
+                if(::getuid() != ::geteuid() || ::getgid() != ::getegid()) { return fail(u8"effective-credentials-differ"); }
                 if(!initialized_)
                 {
                     uid_ = ::getuid(); gid_ = ::getgid();
                     auto const ring{control(KEYCTL_GET_KEYRING_ID, number(KEY_SPEC_USER_KEYRING), 1ul)};
-                    if(!serial_value(ring)) { return fail(); }
+                    if(!serial_value(ring)) { return fail(u8"open-kernel-user-keyring", errno); }
                     ring_ = static_cast<serial>(ring);
                     key_description ring_info{};
-                    if(!describe(ring_, ring_info) || ring_info.type != "keyring" || ring_info.uid != uid_) { return fail(); }
+                    if(!describe(ring_, ring_info) || ring_info.type != "keyring" || ring_info.uid != uid_) { return fail(u8"kernel-user-keyring-owner-or-type"); }
                     auto const existing{search(ring_)};
                     if(serial_value(existing)) { key_ = static_cast<serial>(existing); }
                     else
                     {
-                        if(existing != -1l || errno != ENOKEY || !publish(ring_, uid_, gid_, key_)) { return fail(); }
+                        if(existing != -1l || errno != ENOKEY) { return fail(u8"search-kernel-origin-key", errno); }
+                        if(!publish(ring_, uid_, gid_, key_)) { return fail(u8"publish-kernel-origin-key", errno); }
                     }
                     if(!runtime_origin::secret_reads_allowed(actual) || !read_exact(ring_, key_, uid_, gid_, output)) { return fail(); }
                     fingerprint_ = fingerprint(output); initialized_ = true;
@@ -268,7 +287,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache::kernel_origin
                 if(::getuid() != uid_ || ::geteuid() != uid_ || ::getgid() != gid_ || ::getegid() != gid_ ||
                    control(KEYCTL_GET_KEYRING_ID, number(KEY_SPEC_USER_KEYRING), 0ul) != ring_ ||
                    !exact_key(key_, uid_, gid_) || !member(ring_, key_) || search(ring_) != key_)
-                { disabled_ = true; return false; }
+                { disabled_ = true; failure_ = {u8"kernel-key-binding-changed-before-publication", 0}; last_failure = failure_; return false; }
                 return dumping_disabled() && runtime_origin::authorized(actual);
             }
         };

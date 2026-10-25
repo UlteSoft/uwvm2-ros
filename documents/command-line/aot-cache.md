@@ -46,6 +46,9 @@ Inspect these records in the runtime log:
 | `... status=generation-bound-plan` or `debugger-active` | The generated object uses process-specific plan or debugger state and must be compiled for this launch. |
 | `... status=experimental-gc-exceptions` or `native-eh-private-binding` | The selected experimental implementation requires fresh compilation. |
 | `... status=origin-admission-unavailable` or `kernel-origin-unavailable` | The runtime or host refused origin admission. The cache remains unavailable. |
+| `origin-admission-refused ... reason=...` | The exact runtime, provider or WASI authority class prevented admission. A standard descriptor index identifies an affected stream without exposing its path. |
+| `... status=not-found` | No object exists for the current authenticated lookup context. Compare the separately logged source, executable, ISA, ABI and policy fingerprints. |
+| `... status=signature-mismatch` | The existing object failed authentication. It is not executed; the module is compiled again. |
 | `object-cache-store-enqueue ... status=ok` | A store was queued; this alone does not prove durable storage. |
 | `object-cache-store-complete ... status=ok` | That asynchronous store completed successfully. |
 | `object-cache-hit ... signature_verified=1` | The object was loaded with its required signature verified. |
@@ -63,12 +66,28 @@ WASI imports also require a runtime built with the WASI provider. A diagnostic
 that the whole `wasi_snapshot_preview1` module is missing differs from a denied
 operation on an available provider. Grant the required operation explicitly;
 for example, `--wasip1-global-grant monotonic-clock` enables the clock used by
-the focused AOT/WASI regression. Keep standard streams as pipes when testing
-the supported WASI cache admission path; regular-file descriptors and additional
-host resources can change eligibility.
+the focused AOT/WASI regression. Standard pipes, sockets, terminals and the null
+device are supported. Ordinary regular files on the reviewed data filesystems
+are also admitted, so redirecting standard output to a log file does not itself
+disable caching. A regular inode on procfs is not ordinary storage. Pseudo-files,
+directories, unknown devices and unreviewed filesystems remain ineligible and
+produce a specific refusal reason. Additional preopened namespaces and native
+callbacks still require separate admission work.
+
+Cache identity, relevant dependencies, per-launch authority and the lifetime of
+the kernel trust root are described in
+[`ros-cache-admission.md`](../toolchain/ros-cache-admission.md). There is no object
+age timeout. This does not promise reuse after the kernel trust root is lost
+or replaced. For cross-reboot reuse, the optional administrator-owned
+[`cache-origin` helper](../../tools/cache-origin/README.md) restores the same
+private origin into the UID keyring before the VM starts. It does not change
+signature verification or grant guest permissions.
 
 The executable regression lives in
 [`run_cache_wasi.py`](../../test/0073.ros-tests/support/source/runtime_repair/run_cache_wasi.py).
 It preserves cold/warm logs and independent cache/WASI results. Test sources
 are not a claim that the selected runtime has passed; inspect its result file
 and the recorded executable SHA-256.
+[`run_cache_identity.py`](../../test/0073.ros-tests/support/source/runtime_repair/run_cache_identity.py)
+additionally checks regular-file output, read-only cache storage, unchanged
+source/executable relocation, changed bytes, revoked authority and corruption.

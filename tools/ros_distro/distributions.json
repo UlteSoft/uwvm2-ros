@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "scope": "COMPATIBILITY_TARGETS_ONLY_NOT_BUILD_OR_RUNTIME_RESULTS",
-  "checked_date": "2026-10-15",
+  "checked_date": "2026-10-24",
   "official_sources": [
     "https://raw.githubusercontent.com/ros/rosdistro/master/index-v4.yaml",
     "https://raw.githubusercontent.com/ros-infrastructure/rep/master/rep-0003.rst",
@@ -9,10 +9,10 @@
     "https://raw.githubusercontent.com/ros2/ros2_documentation/rolling/source/Releases.rst",
     "https://raw.githubusercontent.com/ros2/ros2_documentation/rolling/source/Releases/lyrical/supported-platforms.rst"
   ],
-  "architecture_targets": ["x86_64", "aarch64", "arm", "riscv64", "loongarch64", "ppc64le", "s390x"],
-  "additional_architecture_targets": ["i386", "mips", "mipsel", "mips64", "mips64el"],
+  "architecture_targets": ["x86_64", "aarch64", "armhf"],
+  "additional_architecture_targets": [],
   "named_historical_ros1_source": "REP3 names five pre-Groovy distributions absent from index-v4. Each needs a locked source/configured SDK and real feature probes; no stock-catkin compatibility is implied.",
-  "architecture_scope": "Targets require their own actual SDK and ELF identity. This list does not assert upstream binary availability. Explicit ELF identities also admit MIPS or other source ports.",
+  "architecture_scope": "Default checks cover documented ROS amd64, arm64 and little-endian ARMv7 hard-float routes. ARM32 is ROS 2 Tier 3 source support. Other explicit source-port profiles are configuration data, not selected acceptance targets. Every row still requires its own actual SDK, ABI and execution evidence.",
   "distributions": [
     {"backend": 1, "distro": "boxturtle", "upstream_status": "end-of-life", "release": "2010-02", "candidate_ubuntu": "8.04", "upstream_cpp_floor": "03", "matrix_cpp": 17, "sdk_availability": "UNVERIFIED", "basis": "REP3_NOT_INDEX_V4", "source_lock_required": true},
     {"backend": 1, "distro": "cturtle", "upstream_status": "end-of-life", "release": "2010-08", "candidate_ubuntu": "10.04", "upstream_cpp_floor": "03", "matrix_cpp": 17, "sdk_availability": "UNVERIFIED", "basis": "REP3_NOT_INDEX_V4", "source_lock_required": true},

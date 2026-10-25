@@ -29,7 +29,7 @@
         state.llvm_module->getTargetTriple().isOSLinux();
 }
 [[nodiscard]] inline bool prepare_runtime_local_func_llvm_jit_canonical_numeric_locals(
-    runtime_local_func_llvm_jit_emit_state_t& state) noexcept
+    [[maybe_unused]] runtime_local_func_llvm_jit_emit_state_t& state) noexcept
 {
 #if defined(__linux__) && defined(__x86_64__)
     namespace cp = ::uwvm2::runtime::checkpoint;

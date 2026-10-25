@@ -440,12 +440,11 @@ def physical_frame(client, thread):
     return physical[0]
 
 
-def native_case(server, wasm):
-    start = source_cli.metadata_cli.function(wasm, "_start")[0]
+def native_case(server, wasm, *, function_imports=()):
+    start, body = source_cli.metadata_cli.function(wasm, "_start", function_imports=function_imports)
     client = server.connect("wasm")
     # The broker attaches to a running loop. Its initialization prefix is
     # executed once; use the independently checked recurring local.get site.
-    _, body = source_cli.metadata_cli.function(wasm, "_start")
     _, begin = source_cli.metadata_cli.u32(body, 0, len(body))
     begin += 2  # one local group: count 1, type i32
     require(body[begin:begin + 10] == b"\x41\x11\x21\x00\x03\x40\x20\x00\x41\x29",

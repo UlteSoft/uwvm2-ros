@@ -100,6 +100,7 @@
 # include "uwvm_runtime_wasip1_memory_bindings.h"
 #include "uwvm_runtime_wasip1_native_file.h"
 # include "uwvm_runtime_wasm_fp_environment.h"
+# include <uwvm2/runtime/llvm_jit_cache/stdio_admission.h>
 # if defined(UWVM_RUNTIME_LLVM_JIT)
 #  include "uwvm_runtime_call_indirect_table_views.h"
 #  include "uwvm_runtime_pending_code_ranges.h"
@@ -1474,6 +1475,10 @@ namespace uwvm2::runtime::lib
 #if defined(UWVM_RUNTIME_LLVM_JIT) && (defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2))
             // Runtime-only transfer token between a genuine generated musttail edge and its next
             // actual function entry. No Guest address/handle, debugger DTO or native return PC issues it.
+            // A private native-ABI value, published only at generated-to-host boundaries.
+            // Low bit records a crossed module; remaining bits encode (module_id + 1).
+            // It is never a Guest operand, permission handle, or diagnostic shadow stack.
+            ::std::uintptr_t ros_native_provenance{};
             call_stack_frame ros_retired_tail_frame{};
             ::std::size_t ros_retired_tail_depth{};
             ::std::uint_least64_t ros_retired_tail_generation{};
@@ -1731,6 +1736,7 @@ namespace uwvm2::runtime::lib
             // lifetime of the thread. Keeping the vector capacity is safe; every retained value is backend-neutral storage.
             g_call_stack.frames.clear();
 # if defined(UWVM_RUNTIME_LLVM_JIT) && (defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2))
+            g_call_stack.ros_native_provenance = 0u;
             g_call_stack.ros_retired_tail_pending = false;
             g_call_stack.ros_retired_tail_frame = {};
             g_call_stack.ros_retired_tail_depth = 0uz;
@@ -3025,18 +3031,9 @@ namespace uwvm2::runtime::lib
             namespace runtime_mode = ::uwvm2::uwvm::runtime::runtime_mode;
             using runtime_llvm_jit_call_stack_t = runtime_mode::runtime_llvm_jit_call_stack_t;
 
-            auto const requested{runtime_mode::global_runtime_llvm_jit_call_stack};
-            if(requested != runtime_llvm_jit_call_stack_t::auto_policy) { return requested; }
-            if(!runtime_llvm_jit_call_stack_applies_to_current_compiler()) { return runtime_llvm_jit_call_stack_t::instruction; }
-
-# if !UWVM2_RUNTIME_LLVM_JIT_HAS_UNWIND_BACKTRACE
-            return runtime_llvm_jit_call_stack_t::instruction;
-# else
-            // Choose before emitting code: a failed native self-test retains instruction frames instead of claiming native success.
-            auto const st{runtime_llvm_jit_unwind_capability()};
-            if(st == runtime_llvm_jit_unwind_capability_status::ok) { return runtime_llvm_jit_call_stack_t::unwind; }
-            return runtime_llvm_jit_call_stack_t::instruction;
-# endif
+            // This platform-bound product never substitutes instruction instrumentation after a failed probe.
+            // The validator below must prove the actual generated native chain before execution.
+            return runtime_llvm_jit_call_stack_t::unwind;
         }
 
         [[nodiscard]] inline constexpr bool runtime_llvm_jit_unwind_call_stack_requested() noexcept
@@ -3072,19 +3069,7 @@ namespace uwvm2::runtime::lib
                                 ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_CYAN),
                                 runtime_llvm_jit_unwind_backend_name(),
                                 ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
-                                u8"). Use ",
-                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_CYAN),
-                                u8"auto",
-                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
-                                u8" or ",
-                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_CYAN),
-                                u8"instruction",
-                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
-                                u8"; use ",
-                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_CYAN),
-                                u8"unwind-uncheck",
-                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
-                                u8" only to skip the live self-test; it still omits logical JIT frames and requires native unwind support. ",
+                                u8"). This uwvm2-ros build requires a working, verified native unwind backend. ",
                                 ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_ORANGE),
                                 u8"(runtime)\n\n",
                                 ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
@@ -3094,26 +3079,9 @@ namespace uwvm2::runtime::lib
 
         inline constexpr void validate_runtime_llvm_jit_unwind_call_stack_or_fatal() noexcept
         {
-            namespace runtime_mode = ::uwvm2::uwvm::runtime::runtime_mode;
-            auto const requested{runtime_mode::global_runtime_llvm_jit_call_stack};
-            if(requested != runtime_mode::runtime_llvm_jit_call_stack_t::unwind &&
-               requested != runtime_mode::runtime_llvm_jit_call_stack_t::unwind_uncheck)
-            {
-                return;
-            }
-
-# if !UWVM2_RUNTIME_LLVM_JIT_HAS_UNWIND_BACKTRACE
-            runtime_llvm_jit_explicit_unwind_call_stack_fatal(runtime_llvm_jit_unwind_capability_status::no_backend);
-# elif !UWVM2_RUNTIME_LLVM_JIT_UNWIND_REPLACES_INSTRUCTION_FRAMES
-            // `unwind-uncheck` skips only the live generated-chain probe. It may never bypass the compile-time
-            // requirement that native unwind authoritatively replaces omitted instruction-emitted frames.
-            runtime_llvm_jit_explicit_unwind_call_stack_fatal(runtime_llvm_jit_unwind_capability_status::no_frame_replacement);
-# else
-            if(requested == runtime_mode::runtime_llvm_jit_call_stack_t::unwind_uncheck) { return; }
-
-            auto const st{runtime_llvm_jit_unwind_capability()};
-            if(st != runtime_llvm_jit_unwind_capability_status::ok) [[unlikely]] { runtime_llvm_jit_explicit_unwind_call_stack_fatal(st); }
-# endif
+            auto const status{runtime_llvm_jit_unwind_capability()};
+            if(status != runtime_llvm_jit_unwind_capability_status::ok) [[unlikely]]
+            { runtime_llvm_jit_explicit_unwind_call_stack_fatal(status); }
         }
 
         template <typename Output>
@@ -3819,21 +3787,8 @@ namespace uwvm2::runtime::lib
 
         [[nodiscard]] inline constexpr bool runtime_llvm_jit_uses_instruction_call_stack_frames() noexcept
         {
-            // Native mode is an alternative to instruction instrumentation: no JIT logical push/pop is generated.
-            // Capability validation happens before this code-generation decision, not after execution starts.
-            namespace runtime_mode = ::uwvm2::uwvm::runtime::runtime_mode;
-
-            using runtime_llvm_jit_call_stack_t = runtime_mode::runtime_llvm_jit_call_stack_t;
-            switch(get_runtime_llvm_jit_effective_call_stack_mode())
-            {
-                case runtime_llvm_jit_call_stack_t::auto_policy: [[fallthrough]];
-                case runtime_llvm_jit_call_stack_t::instruction: return true;
-                case runtime_llvm_jit_call_stack_t::unwind: [[fallthrough]];
-                case runtime_llvm_jit_call_stack_t::unwind_uncheck: return false;
-                case runtime_llvm_jit_call_stack_t::none: return false;
-            }
-
-            return true;
+            // Diagnostic frames come from registered native CFI; no per-function shadow-stack calls are emitted.
+            return false;
         }
 
         inline constexpr void
@@ -4779,6 +4734,11 @@ namespace uwvm2::runtime::lib
 
         class runtime_execution_entry_scope
         {
+#if defined(UWVM_RUNTIME_LLVM_JIT) && (defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2))
+            // A host callback can reenter Wasm repeatedly. Restore its actual suspended caller
+            // even when a nested entry throws; ordinary Wasm calls need no TLS push or pop.
+            ::std::uintptr_t const saved_ros_provenance{get_call_stack().ros_native_provenance};
+#endif
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS) && \
     defined(UWVM_EXPERIMENTAL_EXCEPTION_SOURCE_RETENTION) && UWVM_EXPERIMENTAL_EXCEPTION_SOURCE_RETENTION == 1
             friend class ::uwvm2::runtime::lib::source_exception_guest_bridge;
@@ -5064,6 +5024,9 @@ namespace uwvm2::runtime::lib
                 if(::uwvm2::runtime::gc::actual_entry_page == &numeric_page)
                 { ::uwvm2::runtime::gc::flush_actual_entry_page(true); }
                 if(page_entry_scope == this) { page_entry_scope = nullptr; }
+#endif
+#if defined(UWVM_RUNTIME_LLVM_JIT) && (defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2))
+                get_call_stack().ros_native_provenance = saved_ros_provenance;
 #endif
                 // Never retain a pointer/reference to a map-backed node across erasure. A permitted nested raw call
                 // merely returns depth N to N-1; only the outermost entry owns complete per-thread cleanup.
@@ -9691,9 +9654,9 @@ namespace uwvm2::runtime::lib
                                                                               u8"call-stack",
                                                                               get_runtime_llvm_jit_call_stack_mode_name());
 # if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
-            // Old cached pop-only tails must not run beneath the new ROS admission query.
+            // Native provenance changes the private function ABI; old objects must never be admitted.
             ::uwvm2::runtime::llvm_jit_cache::details::append_cache_key_value(
-                llvm_jit_cache_codegen_policy, u8"ros-ancestry", u8"owned-function-tail-v1");
+                llvm_jit_cache_codegen_policy, u8"ros-ancestry", u8"native-abi-provenance-v2");
 # endif
             // Cache identity records EFFECTIVE ABI, not an unproven CLI request.
             ::uwvm2::runtime::llvm_jit_cache::details::append_cache_key_value(
@@ -13082,6 +13045,25 @@ namespace uwvm2::runtime::lib
         terminate_func();
         ::std::atomic_signal_fence(::std::memory_order_seq_cst);
     }
+
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+    extern "C++" void llvm_jit_publish_ros_provenance(::std::uintptr_t provenance) noexcept
+    {
+        // Only the generated private ABI supplies this value. The enclosing native execution
+        // lease pins its module identities; a host callback cannot publish a Guest-supplied token.
+        if(get_runtime_execution_entry_depth() == 0uz || provenance < 2u) [[unlikely]]
+        { ::fast_io::fast_terminate(); }
+        get_call_stack().ros_native_provenance = provenance;
+    }
+
+    extern "C++" ::std::uintptr_t llvm_jit_seed_ros_provenance(::std::uintptr_t own_module) noexcept
+    {
+        if(get_runtime_execution_entry_depth() == 0uz || own_module < 2u || (own_module & 1u) != 0u) [[unlikely]]
+        { ::fast_io::fast_terminate(); }
+        auto const suspended{get_call_stack().ros_native_provenance};
+        return suspended == 0u ? own_module : suspended;
+    }
+#endif
 
     extern "C++" void llvm_jit_push_call_stack_frame(::std::size_t module_id, ::std::size_t function_index) noexcept
     {
@@ -16867,11 +16849,6 @@ namespace uwvm2::runtime::lib
                 {
                     auto const local_imported_module{tgt.u.local_imported.module_ptr};
                     if(local_imported_module == nullptr) [[unlikely]] { ::fast_io::fast_terminate(); }
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
-                    // The resolved record is runtime-owned. Keep this real import activation through
-                    // Host callbacks/typed propagation and consume a pending generated tail exactly once.
-                    call_stack_guard guard{call_stack, tgt.frame.module_id, tgt.frame.function_index};
-#endif
 #if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
                     runtime_checkpoint_guest_worker_bridge::try_builtin_proc_exit(tgt.frame.module_id,
                         tgt.frame.function_index, ::std::addressof(tgt), static_cast<::std::byte const*>(param_buffer),param_bytes);
@@ -16889,9 +16866,6 @@ namespace uwvm2::runtime::lib
                 {
                     auto const capi_ptr{tgt.u.capi_ptr};
                     if(capi_ptr == nullptr || capi_ptr->func_ptr == nullptr) [[unlikely]] { ::fast_io::fast_terminate(); }
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
-                    call_stack_guard guard{call_stack, tgt.frame.module_id, tgt.frame.function_index};
-#endif
                     call_capi_with_wasip1_env(*capi_ptr,
                                               tgt.preload_module_memory_attribute,
                                               static_cast<::std::byte*>(result_buffer),
@@ -17080,12 +17054,12 @@ namespace uwvm2::runtime::lib
 # endif
         if(runtime_compiler_requests_uwvm_int_translation()) { return true; }
 # if defined(UWVM_RUNTIME_LLVM_JIT)
-        // This is a code-generation contract, not a debugger-enabled claim. Instruction call-stack
-        // policy emits function-boundary hooks in ordinary full execution too; no per-opcode hook is required.
+        // Native CFI supplies diagnostics. The private typed ABI carries module ancestry through
+        // ordinary and genuine tail calls; ROS imports observe it only at the host boundary.
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
         return runtime_compiler_requests_llvm_jit_translation() &&
             mode::global_runtime_mode == mode::runtime_mode_t::full_compile &&
-            runtime_llvm_jit_uses_instruction_call_stack_frames();
+            runtime_llvm_jit_unwind_call_stack_requested();
 # else
         return false;
 # endif
@@ -17104,22 +17078,30 @@ namespace uwvm2::runtime::lib
         if(threaded_profile::has_active_host_call()) { return threaded_profile::observed_caller(out); }
 #endif
         if(!ros_execution_backend_supported_host_api() || get_runtime_execution_entry_depth() == 0uz) { return false; }
-        auto const& stack{get_call_stack()};
-#if defined(UWVM_RUNTIME_LLVM_JIT)
-        if(stack.ros_retired_tail_pending) { return false; }
-#endif
-        // A trusted builtin call context is required above. Host callbacks intentionally suspend the
-        // generated-bridge scope, so that unrelated FP/bridge marker is not used as a ROS principal.
-        if(stack.frames.empty()) { return false; }
         auto const module_id{context.module_id};
-        if(module_id >= g_runtime.modules.size() || stack.frames.back().module_id != module_id) { return false; }
+        bool cross_module_ancestry{};
+#if defined(UWVM_RUNTIME_LLVM_JIT)
+        if(runtime_compiler_requests_llvm_jit_translation())
+        {
+            auto const provenance{get_call_stack().ros_native_provenance};
+            if(provenance < 2u || (provenance >> 1u) - 1u != module_id) { return false; }
+            cross_module_ancestry = (provenance & 1u) != 0u;
+        }
+        else
+#endif
+        {
+            auto const& frames{get_call_stack().frames};
+            if(frames.empty() || frames.back().module_id != module_id) { return false; }
+            cross_module_ancestry = frames.back().ros_cross_module_ancestry;
+        }
+        if(module_id >= g_runtime.modules.size()) { return false; }
         auto const& module{g_runtime.modules.index_unchecked(module_id)};
         if(module.runtime_module == nullptr) { return false; }
         auto const entry{::uwvm2::uwvm::wasm::storage::all_module.find(module.module_name)};
         if(entry == ::uwvm2::uwvm::wasm::storage::all_module.end()) { return false; }
         using module_type = ::uwvm2::uwvm::wasm::type::module_type_t;
         if(entry->second.type != module_type::exec_wasm && entry->second.type != module_type::preloaded_wasm) { return false; }
-        out = {module.runtime_module, current_runtime_generation(), module.module_name, stack.frames.back().ros_cross_module_ancestry};
+        out = {module.runtime_module, current_runtime_generation(), module.module_name, cross_module_ancestry};
         return true;
 #else
         return false;

@@ -24,7 +24,11 @@ inline ::std::uint_least64_t sha512_load_be64_unaligned(::std::byte const *p) no
 #if __has_cpp_attribute(__gnu__::__flatten__)
 [[__gnu__::__flatten__]]
 #endif
-#if __has_cpp_attribute(msvc::forceinline)
+// Some Clang targets report the MSVC attribute as available but ignore it
+// here. Prefer the supported function attribute for this SHA round.
+#if __has_cpp_attribute(__gnu__::__always_inline__)
+[[__gnu__::__always_inline__]]
+#elif defined(_MSC_VER) && __has_cpp_attribute(msvc::forceinline)
 [[msvc::forceinline]]
 #endif
 inline constexpr void sha512_round(::std::uint_least64_t T1, ::std::uint_least64_t a, ::std::uint_least64_t b,

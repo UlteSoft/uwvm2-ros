@@ -57,7 +57,7 @@ def main():
             assert guests[name].read_bytes()[:8] == b"\0asm\1\0\0\0"
 
         base = [args.uwvm, "--runtime-aot", "-Rct", "0", "-Rllvm-policy", "max",
-                "-Rllvm-call-stack", "none", "--log-verbose", "--runtime-compiler-log", "err"]
+                "-Rllvm-call-stack", "unwind", "--log-verbose", "--runtime-compiler-log", "err"]
         def cache_case():
             unsealed_dir = cache_root / "unsealed-cache"
             unsealed = run("unsealed", [*base, "-Rllvm-cache-path", "path", unsealed_dir,

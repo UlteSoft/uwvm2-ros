@@ -168,7 +168,7 @@ struct llvm_jit_memory_snapshot_values_t
 [[nodiscard]] inline constexpr bool verify_llvm_jit_function(::llvm::Function& function, bool verify_llvm_jit_ir) noexcept
 {
     if(!verify_llvm_jit_ir) { return true; }
-    if(!::llvm::verifyFunction(function)) [[likely]] { return true; }
+    if(!::llvm::verifyFunction(function, ::std::addressof(::llvm::errs()))) [[likely]] { return true; }
     runtime_storage_bug();
 }
 
@@ -176,7 +176,7 @@ struct llvm_jit_memory_snapshot_values_t
 [[nodiscard]] inline constexpr bool verify_llvm_jit_module(::llvm::Module& module, bool verify_llvm_jit_ir) noexcept
 {
     if(!verify_llvm_jit_ir) { return true; }
-    if(!::llvm::verifyModule(module)) [[likely]] { return true; }
+    if(!::llvm::verifyModule(module, ::std::addressof(::llvm::errs()))) [[likely]] { return true; }
     runtime_storage_bug();
 }
 
@@ -837,6 +837,54 @@ inline constexpr CallSite* apply_llvm_jit_calling_conv(CallSite* call_inst, ::ll
     return call_inst;
 }
 
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+// Only compiler-owned native arguments and metadata carry ROS provenance.
+// Derive it at each IR insertion point: debug/GC prologues can insert host calls
+// before ordinary body initialization. An entry-body SSA value would not
+// dominate those uses. LLVM may freely common these pure integer expressions.
+[[nodiscard]] inline ::llvm::Value* llvm_jit_ros_provenance(::llvm::IRBuilder<>& builder) noexcept
+{
+    auto const function{builder.GetInsertBlock()->getParent()};
+    auto const incoming{function->getValueSymbolTable()->lookup("uwvm.ros.provenance")};
+    if(incoming == nullptr) { return nullptr; }
+    auto const owner{function->getMetadata("uwvm.ros.owner")};
+    if(owner == nullptr) { return incoming; } // Checked tail adapters forward their caller's token.
+    if(owner->getNumOperands() != 1u) { return nullptr; }
+    auto const constant{::llvm::dyn_cast<::llvm::ConstantAsMetadata>(owner->getOperand(0u))};
+    if(constant == nullptr || constant->getValue()->getType() != incoming->getType()) { return nullptr; }
+    auto const own{constant->getValue()};
+    auto const integer{incoming->getType()};
+    auto const previous{builder.CreateAnd(incoming, ::llvm::ConstantInt::get(integer, ~::std::uintptr_t{1u}))};
+    auto const crossed{builder.CreateZExt(builder.CreateICmpNE(previous, own), integer)};
+    auto const retained{builder.CreateAnd(incoming, ::llvm::ConstantInt::get(integer, 1u))};
+    return builder.CreateOr(own, builder.CreateOr(crossed, retained));
+}
+
+inline void publish_llvm_jit_ros_host_call(::llvm::CallBase* call) noexcept
+{
+    if(call == nullptr) { return; }
+    ::llvm::IRBuilder<> builder(call);
+    auto const provenance{llvm_jit_ros_provenance(builder)};
+    if(provenance == nullptr) { return; } // A raw host-entry thunk has not entered a typed Wasm function.
+    auto const type{::llvm::FunctionType::get(builder.getVoidTy(), {provenance->getType()}, false)};
+    auto const bridge{get_llvm_runtime_bridge_function_symbol_value_unwrapped<
+        ::uwvm2::runtime::lib::llvm_jit_publish_ros_provenance>(builder, type)};
+    if(bridge == nullptr) { ::fast_io::fast_terminate(); }
+    auto const publication{builder.CreateCall(type, bridge, {provenance})};
+    publication->setCallingConv(get_llvm_jit_host_calling_conv());
+    publication->setDoesNotThrow();
+}
+
+[[nodiscard]] inline bool append_llvm_jit_ros_provenance(
+    ::llvm::IRBuilder<>& builder, ::uwvm2::utils::container::vector<::llvm::Value*>& arguments) noexcept
+{
+    auto const provenance{llvm_jit_ros_provenance(builder)};
+    if(provenance == nullptr) { return false; }
+    arguments.push_back(provenance);
+    return true;
+}
+#endif
+
 // Mark a generated function as callable from the host/runtime bridge ABI.
 inline constexpr void apply_llvm_jit_host_calling_conv(::llvm::Function& function) noexcept
 { apply_llvm_jit_calling_conv(function, get_llvm_jit_host_calling_conv()); }
@@ -845,7 +893,12 @@ inline constexpr void apply_llvm_jit_host_calling_conv(::llvm::Function& functio
 template <typename CallSite>
     requires ::std::derived_from<CallSite, ::llvm::CallBase>
 inline constexpr CallSite* apply_llvm_jit_host_calling_conv(CallSite* call_inst) noexcept
-{ return apply_llvm_jit_calling_conv(call_inst, get_llvm_jit_host_calling_conv()); }
+{
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+    publish_llvm_jit_ros_host_call(call_inst);
+#endif
+    return apply_llvm_jit_calling_conv(call_inst, get_llvm_jit_host_calling_conv());
+}
 
 // Raw Wasm entry targets are called both from generated code and from the C++ runtime.  They deliberately share
 // the private Wasm ABI above, so update the runtime-side entry pointer attributes whenever this convention changes.
@@ -881,6 +934,9 @@ template <typename CallSite>
     requires ::std::derived_from<CallSite, ::llvm::CallBase>
 inline constexpr CallSite* apply_llvm_jit_raw_entry_calling_conv(CallSite* call_inst) noexcept
 {
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+    publish_llvm_jit_ros_host_call(call_inst);
+#endif
     auto ret{apply_llvm_jit_calling_conv(call_inst, get_llvm_jit_raw_entry_calling_conv())};
     apply_llvm_jit_no_tail_call_marker(ret);
     return ret;
@@ -2232,6 +2288,10 @@ template <typename Element>
         llvm_parameter_types.push_back(llvm_parameter_type);
     }
 
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+    // This hidden native register is separate from the public Wasm signature and raw byte buffers.
+    llvm_parameter_types.push_back(::llvm::Type::getIntNTy(llvm_context, static_cast<unsigned>(sizeof(::std::uintptr_t) * CHAR_BIT)));
+#endif
     auto llvm_result_type{get_llvm_result_type_from_wasm_result_range(llvm_context, result_begin, result_end)};
     if(llvm_result_type == nullptr) [[unlikely]] { return nullptr; }
     if(llvm_result_type->isStructTy())
@@ -2542,6 +2602,12 @@ template<typename EmitCall>
 {
     auto const layout{get_runtime_wasm_call_abi_layout(wasm_type)};
     if(!layout.valid || type == nullptr || callee == nullptr || arguments.size() != layout.parameter_count) { return nullptr; }
+    ::uwvm2::utils::container::vector<::llvm::Value*> native_arguments{};
+    for(auto argument: arguments) { native_arguments.push_back(argument); }
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+    if(!append_llvm_jit_ros_provenance(builder, native_arguments)) { return nullptr; }
+#endif
+    arguments = {native_arguments.data(), native_arguments.size()};
     if(layout.result_count <= 1uz) { return apply_llvm_jit_wasm_calling_conv(emit_call(type, callee, arguments)); }
     auto& context{builder.getContext()};
     auto const intptr{::llvm::Type::getIntNTy(context, static_cast<unsigned>(sizeof(::std::uintptr_t) * CHAR_BIT))};
@@ -7473,7 +7539,7 @@ struct runtime_local_func_llvm_jit_emit_state_t
 // only three scalar source identities enter generated code, never native pointers.
 [[nodiscard]] inline constexpr bool emit_runtime_local_func_llvm_jit_debug_safe_point(
     runtime_local_func_llvm_jit_emit_state_t& state, ::std::size_t wasm_expr_byte_offset,
-    bool local_typed_call_demand = false, ::llvm::Value* local_reference_target = nullptr) noexcept
+    [[maybe_unused]] bool local_typed_call_demand = false, [[maybe_unused]] ::llvm::Value* local_reference_target = nullptr) noexcept
 {
     if(state.ir_builder == nullptr || state.local_func_storage_ptr == nullptr ||
        !emit_runtime_local_func_llvm_jit_native_provenance(state, wasm_expr_byte_offset)) [[unlikely]] { return false; }
@@ -8211,6 +8277,18 @@ namespace sealed_compact_codegen {
 
 
     state.ir_builder = ::uwvm2::utils::container::make_delete_owned<::llvm::IRBuilder<>>(body_init_block);
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+    if(state.local_func_storage_ptr->module_id >= (SIZE_MAX >> 1u)) { return false; }
+    auto& ros_builder{*state.ir_builder};
+    auto const ros_intptr{ros_builder.getIntNTy(static_cast<unsigned>(sizeof(::std::uintptr_t) * CHAR_BIT))};
+    auto const ros_own{::llvm::ConstantInt::get(ros_intptr, (state.local_func_storage_ptr->module_id + 1uz) << 1u)};
+    auto const ros_parameter{func_parameter_count_uz + (pending_numeric_plan != nullptr ? 1uz : 0uz)};
+    auto const ros_incoming{state.llvm_function->getArg(ros_parameter)};
+    ros_incoming->setName("uwvm.ros.provenance");
+    state.llvm_function->setMetadata("uwvm.ros.owner", ::llvm::MDNode::get(llvm_context,
+        {::llvm::ConstantAsMetadata::get(ros_own)}));
+#endif
+
     if(state.emit_debug_safe_points)
     {
         // Identity is supplied by the admitted full compiler, not a guest custom section.
@@ -8551,6 +8629,17 @@ namespace sealed_compact_codegen {
                 param_offset += abi_size;
             }
 
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+            auto const provenance_type{::llvm::FunctionType::get(llvm_intptr_type, {llvm_intptr_type}, false)};
+            auto const provenance_bridge{get_llvm_runtime_bridge_function_symbol_value_unwrapped<
+                ::uwvm2::runtime::lib::llvm_jit_seed_ros_provenance>(raw_ir_builder, provenance_type)};
+            if(provenance_bridge == nullptr) { return false; }
+            auto const provenance{raw_ir_builder.CreateCall(provenance_type, provenance_bridge,
+                {::llvm::ConstantInt::get(llvm_intptr_type, (state.local_func_storage_ptr->module_id + 1uz) << 1u)})};
+            provenance->setCallingConv(get_llvm_jit_host_calling_conv());
+            provenance->setDoesNotThrow();
+            call_arguments.push_back(provenance);
+#endif
             if(abi_layout.result_count > 1uz) { call_arguments.push_back(result_buffer_address); }
             auto typed_call{apply_llvm_jit_wasm_calling_conv(raw_ir_builder.CreateCall(llvm_function, {call_arguments.data(), call_arguments.size()}))};
             if(abi_layout.result_count == 1uz)
@@ -10276,6 +10365,9 @@ template <bool DirectImport = false>
     auto const adapter{::llvm::Function::Create(adapter_type, ::llvm::Function::InternalLinkage,
                                                 get_llvm_string_ref(u8"tail.host.adapter"), state.llvm_module)};
     apply_llvm_jit_wasm_calling_conv(*adapter);
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+    adapter->getArg(layout.parameter_count + 2uz)->setName("uwvm.ros.provenance");
+#endif
     adapter->addFnAttr(::llvm::Attribute::NoInline);
     if(state.debug_activation_enabled) { adapter->addFnAttr("uwvm.debug.activation"); }
     if(state.emit_unwind_call_stack_frames) { apply_llvm_jit_unwind_call_stack_function_attrs(*adapter); }
@@ -10382,6 +10474,9 @@ template <bool DirectImport = false>
        type->getReturnType() != state.llvm_function->getReturnType()) { return false; }
     auto prepared{prepare_runtime_local_func_llvm_jit_wasm_call_operands(state, *wasm_type)};
     if(!prepared.valid) { return false; }
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+    if(!append_llvm_jit_ros_provenance(*state.ir_builder, prepared.arguments)) { return false; }
+#endif
     if(prepared.abi_layout.result_count > 1uz)
     {
         // [surviving non-tail caller's result_bytes ...] the checked Wasm result
@@ -10465,6 +10560,9 @@ template <bool DirectImport = false>
     for(auto const type: callee->getFunctionType()->params()) { if(type->isAggregateType()) { return false; } }
     auto prepared{prepare_runtime_local_func_llvm_jit_wasm_call_operands(state, *target.function_type_ptr)};
     if(!prepared.valid) { return false; }
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+    if(!append_llvm_jit_ros_provenance(*state.ir_builder, prepared.arguments)) { return false; }
+#endif
     if(prepared.abi_layout.result_count > 1uz)
     {
         // [surviving non-tail caller's result_bytes ...] the checked Wasm result
@@ -10792,6 +10890,9 @@ template <bool Tail = false>
 
     if constexpr(Tail)
     {
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+        if(!append_llvm_jit_ros_provenance(*state.ir_builder, prepared_call.arguments)) { return false; }
+#endif
         if(abi_layout.result_count > 1uz)
         {
             // [surviving caller's tuple ...] signature checked before this branch.
@@ -11089,6 +11190,9 @@ template <bool Tail = false>
 
     if constexpr(Tail)
     {
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+        if(!append_llvm_jit_ros_provenance(*state.ir_builder, prepared.arguments)) { return false; }
+#endif
         if(state.llvm_function == nullptr) [[unlikely]] { return false; }
         if(abi_layout.result_count > 1uz)
         {

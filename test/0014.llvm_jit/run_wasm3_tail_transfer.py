@@ -115,7 +115,7 @@ def fixtures(backend):
     yield ('table-mutation', '''(module
       (type $t (func (param i32) (result i32)))
       (table $unused 1 funcref) (table $selected 1 2 funcref)
-      (elem (table $selected) (i32.const 0) $one) (elem declare func $two)
+      (elem (table $selected) (i32.const 0) func $one) (elem declare func $two)
       (func $one (type $t) local.get 0 i32.const 1 i32.add)
       (func $two (type $t) local.get 0 i32.const 2 i32.add)
       (func $dispatch (param i32) (result i32)

@@ -74,7 +74,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
         generation_bound_plan,
         debugger_active,
         experimental_gc_exceptions,
-        native_eh_private_binding
+        native_eh_private_binding,
+        not_found  // No object exists for the current authenticated context; this is an ordinary cold miss.
     };
 
     [[nodiscard]] inline constexpr ::uwvm2::utils::container::u8string_view cache_status_name(cache_status status) noexcept
@@ -83,6 +84,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
         {
             case cache_status::ok: return u8"ok";
             case cache_status::disabled: return u8"disabled";
+            case cache_status::not_found: return u8"not-found";
             case cache_status::io_error: return u8"io-error";
             case cache_status::malformed: return u8"malformed";
             case cache_status::invalid_magic: return u8"invalid-magic";

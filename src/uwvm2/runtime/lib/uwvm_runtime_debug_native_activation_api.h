@@ -437,7 +437,7 @@
             {
                 bool same{};
                 if(!::uwvm2::uwvm::debugger::native_step::with_owned_registers_and_revision(session,
-                    [&](auto thread,auto pc,auto begin,auto end,auto const& raw,auto actual_revision,bool actual_delay_slot) noexcept
+                    [&](auto thread,auto pc,auto begin,auto end,[[maybe_unused]] auto const& raw,auto actual_revision,[[maybe_unused]] bool actual_delay_slot) noexcept
                     { same = thread == cursor->thread_ && pc == image.stop_pc && begin == image.owner_begin && end == image.owner_end;
                       if(same)
                       {

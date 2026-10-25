@@ -1,0 +1,26 @@
+[Unit]
+Description=Restore the uwvm2-ros cache origin for UID %i
+After=local-fs.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=root
+Group=root
+UMask=0077
+ExecStart=/usr/libexec/uwvm2-ros-cache-origin --uid %i
+StateDirectory=uwvm2-ros/cache-origin
+StateDirectoryMode=0700
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictNamespaces=yes
+NoNewPrivileges=yes
+CapabilityBoundingSet=CAP_SETUID CAP_SETGID
+LimitCORE=0
+
+[Install]
+WantedBy=multi-user.target

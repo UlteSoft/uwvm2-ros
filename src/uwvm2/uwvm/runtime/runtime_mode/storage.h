@@ -212,7 +212,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::runtime_mode
     inline bool runtime_llvm_jit_call_stack_existed{};  // [global]
 
     /// @brief Runtime LLVM AOT call-stack tracking mode.
-    inline runtime_llvm_jit_call_stack_t global_runtime_llvm_jit_call_stack{runtime_llvm_jit_call_stack_t::auto_policy};  // [global]
+    inline runtime_llvm_jit_call_stack_t global_runtime_llvm_jit_call_stack{runtime_llvm_jit_call_stack_t::unwind};  // [global]
 
     /// @brief Whether the LLVM AOT cache path mode was explicitly configured.
     inline bool runtime_llvm_jit_cache_path_existed{};  // [global]

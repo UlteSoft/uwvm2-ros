@@ -21,6 +21,10 @@
 # include <uwvm2/runtime/lib/uwvm_runtime.h>
 # include "loader.h"
 # include "retval.h"
+# if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#  include <uwvm2/uwvm/imported/ros/validation.h>
+#  include <uwvm2/uwvm/imported/ros/host.h>
+# endif
 #endif
 #ifndef UWVM_MODULE_EXPORT
 # define UWVM_MODULE_EXPORT
@@ -158,6 +162,26 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
                         if(loaded_preload != ::uwvm2::uwvm::wasm::loader::load_wasm_file_rtl::ok)
                         { ctx.result = static_cast<int>(retval::load_main_module_error); return false; }
                     }
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+                    // Owning the parsed source must not bypass the ordinary ROS
+                    // admission sequence. Validate all loaded module bindings and
+                    // attest configured gateways before any runtime initialization.
+                    if(::uwvm2::uwvm::imported::ros::policy_configured)
+                    {
+                        if(auto result{::uwvm2::uwvm::imported::ros::validate_loaded_policy(true)}; !result)
+                        {
+                            ::uwvm2::uwvm::imported::ros::print_policy_error(result);
+                            ctx.result = static_cast<int>(retval::parameter_error);
+                            return false;
+                        }
+                        if(auto result{::uwvm2::uwvm::imported::ros::host::preflight()}; !result)
+                        {
+                            ::uwvm2::uwvm::imported::ros::print_policy_error(result);
+                            ctx.result = static_cast<int>(retval::parameter_error);
+                            return false;
+                        }
+                    }
+#endif
                     // Native standard pipeline, with original provider behavior.
                     // No guest may execute inside this maintenance callback.
                     if(auto const code{load_local_modules()}; code != static_cast<int>(retval::ok))

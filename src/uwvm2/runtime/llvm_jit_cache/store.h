@@ -935,18 +935,44 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
         inline constexpr void runtime_cache_log_line(Args&&... args) noexcept
         {
 #if defined(UWVM)
-            // Runtime logs are optional because cache activity is useful for profiling but noisy for normal execution.
-            if(!::uwvm2::uwvm::io::enable_runtime_log) { return; }
-
-            ::fast_io::io::perrln(::uwvm2::uwvm::io::u8runtime_log_output, u8"[llvm-jit-cache] ", ::std::forward<Args>(args)...);
+            // A verbose cache diagnosis must not require a separate compiler
+            // logging flag or write to an unopened runtime-log stream.
+            if(::uwvm2::uwvm::io::enable_runtime_log)
+            {
+                ::fast_io::io::perrln(::uwvm2::uwvm::io::u8runtime_log_output, u8"[llvm-jit-cache] ", ::std::forward<Args>(args)...);
+            }
+            else if(::uwvm2::uwvm::io::show_verbose)
+            {
+                ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output, u8"[llvm-jit-cache] ", ::std::forward<Args>(args)...);
+            }
 #else
             ((void)args, ...);
+#endif
+        }
+
+        /// @brief Report the check that refused native cache I/O, never secret bytes.
+        inline void log_cache_refusal(cache_status status) noexcept
+        {
+#if defined(__linux__)
+            if(status == cache_status::io_error || status == cache_status::not_found)
+            {
+                runtime_cache_log_line(u8"refusal-detail operation=", secure_file::last_failure.operation,
+                                       u8" errno=", secure_file::last_failure.system_error);
+            }
+            else if(status == cache_status::kernel_origin_unavailable)
+            {
+                runtime_cache_log_line(u8"refusal-detail operation=", kernel_origin::last_failure.operation,
+                                       u8" errno=", kernel_origin::last_failure.system_error);
+            }
+#else
+            (void)status;
 #endif
         }
 
         inline constexpr void log_cache_store_completion(cache_store_request const& request, cache_status status) noexcept
         {
             if(!request.log_completion) { return; }
+            log_cache_refusal(status);
             if(request.log_parallel_object)
             {
                 runtime_cache_log_line(u8"object-cache-store-complete module=\"",
@@ -1269,14 +1295,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
             auto cache_dir{secure_file::object_directory(as_view(ctx.cache_dir), as_view(cache_product_name), as_view(shard), false)};
             if(!cache_dir)
             {
-                result.status = cache_status::io_error;
+                result.status = secure_file::last_failure.system_error == ENOENT ? cache_status::not_found : cache_status::io_error;
                 return result;
             }
             auto const file_name{details::cache_file_name_from_hash(key_hash)};
             auto file{secure_file::read_snapshot(cache_dir.value, as_view(file_name), maximum)};
             if(!file.ok)
             {
-                result.status = cache_status::io_error;
+                result.status = secure_file::last_failure.system_error == ENOENT ? cache_status::not_found : cache_status::io_error;
                 return result;
             }
             auto const first{file.bytes.get()};

@@ -107,10 +107,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
         inline constexpr void runtime_log_line(Args&&... args) noexcept
         {
 # if defined(UWVM)
-            // Cache logging is kept behind the runtime flag because ObjectCache callbacks can be frequent.
-            if(!::uwvm2::uwvm::io::enable_runtime_log) { return; }
-
-            ::fast_io::io::perrln(::uwvm2::uwvm::io::u8runtime_log_output, u8"[llvm-jit-cache] ", ::std::forward<Args>(args)...);
+            runtime_cache_log_line(::std::forward<Args>(args)...);
 # else
             ((void)args, ...);
 # endif
@@ -288,12 +285,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
                                       cache_status_name(status),
                                       u8" bytes=",
                                       buffer.size());
+            details::log_cache_refusal(status);
         }
 
         [[nodiscard]] inline constexpr ::std::unique_ptr<::llvm::MemoryBuffer> getObject(::llvm::Module const* module) UWVM_THROWS override
         {
             if(module == nullptr) [[unlikely]] { return {}; }
-            auto load{load_object(make_module_context(*module), policy)};
+            auto ctx{make_module_context(*module)};
+            auto load{load_object(ctx, policy)};
             if(load.status != cache_status::ok)
             {
                 // A miss returns nullptr so LLVM falls back to compiling the module normally.
@@ -303,6 +302,29 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
                                           details::module_identifier_view(*module),
                                           u8"\" status=",
                                           cache_status_name(load.status));
+                details::log_cache_refusal(load.status);
+                // Component fingerprints let users compare two verbose runs:
+                // no cache entry is adopted merely because these fields match.
+                // The full signed context and current origin are still checked.
+                if(::uwvm2::uwvm::io::show_verbose)
+                {
+                    auto const isa{make_isa_metadata(ctx)};
+                    auto const context{make_context_metadata(ctx)};
+                    auto const fingerprint{[](auto const& value) noexcept
+                    {
+                        ::uwvm2::utils::container::vector<::std::byte> bytes{};
+                        bytes.reserve(value.size());
+                        auto const first{reinterpret_cast<::std::byte const*>(value.data())};
+                        if(!value.empty()) { details::append_bytes(bytes, first, first + value.size()); }
+                        return details::sha256_hex_for_path(bytes);
+                    }};
+                    details::runtime_log_line(u8"lookup-context key=", details::cache_key_hash(ctx),
+                        u8" source=", fingerprint(ctx.cache_key), u8" executable=", fingerprint(ctx.self_executable_sha256),
+                        u8" isa=", details::sha256_hex_for_path(isa),
+                        u8" context=", details::sha256_hex_for_path(context),
+                        u8" llvm=", ctx.llvm_version, u8" abi=", fingerprint(ctx.uwvm_abi),
+                        u8" policy=", fingerprint(ctx.codegen_policy), u8" ttl=none");
+                }
                 if(load.status == cache_status::signature_missing) [[unlikely]] { warn_signature_missing_once(); }
                 return {};
             }
