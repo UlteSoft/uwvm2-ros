@@ -18,6 +18,40 @@ DRIVER = Path(__file__).resolve()
 ROOT = DRIVER.parents[5] if len(DRIVER.parents) > 5 else None
 
 
+def verify_source_inputs(root, manifest):
+    """@brief Verify every frozen VM input, with or without the historical vm/ prefix.
+
+    @details A valid manifest identity alone proves no relationship to the files
+    used by a debugger session. Require a nonempty inventory, one entry per
+    resolved source path, the exact size and the complete SHA-256. Paths must
+    remain inside the explicitly selected source tree. No entry is skipped.
+    """
+    if not isinstance(manifest, list) or not manifest:
+        raise ValueError("The VM source manifest must contain file entries")
+    root = root.resolve(strict=True)
+    seen = set()
+    total = 0
+    for row in manifest:
+        relative = row["path"]
+        if relative.startswith("vm/"):
+            relative = relative[3:]
+        parts = relative.split("/")
+        if any(part in ("", ".", "..") for part in parts):
+            raise ValueError("Noncanonical VM source path: " + row["path"])
+        file = (root / relative).resolve(strict=True)
+        if not file.is_relative_to(root) or file in seen:
+            raise ValueError("Escaping or duplicate VM source path: " + row["path"])
+        seen.add(file)
+        if not file.is_file() or file.stat().st_size != row["bytes"]:
+            raise ValueError("VM source size differs: " + row["path"])
+        with file.open("rb") as stream:
+            digest = hashlib.file_digest(stream, "sha256").hexdigest()
+        if digest != row["sha256"]:
+            raise ValueError("VM source SHA-256 differs: " + row["path"])
+        total += row["bytes"]
+    return {"files": len(seen), "bytes": total}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("uwvm", "wat2wasm", "build-receipt", "source-manifest", "out"):
@@ -52,10 +86,7 @@ def main():
         manifest = json.loads(args.source_manifest.read_text())
         identity = hashlib.sha256(json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
         assert "sha256:" + identity == build["source"]["source_identity"]
-        for row in manifest:
-            if row["path"].startswith("vm/"):
-                file = root / row["path"][3:]
-                assert file.stat().st_size == row["bytes"] and live.sha(file) == row["sha256"], row["path"]
+        report["verified_source_inputs"] = verify_source_inputs(root, manifest)
         report["source_identity"] = build["source"]["source_identity"]
         report["runtime_sha256"] = live.sha(args.uwvm)
         report["driver_sha256"] = live.sha(Path(__file__))
