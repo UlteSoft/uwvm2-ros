@@ -31,11 +31,18 @@
 # error "uwvm2-ros ARM requires the rebuilt bundled TailCC stack-restoration capability"
 #endif
 
+// Revision 15 restores reserved AArch64 caller frames before spill reloads.
+// Keep this capability coupled to the actual backend source and archive hashes.
+#if (defined(__aarch64__) || defined(_M_ARM64)) && \
+    (!defined(LLVM_UWVM_AARCH64_CALLEE_POP_SP_FIXED) || LLVM_UWVM_AARCH64_CALLEE_POP_SP_FIXED != 1)
+# error "uwvm2-ros AArch64 requires the rebuilt bundled callee-pop stack-restoration capability"
+#endif
+
 // No standard-library include is needed in the header/module global fragment.
 // This is compile-time only, with no VM-entry or generated-Wasm overhead.
 static_assert([]() constexpr
 {
-    constexpr char expected[]{"23.1.1-uwvm-ros.14"};
+    constexpr char expected[]{"23.1.1-uwvm-ros.15"};
     constexpr char actual[]{LLVM_VERSION_STRING};
     if constexpr(sizeof(actual) != sizeof(expected)) { return false; }
     else
@@ -46,7 +53,7 @@ static_assert([]() constexpr
         }
         return true;
     }
-}(), "uwvm2-ros requires the exact bundled LLVM 23.1.1-uwvm-ros.14 headers; configure through xmake");
+}(), "uwvm2-ros requires the exact bundled LLVM 23.1.1-uwvm-ros.15 headers; configure through xmake");
 
 // Revision 9 includes the qualified RISC-V callee-pop TailCC ABI and the
 // incoming-stack musttail repair. Ordinary uwvm2 requires an explicit opt-in;

@@ -6,11 +6,14 @@ Archive/signature provenance is in [README.md](README.md).
 
 ## Compiled LLVM source changes
 
-The following fifty-five compiler inputs and one exported configuration
-header template differ from the official release:
+The following compiler inputs and exported configuration header template
+differ from the official release:
 
 | File | Reason |
 | --- | --- |
+| `llvm/lib/Target/ARM/ARMISelLowering.cpp` | Revision 14 aligns guaranteed-tail callee-pop counts to the actual target stack alignment, matching incoming/outgoing ARMv7 EABI argument areas. |
+| `llvm/lib/Target/ARM/ARMFrameLowering.cpp` | Revision 14 prevents shrink wrapping from skipping incoming callee-popped argument restoration on an early return. |
+| `llvm/lib/Target/AArch64/AArch64FrameLowering.cpp` | Revision 15 restores a reserved caller SP immediately after a callee-pop call, before register-allocator spill reloads. Ordinary calls retain their existing frame accounting. |
 | `llvm/lib/Target/ARM/ARMFastISel.cpp` | TailCC normal calls and returns decline FastISel before ABI assignment or instruction emission, so the existing SelectionDAG TailCC implementation handles O0 typed Wasm calls. Other calling conventions retain upstream behavior; this does not change the C host entry ABI or enable ARM EHABI unwind. Real MCJIT tests cover non-tail integer and void TailCC calls and returns at O0 and optimized code generation. |
 | `llvm/lib/Target/Mips/MipsBranchExpansion.cpp` | Only the actual `uwvm.native.debug.pcrel` N64 pre-R6 function attribute converts intra-function J edges to PC-relative B before the unchanged long-branch range pass. This avoids RuntimeDyld section-tail trampolines without expanding native-debug ownership, changing the static C host-call ABI, or altering unmarked/MIPS16/microMIPS/R6 functions. Actual MCJIT regression checks both marked containment and the unchanged unmarked trampoline path. Revision 13 also keeps marked long B edges inside the function with full-width relocated targets and explicit delay slots. |
 | `llvm/lib/Target/Mips/MipsISelLowering.cpp` | Exact static N64 non-varargs C `musttail` bypasses the optional sibling-call switch, retaining unchanged incoming-area/byval/local-callee checks. PIC, other ABIs and differing C prototypes keep the original opt-in policy. Revision 13 separately adds qualified static N64 R2 TailCC callee-pop argument areas, signed growing/shrinking stack offsets, load/store ordering and normal-call callee-pop accounting. |
@@ -23,7 +26,7 @@ header template differ from the official release:
 | `llvm/lib/Object/RelocationResolver.cpp` | Resolve V9 DISP32/DISP64 and SystemZ PC32/PC64 in the independent DWARF object reader; a valid PC-relative EH section must not invalidate the actual Wasm line/location metadata. |
 | `llvm/lib/Target/Sparc/TargetInfo/SparcTargetInfo.cpp` | Revision 11 registers `sparcv9` as a JIT target alongside the completed ELF64 RuntimeDyld loader; 32-bit and little-endian SPARC remain AOT-only. |
 | `llvm/include/llvm/ExecutionEngine/RuntimeDyld.h` | Revision 11 declares library-defined ELF loader and PPC64 paired TOC-tail ABI capability queries, preventing patched-header/stale-archive mixtures from enabling unsupported native targets. |
-| `llvm/include/llvm/Config/llvm-config.h.cmake` | Revision 11 exports explicit PPC32/SPARC V9 loader capability macros so consumers cannot infer patched loader support from a stock version number. Revision 12 adds the exact X86 aligned-frame TailCC capability. Revision 13 packages the explicit LoongArch64 and MIPS N64EL R2 TailCC capabilities. |
+| `llvm/include/llvm/Config/llvm-config.h.cmake` | Revision 11 exports explicit PPC32/SPARC V9 loader capability macros so consumers cannot infer patched loader support from a stock version number. Revision 12 adds the exact X86 aligned-frame TailCC capability. Revision 13 packages the explicit LoongArch64 and MIPS N64EL R2 TailCC capabilities. Revisions 14 and 15 add the ARM and AArch64 callee-pop restoration capabilities. |
 | `llvm/lib/Target/X86/X86ISelLoweringCall.cpp` | Revision 12 rounds incoming guaranteed-tail call frames with MaxStackArgAlign before return-address-slot alignment, matching outgoing callee-pop accounting. Ordinary C and vararg raw stack accounting stays unchanged. |
 | `llvm/lib/CodeGen/AsmPrinter/AsmPrinter.cpp` | Revision 10 emits an opt-in nonexecuting actual text begin/code-end relocation table for all emitted definitions; code end is before target-specific trailers, with actual assembler entry/local-entry names in v2. Unknown shapes stay claims; permissions remain a separate canonical runtime decision. |
 | `llvm/lib/Target/RISCV/RISCVISelLowering.cpp` | Revision 9 stores C musttail arguments in incoming fixed slots after all overlapping reads; TailCC supports different argument areas, reserves growth before spills, and emits explicit tail SP deltas and callee-pop calls. |
@@ -178,7 +181,7 @@ The ordinary repository supplies the same
   were not imported. Required libc shared math headers remain.
 - Three internal mlgo utility symlinks were materialized with identical target
   bytes for Windows checkouts. Vendor line-ending conversion is disabled.
-- ROS xmake builds Release static archives with suffix `-uwvm-ros.14` and
+- ROS xmake builds Release static archives with suffix `-uwvm-ros.15` and
   verifies `sources.sha256`. Its CMake metadata target exports include paths,
   definitions and the complete ordered static-library closure.
 - Separately from compiler-source edits, ROS native MIPS target selection uses
@@ -424,3 +427,21 @@ regressions exercise direct/indirect calls, million-step mutual tail recursion,
 different argument counts, scalar/vector arguments and traps. Qualification
 receipts and remaining target limits are recorded in
 [the ROS runtime report](../../documents/toolchain/ros-runtime-qualification.md).
+
+
+## Revision 15: AArch64 reserved-frame spill reloads
+
+AArch64 callee-pop calls previously restored reserved caller SP at
+`ADJCALLSTACKUP`, after a possible register-allocator spill reload. The existing
+adjustment now follows the call immediately, matching X86. Argument offsets,
+pop sizes, ordinary call accounting and runtime checks stay unchanged.
+`AArch64/callee-pop-reload.mir` checks direct and indirect callee-pop calls plus
+an ordinary-call control with machine verification for both endiannesses.
+The maintained executable probe and exact evidence are described in
+[the AArch64 repair report](../../documents/toolchain/llvm-aarch64-callee-pop.md).
+
+The generated `LLVM_UWVM_AARCH64_CALLEE_POP_SP_FIXED` capability accompanies the
+revision-15 source manifest and archive identity. Consumer cache keys record
+actual AArch64 admission and explicit external qualification. The source
+allowlist now also includes the two previously documented revision-14 ARM
+backend edits. Historical source/receipt bytes are unchanged.

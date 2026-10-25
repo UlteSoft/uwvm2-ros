@@ -2,9 +2,8 @@
 """Compare retained vendor bytes to the exact official archive, without extracting it.
 
 Materialized in-tree symlinks are compared to their original target bytes.
-Only the fifty-five documented compiler edits, one exported configuration
-header template, two host build policies, and twenty-five regression
-files may differ.
+Only the documented compiler edits, exported configuration header, host
+build policies, and explicitly listed regression files may differ.
 This is a content/provenance check, not a proof of compiler correctness.
 """
 import argparse
@@ -67,6 +66,9 @@ CHANGED |= {
     'llvm/lib/Target/Mips/MipsSEFrameLowering.cpp',
     'llvm/lib/Target/Mips/MipsScheduleGeneric.td',
 }
+CHANGED |= {'llvm/lib/Target/ARM/ARMISelLowering.cpp',
+            'llvm/lib/Target/ARM/ARMFrameLowering.cpp',
+            'llvm/lib/Target/AArch64/AArch64FrameLowering.cpp'}
 BUILD_POLICY_CHANGED = {'llvm/lib/CodeGen/CMakeLists.txt', 'llvm/cmake/config-ix.cmake'}
 ADDED = {'llvm/test/CodeGen/SystemZ/load-trap-motion.ll',
          'llvm/test/CodeGen/RISCV/rtdyld-call-range.s',
@@ -93,6 +95,7 @@ ADDED = {'llvm/test/CodeGen/SystemZ/load-trap-motion.ll',
          'llvm/test/CodeGen/AArch64/rtdyld-pcrel-be.check',
          'llvm/test/CodeGen/RISCV/rtdyld-local-symbols.ll',
          'llvm/test/CodeGen/RISCV/rtdyld-local-symbols.check'}
+ADDED |= {'llvm/test/CodeGen/AArch64/callee-pop-reload.mir'}
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('archive', type=Path)
 args = parser.parse_args()

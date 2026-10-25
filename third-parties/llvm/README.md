@@ -4,8 +4,8 @@ ROS uses **LLVM 23.1.1**, the latest official non-prerelease at the time of
 this import (2026-09-16), plus the explicitly recorded downstream backend repairs.
 This is **not trunk**, a nightly, an RC, or a system LLVM installation.
 The exact [downstream changes relative to the official release](UPSTREAM_CHANGES.md)
-are listed separately, including fifty-five compiler edits, one exported configuration header template,
-two host build policies (Linux MIPS64EL Clang 23 scheduling and Windows helper linking), and twenty-five regression files.
+are listed separately, including compiler edits, an exported configuration
+header template, host build policies and retained regression fixtures.
 See the [maintenance rationale and upgrade checklist](../../documents/toolchain/ros-llvm-maintenance.md)
 before relaxing a version/build guard, changing cache identity or removing a workaround.
 
@@ -33,7 +33,7 @@ identical target bytes so Windows checkouts do not depend on symlink privileges.
 The repository `.gitattributes` disables newline conversion for this vendor tree.
 Omitted: all other top-level projects (Clang, LLDB, LLD, MLIR, Flang, runtimes,
 etc.), LLVM documentation/examples/benchmarks/bindings/unit tests and the large
-upstream test suite. Git attributes/ignore metadata are also omitted. Twenty-five downstream
+upstream test suite. Git attributes/ignore metadata are also omitted. Twenty-six downstream
 regression files remain under `llvm/test/CodeGen/{Mips,VE,AVR,MSP430,AArch64,RISCV,SystemZ}/`.
 No `.git` repository or submodule is embedded.
 Do not remove `.td`, `.inc`, `.def`, Python or CMake files by extension: these
@@ -87,7 +87,7 @@ The hash distinguishes source/patch content, compiler binaries, ABI-affecting
 flags, target backends and cross configuration. LLVM archives are linked by
 absolute path even when the application's system libraries remain dynamic;
 runtime loader search paths cannot replace libLLVM with another installation.
-The version suffix `-uwvm-ros.14` separates the native-object cache from
+The version suffix `-uwvm-ros.15` separates the native-object cache from
 unpatched upstream LLVM and earlier downstream revisions. Revision 2 added
 VE/AVR/MSP430 repairs; revision 3 fixes FP-predicate inversion and MIPS R6
 strict comparison selection/exception preservation. Otherwise an old cache
@@ -144,6 +144,10 @@ Revision 14 repairs ARM TailCC callee-pop alignment and prevents shrink wrapping
 from bypassing incoming argument-stack restoration on early returns. The backend
 exports `LLVM_UWVM_ROS_ARM_TAILCC_STACK_RESTORE`; the product also independently
 checks the linked ARM EHABI provider and its live generated unwind chain.
+Revision 15 restores reserved AArch64 caller SP immediately after a callee-pop
+call, before register-allocator spill reloads. Its generated capability and
+AArch64-only cache fields prevent the unrepaired ABI from being selected or
+reused. See [the defect, regression and qualification scope](../../documents/toolchain/llvm-aarch64-callee-pop.md).
 These revisions do not replace the official release base with trunk.
 A source/version mismatch fails closed.
 Source verification/Ninja checks run once per xmake process, not once per

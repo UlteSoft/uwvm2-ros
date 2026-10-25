@@ -723,7 +723,15 @@ MachineBasicBlock::iterator AArch64FrameLowering::eliminateCallFramePseudoInstr(
     // If the calling convention demands that the callee pops arguments from the
     // stack, we want to add it back if we have a reserved call frame.
     assert(CalleePopAmount < 0xffffff && "call frame too large");
-    emitFrameOffset(MBB, I, DL, AArch64::SP, AArch64::SP,
+    // Register allocation can insert frame-index reloads between the call and
+    // ADJCALLSTACKUP. Those frame indices use the caller's reserved-frame SP,
+    // but a callee-pop call has already advanced SP on return. Restore it
+    // immediately after the call, before any such reload (as on X86).
+    auto InsertPt = I;
+    while (InsertPt != MBB.begin() && !std::prev(InsertPt)->isCall())
+      --InsertPt;
+    assert(InsertPt != MBB.begin() && "callee-pop adjustment without a call");
+    emitFrameOffset(MBB, InsertPt, DL, AArch64::SP, AArch64::SP,
                     StackOffset::getFixed(-(int64_t)CalleePopAmount), TII);
   }
   return MBB.erase(I);

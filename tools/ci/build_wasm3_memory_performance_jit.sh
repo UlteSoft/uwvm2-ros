@@ -35,10 +35,10 @@ if [[ -n ${UWVM_TEST_ROS_LLVM_BUILD:-} ]]; then
 import json, pathlib, shlex, sys
 root = pathlib.Path(sys.argv[1]).resolve()
 metadata = json.loads((root / 'uwvm-llvm-version.json').read_text())
-if metadata['version'] != '23.1.1-uwvm-ros.14':
+if metadata['version'] != '23.1.1-uwvm-ros.15':
     raise SystemExit('wrong bundled LLVM patch version')
 header = root / 'include/llvm/Config/llvm-config.h'
-if '#define LLVM_VERSION_STRING "23.1.1-uwvm-ros.14"' not in header.read_text().splitlines():
+if '#define LLVM_VERSION_STRING "23.1.1-uwvm-ros.15"' not in header.read_text().splitlines():
     raise SystemExit('wrong generated bundled LLVM version header')
 for token in shlex.split((root / 'consumer-link.rsp').read_text()):
     if token.endswith('.a') and (not pathlib.Path(token).is_relative_to(root) or not pathlib.Path(token).is_file()):

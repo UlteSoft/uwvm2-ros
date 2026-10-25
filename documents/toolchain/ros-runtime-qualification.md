@@ -1,4 +1,4 @@
-# ROS runtime qualification, 2026-10-25
+# ROS runtime qualification, 2026-10-26
 
 The qualified Linux product uses live-checked native unwind. The public
 `instruction`, `auto`, `none` and `unwind-uncheck` stack policies are refused.
@@ -50,13 +50,24 @@ it is not relabeled as a new two-boot run.
 | AArch64 | LLVM 23 paired cross-build, full-system QEMU basic checks, 24 native call ABI guests, persistent-origin reboot checks | This exact libc/runtime closure is qualified; a stock older distro or GPU is not implied. |
 | ARMv7 hard-float | Paired LLVM 23 revision 14 build, full-system QEMU cache store/two fresh hits, checked three-frame unwind, all 24 call ABI guests and policy refusals | Tested target libc is 2.35. ARM32 native debugger, stock Focal and native ROS endpoints remain unqualified; no QEMU performance is claimed. |
 
-The final provider revision `23.1.1-uwvm-ros.14` was rebuilt from its verified
+The retained provider revision `23.1.1-uwvm-ros.14` was rebuilt from its verified
 source inventory for all three targets. ARM TailCC now uses the target's actual
 stack alignment for callee-pop size. Functions with incoming callee-popped
 arguments no longer shrink-wrap away the epilogue on an early return. The paired
 libunwind consults the owned JIT exidx registry; static-image lookup uses bounded
 loader-owned program headers. Its ABI marker and live unwind probe remain
 mandatory. ARM EHABI setup is independent of the debugger build option.
+
+The x86_64 and AArch64 providers and products were then rebuilt from the complete
+paired revision-15 source inventory. The native product passed `basic_test`,
+cache-identity and permission regressions, ROS ancestry/reentry, the corrected
+live debugger driver, all 24 ABI guests and all twelve retained KUKA programs.
+On AArch64, full-system QEMU passed the basic cache/WASI/ROS,
+checked-unwind and debugger checks, all 24 call ABI guests, and all twelve
+retained KUKA TypeScript example/regression programs across wasm32 and wasm64.
+The original memory64 failure and its caller-frame repair are described below.
+These results do not relabel the revision-14 ARMv7 product or earlier timing
+cohorts as revision-15 measurements.
 
 The 24 ABI guests exercise direct, indirect and typed-reference calls, genuine
 tail calls, mutual recursion, stack/vector arguments, multi-value results,
@@ -71,6 +82,13 @@ stale-reference refusal. ROS1 and ROS2 ancestry tests retain denial across
 cross-module direct/reference/indirect/tail calls and restore the suspended
 owner after host reentry and exceptions. ROS provenance travels in a private
 native argument, not in per-function diagnostic push/pop hooks.
+
+The standalone debugger driver now verifies every source-manifest entry in both
+the historical `vm/` layout and the repository-relative layout. It rejects
+missing, changed, truncated, duplicate, noncanonical and escaping paths. Eight
+Linux checks passed; each actual manifest layout verified 27,313 complete files.
+This corrects a driver omission and does not replace the outer build's own
+source and ELF verification.
 
 Selected ROS release architecture boundaries and NVIDIA hardware limitations
 are documented in [ARCHITECTURES.md](../../test/0073.ros-tests/ARCHITECTURES.md).
@@ -264,14 +282,31 @@ runs without a gateway or a matching sourced ROS distribution. An enabled
 preload still requires a gateway before worker creation. These checks use the
 final revision-14 native executable and explicit stream-only authority.
 
-Further TypeScript coverage found an unresolved AArch64 failure: the final
-revision-14 executable passes three KUKA wasm32 examples, but the first wasm64
-example traps during QuickJS context initialization with an out-of-bounds memory
-access. All twelve retained KUKA example/regression artifacts pass on the exact
-x86_64 executable. The full-system AArch64 receipt retains the failing Wasm hash
+Further TypeScript coverage exposed an AArch64 revision-14 failure: three KUKA
+wasm32 examples passed, but the first wasm64 example trapped during QuickJS
+context initialization. All twelve retained KUKA example/regression artifacts
+passed on the exact revision-14 x86_64 executable. The original failing Wasm is
 `bdc93a619bf17729f9f6a72c2c4975e0b1acd503bc5f248b357a92e221cf3bc3`
-and the actual Wasm frames. This blocks that candidate's AArch64 memory64
-acceptance; earlier finite ABI tests do not override the new failure.
+and the failed receipt retains its actual Wasm frames.
+
+The access was in bounds. A guaranteed-tail callee had advanced SP, and LLVM
+reloaded a caller spill before restoring the reserved caller frame. Revision 15
+moves that existing restoration immediately after the call. The old provider
+fails independent direct/indirect machine and executable controls; the repaired
+provider passes both endian machine checks and a real little-endian executable.
+The exact original QuickJS guest then passes `pb-o1`, `legacy-light` and `pb-o3`.
+No bounds, permission, provenance or unwind check was removed. See
+[the compiler repair and portable regression](llvm-aarch64-callee-pop.md).
+
+The fresh, source-paired native x86_64 revision-15 ELF has SHA-256
+`d8892127689d175e6344a14c9ec4d28515493c283969a95091ab05b30317b88e`.
+The corresponding AArch64 ELF has SHA-256
+`7015f8650bf8b19d0e670dc8681a31007b07e7464123aa5a33664c1e9067e466`.
+Their frozen source identity is
+`sha256:5761395cfae8912fae119f3ffd0ed0f6ccdf0c49faf0e8836996ccca742789b0`.
+Both complete formal runs pass all twelve unchanged KUKA artifacts. This
+qualifies those finite codec programs under AOT and checked unwind; it does not
+qualify a native KUKA peer, physical controller, or every SDK language/library.
 
 A second private optimization that removed unused provenance operands produced
 no stable native latency improvement in fifteen measured, interleaved rounds
@@ -291,6 +326,8 @@ remain private test artifacts, outside the SDK and Git. Export archive digests:
 - `ros1-resource-vtune-raw-recovery-r1.tar.gz`: `3b51ac4baa326880de8444dd2869279e5336323095fc74f4623be99e79adea4a`
 - `qualification-cache-origin-r1.tar.gz`: `6c62deaad0d76dd85d8f555b46386d9bad370c66b0054a8ed9e6c583aa998363`
 - `review-evidence-r8/results.tar.gz`: `1d4b249f79fd5e42288467f4acda363d5ad2e1d31d0e890aaa2dafc4baaa4d9f` (352 verified receipt members, including the AArch64 failure and SDK launcher checks)
+- `formal-aarch64-r15-r1/receipts.tar.gz`: `14bb66f260ea7715a9489da7a7ab543ddc997ae0ee2a468af46deb37a581db86` (32 verified receipt members; fresh paired build, machine/executable controls, full-system basic/24-ABI/12-SDK checks)
+- `formal-native-r15-r1/receipts.tar.gz`: `16440d1c59f8ab5afb4c3f45ab3ce0f813d2d3b33086087bf42f66fd17b06286` (225 verified receipt members; fresh paired build, basic/cache/ancestry/debugger/24-ABI/12-SDK checks)
 
 Earlier aggregate failures remain failures in their original receipts. Examples
 include an unsupported WAT assembler grammar, an ANSI-stripping checker error,
