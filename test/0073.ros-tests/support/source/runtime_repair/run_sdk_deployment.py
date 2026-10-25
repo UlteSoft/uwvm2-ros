@@ -64,7 +64,9 @@ def main():
     if sys.platform != "linux":
         parser.error("the product launch probes require Linux")
     sys.dont_write_bytecode = True
+    sys.path.insert(0, str(args.sdk_root / "tools/platform/ros"))
     deployment = load(args.sdk_root / "tools/platform/ros/deployment.py", "sdk_deployment")
+    runner = load(args.sdk_root / "tools/platform/ros/run.py", "sdk_runner")
     codec = load(Path(__file__).resolve().parents[3] / "basic_test.py", "basic_codec")
     args.out.mkdir(parents=True, exist_ok=False)
     runtime = str(args.uwvm.resolve(strict=True))
@@ -90,6 +92,72 @@ def main():
                              b"call_stack=unwind " in result.stderr and b"unwind_check=live" in result.stderr)
             if not row["passed"]:
                 raise RuntimeError(f"{backend}: SDK launch or native authority check failed")
+        # Exercise the complete public runner, including executable discovery,
+        # the stopped-worker handshake and evidence output. Disabled ROS must
+        # not require an unused gateway or the user's sourced ROS distribution.
+        previous_distribution = os.environ.get("ROS_DISTRO")
+        try:
+            for backend, distribution in (("ros1", "noetic"), ("ros2", "jazzy")):
+                connection = (
+                    {"node-name": "sdk_probe", "namespace": "/",
+                     "master-uri": "http://127.0.0.1:11311",
+                     "advertise-host": "127.0.0.1", "transport": "tcpros"}
+                    if backend == "ros1" else
+                    {"node-name": "sdk_probe", "namespace": "/", "domain-id": "219",
+                     "rmw-implementation": "rmw_fastrtps_cpp", "security-mode": "disabled-test",
+                     "keystore": "not-applicable", "enclave": "not-applicable"}
+                )
+                scenario = {"arguments": [], "main_module": "main", "preloads": [],
+                            "modules": {"main": {"ros_enabled": False, "grants": [],
+                                                "wasi_grants": ["stdio-full-rights"]}}}
+                config = {"format": deployment.FORMAT, "runtime": runtime,
+                          "backend": backend, "distribution": distribution,
+                          "connection": connection, "examples": {"probe": scenario}}
+                wasm = (args.out / (backend + ".wasm")).resolve()
+                for supplied in (False, True):
+                    label = backend + ("-unused-gateway" if supplied else "-no-gateway")
+                    if supplied:
+                        config["gateway"] = str(args.out / "deliberately-absent-gateway")
+                    else:
+                        config.pop("gateway", None)
+                    configuration = args.out / (label + ".json")
+                    configuration.write_text(json.dumps(config) + "\n")
+                    destination = args.out / label
+                    os.environ["ROS_DISTRO"] = "unrelated-sourced-distribution"
+                    code = runner.run(configuration, "probe", wasm, destination,
+                                      "wasm32-wasip1", backend, distribution)
+                    records = list(destination.glob("*/execution.json"))
+                    assert code == 0 and len(records) == 1, label
+                    record = json.loads(records[0].read_text())
+                    assert record["gateway"] is None and record["gateway_sha256"] is None
+                    assert record["gateway_pids"] == {} and record["status"] == "PASS"
+                    assert "--runtime-aot" in record["argv"] and "unwind" in record["argv"]
+                    assert (records[0].parent / "worker.stdout").read_bytes() == expected
+                    report["checks"].append({"case": label, "passed": True,
+                                              "execution": str(records[0])})
+                # Any enabled preload requires a gateway even if main has no
+                # ROS authority. This refusal must precede process creation.
+                config.pop("gateway", None)
+                scenario["preloads"] = [{"module": "observer", "path": str(wasm), "attribute": "none"}]
+                scenario["modules"]["observer"] = {"ros_enabled": True, "grants": [], "wasi_grants": []}
+                configuration = args.out / (backend + "-enabled-preload.json")
+                configuration.write_text(json.dumps(config) + "\n")
+                destination = args.out / (backend + "-enabled-preload")
+                os.environ["ROS_DISTRO"] = distribution
+                try:
+                    runner.run(configuration, "probe", wasm, destination,
+                               "wasm32-wasip1", backend, distribution)
+                except ValueError as error:
+                    assert str(error) == "A ROS-enabled module requires a gateway executable"
+                else:
+                    raise AssertionError("An enabled preload bypassed gateway admission")
+                assert not destination.exists(), "A refused deployment started a worker"
+                report["checks"].append({"case": backend + "-enabled-preload-refused", "passed": True})
+        finally:
+            if previous_distribution is None:
+                os.environ.pop("ROS_DISTRO", None)
+            else:
+                os.environ["ROS_DISTRO"] = previous_distribution
         report["passed"] = True
     finally:
         (args.out / "report.json").write_text(json.dumps(report, indent=2) + "\n")

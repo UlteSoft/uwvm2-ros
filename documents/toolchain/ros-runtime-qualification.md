@@ -258,6 +258,25 @@ the AOT launcher. This finite probe does not certify every SDK language/platform
 the PAL Java preload application, or a physical NVIDIA endpoint. PAL's updated
 shell launch command was separately syntax-checked.
 
+The complete SDK `run.py` launcher now also has eight real-Wasm checks covering
+both ROS import families. A deployment with every module's ROS policy disabled
+runs without a gateway or a matching sourced ROS distribution. An enabled
+preload still requires a gateway before worker creation. These checks use the
+final revision-14 native executable and explicit stream-only authority.
+
+Further TypeScript coverage found an unresolved AArch64 failure: the final
+revision-14 executable passes three KUKA wasm32 examples, but the first wasm64
+example traps during QuickJS context initialization with an out-of-bounds memory
+access. All twelve retained KUKA example/regression artifacts pass on the exact
+x86_64 executable. The full-system AArch64 receipt retains the failing Wasm hash
+`bdc93a619bf17729f9f6a72c2c4975e0b1acd503bc5f248b357a92e221cf3bc3`
+and the actual Wasm frames. This blocks that candidate's AArch64 memory64
+acceptance; earlier finite ABI tests do not override the new failure.
+
+A second private optimization that removed unused provenance operands produced
+no stable native latency improvement in fifteen measured, interleaved rounds
+against the formal revision-14 executable. It is not part of the product.
+
 Raw receipts, source manifests, stdout/stderr, failed attempts and VTune data
 remain private test artifacts, outside the SDK and Git. Export archive digests:
 
@@ -271,6 +290,7 @@ remain private test artifacts, outside the SDK and Git. Export archive digests:
 - `ros1-resource-results-recovery-r2.tar.gz`: `50f85e49c3f45b42ea17053a9780d8dec8b10373e8b16bd8215c1a0ed2e7baea`
 - `ros1-resource-vtune-raw-recovery-r1.tar.gz`: `3b51ac4baa326880de8444dd2869279e5336323095fc74f4623be99e79adea4a`
 - `qualification-cache-origin-r1.tar.gz`: `6c62deaad0d76dd85d8f555b46386d9bad370c66b0054a8ed9e6c583aa998363`
+- `review-evidence-r8/results.tar.gz`: `1d4b249f79fd5e42288467f4acda363d5ad2e1d31d0e890aaa2dafc4baaa4d9f` (352 verified receipt members, including the AArch64 failure and SDK launcher checks)
 
 Earlier aggregate failures remain failures in their original receipts. Examples
 include an unsupported WAT assembler grammar, an ANSI-stripping checker error,

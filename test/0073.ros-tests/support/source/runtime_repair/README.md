@@ -104,6 +104,12 @@ serializer for both ROS families. It checks actual standard output, a denied
 WASI clock, a well-formed ungranted ROS alias and live checked native unwind.
 The test grants only its explicitly listed standard-stream permission.
 
+The same driver also calls the complete public `run.py` launcher for both
+backends. Pure Wasm policies must run without a gateway, with an unused invalid
+gateway path, and with an unrelated sourced `ROS_DISTRO`. An explicitly enabled
+ROS preload must still fail before worker creation when its gateway is absent.
+These eight checks verify real output and refusal behavior without a native peer.
+
 `xmake lua run_sdk_empty.lua <sdk> <runtime> <guest.wasm>` exercises the SDK's
 NVIDIA empty-authority launcher through actual Xmake, using one of those generated
 policy-checking guests. This verifies launch arguments and denials; it does not
