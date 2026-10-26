@@ -1,0 +1,14 @@
+[
+  {
+    "label": "compile",
+    "root": "/dev/shm/sdk01-portable-compile-r650-qualify-19479f707522460bb98f6f8c08234bcf",
+    "sha256": "d87d1b9499364681dd028a0a7d22d954b336fbf521254538cd1400f04719363d",
+    "bytes": 11417
+  },
+  {
+    "label": "control",
+    "root": "/dev/shm/vm-control-envelope-r1-2d64426c27f4438ca2d398777f4c68c5",
+    "sha256": "6be6833a34aaee561cb6de0598eedbd5e04b2c983fc9c621e8a4a95f9958991f",
+    "bytes": 7830
+  }
+]

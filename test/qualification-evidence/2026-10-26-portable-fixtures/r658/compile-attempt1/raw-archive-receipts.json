@@ -1,0 +1,18 @@
+[
+  {
+    "label": "compile",
+    "root": "/dev/shm/sdk01-portable-compile-r658-qualify-e3c0ed165dcb48c2ace12a77d1f65344",
+    "sha256": "f60e119693d07a2bd03e1618a60b431df0dc639d932c0eddf578fae8524b4d38",
+    "bytes": 29320,
+    "files": 37,
+    "logical_bytes": 132024
+  },
+  {
+    "label": "control",
+    "root": "/dev/shm/vm-control-envelope-r1-4d8850fe8db64e0f90fea975314263d5",
+    "sha256": "27d73beb61d7def1770d21933f33d1327d6f54ac28bcad058ab4ba8e75eea1c1",
+    "bytes": 7977,
+    "files": 46,
+    "logical_bytes": 45824
+  }
+]

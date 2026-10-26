@@ -1,0 +1,16 @@
+{
+  "schema": "uwvm-closed-control-request-v1",
+  "packet": "/dev/shm/sdk01-portable-compile-input-r652",
+  "packet_manifest_sha256": "6792b8b8448c2182c9440581d069d03ef745705eceabd2ef469ab2020996e0ac",
+  "entry": "launch.py",
+  "arguments": [
+    "--mode",
+    "prove-guardian",
+    "--parent-id",
+    "e9d3c78af787a89fa89b598e220e610ed4a40900afe9ef3ce220a7325b05603f",
+    "--expected-boot-id",
+    "815b614a-e0a5-4600-9d7f-139b323d8190",
+    "--packet-manifest-sha256",
+    "6792b8b8448c2182c9440581d069d03ef745705eceabd2ef469ab2020996e0ac"
+  ]
+}

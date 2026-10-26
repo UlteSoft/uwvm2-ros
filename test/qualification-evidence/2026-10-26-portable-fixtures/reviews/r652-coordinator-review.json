@@ -1,0 +1,133 @@
+{
+  "schema": "coordinator-limited-artifact-evidence-review-v1",
+  "at": "2026-10-26T12:53:05.623929+00:00",
+  "scope": "Existing bytes/raw receipts only; no local subject execution, compilation or test",
+  "errors": [],
+  "compiler_packet": {
+    "files": 83,
+    "bytes": 851164
+  },
+  "sdk_immutable_assets": {
+    "files": 2258,
+    "bytes": 337198104
+  },
+  "artifact_manifest_sha256": "0870aeac005e003a0bfb52c4834ce46ed45da032247e8dbc23a8a4ade1b48949",
+  "semantic_source_files": {
+    "files": 3,
+    "bytes": 10218
+  },
+  "wasm": {
+    "bytes": 4449,
+    "sha256": "c0d886e864243938999e4adf4c0f4ce6fb3c2c001723b855cd8b203bfafe2043",
+    "same_first_r650_bytes": true,
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros-sdk/lib/platform/ros/portable/v0.1.0/joint-step.wasm"
+  },
+  "archives": [
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/.tmp/sdk-validation/platform-chat-01/portable-compile-r652/compile-attempt1/compile-raw.tar.gz",
+      "sha256": "fc1f9140cd1640e96a021326646f8af910b5596101926fa3acac6b7b997d1790",
+      "regular_files": 21,
+      "expanded_bytes_match": true
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/.tmp/sdk-validation/platform-chat-01/portable-compile-r652/compile-attempt1/control-raw.tar.gz",
+      "sha256": "6f4e34d9e3d60dfbc4b68ba215132c9ad93185f9f986f9804c6ad0198de45cb9",
+      "regular_files": 44,
+      "expanded_bytes_match": true
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/.tmp/sdk-validation/platform-chat-01/portable-compile-r652/attempt1/proof-raw.tar.gz",
+      "sha256": "3da447dddcdb3022866272545fbe56437f66de7dc8b381f18839ad307b08238f",
+      "regular_files": 39,
+      "expanded_bytes_match": true
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/.tmp/sdk-validation/platform-chat-01/portable-compile-r652/attempt1/control-raw.tar.gz",
+      "sha256": "de9717cca64fb14cda148a024de342567f45e5d263cf950ed962b37fddf0a5b2",
+      "regular_files": 87,
+      "expanded_bytes_match": true
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/.tmp/sdk-validation/platform-chat-01/portable-compile-r652/compile-attempt1/actual-configured-project.tar.gz",
+      "sha256": "d3e7f9ddc97d3fd1f64dfc58dbb85559d18c47c3f17b0ef19b92265235bcc53c",
+      "regular_files": 13,
+      "expanded_bytes_match": false
+    }
+  ],
+  "actual_result_sha256": "341c3cf05655af36b13dc004714da7c4813755aa41736b3a569fc5e01f58fcbc",
+  "commands": [
+    {
+      "argv": [
+        "/tool-bin/xmake",
+        "f",
+        "-y",
+        "-c",
+        "-a",
+        "wasm32"
+      ],
+      "cwd": "/work/compile/sdk/example/platform/ros/portable/v0_1_0/joint_step",
+      "exit_code": 0,
+      "name": "configure",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "764b8d443b3c3573a2ba138978de518980a794fc9e54167f73ed77623d3abd69"
+    },
+    {
+      "argv": [
+        "/tool-bin/xmake",
+        "-vD",
+        "-j2"
+      ],
+      "cwd": "/work/compile/sdk/example/platform/ros/portable/v0_1_0/joint_step",
+      "exit_code": 0,
+      "name": "build",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "858f05010ffd66089532cb3ef3f86d6516e505cc5c44ba141010dcf1e7f5b794"
+    },
+    {
+      "argv": [
+        "/tool-bin/xmake",
+        "l",
+        "/packet/inspect_artifacts.lua",
+        "/work/compile/sdk",
+        "/work/compile/sdk/example/platform/ros/portable/v0_1_0/joint_step/build/portable-joint-step-v0-1-0.wasm",
+        "/work/compile/raw/wasm-structure.json"
+      ],
+      "cwd": "/work/compile/sdk/example/platform/ros/portable/v0_1_0/joint_step",
+      "exit_code": 0,
+      "name": "inspect",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "actual_actor_budget_and_lease_receipts": true,
+  "two_interruption_cases": [
+    {
+      "case": "host-controller-loss",
+      "sha256": "ddce5d271759e69c1a1cada06785f8660d1604e6808a2633f6de59f4b5e721fc",
+      "live_child_lock_held_and_owned_container_retired": true
+    },
+    {
+      "case": "inside-controller-loss",
+      "sha256": "b20f7fe959737f00ced1da9989310239a1d76ff9e209ea55e2bfd623300cce47",
+      "live_child_lock_held_and_owned_container_retired": true
+    }
+  ],
+  "host_control_actors": {
+    "count": 97,
+    "roles": {
+      "rpc": 77,
+      "client": 3,
+      "host-guardian": 3,
+      "host-keeper": 3,
+      "host-launch": 2,
+      "bootstrap": 2,
+      "host-try_lease": 6,
+      "host-proof_sentinel": 1
+    }
+  },
+  "attempt1_leaf_observation": "populated 0\nfrozen 0\n",
+  "compile-attempt1_leaf_observation": "populated 0\nfrozen 0\n",
+  "acceptance": "VERIFIED_COMPILER_AND_RECORDED_STRUCTURE_ONLY",
+  "vm_native_ros_simulation_qemu_performance": "NOT_RUN",
+  "shipping_approved": false
+}

@@ -1,0 +1,171 @@
+{
+  "schema": "portable-compiled-preview-publication-v1",
+  "created_at": "2026-10-26T15:46:23.130900+00:00",
+  "sdk_repository": "https://github.com/UlteSoft/uwvm2-ros-sdk",
+  "sdk_base_commit": "64c2e9e0187088ee572e0b127e42568c97854ead",
+  "scope": "Three compiler/recorded-structure-qualified preview fixtures, versioned candidate contracts and developer documentation. No host or robot-platform runtime support is asserted.",
+  "files": [
+    {
+      "path": "document/platform/ros/en_US/portable/v0_1_0/README.md",
+      "bytes": 3828,
+      "sha256": "0038af28332c32f9b9a88a9887d50be0f2e439c35f5d009212eb6d9c4ab05927"
+    },
+    {
+      "path": "document/platform/ros/en_US/portable/v0_3_0/README.md",
+      "bytes": 2709,
+      "sha256": "1f078e4b70b2b60fe44d998fdc758d76098c75347f544cc89cd16d2c2265be2f"
+    },
+    {
+      "path": "document/platform/ros/zh_CN/portable/v0_1_0/README.md",
+      "bytes": 3181,
+      "sha256": "0751eb028afcc82e4e1720bd786e14aec115f524de8faa46f758a946ca6656cc"
+    },
+    {
+      "path": "document/platform/ros/zh_CN/portable/v0_3_0/README.md",
+      "bytes": 2194,
+      "sha256": "069c795e129469dba2ab03759b90128fceff4bc524b7dd3f3441bb7d06b4829e"
+    },
+    {
+      "path": "example/platform/ros/portable/v0_1_0/joint_step/main.c",
+      "bytes": 6112,
+      "sha256": "46f6bac6268cc9a4e338f75c57d7b9df508ec98a4b63d9f95bc427186d6fa616"
+    },
+    {
+      "path": "example/platform/ros/portable/v0_1_0/joint_step/xmake.lua",
+      "bytes": 804,
+      "sha256": "57da5ffa3fed362bcefaed7a36853636316a0816bf1a2f44ab7de14b084cd730"
+    },
+    {
+      "path": "example/platform/ros/portable/v0_3_0/planar_goal/main.c",
+      "bytes": 4074,
+      "sha256": "f59e3850d7b9cdd640066bdd6cd7e93c261a59d95d8bf58796ff2a6f13bbfd30"
+    },
+    {
+      "path": "example/platform/ros/portable/v0_3_0/planar_goal/xmake.lua",
+      "bytes": 732,
+      "sha256": "89978fb1ebd5b2d79d606f300a45741928a5c410beb969ef88ebc2d980b0d163"
+    },
+    {
+      "path": "example/platform/ros/portable/v0_3_0/sensor_digest/main.c",
+      "bytes": 2931,
+      "sha256": "4db0dd84936ba6776332691d642131df875d85ae1068bd827f4fb4153a8ea4fd"
+    },
+    {
+      "path": "example/platform/ros/portable/v0_3_0/sensor_digest/xmake.lua",
+      "bytes": 736,
+      "sha256": "52d14c8a3af9591f62adc62fe80115884f6c025913f48c24add4a4179a35cf32"
+    },
+    {
+      "path": "include/platform/ros/portable/v0_1_0/abi.h",
+      "bytes": 3302,
+      "sha256": "9feeb5eb1354edfa06274b77cbe83d24569366fd49e2bf67400bab970ddd902d"
+    },
+    {
+      "path": "lib/platform/ros/portable/v0.1.0/joint-step.wasm",
+      "bytes": 4449,
+      "sha256": "c0d886e864243938999e4adf4c0f4ce6fb3c2c001723b855cd8b203bfafe2043"
+    },
+    {
+      "path": "lib/platform/ros/portable/v0.3.0/planar-goal.wasm",
+      "bytes": 3797,
+      "sha256": "54884d1513c2e5256450128627a5cc6f4130ca9ed533322a5035f77f81b59ff9"
+    },
+    {
+      "path": "lib/platform/ros/portable/v0.3.0/sensor-digest.wasm",
+      "bytes": 20095,
+      "sha256": "7061f671b91860cca2867d52bc38bca4c12234426598951451b481cf31c69100"
+    },
+    {
+      "path": "share/platform/ros/portable/artifacts/joint-step-v0.1.0.json",
+      "bytes": 11730,
+      "sha256": "0870aeac005e003a0bfb52c4834ce46ed45da032247e8dbc23a8a4ade1b48949"
+    },
+    {
+      "path": "share/platform/ros/portable/artifacts/planar-goal-v0.3.0.json",
+      "bytes": 11538,
+      "sha256": "14f4df197e95476046dc2b19a0fddb6fe598d474576785f4067b7084145d849e"
+    },
+    {
+      "path": "share/platform/ros/portable/artifacts/sensor-digest-v0.3.0.json",
+      "bytes": 12114,
+      "sha256": "191e2a87d72af2a2fffd8878ae271d9907fa7f19770eb92ce0e89d86d9e6c278"
+    },
+    {
+      "path": "share/platform/ros/portable/v0.1.0/abi.json",
+      "bytes": 5376,
+      "sha256": "d4063d349ab9e97e28b5c92836812c5e847b3a6ed9a8a3123d02248594a84eba"
+    },
+    {
+      "path": "share/platform/ros/portable/v0.1.0/adapter.schema.json",
+      "bytes": 4744,
+      "sha256": "b1b9d0a6cf60cf8d5c1c9f33fdbdee6fb38a796b811045e3b9e0b807ef910248"
+    },
+    {
+      "path": "share/platform/ros/portable/v0.1.0/algorithm.json",
+      "bytes": 3254,
+      "sha256": "79fb0412de6882ec2e8216e33296af56d761f31ad2b9873387d3a2bb2e2e6743"
+    },
+    {
+      "path": "share/platform/ros/portable/v0.1.0/contract.json",
+      "bytes": 4737,
+      "sha256": "181db9c80d42c913cd14a2d7a71a4eb6d99931eedd4dc4f6c94cb411825922ee"
+    },
+    {
+      "path": "share/platform/ros/portable/v0.1.0/source-files.json",
+      "bytes": 2222,
+      "sha256": "ed178b82496ed45bf8041c18387db9343c3d6b3954aadd190a51c4cf81cc2bbd"
+    },
+    {
+      "path": "share/platform/ros/portable/v0.1.0/wire.json",
+      "bytes": 4765,
+      "sha256": "d09c0f919e0eca4fe74e9200b9bcbed1d5499bfdda02fb268543e08b41af137d"
+    },
+    {
+      "path": "share/platform/ros/portable/v0.3.0/adapter.schema.json",
+      "bytes": 17632,
+      "sha256": "a2a1ee8492cf8c1bdc82d9df4d7575ebfb60a444769ef3648df0dbae8f7397ed"
+    },
+    {
+      "path": "share/platform/ros/portable/v0.3.0/algorithms.json",
+      "bytes": 2668,
+      "sha256": "60c61b00d33849a86ffe4bef68845e07fe5188dbf012e22d5062ebd6fcff6743"
+    },
+    {
+      "path": "share/platform/ros/portable/v0.3.0/contract.json",
+      "bytes": 4059,
+      "sha256": "d5af6871a6070dc674d5925a00ca66cb97015d563e5efce7c6a30610f4e78bea"
+    },
+    {
+      "path": "share/platform/ros/portable/v0.3.0/source-files.json",
+      "bytes": 2419,
+      "sha256": "158aa66cafd9d61cb66e3c9879f55060a52617f6528e4cbf71ecf74a86f74228"
+    },
+    {
+      "path": "share/platform/ros/portable/v0.3.0/wire.json",
+      "bytes": 4808,
+      "sha256": "e4b1bf368078af68f48280b486a27ac4d49a6cf9d376a47d9fa239bece3c69ca"
+    }
+  ],
+  "excluded": [
+    "v0.2.0 source-only preview",
+    "global index.json and capability-families.json",
+    "all other owners and all runtime changes"
+  ],
+  "packet_metadata_resolution": {
+    "path": "share/platform/ros/portable/index.json",
+    "classification": "SEALED_PACKET_METADATA_ONLY_EXCLUDED_FROM_PUBLIC_SDK_SCOPE",
+    "evidence": "compile_portable.py copies and hashes the staged SDK file set; it reads ABI/case data directly. None of the sealed SDK tools or example xmake.lua files references this index. The exact historical index is preserved in each source-packet archive. Global catalog publication and its additional source-only version are excluded.",
+    "qualification": "Static dependency review; no additional compile or runtime test performed."
+  },
+  "qualification": {
+    "compiler": "PASS_RECORDED_LINUX_EXECUTION",
+    "recorded_wasm_structure": "PASS",
+    "vm_execution": "NOT_RUN",
+    "native_ros": "NOT_RUN",
+    "official_simulation": "NOT_RUN",
+    "cross_platform_reuse": "NOT_RUN",
+    "qemu": "NOT_RUN",
+    "native_performance": "NOT_RUN"
+  },
+  "coordinator_actions": "Source/diff inspection, existing receipt/archive/hash review, evidence copying, and Git publication only. No compiler, Wasm, tests, or repository code executed on macOS."
+}

@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/dev/shm/sdk01-portable-families-input-r656/launch.py", line 281, in <module>
+    if __name__=='__main__':main()
+                            ~~~~^^
+  File "/dev/shm/sdk01-portable-families-input-r656/launch.py", line 260, in main
+    need(state['controller'].returncode==0 and report.get('passed') and report['retirement']['retired'], 'compiler failed or retirement incomplete')
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev/shm/sdk01-portable-families-input-r656/common.py", line 36, in need
+    raise RuntimeError(message)
+RuntimeError: compiler failed or retirement incomplete

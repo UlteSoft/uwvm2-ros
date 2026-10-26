@@ -1,0 +1,44 @@
+{
+  "status": "PASS_OWN_COMPLETE_SYSROOT_BATCH_PROOF_ONLY",
+  "source_packet_sha256": "97eb003724e2fb05164950cdd81f2752fac0df090da747d73029d286d38d5d02",
+  "proof_remote": "/dev/shm/sdk01-portable-compile-r658-prove-guardian-070b54b92d4f47658ae9c54cc081fd14/proof.json",
+  "proof_sha256": "2a3295236519a0ee0672d53f33dc5db28111cfe36088f46d6fb4343c935b7f4d",
+  "archives": [
+    {
+      "label": "proof",
+      "root": "/dev/shm/sdk01-portable-compile-r658-prove-guardian-070b54b92d4f47658ae9c54cc081fd14",
+      "sha256": "bf488018bcfd8c85bda568e4b478c009cb388ff59e5dfad9c6be89e3412ff552",
+      "bytes": 18597,
+      "files": 39
+    },
+    {
+      "label": "control",
+      "root": "/dev/shm/vm-control-envelope-r1-3c8a2fafc3d34f86ac751c5d1977a3f6",
+      "sha256": "c84bf07ea599f88e462d03212c674a4825e52adecbc3994c905624efac52aa42",
+      "bytes": 11518,
+      "files": 87
+    }
+  ],
+  "case_raw_hashes_verified": 35,
+  "host_records": 70,
+  "roles": {
+    "host-try_lease": 6,
+    "rpc": 55,
+    "host-proof_sentinel": 1,
+    "client": 2,
+    "host-keeper": 2,
+    "host-guardian": 2,
+    "bootstrap": 1,
+    "host-launch": 1
+  },
+  "control_leaf_empty": true,
+  "immutable_inputs": {
+    "compiler_executed_by_this_gate": false,
+    "immutable_bytes": 350094523,
+    "immutable_files": 4143,
+    "llvm_archive_sha256": "8e97c5e26755459965d86361f970c9b7d6d2e7c44e953fc0faeb82621b157522",
+    "xmake_binary_sha256": "d24ec7daa11ab5007f33221ba0a883f9c7479afae2a47370773f209047152a1e",
+    "xmake_program_files": 1887
+  },
+  "compiler_executed": false
+}

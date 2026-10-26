@@ -1,0 +1,23 @@
+[
+  {
+    "id": "planar-goal-v0.3.0",
+    "file": "planar-goal-v0.3.0-actual-project.tar.gz",
+    "sha256": "8763463ee1b34e619919f7acde543db2a2bd9beb3b93caee1b272f9dac72f378",
+    "bytes": 5599,
+    "members": 24
+  },
+  {
+    "id": "sensor-digest-v0.3.0",
+    "file": "sensor-digest-v0.3.0-actual-project.tar.gz",
+    "sha256": "35b03f1a32bf980b9543a4e0c8de1e283b09e915850be5c88c078c62efb55855",
+    "bytes": 12555,
+    "members": 22
+  },
+  {
+    "id": "existing-wasi-c-sum_arguments-wasm32",
+    "file": "existing-wasi-c-sum_arguments-wasm32-actual-project.tar.gz",
+    "sha256": "1d47a6e3bb62a2c422cf2c25bf328d777a7f142f5ed35835cac688642911de76",
+    "bytes": 16086,
+    "members": 22
+  }
+]

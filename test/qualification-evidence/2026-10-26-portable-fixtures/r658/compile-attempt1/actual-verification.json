@@ -1,0 +1,305 @@
+{
+  "status": "PASS_THREE_ACTUAL_COMPILATIONS_STRUCTURES_AND_PHYSICAL_RETIREMENT",
+  "verified_utc": "2026-10-26T14:55:11.108749+00:00",
+  "result_sha256": "f7266df0b157b719b859adfd9e600b55111cac35ea388fde54c1c279b57cbaa8",
+  "compiler_commands_verified": 9,
+  "artifacts": [
+    {
+      "bytes": 3797,
+      "capability": "planar.pose.goal.v1",
+      "id": "planar-goal-v0.3.0",
+      "memories": [
+        {
+          "address_bits": 32,
+          "flags": 1,
+          "maximum": 1024,
+          "minimum": 17,
+          "shared": false
+        }
+      ],
+      "metadata_sha256": "c406047bac2bf33f5a9826c56031b6fc84dd9c6276866cce9a82c89316ac1fe7",
+      "path": "/work/compile/artifacts/planar-goal-v0.3.0.wasm",
+      "portable_imports": [
+        {
+          "kind": 0,
+          "module": "uwvm_portable_robot_v1",
+          "name": "abi_version",
+          "signature": {
+            "parameters": [],
+            "results": [
+              127
+            ]
+          }
+        },
+        {
+          "kind": 0,
+          "module": "uwvm_portable_robot_v1",
+          "name": "open",
+          "signature": {
+            "parameters": [
+              127,
+              126,
+              126,
+              126
+            ],
+            "results": [
+              127
+            ]
+          }
+        },
+        {
+          "kind": 0,
+          "module": "uwvm_portable_robot_v1",
+          "name": "describe",
+          "signature": {
+            "parameters": [
+              126,
+              127,
+              126,
+              126,
+              126
+            ],
+            "results": [
+              127
+            ]
+          }
+        },
+        {
+          "kind": 0,
+          "module": "uwvm_portable_robot_v1",
+          "name": "read_state",
+          "signature": {
+            "parameters": [
+              126,
+              127,
+              126,
+              126,
+              126
+            ],
+            "results": [
+              127
+            ]
+          }
+        },
+        {
+          "kind": 0,
+          "module": "uwvm_portable_robot_v1",
+          "name": "submit",
+          "signature": {
+            "parameters": [
+              126,
+              127,
+              126,
+              126,
+              126,
+              126,
+              126
+            ],
+            "results": [
+              127
+            ]
+          }
+        },
+        {
+          "kind": 0,
+          "module": "uwvm_portable_robot_v1",
+          "name": "wait",
+          "signature": {
+            "parameters": [
+              126,
+              126,
+              127,
+              126,
+              126,
+              126
+            ],
+            "results": [
+              127
+            ]
+          }
+        },
+        {
+          "kind": 0,
+          "module": "uwvm_portable_robot_v1",
+          "name": "close",
+          "signature": {
+            "parameters": [
+              126
+            ],
+            "results": [
+              127
+            ]
+          }
+        }
+      ],
+      "sha256": "54884d1513c2e5256450128627a5cc6f4130ca9ed533322a5035f77f81b59ff9",
+      "source_files": [
+        {
+          "bytes": 4074,
+          "path": "example/platform/ros/portable/v0_3_0/planar_goal/main.c",
+          "sha256": "f59e3850d7b9cdd640066bdd6cd7e93c261a59d95d8bf58796ff2a6f13bbfd30"
+        },
+        {
+          "bytes": 732,
+          "path": "example/platform/ros/portable/v0_3_0/planar_goal/xmake.lua",
+          "sha256": "89978fb1ebd5b2d79d606f300a45741928a5c410beb969ef88ebc2d980b0d163"
+        },
+        {
+          "bytes": 3302,
+          "path": "include/platform/ros/portable/v0_1_0/abi.h",
+          "sha256": "9feeb5eb1354edfa06274b77cbe83d24569366fd49e2bf67400bab970ddd902d"
+        }
+      ]
+    },
+    {
+      "bytes": 20095,
+      "capability": "sensor.frame.integrity.v1",
+      "id": "sensor-digest-v0.3.0",
+      "memories": [
+        {
+          "address_bits": 32,
+          "flags": 1,
+          "maximum": 1024,
+          "minimum": 33,
+          "shared": false
+        }
+      ],
+      "metadata_sha256": "3150b8fe62d80b2bc2818210dcb40e4484e7c77c20009ca6555c72bfe31a3f4e",
+      "path": "/work/compile/artifacts/sensor-digest-v0.3.0.wasm",
+      "portable_imports": [
+        {
+          "kind": 0,
+          "module": "uwvm_portable_robot_v1",
+          "name": "abi_version",
+          "signature": {
+            "parameters": [],
+            "results": [
+              127
+            ]
+          }
+        },
+        {
+          "kind": 0,
+          "module": "uwvm_portable_robot_v1",
+          "name": "open",
+          "signature": {
+            "parameters": [
+              127,
+              126,
+              126,
+              126
+            ],
+            "results": [
+              127
+            ]
+          }
+        },
+        {
+          "kind": 0,
+          "module": "uwvm_portable_robot_v1",
+          "name": "describe",
+          "signature": {
+            "parameters": [
+              126,
+              127,
+              126,
+              126,
+              126
+            ],
+            "results": [
+              127
+            ]
+          }
+        },
+        {
+          "kind": 0,
+          "module": "uwvm_portable_robot_v1",
+          "name": "read_state",
+          "signature": {
+            "parameters": [
+              126,
+              127,
+              126,
+              126,
+              126
+            ],
+            "results": [
+              127
+            ]
+          }
+        },
+        {
+          "kind": 0,
+          "module": "uwvm_portable_robot_v1",
+          "name": "close",
+          "signature": {
+            "parameters": [
+              126
+            ],
+            "results": [
+              127
+            ]
+          }
+        }
+      ],
+      "sha256": "7061f671b91860cca2867d52bc38bca4c12234426598951451b481cf31c69100",
+      "source_files": [
+        {
+          "bytes": 2931,
+          "path": "example/platform/ros/portable/v0_3_0/sensor_digest/main.c",
+          "sha256": "4db0dd84936ba6776332691d642131df875d85ae1068bd827f4fb4153a8ea4fd"
+        },
+        {
+          "bytes": 736,
+          "path": "example/platform/ros/portable/v0_3_0/sensor_digest/xmake.lua",
+          "sha256": "52d14c8a3af9591f62adc62fe80115884f6c025913f48c24add4a4179a35cf32"
+        },
+        {
+          "bytes": 3302,
+          "path": "include/platform/ros/portable/v0_1_0/abi.h",
+          "sha256": "9feeb5eb1354edfa06274b77cbe83d24569366fd49e2bf67400bab970ddd902d"
+        }
+      ]
+    },
+    {
+      "bytes": 31267,
+      "capability": null,
+      "id": "existing-wasi-c-sum_arguments-wasm32",
+      "memories": [
+        {
+          "address_bits": 32,
+          "flags": 1,
+          "maximum": 1024,
+          "minimum": 17,
+          "shared": false
+        }
+      ],
+      "metadata_sha256": "b71a6ffdcf1d3bd4a24a2ab87fdd22a3a1909f5c677ba98a22c051c7615f8b5c",
+      "path": "/work/compile/artifacts/existing-wasi-c-sum_arguments-wasm32.wasm",
+      "portable_imports": [],
+      "sha256": "3ae9e4dee2268c5746d11dc0acbc8f693120fd4e7bc1a21f5e651bce5446f465",
+      "source_files": [
+        {
+          "bytes": 828,
+          "path": "example/platform/wasi/c/sum_arguments/main.c",
+          "sha256": "a362cd1e4f895d2e9d7a6d6958a87bcdd42bda0898db8c97743a02a936ff3f86"
+        },
+        {
+          "bytes": 1934,
+          "path": "example/platform/wasi/c/sum_arguments/xmake.lua",
+          "sha256": "4dbace6cba74bda29db2b9ebc8a77adef3d06800fcaba7abcc7f93c9e192fde3"
+        }
+      ]
+    }
+  ],
+  "own_proof_sha256": "2a3295236519a0ee0672d53f33dc5db28111cfe36088f46d6fb4343c935b7f4d",
+  "control_admission_sha256": "efba66a2c9ad3fa3a3b781f715676f5f12fab922e344a7e9cfd4951335195275",
+  "control_actor_records_verified": 29,
+  "control_leaf_physically_empty": true,
+  "guardian_status": "RETIRED",
+  "keeper_status": "PASS_COMPILE_ONLY_RETIRED",
+  "vm_executed": false,
+  "native_ros_executed": false,
+  "official_simulator_executed": false,
+  "raw_archive_receipts": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/.tmp/sdk-validation/platform-chat-01/portable-families-compile-r658/compile-attempt1/raw-archive-receipts.json"
+}

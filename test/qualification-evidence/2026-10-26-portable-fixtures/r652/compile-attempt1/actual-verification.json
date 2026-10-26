@@ -1,0 +1,225 @@
+{
+  "status": "PASS_COMPILED_WASM_STRUCTURE_ONLY",
+  "wasm_bytes": 4449,
+  "wasm_sha256": "c0d886e864243938999e4adf4c0f4ce6fb3c2c001723b855cd8b203bfafe2043",
+  "same_exact_first_r650_bytes": true,
+  "public_precompiled_asset": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros-sdk/lib/platform/ros/portable/v0.1.0/joint-step.wasm",
+  "source_packet_sha256": "6792b8b8448c2182c9440581d069d03ef745705eceabd2ef469ab2020996e0ac",
+  "result_sha256": "341c3cf05655af36b13dc004714da7c4813755aa41736b3a569fc5e01f58fcbc",
+  "result_remote": "/dev/shm/sdk01-portable-compile-r652-qualify-b277604e2fd6478c888e108b1ce4d9a0/compile-portable/work/compile/result.json",
+  "command_raw_hashes_verified": true,
+  "compiler_commands": [
+    {
+      "argv": [
+        "/tool-bin/xmake",
+        "f",
+        "-y",
+        "-c",
+        "-a",
+        "wasm32"
+      ],
+      "cwd": "/work/compile/sdk/example/platform/ros/portable/v0_1_0/joint_step",
+      "exit_code": 0,
+      "name": "configure",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "764b8d443b3c3573a2ba138978de518980a794fc9e54167f73ed77623d3abd69"
+    },
+    {
+      "argv": [
+        "/tool-bin/xmake",
+        "-vD",
+        "-j2"
+      ],
+      "cwd": "/work/compile/sdk/example/platform/ros/portable/v0_1_0/joint_step",
+      "exit_code": 0,
+      "name": "build",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "858f05010ffd66089532cb3ef3f86d6516e505cc5c44ba141010dcf1e7f5b794"
+    },
+    {
+      "argv": [
+        "/tool-bin/xmake",
+        "l",
+        "/packet/inspect_artifacts.lua",
+        "/work/compile/sdk",
+        "/work/compile/sdk/example/platform/ros/portable/v0_1_0/joint_step/build/portable-joint-step-v0-1-0.wasm",
+        "/work/compile/raw/wasm-structure.json"
+      ],
+      "cwd": "/work/compile/sdk/example/platform/ros/portable/v0_1_0/joint_step",
+      "exit_code": 0,
+      "name": "inspect",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "actual_admission": {
+    "actual_security": {
+      "CapAmb": "0000000000000000",
+      "CapBnd": "0000000000000000",
+      "CapEff": "0000000000000000",
+      "CapInh": "0000000000000000",
+      "CapPrm": "0000000000000000",
+      "Seccomp": "2",
+      "Seccomp_filters": "1"
+    },
+    "birth": "1095485",
+    "boot_id": "815b614a-e0a5-4600-9d7f-139b323d8190",
+    "compiler_inputs": {
+      "compiler_executed_by_this_gate": false,
+      "immutable_bytes": 337198104,
+      "immutable_files": 2258,
+      "llvm_archive_sha256": "8e97c5e26755459965d86361f970c9b7d6d2e7c44e953fc0faeb82621b157522",
+      "xmake_binary_sha256": "d24ec7daa11ab5007f33221ba0a883f9c7479afae2a47370773f209047152a1e",
+      "xmake_program_files": 1887
+    },
+    "cpuset.cpus.effective": "0,2,4,6,16-31",
+    "lease": {
+      "flock": [
+        "9: FLOCK  ADVISORY  WRITE 433396 103:08:17575649 0 EOF"
+      ],
+      "guardian_birth": "1095425",
+      "guardian_fdinfo": "pos:\t0\nflags:\t0500000\nmnt_id:\t32\nino:\t17575649\nlock:\t1: FLOCK  ADVISORY  WRITE 433396 103:08:17575649 0 EOF\n",
+      "guardian_pid": 433407,
+      "observed_monotonic_ns": 10954941437109,
+      "owner": {
+        "birth": "1095419",
+        "device_inode": [
+          259,
+          8,
+          17575649
+        ],
+        "pid": 433396
+      }
+    },
+    "membership": "0::/",
+    "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+    "memory.max": "68719476736",
+    "memory.swap.max": "0",
+    "pid": 7,
+    "sdk01_source_provider_pins": 66,
+    "shared_admission_sha256": "201917163c53726c34b7964632580b8b460b0a47de00f7613a02396cf2d692f1",
+    "shared_ancestor": {
+      "actual_path": "/host/budget",
+      "host_path": "/sys/fs/cgroup/uwvmros.slice",
+      "inode": 20624,
+      "memory.current": "8448593920",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+      "memory.max": "68719476736",
+      "memory.swap.max": "0"
+    },
+    "shared_readonly_mounts": [
+      "4725 4715 0:28 /sdk01-portable-compile-input-r652 /packet ro,nosuid,nodev - tmpfs tmpfs rw,inode64",
+      "4726 4715 0:28 /sdk01-portable-compile-r652-qualify-b277604e2fd6478c888e108b1ce4d9a0/compile-portable /context ro,nosuid,nodev - tmpfs tmpfs rw,inode64",
+      "4732 4715 0:29 /.. /host/budget ro,nosuid,nodev,noexec,relatime - cgroup2 cgroup2 rw",
+      "4733 4715 0:25 / /host/proc ro,nosuid,nodev,noexec,relatime - proc proc rw",
+      "4734 4733 0:33 / /host/proc/sys/fs/binfmt_misc ro,relatime - autofs systemd-1 rw,fd=36,pgrp=0,timeout=0,minproto=5,maxproto=5,direct,pipe_ino=14986",
+      "4735 4734 0:51 / /host/proc/sys/fs/binfmt_misc ro,nosuid,nodev,noexec,relatime - binfmt_misc binfmt_misc rw",
+      "4873 4715 0:28 /sdk01-portable-compile-r652-qualify-b277604e2fd6478c888e108b1ce4d9a0/compile-portable /host/dev/shm/sdk01-portable-compile-r652-qualify-b277604e2fd6478c888e108b1ce4d9a0/compile-portable ro,nosuid,nodev - tmpfs tmpfs rw,inode64",
+      "4874 4715 259:8 /home/macromodel/Documents/uwvm2-ros-test/control/test.lock /host/home/macromodel/Documents/uwvm2-ros-test/control/test.lock ro,relatime - ext4 /dev/nvme1n1p3 rw"
+    ]
+  },
+  "final_actual_admission": {
+    "actual_security": {
+      "CapAmb": "0000000000000000",
+      "CapBnd": "0000000000000000",
+      "CapEff": "0000000000000000",
+      "CapInh": "0000000000000000",
+      "CapPrm": "0000000000000000",
+      "Seccomp": "2",
+      "Seccomp_filters": "1"
+    },
+    "birth": "1095485",
+    "boot_id": "815b614a-e0a5-4600-9d7f-139b323d8190",
+    "compiler_inputs": {
+      "compiler_executed_by_this_gate": false,
+      "immutable_bytes": 337198104,
+      "immutable_files": 2258,
+      "llvm_archive_sha256": "8e97c5e26755459965d86361f970c9b7d6d2e7c44e953fc0faeb82621b157522",
+      "xmake_binary_sha256": "d24ec7daa11ab5007f33221ba0a883f9c7479afae2a47370773f209047152a1e",
+      "xmake_program_files": 1887
+    },
+    "cpuset.cpus.effective": "0,2,4,6,16-31",
+    "lease": {
+      "flock": [
+        "9: FLOCK  ADVISORY  WRITE 433396 103:08:17575649 0 EOF"
+      ],
+      "guardian_birth": "1095425",
+      "guardian_fdinfo": "pos:\t0\nflags:\t0500000\nmnt_id:\t32\nino:\t17575649\nlock:\t1: FLOCK  ADVISORY  WRITE 433396 103:08:17575649 0 EOF\n",
+      "guardian_pid": 433407,
+      "observed_monotonic_ns": 10962127185007,
+      "owner": {
+        "birth": "1095419",
+        "device_inode": [
+          259,
+          8,
+          17575649
+        ],
+        "pid": 433396
+      }
+    },
+    "membership": "0::/",
+    "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+    "memory.max": "68719476736",
+    "memory.swap.max": "0",
+    "pid": 7,
+    "sdk01_source_provider_pins": 66,
+    "shared_admission_sha256": "201917163c53726c34b7964632580b8b460b0a47de00f7613a02396cf2d692f1",
+    "shared_ancestor": {
+      "actual_path": "/host/budget",
+      "host_path": "/sys/fs/cgroup/uwvmros.slice",
+      "inode": 20624,
+      "memory.current": "9160331264",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+      "memory.max": "68719476736",
+      "memory.swap.max": "0"
+    },
+    "shared_readonly_mounts": [
+      "4725 4715 0:28 /sdk01-portable-compile-input-r652 /packet ro,nosuid,nodev - tmpfs tmpfs rw,inode64",
+      "4726 4715 0:28 /sdk01-portable-compile-r652-qualify-b277604e2fd6478c888e108b1ce4d9a0/compile-portable /context ro,nosuid,nodev - tmpfs tmpfs rw,inode64",
+      "4732 4715 0:29 /.. /host/budget ro,nosuid,nodev,noexec,relatime - cgroup2 cgroup2 rw",
+      "4733 4715 0:25 / /host/proc ro,nosuid,nodev,noexec,relatime - proc proc rw",
+      "4734 4733 0:33 / /host/proc/sys/fs/binfmt_misc ro,relatime - autofs systemd-1 rw,fd=36,pgrp=0,timeout=0,minproto=5,maxproto=5,direct,pipe_ino=14986",
+      "4735 4734 0:51 / /host/proc/sys/fs/binfmt_misc ro,nosuid,nodev,noexec,relatime - binfmt_misc binfmt_misc rw",
+      "4873 4715 0:28 /sdk01-portable-compile-r652-qualify-b277604e2fd6478c888e108b1ce4d9a0/compile-portable /host/dev/shm/sdk01-portable-compile-r652-qualify-b277604e2fd6478c888e108b1ce4d9a0/compile-portable ro,nosuid,nodev - tmpfs tmpfs rw,inode64",
+      "4874 4715 259:8 /home/macromodel/Documents/uwvm2-ros-test/control/test.lock /host/home/macromodel/Documents/uwvm2-ros-test/control/test.lock ro,relatime - ext4 /dev/nvme1n1p3 rw"
+    ]
+  },
+  "actual_host_actor_records": 27,
+  "actual_host_roles": {
+    "rpc": 22,
+    "client": 1,
+    "bootstrap": 1,
+    "host-launch": 1,
+    "host-guardian": 1,
+    "host-keeper": 1
+  },
+  "control_admission_sha256": "a5b4075a9e883b72909850e98543d424d46140de2b24ac2be0de28f4bb3ab157",
+  "control_leaf_empty_after_retirement": true,
+  "guardian_physically_retired": true,
+  "archives": [
+    {
+      "label": "compile",
+      "root": "/dev/shm/sdk01-portable-compile-r652-qualify-b277604e2fd6478c888e108b1ce4d9a0",
+      "archive": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/.tmp/sdk-validation/platform-chat-01/portable-compile-r652/compile-attempt1/compile-raw.tar.gz",
+      "sha256": "fc1f9140cd1640e96a021326646f8af910b5596101926fa3acac6b7b997d1790",
+      "bytes": 11572,
+      "raw_files": 21
+    },
+    {
+      "label": "control",
+      "root": "/dev/shm/vm-control-envelope-r1-40b9ddace658407cab98664ccb22ae89",
+      "archive": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/.tmp/sdk-validation/platform-chat-01/portable-compile-r652/compile-attempt1/control-raw.tar.gz",
+      "sha256": "6f4e34d9e3d60dfbc4b68ba215132c9ad93185f9f986f9804c6ad0198de45cb9",
+      "bytes": 7808,
+      "raw_files": 44
+    }
+  ],
+  "actual_project_archive_sha256": "d3e7f9ddc97d3fd1f64dfc58dbb85559d18c47c3f17b0ef19b92265235bcc53c",
+  "actual_project_files": 13,
+  "actual_compiler_provenance_sha256": "a46ee42aa826833fb758c4c8917a9daf49fcb29e15a1caa2855d1cf911f136a1",
+  "vm_executed": false,
+  "native_ros_executed": false,
+  "official_simulator_executed": false,
+  "qemu_executed": false,
+  "cross_platform_same_bytes_qualified": false
+}

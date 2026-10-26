@@ -1,0 +1,208 @@
+{
+  "schema": 1,
+  "at": "2026-10-26T15:09:42.944790+00:00",
+  "status": "VERIFIED_COMPILER_AND_RECORDED_STRUCTURE_ONLY",
+  "source_manifest": {
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/.tmp/sdk-validation/platform-chat-01/portable-families-compile-r658/packet/packet-manifest.json",
+    "bytes": 17152,
+    "sha256": "97eb003724e2fb05164950cdd81f2752fac0df090da747d73029d286d38d5d02"
+  },
+  "packet_files": 96,
+  "immutable_sdk_assets": 4143,
+  "source_files_and_asset_hashes_match": true,
+  "raw_archives": [
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/.tmp/sdk-validation/platform-chat-01/portable-families-compile-r658/compile-attempt1/compile-raw.tar.gz",
+      "bytes": 29320,
+      "sha256": "f60e119693d07a2bd03e1618a60b431df0dc639d932c0eddf578fae8524b4d38"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/.tmp/sdk-validation/platform-chat-01/portable-families-compile-r658/compile-attempt1/control-raw.tar.gz",
+      "bytes": 7977,
+      "sha256": "27d73beb61d7def1770d21933f33d1327d6f54ac28bcad058ab4ba8e75eea1c1"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/.tmp/sdk-validation/platform-chat-01/portable-families-compile-r658/compile-attempt1/planar-goal-v0.3.0-actual-project.tar.gz",
+      "bytes": 5599,
+      "sha256": "8763463ee1b34e619919f7acde543db2a2bd9beb3b93caee1b272f9dac72f378"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/.tmp/sdk-validation/platform-chat-01/portable-families-compile-r658/compile-attempt1/sensor-digest-v0.3.0-actual-project.tar.gz",
+      "bytes": 12555,
+      "sha256": "35b03f1a32bf980b9543a4e0c8de1e283b09e915850be5c88c078c62efb55855"
+    },
+    {
+      "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/.tmp/sdk-validation/platform-chat-01/portable-families-compile-r658/compile-attempt1/existing-wasi-c-sum_arguments-wasm32-actual-project.tar.gz",
+      "bytes": 16086,
+      "sha256": "1d47a6e3bb62a2c422cf2c25bf328d777a7f142f5ed35835cac688642911de76"
+    }
+  ],
+  "raw_counts": {
+    "compile": 37,
+    "control": 46
+  },
+  "result_sha256": "f7266df0b157b719b859adfd9e600b55111cac35ea388fde54c1c279b57cbaa8",
+  "commands": [
+    {
+      "name": "planar-goal-v0.3.0-configure",
+      "argv": [
+        "/tool-bin/xmake",
+        "f",
+        "-y",
+        "-c",
+        "-a",
+        "wasm32"
+      ],
+      "cwd": "/work/compile/sdk/example/platform/ros/portable/v0_3_0/planar_goal",
+      "exit": 0,
+      "raw_hashes_match": true
+    },
+    {
+      "name": "planar-goal-v0.3.0-build",
+      "argv": [
+        "/tool-bin/xmake",
+        "-vD",
+        "-j2"
+      ],
+      "cwd": "/work/compile/sdk/example/platform/ros/portable/v0_3_0/planar_goal",
+      "exit": 0,
+      "raw_hashes_match": true
+    },
+    {
+      "name": "planar-goal-v0.3.0-inspect",
+      "argv": [
+        "/tool-bin/xmake",
+        "l",
+        "/packet/inspect_artifacts.lua",
+        "/work/compile/sdk",
+        "/work/compile/sdk/example/platform/ros/portable/v0_3_0/planar_goal/build/portable-planar-goal-v0-3-0.wasm",
+        "/work/compile/raw/planar-goal-v0.3.0-structure.json"
+      ],
+      "cwd": "/work/compile/sdk/example/platform/ros/portable/v0_3_0/planar_goal",
+      "exit": 0,
+      "raw_hashes_match": true
+    },
+    {
+      "name": "sensor-digest-v0.3.0-configure",
+      "argv": [
+        "/tool-bin/xmake",
+        "f",
+        "-y",
+        "-c",
+        "-a",
+        "wasm32"
+      ],
+      "cwd": "/work/compile/sdk/example/platform/ros/portable/v0_3_0/sensor_digest",
+      "exit": 0,
+      "raw_hashes_match": true
+    },
+    {
+      "name": "sensor-digest-v0.3.0-build",
+      "argv": [
+        "/tool-bin/xmake",
+        "-vD",
+        "-j2"
+      ],
+      "cwd": "/work/compile/sdk/example/platform/ros/portable/v0_3_0/sensor_digest",
+      "exit": 0,
+      "raw_hashes_match": true
+    },
+    {
+      "name": "sensor-digest-v0.3.0-inspect",
+      "argv": [
+        "/tool-bin/xmake",
+        "l",
+        "/packet/inspect_artifacts.lua",
+        "/work/compile/sdk",
+        "/work/compile/sdk/example/platform/ros/portable/v0_3_0/sensor_digest/build/portable-sensor-digest-v0-3-0.wasm",
+        "/work/compile/raw/sensor-digest-v0.3.0-structure.json"
+      ],
+      "cwd": "/work/compile/sdk/example/platform/ros/portable/v0_3_0/sensor_digest",
+      "exit": 0,
+      "raw_hashes_match": true
+    },
+    {
+      "name": "existing-wasi-c-sum_arguments-wasm32-configure",
+      "argv": [
+        "/tool-bin/xmake",
+        "f",
+        "-y",
+        "-c",
+        "-a",
+        "wasm32"
+      ],
+      "cwd": "/work/compile/sdk/example/platform/wasi/c/sum_arguments",
+      "exit": 0,
+      "raw_hashes_match": true
+    },
+    {
+      "name": "existing-wasi-c-sum_arguments-wasm32-build",
+      "argv": [
+        "/tool-bin/xmake",
+        "-vD",
+        "-j2"
+      ],
+      "cwd": "/work/compile/sdk/example/platform/wasi/c/sum_arguments",
+      "exit": 0,
+      "raw_hashes_match": true
+    },
+    {
+      "name": "existing-wasi-c-sum_arguments-wasm32-inspect",
+      "argv": [
+        "/tool-bin/xmake",
+        "l",
+        "/packet/inspect_artifacts.lua",
+        "/work/compile/sdk",
+        "/work/compile/sdk/example/platform/wasi/c/sum_arguments/build/wasi-c-sum_arguments.wasm",
+        "/work/compile/raw/existing-wasi-c-sum_arguments-wasm32-structure.json"
+      ],
+      "cwd": "/work/compile/sdk/example/platform/wasi/c/sum_arguments",
+      "exit": 0,
+      "raw_hashes_match": true
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "planar-goal-v0.3.0",
+      "bytes": 3797,
+      "sha256": "54884d1513c2e5256450128627a5cc6f4130ca9ed533322a5035f77f81b59ff9",
+      "retained_archive_members": [
+        "example/platform/ros/portable/v0_3_0/planar_goal/build/portable-planar-goal-v0-3-0.wasm"
+      ]
+    },
+    {
+      "id": "sensor-digest-v0.3.0",
+      "bytes": 20095,
+      "sha256": "7061f671b91860cca2867d52bc38bca4c12234426598951451b481cf31c69100",
+      "retained_archive_members": [
+        "example/platform/ros/portable/v0_3_0/sensor_digest/build/portable-sensor-digest-v0-3-0.wasm"
+      ]
+    },
+    {
+      "id": "existing-wasi-c-sum_arguments-wasm32",
+      "bytes": 31267,
+      "sha256": "3ae9e4dee2268c5746d11dc0acbc8f693120fd4e7bc1a21f5e651bce5446f465",
+      "retained_archive_members": [
+        "example/platform/wasi/c/sum_arguments/build/wasi-c-sum_arguments.wasm"
+      ]
+    }
+  ],
+  "host_control_actor_records": 29,
+  "guardian_status": "RETIRED",
+  "keeper_status": "PASS_COMPILE_ONLY_RETIRED",
+  "public_candidate_review": {
+    "path": "/Users/liyinan/Documents/MacroModel/src/uwvm2-ros/.tmp/sdk-validation/platform-chat-01/portable-families-compile-r658/PUBLIC_REVIEW.json",
+    "bytes": 6719,
+    "sha256": "bf81bb96bc5eace9e601b6eed97639fb06261ce243af8585e0c169524704703d"
+  },
+  "public_candidate_files_hashed": 17,
+  "joint_sha256_unchanged": "c0d886e864243938999e4adf4c0f4ce6fb3c2c001723b855cd8b203bfafe2043",
+  "prior_r656_failure_preserved": true,
+  "vm_executed": false,
+  "native_ros_executed": false,
+  "official_simulator_executed": false,
+  "scope": "Two capability algorithms plus one existing SDK binary compiler/structure case only; VM/nativeROS/official simulator/QEMU/performance NOT_RUN",
+  "shipping_approved": false,
+  "issues": [],
+  "root_execution": "stdlib metadata/archive/hash only; no compiler, Wasm or repository code execution"
+}

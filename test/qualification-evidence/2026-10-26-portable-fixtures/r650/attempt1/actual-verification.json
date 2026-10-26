@@ -1,0 +1,68 @@
+{
+  "status": "PASS_CURRENT_COMPLETE_INPUT_COMPILER_TOPOLOGY_GUARDIAN_ONLY",
+  "source_packet_sha256": "78d75264cc8220d3272a9a322a26561b08fa2002cd4db97e9f1812e854d399fa",
+  "proof_remote": "/dev/shm/sdk01-portable-compile-r650-prove-guardian-c4a76ab6174c42149ce5a89b91391b15/proof.json",
+  "proof_sha256": "6cf7b204ed163effc09c4fa95816cd820959ec2f2d8a11741e0558cbe1567e51",
+  "archives": [
+    {
+      "label": "proof",
+      "remote": "/dev/shm/sdk01-portable-compile-r650-prove-guardian-c4a76ab6174c42149ce5a89b91391b15",
+      "sha256": "7ddd44d20f52183d959af8eacdd9604028f0e417595806c0122164e488e78610",
+      "bytes": 18608,
+      "raw_files": 39
+    },
+    {
+      "label": "control",
+      "remote": "/dev/shm/vm-control-envelope-r1-ceccf10391ce463f84d50a59be944b75",
+      "sha256": "319c99a728cf302f64ebc48fe48c7a7d61c2b2db139db24fea7dd01bd3ffddff",
+      "bytes": 11542,
+      "raw_files": 87
+    }
+  ],
+  "case_raw_hashes_verified": 35,
+  "cases": [
+    {
+      "case": "host-controller-loss",
+      "sha256": "d6a1bc71a4c776944a9dedc9173acc949e61d8493c395222fd080f1df53d7ae2",
+      "passed": true,
+      "compiler_inputs": {
+        "compiler_executed_by_this_gate": false,
+        "immutable_bytes": 337198104,
+        "immutable_files": 2258,
+        "llvm_archive_sha256": "8e97c5e26755459965d86361f970c9b7d6d2e7c44e953fc0faeb82621b157522",
+        "xmake_binary_sha256": "d24ec7daa11ab5007f33221ba0a883f9c7479afae2a47370773f209047152a1e",
+        "xmake_program_files": 1887
+      },
+      "physical_retirement": true
+    },
+    {
+      "case": "inside-controller-loss",
+      "sha256": "e984821bf0a591bfd3fb084acd08157525df937c86887789553bd3cf87599a2a",
+      "passed": true,
+      "compiler_inputs": {
+        "compiler_executed_by_this_gate": false,
+        "immutable_bytes": 337198104,
+        "immutable_files": 2258,
+        "llvm_archive_sha256": "8e97c5e26755459965d86361f970c9b7d6d2e7c44e953fc0faeb82621b157522",
+        "xmake_binary_sha256": "d24ec7daa11ab5007f33221ba0a883f9c7479afae2a47370773f209047152a1e",
+        "xmake_program_files": 1887
+      },
+      "physical_retirement": true
+    }
+  ],
+  "actual_control_actor_records": 70,
+  "actual_control_roles": {
+    "rpc": 55,
+    "host-try_lease": 6,
+    "client": 2,
+    "host-guardian": 2,
+    "bootstrap": 1,
+    "host-launch": 1,
+    "host-keeper": 2,
+    "host-proof_sentinel": 1
+  },
+  "control_admission_sha256": "e88c920670f93860cf9a8e4baa24b5f1184e9dd6c8cb9066dfb1641a4395b515",
+  "empty_control_leaf_after_retirement": true,
+  "compiler_executed": false,
+  "vm_or_ros_executed": false
+}

@@ -1,0 +1,20 @@
+{
+  "status": "TRANSPORT_FINISHED",
+  "argv": [
+    "python3",
+    "-B",
+    "/dev/shm/vm-astra-control-envelope-input-r1/bootstrap.py",
+    "--manifest-sha256",
+    "207d75c523ce8b4a20adce153eb7cb116765f04394803c11e548a3decfb1a808",
+    "--request",
+    "/dev/shm/sdk01-portable-compile-requests-r652-compile/compile.json",
+    "--request-sha256",
+    "f43565d975edb0782630aa39a707b9f927e17320299fda3401688342742f3f0d",
+    "--nonce",
+    "40b9ddace658407cab98664ccb22ae89"
+  ],
+  "control_root": "/dev/shm/vm-control-envelope-r1-40b9ddace658407cab98664ccb22ae89",
+  "started_utc": "2026-10-26T12:03:44.955704+00:00",
+  "returncode": 0,
+  "finished_utc": "2026-10-26T12:03:55.440325+00:00"
+}

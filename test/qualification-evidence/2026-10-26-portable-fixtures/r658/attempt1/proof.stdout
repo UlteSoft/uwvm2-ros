@@ -1,0 +1,2 @@
+{"control_root": "/dev/shm/vm-control-envelope-r1-3c8a2fafc3d34f86ac751c5d1977a3f6", "control_admission_sha256": "cba2de9c4e0bf6155df34a35c80b3236f5d07426b5e621e6f404268ba637d35d", "status": "ADMITTED_FIXED_DISPATCH"}
+{"status": "PASS_GUARDIAN_ONLY", "proof": "/dev/shm/sdk01-portable-compile-r658-prove-guardian-070b54b92d4f47658ae9c54cc081fd14/proof.json", "sha256": "2a3295236519a0ee0672d53f33dc5db28111cfe36088f46d6fb4343c935b7f4d"}

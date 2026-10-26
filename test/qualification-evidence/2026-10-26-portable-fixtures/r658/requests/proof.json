@@ -1,0 +1,16 @@
+{
+  "schema": "uwvm-closed-control-request-v1",
+  "packet": "/dev/shm/sdk01-portable-families-input-r658",
+  "packet_manifest_sha256": "97eb003724e2fb05164950cdd81f2752fac0df090da747d73029d286d38d5d02",
+  "entry": "launch.py",
+  "arguments": [
+    "--mode",
+    "prove-guardian",
+    "--parent-id",
+    "e9d3c78af787a89fa89b598e220e610ed4a40900afe9ef3ce220a7325b05603f",
+    "--expected-boot-id",
+    "815b614a-e0a5-4600-9d7f-139b323d8190",
+    "--packet-manifest-sha256",
+    "97eb003724e2fb05164950cdd81f2752fac0df090da747d73029d286d38d5d02"
+  ]
+}
