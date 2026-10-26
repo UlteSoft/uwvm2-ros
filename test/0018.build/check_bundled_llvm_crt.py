@@ -9,6 +9,7 @@ import argparse
 import json
 from pathlib import Path
 import re
+import shutil
 import subprocess
 
 
@@ -22,11 +23,20 @@ def main():
     parser.add_argument('--llvm-ranlib')
     parser.add_argument('--lld-link', required=True)
     parser.add_argument('--llvm-readobj', required=True)
+    parser.add_argument('--llvm-rc', help='LLVM resource compiler required by CMake Windows-Clang')
     parser.add_argument('--cmake', default='cmake')
     parser.add_argument('--xmake', default='xmake')
     args = parser.parse_args()
     if args.frontend == 'gnu' and not (args.llvm_ar and args.llvm_ranlib):
         parser.error('GNU-style Windows Clang needs --llvm-ar and --llvm-ranlib')
+    compiler = Path(shutil.which(args.cxx) or args.cxx).resolve()
+    resource_compiler = (args.llvm_rc or shutil.which('llvm-rc', path=str(compiler.parent))
+                         or shutil.which('llvm-rc'))
+    if not resource_compiler:
+        parser.error('CMake Windows-Clang requires llvm-rc; provide --llvm-rc or install it beside Clang')
+    resource_compiler = Path(shutil.which(resource_compiler) or resource_compiler).resolve()
+    if not resource_compiler.is_file():
+        parser.error('The selected LLVM resource compiler does not exist: '+str(resource_compiler))
     repo = Path(__file__).resolve().parents[2]
     out = args.out.resolve()
     out.mkdir(parents=True, exist_ok=False)
@@ -41,6 +51,7 @@ def main():
         '-DCMAKE_BUILD_TYPE=Release', '-DCMAKE_SYSTEM_NAME=Windows',
         '-DCMAKE_CXX_COMPILER='+args.cxx, '-DCMAKE_CXX_COMPILER_TARGET=x86_64-pc-windows-msvc',
         '-DCMAKE_AR='+(args.llvm_ar if args.frontend == 'gnu' else args.llvm_lib), '-DCMAKE_LINKER='+args.lld_link,
+        '-DCMAKE_RC_COMPILER='+str(resource_compiler),
         '-DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY', '-DLLVM_HOST_TRIPLE=x86_64-pc-windows-msvc',
         '-DCMAKE_PROJECT_LLVM_INCLUDE='+str(repo/'xmake/llvm/contract.cmake')]
     if args.frontend == 'gnu':
@@ -63,23 +74,34 @@ def main():
         command = [*common, '-B', str(build), *extra]
         configured = run(command, crt+'-configure')
         row = dict(name=crt, command=command, configure_returncode=configured.returncode)
+        last_log = out/(crt+'-configure.log')
         if mismatch:
             row['passed'] = configured.returncode != 0 and b'ROS LLVM MSVC runtime mismatch' in configured.stderr
         elif configured.returncode != 0:
             row['passed'] = False
         else:
             built = run([args.cmake, '--build', str(build), '--target', 'LLVMFixture', '--parallel', '1'], crt+'-build')
+            last_log = out/(crt+'-build.log')
             row['build_returncode'] = built.returncode
             row['passed'] = False
             if built.returncode == 0:
                 inspected = run([args.llvm_readobj, '--coff-directives', str(build/'LLVMFixture.lib')], crt+'-coff')
+                last_log = out/(crt+'-coff.log')
                 text = inspected.stdout.decode().lower()
                 row['directives'] = text
                 row['passed'] = inspected.returncode == 0 and re.search(
                     r'defaultlib:[\"]?'+library+r'(?:\.lib)?(?:[\"\s]|$)', text) is not None
+        row['last_log'] = str(last_log)
         rows.append(row)
         (out/'results.json').write_text(json.dumps(dict(note=__doc__, rows=rows), indent=2)+'\n')
         print(crt, 'PASS' if row['passed'] else 'FAIL', flush=True)
+        if not row['passed']:
+            # Keep a bounded diagnostic in the Actions log even when the
+            # runner's temporary-directory artifacts are not uploaded.
+            with last_log.open('rb') as failure:
+                failure.seek(max(0, last_log.stat().st_size-4096))
+                diagnostic = failure.read().decode(errors='replace')
+            print('Failure details:', last_log, '\n'+diagnostic, flush=True)
     raise SystemExit(not all(row['passed'] for row in rows))
 
 
