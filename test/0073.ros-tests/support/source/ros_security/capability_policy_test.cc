@@ -1,5 +1,5 @@
 #include <uwvm2/imported/ros/capability/manager.h>
-#include "../../../../../src/ros/gateway/common/config.h"
+#include <gateway/common/config.h>
 #include <atomic>
 #include <array>
 #include <cassert>
@@ -504,9 +504,26 @@ int main()
     });
     run("qos-and-resource-conflicts-fail-closed", [] {
         auto cap{topic(version::ros2)}; cap.limits["qos.history"] = "keep-all"; require(validate_capability(version::ros2, cap), errc::unsupported);
-        cap = topic(); cap.limits["overflow-policy"] = "backpressure"; require(validate_capability(version::ros1, cap), errc::unsupported);
+        cap = topic(); cap.limits["overflow-policy"] = "backpressure"; require(validate_capability(version::ros1, cap), errc::invalid_argument);
         cap = topic(); cap.limits["max-queue-bytes"] = "1"; require(validate_capability(version::ros1, cap), errc::invalid_argument);
         cap = topic(); cap.limits["max-rate-hz"] = "nan"; require(validate_capability(version::ros1, cap), errc::invalid_argument);
+    });
+    run("backpressure-requires-explicit-single-pending-record-capacity", [&] {
+        for(auto v : {version::ros1, version::ros2})
+        {
+            auto cap{topic(v, "bounded", "topic.subscribe")};
+            cap.limits["overflow-policy"] = "backpressure";
+            require(validate_capability(v, cap), errc::invalid_argument); assert(!gateway_accepts(v, cap));
+            cap.limits["max-pending-events"] = "1";
+            require(validate_capability(v, cap), errc::invalid_argument); assert(!gateway_accepts(v, cap));
+            cap.limits["max-pending-event-bytes"] = "63";
+            require(validate_capability(v, cap), errc::invalid_argument); assert(!gateway_accepts(v, cap));
+            cap.limits["max-pending-event-bytes"] = "64";
+            cap.limits["max-pending-events"] = "2";
+            require(validate_capability(v, cap), errc::invalid_argument); assert(!gateway_accepts(v, cap));
+            cap.limits["max-pending-events"] = "1";
+            require(validate_capability(v, cap)); assert(gateway_accepts(v, cap));
+        }
     });
     run("ros2-dds-service-parameter-lifecycle-qos-all-eight-explicit", [] {
         for(auto operation : {"service.call", "service.advertise", "service.respond", "param.get", "param.set", "param.describe", "param.list", "lifecycle.get-state", "lifecycle.change-state"})

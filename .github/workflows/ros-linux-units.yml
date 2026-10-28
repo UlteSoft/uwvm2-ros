@@ -1,0 +1,36 @@
+name: Linux compiler and ROS unit fixtures
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ros-units-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compiler-and-units:
+    name: Linux x86_64 / compiler and four unit suites only
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Acquire pinned compiler and SDK fixtures, then compile and run units
+        run: |
+          WORK="/tmp/uwvm-ci-$(python3 -c 'import uuid;print(uuid.uuid4().hex[:12])')"
+          python3 -B tools/ci/linux_smoke/run.py --source "$GITHUB_WORKSPACE" \
+            --out "$RUNNER_TEMP/ros-unit-evidence" --work "$WORK" --route github-hosted
+      - name: Preserve original results, compiler receipts and unqualified target states
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: linux-ros-units-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ros-unit-evidence/
+          if-no-files-found: error
+          retention-days: 14

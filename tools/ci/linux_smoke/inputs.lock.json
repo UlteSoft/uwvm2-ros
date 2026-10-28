@@ -1,0 +1,34 @@
+{
+  "compiler": {
+    "archive": "tar.xz",
+    "maximum_bytes": 104857600,
+    "sha256": "d8e983d3f4c25052319c6afb897a0d1b6e628198a30cfad148263891c1fed7b5",
+    "source": "https://mirrors.edge.kernel.org/pub/tools/llvm/files/sha256sums.asc",
+    "url": "https://mirrors.edge.kernel.org/pub/tools/llvm/files/llvm-23.1.4-x86_64.tar.xz",
+    "version": "23.1.4"
+  },
+  "format": "uwvm-linux-smoke-inputs-v1",
+  "product_qualification": false,
+  "required_suites": [
+    "security",
+    "ipc",
+    "ipc-handshake",
+    "ipc-client-deadline"
+  ],
+  "sdk_commit": "708313f7f22eb05302eec2d7a66422f7af23e952",
+  "sdk_fixture_scope": "Two actual public native-gateway headers used by the security fixture; not a complete SDK or ROS runtime deployment",
+  "sdk_fixtures": [
+    {
+      "bytes": 34194,
+      "path": "src/gateway/common/config.h",
+      "sha256": "56174584cadceb7298e8572f8285c50e316daa3b80716e32a30f15c9c872b47c",
+      "url": "https://raw.githubusercontent.com/UlteSoft/uwvm2-ros-sdk/708313f7f22eb05302eec2d7a66422f7af23e952/src/gateway/common/config.h"
+    },
+    {
+      "bytes": 12225,
+      "path": "src/gateway/common/native_io.h",
+      "sha256": "bec319ccc0dbe6abc7fb9bf7b0df6758ed211b0f893998c52fa7e91856308dca",
+      "url": "https://raw.githubusercontent.com/UlteSoft/uwvm2-ros-sdk/708313f7f22eb05302eec2d7a66422f7af23e952/src/gateway/common/native_io.h"
+    }
+  ]
+}

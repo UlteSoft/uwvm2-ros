@@ -100,7 +100,7 @@ namespace test
                     // procfs is live pseudo-file content, never a mapped file.
                     // One read has a 63-byte bound, matching a 64-byte fgets range;
                     // a missing/empty/unreadable observation remains pending.
-                    fast_io::native_file input{fast_io::mnp::os_c_str(name),fast_io::open_mode::in};
+                    fast_io::native_file input{name,fast_io::open_mode::in};
                     auto end{fast_io::operations::read_some(input,state,state+sizeof state-1)};
                     waiting=std::string_view{state,static_cast<std::size_t>(end-state)}.find("futex")!=std::string_view::npos;
                 }
