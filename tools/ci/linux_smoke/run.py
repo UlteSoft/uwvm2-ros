@@ -20,18 +20,17 @@ import time
 import traceback
 
 from acquire import digest, download, require, save, unpack
+from process_evidence import process_resources
 
 
 def resources(work):
-    group = Path('/sys/fs/cgroup')
     status = dict(line.split(':', 1) for line in Path('/proc/self/status').read_text().splitlines() if ':' in line)
     return {'route': os.environ.get('RUNNER_ENVIRONMENT', 'manual'), 'machine': platform.machine(),
         'kernel': platform.release(), 'runner_image': os.environ.get('ImageOS'),
         'runner_image_version': os.environ.get('ImageVersion'), 'os_release': Path('/etc/os-release').read_text(),
         'cpus': len(os.sched_getaffinity(0)), 'uid': os.getuid(), 'gid': os.getgid(),
         'membership': Path('/proc/self/cgroup').read_text(), 'free_bytes': shutil.disk_usage(work).free,
-        'cgroup': {name: (group/name).read_text().strip() for name in
-            ('memory.max', 'memory.swap.max', 'memory.events', 'cpu.max') if (group/name).is_file()},
+        'process_resources': process_resources(os.getpid()),
         'actual_security': {key: status[key].strip() for key in
             ('CapInh', 'CapPrm', 'CapEff', 'CapBnd', 'CapAmb', 'NoNewPrivs', 'Seccomp')},
         'build_jobs': 1, 'hosted_has_manual_64GiB_admission': False}
@@ -292,11 +291,24 @@ def main():
         for suite in ('security', 'ipc'):
             selected = work/'units'/suite
             row = commands.run(suite+'-units', [sys.executable, '-B', unit, '--suite', suite,
-                '--sdk-root', sdk, '--out', selected], 720)
+                '--sdk-root', sdk, '--out', selected, '--require-exec-observation'], 720)
             result = json.loads((selected/'results.json').read_text())
             require(result['status'] == 'PASS' and result['suites'], 'actual nonempty unit results required')
             require(all(item.get('compiled') and item.get('executed') and item['status'] == 'PASS'
                 for item in result['suites']), 'unit suite silently skipped')
+            for item in result['suites']:
+                evidence = item.get('actual_exec') or {}
+                actual = evidence.get('actual_exec') or {}
+                require(evidence.get('status') == 'OBSERVED_AND_RETIRED' and evidence.get('retired') is True
+                    and evidence.get('exit') == item['returncode'] == 0,
+                    'every unit requires actual exec identity and a reaped successful exit')
+                require(actual.get('before_first_user_instruction') is True
+                    and actual.get('executable_sha256') == digest(selected/item['suite'])
+                    and actual.get('pid') == evidence.get('pid') and actual.get('birth') == evidence.get('birth')
+                    and actual['observed_ns'] < evidence['released_ns'] < evidence['exit_observed_ns'],
+                    'unit exec-stop identity or execution ordering differs')
+                require(actual.get('resources', {}).get('cgroup_resolution'),
+                    'unit actual resources or explicit unreadable reason missing')
             if frozen is None:
                 require(any(actor['executable_sha256'] == report['compiler']['sha256'] for actor in row['actors']),
                         'actual acquired compiler process was not observed')

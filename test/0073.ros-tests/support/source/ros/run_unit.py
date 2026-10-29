@@ -14,6 +14,8 @@ p = argparse.ArgumentParser()
 p.add_argument('--suite', choices=['security', 'ipc', 'ipc-handshake', 'ipc-client-deadline', 'sorted-rows', 'sdk', 'unified-events',
     'unified-event-queue', 'unified-event-async', 'unified-event-manager', 'unified-event-server', 'all'], default='all')
 p.add_argument('--out', type=Path, required=True)
+p.add_argument('--require-exec-observation', action='store_true',
+    help='On Linux, retain exact kernel exec-stop identity and exit evidence for every selected unit')
 p.add_argument('--sdk-root', type=Path, default=os.environ.get('UWVM_ROS_SDK_ROOT'),
     help='Installed SDK containing src/gateway/common; required by the security suite')
 a = p.parse_args()
@@ -98,7 +100,15 @@ for name, source in [('security', root/'test/0073.ros-tests/support/source/ros_s
         with tempfile.TemporaryDirectory(prefix='ipc-',dir=a.out.resolve()) as temporary:
             environment={**os.environ,'TMPDIR':temporary}
             executed = True
-            result = subprocess.run([str(binary.resolve())], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=45,env=environment)
+            actual_exec = None
+            if a.require_exec_observation:
+                sys.path.insert(0, str(root/'tools/ci/linux_smoke'))
+                from process_evidence import run_observed
+                result, actual_exec = run_observed([str(binary.resolve())],
+                    log=a.out/(name+'.log'), receipt=a.out/(name+'.actual-exec.json'),
+                    timeout=45, env=environment)
+            else:
+                result = subprocess.run([str(binary.resolve())], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=45,env=environment)
         (a.out/(name+'.log')).write_bytes(result.stdout)
         stable = all(Path(row['path']).stat().st_size == row['bytes'] and
             hashlib.sha256(Path(row['path']).read_bytes()).hexdigest() == row['sha256'] for row in fixture_inputs)
@@ -107,13 +117,18 @@ for name, source in [('security', root/'test/0073.ros-tests/support/source/ros_s
         dependency_unchanged = dependency_path.read_bytes() == dependency_bytes and dependency_before == dependency_after
         rows.append({'suite':name, 'status':'PASS' if result.returncode==0 and stable and dependency_unchanged else 'BLOCKED' if name=='ipc-handshake' and result.returncode==77 else 'FAIL',
             'returncode':result.returncode, 'compiled':True, 'executed':True, 'command':command,
+            'actual_exec':actual_exec,
             'fixture_inputs':fixture_inputs, 'fixture_inputs_unchanged':stable,
             'compiler_dependency_file':dependency, 'compiler_dependency_file_unchanged':dependency_unchanged,
             'compiler_dependency_inputs_before':dependency_before_record,
             'compiler_dependency_inputs_after':dependency_after_record,
             'compiler_dependency_inputs_unchanged':dependency_unchanged})
+    except RuntimeError as error:
+        rows.append({'suite':name, 'status':'FAIL', 'reason':str(error), 'compiled':compiled, 'executed':executed, 'command':command})
     except FileNotFoundError as error:
         rows.append({'suite':name, 'status':'BLOCKED', 'reason':str(error), 'compiled':compiled, 'executed':executed, 'command':command})
+    except OSError as error:
+        rows.append({'suite':name, 'status':'FAIL', 'reason':str(error), 'compiled':compiled, 'executed':executed, 'command':command})
     except subprocess.TimeoutExpired:
         rows.append({'suite':name, 'status':'FAIL', 'reason':'bounded test timeout', 'compiled':compiled, 'executed':executed, 'command':command})
 status = 'PASS' if rows and all(r['status']=='PASS' for r in rows) else 'FAIL' if any(r['status']=='FAIL' for r in rows) else 'BLOCKED'
