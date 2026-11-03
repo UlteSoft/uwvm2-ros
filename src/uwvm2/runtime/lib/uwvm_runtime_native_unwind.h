@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <chrono>
+
 #include <uwvm2/runtime/compiler/llvm_jit/native_unwind_platform.h>
 
 // Keep native-unwind detection identical for the traditional aggregation translation unit and the C++ module consumer.
@@ -23,8 +25,8 @@
 # define UWVM2_RUNTIME_LLVM_JIT_ENABLE_NATIVE_UNWIND_BACKTRACE 0
 #endif
 
-#if defined(UWVM_RUNTIME_LLVM_JIT) && UWVM2_RUNTIME_LLVM_JIT_ENABLE_NATIVE_UNWIND_BACKTRACE && !defined(_WIN32) && __has_include(<unwind.h>)
-# include <unwind.h>
+#if defined(UWVM_RUNTIME_LLVM_JIT) && UWVM2_RUNTIME_LLVM_JIT_ENABLE_NATIVE_UNWIND_BACKTRACE && !defined(_WIN32) && defined(UWVM_ROS_PAIRED_RUNTIME_HEADERS)
+# include <uwvm2/runtime/compiler/llvm_jit/paired_unwind.h>
 # include <uwvm2/runtime/compiler/llvm_jit/native_unwind_abi.h>
 # define UWVM2_RUNTIME_LLVM_JIT_HAS_UNWIND_H_BACKTRACE 1
 #else

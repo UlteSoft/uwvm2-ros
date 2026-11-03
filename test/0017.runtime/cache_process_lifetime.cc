@@ -1,6 +1,7 @@
 // The runtime's execution drain must precede the cache service's destruction.
 // Interpose the real POSIX destructor to observe that order without accessing an
 // already-destroyed C++ object or adding test hooks to production code.
+#include "mandatory_native_fixture.h"
 #include "../0013.uwvm_int/strict/uwvm_int_translate_strict_common.h"
 #include <uwvm2/runtime/lib/uwvm_runtime.h>
 #include <uwvm2/runtime/wasm_threads/impl.h>
@@ -69,11 +70,12 @@ extern "C" int pthread_cond_destroy(pthread_cond_t* value) noexcept
 }
 int main(int argc,char** argv)
 {
+    if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
+    if(argc != 1) { return 64; }
     real_destroy=reinterpret_cast<destroy_function>(::dlsym(RTLD_NEXT,"pthread_cond_destroy"));
     UWVM2TEST_REQUIRE(real_destroy!=nullptr);
     namespace mode=uwvm2::uwvm::runtime::runtime_mode;
-    mode::global_runtime_llvm_jit_call_stack=argc>1 && std::strcmp(argv[1],"unwind")==0 ?
-        mode::runtime_llvm_jit_call_stack_t::unwind : mode::runtime_llvm_jit_call_stack_t::instruction;
+
     strict::module_builder module{};
     module.types.push_back({{}, {}});
     module.add_import_func("lifetime-host","shutdown",0);

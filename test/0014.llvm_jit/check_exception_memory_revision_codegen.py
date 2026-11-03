@@ -41,7 +41,7 @@ def main():
     def emit(binary,label,policy):
         out=a.out/(label+'-'+policy);out.mkdir();cache=out/'cache';cache.mkdir()
         mode=['-Raot'] if a.ros else ['-Rcc','jit','-Rcm','full']
-        run([binary,*mode,'-Rct','0','-Rllvm-full-policy','pb-o3','-Rllvm-call-stack',policy,
+        run([binary,*mode,'-Rct','0','-Rllvm-full-policy','pb-o3',*([] if a.ros else ['-Rllvm-call-stack', policy]),
              '-WFD-exceptions','-Rllvm-cache-path','path',cache,'--run',a.fixture],out/'run.log')
         cached=list(cache.rglob('*.uwvm-ljc'))
         if len(cached)!=1:raise RuntimeError('expected exactly one actual cached object')
@@ -60,7 +60,7 @@ def main():
             body=asm.split('<'+names[0]+'>:',1)[1]
             bodies.append(re.sub(r'uwvm_m_[0-9a-f]+_','uwvm_m_HASH_',body))
         return executable,normalize_relocations(reloc),bodies
-    for policy in ['instruction','unwind']:
+    for policy in (('mandatory-native',) if a.ros else ('instruction', 'unwind')):
         before=emit(a.before,'before',policy);after=emit(a.after,'after',policy)
         try:compare_executable_images(before[0],after[0]);same_code=True
         except ELFCodeError:same_code=False
@@ -73,7 +73,7 @@ def main():
             raise RuntimeError('ordinary caller has no normal return')
         if normal_prefix(before[2][1])!=normal_prefix(after[2][1]):
             raise RuntimeError(f'{policy}: normal caller machine-code prefix changed; inspect retained objects')
-        if policy=='unwind' and not(same_code and same_reloc):
+        if policy in ('unwind', 'mandatory-native') and not(same_code and same_reloc):
             raise RuntimeError('native-unwind ordinary code or complete relocations changed')
         rows.append(dict(policy=policy,identical_whole_executable_images=same_code,
                          identical_complete_relocations=same_reloc,identical_memory_leaf=True,

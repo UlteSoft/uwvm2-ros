@@ -62,8 +62,8 @@ for suite in a.suite or sources:
   'src/uwvm2/uwvm/host_api.default.cpp',str(a.out/'runtime.o'),'@'+str(a.llvm_root/'consumer-link.rsp'),'-O1',
   '-L'+str(deps/'usr/lib'/triple),'-L'+str(sysroot/'lib'),'-lssl','-lcrypto','-latomic','-ldl','-pthread','-o',str(binary)])
  env=os.environ.copy();env['UWVM_TAIL_IR_FILE']=str(directory/'mutual.ll')
- for policy in (['instruction'] if suite=='unit' else ['instruction','unwind','indirect-instruction','indirect-unwind']):
-  arguments=policy.split('-')
+ for policy in (['component-unit'] if suite=='unit' else ['mandatory-native','mandatory-native-indirect']):
+  arguments=['indirect'] if policy=='mandatory-native-indirect' else []
   emulator={'aarch64-linux-gnu':'qemu-aarch64','arm-linux-gnueabihf':'qemu-arm',
             'riscv64-linux-gnu':'qemu-riscv64'}[triple]
   run(suite+'-'+policy,[str(deps/'usr/bin'/emulator),'-U','LD_LIBRARY_PATH','-E',
@@ -74,4 +74,4 @@ after=subprocess.check_output(['python3','tools/ci/wasm3_source_fingerprint.py',
 assert source_id==after and all(digest(Path(path))==value for path,value in toolchain.items())
 audit_resources('after')
 (a.out/'summary.json').write_text(json.dumps(dict(passed=True,source_id=source_id,llvm='23.1.1-uwvm-ros.9',
- target=triple,memory_backend='concurrent-allocator',suites=a.suite or list(sources),rows=rows),indent=2)+'\n')
+ scope='standalone component capability; not ROS product ABI qualification',target=triple,memory_backend='concurrent-allocator',suites=a.suite or list(sources),rows=rows),indent=2)+'\n')

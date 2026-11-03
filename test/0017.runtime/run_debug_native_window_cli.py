@@ -6,6 +6,7 @@ The immutable fresh runtime/main/source dependency closure is qualified by the
 keeper before invocation; emitted binary SHA here is identification, not proof
 of an original build argv or an independently qualified runtime object.
 """
+from mandatory_native_cli import require_linux_ros, product_policy, product_policies
 import argparse
 import importlib.util
 import hashlib
@@ -25,7 +26,7 @@ parser.add_argument('--uwvm', type=Path, required=True)
 parser.add_argument('--wasm-tools', type=Path, required=True)
 parser.add_argument('--out', type=Path, required=True)
 parser.add_argument('--ros', action='store_true')
-args = parser.parse_args()
+args = parser.parse_args(); require_linux_ros(parser, args.ros)
 source = args.source_root.resolve(strict=True)
 binary = args.uwvm.resolve(strict=True)
 wasm_tools = args.wasm_tools.resolve(strict=True)
@@ -48,7 +49,7 @@ class Console:
         self.name = name
         mode = ['-Raot'] if args.ros else ['-Rcc', 'jit', '-Rcm', 'full']
         self.command = [str(binary), '-m', 'debug-jit', *mode, '-Rct', '0',
-                        '-Rllvm-call-stack', policy, '-Rllvm-cache-path', 'disable',
+                        *([] if args.ros else ['-Rllvm-call-stack', policy]), '-Rllvm-cache-path', 'disable',
                         '--run', str(out / 'fixture.wasm')]
         self.child = subprocess.Popen(self.command, stdin=subprocess.PIPE,
                                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -120,7 +121,7 @@ def range_page(console, thread, stop, epoch, count=1, byte_offset=0, instruction
     return identity, rows
 
 rows = []
-for policy in ('instruction', 'unwind'):
+for policy in (('mandatory-native',) if args.ros else ('instruction', 'unwind')):
     console = Console(policy, f'{policy}-two-steps')
     initial = console.send('step asm 1')
     assert b'error: command or thread is not valid' in initial, initial

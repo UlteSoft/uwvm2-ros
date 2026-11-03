@@ -2,6 +2,7 @@
 // before-park captures -> ONE cohort -> hostclose -> N -> publication -> owned
 // real modern GC root state -> one bounded selected linear-memory write.
 // No fake capture, copied VIEW write permission or restore authority.
+#include "mandatory_native_fixture.h"
 #include <uwvm2/uwvm/run/owned_source.h>
 #include <uwvm2/utils/control/owned_file_image.h>
 #include <uwvm2/runtime/checkpoint/materialization.h>
@@ -154,10 +155,11 @@ struct observer
 };
 int main(int argc, char** argv)
 {
-    if(argc != 5 && argc != 6) { return 64; }
-    bool const resumable{argc == 6};
-    if(resumable) { REQUIRE(::fast_io::concat_std(::fast_io::mnp::os_c_str(argv[5])) == "resumable"); }
-    auto const variant{::fast_io::concat_std(::fast_io::mnp::os_c_str(argv[4]))};
+    if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
+    if(argc != 4 && argc != 5) { return 64; }
+    bool const resumable{argc == 5};
+    if(resumable) { REQUIRE(::fast_io::concat_std(::fast_io::mnp::os_c_str(argv[4])) == "resumable"); }
+    auto const variant{::fast_io::concat_std(::fast_io::mnp::os_c_str(argv[3]))};
     REQUIRE(variant == "small" || variant == "large");
     bool const large{variant == "large"};
     // Narrow target-resource skip BEFORE opening or initializing large Wasm.
@@ -169,12 +171,11 @@ int main(int argc, char** argv)
     }
     ::std::uint64_t const wide_offset{large ? 4294967304ull : 72ull};
     ::std::uint64_t const wide_end{large ? 4295032832ull : 131072ull};
-    auto const policy{::fast_io::concat_std(::fast_io::mnp::os_c_str(argv[3]))};
-    REQUIRE(policy == "instruction" || policy == "unwind");
+    auto const policy{::fast_io::concat_std(::fast_io::mnp::os_c_str("mandatory-native"))};
+
     mode::global_runtime_mode = mode::runtime_mode_t::full_compile;
     mode::global_runtime_compiler = mode::runtime_compiler_t::llvm_jit_only;
-    mode::global_runtime_llvm_jit_call_stack = policy == "instruction" ?
-        mode::runtime_llvm_jit_call_stack_t::instruction : mode::runtime_llvm_jit_call_stack_t::unwind;
+
     mode::global_runtime_compile_threads = 0u; mode::runtime_compile_threads_existed = true;
     mode::global_runtime_llvm_jit_cache_path_mode = mode::runtime_llvm_jit_cache_path_mode_t::disabled;
     auto& features{::uwvm2::uwvm::wasm::feature::wasm_binfmt_ver1_wasm1p1_parameter(::uwvm2::uwvm::wasm::storage::wasm_parameter.binfmt1_para)};

@@ -1,0 +1,52 @@
+{
+  "schema": "uwvm-debugger-qualification-v1",
+  "authoring_status": "Source authored on macOS; no compiler, Python import, or test was executed there. Current native results must come from the keeper's admitted Linux run.",
+  "ros_stack_contract": "No public -Rllvm-call-stack option. Runtime always retains checked native unwind and crash stacks. Native-unwind exception dispatch remains supported.",
+  "stages": {
+    "protocol": "New current-console hex/ASCII dump parser plus existing bounded memory, mutation, stale frame and replacement reference formatter regressions. Test brokers supply DATA; no real-VM acceptance credit.",
+    "endpoint": "Actual inherited launch authorization, already-executing guest, recurring Wasm breakpoint, bounded memory mutation, quit/EOF release of cooperative or real native trap, same-UID foreign-PID credential rejection, original pidfd process retirement.",
+    "broker": "Actual stdio DAP: official C source into/next/finish and inline labels; one-opcode Wasm step; copied versus executed native instructions/registers; no native memory authority; session reconnect; inactive function replacement, invalid-body nonpublication and stale references.",
+    "source-step": "Actual C/C++/Rust embedded compiler DWARF and official line oracle. Into/over/out; full profile adds concrete inline out, repeated same-name sites and recursive same-function out.",
+    "source-values": "Actual C/C++/Rust source objects and lexical values; full profile adds selected physical/inline frames, next/finish and direct constants. Missing or optimized-away producer capabilities fail.",
+    "frame-scope": "Actual externally advanced VM stops and a mid-copy stop change must retire old frame/scope/source references before publishing values.",
+    "cross-module": "Actual leaf/relay/main module identities and exact suspended caller locals across reloads, plus generation/active-target function replacement refusal. No multi-module DWARF source-path claim.",
+    "blocked-wait": "Optional actual atomic.wait32/wait64 with memory32/memory64: pause an in-flight VM bridge, reject native access, mutate and resume after the real original deadline. No concurrent full-VM hot-swap claim."
+  },
+  "unresolved_gaps": [
+    {
+      "id": "whole-module-hot-update",
+      "status": "not_implemented_by_public_debugger",
+      "evidence": "The public grammar and controller implement replace_function with exact existing ABI and inactive target checks. No whole-module replacement transaction, import/export compatibility, live data migration or atomic module-wide rollback is exposed.",
+      "required_acceptance": "Real provider/consumer modules, concurrent stopped participants, changed module generation, old import/function/reference retirement, migration failure rollback and unchanged old guest results."
+    },
+    {
+      "id": "concurrent-full-vm-update",
+      "status": "not_qualified_by_this_suite",
+      "evidence": "A two-worker controller diagnostic provider is distinct from full guest execution. Existing real blocked-wait cohort and public threaded debug-control witnesses require a separately linked embedding. Ordinary threaded CLI debugger admission remains separately gated.",
+      "required_acceptance": "Fresh runtime-linked embedding with at least two real guest workers, complete-cohort pause, active-target refusal on another worker, exclusive publication, concurrent resume/stop, physical join, timeout failure and stale-owner refusal."
+    },
+    {
+      "id": "all-source-producers",
+      "status": "partial_producer_matrix",
+      "evidence": "This executable suite covers original C/C++/Rust DWARF producers and the common Wasm layer. Language feature-selection macros and old producer notes do not establish Java/.NET/Python/JavaScript/TinyGo/Zig/AssemblyScript/MoonBit/Kotlin source debugging on the current product.",
+      "required_acceptance": "Each original producer artifact, actual retained metadata, own-file source breakpoint and step, typed value if supported, exact independent guest result, natural shutdown and current product identity."
+    },
+    {
+      "id": "post-commit-rollback",
+      "status": "not_qualified",
+      "evidence": "Rejecting an invalid body proves nonpublication; it is not a successful rollback after a committed update. Replacing old bytes as another forward generation is not reversal of guest state or external effects.",
+      "required_acceptance": "Explicit rollback contract for code generation, active frames, roots, memory, external effects and permissions; genuine failed publication/migration witnesses."
+    },
+    {
+      "id": "native-disabled-debug-overhead",
+      "status": "measurement_pending",
+      "evidence": "No timing or hardware profile is supplied by these sources. ROS mandatory checked native unwind cannot be disabled to manufacture a faster baseline.",
+      "required_acceptance": "Identical final product/workload, no debug launch authorization versus idle authorized observation versus active debugger, serial randomized repetitions, correct results, exact binary/build/CPU identities and hardware samples. See README.md."
+    },
+    {
+      "id": "ide-and-other-platforms",
+      "status": "not_qualified",
+      "evidence": "Actual stdio DAP does not establish a real VS Code UI session, macOS Mach stepping, Windows PE/Job stepping, AArch64 or other target acceptance."
+    }
+  ]
+}

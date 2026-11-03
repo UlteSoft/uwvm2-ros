@@ -42,7 +42,7 @@
     (defined(__cpp_exceptions) || defined(__EXCEPTIONS)) && \
     !defined(__USING_SJLJ_EXCEPTIONS__) && \
     (!(defined(__arm__) || defined(__thumb__)) || defined(__ARM_DWARF_EH__) || (defined(UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT) && UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT == 1 && defined(__linux__) && defined(__GLIBC__))) && \
-    __has_include(<cxxabi.h>) && __has_include(<unwind.h>) && \
+    __has_include(<cxxabi.h>) && defined(UWVM_ROS_PAIRED_RUNTIME_HEADERS) && \
     ((!defined(_WIN32)) || \
      (defined(_WIN64) && defined(__SEH__) && !defined(__CYGWIN__) && \
       !defined(__arm64ec__) && !defined(_M_ARM64EC) && \
@@ -53,8 +53,8 @@
       !defined(_MSC_VER) && !defined(__CYGWIN__) && \
       !defined(__arm64ec__) && !defined(_M_ARM64EC) && \
       (defined(__aarch64__) || defined(_M_ARM64))))
-# include <cxxabi.h>
-# include <unwind.h>
+# include <llvm-runtimes/upstream/libcxxabi/include/cxxabi.h>
+# include <uwvm2/runtime/compiler/llvm_jit/paired_unwind.h>
 # define UWVM_RUNTIME_NATIVE_EXCEPTION_HOST_GNU_CXX 1
 # if defined(_WIN64)
 #  define UWVM_RUNTIME_NATIVE_EXCEPTION_HOST_WIN64_SEH 1

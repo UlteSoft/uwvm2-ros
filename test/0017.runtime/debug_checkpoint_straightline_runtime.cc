@@ -1,5 +1,6 @@
 // Actual LLVM-full opt-in entry producer/activation qualification. This does
 // not accept whole-instance restore, replay, GC graph export or native-PC jump.
+#include "mandatory_native_fixture.h"
 #include <uwvm2/uwvm/run/owned_source.h>
 #include <uwvm2/runtime/checkpoint/materialization.h>
 #include <fast_io.h>
@@ -94,13 +95,12 @@ struct observer
 };
 int main(int argc, char** argv)
 {
-    if(argc != 4) { return 2; }
+    if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
+    if(argc != 3) { return 2; }
     mode::global_runtime_mode = mode::runtime_mode_t::full_compile;
     mode::global_runtime_compiler = mode::runtime_compiler_t::llvm_jit_only;
-    auto const policy{::fast_io::concat_std(::fast_io::mnp::os_c_str(argv[2]))};
-    require(policy == "instruction" || policy == "unwind", "explicit instruction/unwind policy");
-    mode::global_runtime_llvm_jit_call_stack = policy == "instruction" ? mode::runtime_llvm_jit_call_stack_t::instruction :
-        mode::runtime_llvm_jit_call_stack_t::unwind;
+
+
     mode::global_runtime_compile_threads = 0u; mode::runtime_compile_threads_existed = true;
     mode::global_runtime_llvm_jit_cache_path_mode = mode::runtime_llvm_jit_cache_path_mode_t::disabled;
     auto const path{::uwvm2::utils::container::u8concat_uwvm(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(argv[1])))};
@@ -125,7 +125,7 @@ int main(int argc, char** argv)
     ::uwvm2::uwvm::wasm::storage::execute_wasm.module_name = u8"checkpoint-straightline";
     require(::uwvm2::uwvm::run::prepare_owned_full_cli_source() == static_cast<int>(::uwvm2::uwvm::run::retval::ok),
         "actual owned source parse/initializer with new GC/nondefaultable-local syntax");
-    auto const kind{::fast_io::concat_std(::fast_io::mnp::os_c_str(argv[3]))};
+    auto const kind{::fast_io::concat_std(::fast_io::mnp::os_c_str(argv[2]))};
     require(kind == "straightline" || kind == "unsupported" || kind == "overquota", "explicit fixture scope");
     auto state{::std::make_shared<observer>()}; state->unsupported = kind == "unsupported"; state->overquota = kind == "overquota";
     auto const profile{checkpoint::compilation_profile::create_for_trusted_manager()}; require(bool(profile), "owned immutable profile");

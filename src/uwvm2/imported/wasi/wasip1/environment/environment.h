@@ -239,6 +239,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::environment
         bool (*debug_console_write)(int, ::fast_io::io_scatter_t const*, ::std::size_t) noexcept{};
         ::std::uint64_t debug_trace_identity{};
         void (*debug_fd_created)(::std::uint64_t) noexcept{};
+        // Numeric IO metadata only, after the original iovec validation and
+        // after successful result publication. No payload or memory borrow.
+        void (*debug_io_observed)(::std::uint64_t,::std::uint64_t,bool) noexcept{};
         bool (*debug_console_read)(int, ::fast_io::io_scatter_t const*, ::std::size_t, ::std::size_t&) noexcept{};
         trace_wasip1_output_target_t trace_wasip1_output_target{};
         ::uwvm2::utils::container::u8string trace_wasip1_output_file_path_storage{};

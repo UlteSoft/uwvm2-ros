@@ -1,6 +1,7 @@
 // Actual original parse/initializer/single fused compiler/native pause ->
 // retire+drain -> restored native parent/child -> guest catch_all_ref/catch_ref ->
 // new current stops -> throw_ref with GC payload. No file/new-world restore claim.
+#include "mandatory_native_fixture.h"
 #include <uwvm2/uwvm/run/owned_source.h>
 #include <uwvm2/runtime/checkpoint/materialization.h>
 #include <uwvm2/uwvm/debugger/wasm_state.h>
@@ -175,10 +176,11 @@ static void check_caught_state(observer& state,domain::pause_ticket const& ticke
 }
 int main(int argc,char** argv)
 {
-    if(argc!=3) { return 2; }
-    auto const policy{::fast_io::concat_std(::fast_io::mnp::os_c_str(argv[2]))};require(policy=="instruction" || policy=="unwind","explicit stack strategy");
+    if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
+    if(argc!=2) { return 2; }
+
     mode::global_runtime_mode=mode::runtime_mode_t::full_compile;mode::global_runtime_compiler=mode::runtime_compiler_t::llvm_jit_only;
-    mode::global_runtime_llvm_jit_call_stack=policy=="instruction"?mode::runtime_llvm_jit_call_stack_t::instruction:mode::runtime_llvm_jit_call_stack_t::unwind;
+
     mode::global_runtime_compile_threads=0u;mode::runtime_compile_threads_existed=true;
     mode::global_runtime_llvm_jit_cache_path_mode=mode::runtime_llvm_jit_cache_path_mode_t::disabled;
     auto const path{::uwvm2::utils::container::u8concat_uwvm(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(argv[1])))};

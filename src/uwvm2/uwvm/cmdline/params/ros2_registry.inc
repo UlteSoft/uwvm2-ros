@@ -1,4 +1,9 @@
 #if defined(UWVM_IMPORT_ROS2)
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::ros2_buffer_audit),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::ros2_buffer_audit_limits),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::portable_robot),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::portable_robot_audit_run),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::portable_robot_audit_inputs),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros2_global_enable),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros2_global_disable),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros2_global_gateway_socket),

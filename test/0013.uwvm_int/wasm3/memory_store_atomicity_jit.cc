@@ -2,6 +2,7 @@
 // and a safe warm-up call. The generated function receives a dynamic address.
 #define UWVM2TEST_RUNNER_USE_LLVM_JIT 1
 #define UWVM2TEST_STRICT_NO_INTERPRETER 1
+#include "../../0017.runtime/mandatory_native_fixture.h"
 #include "../strict/uwvm_int_translate_strict_common.h"
 #include <fstream>
 #include <signal.h>
@@ -38,15 +39,14 @@ namespace
 
 int main(int argc, char** argv)
 {
+    if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
     using namespace uwvm2test::uwvm_int_strict;
     namespace mode = uwvm2::uwvm::runtime::runtime_mode;
-    if(argc < 4 || argc > 6) { return 64; }
+    if(argc < 3 || argc > 5) { return 64; }
     auto const width{static_cast<unsigned>(std::strtoul(argv[2], nullptr, 10))};
     if(width != 2 && width != 4 && width != 8 && width != 16) { return 64; }
-    auto const policy{std::string_view{argv[3]}};
-    if(policy != "instruction" && policy != "unwind") { return 64; }
     bool growth{}, memory64{};
-    for(int i{4}; i < argc; ++i)
+    for(int i{3}; i < argc; ++i)
     {
         if(std::strcmp(argv[i], "growth") == 0 && !growth) { growth = true; }
         else if(std::strcmp(argv[i], "memory64") == 0 && !memory64) { memory64 = true; }
@@ -54,9 +54,8 @@ int main(int argc, char** argv)
     }
     mode::runtime_llvm_jit_full_policy_existed = true;
     mode::global_runtime_llvm_jit_full_policy = mode::runtime_llvm_jit_full_policy_t::passbuilder_o3;
-    mode::runtime_llvm_jit_call_stack_existed = true;
-    mode::global_runtime_llvm_jit_call_stack = policy == "unwind" ? mode::runtime_llvm_jit_call_stack_t::unwind
-                                                               : mode::runtime_llvm_jit_call_stack_t::instruction;
+
+
     static_assert(uwvm2::object::memory::linear::native_memory_t::can_mmap);
     std::ifstream input(argv[1], std::ios::binary);
     if(!input) { return 65; }

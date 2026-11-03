@@ -171,9 +171,20 @@ def main():
         report["checks"]["unwind"] = "PASS: real three-function native trap chain"
         denied, text = run("wasi-revoked", [*base, "-Wstart", "2", "2", "--run", wasm])
         require(denied.returncode == 0 and denied.stdout == message, "cached guest retained a prior WASI clock grant")
-        for policy in ("instruction", "none", "auto", "unwind-uncheck"):
-            rejected, text = run("removed-" + policy, ["-Rllvm-call-stack", policy, "--run", wasm])
-            require(rejected.returncode != 0 and b"only checked native unwind" in text, "removed stack policy was accepted")
+        require(b"[unwind-check] status=ok" in text, "mandatory native unwind witness did not run")
+        for option in ("-Rllvm-call-stack", "--runtime-llvm-jit-call-stack"):
+            for policy in ("auto", "instruction", "none", "unwind-uncheck", "unwind"):
+                rejected, text = run("removed-" + option.lstrip("-") + "-" + policy,
+                    [option, policy, "--run", wasm])
+                require(rejected.returncode != 0 and b"invalid parameter:" in text,
+                        "the removed unwind control option was accepted")
+        helped, help_text = run("help", ["--help"])
+        require(helped.returncode == 0 and b"runtime-llvm-jit-call-stack" not in helped.stdout + help_text
+                and b"-Rllvm-call-stack" not in helped.stdout + help_text, "removed unwind option remains advertised")
+        for policy in ("instruction", "pending-numeric"):
+            rejected, text = run("removed-eh-" + policy,
+                ["-Rllvm-exception-dispatch", policy, "--run", wasm])
+            require(rejected.returncode != 0 and b"Usage:" in text, "removed EH policy was accepted")
         invalid, text = run("incomplete-ros-policy", ["-Raot", "--ros1-global-enable", "--run", wasm])
         require(invalid.returncode != 0 and b"ROS policy:" in text,
                 "the owning AOT loader skipped ROS policy validation")

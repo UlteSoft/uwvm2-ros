@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Run the same escaping Core 3 exception through interpreter and JIT full modes."""
 
+from mandatory_native_cli import require_linux_ros
 import argparse
 import hashlib
 import json
@@ -23,16 +24,13 @@ def main() -> int:
     parser.add_argument('--ros', action='store_true')
     parser.add_argument('--jit-only', action='store_true',
                         help='For a Windows LLVM-only PE with interpreter disabled')
-    args = parser.parse_args()
+    args = parser.parse_args(); require_linux_ros(parser, args.ros)
     uwvm = args.uwvm.resolve(strict=True)
     wasm = args.wasm.resolve(strict=True)
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
     if args.ros:
-        modes = [] if args.jit_only else [('int-full', ['-Rint'])]
-        modes += [(f'jit-full-{policy}', ['-Raot', '-Rct', '0',
-                   '-Rllvm-call-stack', policy, '-Rllvm-cache-path', 'disable'])
-                  for policy in ('instruction', 'unwind')]
+        modes = [('jit-full-mandatory-native', ['-Raot', '-Rct', '0', '-Rllvm-cache-path', 'disable'])]
     else:
         modes = [] if args.jit_only else [
             ('int-full', ['-Rcc', 'int', '-Rcm', 'full']),

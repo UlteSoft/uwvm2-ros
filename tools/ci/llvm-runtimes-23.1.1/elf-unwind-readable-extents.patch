@@ -1,0 +1,373 @@
+--- a/upstream/libunwind/src/AddressSpace.hpp
++++ b/upstream/libunwind/src/AddressSpace.hpp
+@@ -414,11 +414,223 @@
+ static FrameHeaderCache TheFrameHeaderCache;
+ #endif
+ 
++// Loader object envelopes may contain PROT_NONE holes. Only a PT_LOAD with
++// PF_R proves a readable range; never use dlfo_map_start/end as its substitute.
++static bool checkedPhdrRange(const Elf_Phdr *phdr, uintptr_t image_base,
++                             uintptr_t &begin, uintptr_t &end) {
++  if (phdr->p_vaddr > UINTPTR_MAX - image_base)
++    return false;
++  begin = image_base + phdr->p_vaddr;
++  if (phdr->p_memsz > UINTPTR_MAX - begin)
++    return false;
++  end = begin + phdr->p_memsz;
++  return begin < end;
++}
++
++#if defined(_LIBUNWIND_SUPPORT_DWARF_INDEX)
++static bool findReadableLoadEnd(const dl_phdr_info *pinfo, uintptr_t address,
++                                uintptr_t &end) {
++  for (Elf_Half i = 0; i < pinfo->dlpi_phnum; ++i) {
++    const Elf_Phdr *phdr = &pinfo->dlpi_phdr[i];
++    uintptr_t begin, candidate_end;
++    if (phdr->p_type == PT_LOAD && (phdr->p_flags & PF_R) != 0 &&
++        checkedPhdrRange(phdr, pinfo->dlpi_addr, begin, candidate_end) &&
++        address >= begin && address < candidate_end) {
++      end = candidate_end;
++      return true;
++    }
++  }
++  return false;
++}
++
++// Decode the two header fields without letting fixed-width or indirect reads
++// escape the proven readable ranges. The generic getEncodedP API does not
++// enforce its end parameter for every fixed-width encoding. Keep this local
++// to ELF discovery; CFI payload interpretation and public APIs are unchanged.
++template <typename A>
++static bool readBoundedEHHeaderValue(A &space, const dl_phdr_info *pinfo,
++                                     uintptr_t &cursor, uintptr_t end,
++                                     uint8_t encoding, uintptr_t datarel_base,
++                                     uintptr_t &value) {
++  if (cursor > end || encoding == DW_EH_PE_omit)
++    return false;
++  const uintptr_t field = cursor;
++  const uint8_t format = encoding & 0x0f;
++  uint64_t raw = 0;
++  unsigned bits = 0;
++  bool is_signed = false;
++  size_t width = 0;
++  switch (format) {
++  case DW_EH_PE_ptr:
++    width = sizeof(uintptr_t);
++    break;
++  case DW_EH_PE_udata2:
++  case DW_EH_PE_sdata2:
++    width = 2;
++    is_signed = format == DW_EH_PE_sdata2;
++    break;
++  case DW_EH_PE_udata4:
++  case DW_EH_PE_sdata4:
++    width = 4;
++    is_signed = format == DW_EH_PE_sdata4;
++    break;
++  case DW_EH_PE_udata8:
++  case DW_EH_PE_sdata8:
++    width = 8;
++    is_signed = format == DW_EH_PE_sdata8;
++    break;
++  case DW_EH_PE_uleb128:
++  case DW_EH_PE_sleb128: {
++    is_signed = format == DW_EH_PE_sleb128;
++    bool terminated = false;
++    for (unsigned byte_index = 0; byte_index != 10; ++byte_index) {
++      if (cursor == end)
++        return false;
++      const uint8_t byte = space.get8(cursor++);
++      const uint8_t payload = byte & 0x7f;
++      // Only bit 63 remains in the tenth byte of a 64-bit LEB value.
++      if (byte_index == 9 &&
++          (is_signed ? (byte != 0 && byte != 0x7f) : byte > 1))
++        return false;
++      const unsigned shift = byte_index * 7;
++      raw |= static_cast<uint64_t>(payload) << shift;
++      if ((byte & 0x80) == 0) {
++        if (is_signed && (byte & 0x40) != 0 && shift < 57)
++          raw |= UINT64_MAX << (shift + 7);
++        terminated = true;
++        break;
++      }
++    }
++    if (!terminated)
++      return false;
++    bits = 64;
++    break;
++  }
++  default:
++    return false;
++  }
++  if (width != 0) {
++    if (width > end - cursor)
++      return false;
++    if (width == 2)
++      raw = space.get16(cursor);
++    else if (width == 4)
++      raw = space.get32(cursor);
++    else
++      raw = space.get64(cursor);
++    cursor += width;
++    bits = static_cast<unsigned>(width * 8);
++  }
++  const uint64_t mask = bits == 64 ? UINT64_MAX : (uint64_t(1) << bits) - 1;
++  const bool negative = is_signed && (raw & (uint64_t(1) << (bits - 1))) != 0;
++  const uint64_t magnitude = negative ? ((~raw & mask) + 1) : raw;
++  if (magnitude > UINTPTR_MAX)
++    return false;
++  uintptr_t base = 0;
++  switch (encoding & 0x70) {
++  case DW_EH_PE_absptr:
++    value = negative ? uintptr_t(0) - static_cast<uintptr_t>(magnitude)
++                     : static_cast<uintptr_t>(magnitude);
++    break;
++  case DW_EH_PE_pcrel:
++    base = field;
++    break;
++  case DW_EH_PE_datarel:
++    base = datarel_base;
++    break;
++  default:
++    // These applications are also unsupported by LocalAddressSpace.
++    return false;
++  }
++  if ((encoding & 0x70) != DW_EH_PE_absptr) {
++    if (negative) {
++      if (magnitude > base)
++        return false;
++      value = base - static_cast<uintptr_t>(magnitude);
++    } else {
++      if (magnitude > UINTPTR_MAX - base)
++        return false;
++      value = base + static_cast<uintptr_t>(magnitude);
++    }
++  }
++  if ((encoding & DW_EH_PE_indirect) != 0) {
++    uintptr_t indirect_end;
++    if (!findReadableLoadEnd(pinfo, value, indirect_end) ||
++        sizeof(uintptr_t) > indirect_end - value)
++      return false;
++    value = space.getP(value);
++  }
++  return true;
++}
++
++template <typename A>
++static bool findDwarfSectionsByPhdr(A &space, const dl_phdr_info *pinfo,
++                                    const Elf_Phdr *phdr,
++                                    UnwindInfoSections &sections) {
++  uintptr_t header, header_end, readable_end;
++  if (phdr->p_type != PT_GNU_EH_FRAME ||
++      !checkedPhdrRange(phdr, pinfo->dlpi_addr, header, header_end) ||
++      header_end - header < 4 || header_end - header > UINT32_MAX ||
++      !findReadableLoadEnd(pinfo, header, readable_end) ||
++      header_end > readable_end)
++    return false;
++  if (space.get8(header) != 1)
++    return false;
++  const uint8_t frame_encoding = space.get8(header + 1);
++  const uint8_t count_encoding = space.get8(header + 2);
++  const uint8_t table_encoding = space.get8(header + 3);
++  uintptr_t cursor = header + 4;
++  uintptr_t frame, count = 0;
++  if (!readBoundedEHHeaderValue(space, pinfo, cursor, header_end,
++                                frame_encoding, header, frame) ||
++      (count_encoding != DW_EH_PE_omit &&
++       !readBoundedEHHeaderValue(space, pinfo, cursor, header_end,
++                                 count_encoding, header, count)) ||
++      !findReadableLoadEnd(pinfo, frame, readable_end))
++    return false;
++
++  // Publish only after both independent ranges have been proved in this same
++  // loader-owned object. The header and frame may occupy different PT_LOADs.
++  sections.dwarf_section = frame;
++  sections.dwarf_section_length = readable_end - frame;
++  sections.dwarf_index_section = 0;
++  sections.dwarf_index_section_length = 0;
++  size_t entry_width = 0;
++  switch (table_encoding & 0x0f) {
++  case DW_EH_PE_udata2:
++  case DW_EH_PE_sdata2:
++    entry_width = 2;
++    break;
++  case DW_EH_PE_udata4:
++  case DW_EH_PE_sdata4:
++    entry_width = 4;
++    break;
++  case DW_EH_PE_udata8:
++  case DW_EH_PE_sdata8:
++    entry_width = 8;
++    break;
++  }
++  // Incomplete/unsupported indexes use the existing finite linear scan. Do
++  // not expose an index whose entry reads could escape the readable header.
++  const uint8_t table_application = table_encoding & 0x70;
++  if (table_encoding != DW_EH_PE_omit && entry_width != 0 && count != 0 &&
++      (table_encoding & DW_EH_PE_indirect) == 0 &&
++      (table_application == DW_EH_PE_absptr ||
++       table_application == DW_EH_PE_pcrel ||
++       table_application == DW_EH_PE_datarel) &&
++      count <= (header_end - cursor) / (2 * entry_width)) {
++    sections.dwarf_index_section = header;
++    sections.dwarf_index_section_length = header_end - header;
++  }
++  return true;
++}
++#endif // _LIBUNWIND_SUPPORT_DWARF_INDEX
++
+ static bool checkAddrInSegment(const Elf_Phdr *phdr, size_t image_base,
+                                dl_iterate_cb_data *cbdata) {
+-  if (phdr->p_type == PT_LOAD) {
+-    uintptr_t begin = image_base + phdr->p_vaddr;
+-    uintptr_t end = begin + phdr->p_memsz;
++  uintptr_t begin, end;
++  if (phdr->p_type == PT_LOAD &&
++      checkedPhdrRange(phdr, image_base, begin, end)) {
+     if (cbdata->targetAddr >= begin && cbdata->targetAddr < end) {
+       cbdata->sects->dso_base = begin;
+       cbdata->sects->text_segment_length = phdr->p_memsz;
+@@ -429,27 +641,18 @@
+ }
+ 
+ static bool checkForUnwindInfoSegment(const Elf_Phdr *phdr, size_t image_base,
++                                      const dl_phdr_info *pinfo,
+                                       dl_iterate_cb_data *cbdata) {
+ #if defined(_LIBUNWIND_SUPPORT_DWARF_INDEX)
+-  if (phdr->p_type == PT_GNU_EH_FRAME) {
+-    EHHeaderParser<LocalAddressSpace>::EHHeaderInfo hdrInfo;
+-    uintptr_t eh_frame_hdr_start = image_base + phdr->p_vaddr;
+-    cbdata->sects->dwarf_index_section = eh_frame_hdr_start;
+-    cbdata->sects->dwarf_index_section_length = phdr->p_memsz;
+-    if (EHHeaderParser<LocalAddressSpace>::decodeEHHdr(
+-            *cbdata->addressSpace, eh_frame_hdr_start,
+-            eh_frame_hdr_start + phdr->p_memsz, hdrInfo)) {
+-      // The callback bounds this address by its readable PT_LOAD segment
+-      // before publishing it. A vDSO need not supply a zero terminator.
+-      cbdata->sects->dwarf_section = hdrInfo.eh_frame_ptr;
+-      cbdata->sects->dwarf_section_length = SIZE_MAX;
+-      return true;
+-    }
+-  }
+-  return false;
++  (void)image_base;
++  return findDwarfSectionsByPhdr(*cbdata->addressSpace, pinfo, phdr,
++                                 *cbdata->sects);
+ #elif defined(_LIBUNWIND_ARM_EHABI)
+   if (phdr->p_type == PT_ARM_EXIDX) {
+-    uintptr_t exidx_start = image_base + phdr->p_vaddr;
++    (void)pinfo;
++    uintptr_t exidx_start, exidx_end;
++    if (!checkedPhdrRange(phdr, image_base, exidx_start, exidx_end))
++      return false;
+     cbdata->sects->arm_section = exidx_start;
+     cbdata->sects->arm_section_length = phdr->p_memsz;
+     return true;
+@@ -493,7 +696,7 @@
+   bool found_unwind = false;
+   for (Elf_Half i = pinfo->dlpi_phnum; i > 0; i--) {
+     const Elf_Phdr *phdr = &pinfo->dlpi_phdr[i - 1];
+-    if (checkForUnwindInfoSegment(phdr, image_base, cbdata)) {
++    if (checkForUnwindInfoSegment(phdr, image_base, pinfo, cbdata)) {
+       found_unwind = true;
+       break;
+     }
+@@ -501,32 +704,6 @@
+   if (!found_unwind)
+     return 0;
+ 
+-#if defined(_LIBUNWIND_SUPPORT_DWARF_INDEX)
+-  // .eh_frame has no program-header length of its own. Use the loader-owned
+-  // readable segment as a finite upper bound for the fallback linear scan.
+-  // QEMU user-mode AArch64 vDSO 10.2.1 places code immediately after an
+-  // unterminated .eh_frame; native/full-system kernel mappings differ.
+-  // Neither layout permits an unbounded read into adjacent instructions.
+-  bool found_dwarf_extent = false;
+-  for (Elf_Half i = 0; i < pinfo->dlpi_phnum; ++i) {
+-    const Elf_Phdr *phdr = &pinfo->dlpi_phdr[i];
+-    if (phdr->p_type != PT_LOAD || (phdr->p_flags & PF_R) == 0 ||
+-        phdr->p_vaddr > UINTPTR_MAX - image_base)
+-      continue;
+-    uintptr_t begin = image_base + phdr->p_vaddr;
+-    if (phdr->p_memsz > UINTPTR_MAX - begin)
+-      continue;
+-    uintptr_t end = begin + phdr->p_memsz;
+-    uintptr_t dwarf = cbdata->sects->dwarf_section;
+-    if (dwarf >= begin && dwarf < end) {
+-      cbdata->sects->dwarf_section_length = end - dwarf;
+-      found_dwarf_extent = true;
+-      break;
+-    }
+-  }
+-  if (!found_dwarf_extent)
+-    return 0;
+-#endif
+ 
+ #if defined(_LIBUNWIND_USE_FRAME_HEADER_CACHE)
+   TheFrameHeaderCache.add(cbdata->sects);
+@@ -661,61 +838,10 @@
+     }
+   }
+ #endif
+-  // Use DLFO_STRUCT_HAS_EH_DBASE to determine the existence of
+-  // `_dl_find_object`. Use _LIBUNWIND_SUPPORT_DWARF_INDEX, because libunwind
+-  // support for _dl_find_object on other unwind formats is not implemented,
+-  // yet.
+-#if defined(DLFO_STRUCT_HAS_EH_DBASE) & defined(_LIBUNWIND_SUPPORT_DWARF_INDEX)
+-  // We expect `_dl_find_object` to return PT_GNU_EH_FRAME.
+-#if DLFO_EH_SEGMENT_TYPE != PT_GNU_EH_FRAME
+-#error _dl_find_object retrieves an unexpected section type
+-#endif
+-  // We look-up `dl_find_object` dynamically at runtime to ensure backwards
+-  // compatibility with earlier version of glibc not yet providing it. On older
+-  // systems, we gracefully fallback to `dl_iterate_phdr`. Cache the pointer
+-  // so we only look it up once. Do manual lock to avoid _cxa_guard_acquire.
+-  static decltype(_dl_find_object) *dlFindObject;
+-  static bool dlFindObjectChecked = false;
+-  if (!dlFindObjectChecked) {
+-    dlFindObject = reinterpret_cast<decltype(_dl_find_object) *>(
+-        dlsym(RTLD_DEFAULT, "_dl_find_object"));
+-    dlFindObjectChecked = true;
+-  }
+-  // Try to find the unwind info using `dl_find_object`
+-  dl_find_object findResult;
+-  if (dlFindObject && dlFindObject((void *)targetAddr, &findResult) == 0) {
+-    if (findResult.dlfo_eh_frame == nullptr) {
+-      // Found an entry for `targetAddr`, but there is no unwind info.
+-      return false;
+-    }
+-    info.dso_base = reinterpret_cast<uintptr_t>(findResult.dlfo_map_start);
+-    info.text_segment_length = static_cast<size_t>(
+-        (char *)findResult.dlfo_map_end - (char *)findResult.dlfo_map_start);
+-
+-    // Record the start of PT_GNU_EH_FRAME.
+-    info.dwarf_index_section =
+-        reinterpret_cast<uintptr_t>(findResult.dlfo_eh_frame);
+-    // The loader's range can cover only the executable segment, while the
+-    // unwind header lives in a separate read-only PT_LOAD. Use the fast result
+-    // only when it bounds both records. Otherwise inspect the program headers
+-    // below; a legitimate split mapping must not disable native unwinding.
+-    const uintptr_t imageEnd =
+-        reinterpret_cast<uintptr_t>(findResult.dlfo_map_end);
+-    if (info.dwarf_index_section >= info.dso_base &&
+-        info.dwarf_index_section < imageEnd) {
+-      info.dwarf_index_section_length = imageEnd - info.dwarf_index_section;
+-      EHHeaderParser<LocalAddressSpace>::EHHeaderInfo hdrInfo;
+-      if (EHHeaderParser<LocalAddressSpace>::decodeEHHdr(
+-              *this, info.dwarf_index_section, imageEnd, hdrInfo) &&
+-          hdrInfo.eh_frame_ptr >= info.dso_base &&
+-          hdrInfo.eh_frame_ptr < imageEnd) {
+-        info.dwarf_section = hdrInfo.eh_frame_ptr;
+-        info.dwarf_section_length = imageEnd - info.dwarf_section;
+-        return true;
+-      }
+-    }
+-  }
+-#endif
++  // _dl_find_object identifies an object, not a uniformly readable extent:
++  // dlfo_map_start/end may enclose PROT_NONE holes or only the target code
++  // segment. Use the loader-synchronized program headers for both header and
++  // frame bounds. Retain the normal frame-header cache and split-load lookup.
+   dl_iterate_cb_data cb_data = {this, &info, static_cast<pint_t>(targetAddr)};
+   int found = dl_iterate_phdr(findUnwindSectionsByPhdr, &cb_data);
+   return static_cast<bool>(found);

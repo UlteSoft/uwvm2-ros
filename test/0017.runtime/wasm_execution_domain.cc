@@ -1,3 +1,4 @@
+#include "mandatory_native_fixture.h"
 #include "../0013.uwvm_int/strict/uwvm_int_translate_strict_common.h"
 #include <uwvm2/runtime/lib/uwvm_runtime.h>
 #include <uwvm2/runtime/wasm_threads/impl.h>
@@ -152,10 +153,10 @@ namespace
 }
 int main(int argc,char** argv)
 {
+    if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
 #if defined(UWVM2TEST_RUNNER_USE_LLVM_JIT)
     namespace mode=uwvm2::uwvm::runtime::runtime_mode;
-    mode::global_runtime_llvm_jit_call_stack = argc>1 && std::strcmp(argv[1],"unwind")==0 ?
-        mode::runtime_llvm_jit_call_stack_t::unwind : mode::runtime_llvm_jit_call_stack_t::instruction;
+
 #else
     (void)argc; (void)argv;
 #endif
@@ -170,8 +171,8 @@ int main(int argc,char** argv)
 #if defined(UWVM2TEST_EXECUTION_TIERED)
     namespace tiered=uwvm2::uwvm::runtime::runtime_mode;
     tiered::global_runtime_compiler=tiered::runtime_compiler_t::uwvm_interpreter_llvm_jit_tiered;
-    tiered::runtime_tiered_disable_uwvm_int_lazy_interpreter=argc>2 && std::strstr(argv[2],"no-t0")!=nullptr;
-    tiered::runtime_tiered_disable_llvm_full_jit=argc>2 && std::strstr(argv[2],"no-t2")!=nullptr;
+    tiered::runtime_tiered_disable_uwvm_int_lazy_interpreter=argc>1 && std::strstr(argv[1],"no-t0")!=nullptr;
+    tiered::runtime_tiered_disable_llvm_full_jit=argc>1 && std::strstr(argv[1],"no-t2")!=nullptr;
 #endif
     uwvm2::uwvm::runtime::runtime_mode::global_runtime_compile_threads_resolved=2;
     // Actual shared-memory syntax reaches both execution backends. Concurrent
@@ -288,7 +289,7 @@ int main(int argc,char** argv)
         lib::runtime_request_execution_stop_host_api();
         lib::reset_runtime_state_host_api();
     }
-    if(argc>2 && std::strcmp(argv[2],"trap")==0)
+    if(argc>1 && std::strcmp(argv[1],"trap")==0)
     {
         std::uint32_t result{};enter(prepared.mod,37,result,false);std::abort();
     }

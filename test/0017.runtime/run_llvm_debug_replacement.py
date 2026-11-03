@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Bounded production LLVM debug-full replacement smoke test."""
+from mandatory_native_cli import require_linux_ros, product_policy, product_policies
 import argparse
 import hashlib
 import json
@@ -50,7 +51,7 @@ def control_fd_probe(args, rows):
     body.write_bytes(b'\x00\x0b')
     host, vm = socket.socketpair(socket.AF_UNIX, socket.SOCK_SEQPACKET)
     host.settimeout(15)
-    command = [str(args.uwvm), '-m', 'run', '-Rct', '0', '-Rllvm-call-stack', 'unwind',
+    command = [str(args.uwvm), '-m', 'run', '-Rct', '0', *([] if args.ros else ['-Rllvm-call-stack', 'unwind']),
                '-Rllvm-cache-path', 'disable']
     if not args.ros:
         command += ['-Rcc', 'jit', '-Rcm', 'full']
@@ -94,7 +95,7 @@ def main():
     parser.add_argument('--replacements', type=int, default=2, choices=(0, 1, 2))
     parser.add_argument('--call-existing', action='store_true')
     parser.add_argument('--ros', action='store_true')
-    args = parser.parse_args()
+    args = parser.parse_args(); require_linux_ros(parser, args.ros)
     args.out.mkdir(parents=True, mode=0o700, exist_ok=False)
     subprocess.run(['bash', str(args.source_root / 'tools/ci/require_wasm3_test_cgroup.sh')], check=True)
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
@@ -123,7 +124,7 @@ def main():
         payloads['good4'] = b'\x00\x41\x00\x1a\x10\x01\x0b'
     for name, data in payloads.items():
         (args.out / (name + '.bin')).write_bytes(data)
-    command = [str(args.uwvm), '-m', 'debug-jit', '-Rct', '0', '-Rllvm-call-stack', 'instruction',
+    command = [str(args.uwvm), '-m', 'debug-jit', '-Rct', '0', *([] if args.ros else ['-Rllvm-call-stack', 'instruction']),
                '-Rllvm-cache-path', 'disable', '--run', str(wasm)]
     process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     pending = bytearray()

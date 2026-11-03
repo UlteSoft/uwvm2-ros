@@ -36,6 +36,7 @@ def main() -> None:
     parser.add_argument('--ldflag', action='append', default=[])
     parser.add_argument('--wasm-tools', type=Path, required=True)
     parser.add_argument('--out', type=Path, required=True)
+    parser.add_argument('--ordinary-upstream', action='store_true', help='Use an independently frozen upstream fixture with its legacy selectors; default is mandatory-native ROS')
     args = parser.parse_args()
     if sys.platform != 'linux':
         raise RuntimeError('remote Linux/cgroup runner only')
@@ -121,8 +122,8 @@ def main() -> None:
                    '(func (export "_start") (result i32) call $helper))\n')
     run('fixture-parse', [str(args.wasm_tools), 'parse', str(wat), '-o', str(out / 'fixture.wasm')])
     run('fixture-validate', [str(args.wasm_tools), 'validate', str(out / 'fixture.wasm')])
-    for policy in ('instruction', 'unwind'):
-        run('runtime-' + policy, [str(out / 'runtime-witness'), str(out / 'fixture.wasm'), policy], 90)
+    for policy in (('instruction', 'unwind') if args.ordinary_upstream else ('mandatory-native',)):
+        run('runtime-' + policy, [str(out / 'runtime-witness'), str(out / 'fixture.wasm'), *([policy] if args.ordinary_upstream else [])], 90)
     if sha(runtime) != expected or sha(command_file) != tool_inputs['actual_test_command']:
         raise RuntimeError('runtime object/original command changed during qualification')
     source_after = {p: sha(root / p) for p in sources}

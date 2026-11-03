@@ -4,6 +4,7 @@
 // retired function. Link against the same frozen runtime object as the CLI.
 #define UWVM2TEST_RUNNER_USE_LLVM_JIT 1
 #define UWVM2TEST_STRICT_NO_INTERPRETER 1
+#include "mandatory_native_fixture.h"
 #include "../0013.uwvm_int/strict/uwvm_int_translate_strict_common.h"
 #include <uwvm2/runtime/lib/uwvm_runtime.h>
 #include <cstdint>
@@ -59,11 +60,11 @@ namespace
 
 int main(int argc, char** argv)
 {
-    if(argc != 4 ||
-       (std::strcmp(argv[2], "instruction") != 0 && std::strcmp(argv[2], "unwind") != 0) ||
-       (std::strcmp(argv[3], "normal") != 0 && std::strcmp(argv[3], "throw") != 0))
+    if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
+    if(argc != 3 ||
+       (std::strcmp(argv[2], "normal") != 0 && std::strcmp(argv[2], "throw") != 0))
     {
-        std::fputs("usage: probe module.wasm instruction|unwind normal|throw\n", stderr);
+        std::fputs("usage: probe module.wasm normal|throw\n", stderr);
         return 2;
     }
     std::ifstream file(argv[1], std::ios::binary);
@@ -83,10 +84,9 @@ int main(int argc, char** argv)
     // [prepared-runtime-owned module] remains live through every outer/nested
     // [safe                         ] invocation; clear this borrow before reset.
     reenter::module = prepared.mod;
-    mode::global_runtime_llvm_jit_call_stack = std::strcmp(argv[2], "unwind") == 0 ?
-        mode::runtime_llvm_jit_call_stack_t::unwind : mode::runtime_llvm_jit_call_stack_t::instruction;
+
     mode::global_runtime_compile_threads_resolved = 1;
-    std::uint32_t parameter{std::strcmp(argv[3], "throw") == 0 ? 1u : 0u};
+    std::uint32_t parameter{std::strcmp(argv[2], "throw") == 0 ? 1u : 0u};
     lib::full_compile_run_config config{};
     config.entry_function_index = 3u;
     // [initialized entry parameter] no pointer arithmetic or retained guest address.

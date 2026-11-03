@@ -27,12 +27,14 @@ jobs:
   configuration-contracts:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
       - name: Pure configuration contracts; no native compatibility claim
         run: PYTHONDONTWRITEBYTECODE=1 python3 -B test/0073.ros-tests/support/source/ros_distro/test_profiles.py
 
   actual-native-matrix:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.repository == 'UlteSoft/uwvm2-ros'
     needs: configuration-contracts
     runs-on: [self-hosted, linux, ros-sdk, ros-cgroup64]
     timeout-minutes: 360
@@ -44,11 +46,14 @@ jobs:
         lane: [serial]
     env:
       PROFILE_LIST: ${{ inputs.profiles }}
+      RUNNER_ADMISSION: ${{ vars.ROS_X86_64_ADMISSION }}
       PYTHONDONTWRITEBYTECODE: '1'
       CMAKE_BUILD_PARALLEL_LEVEL: '1'
+      UWVM_ROS_BUILD_MAX_JOBS: '1'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
+          persist-credentials: false
           submodules: recursive
       - name: Freeze all source, including the new tools
         run: |
@@ -56,12 +61,14 @@ jobs:
       - name: Actual Gateway build and native SDK topic per selected distribution
         run: |
           FROZEN="$RUNNER_TEMP/ros-distro-source-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
-          python3 -B "$FROZEN/source/tools/ros_distro/matrix.py" --source "$FROZEN/source" --source-manifest "$FROZEN/source-manifest.json" --profiles "$PROFILE_LIST" --out "$RUNNER_TEMP/ros-distro-results-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" --minimum-distributions 2 --require-behavior
-      - uses: actions/upload-artifact@v4
+          python3 -B test/0080.product-qualification/guarded.py --source "$FROZEN/source" --admission "$RUNNER_ADMISSION" --out "$RUNNER_TEMP/ros-distro-resources-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT.json" -- \
+            python3 -B "$FROZEN/source/tools/ros_distro/matrix.py" --source "$FROZEN/source" --source-manifest "$FROZEN/source-manifest.json" --profiles "$PROFILE_LIST" --out "$RUNNER_TEMP/ros-distro-results-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" --minimum-distributions 2 --require-behavior
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: ros-distro-actual-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
+            ${{ runner.temp }}/ros-distro-resources-${{ github.run_id }}-${{ github.run_attempt }}.json
             ${{ runner.temp }}/ros-distro-source-${{ github.run_id }}-${{ github.run_attempt }}/source-manifest.json
             ${{ runner.temp }}/ros-distro-source-${{ github.run_id }}-${{ github.run_attempt }}/freeze.json
             ${{ runner.temp }}/ros-distro-results-${{ github.run_id }}-${{ github.run_attempt }}/**/report.json
@@ -69,3 +76,4 @@ jobs:
             ${{ runner.temp }}/ros-distro-results-${{ github.run_id }}-${{ github.run_attempt }}/**/*.log
             ${{ runner.temp }}/ros-distro-results-${{ github.run_id }}-${{ github.run_attempt }}/**/*.jsonl
           retention-days: 14
+          if-no-files-found: error

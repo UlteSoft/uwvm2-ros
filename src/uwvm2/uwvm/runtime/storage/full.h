@@ -583,7 +583,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
                    builtin_wasip1_identity_->current_member()!=builtin_wasip1_member_) {return false;}
                 wasi=builtin_wasip1_member_;
             }
-            ::std::array<::uwvm2::uwvm::wasm::type::local_imported_t const*,7u> ros{};
+            ::std::array<::uwvm2::uwvm::wasm::type::local_imported_t const*,8u> ros{};
             for(::std::size_t i{};i!=debug_ros_identities_.size();++i)
             {
                 auto const& identity{debug_ros_identities_[i]};if(!identity) {continue;}

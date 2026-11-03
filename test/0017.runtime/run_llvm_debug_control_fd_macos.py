@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Native macOS ARM64 late LLVM-full control over a sealed Unix stream."""
 
+from mandatory_native_cli import require_linux_ros, product_policy, product_policies
 import argparse
 import array
 import fcntl
@@ -332,7 +333,7 @@ def main() -> int:
     parser.add_argument('--wasm-tools', type=Path, default=shutil.which('wasm-tools'))
     parser.add_argument('--out', type=Path)
     parser.add_argument('--ros', action='store_true')
-    args = parser.parse_args()
+    args = parser.parse_args(); require_linux_ros(parser, args.ros); parser.error('ROS has no macOS product; this recipe requires an ordinary-upstream executable') if args.ros else None
     if sys.platform != 'darwin' or not args.wasm_tools:
         parser.error('macOS and wasm-tools are required')
     binary = args.uwvm.resolve(strict=True)

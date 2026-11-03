@@ -52,9 +52,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
         using dispatch_t = mode::runtime_llvm_jit_exception_dispatch_t;
         dispatch_t requested{};
-        if(next->str == u8"auto") { requested = dispatch_t::auto_policy; }
+        if(next->str == u8"auto") { requested = dispatch_t::native_unwind; }
         else if(next->str == u8"native-unwind") { requested = dispatch_t::native_unwind; }
-        else if(next->str == u8"pending-numeric") { requested = dispatch_t::pending_numeric; }
         else { usage(); return ::uwvm2::utils::cmdline::parameter_return_type::return_m1_imme; }
         // [actual next result element] valid spelling was proved before commit.
         next->type = ::uwvm2::utils::cmdline::parameter_parsing_results_type::occupied_arg;

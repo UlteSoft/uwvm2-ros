@@ -131,7 +131,8 @@ def main():
                     record = json.loads(records[0].read_text())
                     assert record["gateway"] is None and record["gateway_sha256"] is None
                     assert record["gateway_pids"] == {} and record["status"] == "PASS"
-                    assert "--runtime-aot" in record["argv"] and "unwind" in record["argv"]
+                    assert "--runtime-aot" in record["argv"]
+                    assert not {"--runtime-llvm-jit-call-stack", "-Rllvm-call-stack"}.intersection(record["argv"])
                     assert (records[0].parent / "worker.stdout").read_bytes() == expected
                     report["checks"].append({"case": label, "passed": True,
                                               "execution": str(records[0])})

@@ -9,6 +9,7 @@
  */
 #define UWVM2TEST_RUNNER_USE_LLVM_JIT 1
 #define UWVM2TEST_STRICT_NO_INTERPRETER 1
+#include "../../../../0017.runtime/mandatory_native_fixture.h"
 #include <uwvm2/uwvm/runtime/runtime_mode/impl.h>
 #include "../../../../0013.uwvm_int/strict/uwvm_int_translate_strict_common.h"
 #include <uwvm2/runtime/lib/uwvm_runtime.h>
@@ -98,6 +99,7 @@ namespace
 
 int main(int argc, char** argv)
 {
+    if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
     if(argc != 4 || (std::strcmp(argv[1], "ros1") != 0 && std::strcmp(argv[1], "ros2") != 0))
     {
         ::fast_io::io::perrln("usage: ancestry-reentry ros1|ros2 reentry-root.wasm reentry-library.wasm");
@@ -146,7 +148,7 @@ int main(int argc, char** argv)
         };
         auto prepared = prepare();
         reenter::module = prepared.mod;
-        mode::global_runtime_llvm_jit_call_stack = mode::runtime_llvm_jit_call_stack_t::unwind;
+
         mode::global_runtime_compile_threads_resolved = 0;
         require(lib::ros_execution_backend_supported_host_api());
         auto epoch = lib::observe_compiler_runtime_generation_host_api();

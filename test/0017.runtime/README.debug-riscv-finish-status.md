@@ -1,3 +1,5 @@
+> Historical source-specific observations. Commands below may use the removed stack selector or non-Linux ROS configurations. They are not current ROS product recipes or qualification evidence. Use the mandatory-native migration contract for new Linux runs.
+
 RISC-V native finish status
 ==========================
 

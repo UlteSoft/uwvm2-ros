@@ -7,6 +7,7 @@ older releases may not understand this grammar.
 https://webassembly.github.io/spec/core/valid/instructions.html#valid-ref.cast
 """
 
+from mandatory_native_cli import require_linux_ros
 import argparse
 import hashlib
 import json
@@ -40,10 +41,7 @@ def sha256(path):
 
 def policies(ros):
     if ros:
-        yield "int-full", ("-Rint",)
-        for trace in ("instruction", "unwind"):
-            yield f"jit-full-{trace}", ("-Raot", "-Rllvm-call-stack", trace,
-                                       "-Rllvm-cache-path", "disable")
+        yield "jit-full-mandatory-native", ("-Raot", "-Rllvm-cache-path", "disable")
         return
     for mode in ("full", "lazy", "lazy+verification"):
         yield f"int-{mode}", ("-Rcc", "int", "-Rcm", mode)
@@ -71,7 +69,7 @@ def main():
     parser.add_argument("--wasmtime", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--ros", action="store_true")
-    args = parser.parse_args()
+    args = parser.parse_args(); require_linux_ros(parser, args.ros)
     source = Path(__file__).resolve().parents[2]
     subprocess.run(["bash", str(source / "tools/ci/require_wasm3_test_cgroup.sh")], check=True)
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
@@ -125,7 +123,7 @@ def main():
                     "reference cast failed: value does not match target heap type")
         # Check each dependency independently. Function references are unrelated
         # to this exception/GC intersection and must remain independently off.
-        int_policy = ("-Rint",) if args.ros else ("-Rcc", "int", "-Rcm", "full")
+        int_policy = ("-Raot",) if args.ros else ("-Rcc", "int", "-Rcm", "full")
         for feature, off_flag, diagnostic in FEATURE_OFF:
             enabled = [flag for flag in ENABLED if flag != "-WFE-" + feature]
             # Exnref function signatures require exceptions, but not GC.

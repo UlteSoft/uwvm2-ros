@@ -11,18 +11,19 @@ add_defines("UWVM_VERSION_Z=3")
 add_defines("UWVM_VERSION_S=0")
 add_defines("UWVM_VERSION_DEV")
 
-set_allowedplats("windows", "mingw", "cygwin", "linux", "djgpp", "unix", "bsd", "freebsd", "dragonflybsd", "netbsd",
-	"openbsd", "macosx", "iphoneos", "watchos", "wasm-wasi", "wasm-wasip1", "wasm-wasip2", "wasm-wasip3",
-	"wasm-wasi-threads", "wasm-wasip1-threads", "wasm-wasip2-threads", "wasm-wasip3-threads", "wasm-emscripten",
-	"serenity", "sun", "cross", "none")
+-- ROS release policy is independent of the retained upstream platform sources.
+set_allowedplats("linux")
 
 includes("xmake/language_debug.lua")
 includes("xmake/impl.lua")
+includes("xmake/ros_product_rule.lua")
 includes("xmake/mach_exc_protected.lua")
 includes("xmake/platform/impl.lua")
 includes("xmake/basic_test.lua")
 add_moduledirs("xmake")
 
+-- The wider platform implementations above remain upstream source assets.
+-- ros_product.lua rejects targets outside the current Linux ROS ABI matrix.
 -- Currently, there are no plugins.
 -- add_plugindirs("xmake/plugins")
 
@@ -53,6 +54,10 @@ local function uwvm_require_build_config(condition, message)
 end
 
 function def_build(opt)
+	add_rules("uwvm_ros_product")
+	-- Unsupported products must reach the full sandbox policy diagnostic;
+	-- do not enter retained platform recipes from declarative scope.
+	if (get_config("plat") or os.host()) ~= "linux" then return end
 	opt = opt or {}
 	uwvm_apply_language_debug_options()
 	-- The command line remains opt-in per module. This only makes the offline
@@ -102,9 +107,7 @@ function def_build(opt)
 
 	for _, ros_version in ipairs({1, 2}) do
 		if get_config("import-ros" .. ros_version) then
-			if not is_plat("linux") then
-				error("ROS runtime host imports require Linux SO_PEERCRED")
-			end
+			-- Linux-only admission is enforced by the mandatory sandbox policy.
 			-- Noetic/Humble/Jazzy name amd64, arm64 and arm32, not every
 			-- member of the x86/ARM families. ARM32 must additionally satisfy
 			-- the compiler's little-endian ARMv7 hard-float ABI check.
@@ -661,9 +664,7 @@ target("uwvm2-ros")
 	local is_debug_mode = is_mode("debug")  -- public all modules in debug mode
 	for _, ros_version in ipairs({1, 2}) do
 		if get_config("import-ros" .. ros_version) then
-			if not is_plat("linux") then
-				error("ROS runtime host imports require Linux SO_PEERCRED")
-			end
+			-- Linux-only admission is enforced by the mandatory sandbox policy.
 			add_defines("UWVM_IMPORT_ROS" .. ros_version)
 		end
 	end
@@ -901,9 +902,7 @@ for _, file in ipairs(os.files("test/**.cc")) do
 
 		for _, ros_version in ipairs({1, 2}) do
 		if get_config("import-ros" .. ros_version) then
-			if not is_plat("linux") then
-				error("ROS runtime host imports require Linux SO_PEERCRED")
-			end
+			-- Linux-only admission is enforced by the mandatory sandbox policy.
 			add_defines("UWVM_IMPORT_ROS" .. ros_version)
 		end
 	end

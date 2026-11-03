@@ -57,6 +57,7 @@ def main() -> None:
     parser.add_argument('--compiler', default='/toolchain/bin/clang++')
     parser.add_argument('--preflight-only', action='store_true',
                         help='verify source, O3 object, Wasm oracles, and cgroup without compiling')
+    parser.add_argument('--ordinary-upstream', action='store_true', help='Run interpreter and legacy-selector matrix only against an independently frozen upstream source')
     args = parser.parse_args()
     source, output = args.source.resolve(), args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
@@ -123,7 +124,7 @@ def main() -> None:
     int_source = 'test/0013.uwvm_int/wasm3/memory_store_atomicity.cc'
     jit_source = 'test/0013.uwvm_int/wasm3/memory_store_atomicity_jit.cc'
     binaries = {}
-    for name, tuning in (('int-normal', []), ('int-all-combine-delay', full_tuning)):
+    for name, tuning in ((('int-normal', []), ('int-all-combine-delay', full_tuning)) if args.ordinary_upstream else ()):
         target = output / name
         command = [args.compiler, *int_flags, *tuning, int_source, '-o', str(target)]
         write_json(output / f'{name}.command.json', command)
@@ -144,13 +145,13 @@ def main() -> None:
     binaries['jit-full'] = {'path': str(target), 'sha256': digest(target), 'command': command}
 
     results = []
-    for backend in ('int-normal', 'int-all-combine-delay', 'jit-full'):
-        policies = ('instruction', 'unwind') if backend == 'jit-full' else (None,)
+    for backend in (('int-normal', 'int-all-combine-delay', 'jit-full') if args.ordinary_upstream else ('jit-full',)):
+        policies = (('instruction', 'unwind') if args.ordinary_upstream else ('mandatory-native',)) if backend == 'jit-full' else (None,)
         for policy in policies:
             for growth in (False, True):
                 for row, wasm, wasm_hash in cases:
                     command = [binaries[backend]['path'], str(wasm), str(row['width'])]
-                    if policy is not None:
+                    if policy is not None and args.ordinary_upstream:
                         command.append(policy)
                     if growth:
                         command.append('growth')
@@ -204,7 +205,7 @@ def main() -> None:
                'positive_old_boundary_writes': sum(item['positive_old_boundary_writes'] for item in results),
                'memory_types': ['memory32', 'memory64'],
                'store_classes': ['scalar', 'SIMD', 'SIMD lane', 'local-value', 'same-memory-copy'],
-               'scope': 'two-memory target-memory fault-first; int uncached/register-ring and JIT full instruction/unwind'}
+               'scope': ('two-memory target-memory fault-first; independent upstream int and JIT policy matrix' if args.ordinary_upstream else 'two-memory target-memory fault-first; mandatory-native ROS runtime fixture; no crash-stack proof from the custom handler')}
     write_json(output / 'summary.json', summary)
     print(f"PASS {len(results)} runs, {summary['prefix_fault_checks']} fault-prefix checks, "
           f"{summary['positive_old_boundary_writes']} after-grow positive writes")

@@ -61,13 +61,13 @@ for suite in a.suite or sources:
   'src/uwvm2/uwvm/host_api.default.cpp',str(a.out/'runtime.o'),'@'+str(a.llvm_root/'consumer-link.rsp'),'-O1',
   '-L'+str(deps/'usr/lib'/triple),'-L'+str(sysroot/'lib'),'-lssl','-lcrypto','-latomic','-ldl','-pthread','-o',str(binary)])
  env=os.environ.copy();env['UWVM_ATOMIC_IR_DIR']=env['UWVM_WAIT_IR_DIR']=str(directory)
- for policy in ['instruction','unwind']:
+ for policy in (['mandatory-native'] if suite == 'domain' else ['component-native-cfi','component-instrumented']):
   run(suite+'-'+policy,[str(deps/'usr/bin/qemu-riscv64'),'-U','LD_LIBRARY_PATH','-E',
-   'LD_LIBRARY_PATH='+str(deps/'usr/lib'/triple)+':'+str(sysroot/'lib'),'-L',str(sysroot),str(binary),policy],300,env)
+   'LD_LIBRARY_PATH='+str(deps/'usr/lib'/triple)+':'+str(sysroot/'lib'),'-L',str(sysroot),str(binary),*([policy] if suite != 'domain' else [])],300,env)
   print((a.out/(suite+'-'+policy+'.log')).read_text(),flush=True)
  (directory/'inputs.json').write_text(json.dumps(dict(test_sha256=digest(source),binary_sha256=digest(binary)),indent=2)+'\n')
 after=subprocess.check_output(['python3','tools/ci/wasm3_source_fingerprint.py','.',str(a.out/'source-after.json')],text=True).strip()
 assert source_id==after and all(digest(Path(path))==value for path,value in toolchain.items())
 audit_resources('after')
 (a.out/'summary.json').write_text(json.dumps(dict(passed=True,source_id=source_id,llvm='23.1.1-uwvm-ros.9',
- target=triple,memory_backend='concurrent-allocator',suites=a.suite or list(sources),rows=rows),indent=2)+'\n')
+ scope='standalone component capability; not ROS product ABI qualification; component IR choice is separate from mandatory-native runtime execution',target=triple,memory_backend='concurrent-allocator',suites=a.suite or list(sources),rows=rows),indent=2)+'\n')

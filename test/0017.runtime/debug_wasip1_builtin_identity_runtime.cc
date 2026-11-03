@@ -1,5 +1,6 @@
 // Real builtin binding-only census fixture. This test uses ONLY
 // existing public actual capture_instance entry. No new friend/callback issuer.
+#include "mandatory_native_fixture.h"
 #include <uwvm2/uwvm/run/owned_source.h>
 #include <uwvm2/utils/control/owned_file_image.h>
 #include <uwvm2/uwvm/debugger/checkpoint_state.h>
@@ -158,12 +159,12 @@ static void check_graph(cp::state const& graph,cp::limits const& cap,::std::arra
 }
 int main(int argc,char** argv)
 {
-    if(argc!=4) { return 64; }
-    auto const strategy{::fast_io::concat_std(::fast_io::mnp::os_c_str(argv[3]))};
-    REQUIRE(strategy=="instruction" || strategy=="unwind");
+    if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
+    if(argc!=3) { return 64; }
+
     mode::global_runtime_mode=mode::runtime_mode_t::full_compile;
     mode::global_runtime_compiler=mode::runtime_compiler_t::llvm_jit_only;
-    mode::global_runtime_llvm_jit_call_stack=strategy=="instruction" ? mode::runtime_llvm_jit_call_stack_t::instruction:mode::runtime_llvm_jit_call_stack_t::unwind;
+
     mode::global_runtime_compile_threads=0u;mode::runtime_compile_threads_existed=true;
     mode::global_runtime_llvm_jit_cache_path_mode=mode::runtime_llvm_jit_cache_path_mode_t::disabled;
     setup state{};state.path=::fast_io::u8concat_std(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(argv[1])));

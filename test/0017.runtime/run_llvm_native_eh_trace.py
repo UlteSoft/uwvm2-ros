@@ -7,6 +7,7 @@ failure. Keep this supplementary runner separate from the frozen fused corpus.
 https://webassembly.github.io/spec/core/exec/instructions.html#exec-throw
 """
 
+from mandatory_native_cli import require_linux_ros
 import argparse
 import hashlib
 import json
@@ -45,17 +46,15 @@ def digest(path):
 
 
 def configurations(ros, full_only):
-    if ros:
-        yield "int-full", ("-Rint",), False
-    else:
+    if not ros:
         for mode in (("full",) if full_only else ("full", "lazy", "lazy+verification")):
             yield "int-" + mode, ("-Rcc", "int", "-Rcm", mode, "-Rct", "0"), False
     modes = ("full",) if ros or full_only else ("full", "lazy", "lazy+verification")
     for mode in modes:
-        for policy in ("instruction", "unwind"):
+        for policy in (("mandatory-native",) if ros else ("instruction", "unwind")):
             engine = ("-Raot",) if ros else ("-Rcc", "jit", "-Rcm", mode)
             flags = (*engine, "-Rct", "0", "-Rllvm-cache-path", "disable",
-                     "-Rllvm-call-stack", policy, "-Rllvm-exception-dispatch", "native-unwind",
+                     *([] if ros else ["-Rllvm-call-stack", policy]), "-Rllvm-exception-dispatch", "native-unwind",
                      "-Rclog", "err", "-log-vb")
             yield "jit-" + mode + "-" + policy, flags, mode == "full"
 
@@ -124,7 +123,7 @@ def main():
     parser.add_argument("--full-only", action="store_true", help="Prioritize the actual native full paths")
     parser.add_argument("--only-case", action="append", choices=tuple(CASES))
     parser.add_argument("--timeout", type=int, default=45)
-    args = parser.parse_args()
+    args = parser.parse_args(); require_linux_ros(parser, args.ros)
     if not 1 <= args.timeout <= 90:
         parser.error("timeout must be between 1 and 90 seconds")
     root = args.source_root.resolve(strict=True)

@@ -32,6 +32,7 @@ def main() -> None:
                         help='Keeper-owned build provenance record for fresh all-TU/macro closure; externally reviewed')
     parser.add_argument('--wasm-tools', type=Path, required=True)
     parser.add_argument('--out', type=Path, required=True)
+    parser.add_argument('--ordinary-upstream', action='store_true', help='Use an independently frozen upstream fixture with its legacy selectors; default is mandatory-native ROS')
     args = parser.parse_args()
     if sys.platform != 'linux':
         raise RuntimeError('sole remote Linux/cgroup runner only; other platforms require their qualified harness')
@@ -87,9 +88,9 @@ def main() -> None:
 
     run('official-parse', [str(tool), 'parse', str(root / inputs[2]), '-o', str(wasm)])
     run('official-validate', [str(tool), 'validate', str(wasm)])
-    for policy in ('instruction', 'unwind'):
+    for policy in (('instruction', 'unwind') if args.ordinary_upstream else ('mandatory-native',)):
         name = policy + '-actual-native-next-ordinary-and-control-refusal'
-        run(name, [str(binary), str(wasm), policy])
+        run(name, [str(binary), str(wasm), *([policy] if args.ordinary_upstream else [])])
         text = (out / (name + '.log')).read_text()
         marker = 'debug_native_next_runtime: PASS actual native next policy=' + policy
         if (marker not in text or 'genuine-native-trap=yes' not in text or
@@ -112,7 +113,7 @@ def main() -> None:
                 'qualified_build_record_sha256': sha(build_record), 'wasm_tools_sha256': sha(tool),
                 'inputs': hashes, 'rows': rows}
     (out / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
-    print('PASS actual native-next ordinary/control refusal, instruction/unwind, fresh runtime/producer/host closure', flush=True)
+    print('PASS actual native-next ordinary/control refusal, mandatory-native (or explicitly selected ordinary-upstream policies), fresh runtime/producer/host closure', flush=True)
 
 
 if __name__ == '__main__':

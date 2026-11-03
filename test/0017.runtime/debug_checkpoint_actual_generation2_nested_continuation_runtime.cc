@@ -1,6 +1,7 @@
 // Genuine original Wasm parse+initializer+single fused compiler+actual pause
 // capture+retirement+actual engine-resolved logical continuation execution.
 // This qualifies the execution slice, not complete instance/file/GC rollback.
+#include "mandatory_native_fixture.h"
 #include <uwvm2/uwvm/run/owned_source.h>
 #include <uwvm2/runtime/checkpoint/materialization.h>
 #include <uwvm2/runtime/gc/frame_roots.h>
@@ -81,17 +82,16 @@ struct observer
 };
 int main(int argc, char** argv)
 {
-    if(argc != 4) { return 2; }
+    if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
+    if(argc != 3) { return 2; }
     // Official assembler-extracted full replacement body (local declaration
     // prefix + expression), supplied by the sole Linux test keeper. Native file
     // loader owns the exact byte extent through actual fused compilation.
-    ::fast_io::native_file_loader replacement_body{::fast_io::mnp::os_c_str(argv[3])};
-    auto const policy{::fast_io::concat_std(::fast_io::mnp::os_c_str(argv[2]))};
-    require(policy == "instruction" || policy == "unwind", "explicit stack strategy");
+    ::fast_io::native_file_loader replacement_body{::fast_io::mnp::os_c_str(argv[2])};
+
     mode::global_runtime_mode = mode::runtime_mode_t::full_compile;
     mode::global_runtime_compiler = mode::runtime_compiler_t::llvm_jit_only;
-    mode::global_runtime_llvm_jit_call_stack = policy == "instruction" ? mode::runtime_llvm_jit_call_stack_t::instruction :
-        mode::runtime_llvm_jit_call_stack_t::unwind;
+
     mode::global_runtime_compile_threads = 0u; mode::runtime_compile_threads_existed = true;
     mode::global_runtime_llvm_jit_cache_path_mode = mode::runtime_llvm_jit_cache_path_mode_t::disabled;
     auto const path{::uwvm2::utils::container::u8concat_uwvm(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(argv[1])))};

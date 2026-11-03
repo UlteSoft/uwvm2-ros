@@ -23,8 +23,8 @@ def main():
     p.add_argument('--ros', action='store_true')
     p.add_argument('--backend', choices=['jit', 'int', 'tiered'], default='jit')
     a = p.parse_args()
-    if a.ros and a.backend == 'tiered':
-        p.error('ROS has no tiered backend')
+    if a.ros and a.backend != 'jit':
+        p.error('ROS requires the full AOT backend with checked native unwind')
     root = Path(__file__).resolve().parents[2]
     subprocess.run(['bash', str(root / 'tools/ci/require_wasm3_test_cgroup.sh')], check=True)
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
@@ -53,7 +53,7 @@ def main():
     if a.backend == 'tiered':
         configs = [('all', []), ('no-t0', ['-Rtiered-disable-t0']), ('no-t2', ['-Rtiered-disable-t2']),
                    ('no-t0-no-t2', ['-Rtiered-disable-t0', '-Rtiered-disable-t2'])]
-    policies = ['instruction', 'unwind'] if a.backend != 'int' else ['instruction']
+    policies = ['mandatory-native'] if a.ros else (['instruction', 'unwind'] if a.backend != 'int' else ['instruction'])
     fixtures = []
     for indexed in [False, True]:
         memory = '(memory 1 1) (memory 1 2 shared)' if indexed else '(memory 1 2 shared)'
@@ -119,7 +119,7 @@ def main():
                 else:
                     base = ['-Rcc', a.backend, '-Rcm', mode]
                 if a.backend != 'int':
-                    base += ['-Rllvm-cache-path', 'disable', '-Rllvm-call-stack', policy]
+                    base += ['-Rllvm-cache-path', 'disable', *([] if a.ros else ['-Rllvm-call-stack', policy])]
                 command = [str(a.uwvm), *base, '-Rclog', 'file', str(log), *features, '--run', str(binary)]
                 run(label, command, trap)
                 # Success must exercise compilation, not stop after parsing. Trap

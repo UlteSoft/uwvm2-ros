@@ -42,6 +42,49 @@ WASM_MEMORY_RE = re.compile(r"^wasm-memory:(\d{1,20}):(\d{1,10}):(\d{1,20})$")
 EXIT_RE = re.compile(r"^guest exited: (-?\d+)$")
 
 
+def parse_wasm_memory_page(reply, module, memory, address, count):
+    """Decode one copied Wasm page; display addresses grant no host access.
+
+    The current console uses a selector header and a fixed 16-byte hex/ASCII
+    dump. Check every row against that requested guest range before publishing
+    bytes. Retain the earlier bounded wire spelling for existing brokers.
+    Neither format replaces the caller's before/after cooperative-stop checks.
+    """
+    if (type(module) is not int or not 0 <= module < 1 << 64 or
+            type(memory) is not int or not 0 <= memory < 1 << 32 or
+            type(address) is not int or not 0 <= address < 1 << 64 or
+            type(count) is not int or not 0 <= count <= 256 or
+            address > (1 << 64) - 1 - count or not isinstance(reply, str) or len(reply) > 4096):
+        raise ValueError("malformed or incomplete bounded Wasm memory page")
+    if reply.startswith("memory:"):
+        if count == 0 and reply == "memory: <empty>\n":
+            return b""
+        if count and re.fullmatch(r"memory:(?: [0-9a-fA-F]{2}){" + str(count) + r"}\n", reply):
+            return bytes.fromhex(reply[7:-1])
+        raise ValueError("malformed or incomplete bounded Wasm memory page")
+    header = f"Wasm memory module={module} index={memory} offset={address} bytes={count}\n"
+    if not reply.startswith(header):
+        raise ValueError("Wasm memory page selector differs from its request")
+    rows = reply[len(header):].splitlines(keepends=True)
+    if len(rows) != (count + 15) // 16:
+        raise ValueError("malformed or incomplete bounded Wasm memory page")
+    copied = bytearray()
+    for index, row in enumerate(rows):
+        first = index * 16
+        size = min(16, count - first)
+        prefix = f"0x{address + first:016x}: "
+        digits = row[len(prefix):len(prefix) + size * 3]
+        if not row.startswith(prefix) or re.fullmatch(r"(?:[0-9a-f]{2} ){" + str(size) + r"}", digits) is None:
+            raise ValueError("malformed or out-of-range Wasm memory dump row")
+        data = bytes.fromhex(digits)
+        text = "".join(chr(value) if 32 <= value < 127 else "." for value in data)
+        expected = prefix + digits + "   " * (16 - size) + " |" + text + "|\n"
+        if row != expected:
+            raise ValueError("malformed Wasm memory dump padding or ASCII")
+        copied.extend(data)
+    return bytes(copied)
+
+
 ROS_SELECTIONS = ("capabilities", "sessions", "queues", "services", "actions", "parameters", "tf", "graph", "stats", "calls", "trace")
 ROS_SELECTION_ALIASES = {"instances": "sessions", "events": "queues"}
 ROS_ROW_TEXT = {"module": 255, "alias": 255, "op": 64, "resource": 256, "type": 192}
@@ -51,6 +94,9 @@ ROS_ROW_INTS = {"kind", "instance", "generation", "opens", "active_handles", "ob
                 "audit_records", "audit_bytes", "audit_suppressed", "depth", "bytes", "pending", "pending_bytes",
                 "reserved", "reserved_bytes", "high_water", "high_water_bytes", "enqueued", "dequeued", "drop_oldest",
                 "drop_newest", "rejected", "backpressured", "admission_refused", "completed", "closed"}
+ROS_ERROR_REASONS = {0: "success", 2: "unknown_module", 9: "bad_handle", 11: "rate_limited",
+                     13: "permission_denied", 17: "conflict", 22: "invalid_argument", 90: "too_large",
+                     95: "unsupported", 107: "disconnected", 110: "timeout", 125: "revoked"}
 
 
 def ros_state_options(arguments):
@@ -145,15 +191,26 @@ def parse_ros_state(reply, options, stop_id):
             raise ValueError("ROS name exceeds the actual bounded field")
         return {"text": raw.decode("utf-8", "backslashreplace"), "bytesBase64": base64.b64encode(raw).decode("ascii"),
                 "truncated": truncated}
-    rows = []; trace = selected == "trace"; calls = selected == "calls"
+    rows = []; trace = selected == "trace"; calls = selected == "calls"; current_trace = None
     for line in lines[1:-1]:
         prefix = "call " if trace else "interface " if calls else "row "
         if not line.startswith(prefix) or len(rows) >= options["count"]:
             raise ValueError("unexpected or excessive ROS metadata row")
         values = fields(line[len(prefix):])
+        symbols = set()
         if trace:
             texts = {"module": 255, "alias": 255, "op": 64, "function": 64}
             integers = {"seq", "ns", "instance", "generation", "errno"}; bools = {"unresolved", "result_known"}; floats = set()
+            # R13 prints resource and stable reason together. Keep the earlier
+            # exact row schema for old brokers, but never accept a partial or
+            # mixed new schema. New rows must also have the new loss footer.
+            this_current_trace = bool(set(values) & {"resource", "reason"})
+            if current_trace is not None and current_trace != this_current_trace:
+                raise ValueError("mixed ROS trace row schemas")
+            current_trace = this_current_trace
+            if current_trace:
+                texts["resource"] = 64
+                symbols.add("reason")
         elif calls:
             texts = {"module": 255, "alias": 255, "op": 64, "function": 64}
             integers = {"instance", "generation", "calls", "errors", "incomplete", "timed", "total_ns", "min_ns", "max_ns", "window_ns"}
@@ -172,12 +229,12 @@ def parse_ros_state(reply, options, stop_id):
                     integers.add("client_features")
             else:
                 integers |= client_pair
-        if set(values) != set(texts) | integers | bools | floats | {"backend"}:
+        if set(values) != set(texts) | integers | bools | floats | symbols | {"backend"}:
             raise ValueError("unknown or incomplete ROS metadata row schema")
         row = {}
         for key, capacity in texts.items():
             row[key] = None if key == "resource" and values[key] == "<redacted>" else quoted(values[key], capacity)
-        if not trace and not calls:
+        if "resource" in texts:
             row["resourceRedacted"] = row["resource"] is None
         for key in integers:
             row[key] = integer(values[key], (1 << 32)-1 if key == "errno" else (1 << 64)-1)
@@ -192,6 +249,15 @@ def parse_ros_state(reply, options, stop_id):
         if values["backend"] not in ("ros1", "ros2"):
             raise ValueError("unknown actual ROS row backend")
         row["backend"] = values["backend"]
+        if trace and current_trace:
+            expected_reason = ROS_ERROR_REASONS.get(row["errno"], "unclassified") if row["result_known"] else "unobserved"
+            if values["reason"] != expected_reason:
+                raise ValueError("ROS trace reason differs from the observed result")
+            row["reason"] = values["reason"]
+            if row["resource"] is not None:
+                raw_resource = base64.b64decode(row["resource"]["bytesBase64"], validate=True)
+                if raw_resource and re.fullmatch(rb"/[A-Za-z0-9_/]*", raw_resource) is None:
+                    raise ValueError("ROS trace resource is not public name metadata")
         if client_metadata:
             if trace:
                 if (row["op"]["truncated"] or row["op"]["text"] != "service.available" or
@@ -234,17 +300,25 @@ def parse_ros_state(reply, options, stop_id):
         rows.append(row)
     footer = fields(lines[-1])
     footer_keys = {"total", "next", "more", "gap", "overwritten", "dropped_busy"}
+    current_footer = "dropped_sequence" in footer
+    if current_footer:
+        footer_keys.add("dropped_sequence")
     if calls:
         footer_keys |= {"dropped_full", "dropped_labels"}
     if set(footer) != footer_keys:
         raise ValueError("complete ROS page footer required")
+    if trace and rows and current_trace != current_footer:
+        raise ValueError("ROS trace row and loss footer schemas differ")
     result = {key: boolean(value) if key in ("more", "gap") else integer(value) for key, value in footer.items()}
     expected_count = min(options["count"], result["total"] if trace else max(0, result["total"]-options["start"]))
-    expected_next = (rows[-1]["seq"] if trace else options["start"]+len(rows)) if rows else 0
+    if trace:
+        expected_next = rows[-1]["seq"] if rows else options.get("after", 0)
+    else:
+        expected_next = options["start"]+len(rows) if rows else 0
     if len(rows) != expected_count or result["next"] != expected_next or result["more"] != (result["total"] >
             (len(rows) if trace else options["start"]+len(rows))):
         raise ValueError("ROS page cardinality/cursor is incomplete")
-    if calls and (result["gap"] or result["overwritten"]):
+    if calls and (result["gap"] or result["overwritten"] or result.get("dropped_sequence", 0)):
         raise ValueError("interface aggregates cannot use trace ring loss semantics")
     result.update(scope="process-owned", stopId=stop_id, selection=selected, requestedSelection=options["requestedSelection"],
                   rows=rows, start=options["start"], readOnly=True, payloadsRead=False, nativeOperationsIssued=False)
@@ -3125,11 +3199,7 @@ class Adapter:
                 raise ValueError("Wasm memory stop changed before a page copy")
             size = min(256, count - first)
             reply = self.command(f"memory {module} {memory} {address + first} {size}")
-            if (not isinstance(reply, str) or
-                    (size == 0 and reply != "memory: <empty>\n") or
-                    (size != 0 and re.fullmatch(r"memory:(?: [0-9a-fA-F]{2}){" + str(size) + r"}\n", reply) is None)):
-                raise ValueError("malformed or incomplete bounded Wasm memory page")
-            copied = bytes.fromhex(reply[7:-1]) if size else b""
+            copied = parse_wasm_memory_page(reply, module, memory, address + first, size)
             self.observe(self.command("status"), notify=False)
             if self.state != "stopped" or self.stop_key != expected:
                 raise ValueError("Wasm memory stop changed during page copy")

@@ -1,3 +1,25 @@
+-- Run policy in a full option sandbox before option-derived dependencies.
+-- Each expensive ensure() entry independently repeats the same admission.
+option("ros-product-policy", function()
+    set_default(true)
+    set_showmenu(false)
+    -- These options have no dependency-producing hooks. Resolve their values
+    -- before sysroot/rtlib/unwindlib callbacks can request a provider. Do not
+    -- depend back on those callbacks: that would create an admission cycle.
+    add_deps("target", "llvm-target", "execution-int", "execution-jit", "use-llvm-compiler",
+        "llvm-runtimes-provider", "stdlib", "llvm-build-jobs", "llvm-build-targets", "llvm-cmake-toolchain",
+        "use-thread-local", "fno-exceptions", "enable-wsea", "linux-native-debug", "detailed-debug-check",
+        "disable-local-imported-wasip1", "enable-local-imported-wasip1-wasm64", "import-ros1", "import-ros2",
+        "wasm-memory-model", "use-cxx-module", "enable-lto", "numeric-exception-fused", "gc-jit-access-profile",
+        "gc-allocation-profile", "mingw-min", "apple-platform", "macos-x64-native-step", "macos-4gib-test",
+        "enable-uwvm-int-combine-ops", "enable-uwvm-int-delay-local", "enable-uwvm-int-instruction-reorder",
+        "enable-uwvm-int-loop-unwind")
+    after_check(function()
+        local product = import("utility.ros_product", {anonymous = true})
+        product.uwvm_ros_product_check_current()
+    end)
+end)
+
 option("march", function()
     set_description
     (
@@ -9,7 +31,10 @@ option("march", function()
         [[    arch: Set the "-march" option as "-march=arch". Note that "arch" is any value other than "no", "none", and "default".]]
     )
     set_default("none")
+    add_deps("ros-product-policy")
     after_check(function(option)
+        local product = import("utility.ros_product", {anonymous = true})
+        product.uwvm_ros_product_check_current()
         import("utility.utility")
         option:add("cxflags", utility.get_march_option())
     end)
@@ -25,7 +50,10 @@ option("sysroot", function()
         [[    path: Set the "--sysroot" option as "--sysroot=path". Note that "path" is an absolute path or a relative path other than "no" and "detect".]]
     )
     set_default("detect")
+    add_deps("ros-product-policy")
     after_check(function(option)
+        local product = import("utility.ros_product", {anonymous = true})
+        product.uwvm_ros_product_check_current()
         import("utility.utility")
         local sysroot_option = utility.get_sysroot_option()
         for flag, opt in pairs(sysroot_option) do
@@ -67,7 +95,10 @@ option("rtlib", function()
     )
     set_default("default")
     set_values("default", "libgcc", "compiler-rt", "platform")
+    add_deps("ros-product-policy")
     after_check(function(option)
+        local product = import("utility.ros_product", {anonymous = true})
+        product.uwvm_ros_product_check_current()
         import("utility.utility")
         local rtlib_option = utility.get_rtlib_option()
         for _, flag in ipairs({ "ldflags", "shflags" }) do
@@ -87,8 +118,10 @@ option("unwindlib", function()
     )
     set_default("default")
     set_values("default", "libgcc", "libunwind", "platform", "force-libgcc", "force-libunwind", "force-platform")
-    add_deps("rtlib")
+    add_deps("ros-product-policy", "rtlib")
     after_check(function(option)
+        local product = import("utility.ros_product", {anonymous = true})
+        product.uwvm_ros_product_check_current()
         import("utility.utility")
         local unwind_option = utility.get_unwindlib_option()
         for _, flag in ipairs({ "ldflags", "shflags" }) do
@@ -129,16 +162,16 @@ option("enable-lto", function()
     set_description
     (
         "Whether to enable LTO while building in release/minsizerel/releasedbg mode.",
-        "LTO is enabled by default, but when use different compiler and linker, " ..
+        "LTO is disabled in the current ROS qualification profile. When using different compiler and linker, " ..
         "for example, compiling with clang while linking with bfd, LTO should be disabled.",
         [[Errors may be reported as "file not recognized: file format not recognized".]]
     )
-    set_default(true)
+    set_default(false)
 end)
 
 option("linux-native-debug", function()
     set_description("Enable Wasm-only Linux native debugging with a qualified LLVM native-owner-table-v2 SDK; the target signal ABI and JIT loader must be supported.")
-    set_default(false)
+    set_default(true)
 end)
 
 option("linux-x64-native-debug", function()
@@ -166,7 +199,10 @@ option("static", function()
     )
     set_default("none")
     set_values("none", "non-system", "compiler")
+    add_deps("ros-product-policy")
     after_check(function()
+        local product = import("utility.ros_product", {anonymous = true})
+        product.uwvm_ros_product_check_current()
         local static_mode = get_config("static")
         if static_mode ~= "none" and static_mode ~= "non-system" and static_mode ~= "compiler" then
             raise([[Invalid --static value "%s"; expected one of: none, non-system, compiler.]], tostring(static_mode))
@@ -179,9 +215,9 @@ option("use-llvm-compiler", function()
     (
         "Use the LLVM/Clang compiler toolchain (Clang-CL on Windows, clang on other platforms).",
         "This only switches the compiler toolchain and does not enable the LLVM AOT backend by itself.",
-        "default = false"
+        "default = true"
     )
-    set_default(false)
+    set_default(true)
 end)
 
 option("use-cxx-module", function()
@@ -224,7 +260,7 @@ end)
 option("use-thread-local", function()
     set_description
     (
-        "Use C++ `thread_local` for per-thread runtime state (faster, but may reduce compatibility on some platforms/toolchains).",
+        "Required modern ROS per-thread state. false is a legacy Uwvm2 configuration and is rejected.",
         "default = true"
     )
     set_default(true)
@@ -237,7 +273,7 @@ option("execution-int", function()
         [[    none: disable execution int backend.]],
         [[    uwvm-int: use uwvm execution int backend.]]
     )
-    set_default("uwvm-int")
+    set_default("none")
     set_values("none", "uwvm-int")
 end)
 
@@ -255,7 +291,7 @@ end)
 option("llvm-runtimes-provider", function()
     set_default("auto")
     set_values("auto", "bundled", "platform")
-    set_description("Paired libc++/libc++abi/libunwind provider: auto builds pinned ROS sources on supported GNU Clang ABIs; bundled requires that ABI; platform retains the explicit existing MSVC/other provider.")
+    set_description("Source-owned paired libc++/libc++abi/libunwind: auto and bundled build the pinned sources. platform is retained for diagnostics but rejected by uwvm2-ros.")
 end)
 
 option("llvm-build-jobs", function()
@@ -276,13 +312,11 @@ end)
 option("llvm-jit-env", function()
     set_default(true)
     set_showmenu(false)
-    add_deps("execution-jit", "llvm-runtimes-provider", "llvm-build-jobs", "llvm-build-targets", "llvm-cmake-toolchain",
+    add_deps("ros-product-policy", "execution-jit", "llvm-runtimes-provider", "llvm-build-jobs", "llvm-build-targets", "llvm-cmake-toolchain",
         "use-llvm-compiler", "stdlib", "rtlib", "unwindlib", "sysroot", "target", "llvm-target")
     after_check(function(option)
-        local execution_jit = get_config("execution-jit")
-        if execution_jit ~= "default" and execution_jit ~= "llvm" then
-            return
-        end
+        local product = import("utility.ros_product", {anonymous = true})
+        product.uwvm_ros_product_check_current()
         import("utility.utility")
         local llvm_jit_options = utility.get_llvm_jit_options()
         if llvm_jit_options.includedirs then
@@ -695,12 +729,12 @@ end)
 
 -- ROS SDKs are linked only into independent gateway executables.
 option("import-ros1", function()
-    set_default(false)
+    set_default(true)
     set_showmenu(true)
     set_description("Compile explicit ROS1 capability host imports (Linux, header build).")
 end)
 option("import-ros2", function()
-    set_default(false)
+    set_default(true)
     set_showmenu(true)
     set_description("Compile explicit ROS2 capability host imports (Linux, header build).")
 end)

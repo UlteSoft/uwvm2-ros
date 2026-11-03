@@ -25,13 +25,13 @@ for name,wat in [('provider',provider),('consumer',consumer)]:
   # Exercise the new explicit function-result grammar too; the baseline supports this encoding.
   encoded=expand(path.read_bytes());path.write_bytes(encoded[0] if isinstance(encoded,tuple) else encoded)
 rows=[]
-for policy in ('instruction','unwind'):
+for policy in (('mandatory-native',) if a.ros else ('instruction', 'unwind')):
  cache=a.out/(policy+'-cache');cache.mkdir()
  for version,binary in [('before',a.before_uwvm),('after',a.uwvm)]:
   out=a.out/(policy+'-'+version);out.mkdir();objects=[]
   for phase in ('cold','warm'):
    existing=set(cache.rglob('*.uwvm-ljc'));compile_log=out/(phase+'.compile.log')
-   command=[str(binary)]+(['-Raot'] if a.ros else ['-Rcc','jit','-Rcm','full'])+['-Wpre',str(a.out/'provider.wasm'),'p','-WFE-function-references','-Rllvm-call-stack',policy,'-Rllvm-full-policy','pb-o3','-Rllvm-cache-path','path',str(cache),'-Rclog','file',str(compile_log),'--run',str(a.out/'consumer.wasm')]
+   command=[str(binary)]+(['-Raot'] if a.ros else ['-Rcc','jit','-Rcm','full'])+['-Wpre',str(a.out/'provider.wasm'),'p','-WFE-function-references',*([] if a.ros else ['-Rllvm-call-stack', policy]),'-Rllvm-full-policy','pb-o3','-Rllvm-cache-path','path',str(cache),'-Rclog','file',str(compile_log),'--run',str(a.out/'consumer.wasm')]
    result=subprocess.run(command,capture_output=True,timeout=60);(out/(phase+'.log')).write_bytes(result.stdout+result.stderr);(out/(phase+'.command')).write_text(json.dumps(command)+'\n');assert result.returncode==0,result.stderr
    hits=compile_log.read_text().count('object-cache-hit');created=set(cache.rglob('*.uwvm-ljc'))-existing
    assert (hits>0)==(phase=='warm'),(version,phase,hits)

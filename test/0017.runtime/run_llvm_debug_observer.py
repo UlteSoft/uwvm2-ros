@@ -14,6 +14,7 @@ p.add_argument('--source-root',type=Path,required=True)
 p.add_argument('--runtime-build',type=Path,required=True)
 p.add_argument('--wasm-tools',type=Path,required=True)
 p.add_argument('--out',type=Path,required=True)
+p.add_argument('--ordinary-upstream', action='store_true', help='Use an independently frozen upstream fixture with its legacy selectors; default is mandatory-native ROS')
 a=p.parse_args()
 a.source_root=a.source_root.resolve();a.runtime_build=a.runtime_build.resolve();a.out=a.out.resolve()
 subprocess.run(['bash',str(a.source_root/'tools/ci/require_wasm3_test_cgroup.sh')],check=True)
@@ -36,8 +37,8 @@ wat='(module\n (import "observer-host" "marker" (func $marker (result i32)))\n (
 subprocess.run([a.wasm_tools,'parse',a.out/'fixture.wat','-o',a.out/'fixture.wasm'],check=True)
 subprocess.run([a.wasm_tools,'validate',a.out/'fixture.wasm'],check=True)
 rows=[]
-for policy in ('instruction','unwind','none'):
-    cmd=[str(a.out/'probe'),str(a.out/'fixture.wasm'),policy]
+for policy in (('instruction','unwind','none') if a.ordinary_upstream else ('mandatory-native',)):
+    cmd=[str(a.out/'probe'),str(a.out/'fixture.wasm'), *([policy] if a.ordinary_upstream else [])]
     with (a.out/(policy+'.log')).open('w') as log:
         r=subprocess.run(cmd,stdout=log,stderr=subprocess.STDOUT,timeout=60)
     text=(a.out/(policy+'.log')).read_text()

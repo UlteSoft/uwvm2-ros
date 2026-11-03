@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Actual repeated guest calls qualify breakpoint ignore/toggle/step interruption."""
 from __future__ import annotations
+from mandatory_native_cli import require_linux_ros, product_policy, product_policies
 import argparse,json,re,subprocess,sys
 from pathlib import Path
 import run_debug_source_step_cli as step
@@ -13,15 +14,15 @@ def main():
     for name in ('uwvm','wasm','source','oracle','out'):ap.add_argument('--'+name,type=Path,required=True)
     ap.add_argument('--ros',action='store_true')
     ap.add_argument('--case',choices=('ignore-toggle','next-interrupt'),required=True)
-    ap.add_argument('--diagnostic-policy',choices=('instruction','unwind'),default='instruction')
-    a=ap.parse_args();root=Path(__file__).resolve().parents[2]
+    ap.add_argument('--diagnostic-policy',choices=('instruction','unwind'),default=None)
+    a=ap.parse_args(); require_linux_ros(ap, a.ros); a.diagnostic_policy = product_policy(ap, a.ros, a.diagnostic_policy, required=False);root=Path(__file__).resolve().parents[2]
     if sys.platform!='linux':raise RuntimeError('designated Linux cgroup only')
     subprocess.run(['bash',str(root/'tools/ci/require_wasm3_test_cgroup.sh')],check=True);a.out.mkdir(parents=True,exist_ok=False)
     inputs=[a.uwvm,a.wasm,a.source,a.oracle,Path(__file__),Path(step.__file__),Path(meta.__file__),Path(language.__file__)]
     before={str(p):step.sha(p) for p in inputs};record={'passed':False,'inputs_before':before,'case':a.case};s=None
     try:
         mode=['-Raot'] if a.ros else ['-Rcc','jit','-Rcm','full']
-        argv=[str(a.uwvm),'-m','debug-jit',*mode,'-Rct','0','-Rllvm-call-stack',a.diagnostic_policy,'-Rllvm-exception-dispatch','native-unwind','-Rllvm-cache-path','disable','--run',str(a.wasm)]
+        argv=[str(a.uwvm),'-m','debug-jit',*mode,'-Rct','0',*([] if a.ros else ['-Rllvm-call-stack', a.diagnostic_policy]),'-Rllvm-exception-dispatch','native-unwind','-Rllvm-cache-path','disable','--run',str(a.wasm)]
         s=step.Session(argv,a.out/'console.log',step.code_expressions(a.wasm),step.line_sequences(a.oracle.read_text()),a.source)
         record.update(argv=argv,actions=s.actions,positions=s.positions)
         leaf=meta.function(a.wasm,'policy_leaf')[0];outer=meta.function(a.wasm,'policy_outer')[0]

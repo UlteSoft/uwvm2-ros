@@ -72,6 +72,8 @@ def main():
     parser.add_argument('--trace', choices=['instruction', 'unwind', 'none'], action='append')
     parser.add_argument('--all-combine-delay', action='store_true')
     args = parser.parse_args()
+    if args.ros and (args.backend != 'llvm' or args.trace):
+        parser.error('--ros requires --backend llvm and has no --trace selector; checked native unwind is mandatory')
     if not args.wasmtime and not args.uwvm:
         parser.error('at least one execution engine is required')
     if args.wrapper_arg and not args.uwvm:
@@ -121,7 +123,7 @@ def main():
         if not passed:
             raise RuntimeError(f'{label}: expected {outcome}, exit={result.returncode}\n{text}')
 
-    policies = args.trace or ['instruction']
+    policies = ['mandatory-native'] if args.ros else (args.trace or ['instruction'])
     combinations = [('default', [])]
     if args.all_combine_delay:
         combinations = [(level + ('-no-delay' if no_delay else '-delay'),
@@ -134,7 +136,7 @@ def main():
                 for policy in policies if args.backend == 'llvm' else [None]:
                     if args.backend == 'llvm':
                         base = ['-Raot'] if args.ros else ['-Rcc', 'jit', '-Rcm', mode]
-                        base += ['-Rllvm-call-stack', policy, '-Rllvm-cache-path', 'disable']
+                        base += [*([] if args.ros else ['-Rllvm-call-stack', policy]), '-Rllvm-cache-path', 'disable']
                     else:
                         base = ['-Rint'] if args.ros else ['-Rcc', 'int', '-Rcm', mode]
                     label = mode + '-' + combination + ('-' + policy if policy else '')

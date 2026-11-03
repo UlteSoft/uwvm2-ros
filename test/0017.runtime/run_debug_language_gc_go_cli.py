@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Actual standard gc Go Wasip1: metadata absence and safe failure, not parity."""
 from __future__ import annotations
+from mandatory_native_cli import require_linux_ros, product_policy, product_policies
 import argparse,json,re,subprocess,sys
 from pathlib import Path
 from run_debug_source_tinygo_cli import TinyGoConsole,named_function
@@ -9,7 +10,7 @@ import run_debug_source_inline_metadata_cli as meta
 def main():
  ap=argparse.ArgumentParser(description=__doc__)
  for key in ('uwvm','wasm','objdump','out'):ap.add_argument('--'+key,type=Path,required=True)
- ap.add_argument('--ros',action='store_true');ap.add_argument('--full-policy',choices=['debug','legacy-light','pb-o1','pb-o2','pb-o3']);a=ap.parse_args();root=Path(__file__).resolve().parents[2]
+ ap.add_argument('--ros',action='store_true');ap.add_argument('--full-policy',choices=['debug','legacy-light','pb-o1','pb-o2','pb-o3']);a=ap.parse_args(); require_linux_ros(ap, a.ros);root=Path(__file__).resolve().parents[2]
  if sys.platform!='linux':raise RuntimeError('designated Linux cgroup only')
  subprocess.run(['bash',str(root/'tools/ci/require_wasm3_test_cgroup.sh')],check=True);a.out.mkdir(parents=True,exist_ok=False)
  paths=[a.uwvm,a.wasm,a.objdump,Path(__file__),Path(meta.__file__),Path(__file__).with_name('run_debug_source_tinygo_cli.py')]
@@ -20,7 +21,7 @@ def main():
   assert not any(n.startswith('.debug_') for n in names);record['actual_custom_sections']=names
   target,_=named_function(a.wasm,b'main.probeOuter');record['actual_guest_function']=target
   mode=['-Raot'] if a.ros else ['-Rcc','jit','-Rcm','full']
-  argv=[str(a.uwvm),'-Rdbg',*mode,'-Rct','0','-Rllvm-call-stack','instruction','-Rllvm-cache-path','disable','--run',str(a.wasm)];record['argv']=argv
+  argv=[str(a.uwvm),'-Rdbg',*mode,'-Rct','0',*([] if a.ros else ['-Rllvm-call-stack', 'instruction']),'-Rllvm-cache-path','disable','--run',str(a.wasm)];record['argv']=argv
   if a.full_policy:argv[1:1]=['-Rllvm-full-policy',a.full_policy]
   record['full_policy_override']=a.full_policy
   c=TinyGoConsole(argv,a.out/'console.log')

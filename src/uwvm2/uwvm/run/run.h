@@ -2092,13 +2092,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
 # endif
         if(own_single_source)
         {
-            // Only debug/reserved modes select an immutable owned preparse
-            // image; ordinary full retains its existing mapped source behavior.
+            // Debug/reserved execution and explicit portable audit retain an
+            // immutable preparse image for authenticated caller source facts.
+            // Auditing a denied call never selects a deployment or permission;
+            // ordinary full without those modes keeps mapped source behavior.
             // The FD/HANDLE was authenticated above before any input effects.
             bool const retain_debug_image{
                 ::uwvm2::uwvm::wasm::storage::execute_wasm_mode == ::uwvm2::uwvm::wasm::base::mode::debug_jit ||
                 ::uwvm2::uwvm::cmdline::params::details::debug_jit_control_fd >= 0 ||
-                ::uwvm2::uwvm::cmdline::params::details::debug_jit_control_handle != 0u};
+                ::uwvm2::uwvm::cmdline::params::details::debug_jit_control_handle != 0u
+#if defined(UWVM_IMPORT_ROS2)
+                || static_cast<bool>(::uwvm2::imported::ros::portable::deployment_selection::current())
+                || ::uwvm2::imported::ros::portable::runtime_audit::runtime.enabled()
+                || ::uwvm2::imported::ros::buffer_audit::journal.enabled()
+#endif
+            };
             auto const prepared{prepare_owned_full_cli_source(retain_debug_image)};
             if(prepared != static_cast<int>(::uwvm2::uwvm::run::retval::ok)) { return prepared; }
             owned_full_prepared = true;

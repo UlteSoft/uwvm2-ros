@@ -6,6 +6,7 @@ The immutable fresh runtime/main/source dependency closure is qualified by the
 keeper before invocation; emitted binary SHA here is identification, not proof
 of an original build argv or an independently qualified runtime object.
 """
+from mandatory_native_cli import require_linux_ros, product_policy, product_policies
 import argparse
 import hashlib
 import json
@@ -39,7 +40,7 @@ parser.add_argument('--extra-locals', type=int, default=0,
 parser.add_argument('--native-walk-timeout', type=int, default=60,
                     help='Seconds for the complete strict native walk; increase for QEMU or large instrumentation')
 parser.add_argument('--prompt-timeout', type=int, default=60)
-args = parser.parse_args()
+args = parser.parse_args(); require_linux_ros(parser, args.ros); args.policy = product_policies(parser, args.ros, args.policy)
 if not 1 <= args.native_walk_timeout <= 1800 or not 1 <= args.prompt_timeout <= 600:
     parser.error('native walk timeout must be 1..1800 and prompt timeout 1..600')
 if not 0 <= args.extra_locals < 10000:
@@ -74,7 +75,7 @@ class Console:
         self.name = name
         mode = ['-Raot'] if args.ros else ['-Rcc', 'jit', '-Rcm', 'full']
         self.command = [*launcher, str(binary), '-Rdbg', *mode, '-Rct', '0',
-                        '-Rllvm-call-stack', policy, '-Rllvm-cache-path', 'disable',
+                        *([] if args.ros else ['-Rllvm-call-stack', policy]), '-Rllvm-cache-path', 'disable',
                         '--run', str(out / 'fixture.wasm')]
         self.child = subprocess.Popen(self.command, stdin=subprocess.PIPE,
                                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -171,7 +172,7 @@ register_bank = {'ppc64-be': 'ppc64', 'ppc64-le': 'ppc64le',
 assert register_bank in hidden_abi_registers, 'unqualified target register bank'
 
 rows = []
-for policy in args.policy or ('instruction', 'unwind'):
+for policy in args.policy:
     console = Console(policy, f'{policy}-numeric-native-steps')
     try:
         initial = console.send('step asm 1')

@@ -18,9 +18,10 @@ sys.path.insert(0,str(S/'test/0017.runtime'));from run_debug_source_inline_metad
 import subprocess
 subprocess.run(['bash',str(S/'tools/ci/require_wasm3_test_cgroup.sh')],check=True)
 sha=lambda p:hashlib.file_digest(Path(p).open('rb'),'sha256').hexdigest()
-matrix=a.matrix_result.resolve(strict=True);M=json.loads(matrix.read_text());repository=M['repository'];assert M['passed'] and len(M['cases'])==40 and all(r['passed'] and len(r['checks'])==18 and all(c['passed'] for c in r['checks']) and r['quit_returncode']==0 and r['managed_shutdown_complete'] for r in M['cases']),'Incomplete successful matrix required'
+matrix=a.matrix_result.resolve(strict=True);M=json.loads(matrix.read_text());repository=M['repository'];assert repository in ('uwvm2','uwvm2-ros');expected_policies=['mandatory-native'] if repository=='uwvm2-ros' else ['instruction','unwind'];assert M['passed'] and len(M['cases'])==20*len(expected_policies) and all(r['passed'] and len(r['checks'])==18 and all(c['passed'] for c in r['checks']) and r['quit_returncode']==0 and r['managed_shutdown_complete'] for r in M['cases']),'Incomplete successful matrix required'
+if repository=='uwvm2-ros':assert all('-Rllvm-call-stack' not in r['argv'] for r in M['cases']),'ROS matrix contains removed public selector'
 selected=[r for r in M['cases'] if r['stem'] in ['c-wasm32-dwarf5','cpp-wasm64-dwarf5']]
-assert len(selected)==4 and {(r['stem'],r['policy']) for r in selected}=={(s,p) for s in ['c-wasm32-dwarf5','cpp-wasm64-dwarf5'] for p in ['instruction','unwind']},'Missing or duplicate replacement configuration'
+assert len(selected)==2*len(expected_policies) and {(r['stem'],r['policy']) for r in selected}=={(s,p) for s in ['c-wasm32-dwarf5','cpp-wasm64-dwarf5'] for p in expected_policies},'Missing or duplicate replacement configuration'
 pins={str(Path(__file__).resolve()):sha(__file__),str(matrix):sha(matrix),str(S/'test/0017.runtime/run_debug_source_inline_metadata_cli.py'):sha(S/'test/0017.runtime/run_debug_source_inline_metadata_cli.py')}
 record={'passed':False,'repository':repository,'product_sha256':M['product_sha256'],'source_id':M['build_source_id'],'inputs':pins,'cases':[],'scope':'Actual current full debugger negative Wasm-body validation, exact valid replacement, expected-generation refusal, and old source metadata refusal'}
 def save():(O/'results.json').write_text(json.dumps(record,indent=2)+'\n')
@@ -61,5 +62,5 @@ for origin in selected:
    except BaseException as error:row.update(passed=False,shutdown_error=repr(error));raise
    finally:save()
 for p,h in pins.items():assert sha(p)==h,('Input changed',p)
-assert len(record['cases'])==4 and all(r['passed'] and r['quit_returncode']==0 and r['managed_shutdown_complete'] for r in record['cases'])
+assert len(record['cases'])==2*len(expected_policies) and all(r['passed'] and r['quit_returncode']==0 and r['managed_shutdown_complete'] for r in record['cases'])
 record.update(passed=True,inputs_before_equals_after=True);save();print(repository,'PASS HOT REPLACEMENT',len(record['cases']),flush=True)

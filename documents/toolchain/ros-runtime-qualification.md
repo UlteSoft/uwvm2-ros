@@ -1,10 +1,40 @@
 # ROS runtime qualification, 2026-10-26
 
-The qualified Linux product uses live-checked native unwind. The public
-`instruction`, `auto`, `none` and `unwind-uncheck` stack policies are refused.
+The current ROS product has no public unwind-control option. Both spellings
+of the former option are rejected, including `auto`, `unwind`,
+`unwind-uncheck`, `instruction` and `none`. Every process must prove real
+generated-chain native unwinding, including when loading a signed cache hit.
 A failed native probe stops execution rather than selecting instrumentation.
 This report records measured cases; it does not certify every ROS interface,
 CPU, vendor device, filesystem or deployment.
+
+Current native qualification uses frozen source
+`sha256:6e23ddaf093702aaf567ca359215fa3a37ffc9f1a27bf1028a336416a93a6c31`
+and x86_64 ELF
+`464086acd5c7692bad9d028a5ca3f3334fc137f8ff03150d14c4bf6e93ef58ee`.
+It passed 29 actual invalid-configuration checks, a fresh paired-provider VM
+build, `basic_test`, cache identity/permission and ROS unwind regressions,
+47 Core3 cases, target ABI and actual production unwind-header tracing.
+The production translation unit resolved only the repository's pinned
+`libunwind/include/unwind.h`; its final ELF uses the paired static providers.
+
+On the measured native Linux host, 31 cold and 31 fresh-process signed-cache
+hit samples had an actual generated-chain self-check median of 1.320491 ms,
+P95 of 1.475000 ms and maximum of 1.537688 ms. The 10 ms budget is an
+acceptance target, not a probe timeout. The corresponding empty-module process
+loading medians were 161.092891 ms cold and 158.823095 ms warm; the retained
+revision-15 baseline measured 162.717092 ms and 160.437747 ms. Every child
+had its live cgroup membership and 64 GiB/zero-swap limits read. The finite
+measurement includes controller sampling overhead on both products and does
+not establish SDK or ROS transport performance. Raw source-bound receipts
+identify the host, executable bytes, commands, individual samples and failures.
+
+The configuration below admits Linux GNU x86_64 and little-endian AArch64
+product ABIs. Current AArch64 qualification is tracked separately; historical
+results below remain bound to their original executables. ARMv7 implementation
+and prior ABI witnesses are retained, but public ARMv7 product admission is
+blocked while its required native debugger remains unqualified. A historical
+ABI smoke test does not establish the complete current product contract.
 
 ## Cache identity and permissions
 

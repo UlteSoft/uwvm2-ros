@@ -1,3 +1,4 @@
+from mandatory_native_cli import require_linux_ros, product_policy, product_policies
 from pathlib import Path
 import argparse, hashlib, json, re, subprocess, sys
 
@@ -5,8 +6,8 @@ ap=argparse.ArgumentParser()
 for key in ('uwvm','wasm','source','oracle','out','source-root'):
     ap.add_argument('--'+key,type=Path,required=True)
 ap.add_argument('--ros',action='store_true')
-ap.add_argument('--policy',choices=('instruction','unwind'),default='instruction')
-a=ap.parse_args()
+ap.add_argument('--policy',choices=('instruction','unwind'),default=None)
+a=ap.parse_args(); require_linux_ros(ap, a.ros); a.policy = product_policy(ap, a.ros, a.policy, required=False)
 assert sys.platform=='linux'
 subprocess.run(['bash',str(a.source_root/'tools/ci/require_wasm3_test_cgroup.sh')],check=True)
 sys.path.insert(0,str(a.source_root/'test/0017.runtime'))
@@ -20,7 +21,7 @@ row={'passed':False,'language':'zig','native_full_parity':False,'inputs_before':
 s=None
 try:
     mode=['-Raot'] if a.ros else ['-Rcc','jit','-Rcm','full']
-    argv=[str(a.uwvm),'-m','debug-jit',*mode,'-Rct','0','-Rllvm-call-stack',a.policy,'-Rllvm-exception-dispatch','native-unwind','-Rllvm-cache-path','disable','--run',str(a.wasm)]
+    argv=[str(a.uwvm),'-m','debug-jit',*mode,'-Rct','0',*([] if a.ros else ['-Rllvm-call-stack', a.policy]),'-Rllvm-exception-dispatch','native-unwind','-Rllvm-cache-path','disable','--run',str(a.wasm)]
     s=step.Session(argv,a.out/'console.log',step.code_expressions(a.wasm),step.line_sequences(a.oracle.read_text()),a.source)
     row.update(argv=argv,actions=s.actions,positions=s.positions)
     target,_=step.metadata_cli.function(a.wasm,'probe_outer')

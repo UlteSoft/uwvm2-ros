@@ -1136,7 +1136,8 @@ extern "C++"
             ::std::size_t maximum_endpoint_functions)
         {
             namespace checkpoint=::uwvm2::runtime::checkpoint;
-            auto const stack_policy{unwind_stack?engine_type::call_stack_policy::unwind:engine_type::call_stack_policy::instruction};
+            if(!unwind_stack) { return false; } // Restored ROS worlds must retain checked crash stacks.
+            auto const stack_policy{engine_type::call_stack_policy::unwind};
             // A real privately issued compiler profile is DATA about genuine
             // emitter selection, never graph/epoch/root execution authority.
             if(phase_!=preparation_status::resources_prepared || !actual_profile ||

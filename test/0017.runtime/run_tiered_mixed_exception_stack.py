@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Prove cross-module EH frames, including ordinary native-tier/T0 mixing."""
 
+from mandatory_native_cli import require_linux_ros
 import argparse
 import hashlib
 import json
@@ -30,8 +31,8 @@ def main():
     parser.add_argument("--wasm-tools", required=True, type=Path)
     parser.add_argument("--wasmtime", required=True, type=Path)
     parser.add_argument("--out", required=True, type=Path)
-    parser.add_argument("--ros", action="store_true", help="Run ROS int/full and JIT/full instead of ordinary tiered")
-    args = parser.parse_args()
+    parser.add_argument("--ros", action="store_true", help="Run the mandatory-native ROS full-AOT oracle; this does not qualify a tiered engine")
+    args = parser.parse_args(); require_linux_ros(parser, args.ros)
     root = Path(__file__).resolve().parents[2]
     subprocess.run(["bash", str(root / "tools/ci/require_wasm3_test_cgroup.sh")], check=True)
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
@@ -62,15 +63,13 @@ def main():
     # names and per-module function indices are the stable identity here.
     expected = [("p", 0), ("main", 1), ("main", 2)]
     rows = []
-    modes = (("int-full", None, ["-Rint"]),
-             ("jit-full-instruction", "instruction", ["-Raot"]),
-             ("jit-full-unwind", "unwind", ["-Raot"])) if args.ros else (
+    modes = (("jit-full-mandatory-native", "mandatory-native", ["-Raot"]),) if args.ros else (
              ("instruction", "instruction", ["-Rcc", "tiered", "-Rcm", "lazy", "-Rtiered-disable-t2"]),
              ("unwind", "unwind", ["-Rcc", "tiered", "-Rcm", "lazy", "-Rtiered-disable-t2"]))
     for label, policy, backend in modes:
         compile_log = args.out / (label + ".compile.log")
         command = [args.uwvm, *backend, "-Rct", "0", "-Rllvm-cache-path", "disable"]
-        if policy is not None:
+        if policy is not None and not args.ros:
             command += ["-Rllvm-call-stack", policy]
         if not args.ros:
             command += ["-Rclog", "file", compile_log]

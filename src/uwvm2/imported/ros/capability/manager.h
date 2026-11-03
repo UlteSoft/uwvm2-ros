@@ -12,6 +12,7 @@
 #include "../policy/policy.h"
 #include "../common/audit.h"
 #include "../common/debug.h"
+#include "../ipc/action_control.h"
 
 namespace uwvm2::imported::ros
 {
@@ -242,6 +243,9 @@ namespace uwvm2::imported::ros
             {
                 auto selected{bound.aliases.find(alias)};if(selected==bound.aliases.end()) {return false;}
                 output.operation.assign(selected->second.cap.operation);
+                auto const& resource{selected->second.cap.resource};
+                if(debug::public_resource(resource)) { output.resource.assign(resource); }
+                else { output.resource_redacted = true; }
             }
             return true;
         }
@@ -358,6 +362,52 @@ namespace uwvm2::imported::ros
             if(consume_quota) { if(auto r{consume(*cap, payload.size())}; !r) { audit_decision(bound, *cap, "deny", r.code); return r; } audit_decision(bound, *cap, "allow", errc::success); }
             set_lease(out, instance, bound, *cap, ::std::move(guard));
             return {};
+        }
+        // ROS2 asynchronous control reuses exact send/own-cancel grants. It
+        // cannot route metadata through an unrelated Topic or validate it as a
+        // Goal body. Every call consumes the original operation/byte budget.
+        result authorize_action_control(void const* object, ::std::uint64_t generation, version v,
+            ::std::uint64_t handle, ::std::string_view wire_operation, ::std::span<::std::byte const> payload,
+            authorization& out, bool response = false, ::std::uint64_t requested_goal = 0)
+        {
+            out.release();
+            auto cmd{ipc::action_control::parse(wire_operation)};
+            auto required{ipc::action_control::capability(cmd)};
+            if(!object||v!=version::ros2||required.empty())
+                return {errc::permission_denied,"ROS2 Action control operation required"};
+            auto instance{find_instance(object,generation)};
+            if(!instance) return {errc::permission_denied,"unregistered trusted instance"};
+            auto& bound{backend(*instance,v)}; ::std::unique_lock guard{bound.mutex};
+            handle_entry* entry{}; alias_state* cap{};
+            if(auto r{lookup(bound,handle,entry,cap)}; !r) return r;
+            auto deny=[&](errc error,char const* reason) -> result
+            { audit_decision(bound,*cap,"deny",error);return {error,reason}; };
+            if(cap->cap.operation!=required) return deny(errc::permission_denied,"Action control differs from explicit capability");
+            if(required=="action.cancel-own-goal")
+            {
+                auto scope{cap->cap.limits.find("cancel-scope")};
+                if(scope==cap->cap.limits.end()||scope->second!="own")
+                    return deny(errc::permission_denied,"Action control requires explicit own cancel scope");
+            }
+            auto data{reinterpret_cast<::std::uint8_t const*>(payload.data())};
+            if(response)
+            {
+                ::std::uint64_t maximum{};auto it{cap->cap.limits.find("max-active-goals")};
+                if(it==cap->cap.limits.end()||!parse_u64(it->second,maximum)||
+                   !ipc::action_control::valid_response(cmd,requested_goal,data,payload.size(),maximum))
+                    return deny(errc::invalid_argument,"invalid complete Action control response");
+            }
+            else if(cmd==ipc::action_control::command::send)
+            {
+                if(auto r{validate_message(v,cap->cap,payload)}; !r)
+                { audit_decision(bound,*cap,"deny",r.code);return r; }
+            }
+            else if(!ipc::action_control::valid_control_request(cmd,data,payload.size()))
+                return deny(errc::invalid_argument,"invalid Action control request");
+            if(auto r{consume(*cap,payload.size(),false,!response)}; !r)
+            { audit_decision(bound,*cap,"deny",r.code);return r; }
+            audit_decision(bound,*cap,"allow",errc::success);
+            set_lease(out,instance,bound,*cap,::std::move(guard));return {};
         }
         /** Admit a trusted ROS2 RMW service ticket envelope.
          *

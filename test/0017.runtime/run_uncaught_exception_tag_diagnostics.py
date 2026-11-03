@@ -4,6 +4,7 @@
 SOURCE fixture until a keeper executes it. This driver grants no source, root,
 restore, native-address or checkpoint authority to the runtime.
 """
+from mandatory_native_cli import require_linux_ros
 import argparse
 import hashlib
 import json
@@ -38,7 +39,9 @@ def main():
     parser.add_argument("--mode", choices=("full", "lazy"), action="append", default=[])
     parser.add_argument("--policy", choices=("instruction", "unwind"), action="append", default=[])
     parser.add_argument("--ros", action="store_true")
-    args = parser.parse_args()
+    args = parser.parse_args(); require_linux_ros(parser, args.ros)
+    if args.ros and (args.compiler != 'llvm-jit' or args.policy):
+        parser.error('ROS requires the full LLVM backend and exposes no stack-policy selector')
     if sys.platform != "linux":
         parser.error("Run only through the SSH Linux keeper inside the existing <=64 GiB cgroup")
     if args.ros and any(mode != "full" for mode in (args.mode or ["full"])):
@@ -58,7 +61,7 @@ def main():
                                   version_exit=result.returncode)
     (args.out / "tools.json").write_text(json.dumps(versions, indent=2) + "\n")
     modes = args.mode or ["full"]
-    policies = ((args.policy or ["instruction", "unwind"])
+    policies = ["mandatory-native"] if args.ros else ((args.policy or ["instruction", "unwind"])
                 if args.compiler == "llvm-jit" else [None])
     for name, expected_tag, expected_entry in CASES:
         wat = root / "test/0017.runtime/fixtures" / (name + ".wat")
@@ -79,7 +82,7 @@ def main():
             selected = (["-Rint"] if args.compiler == "int" else ["-Raot"]) if args.ros else [
                 "-Rcc", "int" if args.compiler == "int" else "jit", "-Rcm", mode]
             for policy in policies:
-                extra = (["-Rllvm-call-stack", policy, "-Rllvm-cache-path", "disable"]
+                extra = ([*([] if args.ros else ["-Rllvm-call-stack", policy]), "-Rllvm-cache-path", "disable"]
                          if policy is not None else [])
                 for color in ("enable", "disable"):
                     command = [str(args.uwvm), *selected, *extra, "-WFE-exceptions",

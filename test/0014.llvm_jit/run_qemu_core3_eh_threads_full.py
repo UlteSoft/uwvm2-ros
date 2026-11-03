@@ -147,7 +147,7 @@ def main():
         target_qemu = (qemu[:-1] + ['-E', 'UWVM2_TEST_CAPTURE_NATIVE_JIT_OBJECT=' + str(captured_object)] + qemu[-1:]
                        if a.test_object_capture else qemu)
         compile_log = out / (policy + '.compile.log')
-        args = [*modes, '-Rct', '0', '-Rllvm-call-stack', policy, '-Rllvm-full-policy', 'pb-o3',
+        args = [*modes, '-Rct', '0', *([] if a.ros else ['-Rllvm-call-stack', policy]), '-Rllvm-full-policy', 'pb-o3',
                 '-Rllvm-cache-path', 'path', cache, '-Rclog', 'file', compile_log,
                 '-WFE-exceptions', '-WFE-threads', '--run', wasm]
         run(policy, [*target_qemu, *args])

@@ -11,8 +11,9 @@ parser.add_argument('--runtime-build',type=Path,required=True)
 parser.add_argument('--source',type=Path,required=True)
 parser.add_argument('--out',type=Path,required=True)
 parser.add_argument('--define',action='append',default=[])
-parser.add_argument('--success-marker',help='require this fixture-specific output in each successful run')
+parser.add_argument('--success-marker',required=True,help='require this fixture-specific output in each successful run')
 parser.add_argument('--ir-env',choices=['UWVM_ATOMIC_IR_DIR','UWVM_WAIT_IR_DIR','UWVM_SHARED_IR_DIR'])
+parser.add_argument('--frame-scope',choices=('runtime','component','ordinary-upstream'),default='runtime')
 args=parser.parse_args()
 root=Path(__file__).resolve().parents[2];os.chdir(root)
 subprocess.run(['bash','tools/ci/require_wasm3_test_cgroup.sh'],check=True)
@@ -36,8 +37,8 @@ with (out/'build.log').open('w') as f:subprocess.run(command,stdout=f,stderr=f,c
 env=os.environ.copy()
 if args.ir_env:env[args.ir_env]=str(out)
 rows=[]
-for policy in ['instruction','unwind']:
- command=['timeout','90',str(out/'fixture'),policy]
+for policy in ({'runtime':['mandatory-native'],'component':['component-native-cfi','component-instrumented'],'ordinary-upstream':['instruction','unwind']}[args.frame_scope]):
+ command=['timeout','90',str(out/'fixture'),*([policy] if args.frame_scope!='runtime' else [])]
  with (out/(policy+'.run.log')).open('w') as f:result=subprocess.run(command,stdout=f,stderr=f,env=env)
  rows.append(dict(command=command,returncode=result.returncode))
  (out/'runs.json').write_text(json.dumps(rows,indent=2)+'\n')
@@ -48,5 +49,5 @@ for policy in ['instruction','unwind']:
 subprocess.run(['bash','tools/ci/require_wasm3_test_cgroup.sh'],check=True)
 assert before==fingerprint(out/'source-after.json')
 assert source_hash==digest(args.source) and object_hash==digest(build/'runtime.o')
-(out/'summary.json').write_text(json.dumps(dict(passed=True,source_id=before,test_sha256=source_hash,
+(out/'summary.json').write_text(json.dumps(dict(passed=True,frame_scope=args.frame_scope,runtime_execution_contract='mandatory-native' if args.frame_scope!='ordinary-upstream' else 'independent-upstream',source_id=before,test_sha256=source_hash,
  runtime_object_sha256=object_hash,runtime_build=str(build),binary_sha256=digest(out/'fixture')),indent=2)+'\n')

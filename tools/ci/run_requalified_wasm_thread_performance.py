@@ -42,6 +42,7 @@ def main():
     parser.add_argument('--measure', action='store_true')
     parser.add_argument('--samples', type=int, default=21)
     parser.add_argument('--rounds', type=int, default=1024)
+    parser.add_argument('--ordinary-upstream', action='store_true', help='Use independently built upstream benchmark fixtures with legacy selectors')
     args = parser.parse_args()
     if not (1 <= args.samples <= 99 and 1 <= args.rounds <= 1024):
         parser.error('samples must be 1..99 and rounds 1..1024')
@@ -62,13 +63,13 @@ def main():
     for name, binary in binaries.items():
         if sha(binary) != record[name+'_sha256']:
             raise RuntimeError(name+' binary differs from recorded build')
-    policies = ('instruction', 'unwind')
+    policies = ('instruction', 'unwind') if args.ordinary_upstream else ('mandatory-native',)
     executions = []
     for name in (('qualify', 'timed') if not args.measure else ('timed',)):
         for policy in policies:
             samples, rounds = (args.samples, args.rounds) if args.measure else (1, 2)
             prefix = out/(name+'-'+policy)
-            command = ['taskset', '-c', '0', str(binaries[name]), policy, str(samples),
+            command = ['taskset', '-c', '0', str(binaries[name]), *([policy] if args.ordinary_upstream else []), str(samples),
                        str(rounds), str(prefix)+'.wasm']
             start = time.monotonic()
             with Path(str(prefix)+'.log').open('w') as log:

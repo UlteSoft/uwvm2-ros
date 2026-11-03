@@ -163,23 +163,28 @@ check_runtime win64-x86_64 1 0 1 1 1 1 -nostdinc -DUWVM_RUNTIME_LLVM_JIT=1 -D_WI
 check_runtime win64-arm64 1 0 1 1 1 1 -nostdinc -DUWVM_RUNTIME_LLVM_JIT=1 -D_WIN32=1 -D_WIN64=1 -D__aarch64__=1
 check_runtime win64-arm64ec 0 0 0 0 0 0 -nostdinc -DUWVM_RUNTIME_LLVM_JIT=1 -D_WIN32=1 -D_WIN64=1 -D__aarch64__=1 -D__arm64ec__=1
 
-check_consumer_scope params \
-    uwvm2/uwvm/cmdline/params/runtime_llvm_jit_call_stack.h \
-    UWVM2_UWVM_CMDLINE_RUNTIME_LLVM_JIT_CALL_STACK_HAS_NATIVE_UNWIND \
-    UWVM2_UWVM_CMDLINE_RUNTIME_LLVM_JIT_CALL_STACK_HAS_AUTHORITATIVE_UNWIND
-check_consumer_scope callback \
-    uwvm2/uwvm/cmdline/callback/runtime_llvm_jit_call_stack.h \
-    UWVM2_UWVM_CMDLINE_RUNTIME_LLVM_JIT_CALL_STACK_HAS_NATIVE_UNWIND \
-    UWVM2_UWVM_CMDLINE_RUNTIME_LLVM_JIT_CALL_STACK_HAS_AUTHORITATIVE_UNWIND
+for removed in params/runtime_llvm_jit_call_stack callback/runtime_llvm_jit_call_stack; do
+    [[ ! -e "$repo_root/src/uwvm2/uwvm/cmdline/$removed.h" &&
+       ! -e "$repo_root/src/uwvm2/uwvm/cmdline/$removed.cppm" ]] ||
+        fail 'removed public stack-control surface returned'
+done
 check_consumer_scope version \
     uwvm2/uwvm/cmdline/callback/version.h \
     UWVM2_UWVM_CMDLINE_VERSION_LLVM_JIT_CALL_STACK_HAS_NATIVE_UNWIND \
     UWVM2_UWVM_CMDLINE_VERSION_LLVM_JIT_CALL_STACK_HAS_AUTHORITATIVE_UNWIND
 
 runtime_source="$repo_root/src/uwvm2/runtime/lib/uwvm_runtime.default.cpp"
-grep -Fq '# if UWVM2_RUNTIME_LLVM_JIT_HAS_UNWIND_BACKTRACE && UWVM2_RUNTIME_LLVM_JIT_UNWIND_REPLACES_INSTRUCTION_FRAMES' "$runtime_source" ||
-    fail 'unwind-uncheck requested path is not explicitly gated by authoritative frame replacement'
-grep -Fq '# elif !UWVM2_RUNTIME_LLVM_JIT_UNWIND_REPLACES_INSTRUCTION_FRAMES' "$runtime_source" ||
-    fail 'unwind-uncheck validation path can bypass authoritative frame replacement'
+stack_policy="$(sed -n '/configure_runtime_llvm_jit_call_stack_policy(/,/^        }/p' "$runtime_source")"
+grep -Fq 'validate_runtime_llvm_jit_unwind_call_stack_or_fatal();' <<<"$stack_policy" ||
+    fail 'mandatory generated-chain native validation is absent from runtime codegen admission'
+grep -Fq 'opt.emit_unwind_call_stack_frames = true;' <<<"$stack_policy" ||
+    fail 'native CFI emission is not mandatory'
+instruction_policy="$(sed -n '/runtime_llvm_jit_uses_instruction_call_stack_frames() noexcept/,/^        }/p' "$runtime_source")"
+grep -Fq 'return false;' <<<"$instruction_policy" ||
+    fail 'ROS runtime still selects instruction-stack instrumentation'
+if rg -n 'global_runtime_llvm_jit_call_stack|runtime_llvm_jit_call_stack_t|runtime_llvm_jit_call_stack_existed' \
+    "$repo_root/src/uwvm2/uwvm/runtime/runtime_mode"; then
+    fail 'removed mutable runtime stack strategy returned'
+fi
 
-printf 'native-unwind platform matrix: ok\n'
+printf 'native-unwind component platform matrix and mandatory ROS policy source checks: ok\n'

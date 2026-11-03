@@ -30,13 +30,18 @@ def main() -> None:
     parser.add_argument('--wasm-tools', type=Path, required=True)
     parser.add_argument('--wasmtime', type=Path, required=True)
     parser.add_argument('--out', type=Path, required=True)
-    parser.add_argument('--policy', choices=('instruction', 'unwind'), required=True)
+    parser.add_argument('--policy', choices=('instruction', 'unwind'), help='Required only for ordinary-upstream policy comparison; omit for --ros')
     parser.add_argument('--ros', action='store_true')
     parser.add_argument('--iterations', type=int, default=50000)
     parser.add_argument('--pairs', type=int, default=9)
     parser.add_argument('--min-sample-seconds', type=float, default=0.1)
     parser.add_argument('--startup-multiple', type=float, default=20.0)
     args = parser.parse_args()
+    if args.ros and args.policy is not None:
+        parser.error('--ros has no --policy selector; checked native unwind is mandatory')
+    if not args.ros and args.policy is None:
+        parser.error('ordinary-upstream comparison requires --policy')
+    args.policy = 'mandatory-native' if args.ros else args.policy
     if args.pairs < 9 or args.iterations < 1 or args.min_sample_seconds <= 0 or args.startup_multiple < 20:
         parser.error('require at least nine pairs, positive iterations/duration and 20x startup')
     subprocess.run(['bash', str(args.source_root/'tools/ci/require_wasm3_test_cgroup.sh')], check=True)
@@ -72,7 +77,7 @@ def main() -> None:
     mode = ['-Raot'] if args.ros else ['-Rcc', 'jit', '-Rcm', 'full']
     def uwvm_command(binary: Path, wasm: Path) -> list[str]:
         return [str(binary), *mode, '-Rct', '0', '-Rllvm-full-policy', 'pb-o3',
-                '-Rllvm-call-stack', args.policy, '-Rllvm-cache-path', 'disable',
+                *([] if args.ros else ['-Rllvm-call-stack', args.policy]), '-Rllvm-cache-path', 'disable',
                 '-WFE-exceptions', '--run', str(wasm)]
 
     empty_wat = args.out/'empty.wat'

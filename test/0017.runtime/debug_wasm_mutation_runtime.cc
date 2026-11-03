@@ -2,6 +2,7 @@
 // before-park captures -> ONE cohort -> hostclose -> N -> publication -> owned
 // GC/exn/global/table/local/operand source -> one typed global/table write.
 // No fake capture, copied VIEW write permission or restore authority.
+#include "mandatory_native_fixture.h"
 #include <uwvm2/uwvm/run/owned_source.h>
 #include <uwvm2/utils/control/owned_file_image.h>
 #include <uwvm2/runtime/checkpoint/materialization.h>
@@ -155,15 +156,15 @@ struct observer
 };
 int main(int argc, char** argv)
 {
-    if(argc != 4 && argc != 5) { return 64; }
-    bool const resumable{argc == 5};
-    if(resumable) { REQUIRE(::fast_io::concat_std(::fast_io::mnp::os_c_str(argv[4])) == "resumable"); }
-    auto const policy{::fast_io::concat_std(::fast_io::mnp::os_c_str(argv[3]))};
-    REQUIRE(policy == "instruction" || policy == "unwind");
+    if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
+    if(argc != 3 && argc != 4) { return 64; }
+    bool const resumable{argc == 4};
+    if(resumable) { REQUIRE(::fast_io::concat_std(::fast_io::mnp::os_c_str(argv[3])) == "resumable"); }
+    auto const policy{::fast_io::concat_std(::fast_io::mnp::os_c_str("mandatory-native"))};
+
     mode::global_runtime_mode = mode::runtime_mode_t::full_compile;
     mode::global_runtime_compiler = mode::runtime_compiler_t::llvm_jit_only;
-    mode::global_runtime_llvm_jit_call_stack = policy == "instruction" ?
-        mode::runtime_llvm_jit_call_stack_t::instruction : mode::runtime_llvm_jit_call_stack_t::unwind;
+
     mode::global_runtime_compile_threads = 0u; mode::runtime_compile_threads_existed = true;
     mode::global_runtime_llvm_jit_cache_path_mode = mode::runtime_llvm_jit_cache_path_mode_t::disabled;
     auto& features{::uwvm2::uwvm::wasm::feature::wasm_binfmt_ver1_wasm1p1_parameter(::uwvm2::uwvm::wasm::storage::wasm_parameter.binfmt1_para)};

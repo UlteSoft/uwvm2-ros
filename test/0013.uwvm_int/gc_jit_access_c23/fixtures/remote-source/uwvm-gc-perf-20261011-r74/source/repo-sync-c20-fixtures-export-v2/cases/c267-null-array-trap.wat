@@ -1,1 +1,0 @@
-(module (type $a (array i32))  (func (export "_start") ref.null $a array.len drop))

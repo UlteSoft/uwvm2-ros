@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "llvm_prefix": "/absolute/reviewed/llvm23-prefix",
+  "xmake": "/absolute/reviewed/xmake",
+  "files": {
+    "/absolute/reviewed/llvm23-prefix/bin/clang": "REPLACE_WITH_SHA256",
+    "/absolute/reviewed/llvm23-prefix/bin/clang++": "REPLACE_WITH_SHA256",
+    "/absolute/reviewed/llvm23-prefix/bin/ld.lld": "REPLACE_WITH_SHA256",
+    "/absolute/reviewed/llvm23-prefix/bin/llvm-ar": "REPLACE_WITH_SHA256",
+    "/absolute/reviewed/llvm23-prefix/bin/llvm-config": "REPLACE_WITH_SHA256",
+    "/absolute/reviewed/xmake": "REPLACE_WITH_SHA256"
+  }
+}

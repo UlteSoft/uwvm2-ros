@@ -9,6 +9,7 @@ The uninitialized-local and late-illegal-opcode modules must instead be rejected
 by the official validator, then rejected privately by the replacement compiler.
 """
 
+from mandatory_native_cli import require_linux_ros, product_policy, product_policies
 import argparse
 import hashlib
 import json
@@ -201,8 +202,10 @@ def main():
     parser.add_argument('--prepare-only', action='store_true',
                         help='parse/extract/validate fixtures without running a VM')
     parser.add_argument('--policies', nargs='+', choices=('instruction', 'unwind'),
-                        default=('instruction', 'unwind'))
-    args = parser.parse_args()
+                        default=None)
+    args = parser.parse_args(); require_linux_ros(parser, args.ros); args.policies = product_policies(parser, args.ros, args.policies)
+    if args.ros and args.macos:
+        parser.error('ROS has no macOS product qualification route')
     if not args.prepare_only and (args.uwvm is None or args.wasmtime is None):
         parser.error('--uwvm and --wasmtime are required for product qualification')
     root = args.source_root.resolve(strict=True)
@@ -278,7 +281,7 @@ def main():
     mode = [] if args.ros else ['-Rcc', 'jit', '-Rcm', 'full']
     for policy in args.policies:
         prefix = [str(binary), '-m', 'debug-jit', *mode, '-Rct', '0',
-                  '-Rllvm-call-stack', policy, '-Rllvm-cache-path', 'disable',
+                  *([] if args.ros else ['-Rllvm-call-stack', policy]), '-Rllvm-cache-path', 'disable',
                   '-WFE-gc', '-WFE-function-references']
         base_command = prefix + ['--run', str(args.out / 'base.wasm')]
         console_run(base_command, EXPECTED['base'], args.out / (policy + '-baseline.log'))

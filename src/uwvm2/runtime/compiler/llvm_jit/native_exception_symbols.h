@@ -44,7 +44,7 @@
     !defined(__USING_SJLJ_EXCEPTIONS__) && !defined(_MSC_VER) && !defined(__CYGWIN__) && \
     !defined(__arm64ec__) && !defined(_M_ARM64EC) && \
     (defined(__aarch64__) || defined(_M_ARM64)) && \
-    __has_include(<cxxabi.h>) && __has_include(<unwind.h>)
+    __has_include(<cxxabi.h>) && defined(UWVM_ROS_PAIRED_RUNTIME_HEADERS)
 // An exact-1 candidate is eligible only with the native GNU C++ ABI provider.
 // The live TargetMachine below must independently match this COFF/SEH model.
 #  define UWVM_RUNTIME_LLVM_JIT_GNU_WIN64_SEH 1

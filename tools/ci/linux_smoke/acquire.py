@@ -69,11 +69,12 @@ def member_path(root, name):
     return path
 
 
-def unpack(archive_path, root):
+def unpack(archive_path, root, *, compression='xz'):
+    require(compression in ('xz', 'gz'), 'unsupported locked archive compression')
     root = Path(root)
     root.mkdir(mode=0o700)
     count, total, links = 0, 0, []
-    with tarfile.open(archive_path, 'r:xz') as archive:
+    with tarfile.open(archive_path, 'r:'+compression) as archive:
         for member in archive:
             count += 1
             total += member.size

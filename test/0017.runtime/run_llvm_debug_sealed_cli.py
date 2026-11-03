@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Actual Linux debug-jit input sealing, including procfd, hardlinks and PTYs."""
+from mandatory_native_cli import require_linux_ros, product_policy, product_policies
 import argparse
 import fcntl
 import hashlib
@@ -20,7 +21,7 @@ p.add_argument('--source-root', type=Path, required=True)
 p.add_argument('--out', type=Path, required=True)
 p.add_argument('--wasm-tools', type=Path, required=True)
 p.add_argument('--ros', action='store_true')
-a = p.parse_args()
+a = p.parse_args(); require_linux_ros(p, a.ros)
 a.uwvm = a.uwvm.resolve()
 a.out = a.out.resolve()
 a.source_root = a.source_root.resolve()
@@ -84,8 +85,7 @@ def fixture(name, actions, denied_stdio=False):
 def command(binary, mount):
     # The explicit root preopen in the procfd/PTY tests is a hostile test fixture,
     # not a claim that access to /proc/self/mem or arbitrary host files is safe.
-    return [str(a.uwvm), '-m', 'debug-jit', '-Rct', '0', '-Rllvm-call-stack',
-            'instruction', '-Rllvm-cache-path', 'disable', '--wasip1-mount-dir',
+    return [str(a.uwvm), '-m', 'debug-jit', '-Rct', '0', *([] if a.ros else ['-Rllvm-call-stack', 'instruction']), '-Rllvm-cache-path', 'disable', '--wasip1-mount-dir',
             '/sandbox', str(mount), '--run', str(binary)]
 
 

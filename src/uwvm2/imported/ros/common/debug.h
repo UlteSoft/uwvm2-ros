@@ -99,10 +99,13 @@ namespace uwvm2::imported::ros::debug
         bool client_features_observed{};
         std::uint64_t started_ns{},duration_ns{};bool duration_known{};
         bool result_known{true}; // Direct denial/ABI records already have an observed result.
+        // Only validated public ROS name metadata is eligible. Long names
+        // retain an explicit truncation marker, never an unmarked identity.
+        text<64> resource{};bool resource_redacted{};
     };
-    // Five bounded text columns plus fixed labels/counters remain within the
-    // existing authenticated broker cap, including hex escaping/truncation.
-    static_assert((4*(3*255+2*64)+5*13+256+8*20)*maximum_trace_rows+512<=65536);
+    // Five escaped label columns, a public-name-only resource column, fixed
+    // labels and counters fit the authenticated broker's existing reply cap.
+    static_assert((4*(3*255+2*64)+64+224+10+160)*maximum_trace_rows+512<=65536);
     struct view
     {
         status result{status::not_selected};selection selected{};
@@ -111,7 +114,7 @@ namespace uwvm2::imported::ros::debug
         std::uint64_t total{},next{},oldest{},newest{},overwritten{},dropped_busy{};
         bool more{},gap{};
         std::array<interface_record,maximum_rows> interfaces{};std::size_t interface_size{};
-        std::uint64_t dropped_full{},dropped_labels{};
+        std::uint64_t dropped_full{},dropped_labels{},dropped_sequence{};
     };
     inline bool matches(request const& query,std::uint8_t backend,std::uint64_t instance,
         std::string_view alias,std::string_view operation,std::string_view module) noexcept
@@ -220,11 +223,11 @@ namespace uwvm2::imported::ros::debug
     {
         std::mutex mutex_{};std::array<trace_record,trace_capacity> rows_{};
         std::size_t begin_{},size_{};std::uint64_t sequence_{},overwritten_{};
-        std::atomic<std::uint64_t> dropped_{};interface_store interfaces_{};
-        void dropped() noexcept
+        std::atomic<std::uint64_t> dropped_{},sequence_dropped_{};interface_store interfaces_{};
+        static void increment(std::atomic<std::uint64_t>& counter) noexcept
         {
-            auto value{dropped_.load(std::memory_order_relaxed)};
-            while(value!=UINT64_MAX&&!dropped_.compare_exchange_weak(value,value+1,std::memory_order_relaxed)) {}
+            auto value{counter.load(std::memory_order_relaxed)};
+            while(value!=UINT64_MAX&&!counter.compare_exchange_weak(value,value+1,std::memory_order_relaxed)) {}
         }
     public:
         // No audit draining, native call, payload copy or blocking wait. The
@@ -233,7 +236,8 @@ namespace uwvm2::imported::ros::debug
         {
             record.monotonic_ns=monotonic_nanoseconds();interfaces_.append(record);
             std::unique_lock<std::mutex> lock{mutex_,std::try_to_lock};
-            if(!lock.owns_lock()||sequence_==UINT64_MAX) {dropped();return;}
+            if(!lock.owns_lock()) {increment(dropped_);return;}
+            if(sequence_==UINT64_MAX) {increment(sequence_dropped_);return;}
             record.sequence=++sequence_;
             if(size_==trace_capacity) {begin_=(begin_+1)%trace_capacity;if(overwritten_!=UINT64_MAX) {++overwritten_;}}
             else {++size_;}
@@ -247,8 +251,9 @@ namespace uwvm2::imported::ros::debug
             std::unique_lock<std::mutex> lock{mutex_,std::try_to_lock};
             if(!lock.owns_lock()) {output.result=status::busy;return;}
             output.result=status::ok;output.overwritten=overwritten_;output.dropped_busy=dropped_.load(std::memory_order_relaxed);
+            output.dropped_sequence=sequence_dropped_.load(std::memory_order_relaxed);output.next=query.after;
             output.oldest=size_?rows_[begin_].sequence:0;output.newest=sequence_;
-            output.gap=query.after&&output.oldest&&query.after<output.oldest-1;
+            output.gap=output.oldest&&query.after<output.oldest-1;
             for(std::size_t i{};i<size_;++i)
             {
                 auto const& value{rows_[(begin_+i)%trace_capacity]};

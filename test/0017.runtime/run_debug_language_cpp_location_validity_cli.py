@@ -4,6 +4,7 @@
 This is a refusal regression, not a complete native-language capability pass.
 The original optimized producer module, source and assertions stay unchanged.
 """
+from mandatory_native_cli import require_linux_ros, product_policy, product_policies
 from pathlib import Path
 import argparse, hashlib, json, re, subprocess, sys
 import run_debug_source_step_cli as step
@@ -12,8 +13,8 @@ import run_debug_language_experience_cli as language
 def main():
     ap=argparse.ArgumentParser(description=__doc__)
     for name in ('uwvm','wasm','source','oracle','out'):ap.add_argument('--'+name,type=Path,required=True)
-    ap.add_argument('--diagnostic-policy',choices=('instruction','unwind'),required=True)
-    ap.add_argument('--ros',action='store_true');a=ap.parse_args()
+    ap.add_argument('--diagnostic-policy',choices=('instruction','unwind'),required=False)
+    ap.add_argument('--ros',action='store_true');a=ap.parse_args(); require_linux_ros(ap, a.ros); a.diagnostic_policy = product_policy(ap, a.ros, a.diagnostic_policy, required=True)
     assert sys.platform=='linux'
     subprocess.run(['bash',str(Path(__file__).resolve().parents[2]/'tools/ci/require_wasm3_test_cgroup.sh')],check=True)
     a.out.mkdir(parents=True,exist_ok=False)
@@ -25,7 +26,7 @@ def main():
         oracle=a.oracle.read_text()
         assert 'DW_AT_object_pointer' in oracle and 'DW_OP_WASM_location 0x0 0x0, DW_OP_stack_value' in oracle
         mode=['-Raot'] if a.ros else ['-Rcc','jit','-Rcm','full']
-        argv=[str(a.uwvm),'-Rdbg',*mode,'-Rct','0','-Rllvm-call-stack',a.diagnostic_policy,'-Rllvm-cache-path','disable','--run',str(a.wasm)]
+        argv=[str(a.uwvm),'-Rdbg',*mode,'-Rct','0',*([] if a.ros else ['-Rllvm-call-stack', a.diagnostic_policy]),'-Rllvm-cache-path','disable','--run',str(a.wasm)]
         s=step.Session(argv,a.out/'console.log',step.code_expressions(a.wasm),step.line_sequences(oracle),a.source)
         d.update(argv=argv,actions=s.actions,positions=s.positions)
         target,_=step.metadata_cli.function(a.wasm,'numeric_probe');s.begin(target)

@@ -104,7 +104,10 @@ def main():
     parser.add_argument("--policy", action="append", choices=("instruction", "unwind"))
     parser.add_argument("--pairs", type=int, default=9,
                         help="process-level AB/BA pairs; use one only for a semantic smoke")
+    parser.add_argument('--ordinary-upstream', action='store_true', help='Use an independently frozen upstream fixture with its legacy selectors; default is mandatory-native ROS')
     args = parser.parse_args()
+    if not args.ordinary_upstream and args.policy:
+        parser.error("ROS has no --policy selector; omit it for mandatory-native execution")
     if args.build_only and args.run_only:
         parser.error("--build-only and --run-only conflict")
     if args.pairs < 1:
@@ -176,7 +179,7 @@ def main():
         print("PASS source-bound O3 guest wait/notify benchmark built; timing deferred", flush=True)
         return
 
-    policies = args.policy or ["instruction", "unwind"]
+    policies = (args.policy or ["instruction", "unwind"]) if args.ordinary_upstream else ["mandatory-native"]
     if len(policies) != len(set(policies)):
         parser.error("each --policy may be selected only once")
     state_before = cgroup_state()
@@ -185,7 +188,7 @@ def main():
     for pair in range(args.pairs):
         order = policies if pair % 2 == 0 else list(reversed(policies))
         for policy in order:
-            command = ["taskset", "-c", "0,2", str(binary), policy]
+            command = ["taskset", "-c", "0,2", str(binary), *([policy] if args.ordinary_upstream else [])]
             label = f"pair-{pair:02d}-{policy}"
             (out / f"{label}.command").write_text(shlex.join(command) + "\n")
             begin = time.perf_counter_ns()

@@ -140,6 +140,7 @@ namespace uwvm2::imported::ros::ipc
         int fd_{-1};
         [[maybe_unused]] std::uint8_t backend_{};
         [[maybe_unused]] std::uint64_t session_{}, next_{1}, retired_session_{};
+        std::uint32_t peer_pid_{},peer_uid_{};
         std::mutex mutex_{};
         cancellation_observation cancellation_{};
         void observe_cancellation(int stop,cancellation_phase phase,bool possible,std::uint64_t old_session)noexcept
@@ -159,7 +160,7 @@ namespace uwvm2::imported::ros::ipc
             if(fd_>=0) { ::close(fd_); }
 #endif
             if(session_) { retired_session_=session_; }
-            fd_=-1; session_=0;
+            fd_=-1; session_=0;peer_pid_=0;peer_uid_=0;
         }
     public:
         client()=default;
@@ -208,6 +209,7 @@ namespace uwvm2::imported::ros::ipc
             if(cancellation_requested(stop)) { return cancelled(stop,cancellation_phase::connect_wait,false,old_session); }
             std::uint32_t uid{},pid{};
             if(!peer_credentials(fd_,uid,pid)||uid!=expected_uid) { disconnect(); return 13; }
+            peer_pid_=pid;peer_uid_=uid;
             if(cancellation_requested(stop)) { return cancelled(stop,cancellation_phase::connect_wait,false,old_session); }
             backend_=backend; next_=1;
             frame hello; hello.type=kind::hello; hello.backend=backend_; hello.request_id=next_++; hello.timeout_ms=timeout_ms;
@@ -255,28 +257,30 @@ namespace uwvm2::imported::ros::ipc
             if(remaining<=0) { return {110,{}}; }
             f.timeout_ms=static_cast<std::uint32_t>(remaining); frame reply;
             if(cancellation_requested(stop)) { return {cancelled(stop,cancellation_phase::request_transfer,false,session_),{}}; }
+            checked_call checked{f.request_id,f.session_id,peer_pid_,peer_uid_,true,false};
             // A failing write_frame is not evidence that no request prefix was
             // sent. Any cancellation from here retains possible-peer-effects.
             if(!write_frame(fd_,f,until,stop))
             {
-                auto e{errno};if(e==ECANCELED) { return {cancelled(stop,cancellation_phase::request_transfer,true,session_),{}}; }
-                disconnect();return {e==ETIMEDOUT?110u:107u,{}};
+                auto e{errno};if(e==ECANCELED) { return {cancelled(stop,cancellation_phase::request_transfer,true,session_),{},checked}; }
+                disconnect();return {e==ETIMEDOUT?110u:107u,{},checked};
             }
             if(!read_frame(fd_,reply,until,stop))
             {
-                auto e{errno};if(e==ECANCELED) { return {cancelled(stop,cancellation_phase::response_transfer,true,session_),{}}; }
-                disconnect();return {e==ETIMEDOUT?110u:107u,{}};
+                auto e{errno};if(e==ECANCELED) { return {cancelled(stop,cancellation_phase::response_transfer,true,session_),{},checked}; }
+                disconnect();return {e==ETIMEDOUT?110u:107u,{},checked};
             }
-            if(cancellation_requested(stop)) { return {cancelled(stop,cancellation_phase::response_transfer,true,session_),{}}; }
+            if(cancellation_requested(stop)) { return {cancelled(stop,cancellation_phase::response_transfer,true,session_),{},checked}; }
             if(reply.type!=kind::response||reply.backend!=backend_||reply.session_id!=session_||reply.response_id!=f.request_id||reply.request_id!=0)
-            { disconnect(); return {13,{}}; }
+            { disconnect(); return {13,{},checked}; }
             // session.bind acknowledges an exact policy manifest with an empty
             // body. Do not silently accept a future/foreign binding protocol or
             // expose its data as a successful authorization acknowledgement.
             if(operation=="session.bind"&&!reply.payload.empty())
-            { disconnect(); return {13,{}}; }
-            if(cancellation_requested(stop)) { return {cancelled(stop,cancellation_phase::response_transfer,true,session_),{}}; }
-            return {reply.error,std::move(reply.payload)};
+            { disconnect(); return {13,{},checked}; }
+            if(cancellation_requested(stop)) { return {cancelled(stop,cancellation_phase::response_transfer,true,session_),{},checked}; }
+            checked.response_checked=true;
+            return {reply.error,std::move(reply.payload),checked};
 #else
             (void)operation; (void)alias; (void)payload; (void)timeout_ms; return {95,{}};
 #endif

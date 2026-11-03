@@ -146,11 +146,8 @@ def tiered_evidence(log, forced_t1=False, native_entry_proof=None):
 def modes(ros):
     if ros:
         return {
-            "int-full": ["-Rint"],
-            "jit-full-instruction": ["-Raot", "-Rllvm-full-policy", "pb-o3",
-                                     "-Rllvm-call-stack", "instruction", "-Rllvm-cache-path", "disable"],
-            "jit-full-unwind": ["-Raot", "-Rllvm-full-policy", "pb-o3",
-                                "-Rllvm-call-stack", "unwind", "-Rllvm-cache-path", "disable"],
+            "jit-full-mandatory-native": ["-Raot", "-Rllvm-full-policy", "pb-o3",
+                                          "-Rllvm-cache-path", "disable"],
         }
     result = {f"int-{kind}": ["-Rcc", "int", "-Rcm", kind]
               for kind in ("full", "lazy", "lazy+verification")}

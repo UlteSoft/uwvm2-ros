@@ -4,6 +4,15 @@ source "$(dirname -- "${BASH_SOURCE[0]}")/require_wasm3_test_cgroup.sh"
 cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.."
 out=${1:?output directory}
 backend=${2:?backend: int, jit or tiered}
+profile=${UWVM_TEST_PRODUCT:-ros}
+case "$profile" in
+    ros)
+        [[ $backend == jit && ${UWVM_TEST_WITH_INTERPRETER:-0} == 0 && ${UWVM_TEST_EXECUTION_LAZY:-0} == 0 ]] || {
+            echo 'ROS runtime fixture requires LLVM/full with mandatory checked native unwind' >&2; exit 2;
+        } ;;
+    ordinary-upstream) ;;
+    *) echo 'invalid test product profile' >&2; exit 2 ;;
+esac
 test_source=${UWVM_TEST_SOURCE:-test/0017.runtime/wasm_execution_domain.cc}
 mkdir -p "$out"
 out=$(cd "$out" && pwd)
@@ -72,7 +81,7 @@ else
     timeout 90 "$out/wasm-execution-domain" >"$out/test.run.log" 2>&1
     cat "$out/test.run.log"
 fi
-if [[ $backend == jit && $test_source == test/0017.runtime/wasm_execution_domain.cc ]]; then
+if [[ $profile == ordinary-upstream && $backend == jit && $test_source == test/0017.runtime/wasm_execution_domain.cc ]]; then
     timeout 60 "$out/wasm-execution-domain" unwind >"$out/unwind.run.log" 2>&1
     cat "$out/unwind.run.log"
 fi

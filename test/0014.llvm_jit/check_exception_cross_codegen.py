@@ -89,7 +89,7 @@ def main():
         cache = out/'cache'
         cache.mkdir()
         command = [a.uwvm]+(['-Raot'] if a.ros else ['-Rcc', 'jit', '-Rcm', 'full'])
-        command += ['-Rct', '0', '-Rllvm-call-stack', policy, '-Rllvm-full-policy', 'pb-o3',
+        command += ['-Rct', '0', *([] if a.ros else ['-Rllvm-call-stack', policy]), '-Rllvm-full-policy', 'pb-o3',
                     '-Rllvm-cache-path', 'path', cache, '-Rclog', 'out',
                     '-WFE-exceptions' if enabled else '-WFD-exceptions', '-WFE-tail-call',
                     '--run', a.out/(name+'.wasm')]
@@ -113,7 +113,7 @@ def main():
         cfi = run([a.llvm/'llvm-dwarfdump', '--eh-frame', obj], out/'eh-frame.txt')
         if '.eh_frame' not in sections or len(re.findall(r'\bFDE\b', cfi)) < 2:
             raise RuntimeError('missing actual frame-unwind records')
-        if policy == 'unwind':
+        if policy in ('unwind', 'mandatory-native'):
             if names['push'] in relocations or names['pop'] in relocations:
                 raise RuntimeError('native unwind generated instruction-stack maintenance')
         else:
@@ -148,7 +148,7 @@ def main():
         content = text.split('<'+found[0]+'>:', 1)[1]
         return re.sub(r'uwvm_m_[0-9a-f]+_', 'uwvm_m_HASH_', content)
 
-    for policy in ['instruction', 'unwind']:
+    for policy in (('mandatory-native',) if a.ros else ('instruction', 'unwind')):
         disabled = emit('memory-loop', policy, False)
         enabled = emit('memory-loop', policy, True)
         compare_executable_images(disabled['executable'], enabled['executable'])
@@ -167,14 +167,14 @@ def main():
         if body(enabled, 0) != body(protected, 0):
             raise RuntimeError('protected caller changed the same mmap memory leaf machine code')
         leaf = body(enabled, 0)
-        if policy == 'unwind':
+        if policy in ('unwind', 'mandatory-native'):
             if re.search(r'\b(?:callq?|j[a-z]+|lock|mfence|lfence|sfence)\s', leaf):
                 raise RuntimeError('mmap memory leaf emitted a helper, conditional guard, or synchronization instruction')
             if not re.search(r'\bmovl\s+%[a-z0-9]+,\s*\(', leaf) or not re.search(r'\bmovl\s+\([^)]*\),\s*%[a-z0-9]+', leaf):
                 raise RuntimeError('memory-leaf positive control lacks a real i32 store/load')
         checks.append(dict(kind='protected-caller-memory-leaf', policy=policy, identical_leaf=True,
                            redundant_catch_elided=protected['elided_protected'],
-                           normal_memory_helper_calls=0 if policy=='unwind' else 'existing instruction tracing'))
+                           normal_memory_helper_calls=0 if policy in ('unwind', 'mandatory-native') else 'existing instruction tracing'))
         cross = emit('cross-throw', policy)
         # A fresh process must consume the actual authenticated object and still catch correctly.
         replay = run(cross['command'], cross['out']/'replay.log')
@@ -185,10 +185,10 @@ def main():
         retired = body(tail, 1)
         if not re.search(r'\bjmpq?\s', retired) or re.search(r'\bretq?\b', retired):
             raise RuntimeError('retired Wasm function did not preserve native tail dispatch')
-        if policy == 'unwind' and re.search(r'\bcallq?\s', retired):
+        if policy in ('unwind', 'mandatory-native') and re.search(r'\bcallq?\s', retired):
             raise RuntimeError('tail-only unwind function retained an ordinary call')
         checks.append(dict(kind='tail-dispatch', policy=policy, jump_without_return=True,
-                           native_tail_body_calls=0 if policy=='unwind' else 'existing instruction tracing'))
+                           native_tail_body_calls=0 if policy in ('unwind', 'mandatory-native') else 'existing instruction tracing'))
     report = dict(passed=True, product='uwvm2-ros' if a.ros else 'uwvm2',
                   runtime_optimization=a.runtime_optimization, generated_optimization='pb-o3',
                   timing_benchmark=False, scope='native x86-64 ELF cached full JIT',

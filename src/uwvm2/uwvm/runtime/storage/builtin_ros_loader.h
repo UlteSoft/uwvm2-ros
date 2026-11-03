@@ -37,7 +37,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
         ros2_client,
         ros2_publisher,
         ros2_subscription,
-        ros2_service
+        ros2_service,
+        portable_robot
     };
 
     struct builtin_ros_function_data
@@ -60,7 +61,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
         builtin_ros_kind kind_{};
         ::std::array<builtin_ros_function_data, 64u> functions_{};
         ::std::weak_ptr<builtin_ros_loader_identity const> canonical_owner_{};
-        inline static ::std::array<::std::shared_ptr<builtin_ros_loader_identity const>, 7u> selected_{};
+        inline static ::std::array<::std::shared_ptr<builtin_ros_loader_identity const>, 8u> selected_{};
         builtin_ros_loader_identity() noexcept = default;
 
         template <class Tuple, ::uwvm2::parser::wasm::concepts::wasm_feature... Fs>
@@ -136,7 +137,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
             return true;
         }
 
-        // Only the friend defined beside all seven actual ROS tuples can mint
+        // Only the friend defined beside the actual ROS tuples can mint
         // identities. It supplies a concrete type, never an external ptr/ready
         // flag/signature. This method performs the real original construction.
         template <class Concrete>
@@ -180,7 +181,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
 
     public:
         using owner = ::std::shared_ptr<builtin_ros_loader_identity const>;
-        using census = ::std::array<owner, 7u>;
+        using census = ::std::array<owner, 8u>;
         builtin_ros_loader_identity(builtin_ros_loader_identity const&) = delete;
         builtin_ros_loader_identity& operator= (builtin_ros_loader_identity const&) = delete;
         ~builtin_ros_loader_identity() = default;

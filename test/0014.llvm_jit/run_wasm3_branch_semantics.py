@@ -23,7 +23,7 @@ ORDINARY = (
 )
 # ROS exposes a platform-qualified AOT backend. Request its native call-stack
 # contract explicitly so this semantic test cannot select a retired engine.
-ROS = (("jit-full-unwind", ("-Raot", "-Rllvm-call-stack", "unwind")),)
+ROS = (("jit-full-mandatory-native", ("-Raot",)),)
 
 
 def combine_modes():

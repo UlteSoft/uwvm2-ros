@@ -2,6 +2,7 @@
 // management domain is never imported; the guest can only call the tick fixture.
 #define UWVM2TEST_RUNNER_USE_LLVM_JIT 1
 #define UWVM2TEST_STRICT_NO_INTERPRETER 1
+#include "mandatory_native_fixture.h"
 #include "../0013.uwvm_int/strict/uwvm_int_translate_strict_common.h"
 #include <uwvm2/utils/thread/cooperative_pause_domain.h>
 #include <atomic>
@@ -45,7 +46,8 @@ struct host
 auto deadline() {return std::chrono::steady_clock::now()+std::chrono::seconds{15};}
 int main(int argc,char** argv)
 {
-    if(argc!=3) {return 2;}
+    if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
+    if(argc!=2) {return 2;}
     std::ifstream file(argv[1],std::ios::binary);
     std::vector<char> input{std::istreambuf_iterator<char>{file},{}};CHECK(file&&!input.empty());
     strict::byte_vec bytes(input.size());std::memcpy(bytes.data(),input.data(),input.size());
@@ -55,7 +57,7 @@ int main(int argc,char** argv)
     auto prepared=strict::prepare_runtime_from_wasm(bytes,u8"debug-pause",{},features,{provider});
     mode::global_runtime_mode=mode::runtime_mode_t::full_compile;
     mode::global_runtime_compiler=mode::runtime_compiler_t::llvm_jit_only;
-    mode::global_runtime_llvm_jit_call_stack=std::string_view{argv[2]}=="instruction" ? mode::runtime_llvm_jit_call_stack_t::instruction : mode::runtime_llvm_jit_call_stack_t::unwind;
+
     auto control=std::make_shared<domain>(8);
     CHECK(lib::llvm_jit_configure_debug_safe_points_host_api(control)==lib::llvm_jit_debug_configure_result::ok);
     lib::full_compile_run_config warm{};warm.entry_function_index=1;

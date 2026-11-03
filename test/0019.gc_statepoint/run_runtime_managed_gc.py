@@ -183,11 +183,11 @@ def main():
         base = ["taskset", "-c", "16", str(build / "uwvm2-ros"), *options,
                 "-Rllvm-cache-path", "disable", "-Rclog", "err", "-WFE-gc"]
         metrics = {}
-        for mode in ("instruction", "unwind"):
+        for mode in (("mandatory-native",) if a.repository == "uwvm2-ros" else ("instruction", "unwind")):
             for kind in ("ring", "tag"):
                 label = kind + "-" + mode
                 path = out / ("ring.wasm" if kind == "ring" else "tag.wasm")
-                argv = [*base, "-Rllvm-call-stack", mode, *(["-WFE-exceptions"] if kind == "tag" else []), "--run", str(path)]
+                argv = [*base, *([] if a.repository == "uwvm2-ros" else ["-Rllvm-call-stack", mode]), *(["-WFE-exceptions"] if kind == "tag" else []), "--run", str(path)]
                 run(label, argv)
                 found = re.findall(r"\[gc-managed\] ([^\n]+)", (out / (label + ".log")).read_text(errors="replace"))
                 require(len(found) == 1, "missing exact native managed-GC report for " + label)

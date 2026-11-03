@@ -18,6 +18,7 @@
 // These feature macros have balanced, header-local push/pop scopes. Keep an
 // outer fixture scope so the requirements below observe the real configured
 // backend, thread and exception capabilities after those headers return.
+#include "../../../../0017.runtime/mandatory_native_fixture.h"
 #include <uwvm2/utils/macro/push_macros.h>
 #include <uwvm2/uwvm/runtime/macro/push_macros.h>
 #include <uwvm2/uwvm/run/owned_source.h>
@@ -177,7 +178,7 @@ namespace
         mode::global_runtime_mode=mode::runtime_mode_t::full_compile;
         mode::global_runtime_compiler=mode::runtime_compiler_t::llvm_jit_only;
         mode::global_runtime_llvm_jit_exception_dispatch=mode::runtime_llvm_jit_exception_dispatch_t::native_unwind;
-        mode::global_runtime_llvm_jit_call_stack=mode::runtime_llvm_jit_call_stack_t::instruction;
+
         mode::global_runtime_compile_threads=0;mode::runtime_compile_threads_existed=true;
         mode::global_runtime_llvm_jit_cache_path_mode=mode::runtime_llvm_jit_cache_path_mode_t::disabled;
         auto& args=uwvm2::uwvm::cmdline::parsing_result;uwvm2::uwvm::cmdline::wasm_file_ppos=nullptr;args.clear();
@@ -356,6 +357,7 @@ namespace
 
 int main(int argc,char** argv)
 {
+    if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
 #if !defined(__linux__)
     return 77;
 #else

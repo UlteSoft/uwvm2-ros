@@ -37,6 +37,7 @@ def main() -> None:
                         help='Externally reviewed keeper build/link provenance; a digest alone is not build proof')
     parser.add_argument('--wasm-tools', type=Path, required=True)
     parser.add_argument('--out', type=Path, required=True)
+    parser.add_argument('--ordinary-upstream', action='store_true', help='Use an independently frozen upstream fixture with its legacy selectors; default is mandatory-native ROS')
     args = parser.parse_args()
     if sys.platform != 'linux':
         raise RuntimeError('sole Linux keeper/original 64GiB cgroup only')
@@ -109,9 +110,9 @@ def main() -> None:
                r'ordinary=(\d+) hidden-bridge=(\d+) SI-retained=(\d+) NI-unavailable=(\d+) '
                r'(?:integer-FP-carriers=\d+ )?'
                r'actual-NI-Wasm-abandon=(\d+) abandon-stale-proved=(\d+) result=(\d+)')
-    for policy in ('instruction', 'unwind'):
+    for policy in (('instruction', 'unwind') if args.ordinary_upstream else ('mandatory-native',)):
         for scenario in ('return', 'exception'):
-            text = run(policy + '-' + scenario, [str(binary), str(wasm), policy, scenario])
+            text = run(policy + '-' + scenario, [str(binary), str(wasm), *([policy] if args.ordinary_upstream else []), scenario])
             marker = 'debug_native_closed_call_continuation_runtime: PASS policy=' + policy + ' scenario=' + scenario
             observed = re.search(pattern, text)
             if marker not in text or not observed or 'Core3-GC-memory64-return_call-try_table=yes' not in text:
@@ -129,7 +130,7 @@ def main() -> None:
     if (hashes != {name: sha(root / name) for name in inputs} or sha(binary) != expected or
             sha(record) != record_hash or sha(tool) != tool_hash):
         raise RuntimeError('source/binary/build-record/tool changed during qualification')
-    manifest = {'scope': 'actual NI under both stack policies; hidden bridge privacy, current caller/generation/epoch and stale-stop proof; NI abandonment during exception workload, reset/worker ACK, modern Core3 execution',
+    manifest = {'scope': 'actual NI under the selected product stack contract; hidden bridge privacy, current caller/generation/epoch and stale-stop proof; NI abandonment during exception workload, reset/worker ACK, modern Core3 execution',
                 'call_operand_class_qualified': False,
                 'exact_VM_entry_negative_matrix_qualified': False,
                 'exact_EH_triggered_abandonment_qualified': False,
@@ -138,7 +139,7 @@ def main() -> None:
                 'qualified_build_record_sha256': record_hash, 'wasm_tools_sha256': tool_hash,
                 'wasm_sha256': sha(wasm), 'inputs': hashes, 'rows': rows}
     (out / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
-    print('PASS actual public NI/abandonment instruction+unwind; call operand class, exact EH cause and other-platform matrix unqualified', flush=True)
+    print('PASS actual public NI/abandonment mandatory-native (or explicitly selected ordinary-upstream policies); call operand class, exact EH cause and other-platform matrix unqualified', flush=True)
 
 
 if __name__ == '__main__':

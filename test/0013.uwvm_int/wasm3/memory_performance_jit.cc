@@ -2,6 +2,7 @@
 // HEAD and current builds use their own runtime object and the same LLVM build.
 #define UWVM2TEST_RUNNER_USE_LLVM_JIT 1
 #define UWVM2TEST_STRICT_NO_INTERPRETER 1
+#include "../../0017.runtime/mandatory_native_fixture.h"
 #include "../strict/uwvm_int_translate_strict_common.h"
 #include "memory_performance_reference.h"
 #include "memory_performance_timing.h"
@@ -10,6 +11,7 @@
 
 int main(int argc, char** argv)
 {
+    if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
     using namespace uwvm2test::uwvm_int_strict;
     namespace mode = uwvm2::uwvm::runtime::runtime_mode;
     if(argc != 4) { return 64; }
@@ -28,13 +30,11 @@ int main(int argc, char** argv)
 #endif
     mode::runtime_llvm_jit_full_policy_existed = true;
     mode::global_runtime_llvm_jit_full_policy = mode::runtime_llvm_jit_full_policy_t::passbuilder_o3;
-    mode::runtime_llvm_jit_call_stack_existed = true;
-    auto const policy{std::getenv("UWVM_TEST_JIT_CALL_STACK")};
-    if(policy == nullptr || std::string_view{policy} == "unwind")
-    { mode::global_runtime_llvm_jit_call_stack = mode::runtime_llvm_jit_call_stack_t::unwind; }
-    else if(std::string_view{policy} == "instruction")
-    { mode::global_runtime_llvm_jit_call_stack = mode::runtime_llvm_jit_call_stack_t::instruction; }
-    else { return 64; }
+    if(std::getenv("UWVM_TEST_JIT_CALL_STACK") != nullptr)
+    {
+        std::fputs("obsolete UWVM_TEST_JIT_CALL_STACK: runtime uses mandatory checked native unwind\n", stderr);
+        return 64;
+    }
     auto prepared{prepare_runtime_from_wasm(wasm, u8"memory_performance", {}, features)};
     // Optional inspection run: the real full runtime writes its authenticated
     // object cache. Timing runs leave this unset and keep caching disabled.

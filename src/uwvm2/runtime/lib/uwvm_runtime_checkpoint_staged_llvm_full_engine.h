@@ -26,7 +26,7 @@ extern "C++"
             ::std::uint64_t generation{};
             ::std::vector<::std::byte> body{};
         };
-        enum class call_stack_policy : unsigned { instruction, unwind };
+        enum class call_stack_policy : unsigned { unwind };
         enum class preparation_status : unsigned
         { ok, invalid_input, invalid_body, unsupported_native, lowering_declined, exhausted, native_failure, native_endpoint_failure,
           native_endpoint_observer_failure, native_endpoint_freeze_failure };
@@ -117,7 +117,7 @@ extern "C++"
             if(!actual_owner.matches_unpublished_file() || actual_module_id == SIZE_MAX || !actual_profile ||
                 actual_profile->purpose() != checkpoint::compilation_purpose::resumable ||
                 actual_profile->cache_identity()[1u] != 17u || checkpoint::native_resume_abi_revision != 2u ||
-                (stack_policy != call_stack_policy::instruction && stack_policy != call_stack_policy::unwind) ||
+                stack_policy != call_stack_policy::unwind ||
                 (granularity != compile::llvm_jit_debug_safe_point_granularity::entry_loop &&
                  granularity != compile::llvm_jit_debug_safe_point_granularity::instruction))
             { return {}; }
@@ -242,8 +242,8 @@ extern "C++"
                 options.debug_full_patchable_typed_target_count = count;
                 options.validator_feature_parameter = ::std::addressof(features);
                 options.verify_llvm_jit_ir = true;
-                options.emit_call_stack_frames = stack_policy == call_stack_policy::instruction;
-                options.emit_unwind_call_stack_frames = stack_policy == call_stack_policy::unwind;
+                options.emit_call_stack_frames = false;
+                options.emit_unwind_call_stack_frames = true; // ROS crash stacks and native EH are mandatory.
                 options.emit_precise_gc_root_frames = true;
                 if constexpr(details::native_exception_host::available)
                 {

@@ -14,7 +14,6 @@ import re
 import resource
 import subprocess
 
-from run_wasm3_multi_memory import llvm_stack_policies
 
 
 def fixtures(backend):
@@ -165,7 +164,7 @@ def main():
     a.uwvm = a.uwvm.resolve()
     binary_hash = hashlib.sha256(a.uwvm.read_bytes()).hexdigest()
     modes = ['full'] if a.ros else ['full', 'lazy', 'lazy+verification']
-    policies = list(llvm_stack_policies(True)) if a.ros else (
+    policies = ['mandatory-native'] if a.ros else (
         ['instruction', 'unwind', 'none'] if a.backend == 'jit' else ['instruction']
     )
     if a.mode:
@@ -197,7 +196,7 @@ def main():
             for policy in policies:
                 base = ['-Raot'] if a.ros else ['-Rcc', a.backend, '-Rcm', mode]
                 if a.backend == 'jit':
-                    base += ['-Rct', '0', '-Rllvm-cache-path', 'disable', '-Rllvm-call-stack', policy]
+                    base += ['-Rct', '0', '-Rllvm-cache-path', 'disable', *([] if a.ros else ['-Rllvm-call-stack', policy])]
                 run(f'{name}-{mode}-{policy}', [str(a.uwvm), *base, '-WFE-tail-call', '--run', str(wasm)],
                     trap[1] if trap else None, ([] if policy == 'none' else trap[2]) if trap else None)
         run(name + '-disabled', [str(a.uwvm), '-m', 'validation', '-WFD-tail-call', '--run', str(wasm)], '--wasm-feature-enable-tail-call')

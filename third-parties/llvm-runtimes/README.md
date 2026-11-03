@@ -28,10 +28,37 @@ marker. A missing weak hook retains the normal static-image lookup. The VM
 separately checks registered extents, the live provider and generated native
 frames; the marker alone grants no admission. `local-patches.json` records the
 original and patched source hashes and the complete patch digest. Vendored
-working sources already contain both patches.
+working sources contain these patches and the bounded ELF scan correction below.
 
-The source-paired revision-14 product passed all 24 call ABI guests on native
-x86_64 and full-system QEMU AArch64/ARMv7 hard-float, along with cache and checked
-unwind probes. The ARM32 target used libc 2.35; its native debugger and stock
-Focal remain unqualified. Exact executable hashes and the earlier failures are
-recorded in the [runtime qualification report](../../documents/toolchain/ros-runtime-qualification.md).
+The immutable `elf-unwind-bounds.patch` adds finite ELF frame-scan arithmetic
+and a readable-segment program-header fallback. Its historical `_dl_find_object`
+optimization used an object envelope, which may contain inaccessible holes and
+therefore does not prove a readable scan extent. The
+[glibc loader implementation](https://raw.githubusercontent.com/bminor/glibc/glibc-2.39/elf/dl-map-segments.h)
+reserves such holes with `PROT_NONE`. Keep that patch and its receipt
+unchanged. The additive `elf-unwind-readable-extents.patch` is chained from its
+AddressSpace postimage; the DwarfParser finite guards remain byte-identical.
+
+The additive correction uses the loader-synchronized `dl_iterate_phdr` route for
+ELF DWARF discovery. It proves the complete EH header and the frame scan upper
+bound separately against readable `PT_LOAD` segments of the same object, permits
+the two regions to occupy different segments, checks address arithmetic and
+header fields before their reads, and preserves registered JIT CFI ownership.
+The former object-envelope optimization is removed. Native startup timing must
+be measured on the newly built paired product; no check is skipped or timed out
+to meet a budget. A readable segment bound is not an exact `.eh_frame` section
+length or comprehensive validation of all CIE/FDE payloads.
+
+`local-patches.json` retains the full ordered chain; `sources.sha256` identifies
+the complete candidate subset. Rebuild matching generated headers and all three
+paired archives before qualifying a product with this additive correction.
+Candidate extent/parser contracts use synthetic metadata and recorded reads;
+they do not run an unsafe baseline. The correction is source-only and UNTESTED
+until the new paired native and architecture products execute their acceptance.
+
+The [runtime qualification report](../../documents/toolchain/ros-runtime-qualification.md)
+records an earlier revision-14 campaign. Those historical native/QEMU results do
+not qualify the current mandatory-unwind native14, a newly built AArch64 ELF, or
+this additive candidate. The current AArch64 header-driver failure and zero new
+VM cases remain separate evidence. QEMU establishes correctness and architecture
+behavior; native performance requires actual native measurements.

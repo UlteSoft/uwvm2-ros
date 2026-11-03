@@ -1,6 +1,7 @@
 // Actual LLVM-full debugger admission, code-owner proof and one native step.
 #define UWVM2TEST_RUNNER_USE_LLVM_JIT 1
 #define UWVM2TEST_STRICT_NO_INTERPRETER 1
+#include "mandatory_native_fixture.h"
 #include "../0013.uwvm_int/strict/uwvm_int_translate_strict_common.h"
 #include <uwvm2/uwvm/debugger/native_step.h>
 #include <atomic>
@@ -83,7 +84,8 @@ struct observer
 
 int main(int argc,char** argv)
 {
-    CHECK(argc==3 && step::platform_available());
+    if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
+    CHECK(argc==2 && step::platform_available());
     std::ifstream file(argv[1],std::ios::binary);
     std::vector<char> input{std::istreambuf_iterator<char>{file},{}};CHECK(file&&!input.empty());
     strict::byte_vec bytes(input.size());std::memcpy(bytes.data(),input.data(),input.size());
@@ -91,8 +93,7 @@ int main(int argc,char** argv)
     auto prepared=strict::prepare_runtime_from_wasm(bytes,u8"native-step",{},features);
     mode::global_runtime_mode=mode::runtime_mode_t::full_compile;
     mode::global_runtime_compiler=mode::runtime_compiler_t::llvm_jit_only;
-    mode::global_runtime_llvm_jit_call_stack=std::string_view{argv[2]}=="instruction"
-        ? mode::runtime_llvm_jit_call_stack_t::instruction : mode::runtime_llvm_jit_call_stack_t::unwind;
+
     CHECK(!lib::llvm_jit_enable_debug_native_step_host_api());
     CHECK(!lib::llvm_jit_capture_debug_native_step_site_host_api().valid);
     auto state=std::make_shared<observer>();state->control=std::make_shared<domain>(1);
@@ -146,5 +147,5 @@ int main(int argc,char** argv)
     CHECK(step::uninstall());
     std::printf("PASS actual LLVM full native step: owner [%p,%p), PC %p -> %p, two precise SIGTRAP stops (%s)\n",
         reinterpret_cast<void*>(site.owner_begin),reinterpret_cast<void*>(site.owner_end),
-        reinterpret_cast<void*>(session.first_pc),reinterpret_cast<void*>(session.next_pc),argv[2]);
+        reinterpret_cast<void*>(session.first_pc),reinterpret_cast<void*>(session.next_pc),"mandatory-native");
 }

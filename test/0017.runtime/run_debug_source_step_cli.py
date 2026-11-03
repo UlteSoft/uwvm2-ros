@@ -5,6 +5,7 @@ Remote keeper Linux cgroup only. This file does not qualify native stepping,
 values, hot replacement, midrun attach, tail source mapping or IDE capabilities.
 """
 from __future__ import annotations
+from mandatory_native_cli import require_linux_ros, product_policy, product_policies
 import argparse
 import hashlib
 import json
@@ -291,7 +292,7 @@ def main() -> None:
     parser.add_argument('--language', action='append', choices=('c', 'cpp', 'rust'))
     parser.add_argument('--dwarf-version', type=int, action='append', choices=(4, 5))
     parser.add_argument('--case', action='append', choices=('into', 'next', 'finish', 'inline-out', 'repeated', 'recursive'))
-    args = parser.parse_args()
+    args = parser.parse_args(); require_linux_ros(parser, args.ros)
     for values in (args.language, args.dwarf_version, args.case):
         require(values is None or len(values) == len(set(values)), 'duplicate requested case would overwrite a fresh receipt')
     require(sys.platform == 'linux', 'keeper controlled Linux only')
@@ -396,9 +397,9 @@ def main() -> None:
                 summary['fixtures'].append({'name': stem, 'source_sha256': sha(source), 'wasm_sha256': sha(wasm),
                     'actual_import_policy': 'all imports rejected by bounded Code oracle',
                     'official_discriminator_nonzero': any(row['discriminator'] for sequence in sequences for row in sequence), 'markers': markers})
-                for policy in ('instruction', 'unwind'):
+                for policy in (('mandatory-native',) if args.ros else ('instruction', 'unwind')):
                     mode = ['-Raot'] if args.ros else ['-Rcc', 'jit', '-Rcm', 'full']
-                    prefix = [str(binary), '-m', 'debug-jit', *mode, '-Rct', '0', '-Rllvm-call-stack', policy,
+                    prefix = [str(binary), '-m', 'debug-jit', *mode, '-Rct', '0', *([] if args.ros else ['-Rllvm-call-stack', policy]),
                               '-Rllvm-exception-dispatch', 'native-unwind', '-Rllvm-cache-path', 'disable']
                     for kind in args.case or ('into', 'next', 'finish', 'inline-out', 'repeated', 'recursive'):
                         require(sha(wasm) == emitted_sha, 'actual product must consume the officially verified exact module', stem)

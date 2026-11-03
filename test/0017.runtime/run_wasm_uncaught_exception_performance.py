@@ -5,6 +5,7 @@ One throw ends each process. Report whole-process latency only; these samples
 cannot isolate per-throw cost from startup/JIT compilation or terminal output.
 """
 
+from mandatory_native_cli import require_linux_ros
 import argparse
 import json
 import os
@@ -50,7 +51,7 @@ def main():
     parser.add_argument("--out", required=True, type=Path)
     parser.add_argument("--pairs", type=int, default=9)
     parser.add_argument("--cpu", type=int, default=0)
-    args = parser.parse_args()
+    args = parser.parse_args(); require_linux_ros(parser, args.ros)
     if args.out.exists() or args.pairs < 9 or args.cpu not in (0, 2, 4, 6):
         parser.error("fresh output, at least nine pairs and a configured P core required")
     before = cgroup_preflight(args.cpu)
@@ -95,9 +96,7 @@ def main():
     profiles = (("ordinary-int", "ordinary", "int", None),
                 ("ordinary-jit-unwind", "ordinary", "jit", "unwind"),
                 ("ordinary-jit-instruction", "ordinary", "jit", "instruction"),
-                ("ros-int", "ros", "int", None),
-                ("ros-jit-unwind", "ros", "jit", "unwind"),
-                ("ros-jit-instruction", "ros", "jit", "instruction"),
+                ("ros-jit-mandatory-native", "ros", "jit", "mandatory-native"),
                 ("wasmtime", "wasmtime", "native", None))
 
     def command(profile, kind):
@@ -109,7 +108,7 @@ def main():
         binary = args.ordinary if product == "ordinary" else args.ros
         selected = (["-Rcc", "int" if compiler == "int" else "jit", "-Rcm", "full"]
                     if product == "ordinary" else ["-Rint" if compiler == "int" else "-Raot"])
-        trace = (["-Rllvm-call-stack", policy, "-Rllvm-cache-path", "disable"]
+        trace = ([*([] if product == "ros" else ["-Rllvm-call-stack", policy]), "-Rllvm-cache-path", "disable"]
                  if policy else [])
         return ["taskset", "-c", str(args.cpu), str(binary), *selected, *trace,
                 "-WFE-exceptions", "-WFD-function-references", CASES[kind][1],

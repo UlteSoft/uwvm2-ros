@@ -151,7 +151,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
             ::std::addressof(::uwvm2::uwvm::cmdline::params::runtime_llvm_jit_policy),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::runtime_llvm_jit_full_policy),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::runtime_llvm_jit_exception_dispatch),
-            ::std::addressof(::uwvm2::uwvm::cmdline::params::runtime_llvm_jit_call_stack),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::runtime_llvm_jit_cache_path),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::runtime_llvm_jit_cache_seal_process),
 # endif

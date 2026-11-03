@@ -6,6 +6,7 @@ rows and original compiler output supply the oracle; no DWARF/guest mutation.
 Run only in the designated Linux test cgroup. Missing capabilities fail.
 """
 from __future__ import annotations
+from mandatory_native_cli import require_linux_ros, product_policy, product_policies
 import argparse
 import hashlib
 import json
@@ -26,8 +27,8 @@ def main():
     ap.add_argument('--ros',action='store_true')
     ap.add_argument('--conditional-subset',action='store_true',help='also check finite C-style numeric ?: at the actual stop; C/C++/Objective-C only')
     ap.add_argument('--address-bits',type=int,choices=(32,64),default=32)
-    ap.add_argument('--diagnostic-policy',choices=('instruction','unwind'),default='instruction')
-    a=ap.parse_args();root=Path(__file__).resolve().parents[2]
+    ap.add_argument('--diagnostic-policy',choices=('instruction','unwind'),default=None)
+    a=ap.parse_args(); require_linux_ros(ap, a.ros); a.diagnostic_policy = product_policy(ap, a.ros, a.diagnostic_policy, required=False);root=Path(__file__).resolve().parents[2]
     if a.conditional_subset and a.language not in ('c','cpp','objc'):
         raise ValueError('conditional subset is C-style syntax; Rust/Go have no native ?: expression')
     if sys.platform!='linux':raise RuntimeError('designated Linux cgroup only')
@@ -43,7 +44,7 @@ def main():
         oracle=a.oracle.read_text();sequences=step.line_sequences(oracle)
         mode=['-Raot'] if a.ros else ['-Rcc','jit','-Rcm','full']
         features=['--wasm-feature-enable-memory64','--wasm-feature-enable-table64'] if a.address_bits==64 else []
-        prefix=[str(a.uwvm),'-m','debug-jit',*mode,'-Rct','0','-Rllvm-call-stack',a.diagnostic_policy,
+        prefix=[str(a.uwvm),'-m','debug-jit',*mode,'-Rct','0',*([] if a.ros else ['-Rllvm-call-stack', a.diagnostic_policy]),
                 '-Rllvm-exception-dispatch','native-unwind','-Rllvm-cache-path','disable',*features,'--run',str(a.wasm)]
         session=step.Session(prefix,a.out/'console.log',step.code_expressions(a.wasm),sequences,a.source)
         record.update(argv=prefix,actions=session.actions,positions=session.positions)

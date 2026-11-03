@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Require independent native unwinding of new Core 3 syntax, including cache replay.
 
-Run the actual full-JIT CLI, optionally through a QEMU wrapper. Auto must select
-native unwind on the tested target; an instruction fallback is a test failure.
+Run the actual full-JIT CLI, optionally through a QEMU wrapper. ROS has one
+mandatory checked native row and no public stack selector. Ordinary upstream
+retains explicit instruction/unwind/auto rows; auto must select native unwind.
 Each cold compilation checks the emitted-frame policy, and fresh processes must
 recover repeated recursive activations from the authenticated cached object.
 """
@@ -153,12 +154,12 @@ def main():
                         str(wat), '-o', str(wasm)], timeout=60)
         assert produced.returncode == 0
         for optimization in args.optimization or ('debug', 'pb-o3'):
-            for policy in ('instruction', 'unwind', 'auto'):
+            for policy in (('mandatory-native',) if args.ros else ('instruction', 'unwind', 'auto')):
                 label = case + '-' + optimization + '-' + policy
                 common = [str(args.uwvm.resolve())]
                 common += ['-Raot']
                 common += ['-Rct', '0', '-Rllvm-full-policy', optimization,
-                           '-Rllvm-call-stack', policy, '-Rllvm-cache-path']
+                           *([] if args.ros else ['-Rllvm-call-stack', policy]), '-Rllvm-cache-path']
                 common += (['path', str((args.output / (label + '-cache')).resolve())]
                            if args.cache == 'signed' else ['disable'])
                 if args.cache == 'signed':

@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "leaf": "/sys/fs/cgroup/REPLACE_WITH_ORIGINAL_ADMITTED_LEAF",
+  "device": 0,
+  "inode": 0,
+  "boot_id": "REPLACE_WITH_CURRENT_ORIGINAL_BOOT_ID",
+  "global_lock": "/var/lock/REPLACE_WITH_EXISTING_SHARED_TEST_LEASE",
+  "lock_device": 0,
+  "lock_inode": 0,
+  "machine": "x86_64",
+  "provision_manifest": "/absolute/reviewed/provision-manifest.json",
+  "provision_sha256": "REPLACE_WITH_REVIEWED_MANIFEST_SHA256"
+}

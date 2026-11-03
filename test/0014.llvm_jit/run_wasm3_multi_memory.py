@@ -25,7 +25,7 @@ def configurations(binary, ros):
     """@brief Build explicit execution commands without an unsupported ROS mode."""
     if ros:
         return [('jit-full-unwind', [str(binary), '-Raot', '-Rllvm-cache-path',
-                                     'disable', '-Rllvm-call-stack', 'unwind',
+                                     'disable',
                                      '-WFE-multi-memory', '--run'])]
     rows = []
     for backend in ('int', 'jit', 'tiered'):

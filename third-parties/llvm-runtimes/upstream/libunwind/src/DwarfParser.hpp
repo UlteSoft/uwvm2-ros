@@ -249,22 +249,40 @@ bool CFI_Parser<A>::findFDE(A &addressSpace,
                             pint_t fdeHint, FDE_Info *fdeInfo,
                             CIE_Info *cieInfo) {
   //fprintf(stderr, "findFDE(0x%llX)\n", (long long)pc);
+  const pint_t maxAddress = static_cast<pint_t>(-1);
+  if (sectionLength != SIZE_MAX && sectionLength > maxAddress - ehSectionStart)
+    return false;
   pint_t p = (fdeHint != 0) ? fdeHint : ehSectionStart;
   const pint_t ehSectionEnd = (sectionLength == SIZE_MAX)
                                   ? static_cast<pint_t>(-1)
                                   : (ehSectionStart + sectionLength);
+  if (p < ehSectionStart || p > ehSectionEnd)
+    return false;
   while (p < ehSectionEnd) {
     pint_t currentCFI = p;
     //fprintf(stderr, "findFDE() CFI at 0x%llX\n", (long long)p);
+    // A mapped ELF may omit the optional zero terminator. Do not interpret
+    // adjacent code or a partial record as a length outside the owned extent.
+    if (ehSectionEnd - p < 4)
+      return false;
     pint_t cfiLength = addressSpace.get32(p);
     p += 4;
     if (cfiLength == 0xffffffff) {
       // 0xffffffff means length is really next 8 bytes
-      cfiLength = (pint_t)addressSpace.get64(p);
+      if (ehSectionEnd - p < 8)
+        return false;
+      uint64_t extendedLength = addressSpace.get64(p);
+      if (extendedLength > maxAddress)
+        return false;
+      cfiLength = static_cast<pint_t>(extendedLength);
       p += 8;
     }
     if (cfiLength == 0)
       return false; // zero terminator
+    // Every CIE/FDE includes its four-byte identifier. Subtraction avoids
+    // wrapping the next record address before the length has been checked.
+    if (cfiLength < 4 || cfiLength > ehSectionEnd - p)
+      return false;
     uint32_t id = addressSpace.get32(p);
     if (id == 0) {
       // Skip over CIEs.

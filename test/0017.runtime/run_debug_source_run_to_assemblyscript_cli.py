@@ -4,6 +4,7 @@
 Every displayed location is compared with the original sidecar at the actual
 guest Code PC. A source map supplies neither DWARF locals nor inline identities.
 """
+from mandatory_native_cli import require_linux_ros, product_policy, product_policies
 from pathlib import Path
 import argparse, hashlib, json, os, re, subprocess, sys
 
@@ -18,8 +19,8 @@ def main():
     ap.add_argument('--ros', action='store_true')
     ap.add_argument('--source-steps', action='store_true')
     ap.add_argument('--aliases', action='store_true', help='Use actual step/next/finish aliases for source steps')
-    ap.add_argument('--policy', choices=('instruction', 'unwind'), default='instruction')
-    a = ap.parse_args(); assert sys.platform == 'linux'
+    ap.add_argument('--policy', choices=('instruction', 'unwind'), default=None)
+    a = ap.parse_args(); require_linux_ros(ap, a.ros); a.policy = product_policy(ap, a.ros, a.policy, required=False); assert sys.platform == 'linux'
     sys.path.insert(0,str(a.source_root/'test/0017.runtime'))
     import run_debug_source_inline_metadata_cli as metadata
     import run_debug_source_step_cli as step
@@ -64,7 +65,7 @@ def main():
         assert len(markers) == 1
         expressions = step.code_expressions(a.wasm)
         mode = ['-Raot'] if a.ros else ['-Rcc', 'jit', '-Rcm', 'full']
-        argv = [str(a.uwvm), '-m', 'debug-jit', *mode, '-Rct', '0', '-Rllvm-call-stack', a.policy,
+        argv = [str(a.uwvm), '-m', 'debug-jit', *mode, '-Rct', '0', *([] if a.ros else ['-Rllvm-call-stack', a.policy]),
                 '-Rllvm-exception-dispatch', 'native-unwind', '-Rllvm-cache-path', 'disable', '--run', str(a.wasm)]
         row['argv'] = argv; c = metadata.Console(argv, a.out / 'console.log')
         assert b'prepared; no Wasm instruction executed' in send('status')

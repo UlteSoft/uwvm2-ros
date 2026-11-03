@@ -13,6 +13,6 @@
 #pragma once
 
 #if defined(UWVM_RUNTIME_LLVM_JIT) && !defined(_WIN32) && \
-    (!(defined(__arm__) || defined(__thumb__)) || defined(__ARM_DWARF_EH__)) && __has_include(<unwind.h>)
+    (!(defined(__arm__) || defined(__thumb__)) || defined(__ARM_DWARF_EH__)) && defined(UWVM_ROS_PAIRED_RUNTIME_HEADERS)
 # include <uwvm2/runtime/compiler/llvm_jit/native_unwind_abi.h>
 #endif

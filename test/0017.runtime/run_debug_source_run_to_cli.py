@@ -5,6 +5,7 @@ Consumes a completed fresh main/runtime/host API build record, pins its complete
 source closure and dependencies, and compares genuine guest stops against the
 official compiler DWARF line tables. Component fixtures cannot satisfy this run.
 """
+from mandatory_native_cli import require_linux_ros, product_policy, product_policies
 from pathlib import Path
 import argparse, hashlib, json, os, re, resource, subprocess, sys
 sys.dont_write_bytecode = True
@@ -32,7 +33,7 @@ def main():
     ap.add_argument('--policy', choices=['instruction', 'unwind'], action='append')
     ap.add_argument('--case', choices=['until-call', 'advance-call', 'until-recursive', 'advance-recursive', 'return-bound', 'refusals', 'breakpoint', 'replacement'], action='append')
     ap.add_argument('--ros', action='store_true')
-    args = ap.parse_args()
+    args = ap.parse_args(); require_linux_ros(ap, args.ros); args.policy = product_policies(ap, args.ros, args.policy)
     root = args.source_root.resolve(strict=True)
     subprocess.run(['bash', str(root/'tools/ci/require_wasm3_test_cgroup.sh')], check=True)
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
@@ -118,11 +119,11 @@ def main():
                         'each run-to marker must be an actual own-file statement; no source row is fabricated',markers)
                 indices = {name:step.metadata_cli.function(wasm,'source_step_'+name)[0] for name in ('outer','leaf','recursive')}
                 summary['fixtures'].append({'name':stem,'wasm_sha256':sha(wasm),'source_sha256':sha(source),'markers':markers})
-                for policy in args.policy or ('instruction','unwind'):
+                for policy in args.policy:
                     for kind in args.case or ('until-call','advance-call','until-recursive','advance-recursive','return-bound','refusals','breakpoint','replacement'):
                         require(sha(wasm) == pins[str(wasm)], 'unchanged actual validated module')
                         mode = ['-Raot'] if args.ros else ['-Rcc','jit','-Rcm','full']
-                        argv = [str(binary),'-Rdbg',*mode,'-Rct','0','-Rllvm-call-stack',policy,
+                        argv = [str(binary),'-Rdbg',*mode,'-Rct','0',*([] if args.ros else ['-Rllvm-call-stack', policy]),
                                 '-Rllvm-exception-dispatch','native-unwind','-Rllvm-cache-path','disable','--run',str(wasm)]
                         session = step.Session(argv,out/(stem+'-'+policy+'-'+kind+'.log'),expressions,sequences,source)
                         row = {'language':language,'dwarf_version':version,'diagnostic_policy':policy,'case':kind,'passed':False,

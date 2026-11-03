@@ -1,525 +1,306 @@
-name: CI
+name: CI / static file analysis
 on:
   pull_request:
-    paths-ignore:
-      - "documents/**"
-      - "**.md"
   push:
-    paths-ignore:
-      - "documents/**"
-      - "**.md"
+    branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: fast-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  # ---------------------------------------------------------------------------
-  aarch64-apple-darwin:
-    name: macOS (aarch64)
-    runs-on: macos-latest
-    strategy:
-      matrix:
-        mode: ["debug"]
+  file-analysis:
+    name: Static files only / no execution acceptance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-      - name: Setup xmake
-        uses: xmake-io/github-action-setup-xmake@v1
-      - name: Setup bootstrap compiler and bundled LLVM build tools (Homebrew)
+      - name: Initialize static-only evidence before checkout or analysis
+        id: initialize
         run: |
-          brew install llvm lld cmake ninja
-          echo "$(brew --prefix llvm)/bin" >> "$GITHUB_PATH"
-      - name: Work around LLVM libc++ header bug
-        run: python3 tools/ci/patch_llvm_libcxx_hash_memory.py --llvm-prefix "$(brew --prefix llvm)"
-      - name: Check Windows CRT mapping with real COFF objects
+          STATIC_EVIDENCE="$RUNNER_TEMP/static-files-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          printf 'STATIC_EVIDENCE=%s\n' "$STATIC_EVIDENCE" >> "$GITHUB_ENV"
+          python3 -I -S -B - "$STATIC_EVIDENCE" <<'PY'
+          import json, pathlib, sys
+          out = pathlib.Path(sys.argv[1])
+          out.mkdir(mode=0o700)
+          report = {'schema_version': 1, 'status': 'INITIALIZED_STATIC_ONLY', 'static_only': True,
+                    'init_argv': sys.orig_argv, 'init_executable': sys.executable, 'stages': {}, 'source_inputs': [],
+                    'execution_acceptance': False, 'functional_tests_run': False,
+                    'repository_modules_imported': False, 'compiler_or_probe_run': False,
+                    'analysis_complete': False, 'scope': 'commit whitespace and bounded CI/helper Python AST only'}
+          (out / 'static-receipt.json').write_text(json.dumps(report, indent=2) + '\n')
+          PY
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        id: checkout
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - name: Capture bounded whitespace and AST file-analysis results
+        id: analysis
+        timeout-minutes: 2
         run: |
-          # Cross-compile a header-free fixture, never run Windows code. The
-          # bootstrap tools are not the LLVM libraries linked into ROS.
-          python3 test/0018.build/check_bundled_llvm_crt.py \
-            --clang-cl "$(brew --prefix llvm)/bin/clang-cl" \
-            --llvm-lib "$(brew --prefix llvm)/bin/llvm-lib" \
-            --lld-link "$(brew --prefix lld)/bin/lld-link" \
-            --llvm-readobj "$(brew --prefix llvm)/bin/llvm-readobj" \
-            --out "$RUNNER_TEMP/uwvm-msvc-crt"
-          # ROS uses GNU-style clang++ too. MSVC ABI is not synonymous with
-          # clang-cl syntax or CMake's MSVC frontend boolean.
-          python3 test/0018.build/check_bundled_llvm_crt.py \
-            --cxx "$(brew --prefix llvm)/bin/clang++" --frontend gnu \
-            --llvm-lib "$(brew --prefix llvm)/bin/llvm-lib" \
-            --llvm-ar "$(brew --prefix llvm)/bin/llvm-ar" \
-            --llvm-ranlib "$(brew --prefix llvm)/bin/llvm-ranlib" \
-            --lld-link "$(brew --prefix lld)/bin/lld-link" \
-            --llvm-readobj "$(brew --prefix llvm)/bin/llvm-readobj" \
-            --out "$RUNNER_TEMP/uwvm-msvc-crt-gnu"
-      - name: Configure
-        run: xmake f -m ${{ matrix.mode }} --march=none --use-llvm-compiler=y --sdk="$(brew --prefix llvm)" --static=none
-      - name: Build
-        run: |
-          xmake b -rv
-          export UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1
-      - name: Check UWVM version
-        run: xmake run uwvm2-ros --version
-      - name: Unit tests
-        run: xmake test -v
-
-  # ---------------------------------------------------------------------------
-  x86_64-linux-gnu:
-    name: Linux (x86_64)
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        mode: ["debug"]
-        policies:
-          [
-            "build.sanitizer.address,build.sanitizer.leak,build.sanitizer.undefined",
-          ]
-        cxx_flags: [
-            "", # SSE2
-            "-msse3", # SSE2 SSE3
-            "-mssse3", # SSE2 SSE3 SSSE3
-            "-msse4 -mbmi -mbmi2", # SSE2 SSE3 SSSE3 SSE4.1 SSE4.2 BMI BMI2
-            "-mavx -mbmi -mbmi2 -mprfchw", # SSE2 SSE3 SSSE3 SSE4.1 SSE4.2 AVX BMI BMI2
-            "-mavx2 -mbmi -mbmi2 -mprfchw" # SSE2 SSE3 SSSE3 SSE4.1 SSE4.2 AVX AVX2 BMI BMI2
-            # "-mavx512bw -mbmi -mbmi2 -mprfchw", # SSE2 SSE3 SSSE3 SSE4.1 SSE4.2 AVX AVX2 AVX512F AVX512BW BMI BMI2
-            # "-mavx512vbmi -mavx512vbmi2 -mbmi -mbmi2 -mprfchw" # SSE2 SSE3 SSSE3 SSE4.1 SSE4.2 AVX AVX2 AVX512F AVX512BW AVX512VBMI AVX512VBMI2 BMI BMI2
-            # "-mavx10.2 -mbmi -mbmi2 -mprfchw"
-            # "-mapxf -mavx10.2 -mbmi -mbmi2 -mprfchw"
-          ]
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup
-        run: |
-          CODENAME=$(lsb_release -cs)
-          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/llvm.asc
-          sudo add-apt-repository ppa:xmake-io/xmake
-          sudo add-apt-repository "deb http://apt.llvm.org/$CODENAME/ llvm-toolchain-$CODENAME main"
-          sudo apt-get install clang-23 clang-tools-23 lld-23 xmake cmake ninja-build
-      - name: Configure
-        run: |
-          ln -s $(which clang++-23) clang++
-          ln -s $(which clang-23) clang
-          export PATH=$PWD:$PATH
-          xmake f -m debug --use-llvm-compiler=y -m ${{ matrix.mode }} --policies=${{ matrix.policies }} --march=none --cxflags="${{ matrix.cxx_flags }}" --test-libfuzzer=y --static=none
-      - name: Build
-        run: |
-          xmake b -rv
-          export UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1
-      - name: Check UWVM version
-        run: xmake run uwvm2-ros --version
-      - name: Unit tests
-        run: xmake test -v
-
-  # ---------------------------------------------------------------------------
-  x86_64-linux-gnu-backend-tests:
-    name: Linux (x86_64) uwvm-int + llvm-aot
-    runs-on: ubuntu-latest
-    env:
-      XMAKE_JOBS: "4"
-      ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
-      LSAN_OPTIONS: print_suppressions=0
-      UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
-      # Dependency selection must remain entirely in third-parties/llvm.
-      LLVM_CONFIG: /deliberately-invalid-system-llvm-config
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup
-        run: |
-          CODENAME=$(lsb_release -cs)
-          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/llvm.asc
-          sudo add-apt-repository ppa:xmake-io/xmake
-          sudo add-apt-repository "deb http://apt.llvm.org/$CODENAME/ llvm-toolchain-$CODENAME main"
-          sudo apt-get install clang-23 clang-tools-23 lld-23 xmake cmake ninja-build
-      - name: Check bundled source and CMake dependency contract guards
-        run: |
-          # Cheap direct-dependency checks run even when the expensive whole
-          # named-module CI job is disabled. These do not replace that build.
-          python3 test/0006.check_module/check_uwvm_module.py
-          python3 test/0006.check_module/test_checker_semantics.py
-          python3 test/0013.uwvm_int/check_existing_int_add_codegen_test.py
-          xmake lua test/0018.build/check_bundled_llvm_manifest.lua
-          xmake lua test/0018.build/check_bundled_llvm_contract.lua
-          xmake lua test/0018.build/check_bundled_llvm_paths.lua
-          # Same upstream release number is not the same downstream loader.
-          python3 test/0018.build/check_pinned_llvm_headers.py \
-            --cxx "$(command -v clang++-23)" --out "$RUNNER_TEMP/uwvm-llvm-header-pin"
-          # Imports cannot provide WASI macros. Check that the real loader's
-          # hosted path survives preprocessing, and its disabled path does not.
-          python3 test/0018.build/check_loader_module_features.py \
-            --cxx "$(command -v clang++-23)" --out "$RUNNER_TEMP/uwvm-loader-features"
-          # Macro-selection regression only: native Windows keeps WSA RAII;
-          # POSIX/Cygwin/Wine must not depend on the unexported dummy alias.
-          python3 test/0018.build/check_crt_network_service.py \
-            --cxx "$(command -v clang++-23)" --out "$RUNNER_TEMP/uwvm-crt-network"
-          # A module BMI is not its initializer object. Check one owner across
-          # an object-library dependency, with real duplicate/private negatives.
-          python3 test/0018.build/check_module_object_ownership.py \
-            --cc "$(command -v clang-23)" --cxx "$(command -v clang++-23)" \
-            --out "$RUNNER_TEMP/uwvm-module-ownership"
-          # Keep the bounded diagnostic packs and one outer lock covered in
-          # both declaration forms, with byte-exact and concurrent output.
-          python3 test/0018.build/check_callback_full_policy.py \
-            --clang "$(command -v clang++-23)" --out "$RUNNER_TEMP/uwvm-policy-diagnostic"
-          # Exercise the real deferred hook as well as synthetic JSON: a
-          # toolchain must not silently replace Release with a different ABI.
-          # Configure only; no second LLVM library build or target executable.
-          python3 test/0018.build/check_bundled_llvm_cmake.py \
-            --cc "$(command -v clang-23)" --cxx "$(command -v clang++-23)" \
-            --out "$RUNNER_TEMP/uwvm-llvm-contract-configure"
-      - name: Configure
-        run: |
-          mkdir -p .github/tools
-          ln -sf "$(which clang++-23)" .github/tools/clang++
-          ln -sf "$(which clang-23)" .github/tools/clang
-          echo "$PWD/.github/tools" >> "$GITHUB_PATH"
-          export PATH="$PWD/.github/tools:$PATH"
-          xmake f -m debug \
-            --use-llvm-compiler=y \
-            --policies=build.sanitizer.address,build.sanitizer.leak,build.sanitizer.undefined \
-            --march=none \
-            --static=none \
-            --execution-int=uwvm-int \
-            --execution-jit=llvm \
-            --enable-test-uwvm-int=y \
-            --enable-test-llvm-jit=y \
-            --enable-test-backend-fuzzer=n \
-            --test-libfuzzer=n
-      - name: Check UWVM version
-        run: |
-          xmake b -rv -j "${XMAKE_JOBS}" uwvm2-ros
-          xmake run uwvm2-ros --version
-      - name: Run uwvm-int strict tests
-        run: UWVM_XMAKE_JOBS="${XMAKE_JOBS}" bash test/0013.uwvm_int/strict/run_strict_basic_full.sh
-      - name: Run LLVM AOT tests
-        run: UWVM_XMAKE_JOBS="${XMAKE_JOBS}" bash test/0014.llvm_jit/run_llvm_jit_full.sh
-
-  # ---------------------------------------------------------------------------
-  x86_64-linux-gnu-sde-dmr:
-    if: ${{ !always() }}
-    name: Linux (x86_64, SDE DMR)
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        mode: ["debug"]
-        policies:
-          [
-            "build.sanitizer.address,build.sanitizer.leak,build.sanitizer.undefined",
-          ]
-        # Build binaries that use AVX-512 so they can be executed via Intel SDE.
-        cxx_flags: [
-          "-mavx512bw -mbmi -mbmi2 -mprfchw",
-          "-mavx512vbmi -mavx512vbmi2 -mbmi -mbmi2 -mprfchw",
-          "-mavx10.2 -mbmi -mbmi2 -mprfchw",
-          "-mapxf -mavx10.2 -mbmi -mbmi2 -mprfchw",
-        ]
-        sde_url: ["https://github.com/MacroModel/sde-temp/releases/download/sde1/sde-external-9.58.0-2025-06-16-lin.tar.xz"]
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup
-        run: |
-          CODENAME=$(lsb_release -cs)
-          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/llvm.asc
-          sudo add-apt-repository ppa:xmake-io/xmake
-          sudo add-apt-repository "deb http://apt.llvm.org/$CODENAME/ llvm-toolchain-$CODENAME main"
-          sudo apt-get install clang-23 clang-tools-23 lld-23 xmake cmake ninja-build
-      - name: Download Intel SDE
-        run: |
-          mkdir -p /opt/intel-sde
-          curl -L "${{ matrix.sde_url }}" -o /tmp/sde.tar.xz
-          tar -xf /tmp/sde.tar.xz -C /opt/intel-sde --strip-components=1
-      - name: Configure
-        run: |
-          ln -s $(which clang++-23) clang++
-          ln -s $(which clang-23) clang
-          export PATH=$PWD:$PATH
-          xmake f -m debug --use-llvm-compiler=y -m ${{ matrix.mode }} --policies=${{ matrix.policies }} --march=none --cxflags="${{ matrix.cxx_flags }}" --test-libfuzzer=y --static=none
-      - name: Build
-        run: |
-          # Build all targets (including tests), but do not run them.
-          xmake b -rva
-          export UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1
-      - name: Check UWVM version (via SDE)
-        run: |
-          BIN_DIR="build/linux/x86_64/${{ matrix.mode }}"
-          echo "Running uwvm from ${BIN_DIR} under SDE"
-          /opt/intel-sde/sde64 -dmr -- "${BIN_DIR}/uwvm2-ros" --version
-      - name: Run all test executables (via SDE)
-        run: |
-          BIN_DIR="build/linux/x86_64/${{ matrix.mode }}"
-          echo "Building done, scanning tests to run under SDE from ${BIN_DIR}"
-          if [ ! -d "${BIN_DIR}" ]; then
-            echo "Binary directory ${BIN_DIR} does not exist"
-            exit 1
-          fi
-
-          # Iterate over all unit-test sources and run corresponding executables via SDE.
-          # This mimics `xmake test` but avoids running through xmake/Lua itself.
-          find test -type f -name '*.cc' | while IFS= read -r src; do
-            # Skip libfuzzer tests; they are too heavy to fuzz under SDE.
-            case "${src}" in
-              *test/0009.libfuzzer/*) continue ;;
-            esac
-
-            name="$(basename "${src}" .cc)"
-            exe="${BIN_DIR}/${name}"
-
-            if [ -x "${exe}" ]; then
-              echo "::group::Running ${name} under SDE"
-              /opt/intel-sde/sde64 -dmr -- "${exe}"
-              echo "::endgroup::"
-            else
-              echo "Executable ${exe} not found or not executable, skipping"
-            fi
-          done
-
-  # ---------------------------------------------------------------------------
-  x86_64-linux-gnu-tsan:
-    name: Linux (x86_64) with thread sanitizer
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        mode: ["debug"]
-        policies:
-          [
-            "build.sanitizer.thread",
-          ]
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup
-        run: |
-          CODENAME=$(lsb_release -cs)
-          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/llvm.asc
-          sudo add-apt-repository ppa:xmake-io/xmake
-          sudo add-apt-repository "deb http://apt.llvm.org/$CODENAME/ llvm-toolchain-$CODENAME main"
-          sudo apt-get install clang-23 clang-tools-23 lld-23 xmake cmake ninja-build
-      - name: Configure
-        run: |
-          ln -s $(which clang++-23) clang++
-          ln -s $(which clang-23) clang
-          export PATH=$PWD:$PATH
-          xmake f -m debug --use-llvm-compiler=y -m ${{ matrix.mode }} --policies=${{ matrix.policies }} --march=none --static=none
-      - name: Build
-        run: xmake b -rv
-      - name: Check UWVM version
-        run: xmake run uwvm2-ros --version
-      - name: Unit tests
-        run: xmake test -v
-
-  # ---------------------------------------------------------------------------
-  x86_64-linux-gnu-module:
-    name: Linux (x86_64) with C++ module
-    if: ${{ !always() }}
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        mode: ["debug"]
-        policies:
-          [
-            "build.sanitizer.address,build.sanitizer.leak,build.sanitizer.undefined",
-          ]
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup
-        run: |
-          CODENAME=$(lsb_release -cs)
-          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/llvm.asc
-          sudo add-apt-repository ppa:xmake-io/xmake
-          sudo add-apt-repository "deb http://apt.llvm.org/$CODENAME/ llvm-toolchain-$CODENAME main"
-          sudo apt-get install clang-23 clang-tools-23 lld-23 xmake cmake ninja-build
-      - name: Configure
-        run: |
-          ln -s $(which clang++-23) clang++
-          ln -s $(which clang-23) clang
-          export PATH=$PWD:$PATH
-          xmake f -m debug --use-llvm-compiler=y -m ${{ matrix.mode }} --policies=${{ matrix.policies }} --use-cxx-module=y --static=none
-      - name: Build
-        run: | 
-          xmake b -rv
-          export UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1
-      - name: Check UWVM version
-        run: xmake run uwvm2-ros --version
-
-  # ---------------------------------------------------------------------------
-  x86_64-windows-gnu:
-    if: ${{ !always() }}
-    name: Windows MINGW (x86_64) ${{ matrix.env.name }}
-    strategy:
-      matrix:
+          python3 -I -S -B - "$STATIC_EVIDENCE" <<'PY'
+          import ast, contextlib, hashlib, json, os, pathlib, resource, signal, stat, subprocess, sys, time
+          out, root = pathlib.Path(sys.argv[1]), pathlib.Path.cwd().resolve()
+          receipt = out / 'static-receipt.json'
+          report = json.loads(receipt.read_text())
+          report.update(status='RUNNING', analysis_argv=sys.orig_argv, analysis_executable=sys.executable,
+                        source_root=str(root), analysis_complete=False, stages={}, source_inputs=[])
+          def save():
+              temporary = receipt.with_suffix('.new')
+              temporary.write_text(json.dumps(report, indent=2) + '\n')
+              temporary.replace(receipt)
+          def digest(path):
+              return hashlib.sha256(path.read_bytes()).hexdigest()
+          def streams(name):
+              return out / (name + '.stdout'), out / (name + '.stderr')
+          def finish_streams(row, name):
+              for label, path in zip(('stdout', 'stderr'), streams(name)):
+                  row[label] = {'path': path.name, 'bytes': path.stat().st_size, 'sha256': digest(path)}
+          def command(name, argv):
+              row = {'argv': argv, 'cwd': str(root), 'executed': False, 'status': 'FAIL', 'returncode': None}
+              report['stages'][name] = row
+              stdout, stderr = streams(name)
+              child, began = None, time.monotonic()
+              try:
+                  with stdout.open('xb') as output, stderr.open('xb') as errors:
+                      child = subprocess.Popen(argv, cwd=root, stdin=subprocess.DEVNULL, stdout=output,
+                                               stderr=errors, start_new_session=True)
+                      row.update(executed=True, pid=child.pid)
+                      while child.poll() is None:
+                          if time.monotonic() - began > 20:
+                              row['reason'] = 'bounded metadata command timeout'
+                              break
+                          if max(stdout.stat().st_size, stderr.stat().st_size) > 512 * 1024:
+                              row['reason'] = 'bounded metadata command output limit'
+                              break
+                          time.sleep(0.02)
+                      if child.poll() is None:
+                          os.killpg(child.pid, signal.SIGKILL)
+                      row['returncode'] = child.wait(timeout=5)
+                      if max(stdout.stat().st_size, stderr.stat().st_size) > 512 * 1024:
+                          row['reason'] = 'bounded metadata command output limit'
+                      if row['returncode'] == 0 and 'reason' not in row:
+                          row['status'] = 'PASS'
+              except Exception as error:
+                  row['reason'] = type(error).__name__ + ': ' + str(error)[:2048]
+                  if child is not None and child.poll() is None:
+                      os.killpg(child.pid, signal.SIGKILL)
+                      child.wait(timeout=5)
+              finally:
+                  for path in (stdout, stderr):
+                      path.touch(exist_ok=True)
+                  row['seconds'] = time.monotonic() - began
+                  finish_streams(row, name)
+                  save()
+              return row
+          save()
+          try:
+              resource.setrlimit(resource.RLIMIT_CPU, (30, 30))
+              resource.setrlimit(resource.RLIMIT_AS, (512 * 1024**2, 512 * 1024**2))
+              resource.setrlimit(resource.RLIMIT_FSIZE, (1024**2, 1024**2))
+              workflow = root / '.github/workflows/ci.yml'
+              if workflow.is_symlink() or not workflow.resolve(strict=True).is_relative_to(root) or workflow.stat().st_size > 128 * 1024:
+                  raise ValueError('workflow source must be a bounded in-checkout regular file')
+              report['workflow_source'] = {'path': '.github/workflows/ci.yml', 'bytes': workflow.stat().st_size, 'sha256': digest(workflow)}
+              git = ['git', '-c', 'core.fsmonitor=false', '-c', 'core.hooksPath=/dev/null']
+              head = command('head', [*git, 'rev-parse', '--verify', 'HEAD^{commit}'])
+              parent = command('parent', [*git, 'rev-parse', '--verify', 'HEAD^'])
+              if parent['status'] != 'PASS':
+                  parent.update(status='BLOCKED', reason='HEAD^ unavailable: initial commit or incomplete history; whitespace is not checked')
+              roots = ['.github/scripts', 'tools/ci', 'test/0080.product-qualification',
+                       'test/0006.check_module', 'test/0073.ros-tests/support/source/ros_distro',
+                       'test/0073.ros-tests/support/source/ros']
+              report['selection_roots'] = roots
+              selection = command('selection', [*git, 'ls-files', '-z', '--', *roots])
+              names = []
+              if selection['status'] == 'PASS':
+                  names = sorted({os.fsdecode(name) for name in (out / 'selection.stdout').read_bytes().split(b'\0') if name.endswith(b'.py')})
+              inputs = {'status': 'PASS', 'selected_files': len(names), 'total_bytes': 0, 'largest_file_bytes': 0,
+                        'bounds': {'files': 256, 'total_bytes': 16 * 1024**2, 'file_bytes': 1024**2}}
+              report['stages']['source-inputs'] = inputs
+              if not names or len(names) > 256 or selection['status'] != 'PASS':
+                  inputs.update(status='FAIL', reason='selection failed or tracked Python count is outside 1..256')
+              else:
+                  for name in names:
+                      row = {'path': name, 'status': 'FAIL'}
+                      report['source_inputs'].append(row)
+                      try:
+                          relative, path = pathlib.Path(name), root / name
+                          if relative.is_absolute() or '..' in relative.parts or not stat.S_ISREG(path.lstat().st_mode) or not path.resolve(strict=True).is_relative_to(root):
+                              raise ValueError('static input must be an in-checkout regular file')
+                          size = path.stat().st_size
+                          row['bytes'] = size
+                          inputs['total_bytes'] += size
+                          inputs['largest_file_bytes'] = max(inputs['largest_file_bytes'], size)
+                          if size > 1024**2 or inputs['total_bytes'] > 16 * 1024**2:
+                              raise ValueError('static source byte bound exceeded; AST is not run')
+                          data = path.read_bytes()
+                          if len(data) != size:
+                              raise ValueError('source changed while reading')
+                          row.update(status='HASHED', sha256=hashlib.sha256(data).hexdigest())
+                      except Exception as error:
+                          row['reason'] = type(error).__name__ + ': ' + str(error)[:2048]
+                          inputs['status'] = 'FAIL'
+              save()
+              whitespace_argv = [*git, 'diff', '--no-ext-diff', '--no-textconv', '--check', 'HEAD^', 'HEAD']
+              if head['status'] == parent['status'] == 'PASS':
+                  command('whitespace', whitespace_argv)
+              else:
+                  row = {'status': 'BLOCKED', 'executed': False, 'planned_argv': whitespace_argv,
+                         'reason': 'A verified HEAD and HEAD^ are required; no empty-tree or silent initial-commit fallback'}
+                  report['stages']['whitespace'] = row
+                  for path in streams('whitespace'):
+                      path.write_bytes(b'')
+                  finish_streams(row, 'whitespace')
+              ast_row = {'status': 'BLOCKED', 'operation': 'ast.parse of each hashed source; no imports/eval',
+                         'controller_argv': sys.orig_argv, 'parsed_files': 0}
+              report['stages']['ast'] = ast_row
+              stdout, stderr = streams('ast')
+              with stdout.open('x') as output, stderr.open('x') as errors, contextlib.redirect_stdout(output), contextlib.redirect_stderr(errors):
+                  if inputs['status'] != 'PASS':
+                      ast_row['reason'] = 'source selection or byte/type/hash bounds failed; no source is parsed'
+                      print(ast_row['reason'], file=sys.stderr)
+                  else:
+                      ast_row['status'] = 'PASS'
+                      for row in report['source_inputs']:
+                          try:
+                              data = (root / row['path']).read_bytes()
+                              if hashlib.sha256(data).hexdigest() != row['sha256']:
+                                  raise ValueError('source changed after hashing')
+                              ast.parse(data.decode('utf-8-sig'), filename=row['path'])
+                              row['parse_status'] = 'PASS'
+                              ast_row['parsed_files'] += 1
+                          except Exception as error:
+                              ast_row['status'] = row['parse_status'] = 'FAIL'
+                              row['parse_error'] = {'type': type(error).__name__, 'message': str(getattr(error, 'msg', error))[:2048],
+                                                    'line': getattr(error, 'lineno', None), 'offset': getattr(error, 'offset', None)}
+                              print(json.dumps({'path': row['path'], **row['parse_error']}), file=sys.stderr)
+                      print('AST file analysis: ' + str(ast_row['parsed_files']) + '/' + str(len(report['source_inputs'])))
+              finish_streams(ast_row, 'ast')
+              report['analysis_complete'] = True
+          except BaseException as error:
+              report['analysis_error'] = {'type': type(error).__name__, 'message': str(error)[:2048]}
+              (out / 'analysis-exception.stderr').write_text(json.dumps(report['analysis_error']) + '\n')
+          finally:
+              required = ['head', 'parent', 'selection', 'source-inputs', 'whitespace', 'ast']
+              report['required_stages'] = required
+              report['missing_required'] = [name for name in required if name not in report['stages']]
+              statuses = {row['status'] for row in report['stages'].values()}
+              report['status'] = ('FAIL' if report.get('analysis_error') or report['missing_required'] or 'FAIL' in statuses
+                                  else 'BLOCKED' if 'BLOCKED' in statuses else 'STATIC_FILE_CHECKS_PASS')
+              report['execution_acceptance'] = False
+              report['functional_tests_run'] = report['repository_modules_imported'] = report['compiler_or_probe_run'] = False
+              save()
+          print(report['status'] + ': file analysis only; no execution acceptance')
+          raise SystemExit(0 if report['status'] == 'STATIC_FILE_CHECKS_PASS' and report['analysis_complete'] else 1)
+          PY
+      - name: Always seal static-only evidence including failures or skipped analysis
+        if: always()
         env:
-          - name: "CLANG64"
-            prefix: mingw-w64-clang-x86_64
-            os: windows-latest
-          #- name: "CLANGARM64"
-          #  prefix: mingw-w64-clang-aarch64
-          #  os: windows-11-arm
-        mode: ["debug"]
-        policies: ["build.sanitizer.address"]
-        winver: [
-          "WIN10",   # NT 10.x (Win10/Win11/WS16/WS19/WS22/WS25)
-          "WINBLUE", # NT 6.3 (Win8.1/WS12R2)
-          "WIN8",    # NT 6.2 (Win8/WS12)
-          "WIN7",    # NT 6.1 (Win7/WS08R2)
-          "VISTA",   # NT 6.0 (Vista/WS08)
-          "WINXP64", # NT 5.2 (WS03/WinXP x64)
-          "WINXP",   # NT 5.1 (WinXP)
-          "WIN2K",   # NT 5.0 (Win2000/WS2K)
-          "NT400",   # NT 4.0 (unverified)
-          "NT351",   # NT 3.51 (unverified)
-          "NT350",   # NT 3.50 (unverified)
-          "NT310",   # NT 3.10 (closest to NT 3.0, unverified)
-          "WINME",   # Win9x 4.90
-          "WIN98",   # Win9x 4.10
-          "WIN95"    # Win9x 4.00
-        ]
-    runs-on: ${{ matrix.env.os }}
-    defaults:
-      run:
-        shell: msys2 {0}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: msys2/setup-msys2@v2
+          INIT_OUTCOME: ${{ steps.initialize.outcome }}
+          CHECKOUT_OUTCOME: ${{ steps.checkout.outcome }}
+          ANALYSIS_OUTCOME: ${{ steps.analysis.outcome }}
+        run: |
+          STATIC_EVIDENCE="${STATIC_EVIDENCE:-$RUNNER_TEMP/static-files-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT}"
+          python3 -I -S -B - "$STATIC_EVIDENCE" <<'PY'
+          import hashlib, json, os, pathlib, stat, sys
+          out, root = pathlib.Path(sys.argv[1]), pathlib.Path(os.environ['GITHUB_WORKSPACE']).resolve()
+          out.mkdir(parents=True, exist_ok=True, mode=0o700)
+          receipt = out / 'static-receipt.json'
+          errors = []
+          try:
+              report = json.loads(receipt.read_text())
+              if not isinstance(report, dict):
+                  raise ValueError('static receipt is not an object')
+          except Exception as error:
+              report = {'status': 'FAIL', 'stages': {}, 'source_inputs': []}
+              errors.append('missing/invalid initialized receipt: ' + str(error)[:2048])
+              if receipt.is_file() and not receipt.is_symlink() and receipt.stat().st_size <= 1024**2:
+                  raw = receipt.read_bytes()
+                  (out / 'invalid-unsealed-receipt.raw').write_bytes(raw)
+                  report['invalid_unsealed_receipt_sha256'] = hashlib.sha256(raw).hexdigest()
+          report['step_outcomes'] = {name: os.environ.get(name + '_OUTCOME', 'unknown') for name in ('INIT', 'CHECKOUT', 'ANALYSIS')}
+          report['seal_argv'], report['seal_executable'] = sys.orig_argv, sys.executable
+          try:
+              required = ['head', 'parent', 'selection', 'source-inputs', 'whitespace', 'ast']
+              stages = report.get('stages', {})
+              report['missing_required'] = [name for name in required if name not in stages]
+              if report['missing_required'] or not report.get('analysis_complete'):
+                  errors.append('analysis incomplete or required stage missing')
+              for name in ('head', 'parent', 'selection', 'whitespace', 'ast'):
+                  row = stages.get(name, {})
+                  for label in ('stdout', 'stderr'):
+                      relative = name + '.' + label
+                      path = out / relative
+                      if not path.is_file() or path.is_symlink() or path.stat().st_size > 1024**2:
+                          errors.append('missing/nonregular/oversized output: ' + relative)
+                          continue
+                      current = {'path': relative, 'bytes': path.stat().st_size, 'sha256': hashlib.sha256(path.read_bytes()).hexdigest()}
+                      if row.get(label) != current:
+                          errors.append('missing/mismatched command output receipt: ' + relative)
+              for row in report.get('source_inputs', []):
+                  if 'sha256' not in row:
+                      errors.append('unhashed selected source: ' + row.get('path', '<missing>'))
+                      continue
+                  name = pathlib.Path(row['path'])
+                  path = root / name
+                  if name.is_absolute() or '..' in name.parts or not stat.S_ISREG(path.lstat().st_mode) or not path.resolve(strict=True).is_relative_to(root):
+                      errors.append('source is no longer a regular in-checkout file')
+                      continue
+                  if path.stat().st_size != row['bytes'] or path.stat().st_size > 1024**2 or hashlib.sha256(path.read_bytes()).hexdigest() != row['sha256']:
+                      errors.append('source hash/size changed: ' + str(name))
+              workflow = root / '.github/workflows/ci.yml'
+              if workflow.is_file() and not workflow.is_symlink() and workflow.resolve().is_relative_to(root) and workflow.stat().st_size <= 128 * 1024:
+                  report['workflow_source_after'] = {'path': '.github/workflows/ci.yml', 'bytes': workflow.stat().st_size,
+                                                    'sha256': hashlib.sha256(workflow.read_bytes()).hexdigest()}
+                  if report.get('workflow_source') != report['workflow_source_after']:
+                      errors.append('analysis workflow source missing or changed')
+              else:
+                  errors.append('workflow source unavailable')
+          except Exception as error:
+              errors.append('sealing exception: ' + type(error).__name__ + ': ' + str(error)[:2048])
+          finally:
+              report.update(static_only=True, execution_acceptance=False, functional_tests_run=False,
+                            repository_modules_imported=False, compiler_or_probe_run=False, sealed=True)
+              stages, sources = report.get('stages', {}), report.get('source_inputs', [])
+              passed = (not errors and report.get('status') == 'STATIC_FILE_CHECKS_PASS'
+                        and report.get('analysis_complete') and not report.get('analysis_error')
+                        and all(value == 'success' for value in report['step_outcomes'].values())
+                        and all(stages.get(name, {}).get('status') == 'PASS' for name in required)
+                        and bool(sources) and stages.get('ast', {}).get('parsed_files') == len(sources)
+                        and all(row.get('parse_status') == 'PASS' for row in sources))
+              report['static_file_analysis_passed'] = bool(passed)
+              report['status'] = 'STATIC_FILE_CHECKS_PASS' if passed else 'BLOCKED' if not errors and report.get('status') == 'BLOCKED' else 'FAIL'
+              report['sealing_errors'] = errors
+              artifacts = {}
+              try:
+                  for path in sorted(out.iterdir()):
+                      if path.name in ('static-receipt.json', 'static-receipt.new', 'artifact-manifest.json'):
+                          continue
+                      if not path.is_file() or path.is_symlink() or path.stat().st_size > 1024**2:
+                          raise ValueError('unexpected static artifact: ' + path.name)
+                      artifacts[path.name] = {'bytes': path.stat().st_size, 'sha256': hashlib.sha256(path.read_bytes()).hexdigest()}
+                  manifest = out / 'artifact-manifest.json'
+                  manifest.write_text(json.dumps(artifacts, indent=2) + '\n')
+                  report['artifact_manifest_sha256'] = hashlib.sha256(manifest.read_bytes()).hexdigest()
+              except Exception as error:
+                  report.update(status='FAIL', static_file_analysis_passed=False)
+                  errors.append('artifact sealing failed: ' + str(error)[:2048])
+              temporary = receipt.with_suffix('.new')
+              temporary.write_text(json.dumps(report, indent=2) + '\n')
+              temporary.replace(receipt)
+          print(report['status'] + ': static-only receipt sealed; no execution acceptance')
+          raise SystemExit(0 if report['static_file_analysis_passed'] else 1)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
         with:
-          msystem: ${{ matrix.env.name }}
-          update: true
-          install: |
-            ${{ matrix.env.prefix }}-cc
-            ${{ matrix.env.prefix }}-xmake
-            ${{ matrix.env.prefix }}-cmake
-            ${{ matrix.env.prefix }}-ninja
-      - name: Configure
-        run: xmake f -p mingw --use-llvm-compiler=y -m ${{ matrix.mode }} --policies=${{ matrix.policies }} --mingw-min=${{ matrix.winver }} --static=compiler
-      - name: Build
-        run: xmake b -rv
-      - name: Check UWVM version
-        run: xmake run uwvm2-ros --version
-      - name: Unit tests
-        run: xmake test -v
-
-  # ---------------------------------------------------------------------------
-  i686-windows-gnu:
-    if: ${{ !always() }}
-    name: Windows MINGW (i686) ${{ matrix.env.name }}
-    strategy:
-      matrix:
-        env:
-          - name: "CLANG64"
-            prefix: mingw-w64-clang-x86_64
-            os: windows-latest
-          #- name: "CLANGARM64"
-          #  prefix: mingw-w64-clang-aarch64
-          #  os: windows-11-arm
-        mode: ["debug"]
-        policies: ["build.sanitizer.address"]
-        winver: ["WIN10"]
-    runs-on: ${{ matrix.env.os }}
-    defaults:
-      run:
-        shell: msys2 {0}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: msys2/setup-msys2@v2
-        with:
-          msystem: ${{ matrix.env.name }}
-          update: true
-          install: |
-            ${{ matrix.env.prefix }}-cc
-            ${{ matrix.env.prefix }}-xmake
-            ${{ matrix.env.prefix }}-cmake
-            ${{ matrix.env.prefix }}-ninja
-      - name: Configure
-        run: xmake f -p mingw --use-llvm-compiler=y -m ${{ matrix.mode }} --policies=${{ matrix.policies }} --mingw-min=${{ matrix.winver }} -a i686 --static=compiler
-      - name: Build
-        run: xmake b -rv
-      - name: Check UWVM version
-        run: xmake run uwvm2-ros --version
-      - name: Unit tests
-        run: xmake test -v
-
-  # ---------------------------------------------------------------------------
-  # todo aarch64-windows-gnu
-
-  # ---------------------------------------------------------------------------
-  x86_64-freebsd:
-    name: FreeBSD (x86_64) ${{ matrix.compiler }}
-    runs-on: ubuntu-latest
-    env:
-      version: "14.3"
-      freebsd_vm_memory: "8G"
-      freebsd_swapfile_mb: "2048"
-    strategy:
-      matrix:
-        compiler: ["CLANG"]
-        mode: ["debug"]
-        policies: ["build.sanitizer.address,build.sanitizer.leak,build.sanitizer.undefined"]
-    steps:
-      - uses: actions/checkout@v4
-      - name: Prepare
-        uses: cross-platform-actions/action@v0.30.0
-        with:
-          operating_system: freebsd
-          version: ${{ env.version }}
-          memory: ${{ env.freebsd_vm_memory }}
-          run: |
-            sudo mkdir -p /usr/local/etc/repos
-            sudo tee /usr/local/etc/repos/FreeBSD.conf << EOF
-              FreeBSD: { enabled: false }
-              FreeBSD-latest: {
-                url: "pkg+https://pkg.freebsd.org/${ABI}/latest",
-                mirror_type: "srv",
-                signature: "fingerprints",
-                fingerprints: "/usr/share/keys/pkg",
-                enabled: yes
-              }
-            EOF
-      - name: Configure
-        if: matrix.compiler == 'CLANG'
-        uses: cross-platform-actions/action@v0.30.0
-        with:
-          operating_system: freebsd
-          version: ${{ env.version }}
-          memory: ${{ env.freebsd_vm_memory }}
-          run: |
-            bash -c "sudo pkg install -y llvm21 gmake unzip libunwind cmake ninja python3"
-            bash -c "sudo pkg clean -ay"
-            bash -c "curl -fsSL https://raw.githubusercontent.com/tboox/xmake/master/scripts/get.sh -o xmake-get.sh"
-            bash -c "bash xmake-get.sh"
-            # FreeBSD's llvm21 package installs the bootstrap SDK here; it is
-            # not the LLVM 23.1.1 dependency that ROS builds from its own sources.
-            bash -c "source ~/.xmake/profile && xmake f -y -m ${{ matrix.mode }} --policies=${{ matrix.policies }} --use-llvm-compiler=y --sdk=/usr/local/llvm21 --march=none --static=none --strip=symbol --cxflags=-g1 --includedirs=/usr/local/include --linkdirs=/usr/local/lib --syslinks=unwind"
-      - name: Configure
-        if: matrix.compiler == 'GCC'
-        uses: cross-platform-actions/action@v0.30.0
-        with:
-          operating_system: freebsd
-          version: ${{ env.version }}
-          memory: ${{ env.freebsd_vm_memory }}
-          run: |
-            bash -c "sudo pkg install -y gcc16-devel gmake unzip cmake ninja python3"
-            bash -c "sudo pkg clean -ay"
-            bash -c "curl -fsSL https://raw.githubusercontent.com/tboox/xmake/master/scripts/get.sh -o xmake-get.sh"
-            bash -c "bash xmake-get.sh"
-            bash -c "source ~/.xmake/profile && xmake f -y -m ${{ matrix.mode }} --policies=${{ matrix.policies }} --cc=gcc16 --cxx=g++16 --ld=g++16 --march=none --static=none --strip=symbol --cxflags=-g1"
-      - name: Build and check
-        uses: cross-platform-actions/action@v0.30.0
-        with:
-          operating_system: freebsd
-          version: ${{ env.version }}
-          memory: ${{ env.freebsd_vm_memory }}
-          run: |
-            bash <<'FREEBSD_CI_SWAP'
-            set -eux
-            swapfile=/usr/swap0
-            sudo dd if=/dev/zero of="${swapfile}" bs=1m count=${{ env.freebsd_swapfile_mb }}
-            sudo chmod 0600 "${swapfile}"
-            swapdev="$(sudo mdconfig -a -t vnode -f "${swapfile}")"
-            case "${swapdev}" in
-              /dev/*) ;;
-              md*) swapdev="/dev/${swapdev}" ;;
-              *) swapdev="/dev/md${swapdev}" ;;
-            esac
-            sudo swapon "${swapdev}"
-            swapinfo
-            df -h / /usr || true
-            FREEBSD_CI_SWAP
-            bash -c "source ~/.xmake/profile && xmake b -rv -j1 || { rc=\$?; swapinfo || true; df -h / /usr || true; dmesg | tail -n 80 || true; exit \$rc; }"
-            bash -c "source ~/.xmake/profile && export UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 && xmake run uwvm2-ros --version"
-            bash -c "source ~/.xmake/profile && xmake clean -y uwvm2-ros || true"
-            bash -c "source ~/.xmake/profile && xmake clean -y uwvm_runtime || true"
-            bash -c "df -h / /usr || true"
-            bash -c "source ~/.xmake/profile && export UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 && xmake test -v -j1"
+          name: static-files-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/static-files-${{ github.run_id }}-${{ github.run_attempt }}
+          if-no-files-found: error
+          retention-days: 14

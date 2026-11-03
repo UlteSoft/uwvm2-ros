@@ -1,5 +1,6 @@
 // Two actual full-JIT entries block in nested Wasm frames on the same wait key.
 // Query genuine paused owners, then resume and notify through real guest code.
+#include "mandatory_native_fixture.h"
 #include <uwvm2/uwvm/run/owned_source.h>
 #include <uwvm2/runtime/checkpoint/materialization.h>
 #include <uwvm2/uwvm/debugger/wasm_state.h>
@@ -82,32 +83,32 @@ struct observer
 };
 int main(int argc, char** argv)
 {
-    if(argc != 6 && argc != 7) { return 64; }
-    bool const shutdown{argc == 7};
+    if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
+    if(argc != 5 && argc != 6) { return 64; }
+    bool const shutdown{argc == 6};
     bool immediate_shutdown{};
     if(shutdown)
     {
-        auto const kind{::fast_io::concat_fast_io(::fast_io::mnp::os_c_str(argv[6]))};
+        auto const kind{::fast_io::concat_fast_io(::fast_io::mnp::os_c_str(argv[5]))};
         REQUIRE(kind == "shutdown" || kind == "shutdown-immediate");
         immediate_shutdown = kind == "shutdown-immediate";
     }
-    auto const strategy{::fast_io::concat_fast_io(::fast_io::mnp::os_c_str(argv[2]))};
-    auto const purpose{::fast_io::concat_fast_io(::fast_io::mnp::os_c_str(argv[3]))};
-    REQUIRE(strategy == "instruction" || strategy == "unwind");
+
+    auto const purpose{::fast_io::concat_fast_io(::fast_io::mnp::os_c_str(argv[2]))};
+
     REQUIRE(purpose == "observe" || purpose == "resumable");
     unsigned address_bits{}, compare_bits{};
-    for(auto const index : {4u, 5u})
+    for(auto const index : {3u, 4u})
     {
         auto const text{::fast_io::concat_fast_io(::fast_io::mnp::os_c_str(argv[index]))};
-        auto& bits{index == 4u ? address_bits : compare_bits};
+        auto& bits{index == 3u ? address_bits : compare_bits};
         auto const end{text.data() + text.size()};
         auto const parsed{::fast_io::parse_by_scan(text.data(), end, ::fast_io::mnp::dec_get<true, true>(bits))};
         REQUIRE(parsed.code == ::fast_io::parse_code::ok && parsed.iter == end && (bits == 32u || bits == 64u));
     }
     mode::global_runtime_mode = mode::runtime_mode_t::full_compile;
     mode::global_runtime_compiler = mode::runtime_compiler_t::llvm_jit_only;
-    mode::global_runtime_llvm_jit_call_stack = strategy == "instruction" ?
-        mode::runtime_llvm_jit_call_stack_t::instruction : mode::runtime_llvm_jit_call_stack_t::unwind;
+
     mode::global_runtime_compile_threads = 0u; mode::runtime_compile_threads_existed = true;
     mode::global_runtime_llvm_jit_cache_path_mode = mode::runtime_llvm_jit_cache_path_mode_t::disabled;
     auto& features{::uwvm2::uwvm::wasm::feature::wasm_binfmt_ver1_wasm1p1_parameter(::uwvm2::uwvm::wasm::storage::wasm_parameter.binfmt1_para)};

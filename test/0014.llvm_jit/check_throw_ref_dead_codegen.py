@@ -52,7 +52,7 @@ def main():
         return r.stdout.decode(errors='replace')
 
     for name, source in fixtures.items():
-        for policy in ['instruction', 'unwind']:
+        for policy in (('mandatory-native',) if a.ros else ('instruction', 'unwind')):
             results = []
             for variant in ['without', 'with']:
                 out = a.out / (name + '-' + policy + '-' + variant)
@@ -62,7 +62,7 @@ def main():
                 run([a.wasm_tools, 'parse', wat, '-o', wasm], out / 'parse.log')
                 cache.mkdir()
                 mode = ['-Raot'] if a.ros else ['-Rcc', 'jit', '-Rcm', 'full']
-                run([a.uwvm] + mode + ['-WFE-exceptions', '-Rct', '0', '-Rllvm-call-stack', policy,
+                run([a.uwvm] + mode + ['-WFE-exceptions', '-Rct', '0', *([] if a.ros else ['-Rllvm-call-stack', policy]),
                     '-Rllvm-cache-path', 'path', cache, '--run', wasm], out / 'run.log')
                 objects = list(cache.rglob('*.uwvm-ljc'))
                 if len(objects) != 1:

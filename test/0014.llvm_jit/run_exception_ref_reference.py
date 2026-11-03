@@ -78,6 +78,8 @@ def main():
     parser.add_argument('--mode', choices=('full', 'lazy', 'lazy+verification'), action='append')
     parser.add_argument('--trace', choices=('instruction', 'unwind'), action='append')
     args = parser.parse_args()
+    if args.ros and (args.backend != 'llvm' or args.trace):
+        parser.error('--ros requires --backend llvm and has no --trace selector; checked native unwind is mandatory')
     if args.wrapper_arg and not args.uwvm:
         parser.error('--wrapper-arg requires --uwvm')
     modes = args.mode or (['full'] if args.ros else ['full', 'lazy', 'lazy+verification'])
@@ -94,12 +96,12 @@ def main():
     configs = []
     if args.uwvm:
         for mode in modes:
-            for trace in (args.trace or ['instruction']) if args.backend == 'llvm' else [None]:
+            for trace in (['mandatory-native'] if args.ros else ((args.trace or ['instruction']) if args.backend == 'llvm' else [None])):
                 if args.backend == 'int':
                     flags = ['-Rint'] if args.ros else ['-Rcc', 'int', '-Rcm', mode]
                 else:
                     flags = ['-Raot'] if args.ros else ['-Rcc', 'jit', '-Rcm', mode]
-                    flags += ['-Rllvm-call-stack', trace, '-Rllvm-cache-path', 'disable']
+                    flags += [*([] if args.ros else ['-Rllvm-call-stack', trace]), '-Rllvm-cache-path', 'disable']
                 configs.append((mode + ('-' + trace if trace else ''), flags))
     for name, (outcome, source) in CASES.items():
         wat = args.out / f'{name}.wat'

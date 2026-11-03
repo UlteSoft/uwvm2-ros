@@ -82,8 +82,8 @@ module;
 #   define MAP_FIXED_NOREPLACE 0x100000
 #  endif
 # endif
-# if !defined(_WIN32) && (!(defined(__arm__) || defined(__thumb__)) || defined(__ARM_DWARF_EH__)) && __has_include(<unwind.h>)
-#  include <unwind.h>
+# if !defined(_WIN32) && (!(defined(__arm__) || defined(__thumb__)) || defined(__ARM_DWARF_EH__)) && defined(UWVM_ROS_PAIRED_RUNTIME_HEADERS)
+#  include <uwvm2/runtime/compiler/llvm_jit/paired_unwind.h>
 #  include "dwarf_eh_frame_registration.h"
 # endif
 #endif

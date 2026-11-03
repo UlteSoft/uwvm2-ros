@@ -1,5 +1,6 @@
 // Real full-JIT guest threads, actual before-unwind exception observation and
 // one complete stopped cohort. No WASIp1, fake activation or native VM access.
+#include "mandatory_native_fixture.h"
 #include <uwvm2/uwvm/run/owned_source.h>
 #include <uwvm2/runtime/checkpoint/materialization.h>
 #include <uwvm2/uwvm/debugger/wasm_mutation.h>
@@ -90,17 +91,17 @@ static ::std::uint64_t bits(ws::value const& value)
 }
 int main(int argc, char** argv)
 {
-    if(argc != 5) { return 2; }
-    auto const stack{::fast_io::concat_std(::fast_io::mnp::os_c_str(argv[2]))};
-    auto const jit{::fast_io::concat_std(::fast_io::mnp::os_c_str(argv[3]))};
-    auto const disposition{::fast_io::concat_std(::fast_io::mnp::os_c_str(argv[4]))};
-    require(stack == "instruction" || stack == "unwind", "explicit call stack policy");
+    if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
+    if(argc != 4) { return 2; }
+
+    auto const jit{::fast_io::concat_std(::fast_io::mnp::os_c_str(argv[2]))};
+    auto const disposition{::fast_io::concat_std(::fast_io::mnp::os_c_str(argv[3]))};
+
     require(jit == "default" || jit == "max", "explicit JIT optimization policy");
     require(disposition == "caught" || disposition == "uncaught", "explicit actual exception disposition");
     mode::global_runtime_mode = mode::runtime_mode_t::full_compile;
     mode::global_runtime_compiler = mode::runtime_compiler_t::llvm_jit_only;
-    mode::global_runtime_llvm_jit_call_stack = stack == "instruction" ? mode::runtime_llvm_jit_call_stack_t::instruction :
-        mode::runtime_llvm_jit_call_stack_t::unwind;
+
     mode::global_runtime_compile_threads = 0u; mode::runtime_compile_threads_existed = true;
     mode::global_runtime_llvm_jit_cache_path_mode = mode::runtime_llvm_jit_cache_path_mode_t::disabled;
     mode::global_runtime_llvm_jit_policy = jit == "max" ? mode::runtime_llvm_jit_policy_t::max :

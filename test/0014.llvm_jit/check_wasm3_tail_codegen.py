@@ -76,11 +76,11 @@ def main():
         assert a.wat2wasm is not None, '--wat2wasm is required for this fixture'
         subprocess.run([a.wat2wasm, '--enable-tail-call', str(src), '-o', str(wasm)], check=True)
     rows = []
-    for policy in ['instruction', 'unwind']:
+    for policy in (('mandatory-native',) if a.ros else ('instruction', 'unwind')):
         cache = out / (policy + '-cache'); cache.mkdir()
         base = ['-Raot'] if a.ros else ['-Rcc', 'jit', '-Rcm', 'full']
         command = [str(a.uwvm.resolve()), *base, '-Rct', '0', '-Rllvm-full-policy', 'pb-o3',
-                   '-Rllvm-cache-path', 'path', cache.name, '-Rllvm-call-stack', policy,
+                   '-Rllvm-cache-path', 'path', cache.name, *([] if a.ros else ['-Rllvm-call-stack', policy]),
                    '-Rclog', 'file', policy + '.compile.log',
                    *(['-WFE-function-references'] if a.case == 'typed-ref-local' else []),
                    '-WFE-tail-call', '--run', str(wasm)]
@@ -108,7 +108,7 @@ def main():
             assert jumps >= 1, (policy, name, assembly)
             # Every Wasm call edge is a native jump. Instruction policy needs a
             # push plus a pop on each of the normal-return and tail-return paths.
-            if policy == 'unwind' and a.case != 'typed-ref-local':
+            if policy in ('unwind', 'mandatory-native') and a.case != 'typed-ref-local':
                 assert success_path_calls(assembly) == 0, (name, assembly)
             if a.case == 'typed-ref-local':
                 # The authenticated resolver is allowed to call host code before

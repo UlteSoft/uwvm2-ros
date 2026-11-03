@@ -2,7 +2,7 @@
 """Compare actual x86 JIT atomic bridge callers after an ABI implementation change.
 
 Both runs must use byte-identical independent semantic fixtures. Inspect emitted
-code for every function and both stack policies; do not count this as a timing
+code for every function and both test-local IR frame policies; do not count this as a timing
 benchmark or as qualification of the native C++ callee on other architectures.
 """
 import argparse,hashlib,json,re,subprocess
@@ -33,7 +33,7 @@ def functions(assembly):
    instructions.append(re.sub(r'\s+',' ',line))
   result[int(match[1])]=instructions
  return result
-for policy in ['instruction','unwind']:
+for policy in ['component-instrumented','component-native-cfi']:
  emitted=[]
  for label,root in [('before',a.baseline),('after',a.current)]:
   source=root/('mixed-'+policy+'.ll');ir=a.out/(label+'-'+policy+'.ll');asm=a.out/(label+'-'+policy+'.s')
@@ -47,7 +47,7 @@ for policy in ['instruction','unwind']:
  (a.out/(policy+'-comparison.json')).write_text(json.dumps(comparisons,indent=2)+'\n')
  assert all(r['identical'] for r in comparisons),(policy,'native caller instruction sequences changed; inspect comparison')
  for body in emitted[1].values():
-  assert sum(line.startswith('call') for line in body)==(3 if policy=='instruction' else 1)
+  assert sum(line.startswith('call') for line in body)==(3 if policy=='component-instrumented' else 1)
   assert not any(line.split()[0] in ['lock','mfence','lfence','sfence'] for line in body)
-(a.out/'summary.json').write_text(json.dumps(dict(passed=True,functions=66,policies=2,fixture_sha256=metadata[0]['test_sha256'],rows=rows),indent=2)+'\n')
-print('PASS 132 atomic bridge callers: instruction-identical after symbol normalization; unwind 1 call versus instruction 3; no added fences')
+(a.out/'summary.json').write_text(json.dumps(dict(passed=True,functions=66,policies=2,scope='test-local offline IR frame emission; ROS runtime instruction mode is not qualified',fixture_sha256=metadata[0]['test_sha256'],rows=rows),indent=2)+'\n')
+print('PASS 132 offline component atomic bridge callers: instruction-identical after symbol normalization; native-CFI 1 call versus instrumented 3; no added fences; no ROS instruction runtime qualification')

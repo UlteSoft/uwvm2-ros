@@ -28,7 +28,7 @@
 #   include <llvm/Object/ELFObjectFile.h>
 #  endif
 #  include <link.h>
-#  include <unwind.h>
+#  include <uwvm2/runtime/compiler/llvm_jit/paired_unwind.h>
 
 extern "C" ::std::uint32_t uwvm_libunwind_arm_exidx_lookup_abi_v1() noexcept __attribute__((weak));
 

@@ -29,6 +29,7 @@ p.add_argument('--variant', choices=['all', 'timed', 'qualify'], default='all')
 p.add_argument('--cpu', type=int, default=0)
 p.add_argument('--affinity', choices=['single', 'four'], default='single',
                help='pin guest workers to one P core or all four established P cores')
+p.add_argument('--ordinary-upstream', action='store_true', help='Use an independently frozen upstream fixture with its legacy selectors; default is mandatory-native ROS')
 a = p.parse_args()
 if a.measure and a.wasm_tools is None:
     p.error('formal thread timing requires --wasm-tools to qualify the generated guest syntax')
@@ -148,10 +149,10 @@ for instrumented in ([False, True] if a.variant == 'all' else [a.variant == 'qua
         run(name+'-build', build)
         binaries[name] = sha(out/name)
         (out/'build-binaries.json').write_text(json.dumps(binaries, indent=2)+'\n')
-    for policy in ['instruction', 'unwind']:
+    for policy in (['instruction', 'unwind'] if a.ordinary_upstream else ('mandatory-native',)):
         samples, rounds = (9, 32) if a.measure and not instrumented else (1, 2)
         wasm = out/(name+'-'+policy+'-'+a.affinity+'.wasm')
-        run(run_prefix+name+'-'+policy, ['taskset', '-c', guest_affinity, str(out/name), policy, str(samples), str(rounds), str(wasm)], timeout=180)
+        run(run_prefix+name+'-'+policy, ['taskset', '-c', guest_affinity, str(out/name), *([policy] if a.ordinary_upstream else []), str(samples), str(rounds), str(wasm)], timeout=180)
         if a.wasm_tools is not None:
             run(run_prefix+name+'-'+policy+'-validate-wasm',
                 ['taskset', '-c', '16', str(a.wasm_tools), 'validate', str(wasm)], timeout=30)

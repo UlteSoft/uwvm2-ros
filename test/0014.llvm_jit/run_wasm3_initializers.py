@@ -8,7 +8,6 @@ import re
 import resource
 import subprocess
 
-from run_wasm3_multi_memory import llvm_stack_policies
 
 
 def main():
@@ -32,7 +31,7 @@ def main():
     features = ["-WFE-extended-const", "-WFE-table-initializer"]
     # Keep the ordinary product's diagnostic matrix. ROS has one qualified
     # calling convention and must never fall back to instrumented frames.
-    policies = llvm_stack_policies(args.ros) if args.ros else (
+    policies = ('mandatory-native',) if args.ros else (
         ("instruction", "unwind", "none") if args.backend == "jit" else ("instruction",)
     )
     for mode in args.modes:
@@ -50,7 +49,7 @@ def main():
                     if "no-t2" in args.tiered_variant:
                         command += ["-Rtiered-disable-t2"]
                 if args.backend != "int":
-                    command += ["-Rllvm-cache-path", "disable", "-Rllvm-call-stack", policy]
+                    command += ["-Rllvm-cache-path", "disable", *([] if args.ros else ['-Rllvm-call-stack', policy])]
                 command += ["-Rclog", "file", str(compile_log), *features, "--run", str(args.fixtures / f"{fixture}.wasm")]
                 run = subprocess.run(command, capture_output=True, timeout=60)
                 output = ansi.sub("", (run.stdout + run.stderr).decode(errors="replace"))

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Real LLVM-full console PTY tests. Run only in the original keeper cgroup."""
+from mandatory_native_cli import require_linux_ros, product_policy, product_policies
 import argparse, errno, fcntl, hashlib, importlib.util, json, os, re, select
 import signal, struct, subprocess, termios, time
 from pathlib import Path
@@ -21,7 +22,7 @@ def main():
     parser.add_argument('--native-unavailable', action='store_true',
         help='Assert refusal when actual build receipts prove owner-table V2 disabled; no positive native qualification')
     parser.add_argument('--build-receipts', type=Path)
-    args = parser.parse_args()
+    args = parser.parse_args(); require_linux_ros(parser, args.ros)
     assert Path('/proc/self/cgroup').read_text().strip() == '0::' + args.cgroup
     root = args.source_root.resolve(strict=True)
     output = args.out.resolve(); output.mkdir(exist_ok=False)
@@ -57,8 +58,8 @@ def main():
             'compiler':compiler, 'rows':rows}, indent=2)+'\n')
     prefix = [str(args.uwvm), '-Rdbg'] + (['-Raot'] if args.ros else ['-Rcc','jit','-Rcm','full']) + \
         ['-Rct','0','-Rllvm-cache-path','disable']
-    for policy in ['instruction','unwind']:
-        con = mod.Console(prefix+['-Rllvm-call-stack',policy,'--run',str(wasm)], 100)
+    for policy in (('mandatory-native',) if args.ros else ('instruction', 'unwind')):
+        con = mod.Console(prefix+[*([] if args.ros else ['-Rllvm-call-stack', policy]),'--run',str(wasm)], 100)
         fd = os.pidfd_open(con.pid)
         row = {'case':policy,'passed':False,'observations':[]}
         try:

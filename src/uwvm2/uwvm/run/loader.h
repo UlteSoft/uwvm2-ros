@@ -298,6 +298,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
         }
 #endif
 #if defined(UWVM_IMPORT_ROS2)
+        if(details::loaded_wasm_imports_namespace(::uwvm2::uwvm::imported::ros::portable_robot_local_imported_module.module_name))
+        {
+#if UWVM2_HAS_THREADED_PROFILE_HOST_API
+            if(threaded_requested) { return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error); }
+#endif
+            if(!::uwvm2::uwvm::imported::ros::append_sealed_ros_builtin(::uwvm2::uwvm::imported::ros::portable_robot_local_imported_module))
+            { return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error); }
+        }
         if(details::loaded_wasm_imports_namespace(::uwvm2::uwvm::imported::ros::ros2_local_imported_module.module_name))
         {
 #if UWVM2_HAS_THREADED_PROFILE_HOST_API

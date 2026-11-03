@@ -1,5 +1,6 @@
 // Actual full-runtime native-next witness; fresh production producer/runtime/CLI+host closure only.
 // LLVM DATA component success is not proof of an executed native instruction.
+#include "mandatory_native_fixture.h"
 #include <uwvm2/uwvm/run/owned_source.h>
 #include <uwvm2/uwvm/debugger/controller.h>
 #include <uwvm2/uwvm/debugger/console.h>
@@ -40,7 +41,8 @@ static bool same_registers(dbg::native_registers::snapshot const& a, dbg::native
 { return a.machine == b.machine && a.size() != 0u && a.values == b.values; }
 int main(int argc, char** argv)
 {
-    if(argc != 3) { return 2; }
+    if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
+    if(argc != 2) { return 2; }
 #if !defined(__linux__) || !defined(__x86_64__) || __SIZEOF_POINTER__ != 8 || \
     !defined(UWVM2_ENABLE_DEBUG_NATIVE_CONTINUATION_LINUX_PRODUCT) || UWVM2_ENABLE_DEBUG_NATIVE_CONTINUATION_LINUX_PRODUCT != 1
     ::fast_io::io::println("debug_native_host_call_continuation_runtime: UNQUALIFIED product/backend switch unavailable");
@@ -51,13 +53,12 @@ int main(int argc, char** argv)
 #endif
     if(!dbg::native_step::platform_available())
     { ::fast_io::io::println("debug_native_host_call_continuation_runtime: SKIP actual native backend unavailable"); return 77; }
-    auto const policy{::fast_io::cstring_view{::fast_io::mnp::os_c_str(argv[2])}};
-    if(policy != "instruction" && policy != "unwind") { return 2; }
+    auto const policy{::fast_io::cstring_view{::fast_io::mnp::os_c_str("mandatory-native")}};
+
     mode::global_runtime_mode = mode::runtime_mode_t::full_compile;
     mode::global_runtime_compiler = mode::runtime_compiler_t::llvm_jit_only;
     mode::global_runtime_llvm_jit_exception_dispatch = mode::runtime_llvm_jit_exception_dispatch_t::native_unwind;
-    mode::global_runtime_llvm_jit_call_stack = policy == "instruction" ?
-        mode::runtime_llvm_jit_call_stack_t::instruction : mode::runtime_llvm_jit_call_stack_t::unwind;
+
     mode::global_runtime_compile_threads = 0;
     mode::runtime_compile_threads_existed = true;
     mode::global_runtime_llvm_jit_cache_path_mode = mode::runtime_llvm_jit_cache_path_mode_t::disabled;

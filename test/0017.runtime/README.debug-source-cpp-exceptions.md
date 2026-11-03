@@ -1,3 +1,5 @@
+> Historical source-specific observations. Commands below may use the removed stack selector or non-Linux ROS configurations. They are not current ROS product recipes or qualification evidence. Use the mandatory-native migration contract for new Linux runs.
+
 # Genuine C++ exceptions and embedded source scopes
 
 This new fixture is source-only and has not been compiled, linked or executed. It preserves the existing C/C++/Rust source-step fixtures, runners and immutable R3 product candidates. Only the sole keeper may run the following short commands inside the admitted Linux 64 GiB, swap-zero cgroup. This file introduces no runner, SDK build, ABI shim, debugger permission or additional execution lane.

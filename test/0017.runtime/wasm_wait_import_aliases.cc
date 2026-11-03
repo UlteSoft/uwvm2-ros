@@ -1,4 +1,5 @@
 // Two Wasm modules share one native memory owner; another memory must stay isolated.
+#include "mandatory_native_fixture.h"
 #include "../0013.uwvm_int/strict/uwvm_int_translate_strict_common.h"
 #include <uwvm2/runtime/lib/uwvm_runtime.h>
 #include <atomic>
@@ -70,9 +71,10 @@ namespace
 }
 int main(int argc,char** argv)
 {
+    if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
+    if(argc != 1) { return 64; }
 #if defined(UWVM2TEST_RUNNER_USE_LLVM_JIT)
-    mode::global_runtime_llvm_jit_call_stack=argc>1 && std::strcmp(argv[1],"unwind")==0?
-        mode::runtime_llvm_jit_call_stack_t::unwind:mode::runtime_llvm_jit_call_stack_t::instruction;
+
 #else
     (void)argc;(void)argv;
 #endif

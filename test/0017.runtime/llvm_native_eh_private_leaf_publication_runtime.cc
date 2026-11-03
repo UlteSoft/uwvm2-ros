@@ -3,6 +3,7 @@
 // component test, never a timing result or a caller-created publication proof.
 #define UWVM2TEST_RUNNER_USE_LLVM_JIT 1
 #define UWVM2TEST_STRICT_NO_INTERPRETER 1
+#include "mandatory_native_fixture.h"
 #include "../0013.uwvm_int/strict/uwvm_int_translate_strict_common.h"
 #include <uwvm2/uwvm/run/owned_source.h>
 #include <fast_io.h>
@@ -76,6 +77,12 @@ static full::full_source_instance::owner prepare(char const* file)
 }
 int main(int argc, char** argv)
 {
+    if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
+    if((argc == 3 || argc == 4) && ::std::string_view{argv[2]} == "component-instruction-decline")
+    {
+        std::fputs("BLOCKED component-instruction-decline: ROS exposes no instruction stack mode; an isolated publication-admission fixture with a test-local emission input is not implemented. No native publication/CFI oracle has run for this case.\n", stderr);
+        return 77;
+    }
 #if !defined(UWVM_EXPERIMENTAL_NATIVE_EH_LEAF_OBSERVER) || UWVM_EXPERIMENTAL_NATIVE_EH_LEAF_OBSERVER != 1 || \
     !defined(UWVM_EXPERIMENTAL_NATIVE_EH_PRIVATE_LEAF) || UWVM_EXPERIMENTAL_NATIVE_EH_PRIVATE_LEAF != 1 || \
     !defined(UWVM2TEST_NATIVE_EH_PRIVATE_LEAF_CFI_FAILURE)
@@ -86,12 +93,11 @@ int main(int argc, char** argv)
     PRIVATE_PUBLICATION_CHECK(argc == 3 || argc == 4);
     auto const test{::std::string_view{argv[2]}};
     bool const ordinary{test == "public"}, rollback{test == "rollback"}, debug_decline{test == "debug-decline"};
-    bool const uncaught{test == "uncaught"}, instruction_decline{test == "instruction-decline"};
-    PRIVATE_PUBLICATION_CHECK(ordinary || rollback || debug_decline || instruction_decline || uncaught || test == "private");
+    bool const uncaught{test == "uncaught"};
+    PRIVATE_PUBLICATION_CHECK(ordinary || rollback || debug_decline || uncaught || test == "private");
     ::uwvm2test::uwvm_int_strict::configure_llvm_jit_runner_runtime();
     mode::global_runtime_llvm_jit_exception_dispatch = mode::runtime_llvm_jit_exception_dispatch_t::native_unwind;
-    mode::global_runtime_llvm_jit_call_stack = instruction_decline ? mode::runtime_llvm_jit_call_stack_t::instruction :
-        mode::runtime_llvm_jit_call_stack_t::unwind;
+
     auto const workers{argc == 4 ? ::std::string_view{argv[3]} : ::std::string_view{"serial"}};
     PRIVATE_PUBLICATION_CHECK(workers == "serial" || workers == "parallel");
     mode::global_runtime_compile_threads = workers == "parallel" ? 2u : 0u; mode::runtime_compile_threads_existed = true;
@@ -115,10 +121,10 @@ int main(int argc, char** argv)
     auto const view{lib::llvm_jit_full_source_publication_host_api(module)};
     PRIVATE_PUBLICATION_CHECK(module == 0u && view.ready && view.canonical_source && view.publication_owns_source &&
         view.engine_address != 0u && view.llvm_context_address != 0u && !view.pending_numeric_plan);
-    bool const selected{!ordinary && !rollback && !debug_decline && !instruction_decline};
+    bool const selected{!ordinary && !rollback && !debug_decline};
     PRIVATE_PUBLICATION_CHECK(view.private_eh_leaf_present == selected && view.private_eh_leaf_actual_binding == selected &&
         view.private_eh_leaf_clone_count == (selected ? 1u : 0u));
-    PRIVATE_PUBLICATION_CHECK(actual_cfi_checks == (ordinary || debug_decline || instruction_decline ? 0u : 1u) &&
+    PRIVATE_PUBLICATION_CHECK(actual_cfi_checks == (ordinary || debug_decline ? 0u : 1u) &&
         retired_private_engines == (rollback ? 1u : 0u));
     if(selected)
     {

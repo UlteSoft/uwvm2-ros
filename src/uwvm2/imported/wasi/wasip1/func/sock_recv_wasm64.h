@@ -303,6 +303,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                 memory,
                 ro_data_len_ptrsz,
                 static_cast<::uwvm2::imported::wasi::wasip1::abi::wasi_size_wasm64_t>(0uz));
+            if(env.debug_io_observed!=nullptr) { env.debug_io_observed(0u,static_cast<::std::uint64_t>(0uz),true); }
 
             using roflags_underlying_t = ::std::underlying_type_t<::uwvm2::imported::wasi::wasip1::abi::roflags_t>;
             ::uwvm2::imported::wasi::wasip1::memory::store_basic_wasm_type_to_memory_wasm64(memory, ro_flags_ptrsz, static_cast<roflags_underlying_t>(0u));
@@ -467,6 +468,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                     curr_tmp_scatter_base.len = static_cast<::std::size_t>(wasm_len);
                 }
 
+                if(env.debug_io_observed!=nullptr) { env.debug_io_observed(static_cast<::std::uint64_t>(length_counter),0u,false); }
+
                 // posix
                 ::fast_io::native_io_observer curr_fd_native_observer{};
 
@@ -570,6 +573,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                         memory,
                         ro_data_len_ptrsz,
                         static_cast<::uwvm2::imported::wasi::wasip1::abi::wasi_size_wasm64_t>(recv_res));
+                    if(env.debug_io_observed!=nullptr) { env.debug_io_observed(static_cast<::std::uint64_t>(length_counter),static_cast<::std::uint64_t>(recv_res),true); }
 
                     using roflags_underlying_t = ::std::underlying_type_t<::uwvm2::imported::wasi::wasip1::abi::roflags_t>;
                     roflags_underlying_t roflags_value{};
@@ -639,6 +643,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                             memory,
                             ro_data_len_ptrsz,
                             static_cast<::uwvm2::imported::wasi::wasip1::abi::wasi_size_wasm64_t>(recv_res));
+                        if(env.debug_io_observed!=nullptr) { env.debug_io_observed(static_cast<::std::uint64_t>(length_counter),static_cast<::std::uint64_t>(recv_res),true); }
 
                         using roflags_underlying_t = ::std::underlying_type_t<::uwvm2::imported::wasi::wasip1::abi::roflags_t>;
                         roflags_underlying_t roflags_value{};
@@ -676,6 +681,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                             memory,
                             ro_data_len_ptrsz,
                             static_cast<::uwvm2::imported::wasi::wasip1::abi::wasi_size_wasm64_t>(total_bytes_read));
+                        if(env.debug_io_observed!=nullptr) { env.debug_io_observed(static_cast<::std::uint64_t>(length_counter),static_cast<::std::uint64_t>(total_bytes_read),true); }
 
                         using roflags_underlying_t = ::std::underlying_type_t<::uwvm2::imported::wasi::wasip1::abi::roflags_t>;
                         ::uwvm2::imported::wasi::wasip1::memory::store_basic_wasm_type_to_memory_wasm64_unlocked(memory,
@@ -826,6 +832,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                     wsabufs[i].len = static_cast<::std::uint_least32_t>(wasm_len);
                 }
 
+                if(env.debug_io_observed!=nullptr) { env.debug_io_observed(static_cast<::std::uint64_t>(length_counter),0u,false); }
+
                 ::std::uint_least32_t bytes_received{};
                 ::std::uint_least32_t wsa_flags{};
 
@@ -920,6 +928,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                     memory,
                     ro_data_len_ptrsz,
                     static_cast<::uwvm2::imported::wasi::wasip1::abi::wasi_size_wasm64_t>(bytes_received));
+                if(env.debug_io_observed!=nullptr) { env.debug_io_observed(static_cast<::std::uint64_t>(length_counter),static_cast<::std::uint64_t>(bytes_received),true); }
 
                 using roflags_underlying_t = ::std::underlying_type_t<::uwvm2::imported::wasi::wasip1::abi::roflags_t>;
                 roflags_underlying_t roflags_value{};

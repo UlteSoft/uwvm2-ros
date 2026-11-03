@@ -19,7 +19,7 @@ end
 function enabled()
     local provider = get_config("llvm-runtimes-provider") or "auto"
     assert(provider == "auto" or provider == "bundled" or provider == "platform", "Invalid LLVM runtimes provider")
-    if provider == "platform" then return false end
+    assert(provider ~= "platform", "uwvm2-ros requires its source-owned paired runtime headers and archives")
     local plat = get_config("plat") or os.host()
     local supported = plat == "linux" or plat == "macosx" or plat == "mingw"
         or plat == "bsd" or plat == "freebsd" or plat == "openbsd"
@@ -138,6 +138,10 @@ local function ordered_link(result)
 end
 
 function ensure(input)
+    -- Admit original project options before enabled(), memo reuse, source
+    -- verification or any paired-runtime configure/build actor.
+    local product = import("utility.ros_product", {anonymous = true})
+    product.uwvm_ros_product_check_current()
     if not enabled() then return nil end
     local memo_key = os.projectdir() .. ":" .. config.builddir()
     local cached = memcache.get("uwvm-ros.bundled-runtimes", memo_key)

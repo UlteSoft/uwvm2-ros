@@ -7,6 +7,7 @@ valid Wasm; absent/malformed/external DWARF tests metadata rejection, not Wasm
 validation rejection. Requires a fresh product with its actual DWARF link closure.
 """
 from __future__ import annotations
+from mandatory_native_cli import require_linux_ros, product_policy, product_policies
 import argparse
 import hashlib
 import json
@@ -277,7 +278,7 @@ def main() -> None:
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--ros', action='store_true')
     parser.add_argument('--native-step', action='store_true', help='Also require a real qualified Linux x86-64 machine step')
-    args = parser.parse_args()
+    args = parser.parse_args(); require_linux_ros(parser, args.ros)
     if sys.platform != 'linux':
         raise RuntimeError('Linux cgroup qualification only')
     root = args.source_root.resolve(strict=True)
@@ -288,9 +289,9 @@ def main() -> None:
     binary = args.uwvm.resolve(strict=True)
     fixture_dir = args.fixture_dir.resolve(strict=True)
     rows = []
-    for policy in ('instruction', 'unwind'):
+    for policy in (('mandatory-native',) if args.ros else ('instruction', 'unwind')):
         mode = ['-Raot'] if args.ros else ['-Rcc', 'jit', '-Rcm', 'full']
-        prefix = [str(binary), '-m', 'debug-jit', *mode, '-Rct', '0', '-Rllvm-call-stack', policy,
+        prefix = [str(binary), '-m', 'debug-jit', *mode, '-Rct', '0', *([] if args.ros else ['-Rllvm-call-stack', policy]),
                   '-Rllvm-exception-dispatch', 'native-unwind', '-Rllvm-cache-path', 'disable']
         for language in ('c', 'cpp', 'rust'):
             for version in (4, 5):

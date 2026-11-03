@@ -323,6 +323,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                 memory,
                 nread,
                 static_cast<::uwvm2::imported::wasi::wasip1::abi::wasi_size_wasm64_t>(0uz));
+            if(env.debug_io_observed!=nullptr) { env.debug_io_observed(0u,static_cast<::std::uint64_t>(0uz),true); }
 
             return ::uwvm2::imported::wasi::wasip1::abi::errno_wasm64_t::esuccess;
         }
@@ -455,6 +456,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                 curr_tmp_scatter_base.len = static_cast<::std::size_t>(wasm_len);
             }
 
+            if(env.debug_io_observed!=nullptr) { env.debug_io_observed(static_cast<::std::uint64_t>(length_counter),0u,false); }
+
 # if defined(_WIN32) && !defined(__CYGWIN__)
             // win32
             ::fast_io::io_scatter_status_t scatter_status;  // no initialize
@@ -524,6 +527,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                                     memory,
                                     nread,
                                     static_cast<::uwvm2::imported::wasi::wasip1::abi::wasi_size_wasm64_t>(0uz));
+                                if(env.debug_io_observed!=nullptr) { env.debug_io_observed(static_cast<::std::uint64_t>(length_counter),static_cast<::std::uint64_t>(0uz),true); }
 
                                 return ::uwvm2::imported::wasi::wasip1::abi::errno_wasm64_t::esuccess;
                             }
@@ -604,6 +608,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                                     memory,
                                     nread,
                                     static_cast<::uwvm2::imported::wasi::wasip1::abi::wasi_size_wasm64_t>(0uz));
+                                if(env.debug_io_observed!=nullptr) { env.debug_io_observed(static_cast<::std::uint64_t>(length_counter),static_cast<::std::uint64_t>(0uz),true); }
 
                                 return ::uwvm2::imported::wasi::wasip1::abi::errno_wasm64_t::esuccess;
                             }
@@ -731,6 +736,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                 memory,
                 nread,
                 static_cast<::uwvm2::imported::wasi::wasip1::abi::wasi_size_wasm64_t>(total_bytes_read));
+            if(env.debug_io_observed!=nullptr) { env.debug_io_observed(static_cast<::std::uint64_t>(length_counter),static_cast<::std::uint64_t>(total_bytes_read),true); }
 
             // memory_locker_guard deallocated here
         }

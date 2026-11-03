@@ -20,8 +20,8 @@ import subprocess
 import time
 
 
-POLICIES = ("unwind", "default")
-REMOVED_POLICIES = ("instruction", "unwind-uncheck", "none", "auto")
+POLICIES = ("default",)
+REMOVED_POLICIES = ("auto", "instruction", "none", "unwind-uncheck", "unwind")
 ANSI = re.compile(rb"\x1b\[[0-9;]*m")
 
 
@@ -107,19 +107,18 @@ def main():
                     argv = [args.uwvm, "-Raot", "-Rct", "0", "-Rllvm-policy", "max",
                             "--log-verbose", "--runtime-compiler-log", "err",
                             "--wasip1-global-noinherit-system-environment"]
-                    if policy != "default":
-                        argv += ["-Rllvm-call-stack", policy]
                     if args.cache_root:
                         argv += ["--runtime-llvm-jit-cache-seal-process", "-Rllvm-cache-path", "path", args.cache_root / prefix]
                     else:
                         argv += ["-Rllvm-cache-path", "disable"]
                     seed, text = run(prefix + "-seed", [*argv, "-Wstart", "2", "0", "--run", wasm])
                     assert seed.returncode == 0, prefix + ": ROS admission or normal return failed"
+                    assert b"[unwind-check] status=ok" in text
                     assert b"call_stack=unwind " in text and b"unwind_check=live" in text
                     assert b"call_stack_frames=omit" in text and b"unwind_replace_frames=yes" in text
                     if args.cache_root:
                         assert re.search(rb"object-cache-store-complete [^\n]*status=ok\b", text), "cold store failed"
-                    kinds = range(1, 6) if not recursive and policy == "unwind" else (1,)
+                    kinds = range(1, 6) if not recursive else (1,)
                     for kind in kinds:
                         result, text = run(prefix + f"-trap-{kind}", [*argv, "-Wstart", "2", str(kind), "--run", wasm])
                         assert result.returncode < 0, prefix + ": expected a genuine fatal trap"
@@ -133,7 +132,7 @@ def main():
         for policy in REMOVED_POLICIES:
             rejected, text = run("removed-" + policy,
                                  [args.uwvm, "-Raot", "-Rllvm-call-stack", policy, "--run", wasm])
-            assert rejected.returncode != 0 and b"only checked native unwind" in text
+            assert rejected.returncode != 0 and b"invalid parameter:" in text
         report["passed"] = True
     except BaseException as error:
         report["failure"] = repr(error)

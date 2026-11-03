@@ -1,3 +1,4 @@
+#include "mandatory_native_fixture.h"
 #include "../0013.uwvm_int/strict/uwvm_int_translate_strict_common.h"
 #include <uwvm2/runtime/lib/uwvm_runtime.h>
 #include <array>
@@ -94,9 +95,10 @@ namespace
 }
 int main(int argc,char** argv)
 {
-    bool indirect{};bool unwind{};
-    for(int i{1};i<argc;++i){indirect|=std::strcmp(argv[i],"indirect")==0;unwind|=std::strcmp(argv[i],"unwind")==0;}
-    mode::global_runtime_llvm_jit_call_stack=unwind?mode::runtime_llvm_jit_call_stack_t::unwind:mode::runtime_llvm_jit_call_stack_t::instruction;
+    if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
+    if(argc > 2 || (argc == 2 && std::strcmp(argv[1], "indirect") != 0)) { return 64; }
+    bool const indirect{argc == 2};
+
     auto features=strict::make_wasm1p1_feature_parameter();
     uwvm2::uwvm::wasm::feature::wasm_binfmt_ver1_wasm1p1_parameter(features).disable_tail_call=false;
     auto provider=module(true,false),consumer=module(false,indirect);

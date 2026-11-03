@@ -85,6 +85,7 @@
 # include "uwvm_runtime_function_identity_cache.h"
 # if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
 #  include <uwvm2/imported/ros/common/management.h>
+#  include <uwvm2/imported/ros/common/buffer_audit.h>
 # endif
 # include <uwvm2/runtime/checkpoint/shadow_ledger.h>
 # include <uwvm2/runtime/checkpoint/dynamic_native_packet.h>
@@ -1656,6 +1657,8 @@ namespace uwvm2::runtime::lib
             capi_function_t const* capi_function{};
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
             bool trusted_ros_call{};
+            local_imported_t const* ros_provider{};
+            ::std::size_t ros_function_index{invalid_module_id};
 #endif
         };
 
@@ -2050,7 +2053,9 @@ namespace uwvm2::runtime::lib
                                                                  capi_function_t const* function = nullptr,
                                                                  ::std::size_t caller_module_id = preload_call_context_t::invalid_module_id
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
-                                                                 , bool trusted_ros_call = false
+                                                                 , bool trusted_ros_call = false,
+                                                                 local_imported_t const* ros_provider = nullptr,
+                                                                 ::std::size_t ros_function_index = preload_call_context_t::invalid_module_id
 #endif
                                                                  ) noexcept :
                 ctx{::std::addressof(get_preload_call_context())}, saved{*ctx}
@@ -2069,6 +2074,8 @@ namespace uwvm2::runtime::lib
                 ctx->capi_function = function;
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
                 ctx->trusted_ros_call = trusted_ros_call;
+                ctx->ros_provider = trusted_ros_call ? ros_provider : nullptr;
+                ctx->ros_function_index = trusted_ros_call ? ros_function_index : preload_call_context_t::invalid_module_id;
 #endif
             }
 
@@ -2450,8 +2457,6 @@ namespace uwvm2::runtime::lib
         inline thread_local bool llvm_jit_win64_trap_caller_context_valid{};       // [global] [thread-local]
 # endif
 
-        [[nodiscard]] inline constexpr ::uwvm2::uwvm::runtime::runtime_mode::runtime_llvm_jit_call_stack_t
-            get_runtime_llvm_jit_effective_call_stack_mode() noexcept;
         [[nodiscard]] inline constexpr bool runtime_llvm_jit_unwind_call_stack_requested() noexcept;
 # if UWVM2_RUNTIME_LLVM_JIT_HAS_WIN64_SEH_BACKTRACE
         [[nodiscard]] inline constexpr bool llvm_jit_win64_virtual_unwind_once(win64_context_t& context) noexcept;
@@ -3004,6 +3009,26 @@ namespace uwvm2::runtime::lib
             return u8"unknown unwind capability failure";
         }
 
+        /** @brief Measure the one-time real generated-chain witness.
+         * @details The 10 ms target is a native startup budget, not a deadline.
+         * QEMU user/system emulation can be much slower and is correctness-only.
+         * Never cache a positive result across processes or skip a failed witness.
+         */
+        [[nodiscard]] inline bool runtime_llvm_jit_measured_unwind_probe(bool (*probe)() noexcept) noexcept
+        {
+            auto const begin{::std::chrono::steady_clock::now()};
+            bool const passed{probe()};
+            auto const elapsed{::std::chrono::duration_cast<::std::chrono::nanoseconds>(
+                ::std::chrono::steady_clock::now() - begin).count()};
+            if(::uwvm2::uwvm::io::show_verbose) [[unlikely]]
+            {
+                ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                    u8"[unwind-check] status=", ::fast_io::mnp::os_c_str(passed ? u8"ok" : u8"failed"),
+                    u8" elapsed_ns=", elapsed, u8" native_target_ns=10000000 provider=paired-llvm23");
+            }
+            return passed;
+        }
+
         [[maybe_unused]] [[nodiscard]] inline constexpr runtime_llvm_jit_unwind_capability_status runtime_llvm_jit_unwind_capability() noexcept
         {
 # if !UWVM2_RUNTIME_LLVM_JIT_HAS_UNWIND_BACKTRACE
@@ -3013,43 +3038,21 @@ namespace uwvm2::runtime::lib
 #  if UWVM2_RUNTIME_LLVM_JIT_HAS_WIN64_SEH_BACKTRACE
             // Win64 checked mode must prove that each generated activation resolves through its registered dynamic
             // function table. A leaf fallback is insufficient because it cannot validate .pdata/.xdata registration.
-            static bool const live_probe_ok{runtime_llvm_jit_win64_live_unwind_probe()};
+            static bool const live_probe_ok{runtime_llvm_jit_measured_unwind_probe(runtime_llvm_jit_win64_live_unwind_probe)};
             if(!live_probe_ok) [[unlikely]] { return runtime_llvm_jit_unwind_capability_status::live_probe_failed; }
 #  elif UWVM2_RUNTIME_LLVM_JIT_HAS_UNWIND_H_BACKTRACE
             // Run once, before codegen chooses whether to omit logical frames. Keep the ROS runtime eager-only;
             // this generated probe tests the native ABI and does not add a lazy/tiered execution mechanism.
-            static bool const live_probe_ok{runtime_llvm_jit_posix_live_unwind_probe()};
+            static bool const live_probe_ok{runtime_llvm_jit_measured_unwind_probe(runtime_llvm_jit_posix_live_unwind_probe)};
             if(!live_probe_ok) [[unlikely]] { return runtime_llvm_jit_unwind_capability_status::live_probe_failed; }
 #  endif
             return runtime_llvm_jit_unwind_capability_status::ok;
 # endif
         }
 
-        [[nodiscard]] inline constexpr ::uwvm2::uwvm::runtime::runtime_mode::runtime_llvm_jit_call_stack_t
-            get_runtime_llvm_jit_effective_call_stack_mode() noexcept
-        {
-            namespace runtime_mode = ::uwvm2::uwvm::runtime::runtime_mode;
-            using runtime_llvm_jit_call_stack_t = runtime_mode::runtime_llvm_jit_call_stack_t;
-
-            // This platform-bound product never substitutes instruction instrumentation after a failed probe.
-            // The validator below must prove the actual generated native chain before execution.
-            return runtime_llvm_jit_call_stack_t::unwind;
-        }
-
         [[nodiscard]] inline constexpr bool runtime_llvm_jit_unwind_call_stack_requested() noexcept
         {
-            namespace runtime_mode = ::uwvm2::uwvm::runtime::runtime_mode;
             if(!runtime_llvm_jit_call_stack_applies_to_current_compiler()) { return false; }
-            auto const mode{get_runtime_llvm_jit_effective_call_stack_mode()};
-            if(mode == runtime_mode::runtime_llvm_jit_call_stack_t::unwind_uncheck)
-            {
-# if UWVM2_RUNTIME_LLVM_JIT_HAS_UNWIND_BACKTRACE && UWVM2_RUNTIME_LLVM_JIT_UNWIND_REPLACES_INSTRUCTION_FRAMES
-                return true;
-# else
-                return false;
-# endif
-            }
-            if(mode != runtime_mode::runtime_llvm_jit_call_stack_t::unwind) { return false; }
             return runtime_llvm_jit_unwind_capability() == runtime_llvm_jit_unwind_capability_status::ok;
         }
 
@@ -3769,20 +3772,8 @@ namespace uwvm2::runtime::lib
         // =========================================================================
         [[nodiscard]] inline constexpr ::uwvm2::utils::container::u8string_view get_runtime_llvm_jit_call_stack_mode_name() noexcept
         {
-            // Return a stable label for logs and diagnostics; keep it in sync with the effective runtime policy, not the raw flag.
-            namespace runtime_mode = ::uwvm2::uwvm::runtime::runtime_mode;
-
-            using runtime_llvm_jit_call_stack_t = runtime_mode::runtime_llvm_jit_call_stack_t;
-            switch(get_runtime_llvm_jit_effective_call_stack_mode())
-            {
-                case runtime_llvm_jit_call_stack_t::auto_policy: return u8"auto";
-                case runtime_llvm_jit_call_stack_t::instruction: return u8"instruction";
-                case runtime_llvm_jit_call_stack_t::none: return u8"none";
-                case runtime_llvm_jit_call_stack_t::unwind: return u8"unwind";
-                case runtime_llvm_jit_call_stack_t::unwind_uncheck: return u8"unwind-uncheck";
-            }
-
-            return u8"instruction";
+            // ROS has one mandatory native CFI/crash-recovery policy.
+            return u8"unwind";
         }
 
         [[nodiscard]] inline constexpr bool runtime_llvm_jit_uses_instruction_call_stack_frames() noexcept
@@ -3797,7 +3788,8 @@ namespace uwvm2::runtime::lib
             // Convert the runtime call-stack policy into codegen switches before IR is emitted.
             validate_runtime_llvm_jit_unwind_call_stack_or_fatal();
             opt.emit_call_stack_frames = runtime_llvm_jit_uses_instruction_call_stack_frames();
-            opt.emit_unwind_call_stack_frames = runtime_llvm_jit_unwind_call_stack_requested();
+            // All ROS policies retain native EH, CFI and crash diagnostics.
+            opt.emit_unwind_call_stack_frames = true;
         }
 
         inline constexpr void publish_llvm_jit_call_indirect_defined_entry_targets(compiled_defined_func_info const* info,
@@ -5336,9 +5328,10 @@ namespace uwvm2::runtime::lib
             preload_module_memory_attribute_t ros_memory_attribute{};
             auto const name{module.get_module_name()};
             auto const ros_call{name == u8"uwvm_ros1_v1" || name == u8"uwvm_ros2_v1" ||
-                                name == u8"uwvm_ros1_client_v1" || name == u8"uwvm_ros2_client_v1" || name == u8"uwvm_ros2_rmw_v1" || name == u8"uwvm_ros2_rmw_sub_v1" || name == u8"uwvm_ros2_rmw_srv_v1"};
+                                name == u8"uwvm_ros1_client_v1" || name == u8"uwvm_ros2_client_v1" || name == u8"uwvm_ros2_rmw_v1" || name == u8"uwvm_ros2_rmw_sub_v1" || name == u8"uwvm_ros2_rmw_srv_v1" || name == u8"uwvm_portable_robot_v1"};
             if(ros_call) { ros_memory_attribute.memory_access_mode = ::uwvm2::uwvm::wasm::type::preload_module_memory_access_mode_t::copy; }
-            preload_call_context_guard ros_context{ros_call ? ::std::addressof(ros_memory_attribute) : nullptr, nullptr, caller_module_id, ros_call};
+            preload_call_context_guard ros_context{ros_call ? ::std::addressof(ros_memory_attribute) : nullptr, nullptr, caller_module_id,
+                                                  ros_call, ::std::addressof(module), function_index};
 #endif
             // Select the caller-specific WASI environment around local-imported calls only when overrides make the default fast path
             // insufficient.
@@ -5431,9 +5424,10 @@ namespace uwvm2::runtime::lib
             preload_module_memory_attribute_t ros_memory_attribute{};
             auto const name{module.get_module_name()};
             auto const ros_call{name == u8"uwvm_ros1_v1" || name == u8"uwvm_ros2_v1" ||
-                                name == u8"uwvm_ros1_client_v1" || name == u8"uwvm_ros2_client_v1" || name == u8"uwvm_ros2_rmw_v1" || name == u8"uwvm_ros2_rmw_sub_v1" || name == u8"uwvm_ros2_rmw_srv_v1"};
+                                name == u8"uwvm_ros1_client_v1" || name == u8"uwvm_ros2_client_v1" || name == u8"uwvm_ros2_rmw_v1" || name == u8"uwvm_ros2_rmw_sub_v1" || name == u8"uwvm_ros2_rmw_srv_v1" || name == u8"uwvm_portable_robot_v1"};
             if(ros_call) { ros_memory_attribute.memory_access_mode = ::uwvm2::uwvm::wasm::type::preload_module_memory_access_mode_t::copy; }
-            preload_call_context_guard ros_context{ros_call ? ::std::addressof(ros_memory_attribute) : nullptr, nullptr, caller_module_id, ros_call};
+            preload_call_context_guard ros_context{ros_call ? ::std::addressof(ros_memory_attribute) : nullptr, nullptr, caller_module_id,
+                                                  ros_call, ::std::addressof(module), function_index};
 #endif
             invoke_host_with_llvm_wasm_fp_control_policy(fp_control_policy,
                 [&]() noexcept { module.call_func_index(function_index, result_buffer, param_buffer); });
@@ -5843,7 +5837,14 @@ namespace uwvm2::runtime::lib
 
             resolved_preload_memory_t resolved{};
             if(!try_build_preload_memory_descriptor(memory_index, nullptr, ::std::addressof(resolved), nullptr)) [[unlikely]] { return false; }
-            if(size == 0uz) [[unlikely]] { return true; }
+            if(size == 0uz) [[unlikely]]
+            {
+                // A zero-byte operation still names a position in the selected
+                // memory. The end is valid; one-past-end and integer overflow
+                // must fail before a provider call or pointer arithmetic.
+                ::std::size_t host_offset{};
+                return validate_preload_copy_range(resolved.byte_length, offset, 0uz, host_offset);
+            }
 
             switch(resolved.kind)
             {
@@ -5893,7 +5894,14 @@ namespace uwvm2::runtime::lib
 
             resolved_preload_memory_t resolved{};
             if(!try_build_preload_memory_descriptor(memory_index, nullptr, ::std::addressof(resolved), nullptr)) [[unlikely]] { return false; }
-            if(size == 0uz) [[unlikely]] { return true; }
+            if(size == 0uz) [[unlikely]]
+            {
+                // A zero-byte operation still names a position in the selected
+                // memory. The end is valid; one-past-end and integer overflow
+                // must fail before a provider call or pointer arithmetic.
+                ::std::size_t host_offset{};
+                return validate_preload_copy_range(resolved.byte_length, offset, 0uz, host_offset);
+            }
 
             switch(resolved.kind)
             {
@@ -7633,8 +7641,9 @@ namespace uwvm2::runtime::lib
             signature.llvm_jit_full_policy = static_cast<::std::uint_least32_t>(runtime_mode::global_runtime_llvm_jit_full_policy);
             signature.llvm_jit_exception_dispatch_existed = runtime_mode::runtime_llvm_jit_exception_dispatch_existed;
             signature.llvm_jit_exception_dispatch = static_cast<::std::uint_least32_t>(runtime_mode::global_runtime_llvm_jit_exception_dispatch);
-            signature.llvm_jit_call_stack_existed = runtime_mode::runtime_llvm_jit_call_stack_existed;
-            signature.llvm_jit_call_stack = static_cast<::std::uint_least32_t>(runtime_mode::global_runtime_llvm_jit_call_stack);
+            // Preserve the signature schema while removing mutable stack policy.
+            signature.llvm_jit_call_stack_existed = false;
+            signature.llvm_jit_call_stack = 3u; // Mandatory checked native unwind ABI.
             signature.llvm_jit_cache_path_existed = runtime_mode::runtime_llvm_jit_cache_path_existed;
             signature.llvm_jit_cache_path_mode = static_cast<::std::uint_least32_t>(runtime_mode::global_runtime_llvm_jit_cache_path_mode);
             // An explicitly disabled persistent cache has no effective path.
@@ -9878,15 +9887,7 @@ namespace uwvm2::runtime::lib
                                                       u8" unwind_backend=",
                                                       runtime_llvm_jit_unwind_backend_name(),
                                                       u8" unwind_check=",
-                                                      !runtime_llvm_jit_unwind_call_stack_requested() ? ::uwvm2::utils::container::u8string_view{u8"off"}
-                                                      : get_runtime_llvm_jit_effective_call_stack_mode() ==
-                                                            ::uwvm2::uwvm::runtime::runtime_mode::runtime_llvm_jit_call_stack_t::unwind_uncheck
-                                                            ? ::uwvm2::utils::container::u8string_view{u8"unchecked"}
-# if UWVM2_RUNTIME_LLVM_JIT_HAS_UNWIND_H_BACKTRACE
-                                                      : ::uwvm2::utils::container::u8string_view{u8"live"},
-# else
-                                                      : ::uwvm2::utils::container::u8string_view{u8"static"},
-# endif
+                                                      ::uwvm2::utils::container::u8string_view{u8"live"},
                                                       u8" unwind_replace_frames=",
                                                       runtime_llvm_jit_unwind_can_replace_instruction_frames()
                                                           ? ::uwvm2::utils::container::u8string_view{u8"yes"}
@@ -12232,6 +12233,24 @@ namespace uwvm2::runtime::lib
 
                 if(compile_llvm_jit_translation)
                 {
+# if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+                    // The ordinary LLVM full path with host imports cannot use
+                    // the numeric plan. Publish its completed fused validation
+                    // from the actual compiler result too, before materialization.
+                    // A deployment request or retained byte image supplies no
+                    // validation authority; the initializer-bound module and all
+                    // local function results must match this runtime generation.
+                    if(err.err_code != ::uwvm2::validation::error::code_validation_error_code::ok)
+                    { print_and_terminate_compile_validation_error(rec.module_name, err); }
+                    if(auto const source{::uwvm2::uwvm::runtime::full::selected_full_source_owner_pin()}; source)
+                    {
+                        if(!::uwvm2::uwvm::runtime::full::full_source_instance::has_canonical_owner(source) ||
+                           !source->initialized_from_actual_state() ||
+                           source->bound_initialized_file(module_id, rec.runtime_module) == nullptr ||
+                           !source->record_actual_full_validation(module_id, current_runtime_generation(), rec.runtime_module))
+                        { ::fast_io::fast_terminate(); }
+                    }
+# endif
                     // Materialization turns LLVM IR into executable code and fills raw/typed entry-address arrays for this module.
                     if(::uwvm2::uwvm::io::show_verbose) [[unlikely]]
                     {
@@ -13806,6 +13825,12 @@ namespace uwvm2::runtime::lib
         // ROS has no lazy/tiered compiler, but its MCJIT object cache still owns one asynchronous writer.
         ::uwvm2::runtime::llvm_jit_cache::shutdown_async_store_objects();
 #endif
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+        // WASI proc_exit calls fast_exit and does not run static destructors.
+        // Finalize only this opt-in journal; a footer is not process-tree
+        // retirement or native ROS acceptance evidence.
+        ::uwvm2::imported::ros::buffer_audit::journal.finish();
+#endif
     }
 
 #if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
@@ -14027,9 +14052,6 @@ namespace uwvm2::runtime::lib
 # endif
         if(!g_debug_observer_active || g_debug_pause_participant == nullptr ||
            get_llvm_jit_generated_bridge_scope_depth() == 0uz) { return {}; }
-        auto const policy{get_runtime_llvm_jit_effective_call_stack_mode()};
-        using policy_t = ::uwvm2::uwvm::runtime::runtime_mode::runtime_llvm_jit_call_stack_t;
-        if(policy == policy_t::none || policy == policy_t::unwind_uncheck) { return {}; }
         // Capture while this real generated activation is alive, before parking.
         // The owning snapshot copies names under the existing execution lease;
         // no native stack, module-name view or code pointer escapes that lease.
@@ -17054,12 +17076,13 @@ namespace uwvm2::runtime::lib
 # endif
         if(runtime_compiler_requests_uwvm_int_translation()) { return true; }
 # if defined(UWVM_RUNTIME_LLVM_JIT)
-        // Native CFI supplies diagnostics. The private typed ABI carries module ancestry through
+        // Native EH capability and crash stacks are mandatory for every ROS policy.
+        // The private typed ABI carries module ancestry through
         // ordinary and genuine tail calls; ROS imports observe it only at the host boundary.
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
         return runtime_compiler_requests_llvm_jit_translation() &&
             mode::global_runtime_mode == mode::runtime_mode_t::full_compile &&
-            runtime_llvm_jit_unwind_call_stack_requested();
+            runtime_llvm_jit_unwind_capability() == runtime_llvm_jit_unwind_capability_status::ok;
 # else
         return false;
 # endif
@@ -17127,6 +17150,8 @@ namespace uwvm2::runtime::lib
         return true;
     }
 
+
+#include "uwvm_runtime_ros_source_facts.h"
 
     extern "C++" void ros_retire_replaced_module_host_api(::std::size_t module_id) noexcept
     {

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Check Core 3 funcidx element nullability and defined-global element expressions."""
 
+from mandatory_native_cli import require_linux_ros
 import argparse
 import hashlib
 import json
@@ -35,12 +36,12 @@ def main():
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--source-id", required=True)
     parser.add_argument("--ros", action="store_true")
-    args = parser.parse_args()
+    args = parser.parse_args(); require_linux_ros(parser, args.ros)
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
     args.out.mkdir(parents=True, exist_ok=True)
 
     configurations = (
-        (("int-full", ("-Rint",)), ("jit-full", ("-Raot", "-Rllvm-cache-path", "disable")))
+        (("jit-full-mandatory-native", ("-Raot", "-Rllvm-cache-path", "disable")),)
         if args.ros else (
             ("int-full", ("-Rcc", "int", "-Rcm", "full")),
             ("int-lazy", ("-Rcc", "int", "-Rcm", "lazy")),

@@ -1,0 +1,18 @@
+;; Memory64 counterpart: offsets/lengths retain their full 64-bit values.
+;; Run with the trusted test observer's explicit copy permission for all memories.
+(module
+  (import "provider" "buffer" (memory $channel i64 0 2))
+  (import "host-memory-bounds" "probe" (func $probe (param i32 i64 i32) (result i32)))
+  (memory $private i64 2 4)
+  (func $check (param $index i32) (param $bytes i64) (param $permitted i32)
+    (if (call $probe (local.get $index) (local.get $bytes) (local.get $permitted))
+      (then unreachable)))
+  (func (export "_start")
+    (call $check (i32.const 0) (i64.const 0) (i32.const 1))
+    (call $check (i32.const 1) (i64.const 131072) (i32.const 1))
+    (call $check (i32.const 2) (i64.const 0) (i32.const 0))
+    (call $check (i32.const -1) (i64.const 0) (i32.const 0))
+    (if (i64.ne (memory.grow $channel (i64.const 1)) (i64.const 0)) (then unreachable))
+    (call $check (i32.const 0) (i64.const 65536) (i32.const 1))
+    (if (i64.ne (memory.grow $private (i64.const 1)) (i64.const 2)) (then unreachable))
+    (call $check (i32.const 1) (i64.const 196608) (i32.const 1))))

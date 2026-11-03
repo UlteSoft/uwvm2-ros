@@ -2,6 +2,7 @@
 // APIs. Same-thread VM execution is the matched memory-work baseline; native
 // std::thread work is a separate creation/scheduling reference, not equivalent
 // generated-code throughput. Compile and execute only in the remote cgroup.
+#include "mandatory_native_fixture.h"
 #include "uwvm_int_translate_strict_common.h"
 #include <uwvm2/runtime/lib/uwvm_runtime.h>
 #include <fast_io.h>
@@ -258,7 +259,8 @@ namespace
 
 int main(int argc, char** argv)
 {
-    if(argc != 5) { return 64; }
+    if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
+    if(argc != 4) { return 64; }
     unsigned samples{}, rounds{};
     auto const parse_count{[](::std::string_view text, unsigned& result) noexcept
     {
@@ -269,14 +271,12 @@ int main(int argc, char** argv)
                                                    ::fast_io::mnp::dec_get<true, true>(result))};
         return parsed.code == ::fast_io::parse_code::ok && parsed.iter == end;
     }};
-    if(!parse_count(argv[2], samples) || !parse_count(argv[3], rounds)) { return 64; }
+    if(!parse_count(argv[1], samples) || !parse_count(argv[2], rounds)) { return 64; }
     if(samples == 0 || samples > 99 || rounds == 0 || rounds > 1024) { return 64; }
-    if(std::strcmp(argv[1], "unwind") != 0 && std::strcmp(argv[1], "instruction") != 0) { return 64; }
-    mode::global_runtime_llvm_jit_call_stack = std::strcmp(argv[1], "unwind") == 0 ?
-        mode::runtime_llvm_jit_call_stack_t::unwind : mode::runtime_llvm_jit_call_stack_t::instruction;
+
     auto wasm = make_module();
     {
-        ::fast_io::native_file wasm_output{::std::string{argv[4]}, ::fast_io::open_mode::out |
+        ::fast_io::native_file wasm_output{::std::string{argv[3]}, ::fast_io::open_mode::out |
             ::fast_io::open_mode::creat | ::fast_io::open_mode::trunc};
         // [wasm.data(), wasm.data()+wasm.size()) is the complete generated module.
         // [safe                                ] write_all_bytes copies that extent.

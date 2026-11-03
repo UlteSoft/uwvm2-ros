@@ -65,19 +65,19 @@ for suite in a.suite or sources:
   '-L'+str(deps/'usr/lib'/triple),'-L'+str(sysroot/'lib'),'-lssl','-lcrypto','-latomic','-ldl','-pthread','-o',str(binary)])
  # QEMU -L redirects opening '/' into its sysroot; relative dirfd traversal stays in the host-mounted test tree.
  env=os.environ.copy();(directory/'ir').mkdir();(directory/'cache').mkdir();env['UWVM_SHARED_IR_DIR']=str(directory/'ir');env['UWVM_MEMORY64_CACHE_DIR']=os.path.relpath(directory/'cache',root)
- for policy in ['instruction','unwind']:
-  arguments=policy.split('-')
+ for policy in ['component-native-cfi','component-instrumented']:
+  arguments=[policy]
   run(suite+'-'+policy,[str(deps/('usr/bin/qemu-aarch64' if triple.startswith('aarch64') else 'usr/bin/qemu-arm')),'-U','LD_LIBRARY_PATH','-E',
    'LD_LIBRARY_PATH='+str(deps/'usr/lib'/triple)+':'+str(sysroot/'lib'),'-L',str(sysroot),str(binary),*arguments],300,env)
   log=(a.out/(suite+'-'+policy+'.log')).read_text();assert {'nonnull':'PASS 1538 ref.as_non_null executions','branches':'PASS 4096 reference branch executions','ref-func':'PASS 3072 native ref.func identities'}[suite] in log,log
-  assert list((directory/'cache'/policy).rglob('*.uwvm-ljc')), 'missing actual target JIT object'
+  assert list((directory/'cache'/'mandatory-native').rglob('*.uwvm-ljc')), 'missing actual target JIT object'
   assert 'Failed to create LLVM JIT cache directory' not in log,log
   if triple=='aarch64-linux-gnu':
    # Decode the runtime's signed cache object, not the separately saved translator IR.
    import sys,re
    sys.path.insert(0,str(root/'test/0014.llvm_jit'))
    from check_wasm3_native_frame_codegen import decode_object
-   cached=list((directory/'cache'/policy).rglob('*.uwvm-ljc'));assert cached
+   cached=list((directory/'cache'/'mandatory-native').rglob('*.uwvm-ljc'));assert cached
    if suite!='ref-func':assert len(cached)==1
    checked=[]
    for object_index,cache_object in enumerate(cached):
@@ -89,7 +89,7 @@ for suite in a.suite or sources:
     for index in range(1,len(chunks),3):
      name,body=chunks[index+1:index+3]
      if not re.fullmatch(r'uwvm_m_[0-9a-f]+_func_'+('[345]' if suite=='ref-func' else '[0-9]+'),name):continue
-     calls=len(re.findall(r'\bblr?\s',body));expected=(2 if policy=='instruction' else 0)+(1 if suite=='nonnull' else 0)
+     calls=len(re.findall(r'\bblr?\s',body));expected=1 if suite=='nonnull' else 0
      assert calls==expected,(name,body);checked.append(dict(function=name,calls=calls))
    assert len(checked)=={'nonnull':6,'branches':8,'ref-func':3}[suite]
    (directory/(policy+'-assembly.json')).write_text(json.dumps(checked,indent=2)+'\n')
@@ -99,4 +99,4 @@ after=subprocess.check_output(['python3','tools/ci/wasm3_source_fingerprint.py',
 assert source_id==after and all(digest(Path(path))==value for path,value in toolchain.items())
 audit_resources('after')
 (a.out/'summary.json').write_text(json.dumps(dict(passed=True,source_id=source_id,llvm='23.1.1-uwvm-ros.9',
- target=triple,memory_backend='concurrent-allocator',suites=a.suite or list(sources),rows=rows),indent=2)+'\n')
+ scope='component IR variants plus mandatory-native runtime cache/code oracles; no ROS instruction runtime qualification',target=triple,memory_backend='concurrent-allocator',suites=a.suite or list(sources),rows=rows),indent=2)+'\n')

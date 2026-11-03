@@ -1,5 +1,6 @@
 // Real observer-profile generated code after the pause domain closes.
 // Closed participant admission must preserve native packet storage ownership.
+#include "mandatory_native_fixture.h"
 #include <uwvm2/uwvm/run/owned_source.h>
 #include <uwvm2/runtime/checkpoint/materialization.h>
 #include <uwvm2/utils/container/string_concat.h>
@@ -13,16 +14,17 @@ static void require(bool value,char const* message)
 { if(!value) { ::fast_io::io::perrln("closed debug entry: ",::fast_io::mnp::os_c_str(message)); ::fast_io::fast_terminate(); } }
 int main(int argc,char** argv)
 {
-    if(argc!=5) { return 2; }
-    auto const strategy{::fast_io::cstring_view{::fast_io::mnp::os_c_str(argv[2])}};
-    auto const fixture{::fast_io::cstring_view{::fast_io::mnp::os_c_str(argv[3])}};
-    auto const entry{::fast_io::cstring_view{::fast_io::mnp::os_c_str(argv[4])}};
-    require(strategy=="instruction" || strategy=="unwind","explicit stack strategy");
+    if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
+    if(argc!=4) { return 2; }
+
+    auto const fixture{::fast_io::cstring_view{::fast_io::mnp::os_c_str(argv[2])}};
+    auto const entry{::fast_io::cstring_view{::fast_io::mnp::os_c_str(argv[3])}};
+
     require(fixture=="nested" || fixture=="saved-gc","explicit actual fixture");
     require(entry=="full" || entry=="raw","explicit public entry");
     mode::global_runtime_mode=mode::runtime_mode_t::full_compile;
     mode::global_runtime_compiler=mode::runtime_compiler_t::llvm_jit_only;
-    mode::global_runtime_llvm_jit_call_stack=strategy=="instruction" ? mode::runtime_llvm_jit_call_stack_t::instruction : mode::runtime_llvm_jit_call_stack_t::unwind;
+
     mode::global_runtime_compile_threads=0u; mode::runtime_compile_threads_existed=true;
     mode::global_runtime_llvm_jit_cache_path_mode=mode::runtime_llvm_jit_cache_path_mode_t::disabled;
     auto const path{::uwvm2::utils::container::u8concat_uwvm(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(argv[1])))};

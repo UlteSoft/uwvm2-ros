@@ -44,7 +44,7 @@ def main():
                 # different import-section format from the product's contract.
                 run(f'ros{version}-{name}-compile', [args.wat2wasm, '--enable-function-references',
                     '--debug-names', wat, '-o', folder / (name + '.wasm')])
-            run(f'ros{version}-run', [args.uwvm, '-Raot', '-Rct', '0', '-Rllvm-call-stack', 'unwind',
+            run(f'ros{version}-run', [args.uwvm, '-Raot', '-Rct', '0',
                 '-Rllvm-cache-path', 'disable', *features, '--wasm-preload-library', folder / 'callbacks.wasm', 'callbacks',
                 '--wasm-preload-library', folder / 'library.wasm', 'library', '--run', folder / 'main.wasm'])
         report['passed'] = True

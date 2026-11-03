@@ -1,0 +1,132 @@
+--- a/upstream/libunwind/src/AddressSpace.hpp
++++ b/upstream/libunwind/src/AddressSpace.hpp
+@@ -439,8 +439,8 @@
+     if (EHHeaderParser<LocalAddressSpace>::decodeEHHdr(
+             *cbdata->addressSpace, eh_frame_hdr_start,
+             eh_frame_hdr_start + phdr->p_memsz, hdrInfo)) {
+-      // .eh_frame_hdr records the start of .eh_frame, but not its size.
+-      // Rely on a zero terminator to find the end of the section.
++      // The callback bounds this address by its readable PT_LOAD segment
++      // before publishing it. A vDSO need not supply a zero terminator.
+       cbdata->sects->dwarf_section = hdrInfo.eh_frame_ptr;
+       cbdata->sects->dwarf_section_length = SIZE_MAX;
+       return true;
+@@ -500,6 +500,33 @@
+   }
+   if (!found_unwind)
+     return 0;
++
++#if defined(_LIBUNWIND_SUPPORT_DWARF_INDEX)
++  // .eh_frame has no program-header length of its own. Use the loader-owned
++  // readable segment as a finite upper bound for the fallback linear scan.
++  // QEMU user-mode AArch64 vDSO 10.2.1 places code immediately after an
++  // unterminated .eh_frame; native/full-system kernel mappings differ.
++  // Neither layout permits an unbounded read into adjacent instructions.
++  bool found_dwarf_extent = false;
++  for (Elf_Half i = 0; i < pinfo->dlpi_phnum; ++i) {
++    const Elf_Phdr *phdr = &pinfo->dlpi_phdr[i];
++    if (phdr->p_type != PT_LOAD || (phdr->p_flags & PF_R) == 0 ||
++        phdr->p_vaddr > UINTPTR_MAX - image_base)
++      continue;
++    uintptr_t begin = image_base + phdr->p_vaddr;
++    if (phdr->p_memsz > UINTPTR_MAX - begin)
++      continue;
++    uintptr_t end = begin + phdr->p_memsz;
++    uintptr_t dwarf = cbdata->sects->dwarf_section;
++    if (dwarf >= begin && dwarf < end) {
++      cbdata->sects->dwarf_section_length = end - dwarf;
++      found_dwarf_extent = true;
++      break;
++    }
++  }
++  if (!found_dwarf_extent)
++    return 0;
++#endif
+ 
+ #if defined(_LIBUNWIND_USE_FRAME_HEADER_CACHE)
+   TheFrameHeaderCache.add(cbdata->sects);
+@@ -668,21 +695,25 @@
+     // Record the start of PT_GNU_EH_FRAME.
+     info.dwarf_index_section =
+         reinterpret_cast<uintptr_t>(findResult.dlfo_eh_frame);
+-    // `_dl_find_object` does not give us the size of PT_GNU_EH_FRAME.
+-    // Setting length to `SIZE_MAX` effectively disables all range checks.
+-    info.dwarf_index_section_length = SIZE_MAX;
+-    EHHeaderParser<LocalAddressSpace>::EHHeaderInfo hdrInfo;
+-    if (!EHHeaderParser<LocalAddressSpace>::decodeEHHdr(
+-            *this, info.dwarf_index_section,
+-            info.dwarf_index_section + info.dwarf_index_section_length,
+-            hdrInfo)) {
+-      return false;
+-    }
+-    // Record the start of the FDE and use SIZE_MAX to indicate that we do
+-    // not know the end address.
+-    info.dwarf_section = hdrInfo.eh_frame_ptr;
+-    info.dwarf_section_length = SIZE_MAX;
+-    return true;
++    // The loader's range can cover only the executable segment, while the
++    // unwind header lives in a separate read-only PT_LOAD. Use the fast result
++    // only when it bounds both records. Otherwise inspect the program headers
++    // below; a legitimate split mapping must not disable native unwinding.
++    const uintptr_t imageEnd =
++        reinterpret_cast<uintptr_t>(findResult.dlfo_map_end);
++    if (info.dwarf_index_section >= info.dso_base &&
++        info.dwarf_index_section < imageEnd) {
++      info.dwarf_index_section_length = imageEnd - info.dwarf_index_section;
++      EHHeaderParser<LocalAddressSpace>::EHHeaderInfo hdrInfo;
++      if (EHHeaderParser<LocalAddressSpace>::decodeEHHdr(
++              *this, info.dwarf_index_section, imageEnd, hdrInfo) &&
++          hdrInfo.eh_frame_ptr >= info.dso_base &&
++          hdrInfo.eh_frame_ptr < imageEnd) {
++        info.dwarf_section = hdrInfo.eh_frame_ptr;
++        info.dwarf_section_length = imageEnd - info.dwarf_section;
++        return true;
++      }
++    }
+   }
+ #endif
+   dl_iterate_cb_data cb_data = {this, &info, static_cast<pint_t>(targetAddr)};
+--- a/upstream/libunwind/src/DwarfParser.hpp
++++ b/upstream/libunwind/src/DwarfParser.hpp
+@@ -249,22 +249,40 @@
+                             pint_t fdeHint, FDE_Info *fdeInfo,
+                             CIE_Info *cieInfo) {
+   //fprintf(stderr, "findFDE(0x%llX)\n", (long long)pc);
++  const pint_t maxAddress = static_cast<pint_t>(-1);
++  if (sectionLength != SIZE_MAX && sectionLength > maxAddress - ehSectionStart)
++    return false;
+   pint_t p = (fdeHint != 0) ? fdeHint : ehSectionStart;
+   const pint_t ehSectionEnd = (sectionLength == SIZE_MAX)
+                                   ? static_cast<pint_t>(-1)
+                                   : (ehSectionStart + sectionLength);
++  if (p < ehSectionStart || p > ehSectionEnd)
++    return false;
+   while (p < ehSectionEnd) {
+     pint_t currentCFI = p;
+     //fprintf(stderr, "findFDE() CFI at 0x%llX\n", (long long)p);
++    // A mapped ELF may omit the optional zero terminator. Do not interpret
++    // adjacent code or a partial record as a length outside the owned extent.
++    if (ehSectionEnd - p < 4)
++      return false;
+     pint_t cfiLength = addressSpace.get32(p);
+     p += 4;
+     if (cfiLength == 0xffffffff) {
+       // 0xffffffff means length is really next 8 bytes
+-      cfiLength = (pint_t)addressSpace.get64(p);
++      if (ehSectionEnd - p < 8)
++        return false;
++      uint64_t extendedLength = addressSpace.get64(p);
++      if (extendedLength > maxAddress)
++        return false;
++      cfiLength = static_cast<pint_t>(extendedLength);
+       p += 8;
+     }
+     if (cfiLength == 0)
+       return false; // zero terminator
++    // Every CIE/FDE includes its four-byte identifier. Subtraction avoids
++    // wrapping the next record address before the length has been checked.
++    if (cfiLength < 4 || cfiLength > ehSectionEnd - p)
++      return false;
+     uint32_t id = addressSpace.get32(p);
+     if (id == 0) {
+       // Skip over CIEs.

@@ -75,8 +75,8 @@
 #  endif
 # endif
 # if defined(UWVM_RUNTIME_LLVM_JIT) && !defined(_WIN32) && \
-    (!(defined(__arm__) || defined(__thumb__)) || defined(__ARM_DWARF_EH__)) && __has_include(<unwind.h>)
-#  include <unwind.h>
+    (!(defined(__arm__) || defined(__thumb__)) || defined(__ARM_DWARF_EH__)) && defined(UWVM_ROS_PAIRED_RUNTIME_HEADERS)
+#  include <uwvm2/runtime/compiler/llvm_jit/paired_unwind.h>
 #  include "dwarf_eh_frame_registration.h"
 # endif
 // import
@@ -108,7 +108,7 @@
 #pragma push_macro("UWVM2_RUNTIME_LLVM_JIT_SECTION_MEMORY_MANAGER_HAS_DWARF_EH_FRAME")
 #undef UWVM2_RUNTIME_LLVM_JIT_SECTION_MEMORY_MANAGER_HAS_DWARF_EH_FRAME
 #if defined(UWVM_RUNTIME_LLVM_JIT) && !defined(_WIN32) && \
-    (!(defined(__arm__) || defined(__thumb__)) || defined(__ARM_DWARF_EH__)) && __has_include(<unwind.h>)
+    (!(defined(__arm__) || defined(__thumb__)) || defined(__ARM_DWARF_EH__)) && defined(UWVM_ROS_PAIRED_RUNTIME_HEADERS)
 # define UWVM2_RUNTIME_LLVM_JIT_SECTION_MEMORY_MANAGER_HAS_DWARF_EH_FRAME 1
 #else
 # define UWVM2_RUNTIME_LLVM_JIT_SECTION_MEMORY_MANAGER_HAS_DWARF_EH_FRAME 0

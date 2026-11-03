@@ -58,7 +58,6 @@ def main():
         parser.add_argument("--" + name, type=Path, required=True)
     parser.add_argument("--ros-version", type=int, choices=(1, 2),
                         help="Exercise the native debugger while the loop calls a real ROS builtin")
-    parser.add_argument("--call-stack", choices=("unwind",), default="unwind")
     parser.add_argument("--source-root", type=Path, default=ROOT,
                         help="Immutable checkout used by the recorded build, independent of this driver's location")
     args = parser.parse_args()
@@ -103,11 +102,11 @@ def main():
         (args.out / "wat2wasm.stderr").write_bytes(result.stderr)
         assert result.returncode == 0
         report["guest_sha256"] = live.sha(guest)
-        vm_args = ["--runtime-aot", "-Rct", "0", "-Rllvm-call-stack", args.call_stack,
+        vm_args = ["--runtime-aot", "-Rct", "0",
                    "-Rllvm-cache-path", "disable"]
         vm_args += ["--run", str(guest)]
         report["ros_version"] = args.ros_version
-        report["call_stack"] = args.call_stack
+        report["call_stack"] = "mandatory-checked-unwind"
         session = live.BrokerSession(args.uwvm, root / "tools/debug/secure_server.py",
                                      root / "tools/debug/dap_adapter.py", vm_args, args.out)
         function_imports = ((f"uwvm_ros{args.ros_version}_v1", "capability_open", 0),) if args.ros_version else ()

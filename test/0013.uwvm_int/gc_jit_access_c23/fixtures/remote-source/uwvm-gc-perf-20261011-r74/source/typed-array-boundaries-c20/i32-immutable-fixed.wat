@@ -1,1 +1,0 @@
-(module (type $a (array i32))  (func (export "_start") (local $a (ref null $a)) i32.const -2147483647 i32.const -2147483647 array.new_fixed $a 2 local.set $a local.get $a i32.const 1 array.get $a i32.const -2147483647 i32.ne if unreachable end ))

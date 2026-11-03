@@ -7,6 +7,7 @@ cannot satisfy any case. Reuse existing real-console/official-line helpers;
 this adds no product I/O or independent Wasm/decimal parser.
 """
 from __future__ import annotations
+from mandatory_native_cli import require_linux_ros, product_policy, product_policies
 import argparse
 import hashlib
 import json
@@ -484,7 +485,7 @@ def main() -> int:
     parser.add_argument('--optimization', type=int, action='append', choices=(0, 1, 2))
     parser.add_argument('--diagnostic-policy', action='append', choices=('instruction', 'unwind'))
     parser.add_argument('--case', action='append', choices=CASES)
-    args = parser.parse_args()
+    args = parser.parse_args(); require_linux_ros(parser, args.ros); args.diagnostic_policy = product_policies(parser, args.ros, args.diagnostic_policy)
     for value in (args.language, args.dwarf_version, args.optimization, args.diagnostic_policy, args.case):
         require(value is None or len(value) == len(set(value)), 'duplicate requested tuple would overwrite a fresh receipt')
     require(sys.platform == 'linux', 'only keeper controlled Linux may compile/run this recipe')
@@ -573,7 +574,7 @@ def main() -> int:
                         summary['fixtures'].append({'name': stem, 'source_sha256': sha(source),
                             'wasm_sha256': emitted_sha, 'official_dwarf_verified': False,
                             'official_verification': diagnostic})
-                        for policy in args.diagnostic_policy or ('instruction', 'unwind'):
+                        for policy in args.diagnostic_policy:
                             for kind in requested:
                                 summary['cases'].append({'case': kind, 'language': language, 'dwarf_version': version,
                                     'optimization': optimization, 'diagnostic_policy': policy, 'status': 'UNAVAILABLE',
@@ -589,9 +590,9 @@ def main() -> int:
                         'const_value_attribute_count': oracle.count('DW_AT_const_value'), 'direct_const_scalar_names': list(scalar_constant_names(oracle)), 'variant_part_count': oracle.count('DW_TAG_variant_part'),
                         'inline_die_count': oracle.count('DW_TAG_inlined_subroutine'), 'linker_size_optimization': 0,
                         'actual_import_policy': 'all actual imports rejected'})
-                    for policy in args.diagnostic_policy or ('instruction', 'unwind'):
+                    for policy in args.diagnostic_policy:
                         mode = ['-Raot'] if args.ros else ['-Rcc', 'jit', '-Rcm', 'full']
-                        prefix = [str(binary), '-m', 'debug-jit', *mode, '-Rct', '0', '-Rllvm-call-stack', policy,
+                        prefix = [str(binary), '-m', 'debug-jit', *mode, '-Rct', '0', *([] if args.ros else ['-Rllvm-call-stack', policy]),
                                   '-Rllvm-exception-dispatch', 'native-unwind', '-Rllvm-cache-path', 'disable']
                         for kind in requested:
                             require(sha(wasm) == emitted_sha, 'product must consume exact officially verified producer module')
@@ -606,7 +607,7 @@ def main() -> int:
         summary['passed'] = bool(summary['cases']) and all(row['passed'] for row in summary['cases'])
         summary['all_required_capabilities_passed'] = summary['passed'] and set(requested) == set(CASES)
         summary['complete_requested_matrix'] = (set(languages) == {'c', 'cpp', 'rust'} and set(args.dwarf_version or (4, 5)) == {4, 5} and
-            set(args.optimization or (0, 1)) == {0, 1} and set(args.diagnostic_policy or ('instruction', 'unwind')) == {'instruction', 'unwind'} and
+            set(args.optimization or (0, 1)) == {0, 1} and set(args.diagnostic_policy) == ({'mandatory-native'} if args.ros else {'instruction', 'unwind'}) and
             set(requested) == set(CASES))
         summary['selected_caller_values_qualified'] = any(row.get('selected_caller_values_qualified', False) for row in summary['cases'])
         summary['requested_cases'] = list(requested)

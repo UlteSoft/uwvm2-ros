@@ -1,1 +1,0 @@
-(module (type $A (sub (array (mut f32)))) (type $B (sub $A (array (mut f32)))) (func (export "get") (result (ref null $A)) ref.null $A))

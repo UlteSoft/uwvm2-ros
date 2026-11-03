@@ -1,13 +1,14 @@
 # Runtime Commands
 
-The production runtime has two eager, full-module execution backends:
+The uwvm2-ros product runs on its qualified Linux GNU targets and uses eager,
+full-module LLVM AOT compilation. `--runtime-aot` (`-Raot`) selects that backend;
+it is also the product default. Native EH, CFI, the real per-process generated
+unwind witness and crash stack recovery are mandatory and cannot be disabled.
 
-- `--runtime-int` (`-Rint`): translate the complete module to the UWVM interpreter representation before execution.
-- `--runtime-aot` (`-Raot`): translate and materialize the complete module with LLVM before execution.
-
-There is no lazy interpreter, demand LLVM compiler, tiered/OSR runtime, or public custom mode/compiler axis. The historical `llvm_jit` names in source paths and LLVM-specific option names are implementation names; `--runtime-aot` is the only production entry to that backend.
-
-LLVM AOT never routes an unsupported function through uwvm-int. If a validated Wasm type or opcode has no native LLVM lowering, `--runtime-aot` rejects compilation; the independent `--runtime-int` backend remains available for interpreter coverage and diagnosis.
+The broader interpreter and platform implementations remain in the source for
+upstream capability testing and future qualification. They are not ROS product
+execution modes. LLVM AOT rejects unsupported lowering instead of falling back
+to an interpreter or instruction-based exception propagation.
 
 Source focus:
 
@@ -21,23 +22,17 @@ Source focus:
 
 | Command | Alias | Arguments | Availability | Behavior |
 | --- | --- | --- | --- | --- |
-| `--runtime-int` | `-Rint` | None | UWVM interpreter | Select the full-module interpreter. |
 | `--runtime-aot` | `-Raot` | None | LLVM backend | Select full-module LLVM AOT compilation. |
 | `--runtime-compiler-log` | `-Rclog` | `[out\|err\|file <path>]` | Runtime backend support | Route compiler diagnostics. |
 | `--runtime-compile-threads` | `-Rct` | `[default\|aggressive\|<count>]` | Runtime backend support | Configure full-module translation workers. |
 | `--runtime-scheduling-policy` | `-Rsp` | `[func_count <count>\|code_size <bytes>]` | Runtime backend support | Split full-module translation work. |
 | `--runtime-llvm-jit-policy` | `-Rllvm-policy` | `[debug\|default\|fast-compile\|balanced\|max]` | LLVM backend | Select an AOT optimization preset. |
 | `--runtime-llvm-jit-full-policy` | `-Rllvm-full-policy` | `[auto\|debug\|legacy-light\|pb-o1\|pb-o2\|pb-o3]` | LLVM backend | Select the concrete full-module optimizer pipeline. |
-| `--runtime-llvm-jit-call-stack` | `-Rllvm-call-stack` | Platform dependent | LLVM backend | Select generated-code stack tracking. |
 | `--runtime-llvm-jit-cache-path` | `-Rllvm-cache-path` | `[disable\|default\|path <path>]` | LLVM backend | Configure the AOT object cache. |
 
-The UWVM interpreter also exposes translation tuning options when their corresponding build features are available:
-
-- `--runtime-uwvm-int-disable-loop-unwind` (`-Rint-no-loop-unwind`)
-- `--runtime-uwvm-int-set-opcode-conbination-level` (`-Rint-op-conbine-level`)
-- `--runtime-uwvm-int-disable-delay-local` (`-Rint-no-delay-local`)
-- `--runtime-uwvm-int-enable-instruction-reorder` (`-Rint-reorder`)
-- `--runtime-uwvm-int-loop-unwind-max-size` (`-Rint-loop-unwind-size`)
+Interpreter translation tuning is an upstream-only interface. Use a separately
+identified ordinary Uwvm2 checkout for its full interpreter acceptance matrix;
+those results do not qualify an interpreter-enabled uwvm2-ros product.
 
 ## Runtime Selection
 
@@ -45,15 +40,13 @@ The UWVM interpreter also exposes translation tuning options when their correspo
 
 | Shortcut | Backend | Preparation rule |
 | --- | --- | --- |
-| `--runtime-int` | UWVM interpreter | Translate every validated function before entering the module. |
 | `--runtime-aot` | LLVM AOT | Generate, optimize, and materialize the complete module before entering it. |
 
-When multiple production backends are compiled, LLVM AOT is the default; otherwise the full interpreter is used. Runtime shortcuts are guarded against duplicates and conflicting selections.
+The ROS build requires the LLVM AOT backend. Runtime shortcuts reject duplicate or conflicting selections.
 
 Examples:
 
 ```bash
-uwvm2-ros --runtime-int --run app.wasm
 uwvm2-ros --runtime-aot --run app.wasm
 ```
 
@@ -62,7 +55,6 @@ Removed commands such as `--runtime-jit`, `--runtime-tiered`, `--runtime-custom-
 ## Compiler Log
 
 ```bash
-uwvm2-ros --runtime-compiler-log out --runtime-int --run app.wasm
 uwvm2-ros --runtime-compiler-log err --runtime-aot --run app.wasm
 uwvm2-ros --runtime-compiler-log file compiler.log --runtime-aot --run app.wasm
 ```
@@ -90,17 +82,23 @@ All generated Wasm functions carry LLVM `NoInline`, including under `max`/`pb-o3
 
 ## LLVM AOT Call Stacks
 
-`--runtime-llvm-jit-call-stack` accepts `auto`, `instruction`, and `none` everywhere. Allow-listed targets with a compiled native-unwind backend additionally expose `unwind` and `unwind-uncheck`. Native modes replace generated logical frames; they are not auxiliary stack output.
+Native unwind and crash stack recovery are mandatory. The former
+`--runtime-llvm-jit-call-stack` / `-Rllvm-call-stack` option is removed; every old
+value is a command-line error. No unchecked or instruction fallback is exposed.
 
-- `auto`: select checked native unwind when its capability check succeeds; otherwise select instruction tracking before code generation.
-- `instruction`: emit explicit per-function stack push/pop operations.
-- `none`: omit generated Wasm body frames from trap diagnostics.
-- `unwind`: require native replacement and omit per-function JIT push/pop operations. The POSIX live probe must recover generated caller frames; an unsupported or failed checked selection fails closed.
-- `unwind-uncheck` (alias `unwind-unchecked`): use the same native replacement and omitted push/pop policy, but skip the live self-check. This does not disable memory safety or unwind-table registration.
+Each executing process compiles and runs a real recursive generated chain using
+its actual target ABI and paired unwinder. A failed witness stops execution.
+Cache reuse does not authorize skipping this process-local check. Native
+measurements record `elapsed_ns`; 10 ms is an optimization target, never a
+forced timeout or a reason to accept an incomplete witness. QEMU establishes
+correctness and ABI behavior, not native startup performance.
 
-The native-unwind path reports concrete generated functions from registered code ranges, preserving recursive frame multiplicity. POSIX uses an ordinary `<unwind.h>` walk through registered JIT CFI and unwindable host-runtime frames. It does not use seeded POSIX cursors, frame-pointer scans, raw-stack scans, synthetic inline scopes, or inline call-chain expansion. AOT functions emit asynchronous unwind tables when native unwind is selected; fixed frame pointers and explicit generated frame/stack context remain limited to the Win64 SEH bridge. The runtime's relevant host frames must also retain unwind metadata; the POSIX live probe checks the actual runtime path.
-
-Compiler logs report the effective `call_stack`, `unwind_backend`, `unwind_check=live|unchecked|off`, `unwind_replace_frames=yes|no`, and `call_stack_frames=emit|omit`. A native stack test must verify both the complete ordered frame chain and omitted logical-frame emission; merely printing one resolved JIT address is insufficient.
+The runtime uses repository-owned LLVM libunwind headers and matching paired
+libc++/libc++abi/libunwind archives. Native CFI preserves recursive frame
+multiplicity without per-function logical stack push/pop operations. It does
+not scan arbitrary stack memory or manufacture frames from guessed code ranges.
+Compiler diagnostics report `call_stack=unwind`, `unwind_check=live`, and omitted
+logical frames; a crash test must verify the complete ordered Wasm chain.
 
 ## LLVM IR Verification and Cache
 

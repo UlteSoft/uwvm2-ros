@@ -1,6 +1,7 @@
 // Genuine setup once, then two read-only LLVM-full guest entries -> actual
 // before-park captures -> ONE cohort -> hostclose -> N -> publication -> owned
 // GC/exn/global/table/local/operand VIEW. No fake capture or restore authority.
+#include "mandatory_native_fixture.h"
 #include <uwvm2/uwvm/run/owned_source.h>
 #include <uwvm2/utils/control/owned_file_image.h>
 #include <uwvm2/runtime/checkpoint/materialization.h>
@@ -146,13 +147,13 @@ struct observer
 };
 int main(int argc, char** argv)
 {
-    if(argc != 3) { return 64; }
-    auto const policy{::fast_io::cstring_view{::fast_io::mnp::os_c_str(argv[2])}};
-    REQUIRE(policy == "instruction" || policy == "unwind");
+    if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
+    if(argc != 2) { return 64; }
+    auto const policy{::fast_io::cstring_view{::fast_io::mnp::os_c_str("mandatory-native")}};
+
     mode::global_runtime_mode = mode::runtime_mode_t::full_compile;
     mode::global_runtime_compiler = mode::runtime_compiler_t::llvm_jit_only;
-    mode::global_runtime_llvm_jit_call_stack = policy == "instruction" ?
-        mode::runtime_llvm_jit_call_stack_t::instruction : mode::runtime_llvm_jit_call_stack_t::unwind;
+
     mode::global_runtime_compile_threads = 0u; mode::runtime_compile_threads_existed = true;
     mode::global_runtime_llvm_jit_cache_path_mode = mode::runtime_llvm_jit_cache_path_mode_t::disabled;
     auto& features{::uwvm2::uwvm::wasm::feature::wasm_binfmt_ver1_wasm1p1_parameter(::uwvm2::uwvm::wasm::storage::wasm_parameter.binfmt1_para)};

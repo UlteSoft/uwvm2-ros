@@ -1,9 +1,10 @@
+from mandatory_native_cli import require_linux_ros, product_policy, product_policies
 from pathlib import Path
 import argparse,hashlib,json,re,subprocess,sys
 ap=argparse.ArgumentParser()
 for key in ('source-root','build-record','out','wasm','source','dwarfdump','validator'):ap.add_argument('--'+key,type=Path,required=True)
 ap.add_argument('--language',choices=('zig','tinygo','objc'),required=True)
-ap.add_argument('--policy',choices=('instruction','unwind'),required=True);ap.add_argument('--ros',action='store_true');a=ap.parse_args()
+ap.add_argument('--policy',choices=('instruction','unwind'),required=False);ap.add_argument('--ros',action='store_true');a=ap.parse_args(); require_linux_ros(ap, a.ros); a.policy = product_policy(ap, a.ros, a.policy, required=True)
 root=a.source_root.resolve(strict=True);sys.path.insert(0,str(root/'test/0017.runtime'))
 import run_debug_source_step_cli as step
 import run_debug_language_experience_cli as language
@@ -33,7 +34,7 @@ try:
  assert all(any(r['line']==line for r in rows) for line in (before_line,after_line,leaf_line)),('required actual own-file statement missing',before_line,after_line,leaf_line)
  origin=(step.metadata_cli.function(a.wasm,origin_name.decode())[0] if a.language=='zig' else tinygo.named_function(a.wasm,origin_name)[0]);leaf=(step.metadata_cli.function(a.wasm,leaf_name.decode())[0] if a.language=='zig' else tinygo.named_function(a.wasm,leaf_name)[0])
  for mode in ('until','advance'):
-  argv=[str(binary),'-Rdbg',*(['-Raot'] if a.ros else ['-Rcc','jit','-Rcm','full']),'-Rct','0','-Rllvm-call-stack',a.policy,'-Rllvm-exception-dispatch','native-unwind','-Rllvm-cache-path','disable','--run',str(a.wasm)]
+  argv=[str(binary),'-Rdbg',*(['-Raot'] if a.ros else ['-Rcc','jit','-Rcm','full']),'-Rct','0',*([] if a.ros else ['-Rllvm-call-stack', a.policy]),'-Rllvm-exception-dispatch','native-unwind','-Rllvm-cache-path','disable','--run',str(a.wasm)]
   s=step.Session(argv,a.out/(mode+'.log'),expressions,sequences,a.source);row=dict(passed=False,policy=mode,argv=argv,actions=s.actions,positions=s.positions);d['rows'].append(row);publish()
   try:
    s.begin(origin);old=language.own_seek(s,lambda p:p['function']==origin and p['line']==before_line and p['is_statement'],'authentic callsite')

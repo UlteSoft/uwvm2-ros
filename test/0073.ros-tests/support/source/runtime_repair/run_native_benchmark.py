@@ -110,7 +110,8 @@ def main():
             ordered = cases[repetition % len(cases):] + cases[:repetition % len(cases)]
             for name, iterations, wasm, label, policy in ordered:
                 command = [str(getattr(args, label)), '-Raot', '-Rct', '0', '-Rllvm-policy', 'max',
-                           '-Rllvm-call-stack', policy, '-Rllvm-cache-path', 'disable', '--log-verbose',
+                           *(['-Rllvm-call-stack', policy] if label == 'baseline' else []),
+                           '-Rllvm-cache-path', 'disable', '--log-verbose',
                            '--wasip1-global-noinherit-system-environment', '--run', str(wasm)]
                 start = time.perf_counter_ns()
                 child = subprocess.run(command, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30)

@@ -9,6 +9,8 @@ mkdir -p "$output/full-pbo3" "$baseline/test/0013.uwvm_int/wasm3"
 output=$(cd "$output" && pwd)
 baseline=$(cd "$baseline" && pwd)
 cp test/0013.uwvm_int/wasm3/memory_performance_jit.cc "$baseline/test/0013.uwvm_int/wasm3/"
+mkdir -p "$baseline/test/0017.runtime"
+cp test/0017.runtime/mandatory_native_fixture.h "$baseline/test/0017.runtime/"
 # Publish shared test headers atomically for concurrent frontend readers.
 for header in memory_performance_reference.h memory_performance_timing.h; do
     reference_tmp=$(mktemp "$baseline/test/0013.uwvm_int/wasm3/.reference.XXXXXX")

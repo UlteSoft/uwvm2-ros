@@ -5,6 +5,7 @@ This launches a fresh real LLVM-full product and original Wasm loader. It is
 not a fake broker or a runtime owner issuer. Native testing belongs to the
 authorized Linux keeper after ROOT integrates the exact source proposal.
 """
+from mandatory_native_cli import product_policy
 import argparse
 import hashlib
 import json
@@ -195,7 +196,7 @@ def main():
     parser.add_argument('--source-root', type=Path, required=True)
     parser.add_argument('--wasm-tools', type=Path, required=True)
     parser.add_argument('--out', type=Path, required=True)
-    parser.add_argument('--strategy', choices=('instruction', 'unwind'), required=True)
+    parser.add_argument('--strategy', choices=('instruction', 'unwind'), help='Required for ordinary-upstream only; omit for ROS')
     parser.add_argument('--repository', choices=('uwvm2', 'uwvm2-ros'), required=True)
     parser.add_argument('--uwvm-sha256', required=True)
     parser.add_argument('--wasm-tools-sha256', required=True)
@@ -207,6 +208,7 @@ def main():
     parser.add_argument('--source-cut-manifest-sha256', required=True)
     parser.add_argument('--allow-developer-provider', action='store_true')
     args = parser.parse_args()
+    args.strategy = product_policy(parser, args.repository == "uwvm2-ros", args.strategy, required=True)
     if sys.platform != 'linux':
         raise RuntimeError('sole remote Linux/cgroup keeper runner only')
     args.source_root = args.source_root.resolve(strict=True)
@@ -224,7 +226,7 @@ def main():
     wasm = args.out/'debug-wasm-memory-mutation-stop.wasm'
     subprocess.run([str(args.wasm_tools), 'parse', str(wat), '-o', str(wasm)], check=True)
     subprocess.run([str(args.wasm_tools), 'validate', '--features', 'all', str(wasm)], check=True)
-    command = [str(args.uwvm), '-Rdbg', '-Rct', '0', '-Rllvm-call-stack', args.strategy,
+    command = [str(args.uwvm), '-Rdbg', '-Rct', '0', *([] if args.repository == 'uwvm2-ros' else ['-Rllvm-call-stack', args.strategy]),
                '-Rllvm-cache-path', 'disable', '-WFE-gc', '-WFE-multi-memory', '-WFE-memory64',
                '-WFE-threads', '--run', str(wasm)]
     console, checks = Console(command, args.out), []

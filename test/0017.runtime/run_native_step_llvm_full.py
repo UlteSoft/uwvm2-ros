@@ -19,6 +19,7 @@ def main():
     parser.add_argument('--runtime-build', type=Path, required=True)
     parser.add_argument('--wasm-tools', type=Path, required=True)
     parser.add_argument('--out', type=Path, required=True)
+    parser.add_argument('--ordinary-upstream', action='store_true', help='Use an independently frozen upstream fixture with its legacy selectors; default is mandatory-native ROS')
     args = parser.parse_args()
     source, build, out = (path.resolve() for path in
                           (args.source_root, args.runtime_build, args.out))
@@ -50,8 +51,8 @@ def main():
     subprocess.run([str(args.wasm_tools), 'parse', str(out / 'fixture.wat'), '-o', str(out / 'fixture.wasm')], check=True)
     subprocess.run([str(args.wasm_tools), 'validate', str(out / 'fixture.wasm')], check=True)
     rows = []
-    for policy in ('instruction', 'unwind'):
-        run = [str(out / 'probe'), str(out / 'fixture.wasm'), policy]
+    for policy in (('instruction', 'unwind') if args.ordinary_upstream else ('mandatory-native',)):
+        run = [str(out / 'probe'), str(out / 'fixture.wasm'), *([policy] if args.ordinary_upstream else [])]
         with (out / f'{policy}.log').open('wb') as log:
             result = subprocess.run(run, stdout=log, stderr=subprocess.STDOUT, timeout=60)
         output = (out / f'{policy}.log').read_text(errors='replace')

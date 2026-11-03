@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Real own-file source breakpoints for the five DWARF producer routes."""
 from __future__ import annotations
+from mandatory_native_cli import require_linux_ros, product_policy, product_policies
 import argparse,hashlib,json,re,subprocess,sys
 from pathlib import Path
 import run_debug_source_step_cli as step
@@ -11,12 +12,12 @@ def main():
  ap=argparse.ArgumentParser(description=__doc__)
  for name in ('uwvm','wasm','source','oracle','out'):ap.add_argument('--'+name,type=Path,required=True)
  ap.add_argument('--language',choices=('c','cpp','rust','objc','tinygo'),required=True)
- ap.add_argument('--diagnostic-policy',choices=('instruction','unwind'),default='instruction');ap.add_argument('--ros',action='store_true');a=ap.parse_args()
+ ap.add_argument('--diagnostic-policy',choices=('instruction','unwind'),default=None);ap.add_argument('--ros',action='store_true');a=ap.parse_args(); require_linux_ros(ap, a.ros); a.diagnostic_policy = product_policy(ap, a.ros, a.diagnostic_policy, required=False)
  root=Path(__file__).resolve().parents[2];assert sys.platform=='linux';subprocess.run(['bash',str(root/'tools/ci/require_wasm3_test_cgroup.sh')],check=True);a.out.mkdir(parents=True,exist_ok=False)
  paths=[a.uwvm,a.wasm,a.source,a.oracle,Path(__file__),Path(step.__file__),Path(tinygo.__file__),Path(language.__file__)];pins={str(p):language.sha(p) for p in paths}
  d={'passed':False,'language':a.language,'inputs_before':pins,'actions':[],'positions':[]};s=None
  try:
-  mode=['-Raot'] if a.ros else ['-Rcc','jit','-Rcm','full'];argv=[str(a.uwvm),'-Rdbg',*mode,'-Rct','0','-Rllvm-call-stack',a.diagnostic_policy,'-Rllvm-cache-path','disable','--run',str(a.wasm)]
+  mode=['-Raot'] if a.ros else ['-Rcc','jit','-Rcm','full'];argv=[str(a.uwvm),'-Rdbg',*mode,'-Rct','0',*([] if a.ros else ['-Rllvm-call-stack', a.diagnostic_policy]),'-Rllvm-cache-path','disable','--run',str(a.wasm)]
   s=step.Session(argv,a.out/'console.log',step.code_expressions(a.wasm),step.line_sequences(a.oracle.read_text()),a.source);d.update(argv=argv,actions=s.actions,positions=s.positions)
   target,marker=(tinygo.named_function(a.wasm,b'_i_LanguageProbe__add_')[0],'OBJC_METHOD_READY') if a.language=='objc' else (tinygo.named_function(a.wasm,b'main.probeOuter')[0],'VALUES') if a.language=='tinygo' else (step.metadata_cli.function(a.wasm,'numeric_probe')[0],'NUMERIC_READY')
   matches=[i for i,line in enumerate(a.source.read_text().splitlines(),1) if '/* '+marker+' */' in line or '// '+marker in line];assert len(matches)==1;wanted=matches[0]

@@ -104,5 +104,13 @@ namespace uwvm2::imported::ros::ipc
         r.data.assign(b.begin()+static_cast<std::ptrdiff_t>(8+o+a),b.end());
         return true;
     }
-    struct call_result { std::uint32_t error{}; std::vector<std::uint8_t> payload{}; };
+    // Host-only observations of the frame actually sent and checked. These are
+    // not wire fields, Guest credentials, or evidence of native ROS acceptance.
+    struct checked_call
+    {
+        std::uint64_t request_id{},session_id{};
+        std::uint32_t peer_pid{},peer_uid{};
+        bool possible_peer_effects{},response_checked{};
+    };
+    struct call_result { std::uint32_t error{}; std::vector<std::uint8_t> payload{}; checked_call checked{}; };
 }

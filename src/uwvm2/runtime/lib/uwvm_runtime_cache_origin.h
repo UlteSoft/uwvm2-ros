@@ -65,7 +65,7 @@ extern "C++"
             if(!environment.mount_dir_roots.empty()) { return refuse_wasi(u8"preopened-filesystem-namespace"); }
             if(environment.trace_wasip1_call || !environment.trace_wasip1_output_file_path_storage.empty())
             { return refuse_wasi(u8"wasi-tracing"); }
-            if(environment.debug_console_read || environment.debug_console_write || environment.debug_fd_created)
+            if(environment.debug_console_read || environment.debug_console_write || environment.debug_fd_created || environment.debug_io_observed)
             { return refuse_wasi(u8"debugger-callback"); }
             if(environment.wasip1_proc_exit_func_ptr != storage::uwvm_wasip1_proc_exit_func_ptr_overload ||
                environment.wasip1_proc_raise_func_ptr || environment.wasip1_sched_yield_func_ptr ||

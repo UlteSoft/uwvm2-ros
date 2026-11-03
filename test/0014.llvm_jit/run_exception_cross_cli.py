@@ -266,6 +266,8 @@ def main():
     parser.add_argument('--all-combine-delay', action='store_true',
                         help='Run disable/soft/heavy/extra, each with local delay enabled and disabled')
     args = parser.parse_args()
+    if args.ros and (args.backend != 'llvm' or args.trace):
+        parser.error('--ros requires --backend llvm and has no --trace selector; checked native unwind is mandatory')
     if not args.wasmtime and not args.uwvm:
         parser.error('at least one execution engine is required')
     modes = args.mode or (['full'] if args.ros or args.backend == 'llvm' else ['full', 'lazy', 'lazy+verification'])
@@ -275,7 +277,7 @@ def main():
         parser.error('--trace selects LLVM call-stack policy and requires --backend llvm')
     if args.backend == 'llvm' and args.all_combine_delay:
         parser.error('--all-combine-delay applies only to --backend int')
-    trace_policies = (args.trace or ['instruction']) if args.backend == 'llvm' else [None]
+    trace_policies = ['mandatory-native'] if args.ros else ((args.trace or ['instruction']) if args.backend == 'llvm' else [None])
     selected = list(fixtures())
     if args.case:
         if not set(args.case) <= {row[0] for row in selected}:
@@ -369,7 +371,7 @@ def main():
                     for trace_policy in trace_policies:
                         if args.backend == 'llvm':
                             base = ['-Raot'] if args.ros else ['-Rcc', 'jit', '-Rcm', mode]
-                            base += ['-Rllvm-call-stack', trace_policy, '-Rllvm-cache-path', 'disable']
+                            base += [*([] if args.ros else ['-Rllvm-call-stack', trace_policy]), '-Rllvm-cache-path', 'disable']
                         else:
                             base = ['-Rint'] if args.ros else ['-Rcc', 'int', '-Rcm', mode]
                         command = [args.uwvm] + base + flags + ['-WFE-exceptions', '-WFE-tail-call', '-Rct', '0']

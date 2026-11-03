@@ -2,6 +2,7 @@
 // cannot catch MCJIT symbols that collide and overwrite another specialization.
 // Compile with UWVM_USE_MULTITHREAD_ALLOCATOR to exercise host bridge fallbacks;
 // also run mmap to compare the directly lowered operations against the same oracle.
+#include "../0013.uwvm_int/wasm3/component_frame_policy.h"
 #include "../0013.uwvm_int/strict/uwvm_int_translate_strict_common.h"
 #include <uwvm2/runtime/compiler/llvm_jit/compile_all_from_uwvm/impl.h>
 #include <uwvm2/validation/standard/wasm3/atomic_immediate.h>
@@ -14,9 +15,10 @@ int main(int argc,char** argv)
     using namespace uwvm2test::uwvm_int_strict;
     namespace atom=uwvm2::validation::standard::wasm3;
     namespace jit=uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm;
-    namespace mode=uwvm2::uwvm::runtime::runtime_mode;
-    bool const unwind=argc>1&&std::strcmp(argv[1],"unwind")==0;
-    mode::global_runtime_llvm_jit_call_stack=unwind?mode::runtime_llvm_jit_call_stack_t::unwind:mode::runtime_llvm_jit_call_stack_t::instruction;
+    bool unwind{};
+    if(!::uwvm2test::component_frame_policy::parse(argc, argv, unwind)) { return 64; }
+    ::uwvm2test::component_frame_policy::announce(unwind);
+
     constexpr std::uint64_t initial=0x88776655c4332211ULL,operand=0x8182838485868788ULL;
     module_builder builder{};builder.has_memory=builder.memory_has_max=builder.memory_shared=true;
     builder.memory_min=builder.memory_max=1;
@@ -54,7 +56,7 @@ int main(int argc,char** argv)
     auto& module=*compiled.llvm_jit_module.llvm_module;UWVM2TEST_REQUIRE(!llvm::verifyModule(module,&llvm::errs()));
     if(auto dir=std::getenv("UWVM_ATOMIC_IR_DIR");dir!=nullptr)
     {
-        std::error_code ec;auto path=std::string(dir)+(unwind?"/mixed-unwind.ll":"/mixed-instruction.ll");
+        std::error_code ec;auto path=std::string(dir)+(unwind?"/mixed-component-native-cfi.ll":"/mixed-component-instrumented.ll");
         llvm::raw_fd_ostream out(path,ec);UWVM2TEST_REQUIRE(!ec);module.print(out,nullptr);
     }
     auto& memory=prepared.mod->local_defined_memory_vec_storage.index_unchecked(0).memory;
@@ -83,5 +85,5 @@ int main(int argc,char** argv)
         UWVM2TEST_REQUIRE(actual==((initial&~mask)|(next&mask)));
     }
     reset();UWVM2TEST_REQUIRE(run(63)==0);UWVM2TEST_REQUIRE(run(64)==1);UWVM2TEST_REQUIRE(run(65)==1);
-    std::printf("PASS 66 coexisting atomic bridge identities: all widths/families, wait/notify, %s, mmap=%d\n",unwind?"unwind":"instruction",int(std::remove_reference_t<decltype(memory)>::can_mmap));
+    std::printf("PASS 66 coexisting atomic bridge identities: all widths/families, wait/notify, %s, mmap=%d\n",unwind?"component-native-cfi":"component-instrumented",int(std::remove_reference_t<decltype(memory)>::can_mmap));
 }

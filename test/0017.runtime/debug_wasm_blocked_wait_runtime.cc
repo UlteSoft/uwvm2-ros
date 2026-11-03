@@ -1,4 +1,5 @@
 // Real full-JIT wait bridge, real cooperative participant and linked wait.
+#include "mandatory_native_fixture.h"
 #include <uwvm2/uwvm/run/owned_source.h>
 #include <uwvm2/runtime/checkpoint/materialization.h>
 #include <uwvm2/utils/container/string_concat.h>
@@ -52,9 +53,10 @@ struct observer
 };
 int main(int argc,char** argv)
 {
-    if(argc!=4 && argc!=5 && argc!=6 && argc!=7) { return 64; }
-    bool const resumable{argc==5 || argc==7};
-    bool const exact_widths{argc>=6};
+    if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
+    if(argc!=3 && argc!=4 && argc!=5 && argc!=6) { return 64; }
+    bool const resumable{argc==4 || argc==6};
+    bool const exact_widths{argc>=5};
     unsigned address_bits{},compare_bits{};
     if(exact_widths)
     {
@@ -66,16 +68,16 @@ int main(int argc,char** argv)
             require(parsed.code==::fast_io::parse_code::ok && parsed.iter==end && (value==32u || value==64u),
                 "explicit fixture address/compare widths");
         };
-        parse_width(resumable?5u:4u,address_bits);parse_width(resumable?6u:5u,compare_bits);
+        parse_width(resumable?4u:3u,address_bits);parse_width(resumable?5u:4u,compare_bits);
     }
-    if(resumable) { require(::uwvm2::utils::container::concat_uwvm(::fast_io::mnp::os_c_str(argv[4]))=="resumable","explicit immutable profile purpose"); }
-    auto strategy{::uwvm2::utils::container::concat_uwvm(::fast_io::mnp::os_c_str(argv[2]))};
-    auto action{::uwvm2::utils::container::concat_uwvm(::fast_io::mnp::os_c_str(argv[3]))};
-    require(strategy=="instruction" || strategy=="unwind","explicit stack policy");
+    if(resumable) { require(::uwvm2::utils::container::concat_uwvm(::fast_io::mnp::os_c_str(argv[3]))=="resumable","explicit immutable profile purpose"); }
+
+    auto action{::uwvm2::utils::container::concat_uwvm(::fast_io::mnp::os_c_str(argv[2]))};
+
     require(action=="notify" || action=="timeout","explicit completion");
     mode::global_runtime_mode=mode::runtime_mode_t::full_compile;
     mode::global_runtime_compiler=mode::runtime_compiler_t::llvm_jit_only;
-    mode::global_runtime_llvm_jit_call_stack=strategy=="instruction" ? mode::runtime_llvm_jit_call_stack_t::instruction : mode::runtime_llvm_jit_call_stack_t::unwind;
+
     mode::global_runtime_compile_threads=0u;mode::runtime_compile_threads_existed=true;
     mode::global_runtime_llvm_jit_cache_path_mode=mode::runtime_llvm_jit_cache_path_mode_t::disabled;
     auto& features{::uwvm2::uwvm::wasm::feature::wasm_binfmt_ver1_wasm1p1_parameter(::uwvm2::uwvm::wasm::storage::wasm_parameter.binfmt1_para)};

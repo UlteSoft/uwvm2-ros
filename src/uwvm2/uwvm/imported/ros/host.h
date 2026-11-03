@@ -34,6 +34,9 @@
 #include <uwvm2/imported/ros/common/audit_io.h>
 #endif
 #ifndef UWVM_MODULE
+#include <uwvm2/imported/ros/common/buffer_audit.h>
+#endif
+#ifndef UWVM_MODULE
 #include <uwvm2/imported/ros/common/management.h>
 #endif
 #ifndef UWVM_MODULE
@@ -46,6 +49,7 @@
 #include <uwvm2/uwvm/runtime/storage/builtin_ros_loader.h>
 #endif
 #include "rmw_service_state.h"
+#include "portable_host.h"
 #include <array>
 #include <map>
 #include <set>
@@ -384,6 +388,9 @@ namespace uwvm2::uwvm::imported::ros
         // only enqueue in the Gateway; they never reenter the Guest or retain Guest memory pointers.
         inline void shutdown() noexcept
         {
+#if defined(UWVM_IMPORT_ROS2)
+            portable_host::retire(nullptr,0,true);
+#endif
             decltype(instances) retired{};
             {
                 ::std::lock_guard<::std::mutex> lock{mutex};
@@ -406,6 +413,9 @@ namespace uwvm2::uwvm::imported::ros
         {
             if(reason==core::management::transition::runtime_retirement) { shutdown();return; }
             if(reason!=core::management::transition::function_replacement||!object||!generation) { return; }
+#if defined(UWVM_IMPORT_ROS2)
+            portable_host::retire(object,generation,false);
+#endif
             ::std::lock_guard<::std::mutex> registry{mutex};
             auto found{instances.find(object)};
             // Never instantiate an ROS state for a module that had none. The
@@ -654,15 +664,63 @@ namespace uwvm2::uwvm::imported::ros
             auto const& spec{*description.capability()};
             audit_result audit{caller.runtime_instance,caller.generation,Version,spec.alias};
             audit.function=op;
+            core::buffer_audit::transfer observed{};
+            // Preserve an opted-in, bounded copy before moving the IPC request.
+            // Default-off execution allocates no observation payload storage.
+            ::std::unique_ptr<::std::uint8_t[]> observed_input{};
+            core::ipc::call_result result{};
+            bool const observing{core::buffer_audit::journal.enabled()};
+            if(observing)
+            {
+                runtime::ros_caller_source_facts facts{};
+                observed.source_known=runtime::ros_caller_source_facts_host_api(facts)&&
+                    facts.caller.runtime_instance==caller.runtime_instance&&facts.caller.generation==caller.generation;
+                for(::std::size_t i{};i!=32;++i) {observed.wasm[i]=::std::to_integer<::std::uint8_t>(facts.whole_wasm_sha256[i]);}
+                observed.wasm_bytes=facts.whole_wasm_bytes;observed.function_index=facts.builtin_function_index;
+                observed.module={reinterpret_cast<char const*>(caller.module_name.data()),caller.module_name.size()};
+                observed.instance=description.instance_number();observed.generation=caller.generation;
+                observed.backend=static_cast<unsigned>(Version);observed.handle=handle;observed.alias=spec.alias;
+                observed.operation=op;observed.resource=spec.resource;observed.type=spec.type;observed.identity=spec.type_identity;
+                observed.memory=memory;observed.input_offset=offset;observed.output_offset=out_offset;
+                observed.capacity=capacity;observed.length_offset=length_offset;
+            }
             bool native_admitted{},native_reported_failure{};
-            auto finish=[&](::std::uint32_t error) {if(!native_reported_failure) {observe_source_error(backend,handle,error,native_admitted);}return audit.finish(error);};
-            auto const actual_op{op == "event.poll" ? ::std::string_view{spec.operation} : op};
+            auto finish=[&](::std::uint32_t error)
+            {
+                if(observing)
+                {
+                    observed.error=error;observed.checked=result.checked;
+                    if(observed.output_written) {observed.output=result.payload;}
+                    core::buffer_audit::journal.emit(observed);
+                }
+                if(!native_reported_failure) {observe_source_error(backend,handle,error,native_admitted);}return audit.finish(error);
+            };
+            auto const control{core::ipc::action_control::parse(op)};
+            bool const action_control{control!=core::ipc::action_control::command::none};
+            if(action_control&&Version!=core::version::ros2) { return finish(13); }
+            auto const actual_op{action_control?core::ipc::action_control::capability(control):op == "event.poll" ? ::std::string_view{spec.operation} : op};
             if(op == "event.poll" && actual_op != "topic.subscribe" && actual_op != "service.advertise" && actual_op != "param.subscribe-events" && actual_op != "action.advertise") { return finish(13); }
             if(spec.operation != actual_op) { return finish(13); }
             if(length > core::ipc::max_payload_bytes || capacity > core::ipc::max_payload_bytes) { return finish(90); }
             if(output && (!memory_range(memory,out_offset,capacity) || !memory_range(memory,length_offset,8))) { return finish(22); }
+            if(action_control&&output&&core::ipc::event_output_overlaps_length(out_offset,capacity,length_offset)) { return finish(22); }
             ::std::vector<::std::uint8_t> payload{};
             if(length && !read_bytes(memory,offset,length,payload)) { return finish(22); }
+            if(observing&&length)
+            {
+                observed.input_read=true;
+                if(payload.size()>core::buffer_audit::journal.payload_capacity()) {observed.payload_over_limit=true;}
+                else
+                {
+                    observed_input.reset(new(::std::nothrow) ::std::uint8_t[payload.size()]);
+                    if(!observed_input){observed.input_snapshot_failed=true;}
+                    else
+                    {
+                        ::std::copy(payload.begin(),payload.end(),observed_input.get());
+                        observed.input={observed_input.get(),payload.size()};
+                    }
+                }
+            }
             // Check the shared native goal queue before Source quota debit or
             // IPC. Another alias may designate the SAME owned native consumer.
             if(payload.size()==8)
@@ -678,7 +736,8 @@ namespace uwvm2::uwvm::imported::ros
             }
             core::authorization ticket{};
             auto payload_view{::std::as_bytes(::std::span{payload})};
-            if(op != "event.poll" && op != "topic.subscribe" && op != "service.advertise" && op != "param.subscribe-events") { r=capabilities.authorize(caller.runtime_instance,caller.generation,Version,handle,actual_op,payload_view,ticket); }
+            if(action_control) { r=capabilities.authorize_action_control(caller.runtime_instance,caller.generation,Version,handle,op,payload_view,ticket); }
+            else if(op != "event.poll" && op != "topic.subscribe" && op != "service.advertise" && op != "param.subscribe-events") { r=capabilities.authorize(caller.runtime_instance,caller.generation,Version,handle,actual_op,payload_view,ticket); }
             else { r=capabilities.authorize(caller.runtime_instance,caller.generation,Version,handle,actual_op,{},ticket,false,false); }
             if(!r) { return finish(code(r)); }
             if(auto error{backend.connect(Version)}) { return finish(error); }
@@ -691,8 +750,9 @@ namespace uwvm2::uwvm::imported::ros
             // A receive capability cannot redirect delivery to another owned goal ID.
             // Keep the scalar request identity before moving the bounded copied request to IPC.
             bool const receives_goal{op == "action.receive-feedback" || op == "action.receive-result"};
-            ::std::uint64_t const requested_goal{receives_goal && payload.size() == 8 ? core::ipc::get(payload.data(),8) : 0};
-            native_admitted=true;auto result{backend.connection.call(op,spec.alias,::std::move(payload),request_timeout)};
+            ::std::uint64_t const requested_goal{(receives_goal||action_control) && payload.size() == 8 ? core::ipc::get(payload.data(),8) : 0};
+            native_admitted=true;result=backend.connection.call(op,spec.alias,::std::move(payload),request_timeout);
+            observed.response_size=result.payload.size();
             // A well-formed Native reply may itself report ENOTCONN or
             // ETIMEDOUT while the owned IPC session remains usable. Only an
             // actual disconnected transport retires the session; otherwise
@@ -711,15 +771,24 @@ namespace uwvm2::uwvm::imported::ros
                         ::std::as_bytes(::std::span{result.payload}),ticket,true,true);
                     if(!r) { return finish(code(r)); }
                 }
+                else if(action_control)
+                {
+                    r=capabilities.authorize_action_control(caller.runtime_instance,caller.generation,Version,handle,op,
+                        ::std::as_bytes(::std::span{result.payload}),ticket,true,requested_goal);
+                    if(!r) { return finish(code(r)); }
+                }
                 else
                 {
                     r=capabilities.authorize_response(caller.runtime_instance,caller.generation,Version,handle,
                         ::std::as_bytes(::std::span{result.payload}),ticket);
                     if(!r) { return finish(code(r)); }
                 }
+                observed.response_authorized=true;
                 if(!write_u64(memory,length_offset,result.payload.size())) { return finish(22); }
+                observed.length_written=true;
                 if(result.payload.size() > capacity) { return finish(90); }
                 if(!runtime::preload_memory_write_host_api(memory,out_offset,result.payload.data(),result.payload.size())) { return finish(22); }
+                observed.output_written=true;
             }
             return finish(0);
         }
@@ -1010,6 +1079,21 @@ namespace uwvm2::uwvm::imported::ros
         { return operation<V>("service.respond",h,m,o,l,true,r,c,n); }
         template <core::version V> inline ::std::uint32_t action_send_goal(::std::uint64_t h,::std::uint32_t m,::std::uint64_t o,::std::uint64_t l,::std::uint64_t r,::std::uint64_t c,::std::uint64_t z) noexcept
         { return operation<V>("action.send-goal",h,m,o,l,true,r,c,z); }
+        // The seven-argument shape is the existing bounded request/response ABI.
+        // Readiness takes an empty request; response/status/cancel take an owned
+        // nonzero u64 goal ID. These imports exist only in uwvm_ros2_v1 below.
+        inline ::std::uint32_t action_server_is_ready(::std::uint64_t h,::std::uint32_t m,::std::uint64_t o,::std::uint64_t l,::std::uint64_t r,::std::uint64_t c,::std::uint64_t z) noexcept
+        { return operation<core::version::ros2>("action.server-is-ready",h,m,o,l,true,r,c,z); }
+        inline ::std::uint32_t action_send_begin(::std::uint64_t h,::std::uint32_t m,::std::uint64_t o,::std::uint64_t l,::std::uint64_t r,::std::uint64_t c,::std::uint64_t z) noexcept
+        { return operation<core::version::ros2>("action.send-begin",h,m,o,l,true,r,c,z); }
+        inline ::std::uint32_t action_goal_response(::std::uint64_t h,::std::uint32_t m,::std::uint64_t o,::std::uint64_t l,::std::uint64_t r,::std::uint64_t c,::std::uint64_t z) noexcept
+        { return operation<core::version::ros2>("action.goal-response",h,m,o,l,true,r,c,z); }
+        inline ::std::uint32_t action_goal_status(::std::uint64_t h,::std::uint32_t m,::std::uint64_t o,::std::uint64_t l,::std::uint64_t r,::std::uint64_t c,::std::uint64_t z) noexcept
+        { return operation<core::version::ros2>("action.goal-status",h,m,o,l,true,r,c,z); }
+        inline ::std::uint32_t action_cancel_begin_own(::std::uint64_t h,::std::uint32_t m,::std::uint64_t o,::std::uint64_t l,::std::uint64_t r,::std::uint64_t c,::std::uint64_t z) noexcept
+        { return operation<core::version::ros2>("action.cancel-begin-own",h,m,o,l,true,r,c,z); }
+        inline ::std::uint32_t action_cancel_response(::std::uint64_t h,::std::uint32_t m,::std::uint64_t o,::std::uint64_t l,::std::uint64_t r,::std::uint64_t c,::std::uint64_t z) noexcept
+        { return operation<core::version::ros2>("action.cancel-response",h,m,o,l,true,r,c,z); }
         template <core::version V> inline ::std::uint32_t action_cancel_own_goal(::std::uint64_t h,::std::uint32_t m,::std::uint64_t o,::std::uint64_t l,::std::uint64_t r,::std::uint64_t c,::std::uint64_t z) noexcept
         { return operation<V>("action.cancel-own-goal",h,m,o,l,true,r,c,z); }
         template <core::version V> inline ::std::uint32_t action_cancel_any_goal(::std::uint64_t h,::std::uint32_t m,::std::uint64_t o,::std::uint64_t l,::std::uint64_t r,::std::uint64_t c,::std::uint64_t z) noexcept
@@ -1136,6 +1220,12 @@ namespace uwvm2::uwvm::imported::ros
         inline constexpr char8_t service_advertise_name[]=u8"service_advertise";
         inline constexpr char8_t service_respond_name[]=u8"service_respond";
         inline constexpr char8_t action_send_goal_name[]=u8"action_send_goal";
+        inline constexpr char8_t action_server_is_ready_name[]=u8"action_server_is_ready";
+        inline constexpr char8_t action_send_begin_name[]=u8"action_send_begin";
+        inline constexpr char8_t action_goal_response_name[]=u8"action_goal_response";
+        inline constexpr char8_t action_goal_status_name[]=u8"action_goal_status";
+        inline constexpr char8_t action_cancel_begin_own_name[]=u8"action_cancel_begin_own";
+        inline constexpr char8_t action_cancel_response_name[]=u8"action_cancel_response";
         inline constexpr char8_t action_cancel_own_goal_name[]=u8"action_cancel_own_goal";
         inline constexpr char8_t action_cancel_any_goal_name[]=u8"action_cancel_any_goal";
         inline constexpr char8_t action_receive_feedback_name[]=u8"action_receive_feedback";
@@ -1249,6 +1339,12 @@ namespace uwvm2::uwvm::imported::ros
             wrapper::native_function<&host::service_advertise<core::version::ros2>,wrapper::service_advertise_name>,
             wrapper::native_function<&host::service_respond<core::version::ros2>,wrapper::service_respond_name>,
             wrapper::native_function<&host::action_send_goal<core::version::ros2>,wrapper::action_send_goal_name>,
+            wrapper::native_function<&host::action_server_is_ready,wrapper::action_server_is_ready_name>,
+            wrapper::native_function<&host::action_send_begin,wrapper::action_send_begin_name>,
+            wrapper::native_function<&host::action_goal_response,wrapper::action_goal_response_name>,
+            wrapper::native_function<&host::action_goal_status,wrapper::action_goal_status_name>,
+            wrapper::native_function<&host::action_cancel_begin_own,wrapper::action_cancel_begin_own_name>,
+            wrapper::native_function<&host::action_cancel_response,wrapper::action_cancel_response_name>,
             wrapper::native_function<&host::action_cancel_own_goal<core::version::ros2>,wrapper::action_cancel_own_goal_name>,
             wrapper::native_function<&host::action_cancel_any_goal<core::version::ros2>,wrapper::action_cancel_any_goal_name>,
             wrapper::native_function<&host::action_receive_feedback<core::version::ros2>,wrapper::action_receive_feedback_name>,
@@ -1341,9 +1437,29 @@ namespace uwvm2::uwvm::imported::ros
     static_assert(::uwvm2::uwvm::wasm::type::has_local_function_tuple<ros2_client_local_imported_module_t>);
     static_assert(::uwvm2::uwvm::wasm::type::is_local_imported_module<ros2_local_imported_module_t>);
     static_assert(::uwvm2::uwvm::wasm::type::has_local_function_tuple<ros2_local_imported_module_t>);
+    namespace portable_names
+    {
+        inline constexpr char8_t open[]=u8"open",describe[]=u8"describe",read_state[]=u8"read_state",
+            submit[]=u8"submit",wait[]=u8"wait",close[]=u8"close";
+    }
+    struct portable_robot_local_imported_module_t
+    {
+        inline static constexpr ::uwvm2::utils::container::u8string_view module_name{u8"uwvm_portable_robot_v1"};
+        using local_function_tuple=::uwvm2::utils::container::tuple<
+            wrapper::native_function<&portable_host::abi_version,wrapper::abi_version_name>,
+            wrapper::native_function<&portable_host::open,portable_names::open>,
+            wrapper::native_function<&portable_host::describe,portable_names::describe>,
+            wrapper::native_function<&portable_host::read_state,portable_names::read_state>,
+            wrapper::native_function<&portable_host::submit,portable_names::submit>,
+            wrapper::native_function<&portable_host::wait,portable_names::wait>,
+            wrapper::native_function<&portable_host::close,portable_names::close>>;
+    };
+    inline constexpr portable_robot_local_imported_module_t portable_robot_local_imported_module{};
+    static_assert(::uwvm2::uwvm::wasm::type::is_local_imported_module<portable_robot_local_imported_module_t>);
+    static_assert(::uwvm2::uwvm::wasm::type::has_local_function_tuple<portable_robot_local_imported_module_t>);
 #endif
     // Read-only DBG identity issuer, not a namespace/name allowlist. The exact
-    // seven immutable Concrete types are the entire construction surface.
+    // immutable Concrete types are the entire construction surface.
     extern "C++"
     {
         class sealed_debug_loader_factory final
@@ -1360,6 +1476,7 @@ namespace uwvm2::uwvm::imported::ros
                 || ::std::is_same_v<T,ros2_rmw_local_imported_module_t>
                 || ::std::is_same_v<T,ros2_rmw_subscription_local_imported_module_t>
                 || ::std::is_same_v<T,ros2_rmw_service_local_imported_module_t>
+                || ::std::is_same_v<T,portable_robot_local_imported_module_t>
 #endif
                 ;
         public:
@@ -1379,6 +1496,7 @@ namespace uwvm2::uwvm::imported::ros
                     else if constexpr(::std::is_same_v<C,ros2_client_local_imported_module_t>)return identity::builtin_ros_kind::ros2_client;
                     else if constexpr(::std::is_same_v<C,ros2_rmw_local_imported_module_t>)return identity::builtin_ros_kind::ros2_publisher;
                     else if constexpr(::std::is_same_v<C,ros2_rmw_subscription_local_imported_module_t>)return identity::builtin_ros_kind::ros2_subscription;
+                    else if constexpr(::std::is_same_v<C,portable_robot_local_imported_module_t>)return identity::builtin_ros_kind::portable_robot;
                     else
 #endif
                     return identity::builtin_ros_kind::ros2_service;

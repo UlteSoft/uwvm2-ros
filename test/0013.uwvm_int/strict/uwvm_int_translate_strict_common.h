@@ -39,6 +39,7 @@
 # include <uwvm2/uwvm/wasm/storage/impl.h>
 # include <uwvm2/uwvm/runtime/storage/impl.h>
 # if defined(UWVM2TEST_RUNNER_USE_LLVM_JIT)
+#  include <uwvm2/uwvm/runtime/runtime_mode/impl.h>
 #  include <uwvm2/runtime/lib/uwvm_runtime.h>
 # endif
 #else
@@ -1137,7 +1138,7 @@ namespace uwvm2test::uwvm_int_strict
         wasm_feature_parameter_t wasm_feature_parameter = {},
         ::std::initializer_list<::uwvm2::uwvm::wasm::type::local_imported_t> local_imported = {})
     {
-        ::uwvm2::uwvm::io::show_verbose = false;
+        ::uwvm2::uwvm::io::show_verbose = ::std::getenv("UWVM2TEST_VERBOSE") != nullptr;
         ::uwvm2::uwvm::io::show_depend_warning = false;
 
 #if defined(UWVM2TEST_RUNNER_USE_LLVM_JIT)

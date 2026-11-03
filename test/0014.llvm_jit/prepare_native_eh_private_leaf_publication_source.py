@@ -110,7 +110,9 @@ def main():
         wat="test/0014.llvm_jit/fixtures/native_eh_private_leaf_publication_valid.wat",
         commands=["<actual-fixture> <same-official-valid.wasm> " + mode + " " + workers
                   for workers in ["serial", "parallel"]
-                  for mode in ["public", "private", "rollback", "debug-decline", "instruction-decline"]],
+                  for mode in ["public", "private", "rollback", "debug-decline"]],
+        separate_blocked_component="<actual-fixture> <same-official-valid.wasm> component-instruction-decline serial",
+        blocked_component_reason="No isolated test-local instruction-emission publication-admission fixture exists; expect exit 77, never PASS or a ROS unwind substitution.",
         separate_expected_fatal="<actual-fixture> <same-official-valid.wasm> uncaught serial",
         fatal_requirements=["nonzero original runtime fatal", "Uncaught WebAssembly exception", "payload[0] i32 bits=0x; independently decode raw bits 0x31 and signed=49",
             "Wasm call stack captured at throw", "original public leaf func_idx=0", "no fixture PASS"],

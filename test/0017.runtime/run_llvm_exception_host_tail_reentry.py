@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Compare actual instruction/unwind throw stacks across a retired host-tail adapter.
+"""Require actual mandatory-native ROS throw stacks across a retired host-tail adapter.
+Ordinary upstream separately compares its instruction/unwind stacks.
 
 Requires a freshly linked, frozen-runtime probe. Run only inside the configured
 SSH Linux cgroup; this runner never compiles and never uses synthetic LLVM IR.
@@ -104,9 +105,9 @@ def main():
             if not row['passed']:
                 (args.out / 'commands.json').write_text(json.dumps(rows, indent=2) + '\n')
                 raise RuntimeError(f'{kind} fixture {action} failed; see {row["log"]}')
-        for policy in ('instruction', 'unwind'):
+        for policy in (('mandatory-native',) if args.product == 'uwvm2-ros' else ('instruction', 'unwind')):
             for scenario in ('normal', 'throw'):
-                row, text = run(f'{kind}-{policy}-{scenario}', [args.probe, wasm, policy, scenario])
+                row, text = run(f'{kind}-{policy}-{scenario}', [args.probe, wasm, *([] if args.product == 'uwvm2-ros' else [policy]), scenario])
                 frames = [(int(module), int(function)) for module, function in re.findall(
                     r'(?m)^uwvm: \[info\]\s+#\d+ module_id=(\d+) .*?func_idx=(\d+)', text)]
                 functions = [function for _, function in frames]
@@ -132,15 +133,16 @@ def main():
                       (f' functions={functions}' if scenario == 'throw' else ''), flush=True)
 
     comparisons = []
-    for kind in ('direct', 'indirect'):
+    for kind in (() if args.product == 'uwvm2-ros' else ('direct', 'indirect')):
         thrown = {row['policy']: row for row in rows if row.get('tail_kind') == kind and row.get('scenario') == 'throw'}
         comparisons.append({'tail_kind': kind,
             'instruction_frames': thrown['instruction']['frames'], 'unwind_frames': thrown['unwind']['frames'],
             'equal': thrown['instruction']['frames'] == thrown['unwind']['frames']})
     unchanged = before == {str(path): sha(path) for path in inputs}
-    passed = unchanged and all(row['passed'] for row in rows) and all(row['equal'] for row in comparisons)
+    passed = (unchanged and sum('scenario' in row for row in rows) == (4 if args.product == 'uwvm2-ros' else 8)
+              and all(row['passed'] for row in rows) and all(row['equal'] for row in comparisons))
     summary = {'passed': passed, 'product': args.product, 'runtime_mode': 'llvm-jit-full',
-        'actual_vm_executions': 8, 'unchanged_inputs': unchanged, 'comparisons': comparisons,
+        'actual_vm_executions': sum('scenario' in row for row in rows), 'unchanged_inputs': unchanged, 'comparisons': comparisons,
         'cgroup_before': initial_cgroup, 'cgroup_after': cgroup_state(),
         'scope': 'Real host import and public raw reentry with Core3 throw/try_table/return_call[_indirect]; no debugger or synthetic IR path.'}
     (args.out / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n')

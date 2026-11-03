@@ -18,10 +18,10 @@ for name,provider in providers.items():
  c=[str(a.wasmtime),'-C','cache=n','-W','exceptions=y','--preload','p='+str(provider),str(importer)];r=subprocess.run(c,capture_output=True,timeout=30);(a.out/('wasmtime-'+name+'.log')).write_bytes(r.stdout+r.stderr);assert r.returncode==0
 rows=[]
 for mode in (('full',) if a.ros else ('full','lazy','lazy+verification')):
- for policy in ('instruction','unwind'):
+ for policy in (('mandatory-native',) if a.ros else ('instruction', 'unwind')):
   cache=a.out/(mode+'-'+policy+'-cache');cache.mkdir()
   for step,name in enumerate(('alias','alias','distinct','distinct','alias')):
-   log=a.out/f'{mode}-{policy}-{step}.compile.log';command=[str(a.uwvm)]+(['-Raot'] if a.ros else ['-Rcc','jit','-Rcm',mode])+['-WFE-exceptions','-Rllvm-call-stack',policy,'-Rllvm-cache-path','path',str(cache),'-Rclog','file',str(log),'-Wpre',str(providers[name]),'p','--run',str(importer)]
+   log=a.out/f'{mode}-{policy}-{step}.compile.log';command=[str(a.uwvm)]+(['-Raot'] if a.ros else ['-Rcc','jit','-Rcm',mode])+['-WFE-exceptions',*([] if a.ros else ['-Rllvm-call-stack', policy]),'-Rllvm-cache-path','path',str(cache),'-Rclog','file',str(log),'-Wpre',str(providers[name]),'p','--run',str(importer)]
    r=subprocess.run(command,capture_output=True,timeout=60);(a.out/f'{mode}-{policy}-{step}.log').write_bytes(r.stdout+r.stderr);hit=log.exists() and 'object-cache-hit' in log.read_text();rows.append(dict(mode=mode,policy=policy,step=step,provider=name,exit=r.returncode,cache_hit=hit,command=command));(a.out/'runs.json').write_text(json.dumps(rows,indent=2)+'\n');assert r.returncode==0,(mode,policy,step,r.stderr)
    assert step not in (1,3,4) or hit,(mode,policy,step,'expected warm cache hit')
 (a.out/'summary.json').write_text(json.dumps(dict(passed=True,cross_function=a.cross_function,runs=len(rows),binary_sha256=hashlib.sha256(a.uwvm.read_bytes()).hexdigest(),importer_sha256=hashlib.sha256(importer.read_bytes()).hexdigest()),indent=2)+'\n')

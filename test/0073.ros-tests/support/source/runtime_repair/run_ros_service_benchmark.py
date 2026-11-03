@@ -206,7 +206,7 @@ def main():
                         command.append(str(RESOURCE_CASES[args.operation][0]))
                 else:
                     command = [runtime_binary, "-Raot", "-Rct", "0", "-Rllvm-policy", "max",
-                               "--runtime-llvm-jit-call-stack", "unwind", "--log-verbose",
+                               "--log-verbose",
                                "--runtime-compiler-log", "err",
                                "--wasip1-global-noinherit-system-environment",
                                "--wasip1-global-grant", "monotonic-clock", option + "enable"]

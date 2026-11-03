@@ -1,5 +1,6 @@
 // Genuine debug-full native entry/exit/capture witness. The official Wasm
 // fixture uses Core 3 return_call and recursive calls. No CFA/source/PC guesses.
+#include "mandatory_native_fixture.h"
 #include <uwvm2/uwvm/run/owned_source.h>
 #include <fast_io.h>
 #include <uwvm2/utils/container/string_concat.h>
@@ -48,18 +49,17 @@ struct observer
 };
 int main(int argc, char** argv)
 {
-    if(argc != 3 && argc != 4) { return 2; }
-    bool const gc_roots{argc == 4};
-    if(gc_roots && ::fast_io::cstring_view{::fast_io::mnp::os_c_str(argv[3])} != "gc-roots") { return 2; }
+    if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
+    if(argc != 2 && argc != 3) { return 2; }
+    bool const gc_roots{argc == 3};
+    if(gc_roots && ::fast_io::cstring_view{::fast_io::mnp::os_c_str(argv[2])} != "gc-roots") { return 2; }
     ::std::optional<::uwvm2::runtime::gc::scoped_cli_gc_execution> root_launch{};
     if(gc_roots) { root_launch.emplace(); }
-    auto const policy{::fast_io::cstring_view{::fast_io::mnp::os_c_str(argv[2])}};
-    if(policy != "instruction" && policy != "unwind") { return 2; }
+
     mode::global_runtime_mode = mode::runtime_mode_t::full_compile;
     mode::global_runtime_compiler = mode::runtime_compiler_t::llvm_jit_only;
     mode::global_runtime_llvm_jit_exception_dispatch = mode::runtime_llvm_jit_exception_dispatch_t::native_unwind;
-    mode::global_runtime_llvm_jit_call_stack = policy == "instruction" ?
-        mode::runtime_llvm_jit_call_stack_t::instruction : mode::runtime_llvm_jit_call_stack_t::unwind;
+
     mode::global_runtime_compile_threads = 0; mode::runtime_compile_threads_existed = true;
     mode::global_runtime_llvm_jit_cache_path_mode = mode::runtime_llvm_jit_cache_path_mode_t::disabled;
     check(lib::llvm_jit_configure_debug_activation_storage_host_api(1u) == lib::llvm_jit_debug_configure_result::invalid_context, "invalid activation byte budget rejected");

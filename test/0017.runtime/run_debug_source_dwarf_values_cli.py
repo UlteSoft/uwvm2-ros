@@ -7,6 +7,7 @@ llvm-dwarfdump verification. Other locations remain explicitly unavailable.
 This does not qualify memory/pointer/aggregate/caller/native-register variables.
 """
 from __future__ import annotations
+from mandatory_native_cli import require_linux_ros, product_policy, product_policies
 import argparse
 import json
 from pathlib import Path
@@ -101,7 +102,7 @@ def main() -> None:
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--ros', action='store_true')
     parser.add_argument('--native-step', action='store_true')
-    args = parser.parse_args()
+    args = parser.parse_args(); require_linux_ros(parser, args.ros)
     if sys.platform != 'linux':
         raise RuntimeError('execute only in keeper controlled Linux cgroup')
     root = args.source_root.resolve(strict=True)
@@ -142,9 +143,9 @@ def main() -> None:
     official_commands = receipt.get('commands', [])
     fixture_inputs = {}
     rows = []
-    for policy in ('instruction', 'unwind'):
+    for policy in (('mandatory-native',) if args.ros else ('instruction', 'unwind')):
         mode = ['-Raot'] if args.ros else ['-Rcc', 'jit', '-Rcm', 'full']
-        prefix = [str(binary), '-m', 'debug-jit', *mode, '-Rct', '0', '-Rllvm-call-stack', policy,
+        prefix = [str(binary), '-m', 'debug-jit', *mode, '-Rct', '0', *([] if args.ros else ['-Rllvm-call-stack', policy]),
                   '-Rllvm-exception-dispatch', 'native-unwind', '-Rllvm-cache-path', 'disable']
         for language in ('c', 'cpp', 'rust'):
             for version in (4, 5):

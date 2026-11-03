@@ -7,13 +7,9 @@ runtime_lib="$repo_root/src/uwvm2/runtime/lib"
 native_unwind_platform="$repo_root/src/uwvm2/runtime/compiler/llvm_jit/native_unwind_platform.h"
 signal_handler="$repo_root/src/uwvm2/object/memory/signal/signal.h"
 unwind_consumer_headers=(
-    "$repo_root/src/uwvm2/uwvm/cmdline/params/runtime_llvm_jit_call_stack.h"
-    "$repo_root/src/uwvm2/uwvm/cmdline/callback/runtime_llvm_jit_call_stack.h"
     "$repo_root/src/uwvm2/uwvm/cmdline/callback/version.h"
 )
 unwind_consumer_modules=(
-    "$repo_root/src/uwvm2/uwvm/cmdline/params/runtime_llvm_jit_call_stack.cppm"
-    "$repo_root/src/uwvm2/uwvm/cmdline/callback/runtime_llvm_jit_call_stack.cppm"
     "$repo_root/src/uwvm2/uwvm/cmdline/callback/version.cppm"
 )
 production_source_boundary=(
@@ -29,11 +25,7 @@ build_surface=(
     "$repo_root/xmake.lua"
     "$repo_root/xmake"
 )
-test_script_surface=(
-    "$repo_root/.github"
-    "$repo_root/test"
-    "$repo_root/tools"
-)
+
 
 fail() {
     printf 'reduced-runtime audit: %s\n' "$*" >&2
@@ -41,7 +33,7 @@ fail() {
 }
 
 # Deleted execution strategies must not leak back through build selection, CLI/parser surfaces, validation/initialization,
-# loaders, compiler/runtime dispatch, module interfaces, or runnable test tooling. Keep this list precise: the retained LLVM
+# loaders, compiler/runtime dispatch, and module interfaces. Keep this list precise: the retained LLVM
 # translator's `llvm_jit_instruction_emitted_inline` flag means "emitted directly in the opcode validation arm" and is not
 # cross-Wasm-function inlining.
 forbidden_runtime_pattern='compile_cu_from_lazy_validator|lazy_compile_(and_run|stop|scheduler)|runtime_mode_t::(lazy|auto_compile)|uwvm_interpreter_llvm_jit_tiered|tiered_(runtime|full|entry|osr)|llvm_jit_call_interpreter_defined_raw_api|interpreter_fallback|runtime_custom_(mode|compiler)|llvm_jit_lazy_policy|runtime_tiered_disable|lazy_defined_(raw_call|typed_entry)_target|get_llvm_lazy|tiered_loop|osr_(entry|loop|target)|debug_interpreter|runtime_debug_int|UWVM_(RUNTIME_DEBUG_INTERPRETER|RUNTIME_HAS_DEBUGGER_BACKEND|ENABLE_DEBUG_INT|DISABLE_DEBUG_INT)|--runtime-(jit|tiered|custom-mode|custom-compiler|llvm-jit-lazy-policy|debug-int)'
@@ -51,10 +43,10 @@ fi
 if rg -n --glob '*.lua' "$forbidden_runtime_pattern" "${build_surface[@]}"; then
     fail 'found a deleted execution strategy in the build configuration'
 fi
-if rg -n --glob '*.{h,cpp,cppm,cc,lua,sh,py,yml,yaml}' --glob '!check_reduced_runtime_surface.sh' \
-    "$forbidden_runtime_pattern" "${test_script_surface[@]}"; then
-    fail 'found a deleted execution strategy in runnable test/tooling configuration'
-fi
+# Test vocabulary is not a production route: retained independent-upstream
+# matrices, explicit refusal probes and offline component IR choices are legal.
+# Check finite positive ROS table authorities without importing any driver.
+python3 "$repo_root/tools/ci/qualification_ros_route_audit.py" --root "$repo_root"
 
 # A production AOT build has no switches that can bypass generated-IR verification or authenticated native caching.
 safety_bypass_pattern='runtime_llvm_jit_(disable_ir_verifaction|cache_no_sign|cache_no_verify)|--runtime-llvm-jit-(disable-ir-verifaction|cache-no-sign|cache-no-verify)|-Rllvm-(noverify|cache-nosign|cache-noverify)'
@@ -64,6 +56,10 @@ if rg -n --glob '*.{h,cpp,cppm,cc,lua,md,sh,py,yml,yaml}' --glob '!check_reduced
 fi
 
 removed_paths=(
+    src/uwvm2/uwvm/cmdline/params/runtime_llvm_jit_call_stack.h
+    src/uwvm2/uwvm/cmdline/params/runtime_llvm_jit_call_stack.cppm
+    src/uwvm2/uwvm/cmdline/callback/runtime_llvm_jit_call_stack.h
+    src/uwvm2/uwvm/cmdline/callback/runtime_llvm_jit_call_stack.cppm
     src/uwvm2/runtime/compiler/uwvm_int/compile_cu_from_lazy_validator
     src/uwvm2/runtime/compiler/llvm_jit/compile_cu_from_lazy_validator
     src/uwvm2/runtime/compiler/uwvm_int/optable/lazy.h
@@ -115,6 +111,13 @@ removed_paths=(
 for relative_path in "${removed_paths[@]}"; do
     [[ ! -e "$repo_root/$relative_path" ]] || fail "deleted source path exists: $relative_path"
 done
+
+# The product has one checked native strategy; deleted mutable selectors must
+# not return merely to make legacy test fixtures compile.
+if rg -n 'global_runtime_llvm_jit_call_stack|runtime_llvm_jit_call_stack_t|runtime_llvm_jit_call_stack_existed' \
+    "$repo_root/src/uwvm2/uwvm/runtime/runtime_mode"; then
+    fail 'removed mutable runtime stack strategy returned'
+fi
 
 if [[ -d "$repo_root/test/0013.uwvm_int/lazy" ]] && find "$repo_root/test/0013.uwvm_int/lazy" -type f -print -quit | grep -q .; then
     fail 'deleted uwvm-int lazy tests still contain source or scripts'

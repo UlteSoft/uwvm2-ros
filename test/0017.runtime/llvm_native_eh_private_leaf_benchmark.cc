@@ -2,6 +2,7 @@
 // of publication V3 must pass first. This is source-only benchmark preparation.
 #define UWVM2TEST_RUNNER_USE_LLVM_JIT 1
 #define UWVM2TEST_STRICT_NO_INTERPRETER 1
+#include "mandatory_native_fixture.h"
 #include "../0013.uwvm_int/strict/uwvm_int_translate_strict_common.h"
 #include <uwvm2/uwvm/run/owned_source.h>
 #include <fast_io.h>
@@ -45,6 +46,7 @@ static constexpr ::std::uint32_t scalar_lcg_result(::std::uint32_t iterations) n
 }
 int main(int argc, char** argv)
 {
+    if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
 #if !defined(UWVM_EXPERIMENTAL_NATIVE_EH_PRIVATE_LEAF) || UWVM_EXPERIMENTAL_NATIVE_EH_PRIVATE_LEAF != 1 || \
     !defined(UWVM_EXPERIMENTAL_NATIVE_EH_LEAF_OBSERVER) || UWVM_EXPERIMENTAL_NATIVE_EH_LEAF_OBSERVER != 1
     static_cast<void>(argc); static_cast<void>(argv);
@@ -60,7 +62,7 @@ int main(int argc, char** argv)
     require(expected_checksum == scalar_lcg_result(iterations), "independent plan iteration/checksum pairing");
     ::uwvm2test::uwvm_int_strict::configure_llvm_jit_runner_runtime();
     mode::global_runtime_llvm_jit_exception_dispatch = mode::runtime_llvm_jit_exception_dispatch_t::native_unwind;
-    mode::global_runtime_llvm_jit_call_stack = mode::runtime_llvm_jit_call_stack_t::unwind;
+
     mode::global_runtime_compile_threads = 0u; mode::runtime_compile_threads_existed = true;
     ::uwvm2::uwvm::io::u8log_output.reopen(::fast_io::io_dup, ::fast_io::u8err());
     auto features{::uwvm2test::uwvm_int_strict::make_wasm1p1_feature_parameter()};

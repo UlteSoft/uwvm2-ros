@@ -54,11 +54,11 @@ def main():
                 raise RuntimeError(reference.stderr.decode(errors='replace'))
             rows.append({'case': name + '-wasmtime', 'passed': True, 'wasm_sha256': hashlib.sha256(binary.read_bytes()).hexdigest()})
             for mode in modes:
-                for policy in ('instruction', 'unwind'):
+                for policy in (('mandatory-native',) if args.ros else ('instruction', 'unwind')):
                     label = f'{name}-{mode}-{policy}'
                     log = args.output / (label + '.compile.log')
                     base = [str(args.uwvm.resolve())] + (['-Raot'] if args.ros else ['-Rcc', 'jit', '-Rcm', mode])
-                    base += ['-Rllvm-cache-path', 'disable', '-Rllvm-call-stack', policy, '-Rclog', 'file', str(log)]
+                    base += ['-Rllvm-cache-path', 'disable', *([] if args.ros else ['-Rllvm-call-stack', policy]), '-Rclog', 'file', str(log)]
                     flags = ['-WFE-threads'] + (['-WFE-multi-memory'] if indexed else [])
                     command = base + flags + ['--run', str(binary)]
                     result = subprocess.run(command, capture_output=True, timeout=30)

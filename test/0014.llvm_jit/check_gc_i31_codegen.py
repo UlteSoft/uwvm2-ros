@@ -51,13 +51,13 @@ def main():
     run([args.wasm_tools, 'validate', '--features', 'all', wasm], args.out / 'validate.log')
     run([args.wasmtime, '-C', 'cache=n', '-W', 'gc=y', wasm], args.out / 'wasmtime.log')
     rows = []
-    for policy in ('instruction', 'unwind'):
+    for policy in (('mandatory-native',) if args.ros else ('instruction', 'unwind')):
         directory = args.out / policy
         directory.mkdir()
         cache = directory / 'cache'
         cache.mkdir()
         command = [args.uwvm, '-Raot'] if args.ros else [args.uwvm, '-Rcc', 'jit', '-Rcm', 'full']
-        command += ['-Rllvm-call-stack', policy, '-Rllvm-cache-path', 'path', cache,
+        command += [*([] if args.ros else ['-Rllvm-call-stack', policy]), '-Rllvm-cache-path', 'path', cache,
                     '-Rclog', 'file', directory / 'compile.log', '-WFE-gc', '--run', wasm]
         run(command, directory / 'run.log')
         objects = list(cache.rglob('*.uwvm-ljc'))
@@ -75,7 +75,7 @@ def main():
             raise AssertionError(f'{policy}: unsigned i31 hot path is missing direct 31-bit mask')
         for name, body in (('signed', signed), ('unsigned', unsigned)):
             calls = re.search(r'\bcallq?\b', body)
-            if policy == 'unwind' and (calls or re.search(r'\b(?:jmpq?|je|jne)\b', body)):
+            if policy in ('unwind', 'mandatory-native') and (calls or re.search(r'\b(?:jmpq?|je|jne)\b', body)):
                 raise AssertionError(f'{policy}: {name} i31 hot path contains a call or branch')
             if policy == 'instruction' and not calls:
                 raise AssertionError(f'{policy}: {name} lacks the requested instruction stack observation')

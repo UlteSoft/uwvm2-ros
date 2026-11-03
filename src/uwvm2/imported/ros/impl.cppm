@@ -64,6 +64,7 @@ export {
 #include "ipc/event_queue.h"
 #include "common/manifest.h"
 #include "common/audit_io.h"
+#include "common/buffer_audit.h"
 #include "common/management.h"
 #include "common/service_availability_history.h"
 #include "common/rmw_endpoint_history.h"

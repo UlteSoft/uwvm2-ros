@@ -504,7 +504,7 @@ def main():
         selections={v:selected_policy(v,args.mode) for v in versions}
         argv=worker_argv(lane,versions,wasm,absent=args.mode=='default-deny',selections=selections)
         argv[1:1]=['--debug-jit-control-fd',str(vm_endpoint.fileno()),'-Rdbg','--runtime-aot','-Rct','0',
-                   '-Rllvm-call-stack','instruction','-Rllvm-cache-path','disable']
+                   '-Rllvm-cache-path','disable']
         runtime_argv=lane.runtime_argv(argv)
         worker,row=lane.start('debug-runtime',['/bin/bash','-c','kill -STOP $$; exec "$@"','debug-runtime',*runtime_argv],
             pass_fds=(vm_endpoint.fileno(),),seconds=300,rss=8*1024**3)

@@ -82,15 +82,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::runtime_mode
         pending_numeric
     };
 
-    enum class runtime_llvm_jit_call_stack_t : unsigned
-    {
-        auto_policy,
-        instruction,
-        none,
-        unwind,
-        unwind_uncheck
-    };
-
     enum class runtime_llvm_jit_cache_path_mode_t : unsigned
     {
         default_path,
@@ -204,15 +195,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::runtime_mode
 
     /// @brief Whether the full exception-dispatch request was explicit.
     inline bool runtime_llvm_jit_exception_dispatch_existed{};
-    /// @brief auto preserves existing eligible pending selection; all failures fall back to native.
-    inline runtime_llvm_jit_exception_dispatch_t global_runtime_llvm_jit_exception_dispatch{
-        runtime_llvm_jit_exception_dispatch_t::auto_policy};
-
-    /// @brief Whether the runtime LLVM AOT call-stack tracking mode was explicitly configured.
-    inline bool runtime_llvm_jit_call_stack_existed{};  // [global]
-
-    /// @brief Runtime LLVM AOT call-stack tracking mode.
-    inline runtime_llvm_jit_call_stack_t global_runtime_llvm_jit_call_stack{runtime_llvm_jit_call_stack_t::unwind};  // [global]
+    /// @brief ROS uses native exception propagation without a pending/instruction fallback.
+    inline runtime_llvm_jit_exception_dispatch_t global_runtime_llvm_jit_exception_dispatch{runtime_llvm_jit_exception_dispatch_t::native_unwind};
 
     /// @brief Whether the LLVM AOT cache path mode was explicitly configured.
     inline bool runtime_llvm_jit_cache_path_existed{};  // [global]

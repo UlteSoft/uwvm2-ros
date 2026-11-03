@@ -4,6 +4,7 @@
 Uses an unchanged real compiler-emitted function body, including local decls.
 No typed locations, replacement source bindings or native parity are invented.
 """
+from mandatory_native_cli import require_linux_ros, product_policy, product_policies
 from pathlib import Path
 import argparse, hashlib, json, re, subprocess, sys
 import run_debug_source_inline_metadata_cli as metadata
@@ -47,8 +48,8 @@ def main():
     for key in ('uwvm', 'wasm', 'map', 'out'):
         ap.add_argument('--' + key, type=Path, required=True)
     ap.add_argument('--ros', action='store_true')
-    ap.add_argument('--policy', choices=('instruction', 'unwind'), required=True)
-    a = ap.parse_args(); assert sys.platform == 'linux'
+    ap.add_argument('--policy', choices=('instruction', 'unwind'), required=False)
+    a = ap.parse_args(); require_linux_ros(ap, a.ros); a.policy = product_policy(ap, a.ros, a.policy, required=True); assert sys.platform == 'linux'
     root = Path(__file__).resolve().parents[2]
     subprocess.run(['bash', str(root/'tools/ci/require_wasm3_test_cgroup.sh')], check=True)
     a.out.mkdir(parents=True, exist_ok=False)
@@ -70,7 +71,7 @@ def main():
         replacement.write_bytes(body)
         row.update(function=target, replacement_body_sha256=sha(replacement))
         mode = ['-Raot'] if a.ros else ['-Rcc', 'jit', '-Rcm', 'full']
-        argv = [str(a.uwvm), '-Rdbg', *mode, '-Rct', '0', '-Rllvm-call-stack', a.policy,
+        argv = [str(a.uwvm), '-Rdbg', *mode, '-Rct', '0', *([] if a.ros else ['-Rllvm-call-stack', a.policy]),
                 '-Rllvm-cache-path', 'disable', '--run', str(a.wasm)]
         row['argv'] = argv; c = metadata.Console(argv, a.out/'console.log')
         assert b'prepared; no Wasm instruction executed' in send('status')

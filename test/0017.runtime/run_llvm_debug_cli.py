@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Actual debug-jit CLI: interactive instruction/EH control and guest input isolation."""
+from mandatory_native_cli import require_linux_ros, product_policy, product_policies
 import argparse
 import hashlib
 import json
@@ -19,7 +20,7 @@ p.add_argument('--source-root',type=Path)
 p.add_argument('--source-fixture-dir',type=Path,help='bounded Linux C/C++ DWARF4/5 Wasm outputs')
 p.add_argument('--rust-source-fixture',type=Path,help='4 GiB bounded macOS Rust -g Wasm output')
 p.add_argument('--source-only',action='store_true',help='run real-product C/C++/Rust source into/over/out and DWARF rejection cases only')
-a=p.parse_args();a.uwvm=a.uwvm.resolve();a.out=a.out.resolve();a.out.mkdir(parents=True,exist_ok=False)
+a=p.parse_args(); require_linux_ros(p, a.ros);a.uwvm=a.uwvm.resolve();a.out=a.out.resolve();a.out.mkdir(parents=True,exist_ok=False)
 root=a.source_root.resolve() if a.source_root else Path(__file__).resolve().parents[2]
 subprocess.run(['bash',str(root/'tools/ci/require_wasm3_test_cgroup.sh')],check=True)
 fixtures={
@@ -235,7 +236,7 @@ class Console:
   if name=='alias_importer':features+=['-WFE-function-references']
   cache_args=['-Rllvm-cache-path','disable'] if cache is None else [
       '-Rllvm-cache-path','path',str(cache),'-Rclog','file',str(a.out/(self.name+'.compile.log'))]
-  self.command=[str(a.uwvm),'-m','debug-jit','-Rct','0','-Rllvm-call-stack',policy,*cache_args,*features,*extra_args,'--run',str(a.out/(name+'.wasm'))]
+  self.command=[str(a.uwvm),'-m','debug-jit','-Rct','0',*([] if a.ros else ['-Rllvm-call-stack', policy]),*cache_args,*features,*extra_args,'--run',str(a.out/(name+'.wasm'))]
   self.child=subprocess.Popen(self.command,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
   self.select=selectors.DefaultSelector();self.select.register(self.child.stdout,selectors.EVENT_READ)
   try:self.prompt()
@@ -271,7 +272,7 @@ class Console:
 
 if source_stems:
  for stem in source_stems:
-   c=Console(stem,'unwind')
+   c=Console(stem,('mandatory-native' if a.ros else 'unwind'))
    try:
     assert b'prepared; no Wasm instruction executed' in c.send('status')
     entry=wasm_export_function_index(a.out/(stem+'.wasm'),'_start')
@@ -293,7 +294,7 @@ if source_stems:
     c.close()
     source_path,source_line,_column=first.rsplit(b':',2)
     source_spec=source_path.decode('utf-8')+':'+source_line.decode('ascii')
-    c=Console(stem,'unwind',tag='source-break')
+    c=Console(stem,('mandatory-native' if a.ros else 'unwind'),tag='source-break')
     try:
      assert b'breakpoint 1 source=' in c.send(f'breaksource 0 {source_spec}')
      assert b'error: source stepping unavailable' not in c.send('status')
@@ -308,7 +309,7 @@ if source_stems:
      helper=wasm_export_function_index(a.out/(stem+'.wasm'),'debug_source_c')
      replacement_body=a.out/'source-c-replacement.bin'
      replacement_body.write_bytes(b'\x00\x20\x00\x41\x07\x6a\x41\x03\x6c\x0b')
-     c=Console(stem,'unwind',tag='source-replaced')
+     c=Console(stem,('mandatory-native' if a.ros else 'unwind'),tag='source-replaced')
      try:
       assert b'function replaced; generation 2' in c.send(f'replace 0 {helper} 1 {replacement_body}')
       assert b'error: source stepping unavailable' in c.send(f'breaksource 0 {source_path.decode("utf-8")}:13')
@@ -334,7 +335,7 @@ if source_stems:
   entry=wasm_export_function_index(a.out/(stem+'.wasm'),'_start')
   callee=wasm_export_function_index(a.out/(stem+'.wasm'),f'debug_source_{language}')
   for policy,origin,destination in (('over',entry,entry),('out',callee,entry)):
-   c=Console(stem,'unwind',tag=f'source-{policy}')
+   c=Console(stem,('mandatory-native' if a.ros else 'unwind'),tag=f'source-{policy}')
    try:
     assert b'breakpoint 1' in c.send(f'break 0 {origin} 0')
     c.send('continue');stopped=c.until(b'stopped: breakpoint')
@@ -351,7 +352,7 @@ if source_stems:
    except BaseException:
     c.close(False);raise
  if a.source_fixture_dir:
-  c=Console('source_importer','unwind',extra_args=['-Wpre',str(a.out/'source-c-dwarf4.wasm'),'p'])
+  c=Console('source_importer',('mandatory-native' if a.ros else 'unwind'),extra_args=['-Wpre',str(a.out/'source-c-dwarf4.wasm'),'p'])
   try:
    provider_entry=wasm_export_function_index(a.out/'source-c-dwarf4.wasm','debug_source_c')
    for module in (0,1):
@@ -370,7 +371,7 @@ if source_stems:
    c.close(False);raise
   stem='source-c-dwarf4-duplicate'
   duplicate_debug_line_section(a.out/'source-c-dwarf4.wasm',a.out/(stem+'.wasm'))
-  c=Console(stem,'unwind')
+  c=Console(stem,('mandatory-native' if a.ros else 'unwind'))
   try:
    entry=wasm_export_function_index(a.out/(stem+'.wasm'),'_start')
    assert b'breakpoint 1' in c.send(f'break 0 {entry} 0')
@@ -386,7 +387,7 @@ if source_stems:
    c.close(False);raise
   stem='source-c-dwarf4-out-of-code'
   out_of_code_debug_line_address(a.out/'source-c-dwarf4.wasm',a.out/(stem+'.wasm'))
-  c=Console(stem,'unwind')
+  c=Console(stem,('mandatory-native' if a.ros else 'unwind'))
   try:
    entry=wasm_export_function_index(a.out/(stem+'.wasm'),'_start')
    assert b'breakpoint 1' in c.send(f'break 0 {entry} 0')
@@ -404,7 +405,7 @@ if a.source_only:
  print('PASS debug-jit product C/C++/Rust source into/over/out and fail-closed DWARF cases')
  raise SystemExit(0)
 
-c=Console('dead_branch','instruction')
+c=Console('dead_branch',('mandatory-native' if a.ros else 'instruction'))
 try:
  # Expression: i32.const 0; if; i32.const 1; drop; end; end.
  # Offset 4 is a valid Wasm opcode in a constant-dead arm. O3 removes its
@@ -417,7 +418,7 @@ try:
 except BaseException:
  c.close(False);raise
 
-for policy in ('instruction','unwind','none'):
+for policy in (('mandatory-native',) if a.ros else ('instruction','unwind','none')):
  c=Console('exception',policy)
  try:
   assert b'prepared; no Wasm instruction executed' in c.send('status')
@@ -466,16 +467,16 @@ for policy in ('instruction','unwind','none'):
  except BaseException:
   c.close(False);raise
 
-c=Console('stdio','instruction')
+c=Console('stdio',('mandatory-native' if a.ros else 'instruction'))
 try:
  c.send('continue');c.until(b'Program exited normally.');assert b'stdio-isolated\n' in c.log,c.log;c.close()
 except BaseException:c.close(False);raise
-c=Console('infinite','unwind')
+c=Console('infinite',('mandatory-native' if a.ros else 'unwind'))
 try:
  c.send('continue');c.close() # Explicit CLI process termination must not try an unbounded guest join.
 except BaseException:c.close(False);raise
 
-c=Console('memory64','instruction')
+c=Console('memory64',('mandatory-native' if a.ros else 'instruction'))
 try:
  assert b'registered' in c.send('break 0 0 0')
  c.send('continue');c.until(b'stopped: breakpoint')
@@ -486,7 +487,7 @@ try:
  c.send('continue');c.until(b'Program exited normally.');c.close()
 except BaseException:c.close(False);raise
 
-for policy in ('instruction','unwind'):
+for policy in (('mandatory-native',) if a.ros else ('instruction', 'unwind')):
  c=Console('patchable_calls',policy)
  try:
   assert b'prepared; no Wasm instruction executed' in c.send('status')
@@ -495,7 +496,7 @@ for policy in ('instruction','unwind'):
 
 # Two independent module records keep distinct fixed slot arrays. Provider
 # local calls, importer local calls and an imported funcref/table alias all run.
-for policy in ('instruction','unwind'):
+for policy in (('mandatory-native',) if a.ros else ('instruction', 'unwind')):
  c=Console('patchable_importer',policy,extra_args=['-Wpre',str(a.out/'patchable_provider.wasm'),'p'])
  try:
   c.send('continue');c.until(b'Program exited normally.');c.close()
@@ -504,7 +505,7 @@ for policy in ('instruction','unwind'):
 # The importer active element overwrites an exported provider table after
 # debug-full precompilation. Both module aliases must observe later table.set
 # and table.grow through one live table domain.
-for policy in ('instruction','unwind'):
+for policy in (('mandatory-native',) if a.ros else ('instruction', 'unwind')):
  c=Console('alias_importer',policy,extra_args=['-Wpre',str(a.out/'alias_provider.wasm'),'p'])
  try:
   c.send('continue');c.until(b'Program exited normally.');c.close()
@@ -514,7 +515,7 @@ for policy in ('instruction','unwind'):
 # by a second process even when the host explicitly configures an object cache.
 cache=a.out/'patchable-cache'
 for phase in ('cold','warm'):
- c=Console('patchable_calls','instruction',cache,phase)
+ c=Console('patchable_calls',('mandatory-native' if a.ros else 'instruction'),cache,phase)
  try:
   c.send('continue');c.until(b'Program exited normally.');c.close()
   compile_log=(a.out/(c.name+'.compile.log')).read_text()
@@ -525,7 +526,7 @@ for phase in ('cold','warm'):
 # A module whose SIMD/reference signature cannot use the typed slot ABI
 # still embeds process-local debugger observer addresses in generated IR.
 for phase in ('fallback-cold','fallback-warm'):
- c=Console('locals','instruction',cache,phase)
+ c=Console('locals',('mandatory-native' if a.ros else 'instruction'),cache,phase)
  try:
   c.send('continue');c.until(b'Program exited normally.');c.close()
   compile_log=(a.out/(c.name+'.compile.log')).read_text()
@@ -533,7 +534,7 @@ for phase in ('fallback-cold','fallback-warm'):
   assert not any(path.is_file() for path in cache.rglob('*')),list(cache.rglob('*'))
  except BaseException:c.close(False);raise
 
-c=Console('locals','instruction')
+c=Console('locals',('mandatory-native' if a.ros else 'instruction'))
 try:
  assert b'error:' in c.send('locals 1') # Prepared state has no guest frame.
  assert b'registered' in c.send('break 0 0 0')

@@ -25,6 +25,30 @@
       "patched_sha256": "f644656d51b585241531ac859da7e462b1811e605f307a2d26a22fd613119fce",
       "patch_sha256": "027ab0ca905e08ad25c810f7113fe2833a9afb7890ddaeb5a352c93f2c181592",
       "scope": "Linux ARM EHABI owned JIT lookup and paired-provider ABI marker; exact target qualification recorded separately"
+    },
+    {
+      "path": "libunwind/src/AddressSpace.hpp",
+      "base_sha256": "9082371507c38c3b8a3e88bfbf262555bf62efdda10549e818425af5a9e39fc6",
+      "patched_sha256": "e504248a31ea58cd65cbdea44877d16f2bff26e5a2db48490ebd79cd858ea156",
+      "patch_file": "tools/ci/llvm-runtimes-23.1.1/elf-unwind-bounds.patch",
+      "patch_sha256": "158734aa8e11832224c366e2bd92a8fd31f0611f764c128f0f546f82fd1d04ab",
+      "scope": "Bound ELF EH lookup to readable PT_LOAD ranges, including split mappings and unterminated QEMU user-mode vDSO. Product qualification required separately."
+    },
+    {
+      "path": "libunwind/src/DwarfParser.hpp",
+      "base_sha256": "97daf4400e58df77a01faa6a037b9def3b5f852829d70a41d0e383386da5cc30",
+      "patched_sha256": "bd66dbddadb33e4728655f8659a24b1f44b3139abd6a2d4b633571d35a3a12e2",
+      "patch_file": "tools/ci/llvm-runtimes-23.1.1/elf-unwind-bounds.patch",
+      "patch_sha256": "158734aa8e11832224c366e2bd92a8fd31f0611f764c128f0f546f82fd1d04ab",
+      "scope": "Bound ELF EH lookup to readable PT_LOAD ranges, including split mappings and unterminated QEMU user-mode vDSO. Product qualification required separately."
+    },
+    {
+      "path": "libunwind/src/AddressSpace.hpp",
+      "base_sha256": "e504248a31ea58cd65cbdea44877d16f2bff26e5a2db48490ebd79cd858ea156",
+      "patched_sha256": "41d7c7f666403d8fd0e334993521c63f279525743087b022aabc10b9de3ab5d3",
+      "patch_file": "tools/ci/llvm-runtimes-23.1.1/elf-unwind-readable-extents.patch",
+      "patch_sha256": "22d449199dbef38d5a72502530c6421a42ca7c20ca7bef0718b91601d569e428",
+      "scope": "Additive correction after immutable elf-unwind-bounds.patch. Discover ELF DWARF data through loader-owned PF_R PT_LOAD proofs for header and frame separately; bounded header field decode and checked arithmetic; no object-envelope read bounds. Source-only candidate; all target qualification pending."
     }
   ]
 }

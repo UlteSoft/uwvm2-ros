@@ -59,9 +59,9 @@ def main():
     a.output.mkdir(parents=True, exist_ok=True)
     rows = []
     modes = ('full',) if a.ros else (('lazy', 'lazy+verification') if a.backend == 'tiered' else ('full', 'lazy', 'lazy+verification'))
-    if a.ros and a.backend == 'tiered':
-        p.error('ROS supports full backends only')
-    policies = ('instruction', 'unwind') if a.backend == 'jit' else ('instruction',)
+    if a.ros and a.backend != 'jit':
+        p.error('ROS requires the full AOT backend with checked native unwind')
+    policies = ('mandatory-native',) if a.ros else (('instruction', 'unwind') if a.backend == 'jit' else ('instruction',))
     for indexed in (False, True):
         name = 'indexed' if indexed else 'legacy'
         wat, cases = fixture(indexed)
@@ -81,7 +81,7 @@ def main():
                 command = [str(a.uwvm.resolve())]
                 command += (['-Raot' if a.backend == 'jit' else '-Rint'] if a.ros else ['-Rcc', a.backend, '-Rcm', mode])
                 if a.backend != 'int':
-                    command += ['-Rllvm-cache-path', 'disable', '-Rllvm-call-stack', policy]
+                    command += ['-Rllvm-cache-path', 'disable', *([] if a.ros else ['-Rllvm-call-stack', policy])]
                 if a.backend == 'tiered':
                     if 'no-t0' in a.tiered_variant:
                         command += ['-Rtiered-disable-t0']

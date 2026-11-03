@@ -1,5 +1,6 @@
 // Actual native-full publication/stop boundary witness. No DWARF library,
 // debugger component, fake publication epoch or caller-created source pin.
+#include "mandatory_native_fixture.h"
 #include <uwvm2/uwvm/run/owned_source.h>
 #include <fast_io.h>
 #include <uwvm2/utils/container/string_concat.h>
@@ -191,21 +192,20 @@ static void run(::std::shared_ptr<observer> const& state, lib::llvm_jit_debug_so
 }
 int main(int argc, char** argv)
 {
-    if(argc != 3 && argc != 4) { return 2; }
-    if(argc == 4)
+    if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
+    if(argc != 2 && argc != 3) { return 2; }
+    if(argc == 3)
     {
-        auto const memory{::fast_io::cstring_view{::fast_io::mnp::os_c_str(argv[3])}};
+        auto const memory{::fast_io::cstring_view{::fast_io::mnp::os_c_str(argv[2])}};
         if(memory == "memory32") { expected_memory_address_bytes = 4u; }
         else if(memory == "memory64") { expected_memory_address_bytes = 8u; }
         else { return 2; }
     }
-    auto const policy{::fast_io::cstring_view{::fast_io::mnp::os_c_str(argv[2])}};
-    if(policy != "instruction" && policy != "unwind") { return 2; }
+
     mode::global_runtime_mode = mode::runtime_mode_t::full_compile;
     mode::global_runtime_compiler = mode::runtime_compiler_t::llvm_jit_only;
     mode::global_runtime_llvm_jit_exception_dispatch = mode::runtime_llvm_jit_exception_dispatch_t::native_unwind;
-    mode::global_runtime_llvm_jit_call_stack = policy == "instruction" ?
-        mode::runtime_llvm_jit_call_stack_t::instruction : mode::runtime_llvm_jit_call_stack_t::unwind;
+
     mode::global_runtime_compile_threads = 0; mode::runtime_compile_threads_existed = true;
     mode::global_runtime_llvm_jit_cache_path_mode = mode::runtime_llvm_jit_cache_path_mode_t::disabled;
     uwvm2::utils::cmdline::parameter_parsing_results path{};

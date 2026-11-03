@@ -6,6 +6,7 @@ invocations in call/fac/skip-stack-guard-page: their recursive paths do not depe
 on preceding successful actions. Ordinary lazy/tiered modes are optional; ROS
 always stays full-only. Native Linux/Darwin guard diagnostics must be explicit.
 """
+from mandatory_native_cli import require_linux_ros
 import argparse
 import concurrent.futures
 import importlib.util
@@ -25,7 +26,7 @@ def main():
     parser.add_argument('--all-modes', action='store_true')
     parser.add_argument('--products', nargs='+', choices=['full', 'ros'], default=['full', 'ros'])
     parser.add_argument('--include-libunwind', action='store_true')
-    args = parser.parse_args()
+    args = parser.parse_args(); require_linux_ros(parser, args.ros)
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
     args.out.mkdir(parents=True, exist_ok=True)
     helper_path = Path(__file__).resolve().parents[1] / '0012.validator/check_wasm2_execution.py'
@@ -66,15 +67,14 @@ def main():
 
     profiles = [
         ('full', 'int-full', ['-Rcm', 'full', '-Rcc', 'int']),
-        ('ros', 'int', ['-Rint']),
     ]
     for product in ('full', 'ros'):
         for policy in ('debug', 'pb-o1', 'pb-o3'):
-            # The CLI calls the native libunwind strategy "unwind"; passing
-            # the provider's library name would only test argument rejection.
-            for tracking in (('none', 'instruction', 'unwind') if args.include_libunwind else ('none', 'instruction')):
+            # ROS always uses checked native unwind; ordinary upstream retains
+            # independently selected none/instruction/unwind comparison rows.
+            for tracking in (('mandatory-native',) if product == 'ros' else (('none', 'instruction', 'unwind') if args.include_libunwind else ('none', 'instruction'))):
                 profiles.append((product, 'llvm-' + policy + '-' + tracking,
-                                 ['-Raot', '-Rllvm-full-policy', policy, '-Rllvm-call-stack', tracking]))
+                                 ['-Raot', '-Rllvm-full-policy', policy, *([] if product == 'ros' else ['-Rllvm-call-stack', tracking])]))
     if args.all_modes:
         profiles.append(('full', 'int-lazy', ['-Rcm', 'lazy', '-Rcc', 'int']))
         for mode, switch in (('llvm-lazy', '--runtime-jit'), ('tiered', '--runtime-tiered')):

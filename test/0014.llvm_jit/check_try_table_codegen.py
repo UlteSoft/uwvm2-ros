@@ -7,11 +7,11 @@ from elf_executable_sections import write_executable_evidence, normalize_relocat
 p=argparse.ArgumentParser(description=__doc__);p.add_argument('--uwvm',type=Path,required=True);p.add_argument('--fixtures',type=Path,required=True);p.add_argument('--out',type=Path,required=True);p.add_argument('--ros',action='store_true');a=p.parse_args()
 root=Path(__file__).resolve().parents[2];subprocess.run(['bash',str(root/'tools/ci/require_wasm3_test_cgroup.sh')],check=True);resource.setrlimit(resource.RLIMIT_CORE,(0,0));a.out.mkdir(parents=True,exist_ok=False);rows=[]
 for case in ('memory','memory-loop'):
- for policy in ('instruction','unwind'):
+ for policy in (('mandatory-native',) if a.ros else ('instruction', 'unwind')):
   results=[]
   for encoding in ('short','explicit'):
    path=a.fixtures/(case+('-short' if encoding=='short' else '')+'.wasm');out=a.out/(case+'-'+policy+'-'+encoding);out.mkdir();cache=out/'cache';cache.mkdir()
-   command=[str(a.uwvm)]+(['-Raot'] if a.ros else ['-Rcc','jit','-Rcm','full'])+['-WFE-exceptions','-Rllvm-call-stack',policy,'-Rllvm-cache-path','path',str(cache),'--run',str(path)]
+   command=[str(a.uwvm)]+(['-Raot'] if a.ros else ['-Rcc','jit','-Rcm','full'])+['-WFE-exceptions',*([] if a.ros else ['-Rllvm-call-stack', policy]),'-Rllvm-cache-path','path',str(cache),'--run',str(path)]
    r=subprocess.run(command,capture_output=True,timeout=60);(out/'run.log').write_bytes(r.stdout+r.stderr);(out/'run.command').write_text(json.dumps(command)+'\n');assert r.returncode==0,r.stderr
    objects=list(cache.rglob('*.uwvm-ljc'));assert len(objects)==1,objects;obj=out/'native.o';obj.write_bytes(decode_object(objects[0].read_bytes(),a.ros))
    assembly=subprocess.check_output(['/toolchain/bin/llvm-objdump','-dr',str(obj)],text=True);(out/'native.s').write_text(assembly)

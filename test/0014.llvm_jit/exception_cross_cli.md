@@ -16,32 +16,24 @@ outside this suite.
 
 ## Backend selection
 
-Existing invocations retain their behavior: the default backend is `int`, with
-ordinary full/lazy/lazy+verification modes and ROS full. Existing interpreter log
-names and `interpreter_modes` summary data remain compatible. `--all-combine-delay`
-still selects all eight interpreter combinations; it is rejected for LLVM.
+Ordinary-upstream invocations default to the interpreter and retain the existing
+full/lazy/lazy+verification and instruction/unwind/none comparison matrices.
+Those require a separately built ordinary-upstream executable. The ROS product
+requires `--ros --backend llvm --mode full` and always checks real native unwind.
+It rejects `--trace` and interpreter selections. Instruction debug safe-point
+granularity remains valid and is independent of the removed stack selector.
 
-LLVM is explicit: `--backend llvm`. It defaults to one profile, full with
-instruction tracing. Repeat `--mode full --mode lazy --mode lazy+verification`
-or `--trace instruction --trace unwind` only when that specific matrix is wanted.
-ROS accepts full only. LLVM lazy+verification is an explicit selection; the runner
-does not silently substitute lazy for verification mode. `--trace` is rejected
-for the interpreter, so it cannot silently mislabel an interpreter measurement.
-
-The runner mappings come from the actual CLI parameter declarations:
-
-| Runner selection | Ordinary CLI | ROS CLI |
+| Runner selection | Ordinary-upstream CLI | ROS CLI |
 | --- | --- | --- |
-| `--backend int --mode full` | `-Rcc int -Rcm full` | `-Rint` |
+| `--backend int --mode full` | `-Rcc int -Rcm full` | Unsupported |
 | `--backend llvm --mode full` | `-Rcc jit -Rcm full` | `-Raot` |
 | `--backend llvm --mode lazy` | `-Rcc jit -Rcm lazy` | Unsupported |
 | `--backend llvm --mode lazy+verification` | `-Rcc jit -Rcm lazy+verification` | Unsupported |
-| `--trace instruction/unwind/none` | `-Rllvm-call-stack instruction/unwind/none` | Same |
+| `--trace instruction/unwind/none` | `-Rllvm-call-stack instruction/unwind/none` | Rejected; omit selector |
 
-The source declarations are `runtime_custom_compiler.h`, `runtime_custom_mode.h`,
-`runtime_llvm_jit_call_stack.h`, and ROS `runtime_aot.h` under
-`src/uwvm2/uwvm/cmdline/params`. `unwind` requests the checked platform mode;
-the scripts do not substitute `unwind-uncheck` or instruction mode on failure.
+The ROS call-stack parameter and callback declarations were deleted. No script
+may restore them to compile a legacy test or relabel an instruction case as a
+native pass. Native registration/probe failures remain failures.
 
 For uncaught exceptions, instruction and unwind profiles require the exact
 `Uncaught WebAssembly exception` fatal class, the throw-site capture heading,
@@ -73,8 +65,9 @@ python3 test/0014.llvm_jit/run_exception_cross_cli.py \
 This explicitly runs 31 cases in two full-JIT stack policies. For a first narrow
 check, add `--case caller-prefix --case uncaught-direct --case uncaught-mismatch`.
 For ordinary LLVM lazy, replace `--mode full` with `--mode lazy`. For ROS full,
-add `--ros` and select the ROS executable. To test disabled diagnostic frames,
-use a separate output directory and `--trace none`.
+add `--ros`, select the ROS executable, and omit both `--trace` options.
+Disabled diagnostic frames are an ordinary-upstream-only comparison with a
+separate output directory and `--trace none`.
 
 Omitting `--uwvm` permits Wasmtime fixture qualification only. Such a report is
 not UWVM execution evidence.
@@ -104,8 +97,9 @@ python3 test/0014.llvm_jit/bench_exception_cross_cli.py \
   --pairs 9 --out /dev/shm/uwvm-builds/exception-cross-llvm-full-unwind-perf
 ```
 
-Use separate output directories to compare instruction/unwind/none. Add `--ros`
-for ROS. Retain exact build manifests, binary hashes, raw samples, affinity,
+Use separate output directories for ordinary-upstream instruction/unwind/none
+comparisons. For ROS, add `--ros` and omit `--trace`; the report contains one
+`mandatory-native` policy. Retain exact build manifests, binary hashes, raw samples, affinity,
 cgroup limits and background-process observations. Run products sequentially
 without other compilation or tests during sampling. Record CPU affinity when
 pinning to a permitted core; preserve noisy initial samples rather than deleting
@@ -124,7 +118,8 @@ not qualify Wasm memory access or execution with guest threads enabled.
 
 ## Diagnostic policy comparison
 
-`bench_exception_trace_policies.py` consumes completed O3/full/pb-o3 instruction
+`bench_exception_trace_policies.py` rejects `--ros`; it consumes ordinary-upstream
+completed O3/full/pb-o3 instruction
 and unwind baseline summaries. It then alternates both policies on the exact same
 Wasm bytes and loop count for nine pairs, with CPU 0 affinity and identical
 startup-amortization requirements. Use `--workload cross-depth-1 --workload

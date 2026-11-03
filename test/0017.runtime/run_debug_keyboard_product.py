@@ -3,6 +3,7 @@
 Binary build-proof pins are mandatory. No fake stop/frame or native permission.
 This does not claim DAP/native NI cancellation/source stepping/full VM finalizers.
 """
+from mandatory_native_cli import require_linux_ros, product_policy, product_policies
 import argparse
 import errno
 import hashlib
@@ -199,7 +200,7 @@ def main():
     p.add_argument('--cgroup', required=True)
     p.add_argument('--ros', action='store_true')
     p.add_argument('--timeout', type=float, default=12)
-    a = p.parse_args()
+    a = p.parse_args(); require_linux_ros(p, a.ros)
     cgroup_check(a.cgroup)
     require(0 < a.timeout <= 20, 'bounded product-case timeout')
     binary = a.binary.resolve(strict=True)
@@ -218,9 +219,9 @@ def main():
         subprocess.run([str(a.wasm_tools), 'validate', str(wasm)], check=True, timeout=10)
         fixtures[name] = wasm
     rows = []
-    for policy in ('instruction', 'unwind'):
+    for policy in (('mandatory-native',) if a.ros else ('instruction', 'unwind')):
         mode = ['-Raot'] if a.ros else ['-Rcc', 'jit', '-Rcm', 'full']
-        prefix = [str(binary), '-Rdbg', *mode, '-Rct', '0', '-Rllvm-call-stack', policy,
+        prefix = [str(binary), '-Rdbg', *mode, '-Rct', '0', *([] if a.ros else ['-Rllvm-call-stack', policy]),
                   '-Rllvm-cache-path', 'disable', '-WFE-exceptions', '-WFE-gc', '-WFE-function-references']
         for name in ('live-gc-eh', 'guest-proc-raise'):
             row = run_case([*prefix, '--run', str(fixtures[name])], a.timeout, name == 'guest-proc-raise')

@@ -18,6 +18,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::ros_state
     using request=data::request;using view=data::view;using selection=data::selection;using status=data::status;
     inline bool valid(request const& query) noexcept {return data::valid(query);}
     inline void read(request const& query,view& output) noexcept {data::snapshot(query,output);}
+    inline ::fast_io::string_view error_text(::std::uint32_t error) noexcept
+    {
+        // Stable ROS Host ABI categories only. Arbitrary gateway detail text
+        // can contain payload, connection secrets or native filesystem names.
+        switch(error)
+        {
+            case 0:return "success";case 2:return "unknown_module";case 9:return "bad_handle";
+            case 11:return "rate_limited";case 13:return "permission_denied";case 17:return "conflict";
+            case 22:return "invalid_argument";case 90:return "too_large";case 95:return "unsupported";
+            case 107:return "disconnected";case 110:return "timeout";case 125:return "revoked";
+        }
+        return "unclassified";
+    }
     inline ::fast_io::string_view status_text(status value) noexcept
     {
         switch(value)
@@ -157,16 +170,24 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::ros_state
                 " backend=ros",::fast_io::mnp::dec(row.backend)," instance=",::fast_io::mnp::dec(row.instance)," generation=",::fast_io::mnp::dec(row.generation)," module=");quoted(output,row.module);
             ::fast_io::io::print(output," function=");quoted(output,row.function);::fast_io::io::print(output," op=");quoted(output,row.operation);
             ::fast_io::io::print(output," alias=");quoted(output,row.alias);
+            ::fast_io::io::print(output," resource=");
+            if(row.resource.size>row.resource.bytes.size()) { ::fast_io::io::print(output,"<invalid>"); }
+            else if(row.resource_redacted || (!row.resource.view().empty() && !data::public_resource(row.resource.view())))
+            { ::fast_io::io::print(output,"<redacted>"); }
+            else { quoted(output,row.resource); }
             if(row.source_alias.size)
             {
                 ::fast_io::io::print(output," source_alias=");quoted(output,row.source_alias);
                 ::fast_io::io::print(output," client_session_label=",::fast_io::mnp::dec(row.client_session_label));
                 if(row.client_features_observed) { ::fast_io::io::print(output," client_features=",::fast_io::mnp::dec(row.client_features)); }
             }
-            ::fast_io::io::print(output," errno=",::fast_io::mnp::dec(row.error)," result_known=",row.result_known," unresolved=",row.unresolved,"\n");
+            ::fast_io::io::print(output," errno=",::fast_io::mnp::dec(row.error)," reason=",
+                row.result_known ? error_text(row.error) : ::fast_io::string_view{"unobserved"},
+                " result_known=",row.result_known," unresolved=",row.unresolved,"\n");
         }
         ::fast_io::io::print(output,"total=",::fast_io::mnp::dec(value.total)," next=",::fast_io::mnp::dec(value.next)," more=",value.more,
-            " gap=",value.gap," overwritten=",::fast_io::mnp::dec(value.overwritten)," dropped_busy=",::fast_io::mnp::dec(value.dropped_busy));
+            " gap=",value.gap," overwritten=",::fast_io::mnp::dec(value.overwritten)," dropped_busy=",::fast_io::mnp::dec(value.dropped_busy),
+            " dropped_sequence=",::fast_io::mnp::dec(value.dropped_sequence));
         if(value.selected==selection::calls)
         {::fast_io::io::print(output," dropped_full=",::fast_io::mnp::dec(value.dropped_full)," dropped_labels=",::fast_io::mnp::dec(value.dropped_labels));}
         ::fast_io::io::print(output,"\n");

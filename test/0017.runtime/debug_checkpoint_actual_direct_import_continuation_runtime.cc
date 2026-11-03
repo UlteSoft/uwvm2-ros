@@ -1,6 +1,7 @@
 // Genuine original Wasm parse+initializer+single fused compiler+actual pause
 // capture+retirement+actual engine-resolved logical continuation execution.
 // This qualifies the execution slice, not complete instance/file/GC rollback.
+#include "mandatory_native_fixture.h"
 #include <uwvm2/uwvm/run/owned_source.h>
 #include <uwvm2/runtime/checkpoint/materialization.h>
 #include <uwvm2/utils/container/string_concat.h>
@@ -64,15 +65,14 @@ struct observer
 };
 int main(int argc, char** argv)
 {
-    if(argc != 5 && argc != 6) { return 2; }
-    auto const policy{::fast_io::concat_std(::fast_io::mnp::os_c_str(argv[3]))};
-    require(policy == "instruction" || policy == "unwind", "explicit stack strategy");
-    auto const route{::fast_io::concat_std(::fast_io::mnp::os_c_str(argv[4]))};
-    require((route == "direct" && argc == 5) || (route == "forward" && argc == 6), "explicit actual direct/forwarded preload route");
+    if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
+    if(argc != 4 && argc != 5) { return 2; }
+
+    auto const route{::fast_io::concat_std(::fast_io::mnp::os_c_str(argv[3]))};
+    require((route == "direct" && argc == 4) || (route == "forward" && argc == 5), "explicit actual direct/forwarded preload route");
     mode::global_runtime_mode = mode::runtime_mode_t::full_compile;
     mode::global_runtime_compiler = mode::runtime_compiler_t::llvm_jit_only;
-    mode::global_runtime_llvm_jit_call_stack = policy == "instruction" ? mode::runtime_llvm_jit_call_stack_t::instruction :
-        mode::runtime_llvm_jit_call_stack_t::unwind;
+
     mode::global_runtime_compile_threads = 0u; mode::runtime_compile_threads_existed = true;
     mode::global_runtime_llvm_jit_cache_path_mode = mode::runtime_llvm_jit_cache_path_mode_t::disabled;
     auto const path{::uwvm2::utils::container::u8concat_uwvm(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(argv[1])))};
@@ -98,7 +98,7 @@ int main(int argc, char** argv)
     ::uwvm2::uwvm::wasm::storage::execute_wasm.module_name = u8"checkpoint-direct-main";
     auto const provider_path{::uwvm2::utils::container::u8concat_uwvm(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(argv[2])))};
     auto const alias_path{route == "forward" ?
-        ::uwvm2::utils::container::u8concat_uwvm(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(argv[5]))) :
+        ::uwvm2::utils::container::u8concat_uwvm(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(argv[4]))) :
         ::uwvm2::utils::container::u8string{}};
     auto& inputs{::uwvm2::uwvm::wasm::storage::preloaded_wasm};
     require(inputs.empty(), "isolated actual preload input setup");

@@ -2,6 +2,7 @@
 // observer stacks belong to the stopped guest, and EH continues after stepping.
 #define UWVM2TEST_RUNNER_USE_LLVM_JIT 1
 #define UWVM2TEST_STRICT_NO_INTERPRETER 1
+#include "mandatory_native_fixture.h"
 #include "../0013.uwvm_int/strict/uwvm_int_translate_strict_common.h"
 #include <atomic>
 #include <chrono>
@@ -76,7 +77,8 @@ struct observer
 };
 int main(int argc,char** argv)
 {
-    if(argc!=3){return 2;}
+    if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
+    if(argc!=2){return 2;}
     std::ifstream file(argv[1],std::ios::binary);
     std::vector<char> input{std::istreambuf_iterator<char>{file},{}};CHECK(file&&!input.empty());
     strict::byte_vec bytes(input.size());std::memcpy(bytes.data(),input.data(),input.size());
@@ -86,9 +88,8 @@ int main(int argc,char** argv)
     auto prepared=strict::prepare_runtime_from_wasm(bytes,u8"observer",{},features,{provider});
     mode::global_runtime_mode=mode::runtime_mode_t::full_compile;
     mode::global_runtime_compiler=mode::runtime_compiler_t::llvm_jit_only;
-    std::string_view policy{argv[2]};
-    mode::global_runtime_llvm_jit_call_stack=policy=="instruction" ? mode::runtime_llvm_jit_call_stack_t::instruction :
-        policy=="unwind" ? mode::runtime_llvm_jit_call_stack_t::unwind : mode::runtime_llvm_jit_call_stack_t::none;
+    std::string_view policy{"mandatory-native"};
+
     CHECK(!lib::llvm_jit_prepare_debug_host_api());
     CHECK(!lib::llvm_jit_capture_debug_stack_host_api());
     auto state=std::make_shared<observer>();state->control=std::make_shared<domain>(1);
@@ -156,5 +157,5 @@ int main(int argc,char** argv)
     lib::reset_runtime_state_host_api();CHECK(weak.expired() && control->is_closed());
     // Owning stack/name snapshots survive code registry retirement.
     for(auto const& old:saved){if(old.stack){CHECK(old.stack->frames()[0].module_name==u8"observer");}}
-    std::printf("PASS LLVM full observer: %zu actual instruction stops, side-effect-free prepare, nested guest stacks, throw/catch step, owner/reset lifetime (%s)\n",saved.size(),argv[2]);
+    std::printf("PASS LLVM full observer: %zu actual instruction stops, side-effect-free prepare, nested guest stacks, throw/catch step, owner/reset lifetime (mandatory-native)\n",saved.size());
 }

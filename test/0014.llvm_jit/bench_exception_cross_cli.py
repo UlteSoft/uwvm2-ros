@@ -111,13 +111,15 @@ def main():
     parser.add_argument('--min-sample-seconds', type=float, default=0.1)
     parser.add_argument('--startup-multiple', type=float, default=20.0)
     args = parser.parse_args()
+    if args.ros and (args.backend != 'llvm' or args.trace):
+        parser.error('--ros requires --backend llvm and has no --trace selector; checked native unwind is mandatory')
     if args.uwvm and not args.build_optimization:
         parser.error('--uwvm requires an explicit --build-optimization; do not infer release flags')
     if args.ros and args.mode != 'full':
         parser.error('ROS only supports full mode')
     if args.backend == 'int' and args.trace:
         parser.error('--trace selects LLVM call-stack policy and requires --backend llvm')
-    trace_policy = (args.trace or 'instruction') if args.backend == 'llvm' else None
+    trace_policy = 'mandatory-native' if args.ros else ((args.trace or 'instruction') if args.backend == 'llvm' else None)
     if not 0 < args.iterations <= 0x7fffffffffffffff or not 0 < args.throw_iterations <= 0x7fffffffffffffff:
         parser.error('iteration counts must be positive signed i64 values')
     if args.reference_max_iterations < 1:
@@ -187,7 +189,7 @@ def main():
     def command(kind, count, enabled):
         if args.backend == 'llvm':
             base = ['-Raot'] if args.ros else ['-Rcc', 'jit', '-Rcm', args.mode]
-            base += ['-Rllvm-call-stack', trace_policy, '-Rllvm-cache-path', 'disable']
+            base += [*([] if args.ros else ['-Rllvm-call-stack', trace_policy]), '-Rllvm-cache-path', 'disable']
             if args.mode == 'full':
                 base += ['-Rllvm-full-policy', 'pb-o3']
         else:

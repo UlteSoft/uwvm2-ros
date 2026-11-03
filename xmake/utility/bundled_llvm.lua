@@ -251,6 +251,10 @@ function verify_fp_flags(value)
 end
 
 function ensure()
+    -- Early option hooks can reach here before effective config is final.
+    -- Admit the original request before memo reuse, hashing or dependency actors.
+    local product = import("utility.ros_product", {anonymous = true})
+    product.uwvm_ros_product_check_current()
     -- Configuration cannot change halfway through one xmake invocation. Still
     -- verify/rebuild on the next invocation; never persist this shortcut.
     -- Anonymous xmake imports can have separate Lua closures. Use process-only

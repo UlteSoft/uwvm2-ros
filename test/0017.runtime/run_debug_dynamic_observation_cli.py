@@ -6,6 +6,7 @@ default observation profile must preserve the waiting caller without acquiring
 executable checkpoint/restore authority. Run inside the Linux test cgroup.
 """
 from __future__ import annotations
+from mandatory_native_cli import require_linux_ros, product_policy, product_policies
 import argparse
 import json
 from pathlib import Path
@@ -22,7 +23,7 @@ def main():
     p.add_argument('--wasm', type=Path, required=True)
     p.add_argument('--out', type=Path, required=True)
     p.add_argument('--ros', action='store_true')
-    a = p.parse_args()
+    a = p.parse_args(); require_linux_ros(p, a.ros)
     root = Path(__file__).resolve().parents[2]
     if sys.platform != 'linux':
         raise RuntimeError('execute in the controlled Linux cgroup')
@@ -31,7 +32,7 @@ def main():
     out.mkdir(parents=True, exist_ok=False)
     binary, wasm = a.uwvm.resolve(strict=True), a.wasm.resolve(strict=True)
     prefix = [str(binary), '-Rdbg'] + ([] if a.ros else ['-Rcc', 'jit', '-Rcm', 'full'])
-    prefix += ['--wasm-feature-enable-function-references', '-Rct', '0', '-Rllvm-call-stack', 'instruction', '-Rllvm-cache-path', 'disable', '--run', str(wasm)]
+    prefix += ['--wasm-feature-enable-function-references', '-Rct', '0', *([] if a.ros else ['-Rllvm-call-stack', 'instruction']), '-Rllvm-cache-path', 'disable', '--run', str(wasm)]
     command = [sys.executable, '-c', 'import os,sys,time;time.sleep(.15);os.execvpe(sys.argv[1],sys.argv[1:],os.environ)', *prefix]
     record = {'binary_sha256': sha(binary), 'wasm_sha256': sha(wasm), 'actions': [], 'passed': False}
     console = None

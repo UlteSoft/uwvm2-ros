@@ -158,3 +158,14 @@ source column uses the same escaped bounded text rendering; full trace pages
 remain within the original65536-byte response bound. Default denial and raw
 business-v1 imports remain unchanged. These additions are source-only pending
 Root's current-source native/Wasm/debugger tests.
+
+Trace rows add a bounded public ROS `resource` prefix and a stable ABI `reason`
+category. Long names are explicitly truncated; secret-bearing URI/path text is
+redacted. The category describes the observed result code, without inventing a
+more specific policy explanation or copying arbitrary gateway detail. An
+unobserved result prints `reason=unobserved`. Initial cursor zero now reports a
+gap after overwrite; empty filtered pages preserve `next`; `dropped_sequence`
+is distinct from `dropped_busy`. These are diagnostic completeness signals,
+not a durable audit guarantee. The qualification and remaining sink/export gaps
+are documented in `test/0082.audit-qualification/README.md`; new sources require
+current-source Linux/native ROS integration execution before acceptance.

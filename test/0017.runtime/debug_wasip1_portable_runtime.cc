@@ -1,6 +1,7 @@
 // Genuine Core3 LLVM-full before-park -> canonical capture -> actual host gate
 // -> complete cohort/N/publication -> bounded WASIp1 query/edit -> resume.
 // No constructor bypass, fake paused scalar, native FD injection or WASI rewrite.
+#include "mandatory_native_fixture.h"
 #include <uwvm2/uwvm/run/owned_source.h>
 #include <uwvm2/runtime/checkpoint/materialization.h>
 #include <uwvm2/uwvm/debugger/wasip1_state.h>
@@ -76,33 +77,34 @@ struct observer
 };
 int main(int argc,char** argv)
 {
-    if(argc!=6 && argc!=7) { return 64; }
-    bool const recording_label_before{argc==7 && ::fast_io::string_view{argv[6],::fast_io::cstr_len(argv[6])}=="recording-label-before"};
-    bool const recording_label{recording_label_before || (argc==7 && ::fast_io::string_view{argv[6],::fast_io::cstr_len(argv[6])}=="recording-label")};
-    bool const resource_alias_before{argc==7 && ::fast_io::string_view{argv[6],::fast_io::cstr_len(argv[6])}=="resource-alias-before"};
-    bool const resource_alias{resource_alias_before || (argc==7 && ::fast_io::string_view{argv[6],::fast_io::cstr_len(argv[6])}=="resource-alias")};
-    bool const fd_slot_before{argc==7 && ::fast_io::string_view{argv[6],::fast_io::cstr_len(argv[6])}=="fd-slot-before"};
-    bool const fd_slot{fd_slot_before || (argc==7 && ::fast_io::string_view{argv[6],::fast_io::cstr_len(argv[6])}=="fd-slot")};
-    bool const sparse_reserved{argc==7 && ::fast_io::string_view{argv[6],::fast_io::cstr_len(argv[6])}=="sparse-reserved"};
-    bool const root_choice_before{argc==7 && ::fast_io::string_view{argv[6],::fast_io::cstr_len(argv[6])}=="root-choice-before"};
-    bool const root_choice{root_choice_before || (argc==7 && ::fast_io::string_view{argv[6],::fast_io::cstr_len(argv[6])}=="root-choice")};
-    bool const root_flags_before{argc==7 && ::fast_io::string_view{argv[6],::fast_io::cstr_len(argv[6])}=="root-flags-before"};
-    bool const root_flags_fresh_before{argc==7 && ::fast_io::string_view{argv[6],::fast_io::cstr_len(argv[6])}=="root-flags-fresh-before"};
-    bool const root_flags{root_choice || root_flags_before || root_flags_fresh_before || (argc==7 && ::fast_io::string_view{argv[6],::fast_io::cstr_len(argv[6])}=="root-flags")};
-    bool const root_alias{root_flags || (argc==7 && ::fast_io::string_view{argv[6],::fast_io::cstr_len(argv[6])}=="root-alias")};
-    bool const normalized_path{argc==7 && ::fast_io::string_view{argv[6],::fast_io::cstr_len(argv[6])}=="normalized-path"};
-    bool const dsync_only{argc==7 && ::fast_io::string_view{argv[6],::fast_io::cstr_len(argv[6])}=="dsync"};
-    if(argc==7 && !recording_label && !resource_alias && !fd_slot && !sparse_reserved && !root_alias && !normalized_path && !dsync_only) { return 64; }
+    if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
+    if(argc!=5 && argc!=6) { return 64; }
+    bool const recording_label_before{argc==6 && ::fast_io::string_view{argv[5],::fast_io::cstr_len(argv[5])}=="recording-label-before"};
+    bool const recording_label{recording_label_before || (argc==6 && ::fast_io::string_view{argv[5],::fast_io::cstr_len(argv[5])}=="recording-label")};
+    bool const resource_alias_before{argc==6 && ::fast_io::string_view{argv[5],::fast_io::cstr_len(argv[5])}=="resource-alias-before"};
+    bool const resource_alias{resource_alias_before || (argc==6 && ::fast_io::string_view{argv[5],::fast_io::cstr_len(argv[5])}=="resource-alias")};
+    bool const fd_slot_before{argc==6 && ::fast_io::string_view{argv[5],::fast_io::cstr_len(argv[5])}=="fd-slot-before"};
+    bool const fd_slot{fd_slot_before || (argc==6 && ::fast_io::string_view{argv[5],::fast_io::cstr_len(argv[5])}=="fd-slot")};
+    bool const sparse_reserved{argc==6 && ::fast_io::string_view{argv[5],::fast_io::cstr_len(argv[5])}=="sparse-reserved"};
+    bool const root_choice_before{argc==6 && ::fast_io::string_view{argv[5],::fast_io::cstr_len(argv[5])}=="root-choice-before"};
+    bool const root_choice{root_choice_before || (argc==6 && ::fast_io::string_view{argv[5],::fast_io::cstr_len(argv[5])}=="root-choice")};
+    bool const root_flags_before{argc==6 && ::fast_io::string_view{argv[5],::fast_io::cstr_len(argv[5])}=="root-flags-before"};
+    bool const root_flags_fresh_before{argc==6 && ::fast_io::string_view{argv[5],::fast_io::cstr_len(argv[5])}=="root-flags-fresh-before"};
+    bool const root_flags{root_choice || root_flags_before || root_flags_fresh_before || (argc==6 && ::fast_io::string_view{argv[5],::fast_io::cstr_len(argv[5])}=="root-flags")};
+    bool const root_alias{root_flags || (argc==6 && ::fast_io::string_view{argv[5],::fast_io::cstr_len(argv[5])}=="root-alias")};
+    bool const normalized_path{argc==6 && ::fast_io::string_view{argv[5],::fast_io::cstr_len(argv[5])}=="normalized-path"};
+    bool const dsync_only{argc==6 && ::fast_io::string_view{argv[5],::fast_io::cstr_len(argv[5])}=="dsync"};
+    if(argc==6 && !recording_label && !resource_alias && !fd_slot && !sparse_reserved && !root_alias && !normalized_path && !dsync_only) { return 64; }
 #if defined(_WIN32) && !defined(__CYGWIN__)
     // Original Windows WASI path_open rejects DSYNC; the four-OS fdstat
     // test covers that explicit ENOTSUP contract.
     if(dsync_only) { ::fast_io::io::println("SKIP DSYNC-only native runtime case: target mode unsupported");return 77; }
 #endif
-    auto policy=::fast_io::concat_std(::fast_io::mnp::os_c_str(argv[2]));
+
     mode::global_runtime_mode = mode::runtime_mode_t::full_compile;
     ::uwvm2::uwvm::wasm::storage::execute_wasm_mode=::uwvm2::uwvm::wasm::base::mode::debug_jit;
     mode::global_runtime_compiler = mode::runtime_compiler_t::llvm_jit_only;
-    mode::global_runtime_llvm_jit_call_stack = policy == "instruction" ? mode::runtime_llvm_jit_call_stack_t::instruction : mode::runtime_llvm_jit_call_stack_t::unwind;
+
     mode::global_runtime_compile_threads = 0u; mode::runtime_compile_threads_existed = true;
     mode::global_runtime_llvm_jit_cache_path_mode = mode::runtime_llvm_jit_cache_path_mode_t::disabled;
     auto const path{::uwvm2::utils::container::u8concat_uwvm(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(argv[1])))};
@@ -122,17 +124,17 @@ int main(int argc,char** argv)
     // The scan-boundary test has one spare occupied FD slot, isolating scan policy.
     if(fd_slot) { wasi_storage::default_wasip1_env.fd_storage.fd_limit=65537u; }
     wasi_storage::wasip1_noinherit_system_environment = true;
-    wasi_storage::wasip1_add_or_replace_environment.emplace(u8"UWVM_DEBUG_KEY", ::fast_io::string_view{argv[4],::fast_io::cstr_len(argv[4])}=="save" ? ::fast_io::u8string_view{u8"old"} : ::fast_io::u8string_view{u8"target"});
+    wasi_storage::wasip1_add_or_replace_environment.emplace(u8"UWVM_DEBUG_KEY", ::fast_io::string_view{argv[3],::fast_io::cstr_len(argv[3])}=="save" ? ::fast_io::u8string_view{u8"old"} : ::fast_io::u8string_view{u8"target"});
     wasi_storage::wasip1_force_args_is_set = true;
     wasi_storage::wasip1_force_argument_storage.emplace_back(u8"argv0");
-    wasi_storage::wasip1_force_argument_storage.emplace_back(::fast_io::string_view{argv[4],::fast_io::cstr_len(argv[4])}=="save" ? ::fast_io::u8string_view{u8"before"} : ::fast_io::u8string_view{u8"target-before"});
+    wasi_storage::wasip1_force_argument_storage.emplace_back(::fast_io::string_view{argv[3],::fast_io::cstr_len(argv[3])}=="save" ? ::fast_io::u8string_view{u8"before"} : ::fast_io::u8string_view{u8"target-before"});
     // Use the ORIGINAL mount/environment initializer to issue the directory
     // FD. Native handle injection and direct FD table fabrication are absent.
     namespace wasi_env=::uwvm2::imported::wasi::wasip1::environment;
     wasi_env::mount_dir_root_t mount{};mount.preload_dir=u8"portable-root";
-    mount.entry=::fast_io::dir_file{::fast_io::mnp::os_c_str(argv[3])};
+    mount.entry=::fast_io::dir_file{::fast_io::mnp::os_c_str(argv[2])};
     wasi_storage::default_wasip1_env.mount_dir_roots.push_back(::std::move(mount));
-    wasi_storage::default_wasip1_env.disable_utf8_check=::fast_io::string_view{argv[4],::fast_io::cstr_len(argv[4])}=="restore";
+    wasi_storage::default_wasip1_env.disable_utf8_check=::fast_io::string_view{argv[3],::fast_io::cstr_len(argv[3])}=="restore";
     require(::uwvm2::uwvm::run::prepare_owned_full_cli_source(true) == static_cast<int>(::uwvm2::uwvm::run::retval::ok), "real initializer and original WASI environment");
 
     auto& actual_environment=wasi_storage::default_wasip1_env;
@@ -141,12 +143,12 @@ int main(int argc,char** argv)
     require(wasi_functions::fd_renumber_base(actual_environment,3,151)==wasi_abi::errno_t::esuccess,"original preopen renumbered");
     if(normalized_path)
     {
-        ::fast_io::dir_file directory{::fast_io::mnp::os_c_str(argv[3])};
+        ::fast_io::dir_file directory{::fast_io::mnp::os_c_str(argv[2])};
         ::fast_io::native_mkdirat(::fast_io::at(directory),u8"nested");
     }
-    auto target_file=::fast_io::u8concat_fast_io(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(argv[3])),
+    auto target_file=::fast_io::u8concat_fast_io(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(argv[2])),
         normalized_path ? ::fast_io::u8string_view{u8"/nested/state.bin"} : ::fast_io::u8string_view{u8"/state.bin"});
-    bool source=::fast_io::string_view{argv[4],::fast_io::cstr_len(argv[4])}=="save";
+    bool source=::fast_io::string_view{argv[3],::fast_io::cstr_len(argv[3])}=="save";
     { ::fast_io::native_file file{target_file,::fast_io::open_mode::out|::fast_io::open_mode::creat|::fast_io::open_mode::trunc};
       ::fast_io::io::print(file,::fast_io::mnp::os_c_str(source ? "SOURCE-CONTENT-MUST-NOT-BE-SAVED" : "TARGET-CONTENT-UNCHANGED")); }
     auto state{::std::make_shared<observer>()};
@@ -180,8 +182,8 @@ int main(int argc,char** argv)
     namespace pp=::uwvm2::uwvm::debugger::wasip1_portable;
     auto call=[&](auto const& input) { return lib::llvm_jit_checkpoint_capture_wasip1_environment_host_api(ticket,owners,input); };
     lib::llvm_jit_wasip1_environment_capsule_request request{};request.recording_label[0]=::std::byte{0x71};
-    bool saving=::fast_io::string_view{argv[4],::fast_io::cstr_len(argv[4])}=="save";
-    pp::text cp_path=::fast_io::u8concat_fast_io(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(argv[5])));
+    bool saving=::fast_io::string_view{argv[3],::fast_io::cstr_len(argv[3])}=="save";
+    pp::text cp_path=::fast_io::u8concat_fast_io(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(argv[4])));
     ::std::shared_ptr<pp::snapshot const> snapshot{};
     auto restrict_mount=[&]
     {
@@ -221,7 +223,6 @@ int main(int argc,char** argv)
         require(pp::encode(current,before_wire) && pp::encode(*after.portable,after_wire) && before_wire==after_wire,
             "quota checks preserve complete FD graph rights flags cursor free list argv and env");
     };
-
 
     if(recording_label)
     {
@@ -783,5 +784,5 @@ int main(int argc,char** argv)
     require(lib::llvm_jit_checkpoint_capture_wasip1_environment_host_api({},owners,denied).status==cs::unavailable_capture,"serialized metadata never replaces a real stop");
     require(state->control->resume(ticket),"real native guest resumed");guest.join();
     require(result==7u,"Core3 guest resumes normally");
-    ::fast_io::io::println("debug_wasip1_portable_runtime PASS checks=",checks," mode=",::fast_io::mnp::os_c_str(argv[4])," policy=",::fast_io::mnp::os_c_str(argv[2]));
+    ::fast_io::io::println("debug_wasip1_portable_runtime PASS checks=",checks," mode=",::fast_io::mnp::os_c_str(argv[3])," policy=mandatory-native");
 }

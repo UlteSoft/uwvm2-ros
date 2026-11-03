@@ -1,0 +1,55 @@
+;; The recorded guest window starts after startup/initial management and ends
+;; before fd_write and control-thread retirement. It includes two WASI clock
+;; boundary calls; the adjacent calibration interval is retained, not subtracted.
+(module
+  (import "wasi_snapshot_preview1" "clock_time_get" (func $clock (param i32 i64 i32) (result i32)))
+  (import "wasi_snapshot_preview1" "fd_write" (func $write (param i32 i32 i32 i32) (result i32)))
+  (memory (export "memory") 1)
+  (data (i32.const 0) "NMODET01")
+  (func $leaf (export "leaf") (param $x i32) (result i32)
+    local.get $x
+    i32.eqz
+    if
+      nop ;; offset 5: xorshift32 preserves a nonzero seed. The independent
+          ;; oracle also rejects a zero state before producing this fixture.
+    end
+    local.get $x local.get $x i32.const 13 i32.shl i32.xor local.set $x
+    local.get $x local.get $x i32.const 17 i32.shr_u i32.xor local.set $x
+    local.get $x local.get $x i32.const 5 i32.shl i32.xor)
+  (func $never (export "never_called") nop nop)
+  (func (export "_start") (local $i i32) (local $state i32) (local $sum i32)
+    ;; Calibration timestamps at 24 and 32, then actual window start at 8.
+    i32.const 1 i64.const 1 i32.const 24 call $clock
+    if unreachable end
+    i32.const 1 i64.const 1 i32.const 32 call $clock
+    if unreachable end
+    i32.const 1 local.set $state
+    i32.const 1 i64.const 1 i32.const 8 call $clock
+    if unreachable end
+    loop $updates
+      i32.const 4096 local.get $i i32.const 1023 i32.and i32.const 2 i32.shl i32.add
+      local.get $state call $leaf local.tee $state i32.store
+      local.get $i i32.const 1 i32.add local.tee $i
+      i32.const 1048576 i32.lt_u br_if $updates
+    end
+    i32.const 0 local.set $i
+    loop $sum
+      local.get $sum
+      i32.const 4096 local.get $i i32.const 2 i32.shl i32.add i32.load
+      i32.add local.set $sum
+      local.get $i i32.const 1 i32.add local.tee $i
+      i32.const 1024 i32.lt_u br_if $sum
+    end
+    i32.const 1 i64.const 1 i32.const 16 call $clock
+    if unreachable end
+    local.get $sum i32.const @CHECKSUM@ i32.ne
+    if unreachable end
+    i32.const 40 local.get $sum i32.store
+    i32.const 44 i32.const 1048576 i32.store
+    ;; One exact 48-byte binary report, after the measured guest interval.
+    i32.const 128 i32.const 0 i32.store
+    i32.const 132 i32.const 48 i32.store
+    i32.const 1 i32.const 128 i32.const 1 i32.const 136 call $write
+    if unreachable end
+    i32.const 136 i32.load i32.const 48 i32.ne
+    if unreachable end))

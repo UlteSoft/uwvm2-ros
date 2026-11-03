@@ -4,6 +4,7 @@
 Requires the fresh CLI/runtime/host receipt produced by the paired Linux build.
 The compiler writes original oracle locals; no Wasm/DWARF bytes are rewritten.
 """
+from mandatory_native_cli import require_linux_ros, product_policy, product_policies
 from pathlib import Path
 import argparse,hashlib,json,os,re,shlex,subprocess,sys,time
 sys.dont_write_bytecode=True
@@ -17,7 +18,7 @@ ap.add_argument('--wasm-tools',type=Path,required=True)
 ap.add_argument('--llvm-dwarfdump',type=Path,required=True)
 ap.add_argument('--out',type=Path,required=True)
 ap.add_argument('--ros',action='store_true')
-a=ap.parse_args()
+a=ap.parse_args(); require_linux_ros(ap, a.ros)
 assert sys.platform=='linux','Execute only in the Linux test cgroup'
 S=a.source_root.resolve(strict=True);O=a.out.resolve();O.mkdir(parents=True,exist_ok=False)
 sha=lambda p:hashlib.file_digest(Path(p).open('rb'),'sha256').hexdigest()
@@ -58,12 +59,12 @@ for bits in [32,64]:
    run([str(compiler),'--target=wasm'+str(bits)+'-unknown-unknown','-fuse-ld=lld','-B'+str(SDK/'bin'),'-x',x,'-std='+dialect,'-O0','-g','-gdwarf-'+str(dwarf),'-nostdlib','-Wl,-O0','-Wl,--no-entry','-Wl,--export-all','-Wl,--initial-memory=131072',str(fixture),'-o',str(wasm)],stem+'-compile')
    run([str(validator),'validate','--features','all',str(wasm)],stem+'-validate')
    run([str(dwarfdump),'--verify',str(wasm)],stem+'-dwarf-verify');pins[str(wasm)]=sha(wasm)
-   for policy in ['instruction','unwind']:
+   for policy in (('mandatory-native',) if a.ros else ('instruction', 'unwind')):
     row={'stem':stem,'policy':policy,'wasm_sha256':sha(wasm),'passed':False,'actions':[],'checks':[]};record['cases'].append(row);save();console=None
     try:
      prefix=[str(binary),'-Rdbg']
      if not a.ros:prefix+=['-Rcc','jit','-Rcm','full']
-     prefix+=['-Rct','0','-Rllvm-call-stack',policy,'-Rllvm-cache-path','disable']
+     prefix+=['-Rct','0',*([] if a.ros else ['-Rllvm-call-stack', policy]),'-Rllvm-cache-path','disable']
      if bits==64:prefix+=['--wasm-feature-enable-memory64','--wasm-feature-enable-table64']
      prefix+=['--run',str(wasm)];row['argv']=prefix
      console=Console(prefix,O/(stem+'-'+policy+'-console.log'))

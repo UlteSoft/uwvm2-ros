@@ -23,10 +23,14 @@
 
 namespace uwvm2::imported::ros::audit_io
 {
+    enum class stream : unsigned char { error, output };
+    enum class failure : unsigned char
+    { none, bad_descriptor, replaced_descriptor, unsupported_sink, oversized, would_block, partial_write, peer_closed, io_error, signal_guard, exception, count };
     // Trusted-runtime diagnostics only: no Guest import, handle or ABI. A
     // delivered record means all bytes were accepted by the selected sink.
     // Counters are monotonic, saturating, and do not add unbudgeted log records.
     inline std::atomic<std::uint64_t> delivered{},dropped{};
+    inline std::array<std::atomic<std::uint64_t>,static_cast<std::size_t>(failure::count)> failures{};
     inline void increment(std::atomic<std::uint64_t>& counter) noexcept
     {
         auto value{counter.load(std::memory_order_relaxed)};
@@ -35,6 +39,11 @@ namespace uwvm2::imported::ros::audit_io
     }
     inline std::uint64_t delivered_records() noexcept { return delivered.load(std::memory_order_relaxed); }
     inline std::uint64_t dropped_records() noexcept { return dropped.load(std::memory_order_relaxed); }
+    inline std::uint64_t failed_records(failure reason) noexcept
+    {
+        auto index{static_cast<std::size_t>(reason)};
+        return index<failures.size() ? failures[index].load(std::memory_order_relaxed) : 0;
+    }
 
 #if defined(__linux__)
     namespace details
@@ -69,7 +78,7 @@ namespace uwvm2::imported::ros::audit_io
                 (void)::pthread_sigmask(SIG_SETMASK,&old_,nullptr);
             }
         };
-        inline bool regular_write(int fd,std::string_view record)
+        inline bool regular_write(int fd,std::string_view record,[[maybe_unused]] failure& reason)
         {
 #if defined(__cpp_exceptions)
             // A pinned duplicate shares the original regular-file OFD, so its
@@ -85,29 +94,38 @@ namespace uwvm2::imported::ros::audit_io
                 {
                     auto n{::write(fd,part.data()+done,part.size()-done)};
                     if(n<0&&errno==EINTR&&++interrupted<16) { continue; }
-                    if(n<=0) { return false; }done+=static_cast<std::size_t>(n);
+                    if(n<=0) { reason=done ? failure::partial_write : failure::io_error;return false; }done+=static_cast<std::size_t>(n);
                 }
             }
             return true;
 #endif
         }
-        inline bool linux_write(std::string_view record)
+        inline bool write_complete(ssize_t count,std::size_t expected,failure& reason) noexcept
         {
+            if(count>=0 && static_cast<std::size_t>(count)==expected) { return true; }
+            if(count>=0) { reason=failure::partial_write; }
+            else if(errno==EAGAIN || errno==EWOULDBLOCK) { reason=failure::would_block; }
+            else if(errno==EPIPE || errno==ECONNRESET) { reason=failure::peer_closed; }
+            return false;
+        }
+        inline bool linux_write(std::string_view record,failure& reason,int descriptor)
+        {
+            reason=failure::io_error;
             struct stat original{};
-            if(::fstat(STDERR_FILENO,&original)<0) { return false; }
-            int pinned{::fcntl(STDERR_FILENO,F_DUPFD_CLOEXEC,3)};
+            if(::fstat(descriptor,&original)<0) { reason=failure::bad_descriptor;return false; }
+            int pinned{::fcntl(descriptor,F_DUPFD_CLOEXEC,3)};
             if(pinned<0) { return false; }
             ::fast_io::posix_file owner{pinned};struct stat snapshot{};
-            if(::fstat(pinned,&snapshot)<0||!same_file(original,snapshot)) { return false; }
+            if(::fstat(pinned,&snapshot)<0||!same_file(original,snapshot)) { reason=failure::replaced_descriptor;return false; }
             auto flags{::fcntl(pinned,F_GETFL,0)};
-            if(flags<0||(flags&O_ACCMODE)==O_RDONLY) { return false; }
-            if(S_ISREG(snapshot.st_mode)) { return regular_write(pinned,record); }
+            if(flags<0||(flags&O_ACCMODE)==O_RDONLY) { reason=failure::bad_descriptor;return false; }
+            if(S_ISREG(snapshot.st_mode)) { return regular_write(pinned,record,reason); }
 
             // Keep one bounded, allocation-free record including its newline.
             // Nonblocking pipes accept <= PIPE_BUF atomically or reject it; an
             // oversized record is dropped before any bytes are written.
             std::array<char,4096> bytes;
-            if(record.size()>=bytes.size()) { return false; }
+            if(record.size()>=bytes.size()) { reason=failure::oversized;return false; }
             ::fast_io::obuffer_view buffer{bytes.data(),bytes.data()+bytes.size()};
             ::fast_io::print(buffer,record,"\n");auto length{record.size()+1};
             if(S_ISSOCK(snapshot.st_mode))
@@ -116,43 +134,44 @@ namespace uwvm2::imported::ros::audit_io
                 {
                     auto n{::send(pinned,bytes.data(),length,MSG_DONTWAIT|MSG_NOSIGNAL)};
                     if(n<0&&errno==EINTR) { continue; }
-                    return n>=0&&static_cast<std::size_t>(n)==length;
+                    return write_complete(n,length,reason);
                 }
                 return false;
             }
             bool pipe{S_ISFIFO(snapshot.st_mode)};
             bool terminal{S_ISCHR(snapshot.st_mode)&&::isatty(pinned)};
             bool null_device{S_ISCHR(snapshot.st_mode)&&snapshot.st_rdev==::makedev(1,3)};
-            if(!pipe&&!terminal&&!null_device) { return false; }
+            if(!pipe&&!terminal&&!null_device) { reason=failure::unsupported_sink;return false; }
             if(pipe)
-            { auto atomic{::fpathconf(pinned,_PC_PIPE_BUF)};if(atomic<=0||length>static_cast<std::uint64_t>(atomic)) { return false; } }
+            { auto atomic{::fpathconf(pinned,_PC_PIPE_BUF)};if(atomic<=0||length>static_cast<std::uint64_t>(atomic)) { reason=failure::oversized;return false; } }
             std::array<char,64> path;
             ::fast_io::obuffer_view path_buffer{path.data(),path.data()+path.size()};
             ::fast_io::print(path_buffer,"/proc/self/fd/",::fast_io::mnp::dec(pinned),std::string_view{"\0",1});
-            // dup + F_SETFL would also change the original stderr OFD. Opening
+            // dup + F_SETFL would also change the original selected OFD. Opening
             // its pinned proc reference creates an independent nonblocking OFD.
             int independent{::open(path.data(),O_WRONLY|O_CLOEXEC|O_NONBLOCK|O_NOCTTY)};
-            if(independent<0) { return false; }
+            if(independent<0) { if(errno==ENXIO || errno==EPIPE) { reason=failure::peer_closed; }return false; }
             ::fast_io::posix_file output{independent};struct stat actual{};
-            if(::fstat(independent,&actual)<0||!same_file(snapshot,actual)) { return false; }
+            if(::fstat(independent,&actual)<0||!same_file(snapshot,actual)) { reason=failure::replaced_descriptor;return false; }
             auto output_flags{::fcntl(independent,F_GETFL,0)};
             if(output_flags<0||!(output_flags&O_NONBLOCK)) { return false; }
             pipe_signal_guard signal;
-            if(!signal.valid()) { return false; }
+            if(!signal.valid()) { reason=failure::signal_guard;return false; }
             for(unsigned attempt{};attempt!=16;++attempt)
             {
                 auto n{::write(independent,bytes.data(),length)};
                 if(n<0&&errno==EINTR) { continue; }
                 if(n<0&&errno==EPIPE) { signal.broken_pipe(); }
-                return n>=0&&static_cast<std::size_t>(n)==length;
+                return write_complete(n,length,reason);
             }
             return false;
         }
     }
 #endif
-    inline bool write_record(std::string_view record) noexcept
+    inline bool write_record_to(stream destination,std::string_view record) noexcept
     {
         bool complete{};
+        failure reason{failure::io_error};
 #if defined(__linux__)
         details::errno_guard preserve_errno;
 #endif
@@ -161,14 +180,19 @@ namespace uwvm2::imported::ros::audit_io
 #endif
         {
 #if defined(__linux__)
-            complete=details::linux_write(record);
+            complete=details::linux_write(record,reason,destination==stream::output?STDOUT_FILENO:STDERR_FILENO);
 #else
-            ::fast_io::io::println(::fast_io::err(),record);complete=true;
+            if(destination==stream::output) { ::fast_io::io::println(::fast_io::out(),record); }
+            else { ::fast_io::io::println(::fast_io::err(),record); }complete=true;
 #endif
         }
 #if defined(__cpp_exceptions)
-        catch(...) {}
+        catch(...) { reason=failure::exception; }
 #endif
-        increment(complete?delivered:dropped);return complete;
+        increment(complete?delivered:dropped);
+        if(!complete) { increment(failures[static_cast<std::size_t>(reason)]); }
+        return complete;
     }
+    inline bool write_record(std::string_view record) noexcept
+    { return write_record_to(stream::error,record); }
 }

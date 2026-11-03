@@ -1,3 +1,4 @@
+#include "mandatory_native_fixture.h"
 #include "../0013.uwvm_int/strict/uwvm_int_translate_strict_common.h"
 #include <uwvm2/runtime/lib/uwvm_runtime.h>
 #include <atomic>
@@ -128,14 +129,15 @@ namespace
 }
 int main(int argc,char** argv)
 {
+    if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
+if(argc > 2 || (argc == 2 && std::strcmp(argv[1], "indirect") != 0)) { return 64; }
 #if defined(UWVM2TEST_TAIL_INDIRECT)
     constexpr bool indirect{true};
 #else
     bool const indirect{argc>1 && std::strcmp(argv[1],"indirect")==0};
 #endif
 #if defined(UWVM2TEST_RUNNER_USE_LLVM_JIT)
-    mode::global_runtime_llvm_jit_call_stack = ((argc>1 && std::strcmp(argv[1],"unwind")==0) || (argc>2 && std::strcmp(argv[2],"unwind")==0)) ?
-        mode::runtime_llvm_jit_call_stack_t::unwind : mode::runtime_llvm_jit_call_stack_t::instruction;
+
 #endif
     auto provider_bytes=provider(), main_bytes=consumer(indirect);
     auto features=strict::make_wasm1p1_feature_parameter();

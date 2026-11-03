@@ -1,0 +1,91 @@
+name: Linux ROS release qualification
+on:
+  push:
+    branches: [main]
+    paths: ['src/**', 'xmake/**', 'xmake.lua', 'third-parties/**', 'tools/ci/**', 'test/0006.check_module/**', 'test/0073.ros-tests/**', 'test/0080.product-qualification/**', 'test/0083.ros-product-policy/**', '.github/**']
+  schedule:
+    - cron: '31 3 * * 1'
+  workflow_dispatch:
+    inputs:
+      matrix:
+        description: 'Primary Linux x86_64 product, or primary plus AArch64 qualification candidate'
+        type: choice
+        options: [primary, full]
+        default: primary
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ros-product-global-qualification
+  cancel-in-progress: false
+
+jobs:
+  selection:
+    if: github.ref == 'refs/heads/main' && github.repository == 'UlteSoft/uwvm2-ros'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - id: plan
+        env:
+          FULL: ${{ github.event_name == 'schedule' || inputs.matrix == 'full' }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          rows = [{'name':'Linux x86_64 release candidate','label':'ros-x86_64-cgroup64','admission':'ROS_X86_64_ADMISSION','llvm':'ROS_X86_64_LLVM23_PREFIX'}]
+          if os.environ['FULL'] == 'true':
+              rows.append({'name':'Linux AArch64 qualification candidate','label':'ros-aarch64-cgroup64','admission':'ROS_AARCH64_ADMISSION','llvm':'ROS_AARCH64_LLVM23_PREFIX'})
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as stream:
+              stream.write('matrix='+json.dumps({'include': rows}, separators=(',', ':'))+'\n')
+          PY
+
+  product:
+    name: ${{ matrix.name }} / guarded contracts, ROS units and AOT
+    needs: selection
+    if: github.ref == 'refs/heads/main' && github.repository == 'UlteSoft/uwvm2-ros'
+    runs-on: [self-hosted, linux, '${{ matrix.label }}']
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix: ${{ fromJSON(needs.selection.outputs.matrix) }}
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      ADMISSION: ${{ vars[matrix.admission] }}
+      LLVM23_PREFIX: ${{ vars[matrix.llvm] }}
+      CMAKE_BUILD_PARALLEL_LEVEL: '1'
+      UWVM_XMAKE_JOBS: '1'
+      LLVM_CONFIG: /deliberately-invalid-system-llvm-config
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Start evidence before tool or resource admission
+        env:
+          LANE_NAME: ${{ matrix.name }}
+        run: |
+          EVIDENCE="$RUNNER_TEMP/ros-product-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          printf 'EVIDENCE=%s\n' "$EVIDENCE" >> "$GITHUB_ENV"
+          python3 -B test/0080.product-qualification/receipt.py init --source "$GITHUB_WORKSPACE" --out "$EVIDENCE" --lane "$LANE_NAME" \
+            --require resource --require toolchain --require module-source --require module-checker-tests \
+            --require ros-profile-tests --require qualification-helper-tests --require ros-security-units --require ros-ipc-units \
+            --require configure --require build --require target --require closure --require version --require basic
+      - name: Admit the existing runner and hold the global lease through build and execution
+        run: |
+          python3 -B test/0080.product-qualification/receipt.py command --out "$EVIDENCE" --id resource --timeout 19500 -- \
+            python3 -B test/0080.product-qualification/guarded.py --source "$GITHUB_WORKSPACE" --admission "$ADMISSION" --out "$EVIDENCE/resources.json" -- \
+            python3 -B test/0080.product-qualification/product.py --source "$GITHUB_WORKSPACE" --out "$EVIDENCE" --llvm-prefix "$LLVM23_PREFIX"
+      - name: Seal exact source, release ELF and logs / unrun dimensions remain untested
+        if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+        run: python3 -B test/0080.product-qualification/receipt.py seal --out "$EVIDENCE" --job-status "$JOB_STATUS"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: ros-${{ matrix.label }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.EVIDENCE }}
+          if-no-files-found: error
+          retention-days: 14

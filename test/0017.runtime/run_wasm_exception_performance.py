@@ -6,6 +6,7 @@ same LCG checksum is checked by all three modules; one in sixteen calls of the
 throwing variant crosses a native Wasm exception boundary.
 """
 
+from mandatory_native_cli import require_linux_ros
 import argparse
 import hashlib
 import json
@@ -19,7 +20,7 @@ import time
 ORDINARY = {'int-full': ['-Rcc', 'int', '-Rcm', 'full'],
             'jit-full': ['-Rcc', 'jit', '-Rcm', 'full'],
             'tiered-lazy': ['-Rcc', 'tiered', '-Rcm', 'lazy']}
-ROS = {'int-full': ['-Rint'], 'jit-full': ['-Raot']}
+ROS = {'jit-full': ['-Raot']}
 MULTIPLIER = 1664525
 INCREMENT = 1013904223
 MASK = 0xffff_ffff
@@ -160,7 +161,7 @@ def main():
     parser.add_argument('--normal-count', type=int, default=10000)
     parser.add_argument('--throw-count', type=int, default=1600)
     parser.add_argument('--cpu', type=int, default=0)
-    args = parser.parse_args()
+    args = parser.parse_args(); require_linux_ros(parser, args.ros)
     if not (1 <= args.samples <= 99 and 16 <= args.normal_count < 2**31 and
             16 <= args.throw_count < 2**31 and args.throw_count % 16 == 0):
         parser.error('invalid sample or iteration count')
@@ -233,10 +234,10 @@ def main():
     for mode in selected:
         if mode not in modes:
             parser.error('mode does not belong to selected product')
-        for policy in (('none',) if mode == 'int-full' else ('unwind', 'instruction')):
+        for policy in (('mandatory-native',) if args.ros else (('none',) if mode == 'int-full' else ('unwind', 'instruction'))):
             prefix = ['taskset', '-c', str(args.cpu), args.uwvm, *modes[mode]]
             if mode != 'int-full':
-                prefix += ['-Rllvm-call-stack', policy, '-Rllvm-cache-path', 'disable']
+                prefix += [*([] if args.ros else ['-Rllvm-call-stack', policy]), '-Rllvm-cache-path', 'disable']
             profiles.append((mode, policy, prefix))
     if args.compare_wasmtime:
         profiles.append(('wasmtime', 'native', None))
@@ -276,7 +277,7 @@ def main():
                 (args.out/'runs.json').write_text(json.dumps(rows, indent=2)+'\n')
     groups = {}
     summary_modes = [(mode, policy) for mode in selected
-                     for policy in (('none',) if mode == 'int-full' else ('unwind', 'instruction'))]
+                     for policy in (('mandatory-native',) if args.ros else (('none',) if mode == 'int-full' else ('unwind', 'instruction')))]
     if args.compare_wasmtime:
         summary_modes.append(('wasmtime', 'native'))
     for mode, policy in summary_modes:

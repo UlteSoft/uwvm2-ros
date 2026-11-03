@@ -1,6 +1,7 @@
 // Real runtime lifecycle tests, separate from the main safe-point fixture.
 #define UWVM2TEST_RUNNER_USE_LLVM_JIT 1
 #define UWVM2TEST_STRICT_NO_INTERPRETER 1
+#include "mandatory_native_fixture.h"
 #include "../0013.uwvm_int/strict/uwvm_int_translate_strict_common.h"
 #include <uwvm2/utils/thread/cooperative_pause_domain.h>
 #include <atomic>
@@ -150,7 +151,8 @@ static void nested_reentry(std::shared_ptr<domain> const& control)
 }
 int main(int argc,char** argv)
 {
-    if(argc!=4)return 2;alarm(40);
+    if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
+    if(argc!=3)return 2;alarm(40);
     std::ifstream file(argv[1],std::ios::binary);std::vector<char> input{std::istreambuf_iterator<char>{file},{}};CHECK(file&&!input.empty());
     strict::byte_vec bytes(input.size());std::memcpy(bytes.data(),input.data(),input.size());
     auto features=strict::make_wasm1p1_feature_parameter();
@@ -158,13 +160,13 @@ int main(int argc,char** argv)
     types::local_imported_t provider{host{}};
     auto prepared=strict::prepare_runtime_from_wasm(bytes,u8"debug-lifecycle",{},features,{provider});
     mode::global_runtime_mode=mode::runtime_mode_t::full_compile;mode::global_runtime_compiler=mode::runtime_compiler_t::llvm_jit_only;
-    mode::global_runtime_llvm_jit_call_stack=std::string_view{argv[2]}=="instruction"?mode::runtime_llvm_jit_call_stack_t::instruction:mode::runtime_llvm_jit_call_stack_t::unwind;
+
     state shared;shared.module=prepared.mod;active=&shared;
     auto const code=prepared.mod->local_defined_function_vec_storage.index_unchecked(4).wasm_code_ptr;CHECK(code!=nullptr);
     for(auto const byte:std::span{code->body.expr_begin,code->body.code_end})shared.nested_code.push_back(static_cast<unsigned char>(byte));
-    auto control=std::make_shared<domain>(std::string_view{argv[3]}=="reset"?2:1);
+    auto control=std::make_shared<domain>(std::string_view{argv[2]}=="reset"?2:1);
     CHECK(lib::llvm_jit_configure_debug_safe_points_host_api(control)==lib::llvm_jit_debug_configure_result::ok);
     lib::full_compile_run_config warm{};warm.entry_function_index=4;lib::full_compile_and_run_main_module(u8"debug-lifecycle",warm);
-    if(std::string_view{argv[3]}=="reset")reset_waiter(control);else if(std::string_view{argv[3]}=="reentry")nested_reentry(control);else return 2;
+    if(std::string_view{argv[2]}=="reset")reset_waiter(control);else if(std::string_view{argv[2]}=="reentry")nested_reentry(control);else return 2;
     alarm(0);
 }

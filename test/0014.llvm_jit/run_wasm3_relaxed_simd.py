@@ -102,7 +102,7 @@ def main():
     if args.uwvm and args.ros:
         for label, command in runtime_configurations(args.uwvm, True):
             flags = [part for part in command[:-1] if part != '-WFE-multi-memory']
-            configurations.append((label, flags + ['-WFE-relaxed-simd', '--run']))
+            configurations.append((label.removesuffix('-unwind') + '-mandatory-native', flags + ['-WFE-relaxed-simd', '--run']))
     elif args.uwvm:
         for backend in ('int','jit','tiered'):
             if args.ros and backend=='tiered':continue

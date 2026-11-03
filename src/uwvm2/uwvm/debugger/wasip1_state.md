@@ -134,3 +134,16 @@ those logs while the guest is still alive. Names/sequence labels grant no
 pause or guest-memory capability. This trace does not implement syscall entry
 catchpoints, arbitrary host-call replay, pointer-structure decoding or external
 I/O checkpoint restoration.
+
+The journal additionally reports `started-ns`, observed return duration,
+`environment`, and explicitly known/unknown requested/transferred byte counts
+for fd read/write/pread/pwrite and socket send/receive (including wasm64).
+Counts come from the original validated IO implementation; no trace reader
+dereferences a guest offset. EOF and empty IO are known zero; early capability
+or descriptor errors have unknown counts. Successful close/renumber/rights
+changes carry numeric lifecycle labels. Append uses try-lock; `dropped-busy`,
+`dropped-invalid`, `dropped-sequence`, `retired-inflight`, `cleared-through`,
+`epoch` and `sequence-exhausted` expose incomplete history. Counters saturate and
+are process lifetime facts. Retention overwrite resets on clear; sequence labels
+do not reset. See `test/0082.audit-qualification/README.md` for scoped tests and
+remaining persistent-audit gaps. Current-source Linux execution is required.

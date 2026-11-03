@@ -14,6 +14,36 @@
 #endif
 namespace uwvm2::uwvm::cmdline::params
 {
+    inline constexpr ::uwvm2::utils::cmdline::parameter ros2_buffer_audit_limits{
+        .name{u8"--ros2-buffer-audit-limits"},
+        .describe{u8"Explicit process-global journal quotas/profile reference; must immediately precede --ros2-buffer-audit. Grants no authority."},
+        .usage{u8"<payload-bytes:uint> <operation-records:uint> <total-file-bytes:uint> <record-bytes:uint> <profile:sha256>"},
+        .handle{::std::addressof(details::ros_details::buffer_audit_limits_configuration)},
+        .cate{::uwvm2::utils::cmdline::categorization::ros2}};
+    inline constexpr ::uwvm2::utils::cmdline::parameter ros2_buffer_audit{
+        .name{u8"--ros2-buffer-audit"},
+        .describe{u8"Opt-in bounded host-only buffer/checked-IPC journal; consumes an empty private write-only regular-file FD. Grants no authority."},
+        .usage{u8"<run-id:ASCII> <inherited-fd:uint>"},
+        .handle{::std::addressof(details::ros_details::buffer_audit_configuration)},
+        .cate{::uwvm2::utils::cmdline::categorization::ros2}};
+    inline constexpr ::uwvm2::utils::cmdline::parameter portable_robot_audit_run{
+        .name{u8"--portable-robot-audit-run"},
+        .describe{u8"Opt in to at most eight process-correlated portable operation records on stdout; disabled by default."},
+        .usage{u8"<run-id:32-lowercase-hex>"},
+        .handle{::std::addressof(details::ros_details::portable_audit_configuration)},
+        .cate{::uwvm2::utils::cmdline::categorization::ros2}};
+    inline constexpr ::uwvm2::utils::cmdline::parameter portable_robot_audit_inputs{
+        .name{u8"--portable-robot-audit-inputs"},
+        .describe{u8"Observe exact bounded adapter/policy bytes for denied-call diagnostics; grants no permission and does not enable audit."},
+        .usage{u8"<adapter:absolute-path> <policy:absolute-path>"},
+        .handle{::std::addressof(details::ros_details::portable_audit_inputs_configuration)},
+        .cate{::uwvm2::utils::cmdline::categorization::ros2}};
+    inline constexpr ::uwvm2::utils::cmdline::parameter portable_robot{
+        .name{u8"--portable-robot"},
+        .describe{u8"Select exact portable adapter bytes and a separate explicit deployment grant."},
+        .usage{u8"<adapter:absolute-path> <adapter:sha256> <policy:absolute-path> <policy:sha256>"},
+        .handle{::std::addressof(details::ros_details::portable_configuration)},
+        .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_global_enable{
         .name{u8"--ros2-global-enable"},
         .describe{u8"Explicit ROS2 global enable configuration; default deny."},

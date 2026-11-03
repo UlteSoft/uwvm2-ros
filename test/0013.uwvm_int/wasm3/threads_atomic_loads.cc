@@ -1,3 +1,4 @@
+#include "component_frame_policy.h"
 #include "../strict/uwvm_int_translate_strict_common.h"
 #include <uwvm2/validation/standard/wasm3/impl.h>
 #include <sys/wait.h>
@@ -14,6 +15,9 @@
 #endif
 namespace
 {
+#if defined(UWVM2TEST_RUNNER_USE_LLVM_JIT)
+    bool component_native_cfi{true};
+#endif
     using namespace uwvm2test::uwvm_int_strict;
     namespace wasm3 = uwvm2::validation::standard::wasm3;
     using error_t = uwvm2::validation::error::code_validation_error_impl;
@@ -114,8 +118,8 @@ namespace
 #if defined(UWVM2TEST_RUNNER_USE_LLVM_JIT)
                 namespace jit=uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm;
                 jit::compile_option options{}; options.validator_feature_parameter=&features; options.verify_llvm_jit_ir=true;
-                bool const unwind{uwvm2::uwvm::runtime::runtime_mode::global_runtime_llvm_jit_call_stack ==
-                    uwvm2::uwvm::runtime::runtime_mode::runtime_llvm_jit_call_stack_t::unwind};
+                // Offline lowerer coverage only; host-entry execution below uses mandatory native unwind.
+                bool const unwind{component_native_cfi};
                 options.emit_call_stack_frames=!unwind; options.emit_unwind_call_stack_frames=unwind;
                 auto compiled{jit::compile_all_from_uwvm(*prepared.mod,options,integrated,0)};
                 UWVM2TEST_REQUIRE(expected && compiled.llvm_jit_module.emitted);
@@ -125,7 +129,7 @@ namespace
                 {
                     std::error_code error{};
                     std::string const path{std::string(directory)+"/atomic-"+std::to_string(opcode)+(indexed ? "-indexed-" : "-legacy-")+
-                        (unwind ? "unwind.ll" : "instruction.ll")};
+                        (unwind ? "component-native-cfi.ll" : "component-instrumented.ll")};
                     llvm::raw_fd_ostream output(path,error); UWVM2TEST_REQUIRE(!error);
                     module.print(output,nullptr); output.close(); UWVM2TEST_REQUIRE(!output.has_error());
                 }
@@ -189,9 +193,8 @@ namespace
 int main(int argc,char** argv)
 {
 #if defined(UWVM2TEST_RUNNER_USE_LLVM_JIT)
-    namespace mode=uwvm2::uwvm::runtime::runtime_mode;
-    mode::global_runtime_llvm_jit_call_stack = argc>1 && std::strcmp(argv[1],"unwind")==0 ?
-        mode::runtime_llvm_jit_call_stack_t::unwind : mode::runtime_llvm_jit_call_stack_t::instruction;
+    if(!::uwvm2test::component_frame_policy::parse(argc, argv, component_native_cfi)) { return 64; }
+    ::uwvm2test::component_frame_policy::announce(component_native_cfi);
 #else
     (void)argc; (void)argv;
 #endif

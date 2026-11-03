@@ -1,5 +1,6 @@
 // Actual console bt -> controller -> sealed physical caller query. The API
 // fixture separately checks recursive incarnations, replacement and retirement.
+#include "mandatory_native_fixture.h"
 #include <uwvm2/uwvm/run/owned_source.h>
 #include <uwvm2/uwvm/debugger/controller.h>
 #include <uwvm2/uwvm/debugger/console.h>
@@ -18,14 +19,14 @@ static dbg::controller_reply command(dbg::controller& owner, ::fast_io::string c
 { return owner.execute(dbg::parse_console_command(::fast_io::string_view{text.data(), text.size()}), ::std::chrono::seconds{10}); }
 int main(int argc, char** argv)
 {
-    if(argc != 3 || !dbg::native_step::platform_available()) { return 77; }
-    auto const policy{::fast_io::cstring_view{::fast_io::mnp::os_c_str(argv[2])}};
-    if(policy != "instruction" && policy != "unwind") { return 2; }
+    if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
+    if(argc != 2 || !dbg::native_step::platform_available()) { return 77; }
+    auto const policy{::fast_io::cstring_view{::fast_io::mnp::os_c_str("mandatory-native")}};
+
     mode::global_runtime_mode = mode::runtime_mode_t::full_compile;
     mode::global_runtime_compiler = mode::runtime_compiler_t::llvm_jit_only;
     mode::global_runtime_llvm_jit_exception_dispatch = mode::runtime_llvm_jit_exception_dispatch_t::native_unwind;
-    mode::global_runtime_llvm_jit_call_stack = policy == "instruction" ?
-        mode::runtime_llvm_jit_call_stack_t::instruction : mode::runtime_llvm_jit_call_stack_t::unwind;
+
     mode::global_runtime_compile_threads = 0; mode::runtime_compile_threads_existed = true;
     mode::global_runtime_llvm_jit_cache_path_mode = mode::runtime_llvm_jit_cache_path_mode_t::disabled;
     auto const path{uwvm2::utils::container::u8concat_uwvm(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(argv[1])))};

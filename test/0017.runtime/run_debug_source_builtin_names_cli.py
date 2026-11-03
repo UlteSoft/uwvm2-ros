@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Real C producer/VM checks that Go builtin lookahead preserves variable names."""
+from mandatory_native_cli import require_linux_ros, product_policy, product_policies
 from pathlib import Path
 import argparse,hashlib,json,re,subprocess,sys
 sys.dont_write_bytecode=True
 from run_debug_source_inline_metadata_cli import Console
 ap=argparse.ArgumentParser(description=__doc__)
 for name in ['uwvm','build-receipt','wasm','source','out']:ap.add_argument('--'+name,type=Path,required=True)
-ap.add_argument('--policy',choices=['instruction','unwind'],required=True);ap.add_argument('--ros',action='store_true');a=ap.parse_args();assert sys.platform=='linux'
+ap.add_argument('--policy',choices=['instruction','unwind'],required=False);ap.add_argument('--ros',action='store_true');a=ap.parse_args(); require_linux_ros(ap, a.ros); a.policy = product_policy(ap, a.ros, a.policy, required=True);assert sys.platform=='linux'
 root=Path(__file__).resolve().parents[2];subprocess.run(['bash',str(root/'tools/ci/require_wasm3_test_cgroup.sh')],check=True);a.out.mkdir(exist_ok=False)
 sha=lambda p:hashlib.file_digest(Path(p).open('rb'),'sha256').hexdigest();build=json.loads(a.build_receipt.read_text());assert build['passed'] and build['all_product_TUs_fresh'] and build['inputs_before_equals_after'] and sha(a.uwvm)==build['binary_sha256']
 pins={str(p.resolve()):sha(p) for p in [a.uwvm,a.build_receipt,a.wasm,a.source,Path(__file__),root/'test/0017.runtime/run_debug_source_inline_metadata_cli.py']}
@@ -14,7 +15,7 @@ record={'passed':False,'source_id':build['source_id'],'inputs':pins,'policy':a.p
 def save():(a.out/'results.json').write_text(json.dumps(record,indent=2)+'\n')
 console=None;save()
 try:
- argv=[str(a.uwvm),'-Rdbg']+([] if a.ros else ['-Rcc','jit','-Rcm','full'])+['-Rct','0','-Rllvm-call-stack',a.policy,'-Rllvm-cache-path','disable','--run',str(a.wasm)];record['argv']=argv;console=Console(argv,a.out/'console.log')
+ argv=[str(a.uwvm),'-Rdbg']+([] if a.ros else ['-Rcc','jit','-Rcm','full'])+['-Rct','0',*([] if a.ros else ['-Rllvm-call-stack', a.policy]),'-Rllvm-cache-path','disable','--run',str(a.wasm)];record['argv']=argv;console=Console(argv,a.out/'console.log')
  def ask(command):
   reply=re.sub(rb'\x1b\[[0-?]*[ -/]*[@-~]',b'',console.send(command)).decode(errors='replace');record['actions'].append({'command':command,'reply':reply});save();return reply
  def number(reply):

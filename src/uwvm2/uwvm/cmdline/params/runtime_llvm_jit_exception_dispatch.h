@@ -34,8 +34,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
 # endif
     inline constexpr ::uwvm2::utils::cmdline::parameter runtime_llvm_jit_exception_dispatch{
         .name{u8"--runtime-llvm-jit-exception-dispatch"},
-        .describe{u8"Request full LLVM exception dispatch; ineligible pending modules retain native dispatch."},
-        .usage{u8"[auto|native-unwind|pending-numeric]"},
+        .describe{u8"Use native LLVM exception dispatch; auto resolves to native-unwind. No instruction-based EH fallback."},
+        .usage{u8"[auto|native-unwind]"},
         .alias{::uwvm2::utils::cmdline::kns_u8_str_scatter_t{::std::addressof(details::runtime_llvm_jit_exception_dispatch_alias), 1uz}},
         .handle{::std::addressof(details::runtime_llvm_jit_exception_dispatch_callback)},
         .is_exist{::std::addressof(::uwvm2::uwvm::runtime::runtime_mode::runtime_llvm_jit_exception_dispatch_existed)},

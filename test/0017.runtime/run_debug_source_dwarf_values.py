@@ -36,6 +36,7 @@ def main() -> None:
     parser.add_argument('--ldflag', action='append', default=[])
     parser.add_argument('--wasm-tools', type=Path, required=True)
     parser.add_argument('--out', type=Path, required=True)
+    parser.add_argument('--ordinary-upstream', action='store_true', help='Use an independently frozen upstream fixture with its legacy selectors; default is mandatory-native ROS')
     args = parser.parse_args()
     if sys.platform != 'linux':
         raise RuntimeError('remote Linux/cgroup runner only')
@@ -146,14 +147,14 @@ def main() -> None:
                    '(func (export "_start") (result i32) i32.const 5 call $helper))\n')
     run('fixture-parse', [str(wasm_tool), 'parse', str(wat), '-o', str(out / 'fixture.wasm')])
     run('fixture-validate', [str(wasm_tool), 'validate', str(out / 'fixture.wasm')])
-    for policy in ('instruction', 'unwind'):
-        run('runtime-' + policy, [str(out / 'runtime-witness'), str(out / 'fixture.wasm'), policy], 90)
+    for policy in (('instruction', 'unwind') if args.ordinary_upstream else ('mandatory-native',)):
+        run('runtime-' + policy, [str(out / 'runtime-witness'), str(out / 'fixture.wasm'), *([policy] if args.ordinary_upstream else [])], 90)
     nondefaultable = out / 'nondefaultable.wasm'
     run('nondefaultable-parse', [str(wasm_tool), 'parse',
         str(root / 'test/0017.runtime/fixtures/debug_source_values_nondefaultable.wat'), '-o', str(nondefaultable)])
     run('nondefaultable-validate', [str(wasm_tool), 'validate', str(nondefaultable)])
-    for policy in ('instruction', 'unwind'):
-        run('runtime-availability-' + policy, [str(out / 'runtime-witness'), str(nondefaultable), policy, 'availability'], 90)
+    for policy in (('instruction', 'unwind') if args.ordinary_upstream else ('mandatory-native',)):
+        run('runtime-availability-' + policy, [str(out / 'runtime-witness'), str(nondefaultable), *([policy] if args.ordinary_upstream else []), 'availability'], 90)
     if sha(runtime) != expected or sha(command_file) != tool_inputs['actual_test_command'] or \
        sha(component_cxx) != component_cxx_sha or sha(wasm_tool) != wasm_tool_sha or \
        sha(compiler) != tool_inputs['actual_witness_cxx'] or \

@@ -1,5 +1,12 @@
 # WebAssembly 3.0 implementation status
 
+Current ROS product candidate (2026-10-26): the public unwind-control option is
+removed. Real generated-chain checked native unwinding, CFI, native EH and
+crash stack recovery are mandatory. Historical entries retain the exact
+interfaces and results of their named revisions; they do not qualify the new
+candidate. Its native self-check cost, loading, build and execution evidence
+must be obtained separately before publication.
+
 This document is a chronological implementation and qualification record for
 both repositories. Early sections describe the state at their named revision;
 the latest section at the end gives the current source IDs, supported behavior,

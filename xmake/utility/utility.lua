@@ -457,6 +457,8 @@ function get_llvm_jit_options()
 
     if dependency.runtimes then
         local runtime = dependency.runtimes
+        _append_unique(result, seen, "defines", "UWVM_ROS_PAIRED_RUNTIME_HEADERS=1")
+        _append_unique(result, seen, "sysincludedirs", path.join(os.projectdir(), "third-parties"))
         _append_unique(result, seen, "cxxflags", "-nostdinc++")
         for _, directory in ipairs({runtime.include, runtime.abi_include, runtime.unwind_include}) do
             _append_unique(result, seen, "sysincludedirs", directory)

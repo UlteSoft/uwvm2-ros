@@ -300,6 +300,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                 memory,
                 ret_data_len_ptrsz,
                 static_cast<::uwvm2::imported::wasi::wasip1::abi::wasi_size_t>(0uz));
+            if(env.debug_io_observed!=nullptr) { env.debug_io_observed(0u,static_cast<::std::uint64_t>(0uz),true); }
 
             return ::uwvm2::imported::wasi::wasip1::abi::errno_t::esuccess;
         }
@@ -468,6 +469,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 #  endif
                 }
 
+                if(env.debug_io_observed!=nullptr) { env.debug_io_observed(static_cast<::std::uint64_t>(length_counter),0u,false); }
+
                 ::fast_io::native_io_observer curr_fd_native_observer{};
 
                 bool const is_file_observer{curr_fd.wasi_fd.ptr->wasi_fd_storage.type ==
@@ -528,6 +531,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                     memory,
                     ret_data_len_ptrsz,
                     static_cast<::uwvm2::imported::wasi::wasip1::abi::wasi_size_t>(send_res));
+                if(env.debug_io_observed!=nullptr) { env.debug_io_observed(static_cast<::std::uint64_t>(length_counter),static_cast<::std::uint64_t>(send_res),true); }
 
                 return ::uwvm2::imported::wasi::wasip1::abi::errno_t::esuccess;
 # endif
@@ -663,6 +667,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                     wsabufs[i].len = static_cast<::std::uint_least32_t>(wasm_len);
                 }
 
+                if(env.debug_io_observed!=nullptr) { env.debug_io_observed(static_cast<::std::uint64_t>(length_counter),0u,false); }
+
                 ::std::uint_least32_t bytes_sent{};
 
                 auto const socket_handle{curr_fd_native_file.native_handle()};
@@ -749,6 +755,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                     memory,
                     ret_data_len_ptrsz,
                     static_cast<::uwvm2::imported::wasi::wasip1::abi::wasi_size_t>(bytes_sent));
+                if(env.debug_io_observed!=nullptr) { env.debug_io_observed(static_cast<::std::uint64_t>(length_counter),static_cast<::std::uint64_t>(bytes_sent),true); }
 
                 return ::uwvm2::imported::wasi::wasip1::abi::errno_t::esuccess;
             }

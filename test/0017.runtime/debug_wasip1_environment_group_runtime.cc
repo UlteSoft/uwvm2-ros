@@ -1,5 +1,6 @@
 // Two independently initialized WASIp1 environments, one authentic complete
 // cooperative stop, private prepare-all/publish-all. No full-VM restore claim.
+#include "mandatory_native_fixture.h"
 #include <uwvm2/uwvm/run/owned_source.h>
 #include <uwvm2/runtime/checkpoint/materialization.h>
 #include <uwvm2/uwvm/debugger/wasip1_state.h>
@@ -60,13 +61,13 @@ struct observer
 };
 int main(int argc, char** argv)
 {
-    if(argc!=5 && argc!=6 && argc!=7) { return 64; }
-    bool const worker_chain{argc==6 && ::fast_io::concat(::fast_io::mnp::os_c_str(argv[5]))=="worker-chain"};
-    auto const policy{::fast_io::concat(::fast_io::mnp::os_c_str(argv[3]))};
-    require(policy=="instruction" || policy=="unwind", "explicit stack policy");
+    if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
+    if(argc!=4 && argc!=5 && argc!=6) { return 64; }
+    bool const worker_chain{argc==5 && ::fast_io::concat(::fast_io::mnp::os_c_str(argv[4]))=="worker-chain"};
+
     mode::global_runtime_mode=mode::runtime_mode_t::full_compile;
     mode::global_runtime_compiler=mode::runtime_compiler_t::llvm_jit_only;
-    mode::global_runtime_llvm_jit_call_stack=policy=="instruction" ? mode::runtime_llvm_jit_call_stack_t::instruction : mode::runtime_llvm_jit_call_stack_t::unwind;
+
     mode::global_runtime_compile_threads=0u; mode::runtime_compile_threads_existed=true;
     mode::global_runtime_llvm_jit_cache_path_mode=mode::runtime_llvm_jit_cache_path_mode_t::disabled;
     auto& features{::uwvm2::uwvm::wasm::feature::wasm_binfmt_ver1_wasm1p1_parameter(::uwvm2::uwvm::wasm::storage::wasm_parameter.binfmt1_para)};
@@ -270,7 +271,7 @@ int main(int argc, char** argv)
         require(current.strings.size()==1u && current.strings.front().bytes==expected_environment,"distinct environment vectors restored");
     }
     namespace pp=::uwvm2::uwvm::debugger::wasip1_portable;
-    auto const artifact_root{::fast_io::u8concat_fast_io(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(argv[4])))};
+    auto const artifact_root{::fast_io::u8concat_fast_io(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(argv[3])))};
     ::std::array<lib::llvm_jit_wasip1_environment_capsule_request,2u> exports{};
     for(::std::size_t n{};n!=ids.size();++n) { exports[n].module=ids[n];exports[n].recording_label=label;exports[n].portable_metadata_only=true; }
     auto const export_call=[&](auto const& rows)
@@ -303,8 +304,8 @@ int main(int argc, char** argv)
     require(pp::save_group_file(batch.portable,pp::text_view{group_path.data(),group_path.size()}),"FastIO writes one bounded portable group file");
     pp::group_snapshot loaded_group{};
     require(pp::load_group_file(pp::text_view{group_path.data(),group_path.size()},loaded_group),"OS-native group file read");
-    if(argc==6 && !worker_chain)
-    { auto foreign=::fast_io::u8concat_fast_io(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(argv[5])));require(pp::load_group_file(pp::text_view{foreign.data(),foreign.size()},loaded_group),"actual source OS group file decoded on target OS"); }
+    if(argc==5 && !worker_chain)
+    { auto foreign=::fast_io::u8concat_fast_io(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(argv[4])));require(pp::load_group_file(pp::text_view{foreign.data(),foreign.size()},loaded_group),"actual source OS group file decoded on target OS"); }
     ws::request grammar{};
     require(ws::parse("set wasip1 export-group 2f746d702f67726f7570 0 1",grammar) && grammar.environments.size()==2u,"console parses group export");
     require(ws::parse("set wasip1 import-group 2f746d702f67726f7570 0:0=2 1:0=2",grammar) && grammar.environments.back().rebindings==u8"0=2","console parses per-environment bindings");
@@ -320,10 +321,10 @@ int main(int argc, char** argv)
         auto path{::fast_io::u8concat_fast_io(::fast_io::u8string_view{artifact_root.data(),artifact_root.size()},
             n==0u ? pp::text_view{u8"/group-main.uwp"} : pp::text_view{u8"/group-provider.uwp"})};
         require(pp::save_file(*metadata.portable,pp::text_view{path.data(),path.size()}),"OS-native FastIO persists detached environment metadata");
-        if(argc==7) { path=::fast_io::u8concat_fast_io(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(argv[5+n]))); }
+        if(argc==6) { path=::fast_io::u8concat_fast_io(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(argv[4+n]))); }
         auto decoded{::std::make_shared<pp::snapshot>()};
         require(pp::load_file(pp::text_view{path.data(),path.size()},*decoded),"persistent metadata loaded in target OS");
-        if(argc==6 && !worker_chain) { *decoded=loaded_group.environments[n]; }
+        if(argc==5 && !worker_chain) { *decoded=loaded_group.environments[n]; }
         require(decoded->resources.size()==1u && decoded->resources.front().type==pp::kind::external && decoded->bindings.size()==2u,
             "anonymous file aliases require explicit target binding");
         imports[n].module=ids[n];imports[n].recording_label=decoded->recording_label;imports[n].portable_restore=decoded;
@@ -420,5 +421,5 @@ int main(int argc, char** argv)
     require(portable_call(imports).status!=status::restored,"stale stop cannot commit a portable group");
     auto retired_export=export_call(exports);require(retired_export.status!=status::captured && retired_export.portable.environments.empty(),"retired stop cannot issue group snapshots");
     lib::reset_runtime_state_host_api();
-    ::fast_io::io::println("debug_wasip1_environment_group_runtime PASS checks=",checks," policy=",::fast_io::mnp::os_c_str(argv[3]));
+    ::fast_io::io::println("debug_wasip1_environment_group_runtime PASS checks=",checks," policy=mandatory-native");
 }

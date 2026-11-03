@@ -3,6 +3,7 @@
 // guest spawn instruction. Build only from the frozen O3 runtime in the test
 // cgroup; the runner pins the process to two assigned P cores. notify=1 proves
 // an enrolled Wasm waiter, but this fixture does not prove an OS-sleep state.
+#include "mandatory_native_fixture.h"
 #include "uwvm_int_translate_strict_common.h"
 #include <uwvm2/runtime/lib/uwvm_runtime.h>
 #include <fast_io.h>
@@ -93,6 +94,7 @@ namespace
 
 int main(int argc, char** argv)
 {
+    if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
     if(argc == 3 && ::std::strcmp(argv[1], "--dump-wasm") == 0)
     {
         auto const wasm{make_module()};
@@ -102,14 +104,10 @@ int main(int argc, char** argv)
         ::fast_io::operations::write_all_bytes(output, wasm.data(), wasm.data() + wasm.size());
         return 0;
     }
-    if(argc != 2 || (::std::strcmp(argv[1], "instruction") != 0 &&
-                       ::std::strcmp(argv[1], "unwind") != 0))
-    { return 64; }
+    if(argc != 1) { return 64; }
     mode::global_runtime_compiler = mode::runtime_compiler_t::llvm_jit_only;
     mode::global_runtime_mode = mode::runtime_mode_t::full_compile;
-    mode::global_runtime_llvm_jit_call_stack = ::std::strcmp(argv[1], "unwind") == 0 ?
-        mode::runtime_llvm_jit_call_stack_t::unwind :
-        mode::runtime_llvm_jit_call_stack_t::instruction;
+
     mode::global_runtime_compile_threads_resolved = 1;
 
     auto wasm{make_module()};
@@ -170,7 +168,7 @@ int main(int argc, char** argv)
         for(unsigned round{}; round != rounds; ++round)
         {
             auto const& row{rows[round]};
-            ::fast_io::io::println("{\"policy\":\"", ::fast_io::mnp::os_c_str(argv[1]), "\",\"sample\":",
+            ::fast_io::io::println("{\"policy\":\"", ::fast_io::mnp::os_c_str("mandatory-native"), "\",\"sample\":",
                                    ::fast_io::mnp::dec(sample - warmups),
                                    ",\"round\":", ::fast_io::mnp::dec(round),
                                    ",\"wake_ns\":", ::fast_io::mnp::dec(row.wake_ns),

@@ -1378,6 +1378,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
     // Observation only: denied cross-module ancestry may be returned for bounded audit records.
     // Never use this query to authorize a Guest operation or to register a capability owner.
     extern "C++" bool ros_observed_caller_identity_host_api(ros_caller_identity & out) noexcept;
+    // Detached facts for the actual sealed builtin call. These never grant a
+    // portable capability. The current bounded profile requires one defined,
+    // nonshared memory; imported memories and threaded children fail closed.
+    struct ros_caller_source_facts
+    {
+        ros_caller_identity caller{};
+        ::std::array<::std::byte,32u> whole_wasm_sha256{}, builtin_interface_sha256{};
+        ::std::uint_least64_t whole_wasm_bytes{}, memory_bytes{}, builtin_function_index{};
+        unsigned builtin_kind{};
+    };
+    extern "C++" bool ros_caller_source_facts_host_api(ros_caller_source_facts& out) noexcept;
     /// @brief Drain the replaced module's local ROS owners after a genuine
     ///        committed update, outside pause/publication locks while still
     ///        stopped. This native management API is never a Wasm import.

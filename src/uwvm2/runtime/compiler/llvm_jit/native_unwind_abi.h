@@ -9,9 +9,9 @@
 // rather than forcing a potentially throwing SDK declaration through a C++
 // wrapper. _Unwind_RaiseException/_Unwind_Resume and __cxa_rethrow deliberately
 // do not belong here: genuine exception propagation must remain unwindable.
-#if !defined(_WIN32) && (defined(__GNUC__) || defined(__clang__)) && __has_include(<unwind.h>)
+#if !defined(_WIN32) && (defined(__GNUC__) || defined(__clang__)) && defined(UWVM_ROS_PAIRED_RUNTIME_HEADERS)
 # include <cstdint>
-# include <unwind.h>
+# include <uwvm2/runtime/compiler/llvm_jit/paired_unwind.h>
 # if defined(__APPLE__)
 #  define UWVM2_NATIVE_UNWIND_C_PREFIX "_"
 # else

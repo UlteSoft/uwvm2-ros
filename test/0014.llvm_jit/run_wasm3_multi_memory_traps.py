@@ -51,9 +51,11 @@ def main():
         subprocess.run([str(a.wat2wasm), '--enable-multi-memory', str(wat), '-o', str(wasm)], check=True)
         fixtures.append((name, wasm))
     configs = configurations(a.uwvm, a.ros)
+    if a.ros:
+        configs = [(name.removesuffix('-unwind') + '-mandatory-native', command) for name, command in configs]
     # Test the explicit no-recording policy too; it must not leak stale frames.
     for name, command in configs[:]:
-        if name.startswith('jit-') and name.endswith('-unwind'):
+        if not a.ros and name.startswith('jit-') and name.endswith('-unwind'):
             command = command[:]
             command[command.index('-Rllvm-call-stack') + 1] = 'none'
             configs.append((name.removesuffix('-unwind') + '-none', command))

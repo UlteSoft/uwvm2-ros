@@ -34,6 +34,7 @@ def main() -> None:
     parser.add_argument('--wasm-tools', type=Path, required=True)
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--race-repeats', type=int, default=2)
+    parser.add_argument('--ordinary-upstream', action='store_true', help='Use an independently frozen upstream fixture with its legacy selectors; default is mandatory-native ROS')
     args = parser.parse_args()
     if sys.platform != 'linux':
         raise RuntimeError('sole remote Linux/cgroup runner only; other platforms require their qualified harness')
@@ -94,26 +95,26 @@ def main() -> None:
 
     run('official-parse', [str(tool), 'parse', str(root / inputs[2]), '-o', str(wasm)])
     run('official-validate', [str(tool), 'validate', str(wasm)])
-    for policy in ('instruction', 'unwind'):
+    for policy in (('instruction', 'unwind') if args.ordinary_upstream else ('mandatory-native',)):
         baseline = policy + '-closed-after-real-trap'
-        run(baseline, [str(binary), str(wasm), policy])
+        run(baseline, [str(binary), str(wasm), *([policy] if args.ordinary_upstream else [])])
         text = (out / (baseline + '.log')).read_text()
         if 'genuine-native-trap=yes\n' not in text or 'PASS actual closed-domain' not in text:
             raise RuntimeError('baseline did not prove a genuine native stop and actual release')
         for maintenance in ('reset', 'stop'):
             name = policy + '-direct-' + maintenance + '-without-pre-detach'
-            run(name, [str(binary), str(wasm), policy, maintenance])
+            run(name, [str(binary), str(wasm), *([policy] if args.ordinary_upstream else []), maintenance])
             log = (out / (name + '.log')).read_text()
             if 'genuine-native-trap=yes\n' not in log or f'direct-maintenance-retired-native={maintenance}\n' not in log:
                 raise RuntimeError('direct host maintenance did not retire the actual native trap before drain')
         for recursive in ('reset', 'stop'):
             name = policy + '-recursive-close-' + recursive + '-fail-closed'
-            run(name, [str(binary), str(wasm), policy, 'recursive-' + recursive],
+            run(name, [str(binary), str(wasm), *([policy] if args.ordinary_upstream else []), 'recursive-' + recursive],
                 fatal_callback_marker='actual-native-close-callback-recursive-' + recursive)
         for repeat in range(args.race_repeats):
             for delay in (0, 1, 10, 100, 1000):
                 name = f'{policy}-close-race-{repeat}-delay-{delay}'
-                run(name, [str(binary), str(wasm), policy, str(delay)])
+                run(name, [str(binary), str(wasm), *([policy] if args.ordinary_upstream else []), str(delay)])
                 # Exact phase timing is deliberately NOT inferred from elapsed
                 # time or success text. Each case proves real close/release/join
                 # correctness, and reports whether a genuine native stop won.
@@ -127,7 +128,7 @@ def main() -> None:
                 'qualified_build_record_sha256': sha(build_record), 'wasm_tools_sha256': sha(tool),
                 'inputs': hashes, 'rows': rows}
     (out / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
-    print('PASS actual closed-domain native controller lifecycle, instruction/unwind; no exact race-phase claim', flush=True)
+    print('PASS actual closed-domain native controller lifecycle, mandatory-native (or explicitly selected ordinary-upstream policies); no exact race-phase claim', flush=True)
 
 
 if __name__ == '__main__':

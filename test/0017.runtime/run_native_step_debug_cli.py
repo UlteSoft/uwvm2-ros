@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Real Linux LLVM-full `step asm`: exact native bytes, two steps, cancellation."""
+from mandatory_native_cli import require_linux_ros, product_policy, product_policies
 import argparse
 import hashlib
 import json
@@ -18,7 +19,7 @@ parser.add_argument('--uwvm', type=Path, required=True)
 parser.add_argument('--wasm-tools', type=Path, required=True)
 parser.add_argument('--out', type=Path, required=True)
 parser.add_argument('--ros', action='store_true')
-args = parser.parse_args()
+args = parser.parse_args(); require_linux_ros(parser, args.ros)
 source = args.source_root.resolve(strict=True)
 binary = args.uwvm.resolve(strict=True)
 wasm_tools = args.wasm_tools.resolve(strict=True)
@@ -36,7 +37,7 @@ class Console:
         self.name = name
         mode = ['-Raot'] if args.ros else ['-Rcc', 'jit', '-Rcm', 'full']
         self.command = [str(binary), '-m', 'debug-jit', *mode, '-Rct', '0',
-                        '-Rllvm-call-stack', policy, '-Rllvm-cache-path', 'disable',
+                        *([] if args.ros else ['-Rllvm-call-stack', policy]), '-Rllvm-cache-path', 'disable',
                         '--run', str(out / 'fixture.wasm')]
         self.child = subprocess.Popen(self.command, stdin=subprocess.PIPE,
                                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -82,7 +83,7 @@ class Console:
 
 native_line = re.compile(rb'native instruction 0x([0-9a-f]+) bytes=([0-9a-f ]+)  ([^\r\n]+?) -> 0x([0-9a-f]+)')
 rows = []
-for policy in ('instruction', 'unwind'):
+for policy in (('mandatory-native',) if args.ros else ('instruction', 'unwind')):
     console = Console(policy, f'{policy}-two-steps')
     initial = console.send('step asm 1')
     assert b'error: command or thread is not valid' in initial, initial

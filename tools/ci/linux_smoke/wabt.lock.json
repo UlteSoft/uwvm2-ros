@@ -1,0 +1,9 @@
+{
+  "archive": "tar.gz",
+  "bytes": 4771968,
+  "sha256": "4aa0929db06c2376cc76f6d9e920dbde2ea6f1fd55bbaed6cd65167e9e39ecd3",
+  "source": "https://github.com/WebAssembly/wabt/releases/download/1.0.36/wabt-1.0.36-ubuntu-20.04.tar.gz.sha256",
+  "url": "https://github.com/WebAssembly/wabt/releases/download/1.0.36/wabt-1.0.36-ubuntu-20.04.tar.gz",
+  "version": "1.0.36",
+  "wat2wasm_sha256": "4d5f3cc59d1fa47084841f26cd0ab69760662511b4f1066547ec45275a5820d6"
+}

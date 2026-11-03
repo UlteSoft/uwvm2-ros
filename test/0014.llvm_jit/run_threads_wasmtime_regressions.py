@@ -80,6 +80,8 @@ def main():
     p.add_argument('--ros', action='store_true')
     p.add_argument('--backend', choices=['int', 'jit'], default='jit')
     a = p.parse_args()
+    if a.ros and a.backend != 'jit':
+        p.error('ROS requires the full AOT backend with checked native unwind')
     root = Path(__file__).resolve().parents[2]
     subprocess.run(['bash', str(root / 'tools/ci/require_wasm3_test_cgroup.sh')], check=True)
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
@@ -89,10 +91,10 @@ def main():
     configs = [('wasmtime', [a.wasmtime, '-C', 'cache=n', '-W', 'threads=y,shared-memory=y'])]
     modes = ['full'] if a.ros else ['full', 'lazy', 'lazy+verification']
     for mode in modes:
-        for policy in ['instruction', 'unwind'] if a.backend == 'jit' else ['instruction']:
+        for policy in (['mandatory-native'] if a.ros else (['instruction', 'unwind'] if a.backend == 'jit' else ['instruction'])):
             base = [str(a.uwvm.resolve())] + (['-Raot' if a.backend == 'jit' else '-Rint'] if a.ros else ['-Rcc', a.backend, '-Rcm', mode])
             if a.backend == 'jit':
-                base += ['-Rllvm-cache-path', 'disable', '-Rllvm-call-stack', policy]
+                base += ['-Rllvm-cache-path', 'disable', *([] if a.ros else ['-Rllvm-call-stack', policy])]
             configs.append((f'{a.backend}-{mode}-{policy}', base + ['-WFE-threads', '--run']))
     cases = 0
     for filename, sha in SOURCES.items():

@@ -6,6 +6,7 @@ consume fixture uses -opt=0 -scheduler=none -gc=leaking; worker uses -opt=1
 and the default scheduler. This runner never rewrites compiler-produced Wasm.
 """
 from __future__ import annotations
+from mandatory_native_cli import require_linux_ros, product_policy, product_policies
 import argparse
 import json
 import os
@@ -116,7 +117,7 @@ def main() -> None:
     parser.add_argument('--case', choices=('consume', 'sequences', 'worker'), required=True)
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--ros', action='store_true')
-    args = parser.parse_args()
+    args = parser.parse_args(); require_linux_ros(parser, args.ros)
     root = Path(__file__).resolve().parents[2]
     if sys.platform != 'linux':
         raise RuntimeError('execute in the controlled Linux test cgroup')
@@ -141,7 +142,7 @@ def main() -> None:
     prefix = [str(binary), '-Rdbg']
     if not args.ros:
         prefix += ['-Rcc', 'jit', '-Rcm', 'full']
-    prefix += ['-Rct', '0', '-Rllvm-call-stack', 'instruction', '-Rllvm-cache-path', 'disable', '--run', str(wasm)]
+    prefix += ['-Rct', '0', *([] if args.ros else ['-Rllvm-call-stack', 'instruction']), '-Rllvm-cache-path', 'disable', '--run', str(wasm)]
     # Admission supervisor observes the executable after this short bootstrap.
     command = [sys.executable, '-c', 'import os,sys,time;time.sleep(.15);os.execvpe(sys.argv[1],sys.argv[1:],os.environ)', *prefix]
     record['command'] = prefix

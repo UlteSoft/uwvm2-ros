@@ -30,6 +30,8 @@ def main():
     p.add_argument('--cpu', type=int, default=0)
     p.add_argument('--workload', action='append', choices=['ordinary-call', 'cross-depth-1', 'cross-depth-8'])
     a = p.parse_args()
+    if a.ros:
+        p.error('instruction-versus-unwind comparison is ordinary-upstream only; ROS has one mandatory checked native contract')
     root = Path(__file__).resolve().parents[2]
     subprocess.run(['bash', str(root/'tools/ci/require_wasm3_test_cgroup.sh')], check=True)
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))

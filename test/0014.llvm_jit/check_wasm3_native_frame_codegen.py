@@ -249,12 +249,12 @@ def main():
     generated = runner.execute('actual-fixture-producer', __cache_source_context__.python_source_argv(root / 'test/0013.uwvm_int/wasm3/multi_memory_cases.py', [fixtures]))
     assert generated.returncode == 0
     rows = []
-    for policy in ('instruction', 'unwind'):
+    for policy in (('mandatory-native',) if args.ros else ('instruction', 'unwind')):
         cache = args.output / (policy + '-cache')
         cache.mkdir(mode=0o700)
         command = [str(args.uwvm.resolve())]
         command += ['-Raot']
-        command += ['-Rllvm-cache-seal-process', '-Rct', '0', '-Rllvm-call-stack', policy, '-Rllvm-full-policy', 'pb-o3',
+        command += ['-Rllvm-cache-seal-process', '-Rct', '0', *([] if args.ros else ['-Rllvm-call-stack', policy]), '-Rllvm-full-policy', 'pb-o3',
                     '-Rllvm-cache-path', 'path', cache.name, '-Rclog', 'err',
                     '-WFE-multi-memory', '--run', str(fixtures / 'load-memory1-exec.wasm')]
         phases = []
@@ -312,7 +312,7 @@ def main():
         assert tool.returncode == 0
         sections = tool.stdout.decode('utf-8', errors='strict')
         (args.output / (policy + '.sections.txt')).write_text(sections)
-        if policy == 'unwind' and '.eh_frame' not in sections:
+        if policy in ('unwind', 'mandatory-native') and '.eh_frame' not in sections:
             raise RuntimeError('native unwind object has no registered CFI section')
         evidence.pop('code')
         rows.append(dict(policy=policy, leaf=leaf[0], calls=calls,
@@ -321,10 +321,12 @@ def main():
                          unwind_cfi='.eh_frame' in sections,
                          object_sha256=hashlib.sha256(obj.read_bytes()).hexdigest(), command=command, phases=phases,
                          cache_format_version=7, origin_authenticated_replay_qualified=True))
-    assert len(rows) == 2 and {row['policy'] for row in rows} == {'instruction', 'unwind'}
+    expected_policies = {'mandatory-native'} if args.ros else {'instruction', 'unwind'}
+    assert len(rows) == len(expected_policies) and {row['policy'] for row in rows} == expected_policies
     assert all(row['instruction_evidence']['instruction_lines'] > 0 for row in rows)
     (args.output / 'results.json').write_text(json.dumps(rows, indent=2) + '\n')
-    print('PASS actual new-syntax JIT objects: instruction has 2 frame calls; unwind has 0 and retains CFI')
+    print('PASS actual new-syntax JIT objects: mandatory native has 0 frame-maintenance calls and retains CFI'
+          if args.ros else 'PASS actual new-syntax JIT objects: instruction has 2 frame calls; unwind has 0 and retains CFI')
 
 
 if __name__ == '__main__':

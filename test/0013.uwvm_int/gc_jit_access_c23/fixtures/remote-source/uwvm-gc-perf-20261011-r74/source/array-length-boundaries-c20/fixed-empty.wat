@@ -1,1 +1,0 @@
-(module (type $a (array i64))  (func (export "_start") array.new_fixed $a 0 array.len i32.const 0 i32.ne if unreachable end))

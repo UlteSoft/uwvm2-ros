@@ -5,6 +5,7 @@ Only the designated Linux cgroup may execute this runner. Six compiler-produced
 arguments plus fixture/Go-spec invariants qualify this finite runtime-backed
 TinyGo map/channel subset; general Go/native parity remains unqualified.
 """
+from mandatory_native_cli import require_linux_ros, product_policy, product_policies
 from pathlib import Path
 import argparse, hashlib, json, re, subprocess, sys
 sys.dont_write_bytecode = True
@@ -16,9 +17,9 @@ def main():
     for name in ('uwvm', 'build-receipt', 'wasm', 'source', 'out'):
         ap.add_argument('--' + name, type=Path, required=True)
     ap.add_argument('--ros', action='store_true')
-    ap.add_argument('--policy', choices=('instruction', 'unwind'), default='instruction')
+    ap.add_argument('--policy', choices=('instruction', 'unwind'), default=None)
     ap.add_argument('--expect-unavailable', action='store_true')
-    a = ap.parse_args()
+    a = ap.parse_args(); require_linux_ros(ap, a.ros); a.policy = product_policy(ap, a.ros, a.policy, required=False)
     assert sys.platform == 'linux'
     root = Path(__file__).resolve().parents[2]
     subprocess.run(['bash', str(root / 'tools/ci/require_wasm3_test_cgroup.sh')], check=True)
@@ -39,7 +40,7 @@ def main():
         prefix = [str(a.uwvm), '-Rdbg']
         if not a.ros:
             prefix += ['-Rcc', 'jit', '-Rcm', 'full']
-        prefix += ['-Rct', '0', '-Rllvm-call-stack', a.policy, '-Rllvm-cache-path', 'disable', '--run', str(a.wasm)]
+        prefix += ['-Rct', '0', *([] if a.ros else ['-Rllvm-call-stack', a.policy]), '-Rllvm-cache-path', 'disable', '--run', str(a.wasm)]
         record['argv'] = prefix
         console = TinyGoConsole(prefix, a.out / 'console.log')
         def ask(command):

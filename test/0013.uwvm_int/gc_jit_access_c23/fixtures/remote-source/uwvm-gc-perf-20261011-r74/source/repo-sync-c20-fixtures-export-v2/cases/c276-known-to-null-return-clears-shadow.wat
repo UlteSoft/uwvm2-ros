@@ -1,1 +1,0 @@
-(module (type $a (array i32)) (func $null (result (ref null $a)) ref.null $a) (func (export "_start") (local $a (ref null $a)) i32.const 13 array.new_default $a local.set $a call $null local.set $a local.get $a array.len drop))
