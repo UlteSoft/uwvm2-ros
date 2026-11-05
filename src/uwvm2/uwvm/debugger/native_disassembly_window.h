@@ -34,12 +34,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_disassembly
     // Only the caller's private runtime query can authenticate these arguments.
     // Decode FORWARD from the exact function entry: never guess an x86 boundary
     // by looking backwards at an arbitrary PC. Unknown boundaries fail closed.
-    template<typename Decoder>
+    template<typename Decoder, typename SizeDecoder = Decoder>
     [[nodiscard]] inline window decode_window_with(Decoder& decoder,
         ::std::span<::std::uint8_t const> owned, ::std::uintptr_t owner_begin,
         ::std::uintptr_t stop_pc, ::std::int64_t byte_offset,
         ::std::int64_t instruction_offset, ::std::size_t requested,
-        ::std::span<::std::uint8_t const> instruction_code = {}) noexcept
+        ::std::span<::std::uint8_t const> instruction_code = {}, SizeDecoder* sizes = nullptr) noexcept
     {
         window result{};
         // Preserve bounded requests while accepting every representable owned
@@ -91,6 +91,31 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_disassembly
                 result.available=true;result.count=requested;return result;
             }
         }
+        auto const scan{[&](::std::uintptr_t pc, ::std::span<::std::uint8_t const> bytes) noexcept -> instruction
+        {
+            if constexpr(requires { sizes->instruction_size(pc, bytes); })
+            {
+                if(sizes != nullptr)
+                {
+                    instruction row{}; row.pc = pc; row.size = sizes->instruction_size(pc, bytes);
+                    return row;
+                }
+            }
+            return decoder.decode(pc, bytes);
+        }};
+        auto const materialize{[&](instruction const& scanned, ::std::span<::std::uint8_t const> bytes) noexcept
+        {
+            if constexpr(requires { sizes->instruction_size(scanned.pc, bytes); })
+            {
+                if(sizes != nullptr)
+                {
+                    auto const shown{decoder.decode(scanned.pc, bytes)};
+                    if(!shown || shown.pc != scanned.pc || shown.size != scanned.size) { return instruction{}; }
+                    return shown;
+                }
+            }
+            return scanned;
+        }};
         auto const target{static_cast<::std::int64_t>(stop_pc - owner_begin) + byte_offset};
         auto const inside{target >= 0 && target < static_cast<::std::int64_t>(owned.size())};
         if(inside && !instruction_code.empty() && instruction_code[static_cast<::std::size_t>(target)]!=1u)
@@ -117,7 +142,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_disassembly
             if(!advance_region()) { break; }
             // [owned.data ... cursor < owned.size) end
             // [safe] authenticate scalar extent BEFORE forming the suffix.
-            auto const decoded{decoder.decode(owner_begin + cursor, {owned.data() + cursor, region_end - cursor})};
+            auto const decoded{scan(owner_begin + cursor, {owned.data() + cursor, region_end - cursor})};
             if(!decoded || decoded.pc != owner_begin + cursor || decoded.size == 0u || decoded.size > region_end - cursor)
             {
                 if(!stop_seen) { return {}; }
@@ -133,7 +158,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_disassembly
                 auto const index{static_cast<::std::int64_t>(total) -
                     static_cast<::std::int64_t>(target_index) - instruction_offset};
                 if(index >= 0 && index < static_cast<::std::int64_t>(requested))
-                { result.instructions[static_cast<::std::size_t>(index)] = decoded; }
+                {
+                    auto const shown{materialize(decoded, {owned.data() + cursor, region_end - cursor})};
+                    if(!shown) { return {}; }
+                    result.instructions[static_cast<::std::size_t>(index)] = shown;
+                }
             }
             ++total;
             cursor += decoded.size; // nonzero size <= remaining proves progress.
@@ -167,12 +196,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_disassembly
         while(cursor < prefix_end && static_cast<::std::int64_t>(ordinal) <= last)
         {
             if(!advance_region() || cursor>=prefix_end) { break; }
-            auto const decoded{decoder.decode(owner_begin + cursor, {owned.data() + cursor, region_end - cursor})};
+            auto const decoded{scan(owner_begin + cursor, {owned.data() + cursor, region_end - cursor})};
             if(!decoded || decoded.pc != owner_begin + cursor || decoded.size == 0u || decoded.size > prefix_end - cursor || decoded.size > region_end - cursor)
             { return {}; }
             auto const index{static_cast<::std::int64_t>(ordinal) - first};
             if(index >= 0 && index < static_cast<::std::int64_t>(requested))
-            { result.instructions[static_cast<::std::size_t>(index)] = decoded; }
+            {
+                auto const shown{materialize(decoded, {owned.data() + cursor, region_end - cursor})};
+                if(!shown) { return {}; }
+                result.instructions[static_cast<::std::size_t>(index)] = shown;
+            }
             ++ordinal; cursor += decoded.size;
         }
         return result;

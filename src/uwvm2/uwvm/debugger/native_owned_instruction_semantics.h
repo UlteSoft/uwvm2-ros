@@ -15,6 +15,7 @@
 # include <type_traits>
 # include "native_disassembly.h"
 # include "native_target_metadata.h"
+# include "native_decoder_cache.h"
 # include "native_instruction_semantics.h"
 # include "native_branch_destination.h"
 # if defined(UWVM_USE_LLVM_JIT)
@@ -664,6 +665,23 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_owned_instruction_sem
         decoder& operator=(decoder&&) = delete;
         [[nodiscard]] explicit operator bool() const noexcept { return disassembler_ != nullptr; }
 
+        // Forward boundary DATA only. Match LLVMDisasmInstruction's Success
+        // contract without printing discarded prefix instructions. Selected rows
+        // still pass the independent text decoder and complete semantic checks.
+        [[nodiscard]] ::std::size_t instruction_size(::std::uintptr_t pc,
+            ::std::span<::std::uint8_t const> owned) noexcept
+        {
+            if(!disassembler_ || pc == 0u || owned.empty() || (pc & (alignment_ - 1u)) != 0u) { return 0u; }
+            auto const available{::std::min(maximum_, owned.size())};
+            if(available > UINTPTR_MAX - pc) { return 0u; }
+            ::std::array<::std::uint8_t, native_target_metadata::max_instruction_bytes> bytes{};
+            for(::std::size_t i{}; i != available; ++i) { bytes[i] = owned[i]; }
+            ::llvm::MCInst instruction{}; ::std::uint64_t size{};
+            auto const status{disassembler_->getInstruction(instruction, size, {bytes.data(), available}, pc, ::llvm::nulls())};
+            return status == ::llvm::MCDisassembler::Success && size != 0u && size <= available ?
+                static_cast<::std::size_t>(size) : 0u;
+        }
+
         // Straight-line RUN interval, not relocation. Preserve the physical
         // frame/stack witness while executing ordinary instructions normally.
         // Memory operands may READ SP/FP; any explicit or implicit definition
@@ -1249,4 +1267,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_owned_instruction_sem
             ::std::span<::std::uint8_t const>) noexcept { return {}; }
     };
 #endif
+    template<typename Description>
+    using cached_decoder = native_decoder_cache::lease<decoder, Description>;
+
 }

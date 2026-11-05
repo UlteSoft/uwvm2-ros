@@ -23,6 +23,7 @@ module;
 export module uwvm2.uwvm.debugger:native_disassembly;
 import fast_io;
 import :native_target_metadata;
+import :native_decoder_cache;
 #define UWVM_MODULE
 #define UWVM_MODULE_EXPORT export
 #include "native_disassembly.h"

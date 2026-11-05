@@ -35,12 +35,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_wasm_step_boundary
     // actual pause/participant/engine-owner/generation/epoch as these bytes.
     // No display position becomes a pointer; this helper cannot mint a native
     // request, change a PC, unpark a participant, or operate on a host function.
-    template<typename DisplayDecoder>
+    template<typename DisplayDecoder, typename SemanticDecoder = DisplayDecoder>
     [[nodiscard]] inline bool exact_boundary(DisplayDecoder& display,
         ::std::span<::std::uint8_t const> owned, ::std::uintptr_t owner_begin,
-        ::std::uintptr_t pc, ::std::span<::std::uint8_t const> instruction_code = {}) noexcept
+        ::std::uintptr_t pc, ::std::span<::std::uint8_t const> instruction_code = {}, SemanticDecoder* sizes = nullptr) noexcept
     {
-        auto const page{native_disassembly::decode_window_with(display, owned, owner_begin, pc, 0, 0, 1u, instruction_code)};
+        auto const page{native_disassembly::decode_window_with(display, owned, owner_begin, pc, 0, 0, 1u, instruction_code, sizes)};
         return page.available && page.count == 1u && page.instructions[0u] && page.instructions[0u].pc == pc;
     }
 
@@ -63,7 +63,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_wasm_step_boundary
            owned.empty() ||
            owner_end - owner_begin != owned.size() || pc < owner_begin || pc >= owner_end)
         { return out; }
-        auto const page{native_disassembly::decode_window_with(display, owned, owner_begin, pc, 0, 0, 2u, instruction_code)};
+        auto const page{native_disassembly::decode_window_with(display, owned, owner_begin, pc, 0, 0, 2u, instruction_code, &semantics)};
         if(!page.available || page.count != 2u || !page.instructions[0u] || page.instructions[0u].pc != pc)
         { return out; }
         out.decoded = page.instructions[0u];
@@ -96,7 +96,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_wasm_step_boundary
             // is the next instruction. Nested control transfers are refused.
             if(pending_npc == 0u || kind != flow::ordinary || !decoded.safe_for_single_instruction() || out.decoded.size != 4u ||
                pending_npc < owner_begin || pending_npc >= owner_end ||
-               !exact_boundary(display, owned, owner_begin, pending_npc, instruction_code))
+               !exact_boundary(display, owned, owner_begin, pending_npc, instruction_code, &semantics))
             { out.unavailable_reason = native_next_policy::reason::branch_continuation_unavailable; return out; }
             out.first_successor = pending_npc;
         }
@@ -114,7 +114,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_wasm_step_boundary
         {
             auto const& destination{decoded.destination()};
             if(!destination || destination.display_pc < owner_begin || destination.display_pc >= owner_end ||
-               !exact_boundary(display, owned, owner_begin, destination.display_pc, instruction_code))
+               !exact_boundary(display, owned, owner_begin, destination.display_pc, instruction_code, &semantics))
             { out.unavailable_reason = native_next_policy::reason::branch_continuation_unavailable; return out; }
             if(decoded.delayed_branch_pair())
             {
@@ -125,8 +125,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_wasm_step_boundary
                 // Nested control, self/delay targets and owner exits refuse.
                 if(out.decoded.size != 4u || owner_end - pc <= 8u ||
                    destination.display_pc == pc || destination.display_pc == fallthrough ||
-                   !exact_boundary(display, owned, owner_begin, fallthrough, instruction_code) ||
-                   !exact_boundary(display, owned, owner_begin, pc + 8u, instruction_code))
+                   !exact_boundary(display, owned, owner_begin, fallthrough, instruction_code, &semantics) ||
+                   !exact_boundary(display, owned, owner_begin, pc + 8u, instruction_code, &semantics))
                 { out.unavailable_reason = native_next_policy::reason::branch_continuation_unavailable; return out; }
                 auto const slot{semantics.decode(fallthrough,owned.subspan(offset + 4u))};
                 if(!slot || slot.semantics().size != 4u || !slot.safe_for_single_instruction())
@@ -139,8 +139,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_wasm_step_boundary
             if(decoded.delayed_direct_branch())
             {
                 if(out.decoded.size != 4u || owner_end - pc <= 8u ||
-                   !exact_boundary(display, owned, owner_begin, fallthrough, instruction_code) ||
-                   !exact_boundary(display, owned, owner_begin, pc + 8u, instruction_code))
+                   !exact_boundary(display, owned, owner_begin, fallthrough, instruction_code, &semantics) ||
+                   !exact_boundary(display, owned, owner_begin, pc + 8u, instruction_code, &semantics))
                 { out.unavailable_reason = native_next_policy::reason::branch_continuation_unavailable; return out; }
                 if(decoded.annulled_direct_branch() && !destination.conditional)
                 {
@@ -149,7 +149,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_wasm_step_boundary
                     // never install a fictitious trap in the skipped slot.
                     auto const successor{destination.never_taken ? pc+8u : destination.display_pc};
                     if(owner_end-successor<=4u ||
-                       !exact_boundary(display,owned,owner_begin,successor+4u,instruction_code))
+                       !exact_boundary(display,owned,owner_begin,successor+4u,instruction_code, &semantics))
                     { out.unavailable_reason = native_next_policy::reason::branch_continuation_unavailable; return out; }
                     out.first_successor=successor;
                     out.successor_npc[0u]=successor+4u;
@@ -163,7 +163,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_wasm_step_boundary
                 {
                     out.second_successor = decoded.annulled_direct_branch() ? pc + 8u : fallthrough;
                     if(decoded.annulled_direct_branch() && (owner_end - pc <= 12u ||
-                       !exact_boundary(display, owned, owner_begin, pc + 12u, instruction_code)))
+                       !exact_boundary(display, owned, owner_begin, pc + 12u, instruction_code, &semantics)))
                     { out.unavailable_reason = native_next_policy::reason::branch_continuation_unavailable; return out; }
                     out.successor_npc[1u] = decoded.annulled_direct_branch() ? pc + 12u : pc + 8u;
                     out.successor_delay_slot[1u] = !decoded.annulled_direct_branch();
@@ -174,7 +174,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_wasm_step_boundary
             out.first_successor = destination.display_pc;
             if(destination.conditional)
             {
-                if(fallthrough >= owner_end || !exact_boundary(display, owned, owner_begin, fallthrough, instruction_code))
+                if(fallthrough >= owner_end || !exact_boundary(display, owned, owner_begin, fallthrough, instruction_code, &semantics))
                 { out.unavailable_reason = native_next_policy::reason::branch_continuation_unavailable; return out; }
                 out.second_successor = fallthrough;
             }

@@ -13,6 +13,7 @@
 # include <cstring>
 # include <span>
 # include "native_target_metadata.h"
+# include "native_decoder_cache.h"
 # if defined(__APPLE__)
 #  include <TargetConditionals.h>
 # endif
@@ -283,4 +284,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_disassembly
     [[nodiscard]] inline constexpr instruction decode_owned(::std::uintptr_t,
         ::std::uintptr_t, ::std::uintptr_t) noexcept { return {}; }
 #endif
+    template<typename Description>
+    using cached_decoder = native_decoder_cache::lease<decoder, Description>;
+
 }

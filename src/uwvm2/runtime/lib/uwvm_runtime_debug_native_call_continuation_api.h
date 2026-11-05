@@ -108,8 +108,8 @@
                     llvm_jit_debug_native_target metadata{};
                     if(end-begin<=PTRDIFF_MAX && debug_copy_actual_native_target(id,function,generation,owner,metadata))
                     {
-                        ::uwvm2::uwvm::debugger::native_disassembly::decoder display{metadata};
-                        ::uwvm2::uwvm::debugger::native_owned_instruction_semantics::decoder semantics{metadata};
+                        ::uwvm2::uwvm::debugger::native_disassembly::cached_decoder display{metadata};
+                        ::uwvm2::uwvm::debugger::native_owned_instruction_semantics::cached_decoder semantics{metadata};
                         bool valid{bool(display) && bool(semantics)}, seen{}; ::std::size_t adjustment{};
                         for(auto pc{begin};valid && pc<end;)
                         {
@@ -493,7 +493,7 @@
                first.trap_revision == UINT64_MAX) { return {}; }
             candidate->trap_revision_ = first.trap_revision;
             // Real engine TargetMachine description, not host/default triple.
-            ::uwvm2::uwvm::debugger::native_owned_instruction_semantics::decoder decoder{image->target};
+            ::uwvm2::uwvm::debugger::native_owned_instruction_semantics::cached_decoder decoder{image->target};
             if(!decoder) { return {}; }
             auto const offset{static_cast<::std::size_t>(image->stop_pc - image->owner_begin)};
             if(linear_limit != 0u)
@@ -530,9 +530,9 @@
             }
             decltype(decoder.decode(0u, {})) call{};
 #if defined(__linux__) && defined(__arm__)
-            ::uwvm2::uwvm::debugger::native_disassembly::decoder display{image->target};
+            ::uwvm2::uwvm::debugger::native_disassembly::cached_decoder display{image->target};
             auto const boundary{::uwvm2::uwvm::debugger::native_disassembly::decode_window_with(display,
-                {image->bytes.data(),image->size},image->owner_begin,image->stop_pc,0,0,1u,image->instruction_code)};
+                {image->bytes.data(),image->size},image->owner_begin,image->stop_pc,0,0,1u,image->instruction_code,&decoder)};
             if(!boundary.available || boundary.count!=1u || boundary.instructions[0u].pc!=image->stop_pc) { return {}; }
             call=decoder.decode(image->stop_pc,{image->bytes.data()+offset,image->size-offset});
             if(call.semantics().size!=boundary.instructions[0u].size) { return {}; }
@@ -630,7 +630,7 @@
             // immutable Wasm body. Calls/returns/indirect or escaping branches
             // never borrow this permission. No descendant snapshot is public.
 #if !defined(__linux__) || !defined(__arm__)
-            ::uwvm2::uwvm::debugger::native_disassembly::decoder display{image->target};
+            ::uwvm2::uwvm::debugger::native_disassembly::cached_decoder display{image->target};
 #endif
             auto const escaped{::uwvm2::uwvm::debugger::native_wasm_step_boundary::prepare(display,decoder,
                 {image->bytes.data(),image->size},image->owner_begin,image->owner_end,continuation,false,0u,image->instruction_code)};

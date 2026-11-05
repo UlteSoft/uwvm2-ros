@@ -580,7 +580,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                    reply.disassembly_function_name_size > reply.disassembly_function_name.size() ||
                    (!command.disassembly_resolve_symbols && reply.disassembly_function_name_size != 0u))
                 { return ::fast_io::concat_std("error: native disassembly range is unavailable\n"); }
-                native_owned_instruction_semantics::decoder public_decoder{code.target};
+                native_owned_instruction_semantics::cached_decoder public_decoder{code.target};
                 for(::std::size_t index{}; index != reply.disassembly_count; ++index)
                 {
                     auto const& instruction{reply.disassembly[index]};
@@ -646,7 +646,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                    reply.disassembly_count > reply.disassembly.size() || code.participant == 0u ||
                    code.pc == 0u || code.function_generation == 0u || code.runtime_epoch == 0u)
                 { return ::fast_io::concat_std("error: native disassembly result is unavailable\n"); }
-                native_owned_instruction_semantics::decoder public_decoder{code.target};
+                native_owned_instruction_semantics::cached_decoder public_decoder{code.target};
                 for(::std::size_t index{}; index != reply.disassembly_count; ++index)
                 {
                     auto const& instruction{reply.disassembly[index]};
@@ -1078,7 +1078,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 }
                 if(thread.source)
                 {
-                    ::fast_io::io::print(output, "  source ");
+                    // A native row carries display-only source provenance, not a
+                    // cooperative source stop or permission to read source values.
+                    ::fast_io::io::print(output, ::fast_io::mnp::os_c_str(thread.native_pc ? "  native-source " : "  source "));
                     add_source_path(text, thread.source->file);
                     ::fast_io::io::print(output, ":", ::fast_io::mnp::dec(thread.source->line),
                         ":", ::fast_io::mnp::dec(thread.source->column), "\n");
@@ -1332,7 +1334,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             {
                 auto listing{::fast_io::concat_fast_io("JIT module=", reply.disassembly_code.module,
                     " function=", reply.disassembly_code.function, "\n")};
-                native_owned_instruction_semantics::decoder decoder{reply.disassembly_code.target};
+                native_owned_instruction_semantics::cached_decoder decoder{reply.disassembly_code.target};
                 for(::std::size_t i{}; i != reply.disassembly_count; ++i)
                 {
                     auto const& instruction{reply.disassembly[i]};
@@ -1383,7 +1385,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 " [",probe.disassembly_code.module,":",probe.disassembly_code.function,"]\n")};
             auto const body{screen_.pane_body_rows(console_tui::layout::assembly)};
             auto const count{body>1u ? body-1u : 1u};bool end{};
-            native_owned_instruction_semantics::decoder decoder{probe.disassembly_code.target};
+            native_owned_instruction_semantics::cached_decoder decoder{probe.disassembly_code.target};
             for(::std::size_t shown{};shown<count && !end;)
             {
                 auto const requested{::std::min(count-shown,::std::size_t{32u})};

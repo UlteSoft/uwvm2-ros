@@ -35,6 +35,7 @@ module;
 export module uwvm2.uwvm.debugger:native_owned_instruction_semantics;
 import :native_disassembly;
 import :native_target_metadata;
+import :native_decoder_cache;
 import :native_instruction_semantics;
 import :native_branch_destination;
 #define UWVM_MODULE

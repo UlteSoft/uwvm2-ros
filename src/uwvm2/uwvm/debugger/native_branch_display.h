@@ -30,7 +30,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_branch_display
         [[nodiscard]] explicit constexpr operator bool() const noexcept
         { return static_cast<bool>(destination); }
     };
-    [[nodiscard]] inline annotation decode(native_owned_instruction_semantics::decoder& decoder,
+    template<typename Decoder>
+    [[nodiscard]] inline annotation decode(Decoder& decoder,
         native_disassembly::instruction const& shown) noexcept
     {
         if(!shown || shown.pc == 0u || shown.size > shown.bytes.size()) { return {}; }

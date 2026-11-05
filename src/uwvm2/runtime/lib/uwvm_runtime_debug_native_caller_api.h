@@ -338,7 +338,7 @@
                 if(!call_return)
 #endif
                 {
-                    ::uwvm2::uwvm::debugger::native_owned_instruction_semantics::decoder decoder{target};
+                    ::uwvm2::uwvm::debugger::native_owned_instruction_semantics::cached_decoder decoder{target};
 #if (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips))
                     // N64 R2 returns after BOTH the call and its delay slot.
                     // Only bytes in this exact published Wasm parent are read;
@@ -410,7 +410,7 @@
                     if(length == 0u || length > static_cast<::std::uintptr_t>(PTRDIFF_MAX) || !debug_copy_actual_native_target(current.module,current.function,
                         current.function_generation,capture->code_owners_[index],child_target)) { return; }
                     auto const* child_code{reinterpret_cast<unsigned char const*>(frame_begin)};
-                    ::uwvm2::uwvm::debugger::native_owned_instruction_semantics::decoder child_decoder{child_target};
+                    ::uwvm2::uwvm::debugger::native_owned_instruction_semantics::cached_decoder child_decoder{child_target};
                     ::std::size_t offset{};
                     while(offset != length)
                     {
@@ -480,7 +480,7 @@
                     // Same-PC recursive returns can occur at another SP. The
                     // sealed ordinary instruction and its successor permit one
                     // REAL instruction to pass, then re-arm the exact return PC.
-                    ::uwvm2::uwvm::debugger::native_owned_instruction_semantics::decoder decoder{target};
+                    ::uwvm2::uwvm::debugger::native_owned_instruction_semantics::cached_decoder decoder{target};
                     auto const next{decoder.decode(recovered.return_pc,{parent_code+(recovered.return_pc-parent_begin),parent_end-recovered.return_pc})};
                     constexpr auto width{step::details::breakpoint_width()};
                     if(!next || !next.safe_for_single_instruction() || next.semantics().size < width ||

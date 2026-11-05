@@ -454,8 +454,8 @@
                       } }) || !same) { return false; }
             }
             namespace debugger = ::uwvm2::uwvm::debugger;
-            debugger::native_disassembly::decoder display{image.target};
-            debugger::native_owned_instruction_semantics::decoder semantics{image.target};
+            debugger::native_disassembly::cached_decoder display{image.target};
+            debugger::native_owned_instruction_semantics::cached_decoder semantics{image.target};
             auto const permitted{debugger::native_wasm_step_boundary::prepare(display,semantics,
                 {image.bytes.data(),image.size},image.owner_begin,image.owner_end,image.stop_pc,false,pending_npc,image.instruction_code,pending_delay_slot)};
             if(!permitted || image.target.minimum_instruction_alignment == 0u) { return false; }

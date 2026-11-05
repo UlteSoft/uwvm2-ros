@@ -246,3 +246,84 @@ official VTune installation also collected hardware Hotspots and
 Microarchitecture Exploration profiles against the final binary. Function
 hotspots resolve, but this release binary's source-line report is unknown;
 it is not evidence of source-line attribution.
+
+## Decoder reuse and boundary-scan costs
+
+The debugger reuses one idle LLVM text decoder and one semantic decoder per
+host thread. The complete triple, CPU, feature string, pointer width, byte order,
+instruction maximum and alignment select the context. A lease removes the
+context from the idle slot; nested requests therefore get distinct owners.
+Only target data and LLVM machinery survive the request. Code bytes, PCs,
+decoded results, captures, stop identities, generations and management
+authority are never cached. Every operation still obtains and checks the
+current owned code and stop.
+
+Forward scans now ask the same target's LLVM MC decoder for instruction sizes
+without formatting discarded prefix instructions. Only actual reply rows are
+formatted, and their size must agree with that scan. The existing entry-to-stop
+walk, literal masks, bounds, both branch successors, semantic vetoes and
+current-owner checks remain in force. Negative windows still walk forward;
+there is no reverse x86 resynchronization or remembered instruction boundary.
+
+Native status labels qualified display-only source information as
+"native-source", preserving the distinction from a cooperative "source" stop.
+Previously a DWARF C function could emit both native and cooperative-looking
+labels, causing the strict DAP parser to reject further assembly stepping.
+The parser still rejects that mixed status and never uses native display
+metadata to authorize source-value access.
+
+On native x86_64, five alternating baseline/final rounds each measure 100
+requests after five warmups. The VM and controller are pinned to separate
+CPUs. Compilation, startup and profiling are outside these latency samples.
+Median-of-round-medians for the SDK WAT loop are:
+
+- Native single step: 0.650 to 0.245 ms, a 62% reduction.
+- 128-instruction disassembly: 3.665 to 2.500 ms, a 32% reduction.
+- 16-instruction disassembly: 0.860 to 0.590 ms, a 31% reduction.
+- Native stack query: 0.830 to 0.563 ms, a 32% reduction.
+- Wasm single step: 0.195 to 0.193 ms; no material change.
+
+The retained Wasmtime 50.0.0 and GDB 16.3 execute the same DWARF SDK C Wasm
+binary as the final VM. GDB/MI and the authenticated DAP client both measure
+complete request/reply round trips. Final uwvm2-ros versus Wasmtime/GDB medians
+are 0.513/0.289 ms for native single step, 0.886/0.345 ms for 16-instruction
+disassembly and 0.360/0.117 ms for stack queries. The workloads differ in generated
+machine code and authority: GDB permits host inspection and returns host frames;
+uwvm2-ros proves and restricts guest ownership. The unmodified baseline cannot
+complete this native C DAP scenario because of the status-label bug, so no
+baseline speedup ratio is assigned to that scenario.
+
+The existing WASI-SDK LLDB 22.1.0 also measures Wasmtime's remote Wasm debugger:
+0.711 ms for Wasm single step and 0.151 ms for a stack query. Its SDK-derived WAT
+loop additionally exports memory and contains debug names required by that
+remote workflow. These are distinct debugger modes and frame representations,
+not a general engine-throughput comparison.
+
+The official VTune 2026.4 installation supplies hardware Hotspots and
+Microarchitecture Exploration evidence. With the same 2,000 WAT disassembly
+requests, sampled retired instructions decrease from 32.04 billion to
+6.936 billion and VM CPU time from 3.393 to 1.081 seconds. A separate build
+using the same optimized sources and release options plus line tables attributes
+samples to debugger source lines; prebuilt LLVM code still has incomplete line
+attribution. Native C stepping/disassembly are profiled separately. No QEMU
+timing is presented as performance evidence.
+
+
+The final rebuilt x86_64, i686, AArch64, ARM soft-float and ARM hard-float
+binaries all pass the same regression matrix: eight call/mode variants and
+13 live VM groups per ABI. These cover direct/indirect/reference/tail/recursive
+calls, native/Wasm transitions, next/finish/deadlines, register and breakpoint
+controls, source stepping, unwind traps, stack exhaustion, replacement,
+foreign-process rejection and WASI host-call boundaries. The hot-update groups
+contain 4,555 assertions in total; the new C/DWARF test performs 600 native
+steps across the five ABIs and rejects stale frames after each step. x86_64
+executes natively; the other four cross-built ELFs execute under QEMU for
+correctness only.
+
+Additional checks pass for 535 DAP tests, 52 actual LLVM MC instruction-form
+assertions, 5,000 fresh-versus-reused decoder comparisons and 6,000 old-versus-new
+window comparisons across the five targets. Cache key validation, reentrancy,
+eight-thread separation and thread-local cleanup pass ASan/UBSan; builds without
+an LLVM provider remain unavailable. The metadata/cache module partitions
+compile independently; this is not a full product module-build qualification.
+The entire run uses the existing 64 GiB, zero-swap cgroup with no OOM events.

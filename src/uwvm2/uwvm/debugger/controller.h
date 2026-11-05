@@ -3439,8 +3439,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                        copied.size == 0u || !copied.complete_storage() ||
                        copied.owner_end <= copied.owner_begin || copied.owner_end - copied.owner_begin != copied.size)
                     { return result; }
-                    native_disassembly::decoder display{copied.target};
-                    native_owned_instruction_semantics::decoder semantics{copied.target};
+                    native_disassembly::cached_decoder display{copied.target};
+                    native_owned_instruction_semantics::cached_decoder semantics{copied.target};
                     // [ONE authenticated exact-sized owned function bytes] end
                     // [safe                                                   ] the
                     //  ^^ private trap + domain + lease/publication copied a complete
@@ -3749,8 +3749,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                        !copied.complete_storage() ||
                        copied.owner_end <= copied.owner_begin || copied.owner_end - copied.owner_begin != copied.size)
                     { return result; }
-                    native_disassembly::decoder display{copied.target};
-                    native_owned_instruction_semantics::decoder semantics{copied.target};
+                    native_disassembly::cached_decoder display{copied.target};
+                    native_owned_instruction_semantics::cached_decoder semantics{copied.target};
                     // [ONE complete exact-sized owned image] owned_end
                     // [safe                                   ] exact authenticated
                     //  ^^ range/participant/gen/epoch above. Before arming the
@@ -4013,9 +4013,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             ::uwvm2::runtime::lib::llvm_jit_debug_native_function_image image{};
             if(!native_breakpoint_image_locked(image)) { return; }
             reply.status = control_error::breakpoint_not_executable;
-            native_disassembly::decoder display{image.target};
+            native_disassembly::cached_decoder display{image.target};
             auto const candidate{native_disassembly::guest_breakpoint_with(display, image, offset)};
-            native_owned_instruction_semantics::decoder semantics{image.target};
+            native_owned_instruction_semantics::cached_decoder semantics{image.target};
             if(!candidate || !public_native_instruction(image, display, semantics, candidate)) { return; }
             // Reuse only a binding to this identical canonical activation and
             // publication. The capture is kept privately; public rows hold DATA.
@@ -4088,9 +4088,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                         [&](auto const& value) { return value.identifier == point.identifier &&
                             value.capture == native_code_capture_ && value.begin == image.owner_begin && value.end == image.owner_end; })};
                     if(binding == native_breakpoint_bindings_.end()) { continue; }
-                    native_disassembly::decoder display{image.target};
+                    native_disassembly::cached_decoder display{image.target};
                     auto const candidate{native_disassembly::guest_breakpoint_with(display, image, point.offset)};
-                    native_owned_instruction_semantics::decoder semantics{image.target};
+                    native_owned_instruction_semantics::cached_decoder semantics{image.target};
                     if(!candidate || !public_native_instruction(image, display, semantics, candidate))
                     { result.error = control_error::breakpoint_not_executable; return result; }
                     if(point.hits != UINT64_MAX) { ++point.hits; }
@@ -4141,10 +4141,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             // [owned copied.bytes ... copied.size] end
             // [safe                             ] size equals both owned buffer extents above;
             //  ^^ span borrows only this local copied image after live owner guard ends.
-            native_disassembly::decoder display_decoder{copied.target};
+            native_disassembly::cached_decoder display_decoder{copied.target};
+            native_owned_instruction_semantics::cached_decoder semantics_decoder{copied.target};
             auto const decoded{native_disassembly::decode_window_with(display_decoder, {copied.bytes.data(), copied.size},
                 copied.owner_begin, copied.stop_pc, command.disassembly_byte_offset,
-                command.disassembly_instruction_offset, static_cast<::std::size_t>(command.disassembly_count),copied.instruction_code)};
+                command.disassembly_instruction_offset, static_cast<::std::size_t>(command.disassembly_count),copied.instruction_code, &semantics_decoder)};
             if(!decoded.available || decoded.count != command.disassembly_count)
             { result.status = control_error::unsupported_command; return; }
             result.disassembly_stop_identifier = stop_identifier_;
@@ -4157,7 +4158,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             result.disassembly_count = decoded.count;
             // One cold semantic MC context for this whole owned display page.
             // A missing context leaves optional target DATA unavailable.
-            native_owned_instruction_semantics::decoder semantics_decoder{copied.target};
             for(::std::size_t index{}; index != decoded.count; ++index)
             {
                 // [fixed decoded page ... count <= 32] end
@@ -5221,7 +5221,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                         if(::uwvm2::runtime::lib::llvm_jit_debug_copy_native_function_host_api(native_code_capture_,&native_session_,image) &&
                            image.stop_pc>=image.owner_begin && image.stop_pc<image.owner_end && image.complete_storage())
                         {
-                            native_owned_instruction_semantics::decoder decoder{image.target};auto const offset{image.stop_pc-image.owner_begin};
+                            native_owned_instruction_semantics::cached_decoder decoder{image.target};auto const offset{image.stop_pc-image.owner_begin};
                             auto const instruction{decoder.decode(image.stop_pc,{image.bytes.data()+offset,image.size-offset})};
                             cross=instruction && instruction.semantics().kind==native_instruction_semantics::flow::return_instruction;
                             if(!cross && instruction.safe_for_call_continuation())

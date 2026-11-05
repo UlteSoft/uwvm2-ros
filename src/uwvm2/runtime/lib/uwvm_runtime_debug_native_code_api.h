@@ -386,7 +386,7 @@ namespace
             llvm_jit_debug_native_function_image image{};
             if(!llvm_jit_debug_copy_native_function_host_api(capture,session,image) || !image.native_instruction_stop ||
                !image.complete_storage() || image.stop_pc<image.owner_begin || image.stop_pc>=image.owner_end) { return false; }
-            ::uwvm2::uwvm::debugger::native_owned_instruction_semantics::decoder decoder{image.target};
+            ::uwvm2::uwvm::debugger::native_owned_instruction_semantics::cached_decoder decoder{image.target};
             auto const offset{image.stop_pc-image.owner_begin};
             auto const call{decoder.decode(image.stop_pc,{image.bytes.data()+offset,image.size-offset})};
             if(!call.safe_for_call_continuation()) { return false; }
@@ -484,8 +484,8 @@ namespace
             if((absolute && (requested<image.owner_begin || requested>=image.owner_end)) ||
                (!absolute && requested>=image.size)) { return result::invalid_target; }
             auto const target{absolute ? static_cast<::std::uintptr_t>(requested) : image.owner_begin+static_cast<::std::uintptr_t>(requested)};
-            dbg::native_disassembly::decoder display{image.target};
-            dbg::native_owned_instruction_semantics::decoder semantics{image.target};
+            dbg::native_disassembly::cached_decoder display{image.target};
+            dbg::native_owned_instruction_semantics::cached_decoder semantics{image.target};
             auto bytes{::std::span<::std::uint8_t const>{image.bytes.data(),image.size}};
             if(!dbg::native_wasm_step_boundary::exact_boundary(display,bytes,image.owner_begin,target,image.instruction_code) ||
                !dbg::native_wasm_step_boundary::exact_boundary(display,bytes,image.owner_begin,image.stop_pc,image.instruction_code))
