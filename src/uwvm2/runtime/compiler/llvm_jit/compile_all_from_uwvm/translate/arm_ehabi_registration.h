@@ -38,6 +38,9 @@ extern "C" _Unwind_Reason_Code __aeabi_unwind_cpp_pr0(_Unwind_State, _Unwind_Con
 extern "C" _Unwind_Reason_Code __aeabi_unwind_cpp_pr1(_Unwind_State, _Unwind_Control_Block*, _Unwind_Context*);
 extern "C" _Unwind_Reason_Code __aeabi_unwind_cpp_pr2(_Unwind_State, _Unwind_Control_Block*, _Unwind_Context*);
 
+// ARM resume lowering calls the paired libc++abi cleanup entry. It can unwind.
+extern "C" void __cxa_end_cleanup();
+
 extern "C" ::std::uintptr_t __gnu_Unwind_Find_exidx(::std::uintptr_t, int*) noexcept;
 namespace uwvm2::runtime::compiler::llvm_jit::details
 {

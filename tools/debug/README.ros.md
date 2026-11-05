@@ -84,7 +84,7 @@ PC again never revives an old scope.
 
 ## Actual integration and architecture scope
 
-`tests/ros_debugger/integration_runtime.py` now loads this exact adapter from
+`test/0073.ros-tests/support/source/ros_debugger/integration_runtime.py` now loads this exact adapter from
 the admitted complete source manifest and executes its production query method
 against the actual credential-checked inherited console. The existing ROS1,
 ROS2 and dual jobs check repeated unchanged projections, instance/event alias
@@ -138,8 +138,8 @@ same PC or the same numeric stop label cannot resurrect a reference from a
 different generation/cohort. These adapter rules conservatively retire copied
 references without asserting whether an uncertain transport committed an update.
 
-[`README.management.md`](../../tests/ros_debugger/README.management.md) describes
+[`README.management.md`](../../test/0073.ros-tests/support/source/ros_debugger/README.management.md) describes
 the separate actual manager/Host components, injected DAP/raw-registry tests
 and the remaining genuine Runtime replacement integration obligation. The SDK
 boundary applies identically to every supported language; see
-[`update-and-debug-boundary.md`](../../sdk/docs/update-and-debug-boundary.md).
+[management authority](../../documents/runtime/management-authority.md).

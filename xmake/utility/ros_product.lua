@@ -77,13 +77,15 @@ function uwvm_ros_product_check(get, host, host_arch, reject_configuration)
     if value("ros-product-policy", true) ~= true then reject("the mandatory product policy cannot be disabled") end
     local aliases = {
         x86_64="x86_64", x64="x86_64", amd64="x86_64",
-        aarch64="aarch64", arm64="aarch64"
+        aarch64="aarch64", arm64="aarch64",
+        x86="i686", i386="i686", i686="i686",
+        arm="arm", armsf="arm", armhf="armhf", armv7="armhf", armv7a="armhf", ["armv7-a"]="armhf"
     }
     local requested = string.lower(tostring(value("arch", host_arch)))
     local arch = aliases[requested]
     if not arch then
-        reject("the current Linux ROS product admits x86_64 and little-endian AArch64 GNU ABIs; " ..
-            "ARMv7 native debugging remains unqualified and its backend is retained for candidate testing; requested arch=" .. requested)
+        reject("the Linux ROS product requires x86_64, i686, little-endian AArch64, " ..
+            "ARMv7 soft-float (arm) or ARMv7 hard-float (armhf); requested arch=" .. requested)
     end
     for _, option in ipairs({"target", "llvm-target"}) do
         local triple = value(option, "detect")
@@ -92,6 +94,9 @@ function uwvm_ros_product_check(get, host, host_arch, reject_configuration)
             local actual
             if triple:match("^x86_64%-") and triple:match("%-linux%-gnu$") then actual = "x86_64"
             elseif triple:match("^aarch64%-") and triple:match("%-linux%-gnu$") then actual = "aarch64"
+            elseif triple:match("^i[3-6]86%-") and triple:match("%-linux%-gnu$") then actual = "i686"
+            elseif (triple:match("^arm%-") or triple:match("^armv7a?%-"))
+                and triple:match("%-linux%-gnueabi$") then actual = "arm"
             elseif (triple:match("^arm%-") or triple:match("^armv7a?%-"))
                 and triple:match("gnueabihf$") then actual = "armhf" end
             if actual ~= arch or not triple:find("linux", 1, true) or not triple:find("gnu", 1, true) then

@@ -50,7 +50,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_step
         ::uwvm2::runtime::lib::llvm_jit_debug_native_activation_provider activation_provider{};
         ::uwvm2::runtime::lib::llvm_jit_debug_native_breakpoint_plan plan{};
         ::std::array<bool, 3u> patched{};
-#if ((defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))
+#if ((defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))
         ::std::uintptr_t return_skip_pc{};
         ::std::array<unsigned char,4u> return_original{}, return_skip_original{};
         bool return_patched{}, return_skip_patched{};
@@ -61,7 +61,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_step
     static_assert(::std::atomic_bool::is_always_lock_free);
     namespace details
     {
-#if ((defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))
+#if ((defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))
         // Private actual-signal telemetry; no native address or public API.
         inline ::std::atomic_uint return_other_stack_hits{}, return_skip_hits{};
         static_assert(::std::atomic_uint::is_always_lock_free);
@@ -158,7 +158,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_step
             step.patched[index] = !restore;
             return true;
         }
-#if ((defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))
+#if ((defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))
         // Only the closed runtime-issued return seal selects these bytes.
         // All cooperative peers are parked. Never make a JIT page RWX.
         [[nodiscard]] inline bool write_return_patch(session& step, bool skip, bool restore) noexcept
@@ -185,7 +185,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_step
         {
             bool okay{true};
             for(unsigned i{}; i != 3u; ++i) { if(step.patched[i] && !write_patch(step,i,true)) { okay = false; } }
-#if ((defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))
+#if ((defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))
             if(step.return_patched && !write_return_patch(step,false,true)) { okay=false; }
             if(step.return_skip_patched && !write_return_patch(step,true,true)) { okay=false; }
 #endif
@@ -332,14 +332,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_step
                 call_return_hits.fetch_add(1u,::std::memory_order_relaxed);
 #endif
             }
-#if ((defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))
+#if ((defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))
             bool const returning{continuing && !step->continuation_call};
             if(returning)
             {
                 bool const hit_return{step->return_patched && pc==step->continuation_pc};
                 bool const hit_skip{step->return_skip_patched && pc==step->return_skip_pc};
                 if((!hit_return && !hit_skip) || pc<step->owner_begin || pc>=step->owner_end ||
-                   (raw.machine!=native_registers::architecture::riscv64 && raw.machine!=native_registers::architecture::aarch64 && raw.machine!=native_registers::architecture::i686 && raw.machine!=native_registers::architecture::loongarch64 && raw.machine!=native_registers::architecture::mips64) || raw.sp()==0u)
+                   (raw.machine!=native_registers::architecture::riscv64 && raw.machine!=native_registers::architecture::aarch64 && raw.machine!=native_registers::architecture::i686 && raw.machine!=native_registers::architecture::loongarch64 && raw.machine!=native_registers::architecture::mips64 && raw.machine!=native_registers::architecture::arm) ||
+                   (raw.machine==native_registers::architecture::arm &&
+                    (raw.size()!=17u || (raw.values[16u] & (1u<<5u))!=0u || (pc & 3u)!=0u)) || raw.sp()==0u)
                 { forward_trap(number,info,pointer);return; }
                 // i386 INT3 reports EIP after the patched byte. Every private
                 // replay/cancellation resumes at the original instruction;
@@ -584,7 +586,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_step
     }
     inline void acknowledge_continuation_execution_exit() noexcept
     { cancel_continuation_on_worker();static_cast<void>(skip_pause_for_continuation()); }
-#if ((defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))
+#if ((defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))
     [[nodiscard]] inline bool continue_to_return(session& step,
         ::uwvm2::runtime::lib::llvm_jit_debug_native_return_event const& event, ::std::uint64_t cookie,int descriptor) noexcept
     { return ::uwvm2::runtime::lib::llvm_jit_debug_continue_native_return_event_host_api(&step,event,cookie,descriptor); }
@@ -642,7 +644,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_step
         details::host_transition_guard lock{};
         if(details::active.load(::std::memory_order_acquire) != &step || step.state.load(::std::memory_order_seq_cst) != phase::released) { return false; }
         for(auto patched : step.patched) { if(patched) { return false; } }
-#if ((defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))
+#if ((defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))
         if(step.return_patched || step.return_skip_patched) { return false; }
         step.return_skip_pc=0u;step.return_original={};step.return_skip_original={};
 #endif
@@ -653,7 +655,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_step
     }
 }
 
-#if ((defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips))) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
+#if ((defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips))) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
 UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
 {
     extern "C++" inline bool llvm_jit_debug_continue_native_return_event_host_api(
@@ -670,7 +672,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
             step.register_snapshot.machine!=::uwvm2::uwvm::debugger::native_registers::architecture::aarch64 &&
             step.register_snapshot.machine!=::uwvm2::uwvm::debugger::native_registers::architecture::i686 &&
             step.register_snapshot.machine!=::uwvm2::uwvm::debugger::native_registers::architecture::loongarch64 &&
-            step.register_snapshot.machine!=::uwvm2::uwvm::debugger::native_registers::architecture::mips64) ||
+            step.register_snapshot.machine!=::uwvm2::uwvm::debugger::native_registers::architecture::mips64 &&
+            step.register_snapshot.machine!=::uwvm2::uwvm::debugger::native_registers::architecture::arm) ||
+           (step.register_snapshot.machine==::uwvm2::uwvm::debugger::native_registers::architecture::arm &&
+            (step.register_snapshot.size()!=17u || (step.register_snapshot.values[16u] & (1u<<5u))!=0u ||
+             (step.register_snapshot.pc() & 3u)!=0u)) ||
            step.register_snapshot.pc()!=step.next_pc || step.register_snapshot.sp()==0u ||
            step.return_patched || step.return_skip_patched) { return false; }
         bool installed{};
@@ -713,7 +719,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
            step.abort_requested.load(::std::memory_order_seq_cst) || step.trap_revision==UINT64_MAX ||
            step.register_snapshot.pc()!=step.next_pc || step.register_snapshot.sp()==0u) { return false; }
         for(auto patched:step.patched) { if(patched) { return false; } }
-#if ((defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))
+#if ((defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))
         if(step.return_patched || step.return_skip_patched) { return false; }
 #endif
         bool const installed{event.install(&step,step.target_thread,step.owner_begin,step.owner_end,

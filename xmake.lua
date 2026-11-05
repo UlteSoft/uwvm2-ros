@@ -108,12 +108,12 @@ function def_build(opt)
 	for _, ros_version in ipairs({1, 2}) do
 		if get_config("import-ros" .. ros_version) then
 			-- Linux-only admission is enforced by the mandatory sandbox policy.
-			-- Noetic/Humble/Jazzy name amd64, arm64 and arm32, not every
-			-- member of the x86/ARM families. ARM32 must additionally satisfy
-			-- the compiler's little-endian ARMv7 hard-float ABI check.
-			uwvm_require_build_config(is_arch("x86_64", "x64", "amd64", "aarch64", "arm64",
-				"arm", "armhf", "armv7", "armv7a", "armv7-a"),
-				"ROS host imports support x86_64, AArch64 and little-endian ARMv7 hard-float; i686/armeb are outside the selected ROS distributions")
+			-- The VM talks to an external native ROS Gateway over the typed
+			-- wire protocol. Its CPU/PCS need not match a distro's binary packages.
+			-- Each VM still requires its own paired LLVM/libc++/unwind ABI.
+			uwvm_require_build_config(is_arch("x86_64", "x64", "amd64", "x86", "i386", "i686", "aarch64", "arm64",
+				"arm", "armsf", "armhf", "armv7", "armv7a", "armv7-a"),
+				"ROS host imports require Linux x86_64, i686, little-endian AArch64 or ARMv7 soft/hard-float")
 			add_defines("UWVM_IMPORT_ROS" .. ros_version)
 		end
 	end
@@ -267,7 +267,7 @@ function def_build(opt)
 		add_defines("UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2=1")
 		local native_debug_target = string.lower(tostring(get_config("target") or ""))
 		local native_debug_llvm_target = string.lower(tostring(get_config("llvm-target") or ""))
-		if is_arch("x86_64", "x64", "amd64", "x86", "i386", "i686", "riscv64", "arm64", "aarch64", "loong64", "loongarch64", "mips64", "mips64el") or
+		if is_arch("x86_64", "x64", "amd64", "x86", "i386", "i686", "riscv64", "arm64", "aarch64", "arm", "armsf", "armhf", "armv7", "armv7a", "armv7-a", "loong64", "loongarch64", "mips64", "mips64el") or
 			string.find(native_debug_target, "^mips64el%-") or string.find(native_debug_llvm_target, "^mips64el%-") or
 			string.find(native_debug_target, "^mips64%-") or string.find(native_debug_llvm_target, "^mips64%-") then
 			add_defines("UWVM2_ENABLE_DEBUG_NATIVE_CONTINUATION_LINUX_PRODUCT=1")

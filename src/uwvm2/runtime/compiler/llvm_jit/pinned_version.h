@@ -31,6 +31,12 @@
 # error "uwvm2-ros ARM requires the rebuilt bundled TailCC stack-restoration capability"
 #endif
 
+// Revision 16 gives the owned A32 debugger exact epilogue DWARF rows.
+#if defined(__arm__) && \
+    (!defined(LLVM_UWVM_ROS_ARM_DEBUG_EPILOGUE_CFI) || LLVM_UWVM_ROS_ARM_DEBUG_EPILOGUE_CFI != 1)
+# error "uwvm2-ros ARM requires rebuilt bundled instruction-precise debug CFI"
+#endif
+
 // Revision 15 restores reserved AArch64 caller frames before spill reloads.
 // Keep this capability coupled to the actual backend source and archive hashes.
 #if (defined(__aarch64__) || defined(_M_ARM64)) && \
@@ -42,7 +48,7 @@
 // This is compile-time only, with no VM-entry or generated-Wasm overhead.
 static_assert([]() constexpr
 {
-    constexpr char expected[]{"23.1.1-uwvm-ros.15"};
+    constexpr char expected[]{"23.1.1-uwvm-ros.16"};
     constexpr char actual[]{LLVM_VERSION_STRING};
     if constexpr(sizeof(actual) != sizeof(expected)) { return false; }
     else
@@ -53,7 +59,7 @@ static_assert([]() constexpr
         }
         return true;
     }
-}(), "uwvm2-ros requires the exact bundled LLVM 23.1.1-uwvm-ros.15 headers; configure through xmake");
+}(), "uwvm2-ros requires the exact bundled LLVM 23.1.1-uwvm-ros.16 headers; configure through xmake");
 
 // Revision 9 includes the qualified RISC-V callee-pop TailCC ABI and the
 // incoming-stack musttail repair. Ordinary uwvm2 requires an explicit opt-in;

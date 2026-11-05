@@ -1,6 +1,7 @@
 
 if is_plat("linux") then
-    set_allowedarchs("i386", "x86_64", "arm", "arm64", "riscv", "riscv64", "loong64", "s390x",
+    set_allowedarchs("i386", "i686", "x86", "x86_64", "x64", "amd64",
+        "arm", "armsf", "armhf", "armv7", "armv7a", "armv7-a", "arm64", "aarch64", "riscv", "riscv64", "loong64", "s390x",
         "mips", "mipsel", "mips64", "mips64el", "ppc", "ppc64", "sparc", "sparc64", "hppa", "hppa64", "alpha",
         "sh", "sh4", "m68k", "xtensa", "csky", "hexagon", "arc", "arceb", "or1k", "nios2",
         "microblaze")

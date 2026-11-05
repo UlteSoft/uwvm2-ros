@@ -1,3 +1,7 @@
+For current revision-16 debugger, Unwind and update coverage on all five Linux
+product ABIs, see [Linux ROS debugger and update targets](../runtime/ros-linux-debug-targets.md).
+The earlier target/provider measurements below retain their original scope.
+
 # ROS runtime qualification, 2026-10-26
 
 The current ROS product has no public unwind-control option. Both spellings

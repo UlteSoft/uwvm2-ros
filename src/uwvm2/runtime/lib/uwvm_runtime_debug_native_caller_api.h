@@ -38,7 +38,7 @@
         friend auto ::uwvm2::runtime::lib::llvm_jit_debug_resume_native_return_continuation_host_api(
             llvm_jit_debug_native_return_continuation_owner const&, void const*, void*,
             llvm_jit_debug_native_return_resume_callback) noexcept -> bool;
-#if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && defined(__linux__) && ((__SIZEOF_POINTER__ == 8 && (defined(__x86_64__) || (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__)) || defined(__loongarch64) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))) || (defined(__i386__) && __SIZEOF_POINTER__ == 4)) && \
+#if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && defined(__linux__) && ((__SIZEOF_POINTER__ == 8 && (defined(__x86_64__) || (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__)) || defined(__loongarch64) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4)) && \
     LLVM_VERSION_MAJOR >= 23 && \
     defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
         static void observe_native_locked(llvm_jit_debug_native_activation_cursor_owner const&, void const*,
@@ -64,7 +64,7 @@
     {
         out = {}; if(proof != nullptr) { *proof = {}; }
         if(maximum_frames == 0u || maximum_frames > out.frames.size()) { return false; }
-#if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && defined(__linux__) && ((__SIZEOF_POINTER__ == 8 && (defined(__x86_64__) || (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__)) || defined(__loongarch64) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))) || (defined(__i386__) && __SIZEOF_POINTER__ == 4)) && \
+#if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && defined(__linux__) && ((__SIZEOF_POINTER__ == 8 && (defined(__x86_64__) || (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__)) || defined(__loongarch64) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4)) && \
     LLVM_VERSION_MAJOR >= 23 && \
     defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
         namespace cfi = ::uwvm2::runtime::compiler::llvm_jit::details;
@@ -95,7 +95,7 @@
         (void)supplied; (void)session; return false;
 #endif
     }
-#if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && defined(__linux__) && ((__SIZEOF_POINTER__ == 8 && (defined(__x86_64__) || (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__)) || defined(__loongarch64) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))) || (defined(__i386__) && __SIZEOF_POINTER__ == 4)) && \
+#if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && defined(__linux__) && ((__SIZEOF_POINTER__ == 8 && (defined(__x86_64__) || (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__)) || defined(__loongarch64) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4)) && \
     LLVM_VERSION_MAJOR >= 23 && \
     defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
     void llvm_jit_debug_native_return_continuation::observe_native_locked(
@@ -150,6 +150,7 @@
                  (raw.machine == ::uwvm2::uwvm::debugger::native_registers::architecture::riscv64 && raw.size() == 34u) ||
                  (raw.machine == ::uwvm2::uwvm::debugger::native_registers::architecture::aarch64 && raw.size() == 34u) ||
                  (raw.machine == ::uwvm2::uwvm::debugger::native_registers::architecture::i686 && raw.size() == 10u) ||
+                 (raw.machine == ::uwvm2::uwvm::debugger::native_registers::architecture::arm && raw.size() == 17u && (raw.values[16u] & (1u << 5u)) == 0u) ||
                  (raw.machine == ::uwvm2::uwvm::debugger::native_registers::architecture::loongarch64 && raw.size() == 34u) ||
                  (raw.machine == ::uwvm2::uwvm::debugger::native_registers::architecture::mips64 && raw.size() == 36u)) ||
                !cursor->ledger_->matches_native_chain(cursor->expected_, cursor->count_)) { return; }
@@ -185,6 +186,14 @@
             ::std::array<::std::uint64_t,32u> registers{};
             for(unsigned n{}; n != 32u; ++n) { registers[n] = raw.values[n]; }
             ::std::uint32_t known{UINT32_MAX};
+#elif (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4)
+            constexpr unsigned register_count{16u}, sp_register{13u}, ra_register{14u};
+            constexpr unsigned preserved[]{4u,5u,6u,7u,8u,10u,11u,14u};
+            // A32 kernel r0..pc. r9 remains unavailable: AAPCS permits a
+            // platform/TLS role, so it cannot become caller register evidence.
+            ::std::array<::std::uint64_t,16u> registers{};
+            for(unsigned n{}; n != 16u; ++n) { registers[n] = raw.values[n]; }
+            ::std::uint32_t known{0xffffu & ~(1u << 9u)};
 #elif defined(__i386__) && __SIZEOF_POINTER__ == 4
             constexpr unsigned register_count{8u}, sp_register{4u}, ra_register{8u};
             constexpr unsigned preserved[]{3u,5u,6u,7u,8u};
@@ -217,7 +226,7 @@
                 }
                 return true;
             }};
-#if (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)) || (defined(__i386__) && __SIZEOF_POINTER__ == 4)
+#if (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4)
             // Repeated inspection of the SAME genuine stopped revision can
             // reuse immutable decoded code facts. The cursor is canonical and
             // this domain/publication/native guard serializes these fields.
@@ -250,10 +259,22 @@
                    row.registers[8u].offset != -4) { return; }
 #endif
                 ::std::uintptr_t cfa{};
-                if(!add(registers[row.cfa_register], row.cfa_offset, cfa) ||
-                   !capture->native_stack_owner_->contains_frame(thread, sp, cfa)) { return; }
+                if(!add(registers[row.cfa_register], row.cfa_offset, cfa)) { return; }
+#if defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4
+                // An exact emitted A32 epilogue row may describe an already
+                // popped TailCC argument area. Verify it stays on this actual
+                // thread's stack; the evaluator accepts no saved-slot reads.
+                if(cfa < sp)
+                {
+                    if(!capture->native_stack_owner_->contains_frame(thread, cfa, sp)) { return; }
+                }
+                else
+#endif
+                if(!capture->native_stack_owner_->contains_frame(thread, sp, cfa)) { return; }
                 #if defined(__i386__) && __SIZEOF_POINTER__ == 4
                 using owned_word = cfi::native_debug_cfi_i386_owned_word;
+#elif (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4)
+                using owned_word = cfi::native_debug_cfi_arm_owned_word;
 #else
                 using owned_word = cfi::native_debug_cfi_owned_word;
 #endif
@@ -269,7 +290,7 @@
                         rule.reg < register_count && (known & (1u << rule.reg)) && add(registers[rule.reg], rule.offset, address)};
                     ::std::array<::std::byte, slot_width> word{};
                     if(!bounded || address < sp || address >= cfa || cfa - address < slot_width ||
-#if defined(__i386__) && __SIZEOF_POINTER__ == 4
+#if (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4)
                        !capture->native_stack_owner_->copy_word32(thread, sp, cfa, address, word.data()))
 #else
                        !capture->native_stack_owner_->copy_word(thread, sp, cfa, address, word.data()))
@@ -300,6 +321,9 @@
 #elif (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips))
                 cfi::native_debug_cfi_mips64_caller recovered{};
                 if(!cfi::evaluate_native_debug_cfi_mips64_sparse
+#elif (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4)
+                cfi::native_debug_cfi_arm_caller recovered{};
+                if(!cfi::evaluate_native_debug_cfi_arm_sparse
 #elif defined(__i386__) && __SIZEOF_POINTER__ == 4
                 cfi::native_debug_cfi_i386_caller recovered{};
                 if(!cfi::evaluate_native_debug_cfi_i386_sparse
@@ -307,7 +331,12 @@
                 cfi::native_debug_cfi_caller recovered{};
                 if(!cfi::evaluate_native_debug_cfi_x64_sparse
 #endif
-                    (row, registers, known, sp, cfa,
+                    (row, registers, known, sp,
+#if defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4
+                    cfa < sp ? sp : cfa,
+#else
+                    cfa,
+#endif
                     {slots.data(), slot_count}, recovered) || recovered.cfa != cfa) { return; }
                 ::std::uintptr_t parent_begin{}, parent_end{};
                 if(!debug_resolve_actual_native_function_body(parent.module, parent.function, parent.function_generation,
@@ -323,7 +352,7 @@
                 // domain and publication guards; no pointer or byte escapes.
                 auto const* parent_code{reinterpret_cast<unsigned char const*>(parent_begin)};
                 bool call_return{};
-#if (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)) || (defined(__i386__) && __SIZEOF_POINTER__ == 4)
+#if (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4)
                 code_key const parent_key{parent_begin,parent_end,parent.module,parent.function,
                     parent.function_generation,parent.runtime_epoch,capture->code_owners_[index-1u]};
                 for(::std::size_t n{}; n != boundary_count; ++n)
@@ -348,8 +377,8 @@
                        call.call_delay_bytes() != 4u || !delay || delay.semantics().size != 4u ||
                        !delay.safe_for_single_instruction()) { return; }
                     call_return = true;
-#elif (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8)
-                    // A64 and LoongArch instructions are exactly four aligned bytes. The
+#elif (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4) || (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8)
+                    // A32, A64 and LoongArch instructions are exactly four aligned bytes. The
                     // exact owned entry and CFI-recovered return PC prove this
                     // boundary without rescanning a large parent prologue.
                     // Actual MC must still classify the preceding instruction
@@ -372,13 +401,13 @@
                     }
                     if(position != recovered.return_pc || !call_return) { return; }
 #endif
-#if (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)) || (defined(__i386__) && __SIZEOF_POINTER__ == 4)
+#if (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4)
                     if(boundary_count == boundaries.size()) { return; }
                     boundaries[boundary_count++] = {parent_key,recovered.return_pc};
 #endif
                 }
                 [[maybe_unused]] ::std::uintptr_t parent_sp{recovered.cfa};
-#if (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)) || (defined(__i386__) && __SIZEOF_POINTER__ == 4)
+#if (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4)
                 // Validate the actual software-step return CFA for EVERY recovered
                 // frame, including a backtrace-only query with no event seal.
                 constexpr bool need_return_pop{true};
@@ -393,7 +422,7 @@
                     // the adjustment from this SAME owned emitted child body;
                     // never guess an ABI constant or relax exact SP matching.
                     ::std::size_t pop{SIZE_MAX};
-#if (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)) || (defined(__i386__) && __SIZEOF_POINTER__ == 4)
+#if (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4)
                     code_key const child_key{frame_begin,frame_end,current.module,current.function,
                         current.function_generation,current.runtime_epoch,capture->code_owners_[index]};
                     for(::std::size_t n{}; n != return_count; ++n)
@@ -428,7 +457,7 @@
                                !epilogue.usable || epilogue.cfa_register != sp_register || epilogue.cfa_offset != 0 ||
                                epilogue.registers[ra_register].kind != cfi::native_debug_cfi_rule_kind::same) { return; }
                             constexpr ::std::size_t amount{};
-#elif (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8)
+#elif (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4)
                             // The exact emitted return row accounts for the
                             // actual ABI (including TailCC argument-area pops).
                             // LoongArch uses C and must prove its zero adjustment. This
@@ -445,7 +474,7 @@
                         }
                         offset += instruction.semantics().size;
                     }
-#if (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)) || (defined(__i386__) && __SIZEOF_POINTER__ == 4)
+#if (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4)
                     if(pop != SIZE_MAX)
                     {
                         if(return_count == returns.size()) { return; }
@@ -472,7 +501,7 @@
                         revision, parent.incarnation, current.incarnation, pc, static_cast<::std::uintptr_t>(raw.sp()),
                         begin, end, recovered.return_pc, recovered.cfa, recovered.cfa + pop, parent_begin, parent_end,
                         capture->code_owners_[index], capture->code_owners_[index - 1u]};
-#if (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips))
+#if (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips))
                     // Same-PC recursive returns can occur at another SP. The
                     // sealed ordinary instruction and its successor permit one
                     // REAL instruction to pass, then re-arm the exact return PC.
@@ -498,11 +527,13 @@
                 if(index == 1u) { out.complete = parent.parent == 0u; return; }
                 #if defined(__i386__) && __SIZEOF_POINTER__ == 4
                 for(unsigned n{}; n != 9u; ++n) { registers[n] = recovered.registers[n]; }
+#elif (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4)
+                for(unsigned n{}; n != 16u; ++n) { registers[n] = recovered.registers[n]; }
 #else
                 registers = recovered.registers;
 #endif
                 known = recovered.known;
-#if (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)) || (defined(__i386__) && __SIZEOF_POINTER__ == 4)
+#if (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4)
                 sp = parent_sp; registers[sp_register] = sp;
 #else
                 sp = recovered.cfa;
@@ -620,6 +651,7 @@
                  (raw.machine == ::uwvm2::uwvm::debugger::native_registers::architecture::riscv64 && raw.size() == 34u) ||
                  (raw.machine == ::uwvm2::uwvm::debugger::native_registers::architecture::aarch64 && raw.size() == 34u) ||
                  (raw.machine == ::uwvm2::uwvm::debugger::native_registers::architecture::i686 && raw.size() == 10u) ||
+                 (raw.machine == ::uwvm2::uwvm::debugger::native_registers::architecture::arm && raw.size() == 17u && (raw.values[16u] & (1u << 5u)) == 0u) ||
                  (raw.machine == ::uwvm2::uwvm::debugger::native_registers::architecture::loongarch64 && raw.size() == 34u) ||
                  (raw.machine == ::uwvm2::uwvm::debugger::native_registers::architecture::mips64 && raw.size() == 36u)) ||
                    !parent->witnessed_ || parent->retirement_ != 4u || parent->witnessed_pc_ != pc || parent->witnessed_sp_ != raw.sp() ||
@@ -673,7 +705,7 @@
         llvm_jit_debug_native_activation_cursor_owner const& supplied, void const* session) noexcept
     {
         if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
-#if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && defined(__linux__) && ((__SIZEOF_POINTER__ == 8 && (defined(__x86_64__) || (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__)) || defined(__loongarch64) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))) || (defined(__i386__) && __SIZEOF_POINTER__ == 4)) && \
+#if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && defined(__linux__) && ((__SIZEOF_POINTER__ == 8 && (defined(__x86_64__) || (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__)) || defined(__loongarch64) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4)) && \
     LLVM_VERSION_MAJOR >= 23 && \
     defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
         try
@@ -704,7 +736,7 @@
     {
         if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
         out = {};
-#if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && defined(__linux__) && ((__SIZEOF_POINTER__ == 8 && (defined(__x86_64__) || (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__)) || defined(__loongarch64) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))) || (defined(__i386__) && __SIZEOF_POINTER__ == 4)) && \
+#if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && defined(__linux__) && ((__SIZEOF_POINTER__ == 8 && (defined(__x86_64__) || (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__)) || defined(__loongarch64) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4)) && \
     LLVM_VERSION_MAJOR >= 23 && \
     defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
         try
@@ -730,7 +762,7 @@
         void* context, llvm_jit_debug_native_return_resume_callback callback) noexcept
     {
         if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
-#if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && defined(__linux__) && ((__SIZEOF_POINTER__ == 8 && (defined(__x86_64__) || (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__)) || defined(__loongarch64) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))) || (defined(__i386__) && __SIZEOF_POINTER__ == 4)) && \
+#if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && defined(__linux__) && ((__SIZEOF_POINTER__ == 8 && (defined(__x86_64__) || (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__)) || defined(__loongarch64) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4)) && \
     LLVM_VERSION_MAJOR >= 23 && \
     defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
@@ -765,7 +797,7 @@
         void* context, llvm_jit_debug_native_return_event_callback callback) noexcept
     {
         if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
-#if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && defined(__linux__) && ((__SIZEOF_POINTER__ == 8 && (defined(__x86_64__) || (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__)) || defined(__loongarch64) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))) || (defined(__i386__) && __SIZEOF_POINTER__ == 4)) && \
+#if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && defined(__linux__) && ((__SIZEOF_POINTER__ == 8 && (defined(__x86_64__) || (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__)) || defined(__loongarch64) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4)) && \
     LLVM_VERSION_MAJOR >= 23 && \
     defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
@@ -791,7 +823,7 @@
     {
         if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
         out = {};
-#if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && defined(__linux__) && ((__SIZEOF_POINTER__ == 8 && (defined(__x86_64__) || (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__)) || defined(__loongarch64) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))) || (defined(__i386__) && __SIZEOF_POINTER__ == 4)) && \
+#if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && defined(__linux__) && ((__SIZEOF_POINTER__ == 8 && (defined(__x86_64__) || (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__)) || defined(__loongarch64) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4)) && \
     LLVM_VERSION_MAJOR >= 23 && \
     defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
         if(!event.valid() || !session || !details::runtime_execution_entry_reset_allowed(get_runtime_execution_entry_depth()) ||
@@ -809,7 +841,7 @@
         (void)event; (void)session; return false;
 #endif
     }
-#if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && defined(__linux__) && ((__SIZEOF_POINTER__ == 8 && (defined(__x86_64__) || (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__)) || defined(__loongarch64) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))) || (defined(__i386__) && __SIZEOF_POINTER__ == 4)) && \
+#if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && defined(__linux__) && ((__SIZEOF_POINTER__ == 8 && (defined(__x86_64__) || (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__)) || defined(__loongarch64) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4)) && \
     LLVM_VERSION_MAJOR >= 23 && \
     defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
     bool llvm_jit_debug_native_return_continuation::capture_event(
@@ -894,7 +926,7 @@
     {
         if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
         out = {};
-#if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && defined(__linux__) && ((__SIZEOF_POINTER__ == 8 && (defined(__x86_64__) || (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__)) || defined(__loongarch64) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))) || (defined(__i386__) && __SIZEOF_POINTER__ == 4)) && \
+#if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && defined(__linux__) && ((__SIZEOF_POINTER__ == 8 && (defined(__x86_64__) || (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__)) || defined(__loongarch64) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4)) && \
     LLVM_VERSION_MAJOR >= 23 && \
     defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;

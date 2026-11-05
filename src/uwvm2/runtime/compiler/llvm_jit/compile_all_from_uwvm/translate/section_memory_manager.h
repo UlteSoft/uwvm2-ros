@@ -534,12 +534,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::details
     defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__)
             // Backend-generated compact unwind relocations refer to these
             // paired static-library symbols even without an IR declaration.
-            // Resolve only the three exact EHABI helpers in this owned loader;
+            // Resolve only these exact EHABI helpers in this owned loader;
             // do not export an arbitrary host symbol or global override.
             ::std::uintptr_t personality{};
             if(name == "__aeabi_unwind_cpp_pr0") { personality = reinterpret_cast<::std::uintptr_t>(&::__aeabi_unwind_cpp_pr0); }
             else if(name == "__aeabi_unwind_cpp_pr1") { personality = reinterpret_cast<::std::uintptr_t>(&::__aeabi_unwind_cpp_pr1); }
             else if(name == "__aeabi_unwind_cpp_pr2") { personality = reinterpret_cast<::std::uintptr_t>(&::__aeabi_unwind_cpp_pr2); }
+            else if(name == "__cxa_end_cleanup") { personality = reinterpret_cast<::std::uintptr_t>(&::__cxa_end_cleanup); }
             if(personality != 0u) { return ::llvm::JITSymbol{personality, ::llvm::JITSymbolFlags::Exported}; }
 # endif
             auto const address{this->getSymbolAddress(name)};
@@ -844,7 +845,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::details
         bool finalization_failure_{};
 # if UWVM2_RUNTIME_DEBUG_REGISTERED_CFI
         native_debug_registered_cfi debug_native_cfi_{};
+#  if !(defined(UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT) && UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT == 1 && \
+    defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__))
         ::llvm::ExecutionEngine* debug_cfi_listener_engine_{}; // identity only; no destructor access
+#  endif
 # endif
 
 # if defined(__APPLE__) && defined(__aarch64__)

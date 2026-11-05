@@ -181,7 +181,7 @@ The ordinary repository supplies the same
   were not imported. Required libc shared math headers remain.
 - Three internal mlgo utility symlinks were materialized with identical target
   bytes for Windows checkouts. Vendor line-ending conversion is disabled.
-- ROS xmake builds Release static archives with suffix `-uwvm-ros.15` and
+- ROS xmake builds Release static archives with suffix `-uwvm-ros.16` and
   verifies `sources.sha256`. Its CMake metadata target exports include paths,
   definitions and the complete ordered static-library closure.
 - Separately from compiler-source edits, ROS native MIPS target selection uses
@@ -445,3 +445,21 @@ revision-15 source manifest and archive identity. Consumer cache keys record
 actual AArch64 admission and explicit external qualification. The source
 allowlist now also includes the two previously documented revision-14 ARM
 backend edits. Historical source/receipt bytes are unchanged.
+
+## Revision 16: A32 debugger epilogue CFI
+
+For ELF A32 functions carrying the existing uwvm.debug.activation attribute,
+ARM frame lowering switches the CFA to the actual SP before restoring saved
+registers. Each register pop and each emitted SP adjustment receives its own
+DWARF row; callee-popped TailCC argument areas may leave a negative SP-relative
+CFA offset. Register restores use same_value only after the actual restore.
+The row anchors refer to the emitting instructions so inserting a later SP
+adjustment cannot move a pop's CFI to the wrong instruction.
+
+The profile retains a separate return instruction instead of folding LR into
+PC, and restores the CFI state before later lexical blocks. Non-attributed
+functions retain their previous code generation. EHABI remains the native
+exception and backtrace provider; DWARF debug rows do not replace it. The
+runtime still rejects unproven/stale r11 restores and never reads retired
+callee stack slots. LLVM_UWVM_ROS_ARM_DEBUG_EPILOGUE_CFI identifies this
+capability alongside the revision-16 source manifest and archive contract.

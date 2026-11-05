@@ -45,7 +45,7 @@
         [[maybe_unused]] bool witnessed_{};
         [[maybe_unused]] unsigned retirement_{4u};
         [[maybe_unused]] ::std::uintptr_t witnessed_pc_{}, witnessed_sp_{};
-#if defined(__linux__) && ((defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)) || (defined(__i386__) && __SIZEOF_POINTER__ == 4))
+#if defined(__linux__) && ((defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4))
         // Manager-only code facts for ONE genuine kernel trap revision. These
         // contain no live register, CFA, saved word or read/resume authority.
         // Access requires the actual domain/publication/native read guards;

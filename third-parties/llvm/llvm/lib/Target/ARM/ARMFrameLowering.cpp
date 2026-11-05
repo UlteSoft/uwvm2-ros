@@ -1435,6 +1435,63 @@ void ARMFrameLowering::emitEpilogue(MachineFunction &MF,
   MachineBasicBlock::iterator MBBI = MBB.getFirstTerminator();
   DebugLoc dl = MBBI != MBB.end() ? MBBI->getDebugLoc() : DebugLoc();
 
+  // The VM's owned A32 debugger needs instruction-precise DWARF rows in
+  // addition to EHABI's call-site unwind tables. In particular r11 cannot
+  // remain the CFA base after its restore, and TailCC can pop incoming args.
+  // Restrict this contract to the VM attribute, not arbitrary target code.
+  const bool PreciseCFI = isARM && STI.isTargetELF() &&
+                         MF.getFunction().hasFnAttribute("uwvm.debug.activation");
+  struct EpilogueCFIPoint {
+    MachineBasicBlock::iterator Pos;
+    int Offset;
+    SmallVector<MCRegister, 16> Restored;
+    bool After = false;
+  };
+  SmallVector<EpilogueCFIPoint, 8> CFIPoints;
+  int CFAOffset = 0;
+  bool SPBasedCFI = false;
+  auto StartSPCFI = [&](MachineBasicBlock::iterator Pos, int Offset) {
+    if (!PreciseCFI)
+      return;
+    CFAOffset = Offset;
+    SPBasedCFI = true;
+    CFIPoints.push_back({Pos, CFAOffset, {}});
+  };
+  auto RecordPop = [&](MachineBasicBlock::iterator Pos, unsigned Bytes) {
+    if (!PreciseCFI)
+      return;
+    assert(SPBasedCFI && "restore before an exact SP CFA");
+    CFAOffset -= Bytes;
+    EpilogueCFIPoint Point{Pos, CFAOffset, {}, true};
+    for (const auto &MO : Pos->explicit_operands())
+      if (MO.isReg() && MO.isDef() && MO.getReg() != ARM::SP &&
+          MO.getReg() != ARM::PC)
+        Point.Restored.push_back(MO.getReg());
+    CFIPoints.push_back(std::move(Point));
+  };
+  auto UpdateSP = [&](int Bytes) {
+    if (!PreciseCFI || !SPBasedCFI) {
+      emitSPUpdate(isARM, MBB, MBBI, dl, TII, Bytes,
+                   MachineInstr::FrameDestroy);
+      return;
+    }
+    // Keep every intermediate ADD/SUB visible in DWARF, including large
+    // TailCC argument areas that require several A32 immediate instructions.
+    auto Before = MBBI == MBB.begin() ? MBB.end() : std::prev(MBBI);
+    emitSPUpdate(isARM, MBB, MBBI, dl, TII, Bytes,
+                 MachineInstr::FrameDestroy);
+    auto First = Before == MBB.end() ? MBB.begin() : std::next(Before);
+    for (auto I = First; I != MBBI; ++I) {
+      assert((I->getOpcode() == ARM::ADDri || I->getOpcode() == ARM::SUBri) &&
+             I->getOperand(0).getReg() == ARM::SP &&
+             I->getOperand(1).getReg() == ARM::SP &&
+             "unexpected A32 constant SP adjustment");
+      int Amount = I->getOperand(2).getImm();
+      CFAOffset += I->getOpcode() == ARM::SUBri ? Amount : -Amount;
+      CFIPoints.push_back({I, CFAOffset, {}, true});
+    }
+  };
+
   MachineBasicBlock::iterator RangeStart;
   if (!AFI->hasStackFrame()) {
     if (MF.hasWinCFI()) {
@@ -1443,10 +1500,17 @@ void ARMFrameLowering::emitEpilogue(MachineFunction &MF,
       RangeStart = initMBBRange(MBB, MBBI);
     }
 
+    if (PreciseCFI) {
+      // Install this state before inserting the SP updates. This branch has
+      // no restore instructions whose iteration could be disturbed by CFI.
+      CFIInstBuilder CFIBuilder(MBB, MBBI, MachineInstr::FrameDestroy);
+      CFIBuilder.insertCFIInst(MCCFIInstruction::createRememberState(nullptr));
+      CFIBuilder.buildDefCFA(ARM::SP, NumBytes);
+      CFAOffset = NumBytes;
+      SPBasedCFI = true;
+    }
     if (NumBytes + IncomingArgStackToRestore != 0)
-      emitSPUpdate(isARM, MBB, MBBI, dl, TII,
-                   NumBytes + IncomingArgStackToRestore,
-                   MachineInstr::FrameDestroy);
+      UpdateSP(NumBytes + IncomingArgStackToRestore);
   } else {
     // Unwind MBBI to point to first LDR / VLDRD.
     if (MBBI != MBB.begin()) {
@@ -1512,9 +1576,18 @@ void ARMFrameLowering::emitEpilogue(MachineFunction &MF,
               .setMIFlag(MachineInstr::FrameDestroy);
       }
     } else if (NumBytes &&
-               !tryFoldSPUpdateIntoPushPop(STI, MF, &*MBBI, NumBytes))
+               (PreciseCFI ||
+                !tryFoldSPUpdateIntoPushPop(STI, MF, &*MBBI, NumBytes)))
       emitSPUpdate(isARM, MBB, MBBI, dl, TII, NumBytes,
                    MachineInstr::FrameDestroy);
+
+    StartSPCFI(MBBI, ReservedArgStack + AFI->getFPCXTSaveAreaSize() +
+                        AFI->getGPRCalleeSavedArea1Size() +
+                        AFI->getGPRCalleeSavedArea2Size() +
+                        AFI->getFPStatusSavesSize() +
+                        AFI->getDPRCalleeSavedGapSize() +
+                        AFI->getDPRCalleeSavedArea1Size() +
+                        AFI->getGPRCalleeSavedArea3Size());
 
     // Increment past our save areas.
     if (AFI->getGPRCalleeSavedArea3Size()) {
@@ -1524,32 +1597,38 @@ void ARMFrameLowering::emitEpilogue(MachineFunction &MF,
     }
 
     if (MBBI != MBB.end() && AFI->getDPRCalleeSavedArea1Size()) {
-      MBBI++;
-      // Since vpop register list cannot have gaps, there may be multiple vpop
-      // instructions in the epilogue.
-      while (MBBI != MBB.end() && MBBI->getOpcode() == ARM::VLDMDIA_UPD)
-        MBBI++;
+      // Since vpop register lists cannot have gaps, track each actual pop.
+      do {
+        unsigned Bytes = 0;
+        if (PreciseCFI)
+          for (const auto &MO : MBBI->explicit_operands())
+            if (MO.isReg() && MO.isDef() && MO.getReg() != ARM::SP)
+              Bytes += 8;
+        RecordPop(MBBI, Bytes);
+        ++MBBI;
+      } while (MBBI != MBB.end() && MBBI->getOpcode() == ARM::VLDMDIA_UPD);
     }
     if (AFI->getDPRCalleeSavedGapSize()) {
       assert(AFI->getDPRCalleeSavedGapSize() == 4 &&
              "unexpected DPR alignment gap");
-      emitSPUpdate(isARM, MBB, MBBI, dl, TII, AFI->getDPRCalleeSavedGapSize(),
-                   MachineInstr::FrameDestroy);
+      UpdateSP(AFI->getDPRCalleeSavedGapSize());
     }
 
     if (AFI->getGPRCalleeSavedArea2Size()) {
       assert(PushPopSplit != ARMSubtarget::SplitR11WindowsSEH);
       (void)PushPopSplit;
+      RecordPop(MBBI, AFI->getGPRCalleeSavedArea2Size());
       MBBI++;
     }
-    if (AFI->getGPRCalleeSavedArea1Size()) MBBI++;
+    if (AFI->getGPRCalleeSavedArea1Size()) {
+      RecordPop(MBBI, AFI->getGPRCalleeSavedArea1Size());
+      MBBI++;
+    }
 
     if (ReservedArgStack || IncomingArgStackToRestore) {
       assert((int)ReservedArgStack + IncomingArgStackToRestore >= 0 &&
              "attempting to restore negative stack amount");
-      emitSPUpdate(isARM, MBB, MBBI, dl, TII,
-                   ReservedArgStack + IncomingArgStackToRestore,
-                   MachineInstr::FrameDestroy);
+      UpdateSP(ReservedArgStack + IncomingArgStackToRestore);
     }
 
     // Validate PAC, It should have been already popped into R12. For CMSE entry
@@ -1567,6 +1646,27 @@ void ARMFrameLowering::emitEpilogue(MachineFunction &MF,
       else
         BuildMI(MBB, MBBI, DebugLoc(), STI.getInstrInfo()->get(ARM::t2AUT));
     }
+  }
+
+  if (PreciseCFI) {
+    assert(SPBasedCFI && CFAOffset == -IncomingArgStackToRestore &&
+           "A32 epilogue CFA disagrees with the actual restored frame");
+    bool Remember = AFI->hasStackFrame();
+    for (const auto &Point : CFIPoints) {
+      CFIInstBuilder CFIBuilder(MBB, Point.After ? std::next(Point.Pos) : Point.Pos,
+                               MachineInstr::FrameDestroy);
+      if (Remember) {
+        CFIBuilder.insertCFIInst(MCCFIInstruction::createRememberState(nullptr));
+        Remember = false;
+      }
+      CFIBuilder.buildDefCFA(ARM::SP, Point.Offset);
+      for (auto Reg : Point.Restored)
+        CFIBuilder.buildSameValue(Reg);
+    }
+    // CFI is a linear program. The next lexical block can be reached from
+    // the function body rather than this epilogue, so restore its saved row.
+    CFIInstBuilder(MBB, MBB.end(), MachineInstr::FrameDestroy)
+        .insertCFIInst(MCCFIInstruction::createRestoreState(nullptr));
   }
 
   if (MF.hasWinCFI()) {
@@ -1791,6 +1891,7 @@ void ARMFrameLowering::emitPopInst(MachineBasicBlock &MBB,
         continue;
 
       if (Reg == ARM::LR && !isTailCall && !isVarArg && !isInterrupt &&
+          !MF.getFunction().hasFnAttribute("uwvm.debug.activation") &&
           !isCmseEntry && !isTrap && AFI->getArgumentStackToRestore() == 0 &&
           STI.hasV5TOps() && MBB.succ_empty() && !hasPAC &&
           (PushPopSplit != ARMSubtarget::SplitR11WindowsSEH &&

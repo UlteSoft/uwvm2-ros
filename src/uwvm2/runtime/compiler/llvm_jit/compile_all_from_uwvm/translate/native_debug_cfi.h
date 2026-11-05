@@ -51,8 +51,35 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::details
         // ISA decoder nor permission to execute/read any native instruction.
         [[nodiscard]] static bool arm_may_replace_frame_register(::std::uint32_t word) noexcept
         {
-            if((word >> 28u) == 15u) { return true; } // Unconditional extension space stays unqualified.
             unsigned const group{(word >> 25u) & 7u}, rd{(word >> 12u) & 15u}, rn{(word >> 16u) & 15u};
+            if((word >> 28u) == 15u)
+            {
+                // A32 Advanced SIMD data processing (NDataI/NDataXI) writes
+                // vector registers, never r11. Structure loads/stores (NLdSt)
+                // can change only their integer base: Rm=15 means no writeback,
+                // Rm=13 or another core register requests base writeback.
+                // Do not interpret vector destination bits as integer Rd.
+                if((word & 0xfe000000u) == 0xf2000000u) { return false; }
+                if((word & 0xff100000u) == 0xf4000000u)
+                { return rn == 11u && (word & 15u) != 15u; }
+                // DMB/DSB/ISB order memory or instruction visibility but do
+                // not define a core register or change the frame. This CFI
+                // fact grants no instruction-stepping or memory authority.
+                auto const barrier{word & 0xfffffff0u};
+                if(barrier == 0xf57ff040u || barrier == 0xf57ff050u || barrier == 0xf57ff060u) { return false; }
+                return true; // Other unconditional extension spaces stay unqualified.
+            }
+            // VFP uses the integer-looking Rd/Rn fields for vector operands.
+            // VLDR/VSTR have P=1,W=0; VLDM/VSTM IA/DB can change only their
+            // writeback base. MRRC/VMOV pairs occupy c4/c5 and do not match.
+            if((word & 0x0f200e00u) == 0x0d000a00u) { return false; }
+            if((word & 0x0f800e00u) == 0x0c800a00u ||
+               (word & 0x0fa00e00u) == 0x0d200a00u)
+            { return rn == 11u && (word & (1u << 21u)) != 0u; }
+            // VFP data processing has bit4=0. Core-register transfers,
+            // including VMRS/MRC and scalar VMOV, have bit4=1 and retain
+            // the conservative integer-destination checks below.
+            if((word & 0x0f000e10u) == 0x0e000a00u) { return false; }
             bool const load{(word & (1u << 20u)) != 0u};
             auto const memory_writeback{[&]() noexcept
             { return rn == 11u && ((word & (1u << 24u)) == 0u || (word & (1u << 21u)) != 0u); }};
@@ -117,7 +144,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::details
                         (static_cast<::std::uint32_t>(bytes[offset+3uz]) << 24u);
                 }};
                 struct record
-                { ::std::size_t offset{}; bool cie{}, cie_relocated{}, text_relocated{}; ::std::uintptr_t retired_frame_begin{}; };
+                {
+                    struct arm_restore { ::std::uintptr_t pc{}; ::std::uint32_t instruction{}; };
+                    ::std::size_t offset{}; bool cie{}, cie_relocated{}, text_relocated{};
+                    ::std::uintptr_t retired_frame_begin{};
+                    ::std::vector<arm_restore> frame_restores{};
+                };
                 ::std::vector<record> records{};
                 for(::std::size_t offset{}; offset != bytes.size();)
                 {
@@ -259,11 +291,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::details
                             { matched->retired_frame_begin = static_cast<::std::uintptr_t>(value+code_limit); }
                             // Only the first unconditional MOV/ADD r11,sp in
                             // a straight-line prologue may install the frame.
-                            // A later identical instruction, a conditional
-                            // restore or any other possible r11 write retires
-                            // the lexical suffix. Rows/branch layout cannot
-                            // revive that proof. Literal/Thumb regions stop it
-                            // before any bytes there are decoded as A32.
+                            // A later frame installation or unknown r11 write
+                            // retires the suffix. An unconditional SP pop can
+                            // survive only if the registered DWARF rows below
+                            // prove its exact CFA delta and restored registers.
+                            // Literal/Thumb regions always retire the suffix.
                             bool installed{}, straight_prologue{true};
                             for(::std::uint64_t n{}; n != code_limit; n += 4u)
                             {
@@ -277,7 +309,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::details
                                     bool const install{instruction == 0xe1a0b00du ||
                                         (instruction & 0xfffff000u) == 0xe28db000u};
                                     if(!installed && straight_prologue && install) { installed = true; }
-                                    else { matched->retired_frame_begin = static_cast<::std::uintptr_t>(value+n+4u); break; }
+                                    else
+                                    {
+                                        bool const pop{((instruction & 0xffff0000u) == 0xe8bd0000u &&
+                                            (instruction & (1u << 11u)) != 0u &&
+                                            (instruction & ((1u << 13u)|(1u << 15u))) == 0u) ||
+                                            instruction == 0xe49db004u}; // ldr r11,[sp],#4
+                                        if(!pop)
+                                        { matched->retired_frame_begin = static_cast<::std::uintptr_t>(value+n+4u); break; }
+                                        matched->frame_restores.push_back({static_cast<::std::uintptr_t>(value+n),instruction});
+                                    }
                                 }
                                 if(((instruction >> 25u) & 7u) == 5u ||
                                     (instruction & 0x0ffffff0u) == 0x012fff10u ||
@@ -302,14 +343,50 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::details
                 if(!valid_) { return; }
                 for(auto const& candidate: records)
                 {
-                    if(candidate.cie || candidate.retired_frame_begin == 0u) { continue; }
+                    if(candidate.cie) { continue; }
                     auto const begin{read32(candidate.offset+8uz)}, range{read32(candidate.offset+12uz)};
                     bool matched{};
                     for(auto index{first_function}; index != functions_.size(); ++index)
                     {
                         auto& function{functions_[index]};
                         if(function.begin == begin && function.end == static_cast<::std::uint64_t>(begin)+range)
-                        { function.arm_retired_frame_begin = candidate.retired_frame_begin; matched = true; break; }
+                        {
+                            function.arm_retired_frame_begin = candidate.retired_frame_begin;
+                            for(auto const& restore: candidate.frame_restores)
+                            {
+                                auto const precise{[&]() noexcept
+                                {
+                                    native_debug_cfi_row const* before{}; native_debug_cfi_row const* after{};
+                                    for(auto const& row: function.rows)
+                                    {
+                                        if(restore.pc >= row.begin && restore.pc < row.end) { before = &row; }
+                                        if(row.begin == restore.pc + 4u) { after = &row; }
+                                    }
+                                    if(before == nullptr || after == nullptr || !before->cfa_usable || !after->cfa_usable ||
+                                       before->cfa_register != 13u || after->cfa_register != 13u) { return false; }
+                                    auto const mask{restore.instruction == 0xe49db004u ? 1u << 11u : restore.instruction & 0xffffu};
+                                    unsigned bytes{};
+                                    for(unsigned reg{}; reg != 15u; ++reg)
+                                    {
+                                        if(!(mask & (1u << reg))) { continue; }
+                                        if((reg >= 4u && reg <= 8u) || reg == 10u || reg == 11u || reg == 14u)
+                                        {
+                                            auto const& saved{before->registers[reg]};
+                                            if(saved.kind != native_debug_cfi_rule_kind::cfa_memory ||
+                                               saved.offset != static_cast<::std::int64_t>(bytes) - before->cfa_offset ||
+                                               after->registers[reg].kind != native_debug_cfi_rule_kind::same) { return false; }
+                                        }
+                                        bytes += 4u;
+                                    }
+                                    return before->cfa_offset >= static_cast<::std::int64_t>(bytes) &&
+                                        after->cfa_offset == static_cast<::std::int64_t>(before->cfa_offset) - bytes;
+                                }()};
+                                if(!precise && (function.arm_retired_frame_begin == 0u ||
+                                    restore.pc + 4u < function.arm_retired_frame_begin))
+                                { function.arm_retired_frame_begin = restore.pc + 4u; }
+                            }
+                            matched = true; break;
+                        }
                     }
                     if(!matched) { retire(); return; }
                 }

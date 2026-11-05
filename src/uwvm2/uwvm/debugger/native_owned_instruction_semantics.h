@@ -533,7 +533,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_owned_instruction_sem
 # elif defined(__linux__) && defined(__sparc__) && defined(__arch64__)
         inline constexpr char const* native_triple{"sparc64-linux-gnu"};
 # elif defined(__linux__) && defined(__arm__)
+#  if defined(__ARM_PCS_VFP)
         inline constexpr char const* native_triple{"arm-linux-gnueabihf"};
+#  else
+        inline constexpr char const* native_triple{"arm-linux-gnueabi"};
+#  endif
 # elif defined(__linux__) && defined(__i386__)
         inline constexpr char const* native_triple{"i686-pc-linux-gnu"};
 # else
@@ -1080,7 +1084,25 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_owned_instruction_sem
                         break;
                     case ::llvm::Triple::arm:
                     case ::llvm::Triple::armeb:
-                        call_continuation_safe=(name=="BL" || name=="BL_pred" || name=="BLX" || name=="BLX_pred") && size==4u; break;
+                        call_continuation_safe=(name=="BL" || name=="BL_pred" || name=="BLX" || name=="BLX_pred") && size==4u;
+                        if((name=="BLX" || name=="BLX_pred") && instruction.getNumOperands()!=0u &&
+                           instruction.getOperand(0u).isReg())
+                        {
+                            auto const reg{instruction.getOperand(0u).getReg()};
+                            if(reg && reg<registers_->getNumRegs())
+                            {
+                                auto const target_register{::llvm::StringRef{registers_->getName(reg)}};
+                                if(target_register=="LR") { call_register_index=14u; }
+                                else if(target_register.size()>=2u && target_register.size()<=3u && target_register.front()=='R')
+                                {
+                                    unsigned value{}; bool valid{true};
+                                    for(char digit:target_register.drop_front())
+                                    { if(digit<'0' || digit>'9') { valid=false;break; } value=value*10u+static_cast<unsigned>(digit-'0'); }
+                                    if(valid && value<13u) { call_register_index=value; }
+                                }
+                            }
+                        }
+                        break;
                     case ::llvm::Triple::ppc:
                     case ::llvm::Triple::ppcle:
                     case ::llvm::Triple::ppc64:

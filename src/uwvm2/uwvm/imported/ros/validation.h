@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include "product_abi.h"
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
 #ifndef UWVM_MODULE
 # include <fast_io.h>
@@ -30,9 +31,9 @@ namespace uwvm2::uwvm::imported::ros
 {
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
 # if !defined(__linux__) || \
-     !(defined(__x86_64__) || (defined(__aarch64__) && !defined(__AARCH64EB__)) || \
-       (defined(__arm__) && defined(__ARM_ARCH) && __ARM_ARCH >= 7 && defined(__ARM_PCS_VFP) && !defined(__ARMEB__)))
-#  error "The selected ROS distributions require Linux amd64, little-endian arm64 or ARMv7 hard-float."
+     !(defined(__x86_64__) || defined(__i386__) || (defined(__aarch64__) && !defined(__AARCH64EB__)) || \
+       (defined(__arm__) && defined(__ARM_ARCH) && __ARM_ARCH >= 7 && defined(__ARM_EABI__) && !defined(__ARMEB__)))
+#  error "The ROS VM requires Linux x86_64, i686, little-endian AArch64 or ARMv7 EABI soft/hard-float."
 # endif
 #endif
     inline ::std::vector<::std::string> loaded_module_names()
@@ -53,7 +54,7 @@ namespace uwvm2::uwvm::imported::ros
         namespace model = ::uwvm2::imported::ros;
         if(!policy_any_enabled) { return {}; }
         if(!::uwvm2::runtime::lib::ros_execution_backend_supported_host_api())
-        { return {model::errc::unsupported, "ROS requires the interpreter or LLVM full compilation with verified native unwind and authenticated native-ABI provenance"}; }
+        { return {model::errc::unsupported, "ROS requires LLVM full compilation with verified native unwind and authenticated native-ABI provenance"}; }
         return {};
     }
     inline ::uwvm2::imported::ros::result validate_loaded_policy(bool executing)

@@ -1,3 +1,7 @@
+Current product integration is documented in
+[Linux ROS debugger and update targets](../../documents/runtime/ros-linux-debug-targets.md).
+The dated records below preserve the scope and limitations of their original runs.
+
 ARM32 native debugger foundation (2026-10-08)
 ===========================================
 

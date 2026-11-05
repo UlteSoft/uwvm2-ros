@@ -30,7 +30,15 @@ namespace uwvm2::runtime::lib::posix_abi
 {
     extern "C" ::pid_t getpid_noexcept() noexcept UWVM_RUNTIME_POSIX_SYMBOL(getpid);
     extern "C" long sysconf_noexcept(int) noexcept UWVM_RUNTIME_POSIX_SYMBOL(sysconf);
+    // glibc redirects these public declarations when off_t/rlim_t are 64-bit.
+    // An assembler alias must select that same symbol: binding a 64-bit off_t
+    // declaration to 32-bit mmap misplaces ARM stack arguments; getrlimit would
+    // write two 32-bit fields into a pair of 64-bit fields.
+# if defined(__GLIBC__) && defined(__USE_FILE_OFFSET64)
+    extern "C" void* mmap_noexcept(void*, ::size_t, int, int, int, ::off_t) noexcept UWVM_RUNTIME_POSIX_SYMBOL(mmap64);
+# else
     extern "C" void* mmap_noexcept(void*, ::size_t, int, int, int, ::off_t) noexcept UWVM_RUNTIME_POSIX_SYMBOL(mmap);
+# endif
     extern "C" int munmap_noexcept(void*, ::size_t) noexcept UWVM_RUNTIME_POSIX_SYMBOL(munmap);
     extern "C" int mprotect_noexcept(void*, ::size_t, int) noexcept UWVM_RUNTIME_POSIX_SYMBOL(mprotect);
     extern "C" int sigaction_noexcept(int, struct ::sigaction const*, struct ::sigaction*) noexcept UWVM_RUNTIME_POSIX_SYMBOL(sigaction);
@@ -47,7 +55,11 @@ namespace uwvm2::runtime::lib::posix_abi
     extern "C" void* pthread_getspecific_noexcept(::pthread_key_t) noexcept UWVM_RUNTIME_POSIX_SYMBOL(pthread_getspecific);
     extern "C" int pthread_setspecific_noexcept(::pthread_key_t, void const*) noexcept UWVM_RUNTIME_POSIX_SYMBOL(pthread_setspecific);
 # if defined(__linux__)
+#  if defined(__GLIBC__) && defined(__USE_FILE_OFFSET64)
+    extern "C" int getrlimit_noexcept(int, struct ::rlimit*) noexcept UWVM_RUNTIME_POSIX_SYMBOL(getrlimit64);
+#  else
     extern "C" int getrlimit_noexcept(int, struct ::rlimit*) noexcept UWVM_RUNTIME_POSIX_SYMBOL(getrlimit);
+#  endif
     extern "C" int pthread_getattr_np_noexcept(::pthread_t, ::pthread_attr_t*) noexcept UWVM_RUNTIME_POSIX_SYMBOL(pthread_getattr_np);
     extern "C" int pthread_attr_getstack_noexcept(::pthread_attr_t const*, void**, ::size_t*) noexcept UWVM_RUNTIME_POSIX_SYMBOL(pthread_attr_getstack);
 # elif defined(__APPLE__)

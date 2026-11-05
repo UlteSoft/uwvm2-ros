@@ -9,10 +9,12 @@ namespace uwvm2::imported::ros::management
 {
     /** Native management notifications, deliberately outside the Guest ABI.
      *
-     * A function replacement permanently retires the affected module's ROS
-     * authority for its existing Runtime incarnation. It does not reconfigure
-     * policy, replenish a quota, reopen a revoked alias or authorize new code.
-     * Reusing ROS requires a fresh trusted launch and explicit launch policy.
+     * A function-replacement notification closes authority only after the
+     * Runtime has explicitly retired that module's existing incarnation.
+     * DEV replacement within an authorized incarnation preserves its policy
+     * and quota accounting. This hook never grants authority, replenishes a
+     * quota, or reopens a retired alias; retirement requires a fresh trusted
+     * launch with explicit policy before ROS can be used again.
      * Runtime retirement is emitted only after actual execution drain, before
      * the Runtime epoch or module storage is destroyed.
      *

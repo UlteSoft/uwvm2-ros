@@ -3199,9 +3199,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             native_step_outcome result{};
             result.error = control_error::unsupported_command;
             result.next_reason = native_next_policy::reason::caller_unwind_unavailable;
-#if defined(__linux__) && (__SIZEOF_POINTER__ == 8 || (defined(__i386__) && __SIZEOF_POINTER__ == 4)) && \
+#if defined(__linux__) && (__SIZEOF_POINTER__ == 8 || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4)) && \
     defined(UWVM2_ENABLE_DEBUG_NATIVE_CONTINUATION_LINUX_PRODUCT) && UWVM2_ENABLE_DEBUG_NATIVE_CONTINUATION_LINUX_PRODUCT == 1 && \
-    ((defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__x86_64__) && defined(PERF_ATTR_SIZE_VER7) && !defined(__ILP32__)) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))
+    ((defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__x86_64__) && defined(PERF_ATTR_SIZE_VER7) && !defined(__ILP32__)) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))
             auto deadline{clock_type::now() + wait_budget};
             ::std::size_t event_index{};
             {
@@ -3250,7 +3250,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                     auto& event{manager.native_return_continuation_events_[context.index]};
                     retained = plan;
                     auto const cookie{mint_native_continuation_cookie()};
-#if ((defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))
+#if ((defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))
                     if(cookie==0u) { retained={};return; }
 #else
                     if(cookie == 0u || !event.open_disabled(plan.thread(),plan.event_pc(),cookie) || !event.enable())
@@ -3259,7 +3259,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                     context.deadline = clock_type::now() + context.wait_budget;
                     if(!resume.commit([&]() noexcept
                     {
-#if ((defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))
+#if ((defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))
                         return native_step::continue_to_return(manager.native_session_,plan,cookie,-1);
 #else
                         return native_step::continue_to_return(manager.native_session_,plan,cookie,event.file_.native_handle());

@@ -48,8 +48,23 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::details
             value = static_cast<::std::uintptr_t>(sum); return true;
         }};
         ::std::uintptr_t cfa{};
-        if(!add(registers[row.cfa_register], row.cfa_offset, cfa) || cfa < frame_begin ||
+        if(!add(registers[row.cfa_register], row.cfa_offset, cfa) ||
            cfa > frame_end || (cfa & 7u) != 0u) { return false; }
+        // TailCC can have already popped its incoming arguments at this
+        // precise instruction. CFA then precedes live SP. Only an empty read
+        // window and restored registers are legal: never read retired slots.
+        bool const popped{cfa < frame_begin};
+        if(popped)
+        {
+            using K = native_debug_cfi_rule_kind;
+            if(row.cfa_register != 13u || row.cfa_offset >= 0 || frame_end != frame_begin ||
+               row.registers[14u].kind != K::same) { return false; }
+            for(unsigned reg : {4u,5u,6u,7u,8u,10u,11u,14u})
+            {
+                auto const kind{row.registers[reg].kind};
+                if(kind != K::same && kind != K::unavailable) { return false; }
+            }
+        }
         native_debug_cfi_arm_caller candidate{};
         for(unsigned reg : {4u, 5u, 6u, 7u, 8u, 10u, 11u, 14u})
         {
