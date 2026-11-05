@@ -114,32 +114,7 @@
         // A PC/range from another engine or an uncommitted replacement
         // cannot nominate CFI. Every owner borrow ends in this guard.
         auto const manager_for{[&](auto const& frame, void const* expected) noexcept
-            -> cfi::runtime_llvm_jit_section_memory_manager const*
-        {
-            if(frame.module >= g_runtime.modules.size()) { return nullptr; }
-            auto const& record{g_runtime.modules.index_unchecked(static_cast<::std::size_t>(frame.module))};
-            auto const* module{record.runtime_module};
-            if(module == nullptr || !record.llvm_jit_ready || !record.llvm_jit_full_publication) { return nullptr; }
-            auto const imports{module->imported_function_vec_storage.size()};
-            if(frame.function < imports || frame.function - imports >= module->local_defined_function_vec_storage.size()) { return nullptr; }
-            auto const local{static_cast<::std::size_t>(frame.function - imports)};
-            if(debug_activation_current_code_owner(record, frame.module, frame.function, local,
-                frame.function_generation) != expected) { return nullptr; }
-            if(frame.function_generation == 1u)
-            {
-                auto const& owner{record.llvm_jit_full_publication};
-                return owner.get() == expected && owner->engine && owner->context ? owner->debug_cfi_manager : nullptr;
-            }
-            cfi::runtime_llvm_jit_section_memory_manager const* found{};
-            for(auto const& retained: record.llvm_jit_debug_full_retained_generations)
-            {
-                if(!retained || retained.get() != expected || !retained->committed || !retained->engine || !retained->context ||
-                   retained->module_id != frame.module || retained->function_index != frame.function || retained->local_index != local ||
-                   retained->expected_generation != frame.function_generation - 1u || retained->expected_runtime_epoch != frame.runtime_epoch) { continue; }
-                if(found != nullptr) { return nullptr; } found = retained->debug_cfi_manager;
-            }
-            return found;
-        }};
+        { return debug_native_cfi_manager_for_frame_locked(frame, expected); }};
         static_cast<void>(step::with_owned_registers_and_revision(session,
             [&](auto thread, auto pc, auto begin, auto end, auto const& raw, auto revision) noexcept
         {

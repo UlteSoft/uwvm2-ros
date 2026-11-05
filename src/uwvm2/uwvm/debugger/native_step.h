@@ -39,7 +39,13 @@
 # define UWVM2_DEBUG_NATIVE_HARDWARE_CONTINUATION 0
 #endif
 
-#if UWVM2_DEBUG_NATIVE_HARDWARE_CONTINUATION || (defined(__linux__) && defined(__x86_64__) && __SIZEOF_POINTER__ == 8 && !defined(__ILP32__) && defined(UWVM2_ENABLE_DEBUG_NATIVE_CONTINUATION_LINUX_PRODUCT) && UWVM2_ENABLE_DEBUG_NATIVE_CONTINUATION_LINUX_PRODUCT == 1 && defined(PERF_ATTR_SIZE_VER7))
+// The qualified Linux software trap backends carry the same authenticated
+// activation/call proofs as x86_64. Guest-level transitions must not depend on
+// the x86 perf-event implementation: no host instruction is exposed by them.
+#if (UWVM2_DEBUG_NATIVE_LINUX_SOFTWARE && defined(UWVM2_ENABLE_DEBUG_NATIVE_CONTINUATION_LINUX_PRODUCT) && UWVM2_ENABLE_DEBUG_NATIVE_CONTINUATION_LINUX_PRODUCT == 1 && \
+     ((defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || \
+      (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4))) || \
+    UWVM2_DEBUG_NATIVE_HARDWARE_CONTINUATION || (defined(__linux__) && defined(__x86_64__) && __SIZEOF_POINTER__ == 8 && !defined(__ILP32__) && defined(UWVM2_ENABLE_DEBUG_NATIVE_CONTINUATION_LINUX_PRODUCT) && UWVM2_ENABLE_DEBUG_NATIVE_CONTINUATION_LINUX_PRODUCT == 1 && defined(PERF_ATTR_SIZE_VER7))
 # define UWVM2_DEBUG_NATIVE_LEVEL_TRANSITIONS 1
 #else
 # define UWVM2_DEBUG_NATIVE_LEVEL_TRANSITIONS 0

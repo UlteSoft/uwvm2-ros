@@ -142,6 +142,25 @@
         {
             output=0u;if(!operand.valid || size==0u || (operand.scale!=1u && operand.scale!=2u && operand.scale!=4u && operand.scale!=8u))
             { return false; }
+#if defined(__i386__) && __SIZEOF_POINTER__ == 4
+            (void)pc; // i386 has no RIP-relative memory addressing.
+            // Native i386 effective addresses wrap at 32 bits. This computes
+            // an integer identity only; actual_typed_slot_target subsequently
+            // compares it to a registered slot before any owned slot is read.
+            if(operand.rip_relative) { return false; }
+            ::std::uint32_t address32{static_cast<::std::uint32_t>(operand.displacement)};
+            if(operand.base!=SIZE_MAX)
+            {
+                if(operand.base>=8u || registers[operand.base]>UINT32_MAX) { return false; }
+                address32+=static_cast<::std::uint32_t>(registers[operand.base]);
+            }
+            if(operand.index!=SIZE_MAX)
+            {
+                if(operand.index>=8u || registers[operand.index]>UINT32_MAX) { return false; }
+                address32+=static_cast<::std::uint32_t>(registers[operand.index])*operand.scale;
+            }
+            output=address32;return output!=0u;
+#else
             ::std::uintptr_t address{};
             if(operand.rip_relative) { if(size>UINTPTR_MAX-pc) { return false; } address=pc+size; }
             else if(operand.base!=SIZE_MAX)
@@ -163,6 +182,7 @@
                 if(amount>UINTPTR_MAX-address) { return false; } address+=static_cast<::std::uintptr_t>(amount);
             }
             output=address;return address!=0u;
+#endif
         }
         [[nodiscard]] static bool actual_typed_slot_target(::std::uintptr_t address,::std::uint_least64_t epoch,
             ::std::uintptr_t& target) noexcept
@@ -581,7 +601,8 @@
             if(!escape_safe || continuation + resumed.semantics().size >= image->owner_end) { return {}; }
 #endif
             auto const register_index{call.call_register_index()};
-#if !UWVM2_DEBUG_NATIVE_LINUX_SOFTWARE
+            // SI authenticates the typed Wasm target on every backend. A software
+            // trap changes how we resume, never which callee is eligible.
             if(!candidate->opaque_call_)
             {
             if(call.call_memory().valid)
@@ -602,8 +623,7 @@
                 candidate->callee_target_ = call.destination().display_pc;
             }
             }
-#elif UWVM2_DEBUG_NATIVE_LINUX_SOFTWARE
-            (void)register_index;
+#if UWVM2_DEBUG_NATIVE_LINUX_SOFTWARE
             // A recursive activation can hit the same return address. Its
             // private escape executes only an ordinary instruction or a direct
             // branch whose EVERY reachable successor is proved in this exact

@@ -1,3 +1,40 @@
+#if defined(UWVM_RUNTIME_LLVM_JIT) && LLVM_VERSION_MAJOR >= 23
+namespace
+{
+    // Caller holds GC/execution, the real stopped participant and publication.
+    // A numeric PC cannot nominate an engine or a retained generation's CFI.
+    [[nodiscard]] auto debug_native_cfi_manager_for_frame_locked(auto const& frame, void const* expected) noexcept
+        -> ::uwvm2::runtime::compiler::llvm_jit::details::runtime_llvm_jit_section_memory_manager const*
+    {
+        namespace cfi = ::uwvm2::runtime::compiler::llvm_jit::details;
+        if(get_runtime_state_publication_depth() != 1u || !expected) { return nullptr; }
+        if(frame.module >= g_runtime.modules.size()) { return nullptr; }
+        auto const& record{g_runtime.modules.index_unchecked(static_cast<::std::size_t>(frame.module))};
+        auto const* module{record.runtime_module};
+        if(module == nullptr || !record.llvm_jit_ready || !record.llvm_jit_full_publication) { return nullptr; }
+        auto const imports{module->imported_function_vec_storage.size()};
+        if(frame.function < imports || frame.function - imports >= module->local_defined_function_vec_storage.size()) { return nullptr; }
+        auto const local{static_cast<::std::size_t>(frame.function - imports)};
+        if(debug_activation_current_code_owner(record, frame.module, frame.function, local,
+            frame.function_generation) != expected) { return nullptr; }
+        if(frame.function_generation == 1u)
+        {
+            auto const& owner{record.llvm_jit_full_publication};
+            return owner.get() == expected && owner->engine && owner->context ? owner->debug_cfi_manager : nullptr;
+        }
+        cfi::runtime_llvm_jit_section_memory_manager const* found{};
+        for(auto const& retained: record.llvm_jit_debug_full_retained_generations)
+        {
+            if(!retained || retained.get() != expected || !retained->committed || !retained->engine || !retained->context ||
+               retained->module_id != frame.module || retained->function_index != frame.function || retained->local_index != local ||
+               retained->expected_generation != frame.function_generation - 1u || retained->expected_runtime_epoch != frame.runtime_epoch) { continue; }
+            if(found != nullptr) { return nullptr; } found = retained->debug_cfi_manager;
+        }
+        return found;
+    }
+}
+#endif
+
 // Private selection runs only under execution/domain/publication ownership.
 #if defined(UWVM_RUNTIME_LLVM_JIT)
 namespace
@@ -337,53 +374,95 @@ namespace
     }
 
     extern "C++" bool llvm_jit_debug_native_retirement_call_host_api(
-        llvm_jit_debug_activation_capture_owner const& capture, void const* session) noexcept
+        llvm_jit_debug_activation_capture_owner const& supplied, void const* session) noexcept
     {
         if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && UWVM2_DEBUG_NATIVE_LEVEL_TRANSITIONS
         try
         {
-            llvm_jit_debug_activation_snapshot chain{};llvm_jit_debug_native_function_image image{};
-            if(!llvm_jit_debug_query_native_activation_host_api(capture,session,chain) || chain.frames.empty() ||
-               !llvm_jit_debug_copy_native_function_host_api(capture,session,image) || !image.complete_storage() ||
-               image.stop_pc<image.owner_begin || image.stop_pc>=image.owner_end) { return false; }
+            auto const capture{debug_activation_canonical_capture(supplied)};
+            if(!capture || !session || !capture->control_ || !capture->ticket_ ||
+               capture->snapshot_.frames.empty() || capture->code_owners_.size()!=capture->snapshot_.frames.size()) { return false; }
+            llvm_jit_debug_native_function_image image{};
+            if(!llvm_jit_debug_copy_native_function_host_api(capture,session,image) || !image.native_instruction_stop ||
+               !image.complete_storage() || image.stop_pc<image.owner_begin || image.stop_pc>=image.owner_end) { return false; }
             ::uwvm2::uwvm::debugger::native_owned_instruction_semantics::decoder decoder{image.target};
             auto const offset{image.stop_pc-image.owner_begin};
             auto const call{decoder.decode(image.stop_pc,{image.bytes.data()+offset,image.size-offset})};
             if(!call.safe_for_call_continuation()) { return false; }
+            auto reader{::uwvm2::runtime::gc::runtime_gc_entry_admission.try_enter()}; if(!reader) { return false; }
+            auto lease{g_runtime.execution_domain.try_enter()}; if(!lease) { return false; }
             bool retires{};
-            static_cast<void>(::uwvm2::uwvm::debugger::native_step::with_owned_registers(session,
-                [&](auto,auto pc,auto begin,auto end,auto const& raw) noexcept
+            static_cast<void>(capture->control_->with_parked_participant(capture->ticket_,capture->snapshot_.participant,
+                [&](auto actual,bool external)
             {
-                // These are the actual bridge's platform C-ABI arguments, not
-                // values inferred from a Wasm stack or an arbitrary host slot.
-#if defined(__aarch64__)
-                constexpr ::std::size_t frame_argument{0u},kind_argument{1u};
+                runtime_state_publication_guard publication{};
+                if(!external || !capture->matches_native_publication_locked(actual,external)) { return; }
+                static_cast<void>(::uwvm2::uwvm::debugger::native_step::with_owned_registers(session,
+                    [&](auto thread,auto pc,auto begin,auto end,auto const& raw) noexcept
+                {
+                    if(pc!=image.stop_pc || begin!=image.owner_begin || end!=image.owner_end ||
+                       !capture->matches_native_cursor_locked(session,thread,pc,raw.sp(),begin,end)) { return; }
+                    auto const index{call.call_register_index()};
+                    auto const target{index<raw.size() ? raw.values[index] : call.destination().display_pc};
+                    // Exact registered identities only: never dereference the
+                    // decoded destination or a target supplied by the adapter.
+                    bool const ordinary{target==reinterpret_cast<::std::uintptr_t>(&details::llvm_jit_checkpoint_observer_return_abi_bridge)};
+                    if(!ordinary && target!=reinterpret_cast<::std::uintptr_t>(&details::llvm_jit_debug_activation_leave_abi_bridge) &&
+                       target!=reinterpret_cast<::std::uintptr_t>(&details::llvm_jit_checkpoint_activation_leave_abi_bridge) &&
+                       target!=reinterpret_cast<::std::uintptr_t>(&details::llvm_jit_checkpoint_observer_activation_leave_abi_bridge)) { return; }
+                    ::std::uint64_t incarnation{},kind{};
+#if defined(__i386__) && __SIZEOF_POINTER__ == 4
+                    // i386 cdecl at the CALL: uint64 incarnation at ESP+0/+4,
+                    // uintptr kind/buffer at ESP+8. Read only these three owned
+                    // words inside this actual Wasm frame's emitted CFI bounds.
+                    namespace cfi = ::uwvm2::runtime::compiler::llvm_jit::details;
+                    auto const* manager{debug_native_cfi_manager_for_frame_locked(
+                        capture->snapshot_.frames.back(),capture->code_owners_.back())};
+                    cfi::native_debug_cfi_row row{};
+                    constexpr unsigned dwarf_to_snapshot[8u]{0u,2u,3u,1u,7u,6u,4u,5u};
+                    if(!manager || !capture->native_stack_owner_ ||
+                       !manager->copy_debug_native_cfi_row(begin,end,pc,row) || !row.usable || row.cfa_register>=8u ||
+                       row.registers[8u].kind!=cfi::native_debug_cfi_rule_kind::cfa_memory || row.registers[8u].offset!=-4) { return; }
+                    auto const base{raw.values[dwarf_to_snapshot[row.cfa_register]]};
+                    if(base>UINTPTR_MAX) { return; }
+                    auto const adjusted{static_cast<::std::int64_t>(base)+static_cast<::std::int64_t>(row.cfa_offset)};
+                    if(adjusted<0 || static_cast<::std::uint64_t>(adjusted)>UINTPTR_MAX) { return; }
+                    auto const cfa{static_cast<::std::uintptr_t>(adjusted)},sp{static_cast<::std::uintptr_t>(raw.sp())};
+                    // Exclude the return word itself, even if an invalid ABI
+                    // layout would otherwise fit in the registered OS stack.
+                    if(cfa<sp || cfa-sp<16u || !capture->native_stack_owner_->contains_frame(thread,sp,cfa)) { return; }
+                    ::std::array<::std::uint32_t,3u> words{};
+                    for(::std::size_t n{};n!=words.size();++n)
+                    {
+                        ::std::array<::std::byte,4u> word{};
+                        if(!capture->native_stack_owner_->copy_word32(thread,sp,cfa,sp+n*4u,word.data())) { return; }
+                        ::std::memcpy(::std::addressof(words[n]),word.data(),4u);
+                    }
+                    incarnation=static_cast<::std::uint64_t>(words[0u]) | (static_cast<::std::uint64_t>(words[1u])<<32u);
+                    kind=words[2u];
+#elif defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4
+                    // AAPCS, both float ABIs: r0/r1 form uint64, r2 is kind.
+                    incarnation=static_cast<::std::uint64_t>(raw.values[0u]) | (static_cast<::std::uint64_t>(raw.values[1u])<<32u);
+                    kind=raw.values[2u];
+#elif defined(__aarch64__)
+                    incarnation=raw.values[0u]; kind=raw.values[1u];
 #elif defined(_WIN32)
-                constexpr ::std::size_t frame_argument{2u},kind_argument{3u}; // RCX, RDX
+                    incarnation=raw.values[2u]; kind=raw.values[3u]; // RCX, RDX
 #else
-                constexpr ::std::size_t frame_argument{5u},kind_argument{4u}; // RDI, RSI
+                    incarnation=raw.values[5u]; kind=raw.values[4u]; // RDI, RSI
 #endif
-                if(pc!=image.stop_pc || begin!=image.owner_begin || end!=image.owner_end ||
-                   raw.values[frame_argument]!=chain.frames.back().incarnation) { return; }
-                auto const index{call.call_register_index()};
-                auto const target{index<raw.size() ? raw.values[index] : call.destination().display_pc};
-                // Compare only with exact registered bridge function identities;
-                // neither a decoded address nor a register is dereferenced.
-                // The specialised ordinary-return ABI has buffer as argument1,
-                // so its kind comes solely from this exact registered identity.
-                // The genuine hook independently joins that buffer to its LIFO
-                // owner. Other targets still require their actual kind argument.
-                retires=target==reinterpret_cast<::std::uintptr_t>(&details::llvm_jit_checkpoint_observer_return_abi_bridge) ||
-                    (raw.values[kind_argument]<=3u &&
-                     (target==reinterpret_cast<::std::uintptr_t>(&details::llvm_jit_debug_activation_leave_abi_bridge) ||
-                      target==reinterpret_cast<::std::uintptr_t>(&details::llvm_jit_checkpoint_activation_leave_abi_bridge) ||
-                      target==reinterpret_cast<::std::uintptr_t>(&details::llvm_jit_checkpoint_observer_activation_leave_abi_bridge)));
-            }));return retires;
+                    // The specialised ordinary-return bridge has buffer as its
+                    // second argument; its exact identity determines kind=0.
+                    // Its genuine leave hook independently joins the LIFO owner.
+                    retires=incarnation==capture->snapshot_.frames.back().incarnation && (ordinary || kind<=3u);
+                }));
+            }));
+            return retires;
         }
         catch(...) { return false; }
 #else
-        (void)capture;(void)session;return false;
+        (void)supplied;(void)session;return false;
 #endif
     }
 

@@ -5,7 +5,8 @@ The current product has authenticated host control, Wasm-offset breakpoints,
 Wasm-instruction safe points, thread stops, Wasm locals and bounded linear-memory
 reads. DWARF4/5 source-line lookup and `step source THREAD into|over|out` are
 implemented and tested with real C, C++ and Rust `-g` Wasm modules. Native
-single-instruction stepping is qualified on Linux x86-64 and macOS ARM64;
+single-instruction stepping is qualified on Linux x86-64, i686, AArch64,
+ARM soft-float, ARM hard-float and macOS ARM64;
 Windows product qualification remains in progress. Exact embedded-DWARF
 file/line breakpoints use `breaksource MODULE FILE:LINE`. Source-language
 variables and inline caller frames remain unimplemented: `locals` reports

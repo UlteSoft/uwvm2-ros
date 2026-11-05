@@ -454,6 +454,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_owned_instruction_sem
                descriptor.isBarrier() || descriptor.hasDelaySlot() || descriptor.isCall() ||
                descriptor.isReturn() || descriptor.isBranch() || descriptor.isTrap() ||
                !descriptor.implicit_defs().empty() || !descriptor.implicit_uses().empty()) { return false; }
+            if(triple.getArch()==::llvm::Triple::arm && opcode=="DMB")
+            {
+                // A32 acquire loads of the typed-entry slot emit DMB ISH.
+                // Qualify only architecturally defined ordering domains:
+                // OSH[ST], NSH[ST], ISH[ST], SY/ST; no DSB/ISB/system opcode.
+                if(descriptor.getNumDefs()!=0u || descriptor.getNumOperands()!=1u ||
+                   instruction.getNumOperands()!=1u || !instruction.getOperand(0u).isImm()) { return false; }
+                auto const option{instruction.getOperand(0u).getImm()};
+                return option==2 || option==3 || option==6 || option==7 ||
+                       option==10 || option==11 || option==14 || option==15;
+            }
             if(triple.getArch()==::llvm::Triple::sparcv9 && opcode=="MEMBARi")
             {
                 // Only the four ordinary memory-order bits used by LLVM's
@@ -973,15 +984,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_owned_instruction_sem
             call_memory_operand call_memory{};
             // [actual MC opcode/name table ... getNumOpcodes) names_end
             // [safe                                                 ] classify
-            //  ^^ checked the opcode. Only these decoded near CALL64 forms keep
-            // the LP64 continuation ABI; no far/system/tail call or text guess.
+            //  ^^ checked the opcode. Only the matching ABI's decoded near
+            // CALL forms qualify; no far/system/tail call or text guess.
             auto const actual_name{instructions_->getName(instruction.getOpcode())};
-            call_continuation_safe = triple_.getArch() == ::llvm::Triple::x86_64 &&
+            call_continuation_safe = triple_.isX86() &&
                 result.kind == native_instruction_semantics::flow::call &&
                 instruction.getFlags() == 0u && !trap_state_change && !descriptor.isReturn() &&
                 !descriptor.isBranch() && !descriptor.isTerminator() && !descriptor.isBarrier() &&
-                (actual_name == "CALL64pcrel32" || actual_name == "CALL64r" || actual_name == "CALL64m");
-            if(call_continuation_safe && actual_name == "CALL64r" &&
+                (triple_.getArch()==::llvm::Triple::x86_64 ?
+                    (actual_name=="CALL64pcrel32" || actual_name=="CALL64r" || actual_name=="CALL64m") :
+                    (actual_name=="CALLpcrel32" || actual_name=="CALL32r" || actual_name=="CALL32m"));
+            if(call_continuation_safe && (actual_name=="CALL64r" || actual_name=="CALL32r") &&
                instruction.getNumOperands() == 1u && descriptor.getNumOperands() == 1u)
             {
                 // [actual decoded MC operands: exactly one] operands_end
@@ -999,17 +1012,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_owned_instruction_sem
                         auto const name{::llvm::StringRef{registers_->getName(reg)}};
                         constexpr ::llvm::StringLiteral names[]{"RAX","RBX","RCX","RDX","RSI","RDI","RBP","RSP",
                             "R8","R9","R10","R11","R12","R13","R14","R15"};
+                        constexpr ::llvm::StringLiteral names32[]{"EAX","EBX","ECX","EDX","ESI","EDI","EBP","ESP"};
                         for(::std::size_t index{}; index != 16u; ++index)
                         {
                             // [fixed complete GPR-name DATA table 0 ... 16) end
                             // [safe] index<16 BEFORE selecting this DATA identity;
                             //  ^^ this records an index, NEVER a native value/read.
-                            if(name == names[index]) { call_register_index = index; break; }
+                            if(triple_.getArch()==::llvm::Triple::x86_64 ? name==names[index] : index<8u && name==names32[index])
+                            { call_register_index=index;break; }
                         }
                     }
                 }
             }
-            if(call_continuation_safe && actual_name=="CALL64m" &&
+            if(call_continuation_safe && (actual_name=="CALL64m" || actual_name=="CALL32m") &&
                instruction.getNumOperands()==5u && descriptor.getNumOperands()==5u)
             {
                 auto const& base{instruction.getOperand(0u)};auto const& scale{instruction.getOperand(1u)};
@@ -1020,10 +1035,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_owned_instruction_sem
                     if(reg==0u) { out=SIZE_MAX;return true; }
                     if(reg>=registers_->getNumRegs()) { return false; }
                     auto const name{::llvm::StringRef{registers_->getName(reg)}};
-                    if(permit_rip && name=="RIP") { call_memory.rip_relative=true;out=SIZE_MAX;return true; }
+                    if(permit_rip && triple_.getArch()==::llvm::Triple::x86_64 && name=="RIP") { call_memory.rip_relative=true;out=SIZE_MAX;return true; }
                     constexpr ::llvm::StringLiteral names[]{"RAX","RBX","RCX","RDX","RSI","RDI","RBP","RSP",
                         "R8","R9","R10","R11","R12","R13","R14","R15"};
-                    for(::std::size_t n{};n!=16u;++n) { if(name==names[n]) { out=n;return true; } }
+                    constexpr ::llvm::StringLiteral names32[]{"EAX","EBX","ECX","EDX","ESI","EDI","EBP","ESP"};
+                    for(::std::size_t n{};n!=16u;++n) { if(triple_.getArch()==::llvm::Triple::x86_64 ? name==names[n] : n<8u && name==names32[n]) { out=n;return true; } }
                     return false; // 32-bit/address overrides, TLS/segments and unknown register classes
                 }};
                 if(base.isReg() && scale.isImm() && index.isReg() && displacement.isImm() &&
@@ -1126,13 +1142,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_owned_instruction_sem
                         call_continuation_safe=(name=="BRAS" || name=="BRASL" || name=="BASR") && first_is("R14D"); break;
                     default: break;
                 }
-            }
-            if(triple_.getArch()==::llvm::Triple::x86 && instruction.getFlags()==0u &&
-               result.kind==native_instruction_semantics::flow::call && !trap_state_change &&
-               !descriptor.isReturn() && !descriptor.isBranch() && !descriptor.isTerminator() && !descriptor.isBarrier())
-            {
-                auto const name{instructions_->getName(instruction.getOpcode())};
-                call_continuation_safe=name=="CALLpcrel32" || name=="CALL32r" || name=="CALL32m";
             }
             if(call_continuation_safe && triple_.isX86())
             {

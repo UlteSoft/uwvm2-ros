@@ -45,6 +45,8 @@
             ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const&) noexcept -> llvm_jit_debug_activation_capture_owner;
         friend auto ::uwvm2::runtime::lib::llvm_jit_debug_query_native_activation_host_api(
             llvm_jit_debug_activation_capture_owner const&, void const*, llvm_jit_debug_activation_snapshot&) noexcept -> bool;
+        friend auto ::uwvm2::runtime::lib::llvm_jit_debug_native_retirement_call_host_api(
+            llvm_jit_debug_activation_capture_owner const&, void const*) noexcept -> bool;
         friend auto ::uwvm2::runtime::lib::llvm_jit_debug_query_activation_host_api(
             llvm_jit_debug_activation_capture_owner const&, llvm_jit_debug_activation_snapshot&) noexcept -> bool;
         friend auto ::uwvm2::runtime::lib::llvm_jit_debug_copy_source_object_host_api(

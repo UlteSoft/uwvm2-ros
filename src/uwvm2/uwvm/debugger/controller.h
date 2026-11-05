@@ -3613,7 +3613,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                         continuation_call = started_continuation = true;
                     }
 #elif UWVM2_DEBUG_NATIVE_LINUX_SOFTWARE
-                    if(!permitted && ordinary_next &&
+                    // SI enters a proved typed guest in execute_console. A
+                    // remaining helper/import call runs opaquely to the same
+                    // sealed guest fallthrough as NI, with no host-code stop.
+                    if(!permitted && (ordinary_next || UWVM2_DEBUG_NATIVE_LEVEL_TRANSITIONS) &&
                        permitted.unavailable_reason==native_next_policy::reason::call_continuation_unavailable)
                     {
                         if(native_call_continuation_count_>=native_call_continuation_owners_.size())

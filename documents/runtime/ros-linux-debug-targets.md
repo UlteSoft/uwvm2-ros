@@ -186,3 +186,63 @@ its approximately 253,000 generated IR instructions take substantially longer
 to compile under QEMU. The final test waits 840 seconds before attaching; the
 VM and broker timeouts, authorization and scope bounds are unchanged. Earlier
 startup timeouts remain recorded as failed attempts, not accepted passes.
+
+## Native call and return parity
+
+The five Linux ROS ABIs also run the SDK WAT math function through direct,
+indirect, function-reference, tail and recursive calls using consecutive native
+SI commands. A separate case for each into/over/out policy switches from a
+native stop to Wasm stepping and back. These 40 sessions require real callee
+entry and return, with no manual Wasm-step fallback for a refused native call.
+Every successful step retires the previous native reference.
+
+Guest SI authenticates the actual typed JIT target on both the hardware and
+software trap backends. Opaque helper/import calls use the same sealed guest
+fallthrough as NI; their bodies never become debugger stops. i686 near-call
+register and memory operands use its actual register layout and 32-bit
+effective-address arithmetic. Only equality with a registered typed slot
+allows reading that slot.
+
+Retirement checks use the actual platform ABI: i686 cdecl arguments remain
+inside the current worker's CFI-proved frame, ARM joins r0/r1 for the 64-bit
+activation identity and uses r2 for the exit kind, and AArch64 uses x0/x1.
+The same execution, publication, worker, code-owner and stop checks surround
+these reads. ARM/AArch64 debug retirement calls load a relocatable registered
+symbol through private JIT data, so the debugger need not follow a loader
+veneer. The cache policy distinguishes this emission.
+
+A32 single stepping admits the exact LLVM DMB ordering form used by acquire
+loads of typed entries. Other barrier encodings, DSB/ISB and other system
+instructions do not gain this exception. A separate actual-LLVM MC test checks
+52 positive and negative instruction/operand cases.
+
+The call-parity change passes a further 12 live regression groups on every
+target: SDK DAP, native finish/next, timeout retention, Unwind traps, stack
+exhaustion, signed production updates, cross-process management rejection,
+native register/breakpoint controls, source stepping/replacement, and SI/NI
+across WASI imports. QEMU runs establish target correctness only; native
+performance measurements remain restricted to x86_64.
+
+The same final binaries pass 9,300 WASI/ROS namespace and permission assertions
+across both engines, including module authority and wasm64 argument bounds.
+Positive execution adds 80 WASI quota/path/clock cases and 20 ROS1/ROS2 gateway
+sessions with actual native message witnesses. Realtime clock jumps do not
+shorten monotonic quota waits. Sixty-five core Wasm/SDK programs run on both
+engines on all five targets (650 runs), with 130 reference runs on the retained
+Wasmtime versions. Fourteen exit/trap cases per target additionally compare
+both engines' process outcomes. The DAP suite passes 535 checks, and all five
+binaries expose the same 266 long command-line options.
+
+The resource gate retains 64 GiB RAM and zero swap. Its inherited 64-task limit
+initially prevented several QEMU workers from starting; the limit was raised
+to 512 and those exact cases were rerun successfully. Original failures remain
+in local evidence, separate from their successful reruns. No OOM kill occurred.
+
+On native x86_64, five alternating baseline/fixed rounds of 100 requests give
+median-of-round-medians of 0.193/0.194 ms for Wasm stepping, 3.673/3.680 ms for
+disassembly and 0.830/0.830 ms for stack queries. These differences are below
+1%; this parity fix makes no performance-improvement claim. The existing
+official VTune installation also collected hardware Hotspots and
+Microarchitecture Exploration profiles against the final binary. Function
+hotspots resolve, but this release binary's source-line report is unknown;
+it is not evidence of source-line attribution.

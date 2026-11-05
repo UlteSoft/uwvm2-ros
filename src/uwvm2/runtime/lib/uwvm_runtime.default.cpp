@@ -8628,6 +8628,7 @@ namespace uwvm2::runtime::lib
                 {
                     function.addFnAttr(llvm_jit_translate_details::get_llvm_string_ref(u8"target-features"), target_features_ref);
                 }
+
             }
         }
 
@@ -8636,6 +8637,9 @@ namespace uwvm2::runtime::lib
                                                                                    ::uwvm2::utils::container::u8string const& tune_cpu_name) noexcept
         {
             ::uwvm2::runtime::llvm_jit_cache::details::append_cache_key_value(policy, u8"target-cpu", target_cpu_name);
+#if defined(__linux__) && (defined(__arm__) || defined(__aarch64__))
+            ::uwvm2::runtime::llvm_jit_cache::details::append_cache_key_value(policy, u8"debug-retirement-bridge", u8"relocatable-target-v1");
+#endif
             ::uwvm2::runtime::llvm_jit_cache::details::append_cache_key_value(policy, u8"tune-cpu", tune_cpu_name);
         }
 

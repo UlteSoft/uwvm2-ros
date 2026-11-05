@@ -8067,6 +8067,22 @@ struct runtime_local_func_llvm_jit_emit_state_t
     if(!state.debug_activation_enabled) { return true; }
     if(state.debug_activation_token == nullptr || kind > 3u) { return false; }
     auto const integer{builder.getIntNTy(static_cast<unsigned>(sizeof(::std::uintptr_t) * 8u))};
+    auto const retirement_target{[&](::llvm::Value* bridge) noexcept -> ::llvm::Value*
+    {
+#if defined(__linux__) && (defined(__aarch64__) || (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__)))
+        if(bridge != nullptr && state.emit_debug_safe_points)
+        {
+            // Resolve a real host symbol into private JIT data at each load.
+            // The volatile carrier keeps its actual identity in a register at
+            // the call, avoiding an out-of-owner RuntimeDyld veneer. No
+            // debugger may follow or inspect that veneer to recover a target.
+            auto const symbol{::llvm::dyn_cast<::llvm::GlobalValue>(bridge)};
+            return symbol == nullptr ? nullptr : get_llvm_relocatable_host_symbol_pointer(builder,symbol);
+        }
+#endif
+        return bridge;
+    }};
+
     if(state.checkpoint_observer_workspace != nullptr)
     {
         if(state.checkpoint_plan == nullptr) { return false; }
@@ -8075,8 +8091,8 @@ struct runtime_local_func_llvm_jit_emit_state_t
            state.checkpoint_plan->profile->purpose() == ::uwvm2::runtime::checkpoint::compilation_purpose::observe_values)
         {
             auto const type{::llvm::FunctionType::get(builder.getVoidTy(), {builder.getInt64Ty(),integer}, false)};
-            auto const bridge{get_llvm_runtime_bridge_function_symbol_value_unwrapped<
-                ::uwvm2::runtime::lib::details::llvm_jit_checkpoint_observer_return_abi_bridge>(builder,type)};
+            auto const bridge{retirement_target(get_llvm_runtime_bridge_function_symbol_value_unwrapped<
+                ::uwvm2::runtime::lib::details::llvm_jit_checkpoint_observer_return_abi_bridge>(builder,type))};
             if(bridge == nullptr) { return false; }
             auto const call{apply_llvm_jit_host_calling_conv(builder.CreateCall(type,bridge,
                 {state.debug_activation_token,builder.CreatePtrToInt(state.checkpoint_observer_workspace,integer)}))};
@@ -8084,8 +8100,8 @@ struct runtime_local_func_llvm_jit_emit_state_t
         }
 #endif
         auto const type{::llvm::FunctionType::get(builder.getVoidTy(), {builder.getInt64Ty(),integer,integer}, false)};
-        auto const bridge{get_llvm_runtime_bridge_function_symbol_value_unwrapped<
-            ::uwvm2::runtime::lib::details::llvm_jit_checkpoint_observer_activation_leave_abi_bridge>(builder,type)};
+        auto const bridge{retirement_target(get_llvm_runtime_bridge_function_symbol_value_unwrapped<
+            ::uwvm2::runtime::lib::details::llvm_jit_checkpoint_observer_activation_leave_abi_bridge>(builder,type))};
         if(bridge == nullptr) { return false; }
         auto const call{apply_llvm_jit_host_calling_conv(builder.CreateCall(type,bridge,
             {state.debug_activation_token,::llvm::ConstantInt::get(integer,kind),
@@ -8093,10 +8109,10 @@ struct runtime_local_func_llvm_jit_emit_state_t
         call->setDoesNotThrow(); return true;
     }
     auto const type{::llvm::FunctionType::get(builder.getVoidTy(), {builder.getInt64Ty(), integer}, false)};
-    auto const bridge{state.checkpoint_plan == nullptr ? get_llvm_runtime_bridge_function_symbol_value<
+    auto const bridge{retirement_target(state.checkpoint_plan == nullptr ? get_llvm_runtime_bridge_function_symbol_value<
         ::uwvm2::runtime::lib::details::llvm_jit_debug_activation_leave_abi_bridge>(builder, type) :
         get_llvm_runtime_bridge_function_symbol_value_unwrapped<
-        ::uwvm2::runtime::lib::details::llvm_jit_checkpoint_activation_leave_abi_bridge>(builder, type)};
+        ::uwvm2::runtime::lib::details::llvm_jit_checkpoint_activation_leave_abi_bridge>(builder, type))};
     if(bridge == nullptr) { return false; }
     if(auto const declaration{::llvm::dyn_cast<::llvm::Function>(bridge)}; declaration != nullptr) { declaration->setDoesNotThrow(); }
     auto const call{apply_llvm_jit_host_calling_conv(builder.CreateCall(type, bridge,
