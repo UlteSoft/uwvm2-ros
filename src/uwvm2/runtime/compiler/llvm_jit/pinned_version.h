@@ -48,7 +48,7 @@
 // This is compile-time only, with no VM-entry or generated-Wasm overhead.
 static_assert([]() constexpr
 {
-    constexpr char expected[]{"23.1.1-uwvm-ros.17"};
+    constexpr char expected[]{"23.1.1-uwvm-ros.18"};
     constexpr char actual[]{LLVM_VERSION_STRING};
     if constexpr(sizeof(actual) != sizeof(expected)) { return false; }
     else
@@ -59,7 +59,7 @@ static_assert([]() constexpr
         }
         return true;
     }
-}(), "uwvm2-ros requires the exact bundled LLVM 23.1.1-uwvm-ros.17 headers; configure through xmake");
+}(), "uwvm2-ros requires the exact bundled LLVM 23.1.1-uwvm-ros.18 headers; configure through xmake");
 
 // Revision 9 includes the qualified RISC-V callee-pop TailCC ABI and the
 // incoming-stack musttail repair. Ordinary uwvm2 requires an explicit opt-in;

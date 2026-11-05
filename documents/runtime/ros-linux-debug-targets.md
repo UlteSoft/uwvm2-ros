@@ -18,7 +18,7 @@ wrong pointer width, big-endian ARM or mismatched ARM floating-point PCS fails
 compilation. Cross builds still need the target's libc headers/libraries, compiler
 builtins, and the product's paired libc++/libc++abi/libunwind and bundled LLVM.
 A system LLVM or another target's archive is not a substitute. The current
-provider contract is `23.1.1-uwvm-ros.17`, including the ARM epilogue-CFI capability.
+provider contract is `23.1.1-uwvm-ros.18`, including the ARM epilogue-CFI capability.
 
 The VM communicates with a separately deployed native ROS Gateway over the
 existing typed protocol. Admission of a VM ABI does not assert availability of
@@ -55,17 +55,46 @@ destination checks. Structure-load/store base writeback
 still invalidates r11 evidence when it targets r11; DMB/DSB/ISB do not change a
 frame. These metadata facts do not grant instruction execution authority.
 
+The built-in debugger has no unrestricted native-debugging launch option or
+session command. Debugging VM, libc or dynamic-library code requires a separately
+attached host debugger; a guest cannot request that attachment.
+
 Native `si`, `ni` and `finish` operate inside the authenticated, stopped guest
 JIT domain. Return continuations retain and recheck the actual worker, stop
 revision, code owner, module generation and execution epoch. A root frame has
 no guest caller to finish into. Timeout does not manufacture a returned frame
 or release a still-running owner. Raw host stack pointers, VM memory and arbitrary
-native code remain outside the public debugger.
+native code remain outside the public debugger. An admitted opaque host call
+runs normally without instruction traps in its body and returns to an
+authenticated guest continuation. A backend without that continuation proof
+refuses before execution; explicit Wasm stepping can execute the authorized
+import normally. Returning from a native stop to a cooperative Wasm stop
+always retires the previous stop identifier and its derived references.
+
+Native register pages expose the complete finite ABI layout: 48 entries on
+x86_64, 18 on i686, 66 on AArch64 and 49 on each ARM ABI. Omitted/zero DAP page
+count returns all remaining entries, including AArch64 V30/V31. This does not
+expose native memory, stack/frame pointers or register writes.
 
 On 32-bit glibc builds with `_FILE_OFFSET_BITS=64`, the private POSIX aliases
 bind `mmap64` and `getrlimit64`, matching the system headers and argument/result
 widths. Alternate signal-stack setup and stack-exhaustion handling retain their
 guard pages and bounds checks.
+
+## Interpreter and LLVM behavior
+
+The product can explicitly include both engines with
+`--execution-int=uwvm-int --execution-jit=llvm`; the default LLVM product selection
+is unchanged. Runtime interpreter selection does not grant imports or operations
+and rejects debugger activation.
+
+Specified guest traps and uncaught guest exceptions terminate through the
+trusted process-exit coordinator with status 126 in both engines. Internal VM
+invariant failures remain distinct from guest faults. The ROS interpreter keeps
+stable mmap memory while checking the complete committed access extent before
+forming a pointer, including SIMD, Memory64 and atomic accesses. Guest memory
+faults therefore do not enter a signal handler that locks or waits in the exit
+coordinator. Stack exhaustion retains controlled status 127.
 
 ## Management separation
 
@@ -99,10 +128,13 @@ See [management authority](management-authority.md),
 
 ## Validation coverage
 
-The revision-16 product was built for all five ABIs with the matching bundled
+The revision-18 product was built for all five ABIs with the matching bundled
 LLVM and paired libc++/libc++abi/libunwind. x86_64 tests run natively; i686,
 AArch64, ARM and ARMhf tests execute their actual target ELF binaries under
-QEMU user mode. QEMU results are functional evidence, not physical hardware
+QEMU user mode. Product and bundled-provider builds use the native x86_64 Clang
+cross toolchain and the retained target sysroots; QEMU is not used to run the
+product C++ compiler. Wasm JIT compilation inside an emulated VM remains part
+of testing that actual target implementation. QEMU results are functional evidence, not physical hardware
 or real-time latency qualification.
 
 Every target exercises SDK-derived Wasm modules through the real VM, broker and
@@ -129,3 +161,28 @@ SIMD/VFP frame-register writes, large-file POSIX ABI variants and wrong-product
 compiler ABI rejection. Temporary drivers, cross sysroots, build products,
 failed intermediate runs and machine-readable evidence remain under `.tmp`
 and are excluded from version control.
+
+The revision-18 combined-engine matrix also covers 65 Wasm/WASI programs per
+engine and target, with the same 65 programs checked independently by the
+installed Wasmtime 42 and 50 binaries. Separate checks cover 14 result/exit
+parity cases per target, uncaught exceptions, interpreter debugger rejection,
+all 92 registered WASIp1 signatures and 124 ROS signatures, module permission
+isolation, positive operations, quota rejection/waiting and realtime-clock jumps.
+Native ROS1/ROS2 subscribers verify actual payload delivery after gateway calls;
+language examples execute as Wasm through the VM.
+
+Current DAP regression coverage comprises 535 passing tests without skips.
+Actual target sessions additionally check every ABI register page, native
+breakpoint lifecycle, source stepping, guest-only instruction stepping across
+WASI calls, opaque native next, and rejection of stale references after returning
+to cooperative Wasm execution. The stop-identity fix is followed by a fresh
+five-target debugger, Unwind, update and cross-process security regression.
+
+All five targets pass the six extended Wasm debugger state suites: memory pages,
+memory mutation, local pages, seven-scope pages, GC-member pages and frame/scope
+lifetime. The seven-scope case covers more than one page of locals, operands,
+saved parameters, controls, handlers, globals and table entries. On ARM/ARMhf,
+its approximately 253,000 generated IR instructions take substantially longer
+to compile under QEMU. The final test waits 840 seconds before attaching; the
+VM and broker timeouts, authorization and scope bounds are unchanged. Earlier
+startup timeouts remain recorded as failed attempts, not accepted passes.

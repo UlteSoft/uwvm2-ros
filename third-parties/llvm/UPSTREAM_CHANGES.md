@@ -181,7 +181,7 @@ The ordinary repository supplies the same
   were not imported. Required libc shared math headers remain.
 - Three internal mlgo utility symlinks were materialized with identical target
   bytes for Windows checkouts. Vendor line-ending conversion is disabled.
-- ROS xmake builds Release static archives with suffix `-uwvm-ros.17` and
+- ROS xmake builds Release static archives with suffix `-uwvm-ros.18` and
   verifies `sources.sha256`. Its CMake metadata target exports include paths,
   definitions and the complete ordered static-library closure.
 - Separately from compiler-source edits, ROS native MIPS target selection uses
@@ -477,3 +477,16 @@ inputs: exhaustive short lists, embedded NUL/newline bytes, random byte strings,
 and long valid and malformed lists. Native x86_64 VM measurements exercise
 authenticated broker/DAP disassembly, with instruction ownership checks intact.
 The source manifest and exact provider contract advance together to revision 17.
+
+## Revision 18: ARM tail-return expansion with trailing CFI
+
+ARMExpandPseudo now expands the current TCRETURN pseudo instead of searching
+again for the last non-debug instruction in its block. Precise epilogue CFI can
+follow the return to restore the next layout block's unwind row. The old search
+mistook that CFI for TCRETURN and accessed nonexistent operands, corrupting
+register-use lists in release builds for valid Wasm tail calls on ARM and ARMhf.
+
+The fix preserves the following CFI and Windows epilogue markers, jump target,
+implicit register operands, call-site metadata and NoMerge flag. Tail calls and
+native Unwind remain enabled. The exact provider contract and source manifest
+advance to revision 18; old archive receipts are not relabelled.

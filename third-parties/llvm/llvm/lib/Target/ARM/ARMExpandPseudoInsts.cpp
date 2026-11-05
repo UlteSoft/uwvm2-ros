@@ -2266,24 +2266,18 @@ bool ARMExpandPseudo::ExpandMI(MachineBasicBlock &MBB,
     case ARM::TCRETURNdi:
     case ARM::TCRETURNri:
     case ARM::TCRETURNrinotr12: {
-      MachineBasicBlock::iterator MBBI = MBB.getLastNonDebugInstr();
-      if (MBBI->getOpcode() == ARM::SEH_EpilogEnd)
-        MBBI--;
-      if (MBBI->getOpcode() == ARM::SEH_Nop_Ret)
-        MBBI--;
+      // Expand this exact pseudo, not the last non-debug instruction.
+      // Precise epilogue CFI may follow the return (restore_state for the
+      // next layout block). Treating that CFI as TCRETURN reads nonexistent
+      // operands and corrupts the register-use lists in release builds.
       assert(MBBI->isReturn() &&
-             "Can only insert epilog into returning blocks");
+             "Can only expand the current tail-call return");
       unsigned RetOpcode = MBBI->getOpcode();
       DebugLoc dl = MBBI->getDebugLoc();
       const ARMBaseInstrInfo &TII = *static_cast<const ARMBaseInstrInfo *>(
           MBB.getParent()->getSubtarget().getInstrInfo());
 
       // Tail call return: adjust the stack pointer and jump to callee.
-      MBBI = MBB.getLastNonDebugInstr();
-      if (MBBI->getOpcode() == ARM::SEH_EpilogEnd)
-        MBBI--;
-      if (MBBI->getOpcode() == ARM::SEH_Nop_Ret)
-        MBBI--;
       MachineOperand &JumpTarget = MBBI->getOperand(0);
 
       // Jump to label or value in register.

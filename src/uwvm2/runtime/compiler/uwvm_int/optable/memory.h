@@ -457,6 +457,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
         }
 # endif
 
+        // ROS interpreter faults use normal runtime callbacks. A raw mmap
+        // signal handler cannot safely lock or wait in the exit coordinator.
+        // Retain stable mmap storage, but check each complete access against
+        // committed memory before forming pointers. LLVM has a separate path.
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        inline constexpr bool explicit_mmap_bounds{true};
+#else
+        inline constexpr bool explicit_mmap_bounds{false};
+#endif
+
         template <typename MemoryT>
         UWVM_ALWAYS_INLINE inline constexpr void check_memory_bounds_unlocked(MemoryT const& memory,
                                                                               [[maybe_unused]] ::std::size_t memory_idx,
@@ -476,7 +486,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
                 // - Full protection: the unsigned u32+u32 domain and supported access width fit entirely in the reservation.
                 // - Partial fixed protection: only check the fixed max (power-of-two) to avoid UB pointer overflow; the rest relies on page protection.
                 // - custom_page < platform_page: must do per-access dynamic bounds check using the atomic memory length.
-                if(memory.require_dynamic_determination_memory_size())
+                if(explicit_mmap_bounds || memory.require_dynamic_determination_memory_size())
                 {
 # if (defined(_DEBUG) || defined(DEBUG)) && defined(UWVM_ENABLE_DETAILED_DEBUG_CHECK)
                     if(memory.memory_length_p == nullptr) [[unlikely]] { ::uwvm2::utils::debug::trap_and_inform_bug_pos(); }
@@ -565,7 +575,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
         {
             if constexpr(MemoryT::can_mmap)
             {
-                if(memory.require_dynamic_determination_memory_size())
+                if(explicit_mmap_bounds || memory.require_dynamic_determination_memory_size())
                 {
                     auto const memory_length{memory.memory_length_p->load(::std::memory_order_acquire)};
                     return effective_offset.offset_65_bit || wasm_bytes > memory_length ||
@@ -709,6 +719,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
                                                                         memory_offset_t effective_offset,
                                                                         ::std::size_t wasm_bytes) noexcept
         {
+            if constexpr(explicit_mmap_bounds)
+            {
+                check_memory_bounds_unlocked(memory, memory_idx, memory_static_offset, effective_offset, wasm_bytes);
+                return;
+            }
+
 #  if (defined(_DEBUG) || defined(DEBUG)) && defined(UWVM_ENABLE_DETAILED_DEBUG_CHECK)
             auto const memory_begin{memory.memory_begin};
             if(memory_begin == nullptr) [[unlikely]] { ::uwvm2::utils::debug::trap_and_inform_bug_pos(); }
@@ -745,6 +761,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
                                                                         memory_offset_t effective_offset,
                                                                         ::std::size_t wasm_bytes) noexcept
         {
+            if constexpr(explicit_mmap_bounds)
+            {
+                check_memory_bounds_unlocked(memory, memory_idx, memory_static_offset, effective_offset, wasm_bytes);
+                return;
+            }
+
 #  if (defined(_DEBUG) || defined(DEBUG)) && defined(UWVM_ENABLE_DETAILED_DEBUG_CHECK)
             auto const memory_begin{memory.memory_begin};
             if(memory_begin == nullptr) [[unlikely]] { ::uwvm2::utils::debug::trap_and_inform_bug_pos(); }

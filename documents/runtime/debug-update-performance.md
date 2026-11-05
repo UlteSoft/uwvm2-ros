@@ -72,3 +72,44 @@ No limit, admission check or publication check was relaxed for these measurement
 Reference checks reuse the existing Wasmtime 50.0.0 (ebe5e8df1), WASI SDK LLDB 22.1.0, WAMR 2.4.5 classic debugger and GDB 16.3. Actual guest LLDB sessions exercised Wasmtime/WAMR Wasm backtrace, disassembly and stepping. GDB hit transform_and_sum from the SDK C static_pointer_library example after compilation to Wasm, displayed its x86_64 JIT instructions, stepped and observed normal exit. These are capability checks, not speed rankings: interpreted Wasm steps, guest LLDB requests, native ptrace operations and authenticated owned native DAP queries perform different work. WAMR source analysis is separately pinned to commit 3a6fb9a8e7871f20471c48592390b9d2342287b1; that checkout was not substituted for the reused runtime binary.
 
 Temporary fixtures, compiler outputs, native and QEMU logs, reference-client failures and corrections, and VTune datasets are retained under .tmp/debug-perf-20261105 and excluded from Git. The preliminary proposal executables are exploratory evidence only; final qualification identifies real revision-17 provider builds. An oversized 2048-function exploratory startup timed out and is excluded from the performance sample set. No claim is made for real-time robot deadlines or non-x86_64 throughput.
+
+## Revision-18 safety regression
+
+The interpreter/JIT parity and native-stop identity fixes were measured again
+on native x86_64. Five interleaved before/after pairs use 100 requests per case,
+the same SDK-derived Wasm loop, CPU 21 for the VM and CPU 20 for the controller.
+The table reports the median of the five per-run medians, in milliseconds.
+
+| Request | Before stop-identity fix | After fix |
+| --- | ---: | ---: |
+| Wasm step | 0.2158 | 0.2140 |
+| 128-instruction disassembly | 3.8996 | 3.8990 |
+| Stack trace | 0.8895 | 0.8950 |
+
+These small differences are not evidence of a speedup or a material regression.
+All runs also check actual later stops and retirement of old frame references.
+The final measured ELF SHA-256 is
+2e5320426f1707eb154dbbf2baa5246e18d5739ab6e3113945983af8463e68e4.
+
+The existing VTune installation collected fresh hardware hotspots and
+microarchitecture-exploration reports for 2,000 disassembly requests on that
+ELF. Both collections and the kernel-health checks passed. The leading named
+LLVM work includes ClearImpliedBits/SetImpliedBits in MCSubtargetInfo.cpp and
+the X86 decoder. Source-line reports remain mostly unavailable for the optimized
+VM/LLVM objects; symbol attribution is not represented as exact source-line
+sampling. Profiled timings are excluded from the table above.
+
+Fresh-process startup was also checked on CPU 31, with the JIT object cache
+disabled, warm filesystem, three warmups and 30 interleaved samples per engine.
+All guest results and exit codes agree.
+
+| Wasm program | Interpreter median (ms) | LLVM median (ms) |
+| --- | ---: | ---: |
+| SDK-derived tail call | 4.965 | 22.755 |
+| i64 multiplication edge cases | 5.236 | 57.195 |
+| SDK C static_pointer_library | 5.429 | 51.029 |
+
+These are first-execution measurements for the listed small programs, not
+steady-state throughput or robot deadline guarantees. No QEMU timing is used
+as platform performance evidence. Current raw data and failed exploratory
+drivers remain under .tmp/platform-parity-20261105 and are excluded from Git.

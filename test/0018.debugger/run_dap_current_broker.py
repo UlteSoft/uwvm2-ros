@@ -321,6 +321,17 @@ class BrokerSession:
                     client.close()
             except BaseException as error:
                 errors.append(repr(error))
+        if self.child.poll() is None and any(
+                event.get("event") == "exited"
+                for client in self.clients for event in client.events):
+            # An actual exited event (not disconnect/terminated) proves the
+            # guest has exited. Let the broker finish its own cleanup
+            # before signalling it: CPython restores SIGTERM to its default
+            # during finalization, after the listener/capability are removed.
+            try:
+                self.child.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                errors.append("broker did not retire after the actual guest terminated")
         if self.child.poll() is None:
             # Original broker catches SIGTERM and in its own finally retires
             # its original Popen guest. No numeric guest PID is killed here.

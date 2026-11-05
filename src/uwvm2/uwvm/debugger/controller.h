@@ -3170,6 +3170,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 step_thread_=selected;source_step_active_=false;wasm_step_active_=true;wasm_step_policy_=policy;
                 source_step_stop_count_=0u;source_step_error_=control_error::none;source_step_origin_activation_=::std::move(origin);
                 if(!release_native_locked(deadline)) { cancel_step_locked();result.error=control_error::invalid_state;return result; }
+                // Native execution consumed the previous stop even though the
+                // cooperative pause ticket remains live. Retire its labels
+                // before waiting for the next actual guest snapshot.
+                advance_stop_identifier_locked();
                 source_statement_stop_=false;reason_=stop_reason::step;
             }
             bool const landed{wait_for_stop(deadline,interrupt)};
@@ -5264,6 +5268,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                     ::std::lock_guard lock{mutex_};
                     if(!native_owned_ || !native_external_parked_ || !pause_ || !release_native_locked(deadline))
                     { initial.status=control_error::invalid_state; return initial; }
+                    // The retained pause ticket is not the old native stop:
+                    // execution reaches a fresh cooperative guest snapshot.
+                    advance_stop_identifier_locked();
                     source_statement_stop_=false; reason_=stop_reason::requested;
                 }
                 // The existing pause request parks at the next actual guest

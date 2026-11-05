@@ -20,21 +20,22 @@ def main():
     guard = root/'src/uwvm2/runtime/compiler/llvm_jit/pinned_version.h'
     source = args.out/'guard.cpp'
     source.write_text('#include "' + str(guard.resolve()) + '"\n')
-    cases = [('23.1.1-uwvm-ros.17', (23, 1, 1), True),
+    cases = [('23.1.1-uwvm-ros.18', (23, 1, 1), True),
              ('23.1.1', (23, 1, 1), False),
              ('23.1.1-uwvm-ros.7', (23, 1, 1), False),
              ('23.1.1-uwvm-ros.9', (23, 1, 1), False),
              ('23.1.1-uwvm-ros.12', (23, 1, 1), False),
              ('23.1.1-uwvm-ros.16', (23, 1, 1), False),
-             ('23.1.1-uwvm-ros.170', (23, 1, 1), False),
-             ('23.1.1-uwvm-ros.17git', (23, 1, 1), False),
+             ('23.1.1-uwvm-ros.17', (23, 1, 1), False),
+             ('23.1.1-uwvm-ros.180', (23, 1, 1), False),
+             ('23.1.1-uwvm-ros.18git', (23, 1, 1), False),
              ('23.0.0git', (23, 0, 0), False),
              ('22.1.8', (22, 1, 8), False),
-             ('23.1.1-uwvm-ros.17', (24, 0, 0), False)]
+             ('23.1.1-uwvm-ros.18', (24, 0, 0), False)]
     rows = []
     controls = [(version, numbers, 1, expected) for version, numbers, expected in cases]
-    controls += [('23.1.1-uwvm-ros.17', (23, 1, 1), None, False),
-                 ('23.1.1-uwvm-ros.17', (23, 1, 1), 0, False)]
+    controls += [('23.1.1-uwvm-ros.18', (23, 1, 1), None, False),
+                 ('23.1.1-uwvm-ros.18', (23, 1, 1), 0, False)]
     for index, (version, numbers, capability, expected) in enumerate(controls):
         directory = args.out/str(index)
         headers = directory/'llvm/Config'

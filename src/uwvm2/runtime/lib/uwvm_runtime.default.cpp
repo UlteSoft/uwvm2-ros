@@ -3323,11 +3323,50 @@ namespace uwvm2::runtime::lib
         void debug_observe_actual_trap(trap_kind) noexcept;
 #endif
 
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(UWVM_RUNTIME_UWVM_INTERPRETER)
+        inline void finish_interpreter_guest_fault(trap_kind k) noexcept
+        {
+            namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
+            if(mode::global_runtime_compiler != mode::runtime_compiler_t::uwvm_interpreter_only ||
+               get_runtime_execution_entry_depth() == 0uz) { return; }
+            // Only specified Guest faults take this path. Internal invariants
+            // and failures of the native runtime retain their fatal handling.
+            switch(k)
+            {
+                case trap_kind::unreachable:
+                case trap_kind::invalid_conversion_to_integer:
+                case trap_kind::integer_divide_by_zero:
+                case trap_kind::integer_overflow:
+                case trap_kind::call_indirect_table_out_of_bounds:
+                case trap_kind::call_indirect_null_element:
+                case trap_kind::call_indirect_type_mismatch:
+                case trap_kind::table_out_of_bounds:
+                case trap_kind::memory_out_of_bounds:
+                case trap_kind::unaligned_atomic:
+                case trap_kind::atomic_wait_non_shared:
+                case trap_kind::null_reference:
+                case trap_kind::array_out_of_bounds:
+                case trap_kind::gc_allocation_failure:
+                case trap_kind::cast_failure: break;
+                default: return;
+            }
+            ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                u8"uwvm: [error] managed Guest trap; execution stopped (interpreter: ", trap_kind_name(k), u8")");
+            // Interpreter callbacks are noexcept. Do not throw through them or
+            // turn a Wasm trap into a host SIGILL. The trusted exit coordinator
+            // preserves the first exit code and explicit pending-operation waits.
+            ::uwvm2::utils::thread::process_exit::request_process_exit(126u);
+        }
+#endif
+
 #if UWVM_HAS_CPP_ATTRIBUTE(clang::disable_tail_calls)
         [[clang::disable_tail_calls]]
 #endif
         [[noreturn]] UWVM_NOINLINE inline constexpr void trap_fatal(trap_kind k) noexcept
         {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(UWVM_RUNTIME_UWVM_INTERPRETER)
+            if(!::std::is_constant_evaluated()) { finish_interpreter_guest_fault(k); }
+#endif
             // Keep termination behind a volatile function pointer and signal fence so compilers do not fold away diagnostic work
             // before noreturn termination.
             print_trap_fatal_message(k);
@@ -3501,6 +3540,9 @@ namespace uwvm2::runtime::lib
 
         inline constexpr void print_memory_out_of_bounds_trap(::uwvm2::object::memory::error::memory_error_t const& memerr) noexcept
         {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(UWVM_RUNTIME_UWVM_INTERPRETER)
+            if(!::std::is_constant_evaluated()) { finish_interpreter_guest_fault(trap_kind::memory_out_of_bounds); }
+#endif
             // Memory traps include structured memory-error details before the generic runtime trap headline and wasm call stack.
             ::uwvm2::object::memory::error::output_memory_error_line(memerr);
             print_trap_fatal_message(trap_kind::memory_out_of_bounds);

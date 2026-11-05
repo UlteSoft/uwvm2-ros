@@ -117,7 +117,13 @@ function uwvm_ros_product_check(get, host, host_arch, reject_configuration)
     if not value("import-ros1", true) and not value("import-ros2", true) then
         reject("at least one qualified ROS bridge must be included")
     end
-    local required = { ["execution-int"]="none", ["execution-jit"]="llvm",
+    -- Optional interpreter execution shares the same per-module host policy.
+    -- Keep LLVM present for the native debugger and managed update compiler.
+    local interpreter = value("execution-int", "none")
+    if interpreter ~= "none" and interpreter ~= "uwvm-int" then
+        reject("--execution-int must be none or uwvm-int")
+    end
+    local required = { ["execution-jit"]="llvm",
         ["gc-jit-access-profile"]="default", ["gc-allocation-profile"]="default",
         ["mingw-min"]="default", ["apple-platform"]="default" }
     for option, expected in pairs(required) do

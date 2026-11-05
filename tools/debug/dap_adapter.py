@@ -2466,6 +2466,8 @@ def parse_status(text):
     current = None
     exit_code = None
     native_stop = False
+    native_breakpoint_stop = False
+    native_breakpoint = None
     uncaught_stop = False
     uncaught_thread = None
     stop_id = None
@@ -2475,7 +2477,11 @@ def parse_status(text):
             uncaught_stop = line == "stopped: Uncaught Wasm exception before unwind; continue propagates"
             reason = ("exception" if uncaught_stop or line == "stopped: Wasm trap after failure; pre-trap operands; continue terminates" else
                       "breakpoint" if "breakpoint" in line else "step" if "step" in line else "pause")
-            native_stop = line == "stopped: native instruction step"
+            native_breakpoint_stop = line == "stopped: native breakpoint"
+            native_stop = line in ("stopped: native instruction step", "stopped: native breakpoint",
+                                   "stopped: first Wasm instruction JIT entry", "stopped: execution relocated")
+            if line in ("stopped: first Wasm instruction", "stopped: first Wasm instruction JIT entry"):
+                reason = "entry"
         elif line.startswith("prepared;"):
             state, reason = "stopped", "entry"
         elif line == "running":
@@ -2484,6 +2490,11 @@ def parse_status(text):
             state = "closed"
         elif match := EXIT_RE.match(line):
             state, exit_code = "exited", int(match.group(1))
+        elif line.startswith("native-breakpoint "):
+            if (not native_breakpoint_stop or state != "stopped" or native_breakpoint is not None
+                    or stop_id is not None or threads or not re.fullmatch(r"native-breakpoint [1-9][0-9]*", line)):
+                raise ValueError("invalid native breakpoint identity")
+            native_breakpoint = unsigned_id(int(line.split()[1]), "native breakpoint")
         elif line.startswith("uncaught-thread "):
             if not uncaught_stop or uncaught_thread is not None or threads or not re.fullmatch(r"uncaught-thread [1-9][0-9]*", line):
                 raise ValueError("invalid uncaught Wasm participant")
@@ -2519,6 +2530,8 @@ def parse_status(text):
     if uncaught_stop and (uncaught_thread is None or sum(t.get("uncaught_exception", False) for t in threads) != 1):
         raise ValueError("uncaught Wasm stop lacks its actual participant")
     native_threads = [thread for thread in threads if "native_pc" in thread]
+    if native_breakpoint_stop and (native_breakpoint is None or stop_id is None or len(native_threads) != 1):
+        raise ValueError("native breakpoint stop lacks its actual identity or participant")
     if (len(native_threads) > 1 or any("source" in thread for thread in native_threads)
             or (native_threads and (state != "stopped" or not native_stop))
             or (native_threads and len({thread["id"] for thread in threads}) != len(threads))):
@@ -4257,14 +4270,18 @@ class Adapter:
                     expected_key, frame_id = self.native_register_scopes[reference]
                     if self.stop_key != expected_key or args.get("filter") not in (None, "named", "indexed"):
                         raise ValueError("retired or invalid native register scope")
-                    start, count = args.get("start", 0), args.get("count", 64)
-                    if type(count) is int and count == 0: count = 64
-                    if type(start) is not int or type(count) is not int or not 0 <= start <= 64 or not 1 <= count <= 64:
+                    start, count = args.get("start", 0), args.get("count", 0)
+                    if type(start) is not int or type(count) is not int or not 0 <= start < 1 << 64 or not 0 <= count <= 64:
                         raise ValueError("bounded native register page required")
                     _, values = self.query_native_registers(frame_id)
                     if reference not in self.native_register_scopes or self.stop_key != expected_key:
                         raise ValueError("native register scope retired during copy")
-                    self.respond(request, {"variables": [] if args.get("filter") == "indexed" else values[start:start + count]})
+                    # Omitted/zero count means all remaining named registers.
+                    # The parser already enforces the finite architecture layout
+                    # and bounded packet. AArch64 has 66 entries: a 64-entry
+                    # default silently hid V30/V31 from ordinary DAP clients.
+                    page = values[start:] if count == 0 else values[start:start + count]
+                    self.respond(request, {"variables": [] if args.get("filter") == "indexed" else page})
                     return
                 if reference in self.wasm_object_views:
                     expected_key, obj, anchor = self.wasm_object_views[reference]

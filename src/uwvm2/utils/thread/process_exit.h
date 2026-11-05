@@ -92,8 +92,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread::process_exit
         }
         return true;
     }
-    // Called only after genuine proc_exit capability authorization. First code
-    // wins. Every concurrent caller joins the same process shutdown; none may
+    // Called after genuine proc_exit authorization or by the trusted runtime
+    // stopping execution for a Guest fault; never exposed as an unchecked import.
+    // First code wins. Every concurrent caller joins the same process shutdown; none may
     // bypass a pending wait owner by issuing a second proc_exit.
     [[noreturn]] inline void request_process_exit(::std::uint32_t code) noexcept
     {

@@ -168,6 +168,18 @@
             ::uwvm2::utils::container::u8string_view module_name, ::std::size_t entry_function_index,
             ::uwvm2::runtime::exception::guest_exception const& caught) noexcept
         {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(UWVM_RUNTIME_UWVM_INTERPRETER)
+            namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
+            if(mode::global_runtime_compiler == mode::runtime_compiler_t::uwvm_interpreter_only)
+            {
+                // This is the trusted terminal catch of a Guest exception.
+                // Interpreter callbacks cannot transport the LLVM-only managed
+                // fault signal. Stop through the same process exit coordinator.
+                ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                    u8"uwvm: [error] uncaught Guest exception; execution stopped");
+                ::uwvm2::utils::thread::process_exit::request_process_exit(126u);
+            }
+#endif
             // This catch owns the immutable value/trace after all callee cleanup. Never reconstruct
             // the original throwing stack from the already-unwound TLS stack or reclassify it as a trap.
             // Serialize the entire report; simultaneous failing host threads cannot interleave its lines.

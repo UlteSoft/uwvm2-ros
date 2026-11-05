@@ -129,7 +129,7 @@ def main():
             live.require(stopped[0] == "stopped" and len(stopped[2]) == 1, "actual external stop cohort", raw)
             stale["after"] = {"stop": stopped[2][0]["stop_id"], "raw": raw}
             stale["actual_memory_after"] = broker.request("memory 0 0 17 4")
-            live.require(stale["after"]["stop"] > current["stop"] and stale["actual_memory_after"] == "memory: ff aa bb cc\n",
+            live.require(stale["after"]["stop"] > current["stop"] and dap.parse_wasm_memory_page(stale["actual_memory_after"], 0, 0, 17, 4) == bytes.fromhex("ff aa bb cc"),
                          "actual changed guest memory and fresh stop", stale)
         broker.after_page = advance_changed_bytes
         stale["response"] = client.request("readMemory", arguments(0, 17, 4), success=None)

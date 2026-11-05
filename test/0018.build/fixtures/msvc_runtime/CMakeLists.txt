@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 # The real ROS deferred hook is passed via CMAKE_PROJECT_LLVM_INCLUDE. This
 # fixture substitutes only the library graph, not CMake's CRT flag lowering.
 project(LLVM LANGUAGES CXX)
-set(PACKAGE_VERSION "23.1.1-uwvm-ros.17")
+set(PACKAGE_VERSION "23.1.1-uwvm-ros.18")
 # Match the default normally supplied by LLVM's top-level configuration.
 set(LLVM_DEFAULT_TARGET_TRIPLE "${LLVM_HOST_TRIPLE}")
 set(LLVM_NATIVE_TARGET X86)

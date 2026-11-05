@@ -67,7 +67,7 @@ class Broker:
                     f"function-generation={self.function_generation} runtime-epoch={self.epoch} "
                     "reference-pc=0x1100 owner-begin=0x1000 owner-end=0x1200 "
                     "byte-offset=0 instruction-offset=0 resolve-symbols=0\n"
-                    "  instruction 0 pc=0x1100 bytes=90  nop\nnative-disassembly-end\n")
+                    "  instruction 0 function-offset=256 pc=0x1100 bytes=90  nop\nnative-disassembly-end\n")
         if command.split() and command.split()[0] == "wasm-script":
             if self.before_replacement is not None:
                 self.before_replacement()
