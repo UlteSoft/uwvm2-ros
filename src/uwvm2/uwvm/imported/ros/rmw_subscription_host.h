@@ -8,6 +8,9 @@
  * independent reservation nonce. No operation grants update/debug authority.
  */
 #pragma once
+#ifndef UWVM_MODULE
+#include <uwvm2/utils/thread/monotonic_clock.h>
+#endif
 #include "rmw_publisher_host.h"
 #ifndef UWVM_MODULE
 #include <uwvm2/imported/ros/ipc/rmw_subscription.h>
@@ -45,7 +48,7 @@ namespace uwvm2::uwvm::imported::ros::host
             else if(!rmw_sub_wire::encode(borrowed,false,raw)){error=22;}
             else
             {
-                auto result{backend.connection.call("rmw.subscription-transfer-v1",alias,{raw.begin(),raw.end()},budget)};
+                auto result{backend.connection.call("rmw.subscription-transfer-v1",alias,{raw.begin(),raw.end()},*budget)};
                 error=result.error;rmw_sub_wire::control reply{};
                 if(error&&!result.payload.empty()){error=13;}
                 else if(!error&&!rmw_sub_wire::associated_ack(result.payload.data(),result.payload.size(),borrowed,reply)){error=13;}
@@ -53,7 +56,7 @@ namespace uwvm2::uwvm::imported::ros::host
             }
         }
 #if defined(__cpp_exceptions)
-        catch(::std::bad_alloc const&){error=12;}catch(...){error=5;}
+        catch(::std::bad_alloc const&){error=12;}catch(::std::length_error const&){error=90;}
 #endif
         backend.rmw_endpoints.cancel_result(borrowed.owner.source,error);return error;
     }
@@ -61,7 +64,7 @@ namespace uwvm2::uwvm::imported::ros::host
     inline ::std::uint32_t rmw_subscription_peek(::std::uint64_t handle,::std::uint64_t incarnation,
         ::std::uint32_t expected_gid,::std::uint32_t memory,::std::uint64_t output,::std::uint64_t capacity) noexcept
     {
-        constexpr auto version{core::version::ros2};auto entered{::std::chrono::steady_clock::now()};
+        constexpr auto version{core::version::ros2};auto entered{::uwvm2::utils::host_clock::now()};
 #if defined(__cpp_exceptions)
         try
 #endif
@@ -83,11 +86,11 @@ namespace uwvm2::uwvm::imported::ros::host
             if(!expected_gid||expected_gid>32){return audit.finish(95);}
             if(capacity<rmw_sub_wire::minimum_delivery_bytes||capacity>core::ipc::max_payload_bytes){return audit.finish(90);}
             if(!memory_range(memory,output,capacity)){return audit.finish(22);}
-            ::std::uint64_t timeout{},maximum{};
-            if(!source.target()||!core::parse_u64(source.target()->connection.at("connect-timeout-ms"),timeout)||
-               !timeout||timeout>core::ipc::max_timeout_ms||!core::parse_u64(cap.limits.at("max-message-bytes"),maximum))
-            {return audit.finish(22);}
-            auto until{entered+::std::chrono::milliseconds(timeout)};auto budget{rmw_remaining(until)};
+            ::std::uint64_t maximum{};
+            if(!core::read_quota(cap,"max-message-bytes",maximum)){return audit.finish(22);}
+            auto until{::std::chrono::steady_clock::time_point::max()};
+            if(auto error{rmw_service_values::connection_deadline(source.target(),entered,until)}){return audit.finish(error);}
+            auto budget{rmw_remaining(until)};
             if(!budget){return audit.finish(110);}
             rmw_sub_wire::control request{};request.owner=owner;request.incarnation=incarnation;
             request.capacity=capacity;request.gid_bytes=static_cast<::std::uint8_t>(expected_gid);
@@ -99,7 +102,7 @@ namespace uwvm2::uwvm::imported::ros::host
             auto finish=[&](::std::uint32_t status) noexcept
             {backend.rmw_endpoints.transfer_result(handle,status);return audit.finish(status);};
             rmw_rpc_guard rpc{backend,true,13};
-            auto result{backend.connection.call("rmw.subscription-transfer-v1",cap.alias,{raw.begin(),raw.end()},budget)};
+            auto result{backend.connection.call("rmw.subscription-transfer-v1",cap.alias,{raw.begin(),raw.end()},*budget)};
             if(result.error)
             {
                 rpc.reason=result.payload.empty()?result.error:13;
@@ -133,15 +136,15 @@ namespace uwvm2::uwvm::imported::ros::host
             rpc.armed=false;return finish(0);
         }
 #if defined(__cpp_exceptions)
-        catch(::std::bad_alloc const&){return audit_denial(version,12);}
-        catch(...){return audit_denial(version,22);}
+        catch(::std::bad_alloc const&){return allocation_failure();}
+        catch(::std::length_error const&){return extent_failure();}
 #endif
     }
 
     inline ::std::uint32_t rmw_subscription_ack(::std::uint64_t handle,::std::uint64_t incarnation,
         ::std::uint64_t sequence,::std::uint64_t reservation,rmw_sub_wire::command operation) noexcept
     {
-        constexpr auto version{core::version::ros2};auto entered{::std::chrono::steady_clock::now()};
+        constexpr auto version{core::version::ros2};auto entered{::uwvm2::utils::host_clock::now()};
 #if defined(__cpp_exceptions)
         try
 #endif
@@ -165,10 +168,9 @@ namespace uwvm2::uwvm::imported::ros::host
             if(error){return audit.finish(error);}
             ::std::array<::std::uint8_t,rmw_sub_wire::header_bytes> raw{};
             if(!rmw_sub_wire::encode(request,false,raw)){return audit.finish(22);}
-            ::std::uint64_t timeout{};
-            if(!source.target()||!core::parse_u64(source.target()->connection.at("connect-timeout-ms"),timeout)||!timeout||timeout>core::ipc::max_timeout_ms)
-            {return audit.finish(22);}
-            auto until{entered+::std::chrono::milliseconds(timeout)};auto budget{rmw_remaining(until)};
+            auto until{::std::chrono::steady_clock::time_point::max()};
+            if(auto error{rmw_service_values::connection_deadline(source.target(),entered,until)}){return audit.finish(error);}
+            auto budget{rmw_remaining(until)};
             if(!budget){return audit.finish(110);}
             backend.rmw_endpoints.transfer_result(handle,115);
             // This marks entry to a Host cancellation attempt, not proof that
@@ -182,7 +184,7 @@ namespace uwvm2::uwvm::imported::ros::host
                 return audit.finish(status);
             };
             rmw_rpc_guard rpc{backend,true,13};
-            auto result{backend.connection.call("rmw.subscription-transfer-v1",cap.alias,{raw.begin(),raw.end()},budget)};
+            auto result{backend.connection.call("rmw.subscription-transfer-v1",cap.alias,{raw.begin(),raw.end()},*budget)};
             if(result.error){rpc.reason=result.payload.empty()?result.error:13;return finish(rpc.reason);}
             rmw_sub_wire::control reply{};
             if(!rmw_sub_wire::associated_ack(result.payload.data(),result.payload.size(),request,reply)){return finish(13);}
@@ -190,8 +192,8 @@ namespace uwvm2::uwvm::imported::ros::host
             rpc.armed=false;return finish(0);
         }
 #if defined(__cpp_exceptions)
-        catch(::std::bad_alloc const&){return audit_denial(version,12);}
-        catch(...){return audit_denial(version,22);}
+        catch(::std::bad_alloc const&){return allocation_failure();}
+        catch(::std::length_error const&){return extent_failure();}
 #endif
     }
     inline ::std::uint32_t rmw_subscription_commit(::std::uint64_t h,::std::uint64_t i,::std::uint64_t s,::std::uint64_t r) noexcept

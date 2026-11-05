@@ -31,14 +31,21 @@
 
     extern "C++" bool runtime_threaded_profile_debug_observation_configure_host_api(
         ::uwvm2::runtime::wasm_threads::threaded_debug_observation purpose) noexcept
-    { return runtime_threaded_profile_bridge::configure_debug_observation(purpose); }
+    { if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; } return runtime_threaded_profile_bridge::configure_debug_observation(purpose); }
     extern "C++" ::uwvm2::runtime::wasm_threads::threaded_debug_session runtime_threaded_profile_debug_session_host_api() noexcept
-    { return runtime_threaded_profile_bridge::debug_session(); }
+    { if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; } return runtime_threaded_profile_bridge::debug_session(); }
     extern "C++" bool runtime_threaded_profile_debug_control_configure_host_api(
         ::uwvm2::runtime::wasm_threads::threaded_debug_control_limits const& purpose) noexcept
-    {return runtime_threaded_profile_bridge::configure_debug_control(purpose);}
+    { if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }return runtime_threaded_profile_bridge::configure_debug_control(purpose);}
     extern "C++" ::uwvm2::runtime::wasm_threads::threaded_debug_control_session runtime_threaded_profile_debug_control_session_host_api() noexcept
-    {return runtime_threaded_profile_bridge::debug_control_session();}
+    { if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }return runtime_threaded_profile_bridge::debug_control_session();}
+    extern "C++" bool runtime_threaded_profile_complete_cli_limits_host_api(
+        ::uwvm2::runtime::wasm_threads::threaded_profile_limits& limits) noexcept
+    { return runtime_threaded_profile_bridge::complete_cli_storage_limits(limits); }
+    extern "C++" bool runtime_threaded_profile_configure_cli_host_api(
+        ::uwvm2::runtime::wasm_threads::threaded_profile_limits const& limits) noexcept
+    { auto completed{limits};return runtime_threaded_profile_bridge::complete_cli_storage_limits(completed) &&
+        runtime_threaded_profile_bridge::configure(completed,true); }
     extern "C++" bool runtime_threaded_profile_configure_host_api(
         ::uwvm2::runtime::wasm_threads::threaded_profile_limits const& limits) noexcept
     { return runtime_threaded_profile_bridge::configure(limits); }

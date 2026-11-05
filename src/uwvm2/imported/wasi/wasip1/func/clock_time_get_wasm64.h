@@ -81,11 +81,23 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         ::uwvm2::imported::wasi::wasip1::abi::timestamp_wasm64_t precision,
         ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_wasm64_t time_ptrsz) noexcept
     {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        if(!env.exposes(u8"clock_time_get")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+#endif
+
         auto const memory_pointer{env.get_memory()};
         if(memory_pointer == nullptr) [[unlikely]] { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
         auto& memory{*memory_pointer};
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        // Validate every result buffer before any native side effect or partial
+        // output. Memory may grow, but cannot shrink during an active host call.
+        if(!check_wasip1_memory_bounds_wasm64(memory, time_ptrsz, 8uz))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
+#endif
 
-        check_wasip1_guest_pointer_alignment<8uz>(time_ptrsz, u8"clock_time_get_wasm64.time (timestamp)");
+
+        if(!check_wasip1_guest_pointer_alignment<8uz>(time_ptrsz, u8"clock_time_get_wasm64.time (timestamp)"))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::einval; }
 
         auto const trace_wasip1_call{env.trace_wasip1_call};
 
@@ -138,6 +150,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             return ::uwvm2::imported::wasi::wasip1::abi::errno_wasm64_t::enotcapable;
         }
 
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        auto const clock_index{static_cast<unsigned>(clock_id)};
+        ::uwvm2::imported::wasi::wasip1::environment::budget_reservation reservation{
+            static_cast<::uwvm2::imported::wasi::wasip1::environment::budget_kind>(static_cast<unsigned>(::uwvm2::imported::wasi::wasip1::environment::budget_kind::realtime) + clock_index), env.limits, 0u};
+        if(!reservation) { return reservation.template error<::uwvm2::imported::wasi::wasip1::abi::errno_t>(); }
+#endif
         ::fast_io::unix_timestamp ts;
 # ifdef UWVM_CPP_EXCEPTIONS
         try
@@ -162,8 +180,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         // Since fast_io directly obtains the clock value via clock_gettime, this operation will not overflow and will not produce negative values.
         auto ts_integral{static_cast<timestamp_integral_t>(ts.seconds * 1'000'000'000u + ts.subseconds / mul_factor)};
 
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        // Host precision cannot be weakened by guest precision=0. Round down
+        // first to avoid overflow and to preserve the host bucket boundary.
+        auto const granularity{env.limits.clock_granularity_ns[clock_index]};
+        if(granularity == 0u) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+        ts_integral -= ts_integral % granularity;
+        precision = static_cast<::uwvm2::imported::wasi::wasip1::abi::timestamp_t>(0u);
+#endif
         // WASI provides this solely as an "accuracy hint"; the returned time value should not be modified.
 # if 0
+
         // ceil to precision
         if(auto const precision_integral{static_cast<timestamp_integral_t>(precision)}; precision_integral != 0u)
         {

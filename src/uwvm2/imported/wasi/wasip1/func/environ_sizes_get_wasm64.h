@@ -65,15 +65,39 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_wasm64_t environ_count_ptrsz,
         ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_wasm64_t environ_buf_size_ptrsz) noexcept
     {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        if(!env.exposes(u8"environ_sizes_get")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+        if(!env.permits(::uwvm2::imported::wasi::wasip1::environment::permission_t::environ)) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+#endif
+
         constexpr auto size_t_max{::std::numeric_limits<::std::size_t>::max()};
         constexpr auto wasi_size_t_wasm64_max{::std::numeric_limits<::uwvm2::imported::wasi::wasip1::abi::wasi_size_wasm64_t>::max()};
 
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        ::std::uint64_t data_bytes{};
+        for(auto const text : env.envs)
+        {
+            if(text.size() >= env.limits.max_args_env_bytes || data_bytes > env.limits.max_args_env_bytes - text.size() - 1u)
+            { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::e2big; }
+            data_bytes += text.size() + 1u;
+        }
+#endif
         auto const memory_pointer{env.get_memory()};
         if(memory_pointer == nullptr) [[unlikely]] { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
         auto& memory{*memory_pointer};
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        // Validate every result buffer before any native side effect or partial
+        // output. Memory may grow, but cannot shrink during an active host call.
+        if(!check_wasip1_memory_bounds_wasm64(memory, environ_count_ptrsz, 8uz) ||
+           !check_wasip1_memory_bounds_wasm64(memory, environ_buf_size_ptrsz, 8uz))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
+#endif
 
-        check_wasip1_guest_pointer_alignment<8uz>(environ_count_ptrsz, u8"environ_sizes_get_wasm64.environ_count (size64)");
-        check_wasip1_guest_pointer_alignment<8uz>(environ_buf_size_ptrsz, u8"environ_sizes_get_wasm64.environ_buf_size (size64)");
+
+        if(!check_wasip1_guest_pointer_alignment<8uz>(environ_count_ptrsz, u8"environ_sizes_get_wasm64.environ_count (size64)"))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::einval; }
+        if(!check_wasip1_guest_pointer_alignment<8uz>(environ_buf_size_ptrsz, u8"environ_sizes_get_wasm64.environ_buf_size (size64)"))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::einval; }
 
         auto const trace_wasip1_call{env.trace_wasip1_call};
 

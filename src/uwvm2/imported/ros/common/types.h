@@ -9,6 +9,7 @@
 #include <map>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace uwvm2::imported::ros
 {
@@ -16,9 +17,9 @@ namespace uwvm2::imported::ros
     enum class scope : ::std::uint8_t { global, single, group };
     enum class errc : ::std::uint32_t
     {
-        success = 0, unknown_module = 2, bad_handle = 9, rate_limited = 11, permission_denied = 13,
+        success = 0, unknown_module = 2, io_error = 5, bad_handle = 9, rate_limited = 11, out_of_memory = 12, permission_denied = 13,
         conflict = 17, invalid_argument = 22, too_large = 90, unsupported = 95, disconnected = 107,
-        timeout = 110, revoked = 125
+        timeout = 110, revoked = 125, cancelled = 125
     };
 
     struct result

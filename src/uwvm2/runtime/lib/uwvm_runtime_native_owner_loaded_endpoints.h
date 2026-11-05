@@ -67,7 +67,11 @@ namespace uwvm2::runtime::lib::details
             ::uwvm2::runtime::checkpoint::compilation_profile::owner,::std::size_t,
             ::std::vector<expected_function>,void*,staged_native_charge);
 #endif
-        inline static constexpr ::std::size_t max_objects{4096u},max_total_object_bytes{256u*1024u*1024u};
+        inline static constexpr ::std::size_t max_objects{4096u};
+        // Objects already belong to the actual LLVM loader. Account their total
+        // without a second implicit code-size quota; staged compilation still
+        // charges every byte to its explicit host budget below.
+        inline static constexpr ::std::size_t max_total_object_bytes{PTRDIFF_MAX};
 
         // ONLY real runtime bridge may construct this after capturing the actual
         // compiler's closed declarations before IR handoff/parallel reset. It

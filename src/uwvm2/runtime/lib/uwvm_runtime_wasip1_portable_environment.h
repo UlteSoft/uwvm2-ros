@@ -13,6 +13,9 @@
     result out{};
     try
     {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        if(selected.portable_restore) { out.status=status::unsupported_resource;return out; }
+#endif
         if((selected.portable_metadata_only && selected.portable_restore) || selected.portable_rebindings.size()>pp::max_rows ||
            (selected.portable_restore && (prepared==nullptr || prepared->target!=nullptr)))
         { out.status=status::invalid_portable_snapshot;return out; }

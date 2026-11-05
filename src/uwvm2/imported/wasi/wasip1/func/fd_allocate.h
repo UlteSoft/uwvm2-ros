@@ -260,6 +260,22 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 
         using underlying_filesize_t = ::std::underlying_type_t<::uwvm2::imported::wasi::wasip1::abi::filesize_t>;
 
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        ::std::uint64_t growth_charge{};
+        auto const requested_offset{static_cast<::std::uint64_t>(offset)};
+        auto const requested_length{static_cast<::std::uint64_t>(len)};
+        if(requested_length != 0u)
+        {
+            if(requested_offset > UINT64_MAX - requested_length) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efbig; }
+            // Reserve the requested final extent, not a racy size difference:
+            // another descriptor may concurrently shrink the same host file.
+            growth_charge = requested_offset + requested_length;
+        }
+        ::uwvm2::imported::wasi::wasip1::environment::budget_reservation reservation{
+            ::uwvm2::imported::wasi::wasip1::environment::budget_kind::filesystem_io, env.limits, growth_charge};
+        if(!reservation) { return reservation.template error<::uwvm2::imported::wasi::wasip1::abi::errno_t>(); }
+#endif
+
         // Trivial success when len == 0
         if(static_cast<underlying_filesize_t>(len) == 0u) [[unlikely]] { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::esuccess; }
 
@@ -821,6 +837,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         ::uwvm2::imported::wasi::wasip1::abi::filesize_t offset,
         ::uwvm2::imported::wasi::wasip1::abi::filesize_t len) noexcept
     {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        if(!env.exposes(u8"fd_allocate")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+        if(fd >= 0 && fd < 3 && !env.grants_stdio(static_cast<unsigned>(fd)))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+
+#endif
+
         auto const trace_wasip1_call{env.trace_wasip1_call};
 
         if(trace_wasip1_call) [[unlikely]]

@@ -100,10 +100,10 @@ namespace uwvm2::uwvm::imported::ros
             if(!enabled) { continue; }
             bool const noinherit{state && state->noinherit_system_environment_is_set ? state->noinherit_system_environment : wasi::wasip1_noinherit_system_environment};
             if(!noinherit) { return {model::errc::permission_denied, "ROS worker requires WASI host environment isolation for " + name}; }
-            // Existing WASI mount and socket tables compose with global tables.
-            // Deny these alternate Guest channels before WASI initialization.
-            if(!wasi::default_wasip1_env.mount_dir_roots.empty() || (state && !state->mount_dir_roots.empty()))
-            { return {model::errc::permission_denied, "ROS worker rejects WASI directory preopens for " + name}; }
+            // Directory preopens retain their explicit per-module WASI roots,
+            // rights and budgets. Enabling ROS neither grants filesystem access
+            // nor removes an independently authorized WASI directory.
+            // Socket preopens remain unsupported by the strict ROS transport.
 #  if defined(UWVM_IMPORT_WASI_WASIP1_SUPPORT_SOCKET)
             if(!wasi::default_wasip1_env.preopen_sockets.empty() || (state && !state->preopen_sockets.empty()))
             { return {model::errc::permission_denied, "ROS worker rejects WASI socket preopens for " + name}; }

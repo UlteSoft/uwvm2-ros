@@ -222,10 +222,29 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
         if(name == u8"monotonic-clock") { return permission::clock_monotonic; }
         if(name == u8"process-clock") { return permission::clock_process_cputime; }
         if(name == u8"thread-clock") { return permission::clock_thread_cputime; }
+        if(name == u8"stdin.read") { return permission::stdin_read; }
+        if(name == u8"stdout.write") { return permission::stdout_write; }
+        if(name == u8"stderr.write") { return permission::stderr_write; }
+        if(name == u8"stdio.metadata") { return permission::stdio_metadata; }
+        if(name == u8"stdio.readiness") { return permission::stdio_readiness; }
+        if(name == u8"args") { return permission::args; }
+        if(name == u8"environ") { return permission::environ; }
+        if(name == u8"proc-exit") { return permission::proc_exit; }
+        if(name == u8"thread-spawn") { return permission::thread_spawn; }
+        if(name == u8"realtime-resolution") { return permission::realtime_resolution; }
+        if(name == u8"realtime-timer") { return permission::realtime_timer; }
+        if(name == u8"monotonic-resolution") { return permission::monotonic_resolution; }
+        if(name == u8"monotonic-timer") { return permission::monotonic_timer; }
+        if(name == u8"process-resolution") { return permission::process_resolution; }
+        if(name == u8"process-timer") { return permission::process_timer; }
+        if(name == u8"thread-resolution") { return permission::thread_resolution; }
+        if(name == u8"thread-timer") { return permission::thread_timer; }
         if(name == u8"random") { return permission::random; }
         if(name == u8"proc-raise") { return permission::proc_raise; }
         if(name == u8"sched-yield") { return permission::sched_yield; }
+#if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
         if(name == u8"stdio-full-rights") { return permission::stdio_full_rights; }
+#endif
         return permission{};
     }
 

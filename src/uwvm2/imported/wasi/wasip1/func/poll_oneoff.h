@@ -20,6 +20,9 @@
  ****************************************/
 
 #pragma once
+#ifndef UWVM_MODULE
+#include <uwvm2/utils/thread/monotonic_clock.h>
+#endif
 
 #ifndef UWVM_MODULE
 // std
@@ -221,14 +224,36 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         ::uwvm2::imported::wasi::wasip1::abi::wasi_size_t nsubscriptions,
         ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_t nevents) noexcept
     {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        if(!env.exposes(u8"poll_oneoff")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+#endif
 
+
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+# if defined(UWVM_CPP_EXCEPTIONS)
+        try
+        {
+# else
+        return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotsup;
+# endif
+#endif
         auto const memory_pointer{env.get_memory()};
         if(memory_pointer == nullptr) [[unlikely]] { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
         auto& memory{*memory_pointer};
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        // Validate every result buffer before any native side effect or partial
+        // output. Memory may grow, but cannot shrink during an active host call.
+        if(!check_wasip1_memory_bounds_wasm32(memory, nevents, 4uz))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
+#endif
 
-        check_wasip1_guest_pointer_alignment<8uz>(in, u8"poll_oneoff.in (subscription)");
-        check_wasip1_guest_pointer_alignment<8uz>(out, u8"poll_oneoff.out (event)");
-        check_wasip1_guest_pointer_alignment<4uz>(nevents, u8"poll_oneoff.nevents (size)");
+
+        if(!check_wasip1_guest_pointer_alignment<8uz>(in, u8"poll_oneoff.in (subscription)"))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::einval; }
+        if(!check_wasip1_guest_pointer_alignment<8uz>(out, u8"poll_oneoff.out (event)"))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::einval; }
+        if(!check_wasip1_guest_pointer_alignment<4uz>(nevents, u8"poll_oneoff.nevents (size)"))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::einval; }
 
         auto const trace_wasip1_call{env.trace_wasip1_call};
 
@@ -246,6 +271,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                                                                               u8")");
         }
 
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        if(nsubscriptions > env.limits.max_poll_subscriptions)
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::e2big; }
+#endif
         // Early exit: zero subscriptions -> zero events.
         if(nsubscriptions == 0u) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::einval; }
 
@@ -269,10 +298,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 
         auto const events_bytes{static_cast<::std::size_t>(nsubscriptions) * size_of_wasi_event_t};
 
-        ::uwvm2::imported::wasi::wasip1::memory::check_memory_bounds_wasm32(memory, in, subs_bytes);
-        ::uwvm2::imported::wasi::wasip1::memory::check_memory_bounds_wasm32(memory, out, events_bytes);
+        if(!::uwvm2::imported::wasi::wasip1::func::check_wasip1_memory_bounds_wasm32(memory, in, subs_bytes))
+            { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
+        if(!::uwvm2::imported::wasi::wasip1::func::check_wasip1_memory_bounds_wasm32(memory, out, events_bytes))
+            { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
 
-        ::uwvm2::utils::container::vector<wasi_subscription_t> subscriptions{};
+        ::uwvm2::imported::wasi::wasip1::func::recoverable_host_vector<wasi_subscription_t> subscriptions{};
         ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_t curr_in_pos{in};
 
         subscriptions.reserve(nsubscriptions);
@@ -385,6 +416,51 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             // memory_locker_guard release here
         }
 
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        // Validate the WHOLE batch before creating an epoll/timer descriptor,
+        // querying a native clock, waiting, or writing a single result byte.
+        for(auto& sub : subscriptions)
+        {
+            using event = ::uwvm2::imported::wasi::wasip1::abi::eventtype_t;
+            using error = ::uwvm2::imported::wasi::wasip1::abi::errno_t;
+            if(sub.u.tag == event::eventtype_clock)
+            {
+                auto& clock{sub.u.u.clock};
+                auto const id{static_cast<unsigned>(clock.id)};
+                if(id >= 4u) { return error::einval; }
+                if(!env.permits(::uwvm2::imported::wasi::wasip1::environment::clock_timer_permission(clock.id))) { return error::enotcapable; }
+                if((static_cast<unsigned>(clock.flags) & ~1u) != 0u) { return error::einval; }
+                // Linux timerfd supports realtime and monotonic clocks, not CPU clocks.
+                if(id >= 2u) { return error::enotsup; }
+#if !defined(__linux__) || !defined(__NR_timerfd_create) || !defined(__NR_timerfd_settime) || \
+    !(defined(__NR_epoll_create1) || defined(__NR_epoll_create)) || !defined(__NR_epoll_ctl) || \
+    !(defined(__NR_epoll_wait) || defined(__NR_epoll_pwait))
+                // Other platform backends still lack a cancellable absolute timer.
+                if(static_cast<unsigned>(clock.flags) != 0u) { return error::enotsup; }
+#endif
+                if(env.limits.clock_granularity_ns[id] == 0u) { return error::enotcapable; }
+            }
+            else if(sub.u.tag == event::eventtype_fd_read || sub.u.tag == event::eventtype_fd_write)
+            {
+                auto const fd{static_cast<::uwvm2::imported::wasi::wasip1::abi::wasi_posix_fd_t>(sub.u.u.fd_readwrite.file_descriptor)};
+                if(fd < 0) { return error::ebadf; }
+                if(fd < 3 && (!env.grants_stdio(static_cast<unsigned>(fd)) ||
+                    !env.permits(::uwvm2::imported::wasi::wasip1::environment::permission_t::stdio_readiness))) { return error::enotcapable; }
+                auto& descriptors{env.fd_storage};
+                ::uwvm2::utils::mutex::rw_fair_shared_guard_t map_lock{descriptors.fds_rwlock};
+                ::uwvm2::imported::wasi::wasip1::fd_manager::wasi_fd_t* object{};
+                if(static_cast<::std::size_t>(fd) < descriptors.opens.size()) { object = descriptors.opens.index_unchecked(static_cast<::std::size_t>(fd)).fd_p; }
+                else if(auto item{descriptors.renumber_map.find(fd)}; item != descriptors.renumber_map.end()) { object = item->second.fd_p; }
+                if(object == nullptr) { return error::ebadf; }
+                ::uwvm2::utils::mutex::mutex_guard_t object_lock{object->fd_mutex};
+                if(object->close_pos != SIZE_MAX) { return error::ebadf; }
+                using rights = ::uwvm2::imported::wasi::wasip1::abi::rights_t;
+                auto const requested{rights::right_poll_fd_readwrite | (sub.u.tag == event::eventtype_fd_read ? rights::right_fd_read : rights::right_fd_write)};
+                if((object->rights_base & requested) != requested) { return error::enotcapable; }
+            }
+            else { return error::einval; }
+        }
+#endif
         // subscriptions.size() == nsubscriptions
 
         // Preflight the entire decoded array before any timer creation, native clock
@@ -394,7 +470,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         for(auto const& sub : subscriptions)
         {
             if(sub.u.tag != ::uwvm2::imported::wasi::wasip1::abi::eventtype_t::eventtype_clock) { continue; }
-            auto const requested{::uwvm2::imported::wasi::wasip1::environment::clock_permission(sub.u.u.clock.id)};
+            auto const requested{::uwvm2::imported::wasi::wasip1::environment::clock_timer_permission(sub.u.u.clock.id)};
             if(requested == ::uwvm2::imported::wasi::wasip1::environment::permission_t{}) [[unlikely]]
             {
                 return ::uwvm2::imported::wasi::wasip1::abi::errno_t::einval;
@@ -405,7 +481,62 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             }
         }
 
-        if(nsubscriptions == 1u && subscriptions.front_unchecked().u.tag == ::uwvm2::imported::wasi::wasip1::abi::eventtype_t::eventtype_clock)
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        // All subscriptions have passed authority/shape checks. Only now may an
+        // absolute deadline require a native clock observation to check a limit.
+        for(auto& sub : subscriptions)
+        {
+            using event = ::uwvm2::imported::wasi::wasip1::abi::eventtype_t;
+            using error = ::uwvm2::imported::wasi::wasip1::abi::errno_t;
+            if(sub.u.tag != event::eventtype_clock) { continue; }
+            auto& clock{sub.u.u.clock};
+            auto const id{static_cast<unsigned>(clock.id)};
+            auto timeout{static_cast<::std::uint64_t>(clock.timeout)};
+            auto const granularity{env.limits.clock_granularity_ns[id]};
+            if(auto remainder{timeout % granularity}; remainder != 0u)
+            {
+                auto const increment{granularity - remainder};
+                if(timeout > UINT64_MAX - increment) { return error::eoverflow; }
+                timeout += increment;
+            }
+            if(env.limits.max_poll_wait_ns != ::uwvm2::imported::wasi::wasip1::environment::unlimited)
+            {
+                auto remaining{timeout};
+                if(static_cast<unsigned>(clock.flags) != 0u)
+                {
+                    auto const sample{::fast_io::posix_clock_gettime(id == 0u ? ::fast_io::posix_clock_id::realtime :
+                                                                                 ::fast_io::posix_clock_id::monotonic)};
+                    if(sample.seconds < 0) { return error::eoverflow; }
+                    constexpr ::std::uint64_t billion{1'000'000'000u};
+                    constexpr auto fraction{::fast_io::uint_least64_subseconds_per_second / billion};
+                    if(static_cast<::std::uint64_t>(sample.seconds) > UINT64_MAX / billion) { remaining = 0u; }
+                    else
+                    {
+                        auto const seconds{static_cast<::std::uint64_t>(sample.seconds) * billion};
+                        auto const nanos{static_cast<::std::uint64_t>(sample.subseconds / fraction)};
+                        if(seconds > UINT64_MAX - nanos) { remaining = 0u; }
+                        else
+                        {
+                            auto const now{seconds + nanos};
+                            remaining = timeout > now ? timeout - now : 0u;
+                        }
+                    }
+                }
+                if(remaining > env.limits.max_poll_wait_ns) { return error::enotcapable; }
+            }
+            clock.timeout = static_cast<decltype(clock.timeout)>(timeout);
+        }
+
+        ::uwvm2::imported::wasi::wasip1::environment::budget_reservation reservation{
+            ::uwvm2::imported::wasi::wasip1::environment::budget_kind::poll, env.limits, 0u};
+        if(!reservation) { return reservation.template error<::uwvm2::imported::wasi::wasip1::abi::errno_t>(); }
+#endif
+
+        if(
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            false &&
+#endif
+            nsubscriptions == 1u && subscriptions.front_unchecked().u.tag == ::uwvm2::imported::wasi::wasip1::abi::eventtype_t::eventtype_clock)
         {
             // Optional blocking behaviour: if there is exactly one clock subscription,
             // we can honour its timeout by sleeping before we evaluate events. This keeps
@@ -594,8 +725,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             // winnt 5.0+ WaitForMultipleObjectsEx
 
             // For those who use their own FD
-            ::uwvm2::utils::container::vector<::uwvm2::imported::wasi::wasip1::fd_manager::wasi_fd_t*> fd_p_vector{};
-            ::uwvm2::utils::container::vector<::uwvm2::utils::mutex::mutex_merely_release_guard_t> fd_release_guards_vector{};
+            ::uwvm2::imported::wasi::wasip1::func::recoverable_host_vector<::uwvm2::imported::wasi::wasip1::fd_manager::wasi_fd_t*> fd_p_vector{};
+            ::uwvm2::imported::wasi::wasip1::func::recoverable_host_vector<::uwvm2::utils::mutex::mutex_merely_release_guard_t> fd_release_guards_vector{};
             ::uwvm2::utils::container::unordered_flat_set<::uwvm2::imported::wasi::wasip1::fd_manager::wasi_fd_t*> fd_unique_set{};
 
             [[maybe_unused]] auto get_fd_from_wasm_fd{
@@ -681,7 +812,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 
             // Collect per-subscription immediate error events (for invalid FDs, rights, etc.),
             // so that poll_oneoff can still succeed globally while reporting errors per event.
-            ::uwvm2::utils::container::vector<::uwvm2::imported::wasi::wasip1::func::wasi_event_t> immediate_events{};
+            ::uwvm2::imported::wasi::wasip1::func::recoverable_host_vector<::uwvm2::imported::wasi::wasip1::func::wasi_event_t> immediate_events{};
 
             [[maybe_unused]] auto push_immediate_event{[&immediate_events](::uwvm2::imported::wasi::wasip1::func::wasi_subscription_t const& sub,
                                                                            ::uwvm2::imported::wasi::wasip1::abi::errno_t err) constexpr noexcept
@@ -764,7 +895,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
       defined(__NR_timerfd_settime) && (defined(__NR_epoll_wait) || defined(__NR_epoll_pwait))
             // syscall __NR_epoll_create1 or __NR_epoll_create, __NR_epoll_ctl, __NR_timerfd_create, __NR_timerfd_settime, epoll wait
 
-            ::uwvm2::utils::container::vector<::fast_io::posix_file> fds{};  // RAII Close
+            ::uwvm2::imported::wasi::wasip1::func::recoverable_host_vector<::fast_io::posix_file> fds{};  // RAII Close
             bool has_epoll_interest{};
 
             int const epfd{
@@ -787,7 +918,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             // add to raii close
             fds.push_back(::fast_io::posix_file{epfd});
 
-            ::uwvm2::utils::container::vector<struct ::epoll_event> ep_events{};
+            ::uwvm2::imported::wasi::wasip1::func::recoverable_host_vector<struct ::epoll_event> ep_events{};
             for(auto const& sub: subscriptions)
             {
                 switch(sub.u.tag)
@@ -936,66 +1067,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                         bool const is_abstime{(clock_flags & ::uwvm2::imported::wasi::wasip1::abi::subclockflags_t::subscription_clock_abstime) ==
                                               ::uwvm2::imported::wasi::wasip1::abi::subclockflags_t::subscription_clock_abstime};
 
-                        timestamp_integral_t effective_timeout{};
-
-                        if(!is_abstime) { effective_timeout = timeout_integral; }
-                        else
-                        {
-                            ::fast_io::posix_clock_id posix_id;  // no initialize
-
-                            switch(clock_id)
-                            {
-                                case ::uwvm2::imported::wasi::wasip1::abi::clockid_t::clock_realtime:
-                                {
-                                    posix_id = ::fast_io::posix_clock_id::realtime;
-                                    break;
-                                }
-                                case ::uwvm2::imported::wasi::wasip1::abi::clockid_t::clock_monotonic:
-                                {
-                                    posix_id = ::fast_io::posix_clock_id::monotonic;
-                                    break;
-                                }
-                                case ::uwvm2::imported::wasi::wasip1::abi::clockid_t::clock_process_cputime_id:
-                                {
-                                    posix_id = ::fast_io::posix_clock_id::process_cputime_id;
-                                    break;
-                                }
-                                case ::uwvm2::imported::wasi::wasip1::abi::clockid_t::clock_thread_cputime_id:
-                                {
-                                    posix_id = ::fast_io::posix_clock_id::thread_cputime_id;
-                                    break;
-                                }
-                                [[unlikely]] default:
-                                {
-                                    return ::uwvm2::imported::wasi::wasip1::abi::errno_t::einval;
-                                }
-                            }
-
-                            ::fast_io::unix_timestamp ts;
-#   if defined(UWVM_CPP_EXCEPTIONS)
-                            try
-#   endif
-                            {
-                                ts = ::fast_io::posix_clock_gettime(posix_id);
-                            }
-#   if defined(UWVM_CPP_EXCEPTIONS)
-                            catch(::fast_io::error)
-                            {
-                                return ::uwvm2::imported::wasi::wasip1::abi::errno_t::eio;
-                            }
-#   endif
-
-                            constexpr timestamp_integral_t mul_factor{
-                                static_cast<timestamp_integral_t>(::fast_io::uint_least64_subseconds_per_second / 1'000'000'000u)};
-
-                            auto const now_integral{static_cast<timestamp_integral_t>(ts.seconds * 1'000'000'000u + ts.subseconds / mul_factor)};
-
-                            if(now_integral >= timeout_integral) { effective_timeout = static_cast<timestamp_integral_t>(1u); }
-                            else
-                            {
-                                effective_timeout = timeout_integral - now_integral;
-                            }
-                        }
+                        // Keep the original clock domain and absolute deadline so
+                        // realtime adjustments while blocked retain their semantics.
+                        auto effective_timeout{timeout_integral};
 
                         constexpr timestamp_integral_t one_billion{1'000'000'000u};
 
@@ -1052,7 +1126,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                         ts.it_value.tv_sec = static_cast<decltype(ts.it_value.tv_sec)>(seconds_part);
                         ts.it_value.tv_nsec = static_cast<decltype(ts.it_value.tv_nsec)>(ns_rem);
 
-                        int ret{::fast_io::system_call<__NR_timerfd_settime, int>(tfd, 0, ::std::addressof(ts), nullptr)};
+                        int ret{::fast_io::system_call<__NR_timerfd_settime, int>(tfd, is_abstime ? TFD_TIMER_ABSTIME : 0, ::std::addressof(ts), nullptr)};
                         if(::uwvm2::imported::wasi::wasip1::func::posix::linux_raw_system_call_failed(ret)) [[unlikely]]
                         {
                             ::fast_io::error fe{};
@@ -1112,18 +1186,47 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             ep_events.resize(subscriptions.size());
 
             int ready{};
-
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            auto const deadline{::uwvm2::imported::wasi::wasip1::environment::deadline_from_ns(env.limits.max_poll_wait_ns)};
+#endif
             for(;;)
             {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                auto const readiness{::uwvm2::imported::wasi::wasip1::environment::wait_for_native_io(epfd,POLLIN,deadline)};
+                if(readiness == ::uwvm2::imported::wasi::wasip1::environment::quota_call_result::cancelled)
+                { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::ecanceled; }
+                if(readiness == ::uwvm2::imported::wasi::wasip1::environment::quota_call_result::wait_unavailable)
+                { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::eio; }
+#endif
 #   if defined(__NR_epoll_wait)
-                ready = ::fast_io::system_call<__NR_epoll_wait, int>(epfd, ep_events.data(), static_cast<int>(ep_events.size()), -1);
+                ready = ::fast_io::system_call<__NR_epoll_wait, int>(epfd, ep_events.data(), static_cast<int>(ep_events.size()),
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                    0
+#else
+                    -1
+#endif
+);
 #   else
                 // AArch64 exposes epoll_pwait instead of epoll_wait. A null
                 // signal mask preserves the current mask; Linux ignores its
                 // size when the mask is null. Keep the existing infinite wait.
                 ready = ::fast_io::system_call<__NR_epoll_pwait, int>(
-                    epfd, ep_events.data(), static_cast<int>(ep_events.size()), -1, static_cast<void const*>(nullptr), ::std::size_t{});
+                    epfd, ep_events.data(), static_cast<int>(ep_events.size()),
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                    0
+#else
+                    -1
+#endif
+, static_cast<void const*>(nullptr), ::std::size_t{});
 #   endif
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                if(::uwvm2::imported::wasi::wasip1::environment::host_wait_cancelled())
+                { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::ecanceled; }
+                auto const now{::uwvm2::utils::host_clock::now()};
+                if(!::uwvm2::utils::host_clock::available()) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::eio; }
+                if(ready == 0 && now < deadline) { continue; }
+                if(ready == 0) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::etimedout; }
+#endif
                 if(!::uwvm2::imported::wasi::wasip1::func::posix::linux_raw_system_call_failed(ready)) { break; }
 
                 auto err{-ready};
@@ -1249,8 +1352,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 
             // syscall __NR_poll
 
-            ::uwvm2::utils::container::vector<struct ::pollfd> poll_fds{};
-            ::uwvm2::utils::container::vector<::uwvm2::imported::wasi::wasip1::func::wasi_subscription_t const*> poll_subs{};
+            ::uwvm2::imported::wasi::wasip1::func::recoverable_host_vector<struct ::pollfd> poll_fds{};
+            ::uwvm2::imported::wasi::wasip1::func::recoverable_host_vector<::uwvm2::imported::wasi::wasip1::func::wasi_subscription_t const*> poll_subs{};
 
             // Record clock subscriptions and their corresponding relative timeouts (unit: ns)
             using timestamp_integral_t = ::std::underlying_type_t<::uwvm2::imported::wasi::wasip1::abi::timestamp_t>;
@@ -1261,7 +1364,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                 timestamp_integral_t effective_timeout_ns{};
             };
 
-            ::uwvm2::utils::container::vector<clock_sub_entry> clock_subs{};
+            ::uwvm2::imported::wasi::wasip1::func::recoverable_host_vector<clock_sub_entry> clock_subs{};
             bool have_clock_timeout{};
             timestamp_integral_t min_clock_timeout_ns{};
 
@@ -1991,7 +2094,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             // Newer BSD
             // kqueue()
 
-            ::uwvm2::utils::container::vector<::fast_io::posix_file> fds{};  // RAII Close for kqueue fd
+            ::uwvm2::imported::wasi::wasip1::func::recoverable_host_vector<::fast_io::posix_file> fds{};  // RAII Close for kqueue fd
 
             int const kq{::uwvm2::imported::wasi::wasip1::func::posix::kqueue()};
             if(kq == -1)
@@ -2013,8 +2116,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                 timestamp_integral_t effective_timeout_ns{};
             };
 
-            ::uwvm2::utils::container::vector<struct ::kevent> change_list{};
-            ::uwvm2::utils::container::vector<clock_sub_entry> clock_subs{};
+            ::uwvm2::imported::wasi::wasip1::func::recoverable_host_vector<struct ::kevent> change_list{};
+            ::uwvm2::imported::wasi::wasip1::func::recoverable_host_vector<clock_sub_entry> clock_subs{};
             bool have_clock_timeout{};
             timestamp_integral_t min_clock_timeout_ns{};
 
@@ -2264,7 +2367,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                 return ::uwvm2::imported::wasi::wasip1::abi::errno_t::eoverflow;
             }
 
-            ::uwvm2::utils::container::vector<struct ::kevent> events{};
+            ::uwvm2::imported::wasi::wasip1::func::recoverable_host_vector<struct ::kevent> events{};
             events.resize(subscriptions.size());
 
             int const max_events{static_cast<int>(events.size())};
@@ -2451,20 +2554,20 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             // Windows NT
             constexpr bool zw_flag_nt{false};
 
-            ::uwvm2::utils::container::vector<void*> wait_handles{};
-            ::uwvm2::utils::container::vector<::fast_io::nt_file> wait_timer_handles{};  // RAII
-            ::uwvm2::utils::container::vector<::std::size_t> wait_socket_handles{};
-            ::uwvm2::utils::container::vector<::fast_io::win32_socket_event_guard_t> wait_socket_events{};  /// RAII
+            ::uwvm2::imported::wasi::wasip1::func::recoverable_host_vector<void*> wait_handles{};
+            ::uwvm2::imported::wasi::wasip1::func::recoverable_host_vector<::fast_io::nt_file> wait_timer_handles{};  // RAII
+            ::uwvm2::imported::wasi::wasip1::func::recoverable_host_vector<::std::size_t> wait_socket_handles{};
+            ::uwvm2::imported::wasi::wasip1::func::recoverable_host_vector<::fast_io::win32_socket_event_guard_t> wait_socket_events{};  /// RAII
 
             struct socket_wait_group_nt
             {
                 ::std::size_t socket_handle{};
                 ::std::uint_least32_t network_events{};
-                ::uwvm2::utils::container::vector<wasi_subscription_t const*> subs{};
+                ::uwvm2::imported::wasi::wasip1::func::recoverable_host_vector<wasi_subscription_t const*> subs{};
                 ::std::size_t socket_wait_index{static_cast<::std::size_t>(-1)};
             };
 
-            ::uwvm2::utils::container::vector<socket_wait_group_nt> socket_groups_nt{};
+            ::uwvm2::imported::wasi::wasip1::func::recoverable_host_vector<socket_wait_group_nt> socket_groups_nt{};
 
             enum class wait_handle_type_nt : unsigned
             {
@@ -2483,7 +2586,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                 } u{};
             };
 
-            ::uwvm2::utils::container::vector<wait_handle_info_nt> wait_infos_nt{};
+            ::uwvm2::imported::wasi::wasip1::func::recoverable_host_vector<wait_handle_info_nt> wait_infos_nt{};
 
             // Process clock subscriptions to determine minimum timeout (ms)
             using timestamp_integral_t_nt = ::std::underlying_type_t<::uwvm2::imported::wasi::wasip1::abi::timestamp_t>;
@@ -2952,7 +3055,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             }
 
             ::uwvm2::imported::wasi::wasip1::abi::wasi_size_t produced_nt{};
-            ::uwvm2::utils::container::vector<wasi_event_t> ready_events_nt{};
+            ::uwvm2::imported::wasi::wasip1::func::recoverable_host_vector<wasi_event_t> ready_events_nt{};
 
             for(auto const& evt: immediate_events) { ready_events_nt.push_back(evt); }
 
@@ -3155,8 +3258,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             // POSIX.1-2001
             // libc: poll()
 
-            ::uwvm2::utils::container::vector<struct ::pollfd> poll_fds{};
-            ::uwvm2::utils::container::vector<::uwvm2::imported::wasi::wasip1::func::wasi_subscription_t const*> poll_subs{};
+            ::uwvm2::imported::wasi::wasip1::func::recoverable_host_vector<struct ::pollfd> poll_fds{};
+            ::uwvm2::imported::wasi::wasip1::func::recoverable_host_vector<::uwvm2::imported::wasi::wasip1::func::wasi_subscription_t const*> poll_subs{};
 
             // Record clock subscriptions and their corresponding relative timeouts (unit: ns)
             using timestamp_integral_t = ::std::underlying_type_t<::uwvm2::imported::wasi::wasip1::abi::timestamp_t>;
@@ -3167,7 +3270,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                 timestamp_integral_t effective_timeout_ns{};
             };
 
-            ::uwvm2::utils::container::vector<clock_sub_entry> clock_subs{};
+            ::uwvm2::imported::wasi::wasip1::func::recoverable_host_vector<clock_sub_entry> clock_subs{};
             bool have_clock_timeout{};
             timestamp_integral_t min_clock_timeout_ns{};
 
@@ -3663,8 +3766,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             // POSIX.1-1988/1990
             // select()
 
-            ::uwvm2::utils::container::vector<::uwvm2::imported::wasi::wasip1::func::wasi_subscription_t const*> fd_subs{};
-            ::uwvm2::utils::container::vector<int> native_fds{};
+            ::uwvm2::imported::wasi::wasip1::func::recoverable_host_vector<::uwvm2::imported::wasi::wasip1::func::wasi_subscription_t const*> fd_subs{};
+            ::uwvm2::imported::wasi::wasip1::func::recoverable_host_vector<int> native_fds{};
 
             using timestamp_integral_t = ::std::underlying_type_t<::uwvm2::imported::wasi::wasip1::abi::timestamp_t>;
 
@@ -3674,7 +3777,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                 timestamp_integral_t effective_timeout_ns{};
             };
 
-            ::uwvm2::utils::container::vector<clock_sub_entry> clock_subs{};
+            ::uwvm2::imported::wasi::wasip1::func::recoverable_host_vector<clock_sub_entry> clock_subs{};
             bool have_clock_timeout{};
             timestamp_integral_t min_clock_timeout_ns{};
 
@@ -4220,6 +4323,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         }
 
         return ::uwvm2::imported::wasi::wasip1::abi::errno_t::esuccess;
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(UWVM_CPP_EXCEPTIONS)
+        }
+        catch(::fast_io::error const&) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::eio; }
+        catch(::std::bad_alloc const&) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enomem; }
+        catch(::std::length_error const&) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::eoverflow; }
+#endif
     }
 }
 

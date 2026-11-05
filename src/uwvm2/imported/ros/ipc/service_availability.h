@@ -12,7 +12,8 @@ namespace uwvm2::imported::ros::ipc::client_availability
     // Trusted Host supplies this envelope AFTER both actual capability leases.
     // Generation fields are associations, not independent IPC credentials.
     inline constexpr std::size_t bytes{64};
-    inline constexpr std::uint64_t maximum_wait_ns{60000000000ULL};
+    // The wire stores the full u64 duration; only an explicit grant limits it.
+    inline constexpr std::uint64_t maximum_wait_ns{UINT64_MAX};
     enum class command : std::uint8_t { features=0,query=1,retire=2 };
     enum class retirement : std::uint8_t
     {none=0,availability_handle=1,source_handle=2,availability_alias=4,source_alias=8};

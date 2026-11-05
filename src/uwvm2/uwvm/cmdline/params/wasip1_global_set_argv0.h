@@ -69,7 +69,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
         .name{u8"--wasip1-global-set-argv0"},
         .describe{u8"Override the global-default WASI Preview 1 argv[0]."},
         .usage{u8"<argv0:str>"},
+#  if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
         .alias{::uwvm2::utils::cmdline::kns_u8_str_scatter_t{details::wasip1_global_set_argv0_alias.data(), details::wasip1_global_set_argv0_alias.size()}},
+#  endif
         .handle{::std::addressof(details::wasip1_global_set_argv0_callback)},
         .is_exist{::std::addressof(details::wasip1_global_set_argv0_is_exist)},
         .cate{::uwvm2::utils::cmdline::categorization::wasi}};

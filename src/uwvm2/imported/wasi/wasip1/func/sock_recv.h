@@ -104,14 +104,31 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_t ro_data_len_ptrsz,
         ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_t ro_flags_ptrsz) noexcept
     {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        if(!env.exposes(u8"sock_recv")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+        // No qualified per-endpoint bounded network provider in this profile.
+        return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotsup;
+#endif
+
 
         auto const memory_pointer{env.get_memory()};
         if(memory_pointer == nullptr) [[unlikely]] { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
         auto& memory{*memory_pointer};
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        // Validate every result buffer before any native side effect or partial
+        // output. Memory may grow, but cannot shrink during an active host call.
+        if(!check_wasip1_memory_bounds_wasm32(memory, ro_data_len_ptrsz, 4uz) ||
+           !check_wasip1_memory_bounds_wasm32(memory, ro_flags_ptrsz, 2uz))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
+#endif
 
-        check_wasip1_guest_pointer_alignment<4uz>(ri_data_ptrsz, u8"sock_recv.ri_data (iovec)");
-        check_wasip1_guest_pointer_alignment<4uz>(ro_data_len_ptrsz, u8"sock_recv.ro_data_len (size)");
-        check_wasip1_guest_pointer_alignment<2uz>(ro_flags_ptrsz, u8"sock_recv.ro_flags (roflags)");
+
+        if(!check_wasip1_guest_pointer_alignment<4uz>(ri_data_ptrsz, u8"sock_recv.ri_data (iovec)"))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::einval; }
+        if(!check_wasip1_guest_pointer_alignment<4uz>(ro_data_len_ptrsz, u8"sock_recv.ro_data_len (size)"))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::einval; }
+        if(!check_wasip1_guest_pointer_alignment<2uz>(ro_flags_ptrsz, u8"sock_recv.ro_flags (roflags)"))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::einval; }
 
         auto const trace_wasip1_call{env.trace_wasip1_call};
 
@@ -312,9 +329,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         }
 
         // check memory bounds
-        ::uwvm2::imported::wasi::wasip1::memory::check_memory_bounds_wasm32(memory,
+        if(!::uwvm2::imported::wasi::wasip1::func::check_wasip1_memory_bounds_wasm32(memory,
                                                                             ri_data_ptrsz,
-                                                                            ri_data_len * ::uwvm2::imported::wasi::wasip1::abi::size_of_wasi_iovec_t);
+                                                                            ri_data_len * ::uwvm2::imported::wasi::wasip1::abi::size_of_wasi_iovec_t))
+            { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
 
         // If ptr is null, it indicates an attempt to open a closed file. However, the preceding check for close pos already prevents such closed files from
         // being processed, making this a virtual machine implementation error.
@@ -429,7 +447,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                     }
 
                     // It is necessary to verify whether the memory referenced within the WASM is sufficient.
-                    ::uwvm2::imported::wasi::wasip1::memory::check_memory_bounds_wasm32_unlocked(memory, wasm_base, wasm_len);
+                    if(!::uwvm2::imported::wasi::wasip1::func::check_wasip1_memory_bounds_wasm32_unlocked(memory, wasm_base, wasm_len))
+            { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
 
                     auto& curr_tmp_scatter_base{scatter_base[i]};
 
@@ -801,7 +820,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                         iovs_curr += sizeof(::uwvm2::imported::wasi::wasip1::abi::wasi_size_t);
                     }
 
-                    ::uwvm2::imported::wasi::wasip1::memory::check_memory_bounds_wasm32_unlocked(memory, wasm_base, wasm_len);
+                    if(!::uwvm2::imported::wasi::wasip1::func::check_wasip1_memory_bounds_wasm32_unlocked(memory, wasm_base, wasm_len))
+            { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
 
                     if(wasm_len > ::std::numeric_limits<::uwvm2::imported::wasi::wasip1::abi::wasi_size_t>::max() - length_counter) [[unlikely]]
                     {

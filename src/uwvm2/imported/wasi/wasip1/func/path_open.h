@@ -103,12 +103,30 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         ::uwvm2::imported::wasi::wasip1::abi::fdflags_t fdflags,
         ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_t fd_ptrsz) noexcept
     {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        if(!env.exposes(u8"path_open")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+#endif
+
         auto const memory_pointer{env.get_memory()};
         if(memory_pointer == nullptr) [[unlikely]] { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
         auto& memory{*memory_pointer};
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        // Check all guest path ranges before copying either path or invoking native I/O.
+        if(!check_wasip1_memory_bounds_wasm32(memory, path_ptrsz, path_len))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
+#endif
+
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        // Validate every result buffer before any native side effect or partial
+        // output. Memory may grow, but cannot shrink during an active host call.
+        if(!check_wasip1_memory_bounds_wasm32(memory, fd_ptrsz, 4uz))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
+#endif
+
 
         // path_ptrsz is ConstPointer<u8> (alignment 1).
-        check_wasip1_guest_pointer_alignment<4uz>(fd_ptrsz, u8"path_open.fd (fd)");
+        if(!check_wasip1_guest_pointer_alignment<4uz>(fd_ptrsz, u8"path_open.fd (fd)"))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::einval; }
 
         auto const trace_wasip1_call{env.trace_wasip1_call};
 
@@ -359,7 +377,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                 // Full locking is required during reading.
                 [[maybe_unused]] auto const memory_locker_guard{::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory)};
 
-                ::uwvm2::imported::wasi::wasip1::memory::check_memory_bounds_wasm32_unlocked(memory, path_ptrsz, path_len);
+                if(!::uwvm2::imported::wasi::wasip1::func::check_wasip1_memory_bounds_wasm32_unlocked(memory, path_ptrsz, path_len))
+            { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
 
                 using char8_t_const_may_alias_ptr UWVM_GNU_MAY_ALIAS = char8_t const*;
 
@@ -432,9 +451,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             }
 
             // check posixfd buffer
-            ::uwvm2::imported::wasi::wasip1::memory::check_memory_bounds_wasm32(memory,
+            if(!::uwvm2::imported::wasi::wasip1::func::check_wasip1_memory_bounds_wasm32(memory,
                                                                                 fd_ptrsz,
-                                                                                sizeof(::uwvm2::imported::wasi::wasip1::abi::wasi_posix_fd_t));
+                                                                                sizeof(::uwvm2::imported::wasi::wasip1::abi::wasi_posix_fd_t)))
+            { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
 
             // storage, This is new file descriptor; no need to lock it.
             new_wasi_fd.fd_p->rights_base = fs_rights_base;
@@ -463,8 +483,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             auto const is_write{(fs_rights_base & ::uwvm2::imported::wasi::wasip1::abi::rights_t::right_fd_write) ==
                                 ::uwvm2::imported::wasi::wasip1::abi::rights_t::right_fd_write};
 
-            // If the request is truncated, write permissions must be granted.
-            if(is_trunc && !is_write) [[unlikely]] { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::einval; }
+            // Truncation is a path operation authorized by the parent's
+            // PATH_FILESTAT_SET_SIZE below. It does not require or add FD_WRITE
+            // authority on the returned descriptor.
             if(is_dir)
             {
                 if(is_trunc || is_append || is_excl || is_creat) [[unlikely]] { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::einval; }
@@ -488,6 +509,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             // The Win32 provider cannot preserve WASI SYNC semantics/flags.
             if(is_sync) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotsup; }
 # endif
+
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            bool const filesystem_operation{dirfd >= 3};
+            ::uwvm2::imported::wasi::wasip1::environment::budget_reservation filesystem_reservation{
+                ::uwvm2::imported::wasi::wasip1::environment::budget_kind::filesystem_io, env.limits, 0u, filesystem_operation};
+            if(filesystem_operation && !filesystem_reservation) { return filesystem_reservation.template error<::uwvm2::imported::wasi::wasip1::abi::errno_t>(); }
+#endif
 
             // WASI access rights never imply O_CREAT/O_TRUNC (or their NT equivalents).
             ::fast_io::open_mode fast_io_oflags{::fast_io::open_mode::explicit_disposition};
@@ -517,9 +545,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             }
 
             if(is_read) { fast_io_oflags |= ::fast_io::open_mode::in; }
-            if(is_write) { fast_io_oflags |= ::fast_io::open_mode::out; }
+            // Native write access performs only the explicitly authorized
+            // open-time truncation. Child rights remain exactly as requested.
+            if(is_write || is_trunc) { fast_io_oflags |= ::fast_io::open_mode::out; }
 
-            if(!is_read && !is_write && !is_dir) { fast_io_oflags |= ::fast_io::open_mode::in; }
+            if(!is_read && !is_write && !is_dir && !is_trunc) { fast_io_oflags |= ::fast_io::open_mode::in; }
 
             // fast_io no fsync and dsync
 
@@ -672,7 +702,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 # endif
                                                 {
                                                     // dir_file default nofollow
-                                                    new_dir_file = ::fast_io::dir_file{at(curr_fd_native_file), open_file_name, fast_io_oflags};
+                                                    new_dir_file = ::uwvm2::imported::wasi::wasip1::func::open_authorized_directory(at(curr_fd_native_file), open_file_name, fast_io_oflags);
 
 # if defined(__CYGWIN__)
                                                     // Cygwin uses the Win32 CreateFile function internally to open directories, allowing both directories and
@@ -764,7 +794,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 # endif
                                                 {
                                                     // dir_file default nofollow
-                                                    new_dir_file = ::fast_io::dir_file{at(path_stack.back_unchecked().file), open_file_name, fast_io_oflags};
+                                                    new_dir_file = ::uwvm2::imported::wasi::wasip1::func::open_authorized_directory(at(path_stack.back_unchecked().file), open_file_name, fast_io_oflags);
 
 # if defined(__CYGWIN__)
                                                     // Cygwin uses the Win32 CreateFile function internally to open directories, allowing both directories and
@@ -862,7 +892,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 # endif
                                         {
                                             // dir_file default nofollow
-                                            new_dir_file = ::fast_io::dir_file{at(curr_fd_native_file), open_file_name, fast_io_oflags};
+                                            new_dir_file = ::uwvm2::imported::wasi::wasip1::func::open_authorized_directory(at(curr_fd_native_file), open_file_name, fast_io_oflags);
 
 # if defined(__CYGWIN__)
                                             // Cygwin uses the Win32 CreateFile function internally to open directories, allowing both directories and files
@@ -998,7 +1028,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 # endif
                                                 {
                                                     // dir_file default nofollow
-                                                    new_dir_file = ::fast_io::dir_file{at(curr_fd_native_file), open_file_name, fast_io_oflags};
+                                                    new_dir_file = ::uwvm2::imported::wasi::wasip1::func::open_authorized_directory(at(curr_fd_native_file), open_file_name, fast_io_oflags);
 
 # if defined(__CYGWIN__)
                                                     // Cygwin uses the Win32 CreateFile function internally to open directories, allowing both directories and
@@ -1090,7 +1120,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 # endif
                                                 {
                                                     // dir_file default nofollow
-                                                    new_dir_file = ::fast_io::dir_file{at(path_stack.back_unchecked().file), open_file_name, fast_io_oflags};
+                                                    new_dir_file = ::uwvm2::imported::wasi::wasip1::func::open_authorized_directory(at(path_stack.back_unchecked().file), open_file_name, fast_io_oflags);
 
 # if defined(__CYGWIN__)
                                                     // Cygwin uses the Win32 CreateFile function internally to open directories, allowing both directories and
@@ -1188,7 +1218,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 # endif
                                         {
                                             // dir_file default nofollow
-                                            new_dir_file = ::fast_io::dir_file{at(path_stack.back_unchecked().file), open_file_name, fast_io_oflags};
+                                            new_dir_file = ::uwvm2::imported::wasi::wasip1::func::open_authorized_directory(at(path_stack.back_unchecked().file), open_file_name, fast_io_oflags);
 
 # if defined(__CYGWIN__)
                                             // Cygwin uses the Win32 CreateFile function internally to open directories, allowing both directories and files
@@ -1344,7 +1374,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 # endif
                                     {
                                         // default is symlink_nofollow
-                                        next = ::fast_io::dir_file{at(curr_fd_native_file), next_name};
+                                        next = ::uwvm2::imported::wasi::wasip1::func::open_authorized_directory(at(curr_fd_native_file), next_name);
 
                                         // The `Win32 CreateFileW` function can simultaneously open both a directory and a file when specifying a
                                         // directory. However, under the current fast_io strategy, `dir_file` does not utilize `CreateFileW`.
@@ -1433,7 +1463,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 # endif
                                     {
                                         // default is symlink_nofollow
-                                        next = ::fast_io::dir_file{at(path_stack.back_unchecked().file), next_name};
+                                        next = ::uwvm2::imported::wasi::wasip1::func::open_authorized_directory(at(path_stack.back_unchecked().file), next_name);
 
                                         // The `Win32 CreateFileW` function can simultaneously open both a directory and a file when specifying a
                                         // directory. However, under the current fast_io strategy, `dir_file` does not utilize `CreateFileW`.

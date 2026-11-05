@@ -18,6 +18,7 @@ namespace uwvm2::imported::ros
 {
     inline bool connection_key(version v, ::std::string_view key) noexcept
     {
+        if(key == "connect-timeout-ms.on-proc-exit") { return true; }
         if(key == "call-boundary") { return true; }
         if(key == "audit-deny-max-rate-hz" || key == "audit-deny-burst" || key == "audit-deny-max-records" || key == "audit-deny-max-bytes") { return true; }
         if(key == "gateway-socket" || key == "gateway-uid" || key == "node-name" || key == "namespace" || key == "connect-timeout-ms") { return true; }
@@ -31,19 +32,23 @@ namespace uwvm2::imported::ros
         {
             return {errc::invalid_argument, "unknown or empty connection field"};
         }
-        if(key == "call-boundary")
+        if(key == "connect-timeout-ms.on-proc-exit")
+        {
+            if(value!="cancel" && value!="wait") { return {errc::invalid_argument,"connection exit action requires cancel or wait"}; }
+        }
+        else if(key == "call-boundary")
         {
             if(value != "same-module" && value != "module-exports") { return {errc::invalid_argument, "call-boundary requires same-module or module-exports"}; }
         }
         else if(key == "audit-deny-max-rate-hz")
         {
             double n{};
-            if(!parse_positive_double(value, n) || n > 1000000.) { return {errc::invalid_argument, "denial audit rate must be finite positive <=1000000"}; }
+            if(value!="unlimited" && value!="0" && !parse_positive_double(value,n)) { return {errc::invalid_argument, "denial audit rate must be nonnegative finite or unlimited"}; }
         }
         else if(key == "audit-deny-burst" || key == "audit-deny-max-records" || key == "audit-deny-max-bytes")
         {
-            ::std::uint64_t n{}; auto maximum{key == "audit-deny-max-bytes" ? 67108864ULL : 1048576ULL};
-            if(!parse_u64(value, n) || !n || n > maximum) { return {errc::invalid_argument, "denial audit integer limit outside public range"}; }
+            ::std::uint64_t n{};
+            if(!quota_integer(value,n)) { return {errc::invalid_argument, "denial audit integer limit outside public range"}; }
         }
         else if(key == "gateway-socket")
         {
@@ -56,10 +61,16 @@ namespace uwvm2::imported::ros
         }
         else if(key == "namespace")
         { if(!canonical_resource(value, true)) { return {errc::invalid_argument, "namespace must be canonical and absolute"}; } }
-        else if(key == "gateway-uid" || key == "domain-id" || key == "connect-timeout-ms")
+        else if(key == "connect-timeout-ms")
         {
             ::std::uint64_t n{};
-            if(!parse_u64(value, n) || (key == "gateway-uid" && n > 4294967294ULL) || (key == "domain-id" && n > 232) || (key == "connect-timeout-ms" && (!n || n > 60000)))
+            if(value!="unlimited" && (!quota_integer(value,n) || n>UINT32_MAX))
+            { return {errc::invalid_argument,"connection timeout must fit the millisecond ABI or be unlimited"}; }
+        }
+        else if(key == "gateway-uid" || key == "domain-id")
+        {
+            ::std::uint64_t n{};
+            if(!parse_u64(value, n) || (key == "gateway-uid" && n > 4294967294ULL) || (key == "domain-id" && n > 232))
             { return {errc::invalid_argument, "connection number outside explicit range"}; }
         }
         else if(key == "transport") { if(value != "tcpros") { return {errc::unsupported, "only TCPROS is implemented"}; } }
@@ -98,17 +109,12 @@ namespace uwvm2::imported::ros
         {
             if(auto r{validate_connection_value(target.ros_version, key, value)}; !r) { return r; }
         }
-        if(target.enabled)
+        if(target.enabled && !target.capabilities.empty())
         {
             ::std::vector<::std::string_view> required{"gateway-socket",
                                                        "gateway-uid",
                                                        "node-name",
-                                                       "namespace",
-                                                       "connect-timeout-ms",
-                                                       "audit-deny-max-rate-hz",
-                                                       "audit-deny-burst",
-                                                       "audit-deny-max-records",
-                                                       "audit-deny-max-bytes"};
+                                                       "namespace"};
             if(target.ros_version == version::ros1) { required.insert(required.end(), {"master-uri", "advertise-host", "transport"}); }
             else
             {
@@ -132,12 +138,12 @@ namespace uwvm2::imported::ros
                 }
             }
         }
-        if(!target.enabled)
-        {
-            unsigned explicit_audit{};
-            for(auto key : {"audit-deny-max-rate-hz", "audit-deny-burst", "audit-deny-max-records", "audit-deny-max-bytes"}) { explicit_audit += target.connection.contains(key); }
-            if(explicit_audit && explicit_audit != 4) { return {errc::invalid_argument, "disabled target denial audit fields must be supplied all together"}; }
-        }
+        auto const rate{target.connection.find("audit-deny-max-rate-hz")};
+        auto const burst{target.connection.find("audit-deny-burst")};
+        bool const finite_rate{rate!=target.connection.end() && rate->second!="unlimited"};
+        bool const finite_burst{burst!=target.connection.end() && burst->second!="unlimited"};
+        if(finite_rate!=finite_burst)
+        { return {errc::invalid_argument,"denial audit rate and burst must be finite together"}; }
         ::std::set<::std::tuple<::std::string, ::std::string, ::std::string>> duplicates{};
         ::std::map<::std::string, ::std::string, ::std::less<>> resource_types{};
         for(auto const& [alias, cap] : target.capabilities)
@@ -262,6 +268,31 @@ namespace uwvm2::imported::ros
             { return {errc::conflict, "module already explicitly bound in this ROS version"}; }
             return {};
         }
+        result bind_global_module(version v, ::std::string_view module)
+        {
+            if(!valid_version(v) || !valid_module_name(module))
+            { return {errc::invalid_argument, "invalid explicit Global module binding"}; }
+            if(!bindings.emplace(::std::pair{v, ::std::string(module)}, ::std::pair{scope::global, ::std::string{}}).second)
+            { return {errc::conflict, "module already explicitly bound in this ROS version"}; }
+            return {};
+        }
+        [[nodiscard]] static constexpr bool namespace_matches(version v, ::std::string_view name_space) noexcept
+        {
+            return v == version::ros1 ?
+                (name_space == "uwvm_ros1_v1" || name_space == "uwvm_ros1_client_v1") :
+                v == version::ros2 &&
+                (name_space == "uwvm_ros2_v1" || name_space == "uwvm_ros2_client_v1" ||
+                 name_space == "uwvm_ros2_rmw_v1" || name_space == "uwvm_ros2_rmw_sub_v1" ||
+                 name_space == "uwvm_ros2_rmw_srv_v1" || name_space == "uwvm_portable_robot_v1");
+        }
+        [[nodiscard]] bool host_import_visible(version v, ::std::string_view module,
+                                                ::std::string_view name_space) const noexcept
+        {
+            auto const target{effective(v, module)};
+            // Version enable exposes its complete registered ABI. It creates
+            // no operation, resource, native connection or portable grant.
+            return namespace_matches(v,name_space) && target && target->enabled;
+        }
         result set_enabled(version v, scope s, ::std::string_view name, bool enabled)
         {
             auto target{mutable_target(v, s, name)};
@@ -294,13 +325,21 @@ namespace uwvm2::imported::ros
             auto it{target->capabilities.find(alias)};
             if(it == target->capabilities.end()) { return {errc::invalid_argument, "unknown capability alias"}; }
             auto fields{operation_schema(v, it->second.operation, it->second.type)};
+            bool action_field{};
+            if(key.ends_with(".on-exhausted") || key.ends_with(".on-proc-exit"))
+            {
+                auto base{key.substr(0,key.size()-13)};
+                action_field=(base=="native-wait" && key.ends_with(".on-proc-exit")) ||
+                    (resource_quota_field(base) && (::std::find(fields.begin(),fields.end(),base)!=fields.end() ||
+                     base=="max-pending-events" || base=="max-pending-event-bytes" || base=="max-parameter-elements"));
+            }
             bool parent_search{v == version::ros1 && it->second.operation == "param.search" && key == "search-parent-namespaces"};
             bool custom_codec{key == "adapter-codec-identity" &&
                               (ipc::find_custom_topic_for_operation(static_cast<unsigned>(v), it->second.type, it->second.operation) ||
                                ipc::find_custom_service(static_cast<unsigned>(v), it->second.type) ||
                                ipc::find_custom_action(static_cast<unsigned>(v), it->second.type))};
             bool pending_field{(key == "max-pending-events" || key == "max-pending-event-bytes") && ::std::find(fields.begin(),fields.end(),"overflow-policy") != fields.end()};
-            if(value.empty() || value.size() > 1024 || (::std::find(fields.begin(), fields.end(), key) == fields.end() && key != "twist.linear-max-abs" && key != "twist.angular-max-abs" && key != "parameter-min-value" && key != "parameter-max-value" && key != "max-parameter-elements" && !parent_search && !custom_codec && !pending_field))
+            if(value.empty() || value.size() > 1024 || (::std::find(fields.begin(), fields.end(), key) == fields.end() && key != "twist.linear-max-abs" && key != "twist.angular-max-abs" && key != "parameter-min-value" && key != "parameter-max-value" && key != "max-parameter-elements" && !parent_search && !custom_codec && !pending_field && !action_field))
             { return {errc::invalid_argument, "unknown/inapplicable capability field"}; }
             if(parent_search && value != "true" && value != "false")
             { return {errc::invalid_argument, "parent parameter search must explicitly be true or false"}; }
@@ -315,7 +354,14 @@ namespace uwvm2::imported::ros
         target_policy const* effective(version v, ::std::string_view module) const noexcept
         {
             auto it{bindings.find(::std::pair{v, module})};
-            if(it == bindings.end()) { return find_target(v, scope::global, ""); }
+            if(it == bindings.end())
+            {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                return nullptr;
+#else
+                return find_target(v, scope::global, "");
+#endif
+            }
             return find_target(v, it->second.first, it->second.second);
         }
         ::std::vector<target_policy const*> configured_targets() const
@@ -379,7 +425,7 @@ namespace uwvm2::imported::ros
             {
                 if(!first) { ::fast_io::print(stream,","); } first = false;
                 auto target{effective(v, name)};
-                ::fast_io::print(stream,"{\"module\":",json_quoted{name},",\"scope\":",json_quoted{target ? to_string(target->target_scope) : "global"},
+                ::fast_io::print(stream,"{\"module\":",json_quoted{name},",\"scope\":",json_quoted{target ? to_string(target->target_scope) : "unbound"},
                     ",\"target\":",json_quoted{target ? ::std::string_view{target->name} : ::std::string_view{}},
                     ",\"enabled\":",::std::string_view{target && target->enabled ? "true" : "false"},"}");
             }

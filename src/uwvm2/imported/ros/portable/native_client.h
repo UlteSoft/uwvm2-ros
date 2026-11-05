@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
+#ifndef UWVM_MODULE
+#include <uwvm2/utils/thread/monotonic_clock.h>
+#endif
 #include "deployment.h"
 #include "command_state.h"
 #include <uwvm2/imported/ros/ipc/unix.h>
@@ -30,8 +33,8 @@ namespace uwvm2::imported::ros::portable
     }
     inline ::std::uint64_t monotonic_ns() noexcept
     {
-        auto n{::std::chrono::duration_cast<::std::chrono::nanoseconds>(::std::chrono::steady_clock::now().time_since_epoch()).count()};
-        return n>0?static_cast<::std::uint64_t>(n):0u;
+        auto n{::std::chrono::duration_cast<::std::chrono::nanoseconds>(::uwvm2::utils::host_clock::now().time_since_epoch()).count()};
+        return ::uwvm2::utils::host_clock::available() && n>0?static_cast<::std::uint64_t>(n):UINT64_MAX;
     }
     class joint_native_client final
     {
@@ -49,7 +52,7 @@ namespace uwvm2::imported::ros::portable
             ::fast_io::sha256_context hash{};::std::array<::std::byte,65536> buffer{};off_t offset{};
             while(offset!=before.st_size)
             {
-                if(::std::chrono::steady_clock::now()>=until) { return false; }
+                if(::uwvm2::utils::host_clock::now()>=until || !::uwvm2::utils::host_clock::available()) { return false; }
                 auto size{::std::min<::std::uint64_t>(buffer.size(),static_cast<::std::uint64_t>(before.st_size-offset))};
                 auto count{::pread(fd,buffer.data(),static_cast<::std::size_t>(size),offset)};
                 if(count<0&&errno==EINTR) { continue; }if(count<=0) { return false; }
@@ -64,7 +67,7 @@ namespace uwvm2::imported::ros::portable
                 before.st_dev==after.st_dev&&before.st_ino==after.st_ino&&before.st_size==after.st_size&&
                 before.st_mtim.tv_sec==after.st_mtim.tv_sec&&before.st_mtim.tv_nsec==after.st_mtim.tv_nsec&&
                 before.st_ctim.tv_sec==after.st_ctim.tv_sec&&before.st_ctim.tv_nsec==after.st_ctim.tv_nsec&&
-                selected.st_dev==before.st_dev&&selected.st_ino==before.st_ino&&::std::chrono::steady_clock::now()<until;
+                selected.st_dev==before.st_dev&&selected.st_ino==before.st_ino&&::uwvm2::utils::host_clock::now()<until&&::uwvm2::utils::host_clock::available();
         }
 #endif
     public:

@@ -51,6 +51,10 @@ module;
 # endif
 #endif
 
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(__linux__)
+# include <sys/vfs.h>
+#endif
+
 export module uwvm2.uwvm.imported.wasi.wasip1.init:init_env;
 
 import uwvm2.uwvm.debugger.wasip1_calls;

@@ -23,16 +23,16 @@ int main(int argc,char** argv)
  w::fd_manager::record_checkpoint_path(provenance,chain,u8"existing.bin",true);
  require(provenance.checkpoint_reopenable && provenance.checkpoint_mount==u8"regression-root" && provenance.checkpoint_path==u8"existing.bin" && provenance.checkpoint_follow,"canonical path recorded before moving native owners");
  w::fd_manager::record_checkpoint_path(provenance,chain,u8"./existing.bin",false);
- require(!provenance.checkpoint_reopenable && provenance.checkpoint_path.empty() && provenance.checkpoint_mount.empty(),"ambiguous provenance requires rebinding without retaining paths");
+ require(provenance.checkpoint_reopenable && provenance.checkpoint_path==u8"existing.bin" && provenance.checkpoint_mount==u8"regression-root","redundant relative spelling preserves ordinary provenance");
  ::uwvm2::utils::container::u8string long_path{};long_path.resize(9000u);for(auto& c:long_path) { c=u8'x'; }
  w::fd_manager::record_checkpoint_path(provenance,chain,::uwvm2::utils::container::u8string_view{long_path.data(),long_path.size()},false);
- require(!provenance.checkpoint_reopenable && provenance.checkpoint_path.empty() && provenance.checkpoint_mount.empty(),"oversized guest path never duplicated into debug metadata");
+ require(provenance.checkpoint_reopenable && provenance.checkpoint_path==long_path && provenance.checkpoint_mount==u8"regression-root","long guest path preserves ordinary provenance");
  auto old_name=entry.name;entry.name=long_path;
  w::fd_manager::record_checkpoint_path(provenance,chain,u8"existing.bin",false);
- require(!provenance.checkpoint_reopenable && provenance.checkpoint_mount.empty(),"oversized guest mount never duplicated into debug metadata");entry.name=::std::move(old_name);
+ require(provenance.checkpoint_reopenable && provenance.checkpoint_mount==long_path,"long mount preserves ordinary provenance");entry.name=::std::move(old_name);
  chain.emplace_back().ptr->dir_stack.name=long_path;
  w::fd_manager::record_checkpoint_path(provenance,chain,u8"existing.bin",false);
- require(!provenance.checkpoint_reopenable && provenance.checkpoint_path.empty(),"oversized ancestor path remains untracked");chain.pop_back();
+ require(provenance.checkpoint_reopenable && provenance.checkpoint_path.size()==long_path.size()+13u,"long ancestor preserves ordinary provenance");chain.pop_back();
  auto path=::fast_io::u8concat_fast_io(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(argv[1])),u8"/existing.bin");
  auto missing=::fast_io::u8concat_fast_io(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(argv[1])),u8"/missing.bin");
  auto open=[&](bool wide,char8_t const* name,unsigned oflags,unsigned flags)

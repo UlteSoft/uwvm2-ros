@@ -21,15 +21,27 @@ extern "C++"
         using admission_status=::uwvm2::runtime::wasm_threads::import_admission;
         using native_fd=::uwvm2::imported::wasi::wasip1::fd_manager::wasi_fd_t;
         using fd_ref=::uwvm2::imported::wasi::wasip1::fd_manager::wasi_fd_ref_t;
-        enum class operation {args_sizes,args_get,env_sizes,env_get,clock_time,clock_res,yield,read,write,poll};
+        enum class operation {args_sizes,args_get,env_sizes,env_get,clock_time,clock_res,yield,random,read,write,poll};
         struct binding {operation code{};environment* env{};::std::size_t parameter_bytes{};};
-        static constexpr ::std::size_t max_vectors{64uz},max_subscriptions{64uz},transfer_bytes{4096uz};
+        static constexpr ::std::size_t transfer_bytes{PIPE_BUF}; // Native packet capacity; legal partial I/O, never a request limit.
+        template<typename T> [[nodiscard]] static ::std::unique_ptr<T[]> allocate_array(::std::size_t count) noexcept
+        {
+            if(count > (SIZE_MAX / sizeof(T))) { return {}; }
+            try { return ::std::make_unique<T[]>(count); }
+            catch(...) { return {}; } // Allocation only: no Guest/native work is in this catch scope.
+        }
         static constexpr ::std::uint32_t trap_memory{0x57415301u},trap_native{0x57415302u};
         struct context final
         {
             lease& actual;world const& instance;environment& env;memory& shared;
             ::std::size_t module{},function{};
-            [[nodiscard]] bool stopped() const noexcept {return actual.cancellation().stop_requested();}
+            [[nodiscard]] bool stopped() const noexcept {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                if(::uwvm2::imported::wasi::wasip1::environment::process_budget_ledger.cancelled.load(::std::memory_order_acquire)) return true;
+                auto* scope{::uwvm2::imported::wasi::wasip1::environment::host_wait_scope::current};
+                if(scope && scope->exit_owner.cancelled()) return true;
+#endif
+                return actual.cancellation().stop_requested();}
             [[nodiscard]] bool native_failure() noexcept
             {actual.request_trap(trap_native,module,function,UINT64_MAX);return false;}
             [[nodiscard]] bool bounds(::std::uint64_t offset,::std::size_t bytes,::std::byte*& pointer) noexcept
@@ -108,10 +120,11 @@ extern "C++"
             else if(name==u8"clock_time_get"){op=operation::clock_time;count=3;wide=1;}
             else if(name==u8"clock_res_get"){op=operation::clock_res;count=2;}
             else if(name==u8"sched_yield"){op=operation::yield;count=0;}
+            else if(name==u8"random_get"){op=operation::random;count=2;}
             else if(name==u8"fd_read"){op=operation::read;count=4;}
             else if(name==u8"fd_write"){op=operation::write;count=4;}
             else if(name==u8"poll_oneoff"){op=operation::poll;count=4;}
-            else return false; // wasm64/random/filesystem/other imports are not widened.
+            else return false; // wasm64/filesystem/other imports are not widened.
             if(concrete.parameter_count!=count)return false;
             auto const* signature=a.import_type_ptr->imports.storage.function;if(!signature)return false;
             if((count==0u ? signature->parameter.begin!=signature->parameter.end :
@@ -126,6 +139,9 @@ extern "C++"
             }
             if(static_cast<unsigned>(signature->result.begin[0])!=0x7fu)return false;
             auto& env=resolve_wasip1_env_for_runtime_module_id(instance.source_module_id());
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            if(!env.exposes(name)) return false;
+#endif
             // These are actual pre-existing overrides, not readiness/authority.
             // No bypass into a possibly blocking debugger/trace callback.
             if(env.trace_wasip1_call||env.debug_console_read!=nullptr||env.debug_console_write!=nullptr||
@@ -142,6 +158,9 @@ extern "C++"
             ::std::uint64_t total{};
             for(auto const& string:strings)
             {if(call.stopped())return error::ecanceled;if(string.size()>=UINT32_MAX-total)return error::eoverflow;total+=string.size()+1u;}
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            if(total > call.env.limits.max_args_env_bytes) return error::e2big;
+#endif
             ::std::byte* unused{};
             if(!call.aligned(first,4u)||!call.bounds(first,sizes?4uz:strings.size()*4uz,unused)||
                !call.bounds(second,sizes?4uz:static_cast<::std::size_t>(total),unused)||(sizes&&!call.aligned(second,4u)))return error::efault;
@@ -158,21 +177,83 @@ extern "C++"
             // There is NO trailing pointer-table NULL outside the validated span.
             return error::esuccess;
         }
-        [[nodiscard]] static bool clock_native(context& call,::std::uint32_t id,::clockid_t& native) noexcept
+        [[nodiscard]] static bool clock_native(context& call,::std::uint32_t id,::clockid_t& native,bool timer=false,bool resolution=false) noexcept
         {
             switch(id){case 0:native=CLOCK_REALTIME;break;case 1:native=CLOCK_MONOTONIC;break;
                 case 2:native=CLOCK_PROCESS_CPUTIME_ID;break;case 3:native=CLOCK_THREAD_CPUTIME_ID;break;default:return false;}
-            return call.env.permits(::uwvm2::imported::wasi::wasip1::environment::clock_permission(static_cast<clock>(id)));
+            namespace policy=::uwvm2::imported::wasi::wasip1::environment;
+            return call.env.permits(timer ? policy::clock_timer_permission(static_cast<clock>(id)) :
+                resolution ? policy::clock_resolution_permission(static_cast<clock>(id)) : policy::clock_permission(static_cast<clock>(id)));
         }
         [[nodiscard]] static error get_clock(context& call,::std::uint32_t id,::std::uint32_t pointer,bool resolution) noexcept
         {
             ::clockid_t native{};if(id>3u)return error::einval;
-            if(!clock_native(call,id,native))return error::enotcapable;
+            if(!clock_native(call,id,native,false,resolution))return error::enotcapable;
             ::std::byte* unused{};if(!call.aligned(pointer,8u)||!call.bounds(pointer,8uz,unused))return error::efault;
-            ::timespec ts{};if((resolution ? ::clock_getres(native,&ts) : ::clock_gettime(native,&ts))!=0)return native_error(errno);
-            if(ts.tv_sec<0||ts.tv_nsec<0||ts.tv_nsec>=1000000000l||static_cast<::std::uint64_t>(ts.tv_sec)>(UINT64_MAX-static_cast<::std::uint64_t>(ts.tv_nsec))/1000000000u)return error::eoverflow;
-            auto value=static_cast<::std::uint64_t>(ts.tv_sec)*1000000000u+static_cast<::std::uint64_t>(ts.tv_nsec);
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            ::uwvm2::imported::wasi::wasip1::environment::budget_reservation reservation{
+                static_cast<::uwvm2::imported::wasi::wasip1::environment::budget_kind>(static_cast<unsigned>(::uwvm2::imported::wasi::wasip1::environment::budget_kind::realtime) + id), call.env.limits, 0u};
+            if(!reservation) return reservation.error<error>();
+#endif
+            ::fast_io::posix_clock_id sample_clock;
+            switch(id)
+            {
+                case 0: sample_clock=::fast_io::posix_clock_id::realtime; break;
+                case 1: sample_clock=::fast_io::posix_clock_id::monotonic; break;
+                case 2: sample_clock=::fast_io::posix_clock_id::process_cputime_id; break;
+                default: sample_clock=::fast_io::posix_clock_id::thread_cputime_id; break;
+            }
+            ::fast_io::unix_timestamp ts{};
+            try { ts=resolution ? ::fast_io::posix_clock_getres(sample_clock) : ::fast_io::posix_clock_gettime(sample_clock); }
+            catch(::fast_io::error const&) { return error::eio; }
+            constexpr ::std::uint64_t billion{1'000'000'000u};
+            constexpr auto fraction{::fast_io::uint_least64_subseconds_per_second/billion};
+            auto const nanos{static_cast<::std::uint64_t>(ts.subseconds/fraction)};
+            if(ts.seconds<0 || nanos>=billion ||
+               static_cast<::std::uint64_t>(ts.seconds)>(UINT64_MAX-nanos)/billion) return error::eoverflow;
+            auto value{static_cast<::std::uint64_t>(ts.seconds)*billion+nanos};
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            auto const granularity{call.env.limits.clock_granularity_ns[id]};
+            if(granularity == 0u) return error::enotcapable;
+            if(resolution) { if(value < granularity) value = granularity; }
+            else value -= value % granularity;
+#endif
             return call.store<8>(pointer,value)?error::esuccess:error::efault;
+        }
+        [[nodiscard]] static error random_bytes(context& call,::std::uint32_t destination,::std::uint32_t bytes) noexcept
+        {
+            if(!call.env.permits(permission::random))return error::enotcapable;
+            ::std::byte* unused{};
+            if(!call.bounds(destination,bytes,unused))return error::efault;
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            // Reserve the full request exactly once, before producing any bytes.
+            // A quota wait returns to the outer provider boundary without effects.
+            ::uwvm2::imported::wasi::wasip1::environment::budget_reservation reservation{
+                ::uwvm2::imported::wasi::wasip1::environment::budget_kind::random,call.env.limits,bytes};
+            if(!reservation)return reservation.error<error>();
+#endif
+            ::std::array<::std::byte,transfer_bytes> scratch{};
+            ::std::uint64_t done{};
+            unsigned interrupted{};
+            while(done<bytes)
+            {
+                if(call.stopped())return error::ecanceled;
+                auto const wanted{static_cast<::std::size_t>((::std::min)(static_cast<::std::uint64_t>(scratch.size()),bytes-done))};
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                ::uwvm2::imported::wasi::wasip1::environment::process_budget_ledger.native_random_calls.fetch_add(1u,::std::memory_order_relaxed);
+#endif
+                // Nonblocking kernel entropy. EAGAIN is a real WASI error, not
+                // permission to sleep-poll or treat /dev/urandom readiness as
+                // completion. Chunk size bounds private storage, never requests.
+                auto const generated{::getrandom(scratch.data(),wanted,GRND_NONBLOCK)};
+                if(generated<0 && errno==EINTR && ++interrupted<8u)continue;
+                if(generated<0)return errno==EINTR?error::eagain:native_error(errno);
+                if(generated==0 || static_cast<::std::size_t>(generated)>wanted)return error::eio;
+                if(!call.copy_out(static_cast<::std::uint64_t>(destination)+done,
+                    {scratch.data(),static_cast<::std::size_t>(generated)}))return call.stopped()?error::ecanceled:error::efault;
+                done+=static_cast<::std::uint64_t>(generated);interrupted=0u;
+            }
+            return error::esuccess;
         }
         struct fd_pin;
         [[nodiscard]] static error wait_ready(context&,int,short,short&) noexcept;
@@ -196,23 +277,70 @@ extern "C++"
                 ::std::memcpy(&a[i],params.data()+offset,width);offset+=width;
             }
             error code{error::enotsup};
+            auto const invoke_provider{[&]() noexcept
+            {
             switch(found.code)
             {
-                case operation::args_sizes:code=strings(call,call.env.argv,a[0],a[1],true);break;
-                case operation::args_get:code=strings(call,call.env.argv,a[0],a[1],false);break;
-                case operation::env_sizes:code=strings(call,call.env.envs,a[0],a[1],true);break;
-                case operation::env_get:code=strings(call,call.env.envs,a[0],a[1],false);break;
+                case operation::args_sizes:
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                    if(!call.env.permits(permission::args)) { code=error::enotcapable; break; }
+#endif
+                    code=strings(call,call.env.argv,a[0],a[1],true);break;
+                case operation::args_get:
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                    if(!call.env.permits(permission::args)) { code=error::enotcapable; break; }
+#endif
+                    code=strings(call,call.env.argv,a[0],a[1],false);break;
+                case operation::env_sizes:
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                    if(!call.env.permits(permission::environ)) { code=error::enotcapable; break; }
+#endif
+                    code=strings(call,call.env.envs,a[0],a[1],true);break;
+                case operation::env_get:
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                    if(!call.env.permits(permission::environ)) { code=error::enotcapable; break; }
+#endif
+                    code=strings(call,call.env.envs,a[0],a[1],false);break;
                 case operation::clock_time:code=get_clock(call,a[0],a[2],false);break; // precision is a hint.
                 case operation::clock_res:code=get_clock(call,a[0],a[1],true);break;
                 case operation::yield:
+                {
+                    if(!call.env.permits(permission::sched_yield)) { code=error::enotcapable; break; }
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                    ::uwvm2::imported::wasi::wasip1::environment::budget_reservation reservation{
+                        ::uwvm2::imported::wasi::wasip1::environment::budget_kind::yield, call.env.limits, 0u};
+                    if(!reservation) { code=reservation.error<error>(); break; }
+#endif
                     // Preserve the real environment grant BEFORE the native
                     // effect, exactly as the ordinary canonical WASI leaf.
                     code=call.env.permits(permission::sched_yield)?
                         (::sched_yield()==0?error::esuccess:native_error(errno)):error::enotcapable;
                     break;
+                }
+                case operation::random:code=random_bytes(call,a[0],a[1]);break;
                 case operation::read:case operation::write:code=fd_io(call,found.code==operation::write,a[0],a[1],a[2],a[3]);break;
                 case operation::poll:code=poll_oneoff(call,a[0],a[1],a[2],a[3]);break;
             }
+            }};
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            using quota_result=::uwvm2::imported::wasi::wasip1::environment::quota_call_result;
+            ::uwvm2::utils::thread::execution_domain::host_wait_registration wake_on_close{
+                g_runtime.execution_domain, [](void*) noexcept
+                { ::uwvm2::imported::wasi::wasip1::environment::process_budget_ledger.notify_waiters(); }, nullptr};
+            auto const completion{::uwvm2::imported::wasi::wasip1::environment::invoke_with_quota_wait(invoke_provider,
+                [](void* opaque) noexcept
+                {
+                    auto& current{*static_cast<context*>(opaque)};
+                    // The ordinary public domain is intentionally closed for the
+                    // entire admitted threaded profile. Only its actual ChildLease
+                    // stop/cancellation and process-exit owner cancel this call.
+                    return current.stopped();
+                }, &call, actual.cancellation_fd())};
+            if(completion != quota_result::completed)
+            { code=completion == quota_result::cancelled ? error::ecanceled : error::eio; }
+#else
+            invoke_provider();
+#endif
             if(call.stopped())return dispatch_status::group_stopped;
             ::std::uint32_t result{static_cast<::std::uint32_t>(code)};::std::memcpy(results.data(),&result,4u);return dispatch_status::returned;
         }

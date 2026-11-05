@@ -643,6 +643,9 @@ extern "C++"
                 }
                 catch(::uwvm2::runtime::exception::guest_exception const& caught)
                 {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                    if(runtime_managed_fault::accept_uncaught(caught)) { return outcome::execution_retired; }
+#endif
                     uncaught_guest_exception_fatal(
                         ::uwvm2::utils::container::u8string_view{root.module_name.data(),root.module_name.size()},
                         capture->frames_.front().activation.function,caught);

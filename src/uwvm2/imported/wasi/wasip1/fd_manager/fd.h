@@ -835,22 +835,22 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::fd_manager
         wasi_fd_storage_t wasi_fd_storage{};
     };
 
-    // Debug metadata must never duplicate an unbounded guest path. Resolve
-    // its complete finite size before allocating any portable provenance.
+    // Preserve the same valid guest path semantics in checkpoint provenance.
+    // Check representable aggregate size without imposing a separate path quota.
     template<typename DirChain>
     inline void record_checkpoint_path(wasi_fd_rc_t& out,DirChain const& chain,
         ::uwvm2::utils::container::u8string_view path,bool follow) noexcept
     {
         out.checkpoint_mount.clear();out.checkpoint_path.clear();out.checkpoint_reopenable=false;out.checkpoint_follow=follow;
-        if(chain.empty() || chain.front_unchecked().ptr==nullptr || path.empty() || path.size()>4096u) { return; }
+        if(chain.empty() || chain.front_unchecked().ptr==nullptr || path.empty()) { return; }
         auto const& root=chain.front_unchecked().ptr->dir_stack.name;
-        if(root.empty() || root.size()>4096u) { return; }
+        if(root.empty()) { return; }
         auto size=path.size();
         for(::std::size_t n{1u};n<chain.size();++n)
         {
             if(chain.index_unchecked(n).ptr==nullptr) { return; }
             auto const& component=chain.index_unchecked(n).ptr->dir_stack.name;
-            if(component.empty() || component.size()>=4096u-size) { return; }
+            if(component.empty() || component.size()>=(::std::numeric_limits<::std::size_t>::max)()-size) { return; }
             size+=component.size()+1u;
         }
         // Original WASI accepts redundant relative separators and dot

@@ -976,9 +976,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 details::validate_configured_import_reset_target_modules_in_context(world_);
                 details::validate_configured_import_reset_matches_in_context(world_);
                 details::resolve_imports_for_wasm_file_modules_in_context(world_);
-                details::error_on_unresolved_imports_after_linking_in_context(world_);
-                details::validate_and_resolve_core3_tags_after_linking_in_context(world_);
-                details::validate_wasm_file_module_import_types_after_linking_in_context(world_);
+                if(!details::error_on_unresolved_imports_after_linking_in_context(world_))
+                { return state_ = skeleton_result::dependency_error; }
+                if(!details::validate_and_resolve_core3_tags_after_linking_in_context(world_) ||
+                   !details::validate_wasm_file_module_import_types_after_linking_in_context(world_))
+                { return state_ = skeleton_result::dependency_error; }
                 // Actual in-map addresses are now stable. No original global/table
                 // initializer runs and no ref value is read from an uninitialized slot.
                 for(auto& [name, module] : modules)

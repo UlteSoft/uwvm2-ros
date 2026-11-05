@@ -8,8 +8,8 @@ class llvm_jit_gc_status_dispatch_plan
     ::llvm::Value* trap_callee_{};
     ::llvm::BasicBlock* ok_{};
     ::llvm::BasicBlock* error_{};
-    ::llvm::BasicBlock* errors_[4]{};
-    bool owned_errors_[4]{};
+    ::llvm::BasicBlock* errors_[6]{};
+    bool owned_errors_[6]{};
     ::llvm::IRBuilder<>::InsertPoint original_{};
     bool committed_{};
     bool shared_{};
@@ -22,6 +22,7 @@ class llvm_jit_gc_status_dispatch_plan
             emit_llvm_jit_current_stack_pointer(builder, intptr)};
         auto const call{apply_llvm_jit_host_calling_conv(builder.CreateCall(trap_type_, callee, arguments))};
         call->setTailCallKind(::llvm::CallInst::TCK_NoTail);
+    call->setMetadata("uwvm.managed.trap.candidate", ::llvm::MDNode::get(builder.getContext(), {}));
         // Direct generated-frame call; explicit Win64 FP/SP and memory clobber
         // stay at the real cold trap. No C++ wrapper or tail call is introduced.
         emit_llvm_jit_memory_clobber(builder);
@@ -45,8 +46,12 @@ class llvm_jit_gc_status_dispatch_plan
             constant(trap_kind::gc_allocation_failure), constant(trap_kind::runtime_invariant_failure))};
         auto const bounds{builder.CreateSelect(failed(storage::gc_object_status::out_of_bounds),
             constant(trap_kind::array_out_of_bounds), generic)};
+        auto const data_bounds{builder.CreateSelect(failed(storage::gc_object_status::data_segment_out_of_bounds),
+            constant(trap_kind::memory_out_of_bounds), bounds)};
+        auto const element_bounds{builder.CreateSelect(failed(storage::gc_object_status::element_segment_out_of_bounds),
+            constant(trap_kind::table_out_of_bounds), data_bounds)};
         auto const selected{builder.CreateSelect(failed(storage::gc_object_status::null_reference),
-            constant(trap_kind::null_reference), bounds, get_llvm_string_ref(u8"gc.status.error.kind"))};
+            constant(trap_kind::null_reference), element_bounds, get_llvm_string_ref(u8"gc.status.error.kind"))};
         emit_trap_body(selected, trap_callee_);
     }
 public:
@@ -62,7 +67,7 @@ public:
         bool restore{current == ok_ || current == error_};
         for(auto const block: errors_) { restore = restore || current == block; }
         if(restore) { builder_->restoreIP(original_); }
-        for(::std::size_t i{}; i != 4uz; ++i)
+        for(::std::size_t i{}; i != 6uz; ++i)
         { if(owned_errors_[i]) { errors_[i]->eraseFromParent(); } }
         if(error_ != nullptr) { error_->eraseFromParent(); }
         ok_->eraseFromParent();
@@ -93,10 +98,13 @@ public:
         ::llvm::StringRef const names[]{get_llvm_string_ref(u8"gc.status.error.invariant.shared"),
             get_llvm_string_ref(u8"gc.status.error.alloc.shared"),
             get_llvm_string_ref(u8"gc.status.error.bounds.shared"),
-            get_llvm_string_ref(u8"gc.status.error.null.shared")};
+            get_llvm_string_ref(u8"gc.status.error.null.shared"),
+            get_llvm_string_ref(u8"gc.status.error.data.bounds.shared"),
+            get_llvm_string_ref(u8"gc.status.error.element.bounds.shared")};
         trap_kind const kinds[]{trap_kind::runtime_invariant_failure, trap_kind::gc_allocation_failure,
-            trap_kind::array_out_of_bounds, trap_kind::null_reference};
-        for(::std::size_t i{}; i != 4uz; ++i)
+            trap_kind::array_out_of_bounds, trap_kind::null_reference,
+            trap_kind::memory_out_of_bounds, trap_kind::table_out_of_bounds};
+        for(::std::size_t i{}; i != 6uz; ++i)
         {
             if(function->getValueSymbolTable() != nullptr)
             { errors_[i] = ::llvm::dyn_cast_or_null<::llvm::BasicBlock>(function->getValueSymbolTable()->lookup(names[i])); }
@@ -128,7 +136,7 @@ public:
         auto const type{::llvm::cast<::llvm::IntegerType>(status.getType())};
         if(shared_)
         {
-            auto const branch{builder.CreateSwitch(::std::addressof(status), errors_[0], 5u)};
+            auto const branch{builder.CreateSwitch(::std::addressof(status), errors_[0], 7u)};
             auto const constant{[&](storage::gc_object_status value)
             { return ::llvm::ConstantInt::get(type, static_cast<::std::uint_least64_t>(value)); }};
             branch->addCase(::llvm::ConstantInt::get(type, 0u), ok_);
@@ -136,11 +144,15 @@ public:
             branch->addCase(constant(storage::gc_object_status::size_overflow), errors_[1]);
             branch->addCase(constant(storage::gc_object_status::out_of_bounds), errors_[2]);
             branch->addCase(constant(storage::gc_object_status::null_reference), errors_[3]);
-            // Static branch preferences: default, success, OOM, size, bounds, null.
+            branch->addCase(constant(storage::gc_object_status::data_segment_out_of_bounds), errors_[4]);
+            branch->addCase(constant(storage::gc_object_status::element_segment_out_of_bounds), errors_[5]);
+            // Static branch preferences: default, success, OOM, size, array, null, data, element.
             branch->setMetadata(::llvm::LLVMContext::MD_prof, ::llvm::MDNode::get(context, {
                 ::llvm::MDString::get(context, "branch_weights"),
                 ::llvm::ConstantAsMetadata::get(builder.getInt32(1u)),
                 ::llvm::ConstantAsMetadata::get(builder.getInt32(2000u)),
+                ::llvm::ConstantAsMetadata::get(builder.getInt32(1u)),
+                ::llvm::ConstantAsMetadata::get(builder.getInt32(1u)),
                 ::llvm::ConstantAsMetadata::get(builder.getInt32(1u)),
                 ::llvm::ConstantAsMetadata::get(builder.getInt32(1u)),
                 ::llvm::ConstantAsMetadata::get(builder.getInt32(1u)),

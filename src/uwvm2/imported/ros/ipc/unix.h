@@ -4,12 +4,17 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#ifndef UWVM_MODULE
+#include <uwvm2/utils/thread/monotonic_clock.h>
+#endif
 #include "protocol.h"
 #include "cancellation_scope.h"
 #include <chrono>
 #include <mutex>
 #include <utility>
 #include <cstring>
+#include <optional>
+#include <climits>
 #if defined(__linux__)
 # include <sys/socket.h>
 # include <sys/un.h>
@@ -25,7 +30,63 @@ namespace uwvm2::imported::ros::ipc
 {
 #if defined(__linux__)
     using deadline=std::chrono::steady_clock::time_point;
-    inline deadline after(std::uint32_t ms) { return std::chrono::steady_clock::now()+std::chrono::milliseconds(ms); }
+    // Zero is the wire representation of an explicitly unlimited deadline.
+    // A finite configured zero is rejected as expired before encoding a frame.
+    inline deadline after(std::uint32_t ms)
+    { return ms ? ::uwvm2::utils::host_clock::now()+std::chrono::milliseconds(ms) : deadline::max(); }
+    inline std::uint32_t min_timeout(std::uint32_t left,std::uint32_t right) noexcept
+    { return !left ? right : !right ? left : (left<right?left:right); }
+    inline std::optional<std::uint32_t> remaining_ms(deadline until) noexcept
+    {
+        if(until==deadline::max()) { return std::uint32_t{}; }
+        auto const now{::uwvm2::utils::host_clock::now()};
+        if(!::uwvm2::utils::host_clock::available() || now>=until) { return std::nullopt; }
+        auto const ns{std::chrono::duration_cast<std::chrono::nanoseconds>(until-now).count()};
+        auto const millis{static_cast<std::uint64_t>(ns/1000000+(ns%1000000!=0))};
+        return static_cast<std::uint32_t>(millis>UINT32_MAX?UINT32_MAX:millis);
+    }
+    inline int poll_timeout(deadline until) noexcept
+    {
+        auto const left{remaining_ms(until)};
+        if(!left) { return 0; }
+        if(!*left) { return -1; }
+        return *left>INT_MAX?INT_MAX:static_cast<int>(*left);
+    }
+    inline bool wait_ready(int fd,short events,deadline until,int cancellation_fd) noexcept
+    {
+        // The provider owns this waiter through the entire RPC, including its
+        // reply. A quota wait selected to finish on proc_exit keeps that owner.
+        auto* waiter{synchronous_wait_context::present()?synchronous_wait_context::waiter():nullptr};
+        if(synchronous_wait_context::present() && !waiter) { errno=ENOMEM;return false; }
+        for(;;)
+        {
+            if(cancellation_requested(cancellation_fd)) { return false; }
+            auto const now{::uwvm2::utils::host_clock::now()};
+            if(!::uwvm2::utils::host_clock::available()) { errno=EIO;return false; }
+            if(now>=until) { errno=ETIMEDOUT;return false; }
+            if(waiter)
+            {
+                auto result{waiter->until(until,cancellation_fd,fd,events)};
+                if(result==quota_wait_result::cancelled) { errno=ECANCELED;return false; }
+                if(result!=quota_wait_result::ready) { errno=EIO;return false; }
+                if(cancellation_requested(cancellation_fd)) { return false; }
+                pollfd ready{fd,events,0};
+                auto const count{::poll(&ready,1,0)};
+                if(count<0 && errno==EINTR) { continue; }
+                if(count<0) { return false; }
+                if(ready.revents) { return true; }
+            }
+            else
+            {
+                pollfd watched[2]{{fd,events,0},{cancellation_fd,POLLIN,0}};
+                auto const count{::poll(watched,2,poll_timeout(until))};
+                if(count<0 && errno==EINTR) { continue; }
+                if(count<0) { return false; }
+                if(watched[1].revents || cancellation_requested(cancellation_fd)) { errno=ECANCELED;return false; }
+                if(watched[0].revents) { return true; }
+            }
+        }
+    }
     /**
      * @brief Transfer a bounded stream extent under the original absolute deadline.
      * @details Attempt nonblocking I/O before waiting: ready sockets need no
@@ -40,8 +101,8 @@ namespace uwvm2::imported::ros::ipc
         while(n)
         {
             if(cancellation_requested(cancellation_fd)) { return false; }
-            auto left{std::chrono::duration_cast<std::chrono::milliseconds>(until - std::chrono::steady_clock::now()).count()};
-            if(left <= 0) { errno = ETIMEDOUT; return false; }
+            auto left{poll_timeout(until)};
+            if(left == 0) { errno = ETIMEDOUT; return false; }
             ssize_t const count{writing ? ::send(fd, bytes, n, MSG_NOSIGNAL | MSG_DONTWAIT) : ::recv(fd, bytes, n, MSG_DONTWAIT)};
             if(count < 0)
             {
@@ -50,14 +111,9 @@ namespace uwvm2::imported::ros::ipc
                 // The attempted syscall and a scheduling interruption consume
                 // the same deadline; never restart its budget before waiting.
                 if(cancellation_requested(cancellation_fd)) { return false; }
-                left = std::chrono::duration_cast<std::chrono::milliseconds>(until - std::chrono::steady_clock::now()).count();
-                if(left <= 0) { errno = ETIMEDOUT; return false; }
-                pollfd watched[2]{{fd, static_cast<short>(writing ? POLLOUT : POLLIN), 0}, {cancellation_fd, POLLIN, 0}};
-                int const ready{::poll(watched, cancellation_fd < 0 ? 1 : 2, static_cast<int>(left))};
-                if(ready < 0 && errno == EINTR) { continue; }
-                if(ready == 0) { errno = ETIMEDOUT; return false; }
-                if(ready < 0) { return false; }
-                if(cancellation_fd >= 0 && watched[1].revents) { errno = ECANCELED; return false; }
+                left = poll_timeout(until);
+                if(left == 0) { errno = ETIMEDOUT; return false; }
+                if(!wait_ready(fd,static_cast<short>(writing?POLLOUT:POLLIN),until,cancellation_fd)) { return false; }
                 continue;
             }
             if(count == 0) { errno = ECONNRESET; return false; }
@@ -79,7 +135,7 @@ namespace uwvm2::imported::ros::ipc
     inline bool write_frame(int fd,frame const& f,deadline until,int cancellation_fd=-1)
     {
         if(cancellation_requested(cancellation_fd)) { return false; }
-        if(f.payload.size()>max_payload_bytes||!f.timeout_ms||f.timeout_ms>max_timeout_ms) { errno=EINVAL; return false; }
+        if(f.payload.size()>max_payload_bytes) { errno=EINVAL; return false; }
         auto b{encode_header_fixed(f)};
         if(!f.payload.empty() && f.payload.size() <= 1024u)
         {
@@ -107,15 +163,9 @@ namespace uwvm2::imported::ros::ipc
         for(;;)
         {
             if(cancellation_requested(cancellation_fd)) { return false; }
-            auto left{std::chrono::duration_cast<std::chrono::milliseconds>(until-std::chrono::steady_clock::now()).count()};
-            if(left<=0) { errno=ETIMEDOUT;return false; }
-            pollfd watched[2]{{fd,POLLOUT,0},{cancellation_fd,POLLIN,0}};
-            auto result{::poll(watched,cancellation_fd<0?1:2,static_cast<int>(left))};
-            if(result<0&&errno==EINTR) { continue; }
-            if(result<0) { return false; }
-            if(!result) { errno=ETIMEDOUT;return false; }
-            if(cancellation_fd>=0&&watched[1].revents) { errno=ECANCELED;return false; }
-            if(cancellation_requested(cancellation_fd)) { return false; }
+            auto left{poll_timeout(until)};
+            if(left==0) { errno=ETIMEDOUT;return false; }
+            if(!wait_ready(fd,POLLOUT,until,cancellation_fd)) { return false; }
             int error{};socklen_t size{sizeof error};
             if(::getsockopt(fd,SOL_SOCKET,SO_ERROR,&error,&size)<0||size!=sizeof error) { return false; }
             if(error) { errno=error;return false; }
@@ -187,8 +237,9 @@ namespace uwvm2::imported::ros::ipc
             disconnect();
 #if defined(__linux__)
             sockaddr_un a{}; a.sun_family=AF_UNIX;
-            if(path.empty()||path[0]!='/'||path.size()>=sizeof a.sun_path||backend<1||backend>2||!timeout_ms||timeout_ms>max_timeout_ms) { return 22; }
-            if(std::chrono::steady_clock::now()>=until) { return 110; }
+            if(path.empty()||path[0]!='/'||path.size()>=sizeof a.sun_path||backend<1||backend>2) { return 22; }
+            if(::uwvm2::utils::host_clock::now()>=until) { return 110; }
+            if(!::uwvm2::utils::host_clock::available()) { return 5; }
             struct stat st{};
             if(::lstat(path.c_str(),&st)<0||!S_ISSOCK(st.st_mode)||st.st_uid!=expected_uid||(st.st_mode&0007)) { return 13; }
             if(cancellation_requested(stop)) { return cancelled(stop,cancellation_phase::connect_admission,false,old_session); }
@@ -246,16 +297,17 @@ namespace uwvm2::imported::ros::ipc
             if(cancellation_requested(stop)) { return {cancelled(stop,cancellation_phase::call_admission,false,session_),{}}; }
 #if defined(__linux__)
             if(fd_<0) { return {107,{}}; }
-            if(!timeout_ms||timeout_ms>max_timeout_ms||next_==std::numeric_limits<std::uint64_t>::max()) { return {22,{}}; }
-            if(std::chrono::steady_clock::now()>=until) { return {110,{}}; }
+            if(next_==std::numeric_limits<std::uint64_t>::max()) { return {22,{}}; }
+            if(::uwvm2::utils::host_clock::now()>=until) { return {110,{}}; }
+            if(!::uwvm2::utils::host_clock::available()) { return {5,{}}; }
             frame f; f.type=kind::request; f.backend=backend_; f.session_id=session_; f.request_id=next_++; f.timeout_ms=timeout_ms;
             if(!encode_request_view({operation,alias,payload},f.payload)) { return {22,{}}; }
-            auto remaining{std::chrono::duration_cast<std::chrono::milliseconds>(until-std::chrono::steady_clock::now()).count()};
+            auto remaining{remaining_ms(until)};
             // Serialization and request preparation consume the entry budget.
             // An unwritten expired request cannot affect the peer, so it need
             // not disconnect a still-live session or retire its resources.
-            if(remaining<=0) { return {110,{}}; }
-            f.timeout_ms=static_cast<std::uint32_t>(remaining); frame reply;
+            if(!remaining) { return {110,{}}; }
+            f.timeout_ms=*remaining; frame reply;
             if(cancellation_requested(stop)) { return {cancelled(stop,cancellation_phase::request_transfer,false,session_),{}}; }
             checked_call checked{f.request_id,f.session_id,peer_pid_,peer_uid_,true,false};
             // A failing write_frame is not evidence that no request prefix was

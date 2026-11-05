@@ -23,6 +23,8 @@
 module;
 
 // std
+#include <uwvm2/runtime/lib/uwvm_runtime_update.h>
+#include <atomic>
 #include <bit>
 #include <array>
 #include <chrono>
@@ -40,6 +42,7 @@ module;
 # include <sys/syscall.h>
 #endif
 #include <limits>
+#include <uwvm2/runtime/lib/uwvm_runtime_guest_exit.h>
 #include <memory>
 #include <span>
 #include <type_traits>
@@ -98,4 +101,5 @@ import :owned_source;
 # define UWVM_MODULE_EXPORT export
 #endif
 
+#include "update_cli.h"
 #include "run.h"

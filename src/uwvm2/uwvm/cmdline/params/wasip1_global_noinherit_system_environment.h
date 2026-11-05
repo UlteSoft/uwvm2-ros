@@ -70,8 +70,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
     inline constexpr ::uwvm2::utils::cmdline::parameter wasip1_global_noinherit_system_environment{
         .name{u8"--wasip1-global-noinherit-system-environment"},
         .describe{u8"Start the global-default WASI Preview 1 environment without inheriting host environment variables."},
+#  if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
         .alias{::uwvm2::utils::cmdline::kns_u8_str_scatter_t{details::wasip1_global_noinherit_system_environment_alias.data(),
                                                              details::wasip1_global_noinherit_system_environment_alias.size()}},
+#  endif
         .handle{::std::addressof(details::wasip1_global_noinherit_system_environment_callback)},
         .is_exist{::std::addressof(::uwvm2::uwvm::imported::wasi::wasip1::storage::wasip1_noinherit_system_environment_is_set)},
         .cate{::uwvm2::utils::cmdline::categorization::wasi}};

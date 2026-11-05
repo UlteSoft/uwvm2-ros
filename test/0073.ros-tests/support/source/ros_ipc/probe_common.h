@@ -1,5 +1,5 @@
 #pragma once
-#include "../../../../../src/ros/gateway/common/config.h"
+#include <gateway/common/config.h>
 #include <uwvm2/imported/ros/common/manifest.h>
 #include <uwvm2/imported/ros/ipc/image.h>
 #include <sys/wait.h>

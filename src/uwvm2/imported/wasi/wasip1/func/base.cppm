@@ -23,6 +23,12 @@ module;
 
 // std
 #include <cstddef>
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+# include <cstdlib>
+# include <vector>
+# include <new>
+# include <stdexcept>
+#endif
 #include <cstdint>
 #include <climits>
 #include <cstring>
@@ -36,6 +42,9 @@ module;
 #include <uwvm2/utils/macro/push_macros.h>
 #include <uwvm2/imported/wasi/wasip1/feature/feature_push_macro.h>
 // platform
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(__linux__)
+# include <sys/vfs.h>
+#endif
 #if !defined(_WIN32)
 # include <errno.h>
 #endif

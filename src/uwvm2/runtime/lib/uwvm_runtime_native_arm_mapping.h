@@ -42,7 +42,7 @@ namespace uwvm2::runtime::lib::details::native_arm_mapping
         output.clear();
         if(object.getArch()!=::llvm::Triple::arm && object.getArch()!=::llvm::Triple::armeb) { return true; }
         if(!object.isRelocatableObject() || !::llvm::isa<::llvm::object::ELFObjectFileBase>(object) ||
-           object.getData().size()>64u*1024u*1024u) { return false; }
+           object.getData().size()>PTRDIFF_MAX) { return false; }
         struct marker { ::std::uint64_t section{},offset{},size{};char state{}; };
         ::std::vector<marker> markers{};::std::size_t count{};
         for(auto const& symbol:object.symbols())
@@ -56,7 +56,7 @@ namespace uwvm2::runtime::lib::details::native_arm_mapping
             if(*selected==object.section_end() || !(**selected).isText()) { return false; }
             auto address{symbol.getAddress()};if(!address) { ::llvm::consumeError(address.takeError());return false; }
             auto const& section{**selected};auto const begin{section.getAddress()},size{section.getSize()};
-            if(size==0u || size>64u*1024u*1024u || *address<begin || *address-begin>=size ||
+            if(size==0u || size>object.getData().size() || size>PTRDIFF_MAX || *address<begin || *address-begin>=size ||
                (*address-begin)%4u!=0u) { return false; }
             markers.push_back({section.getIndex(),*address-begin,size,state});
         }

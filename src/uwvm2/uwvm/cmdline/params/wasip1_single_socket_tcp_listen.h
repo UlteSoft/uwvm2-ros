@@ -68,7 +68,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
         .name{u8"--wasip1-single-socket-tcp-listen"},
         .describe{u8"Listen on a WASI Preview 1 TCP server socket for one single module."},
         .usage{u8"<module:str> <fd:i32> [<ipv4|ipv6>:<port>|unix <path>]"},
+#  if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
         .alias{::uwvm2::utils::cmdline::kns_u8_str_scatter_t{::std::addressof(details::wasip1_single_socket_tcp_listen_alias), 1uz}},
+#  endif
         .handle{::std::addressof(details::wasip1_single_socket_tcp_listen_callback)},
         .cate{::uwvm2::utils::cmdline::categorization::wasi}};
 #   if defined(__clang__)

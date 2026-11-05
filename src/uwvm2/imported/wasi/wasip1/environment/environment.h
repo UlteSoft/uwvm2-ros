@@ -45,6 +45,10 @@
 # include <uwvm2/imported/wasi/wasip1/abi/impl.h>
 # include <uwvm2/imported/wasi/wasip1/fd_manager/impl.h>
 # include <uwvm2/imported/wasi/wasip1/memory/impl.h>
+# if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+#  include "resource_limits.h"
+#  include "bounded_stdio.h"
+# endif
 #endif
 
 #ifndef UWVM_MODULE_EXPORT
@@ -67,7 +71,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::environment
         random = 16u,
         proc_raise = 32u,
         sched_yield = 64u,
-        stdio_full_rights = 128u
+        stdio_full_rights = 128u,
+        stdin_read = 256u, stdout_write = 512u, stderr_write = 1024u,
+        stdio_metadata = 2048u, stdio_readiness = 4096u,
+        args = 8192u, environ = 16384u, proc_exit = 32768u, thread_spawn = 65536u,
+        realtime_resolution = 131072u, monotonic_resolution = 262144u, process_resolution = 524288u, thread_resolution = 1048576u,
+        realtime_timer = 2097152u, monotonic_timer = 4194304u, process_timer = 8388608u, thread_timer = 16777216u
     };
 
     [[nodiscard]] inline constexpr permission_t operator|(permission_t left, permission_t right) noexcept
@@ -91,6 +100,84 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::environment
             case clockid::clock_thread_cputime_id: return permission_t::clock_thread_cputime;
             default: return permission_t{};
         }
+    }
+
+    [[nodiscard]] inline constexpr permission_t clock_resolution_permission(::uwvm2::imported::wasi::wasip1::abi::clockid_t id) noexcept
+    {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        return static_cast<permission_t>(static_cast<::std::uint32_t>(clock_permission(id)) << 17u);
+#else
+        return clock_permission(id);
+#endif
+    }
+    [[nodiscard]] inline constexpr permission_t clock_timer_permission(::uwvm2::imported::wasi::wasip1::abi::clockid_t id) noexcept
+    {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        return static_cast<permission_t>(static_cast<::std::uint32_t>(clock_permission(id)) << 21u);
+#else
+        return clock_permission(id);
+#endif
+    }
+
+    // Exact interface identities. Unknown/future imports have no implicit bit.
+    [[nodiscard]] inline constexpr ::std::uint64_t host_function_bit(::uwvm2::utils::container::u8string_view name) noexcept
+    {
+#if defined(UWVM_IMPORT_WASI_WASIP1_WASM64)
+        // The registered memory64 extension belongs to the same namespace.
+        // Signature/registry validation still rejects unknown function names.
+        if(name.size()>7uz && ::uwvm2::utils::container::u8string_view{name.data()+name.size()-7uz,7uz}==u8"_wasm64")
+        { name=::uwvm2::utils::container::u8string_view{name.data(),name.size()-7uz}; }
+#endif
+        if(name == u8"args_get") { return ::std::uint64_t{1} << 0u; }
+        if(name == u8"args_sizes_get") { return ::std::uint64_t{1} << 1u; }
+        if(name == u8"clock_res_get") { return ::std::uint64_t{1} << 2u; }
+        if(name == u8"clock_time_get") { return ::std::uint64_t{1} << 3u; }
+        if(name == u8"environ_get") { return ::std::uint64_t{1} << 4u; }
+        if(name == u8"environ_sizes_get") { return ::std::uint64_t{1} << 5u; }
+        if(name == u8"fd_advise") { return ::std::uint64_t{1} << 6u; }
+        if(name == u8"fd_allocate") { return ::std::uint64_t{1} << 7u; }
+        if(name == u8"fd_close") { return ::std::uint64_t{1} << 8u; }
+        if(name == u8"fd_datasync") { return ::std::uint64_t{1} << 9u; }
+        if(name == u8"fd_fdstat_get") { return ::std::uint64_t{1} << 10u; }
+        if(name == u8"fd_fdstat_set_flags") { return ::std::uint64_t{1} << 11u; }
+        if(name == u8"fd_fdstat_set_rights") { return ::std::uint64_t{1} << 12u; }
+        if(name == u8"fd_filestat_get") { return ::std::uint64_t{1} << 13u; }
+        if(name == u8"fd_filestat_set_size") { return ::std::uint64_t{1} << 14u; }
+        if(name == u8"fd_filestat_set_times") { return ::std::uint64_t{1} << 15u; }
+        if(name == u8"fd_pread") { return ::std::uint64_t{1} << 16u; }
+        if(name == u8"fd_prestat_dir_name") { return ::std::uint64_t{1} << 17u; }
+        if(name == u8"fd_prestat_get") { return ::std::uint64_t{1} << 18u; }
+        if(name == u8"fd_pwrite") { return ::std::uint64_t{1} << 19u; }
+        if(name == u8"fd_read") { return ::std::uint64_t{1} << 20u; }
+        if(name == u8"fd_readdir") { return ::std::uint64_t{1} << 21u; }
+        if(name == u8"fd_renumber") { return ::std::uint64_t{1} << 22u; }
+        if(name == u8"fd_seek") { return ::std::uint64_t{1} << 23u; }
+        if(name == u8"fd_sync") { return ::std::uint64_t{1} << 24u; }
+        if(name == u8"fd_tell") { return ::std::uint64_t{1} << 25u; }
+        if(name == u8"fd_write") { return ::std::uint64_t{1} << 26u; }
+        if(name == u8"path_create_directory") { return ::std::uint64_t{1} << 27u; }
+        if(name == u8"path_filestat_get") { return ::std::uint64_t{1} << 28u; }
+        if(name == u8"path_filestat_set_times") { return ::std::uint64_t{1} << 29u; }
+        if(name == u8"path_link") { return ::std::uint64_t{1} << 30u; }
+        if(name == u8"path_open") { return ::std::uint64_t{1} << 31u; }
+        if(name == u8"path_readlink") { return ::std::uint64_t{1} << 32u; }
+        if(name == u8"path_remove_directory") { return ::std::uint64_t{1} << 33u; }
+        if(name == u8"path_rename") { return ::std::uint64_t{1} << 34u; }
+        if(name == u8"path_symlink") { return ::std::uint64_t{1} << 35u; }
+        if(name == u8"path_unlink_file") { return ::std::uint64_t{1} << 36u; }
+        if(name == u8"poll_oneoff") { return ::std::uint64_t{1} << 37u; }
+#if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS) || defined(UWVM_CPP_EXCEPTIONS)
+        if(name == u8"proc_exit") { return ::std::uint64_t{1} << 38u; }
+#endif
+        if(name == u8"proc_raise") { return ::std::uint64_t{1} << 39u; }
+        if(name == u8"random_get") { return ::std::uint64_t{1} << 40u; }
+        if(name == u8"sched_yield") { return ::std::uint64_t{1} << 41u; }
+        if(name == u8"sock_accept") { return ::std::uint64_t{1} << 42u; }
+        if(name == u8"sock_recv") { return ::std::uint64_t{1} << 43u; }
+        if(name == u8"sock_send") { return ::std::uint64_t{1} << 44u; }
+        if(name == u8"sock_shutdown") { return ::std::uint64_t{1} << 45u; }
+        if(name == u8"thread-spawn") { return ::std::uint64_t{1} << 46u; }
+        return 0u;
     }
 
     template <typename memory_type>
@@ -150,6 +237,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::environment
     {
         ::uwvm2::utils::container::u8string preload_dir{};
         ::fast_io::dir_file entry{};
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        // A host-selected pair applies only to this root. Otherwise the
+        // module's explicit filesystem masks apply (zero by default).
+        bool rights_configured{};
+        ::std::uint64_t rights_base{}, rights_inheriting{};
+#endif
     };
 
     using wasip1_proc_exit_ptr_t = void (*)(::uwvm2::parser::wasm::standard::wasm1::type::wasm_i32) noexcept;
@@ -202,6 +295,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::environment
     };
 #endif
 
+    struct policy_resource_binding
+    {
+        ::std::uint64_t kind{}, logical_slot{}, incarnation{};
+        ::uwvm2::utils::container::u8string label{};
+        // Immutable initial authority, separate from a guest's later fd-rights
+        // reduction or close. Bind both masks into the effective policy digest.
+        ::std::uint64_t rights_base{}, rights_inheriting{};
+    };
+
     /// @brief [singleton]
     template <wasip1_memory memory_type>
     struct wasip1_environment
@@ -212,6 +314,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::environment
         ::uwvm2::utils::container::vector<::uwvm2::utils::container::u8string_view> argv{};
         // allow user custom envs, use current vm envs by default
         ::uwvm2::utils::container::vector<::uwvm2::utils::container::u8string_view> envs{};
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        // Authorized policy replacement owns its approved bytes in this stable
+        // environment. Views are published only while execution is drained.
+        ::uwvm2::utils::container::vector<::uwvm2::utils::container::u8string> policy_owned_argv{};
+        ::uwvm2::utils::container::vector<::uwvm2::utils::container::u8string> policy_owned_envs{};
+#endif
 
         ::uwvm2::imported::wasi::wasip1::fd_manager::wasm_fd_storage_t fd_storage{};  // [singleton]
 
@@ -254,6 +362,39 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::environment
         /// @note Checkpoint data must not elevate this live policy. A zero request
         ///       is rejected so an unknown clock ID cannot accidentally authorize.
         permission_t non_fd_permissions{};
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        resource_limits limits{};
+        // Immutable approved resource identities, installed by the initializer.
+        // Guest close/seek do not rewrite the approval contract. No owners are
+        // retained here, so close still releases its native stream normally.
+        ::uwvm2::utils::container::vector<policy_resource_binding> policy_resources{};
+#endif
+        // Namespace admission is separate from operation/resource authority.
+        // Cached imports recheck admission against the immediate caller.
+        bool interface_enabled{};
+        bool proc_exit_requested{};
+        bool proc_exit_denied{};
+        ::std::uint32_t proc_exit_code{};
+
+        [[nodiscard]] inline constexpr bool exposes(::uwvm2::utils::container::u8string_view name) const noexcept
+        {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            auto const bit{host_function_bit(name)};
+            return interface_enabled && bit != 0u;
+#else
+            static_cast<void>(name); return true;
+#endif
+        }
+
+        [[nodiscard]] inline constexpr bool grants_stdio(unsigned index) const noexcept
+        {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            return permits(index == 0u ? permission_t::stdin_read : index == 1u ? permission_t::stdout_write : permission_t::stderr_write);
+#else
+            static_cast<void>(index); return true;
+#endif
+        }
+
 
         [[nodiscard]] inline constexpr bool permits(permission_t requested) const noexcept
         { return requested != permission_t{} && (non_fd_permissions & requested) == requested; }
@@ -264,14 +405,24 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::environment
         [[nodiscard]] inline constexpr ::uwvm2::imported::wasi::wasip1::abi::rights_t stdio_base_rights(bool input) const noexcept
         {
             using rights = ::uwvm2::imported::wasi::wasip1::abi::rights_t;
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            return (input ? rights::right_fd_read : rights::right_fd_write) |
+                (permits(permission_t::stdio_metadata) ? rights::right_fd_filestat_get : rights{}) |
+                (permits(permission_t::stdio_readiness) ? rights::right_poll_fd_readwrite : rights{});
+#else
             return permits(permission_t::stdio_full_rights) ? static_cast<rights>(-1) :
                 rights::right_fd_filestat_get | rights::right_poll_fd_readwrite |
                 (input ? rights::right_fd_read : rights::right_fd_write);
+#endif
         }
         [[nodiscard]] inline constexpr ::uwvm2::imported::wasi::wasip1::abi::rights_t stdio_inheriting_rights() const noexcept
         {
             using rights = ::uwvm2::imported::wasi::wasip1::abi::rights_t;
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            return rights{};
+#else
             return permits(permission_t::stdio_full_rights) ? static_cast<rights>(-1) : rights{};
+#endif
         }
 
         // Native callers retain the ordinary field. Runtime-managed environments

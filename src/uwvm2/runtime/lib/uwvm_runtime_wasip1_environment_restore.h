@@ -35,6 +35,11 @@ struct prepared_managed_resource
 {
     try
     {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+    // Restoring host objects/rights is a management permission transaction,
+    // never a side effect of guest debug checkpoint materialization.
+    return status::unsupported_resource;
+#endif
     if(prepared.target!=nullptr) { return status::invalid_capsule_owner; }
     auto const saved{canonical(supplied)};
     if(!saved) { return status::invalid_capsule_owner; }

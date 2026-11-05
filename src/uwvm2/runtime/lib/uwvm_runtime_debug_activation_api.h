@@ -37,6 +37,7 @@
     extern "C++" llvm_jit_debug_activation_capture_owner llvm_jit_debug_capture_activation_host_api(
         ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const& ticket) noexcept
     {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS)
         if(!ticket || !g_debug_observer_active || !g_debug_activation_park_site.before_park ||
            g_debug_pause_participant == nullptr || g_debug_activation_ledger == nullptr ||
@@ -184,6 +185,7 @@
         llvm_jit_debug_activation_capture_owner const& capture,
         llvm_jit_debug_activation_snapshot& out) noexcept
     {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
         out = {};
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS)
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
@@ -228,6 +230,7 @@
         llvm_jit_debug_source_binding_owner const& binding,
         llvm_jit_debug_source_activation_snapshot& out) noexcept
     {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
         out = {};
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS)
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;

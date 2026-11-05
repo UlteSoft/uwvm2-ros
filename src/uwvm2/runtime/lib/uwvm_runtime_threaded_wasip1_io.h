@@ -3,21 +3,33 @@ extern "C++"
 {
     struct runtime_threaded_wasip1_adapter::fd_pin final
     {
-        enum class kind {unsupported,pipe,stream_socket};
+        enum class kind {unsupported,pipe,stream_socket,native_descriptor};
         context* call{};native_fd* locked{};
         fd_ref retained{::uwvm2::imported::wasi::wasip1::fd_manager::wasi_no_construct};
-        int descriptor{-1},flags{};kind type{kind::unsupported};
+        int descriptor{-1},flags{};bool owns_descriptor{};kind type{kind::unsupported};
         fd_pin() noexcept=default;fd_pin(fd_pin const&)=delete;
-        ~fd_pin() noexcept {if(descriptor>=0)static_cast<void>(::close(descriptor));unlock();}
+        ~fd_pin() noexcept {if(owns_descriptor&&descriptor>=0)static_cast<void>(::close(descriptor));unlock();}
         void unlock() noexcept
         {
             if(locked!=nullptr)
-            {auto const result=::pthread_mutex_unlock(::std::addressof(locked->fd_mutex.mutex));locked=nullptr;if(result!=0&&call)static_cast<void>(call->native_failure());}
+            {
+                auto const result=::pthread_mutex_unlock(::std::addressof(locked->fd_mutex.mutex));locked=nullptr;
+                if(result!=0&&call)static_cast<void>(call->native_failure());
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                // Notify only after the real mutex is released. Poll registers
+                // before trying that lock, so it cannot lose this transition.
+                if(result==0)::uwvm2::imported::wasi::wasip1::environment::process_budget_ledger.notify_waiters();
+#endif
+            }
         }
         struct acquisition {error failure{error::esuccess};bool deferred{};};
-        [[nodiscard]] acquisition acquire(context& actual,::std::uint32_t guest,right required,bool keep_lock,bool try_only=false) noexcept
+        [[nodiscard]] acquisition acquire(context& actual,::std::uint32_t guest,right required,bool keep_lock,bool try_only=false,bool policy_only=false) noexcept
         {
             call=&actual;if(guest>INT32_MAX)return {error::ebadf};
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            if(guest < 3u && !actual.env.grants_stdio(guest)) return {error::enotcapable};
+            if(guest < 3u && (required & right::right_poll_fd_readwrite) != right{} && !actual.env.permits(permission::stdio_readiness)) return {error::enotcapable};
+#endif
             auto& map=actual.env.fd_storage;
             // Same actual fair RW lock protocol; no blocking guard constructor
             // can hide cancellation. PENDING/WRITER block new readers.
@@ -58,10 +70,12 @@ extern "C++"
             }
             if(selected->close_pos!=SIZE_MAX)return {error::ebadf};
             if((selected->rights_base&required)!=required)return {error::enotcapable};
+            if(policy_only) { unlock(); return {error::esuccess}; }
             if(selected->wasi_fd.ptr==nullptr){static_cast<void>(actual.native_failure());return {error::eio};}
-            // The actual map reader and fd mutex keep this borrowed resource
-            // alive while classifying it. Do NOT retain/duplicate an unknown
-            // regular/FUSE file: even a non-last close can invoke f_op->flush.
+            // The map reader and fd mutex keep the explicit binding alive.
+            // Ordinary files/devices are retained without dup/close, which can
+            // otherwise introduce an extra filesystem flush. Their synchronous
+            // call and final resource release retain the native execution lease.
             auto const& storage=selected->wasi_fd.ptr->wasi_fd_storage;
             using t=::uwvm2::imported::wasi::wasip1::fd_manager::wasi_fd_type_e;
             int borrowed{-1};
@@ -87,14 +101,18 @@ extern "C++"
                 // Linux F_GETPIPE_SZ identifies genuine pipe/FIFO operations
                 // without calling unknown filesystem fstat/getattr/device IO.
                 constexpr int linux_getpipe_size{1032};
-                if(::fcntl(borrowed,linux_getpipe_size)<=0)return {error::enotsup};
-                type=kind::pipe;
+                type=::fcntl(borrowed,linux_getpipe_size)>0 ? kind::pipe : kind::native_descriptor;
             }
-            // Only authenticated kernel pipe/stream-socket classes reach RC
-            // retention or duplication. SAME OFD; no flag changes or path open.
+            // Same explicitly approved OFD; no flag changes or path reopen.
             retained=selected->wasi_fd;
-            constexpr int linux_dupfd_cloexec{1030};
-            descriptor=::fcntl(borrowed,linux_dupfd_cloexec,0);if(descriptor<0)return {native_error(errno)};
+            if(type==kind::native_descriptor) descriptor=borrowed;
+            else
+            {
+                constexpr int linux_dupfd_cloexec{1030};
+                descriptor=::fcntl(borrowed,linux_dupfd_cloexec,0);
+                if(descriptor<0)return {native_error(errno)};
+                owns_descriptor=true;
+            }
             auto const pinned_flags=::fcntl(descriptor,F_GETFL);
             if(pinned_flags<0)return {native_error(errno)};
             if(pinned_flags!=flags){static_cast<void>(actual.native_failure());return {error::eio};}
@@ -109,7 +127,17 @@ extern "C++"
             if(call.stopped())return error::ecanceled;
             auto const stop=call.actual.cancellation_fd();if(stop<0){static_cast<void>(call.native_failure());return error::eio;}
             ::pollfd watched[2]{{stop,POLLIN,0},{descriptor,events,0}};
+            // Native blocking semantics with a real cancellation descriptor;
+            // no implicit one-second operation deadline.
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            auto const ready{::uwvm2::imported::wasi::wasip1::environment::wait_for_native_io(
+                descriptor,events,::std::chrono::steady_clock::time_point::max(),stop)};
+            if(ready == ::uwvm2::imported::wasi::wasip1::environment::quota_call_result::cancelled) return error::ecanceled;
+            if(ready == ::uwvm2::imported::wasi::wasip1::environment::quota_call_result::wait_unavailable) return error::eio;
+            auto const result=::poll(watched,2,0);
+#else
             auto const result=::poll(watched,2,-1);
+#endif
             if(result<0){if(errno==EINTR)continue;return native_error(errno);}
             if(call.stopped())return error::ecanceled;
             if(watched[0].revents!=0){static_cast<void>(call.native_failure());return error::eio;}
@@ -120,14 +148,13 @@ extern "C++"
     inline auto runtime_threaded_wasip1_adapter::fd_io(context& call,bool writing,::std::uint32_t guest,
         ::std::uint32_t iovs,::std::uint32_t count,::std::uint32_t completed) noexcept -> error
     {
-        fd_pin pinned{};auto acquired=pinned.acquire(call,guest,writing?right::right_fd_write:right::right_fd_read,true);
-        if(acquired.failure!=error::esuccess)return acquired.failure;
-        if(acquired.deferred){static_cast<void>(call.native_failure());return error::eio;}
-        if(count>max_vectors)return error::e2big;
+        if(count != 0u && 8uz > SIZE_MAX / static_cast<::std::size_t>(count)) return error::eoverflow;
         if(!call.aligned(iovs,4u)||!call.aligned(completed,4u))return error::efault;
         ::std::byte* unused{};
         if(!call.bounds(iovs,static_cast<::std::size_t>(count)*8uz,unused)||!call.bounds(completed,4uz,unused))return error::efault;
-        struct vector {::std::uint32_t base{},size{};};::std::array<vector,max_vectors> vectors{};
+        struct vector {::std::uint32_t base{},size{};};
+        auto vectors{allocate_array<vector>(count)};
+        if(count != 0u && !vectors) return error::enomem;
         ::std::uint64_t total{};
         for(::std::uint32_t i{};i<count;++i)
         {
@@ -136,37 +163,40 @@ extern "C++"
             if(!call.bounds(v.base,v.size,unused))return error::efault;
             if(v.size>UINT32_MAX-total)return error::einval;total+=v.size;
         }
-        if(total==0u)return call.store<4>(completed,0u)?error::esuccess:error::efault;
-        if(pinned.type==fd_pin::kind::pipe)
-        {
-            if(!writing)
-            {
-                // A pipe's READ-end flags cannot prove whether another writer
-                // emitted packet-mode buffers. Only a REAL already-nonblocking
-                // read preserves those native packet/drop semantics safely.
-                if((pinned.flags&O_NONBLOCK)==0)return error::enotsup;
-                // Never shorten a Guest capacity that could fit a larger
-                // packet: reject before I/O instead of discarding its tail.
-                if(total>transfer_bytes)return error::e2big;
-            }
-#ifdef O_DIRECT
-            else if(pinned.flags&O_DIRECT)return error::enotsup;
+        fd_pin pinned{};auto acquired=pinned.acquire(call,guest,writing?right::right_fd_write:right::right_fd_read,true);
+        if(acquired.failure!=error::esuccess)return acquired.failure;
+        if(acquired.deferred){static_cast<void>(call.native_failure());return error::eio;}
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        auto const kind{::uwvm2::imported::wasi::wasip1::environment::fd_io_budget(guest)};
+        ::uwvm2::imported::wasi::wasip1::environment::budget_reservation reservation{kind, call.env.limits, total};
+        if(!reservation) return reservation.error<error>();
 #endif
-        }
-        auto const wanted=static_cast<::std::size_t>((::std::min)(total,static_cast<::std::uint64_t>(transfer_bytes)));
-        ::std::array<::std::byte,transfer_bytes> bounce{};
+        if(total==0u)return call.store<4>(completed,0u)?error::esuccess:error::efault;
+        // A read end cannot reveal packet-mode buffers from another writer.
+        // Keep read(2)'s exact packet/drop semantics instead of consuming bytes
+        // through splice. Blocking reads stay synchronous and retain their lease;
+        // default proc_exit still ends the process, while explicit wait waits.
+        bool const splice_pipe{pinned.type==fd_pin::kind::pipe && writing && (pinned.flags&O_DIRECT)==0};
+        // Linux packet pipes split packets at PIPE_BUF. This capacity preserves
+        // every packet a full Guest buffer could accept, while larger byte-stream
+        // reads may legally report partial progress without a huge allocation.
+        auto const capacity{(::std::min)(total,static_cast<::std::uint64_t>(transfer_bytes))};
+        if(capacity > SIZE_MAX) return error::eoverflow;
+        auto const wanted{static_cast<::std::size_t>(capacity)};
+        auto bounce{allocate_array<::std::byte>(wanted)};
+        if(!bounce) return error::enomem;
         if(writing)
         {
             ::std::size_t at{};
             for(::std::uint32_t i{};i<count&&at<wanted;++i)
-            {auto n=(::std::min)(static_cast<::std::size_t>(vectors[i].size),wanted-at);if(!call.copy_in(vectors[i].base,{bounce.data()+at,n}))return error::efault;at+=n;}
+            {auto n=(::std::min)(static_cast<::std::size_t>(vectors[i].size),wanted-at);if(!call.copy_in(vectors[i].base,{bounce.get()+at,n}))return error::efault;at+=n;}
         }
         struct staging final
         {
             int ends[2]{-1,-1};
             ~staging() noexcept{for(auto fd:ends)if(fd>=0)static_cast<void>(::close(fd));}
         } pipe;
-        if(pinned.type==fd_pin::kind::pipe&&writing)
+        if(splice_pipe)
         {
             if(::syscall(SYS_pipe2,pipe.ends,O_NONBLOCK|O_CLOEXEC)!=0)return native_error(errno);
             for(auto fd:pipe.ends){auto f=::fcntl(fd,F_GETFL);if(f<0||(f&O_NONBLOCK)==0){static_cast<void>(call.native_failure());return error::eio;}}
@@ -174,7 +204,7 @@ extern "C++"
             {
                 // Only our NEW OFDs are nonblocking. The actual inherited / 
                 // redirected descriptor and every user alias are unmodified.
-                auto const n=::write(pipe.ends[1],bounce.data(),wanted);
+                auto const n=::write(pipe.ends[1],bounce.get(),wanted);
                 if(n<0)return native_error(errno);if(static_cast<::std::size_t>(n)!=wanted){static_cast<void>(call.native_failure());return error::eio;}
             }
         }
@@ -206,21 +236,15 @@ extern "C++"
             // Still fail on an observed flag drift rather than silently adapt.
             if(current!=pinned.flags){static_cast<void>(call.native_failure());return error::eio;}
             if(pinned.type==fd_pin::kind::stream_socket)
-            {transferred=writing ? ::send(pinned.descriptor,bounce.data(),wanted,MSG_DONTWAIT|MSG_NOSIGNAL) : ::recv(pinned.descriptor,bounce.data(),wanted,MSG_DONTWAIT);}
-            else if(!writing)
-            {
-                // Actual inherited O_NONBLOCK was checked, and its OFD flags
-                // were just rechecked unchanged. No poll-then-blocking read,
-                // dup-F_SETFL, staging splice or packet-class assumption.
-                transferred=::read(pinned.descriptor,bounce.data(),wanted);
-            }
-            else
+            {transferred=writing ? ::send(pinned.descriptor,bounce.get(),wanted,MSG_DONTWAIT|MSG_NOSIGNAL) : ::recv(pinned.descriptor,bounce.get(),wanted,MSG_DONTWAIT);}
+            else if(splice_pipe)
             {
                 auto const owned_flags=::fcntl(pipe.ends[0],F_GETFL);
                 if(owned_flags<0||(owned_flags&O_NONBLOCK)==0){static_cast<void>(call.native_failure());return error::eio;}
-                constexpr unsigned splice_nonblock{2u}; // Linux UAPI SPLICE_F_NONBLOCK.
+                constexpr unsigned splice_nonblock{2u};
                 transferred=static_cast<::ssize_t>(::syscall(SYS_splice,pipe.ends[0],nullptr,pinned.descriptor,nullptr,wanted,splice_nonblock));
             }
+            else transferred=writing ? ::write(pinned.descriptor,bounce.get(),wanted) : ::read(pinned.descriptor,bounce.get(),wanted);
             if(transferred>=0)break;
             auto const failure=errno;if(failure==EPIPE)pipe_signals.consume_new_epipe();
             if(failure==EINTR)continue;
@@ -236,7 +260,7 @@ extern "C++"
         {
             ::std::size_t at{};
             for(::std::uint32_t i{};i<count&&at<amount;++i)
-            {auto n=(::std::min)(static_cast<::std::size_t>(vectors[i].size),amount-at);if(!call.copy_out(vectors[i].base,{bounce.data()+at,n}))return error::efault;at+=n;}
+            {auto n=(::std::min)(static_cast<::std::size_t>(vectors[i].size),amount-at);if(!call.copy_out(vectors[i].base,{bounce.get()+at,n}))return error::efault;at+=n;}
         }
         return call.store<4>(completed,amount)?error::esuccess:error::efault;
     }

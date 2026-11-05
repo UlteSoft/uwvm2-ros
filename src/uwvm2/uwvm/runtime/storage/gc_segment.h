@@ -98,7 +98,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
         [[nodiscard]] inline gc_object_status element_reference(wasm_module_storage_t const* module,
             element_window const& window, ::std::size_t index, gc_reference& result) noexcept
         {
-            if(index >= window.size) { return gc_object_status::out_of_bounds; }
+            if(index >= window.size) { return gc_object_status::element_segment_out_of_bounds; }
             using ref_kind = ::uwvm2::object::global::wasm_ref_kind;
             using table_kind = local_defined_table_elem_storage_type_t;
             result = {};
@@ -157,7 +157,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                     result = window.payload.gc_ref_begin[index];
                     return gc_object_status::ok;
                 }
-                case element_kind::empty: return gc_object_status::out_of_bounds;
+                case element_kind::empty: return gc_object_status::element_segment_out_of_bounds;
             }
             return gc_object_status::invalid_value;
         }
@@ -167,7 +167,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             ::std::unique_ptr<gc_reference[]>& result) noexcept
         {
             if(offset > window.size || length > window.size - offset)
-            { return gc_object_status::out_of_bounds; }
+            { return gc_object_status::element_segment_out_of_bounds; }
             if(length == 0uz) { return gc_object_status::ok; }
             if(length > static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)()) / sizeof(gc_reference))
             { return gc_object_status::size_overflow; }
@@ -191,7 +191,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
         gc_segment_details::data_window data{};
         auto const status{gc_segment_details::data_at(module, data_index, data)};
         if(status != gc_object_status::ok) { return status; }
-        return store->array_new_data(type_index, data.begin, data.size, source_offset, length, *result);
+        auto const outcome{store->array_new_data(type_index, data.begin, data.size, source_offset, length, *result)};
+        return outcome == gc_object_status::out_of_bounds ?
+            gc_object_status::data_segment_out_of_bounds : outcome;
     }
     extern "C" [[nodiscard]] inline gc_object_status uwvm2_gc_array_new_elem(gc_object_store* store,
         wasm_module_storage_t const* module, ::std::uint_least32_t type_index, ::std::uint_least32_t element_index,
@@ -212,11 +214,20 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
         ::std::size_t length) noexcept
     {
         if(store == nullptr || array == nullptr) { return gc_object_status::invalid_store; }
+        // Null and destination bounds precede source-segment bounds. Array
+        // length is immutable, and array_init_data rechecks type and ownership.
+        ::std::size_t destination_size{};
+        auto const destination_status{store->array_length(*array, destination_size)};
+        if(destination_status != gc_object_status::ok) { return destination_status; }
+        if(destination_offset > destination_size || length > destination_size - destination_offset)
+        { return gc_object_status::out_of_bounds; }
         gc_segment_details::data_window data{};
         auto const status{gc_segment_details::data_at(module, data_index, data)};
         if(status != gc_object_status::ok) { return status; }
-        return store->array_init_data(type_index, *array, destination_offset,
-                                      data.begin, data.size, source_offset, length);
+        auto const outcome{store->array_init_data(type_index, *array, destination_offset,
+                                      data.begin, data.size, source_offset, length)};
+        return outcome == gc_object_status::out_of_bounds ?
+            gc_object_status::data_segment_out_of_bounds : outcome;
     }
     extern "C" [[nodiscard]] inline gc_object_status uwvm2_gc_array_init_elem(gc_object_store* store,
         wasm_module_storage_t const* module, ::std::uint_least32_t type_index, ::std::uint_least32_t element_index,
@@ -224,6 +235,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
         ::std::size_t length) noexcept
     {
         if(store == nullptr || array == nullptr) { return gc_object_status::invalid_store; }
+        // Diagnose the destination before materializing any source references.
+        ::std::size_t destination_size{};
+        auto const destination_status{store->array_length(*array, destination_size)};
+        if(destination_status != gc_object_status::ok) { return destination_status; }
+        if(destination_offset > destination_size || length > destination_size - destination_offset)
+        { return gc_object_status::out_of_bounds; }
         gc_segment_details::element_window element{};
         auto const status{gc_segment_details::element_at(module, element_index, element)};
         if(status != gc_object_status::ok) { return status; }

@@ -175,11 +175,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                 // Allocate new storage space for closepos while simultaneously acquiring the position for subsequent writes to the internal fd.
                 // new_close_pos must be written separately from -cebgin, otherwise it will cause undefined evaluation order issues. If expansion occurs, it
                 // will result in UB.
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                if(fd_opens_pos < 3u) { curr_fd_p->close_pos = SIZE_MAX - 1u; }
+                else
+#endif
+                {
                 auto const new_close_pos{::std::addressof(wasm_fd_storage.closes.emplace_back(fd_opens_pos))};
 
                 // Add the position where it closes itself to facilitate subsequent renumbering.
                 // Since it is a vector, its internal iterators are contiguous, allowing direct access to adjacent elements.
                 curr_fd_p->close_pos = static_cast<::std::size_t>(new_close_pos - wasm_fd_storage.closes.cbegin());
+                }
 
                 // The write lock here must remain locked until the entire file is closed, to prevent subsequent open_at operations from acquiring the actual
                 // closing position and causing a use-after-free condition.
@@ -229,6 +235,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         ::uwvm2::imported::wasi::wasip1::environment::wasip1_environment<::uwvm2::object::memory::linear::native_memory_t> & env,
         ::uwvm2::imported::wasi::wasip1::abi::wasi_posix_fd_t fd) noexcept
     {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        if(!env.exposes(u8"fd_close")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+#endif
+
         auto const trace_wasip1_call{env.trace_wasip1_call};
 
         if(trace_wasip1_call) [[unlikely]] { ::uwvm2::imported::wasi::wasip1::func::print_wasip1_trace_message(env, u8"fd_close(", fd, u8")"); }

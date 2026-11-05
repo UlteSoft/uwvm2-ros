@@ -22,87 +22,266 @@ The WASI command category is compiled only when WASI support is enabled.
 
 If a command is not compiled into the binary, the parser treats its name as an invalid parameter.
 
-## Default Authority
+## ROS product: zero initial authority
 
-WASI Preview 1 imports remain available for linking by default. The concrete
-environment starts with no inherited host environment variables and no
-non-descriptor permissions. Merely enabling imports or exposing the native host
-API does not authorize clocks, random bytes, process signals or scheduler calls.
+The `uwvm2-ros` target defines `UWVM_ROS_ZERO_HOST_DEFAULTS`; this policy does
+not depend on whether the guest imports ROS, on DEV/RELEASE, or on JIT/AOT.
+The retained ordinary uwvm shared headers, built without that product definition,
+keep their previous defaults.
 
-Standard input grants read, descriptor metadata and readiness; standard output
-and standard error grant write, descriptor metadata and readiness. Their
-inheriting rights are zero. Filesystem mutation, seek, shared descriptor flag
-changes, path operations, socket acceptance and shutdown are absent from these
-default masks. Directory and socket preopens remain explicit command-line
-resources. Arguments supplied by the launcher, descriptor introspection and
-closing/renumbering existing descriptors do not create additional resources.
+Every ROS guest starts without a WASI namespace or host import, without host
+stdio objects, argv/environment, clocks, random, files, sockets or process
+operations. A pure Wasm computation needs no host grant. Missing interfaces fail
+linking before start. A Single/Group must be created and explicitly enabled,
+which exposes the registered Preview 1 interface set with its exact ABI.
+Namespace enablement grants no operation or resource authority. Validation mode
+also checks namespace admission and import signatures without initializing
+stdio/providers or running start. Explicit preopen configuration can open its
+approved directory during command-line parsing. Unknown/new modules receive no fallback policy.
+The ROS product accepts only explicit Single/Group WASI bindings; the former
+Global options, per-function expose commands and preload expose/hide switches
+are removed from its command table. Ordinary uwvm retains its separate defaults.
 
-This changes the previous permissive defaults. Applications that need an
-operation must request it explicitly. Positive clock/random unit fixtures and
-applications that use a WASI sleep timer must grant their exact required
-permission. The new implementation and prepared tests are documented in
-[the default-authority configuration tests](../../test/0073.ros-tests/support/source/wasip1_default_deny/README.configuration.md);
-source-model checks do not establish compiled runtime acceptance.
+```bash
+uwvm2-ros --wasm-set-main-module-name main \
+  --wasip1-single-create main --wasip1-single-enable main \
+  --wasip1-single-grant main stdout.write \
+  --run stdout-only.wasm
+```
 
-## Explicit Permission Commands
+Namespace enablement lets libc's registered imports link, including `fd_write`,
+`fd_close`, `fd_fdstat_get`, `fd_seek`, and `proc_exit`. Each operation still
+checks its own authority. The example grants only stdout writing. Calling
+`proc_exit` without `proc-exit` is a controlled Guest rejection, never an
+unauthorized host exit. The SDK writes explicit namespace enables and audited
+operation grants; binary imports do not generate grants automatically.
 
 | Command | Arguments | Effect |
 | --- | --- | --- |
-| `--wasip1-global-grant` | `<permission:str>` | Grant one permission in the Global default. |
-| `--wasip1-global-deny` | `<permission:str>` | Explicitly deny one permission in the Global default. |
-| `--wasip1-single-grant` | `<module:str> <permission:str>` | Grant one bit for an already-created Single target. |
-| `--wasip1-single-deny` | `<module:str> <permission:str>` | Deny one bit for an already-created Single target, including a Global grant. |
-| `--wasip1-group-grant` | `<group:str> <permission:str>` | Grant one bit for an already-created named Group. |
-| `--wasip1-group-deny` | `<group:str> <permission:str>` | Deny one bit for an already-created named Group, including a Global grant. |
+| `--wasip1-single-grant`, `--wasip1-group-grant` | `<target> <permission>` | Grant one operation permission. |
+| `--wasip1-single-deny`, `--wasip1-group-deny` | `<target> <permission>` | Explicitly deny one operation permission for this target. |
+| `--wasip1-single-limit`, `--wasip1-group-limit` | `<target> <limit> <decimal-u64|unlimited>` | Set a resource ceiling, without granting authority. |
 
-Permission names are exact and case-sensitive:
+A preopen can select its own initial base/inheriting masks using
+--wasip1-single-mount-dir-rights or --wasip1-group-mount-dir-rights:
 
-| Permission | Authorized operation |
+    uwvm2-ros --wasm-set-main-module-name main \
+      --wasip1-single-create main --wasip1-single-enable main \
+      --wasip1-single-mount-dir main /readonly /operator/readonly \
+      --wasip1-single-mount-dir-rights main /readonly 270336 2097190 \
+      --wasip1-single-mount-dir main /workspace /operator/workspace \
+      --wasip1-single-mount-dir-rights main /workspace 271360 2097254 \
+      --run app.wasm
+
+Each command takes the target, an already-declared guest preopen name, and two
+decimal uint64 masks. Guest-name matching uses the mount's lexical normalization.
+Unknown roots, repeated rights for the same normalized root, missing masks,
+overflow and unlimited are rejected. The explicit pair replaces the module
+filesystem mask for that root only; a root without a pair uses the module masks,
+which remain zero by default. These are operation rights, not I/O quotas.
+
+The original pair is bound into the effective policy digest (WASI policy
+encoding v5). Guest fd-rights reduction and closure do not rewrite that initial
+host authorization. Current live policy transactions preserve these directory
+bindings and reject unsupported rebinding; they cannot manufacture a wider
+preopen. No default traffic quota, path-length cap or asynchronous mode is added.
+
+Names are exact and case sensitive, without wildcards. Conflicting grant/deny is rejected. A single or group must already exist.
+
+| Permission | Authorized operation (after namespace enablement) |
 | --- | --- |
-| `realtime-clock` | Realtime `clock_res_get`, `clock_time_get` and clock subscriptions in `poll_oneoff`. |
-| `monotonic-clock` | The same operations for the monotonic domain. |
-| `process-clock` | The same operations for the process CPU-time domain, where supported. |
-| `thread-clock` | The same operations for the thread CPU-time domain, where supported. |
-| `random` | `random_get`, including its wasm64 form. |
-| `proc-raise` | `proc_raise` and its host callback/native signal behavior. |
-| `sched-yield` | `sched_yield` and its host callback/native scheduler behavior. |
-| `stdio-full-rights` | Opt into the previous full base/inheriting stdio masks during initialization. |
+| `stdin.read` | Read the explicitly mapped inherited stdin source. |
+| `stdout.write`, `stderr.write` | Write only the respective inherited output receiver. |
+| `stdio.metadata` | Descriptor metadata, for an independently granted stream. |
+| `stdio.readiness` | Poll readiness, for an independently granted stream. |
+| `args` | Read only configured guest argv and its sizes. |
+| `environ` | Read only configured environment and its sizes; no host inheritance by default. |
+| `realtime-clock`, `monotonic-clock`, `process-clock`, `thread-clock` | `clock_time_get` for that clock ID. |
+| `realtime-resolution`, `monotonic-resolution`, `process-resolution`, `thread-resolution` | `clock_res_get` for that clock ID. |
+| `realtime-timer`, `monotonic-timer`, `process-timer`, `thread-timer` | Clock subscriptions for that ID, subject to backend support. |
+| `random` | Bounded native CSPRNG reads; zero-length requests also consume call budget. |
+| `proc-exit` | Request whole-process exit through the runtime; the first accepted code wins and per-operation exit wait policy applies. |
+| `proc-raise` | A separately installed, scoped host signal handler; no process-wide fallback. |
+| `sched-yield` | Bounded scheduler requests. |
+| `thread-spawn` | Guest spawning through the separately authorized WASI threads bridge. Core atomics/threads do not grant this. |
 
-There is no wildcard. Repeat grant/deny for distinct permissions only: a repeated
-or opposing command for the same bit in the same target is an error. A target
-has separate value and presence masks. Unspecified bits follow Global; an
-explicit target deny removes only its configured bit. These are WASI policies:
-they neither create nor revoke ROS capabilities.
+`stdio-full-rights` is rejected in this product. It remains an upstream
+ordinary uwvm input only when the ROS product policy is absent.
 
-For example, permit a monotonic timer globally while keeping one module without
-that timer and allowing random bytes only in a separate Group:
+### Standard stream slots and bounded providers
+
+Slots 0/1/2 are permanently reserved for stdin/stdout/stderr, including in a
+fresh embedded environment. Unapproved slots contain no native object and have
+zero rights. Closing leaves a non-allocatable tombstone; renumbering from or into
+any reserved slot is rejected. Ordinary files and accepted sockets allocate
+from 3. No `/dev/null` is installed. DEV does not change these mappings, rights
+or source data. A cached bridge/descriptor cannot bypass current namespace enablement or
+stream grants.
+
+The Linux ROS stdio adapter retains the native read/write semantics of an
+explicitly approved file, terminal or device binding. It does not modify inherited
+open-file-description flags. Byte-stream pipe writes and stream sockets use
+nonblocking operations and cancellable readiness waits. Pipe reads (including
+blocking inputs) and packet-mode writes retain native read/write semantics,
+including packet truncation; a read end cannot identify another writer's mode. Reads and writes may make a short
+transfer through a PIPE_BUF-sized private staging buffer; this is transfer
+progress, not a maximum guest request. Callers must handle short transfers.
+
+A blocking stream has no implicit timeout. Quota waits use the configured
+reject/wait policy and native timer. A pipe read, file, terminal or device syscall already
+in progress retains its execution lease until it actually returns: lifecycle
+cancellation does not falsely report its completion, and hot-update draining
+must wait or reject before commit. The default proc_exit ends the process;
+explicit native-wait exit policies may instead wait for that call to finish.
+The VM does not claim an arbitrary device syscall has a cancellable deadline.
+Nonblocking backpressure reports EAGAIN, disk exhaustion reports ENOSPC, and a
+closed writer reports EPIPE without terminating the host through SIGPIPE.
+Non-stream sockets are outside this byte-stream adapter. No guest output queue
+is created. Management logging is a separate channel.
+
+### Explicit resource limits and continuity
+
+Exposure and operation authority start at zero. After an explicit grant, every
+operation quota defaults to `unlimited`; granting an operation does not silently
+install a byte, call, concurrency or time ceiling. Hosts may set limits with
+`--wasip1-single-limit` or `--wasip1-group-limit`, using a decimal value or
+`unlimited` (`UINT64_MAX` in the native policy). Clock granularity defaults to 1 ns,
+which adds no coarsening. Poll subscription count, poll wait duration, approved
+args/env bytes and descriptor count also have no additional default quota.
+ABI integer ranges, guest memory bounds, native errors and allocation failures
+still apply. Temporary I/O vectors and poll arrays report allocation failures
+instead of enforcing the removed fixed vector/subscription ceilings.
+
+All ROS environments share a stable, synchronized process ledger. Creating a
+new module/environment or updating code does not reset window/total consumption.
+Counters saturate instead of wrapping, including under unlimited policy, so a
+later finite limit cannot discard prior consumption. Reservations precede native
+RNG and I/O and guest output writes. Failed requests that reserved work do not
+refund it. Internal VM clocks/nonce randomness remain separate from guest calls.
+
+Limit names use prefixes `random`, `stdin`, `stdout`, `stderr`, `realtime`,
+`monotonic`, `process`, `thread`, `poll`, `signal`, `yield`, `filesystem`, followed by
+`.request-bytes`, `.window-bytes`, `.window-calls`, `.total-bytes`, `.total-calls`
+or `.concurrent`. Window quotas replenish per one-second monotonic window. The host reads
+`fast_io::posix_clock_gettime(posix_clock_id::monotonic)` and arms Linux
+`timerfd` with `CLOCK_MONOTONIC` and `TFD_TIMER_ABSTIME`. Changing wall-clock
+date/time does not advance quotas or restart a wait. EINTR and wake notifications
+recheck the same deadline and live counters. A failed/backward monotonic reading
+makes the current admission return `EIO` without refilling quota or performing
+the requested native operation. A later valid reading can resume operation
+under the original, unchanged counters and limits.
+Each of these six dimensions has its own overflow action, selected with
+`--wasip1-single-limit-action` or `--wasip1-group-limit-action`:
 
 ```bash
-uwvm \
-  --wasip1-global-grant monotonic-clock \
-  --wasip1-single-create restricted \
-  --wasip1-single-deny restricted monotonic-clock \
-  --wasip1-group-create entropy \
-  --wasip1-group-add-module entropy generator \
-  --wasip1-group-grant entropy random \
-  --wasm-preload-library restricted.wasm restricted \
-  --wasm-preload-library generator.wasm generator \
-  --run main.wasm
+--wasip1-single-limit main random.request-bytes 4096
+--wasip1-single-limit main random.window-calls 100
+--wasip1-single-limit-action main random.window-calls wait
+--wasip1-single-limit-exit-action main random.window-calls cancel
+--wasip1-single-limit main random.total-bytes unlimited
+--wasip1-single-limit main monotonic.granularity-ns 10000000
 ```
 
-`stdio-full-rights` is a broad compatibility opt-in. It authorizes descriptor
-operations allowed by the former masks; native descriptor access modes still
-apply. Debugger launchers retain their stricter console masks even with this
-option, and strict ROS execution continues to reject socket standard streams.
-Use the basic default when ordinary stream I/O is sufficient.
+`reject` is the default action. A request larger than a request or entire-window
+byte ceiling returns `E2BIG`; exhausted finite counters return `EAGAIN`.
+`wait` is accepted only for window bytes, window calls and concurrency: these
+can replenish. Request and lifetime ceilings cannot replenish and configuring
+`wait` for them is rejected. Zero window-call/concurrency capacity also cannot
+make progress and returns an error. Synchronous quota waits happen after the
+provider has released its guest-memory and descriptor locks; a retry checks
+current authority, descriptor identity and memory bounds again before effects.
+`--wasip1-single-limit-exit-action` / `--wasip1-group-limit-exit-action`
+also accepts `<budget>.native-wait` to select the exit behavior of actual
+pipe/socket/poll waiting after the operation quota was admitted. For example,
+`--wasip1-single-limit-exit-action main stdout.native-wait wait` preserves a
+pending stdout transfer without introducing a finite stdout quota. It
+selects `cancel` (default) or `wait` for an individual native wait or window/concurrency
+dimension when another guest thread exits. `cancel` releases that quota wait;
+`wait` lets it finish according to the host's approved policy. Other Wasm modules
+cannot change this policy or cancel its quota. Trusted host stop/update controls
+remain separate. Cancellation reports `ECANCELED`. No asynchronous quota mode
+exists.
 
-## Target Model
+An authorized proc_exit from any module/thread requests exit of the entire
+process, using the first accepted exit code. With only default cancel selections,
+the process exits directly. Already admitted operations selected to wait retain
+their native owner until the actual operation completes; newly arriving work
+cannot acquire that hold after exit is claimed. Canceled provider calls join the
+same exit instead of resuming Guest code and turning cancellation into a trap
+that would stop another selected waiting owner.
+
+Invalid Guest pointer extents return WASI `EFAULT`; an address that violates
+WASIp1 ABI alignment returns `EINVAL`. This includes nested I/O vectors, both
+paths of a two-path operation, and result pointers even when the vector count is
+zero. All participating ranges are checked before native I/O or output writes.
+These errors do not terminate the host or turn a refused operation into success.
+Recoverable host allocation failures return `ENOMEM` where an allocation is
+required. The application remains responsible for handling the returned errno;
+known Guest traps are contained at the runtime's protected execution boundary.
+The ordinary `uwvm2` product keeps its existing policy and fault behavior.
+
+An explicit clock granularity rounds clock values and resolution independently
+per clock ID, even when guest precision is zero. This limits the interface, not
+all timing side channels. `poll-subscriptions`, `poll-wait-ns` and
+`args-env-bytes` are optional explicit limits. Absolute and CPU-clock timers
+remain unsupported by the current product poll adapter; no default one-second
+poll timeout remains. These scalar bounds reject requests or report a poll
+deadline; they do not use operation-quota wait actions.
+
+Directory preopens are explicit objects with initially zero operation masks.
+`filesystem.base-rights` and `filesystem.inheriting-rights` configure their
+explicit WASIp1 rights masks; the module must also enable the namespace. Actual
+procfs/sysfs handles are rejected, including alternate path spellings.
+The VM imposes no additional fixed 4096-byte path limit. Existing WASI memory
+bounds, resource rights and native filesystem semantics decide the result.
+The independent `filesystem` budget covers ordinary-descriptor read/write and
+positioned I/O, allocation and resizing, plus native path, metadata, directory,
+seek, flag, advise and sync operations. Each authorized native operation reserves
+one call before native work; multi-fd link/rename reserves once after both rights
+checks. Close remains available to release resources after quota exhaustion.
+Guest-local prestat queries, rights reductions and fd renumbering do not reserve
+native filesystem work. Standard-stream metadata keeps its explicit grant and
+does not debit the filesystem pool. Empty-vector I/O and zero-length
+allocation still consume call quotas. Allocation reserves the requested final
+extent (`offset + length`, checked for overflow); resizing reserves the target
+size. These are conservative upper bounds, not actual newly allocated bytes:
+a small extension of a large existing file needs a sufficiently large request
+ceiling. Charging a size difference would race with other descriptors or host
+aliases that shrink the file. Budget rejection occurs before mutation and does
+not change file size/content. Counters are shared across authorized filesystem
+objects; separate per-mount/per-file budgets are not currently provided.
+The native filesystem implementation remains synchronous. Its calls are not a
+cancellable broker and arbitrary filesystem/device operations do not have a
+hard deadline. Applications requiring that property must not grant those calls.
+Raw per-call WASI trace output is rejected; use bounded runtime diagnostics.
+Socket functions return `ENOTSUP`, and socket preopens currently return a startup error in this product because their
+connect/listen/queue lifetime has no qualified bounded provider contract.
+When compiled in, the existing nonstandard `*_wasm64` imports are exposed by
+the same namespace enable. They retain their i64-pointer ABI and the same
+operation/resource checks; Core Memory64 remains a separate Wasm feature. Generic debugger descriptor
+creation/rebinding and host-environment checkpoint restore are rejected; a
+DeveloperGrant is not authority to change host resources or revive rights.
+
+Permissions and resource limits are installed by the trusted host before
+execution. Generic guest/debug writes cannot access them. Changes require a
+host management transaction with execution quiescence; raw concurrent writes
+to environment fields are not an authorization API.
+
+## Ordinary uwvm target model and shared command definitions
+
+The following Global/default and preload host-API commands describe ordinary
+uwvm. They are not accepted by `uwvm2-ros`. In the ROS product, only the
+Single/Group commands apply, without short compatibility aliases or
+`expose-host-api`/`hide-host-api`. Use the ROS binary's `--help wasi` for its
+compiled command table.
+
+### Target Model
 
 WASI Preview 1 configuration has three layers:
 
 | Layer | Purpose | How to configure |
 | --- | --- | --- |
-| Global default | Default environment and default import visibility for modules that do not have an override. | `--wasip1-global-*` commands and their short aliases. |
+| Global default | Ordinary uwvm defaults only; absent from the ROS product command table. | `--wasip1-global-*` commands and their short aliases. |
 | Single target | One anonymous per-module override group, keyed by a Wasm module name. | `--wasip1-single-create <module>`, then `--wasip1-single-* <module> ...`. |
 | Named group | One named shared override group that can be bound to multiple modules. | `--wasip1-group-create <group>`, `--wasip1-group-add-module <group> <module>`, then `--wasip1-group-* <group> ...`. |
 
@@ -121,7 +300,7 @@ One module name cannot be configured as both a single target and a member of a n
 
 UWVM2 treats WASI Preview 1 configuration as a target selection problem, not as one process-wide WASI table. Every loaded module resolves to exactly one WASI target:
 
-- The global default target, when no override is configured.
+- The global default target, when no override is configured (no import visibility in the ROS product).
 - An anonymous single-module target created with `--wasip1-single-create <module>`.
 - A named shared target created with `--wasip1-group-create <group>` and populated with `--wasip1-group-add-module <group> <module>`.
 
@@ -171,7 +350,7 @@ uwvm \
 
 In this example:
 
-- `main.wasm`, named as `main`, and `utility.wasm`, named as `utility`, use the global default WASI target because neither name is bound to a single target or a named group.
+- `main.wasm`, named as `main`, and `utility.wasm`, named as `utility`, have no WASI imports visible in the ROS product because neither name is explicitly bound and enabled.
 - `crypto.wasm`, named as `crypto`, and `crypto_accelerate.so`, named as `crypto_accelerate`, both resolve to the `crypto` group.
 - The global target sees the `/app` preopen.
 - The `crypto` group sees the global target's inherited configuration plus its own `/crypto` preopen and fd limit.
@@ -286,7 +465,7 @@ Group action commands fail if the group does not already exist. Use `--wasip1-gr
 
 ## Global Defaults And Overrides
 
-The built-in Preview 1 module is globally enabled by default. `--wasip1-global-disable` sets `local_preload_wasip1` to false. A single or group target can then re-enable WASI for selected modules with `--wasip1-single-enable` or `--wasip1-group-enable`.
+In ordinary uwvm the built-in Preview 1 module is globally enabled by default; in the ROS product it is disabled until an explicitly bound Single/Group enables its namespace; operation grants remain independent. `--wasip1-global-disable` sets `local_preload_wasip1` to false. A single or group target can then re-enable WASI for selected modules with `--wasip1-single-enable` or `--wasip1-group-enable`.
 
 Import visibility resolution is:
 
@@ -458,7 +637,7 @@ Rules:
 - The whole token must parse as `size_t`.
 - If `size_t` can represent values larger than the WASI fd type, values above the WASI fd maximum are rejected.
 - A value of `0` is translated by the command-line callback to the maximum WASI fd value.
-- If no fd limit is set, initialization treats internal `0` as default `1024`.
+- If no fd limit is set, ROS initialization uses the WASI descriptor ABI range without an additional descriptor quota; ordinary uwvm keeps its default `1024`.
 - Initialization requires room for stdio fds 0, 1, and 2. A configured limit below 3 parses successfully but fails during WASI environment initialization.
 - Preopened sockets and directories count against the fd limit.
 
@@ -759,3 +938,13 @@ uwvm2-ros --wasip1-global-mount-dir /data ::NT::\??\C:\sandbox\data --run app.wa
 ```
 
 On Windows NT, this strips `::NT::`, uses the NT opener, and can emit or fatalize the `nt-path` warning according to logging configuration.
+
+Live WASI policy manifests use `UWPOL4` with twelve operation-budget classes;
+`filesystem` is appended after the preceding eleven. Each class encodes six
+64-bit limits followed by six one-byte reject/wait actions and six one-byte
+cancel/wait actions for guest exit, then one native-wait guest-exit action. Older `UWPOL1` and
+`UWPOL2` payloads are rejected rather than reinterpreted. The signed transition keeps the same
+environment/resources and process ledger; lowering a limit does not erase
+already consumed work. Policy expiration is not an implemented WASI grant
+field: signature/activation-ticket expiry must not be described as automatic
+expiration of an installed guest permission.

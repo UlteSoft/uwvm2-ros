@@ -28,6 +28,8 @@
 # include "keyed_wait_set.h"
 # include "execution_lifetime.h"
 # include "execution_domain.h"
+# include "process_exit.h"
+# include "monotonic_clock.h"
 # include "checkpoint_host_admission.h"
 # include "cooperative_pause_domain.h"
 # include "collection_pause_domain.h"

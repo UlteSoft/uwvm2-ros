@@ -4,6 +4,9 @@
  * module/instance/generation; no Guest argument selects a management identity.
  */
 #pragma once
+#ifndef UWVM_MODULE
+#include <uwvm2/utils/thread/monotonic_clock.h>
+#endif
 #include "host.h"
 #ifndef UWVM_MODULE
 #include <uwvm2/imported/ros/ipc/rmw_publish.h>
@@ -27,11 +30,8 @@ namespace uwvm2::uwvm::imported::ros::host
         session& backend;bool armed{};::std::uint32_t reason{13};
         ~rmw_rpc_guard(){if(armed){abandon_rmw_transport(backend,reason);}}
     };
-    inline ::std::uint32_t rmw_remaining(::std::chrono::steady_clock::time_point until) noexcept
-    {
-        auto remaining{::std::chrono::duration_cast<::std::chrono::milliseconds>(until-::std::chrono::steady_clock::now()).count()};
-        return remaining>0?static_cast<::std::uint32_t>(::std::min<::std::uint64_t>(remaining,core::ipc::max_timeout_ms)):0u;
-    }
+    inline ::std::optional<::std::uint32_t> rmw_remaining(::std::chrono::steady_clock::time_point until) noexcept
+    {return core::ipc::remaining_ms(until);}
     /** One row's private cleanup. The caller tombstones ALL matching rows
      * before entering here, then claims this row exactly once. A disconnected
      * old Native session records107; it is never replaced by a new connection.
@@ -55,7 +55,7 @@ namespace uwvm2::uwvm::imported::ros::host
                 request.kind=receipt.kind;request.owner=receipt.owner;request.incarnation=receipt.incarnation;request.peer=pair->peer;
                 ::std::array<::std::uint8_t,core::ipc::rmw_service::header_bytes> raw{};
                 if(!core::ipc::rmw_service::encode(request,false,raw)){return 22;}
-                auto result{backend.connection.call("rmw.service-retire-v1",pair->primary_alias,{raw.begin(),raw.end()},budget)};
+                auto result{backend.connection.call("rmw.service-retire-v1",pair->primary_alias,{raw.begin(),raw.end()},*budget)};
                 core::ipc::rmw_service::control reply{};rmw_wire::packet observed{};
                 if(result.error){return result.payload.empty()?result.error:13u;}
                 if(!core::ipc::rmw_service::associated_endpoint(result.payload.data(),result.payload.size(),request,reply,observed)){return 13;}
@@ -67,13 +67,13 @@ namespace uwvm2::uwvm::imported::ros::host
             auto action{row.observed.kind==rmw_wire::role::publisher?"rmw.endpoint-retire-v1":
                 row.observed.kind==rmw_wire::role::subscription?"rmw.subscription-endpoint-retire-v1":nullptr};
             if(!action){return 95;}
-            auto result{backend.connection.call(action,row.alias,{raw.begin(),raw.end()},budget)};
+            auto result{backend.connection.call(action,row.alias,{raw.begin(),raw.end()},*budget)};
             rmw_wire::packet reply{};
             if(result.error){return result.payload.empty()?result.error:13u;}
             return rmw_wire::associated_response(result.payload.data(),result.payload.size(),receipt,reply)?0u:13u;
         }
 #if defined(__cpp_exceptions)
-        catch(::std::bad_alloc const&){return 12;}catch(...){return 5;}
+        catch(::std::bad_alloc const&){return 12;}catch(::std::length_error const&){return 90;}
 #endif
     }
     inline ::std::uint32_t retire_rmw_endpoints(session& backend,::std::uint64_t handle,
@@ -82,7 +82,7 @@ namespace uwvm2::uwvm::imported::ros::host
         // ONE entry deadline covers every local scan and every native retire.
         // No per-row timeout multiplication, quota, allocation or native error
         // can stop the first allocation-free authority tombstone sweep.
-        auto until{::std::chrono::steady_clock::now()+::std::chrono::milliseconds(backend.timeout)};
+        auto until{core::ipc::after(backend.timeout)};
         auto matches=[&](core::rmw_endpoint_history::entry const& row) noexcept
         {
             if(!core::service_endpoint_role(row.observed.kind))
@@ -131,7 +131,7 @@ namespace uwvm2::uwvm::imported::ros::host
     inline ::std::uint32_t rmw_endpoint_control(::std::uint64_t handle,::std::uint64_t incarnation,
         ::std::uint32_t memory,::std::uint64_t output,rmw_wire::command command,rmw_wire::role kind) noexcept
     {
-        constexpr auto version{core::version::ros2};auto entered{::std::chrono::steady_clock::now()};
+        constexpr auto version{core::version::ros2};auto entered{::uwvm2::utils::host_clock::now()};
         bool const publisher{kind==rmw_wire::role::publisher};
         if(!publisher&&kind!=rmw_wire::role::subscription){return audit_denial(version,95);}
 #if defined(__cpp_exceptions)
@@ -151,11 +151,17 @@ namespace uwvm2::uwvm::imported::ros::host
             audit.function=publisher?
                 (command==rmw_wire::command::activate?"rmw.publisher_activate":command==rmw_wire::command::inspect?"rmw.publisher_inspect":"rmw.publisher_retire"):
                 (command==rmw_wire::command::activate?"rmw.subscription_activate":command==rmw_wire::command::inspect?"rmw.subscription_inspect":"rmw.subscription_retire");
-            ::std::uint64_t timeout{},maximum{};
-            if(!source.target()||!core::parse_u64(source.target()->connection.at("connect-timeout-ms"),timeout)||
-               !timeout||timeout>core::ipc::max_timeout_ms||!core::parse_u64(cap.limits.at(publisher?"max-publishers":"max-subscribers"),maximum)||
-               !maximum||maximum>core::rmw_endpoint_history::maximum_entries){return audit.finish(22);}
-            auto until{entered+::std::chrono::milliseconds(timeout)};
+            ::std::uint64_t maximum{};::std::size_t maximum_native{};
+            auto const count_key{publisher?"max-publishers":"max-subscribers"};
+            if(!core::read_quota(cap,count_key,maximum)){return audit.finish(22);}
+            // Retirement needs this same serialized backend. Waiting here
+            // would prevent the operation that can release an active slot.
+            if(rmw_service_values::unsupported_wait(cap,count_key)){return audit.finish(95);}
+            if(auto error{rmw_service_values::quota_extent(maximum,maximum_native)}){return audit.finish(error);}
+            auto until{::std::chrono::steady_clock::time_point::max()};
+            if(auto error{rmw_service_values::connection_deadline(source.target(),entered,until)}){return audit.finish(error);}
+            if(!rmw_remaining(until)){return audit.finish(110);}
+            if(command==rmw_wire::command::activate&&!maximum_native){return audit.finish(90);}
             if(command==rmw_wire::command::activate)
             {if(auto error{backend.connect(version,until)}){return audit.finish(error);}}
             else if(!backend.connected||!backend.connection.session_id()){return audit.finish(125);}
@@ -164,7 +170,7 @@ namespace uwvm2::uwvm::imported::ros::host
             core::rmw_endpoint_history::entry const* previous{};
             if(command==rmw_wire::command::activate)
             {
-                auto error{backend.rmw_endpoints.reserve(request,cap.alias,static_cast<::std::size_t>(maximum),previous)};
+                auto error{backend.rmw_endpoints.reserve(request,cap.alias,maximum_native,previous)};
                 if(error){return audit.finish(error);}
             }
             else
@@ -190,7 +196,7 @@ namespace uwvm2::uwvm::imported::ros::host
                 if(!backend.rmw_endpoints.claim_cleanup(handle)){return audit.finish(125);}
             }
             rmw_rpc_guard rpc{backend,true,13};
-            auto result{backend.connection.call(publisher?"rmw.endpoint-v1":"rmw.subscription-endpoint-v1",cap.alias,{raw.begin(),raw.end()},budget)};
+            auto result{backend.connection.call(publisher?"rmw.endpoint-v1":"rmw.subscription-endpoint-v1",cap.alias,{raw.begin(),raw.end()},*budget)};
             if(result.error)
             {
                 rpc.reason=result.payload.empty()?result.error:13;
@@ -211,8 +217,8 @@ namespace uwvm2::uwvm::imported::ros::host
             rpc.armed=false;return audit.finish(0);
         }
 #if defined(__cpp_exceptions)
-        catch(::std::bad_alloc const&){return audit_denial(version,12);}
-        catch(...){return audit_denial(version,22);}
+        catch(::std::bad_alloc const&){return allocation_failure();}
+        catch(::std::length_error const&){return extent_failure();}
 #endif
     }
     inline ::std::uint32_t rmw_publisher_activate(::std::uint64_t h,::std::uint32_t m,::std::uint64_t o) noexcept
@@ -224,7 +230,7 @@ namespace uwvm2::uwvm::imported::ros::host
     inline ::std::uint32_t rmw_publisher_publish(::std::uint64_t handle,::std::uint64_t incarnation,
         ::std::uint32_t memory,::std::uint64_t input,::std::uint64_t length) noexcept
     {
-        constexpr auto version{core::version::ros2};auto entered{::std::chrono::steady_clock::now()};
+        constexpr auto version{core::version::ros2};auto entered{::uwvm2::utils::host_clock::now()};
 #if defined(__cpp_exceptions)
         try
 #endif
@@ -241,7 +247,7 @@ namespace uwvm2::uwvm::imported::ros::host
             core::rmw_endpoint_history::entry const* row{};auto error{backend.rmw_endpoints.find(owner,incarnation,rmw_wire::role::publisher,row)};
             if(error){return audit.finish(error);}
             ::std::uint64_t maximum{};
-            if(!core::parse_u64(cap.limits.at("max-message-bytes"),maximum)||length>maximum||length>core::ipc::max_payload_bytes-518-core::ipc::rmw_publish::header_bytes){return audit.finish(90);}
+            if(!core::read_quota(cap,"max-message-bytes",maximum)||length>maximum||length>core::ipc::max_payload_bytes-518-core::ipc::rmw_publish::header_bytes){return audit.finish(90);}
             if(!memory_range(memory,input,length)){return audit.finish(22);}
             // One owned allocation/read. Admission borrows the active body,
             // then the fixed envelope is filled without another payload copy.
@@ -253,18 +259,18 @@ namespace uwvm2::uwvm::imported::ros::host
             ::std::array<::std::uint8_t,core::ipc::rmw_publish::header_bytes> raw{};
             if(!core::ipc::rmw_publish::encode({owner,incarnation,length},raw)){return audit.finish(22);}
             ::std::copy(raw.begin(),raw.end(),packet.begin());
-            ::std::uint64_t timeout{};
-            if(!core::parse_u64(source.target()->connection.at("connect-timeout-ms"),timeout)||!timeout||timeout>core::ipc::max_timeout_ms){return audit.finish(22);}
-            auto until{entered+::std::chrono::milliseconds(timeout)};auto budget{rmw_remaining(until)};if(!budget){return audit.finish(110);}
-            rmw_rpc_guard rpc{backend,true,13};auto result{backend.connection.call("rmw.publish-v1",cap.alias,::std::move(packet),budget)};
+            auto until{::std::chrono::steady_clock::time_point::max()};
+            if(auto error{rmw_service_values::connection_deadline(source.target(),entered,until)}){return audit.finish(error);}
+            auto budget{rmw_remaining(until)};if(!budget){return audit.finish(110);}
+            rmw_rpc_guard rpc{backend,true,13};auto result{backend.connection.call("rmw.publish-v1",cap.alias,::std::move(packet),*budget)};
             if(!result.payload.empty()){return audit.finish(13);}
             if(result.error){rpc.reason=result.error;if(result.error==11){rpc.armed=false;}return audit.finish(result.error);}
             if(!rmw_remaining(until)){rpc.reason=110;return audit.finish(110);}
             rpc.armed=false;return audit.finish(0);
         }
 #if defined(__cpp_exceptions)
-        catch(::std::bad_alloc const&){return audit_denial(version,12);}
-        catch(...){return audit_denial(version,22);}
+        catch(::std::bad_alloc const&){return allocation_failure();}
+        catch(::std::length_error const&){return extent_failure();}
 #endif
     }
 }

@@ -1,5 +1,5 @@
 /** @file
- * Finite session-bound native endpoint history shared by trusted Host/Gateway.
+ * Session-bound native endpoint history shared by trusted Host/Gateway.
  * It stores values only. Every authority check and actual entity operation must
  * still hold the true capability/session lease. Owners serialize every method.
  * A failed activation remains a tombstone; neither a reconnect nor retirement
@@ -35,7 +35,7 @@ namespace uwvm2::imported::ros
             std::uint32_t last_transfer_error{},last_cancel_error{};
             bool cancel_attempted{};
         };
-        static constexpr std::size_t maximum_entries{65536};
+        static constexpr std::size_t maximum_entries{SIZE_MAX};
     private:
         std::map<std::uint64_t,entry> entries_;
         std::map<std::string,std::size_t,std::less<>> active_by_alias_;
@@ -65,7 +65,7 @@ namespace uwvm2::imported::ros
             std::size_t maximum_active,entry const*& output)
         {
             if(!ipc::rmw_endpoint::valid_request(request)||request.operation!=ipc::rmw_endpoint::command::activate||
-               alias.empty()||alias.size()>255||alias.find('\0')!=alias.npos||!maximum_active||maximum_active>maximum_entries){return 22;}
+               alias.empty()||alias.size()>255||alias.find('\0')!=alias.npos){return 22;}
             if(sealed_){return 125;}
             auto const& owner{request.owner};
             if(instance_&&(instance_!=owner.instance||generation_!=owner.generation)){return 13;}
@@ -77,7 +77,7 @@ namespace uwvm2::imported::ros
                 if(!ipc::rmw_endpoint::same(old->second.observed.owner,owner)||old->second.alias!=alias||old->second.observed.kind!=request.kind){return 13;}
                 return old->second.state==phase::retired?125u:17u;
             }
-            if(entries_.size()>=maximum_entries||active_count(alias)>=maximum_active){return 11;}
+            if(active_count(alias)>=maximum_active){return 11;}
 #if defined(__cpp_exceptions)
             try
 #endif

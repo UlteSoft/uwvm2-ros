@@ -76,7 +76,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
     enum class gc_object_status : ::std::uint32_t
     {
         ok, invalid_store, invalid_type, null_reference, invalid_reference, invalid_value, out_of_bounds,
-        immutable_field, size_overflow, out_of_memory
+        immutable_field, size_overflow, out_of_memory,
+        data_segment_out_of_bounds, element_segment_out_of_bounds
     };
 
     // Exactly one 16-byte Wasm stack slot. The validated instruction/type declaration

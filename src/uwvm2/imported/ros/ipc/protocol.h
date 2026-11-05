@@ -18,7 +18,7 @@ namespace uwvm2::imported::ros::ipc
     inline constexpr std::uint16_t abi_version{1};
     inline constexpr std::size_t header_bytes{48};
     inline constexpr std::uint32_t max_payload_bytes{4u * 1024u * 1024u};
-    inline constexpr std::uint32_t max_timeout_ms{60000};
+    inline constexpr std::uint32_t max_timeout_ms{UINT32_MAX};
     enum class kind : std::uint16_t { hello=1, request=2, response=3, cancel=4, close=5 };
     struct frame
     {
@@ -58,7 +58,7 @@ namespace uwvm2::imported::ros::ipc
         auto k{get(b+6,2)};
         if(k < 1 || k > 5) { return false; }
         length=static_cast<std::uint32_t>(get(b+36,4));
-        if(length > max_payload_bytes || get(b+44,4) == 0 || get(b+44,4) > max_timeout_ms) { return false; }
+        if(length > max_payload_bytes) { return false; }
         f.type=static_cast<kind>(k); f.backend=b[8];
         f.request_id=get(b+12,8); f.response_id=get(b+20,8); f.session_id=get(b+28,8);
         f.error=static_cast<std::uint32_t>(get(b+40,4)); f.timeout_ms=static_cast<std::uint32_t>(get(b+44,4));

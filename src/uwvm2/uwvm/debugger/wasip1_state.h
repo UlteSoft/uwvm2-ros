@@ -202,6 +202,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasip1_state
     { return details::scan_rebindings(bytes,[](::std::uint32_t,::std::uint32_t) noexcept {}); }
     [[nodiscard]] inline constexpr bool valid(request const& requested) noexcept
     {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        // Developer control cannot rewrite launch grants, resource handles,
+        // argv/environment contracts, or restore an older permission table.
+        if(is_mutation(requested.operation)) { return false; }
+#endif
         if(requested.count == 0u || requested.count > maximum_rows) { return false; }
         bool const group{requested.operation==action::portable_export_group || requested.operation==action::portable_import_group};
         if(!group && !requested.environments.empty()) { return false; }

@@ -2,7 +2,7 @@
 #include "typed_event_common_ros2.h"
 #include <iomanip>
 #include <map>
-#include "../../../../../src/ros/gateway/common/native_io.h"
+#include <gateway/common/native_io.h>
 
 namespace typed_event_probe
 {

@@ -41,11 +41,24 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
         ::std::size_t const capacity;
         ::std::shared_ptr<execution_lifetime> current;
         bool accepting{true};
+        struct wait_notification
+        {
+            void (*wake)(void*) noexcept{};
+            void* context{};
+            wait_notification* next{};
+        };
+        wait_notification* host_waiters{};
+        // Callbacks only signal native wait primitives. They cannot call back
+        // into this domain or take execution/resource ownership.
+        void wake_host_waiters_locked() noexcept
+        { for(auto* item{host_waiters}; item; item=item->next) { item->wake(item->context); } }
+
 
         [[nodiscard]] ::std::shared_ptr<execution_lifetime> close_admission()
         {
             ::std::lock_guard lock{admission_mutex};
             accepting = false;
+            wake_host_waiters_locked();
             // Copy ownership before dropping the lock: a concurrent reset may
             // retire this generation while a stop callback is still returning.
             return current;
@@ -133,6 +146,20 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
             accepting = false;
             return private_generation_gate{*this, current};
         }
+        // Managed cold launch configures and closes the same real generation
+        // atomically against public entry. The retained maintenance owner may
+        // compile using a private lease; it cannot open public admission itself.
+        template<typename Configure>
+        [[nodiscard]] private_generation_gate configure_and_suspend_public_admission(
+            maintenance_transition const& transition, Configure&& configure)
+        {
+            if(transition.owner_ != this || !transition.lock_.owns_lock()) { return {}; }
+            ::std::lock_guard lock{admission_mutex};
+            if(!accepting || !current->quiescent_configuration_ready()) { return {}; }
+            ::std::forward<Configure>(configure)();
+            accepting = false;
+            return private_generation_gate{*this, current};
+        }
         // Invoke only after real profile native joins, all owned code/world/
         // provider pins and REAL execution leases have left. Pending cannot pass.
         [[nodiscard]] bool reopen_public_admission(maintenance_transition const& transition,
@@ -143,6 +170,41 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
             if(accepting || current.get() != gate.actual_.get() || current.owner_before(gate.actual_) ||
                gate.actual_.owner_before(current) || !current->quiescent_configuration_ready()) { return false; }
             accepting = true; gate.owner_ = nullptr; gate.actual_.reset(); return true;
+        }
+        // Separate production update fence. It closes new root admission without
+        // cancelling genuine old leases; only their actual destruction drains it.
+        // The management transition is held by the same native management thread
+        // from prepare through its authenticated decision. Dropping a pending
+        // token NEVER reopens admission.
+        [[nodiscard]] private_generation_gate fence_for_update(maintenance_transition const& transition)
+        {
+            if(transition.owner_ != this || !transition.lock_.owns_lock()) { return {}; }
+            ::std::lock_guard lock{admission_mutex};
+            if(!accepting || current->stop_requested()) { return {}; }
+            accepting = false;
+            return private_generation_gate{*this, current};
+        }
+        // Only an uncommitted candidate may use this: no production state or
+        // entry has changed. Genuine old leases may still be running after a
+        // prepare deadline; cancellation of private work need not cancel them.
+        [[nodiscard]] bool cancel_private_update_fence(maintenance_transition const& transition,
+            private_generation_gate& gate)
+        {
+            if(transition.owner_ != this || !transition.lock_.owns_lock() || gate.owner_ != this || !gate.actual_) { return false; }
+            ::std::lock_guard lock{admission_mutex};
+            if(accepting || current.get() != gate.actual_.get() || current.owner_before(gate.actual_) ||
+               gate.actual_.owner_before(current) || current->stop_requested()) { return false; }
+            accepting = true; gate.owner_ = nullptr; gate.actual_.reset(); return true;
+        }
+        [[nodiscard]] bool drain_update_until(maintenance_transition const& transition,
+            private_generation_gate const& gate, ::std::chrono::steady_clock::time_point deadline)
+        {
+            if(transition.owner_ != this || !transition.lock_.owns_lock() || gate.owner_ != this || !gate.actual_) { return false; }
+            {
+                ::std::lock_guard lock{admission_mutex};
+                if(accepting || current.get() != gate.actual_.get() || current->stop_requested()) { return false; }
+            }
+            return gate.actual_->drain_until(deadline);
         }
         explicit execution_domain(::std::size_t max_concurrent)
             : capacity{max_concurrent}, current{::std::make_shared<execution_lifetime>(max_concurrent)} {}
@@ -158,6 +220,37 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
             // shared_ptr increment or allocation per execution entry.
             if(!accepting) { return {}; }
             return current->try_enter();
+        }
+
+        class host_wait_registration
+        {
+            execution_domain& owner;
+            wait_notification entry;
+        public:
+            host_wait_registration(execution_domain& actual, void (*wake)(void*) noexcept, void* context) noexcept
+                : owner{actual}, entry{wake, context, nullptr}
+            {
+                ::std::lock_guard lock{owner.admission_mutex};
+                entry.next=owner.host_waiters; owner.host_waiters=&entry;
+            }
+            host_wait_registration(host_wait_registration const&) = delete;
+            ~host_wait_registration()
+            {
+                ::std::lock_guard lock{owner.admission_mutex};
+                auto** item{&owner.host_waiters};
+                while(*item && *item != &entry) { item=&(*item)->next; }
+                if(*item) { *item=entry.next; }
+            }
+        };
+
+        // Native host waits must release provider locks before this query.
+        // Closing new-root admission for an update does not cancel an already
+        // admitted invocation's waits. Only actual stop/retirement cancels them;
+        // an update deadline must refuse the candidate if they have not drained.
+        [[nodiscard]] bool host_wait_interrupted() noexcept
+        {
+            ::std::lock_guard lock{admission_mutex};
+            return current->stop_requested();
         }
 
         // Cold configuration only; no wait, cancellation, guest entry or

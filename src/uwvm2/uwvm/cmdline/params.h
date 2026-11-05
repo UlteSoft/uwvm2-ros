@@ -48,10 +48,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
     {
         inline constexpr ::uwvm2::utils::cmdline::parameter const* parameter_unsort[]{
             // global
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::diagnostic_control_fd),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::update_control_fd),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::update_public_key),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::update_contract),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::update_scope),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::update_call_export),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::version),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::run),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::help),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::mode),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::management_profile),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::runtime_debug_jit),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::debug_jit_control_fd),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::debug_jit_control_handle),
@@ -163,30 +170,68 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
         // wasip1
 #ifndef UWVM_DISABLE_LOCAL_IMPORTED_WASIP1
 # if defined(UWVM_IMPORT_WASI_WASIP1)
+#  if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_global_trace),
+#  endif
+#  if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_global_expose_host_api),
+#  endif
+#  if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_global_disable),
+#  endif
+#  if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_global_set_fd_limit),
+#  endif
+#  if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_global_mount_dir),
+#  endif
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_disable_mount_path_normalization),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_allow_overlapping_mount_paths),
+#  if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_global_set_argv0),
+#  endif
+#  if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_global_force_args),
+#  endif
+#  if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_global_noinherit_system_environment),
+#  endif
+#  if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_global_inherit_system_environment),
+#  endif
+#  if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_global_grant),
+#  endif
+#  if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_global_deny),
+#  endif
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_single_grant),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_single_mount_dir_rights),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_group_mount_dir_rights),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_single_limit),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_group_limit),
+        ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_single_limit_action),
+        ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_group_limit_action),
+        ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_single_limit_exit_action),
+        ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_group_limit_exit_action),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_single_deny),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_group_grant),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_group_deny),
+#  if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_global_delete_system_environment),
+#  endif
+#  if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_global_add_or_replace_environment),
+#  endif
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_single_create),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_single_enable),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_single_disable),
+#  if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_single_expose_host_api),
+#  endif
+#  if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_single_hide_host_api),
+#  endif
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_single_noinherit_system_environment),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_single_inherit_system_environment),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_single_disable_utf8_check),
@@ -202,8 +247,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_group_add_module),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_group_enable),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_group_disable),
+#  if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_group_expose_host_api),
+#  endif
+#  if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_group_hide_host_api),
+#  endif
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_group_noinherit_system_environment),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_group_inherit_system_environment),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_group_disable_utf8_check),
@@ -216,10 +265,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_group_delete_system_environment),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_group_mount_dir),
 #  if defined(UWVM_IMPORT_WASI_WASIP1_SUPPORT_SOCKET)
+#  if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_global_socket_tcp_listen),
+#  endif
+#  if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_global_socket_tcp_connect),
+#  endif
+#  if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_global_socket_udp_bind),
+#  endif
+#  if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_global_socket_udp_connect),
+#  endif
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_single_socket_tcp_listen),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_single_socket_tcp_connect),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_single_socket_udp_bind),

@@ -80,11 +80,26 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_t environ_ptrsz,
         ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_t environ_buf_ptrsz) noexcept
     {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        if(!env.exposes(u8"environ_get")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+        if(!env.permits(::uwvm2::imported::wasi::wasip1::environment::permission_t::environ)) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+#endif
+
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        ::std::uint64_t data_bytes{};
+        for(auto const text : env.envs)
+        {
+            if(text.size() >= env.limits.max_args_env_bytes || data_bytes > env.limits.max_args_env_bytes - text.size() - 1u)
+            { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::e2big; }
+            data_bytes += text.size() + 1u;
+        }
+#endif
         auto const memory_pointer{env.get_memory()};
         if(memory_pointer == nullptr) [[unlikely]] { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
         auto& memory{*memory_pointer};
 
-        check_wasip1_guest_pointer_alignment<4uz>(environ_ptrsz, u8"environ_get.environ (Pointer<Pointer<u8>>)");
+        if(!check_wasip1_guest_pointer_alignment<4uz>(environ_ptrsz, u8"environ_get.environ (Pointer<Pointer<u8>>)"))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::einval; }
 
         auto const trace_wasip1_call{env.trace_wasip1_call};
 
@@ -107,7 +122,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 
         // WASI authorizes exactly the count reported by the matching sizes_get call.
         auto const environ_vec_size_bytes{environ_vec_size * sizeof(::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_t)};
-        ::uwvm2::imported::wasi::wasip1::memory::check_memory_bounds_wasm32(memory, environ_ptrsz, environ_vec_size_bytes);
+        if(!::uwvm2::imported::wasi::wasip1::func::check_wasip1_memory_bounds_wasm32(memory, environ_ptrsz, environ_vec_size_bytes))
+            { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
 
         // Check only once to avoid excessive locking overhead.
         ::std::size_t curr_environ_size_bytes{};
@@ -122,7 +138,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             // nerver overflow
             curr_environ_size_bytes += curr_argv_size + 1uz;  // end zero-byte
         }
-        ::uwvm2::imported::wasi::wasip1::memory::check_memory_bounds_wasm32(memory, environ_buf_ptrsz, curr_environ_size_bytes);
+        if(!::uwvm2::imported::wasi::wasip1::func::check_wasip1_memory_bounds_wasm32(memory, environ_buf_ptrsz, curr_environ_size_bytes))
+            { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
 
         auto environ_curr_size{environ_ptrsz};
         auto environ_buff_curr_size{environ_buf_ptrsz};

@@ -24,6 +24,12 @@
 #ifndef UWVM_MODULE
 // std
 # include <cstddef>
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+# include <cstdlib>
+# include <vector>
+# include <new>
+# include <stdexcept>
+#endif
 # include <cstdint>
 # include <climits>
 # include <cstring>
@@ -39,6 +45,9 @@
 // platform
 # if !defined(_WIN32)
 #  include <errno.h>
+# endif
+# if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(__linux__)
+#  include <sys/vfs.h>
 # endif
 // import
 # include <fast_io.h>
@@ -64,6 +73,85 @@
 
 UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 {
+    // Host-call pointers must be checked against committed guest memory, even
+    // when the interpreter normally relies on mmap guard pages. A host syscall
+    // or a checked-memory helper must never turn bad guest input into a host trap.
+    template<typename Memory, ::std::unsigned_integral Offset, ::std::unsigned_integral Size>
+    [[nodiscard]] inline constexpr bool wasip1_guest_range_valid_unlocked(Memory const& memory, Offset offset, Size bytes) noexcept
+    {
+        if(memory.memory_begin == nullptr) { return false; }
+        ::std::size_t length{};
+        if constexpr(requires { memory.memory_length_p; })
+        {
+            if(memory.memory_length_p == nullptr) { return false; }
+            length = memory.memory_length_p->load(::std::memory_order_acquire);
+        }
+        else { length = memory.memory_length; }
+        // Compare before narrowing; subtraction avoids offset + bytes overflow.
+        return offset <= length && bytes <= length - static_cast<::std::size_t>(offset);
+    }
+
+    template<typename Memory, ::std::unsigned_integral Offset, ::std::unsigned_integral Size>
+    [[nodiscard]] inline constexpr bool check_wasip1_memory_bounds_wasm32(Memory const& memory, Offset offset, Size bytes) noexcept
+    {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        [[maybe_unused]] auto const guard{::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory)};
+        return wasip1_guest_range_valid_unlocked(memory, offset, bytes);
+#else
+        ::uwvm2::imported::wasi::wasip1::memory::check_memory_bounds_wasm32(memory, offset, bytes);
+        return true;
+#endif
+    }
+
+    template<typename Memory, ::std::unsigned_integral Offset, ::std::unsigned_integral Size>
+    [[nodiscard]] inline constexpr bool check_wasip1_memory_bounds_wasm32_unlocked(Memory const& memory, Offset offset, Size bytes) noexcept
+    {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        return wasip1_guest_range_valid_unlocked(memory, offset, bytes);
+#else
+        ::uwvm2::imported::wasi::wasip1::memory::check_memory_bounds_wasm32_unlocked(memory, offset, bytes);
+        return true;
+#endif
+    }
+
+    template<typename Memory, ::std::unsigned_integral Offset, ::std::unsigned_integral Size>
+    [[nodiscard]] inline constexpr bool check_wasip1_memory_bounds_wasm64(Memory const& memory, Offset offset, Size bytes) noexcept
+    {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        [[maybe_unused]] auto const guard{::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory)};
+        return wasip1_guest_range_valid_unlocked(memory, offset, bytes);
+#else
+        ::uwvm2::imported::wasi::wasip1::memory::check_memory_bounds_wasm64(memory, offset, bytes);
+        return true;
+#endif
+    }
+
+    template<typename Memory, ::std::unsigned_integral Offset, ::std::unsigned_integral Size>
+    [[nodiscard]] inline constexpr bool check_wasip1_memory_bounds_wasm64_unlocked(Memory const& memory, Offset offset, Size bytes) noexcept
+    {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        return wasip1_guest_range_valid_unlocked(memory, offset, bytes);
+#else
+        ::uwvm2::imported::wasi::wasip1::memory::check_memory_bounds_wasm64_unlocked(memory, offset, bytes);
+        return true;
+#endif
+    }
+
+    // Every directory traversal validates the object opened by the kernel.
+    // This also prevents an approved ancestor mount from reaching proc/sys
+    // magic links and exposing management descriptors through /proc/self/fd.
+    template<typename... Args>
+    [[nodiscard]] inline constexpr ::fast_io::dir_file open_authorized_directory(Args&&... args)
+    {
+        ::fast_io::dir_file opened{::std::forward<Args>(args)...};
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(__linux__)
+        struct ::statfs filesystem{};
+        if(::fstatfs(opened.native_handle(), &filesystem)!=0) ::fast_io::throw_posix_error(errno);
+        if(filesystem.f_type==0x9fa0 || filesystem.f_type==0x62656572) ::fast_io::throw_posix_error(EPERM);
+#endif
+        return opened;
+    }
+
     /// @brief Report a WASI Preview 1 guest-ABI pointer alignment violation and trap.
     /// @note  This is deliberately separate from WebAssembly linear-memory load/store handling: ordinary non-atomic Wasm memory operations may use
     ///        unaligned effective addresses. The stricter rule belongs only to pointer arguments crossing the WASI host-call boundary.
@@ -112,15 +200,20 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
     /// @see https://github.com/WebAssembly/WASI/blob/wasi-0.1/tools/witx-docs.md#pointers
     /// @tparam RequiredAlignment Explicit alignment from the guest ABI layout; never infer this from a host C++ pointer or host ABI.
     template <::std::size_t RequiredAlignment, ::std::unsigned_integral Pointer>
-    inline constexpr void check_wasip1_guest_pointer_alignment(Pointer guest_offset, ::fast_io::u8string_view pointer_name) noexcept
+    [[nodiscard]] inline constexpr bool check_wasip1_guest_pointer_alignment(Pointer guest_offset, [[maybe_unused]] ::fast_io::u8string_view pointer_name) noexcept
     {
         static_assert(RequiredAlignment != 0uz && (RequiredAlignment & (RequiredAlignment - 1uz)) == 0uz,
                       "WASI guest pointer alignment must be a nonzero power of two");
 
         if((guest_offset & static_cast<Pointer>(RequiredAlignment - 1uz)) != 0u) [[unlikely]]
         {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            return false;
+#else
             output_wasip1_guest_pointer_alignment_error(static_cast<::std::uint_least64_t>(guest_offset), RequiredAlignment, pointer_name);
+#endif
         }
+        return true;
     }
 
     template <::std::integral I>
@@ -235,9 +328,43 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 # endif
     }
 
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+    // Temporary host allocations must report failure through the guest ABI.
+    // This adapter keeps the repository vector spelling without its fail-fast
+    // allocator; callers contain bad_alloc/length_error before returning.
+    template<typename T>
+    struct recoverable_host_vector : ::std::vector<T>
+    {
+        using ::std::vector<T>::vector;
+        template<typename... Args> constexpr T& emplace_back_unchecked(Args&&... args)
+        { return this->emplace_back(static_cast<Args&&>(args)...); }
+        constexpr T& front_unchecked() noexcept { return this->front(); }
+        constexpr T const& front_unchecked() const noexcept { return this->front(); }
+        constexpr T& back_unchecked() noexcept { return this->back(); }
+        constexpr T const& back_unchecked() const noexcept { return this->back(); }
+        constexpr T& index_unchecked(::std::size_t index) noexcept { return (*this)[index]; }
+        constexpr T const& index_unchecked(::std::size_t index) const noexcept { return (*this)[index]; }
+    };
+#else
+    template<typename T> using recoverable_host_vector = ::uwvm2::utils::container::vector<T>;
+#endif
+
     struct fast_io_io_scatter_t_allocator_guard
     {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        struct allocator
+        {
+            [[nodiscard]] static ::fast_io::io_scatter_t* allocate(::std::size_t count) noexcept
+            {
+                if(count > SIZE_MAX / sizeof(::fast_io::io_scatter_t)) { return nullptr; }
+                return static_cast<::fast_io::io_scatter_t*>(::std::malloc(count * sizeof(::fast_io::io_scatter_t)));
+            }
+            static constexpr void deallocate(::fast_io::io_scatter_t* value) noexcept
+            { if(value != nullptr) { ::std::free(value); } }
+        };
+#else
         using allocator = ::fast_io::native_typed_global_allocator<::fast_io::io_scatter_t>;
+#endif
         ::fast_io::io_scatter_t* ptr{};
 
         inline constexpr fast_io_io_scatter_t_allocator_guard() noexcept = default;
@@ -319,6 +446,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
     inline constexpr void print_wasip1_trace_message(::uwvm2::imported::wasi::wasip1::environment::wasip1_environment<memory_type> & env,
                                                      Args && ... args) noexcept
     {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        // Raw per-call formatting can expose arbitrary labels and block on the
+        // trace sink. The ROS launcher rejects this legacy facility; embedders
+        // cannot turn it into an unbounded guest-triggered output channel.
+        return;
+#endif
         using trace_group_kind_t = ::uwvm2::imported::wasi::wasip1::environment::trace_wasip1_group_kind_t;
         using trace_output_target_t = ::uwvm2::imported::wasi::wasip1::environment::trace_wasip1_output_target_t;
 
@@ -616,9 +749,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 # if defined(_WIN32) && !defined(__CYGWIN__) && !defined(_WIN32_WINDOWS)
             // An empty NT relative name reopens the supplied directory itself.
             // NT does not interpret the POSIX dot component in this operation.
-            ::fast_io::dir_file opened{at(directory), u8"", mode};
+            auto opened{::uwvm2::imported::wasi::wasip1::func::open_authorized_directory(at(directory), u8"", mode)};
 # else
-            ::fast_io::dir_file opened{at(directory), u8".", mode};
+            auto opened{::uwvm2::imported::wasi::wasip1::func::open_authorized_directory(at(directory), u8".", mode)};
 # endif
             ::uwvm2::imported::wasi::wasip1::fd_manager::dir_stack_entry_ref_t replacement{};
             replacement.ptr->dir_stack.name = original.name;
@@ -754,7 +887,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 # endif
                             {
                                 // default is symlink_nofollow
-                                next = ::fast_io::dir_file{at(curr_fd_native_dir_file), next_name};
+                                next = ::uwvm2::imported::wasi::wasip1::func::open_authorized_directory(at(curr_fd_native_dir_file), next_name);
 
                                 // The `Win32 CreateFileW` function can simultaneously open both a directory and a file when specifying a
                                 // directory. However, under the current fast_io strategy, `dir_file` does not utilize `CreateFileW`.
@@ -845,7 +978,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 # endif
                             {
                                 // default is symlink_nofollow
-                                next = ::fast_io::dir_file{at(curr_path_stack.back_unchecked()), next_name};
+                                next = ::uwvm2::imported::wasi::wasip1::func::open_authorized_directory(at(curr_path_stack.back_unchecked()), next_name);
 
                                 // The `Win32 CreateFileW` function can simultaneously open both a directory and a file when specifying a
                                 // directory. However, under the current fast_io strategy, `dir_file` does not utilize `CreateFileW`.
@@ -1207,7 +1340,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 # endif
                                 {
                                     // default is symlink_nofollow
-                                    next = ::fast_io::dir_file{at(curr_fd_native_dir_file), next_name};
+                                    next = ::uwvm2::imported::wasi::wasip1::func::open_authorized_directory(at(curr_fd_native_dir_file), next_name);
 
                                     // The `Win32 CreateFileW` function can simultaneously open both a directory and a file when specifying a
                                     // directory. However, under the current fast_io strategy, `dir_file` does not utilize `CreateFileW`.
@@ -1316,7 +1449,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 # endif
                                 {
                                     // default is symlink_nofollow
-                                    next = ::fast_io::dir_file{at(curr_path_stack.back_unchecked()), next_name};
+                                    next = ::uwvm2::imported::wasi::wasip1::func::open_authorized_directory(at(curr_path_stack.back_unchecked()), next_name);
 
                                     // The `Win32 CreateFileW` function can simultaneously open both a directory and a file when specifying a
                                     // directory. However, under the current fast_io strategy, `dir_file` does not utilize `CreateFileW`.
@@ -1530,7 +1663,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 # endif
                             {
                                 // default is symlink_nofollow
-                                next = ::fast_io::dir_file{at(curr_fd_native_dir_file), next_name};
+                                next = ::uwvm2::imported::wasi::wasip1::func::open_authorized_directory(at(curr_fd_native_dir_file), next_name);
 
                                 // The `Win32 CreateFileW` function can simultaneously open both a directory and a file when specifying a
                                 // directory. However, under the current fast_io strategy, `dir_file` does not utilize `CreateFileW`.
@@ -1621,7 +1754,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 # endif
                             {
                                 // default is symlink_nofollow
-                                next = ::fast_io::dir_file{at(curr_path_stack.back_unchecked().file), next_name};
+                                next = ::uwvm2::imported::wasi::wasip1::func::open_authorized_directory(at(curr_path_stack.back_unchecked().file), next_name);
 
                                 // The `Win32 CreateFileW` function can simultaneously open both a directory and a file when specifying a
                                 // directory. However, under the current fast_io strategy, `dir_file` does not utilize `CreateFileW`.
@@ -1979,7 +2112,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 # endif
                                 {
                                     // default is symlink_nofollow
-                                    next = ::fast_io::dir_file{at(curr_fd_native_dir_file), next_name};
+                                    next = ::uwvm2::imported::wasi::wasip1::func::open_authorized_directory(at(curr_fd_native_dir_file), next_name);
 
                                     // The `Win32 CreateFileW` function can simultaneously open both a directory and a file when specifying a
                                     // directory. However, under the current fast_io strategy, `dir_file` does not utilize `CreateFileW`.
@@ -2088,7 +2221,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 # endif
                                 {
                                     // default is symlink_nofollow
-                                    next = ::fast_io::dir_file{at(curr_path_stack.back_unchecked().file), next_name};
+                                    next = ::uwvm2::imported::wasi::wasip1::func::open_authorized_directory(at(curr_path_stack.back_unchecked().file), next_name);
 
                                     // The `Win32 CreateFileW` function can simultaneously open both a directory and a file when specifying a
                                     // directory. However, under the current fast_io strategy, `dir_file` does not utilize `CreateFileW`.

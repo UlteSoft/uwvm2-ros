@@ -18,7 +18,8 @@ namespace uwvm2::imported::ros::ipc::rmw_service
     inline constexpr std::size_t minimum_delivery_bytes{header_bytes+metadata::header_bytes};
     inline constexpr std::size_t endpoint_response_bytes{header_bytes+endpoint::packet_bytes};
     inline constexpr std::size_t maximum_input_bytes{max_payload_bytes-518-header_bytes};
-    inline constexpr std::uint64_t maximum_wait_ns{60000000000ULL};
+    // The wire stores the full u64 duration; only an explicit grant limits it.
+    inline constexpr std::uint64_t maximum_wait_ns{UINT64_MAX};
     enum class command:std::uint8_t
     {activate=1,inspect=2,retire=3,submit=4,peek=5,commit=6,cancel=7,respond=8,available=9,abandon=10};
     struct control

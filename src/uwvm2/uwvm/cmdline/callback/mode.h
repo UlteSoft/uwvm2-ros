@@ -49,6 +49,74 @@
 UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
 {
 #if defined(UWVM_MODULE)
+    extern "C++"
+#else
+    inline
+#endif
+    ::uwvm2::utils::cmdline::parameter_return_type update_option_callback(
+        ::uwvm2::utils::cmdline::parameter_parsing_results*,
+        ::uwvm2::utils::cmdline::parameter_parsing_results* current,
+        ::uwvm2::utils::cmdline::parameter_parsing_results* end) noexcept
+    {
+        using result = ::uwvm2::utils::cmdline::parameter_return_type;
+        auto next{current + 1};
+        if(next == end || next->type != ::uwvm2::utils::cmdline::parameter_parsing_results_type::arg) { return result::return_m1_imme; }
+        if(current->str == u8"--update-control-fd" || current->str == u8"--diagnostic-control-fd")
+        {
+            unsigned fd{};
+            if(next->str.empty()) { return result::return_m1_imme; }
+            for(auto c : next->str)
+            { if(c < u8'0' || c > u8'9' || fd > 104857) { return result::return_m1_imme; } fd = fd * 10 + static_cast<unsigned>(c-u8'0'); }
+            if(fd < 3 || fd > 1048576) { return result::return_m1_imme; }
+            if(current->str == u8"--diagnostic-control-fd") { diagnostic_control_fd = static_cast<int>(fd); }
+            else { update_control_fd = static_cast<int>(fd); }
+        }
+        else if(current->str == u8"--update-call-export")
+        {
+            if(next->str.empty() || next->str.size() > 256u) { return result::return_m1_imme; }
+            for(auto c : next->str) { if(c < 0x20 || c == 0x7f) { return result::return_m1_imme; } }
+            update_call_export = ::uwvm2::utils::container::u8string_view{next->str.data(), next->str.size()};
+        }
+        else
+        {
+            auto* value{current->str == u8"--update-public-key" ? &update_public_key : current->str == u8"--update-contract" ? &update_contract : &update_scope};
+            if(next->str.size() != 64) { return result::return_m1_imme; }
+            for(::std::size_t i{}; i != 32; ++i)
+            {
+                auto nibble{[](char8_t c) noexcept -> int { if(c >= u8'0' && c <= u8'9') return c-u8'0'; if(c >= u8'a' && c <= u8'f') return c-u8'a'+10; return -1; }};
+                int a{nibble(next->str[i*2])}, b{nibble(next->str[i*2+1])};
+                if(a < 0 || b < 0) { return result::return_m1_imme; } (*value)[i] = static_cast<unsigned char>(a*16+b);
+            }
+        }
+        next->type = ::uwvm2::utils::cmdline::parameter_parsing_results_type::occupied_arg;
+        return result::def;
+    }
+
+#if defined(UWVM_MODULE)
+    extern "C++"
+#else
+    inline
+#endif
+    ::uwvm2::utils::cmdline::parameter_return_type management_profile_callback(
+        ::uwvm2::utils::cmdline::parameter_parsing_results*,
+        ::uwvm2::utils::cmdline::parameter_parsing_results* current,
+        ::uwvm2::utils::cmdline::parameter_parsing_results* end) noexcept
+    {
+        using status = ::uwvm2::utils::cmdline::parameter_return_type;
+        auto const next{current + 1u};
+        if(next == end || next->type != ::uwvm2::utils::cmdline::parameter_parsing_results_type::arg ||
+           (next->str != u8"release" && next->str != u8"dev"))
+        {
+            ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                u8"uwvm: [error] --management-profile requires release or dev");
+            return status::return_m1_imme;
+        }
+        management_development = next->str == u8"dev";
+        next->type = ::uwvm2::utils::cmdline::parameter_parsing_results_type::occupied_arg;
+        return status::def;
+    }
+
+#if defined(UWVM_MODULE)
     extern "C++" UWVM_GNU_COLD
 #else
     UWVM_GNU_COLD inline constexpr

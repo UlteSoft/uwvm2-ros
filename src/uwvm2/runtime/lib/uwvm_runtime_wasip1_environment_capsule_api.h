@@ -8,6 +8,7 @@ extern "C++" llvm_jit_wasip1_environment_capsule_result llvm_jit_checkpoint_capt
     llvm_jit_wasip1_environment_capsule_request const& selected) noexcept
 {
     using status=llvm_jit_wasip1_environment_capsule_status;
+    if(!::uwvm2::utils::control::management::debug_allowed()) { return {status::unavailable_capture,{}}; }
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS)
     namespace mode=::uwvm2::uwvm::runtime::runtime_mode;
     if(mode::global_runtime_mode!=mode::runtime_mode_t::full_compile || mode::global_runtime_compiler!=mode::runtime_compiler_t::llvm_jit_only)
@@ -32,6 +33,7 @@ extern "C++" llvm_jit_wasip1_environment_capsule_data_result llvm_jit_checkpoint
     llvm_jit_wasip1_environment_capsule_owner const& supplied) noexcept
 {
     using status=llvm_jit_wasip1_environment_capsule_status;
+    if(!::uwvm2::utils::control::management::debug_allowed()) { return {status::unavailable_capture,{}}; }
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS)
     auto const actual{llvm_jit_wasip1_environment_capsule::canonical(supplied)};
     if(!actual) { return {status::invalid_capsule_owner,{}}; }
@@ -52,6 +54,10 @@ extern "C++" llvm_jit_wasip1_environment_capsule_status llvm_jit_checkpoint_rest
     llvm_jit_wasip1_environment_capsule_owner const& saved, llvm_jit_wasip1_environment_restore_request const& selected) noexcept
 {
     using status=llvm_jit_wasip1_environment_capsule_status;
+    if(!::uwvm2::utils::control::management::debug_allowed()) { return status::unavailable_capture; }
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+    return status::unavailable_capture;
+#endif
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS)
     namespace mode=::uwvm2::uwvm::runtime::runtime_mode;
     if(mode::global_runtime_mode!=mode::runtime_mode_t::full_compile || mode::global_runtime_compiler!=mode::runtime_compiler_t::llvm_jit_only)

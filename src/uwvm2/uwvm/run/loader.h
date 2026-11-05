@@ -253,7 +253,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
     }
 #endif
 
-    inline constexpr int load_local_modules() noexcept
+    inline constexpr int load_local_modules(bool preserve_host_state = false, [[maybe_unused]] bool initialize_host_resources = true) noexcept
     {
 #if UWVM2_HAS_THREADED_PROFILE_HOST_API
         // An atomic host policy snapshot chooses namespace construction only.
@@ -263,8 +263,27 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
             ::uwvm2::uwvm::imported::wasi::threads::local_imported_module))
         { return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error); }
 #endif
+        // The trusted DEV fresh-world path retains existing host environments.
+        // No physical ROS provider may be re-created under that WASI-only path.
+        if(preserve_host_state)
+        {
+#if defined(UWVM_IMPORT_ROS1)
+            if(details::loaded_wasm_imports_namespace(::uwvm2::uwvm::imported::ros::ros1_local_imported_module.module_name) ||
+               details::loaded_wasm_imports_namespace(::uwvm2::uwvm::imported::ros::ros1_client_local_imported_module.module_name))
+            { return static_cast<int>(retval::load_local_modules_error); }
+#endif
+#if defined(UWVM_IMPORT_ROS2)
+            if(details::loaded_wasm_imports_namespace(::uwvm2::uwvm::imported::ros::portable_robot_local_imported_module.module_name) ||
+               details::loaded_wasm_imports_namespace(::uwvm2::uwvm::imported::ros::ros2_local_imported_module.module_name) ||
+               details::loaded_wasm_imports_namespace(::uwvm2::uwvm::imported::ros::ros2_client_local_imported_module.module_name) ||
+               details::loaded_wasm_imports_namespace(::uwvm2::uwvm::imported::ros::ros2_rmw_local_imported_module.module_name) ||
+               details::loaded_wasm_imports_namespace(::uwvm2::uwvm::imported::ros::ros2_rmw_subscription_local_imported_module.module_name) ||
+               details::loaded_wasm_imports_namespace(::uwvm2::uwvm::imported::ros::ros2_rmw_service_local_imported_module.module_name))
+            { return static_cast<int>(retval::load_local_modules_error); }
+#endif
+        }
         // Register only namespaces referenced by a loaded Wasm import. A
-        // disabled ROS target still links and remains default-deny at dispatch.
+        // dependency and runtime gates independently check target enable.
 #if defined(UWVM_IMPORT_ROS1)
         if(details::loaded_wasm_imports_namespace(::uwvm2::uwvm::imported::ros::ros1_local_imported_module.module_name))
         {
@@ -466,25 +485,30 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
                 return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error);
             }
 
-            if(!::uwvm2::uwvm::imported::wasi::wasip1::storage::init_wasip1_environment(::uwvm2::uwvm::imported::wasi::wasip1::storage::default_wasip1_env))
-                [[unlikely]]
+            if(!preserve_host_state && initialize_host_resources)
             {
-                return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error);
-            }
-
-            for(auto& group_state: ::uwvm2::uwvm::imported::wasi::wasip1::storage::configured_wasip1_groups)
-            {
-                // A configured WASI target must always receive an initialized
-                // environment, even when it only exists to bind a module to a
-                // single/group target and has no explicit overrides. Runtime
-                // dispatch switches imported WASI calls to the target env when
-                // a binding exists; leaving that env default-constructed would
-                // drop inherited argv/env/fd state such as the `--run` argv.
-                if(!::uwvm2::uwvm::imported::wasi::wasip1::storage::init_wasip1_environment(group_state)) [[unlikely]]
+                // First launch only: rebuilding guest objects must not restore closed
+                // descriptors, widened rights, reset file offsets, or refill quotas.
+                if(!::uwvm2::uwvm::imported::wasi::wasip1::storage::init_wasip1_environment(::uwvm2::uwvm::imported::wasi::wasip1::storage::default_wasip1_env))
+                    [[unlikely]]
                 {
                     return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error);
                 }
-            }
+
+                for(auto& group_state: ::uwvm2::uwvm::imported::wasi::wasip1::storage::configured_wasip1_groups)
+                {
+                    // A configured WASI target must always receive an initialized
+                    // environment, even when it only exists to bind a module to a
+                    // single/group target and has no explicit overrides. Runtime
+                    // dispatch switches imported WASI calls to the target env when
+                    // a binding exists; leaving that env default-constructed would
+                    // drop inherited argv/env/fd state such as the `--run` argv.
+                    if(!::uwvm2::uwvm::imported::wasi::wasip1::storage::init_wasip1_environment(group_state)) [[unlikely]]
+                    {
+                        return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error);
+                    }
+                }
+            } // first-launch host environment initialization
         }
 
         if(need_wasip1_local_imported_module)

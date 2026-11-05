@@ -38,7 +38,7 @@ namespace uwvm2::imported::ros
         {
             output=nullptr;
             if(!ipc::client_availability::valid(c)||!native_session||a.empty()||s.empty()||a==s||
-               a.size()>255||s.size()>255||a.find('\0')!=a.npos||s.find('\0')!=s.npos||!maximum||maximum>65536){return 22;}
+               a.size()>255||s.size()>255||a.find('\0')!=a.npos||s.find('\0')!=s.npos){return 22;}
             if(sealed_){return 125;}
             if(instance_&&(instance_!=c.instance||runtime_generation_!=c.runtime_generation||backend_!=c.backend)){return 13;}
             auto found{rows_.find(c.availability)};
@@ -59,7 +59,7 @@ namespace uwvm2::imported::ros
                 if(old.source_alias==s&&old.source_revoked){return 125;}
                 if(old.binding.source==c.source&&old.source_retired){return 125;}
             }
-            if(count>=maximum||rows_.size()>=65536){return 11;}
+            if(count>=maximum){return 11;}
             // Build ALL copied metadata before publication; no second map/count
             // insertion after a row could throw and enable a retry/regrant.
 #if defined(__cpp_exceptions)

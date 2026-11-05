@@ -23,7 +23,15 @@ namespace uwvm2::imported::ros
         if(backend==version::ros2)
         {
             for(auto field:{"qos.reliability","qos.durability","qos.history","qos.depth","qos.deadline","qos.lifespan","qos.liveliness","qos.liveliness-lease-duration"})
-            {auto left{availability.limits.find(field)},right{source.limits.find(field)};if(left==availability.limits.end()||right==source.limits.end()||left->second!=right->second){return false;}}
+            {
+                // KEEP_ALL has no effective native depth. An omitted quota
+                // remains unlimited, and its spelling cannot deny an otherwise
+                // identical separately authorized availability binding.
+                if(std::string_view{field}=="qos.depth")
+                {auto history{availability.limits.find("qos.history")};if(history!=availability.limits.end()&&history->second=="keep-all")continue;}
+                auto left{availability.limits.find(field)},right{source.limits.find(field)};
+                if(left==availability.limits.end()||right==source.limits.end()||left->second!=right->second){return false;}
+            }
         }
         return true;
     }

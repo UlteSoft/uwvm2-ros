@@ -37,6 +37,10 @@ module;
 #include <uwvm2/utils/macro/push_macros.h>
 #include <uwvm2/imported/wasi/wasip1/feature/feature_push_macro.h>
 
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(__linux__)
+# include <sys/random.h>
+#endif
+
 export module uwvm2.imported.wasi.wasip1.func:random_get;
 
 import fast_io;

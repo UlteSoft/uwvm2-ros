@@ -131,11 +131,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
             ++next;
         }
         ::uwvm2::runtime::wasm_threads::threaded_profile_limits limits{};
-        if(!wasi_threads_derive_limits(numbers,limits))
+        if(!wasi_threads_derive_limits(numbers,limits) ||
+           !::uwvm2::runtime::lib::runtime_threaded_profile_complete_cli_limits_host_api(limits))
         {usage();return ::uwvm2::utils::cmdline::parameter_return_type::return_m1_imme;}
         // Exactly one actual cold Runtime policy publication. A parsed value,
         // caller bool or explicit CLI token alone grants no source/child lease.
-        if(!::uwvm2::runtime::lib::runtime_threaded_profile_configure_host_api(limits))
+        if(!::uwvm2::runtime::lib::runtime_threaded_profile_configure_cli_host_api(limits))
         {
             ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
                 u8"uwvm: [error] Cannot configure finite WASI Threads quotas for the actual quiescent Runtime.\n\n");

@@ -2,6 +2,9 @@
  * UWVM2 ROS Runtime Extension. APL-2.0.                     *
  *************************************************************/
 #pragma once
+#ifndef UWVM_MODULE
+#include <uwvm2/utils/thread/monotonic_clock.h>
+#endif
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
 #ifndef UWVM_MODULE
 #include "storage.h"
@@ -51,6 +54,8 @@
 #include "rmw_service_state.h"
 #include "portable_host.h"
 #include <array>
+#include <atomic>
+#include <stdexcept>
 #include <map>
 #include <set>
 #include <memory>
@@ -95,7 +100,20 @@ namespace uwvm2::uwvm::imported::ros
         inline ::std::uint32_t rmw_client_available(::std::uint64_t,::std::uint64_t,::std::uint64_t,::std::uint64_t,::std::uint32_t,::std::uint64_t) noexcept;
         inline ::std::uint32_t rmw_service_retire(::std::uint64_t,::std::uint64_t) noexcept;
         inline ::std::uint32_t code(core::result const& r) noexcept { return static_cast<::std::uint32_t>(r.code); }
-        inline ::std::uint32_t audit_denial(core::version version, ::std::uint32_t error);
+        inline ::std::uint32_t audit_denial(core::version version, ::std::uint32_t error) noexcept;
+        // Emergency diagnostics never allocate, retry a native operation or
+        // rewrite an already completed business result. Counters saturate.
+        inline ::std::atomic<::std::uint64_t> diagnostic_allocation_failures{},diagnostic_extent_failures{};
+        inline ::std::atomic<::std::uint64_t> guest_allocation_failures{},guest_extent_failures{};
+        inline void increment_failure(::std::atomic<::std::uint64_t>& counter) noexcept
+        {
+            auto value{counter.load(::std::memory_order_relaxed)};
+            while(value!=UINT64_MAX&&!counter.compare_exchange_weak(value,value+1,::std::memory_order_relaxed)) {}
+        }
+        inline ::std::uint32_t allocation_failure() noexcept
+        {increment_failure(guest_allocation_failures);return 12;}
+        inline ::std::uint32_t extent_failure() noexcept
+        {increment_failure(guest_extent_failures);return 90;}
         struct audit_result
         {
             void const* object{};
@@ -108,7 +126,7 @@ namespace uwvm2::uwvm::imported::ros
             core::debug::text<255> source_alias{};::std::uint64_t client_session_label{},client_features{};
             bool client_features_observed{};
             ::std::uint64_t debug_started_ns{core::debug::monotonic_nanoseconds()};
-            ~audit_result();
+            ~audit_result() noexcept;
         };
         inline bool memory_range(::std::uint32_t memory, ::std::uint64_t offset, ::std::uint64_t length) noexcept
         {
@@ -214,24 +232,27 @@ namespace uwvm2::uwvm::imported::ros
                 if(owned_native){rmw_endpoints.retire_session(availability_native_session,107);connection.close();}
                 retire_service_session(availability_native_session,107);
                 if(target == nullptr || !target->enabled) { return 13; }
-                ::std::uint64_t uid{}, millis{};
-                if(!core::parse_u64(target->connection.at("gateway-uid"),uid) ||
-                   !core::parse_u64(target->connection.at("connect-timeout-ms"),millis)) { return 22; }
-                timeout=static_cast<::std::uint32_t>(millis);
-                // New client queries pass one absolute entry deadline. Ordinary
-                // v1 callers keep their existing configured connection budget.
-                auto budget=[&]() -> ::std::uint32_t
-                {
-                    auto now{::std::chrono::steady_clock::now()};if(now>=deadline) { return 0; }
-                    auto remaining{::std::chrono::duration_cast<::std::chrono::milliseconds>(deadline-now).count()};
-                    return static_cast<::std::uint32_t>(::std::min<::std::uint64_t>(millis,static_cast<::std::uint64_t>(remaining)));
-                };
+                ::std::uint64_t uid{}, millis{UINT64_MAX};
+                if(!core::parse_u64(target->connection.at("gateway-uid"),uid)) { return 22; }
+                auto const exit_setting{target->connection.find("connect-timeout-ms.on-proc-exit")};
+                core::native_exit_selection exit_scope{exit_setting!=target->connection.end() && exit_setting->second=="wait"};
+                if(!exit_scope) { return 125; }
+                auto const configured_timeout{target->connection.find("connect-timeout-ms")};
+                if(configured_timeout!=target->connection.end() &&
+                   !core::quota_integer(configured_timeout->second,millis)) { return 22; }
+                if(millis!=UINT64_MAX && millis>UINT32_MAX) { return 22; }
+                // Explicit zero is already expired; only absence/unlimited is
+                // encoded as wire zero. Keep one deadline through hello/bind.
+                if(millis==0) { return 110; }
+                timeout=millis==UINT64_MAX?0u:static_cast<::std::uint32_t>(millis);
+                auto const until{(::std::min)(deadline,core::ipc::after(timeout))};
+                auto budget=[&]() { return core::ipc::remaining_ms(until); };
                 availability_history.retire_session(availability_native_session);
                 auto first{budget()};if(!first) { return 110; }
-                auto const error{connection.connect(target->connection.at("gateway-socket"),static_cast<::std::uint8_t>(version),static_cast<::std::uint32_t>(uid),first)};
+                auto const error{connection.connect(target->connection.at("gateway-socket"),static_cast<::std::uint8_t>(version),static_cast<::std::uint32_t>(uid),*first)};
                 if(error) { return error; }
                 auto second{budget()};if(!second) { connection.close();return 110; }
-                auto bound{connection.call("session.bind","target",core::binding_manifest(*target),second)};
+                auto bound{connection.call("session.bind","target",core::binding_manifest(*target),*second)};
                 if(bound.error) { connection.close(); return bound.error; }
                 connected=true;availability_native_session=connection.session_id();
                 availability_debug_session=availability_debug_counter==UINT64_MAX?0:++availability_debug_counter;
@@ -254,7 +275,11 @@ namespace uwvm2::uwvm::imported::ros
             (void)core::audit_io::write_record(record);
         }
 
-        inline audit_result::~audit_result()
+        inline audit_result::~audit_result() noexcept
+
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+        try
+#endif
         {
             // Diagnostic metadata is independent of the existing audit sink.
             // No payload, address, socket/session credential or audit body is
@@ -278,6 +303,10 @@ namespace uwvm2::uwvm::imported::ros
             if(capabilities.drain_audit(object,generation,version,alias,records,dropped))
             { for(auto const& record : records) { write_audit_record(record); } }
         }
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+        catch(::std::bad_alloc const&) { increment_failure(diagnostic_allocation_failures); }
+        catch(::std::length_error const&) { increment_failure(diagnostic_extent_failures); }
+#endif
 
 
         struct denial_sink
@@ -301,7 +330,11 @@ namespace uwvm2::uwvm::imported::ros
         };
         inline ::std::map<denial_identity,::std::shared_ptr<denial_sink>,denial_less> denials{};
         inline ::std::uint64_t next_denial_instance{1};
-        inline ::std::uint32_t audit_denial(core::version version, ::std::uint32_t error)
+        inline ::std::uint32_t audit_denial(core::version version, ::std::uint32_t error) noexcept
+
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+        try
+#endif
         {
             runtime::ros_caller_identity observed{};
             if(!error) {return error;}
@@ -317,7 +350,7 @@ namespace uwvm2::uwvm::imported::ros
             if(!available) {return error;}
             ::std::string_view name{reinterpret_cast<char const*>(observed.module_name.data()),observed.module_name.size()};
             auto const target{runtime_policy.effective(version,name)};
-            if(!target || !target->connection.contains("audit-deny-max-rate-hz")) { return error; }
+            if(!target) { return error; }
             ::std::shared_ptr<denial_sink> sink{};
             {
                 ::std::lock_guard<::std::mutex> registry_lock{denial_mutex};
@@ -329,7 +362,7 @@ namespace uwvm2::uwvm::imported::ros
                     for(auto suffix : {"max-rate-hz","burst","max-records","max-bytes"})
                     {
                         auto field{target->connection.find(::fast_io::concat_std("audit-deny-",::std::string_view{suffix}))};
-                        if(field == target->connection.end()) { return error; }
+                        if(field == target->connection.end()) { continue; }
                         explicit_budget.limits.emplace(::fast_io::concat_std("audit-",::std::string_view{suffix}),field->second);
                     }
                     if(!item->audit.configure(explicit_budget) || next_denial_instance == UINT64_MAX) { return error; }
@@ -353,14 +386,18 @@ namespace uwvm2::uwvm::imported::ros
             for(auto const& record : records) { write_audit_record(record); }
             return error;
         }
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+        catch(::std::bad_alloc const&) { increment_failure(diagnostic_allocation_failures);return error; }
+        catch(::std::length_error const&) { increment_failure(diagnostic_extent_failures);return error; }
+#endif
 
-        // All enabled targets attest the exact network identity/security and capability manifest
+        // Every target with actual grants attests its exact network identity/security and capability manifest
         // before Wasm initialization or start sections can execute. Temporary sessions own no Guest handles.
         inline core::result preflight()
         {
             for(auto target : runtime_policy.configured_targets())
             {
-                if(!target->enabled) { continue; }
+                if(!target->enabled || target->capabilities.empty()) { continue; }
                 session probe{}; probe.target=target;
                 auto error{probe.connect(target->ros_version)};
                 if(error) { return {static_cast<core::errc>(error),::fast_io::concat_std("gateway preflight failed for ",core::to_string(target->ros_version),"/",core::to_string(target->target_scope),"/",target->name)}; }
@@ -492,11 +529,13 @@ namespace uwvm2::uwvm::imported::ros
 
         template <core::version Version>
         inline ::std::uint32_t capability_open(::std::uint32_t memory, ::std::uint64_t alias_offset, ::std::uint64_t alias_length, ::std::uint64_t out_offset) noexcept
+
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+        try
+#endif
         {
             runtime::ros_caller_identity caller{}; ::std::shared_ptr<instance> state{};
             if(auto error{identify(Version,caller,state)}) { return audit_denial(Version,error); }
-            auto& backend{state->backends[static_cast<unsigned>(Version)-1]};
-            ::std::lock_guard<::std::mutex> backend_lock{backend.mutex};
             if(!alias_length || alias_length > 255 || !memory_range(memory,alias_offset,alias_length) || !memory_range(memory,out_offset,8)) { return audit_denial(Version,22); }
             ::std::vector<::std::uint8_t> alias_bytes{};
             if(!read_bytes(memory,alias_offset,alias_length,alias_bytes)) { return audit_denial(Version,22); }
@@ -510,6 +549,10 @@ namespace uwvm2::uwvm::imported::ros
             if(!write_u64(memory,out_offset,handle)) { capabilities.close(caller.runtime_instance,caller.generation,Version,handle); return audit.finish(22); }
             return audit.finish(0);
         }
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+        catch(::std::bad_alloc const&) { return allocation_failure(); }
+        catch(::std::length_error const&) { return extent_failure(); }
+#endif
 
         inline void retire_watches(session& backend,::std::uint64_t handle,::std::string_view alias,bool revoke,::std::uint32_t reason)
         {
@@ -579,12 +622,18 @@ namespace uwvm2::uwvm::imported::ros
                 return result.error;
             }
 #if defined(__cpp_exceptions)
-            catch(...)
-            { backend.connection.close();backend.connected=false;backend.retire_observations(12);return 12; }
+            catch(::std::bad_alloc const&)
+            { backend.connection.close();backend.connected=false;backend.retire_observations(12);return allocation_failure(); }
+            catch(::std::length_error const&)
+            { backend.connection.close();backend.connected=false;backend.retire_observations(90);return extent_failure(); }
 #endif
         }
         template <core::version Version>
         inline ::std::uint32_t capability_close(::std::uint64_t handle) noexcept
+
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+        try
+#endif
         {
             runtime::ros_caller_identity caller{}; ::std::shared_ptr<instance> state{};
             if(auto error{identify(Version,caller,state)}) { return audit_denial(Version,error); }
@@ -609,9 +658,17 @@ namespace uwvm2::uwvm::imported::ros
             if(!backend.connection.session_id()) { backend.connected=false;backend.retire_observations(result.error?result.error:107); }
             return audit.finish(retirement_error?retirement_error:result.error);
         }
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+        catch(::std::bad_alloc const&) { return allocation_failure(); }
+        catch(::std::length_error const&) { return extent_failure(); }
+#endif
 
         template <core::version Version>
         inline ::std::uint32_t capability_revoke(::std::uint64_t handle) noexcept
+
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+        try
+#endif
         {
             runtime::ros_caller_identity caller{}; ::std::shared_ptr<instance> state{};
             if(auto error{identify(Version,caller,state)}) { return audit_denial(Version,error); }
@@ -635,8 +692,16 @@ namespace uwvm2::uwvm::imported::ros
             if(result.error) { backend.connection.close(); backend.connected=false;backend.retire_observations(result.error); }
             return audit.finish(retirement_error?retirement_error:result.error);
         }
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+        catch(::std::bad_alloc const&) { return allocation_failure(); }
+        catch(::std::length_error const&) { return extent_failure(); }
+#endif
 
         inline void observe_source_error(session& backend,::std::uint64_t source,::std::uint32_t error,bool native_admitted=false) noexcept
+
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+        try
+#endif
         {
             if(!error||error==11) { return; } // Idle/readiness is not a native fault.
             for(auto& item:backend.observations)
@@ -645,10 +710,18 @@ namespace uwvm2::uwvm::imported::ros
                 (void)selected.local->enqueue({core::ipc::event_kind::resource_error,static_cast<::std::uint8_t>(native_admitted?core::ipc::event_external_effects_may_remain:0),error,0,{}});
             }
         }
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+        catch(::std::bad_alloc const&) { increment_failure(diagnostic_allocation_failures); }
+        catch(::std::length_error const&) { increment_failure(diagnostic_extent_failures); }
+#endif
         template <core::version Version>
         inline ::std::uint32_t operation(::std::string_view op, ::std::uint64_t handle, ::std::uint32_t memory,
             ::std::uint64_t offset, ::std::uint64_t length, bool output, ::std::uint64_t out_offset,
             ::std::uint64_t capacity, ::std::uint64_t length_offset) noexcept
+
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+        try
+#endif
         {
             runtime::ros_caller_identity caller{}; ::std::shared_ptr<instance> state{};
             if(auto error{identify(Version,caller,state)}) { return audit_denial(Version,error); }
@@ -657,11 +730,11 @@ namespace uwvm2::uwvm::imported::ros
             core::authorization description{};
             auto r{capabilities.describe(caller.runtime_instance,caller.generation,Version,handle,description)};
             if(!r) { return audit_denial(Version,code(r)); }
-            // The description owns the instance and its recursive authority
-            // lock until this operation returns. Borrow the immutable policy
-            // under that lease instead of allocating a copy of every limit.
-            // Request/response authorization and revocation remain unchanged.
-            auto const& spec{*description.capability()};
+            // Copy immutable metadata before releasing its descriptive lease.
+            // Quota waits must permit close/revoke on another thread.
+            auto const spec{*description.capability()};
+            auto const described_instance{description.instance_number()};
+            description.release();
             audit_result audit{caller.runtime_instance,caller.generation,Version,spec.alias};
             audit.function=op;
             core::buffer_audit::transfer observed{};
@@ -678,7 +751,7 @@ namespace uwvm2::uwvm::imported::ros
                 for(::std::size_t i{};i!=32;++i) {observed.wasm[i]=::std::to_integer<::std::uint8_t>(facts.whole_wasm_sha256[i]);}
                 observed.wasm_bytes=facts.whole_wasm_bytes;observed.function_index=facts.builtin_function_index;
                 observed.module={reinterpret_cast<char const*>(caller.module_name.data()),caller.module_name.size()};
-                observed.instance=description.instance_number();observed.generation=caller.generation;
+                observed.instance=described_instance;observed.generation=caller.generation;
                 observed.backend=static_cast<unsigned>(Version);observed.handle=handle;observed.alias=spec.alias;
                 observed.operation=op;observed.resource=spec.resource;observed.type=spec.type;observed.identity=spec.type_identity;
                 observed.memory=memory;observed.input_offset=offset;observed.output_offset=out_offset;
@@ -792,11 +865,19 @@ namespace uwvm2::uwvm::imported::ros
             }
             return finish(0);
         }
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+        catch(::std::bad_alloc const&) { return allocation_failure(); }
+        catch(::std::length_error const&) { return extent_failure(); }
+#endif
         // Additive event ABI. The observer is separately authorized; source
         // authority is borrowed only under a live trusted Instance/backend lease.
         // No native callback retains a guest address or enters guest code.
         template <core::version Version>
         inline ::std::uint32_t event_watch(::std::uint64_t observer_handle,::std::uint64_t source_handle,::std::uint64_t correlation) noexcept
+
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+        try
+#endif
         {
             runtime::ros_caller_identity caller{};::std::shared_ptr<instance> state{};
             if(auto error=identify(Version,caller,state)) { return audit_denial(Version,error); }
@@ -834,7 +915,7 @@ namespace uwvm2::uwvm::imported::ros
                         watch.source.resource,watch.source.type,watch.correlation,watch.local->allowed_kinds())) {return audit.finish(17);}
                 }
             }
-            auto number=[&](char const* name) { ::std::uint64_t value{};(void)core::parse_u64(cap.limits.at(name),value);return value; };
+            auto number=[&](char const* name) { return core::quota_value(cap,name); };
             core::ipc::event_stream_settings settings{number("max-event-queue-depth"),number("max-event-queue-bytes"),number("max-event-bytes"),overflow==core::ipc::event_overflow::backpressure?number("max-pending-events"):0,overflow==core::ipc::event_overflow::backpressure?number("max-pending-event-bytes"):0,overflow};
             core::ipc::event_header binding{};binding.backend=static_cast<::std::uint8_t>(Version);binding.source_handle=source_handle;binding.instance=source.instance_number();binding.session=backend.connection.session_id();
             auto local{::std::make_shared<core::ipc::event_stream>(settings,binding,mask)};if(!local->configured()) { return audit.finish(22); }
@@ -845,8 +926,16 @@ namespace uwvm2::uwvm::imported::ros
             backend.observations.emplace(observer_handle,watched_event{cap,selected,source_handle,correlation,binding.instance,binding.session,0,0,false,::std::move(local),{}});
             return audit.finish(0);
         }
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+        catch(::std::bad_alloc const&) { return allocation_failure(); }
+        catch(::std::length_error const&) { return extent_failure(); }
+#endif
         template <core::version Version>
         inline ::std::uint32_t event_poll_v1(::std::uint64_t observer_handle,::std::uint32_t memory,::std::uint64_t out,::std::uint64_t capacity,::std::uint64_t length_out) noexcept
+
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+        try
+#endif
         {
             runtime::ros_caller_identity caller{};::std::shared_ptr<instance> state{};
             if(auto error=identify(Version,caller,state)) { return audit_denial(Version,error); }
@@ -880,7 +969,7 @@ namespace uwvm2::uwvm::imported::ros
                 return audit.finish(write_u64(memory,length_out,core::ipc::get(result.payload.data(),8))?90u:22u);
             }
             if(result.error) { return audit.finish(result.error); }
-            ::std::uint64_t maximum{};if(!core::parse_u64(watched.observer.limits.at("max-event-bytes"),maximum)||result.payload.size()>capacity||result.payload.size()>maximum) { return malformed(); }
+            ::std::uint64_t maximum{};if(!core::read_quota(watched.observer,"max-event-bytes",maximum)||result.payload.size()>capacity||result.payload.size()>maximum) { return malformed(); }
             core::ipc::event_header header{};
             if(!core::ipc::decode_event(result.payload.data(),result.payload.size(),header)||header.backend!=static_cast<unsigned>(Version)||header.source_handle!=watched.source_handle||header.instance!=watched.instance||header.session!=watched.native_session||!(watched.local->allowed_kinds()&core::ipc::event_bit(header.kind))||!core::ipc::event_kind_for_source(watched.source.operation,header.kind,header.flags)) { return malformed(); }
             if(!from_local)
@@ -906,8 +995,16 @@ namespace uwvm2::uwvm::imported::ros
             if(!write_u64(memory,length_out,result.payload.size())) {backend.connection.close();backend.connected=false;backend.retire_observations(22);return audit.finish(22);}
             ++watched.delivered;if(watched.source.operation=="service.call"&&header.correlation) { watched.requests.erase(header.correlation); }return audit.finish(0);
         }
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+        catch(::std::bad_alloc const&) { return allocation_failure(); }
+        catch(::std::length_error const&) { return extent_failure(); }
+#endif
         template <core::version Version>
         inline ::std::uint32_t event_ready(::std::uint64_t observer_handle,::std::uint32_t memory,::std::uint64_t out) noexcept
+
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+        try
+#endif
         {
             runtime::ros_caller_identity caller{};::std::shared_ptr<instance> state{};
             if(auto error=identify(Version,caller,state)) { return audit_denial(Version,error); }
@@ -937,8 +1034,16 @@ namespace uwvm2::uwvm::imported::ros
             granted=capabilities.charge_observation(caller.runtime_instance,caller.generation,Version,observer_handle,result.payload.size(),observer);if(!granted) { return audit.finish(code(granted)); }
             return audit.finish(runtime::preload_memory_write_host_api(memory,out,result.payload.data(),result.payload.size())?0u:22u);
         }
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+        catch(::std::bad_alloc const&) { return allocation_failure(); }
+        catch(::std::length_error const&) { return extent_failure(); }
+#endif
         template <core::version Version>
         inline ::std::uint32_t service_submit(::std::uint64_t source_handle,::std::uint64_t observer_handle,::std::uint32_t memory,::std::uint64_t input,::std::uint64_t length,::std::uint64_t request_out) noexcept
+
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+        try
+#endif
         {
             runtime::ros_caller_identity caller{};::std::shared_ptr<instance> state{};
             if(auto error=identify(Version,caller,state)) { return audit_denial(Version,error); }
@@ -952,13 +1057,13 @@ namespace uwvm2::uwvm::imported::ros
             if(watched.retired) { return audit.finish(125); }
             auto required{core::ipc::event_bit(core::ipc::event_kind::service_response)|core::ipc::event_bit(core::ipc::event_kind::resource_error)};
             if((watched.local->allowed_kinds()&required)!=required) { return audit.finish(13); }
-            ::std::uint64_t request_limit{};if(!core::parse_u64(watched.source.limits.at("max-request-bytes"),request_limit)) {return audit.finish(22);}
+            ::std::uint64_t request_limit{};if(!core::read_quota(watched.source,"max-request-bytes",request_limit)) {return audit.finish(22);}
             if(length>request_limit||length>core::ipc::max_payload_bytes-526) { return audit.finish(90); }
             if(!memory_range(memory,input,length)||!memory_range(memory,request_out,8)) { return audit.finish(22); }
             ::std::vector<::std::uint8_t> bytes;if(!read_bytes(memory,input,length,bytes)) { return audit.finish(22); }
             granted=capabilities.authorize(caller.runtime_instance,caller.generation,Version,source_handle,"service.call",::std::as_bytes(::std::span{bytes}),source,true,true);
             if(!granted) { return audit.finish(code(granted)); }
-            ::std::uint64_t maximum{};if(!core::parse_u64(watched.source.limits.at("max-inflight"),maximum)) { return audit.finish(22); }
+            ::std::uint64_t maximum{};if(!core::read_quota(watched.source,"max-inflight",maximum)) { return audit.finish(22); }
             if(watched.requests.size()>=maximum) { return audit.finish(11); }
             if(backend.next_service_request==UINT64_MAX) { return audit.finish(90); }auto id{backend.next_service_request++};
             watched.requests.insert(id);
@@ -970,6 +1075,10 @@ namespace uwvm2::uwvm::imported::ros
             if(!write_u64(memory,request_out,id)) {backend.connection.close();backend.connected=false;backend.retire_observations(22);return audit.finish(22);}
             return audit.finish(0);
         }
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+        catch(::std::bad_alloc const&) { return allocation_failure(); }
+        catch(::std::length_error const&) { return extent_failure(); }
+#endif
 
         // Optional client extension. Both true capability leases remain live
         // through native observation, exact response association and Guest copy.
@@ -979,7 +1088,7 @@ namespace uwvm2::uwvm::imported::ros
             ::std::uint64_t wait_ns,::std::uint32_t memory,::std::uint64_t output,bool features) noexcept
         {
             namespace wire=core::ipc::client_availability;
-            auto entry_time{::std::chrono::steady_clock::now()};
+            auto entry_time{::uwvm2::utils::host_clock::now()};
 #if defined(__cpp_exceptions)
             try
 #endif
@@ -1007,8 +1116,8 @@ namespace uwvm2::uwvm::imported::ros
                 if(!core::service_availability_pair(Version,cap,called)||observation.target()!=source.target()||
                    observation.instance_number()!=source.instance_number()) { return audit.finish(13); }
                 ::std::uint64_t maximum{},timeout{},history{};
-                if(!core::parse_u64(cap.limits.at("max-wait-ns"),maximum)||!core::parse_u64(cap.limits.at("timeout-ms"),timeout)||
-                   !core::parse_u64(cap.limits.at("max-binding-history"),history)||wait_ns>maximum) { return audit.finish(22); }
+                if(!core::read_quota(cap,"max-wait-ns",maximum)||!core::read_quota(cap,"timeout-ms",timeout)||
+                   !core::read_quota(cap,"max-binding-history",history)||wait_ns>maximum) { return audit.finish(22); }
                 wire::packet request{features?wire::command::features:wire::command::query,wire::retirement::none,0,
                     {static_cast<::std::uint8_t>(Version),availability_handle,source_handle,observation.instance_number(),caller.generation},wait_ns};
                 if(!wire::valid_request(request)) { return audit.finish(22); }
@@ -1019,16 +1128,23 @@ namespace uwvm2::uwvm::imported::ros
                 granted=capabilities.authorize(caller.runtime_instance,caller.generation,Version,availability_handle,
                     "service.available",::std::as_bytes(::std::span{raw}),admitted,true,true);
                 if(!granted) { return audit.finish(code(granted)); }
-                auto until{entry_time+::std::chrono::milliseconds(timeout)};
+                auto until{core::ipc::deadline::max()};
+                if(timeout!=core::unlimited_quota)
+                {
+                    auto const room{::std::chrono::duration_cast<::std::chrono::milliseconds>(until-entry_time).count()};
+                    if(timeout<static_cast<::std::uint64_t>(room)) { until=entry_time+::std::chrono::milliseconds(timeout); }
+                }
                 if(auto error{backend.connect(Version,until)}) { return audit.finish(error); }
                 audit.client_session_label=backend.availability_debug_session;
                 core::service_availability_history::entry const* row{};
+                if(history!=core::unlimited_quota && history>SIZE_MAX) { return audit.finish(90); }
+                auto const history_capacity{history==core::unlimited_quota?SIZE_MAX:static_cast<::std::size_t>(history)};
                 if(auto error{backend.availability_history.bind(request.binding,cap.alias,called.alias,backend.availability_native_session,
-                    static_cast<::std::size_t>(history),row)}) { return audit.finish(error); }
-                auto remaining{::std::chrono::duration_cast<::std::chrono::milliseconds>(until-::std::chrono::steady_clock::now()).count()};
-                if(remaining<=0) { return audit.finish(110); }
+                    history_capacity,row)}) { return audit.finish(error); }
+                auto remaining{core::ipc::remaining_ms(until)};
+                if(!remaining) { return audit.finish(110); }
                 auto result{backend.connection.call("service.available-v1",cap.alias,{raw.begin(),raw.end()},
-                    static_cast<::std::uint32_t>(remaining))};
+                    *remaining)};
                 if(!backend.connection.session_id()) { backend.connected=false;backend.retire_observations(result.error?result.error:107); }
                 if(result.error)
                 {
@@ -1044,7 +1160,7 @@ namespace uwvm2::uwvm::imported::ros
                 granted=capabilities.authorize_response(caller.runtime_instance,caller.generation,Version,availability_handle,
                     ::std::as_bytes(::std::span{result.payload}),response_credit);
                 if(!granted) { return audit.finish(code(granted)); }
-                if(::std::chrono::steady_clock::now()>=until) { return audit.finish(110); }
+                if(::uwvm2::utils::host_clock::now()>=until) { return audit.finish(110); }
                 // Success is atomic from the SDK's perspective. No write on
                 // failure; the runtime copy primitive rechecks the live extent.
                 if(features)
@@ -1056,8 +1172,8 @@ namespace uwvm2::uwvm::imported::ros
                 return audit.finish(runtime::preload_memory_write_host_api(memory,output,&value,1)?0u:22u);
             }
 #if defined(__cpp_exceptions)
-            catch(::std::bad_alloc const&) { return audit_denial(Version,12); }
-            catch(...) { return audit_denial(Version,22); }
+            catch(::std::bad_alloc const&) { return allocation_failure(); }
+            catch(::std::length_error const&) { return extent_failure(); }
 #endif
         }
         template <core::version V> inline ::std::uint32_t client_features(::std::uint64_t a,::std::uint64_t s,::std::uint32_t m,::std::uint64_t o) noexcept
@@ -1166,9 +1282,9 @@ namespace uwvm2::uwvm::imported::ros
         using value = ::uwvm2::uwvm::wasm::type::feature_list_final_value_type_t<features>;
         template <typename T> consteval value map_value() noexcept
         { static_assert(::std::is_integral_v<T>); return sizeof(T) <= 4 ? value::i32 : value::i64; }
-        template <typename Signature, Signature Fn, auto& Name> struct function;
-        template <typename R, typename... A, R (*Fn)(A...) noexcept, auto& Name>
-        struct function<R (*)(A...) noexcept,Fn,Name>
+        template <typename Signature, Signature Fn, auto& Name, auto& Namespace> struct function;
+        template <typename R, typename... A, R (*Fn)(A...) noexcept, auto& Name, auto& Namespace>
+        struct function<R (*)(A...) noexcept,Fn,Name,Namespace>
         {
             using result_tuple = ::uwvm2::uwvm::wasm::type::import_function_result_tuple_t<features,map_value<R>()>;
             using parameter_tuple = ::uwvm2::uwvm::wasm::type::import_function_parameter_tuple_t<features,map_value<A>()...>;
@@ -1176,12 +1292,21 @@ namespace uwvm2::uwvm::imported::ros
             inline static constexpr ::uwvm2::utils::container::u8string_view function_name{Name};
             static void call(local_imported_function_type& call) noexcept
             {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                runtime::ros_caller_identity caller{};
+                if(!runtime::ros_observed_caller_identity_host_api(caller) ||
+                   !host_import_visible(caller.module_name, Namespace, function_name))
+                {
+                    ::uwvm2::utils::container::get<0>(call.res) = 13; // Before any native effect or Guest write.
+                    return;
+                }
+#endif
                 auto result{[&]<::std::size_t... I>(::std::index_sequence<I...>) noexcept
                 { return Fn(static_cast<A>(::uwvm2::utils::container::get<I>(call.params))...); }(::std::make_index_sequence<sizeof...(A)>{})};
                 ::uwvm2::utils::container::get<0>(call.res)=static_cast<::std::remove_cvref_t<decltype(::uwvm2::utils::container::get<0>(call.res))>>(result);
             }
         };
-        template <auto Fn, auto& Name> using native_function = function<decltype(Fn),Fn,Name>;
+        template <auto Fn, auto& Name, auto& Namespace> using native_function = function<decltype(Fn),Fn,Name,Namespace>;
         inline constexpr char8_t abi_version_name[]=u8"abi_version";
         inline constexpr char8_t rmw_srv_client_activate_name[]=u8"client_activate";
         inline constexpr char8_t rmw_srv_service_activate_name[]=u8"service_activate";
@@ -1264,44 +1389,44 @@ namespace uwvm2::uwvm::imported::ros
     {
         inline static constexpr ::uwvm2::utils::container::u8string_view module_name{u8"uwvm_ros1_v1"};
         using local_function_tuple = ::uwvm2::utils::container::tuple<
-            wrapper::native_function<&host::abi_version<core::version::ros1>,wrapper::abi_version_name>,
-            wrapper::native_function<&host::capability_open<core::version::ros1>,wrapper::capability_open_name>,
-            wrapper::native_function<&host::capability_close<core::version::ros1>,wrapper::capability_close_name>,
-            wrapper::native_function<&host::capability_revoke<core::version::ros1>,wrapper::capability_revoke_name>,
-            wrapper::native_function<&host::topic_publish<core::version::ros1>,wrapper::topic_publish_name>,
-            wrapper::native_function<&host::topic_subscribe<core::version::ros1>,wrapper::topic_subscribe_name>,
-            wrapper::native_function<&host::event_poll<core::version::ros1>,wrapper::event_poll_name>,
-            wrapper::native_function<&host::event_watch<core::version::ros1>,wrapper::event_watch_name>,
-            wrapper::native_function<&host::event_poll_v1<core::version::ros1>,wrapper::event_poll_v1_name>,
-            wrapper::native_function<&host::event_ready<core::version::ros1>,wrapper::event_ready_name>,
-            wrapper::native_function<&host::service_submit<core::version::ros1>,wrapper::service_submit_name>,
-            wrapper::native_function<&host::service_call<core::version::ros1>,wrapper::service_call_name>,
-            wrapper::native_function<&host::service_advertise<core::version::ros1>,wrapper::service_advertise_name>,
-            wrapper::native_function<&host::service_respond<core::version::ros1>,wrapper::service_respond_name>,
-            wrapper::native_function<&host::action_send_goal<core::version::ros1>,wrapper::action_send_goal_name>,
-            wrapper::native_function<&host::action_cancel_own_goal<core::version::ros1>,wrapper::action_cancel_own_goal_name>,
-            wrapper::native_function<&host::action_cancel_any_goal<core::version::ros1>,wrapper::action_cancel_any_goal_name>,
-            wrapper::native_function<&host::action_receive_feedback<core::version::ros1>,wrapper::action_receive_feedback_name>,
-            wrapper::native_function<&host::action_receive_result<core::version::ros1>,wrapper::action_receive_result_name>,
-            wrapper::native_function<&host::action_advertise<core::version::ros1>,wrapper::action_advertise_name>,
-            wrapper::native_function<&host::action_respond<core::version::ros1>,wrapper::action_respond_name>,
-            wrapper::native_function<&host::tf_lookup<core::version::ros1>,wrapper::tf_lookup_name>,
-            wrapper::native_function<&host::tf_broadcast<core::version::ros1>,wrapper::tf_broadcast_name>,
-            wrapper::native_function<&host::parameter_get<core::version::ros1>,wrapper::parameter_get_name>,
-            wrapper::native_function<&host::parameter_set<core::version::ros1>,wrapper::parameter_set_name>,
-            wrapper::native_function<&host::parameter_delete<core::version::ros1>,wrapper::parameter_delete_name>,
-            wrapper::native_function<&host::parameter_exists<core::version::ros1>,wrapper::parameter_exists_name>,
-            wrapper::native_function<&host::parameter_list<core::version::ros1>,wrapper::parameter_list_name>,
-            wrapper::native_function<&host::parameter_search<core::version::ros1>,wrapper::parameter_search_name>,
-            wrapper::native_function<&host::graph_inspect_topic<core::version::ros1>,wrapper::graph_inspect_topic_name>,
-            wrapper::native_function<&host::graph_inspect_node<core::version::ros1>,wrapper::graph_inspect_node_name>,
-            wrapper::native_function<&host::graph_inspect_service<core::version::ros1>,wrapper::graph_inspect_service_name>,
-            wrapper::native_function<&host::graph_list_topics<core::version::ros1>,wrapper::graph_list_topics_name>,
-            wrapper::native_function<&host::graph_list_nodes<core::version::ros1>,wrapper::graph_list_nodes_name>,
-            wrapper::native_function<&host::graph_list_services<core::version::ros1>,wrapper::graph_list_services_name>,
-            wrapper::native_function<&host::time_read_ros<core::version::ros1>,wrapper::time_read_ros_name>,
-            wrapper::native_function<&host::time_read_wall<core::version::ros1>,wrapper::time_read_wall_name>,
-            wrapper::native_function<&host::log_write<core::version::ros1>,wrapper::log_write_name>
+            wrapper::native_function<&host::abi_version<core::version::ros1>,wrapper::abi_version_name,module_name>,
+            wrapper::native_function<&host::capability_open<core::version::ros1>,wrapper::capability_open_name,module_name>,
+            wrapper::native_function<&host::capability_close<core::version::ros1>,wrapper::capability_close_name,module_name>,
+            wrapper::native_function<&host::capability_revoke<core::version::ros1>,wrapper::capability_revoke_name,module_name>,
+            wrapper::native_function<&host::topic_publish<core::version::ros1>,wrapper::topic_publish_name,module_name>,
+            wrapper::native_function<&host::topic_subscribe<core::version::ros1>,wrapper::topic_subscribe_name,module_name>,
+            wrapper::native_function<&host::event_poll<core::version::ros1>,wrapper::event_poll_name,module_name>,
+            wrapper::native_function<&host::event_watch<core::version::ros1>,wrapper::event_watch_name,module_name>,
+            wrapper::native_function<&host::event_poll_v1<core::version::ros1>,wrapper::event_poll_v1_name,module_name>,
+            wrapper::native_function<&host::event_ready<core::version::ros1>,wrapper::event_ready_name,module_name>,
+            wrapper::native_function<&host::service_submit<core::version::ros1>,wrapper::service_submit_name,module_name>,
+            wrapper::native_function<&host::service_call<core::version::ros1>,wrapper::service_call_name,module_name>,
+            wrapper::native_function<&host::service_advertise<core::version::ros1>,wrapper::service_advertise_name,module_name>,
+            wrapper::native_function<&host::service_respond<core::version::ros1>,wrapper::service_respond_name,module_name>,
+            wrapper::native_function<&host::action_send_goal<core::version::ros1>,wrapper::action_send_goal_name,module_name>,
+            wrapper::native_function<&host::action_cancel_own_goal<core::version::ros1>,wrapper::action_cancel_own_goal_name,module_name>,
+            wrapper::native_function<&host::action_cancel_any_goal<core::version::ros1>,wrapper::action_cancel_any_goal_name,module_name>,
+            wrapper::native_function<&host::action_receive_feedback<core::version::ros1>,wrapper::action_receive_feedback_name,module_name>,
+            wrapper::native_function<&host::action_receive_result<core::version::ros1>,wrapper::action_receive_result_name,module_name>,
+            wrapper::native_function<&host::action_advertise<core::version::ros1>,wrapper::action_advertise_name,module_name>,
+            wrapper::native_function<&host::action_respond<core::version::ros1>,wrapper::action_respond_name,module_name>,
+            wrapper::native_function<&host::tf_lookup<core::version::ros1>,wrapper::tf_lookup_name,module_name>,
+            wrapper::native_function<&host::tf_broadcast<core::version::ros1>,wrapper::tf_broadcast_name,module_name>,
+            wrapper::native_function<&host::parameter_get<core::version::ros1>,wrapper::parameter_get_name,module_name>,
+            wrapper::native_function<&host::parameter_set<core::version::ros1>,wrapper::parameter_set_name,module_name>,
+            wrapper::native_function<&host::parameter_delete<core::version::ros1>,wrapper::parameter_delete_name,module_name>,
+            wrapper::native_function<&host::parameter_exists<core::version::ros1>,wrapper::parameter_exists_name,module_name>,
+            wrapper::native_function<&host::parameter_list<core::version::ros1>,wrapper::parameter_list_name,module_name>,
+            wrapper::native_function<&host::parameter_search<core::version::ros1>,wrapper::parameter_search_name,module_name>,
+            wrapper::native_function<&host::graph_inspect_topic<core::version::ros1>,wrapper::graph_inspect_topic_name,module_name>,
+            wrapper::native_function<&host::graph_inspect_node<core::version::ros1>,wrapper::graph_inspect_node_name,module_name>,
+            wrapper::native_function<&host::graph_inspect_service<core::version::ros1>,wrapper::graph_inspect_service_name,module_name>,
+            wrapper::native_function<&host::graph_list_topics<core::version::ros1>,wrapper::graph_list_topics_name,module_name>,
+            wrapper::native_function<&host::graph_list_nodes<core::version::ros1>,wrapper::graph_list_nodes_name,module_name>,
+            wrapper::native_function<&host::graph_list_services<core::version::ros1>,wrapper::graph_list_services_name,module_name>,
+            wrapper::native_function<&host::time_read_ros<core::version::ros1>,wrapper::time_read_ros_name,module_name>,
+            wrapper::native_function<&host::time_read_wall<core::version::ros1>,wrapper::time_read_wall_name,module_name>,
+            wrapper::native_function<&host::log_write<core::version::ros1>,wrapper::log_write_name,module_name>
         >;
     };
     inline constexpr ros1_local_imported_module_t ros1_local_imported_module{};
@@ -1309,9 +1434,9 @@ namespace uwvm2::uwvm::imported::ros
     {
         inline static constexpr ::uwvm2::utils::container::u8string_view module_name{u8"uwvm_ros1_client_v1"};
         using local_function_tuple = ::uwvm2::utils::container::tuple<
-            wrapper::native_function<&host::abi_version<core::version::ros1>,wrapper::abi_version_name>,
-            wrapper::native_function<&host::client_features<core::version::ros1>,wrapper::client_features_name>,
-            wrapper::native_function<&host::client_service_available<core::version::ros1>,wrapper::client_service_available_name>>;
+            wrapper::native_function<&host::abi_version<core::version::ros1>,wrapper::abi_version_name,module_name>,
+            wrapper::native_function<&host::client_features<core::version::ros1>,wrapper::client_features_name,module_name>,
+            wrapper::native_function<&host::client_service_available<core::version::ros1>,wrapper::client_service_available_name,module_name>>;
     };
     inline constexpr ros1_client_local_imported_module_t ros1_client_local_imported_module{};
     static_assert(::uwvm2::uwvm::wasm::type::is_local_imported_module<ros1_client_local_imported_module_t>);
@@ -1324,55 +1449,55 @@ namespace uwvm2::uwvm::imported::ros
     {
         inline static constexpr ::uwvm2::utils::container::u8string_view module_name{u8"uwvm_ros2_v1"};
         using local_function_tuple = ::uwvm2::utils::container::tuple<
-            wrapper::native_function<&host::abi_version<core::version::ros2>,wrapper::abi_version_name>,
-            wrapper::native_function<&host::capability_open<core::version::ros2>,wrapper::capability_open_name>,
-            wrapper::native_function<&host::capability_close<core::version::ros2>,wrapper::capability_close_name>,
-            wrapper::native_function<&host::capability_revoke<core::version::ros2>,wrapper::capability_revoke_name>,
-            wrapper::native_function<&host::topic_publish<core::version::ros2>,wrapper::topic_publish_name>,
-            wrapper::native_function<&host::topic_subscribe<core::version::ros2>,wrapper::topic_subscribe_name>,
-            wrapper::native_function<&host::event_poll<core::version::ros2>,wrapper::event_poll_name>,
-            wrapper::native_function<&host::event_watch<core::version::ros2>,wrapper::event_watch_name>,
-            wrapper::native_function<&host::event_poll_v1<core::version::ros2>,wrapper::event_poll_v1_name>,
-            wrapper::native_function<&host::event_ready<core::version::ros2>,wrapper::event_ready_name>,
-            wrapper::native_function<&host::service_submit<core::version::ros2>,wrapper::service_submit_name>,
-            wrapper::native_function<&host::service_call<core::version::ros2>,wrapper::service_call_name>,
-            wrapper::native_function<&host::service_advertise<core::version::ros2>,wrapper::service_advertise_name>,
-            wrapper::native_function<&host::service_respond<core::version::ros2>,wrapper::service_respond_name>,
-            wrapper::native_function<&host::action_send_goal<core::version::ros2>,wrapper::action_send_goal_name>,
-            wrapper::native_function<&host::action_server_is_ready,wrapper::action_server_is_ready_name>,
-            wrapper::native_function<&host::action_send_begin,wrapper::action_send_begin_name>,
-            wrapper::native_function<&host::action_goal_response,wrapper::action_goal_response_name>,
-            wrapper::native_function<&host::action_goal_status,wrapper::action_goal_status_name>,
-            wrapper::native_function<&host::action_cancel_begin_own,wrapper::action_cancel_begin_own_name>,
-            wrapper::native_function<&host::action_cancel_response,wrapper::action_cancel_response_name>,
-            wrapper::native_function<&host::action_cancel_own_goal<core::version::ros2>,wrapper::action_cancel_own_goal_name>,
-            wrapper::native_function<&host::action_cancel_any_goal<core::version::ros2>,wrapper::action_cancel_any_goal_name>,
-            wrapper::native_function<&host::action_receive_feedback<core::version::ros2>,wrapper::action_receive_feedback_name>,
-            wrapper::native_function<&host::action_receive_result<core::version::ros2>,wrapper::action_receive_result_name>,
-            wrapper::native_function<&host::action_advertise<core::version::ros2>,wrapper::action_advertise_name>,
-            wrapper::native_function<&host::action_respond<core::version::ros2>,wrapper::action_respond_name>,
-            wrapper::native_function<&host::tf_lookup<core::version::ros2>,wrapper::tf_lookup_name>,
-            wrapper::native_function<&host::tf_broadcast<core::version::ros2>,wrapper::tf_broadcast_name>,
-            wrapper::native_function<&host::parameter_get<core::version::ros2>,wrapper::parameter_get_name>,
-            wrapper::native_function<&host::parameter_set<core::version::ros2>,wrapper::parameter_set_name>,
-            wrapper::native_function<&host::parameter_list<core::version::ros2>,wrapper::parameter_list_name>,
-            wrapper::native_function<&host::parameter_describe<core::version::ros2>,wrapper::parameter_describe_name>,
-            wrapper::native_function<&host::parameter_declare<core::version::ros2>,wrapper::parameter_declare_name>,
-            wrapper::native_function<&host::parameter_undeclare<core::version::ros2>,wrapper::parameter_undeclare_name>,
-            wrapper::native_function<&host::graph_inspect_topic<core::version::ros2>,wrapper::graph_inspect_topic_name>,
-            wrapper::native_function<&host::graph_inspect_node<core::version::ros2>,wrapper::graph_inspect_node_name>,
-            wrapper::native_function<&host::graph_inspect_service<core::version::ros2>,wrapper::graph_inspect_service_name>,
-            wrapper::native_function<&host::graph_inspect_action<core::version::ros2>,wrapper::graph_inspect_action_name>,
-            wrapper::native_function<&host::parameter_subscribe_events<core::version::ros2>,wrapper::parameter_subscribe_events_name>,
-            wrapper::native_function<&host::graph_list_topics<core::version::ros2>,wrapper::graph_list_topics_name>,
-            wrapper::native_function<&host::graph_list_nodes<core::version::ros2>,wrapper::graph_list_nodes_name>,
-            wrapper::native_function<&host::graph_list_services<core::version::ros2>,wrapper::graph_list_services_name>,
-            wrapper::native_function<&host::lifecycle_get_state<core::version::ros2>,wrapper::lifecycle_get_state_name>,
-            wrapper::native_function<&host::lifecycle_change_state<core::version::ros2>,wrapper::lifecycle_change_state_name>,
-            wrapper::native_function<&host::time_read_ros<core::version::ros2>,wrapper::time_read_ros_name>,
-            wrapper::native_function<&host::time_read_system<core::version::ros2>,wrapper::time_read_system_name>,
-            wrapper::native_function<&host::time_read_steady<core::version::ros2>,wrapper::time_read_steady_name>,
-            wrapper::native_function<&host::log_write<core::version::ros2>,wrapper::log_write_name>
+            wrapper::native_function<&host::abi_version<core::version::ros2>,wrapper::abi_version_name,module_name>,
+            wrapper::native_function<&host::capability_open<core::version::ros2>,wrapper::capability_open_name,module_name>,
+            wrapper::native_function<&host::capability_close<core::version::ros2>,wrapper::capability_close_name,module_name>,
+            wrapper::native_function<&host::capability_revoke<core::version::ros2>,wrapper::capability_revoke_name,module_name>,
+            wrapper::native_function<&host::topic_publish<core::version::ros2>,wrapper::topic_publish_name,module_name>,
+            wrapper::native_function<&host::topic_subscribe<core::version::ros2>,wrapper::topic_subscribe_name,module_name>,
+            wrapper::native_function<&host::event_poll<core::version::ros2>,wrapper::event_poll_name,module_name>,
+            wrapper::native_function<&host::event_watch<core::version::ros2>,wrapper::event_watch_name,module_name>,
+            wrapper::native_function<&host::event_poll_v1<core::version::ros2>,wrapper::event_poll_v1_name,module_name>,
+            wrapper::native_function<&host::event_ready<core::version::ros2>,wrapper::event_ready_name,module_name>,
+            wrapper::native_function<&host::service_submit<core::version::ros2>,wrapper::service_submit_name,module_name>,
+            wrapper::native_function<&host::service_call<core::version::ros2>,wrapper::service_call_name,module_name>,
+            wrapper::native_function<&host::service_advertise<core::version::ros2>,wrapper::service_advertise_name,module_name>,
+            wrapper::native_function<&host::service_respond<core::version::ros2>,wrapper::service_respond_name,module_name>,
+            wrapper::native_function<&host::action_send_goal<core::version::ros2>,wrapper::action_send_goal_name,module_name>,
+            wrapper::native_function<&host::action_server_is_ready,wrapper::action_server_is_ready_name,module_name>,
+            wrapper::native_function<&host::action_send_begin,wrapper::action_send_begin_name,module_name>,
+            wrapper::native_function<&host::action_goal_response,wrapper::action_goal_response_name,module_name>,
+            wrapper::native_function<&host::action_goal_status,wrapper::action_goal_status_name,module_name>,
+            wrapper::native_function<&host::action_cancel_begin_own,wrapper::action_cancel_begin_own_name,module_name>,
+            wrapper::native_function<&host::action_cancel_response,wrapper::action_cancel_response_name,module_name>,
+            wrapper::native_function<&host::action_cancel_own_goal<core::version::ros2>,wrapper::action_cancel_own_goal_name,module_name>,
+            wrapper::native_function<&host::action_cancel_any_goal<core::version::ros2>,wrapper::action_cancel_any_goal_name,module_name>,
+            wrapper::native_function<&host::action_receive_feedback<core::version::ros2>,wrapper::action_receive_feedback_name,module_name>,
+            wrapper::native_function<&host::action_receive_result<core::version::ros2>,wrapper::action_receive_result_name,module_name>,
+            wrapper::native_function<&host::action_advertise<core::version::ros2>,wrapper::action_advertise_name,module_name>,
+            wrapper::native_function<&host::action_respond<core::version::ros2>,wrapper::action_respond_name,module_name>,
+            wrapper::native_function<&host::tf_lookup<core::version::ros2>,wrapper::tf_lookup_name,module_name>,
+            wrapper::native_function<&host::tf_broadcast<core::version::ros2>,wrapper::tf_broadcast_name,module_name>,
+            wrapper::native_function<&host::parameter_get<core::version::ros2>,wrapper::parameter_get_name,module_name>,
+            wrapper::native_function<&host::parameter_set<core::version::ros2>,wrapper::parameter_set_name,module_name>,
+            wrapper::native_function<&host::parameter_list<core::version::ros2>,wrapper::parameter_list_name,module_name>,
+            wrapper::native_function<&host::parameter_describe<core::version::ros2>,wrapper::parameter_describe_name,module_name>,
+            wrapper::native_function<&host::parameter_declare<core::version::ros2>,wrapper::parameter_declare_name,module_name>,
+            wrapper::native_function<&host::parameter_undeclare<core::version::ros2>,wrapper::parameter_undeclare_name,module_name>,
+            wrapper::native_function<&host::graph_inspect_topic<core::version::ros2>,wrapper::graph_inspect_topic_name,module_name>,
+            wrapper::native_function<&host::graph_inspect_node<core::version::ros2>,wrapper::graph_inspect_node_name,module_name>,
+            wrapper::native_function<&host::graph_inspect_service<core::version::ros2>,wrapper::graph_inspect_service_name,module_name>,
+            wrapper::native_function<&host::graph_inspect_action<core::version::ros2>,wrapper::graph_inspect_action_name,module_name>,
+            wrapper::native_function<&host::parameter_subscribe_events<core::version::ros2>,wrapper::parameter_subscribe_events_name,module_name>,
+            wrapper::native_function<&host::graph_list_topics<core::version::ros2>,wrapper::graph_list_topics_name,module_name>,
+            wrapper::native_function<&host::graph_list_nodes<core::version::ros2>,wrapper::graph_list_nodes_name,module_name>,
+            wrapper::native_function<&host::graph_list_services<core::version::ros2>,wrapper::graph_list_services_name,module_name>,
+            wrapper::native_function<&host::lifecycle_get_state<core::version::ros2>,wrapper::lifecycle_get_state_name,module_name>,
+            wrapper::native_function<&host::lifecycle_change_state<core::version::ros2>,wrapper::lifecycle_change_state_name,module_name>,
+            wrapper::native_function<&host::time_read_ros<core::version::ros2>,wrapper::time_read_ros_name,module_name>,
+            wrapper::native_function<&host::time_read_system<core::version::ros2>,wrapper::time_read_system_name,module_name>,
+            wrapper::native_function<&host::time_read_steady<core::version::ros2>,wrapper::time_read_steady_name,module_name>,
+            wrapper::native_function<&host::log_write<core::version::ros2>,wrapper::log_write_name,module_name>
         >;
     };
     inline constexpr ros2_local_imported_module_t ros2_local_imported_module{};
@@ -1380,11 +1505,11 @@ namespace uwvm2::uwvm::imported::ros
     {
         inline static constexpr ::uwvm2::utils::container::u8string_view module_name{u8"uwvm_ros2_rmw_v1"};
         using local_function_tuple = ::uwvm2::utils::container::tuple<
-            wrapper::native_function<&host::abi_version<core::version::ros2>,wrapper::abi_version_name>,
-            wrapper::native_function<&host::rmw_publisher_activate,wrapper::rmw_publisher_activate_name>,
-            wrapper::native_function<&host::rmw_publisher_inspect,wrapper::rmw_publisher_inspect_name>,
-            wrapper::native_function<&host::rmw_publisher_publish,wrapper::rmw_publisher_publish_name>,
-            wrapper::native_function<&host::rmw_publisher_retire,wrapper::rmw_publisher_retire_name>>;
+            wrapper::native_function<&host::abi_version<core::version::ros2>,wrapper::abi_version_name,module_name>,
+            wrapper::native_function<&host::rmw_publisher_activate,wrapper::rmw_publisher_activate_name,module_name>,
+            wrapper::native_function<&host::rmw_publisher_inspect,wrapper::rmw_publisher_inspect_name,module_name>,
+            wrapper::native_function<&host::rmw_publisher_publish,wrapper::rmw_publisher_publish_name,module_name>,
+            wrapper::native_function<&host::rmw_publisher_retire,wrapper::rmw_publisher_retire_name,module_name>>;
     };
     inline constexpr ros2_rmw_local_imported_module_t ros2_rmw_local_imported_module{};
     static_assert(::uwvm2::uwvm::wasm::type::is_local_imported_module<ros2_rmw_local_imported_module_t>);
@@ -1393,13 +1518,13 @@ namespace uwvm2::uwvm::imported::ros
     {
         inline static constexpr ::uwvm2::utils::container::u8string_view module_name{u8"uwvm_ros2_rmw_sub_v1"};
         using local_function_tuple = ::uwvm2::utils::container::tuple<
-            wrapper::native_function<&host::abi_version<core::version::ros2>,wrapper::abi_version_name>,
-            wrapper::native_function<&host::rmw_subscription_activate,wrapper::rmw_subscription_activate_name>,
-            wrapper::native_function<&host::rmw_subscription_inspect,wrapper::rmw_subscription_inspect_name>,
-            wrapper::native_function<&host::rmw_subscription_peek,wrapper::rmw_subscription_peek_name>,
-            wrapper::native_function<&host::rmw_subscription_commit,wrapper::rmw_subscription_commit_name>,
-            wrapper::native_function<&host::rmw_subscription_cancel,wrapper::rmw_subscription_cancel_name>,
-            wrapper::native_function<&host::rmw_subscription_retire,wrapper::rmw_subscription_retire_name>>;
+            wrapper::native_function<&host::abi_version<core::version::ros2>,wrapper::abi_version_name,module_name>,
+            wrapper::native_function<&host::rmw_subscription_activate,wrapper::rmw_subscription_activate_name,module_name>,
+            wrapper::native_function<&host::rmw_subscription_inspect,wrapper::rmw_subscription_inspect_name,module_name>,
+            wrapper::native_function<&host::rmw_subscription_peek,wrapper::rmw_subscription_peek_name,module_name>,
+            wrapper::native_function<&host::rmw_subscription_commit,wrapper::rmw_subscription_commit_name,module_name>,
+            wrapper::native_function<&host::rmw_subscription_cancel,wrapper::rmw_subscription_cancel_name,module_name>,
+            wrapper::native_function<&host::rmw_subscription_retire,wrapper::rmw_subscription_retire_name,module_name>>;
     };
     inline constexpr ros2_rmw_subscription_local_imported_module_t ros2_rmw_subscription_local_imported_module{};
     static_assert(::uwvm2::uwvm::wasm::type::is_local_imported_module<ros2_rmw_subscription_local_imported_module_t>);
@@ -1408,18 +1533,18 @@ namespace uwvm2::uwvm::imported::ros
     {
         inline static constexpr ::uwvm2::utils::container::u8string_view module_name{u8"uwvm_ros2_rmw_srv_v1"};
         using local_function_tuple = ::uwvm2::utils::container::tuple<
-            wrapper::native_function<&host::abi_version<core::version::ros2>,wrapper::abi_version_name>,
-            wrapper::native_function<&host::rmw_client_activate,wrapper::rmw_srv_client_activate_name>,
-            wrapper::native_function<&host::rmw_service_activate,wrapper::rmw_srv_service_activate_name>,
-            wrapper::native_function<&host::rmw_service_inspect,wrapper::rmw_srv_endpoint_inspect_name>,
-            wrapper::native_function<&host::rmw_client_submit,wrapper::rmw_srv_client_submit_name>,
-            wrapper::native_function<&host::rmw_client_abandon,wrapper::rmw_srv_client_abandon_name>,
-            wrapper::native_function<&host::rmw_service_respond,wrapper::rmw_srv_service_respond_name>,
-            wrapper::native_function<&host::rmw_service_peek,wrapper::rmw_srv_endpoint_peek_name>,
-            wrapper::native_function<&host::rmw_service_commit,wrapper::rmw_srv_endpoint_commit_name>,
-            wrapper::native_function<&host::rmw_service_cancel,wrapper::rmw_srv_endpoint_cancel_name>,
-            wrapper::native_function<&host::rmw_client_available,wrapper::rmw_srv_client_available_name>,
-            wrapper::native_function<&host::rmw_service_retire,wrapper::rmw_srv_endpoint_retire_name>>;
+            wrapper::native_function<&host::abi_version<core::version::ros2>,wrapper::abi_version_name,module_name>,
+            wrapper::native_function<&host::rmw_client_activate,wrapper::rmw_srv_client_activate_name,module_name>,
+            wrapper::native_function<&host::rmw_service_activate,wrapper::rmw_srv_service_activate_name,module_name>,
+            wrapper::native_function<&host::rmw_service_inspect,wrapper::rmw_srv_endpoint_inspect_name,module_name>,
+            wrapper::native_function<&host::rmw_client_submit,wrapper::rmw_srv_client_submit_name,module_name>,
+            wrapper::native_function<&host::rmw_client_abandon,wrapper::rmw_srv_client_abandon_name,module_name>,
+            wrapper::native_function<&host::rmw_service_respond,wrapper::rmw_srv_service_respond_name,module_name>,
+            wrapper::native_function<&host::rmw_service_peek,wrapper::rmw_srv_endpoint_peek_name,module_name>,
+            wrapper::native_function<&host::rmw_service_commit,wrapper::rmw_srv_endpoint_commit_name,module_name>,
+            wrapper::native_function<&host::rmw_service_cancel,wrapper::rmw_srv_endpoint_cancel_name,module_name>,
+            wrapper::native_function<&host::rmw_client_available,wrapper::rmw_srv_client_available_name,module_name>,
+            wrapper::native_function<&host::rmw_service_retire,wrapper::rmw_srv_endpoint_retire_name,module_name>>;
     };
     inline constexpr ros2_rmw_service_local_imported_module_t ros2_rmw_service_local_imported_module{};
     static_assert(::uwvm2::uwvm::wasm::type::is_local_imported_module<ros2_rmw_service_local_imported_module_t>);
@@ -1428,9 +1553,9 @@ namespace uwvm2::uwvm::imported::ros
     {
         inline static constexpr ::uwvm2::utils::container::u8string_view module_name{u8"uwvm_ros2_client_v1"};
         using local_function_tuple = ::uwvm2::utils::container::tuple<
-            wrapper::native_function<&host::abi_version<core::version::ros2>,wrapper::abi_version_name>,
-            wrapper::native_function<&host::client_features<core::version::ros2>,wrapper::client_features_name>,
-            wrapper::native_function<&host::client_service_available<core::version::ros2>,wrapper::client_service_available_name>>;
+            wrapper::native_function<&host::abi_version<core::version::ros2>,wrapper::abi_version_name,module_name>,
+            wrapper::native_function<&host::client_features<core::version::ros2>,wrapper::client_features_name,module_name>,
+            wrapper::native_function<&host::client_service_available<core::version::ros2>,wrapper::client_service_available_name,module_name>>;
     };
     inline constexpr ros2_client_local_imported_module_t ros2_client_local_imported_module{};
     static_assert(::uwvm2::uwvm::wasm::type::is_local_imported_module<ros2_client_local_imported_module_t>);
@@ -1446,13 +1571,13 @@ namespace uwvm2::uwvm::imported::ros
     {
         inline static constexpr ::uwvm2::utils::container::u8string_view module_name{u8"uwvm_portable_robot_v1"};
         using local_function_tuple=::uwvm2::utils::container::tuple<
-            wrapper::native_function<&portable_host::abi_version,wrapper::abi_version_name>,
-            wrapper::native_function<&portable_host::open,portable_names::open>,
-            wrapper::native_function<&portable_host::describe,portable_names::describe>,
-            wrapper::native_function<&portable_host::read_state,portable_names::read_state>,
-            wrapper::native_function<&portable_host::submit,portable_names::submit>,
-            wrapper::native_function<&portable_host::wait,portable_names::wait>,
-            wrapper::native_function<&portable_host::close,portable_names::close>>;
+            wrapper::native_function<&portable_host::abi_version,wrapper::abi_version_name,module_name>,
+            wrapper::native_function<&portable_host::open,portable_names::open,module_name>,
+            wrapper::native_function<&portable_host::describe,portable_names::describe,module_name>,
+            wrapper::native_function<&portable_host::read_state,portable_names::read_state,module_name>,
+            wrapper::native_function<&portable_host::submit,portable_names::submit,module_name>,
+            wrapper::native_function<&portable_host::wait,portable_names::wait,module_name>,
+            wrapper::native_function<&portable_host::close,portable_names::close,module_name>>;
     };
     inline constexpr portable_robot_local_imported_module_t portable_robot_local_imported_module{};
     static_assert(::uwvm2::uwvm::wasm::type::is_local_imported_module<portable_robot_local_imported_module_t>);

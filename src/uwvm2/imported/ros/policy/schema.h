@@ -170,27 +170,58 @@ namespace uwvm2::imported::ros
         auto custom{ipc::find_custom_topic_for_operation(static_cast<unsigned>(v), cap.type, cap.operation)};
         auto custom_service{ipc::find_custom_service(static_cast<unsigned>(v), cap.type)};
         auto custom_action{ipc::find_custom_action(static_cast<unsigned>(v), cap.type)};
-        auto overflow{cap.limits.find("overflow-policy")};
-        bool const backpressure{overflow != cap.limits.end() && overflow->second == "backpressure"};
         if(fields.empty()) { return {errc::unsupported, "unknown operation for this ROS version: " + cap.operation}; }
         if(!canonical_resource(cap.resource, cap.operation.starts_with("graph.") || cap.operation == "param.list"))
         { return {errc::invalid_argument, "resource must be a canonical absolute ROS name"}; }
         for(auto field : fields)
         {
-            if(!cap.limits.contains(field)) { return {errc::invalid_argument, "missing explicit field: " + ::std::string(field)}; }
+            if(!resource_quota_field(field) && !cap.limits.contains(field)) { return {errc::invalid_argument, "missing explicit field: " + ::std::string(field)}; }
         }
         for(auto const& [key, value] : cap.limits)
         {
+            auto const key_view{::std::string_view{key}};
+            bool const exhaust_action{key_view.ends_with(".on-exhausted")};
+            bool const exit_action{key_view.ends_with(".on-proc-exit")};
+            if(exhaust_action || exit_action)
+            {
+                auto base{key_view.substr(0,key_view.size()-(exhaust_action?13u:13u))};
+                bool const native{base=="native-wait"};
+                bool const pending{base=="max-pending-events" || base=="max-pending-event-bytes"};
+                if((native && !exit_action) || (!native && ((!resource_quota_field(base)) ||
+                    (::std::find(fields.begin(),fields.end(),base)==fields.end() && !pending && base!="max-parameter-elements"))))
+                { return {errc::invalid_argument,"wait action does not apply to operation: "+key}; }
+                if(exit_action)
+                { if(value!="cancel" && value!="wait") { return {errc::invalid_argument,"exit action requires cancel or wait: "+key}; } }
+                else if(value!="reject" && value!="wait")
+                { return {errc::invalid_argument,"quota action requires reject or wait: "+key}; }
+                else if(value=="wait" && !replenishing_quota(base))
+                { return {errc::invalid_argument,"non-replenishing quota cannot wait: "+key}; }
+                continue;
+            }
             bool parameter_bound{key == "parameter-min-value" || key == "parameter-max-value"};
             bool parameter_elements{key == "max-parameter-elements"};
             bool bound_field{key == "twist.linear-max-abs" || key == "twist.angular-max-abs"};
             bool parent_search{v == version::ros1 && cap.operation == "param.search" && key == "search-parent-namespaces"};
             bool custom_codec{(custom || custom_service || custom_action) && key == "adapter-codec-identity"};
-            bool pending_field{backpressure && (key == "max-pending-events" || key == "max-pending-event-bytes")};
+            bool pending_field{key == "max-pending-events" || key == "max-pending-event-bytes"};
             if(::std::find(fields.begin(), fields.end(), key) == fields.end() && !bound_field && !parameter_bound && !parameter_elements && !parent_search && !custom_codec && !pending_field)
             { return {errc::invalid_argument, "field does not apply to operation: " + key}; }
             if(value.empty() || value.size() > 1024) { return {errc::invalid_argument, "empty or oversized field: " + key}; }
-            if(key == "max-rate-hz" || key == "audit-max-rate-hz" || key == "tf.max-translation-abs" || key == "tf.quaternion-norm-tolerance" || bound_field)
+            if(resource_quota_field(key))
+            {
+                if(value == "unlimited") { continue; }
+                if(key == "max-rate-hz" || key == "audit-max-rate-hz")
+                {
+                    double rate{};
+                    if(value!="0" && !parse_positive_double(value,rate)) { return {errc::invalid_argument,"finite nonnegative rate or unlimited required: " + key}; }
+                }
+                else
+                {
+                    ::std::uint64_t number{};
+                    if(!quota_integer(value,number)) { return {errc::invalid_argument,"uint64 quota or unlimited required: " + key}; }
+                }
+            }
+            else if(key == "tf.max-translation-abs" || key == "tf.quaternion-norm-tolerance" || bound_field)
             {
                 double number{};
                 if(!parse_positive_double(value, number) || number > 1000000. || (key == "tf.quaternion-norm-tolerance" && number > 0.001)) { return {errc::invalid_argument, "invalid finite positive rate or bound: " + key}; }
@@ -234,13 +265,13 @@ namespace uwvm2::imported::ros
             { if(value != "none" && value != "finite" && value != "twist-bounds" && value != "transform-bounds") { return {errc::unsupported, "validator has no trusted implementation"}; } }
             else if(key == "overflow-policy")
             {
-                if(value != "drop-oldest" && value != "drop-newest" && value != "reject" && value != "backpressure") { return {errc::invalid_argument, "invalid overflow policy"}; }
+                if(value != "reject" && value != "wait") { return {errc::invalid_argument, "quota overflow requires reject or synchronous wait"}; }
             }
             else if(key == "transport") { if(v != version::ros1 || value != "tcpros") { return {errc::unsupported, "only explicit TCPROS transport is implemented"}; } }
             else if(key == "latch") { if(value != "true" && value != "false") { return {errc::invalid_argument, "latch must be true or false"}; } }
             else if((key.starts_with("qos.") && key.ends_with(".reliability"))) { if(value != "reliable" && value != "best-effort") { return {errc::invalid_argument, "invalid reliability"}; } }
             else if((key.starts_with("qos.") && key.ends_with(".durability"))) { if(value != "volatile" && value != "transient-local") { return {errc::invalid_argument, "invalid durability"}; } }
-            else if((key.starts_with("qos.") && key.ends_with(".history"))) { if(value != "keep-last") { return {errc::unsupported, "only bounded keep-last history is implemented"}; } }
+            else if((key.starts_with("qos.") && key.ends_with(".history"))) { if(value != "keep-last" && value != "keep-all") { return {errc::invalid_argument, "history requires keep-last or keep-all"}; } }
             else if((key.starts_with("qos.") && key.ends_with(".liveliness"))) { if(value != "automatic" && value != "manual-by-topic") { return {errc::invalid_argument, "invalid liveliness"}; } }
             else if(key.starts_with("qos."))
             {
@@ -249,48 +280,28 @@ namespace uwvm2::imported::ros
                 { return {errc::invalid_argument, "QoS duration needs explicit positive nanoseconds or infinite"}; }
             }
         }
+        for(auto pair : {::std::pair{::std::string_view{"max-rate-hz"},::std::string_view{"burst"}},
+                         ::std::pair{::std::string_view{"audit-max-rate-hz"},::std::string_view{"audit-burst"}}})
+        {
+            auto const rate{cap.limits.find(pair.first)};
+            bool const finite_rate{rate!=cap.limits.end() && rate->second!="unlimited"};
+            if(finite_rate != (quota_value(cap,pair.second)!=unlimited_quota))
+            { return {errc::invalid_argument,"rate and burst must both be explicitly finite or both unlimited"}; }
+        }
         if(!backend_supported(v, cap.operation, cap.type)) { return {errc::unsupported, "operation/type has no implemented trusted backend adapter"}; }
         if(cap.type_identity != trusted_type_identity(v, cap.type, cap.operation)) { return {errc::permission_denied, "type identity differs from trusted adapter"}; }
         if(custom && !custom_topic_codec_matches(v, cap))
         { return {errc::permission_denied, "custom Topic requires its explicit compiled adapter-codec-identity"}; }
         if((custom_service || custom_action) && !custom_interface_codec_matches(v, cap))
         { return {errc::permission_denied, "custom interface requires its explicit compiled adapter-codec-identity"}; }
-        if(backpressure)
+        for(auto const& [key,value]:cap.limits)
         {
-            auto count{cap.limits.find("max-pending-events")},pending{cap.limits.find("max-pending-event-bytes")};
-            ::std::uint64_t pending_count{},pending_bytes{},record_bytes{};
-            if(count == cap.limits.end() || pending == cap.limits.end() || !parse_u64(count->second,pending_count) || pending_count != 1 ||
-               !parse_u64(pending->second,pending_bytes) || !pending_bytes)
-            { return {errc::invalid_argument, "backpressure requires one explicitly bounded pending event"}; }
-            auto key{cap.operation == "event.observe" ? "max-event-bytes" : cap.operation == "param.subscribe-events" ? "max-parameter-bytes" :
-                     cap.operation == "service.advertise" ? "max-request-bytes" : cap.operation.starts_with("action.") ? "max-result-bytes" : "max-message-bytes"};
-            auto record{cap.limits.find(key)};
-            if(record == cap.limits.end() || !parse_u64(record->second,record_bytes)) { return {errc::invalid_argument, "backpressure requires an explicit event record quota"}; }
-            if(cap.operation == "service.advertise") { record_bytes += 8; }
-            if(cap.operation.starts_with("action."))
-            { ::std::uint64_t feedback{},goal{};parse_u64(cap.limits.at("max-feedback-bytes"),feedback);parse_u64(cap.limits.at("max-goal-bytes"),goal);record_bytes = ::std::max({record_bytes,feedback,goal+8}); }
-            if(pending_bytes < record_bytes) { return {errc::invalid_argument, "pending event quota cannot hold its explicit maximum record"}; }
-        }
-        if(cap.operation == "event.observe")
-        {
-            ::std::uint64_t record{},depth{},queue{},bandwidth{},burst{};
-            parse_u64(cap.limits.at("max-event-bytes"),record);parse_u64(cap.limits.at("max-event-queue-depth"),depth);
-            parse_u64(cap.limits.at("max-event-queue-bytes"),queue);parse_u64(cap.limits.at("max-bytes-per-second"),bandwidth);parse_u64(cap.limits.at("burst"),burst);
-            if(record < ipc::event_header_bytes || depth < 3 || queue < record + 2*ipc::event_header_bytes || record > bandwidth || burst > depth)
-            { return {errc::invalid_argument, "event observer requires explicit data capacity and two bounded control records"}; }
-        }
-        if(cap.operation == "service.available")
-        {
-            ::std::uint64_t wait{},timeout{},history{},clients{},inflight{},request{},response{},bandwidth{};
-            parse_u64(cap.limits.at("max-wait-ns"),wait);parse_u64(cap.limits.at("timeout-ms"),timeout);
-            parse_u64(cap.limits.at("max-binding-history"),history);parse_u64(cap.limits.at("max-native-clients"),clients);
-            parse_u64(cap.limits.at("max-inflight"),inflight);parse_u64(cap.limits.at("max-request-bytes"),request);
-            parse_u64(cap.limits.at("max-response-bytes"),response);parse_u64(cap.limits.at("max-bytes-per-second"),bandwidth);
-            // One extra millisecond remains for a truthful false result. The
-            // operation/transport deadline still includes native setup/query.
-            if((wait+999999)/1000000+1>timeout||history>65536||clients>1024||clients>history||
-               inflight!=1||request!=ipc::client_availability::bytes||response!=ipc::client_availability::bytes||bandwidth<request)
-            { return {errc::invalid_argument, "availability needs finite wait/headroom, history/client bounds and exact tagged-envelope quotas"}; }
+            if(key.starts_with("qos.") && key.ends_with(".history") && value=="keep-last")
+            {
+                auto const depth{quota_value(cap,key.substr(0,key.size()-7)+"depth")};
+                if(!depth || depth==unlimited_quota)
+                { return {errc::invalid_argument,"keep-last requires an explicit positive finite depth"}; }
+            }
         }
         auto parameter_contract{ipc::validate_parameter_contract(v,cap)};
         if(parameter_contract) { return {static_cast<errc>(parameter_contract), "invalid explicit parameter type, bounds or byte quota"}; }
@@ -322,38 +333,8 @@ namespace uwvm2::imported::ros
             if(cap.operation != "param.list") { auto name{cap.limits.at("parameter-name")}; ::std::replace(name.begin(), name.end(), '.', '/'); resource += "/" + name; }
             if(resource != cap.resource) { return {errc::invalid_argument, "resource must equal explicit parameter node/name scope"}; }
         }
-        if(cap.operation.starts_with("time."))
-        {
-            ::std::uint64_t response{}; parse_u64(cap.limits.at("max-response-bytes"), response);
-            if(response < 8) { return {errc::invalid_argument, "time response limit must explicitly allow 8 bytes"}; }
-        }
-        if(cap.operation.starts_with("action."))
-        {
-            ::std::uint64_t goal{},feedback{},result{},queue{};
-            parse_u64(cap.limits.at("max-goal-bytes"),goal);parse_u64(cap.limits.at("max-feedback-bytes"),feedback);parse_u64(cap.limits.at("max-result-bytes"),result);parse_u64(cap.limits.at("max-event-queue-bytes"),queue);
-            // A legacy fixed component has no separate minimum field: its
-            // complete wire size is also its minimum. Empty bounded records
-            // legitimately have a zero minimum and still require envelopes.
-            auto component_min{[](ipc::custom_topic_descriptor const* part) noexcept
-            { return part->bounded_layout ? part->minimum_wire_bytes : part->wire_bytes; }};
-            auto goal_min{custom_action ? component_min(custom_action->goal) : 4u};
-            auto feedback_min{custom_action ? 8u + component_min(custom_action->feedback) : 12u};
-            auto result_min{custom_action ? 9u + component_min(custom_action->result) : 13u};
-            if(goal < goal_min || feedback < feedback_min || result < result_min || queue < ::std::max(feedback_min, result_min))
-            { return {errc::invalid_argument,"Action quotas must allow explicit canonical goal/feedback/result envelopes"}; }
-        }
-        if(cap.operation.starts_with("topic.") || cap.operation == "param.subscribe-events")
-        {
-            ::std::uint64_t max_message{}, max_queue{}, burst{}, bandwidth{}, depth{};
-            bool const event{cap.operation == "param.subscribe-events"};
-            parse_u64(cap.limits.at(event ? "max-parameter-bytes" : "max-message-bytes"), max_message);
-            parse_u64(cap.limits.at(event ? "max-event-queue-bytes" : "max-queue-bytes"), max_queue);
-            parse_u64(cap.limits.at("burst"), burst);
-            parse_u64(cap.limits.at("max-bytes-per-second"), bandwidth);
-            parse_u64(cap.limits.at(v == version::ros1 ? "queue-depth" : "qos.depth"), depth);
-            if(max_queue < max_message || max_message > bandwidth || burst > depth)
-            { return {errc::invalid_argument, "message, byte quota, burst and queue limits conflict"}; }
-        }
+        // Independent optional quotas impose no synthetic relationship on
+        // one another. Each actual request is checked before its native effect.
         return {};
     }
 }

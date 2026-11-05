@@ -20,7 +20,12 @@
  ****************************************/
 
 module;
+#include "uwvm_runtime_update.h"
+#include "uwvm_runtime_diagnostics.h"
+
 #include <uwvm2/utils/security/wsea.h>
+#include <uwvm2/utils/control/management.h>
+#include "uwvm_runtime_guest_exit.h"
 
 // std
 #include <algorithm>
@@ -270,6 +275,7 @@ import uwvm2.imported.wasi.wasip1;
 import uwvm2.runtime.compiler.shared.wasm_threads;
 import uwvm2.uwvm.imported.wasi.wasip1.storage;
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
+import uwvm2.imported.wasi.wasip1.environment;
 import uwvm2.uwvm.imported.wasi.wasip1.init;
 #endif
 import uwvm2.uwvm.runtime.storage;
@@ -289,4 +295,7 @@ import uwvm2.uwvm.wasm.storage;
 // Implementation-private cache uses imported checkpoint types.
 #include "uwvm_runtime_checkpoint_entry_cache.h"
 #include "uwvm_runtime_function_identity_cache.h"
+#if !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1) && defined(UWVM_IMPORT_WASI_WASIP1) && defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+#include <uwvm2/utils/update/policy_change.h>
+#endif
 #include "uwvm_runtime.default.cpp"

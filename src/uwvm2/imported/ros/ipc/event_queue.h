@@ -2,7 +2,11 @@
  * UWVM2 ROS Runtime Extension. APL-2.0.                     *
  *************************************************************/
 #pragma once
+#ifndef UWVM_MODULE
+#include <uwvm2/utils/thread/monotonic_clock.h>
+#endif
 #include "event.h"
+#include "../common/synchronous_wait.h"
 #include <algorithm>
 #include <deque>
 #include <map>
@@ -13,18 +17,16 @@
 
 namespace uwvm2::imported::ros::ipc
 {
-    enum class event_overflow : std::uint8_t { drop_oldest,drop_newest,reject,backpressure };
+    enum class event_overflow : std::uint8_t { drop_oldest,drop_newest,reject,backpressure,wait };
     inline bool parse_event_overflow(std::string_view value,event_overflow& result) noexcept
     {
-        if(value=="drop-oldest") { result=event_overflow::drop_oldest; }
-        else if(value=="drop-newest") { result=event_overflow::drop_newest; }
-        else if(value=="reject") { result=event_overflow::reject; }
-        else if(value=="backpressure") { result=event_overflow::backpressure; }
+        if(value=="reject") { result=event_overflow::reject; }
+        else if(value=="wait") { result=event_overflow::wait; }
         else { return false; }return true;
     }
     struct event_stream_settings
     {
-        std::uint64_t depth{},bytes{},record_bytes{},pending_events{},pending_bytes{};
+        std::uint64_t depth{UINT64_MAX},bytes{UINT64_MAX},record_bytes{UINT64_MAX},pending_events{},pending_bytes{};
         event_overflow overflow{event_overflow::reject};
     };
     // Trusted native snapshots only. There is no Guest statistics import or
@@ -46,6 +48,16 @@ namespace uwvm2::imported::ros::ipc
     class event_stream
     {
         mutable std::mutex mutex_;
+        struct waiter_link { synchronous_quota_wait* waiter{};waiter_link* next{}; };
+        waiter_link* waiters_{};
+        void notify_locked() noexcept
+        { for(auto* entry=waiters_;entry;entry=entry->next) { entry->waiter->notify(); } }
+        std::uint64_t controls() const noexcept
+        { return (control_error_?1u:0u)+(control_closed_?1u:0u); }
+        std::uint64_t occupied_depth() const noexcept
+        { return sum(sum(records_.size(),reservations_.size()),controls()); }
+        std::uint64_t occupied_bytes() const noexcept
+        { return sum(sum(queued_bytes_,reserved_bytes_),controls()*event_header_bytes); }
         event_stream_settings settings_{};event_header binding_{};std::uint32_t mask_{};
         bool configured_{},active_{true};std::uint64_t sequence_{1},queued_bytes_{},reserved_bytes_{};
         std::deque<event_record> records_;
@@ -62,15 +74,14 @@ namespace uwvm2::imported::ros::ipc
         { return reserved_bytes_; }
         bool room(std::uint64_t bytes) const noexcept
         {
-            auto reserved{reserved_bytes()};auto available{settings_.bytes-128};
-            return records_.size()+reservations_.size()<settings_.depth-2&&
-                queued_bytes_<=available&&reserved<=available-queued_bytes_&&bytes<=available-queued_bytes_-reserved;
+            auto const used{occupied_bytes()};
+            return occupied_depth()<settings_.depth && used<=settings_.bytes && bytes<=settings_.bytes-used;
         }
         bool allowed(event_record const& record) const noexcept
         {
             auto header{binding_};header.kind=record.kind;header.flags=record.flags;header.error=record.error;
             header.correlation=record.correlation;header.sequence=sequence_;header.payload_bytes=record.payload.size();
-            if(!(mask_&event_bit(record.kind))||!valid_event_header(header)||record.wire_bytes()>settings_.record_bytes) { return false; }
+            if(!(mask_&event_bit(record.kind))||!valid_event_header(header)||record.wire_bytes()>settings_.record_bytes||record.wire_bytes()>max_payload_bytes) { return false; }
             if((record.kind==event_kind::service_request||record.kind==event_kind::action_feedback||record.kind==event_kind::action_result)&&
                (record.payload.size()<8||get(record.payload.data(),8)!=record.correlation)) { return false; }
             return true;
@@ -89,7 +100,7 @@ namespace uwvm2::imported::ros::ipc
             if(pending_&&room(pending_->owned_bytes()))
             { auto bytes{pending_->owned_bytes()};records_.push_back(std::move(*pending_));queued_bytes_+=bytes;pending_.reset(); }
         }
-        void append(event_record record)
+        void append(event_record&& record)
         { auto bytes{record.owned_bytes()};records_.push_back(std::move(record));queued_bytes_+=bytes;increment(totals_.enqueued);high_water(); }
         auto first_completion() const
         { return std::find_if(reservations_.begin(),reservations_.end(),[](auto const& item){return item.second.completed.has_value();}); }
@@ -134,63 +145,78 @@ namespace uwvm2::imported::ros::ipc
             if(pinned_==front_source::data) { queued_bytes_-=records_.front().owned_bytes();records_.pop_front(); }
             else if(pinned_==front_source::completion) { auto found{reservations_.find(pinned_request_)};reserved_bytes_-=found->second.owned;reservations_.erase(found); }
             else if(pinned_==front_source::error) { control_error_.reset(); }else { control_closed_.reset(); }
-            pinned_=front_source::none;pinned_request_=0;++sequence_;increment(totals_.dequeued);return 0;
+            pinned_=front_source::none;pinned_request_=0;++sequence_;increment(totals_.dequeued);notify_locked();return 0;
         }
     public:
-        // All settings are explicit. Two metadata slots are reserved within the
-        // configured depth/bytes so retiring a source cannot hide its permitted
-        // error/closed notification behind previously queued sensitive content.
+        // Missing quotas are unlimited. Explicit ceilings include retained
+        // control records, data and reservations. Terminal state remains visible
+        // even when a configured zero leaves no room for a control record.
         event_stream(event_stream_settings settings,event_header binding,std::uint32_t mask)
             :settings_{settings},binding_{binding},mask_{mask}
         {
-            configured_=settings.depth>=3&&settings.record_bytes>=event_header_bytes&&settings.record_bytes<=max_payload_bytes&&
-                settings.bytes>=settings.record_bytes+128&&binding.backend>=1&&binding.backend<=2&&binding.source_handle&&binding.instance&&binding.session&&
+            configured_=binding.backend>=1&&binding.backend<=2&&binding.source_handle&&binding.instance&&binding.session&&
                 mask&&!(mask&~std::uint32_t{127})&&
-                (settings.overflow==event_overflow::backpressure?
-                    settings.pending_events==1&&settings.pending_bytes>=settings.record_bytes:
-                    settings.pending_events==0&&settings.pending_bytes==0);
+                (settings.overflow==event_overflow::reject||settings.overflow==event_overflow::wait);
         }
         event_stream(event_stream const&)=delete;event_stream& operator=(event_stream const&)=delete;
         bool configured() const noexcept { return configured_; }
         event_header binding() const noexcept { return binding_; }
         std::uint32_t allowed_kinds() const noexcept { return mask_; }
         bool active() const noexcept { std::lock_guard<std::mutex> guard{mutex_};return configured_&&active_; }
-        // Return0 for retained admission,11 for a bounded full refusal,90 for an
-        // oversized record and125 after source retirement. Never wait for credit
-        // inside a native executor/callback. The optional pending push is exactly
-        // one separately budgeted record; a second pending push receives11.
-        std::uint32_t enqueue(event_record record)
+        // This primitive never consumes the caller's record on refusal.
+        // Owners release their ingress/connection locks before wait_for_space,
+        // then retry this same owned record; no native request is replayed.
+        std::uint32_t enqueue_owned(event_record& record)
         {
             std::lock_guard<std::mutex> guard{mutex_};
             if(!configured_) { return 22; }if(!active_) { return 125; }
-            if(!allowed(record)) { increment(totals_.rejected);return record.wire_bytes()>settings_.record_bytes?90:22; }
+            if(!allowed(record))
+            { increment(totals_.rejected);return record.wire_bytes()>settings_.record_bytes||record.wire_bytes()>max_payload_bytes?90:22; }
             if(event_control(record.kind)&&record.correlation==0)
             {
-                auto tag{record.kind==event_kind::resource_error?front_source::error:front_source::closed};
-                if(pinned_==tag) { increment(totals_.admission_refused);return 11; }
                 auto& slot{record.kind==event_kind::resource_error?control_error_:control_closed_};
-                if(slot) { increment(totals_.dropped_oldest); }slot=std::move(record);increment(totals_.enqueued);high_water();return 0;
+                if(slot||!room(record.owned_bytes())) { increment(totals_.admission_refused);return 11; }
+                slot=std::move(record);increment(totals_.enqueued);high_water();return 0;
             }
-            promote();
-            if(!pending_&&room(record.owned_bytes())) { append(std::move(record));return 0; }
-            if(settings_.overflow==event_overflow::drop_oldest)
+            if(!room(record.owned_bytes())) { increment(totals_.rejected);increment(totals_.admission_refused);return 11; }
+#if defined(__cpp_exceptions)
+            try
+#endif
+            { append(std::move(record));return 0; }
+#if defined(__cpp_exceptions)
+            catch(std::bad_alloc const&) { increment(totals_.admission_refused);return 12; }
+#endif
+        }
+        std::uint32_t enqueue(event_record record) { return enqueue_owned(record); }
+        void notify_waiters() noexcept { std::lock_guard<std::mutex> guard{mutex_};notify_locked(); }
+        std::uint32_t wait_for_space(std::uint64_t bytes,
+            std::chrono::steady_clock::time_point deadline,bool wait_records,bool wait_bytes,
+            bool (*cancelled)(void*) noexcept=nullptr,void* context=nullptr,int cancellation_fd=-1)
+        {
+            std::unique_ptr<synchronous_quota_wait> fallback;
+            auto* waiter{synchronous_wait_context::present()?synchronous_wait_context::waiter():nullptr};
+            if(!waiter && !synchronous_wait_context::present())
+            { fallback.reset(new(std::nothrow) synchronous_quota_wait{});waiter=fallback.get(); }
+            if(!waiter) { return 12; }
+            std::unique_lock<std::mutex> guard{mutex_};
+            for(;;)
             {
-                while(!room(record.owned_bytes())&&!records_.empty())
-                {
-                    auto oldest{records_.begin()};if(pinned_==front_source::data) { ++oldest;if(oldest==records_.end()) {break;} }
-                    queued_bytes_-=oldest->owned_bytes();records_.erase(oldest);increment(totals_.dropped_oldest);
-                }
-                if(room(record.owned_bytes())) { append(std::move(record));return 0; }
+                if(!configured_) { return 22; }
+                if(!active_||waiter->cancelled()||(cancelled&&cancelled(context))) { return 125; }
+                if(room(bytes)) { return 0; }
+                if(bytes>settings_.bytes || !settings_.depth) { return 90; }
+                bool const count{occupied_depth()>=settings_.depth};
+                auto const used{occupied_bytes()};
+                bool const data{used>settings_.bytes || bytes>settings_.bytes-used};
+                if((count&&!wait_records)||(data&&!wait_bytes)) { return 11; }
+                auto const now{::uwvm2::utils::host_clock::now()};
+                if(!::uwvm2::utils::host_clock::available()) { return 5; }
+                if(now>=deadline) { return 110; }
+                waiter_link pending{waiter,waiters_};waiters_=&pending;
+                guard.unlock();auto const outcome{waiter->until(deadline,cancellation_fd)};guard.lock();
+                auto** link{&waiters_};while(*link!=&pending) { link=&(*link)->next; }*link=pending.next;
+                if(outcome!=quota_wait_result::ready) { return outcome==quota_wait_result::cancelled?125u:5u; }
             }
-            else if(settings_.overflow==event_overflow::backpressure)
-            {
-                increment(totals_.backpressured);
-                if(!pending_&&record.owned_bytes()<=settings_.pending_bytes)
-                { pending_=std::move(record);increment(totals_.enqueued);high_water();return 0; }
-                increment(totals_.admission_refused);return 11;
-            }
-            if(settings_.overflow==event_overflow::drop_newest) { increment(totals_.dropped_newest); }
-            else { increment(totals_.rejected); }increment(totals_.admission_refused);return 11;
         }
         // Reserve response storage BEFORE native asynchronous side effects.
         // Input capacity and fixed task-accounting bytes share the same explicit
@@ -200,8 +226,9 @@ namespace uwvm2::imported::ros::ipc
             std::lock_guard<std::mutex> guard{mutex_};
             if(!configured_||!request||response_bytes<event_header_bytes||response_bytes>settings_.record_bytes) { return 22; }
             if(!active_) { return 125; }if(reservations_.count(request)) { return 17; }
-            auto total{sum(response_bytes,request_owned_bytes)};
-            if(pending_||!room(total)) { increment(totals_.backpressured);increment(totals_.admission_refused);return 11; }
+            if(request_owned_bytes>UINT64_MAX-response_bytes) { return 90; }
+            auto total{response_bytes+request_owned_bytes};
+            if(!room(total)) { increment(totals_.backpressured);increment(totals_.admission_refused);return 11; }
 #if defined(__cpp_exceptions)
             try { reservations_.emplace(request,reserved_credit{response_bytes,total,{}}); }
             catch(std::bad_alloc const&) { increment(totals_.admission_refused);return 12; }
@@ -211,7 +238,7 @@ namespace uwvm2::imported::ros::ipc
             reserved_bytes_+=total;high_water();return 0;
         }
         void cancel_reservation(std::uint64_t request) noexcept
-        { std::lock_guard<std::mutex> guard{mutex_};auto found{reservations_.find(request)};if(found!=reservations_.end()) { reserved_bytes_-=found->second.owned;reservations_.erase(found); } }
+        { std::lock_guard<std::mutex> guard{mutex_};auto found{reservations_.find(request)};if(found!=reservations_.end()) { reserved_bytes_-=found->second.owned;reservations_.erase(found);notify_locked(); } }
         // Every successful submission completes at most once. Reserved records
         // bypass overflow eviction: capacity already belongs to this request.
         // After seal, no response content can be retained or delivered.
@@ -230,7 +257,7 @@ namespace uwvm2::imported::ros::ipc
             // a deque/map allocation and overflow never evicts this response.
             reserved_bytes_-=found->second.owned;found->second.owned=record.owned_bytes();
             reserved_bytes_+=found->second.owned;found->second.completed=std::move(record);
-            increment(totals_.enqueued);increment(totals_.completed);high_water();return 0;
+            increment(totals_.enqueued);increment(totals_.completed);high_water();notify_locked();return 0;
         }
         // Two-phase Native delivery pins an existing slot, never an extra queue.
         // Source/observer quotas can refuse admission without losing this record
@@ -273,8 +300,8 @@ namespace uwvm2::imported::ros::ipc
             if(auto record=front()) { value.next_event_bytes=record->wire_bytes(); }
             if(active_&&!pending_)
             {
-                auto used{queued_bytes_+reserved_bytes()};auto budget{settings_.bytes-128};
-                value.admission_slots=settings_.depth-2-records_.size()-reservations_.size();
+                auto used{occupied_bytes()};auto budget{settings_.bytes};
+                auto depth{occupied_depth()};value.admission_slots=depth>settings_.depth?0:settings_.depth-depth;
                 value.admission_bytes=used>budget?0:budget-used;
             }
             return value;
@@ -311,14 +338,14 @@ namespace uwvm2::imported::ros::ipc
             std::lock_guard<std::mutex> guard{mutex_};if(!active_) { return; }
             active_=false;if(pinned_!=front_source::none&&sequence_!=UINT64_MAX) {++sequence_;}pinned_=front_source::none;pinned_request_=0;records_.clear();pending_.reset();reservations_.clear();reserved_bytes_=0;queued_bytes_=0;control_error_.reset();control_closed_.reset();
             auto flags{static_cast<std::uint8_t>(event_source_retired|(external_effects_may_remain?event_external_effects_may_remain:0))};
-            if(reason&&(mask_&event_bit(event_kind::resource_error))) { control_error_=event_record{event_kind::resource_error,flags,reason,0,{}};increment(totals_.enqueued); }
-            if(mask_&event_bit(event_kind::resource_closed)) { control_closed_=event_record{event_kind::resource_closed,flags,reason,0,{}};increment(totals_.enqueued); }
-            increment(totals_.closed);high_water();
+            if(reason&&(mask_&event_bit(event_kind::resource_error))&&room(event_header_bytes)) { control_error_=event_record{event_kind::resource_error,flags,reason,0,{}};increment(totals_.enqueued); }
+            if((mask_&event_bit(event_kind::resource_closed))&&room(event_header_bytes)) { control_closed_=event_record{event_kind::resource_closed,flags,reason,0,{}};increment(totals_.enqueued); }
+            increment(totals_.closed);high_water();notify_locked();
         }
         void discard() noexcept
         {
             std::lock_guard<std::mutex> guard{mutex_};active_=false;pinned_=front_source::none;pinned_request_=0;records_.clear();pending_.reset();reservations_.clear();reserved_bytes_=0;
-            control_error_.reset();control_closed_.reset();queued_bytes_=0;
+            control_error_.reset();control_closed_.reset();queued_bytes_=0;notify_locked();
         }
     };
 }

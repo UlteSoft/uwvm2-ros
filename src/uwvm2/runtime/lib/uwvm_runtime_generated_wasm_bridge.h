@@ -127,6 +127,15 @@ namespace uwvm2::runtime::lib::details
     extern "C++" void llvm_jit_checkpoint_observer_return_abi_bridge(
         ::std::uint64_t incarnation, ::std::uintptr_t compiler_buffer) noexcept;
 
+    // Qualified debug/ordinary-fault full engines classify actual Wasm leaves
+    // before opening a foreign host island. No caller enum supplies ownership.
+    extern "C++" void llvm_jit_debug_classified_import_abi_bridge(
+        ::std::uintptr_t, ::std::uintptr_t, ::std::uintptr_t, ::std::size_t,
+        ::std::uintptr_t, ::std::size_t) UWVM_THROWS;
+    extern "C++" void llvm_jit_debug_classified_raw_target_abi_bridge(
+        ::std::uintptr_t, ::std::uintptr_t, ::std::uintptr_t, ::std::size_t,
+        ::std::uintptr_t, ::std::size_t) UWVM_THROWS;
+
     // Selected resumable full-JIT import edges only. Resolve the actual owned
     // final leaf and count a foreign operation BEFORE provider entry; these
     // internal ABI declarations grant no native/file/restore capability.

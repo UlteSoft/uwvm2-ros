@@ -68,6 +68,7 @@
             ::std::atomic_bool builtin_requested{};
             ::uwvm2::runtime::wasm_threads::threaded_debug_observation observation{::uwvm2::runtime::wasm_threads::threaded_debug_observation::none};
             ::uwvm2::runtime::wasm_threads::threaded_profile_limits configured{};
+            bool cli_storage_derived{};
             ::uwvm2::runtime::wasm_threads::threaded_debug_control_limits debug_control{};
             threaded_signal_policy signal_policy{};
             threaded_signal_report last_signal_report{};
@@ -255,6 +256,7 @@
             {
                 // Submission never borrows a Guest/Host raw span beyond return.
                 parameters_.resize(parameters.size());
+                if(parameters_.capacity()>state_->admitted->limits().max_value_stack_bytes) { throw ::std::bad_alloc{}; }
                 if(!parameters.empty()) { ::std::memcpy(parameters_.data(), parameters.data(), parameters.size()); }
             }
             [[nodiscard]] auto retained_admission() const noexcept -> ::std::shared_ptr<admission const> override
@@ -389,13 +391,37 @@
             if(purpose.kind!=policy::none&&control_owner().observation!=::uwvm2::runtime::wasm_threads::threaded_debug_observation::readonly_metadata)return false;
             return g_runtime.execution_domain.with_quiescent_configuration([&]() noexcept {control_owner().debug_control=purpose;});
         }
-        [[nodiscard]] static bool configure(::uwvm2::runtime::wasm_threads::threaded_profile_limits const& limits) noexcept
+        // CLI specifies per-child storage. Derive the aggregate from actual
+        // requested object sizes, without changing explicit native total caps.
+        [[nodiscard]] static bool complete_cli_storage_limits(
+            ::uwvm2::runtime::wasm_threads::threaded_profile_limits& limits) noexcept
+        {
+            if(!group::limits_admitted(limits)) { return false; }
+            auto const slots{limits.max_active_children+1u};
+            ::std::size_t total{};
+            auto add=[&](::std::size_t n) noexcept { if(n>=SIZE_MAX-total) { return false; } total+=n;return true; };
+            auto repeated=[&](::std::size_t count,::std::size_t each) noexcept
+            { return each!=0u && count<=SIZE_MAX/each && add(count*each); };
+            // Every live Guest owns its full reservation. Every possible queue
+            // entry owns one concrete submission; only initial-main has ABI
+            // parameters, bounded by the real value-stack cap.
+            if(!repeated(slots,limits.max_child_storage_bytes) ||
+               !repeated(slots,sizeof(group::slot)) || !repeated(slots,sizeof(group::compiler_slot)) ||
+               !repeated(slots,sizeof(concrete_compile_work)) || !add(sizeof(group)) ||
+               !add(sizeof(profile_state)+sizeof(main_result)+sizeof(admission)) ||
+               !add(limits.max_value_stack_bytes) || !add(limits.max_value_stack_bytes)) { return false; }
+            limits.max_live_storage_bytes=total;
+            return true;
+        }
+        [[nodiscard]] static bool configure(::uwvm2::runtime::wasm_threads::threaded_profile_limits const& limits,
+            bool cli_storage_derived=false) noexcept
         {
             if(!group::limits_admitted(limits)) { return false; }
             ::std::unique_lock registry{control_owner().registry, ::std::try_to_lock};
             if(!registry.owns_lock()) { return false; }
             if(control_owner().profile || control_owner().blocked_generation == current_runtime_generation()) { return false; }
-            bool const accepted{g_runtime.execution_domain.with_quiescent_configuration([&]() noexcept { control_owner().configured = limits; })};
+            bool const accepted{g_runtime.execution_domain.with_quiescent_configuration([&]() noexcept
+            { control_owner().configured=limits;control_owner().cli_storage_derived=cli_storage_derived; })};
             if(accepted) { control_owner().builtin_requested.store(true, ::std::memory_order_release); }
             return accepted;
         }
@@ -413,6 +439,32 @@
                 { return threaded_main_status::rejected; }
                 auto maintenance{g_runtime.execution_domain.try_maintenance_transition()};
                 if(!maintenance) { return threaded_main_status::rejected; }
+                if(control_owner().cli_storage_derived)
+                {
+                    auto completed{control_owner().configured};
+                    if(!complete_cli_storage_limits(completed)) { return threaded_main_status::rejected; }
+                    auto add=[&](::std::size_t bytes) noexcept
+                    { if(bytes>=SIZE_MAX-completed.max_live_storage_bytes) { return false; }
+                      completed.max_live_storage_bytes+=bytes;return true; };
+                    // CLI options may be parsed in either order. Bind optional
+                    // owners only now, under the real cold registry/maintenance
+                    // gate. Their actual allocations remain charged by Group.
+                    auto const& control_limits{control_owner().debug_control};
+                    if(control_limits.kind!=::uwvm2::runtime::wasm_threads::threaded_debug_control::none &&
+                       !add(control_limits.maximum_control_storage_bytes)) { return threaded_main_status::rejected; }
+                    auto const& signal_limits{control_owner().signal_policy};
+                    if(signal_limits.read_fd!=0u)
+                    {
+#if defined(UWVM_IMPORT_WASI_WASIP1) && !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1)
+                        if(!add(signal_limits.maximum_pipe_bytes)||!add(signal_owner::bookkeeping_bytes))
+                        { return threaded_main_status::rejected; }
+#else
+                        return threaded_main_status::rejected;
+#endif
+                    }
+                    if(!group::limits_admitted(completed)) { return threaded_main_status::rejected; }
+                    control_owner().configured=completed;
+                }
                 try
                 {
                     state = ::std::make_shared<profile_state>();
@@ -453,6 +505,7 @@
                     if(!entry_type || !numeric_abi(*entry_type, *entry_type, parameter_bytes, output_bytes) ||
                        parameters.size() != parameter_bytes || result_bytes != output_bytes) { throw ::std::bad_alloc{}; }
                     state->result = ::std::make_shared<main_result>(); state->result->bytes.resize(result_bytes);
+                    if(state->result->bytes.capacity()>control_owner().configured.max_value_stack_bytes) { throw ::std::bad_alloc{}; }
                     state->selected = backend::integer;
 #if defined(UWVM_RUNTIME_LLVM_JIT)
                     if(runtime_compiler_requests_llvm_jit_translation()) { state->selected = backend::llvm; }

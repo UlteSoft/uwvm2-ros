@@ -49,7 +49,23 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::fd_manager
     struct wasm_fd_storage_t
     {
         // Ensure that iterators can't fail during expansion
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        static constexpr ::uwvm2::utils::container::vector<::uwvm2::imported::wasi::wasip1::fd_manager::wasi_fd_unique_ptr_t> initial_reserved_slots() noexcept
+        {
+            ::uwvm2::utils::container::vector<::uwvm2::imported::wasi::wasip1::fd_manager::wasi_fd_unique_ptr_t> result{};
+            for(unsigned index{}; index != 3u; ++index)
+            {
+                auto& slot{result.emplace_back()};
+                slot.fd_p->close_pos = SIZE_MAX - 1u;
+                slot.fd_p->rights_base = {};
+                slot.fd_p->rights_inherit = {};
+            }
+            return result;
+        }
+        ::uwvm2::utils::container::vector<::uwvm2::imported::wasi::wasip1::fd_manager::wasi_fd_unique_ptr_t> opens{initial_reserved_slots()};
+#else
         ::uwvm2::utils::container::vector<::uwvm2::imported::wasi::wasip1::fd_manager::wasi_fd_unique_ptr_t> opens{};
+#endif
         // Specialization of renumber, each extension requires a judgment of begin
         ::uwvm2::utils::container::map<::uwvm2::imported::wasi::wasip1::abi::wasi_posix_fd_t, ::uwvm2::imported::wasi::wasip1::fd_manager::wasi_fd_unique_ptr_t>
             renumber_map{};

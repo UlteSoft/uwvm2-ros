@@ -95,6 +95,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable;
         }
 
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        if(!env.exposes(u8"sched_yield")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+        ::uwvm2::imported::wasi::wasip1::environment::budget_reservation reservation{
+            ::uwvm2::imported::wasi::wasip1::environment::budget_kind::yield, env.limits, 0u};
+        if(!reservation) { return reservation.template error<::uwvm2::imported::wasi::wasip1::abi::errno_t>(); }
+#endif
         if(env.wasip1_sched_yield_func_ptr != nullptr) { return env.wasip1_sched_yield_func_ptr(); }
         else
         {
@@ -106,6 +112,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
     inline constexpr ::uwvm2::imported::wasi::wasip1::abi::errno_t sched_yield(
         ::uwvm2::imported::wasi::wasip1::environment::wasip1_environment<::uwvm2::object::memory::linear::native_memory_t> & env) noexcept
     {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        if(!env.exposes(u8"sched_yield")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+#endif
+
         auto const trace_wasip1_call{env.trace_wasip1_call};
 
         if(trace_wasip1_call) [[unlikely]] { ::uwvm2::imported::wasi::wasip1::func::print_wasip1_trace_message(env, u8"sched_yield()"); }

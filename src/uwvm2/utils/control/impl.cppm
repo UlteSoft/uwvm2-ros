@@ -1,5 +1,6 @@
 module;
 export module uwvm2.utils.control;
+export import :management;
 export import :protocol;
 export import :sealed_input;
 export import :protected_assets;

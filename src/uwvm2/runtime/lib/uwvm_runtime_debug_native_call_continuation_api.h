@@ -436,6 +436,7 @@
         llvm_jit_debug_activation_capture_owner const& supplied, llvm_jit_debug_native_activation_cursor_owner const& supplied_cursor,
         void const* session, bool require_guest, ::std::size_t linear_limit) noexcept
     {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && ((defined(__linux__) && (defined(__x86_64__) || UWVM2_DEBUG_NATIVE_LINUX_SOFTWARE)) || UWVM2_DEBUG_NATIVE_HARDWARE_CONTINUATION) && \
     defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
@@ -682,11 +683,13 @@
     extern "C++" llvm_jit_debug_native_call_continuation_owner llvm_jit_debug_mint_native_call_continuation_host_api(
         llvm_jit_debug_activation_capture_owner const& capture, llvm_jit_debug_native_activation_cursor_owner const& cursor,
         void const* session) noexcept
-    { return llvm_jit_debug_mint_native_call_policy_host_api(capture,cursor,session,false); }
+    {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; } return llvm_jit_debug_mint_native_call_policy_host_api(capture,cursor,session,false); }
     extern "C++" bool llvm_jit_debug_native_call_continuation_host_api(
         llvm_jit_debug_native_call_continuation_owner const& supplied, void const* session,
         llvm_jit_debug_native_call_continuation_view& out) noexcept
     {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
         out = {};
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && ((defined(__linux__) && (defined(__x86_64__) || UWVM2_DEBUG_NATIVE_LINUX_SOFTWARE)) || UWVM2_DEBUG_NATIVE_HARDWARE_CONTINUATION) && \
     defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
@@ -720,6 +723,7 @@
         llvm_jit_debug_native_call_continuation_owner const& supplied, void const* session,
         void* context, llvm_jit_debug_native_call_resume_callback callback) noexcept
     {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && ((defined(__linux__) && (defined(__x86_64__) || UWVM2_DEBUG_NATIVE_LINUX_SOFTWARE)) || UWVM2_DEBUG_NATIVE_HARDWARE_CONTINUATION) && \
     defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
@@ -747,6 +751,7 @@
         llvm_jit_debug_native_call_continuation_owner const& supplied, void const* session,
         void* context, llvm_jit_debug_native_call_event_resume_callback callback) noexcept
     {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && ((defined(__linux__) && (defined(__x86_64__) || UWVM2_DEBUG_NATIVE_LINUX_SOFTWARE)) || UWVM2_DEBUG_NATIVE_HARDWARE_CONTINUATION) && \
     defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;

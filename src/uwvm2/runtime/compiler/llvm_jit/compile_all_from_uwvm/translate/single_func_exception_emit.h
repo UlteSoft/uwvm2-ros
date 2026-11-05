@@ -228,6 +228,44 @@
             auto const function{builder.GetInsertBlock()->getParent()};
             auto const normal{::llvm::BasicBlock::Create(builder.getContext(), "guest.call.return", function)};
             ::llvm::BasicBlock* unwind{};
+            ::llvm::BasicBlock** reusable_entry{};
+            if(state.pending_numeric_plan == nullptr && state.checkpoint_plan == nullptr &&
+               state.checkpoint_observer_controls == nullptr && function == state.llvm_function)
+            {
+                if(!has_handlers)
+                {
+                    // Cleanup retires the same entry-owned activation token,
+                    // GC frame, and logical frame. Safe points stay at their
+                    // original call sites; no source offset is captured here.
+                    reusable_entry = ::std::addressof(state.native_exception_cleanup);
+                }
+                else
+                {
+                    bool site_independent{true};
+                    for(auto const& operand: state.operand_stack)
+                    { site_independent &= !llvm_jit_gc_root_carrier_type(operand.type); }
+                    if(site_independent)
+                    {
+                        for(auto& frame: state.control_stack)
+                        {
+                            if(!frame.exception_handlers.empty())
+                            { reusable_entry = ::std::addressof(frame.native_exception_entry); }
+                        }
+                    }
+                }
+            }
+            if(reusable_entry != nullptr && *reusable_entry != nullptr)
+            {
+                // [same function][same innermost lexical handler scope]
+                // Local slots and frame addresses dominate every invoke. The
+                // cold block reloads current locals and constructs/copies the
+                // actual caught tuple/exnref each time. No call-site reference
+                // operand or saved checkpoint prefix is borrowed across sites.
+                if((*reusable_entry)->getParent() != function) { return nullptr; }
+                auto const invoke{builder.CreateInvoke(type, callee, normal, *reusable_entry, arguments)};
+                builder.SetInsertPoint(normal);
+                return invoke;
+            }
             bool cleanup_valid{true};
             auto const cleanup{[&](::llvm::IRBuilder<>& cold) noexcept
             {
@@ -310,6 +348,7 @@
                 }
             }
             if(!cleanup_valid) { return nullptr; }
+            if(reusable_entry != nullptr) { *reusable_entry = unwind; }
             // [original nonterminated call block] saved before cold IR emission;
             // [safe                            ] LLVM still owns its insertion position.
             builder.restoreIP(origin);

@@ -76,10 +76,10 @@ int main(int argc,char** argv)
     ::fast_io::u8string boundary{};boundary.append(u8"./");
     while(boundary.size()<4096u) { boundary.push_back(u8'a'); }
     fm::record_checkpoint_path(*value.ptr,chain,::uwvm2::utils::container::u8string_view{boundary.data(),boundary.size()},false);
-    require(value.ptr->checkpoint_reopenable && value.ptr->checkpoint_path.size()==4094u,"maximum raw provenance size normalizes within the original allocation bound");
+    require(value.ptr->checkpoint_reopenable && value.ptr->checkpoint_path.size()==4094u,"4096-byte spelling has ordinary normalization semantics");
     boundary.push_back(u8'a');fm::record_checkpoint_path(*value.ptr,chain,::uwvm2::utils::container::u8string_view{boundary.data(),boundary.size()},true);
-    require(!value.ptr->checkpoint_reopenable && value.ptr->checkpoint_path.empty(),"over-limit raw path does not allocate portable metadata even if shorter after normalization");
-    require(value.ptr->checkpoint_follow,"failed provenance does not lose actual lookup mode");
+    require(value.ptr->checkpoint_reopenable && value.ptr->checkpoint_path.size()==4095u,"4097-byte spelling has the same normalization semantics");
+    require(value.ptr->checkpoint_follow,"long provenance preserves actual lookup mode");
     fm::record_checkpoint_path(*value.ptr,chain,u8"./目录//./状态.bin",false);
     require(value.ptr->checkpoint_reopenable && value.ptr->checkpoint_path==u8"目录/状态.bin","normalization preserves Unicode component bytes");
     ::fast_io::io::println("wasip1_path_provenance ",checks," checks passed");

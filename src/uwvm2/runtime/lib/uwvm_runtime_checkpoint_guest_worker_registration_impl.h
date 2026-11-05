@@ -230,6 +230,11 @@ extern "C++"
         // is interpreted as a host pointer, and no native provider is called.
         ::std::uint32_t raw_code{}; ::std::memcpy(::std::addressof(raw_code),params,4u);
         auto& env{resolve_wasip1_env_for_runtime_module_id(module_id)};
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        if(!env.exposes(u8"proc_exit") || !env.permits(::uwvm2::imported::wasi::wasip1::environment::permission_t::proc_exit))
+        { ::uwvm2::runtime::lib::guest_exit::request(true, raw_code); }
+        ::uwvm2::utils::thread::process_exit::request_process_exit(raw_code);
+#endif
         if(env.trace_wasip1_call)
         {
             ::uwvm2::imported::wasi::wasip1::func::print_wasip1_trace_message(env,
@@ -552,6 +557,7 @@ extern "C++" llvm_jit_debug_guest_worker_launch_result runtime_launch_llvm_jit_d
     ::std::shared_ptr<::uwvm2::utils::thread::cooperative_pause_domain> const& control,
     ::std::shared_ptr<void> state, llvm_jit_debug_guest_worker_body body) noexcept
 {
+    if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
 #if defined(UWVM_RUNTIME_LLVM_JIT)
     return runtime_checkpoint_guest_worker_bridge::launch(control, ::std::move(state), body);
 #else
@@ -578,6 +584,9 @@ extern "C++" bool runtime_llvm_jit_debug_guest_worker_matches_control_host_api(
 }
 extern "C++" ::std::uint_least32_t runtime_llvm_jit_debug_registered_worker_exit_code_host_api() noexcept
 {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+    if(runtime_guest_fault_detected_host_api()) { return 126u; }
+#endif
 #if defined(UWVM_RUNTIME_LLVM_JIT)
     return runtime_checkpoint_guest_worker_bridge::completion_code();
 #else

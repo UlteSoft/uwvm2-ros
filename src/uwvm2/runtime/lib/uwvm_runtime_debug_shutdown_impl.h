@@ -52,7 +52,13 @@ llvm_jit_debug_shutdown_start runtime_debug_shutdown_bridge::begin(
     // REAL maintenance -> execution admission -> publication. Drop our own
     // admission before requesting stop/draining; never wait for our own lease.
     auto admission{g_runtime.execution_domain.try_enter()};
-    if(!admission) { return {result::busy, {}}; }
+    // A privately authenticated Guest fault already closed admission. The
+    // genuine maintenance owner above pins that exact generation while the
+    // original code/source census, real drain and native joins still run.
+    // No new execution lease is fabricated and admission is never reopened.
+    bool const fault_stopped{runtime_managed_fault::faulted(current_runtime_generation()) &&
+        g_runtime.execution_domain.host_wait_interrupted()};
+    if(!admission && !fault_stopped) { return {result::busy, {}}; }
     try
     {
         auto prepared{::std::shared_ptr<llvm_jit_debug_shutdown_request>{new llvm_jit_debug_shutdown_request{::std::move(transition)}}};
@@ -68,8 +74,22 @@ llvm_jit_debug_shutdown_start runtime_debug_shutdown_bridge::begin(
             for(auto const& rec : g_runtime.modules)
             {
                 auto const* code{rec.llvm_jit_full_publication.get()};
-                if(code == nullptr || !code->source || code->engine == nullptr || code->context == nullptr ||
-                   code->debug_shutdown_abi_revision.load(::std::memory_order_acquire) != 1u || rec.runtime_module == nullptr)
+                if(code == nullptr || !code->source || rec.runtime_module == nullptr)
+                { return {result::unavailable_cleanup, {}}; }
+                if(rec.runtime_module->local_defined_function_vec_storage.empty())
+                {
+                    // A declarations-only Wasm provider has no native body to
+                    // unwind. Retain its actual validated source/storage owner;
+                    // never manufacture an engine or a cleanup-ABI receipt.
+                    auto const id{find_runtime_module_id_from_storage_ptr(rec.runtime_module)};
+                    if(!rec.llvm_jit_ready || code->engine || code->context ||
+                       code->debug_source_runtime_epoch!=prepared->epoch_ ||
+                       !::uwvm2::uwvm::runtime::full::full_source_instance::has_canonical_owner(code->source) ||
+                       code->source->bound_initialized_file(id,rec.runtime_module)==nullptr)
+                    { return {result::unavailable_cleanup, {}}; }
+                }
+                else if(code->engine == nullptr || code->context == nullptr ||
+                        code->debug_shutdown_abi_revision.load(::std::memory_order_acquire) != 1u)
                 { return {result::unavailable_cleanup, {}}; }
                 llvm_jit_debug_shutdown_request::module_pin pin{};
                 pin.source = code->source; pin.publication = code;

@@ -61,6 +61,7 @@
 #endif
     extern "C++" llvm_jit_debug_source_binding_owner llvm_jit_debug_bind_source_host_api(::std::size_t module_id) noexcept
     {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
         if(mode::global_runtime_mode != mode::runtime_mode_t::full_compile ||
@@ -242,6 +243,7 @@
     extern "C++" bool llvm_jit_debug_copy_source_image_host_api(llvm_jit_debug_source_binding_owner const& binding,
         llvm_jit_debug_source_image& out) noexcept
     {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
         out = {};
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
@@ -279,6 +281,7 @@
         ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const& ticket,
         ::std::uint_least64_t participant, llvm_jit_debug_source_position& out) noexcept
     {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
         out = {};
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;

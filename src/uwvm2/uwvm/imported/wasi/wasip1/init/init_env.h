@@ -27,6 +27,9 @@
 # include <cstddef>
 # include <cstdint>
 # include <uwvm2/uwvm/debugger/console_stdio.h>
+# if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(__linux__)
+#  include <sys/vfs.h>
+# endif
 # include <uwvm2/uwvm/debugger/wasip1_calls.h>
 # include <cstring>
 # include <cerrno>
@@ -195,6 +198,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
                                     ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
             }};
 
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        if(env.trace_wasip1_call) { print_init_error(u8"Unbounded legacy WASI tracing is unsupported; use bounded runtime diagnostics"); return false; }
+#endif
         // ====== Arguments ======
         {
             using u8string = ::uwvm2::utils::container::u8string;
@@ -361,6 +367,27 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
         }
 
         // ====== File descriptor table ======
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        if(!env.permits(::uwvm2::imported::wasi::wasip1::environment::permission_t::args))
+        { env.argv.clear(); wasip1_argument_storage.clear(); }
+        if(!env.permits(::uwvm2::imported::wasi::wasip1::environment::permission_t::environ))
+        { env.envs.clear(); wasip1_environment_storage.clear(); }
+#endif
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        env.policy_resources.clear();
+        ::std::uint64_t approved_string_bytes{};
+        auto text_fits{[&env, &approved_string_bytes](auto const& strings) constexpr noexcept
+        {
+            auto& bytes{approved_string_bytes};
+            for(auto const text : strings)
+            {
+                if(text.size() >= env.limits.max_args_env_bytes || bytes > env.limits.max_args_env_bytes - text.size() - 1u) { return false; }
+                bytes += text.size() + 1u;
+            }
+            return true;
+        }};
+        if(!text_fits(env.argv) || !text_fits(env.envs)) { print_init_error(u8"WASI args/environment exceed approved byte limit"); return false; }
+#endif
         // Build a temporary fd map first and commit it only after all stdio,
         // socket, directory, duplicate-fd, and limit checks succeed. This keeps
         // a failed target environment initialization from partially overwriting
@@ -371,7 +398,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
         // explicit limit yet, use the built-in default".
         auto const fd_limit_before{env.fd_storage.fd_limit};
         ::std::size_t fd_limit{fd_limit_before};
-        if(fd_limit == 0uz) [[unlikely]] { fd_limit = 1024uz; }
+        if(fd_limit == 0uz) [[unlikely]]
+        {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            fd_limit = static_cast<::std::size_t>(::std::numeric_limits<::uwvm2::imported::wasi::wasip1::abi::wasi_posix_fd_t>::max());
+#else
+            fd_limit = 1024uz;
+#endif
+        }
 
         using fd_t = ::uwvm2::imported::wasi::wasip1::abi::wasi_posix_fd_t;
         using fd_map_t = ::uwvm2::utils::container::map<fd_t, ::uwvm2::imported::wasi::wasip1::fd_manager::wasi_fd_unique_ptr_t>;
@@ -451,6 +485,29 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
                                   return true;
                               }};
 
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        // Preserve the logical numbers forever, without opening a host object
+        // for an ungranted stream. DEV and RELEASE use this identical policy.
+        for(unsigned index{}; index != 3u; ++index)
+        {
+            ::uwvm2::imported::wasi::wasip1::fd_manager::wasi_fd_unique_ptr_t stream{};
+            if(env.grants_stdio(index))
+            {
+                auto const native{index == 0u ? ::fast_io::in() : index == 1u ? ::fast_io::out() : ::fast_io::err()};
+                if(!init_stdio(*stream.fd_p, native, index == 0u)) { return false; }
+                stream.fd_p->wasi_fd.ptr->checkpoint_stdio_index = static_cast<int>(index);
+                env.policy_resources.emplace_back(::uwvm2::imported::wasi::wasip1::environment::policy_resource_binding{
+                    index, index, static_cast<::std::uint64_t>(reinterpret_cast<::std::uintptr_t>(stream.fd_p->wasi_fd.ptr)), {}});
+            }
+            else
+            {
+                stream.fd_p->close_pos = SIZE_MAX - 1u;
+                stream.fd_p->rights_base = {};
+                stream.fd_p->rights_inherit = {};
+            }
+            if(!try_emplace_fd(static_cast<fd_t>(index), ::std::move(stream))) { return false; }
+        }
+#else
         if(::uwvm2::uwvm::wasm::storage::execute_wasm_mode == ::uwvm2::uwvm::wasm::base::mode::debug_jit)
         { env.debug_console_write=::uwvm2::uwvm::debugger::console_stdio::write;
           env.debug_console_read=::uwvm2::uwvm::debugger::console_stdio::read;
@@ -564,7 +621,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
             if(!try_emplace_fd(static_cast<fd_t>(2), ::std::move(fd2))) [[unlikely]] { return false; }
         }
 
+#endif
+
 #  if defined(UWVM_IMPORT_WASI_WASIP1_SUPPORT_SOCKET)
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        if(!env.preopen_sockets.empty()) { print_init_error(u8"Network preopens require a qualified bounded provider; unsupported in this ROS profile"); return false; }
+#endif
         // Preopened sockets use explicit fds supplied by command-line options.
         // They are inserted before directory preopens so the directory allocator
         // can skip occupied fd numbers and still expose directories as a compact
@@ -837,8 +899,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
             }
 
             ::uwvm2::imported::wasi::wasip1::fd_manager::wasi_fd_unique_ptr_t new_dir_fd{};
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            struct statfs filesystem{};
+            if(::fstatfs(mr.entry.native_handle(), &filesystem) != 0 || filesystem.f_type == 0x9fa0 || filesystem.f_type == 0x62656572)
+            { print_init_error(u8"WASI cannot preopen procfs/sysfs or an unverifiable filesystem"); return false; }
+            new_dir_fd.fd_p->rights_base = static_cast<::uwvm2::imported::wasi::wasip1::abi::rights_t>(mr.rights_configured ? mr.rights_base : env.limits.filesystem_base_rights);
+            new_dir_fd.fd_p->rights_inherit = static_cast<::uwvm2::imported::wasi::wasip1::abi::rights_t>(mr.rights_configured ? mr.rights_inheriting : env.limits.filesystem_inheriting_rights);
+#else
             new_dir_fd.fd_p->rights_base = static_cast<::uwvm2::imported::wasi::wasip1::abi::rights_t>(-1);
             new_dir_fd.fd_p->rights_inherit = static_cast<::uwvm2::imported::wasi::wasip1::abi::rights_t>(-1);
+#endif
 
             new_dir_fd.fd_p->wasi_fd.ptr->wasi_fd_storage.reset_type(::uwvm2::imported::wasi::wasip1::fd_manager::wasi_fd_type_e::dir);
 
@@ -879,6 +949,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
             new_entry.storage.observer = ::fast_io::dir_io_observer{mr.entry};
 #  endif
 
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            env.policy_resources.emplace_back(::uwvm2::imported::wasi::wasip1::environment::policy_resource_binding{
+                3u, static_cast<::std::uint64_t>(next_dir_fd), static_cast<::std::uint64_t>(reinterpret_cast<::std::uintptr_t>(new_dir_fd.fd_p->wasi_fd.ptr)), mr.preload_dir,
+                static_cast<::std::uint64_t>(new_dir_fd.fd_p->rights_base), static_cast<::std::uint64_t>(new_dir_fd.fd_p->rights_inherit)});
+#endif
             if(!try_emplace_fd(next_dir_fd, ::std::move(new_dir_fd))) [[unlikely]] { return false; }
             ++next_dir_fd_u;
 
@@ -988,6 +1063,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
         // Target presence replaces only explicitly configured bits. In
         // particular, a target deny can remove an explicit global grant while
         // unrelated global permissions continue to follow the existing model.
+        state.env.interface_enabled = state.enabled_is_set && state.enabled;
         state.env.non_fd_permissions = effective_wasip1_permissions(
             default_wasip1_env.non_fd_permissions, state.non_fd_permissions, state.permission_presence);
         state.env.wasip1_proc_exit_func_ptr = default_wasip1_env.wasip1_proc_exit_func_ptr;

@@ -148,6 +148,7 @@ extern "C++"
         ::std::span<llvm_jit_checkpoint_thread_capture_owner const> supplied,
         llvm_jit_checkpoint_prepare_request const& requested) noexcept
     {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
         namespace mode=::uwvm2::uwvm::runtime::runtime_mode;
         llvm_jit_checkpoint_prepare_result out{};
         if(mode::global_runtime_mode!=mode::runtime_mode_t::full_compile ||
@@ -184,6 +185,7 @@ extern "C++" llvm_jit_checkpoint_prepare_result llvm_jit_checkpoint_prepare_inst
     ::std::span<llvm_jit_checkpoint_thread_capture_owner const>,
     llvm_jit_checkpoint_prepare_request const&) noexcept
 {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
     llvm_jit_checkpoint_prepare_result out{};out.status=llvm_jit_checkpoint_prepare_status::unavailable_capture;return out;
 }
 #endif

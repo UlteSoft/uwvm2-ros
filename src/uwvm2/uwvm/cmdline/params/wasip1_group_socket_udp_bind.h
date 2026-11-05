@@ -67,7 +67,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
         .name{u8"--wasip1-group-socket-udp-bind"},
         .describe{u8"Bind a WASI Preview 1 UDP socket for one named group."},
         .usage{u8"<group:str> <fd:i32> [<ipv4|ipv6>:<port>|unix <path>]"},
+#  if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
         .alias{::uwvm2::utils::cmdline::kns_u8_str_scatter_t{::std::addressof(details::wasip1_group_socket_udp_bind_alias), 1uz}},
+#  endif
         .handle{::std::addressof(details::wasip1_group_socket_udp_bind_callback)},
         .cate{::uwvm2::utils::cmdline::categorization::wasi}};
 #   if defined(__clang__)

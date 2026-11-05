@@ -130,11 +130,11 @@ namespace uwvm2::imported::ros::ipc
     {
         if(backend!=version::ros2||cap.operation!="param.subscribe-events"||parameter_event_type(backend,cap.type)==parameter_kind::unsupported) { return 95; }
         auto error{validate_parameter_contract(backend,cap)};if(error) { return error; }
-        std::int64_t maximum{};parse_parameter_integer(cap.limits.at("max-parameter-bytes"),maximum);
-        if(bytes.size()>static_cast<std::uint64_t>(maximum)) { return 90; }
+        std::uint64_t maximum{};(void)read_quota(cap,"max-parameter-bytes",maximum);
+        if(bytes.size()>maximum) { return 90; }
         std::size_t elements{parameter_max_elements};
         if(array_parameter(parameter_event_type(backend,cap.type)))
-        { std::int64_t count{};parse_parameter_integer(cap.limits.at("max-parameter-elements"),count);elements=static_cast<std::size_t>(count); }
+        {std::uint64_t count{};(void)read_quota(cap,"max-parameter-elements",count);elements=static_cast<std::size_t>(std::min<std::uint64_t>(count,parameter_max_elements));}
         typed_parameter_event event;error=decode_typed_parameter_event(bytes,event,elements);if(error) { return error; }
         auto node{cap.limits.find("parameter-node")},name{cap.limits.find("parameter-name")};
         if(node==cap.limits.end()||name==cap.limits.end()||event.node!=node->second||event.name!=name->second||event.value.type!=parameter_event_type(backend,cap.type)) { return 13; }

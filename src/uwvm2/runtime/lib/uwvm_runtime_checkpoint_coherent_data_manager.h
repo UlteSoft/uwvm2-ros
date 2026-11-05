@@ -299,6 +299,9 @@ extern "C++"
             domain::pause_ticket const& ticket, ::std::span<capture::owner const> supplied,
             llvm_jit_wasip1_environment_capsule_owner const& saved, llvm_jit_wasip1_environment_restore_request const& selected) noexcept
         {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            return llvm_jit_wasip1_environment_capsule_status::unavailable_capture;
+#endif
             auto const canonical{llvm_jit_wasip1_environment_capsule::canonical(saved)};
             if(!canonical) { return llvm_jit_wasip1_environment_capsule_status::invalid_capsule_owner; }
             llvm_jit_wasip1_environment_capsule_request request{};request.module=selected.module;
@@ -328,6 +331,9 @@ extern "C++"
             domain::pause_ticket const& ticket,::std::span<capture::owner const> supplied,
             ::std::span<llvm_jit_wasip1_environment_capsule_request const> selected) noexcept
         {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            return {llvm_jit_wasip1_environment_capsule_status::unavailable_capture,{}};
+#endif
             environment_group_restore_request request{};request.portable=selected;
             auto const checked{inspect_current_impl(ticket,supplied,nullptr,nullptr,nullptr,nullptr,
                 nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,false,::std::addressof(request))};
@@ -340,6 +346,9 @@ extern "C++"
             domain::pause_ticket const& ticket,::std::span<capture::owner const> supplied,
             ::std::span<llvm_jit_wasip1_environment_capsule_owner const> saved,bool strict) noexcept
         {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            return llvm_jit_wasip1_environment_capsule_status::unavailable_capture;
+#endif
             environment_group_restore_request request{saved,strict};
             auto const checked{inspect_current_impl(ticket,supplied,nullptr,nullptr,nullptr,nullptr,
                 nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,false,::std::addressof(request))};

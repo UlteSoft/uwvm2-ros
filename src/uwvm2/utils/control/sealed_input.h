@@ -62,6 +62,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::control
 #endif
         };
         inline sealed_input_state sealed_console_input{};
+#if defined(__linux__)
+        // Independent RELEASE observer capability. Both retained objects stay
+        // pinned for the process lifetime; neither role can replace the other.
+        inline sealed_input_state sealed_diagnostic_control{};
+#endif
 #if defined(_WIN32) && !defined(__CYGWIN__)
         // Separate host-only capability: late debugger commands do not use
         // stdin. Keep a non-inheritable duplicate alive for exact HANDLE alias
@@ -213,13 +218,25 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::control
         [[nodiscard]] inline sealed_input_decision inspect_sealed_fd(int fd, bool guest_output, ::fast_io::posix_file_status* observed = nullptr) noexcept
         {
             auto const& sealed{sealed_console_input};
-            if(!sealed.published.load(::std::memory_order_acquire)) { return sealed_input_decision::allow; }
+            bool const primary{sealed.published.load(::std::memory_order_acquire)};
+# if defined(__linux__)
+            bool const diagnostic{sealed_diagnostic_control.published.load(::std::memory_order_acquire)};
+            if(!primary && !diagnostic) { return sealed_input_decision::allow; }
+# else
+            if(!primary) { return sealed_input_decision::allow; }
+# endif
             auto const queried_status{::fast_io::posix_status_nothrow(::fast_io::posix_io_observer{fd})};
             if(!queried_status) { return sealed_input_decision::identity_unavailable; }
             // This reference borrows the complete local result only through the
             // synchronous identity check; no status cell or fd borrow escapes.
             auto const& status{queried_status.value};
             if(observed != nullptr) { *observed = status; } // Borrowed caller-owned output, valid for this call.
+# if defined(__linux__)
+            if(diagnostic && status.dev == sealed_diagnostic_control.device &&
+               status.ino == sealed_diagnostic_control.inode && status.type == sealed_diagnostic_control.type)
+            { return sealed_input_decision::denied; }
+            if(!primary) { return sealed_input_decision::allow; }
+# endif
 # if defined(__APPLE__) && defined(__MACH__)
             // An opted-in debugger can seal an anonymous Unix socket. Darwin
             // does not expose a portable socket inode identity through fstat;
@@ -329,6 +346,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::control
 #if defined(_WIN32) && !defined(__CYGWIN__)
         return details::sealed_console_input.published.load(::std::memory_order_acquire) ||
                details::sealed_debug_control.published.load(::std::memory_order_acquire);
+#elif defined(__linux__)
+        return details::sealed_console_input.published.load(::std::memory_order_acquire) ||
+               details::sealed_diagnostic_control.published.load(::std::memory_order_acquire);
 #else
         return details::sealed_console_input.published.load(::std::memory_order_acquire);
 #endif
@@ -353,6 +373,28 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::control
         // never exposes the duplicate to guest descriptors or child processes.
         sealed.retained.reset(duplicate);
         sealed.type = FILE_TYPE_PIPE;
+        sealed.published.store(true, ::std::memory_order_release);
+        return sealed_input_status::ok;
+    }
+#endif
+
+#if defined(__linux__)
+    // Called only after authenticating the separate read-only observer endpoint,
+    // during serialized cold startup. Pin exact identity, including dup aliases.
+    [[nodiscard]] inline sealed_input_status seal_diagnostic_control_host_api(int fd) noexcept
+    {
+        auto& sealed{details::sealed_diagnostic_control};
+        if(sealed.published.load(::std::memory_order_acquire)) { return sealed_input_status::already_sealed; }
+        if(fd < 3) { return sealed_input_status::invalid_descriptor; }
+        ::fast_io::native_file retained{::uwvm2::utils::control::posix_abi::fcntl_noexcept(fd, F_DUPFD_CLOEXEC, 3)};
+        if(retained.native_handle() == -1) { return sealed_input_status::identity_unavailable; }
+        auto const queried{::fast_io::posix_status_nothrow(::fast_io::posix_io_observer{retained.native_handle()})};
+        if(!queried || queried.value.type != ::fast_io::file_type::socket)
+        { return sealed_input_status::invalid_descriptor; }
+        sealed.device = queried.value.dev;
+        sealed.inode = queried.value.ino;
+        sealed.type = queried.value.type;
+        sealed.retained = ::std::move(retained);
         sealed.published.store(true, ::std::memory_order_release);
         return sealed_input_status::ok;
     }

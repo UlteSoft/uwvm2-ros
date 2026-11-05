@@ -88,7 +88,7 @@ namespace uwvm2::imported::ros
     class rmw_service_bindings
     {
     public:
-        static constexpr std::size_t maximum_entries{65536};
+        static constexpr std::size_t maximum_entries{SIZE_MAX};
         struct entry
         {
             rmw_service_owner owner{};rmw_service_role kind{};std::uint64_t peer{};
@@ -99,11 +99,11 @@ namespace uwvm2::imported::ros
         std::map<std::uint64_t,entry> rows_;
         std::size_t capacity_;std::uint64_t instance_{},generation_{};bool sealed_{};
     public:
-        /** Invalid capacity is retained as0 and reserve refuses22. No native
+        /** Capacity zero refuses new reservations. No native
          * allocation/effect or ambient authority is acquired by construction.
          */
         explicit rmw_service_bindings(std::size_t capacity=maximum_entries) noexcept:
-            capacity_{capacity&&capacity<=maximum_entries?capacity:0}{}
+            capacity_{capacity}{}
         rmw_service_bindings(rmw_service_bindings const&)=delete;
         rmw_service_bindings& operator=(rmw_service_bindings const&)=delete;
         auto const& rows() const noexcept{return rows_;}
@@ -119,7 +119,7 @@ namespace uwvm2::imported::ros
         std::uint32_t reserve(rmw_service_owner const& owner,rmw_service_role kind,std::uint64_t peer,
             capability_spec const& primary,capability_spec const& auxiliary,entry const*& output)
         {
-            if(!capacity_||!ipc::rmw_endpoint::valid(owner)||!ipc::rmw_endpoint::full_handle(peer)||peer==owner.source){return 22;}
+            if(!ipc::rmw_endpoint::valid(owner)||!ipc::rmw_endpoint::full_handle(peer)||peer==owner.source){return 22;}
             auto error=service_endpoint_pair(primary,auxiliary,kind);if(error){return error;}
             if(instance_&&(instance_!=owner.instance||generation_!=owner.generation)){return 13;}
             auto old=rows_.find(owner.source);

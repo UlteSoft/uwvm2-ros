@@ -53,7 +53,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::storage
 # ifndef UWVM_DISABLE_LOCAL_IMPORTED_WASIP1
 #  if defined(UWVM_IMPORT_WASI_WASIP1)
     // wasip1: WASI-Preview1 + WASM64
-    inline bool local_preload_wasip1{true};  // [global]
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+    inline bool local_preload_wasip1{};
+#else
+    inline bool local_preload_wasip1{true};
+#endif  // [global]
     // Expose the stable WASI Preview 1 host API to preload modules (disabled by default).
     inline bool preload_expose_wasip1_host_api{};  // [global]
 #  endif

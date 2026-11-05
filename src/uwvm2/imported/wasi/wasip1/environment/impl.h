@@ -23,4 +23,5 @@
 
 #ifndef UWVM_MODULE
 # include "environment.h"
+# include "policy_encoding.h"
 #endif

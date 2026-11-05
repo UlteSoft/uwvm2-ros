@@ -66,7 +66,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
         .name{u8"--wasip1-single-expose-host-api"},
         .describe{u8"Expose the Preview 1 preload host API to one single module."},
         .usage{u8"<module:str>"},
+#  if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
         .alias{::uwvm2::utils::cmdline::kns_u8_str_scatter_t{::std::addressof(details::wasip1_single_expose_host_api_alias), 1uz}},
+#  endif
         .handle{::std::addressof(details::wasip1_single_expose_host_api_callback)},
         .cate{::uwvm2::utils::cmdline::categorization::wasi}};
 #  if defined(__clang__)

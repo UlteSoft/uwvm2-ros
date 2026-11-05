@@ -104,12 +104,27 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         ::uwvm2::imported::wasi::wasip1::abi::wasi_posix_fd_t fd,
         ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_t buf_ptrsz) noexcept
     {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        if(!env.exposes(u8"fd_prestat_get")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+        if(fd >= 0 && fd < 3 && !env.grants_stdio(static_cast<unsigned>(fd)))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+
+#endif
+
         auto const memory_pointer{env.get_memory()};
         if(memory_pointer == nullptr) [[unlikely]] { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
         auto& memory{*memory_pointer};
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        // Validate every result buffer before any native side effect or partial
+        // output. Memory may grow, but cannot shrink during an active host call.
+        if(!check_wasip1_memory_bounds_wasm32(memory, buf_ptrsz, 8uz))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
+#endif
+
 
         // Canonical Preview 1 defines prestat as size 8, alignment 4. Do not derive guest alignment from this file's over-aligned host staging type.
-        check_wasip1_guest_pointer_alignment<4uz>(buf_ptrsz, u8"fd_prestat_get.buf (prestat)");
+        if(!check_wasip1_guest_pointer_alignment<4uz>(buf_ptrsz, u8"fd_prestat_get.buf (prestat)"))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::einval; }
 
         auto const trace_wasip1_call{env.trace_wasip1_call};
 
@@ -266,7 +281,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             }
         }
 
-        ::uwvm2::imported::wasi::wasip1::memory::check_memory_bounds_wasm32(memory, buf_ptrsz, size_of_wasi_prestat_t);
+        if(!::uwvm2::imported::wasi::wasip1::func::check_wasip1_memory_bounds_wasm32(memory, buf_ptrsz, size_of_wasi_prestat_t))
+            { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
 
         if constexpr(is_default_wasi_prestat_data_layout())
         {

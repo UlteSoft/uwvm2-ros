@@ -68,7 +68,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
     inline constexpr ::uwvm2::utils::cmdline::parameter wasip1_global_disable{
         .name{u8"--wasip1-global-disable"},
         .describe{u8"Disable the global-default built-in WASI Preview 1 module for wasm imports unless a module-specific setting re-enables it."},
+#  if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
         .alias{::uwvm2::utils::cmdline::kns_u8_str_scatter_t{details::wasip1_global_disable_alias.data(), details::wasip1_global_disable_alias.size()}},
+#  endif
         .handle{::std::addressof(details::wasip1_global_disable_callback)},
         .is_exist{::std::addressof(details::wasip1_global_disable_is_exist)},
         .cate{::uwvm2::utils::cmdline::categorization::wasi}};

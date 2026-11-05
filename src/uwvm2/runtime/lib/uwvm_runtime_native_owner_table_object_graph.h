@@ -35,6 +35,8 @@ namespace uwvm2::runtime::lib::details::native_owner_object_graph
     };
     namespace detail
     {
+        // Metadata allocations remain bounded independently of the complete emitted
+        // object. Large text/data sections do not enlarge the owner record ledger.
         inline constexpr ::std::size_t max_object_bytes{64u*1024u*1024u}, max_sections{4096u}, max_rows{262144u};
         struct point { ::std::uint64_t section{}, offset{}, size{}; bool known{}; };
         [[nodiscard]] inline bool text_point(::llvm::object::ObjectFile const& object,
@@ -44,7 +46,7 @@ namespace uwvm2::runtime::lib::details::native_owner_object_graph
             // [safe] sentinel/object identity before any section dereference/API.
             if(section.getObject()!=::std::addressof(object) || ::llvm::object::section_iterator{section}==object.section_end() || !section.isText()) { return false; }
             auto const size{section.getSize()};
-            if(size==0u || size>max_object_bytes || offset>size) { return false; }
+            if(size==0u || size>object.getData().size() || size>PTRDIFF_MAX || offset>size) { return false; }
             out={section.getIndex(),offset,size,true};return true;
         }
         [[nodiscard]] inline bool symbol_point(::llvm::object::ObjectFile const& object,
@@ -201,7 +203,7 @@ namespace uwvm2::runtime::lib::details::native_owner_object_graph
     [[nodiscard]] inline bool collect(::llvm::object::ObjectFile const& object,::std::vector<row>& output)
     {
         output.clear();
-        if(!object.isRelocatableObject() || object.getData().size()>detail::max_object_bytes ||
+        if(!object.isRelocatableObject() || object.getData().size()>PTRDIFF_MAX ||
            (object.getBytesInAddress()!=4u && object.getBytesInAddress()!=8u)) { return false; }
         ::std::vector<row> candidate{};
         ::std::size_t section_count{},table_count{};

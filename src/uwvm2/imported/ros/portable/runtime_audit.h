@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
+#ifndef UWVM_MODULE
+#include <uwvm2/utils/thread/monotonic_clock.h>
+#endif
 #include "deployment.h"
 #include <uwvm2/imported/ros/common/audit_io.h>
 #include <atomic>
@@ -204,7 +207,7 @@ namespace uwvm2::imported::ros::portable::runtime_audit
                 bool nonzero{};for(auto byte:*goal) { nonzero|=byte!=0; }if(!nonzero) { return fail(); }
             }
             else if(command||goal) { return fail(); }
-            auto stamp{::std::chrono::duration_cast<::std::chrono::nanoseconds>(::std::chrono::steady_clock::now().time_since_epoch()).count()};
+            auto stamp{::std::chrono::duration_cast<::std::chrono::nanoseconds>(::uwvm2::utils::host_clock::now().time_since_epoch()).count()};
             auto pid{::getpid()};if(stamp<=0||pid<=0) { return fail(); }
             constexpr ::std::array<::std::string_view,6> names{"open","describe","read_state","submit","wait","close"};
             detail::record row;
@@ -259,7 +262,7 @@ namespace uwvm2::imported::ros::portable::runtime_audit
                 auto const& bound{deployment.mapping.joints[i]};
                 if(sample.positions[i]<bound.lower||sample.positions[i]>bound.upper) { return fail(); }
             }
-            auto stamp{::std::chrono::duration_cast<::std::chrono::nanoseconds>(::std::chrono::steady_clock::now().time_since_epoch()).count()};
+            auto stamp{::std::chrono::duration_cast<::std::chrono::nanoseconds>(::uwvm2::utils::host_clock::now().time_since_epoch()).count()};
             auto pid{::getpid()};
             if(stamp<=0||pid<=0||sample.observed_ns>static_cast<::std::uint64_t>(stamp)||
                static_cast<::std::uint64_t>(stamp)>=sample.valid_until_ns) { return fail(); }
@@ -336,7 +339,7 @@ namespace uwvm2::imported::ros::portable::runtime_audit
                !deployment_detail::utf8(deployment.module)||!deployment_detail::utf8(deployment.alias)||
                (value.kind==event::vm_goal_accepted ? result!=1u : result<2u||result>4u)||
                ((result==1u||result==2u)&&value.native_status!=0)) { return fail(); }
-            auto stamp{::std::chrono::duration_cast<::std::chrono::nanoseconds>(::std::chrono::steady_clock::now().time_since_epoch()).count()};
+            auto stamp{::std::chrono::duration_cast<::std::chrono::nanoseconds>(::uwvm2::utils::host_clock::now().time_since_epoch()).count()};
             auto pid{::getpid()};
             if(stamp<=0||pid<=0||value.native_observed_ns>static_cast<::std::uint64_t>(stamp)) { return fail(); }
             detail::record row;

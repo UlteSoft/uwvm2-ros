@@ -301,6 +301,7 @@
     extern "C++" llvm_jit_debug_native_activation_cursor_owner llvm_jit_debug_mint_native_activation_host_api(
         llvm_jit_debug_activation_capture_owner const& supplied, void const* session) noexcept
     {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && defined(__linux__) && (defined(__x86_64__) || UWVM2_DEBUG_NATIVE_LINUX_SOFTWARE)
         if(session == nullptr || !details::runtime_execution_entry_reset_allowed(get_runtime_execution_entry_depth()) ||
            !details::runtime_state_publication_access_allowed(get_runtime_state_publication_depth()) ||
@@ -361,6 +362,7 @@
     extern "C++" bool llvm_jit_debug_native_activation_provider_host_api(
         llvm_jit_debug_native_activation_cursor_owner const& supplied, llvm_jit_debug_native_activation_provider& out) noexcept
     {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
         out = {};
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && defined(__linux__) && (defined(__x86_64__) || UWVM2_DEBUG_NATIVE_LINUX_SOFTWARE)
         auto const cursor{canonical_native_activation_cursor(supplied)};
@@ -377,6 +379,7 @@
     extern "C++" bool llvm_jit_debug_native_activation_host_api(
         llvm_jit_debug_native_activation_cursor_owner const& supplied, void const* session) noexcept
     {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && defined(__linux__) && (defined(__x86_64__) || UWVM2_DEBUG_NATIVE_LINUX_SOFTWARE)
         if(session == nullptr || !details::runtime_execution_entry_reset_allowed(get_runtime_execution_entry_depth()) ||
            !details::runtime_state_publication_access_allowed(get_runtime_state_publication_depth()) ||
@@ -419,6 +422,7 @@
         llvm_jit_debug_native_activation_cursor_owner const& supplied, void const* session,
         bool initial, llvm_jit_debug_native_breakpoint_plan& out) noexcept
     {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
         out = {};
 #if UWVM2_DEBUG_NATIVE_LINUX_SOFTWARE && defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS)
         try

@@ -98,12 +98,31 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         ::uwvm2::imported::wasi::wasip1::abi::wasi_size_wasm64_t buf_len,
         ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_wasm64_t buf_used_ptrsz) noexcept
     {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        if(!env.exposes(u8"path_readlink")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+#endif
+
         auto const memory_pointer{env.get_memory()};
         if(memory_pointer == nullptr) [[unlikely]] { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
         auto& memory{*memory_pointer};
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        // Check all guest path ranges before copying either path or invoking native I/O.
+        if(!check_wasip1_memory_bounds_wasm64(memory, path_ptrsz, path_len))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
+#endif
+
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        // Validate every result buffer before any native side effect or partial
+        // output. Memory may grow, but cannot shrink during an active host call.
+        if(!check_wasip1_memory_bounds_wasm64(memory, buf_used_ptrsz, 8uz) ||
+           !check_wasip1_memory_bounds_wasm64(memory, buf_ptrsz, buf_len))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
+#endif
+
 
         // path_ptrsz and buf_ptrsz point to u8 and therefore both have alignment 1.
-        check_wasip1_guest_pointer_alignment<8uz>(buf_used_ptrsz, u8"path_readlink_wasm64.buf_used (size64)");
+        if(!check_wasip1_guest_pointer_alignment<8uz>(buf_used_ptrsz, u8"path_readlink_wasm64.buf_used (size64)"))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::einval; }
 
         auto const trace_wasip1_call{env.trace_wasip1_call};
 
@@ -209,6 +228,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             return ::uwvm2::imported::wasi::wasip1::abi::errno_wasm64_t::enotcapable;
         }
 
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        bool const filesystem_operation{fd >= 3};
+        ::uwvm2::imported::wasi::wasip1::environment::budget_reservation filesystem_reservation{
+            ::uwvm2::imported::wasi::wasip1::environment::budget_kind::filesystem_io, env.limits, 0u, filesystem_operation};
+        if(filesystem_operation && !filesystem_reservation) { return filesystem_reservation.template error<::uwvm2::imported::wasi::wasip1::abi::errno_wasm64_t>(); }
+#endif
+
         // If ptr is null, it indicates an attempt to open a closed file. However, the preceding check for close pos already prevents such closed files from
         // being processed, making this a virtual machine implementation error.
         if(curr_fd.wasi_fd.ptr == nullptr) [[unlikely]]
@@ -283,10 +309,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         auto const& curr_fd_native_file{curr_dir_io_observer};
 
         // check memory bounds
-        ::uwvm2::imported::wasi::wasip1::memory::check_memory_bounds_wasm64(memory, buf_ptrsz, buf_len);
-        ::uwvm2::imported::wasi::wasip1::memory::check_memory_bounds_wasm64(memory,
+        if(!::uwvm2::imported::wasi::wasip1::func::check_wasip1_memory_bounds_wasm64(memory, buf_ptrsz, buf_len))
+            { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
+        if(!::uwvm2::imported::wasi::wasip1::func::check_wasip1_memory_bounds_wasm64(memory,
                                                                             buf_used_ptrsz,
-                                                                            sizeof(::uwvm2::imported::wasi::wasip1::abi::wasi_size_wasm64_t));
+                                                                            sizeof(::uwvm2::imported::wasi::wasip1::abi::wasi_size_wasm64_t)))
+            { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
 
         // symlink symbol storage
         ::uwvm2::utils::container::u8string symlink_symbol{};
@@ -304,7 +332,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             // Full locking is required during reading.
             [[maybe_unused]] auto const memory_locker_guard{::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory)};
 
-            ::uwvm2::imported::wasi::wasip1::memory::check_memory_bounds_wasm64_unlocked(memory, path_ptrsz, path_len);
+            if(!::uwvm2::imported::wasi::wasip1::func::check_wasip1_memory_bounds_wasm64_unlocked(memory, path_ptrsz, path_len))
+            { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
 
             using char8_t_const_may_alias_ptr UWVM_GNU_MAY_ALIAS = char8_t const*;
 
@@ -495,7 +524,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 # endif
                                 {
                                     // default is symlink_nofollow
-                                    next = ::fast_io::dir_file{at(curr_fd_native_file), next_name};
+                                    next = ::uwvm2::imported::wasi::wasip1::func::open_authorized_directory(at(curr_fd_native_file), next_name);
 
                                     // The `Win32 CreateFileW` function can simultaneously open both a directory and a file when specifying a
                                     // directory. However, under the current fast_io strategy, `dir_file` does not utilize `CreateFileW`.
@@ -584,7 +613,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 # endif
                                 {
                                     // default is symlink_nofollow
-                                    next = ::fast_io::dir_file{at(path_stack.back_unchecked()), next_name};
+                                    next = ::uwvm2::imported::wasi::wasip1::func::open_authorized_directory(at(path_stack.back_unchecked()), next_name);
 
                                     // The `Win32 CreateFileW` function can simultaneously open both a directory and a file when specifying a
                                     // directory. However, under the current fast_io strategy, `dir_file` does not utilize `CreateFileW`.

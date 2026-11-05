@@ -15,6 +15,7 @@
         ::std::uint_least64_t guest_offset, ::std::size_t size,
         ::std::uint_least8_t address_bytes, llvm_jit_debug_source_object_copy& out) noexcept
     {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
         out = {};
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS)
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;

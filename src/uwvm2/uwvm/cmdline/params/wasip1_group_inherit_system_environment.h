@@ -67,7 +67,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
         .name{u8"--wasip1-group-inherit-system-environment"},
         .describe{u8"Inherit host environment variables into one named group."},
         .usage{u8"<group:str>"},
+#  if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
         .alias{::uwvm2::utils::cmdline::kns_u8_str_scatter_t{::std::addressof(details::wasip1_group_inherit_system_environment_alias), 1uz}},
+#  endif
         .handle{::std::addressof(details::wasip1_group_inherit_system_environment_callback)},
         .cate{::uwvm2::utils::cmdline::categorization::wasi}};
 #  if defined(__clang__)

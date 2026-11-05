@@ -1,5 +1,5 @@
 // Explicit authority callbacks use the same target dispatcher as other WASI options.
-// SPDX-License-Identifier: Apache-2.0
+// Licensed under the APL-2.0 License (see LICENSE file).
 #pragma once
 #ifndef UWVM_MODULE
 # include <uwvm2/utils/macro/push_macros.h>
@@ -18,6 +18,86 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
 {
 #ifndef UWVM_DISABLE_LOCAL_IMPORTED_WASIP1
 # if defined(UWVM_IMPORT_WASI_WASIP1)
+#  if defined(UWVM_MODULE)
+    extern "C++"
+#  else
+    inline constexpr
+#  endif
+    ::uwvm2::utils::cmdline::parameter_return_type wasip1_single_mount_dir_rights_callback(
+        [[maybe_unused]] ::uwvm2::utils::cmdline::parameter_parsing_results* begin,
+        ::uwvm2::utils::cmdline::parameter_parsing_results* current, ::uwvm2::utils::cmdline::parameter_parsing_results* end) noexcept
+    { return wasip1_single_details::apply_action(::uwvm2::uwvm::cmdline::params::wasip1_single_mount_dir_rights, current, end,
+        wasip1_module_details::target_action_t::mount_dir_rights); }
+#  if defined(UWVM_MODULE)
+    extern "C++"
+#  else
+    inline constexpr
+#  endif
+    ::uwvm2::utils::cmdline::parameter_return_type wasip1_group_mount_dir_rights_callback(
+        [[maybe_unused]] ::uwvm2::utils::cmdline::parameter_parsing_results* begin,
+        ::uwvm2::utils::cmdline::parameter_parsing_results* current, ::uwvm2::utils::cmdline::parameter_parsing_results* end) noexcept
+    { return wasip1_group_details::apply_action(::uwvm2::uwvm::cmdline::params::wasip1_group_mount_dir_rights, current, end,
+        wasip1_module_details::target_action_t::mount_dir_rights); }
+#  if defined(UWVM_MODULE)
+    extern "C++"
+#  else
+    inline constexpr
+#  endif
+    ::uwvm2::utils::cmdline::parameter_return_type wasip1_single_limit_callback(
+        [[maybe_unused]] ::uwvm2::utils::cmdline::parameter_parsing_results* begin,
+        ::uwvm2::utils::cmdline::parameter_parsing_results* current, ::uwvm2::utils::cmdline::parameter_parsing_results* end) noexcept
+    { return wasip1_single_details::apply_action(::uwvm2::uwvm::cmdline::params::wasip1_single_limit, current, end,
+        wasip1_module_details::target_action_t::set_resource_limit); }
+#  if defined(UWVM_MODULE)
+    extern "C++"
+#  else
+    inline constexpr
+#  endif
+    ::uwvm2::utils::cmdline::parameter_return_type wasip1_group_limit_callback(
+        [[maybe_unused]] ::uwvm2::utils::cmdline::parameter_parsing_results* begin,
+        ::uwvm2::utils::cmdline::parameter_parsing_results* current, ::uwvm2::utils::cmdline::parameter_parsing_results* end) noexcept
+    { return wasip1_group_details::apply_action(::uwvm2::uwvm::cmdline::params::wasip1_group_limit, current, end,
+        wasip1_module_details::target_action_t::set_resource_limit); }
+#  if defined(UWVM_MODULE)
+    extern "C++"
+#  else
+    inline constexpr
+#  endif
+    ::uwvm2::utils::cmdline::parameter_return_type wasip1_single_limit_action_callback(
+        [[maybe_unused]] ::uwvm2::utils::cmdline::parameter_parsing_results* begin,
+        ::uwvm2::utils::cmdline::parameter_parsing_results* current, ::uwvm2::utils::cmdline::parameter_parsing_results* end) noexcept
+    { return wasip1_single_details::apply_action(::uwvm2::uwvm::cmdline::params::wasip1_single_limit_action, current, end,
+        wasip1_module_details::target_action_t::set_resource_limit_action); }
+#  if defined(UWVM_MODULE)
+    extern "C++"
+#  else
+    inline constexpr
+#  endif
+    ::uwvm2::utils::cmdline::parameter_return_type wasip1_group_limit_action_callback(
+        [[maybe_unused]] ::uwvm2::utils::cmdline::parameter_parsing_results* begin,
+        ::uwvm2::utils::cmdline::parameter_parsing_results* current, ::uwvm2::utils::cmdline::parameter_parsing_results* end) noexcept
+    { return wasip1_group_details::apply_action(::uwvm2::uwvm::cmdline::params::wasip1_group_limit_action, current, end,
+        wasip1_module_details::target_action_t::set_resource_limit_action); }
+#  if defined(UWVM_MODULE)
+    extern "C++"
+#  else
+    inline constexpr
+#  endif
+    ::uwvm2::utils::cmdline::parameter_return_type wasip1_single_limit_exit_action_callback(
+        [[maybe_unused]] ::uwvm2::utils::cmdline::parameter_parsing_results* begin,
+        ::uwvm2::utils::cmdline::parameter_parsing_results* current, ::uwvm2::utils::cmdline::parameter_parsing_results* end) noexcept
+    { return wasip1_single_details::apply_action(::uwvm2::uwvm::cmdline::params::wasip1_single_limit_exit_action, current, end,
+        wasip1_module_details::target_action_t::set_resource_limit_exit_action); }
+#  if defined(UWVM_MODULE)
+    extern "C++"
+#  else
+    inline constexpr
+#  endif
+    ::uwvm2::utils::cmdline::parameter_return_type wasip1_group_limit_exit_action_callback(
+        [[maybe_unused]] ::uwvm2::utils::cmdline::parameter_parsing_results* begin,
+        ::uwvm2::utils::cmdline::parameter_parsing_results* current, ::uwvm2::utils::cmdline::parameter_parsing_results* end) noexcept
+    { return wasip1_group_details::apply_action(::uwvm2::uwvm::cmdline::params::wasip1_group_limit_exit_action, current, end,
+        wasip1_module_details::target_action_t::set_resource_limit_exit_action); }
     namespace wasip1_permission_details
     {
         // Parse and consume one permission operand. The configured-bit mask is

@@ -66,7 +66,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
         .name{u8"--wasip1-single-enable"},
         .describe{u8"Enable WASI Preview 1 for one single module."},
         .usage{u8"<module:str>"},
+#  if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
         .alias{::uwvm2::utils::cmdline::kns_u8_str_scatter_t{::std::addressof(details::wasip1_single_enable_alias), 1uz}},
+#  endif
         .handle{::std::addressof(details::wasip1_single_enable_callback)},
         .cate{::uwvm2::utils::cmdline::categorization::wasi}};
 #  if defined(__clang__)

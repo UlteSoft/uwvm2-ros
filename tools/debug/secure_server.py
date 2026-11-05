@@ -259,7 +259,7 @@ def serve(arguments):
             # its inherited endpoint. Linux attaches sender credentials when
             # the packet is sent; enabling PASSCRED later loses that identity.
             vm_endpoint.setsockopt(socket.SOL_SOCKET, socket.SO_PASSCRED, 1)
-            command = [str(arguments.uwvm), "--debug-jit-control-fd", str(vm_endpoint.fileno()), *vm_args]
+            command = [str(arguments.uwvm), "--management-profile", "dev", "--debug-jit-control-fd", str(vm_endpoint.fileno()), *vm_args]
             guest = subprocess.Popen(command, pass_fds=(vm_endpoint.fileno(),))
         finally:
             vm_endpoint.close()

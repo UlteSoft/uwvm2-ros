@@ -55,7 +55,10 @@ namespace uwvm2::imported::ros::ipc::rmw_endpoint
     inline bool same(qos const& a,qos const& b) noexcept
     {
         return a.history==b.history&&a.reliability==b.reliability&&a.durability==b.durability&&
-            a.liveliness==b.liveliness&&a.depth==b.depth&&same(a.deadline,b.deadline)&&
+            // Depth only constrains KEEP_LAST. Preserve the actual getter's
+            // raw depth in receipts, but do not reject KEEP_ALL because a
+            // middleware stores a different ignored depth (e.g. 0 versus 1).
+            a.liveliness==b.liveliness&&(a.history!=1||a.depth==b.depth)&&same(a.deadline,b.deadline)&&
             same(a.lifespan,b.lifespan)&&same(a.lease,b.lease)&&
             a.avoid_ros_namespace_conventions==b.avoid_ros_namespace_conventions;
     }

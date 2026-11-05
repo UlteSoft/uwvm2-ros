@@ -113,12 +113,28 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         ::uwvm2::imported::wasi::wasip1::abi::dircookie_t cookie,
         ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_t buf_used_ptrsz) noexcept
     {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        if(!env.exposes(u8"fd_readdir")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+        if(fd >= 0 && fd < 3 && !env.grants_stdio(static_cast<unsigned>(fd)))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+
+#endif
+
         auto const memory_pointer{env.get_memory()};
         if(memory_pointer == nullptr) [[unlikely]] { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
         auto& memory{*memory_pointer};
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        // Validate every result buffer before any native side effect or partial
+        // output. Memory may grow, but cannot shrink during an active host call.
+        if(!check_wasip1_memory_bounds_wasm32(memory, buf_used_ptrsz, 4uz) ||
+           !check_wasip1_memory_bounds_wasm32(memory, buf_ptrsz, buf_len))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
+#endif
+
 
         // buf_ptrsz is Pointer<u8> and therefore has alignment 1; only the lowered size result is alignment-sensitive.
-        check_wasip1_guest_pointer_alignment<4uz>(buf_used_ptrsz, u8"fd_readdir.buf_used (size)");
+        if(!check_wasip1_guest_pointer_alignment<4uz>(buf_used_ptrsz, u8"fd_readdir.buf_used (size)"))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::einval; }
 
         auto const trace_wasip1_call{env.trace_wasip1_call};
 
@@ -230,6 +246,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 
         ::uwvm2::imported::wasi::wasip1::abi::wasi_size_t byte_write_all_size{};
         ::uwvm2::imported::wasi::wasip1::abi::wasi_size_t buf_remaining_size{buf_len};
+
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        bool const filesystem_operation{fd >= 3};
+        ::uwvm2::imported::wasi::wasip1::environment::budget_reservation filesystem_reservation{
+            ::uwvm2::imported::wasi::wasip1::environment::budget_kind::filesystem_io, env.limits, 0u, filesystem_operation};
+        if(filesystem_operation && !filesystem_reservation) { return filesystem_reservation.template error<::uwvm2::imported::wasi::wasip1::abi::errno_t>(); }
+#endif
 
         // If ptr is null, it indicates an attempt to open a closed file. However, the preceding check for close pos already prevents such closed files from
         // being processed, making this a virtual machine implementation error.
@@ -349,7 +372,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                                             ::uwvm2::imported::wasi::wasip1::abi::wasi_size_t write_size) noexcept
         {
             if(write_size == 0u) { return; }
+#if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             ::uwvm2::imported::wasi::wasip1::memory::check_memory_bounds_wasm32(memory, buf_ptrsz, byte_write_all_size + write_size);
+#endif
+            // The complete buf_len range was validated before directory I/O;
+            // this prefix is bounded by the remaining capacity in that range.
             // Explicit little-endian bytes also define the three padding bytes.
             ::std::byte header[size_of_wasi_dirent_t]{};
             for(::std::size_t i{}; i != 8uz; ++i)

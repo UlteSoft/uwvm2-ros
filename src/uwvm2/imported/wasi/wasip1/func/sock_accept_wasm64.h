@@ -107,13 +107,31 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 # endif
         ) noexcept
     {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        if(!env.exposes(u8"sock_accept")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+        // No qualified per-endpoint bounded network provider in this profile.
+        return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotsup;
+#endif
+
 
         auto const memory_pointer{env.get_memory()};
         if(memory_pointer == nullptr) [[unlikely]] { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
         auto& memory{*memory_pointer};
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        // Validate every result buffer before any native side effect or partial
+        // output. Memory may grow, but cannot shrink during an active host call.
+        if(!check_wasip1_memory_bounds_wasm64(memory, ro_fd_ptrsz, 4uz))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
+# ifdef UWVM_IMPORT_WASI_WASIP1_SUPPORT_WASIX_SOCKET
+        if(!check_wasip1_memory_bounds_wasm64(memory, ro_addr_ptrsz, 20uz))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
+# endif
+#endif
+
 
         // fd remains a 32-bit handle in the mirrored wasm64 ABI.
-        check_wasip1_guest_pointer_alignment<4uz>(ro_fd_ptrsz, u8"sock_accept_wasm64.ro_fd (fd)");
+        if(!check_wasip1_guest_pointer_alignment<4uz>(ro_fd_ptrsz, u8"sock_accept_wasm64.ro_fd (fd)"))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::einval; }
 
         auto const trace_wasip1_call{env.trace_wasip1_call};
 
@@ -429,10 +447,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                     //   u.octs: [port_be[0], port_be[1], ip bytes...]
                     //
                     // The buffer pointed to by ro_addr_ptrsz must hold size_of_wasi_addr_port_t bytes.
-                    ::uwvm2::imported::wasi::wasip1::memory::check_memory_bounds_wasm64_unlocked(
+                    if(!::uwvm2::imported::wasi::wasip1::func::check_wasip1_memory_bounds_wasm64_unlocked(
                         memory,
                         ro_addr_ptrsz,
-                        ::uwvm2::imported::wasi::wasip1::func::size_of_wasi_addr_port_t);
+                        ::uwvm2::imported::wasi::wasip1::func::size_of_wasi_addr_port_t))
+            { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
 
                     ::uwvm2::parser::wasm::standard::wasm1::type::wasm_u8 raw[::uwvm2::imported::wasi::wasip1::func::size_of_wasi_addr_port_t]{};
 
@@ -700,10 +719,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                     //   u.octs: [port_be[0], port_be[1], ip bytes...]
                     //
                     // The buffer pointed to by ro_addr_ptrsz must hold size_of_wasi_addr_port_t bytes.
-                    ::uwvm2::imported::wasi::wasip1::memory::check_memory_bounds_wasm64_unlocked(
+                    if(!::uwvm2::imported::wasi::wasip1::func::check_wasip1_memory_bounds_wasm64_unlocked(
                         memory,
                         ro_addr_ptrsz,
-                        ::uwvm2::imported::wasi::wasip1::func::size_of_wasi_addr_port_t);
+                        ::uwvm2::imported::wasi::wasip1::func::size_of_wasi_addr_port_t))
+            { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
 
                     ::uwvm2::parser::wasm::standard::wasm1::type::wasm_u8 raw[::uwvm2::imported::wasi::wasip1::func::size_of_wasi_addr_port_t]{};
 

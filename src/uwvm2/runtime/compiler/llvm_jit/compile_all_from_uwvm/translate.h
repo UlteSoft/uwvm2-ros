@@ -150,6 +150,7 @@
 #endif
 
 #if defined(UWVM_RUNTIME_LLVM_JIT)
+# include "translate/immutable_global_bindings.h"
 # include "translate/private_host_object_emission_scope.h"
 # include "translate/threaded_host_emission_scope.h"
 UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
@@ -197,6 +198,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
                                                               ::std::size_t memory_type_size,
                                                               [[maybe_unused]] ::std::uintptr_t frame_address,
                                                               [[maybe_unused]] ::std::uintptr_t stack_pointer) noexcept;
+
+    // Selected only by the compiler's qualified managed-trap cleanup pass.
+    // Unlike fatal diagnostic helpers these entries may unwind real Wasm frames.
+    extern "C++" UWVM_NOINLINE void llvm_jit_managed_runtime_trap(llvm_jit_trap_kind, ::std::uintptr_t, ::std::uintptr_t) UWVM_THROWS;
+    extern "C++" UWVM_NOINLINE void llvm_jit_managed_memory_trap(::std::size_t, ::std::uint_least64_t,
+        ::std::uint_least64_t, ::std::uint_least32_t, ::std::uint_least64_t, ::std::size_t,
+        ::std::uintptr_t, ::std::uintptr_t) UWVM_THROWS;
 
     // A successful funcref-table mutation updates only compact views which alias the resolved destination table.
     extern "C++" void llvm_jit_refresh_call_indirect_table_views(

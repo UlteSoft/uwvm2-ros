@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
+#ifndef UWVM_MODULE
+#include <uwvm2/utils/thread/monotonic_clock.h>
+#endif
 #include "../ipc/protocol.h"
 #include <array>
 #include <atomic>
@@ -120,7 +123,7 @@ namespace uwvm2::imported::ros::buffer_audit
             r.append("{\"format\":\"uwvm-ros-buffer-journal-v1\",\"producer\":\"uwvm2-ros/ros-host\",\"kind\":");r.quoted(kind);
             r.append(",\"run_id\":");r.quoted({run_.data(),run_size_});r.append(",\"pid\":");r.number(pid_);
             r.append(",\"sequence\":");r.number(sequence_);
-            r.append(",\"monotonic_ns\":");r.number(::std::chrono::duration_cast<::std::chrono::nanoseconds>(::std::chrono::steady_clock::now().time_since_epoch()).count());
+            r.append(",\"monotonic_ns\":");r.number(::std::chrono::duration_cast<::std::chrono::nanoseconds>(::uwvm2::utils::host_clock::now().time_since_epoch()).count());
         }
     public:
         bool enabled() const noexcept {return enabled_.load(::std::memory_order_relaxed);}

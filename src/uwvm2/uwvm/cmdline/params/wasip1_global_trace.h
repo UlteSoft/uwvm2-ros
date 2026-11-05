@@ -75,7 +75,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
             u8"[none|out|err]"
 #  endif
         },
+#  if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
         .alias{::uwvm2::utils::cmdline::kns_u8_str_scatter_t{details::wasip1_global_trace_alias.data(), details::wasip1_global_trace_alias.size()}},
+#  endif
         .handle{::std::addressof(details::wasip1_global_trace_callback)},
         .is_exist{::std::addressof(details::wasip1_global_trace_is_exist)},
         .cate{::uwvm2::utils::cmdline::categorization::wasi}};

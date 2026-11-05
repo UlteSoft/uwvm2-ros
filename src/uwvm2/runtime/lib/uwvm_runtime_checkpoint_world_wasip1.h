@@ -121,6 +121,11 @@ bool wasip1_dispatch_tls_restored_{};
         // never recovered from snapshot bytes, which could restore revoked
         // authority; the private candidate uses the live target's exact mask.
         next.non_fd_permissions = original.non_fd_permissions;
+        next.interface_enabled = original.interface_enabled;
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        next.limits = original.limits;
+        next.policy_resources = original.policy_resources;
+#endif
         next.disable_utf8_check = original.disable_utf8_check;
         next.trace_wasip1_call = original.trace_wasip1_call;
         next.trace_wasip1_output_target = original.trace_wasip1_output_target;

@@ -647,7 +647,8 @@
     extern "C++" bool llvm_jit_debug_native_backtrace_host_api(
         llvm_jit_debug_native_activation_cursor_owner const& supplied, void const* session,
         llvm_jit_debug_native_backtrace_view& out, ::std::size_t maximum_frames) noexcept
-    { return llvm_jit_debug_native_return_continuation::observe(supplied, session, out, maximum_frames, nullptr); }
+    {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; } return llvm_jit_debug_native_return_continuation::observe(supplied, session, out, maximum_frames, nullptr); }
     namespace
     {
         ::std::mutex g_debug_native_return_continuation_mutex{};
@@ -671,6 +672,7 @@
     extern "C++" llvm_jit_debug_native_return_continuation_owner llvm_jit_debug_mint_native_return_continuation_host_api(
         llvm_jit_debug_native_activation_cursor_owner const& supplied, void const* session) noexcept
     {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && defined(__linux__) && ((__SIZEOF_POINTER__ == 8 && (defined(__x86_64__) || (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__)) || defined(__loongarch64) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))) || (defined(__i386__) && __SIZEOF_POINTER__ == 4)) && \
     LLVM_VERSION_MAJOR >= 23 && \
     defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
@@ -700,6 +702,7 @@
         llvm_jit_debug_native_return_continuation_owner const& supplied, void const* session,
         llvm_jit_debug_native_caller_view& out) noexcept
     {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
         out = {};
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && defined(__linux__) && ((__SIZEOF_POINTER__ == 8 && (defined(__x86_64__) || (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__)) || defined(__loongarch64) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))) || (defined(__i386__) && __SIZEOF_POINTER__ == 4)) && \
     LLVM_VERSION_MAJOR >= 23 && \
@@ -726,6 +729,7 @@
         llvm_jit_debug_native_return_continuation_owner const& supplied, void const* session,
         void* context, llvm_jit_debug_native_return_resume_callback callback) noexcept
     {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && defined(__linux__) && ((__SIZEOF_POINTER__ == 8 && (defined(__x86_64__) || (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__)) || defined(__loongarch64) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))) || (defined(__i386__) && __SIZEOF_POINTER__ == 4)) && \
     LLVM_VERSION_MAJOR >= 23 && \
     defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
@@ -750,6 +754,7 @@
         llvm_jit_debug_native_activation_cursor_owner const& supplied, void const* session,
         llvm_jit_debug_native_caller_view& out) noexcept
     {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
         out = {};
         llvm_jit_debug_native_backtrace_view trace{};
         if(!llvm_jit_debug_native_backtrace_host_api(supplied, session, trace, 1u)) { return false; }
@@ -759,6 +764,7 @@
         llvm_jit_debug_native_return_continuation_owner const& supplied, void const* session,
         void* context, llvm_jit_debug_native_return_event_callback callback) noexcept
     {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && defined(__linux__) && ((__SIZEOF_POINTER__ == 8 && (defined(__x86_64__) || (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__)) || defined(__loongarch64) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))) || (defined(__i386__) && __SIZEOF_POINTER__ == 4)) && \
     LLVM_VERSION_MAJOR >= 23 && \
     defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
@@ -783,6 +789,7 @@
         llvm_jit_debug_native_return_event const& event, void const* session,
         llvm_jit_debug_native_caller_view& out) noexcept
     {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
         out = {};
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && defined(__linux__) && ((__SIZEOF_POINTER__ == 8 && (defined(__x86_64__) || (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__)) || defined(__loongarch64) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))) || (defined(__i386__) && __SIZEOF_POINTER__ == 4)) && \
     LLVM_VERSION_MAJOR >= 23 && \
@@ -885,6 +892,7 @@
         llvm_jit_debug_native_return_event const& event, void const* session,
         llvm_jit_debug_native_return_stop& out) noexcept
     {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
         out = {};
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && defined(__linux__) && ((__SIZEOF_POINTER__ == 8 && (defined(__x86_64__) || (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__)) || defined(__loongarch64) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))) || (defined(__i386__) && __SIZEOF_POINTER__ == 4)) && \
     LLVM_VERSION_MAJOR >= 23 && \

@@ -163,6 +163,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
             ::fast_io::io::perr(u8log_output_ul,
                                 // ln
                                 u8"\n",
+                                u8"  <update>  -----  Use \"--help update\" to display production update arguments.\n\n",
                                 // debug
                                 ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_LT_CYAN),
                                 u8"  ",
@@ -266,6 +267,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
                 ::fast_io::io::perr(u8log_output_ul, argument_name, u8" arguments.\n\n");
             }};
             output_category_hint(u8"<debug>", u8"debug");
+            output_category_hint(u8"<update>", u8"update");
             output_category_hint(u8"<wasm>", u8"wasm");
             output_category_hint(u8"<secure>", u8"secure");
             output_category_hint(u8"<runtime>", u8"runtime");
@@ -327,6 +329,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
             help_output_singal_cate(u8log_output_ul, ::uwvm2::utils::cmdline::categorization::ros2);
         }
 #endif
+        else if(currp1_str == u8"update")
+        {
+            ::fast_io::io::perrln(u8log_output_ul, u8"Production update arguments (signed, exclusive transfer):");
+            help_output_singal_cate(u8log_output_ul, ::uwvm2::utils::cmdline::categorization::update);
+            ::fast_io::io::perrln(u8log_output_ul, u8"  prepare -> ready/fence -> durable external COMMIT -> activate; no rollback.\n"
+                u8"  Requires LLVM full, immutable source, fixed contract, authenticated local launcher.\n"
+                u8"  See documents/runtime/production-update.md for exact supported scope and wire format.");
+        }
         else if(currp1_str == u8"debug")
         {
             ::fast_io::io::perr(u8log_output_ul,

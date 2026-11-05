@@ -113,11 +113,28 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         ::uwvm2::imported::wasi::wasip1::abi::wasi_posix_fd_t fd,
         ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_t stat_ptrsz) noexcept
     {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        if(!env.exposes(u8"fd_fdstat_get")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+        if(fd >= 0 && fd < 3 && !env.grants_stdio(static_cast<unsigned>(fd)))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+        if(fd >= 0 && fd < 3 && !env.permits(::uwvm2::imported::wasi::wasip1::environment::permission_t::stdio_metadata))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+
+#endif
+
         auto const memory_pointer{env.get_memory()};
         if(memory_pointer == nullptr) [[unlikely]] { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
         auto& memory{*memory_pointer};
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        // Validate every result buffer before any native side effect or partial
+        // output. Memory may grow, but cannot shrink during an active host call.
+        if(!check_wasip1_memory_bounds_wasm32(memory, stat_ptrsz, 24uz))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
+#endif
 
-        check_wasip1_guest_pointer_alignment<8uz>(stat_ptrsz, u8"fd_fdstat_get.stat (fdstat)");
+
+        if(!check_wasip1_guest_pointer_alignment<8uz>(stat_ptrsz, u8"fd_fdstat_get.stat (fdstat)"))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::einval; }
 
         auto const trace_wasip1_call{env.trace_wasip1_call};
 
@@ -207,7 +224,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         // The purpose of `fd_fdstat_get` is solely to read the metadata of an FD (type, flags, rights). It does not access the file contents nor alter any
         // state.
 
-        ::uwvm2::imported::wasi::wasip1::memory::check_memory_bounds_wasm32(memory, stat_ptrsz, size_of_wasi_fdstat_t);
+        if(!::uwvm2::imported::wasi::wasip1::func::check_wasip1_memory_bounds_wasm32(memory, stat_ptrsz, size_of_wasi_fdstat_t))
+            { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
 
         // Query native fd flags via fcntl(F_GETFL) for WASI fdflags mapping
         // All require initialization to prevent subsequent unconfigured settings from causing undefined behavior.
@@ -215,6 +233,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         ::uwvm2::imported::wasi::wasip1::abi::fdflags_t fs_flags{};                                   // 2
         ::uwvm2::imported::wasi::wasip1::abi::rights_t fs_rights_base{curr_fd.rights_base};           // 8
         ::uwvm2::imported::wasi::wasip1::abi::rights_t fs_rights_inheriting{curr_fd.rights_inherit};  // 16
+
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        bool const filesystem_operation{fd >= 3};
+        ::uwvm2::imported::wasi::wasip1::environment::budget_reservation filesystem_reservation{
+            ::uwvm2::imported::wasi::wasip1::environment::budget_kind::filesystem_io, env.limits, 0u, filesystem_operation};
+        if(filesystem_operation && !filesystem_reservation) { return filesystem_reservation.template error<::uwvm2::imported::wasi::wasip1::abi::errno_t>(); }
+#endif
 
         // If ptr is null, it indicates an attempt to open a closed file. However, the preceding check for close pos already prevents such closed files from
         // being processed, making this a virtual machine implementation error.

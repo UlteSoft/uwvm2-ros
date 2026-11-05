@@ -16,6 +16,7 @@
  */
 #pragma once
 #include <cstdint>
+#include "../common/synchronous_wait.h"
 #if defined(__linux__)
 #include <poll.h>
 #include <errno.h>
@@ -51,13 +52,15 @@ namespace uwvm2::imported::ros::ipc
     };
     inline int current_cancellation_fd()noexcept
     {return cancellation_scope::current_.rejected?-2:cancellation_scope::current_.fd;}
-    enum class cancellation_probe:std::uint8_t {clear,ready,rejected,probe_failed};
+    enum class cancellation_probe:std::uint8_t {clear,ready,rejected,probe_failed,process_exit,domain_stop};
     /** Zero-wait metadata observation only. POLLNVAL/invalid descriptor/probe
      * interruption are fail-closed admission failures, NOT invented evidence
      * that the controller published a stop payload. No unbounded EINTR loop.
      */
     inline cancellation_probe probe_cancellation(int borrowed_fd)noexcept
     {
+        if(synchronous_wait_context::process_cancelled())return cancellation_probe::process_exit;
+        if(synchronous_wait_context::stop_requested())return cancellation_probe::domain_stop;
         if(borrowed_fd==-1)return cancellation_probe::clear;
         if(borrowed_fd< -1)return cancellation_probe::rejected;
 #if defined(__linux__)

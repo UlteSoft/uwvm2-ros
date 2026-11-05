@@ -97,9 +97,20 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_t new_path_ptrsz,
         ::uwvm2::imported::wasi::wasip1::abi::wasi_size_t new_path_len) noexcept
     {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        if(!env.exposes(u8"path_rename")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+#endif
+
         auto const memory_pointer{env.get_memory()};
         if(memory_pointer == nullptr) [[unlikely]] { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
         auto& memory{*memory_pointer};
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        // Check all guest path ranges before copying either path or invoking native I/O.
+        if(!check_wasip1_memory_bounds_wasm32(memory, old_path_ptrsz, old_path_len) ||
+           !check_wasip1_memory_bounds_wasm32(memory, new_path_ptrsz, new_path_len))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
+#endif
+
 
         auto const trace_wasip1_call{env.trace_wasip1_call};
 
@@ -241,6 +252,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         {
             return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable;
         }
+
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        bool const filesystem_operation{old_fd >= 3 || new_fd >= 3};
+        ::uwvm2::imported::wasi::wasip1::environment::budget_reservation filesystem_reservation{
+            ::uwvm2::imported::wasi::wasip1::environment::budget_kind::filesystem_io, env.limits, 0u, filesystem_operation};
+        if(filesystem_operation && !filesystem_reservation) { return filesystem_reservation.template error<::uwvm2::imported::wasi::wasip1::abi::errno_t>(); }
+#endif
 
         // If ptr is null, it indicates an attempt to open a closed file. However, the preceding check for close pos already prevents such closed files from
         // being processed, making this a virtual machine implementation error.
@@ -388,8 +406,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             // Full locking is required during reading.
             [[maybe_unused]] auto const memory_locker_guard{::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory)};
 
-            ::uwvm2::imported::wasi::wasip1::memory::check_memory_bounds_wasm32_unlocked(memory, old_path_ptrsz, old_path_len);
-            ::uwvm2::imported::wasi::wasip1::memory::check_memory_bounds_wasm32_unlocked(memory, new_path_ptrsz, new_path_len);
+            if(!::uwvm2::imported::wasi::wasip1::func::check_wasip1_memory_bounds_wasm32_unlocked(memory, old_path_ptrsz, old_path_len))
+            { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
+            if(!::uwvm2::imported::wasi::wasip1::func::check_wasip1_memory_bounds_wasm32_unlocked(memory, new_path_ptrsz, new_path_len))
+            { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
 
             using char8_t_const_may_alias_ptr UWVM_GNU_MAY_ALIAS = char8_t const*;
 
@@ -602,7 +622,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 # endif
                                 {
                                     // default is symlink_nofollow
-                                    next = ::fast_io::dir_file{at(curr_new_fd_native_file), next_name};
+                                    next = ::uwvm2::imported::wasi::wasip1::func::open_authorized_directory(at(curr_new_fd_native_file), next_name);
 
                                     // The `Win32 CreateFileW` function can simultaneously open both a directory and a file when specifying a
                                     // directory. However, under the current fast_io strategy, `dir_file` does not utilize `CreateFileW`.
@@ -691,7 +711,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 # endif
                                 {
                                     // default is symlink_nofollow
-                                    next = ::fast_io::dir_file{at(new_path_stack.back_unchecked()), next_name};
+                                    next = ::uwvm2::imported::wasi::wasip1::func::open_authorized_directory(at(new_path_stack.back_unchecked()), next_name);
 
                                     // The `Win32 CreateFileW` function can simultaneously open both a directory and a file when specifying a
                                     // directory. However, under the current fast_io strategy, `dir_file` does not utilize `CreateFileW`.
@@ -936,7 +956,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 # endif
                                 {
                                     // default is symlink_nofollow
-                                    next = ::fast_io::dir_file{at(curr_old_fd_native_file), next_name};
+                                    next = ::uwvm2::imported::wasi::wasip1::func::open_authorized_directory(at(curr_old_fd_native_file), next_name);
 
                                     // The `Win32 CreateFileW` function can simultaneously open both a directory and a file when specifying a
                                     // directory. However, under the current fast_io strategy, `dir_file` does not utilize `CreateFileW`.
@@ -1025,7 +1045,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 # endif
                                 {
                                     // default is symlink_nofollow
-                                    next = ::fast_io::dir_file{at(old_path_stack.back_unchecked()), next_name};
+                                    next = ::uwvm2::imported::wasi::wasip1::func::open_authorized_directory(at(old_path_stack.back_unchecked()), next_name);
 
                                     // The `Win32 CreateFileW` function can simultaneously open both a directory and a file when specifying a
                                     // directory. However, under the current fast_io strategy, `dir_file` does not utilize `CreateFileW`.

@@ -4,6 +4,9 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#ifndef UWVM_MODULE
+#include <uwvm2/utils/thread/monotonic_clock.h>
+#endif
 
 #include <chrono>
 #include <memory>
@@ -11,6 +14,8 @@
 #include <utility>
 #include "../policy/policy.h"
 #include "../common/audit.h"
+#include "../common/synchronous_wait.h"
+#include <cmath>
 #include "../common/debug.h"
 #include "../ipc/action_control.h"
 
@@ -57,8 +62,12 @@ namespace uwvm2::imported::ros
             bounded_audit audit{};
             bool revoked{};
             ::std::uint64_t open_count{};
-            double rate{}, burst{}, bandwidth{}, tokens{}, creation_tokens{}, byte_tokens{};
-            ::std::chrono::steady_clock::time_point updated{::std::chrono::steady_clock::now()};
+            double rate{};
+            ::std::uint64_t burst{}, bandwidth{}, tokens{}, creation_tokens{}, byte_tokens{}, byte_fraction{};
+            ::std::uint64_t log_bandwidth{},log_tokens{},log_fraction{};
+            long double token_fraction{}, creation_fraction{};
+            bool limited_rate{},limited_bytes{},limited_log{};
+            ::std::chrono::steady_clock::time_point updated{::uwvm2::utils::host_clock::now()};
         };
         struct handle_entry
         {
@@ -66,8 +75,14 @@ namespace uwvm2::imported::ros
             ::std::string alias{};
             bool active{}, retired{};
         };
+        struct waiting_operation
+        {
+            synchronous_quota_wait* waiter{};
+            waiting_operation* next{};
+        };
         struct backend_state
         {
+            waiting_operation* waiters{};
             ::std::recursive_mutex mutex{};
             bool alive{true};
             target_policy policy{};
@@ -106,31 +121,160 @@ namespace uwvm2::imported::ros
         }
         static void initialize_bucket(alias_state& state)
         {
-            parse_positive_double(state.cap.limits.at("max-rate-hz"), state.rate);
-            ::std::uint64_t burst{}, bandwidth{};
-            parse_u64(state.cap.limits.at("burst"), burst); parse_u64(state.cap.limits.at("max-bytes-per-second"), bandwidth);
-            if(state.cap.operation == "log.write") { ::std::uint64_t log_bytes{}; parse_u64(state.cap.limits.at("max-log-bytes-per-second"), log_bytes); bandwidth = ::std::min(bandwidth, log_bytes); }
-            state.burst = static_cast<double>(burst); state.bandwidth = static_cast<double>(bandwidth);
-            state.tokens = state.creation_tokens = state.burst; state.byte_tokens = state.bandwidth;
+            auto const rate{state.cap.limits.find("max-rate-hz")};
+            state.limited_rate=rate!=state.cap.limits.end() && rate->second!="unlimited";
+            if(state.limited_rate && rate->second!="0") { parse_positive_double(rate->second,state.rate); }
+            state.burst=quota_value(state.cap,"burst");
+            state.bandwidth=quota_value(state.cap,"max-bytes-per-second");
+            state.log_bandwidth=quota_value(state.cap,"max-log-bytes-per-second");
+            state.limited_log=state.cap.operation=="log.write" && state.log_bandwidth!=unlimited_quota;
+            state.log_tokens=state.log_bandwidth;
+            state.limited_bytes=state.bandwidth!=unlimited_quota;
+            state.tokens=state.creation_tokens=state.burst; state.byte_tokens=state.bandwidth;
             state.audit.configure(state.cap);
+        }
+        static void refill_calls(::std::uint64_t maximum,::std::uint64_t& tokens,long double& fraction,
+                                 long double credit)
+        {
+            if(tokens==maximum) { fraction=0;return; }
+            auto const room{maximum-tokens};
+            credit+=fraction;
+            if(credit>=static_cast<long double>(room)) { tokens=maximum;fraction=0;return; }
+            auto const complete{static_cast<::std::uint64_t>(credit)};
+            tokens+=complete;fraction=credit-static_cast<long double>(complete);
+        }
+        static void refill_bytes(::std::uint64_t capacity,::std::uint64_t& tokens,::std::uint64_t& fraction,
+                                 ::std::uint64_t elapsed) noexcept
+        {
+            if(elapsed>=1000000000 || tokens==capacity) { tokens=capacity;fraction=0;return; }
+            auto const partial{(capacity%1000000000)*elapsed+fraction};
+            auto const credit{(capacity/1000000000)*elapsed+partial/1000000000};
+            auto const room{capacity-tokens};
+            if(credit>=room) { tokens=capacity;fraction=0; }
+            else { tokens+=credit;fraction=partial%1000000000; }
         }
         static void refresh_quota(alias_state& state)
         {
-            auto now{::std::chrono::steady_clock::now()};
-            auto seconds{::std::clamp(::std::chrono::duration<double>(now - state.updated).count(), 0., 86400.)};
-            state.tokens = ::std::min(state.burst, state.tokens + seconds * state.rate);
-            state.creation_tokens = ::std::min(state.burst, state.creation_tokens + seconds * state.rate);
-            state.byte_tokens = ::std::min(state.bandwidth, state.byte_tokens + seconds * state.bandwidth); state.updated = now;
+            auto now{::uwvm2::utils::host_clock::now()};
+            if(!::uwvm2::utils::host_clock::available()) { return; }
+            auto const elapsed{::std::chrono::duration_cast<::std::chrono::nanoseconds>(now-state.updated).count()};
+            if(elapsed<=0) { return; }
+            if(state.limited_rate)
+            {
+                auto const credit{static_cast<long double>(elapsed)*state.rate/1000000000.L};
+                refill_calls(state.burst,state.tokens,state.token_fraction,credit);
+                refill_calls(state.burst,state.creation_tokens,state.creation_fraction,credit);
+            }
+            if(state.limited_bytes) { refill_bytes(state.bandwidth,state.byte_tokens,state.byte_fraction,elapsed); }
+            if(state.limited_log) { refill_bytes(state.log_bandwidth,state.log_tokens,state.log_fraction,elapsed); }
+            state.updated=now;
         }
         static bool available(alias_state& state, ::std::size_t bytes, bool operation)
-        {refresh_quota(state);return (!operation||state.tokens>=1.)&&static_cast<double>(bytes)<=state.byte_tokens;}
+        {refresh_quota(state);return ::uwvm2::utils::host_clock::available()&&(!operation||!state.limited_rate||state.tokens>=1)&&(!state.limited_bytes||bytes<=state.byte_tokens)&&(!state.limited_log||bytes<=state.log_tokens);}
         static result consume(alias_state& state, ::std::size_t bytes, bool creation = false, bool operation = true)
         {
             refresh_quota(state);
-            double& tokens{creation ? state.creation_tokens : state.tokens};
-            if((operation && tokens < 1.) || static_cast<double>(bytes) > state.byte_tokens) { return {errc::rate_limited, "explicit per-instance capability quota exhausted"}; }
-            if(operation) { tokens -= 1.; } state.byte_tokens -= static_cast<double>(bytes);
+            if(!::uwvm2::utils::host_clock::available()) { return {errc::io_error,"monotonic clock unavailable"}; }
+            auto& tokens{creation ? state.creation_tokens : state.tokens};
+            if((operation && state.limited_rate && !tokens) || (state.limited_bytes && bytes>state.byte_tokens) || (state.limited_log && bytes>state.log_tokens))
+            { return {errc::rate_limited,"explicit per-instance capability quota exhausted"}; }
+            if(operation && state.limited_rate) { --tokens; }
+            if(state.limited_bytes) { state.byte_tokens-=bytes; }
+            if(state.limited_log) { state.log_tokens-=bytes; }
             return {};
+        }
+        static void notify_waiters(backend_state& state) noexcept
+        { for(auto* entry=state.waiters;entry;entry=entry->next) { entry->waiter->notify(); } }
+        static result wait_quotas(backend_state& bound,alias_state& state,
+            ::std::unique_lock<::std::recursive_mutex>& guard,::std::uint64_t handle,
+            ::std::size_t bytes,bool creation=false,bool operation=true,::std::string_view count_field={},bool debit=true)
+        {
+            ::std::unique_ptr<synchronous_quota_wait> fallback;
+            synchronous_quota_wait* waiter{};
+            for(;;)
+            {
+                if(!bound.alive || !bound.policy.enabled || state.revoked)
+                { return {errc::revoked,"capability stopped while waiting"}; }
+                if(handle)
+                {
+                    handle_entry* entry{};alias_state* selected{};
+                    if(auto r{lookup(bound,handle,entry,selected)};!r) { return r; }
+                    if(selected!=&state) { return {errc::bad_handle,"handle changed while waiting"}; }
+                }
+                if(synchronous_wait_context::stop_requested() || (waiter?waiter->exit_cancelled():synchronous_wait_context::process_cancelled()))
+                { return {errc::cancelled,"native operation cancelled while waiting"}; }
+                refresh_quota(state);
+                if(!::uwvm2::utils::host_clock::available()) { return {errc::io_error,"monotonic clock unavailable"}; }
+                auto const tokens{creation?state.creation_tokens:state.tokens};
+                bool const calls{operation && state.limited_rate && !tokens};
+                bool const data{state.limited_bytes && bytes>state.byte_tokens};
+                bool const log{state.limited_log && bytes>state.log_tokens};
+                auto const maximum{count_field.empty()?unlimited_quota:quota_value(state.cap,count_field)};
+                bool const count{!count_field.empty() && state.open_count>=maximum};
+                if(!calls && !data && !log && !count)
+                {
+                    if(!(synchronous_wait_context::present()?synchronous_wait_context::select_native_exit(native_wait_on_exit(state.cap)):
+                        waiter?waiter->select_exit(native_wait_on_exit(state.cap)):
+                        !::uwvm2::utils::thread::process_exit::exit_claimed.load(::std::memory_order_acquire)))
+                    { return {errc::cancelled,"process exit precedes operation admission"}; }
+                    return debit?consume(state,bytes,creation,operation):result{};
+                }
+                bool wait_on_exit{};
+                long double seconds{};
+                auto check=[&](::std::string_view key)
+                {
+                    wait_on_exit=wait_on_exit||quota_wait_on_exit(state.cap,key);
+                    return quota_wait_enabled(state.cap,key);
+                };
+                if(calls)
+                {
+                    if(!state.burst || !state.rate || !check("max-rate-hz"))
+                    { return {errc::rate_limited,"operation rate quota exhausted"}; }
+                    wait_on_exit=wait_on_exit||quota_wait_on_exit(state.cap,"burst");
+                    seconds=(1-(creation?state.creation_fraction:state.token_fraction))/state.rate;
+                }
+                auto check_bytes=[&](bool blocked,::std::uint64_t ceiling,::std::uint64_t credit,
+                                      ::std::uint64_t fraction,::std::string_view key)->result
+                {
+                    if(!blocked) { return {}; }
+                    if(bytes>ceiling) { return {errc::too_large,"request exceeds one full byte-credit bucket"}; }
+                    if(!ceiling || !check(key)) { return {errc::rate_limited,"byte rate quota exhausted"}; }
+                    seconds=(::std::max)(seconds,(static_cast<long double>(bytes-credit)-
+                        static_cast<long double>(fraction)/1000000000.L)/ceiling);
+                    return {};
+                };
+                if(auto r{check_bytes(data,state.bandwidth,state.byte_tokens,state.byte_fraction,"max-bytes-per-second")};!r) { return r; }
+                if(auto r{check_bytes(log,state.log_bandwidth,state.log_tokens,state.log_fraction,"max-log-bytes-per-second")};!r) { return r; }
+                if(count && (!maximum || !check(count_field)))
+                { return {errc::rate_limited,"resource count quota exhausted"}; }
+                if(!waiter)
+                {
+                    if(synchronous_wait_context::present()) { waiter=synchronous_wait_context::waiter(); }
+                    else { fallback.reset(new(::std::nothrow) synchronous_quota_wait{});waiter=fallback.get(); }
+                    if(!waiter) { return {errc::out_of_memory,"cannot allocate native quota waiter"}; }
+                }
+                if(!waiter->select_exit(wait_on_exit)) { return {errc::cancelled,"process exit cancels quota wait"}; }
+                auto deadline{::std::chrono::steady_clock::time_point::max()};
+                if(calls || data || log)
+                {
+                    auto now{::uwvm2::utils::host_clock::now()};
+                    if(!::uwvm2::utils::host_clock::available()) { return {errc::io_error,"monotonic clock unavailable"}; }
+                    auto ceiling{::std::chrono::duration<long double>(deadline-now).count()};
+                    if(seconds<ceiling) { deadline=now+::std::chrono::nanoseconds(
+                        static_cast<::std::int64_t>((::std::max)(1.L,::std::ceil(seconds*1000000000.L)))); }
+                }
+                // Register before unlocking. Close/revoke cannot race between
+                // the exhausted predicate and the eventfd notification.
+                waiting_operation pending{waiter,bound.waiters};bound.waiters=&pending;
+                guard.unlock();
+                auto const outcome{waiter->until(deadline)};
+                guard.lock();
+                auto** link{&bound.waiters};
+                while(*link!=&pending) { link=&(*link)->next; }
+                *link=pending.next;
+                if(outcome!=quota_wait_result::ready)
+                { return {outcome==quota_wait_result::cancelled?errc::cancelled:errc::io_error,"native quota wait did not complete"}; }
+            }
         }
         static result lookup(backend_state& state, ::std::uint64_t handle, handle_entry*& entry, alias_state*& cap)
         {
@@ -145,8 +289,12 @@ namespace uwvm2::imported::ros
             cap = &alias->second;
             return {};
         }
-        static void audit_decision(backend_state& state, alias_state& cap, ::std::string_view event, errc error)
+        static void audit_decision(backend_state& state, alias_state& cap, ::std::string_view event, errc error) noexcept
         {
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+            try
+            {
+#endif
             if(cap.cap.limits.at("audit") == "deny-only" && error == errc::success && (event == "allow" || event == "gateway-result")) { return; }
             auto timestamp{::std::chrono::duration_cast<::std::chrono::nanoseconds>(::std::chrono::system_clock::now().time_since_epoch()).count()};
             cap.audit.record(::fast_io::concat_std("{\"time_unix_ns\":",::fast_io::mnp::dec(timestamp),
@@ -155,6 +303,11 @@ namespace uwvm2::imported::ros
                 ",\"operation\":",json_quoted{cap.cap.operation},",\"resource\":",json_quoted{cap.cap.resource},
                 ",\"result\":",json_quoted{error == errc::success ? "allow" : "deny"},
                 ",\"error\":",::fast_io::mnp::dec(static_cast<unsigned>(error)),"}"));
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+            }
+            catch(::std::bad_alloc const&) { cap.audit.record_allocation_failure(); }
+            catch(::std::length_error const&) { cap.audit.record_extent_failure(); }
+#endif
         }
         static void invalidate(handle_entry& entry) noexcept
         {
@@ -169,6 +322,7 @@ namespace uwvm2::imported::ros
             // Do not consume another handle generation on repeated retirement.
             if(!state.ros1.alive&&!state.ros2.alive) { return; }
             state.ros1.alive = state.ros2.alive = false;
+            notify_waiters(state.ros1);notify_waiters(state.ros2);
             for(auto& item : state.ros1.handles) { invalidate(item.second); }
             for(auto& item : state.ros2.handles) { invalidate(item.second); }
         }
@@ -313,16 +467,15 @@ namespace uwvm2::imported::ros
             if(!object || !valid_version(v)) { return {errc::permission_denied, "invalid trusted instance or version"}; }
             auto instance{find_instance(object, generation)};
             if(!instance) { return {errc::permission_denied, "unregistered trusted instance"}; }
-            auto& bound{backend(*instance, v)}; ::std::lock_guard guard{bound.mutex};
+            auto& bound{backend(*instance, v)}; ::std::unique_lock guard{bound.mutex};
             if(!bound.alive || !bound.policy.enabled) { return {errc::permission_denied, "ROS target disabled or instance torn down"}; }
             auto found{bound.aliases.find(alias)};
             if(found == bound.aliases.end()) { return {errc::permission_denied, "alias absent from effective target"}; }
             auto& cap{found->second};
             if(cap.revoked) { audit_decision(bound, cap, "deny", errc::revoked); return {errc::revoked, "revoked capability cannot be reopened"}; }
-            ::std::uint64_t maximum{};
             auto count_field{cap.cap.operation == "topic.publish" ? "max-publishers" : (cap.cap.operation == "topic.subscribe" || cap.cap.operation == "param.subscribe-events") ? "max-subscribers" : cap.cap.operation == "service.advertise" ? "max-services" : cap.cap.operation.starts_with("action.") ? "max-actions" : "max-inflight"};
-            if(!parse_u64(cap.cap.limits.at(count_field), maximum) || cap.open_count >= maximum) { audit_decision(bound, cap, "deny", errc::rate_limited); return {errc::rate_limited, "explicit resource count exhausted"}; }
-            if(auto r{consume(cap, 0, true)}; !r) { audit_decision(bound, cap, "deny", r.code); return r; }
+            if(auto r{wait_quotas(bound,cap,guard,0,0,true,true,count_field)};!r)
+            { audit_decision(bound,cap,"deny",r.code);return r; }
             ::std::uint32_t slot{}; handle_entry* entry{};
             for(auto& [candidate, value] : bound.handles) { if(!value.active && !value.retired) { slot = candidate; entry = &value; break; } }
             if(!entry)
@@ -359,7 +512,9 @@ namespace uwvm2::imported::ros
             if(auto r{lookup(bound, handle, entry, cap)}; !r) { return r; }
             if(cap->cap.operation != operation) { audit_decision(bound, *cap, "deny", errc::permission_denied); return {errc::permission_denied, "operation differs from explicit capability"}; }
             if(validate_payload) { if(auto r{validate_message(v, cap->cap, payload)}; !r) { audit_decision(bound, *cap, "deny", r.code); return r; } }
-            if(consume_quota) { if(auto r{consume(*cap, payload.size())}; !r) { audit_decision(bound, *cap, "deny", r.code); return r; } audit_decision(bound, *cap, "allow", errc::success); }
+            if(!consume_quota && !synchronous_wait_context::select_native_exit(native_wait_on_exit(cap->cap)))
+            { return {errc::cancelled,"process exit precedes native operation"}; }
+            if(consume_quota) { if(auto r{wait_quotas(bound,*cap,guard,handle,payload.size())}; !r) { audit_decision(bound, *cap, "deny", r.code); return r; } audit_decision(bound, *cap, "allow", errc::success); }
             set_lease(out, instance, bound, *cap, ::std::move(guard));
             return {};
         }
@@ -392,8 +547,8 @@ namespace uwvm2::imported::ros
             auto data{reinterpret_cast<::std::uint8_t const*>(payload.data())};
             if(response)
             {
-                ::std::uint64_t maximum{};auto it{cap->cap.limits.find("max-active-goals")};
-                if(it==cap->cap.limits.end()||!parse_u64(it->second,maximum)||
+                ::std::uint64_t maximum{};
+                if(!read_quota(cap->cap,"max-active-goals",maximum)||
                    !ipc::action_control::valid_response(cmd,requested_goal,data,payload.size(),maximum))
                     return deny(errc::invalid_argument,"invalid complete Action control response");
             }
@@ -404,7 +559,7 @@ namespace uwvm2::imported::ros
             }
             else if(!ipc::action_control::valid_control_request(cmd,data,payload.size()))
                 return deny(errc::invalid_argument,"invalid Action control request");
-            if(auto r{consume(*cap,payload.size(),false,!response)}; !r)
+            if(auto r{wait_quotas(bound,*cap,guard,handle,payload.size(),false,!response)}; !r)
             { audit_decision(bound,*cap,"deny",r.code);return r; }
             audit_decision(bound,*cap,"allow",errc::success);
             set_lease(out,instance,bound,*cap,::std::move(guard));return {};
@@ -438,7 +593,7 @@ namespace uwvm2::imported::ros
             { audit_decision(bound, *cap, "deny", errc::invalid_argument); return {errc::invalid_argument, "RMW service ticket envelope truncated"}; }
             if(auto r{validate_message(v, cap->cap, envelope)}; !r)
             { audit_decision(bound, *cap, "deny", r.code); return r; }
-            if(auto r{consume(*cap, envelope.size() - 8, false, consume_operation)}; !r)
+            if(auto r{wait_quotas(bound,*cap,guard,handle,envelope.size()-8,false,consume_operation)}; !r)
             { audit_decision(bound, *cap, "deny", r.code); return r; }
             audit_decision(bound, *cap, "allow", errc::success);
             set_lease(out, instance, bound, *cap, ::std::move(guard));
@@ -454,7 +609,7 @@ namespace uwvm2::imported::ros
             handle_entry* entry{}; alias_state* cap{};
             if(auto r{lookup(bound, handle, entry, cap)}; !r) { return r; }
             if(auto r{validate_response_payload(v, cap->cap, payload)}; !r) { audit_decision(bound, *cap, "deny", r.code); return r; }
-            if(auto r{consume(*cap, payload.size(), false, false)}; !r) { audit_decision(bound, *cap, "deny", r.code); return r; }
+            if(auto r{wait_quotas(bound,*cap,guard,handle,payload.size(),false,false)}; !r) { audit_decision(bound, *cap, "deny", r.code); return r; }
             set_lease(out, instance, bound, *cap, ::std::move(guard)); return {};
         }
         // Source and observer byte/rate admission is atomic. A refused preview
@@ -471,7 +626,7 @@ namespace uwvm2::imported::ros
             if(auto r{lookup(bound,observer_handle,entry,observing)};!r) {return r;}
             if(!ipc::valid_event_header(header)||observing->cap.operation!="event.observe"||header.instance!=bound.instance_id||header.backend!=static_cast<unsigned>(v)||header.source_handle!=source_handle||header.payload_bytes!=body.size()) {return {errc::permission_denied,"event binding differs from explicit observer"};}
             ::std::uint32_t mask{};::std::uint64_t maximum{};
-            if(!ipc::parse_event_kinds(observing->cap.limits.at("event-kinds"),mask)||!(mask&ipc::event_bit(header.kind))||!parse_u64(observing->cap.limits.at("max-event-bytes"),maximum)||body.size()>maximum-ipc::event_header_bytes) {return {errc::permission_denied,"event exceeds explicit observer kind/bytes"};}
+            if(!ipc::parse_event_kinds(observing->cap.limits.at("event-kinds"),mask)||!(mask&ipc::event_bit(header.kind))||!read_quota(observing->cap,"max-event-bytes",maximum)||maximum<ipc::event_header_bytes||body.size()>maximum-ipc::event_header_bytes) {return {errc::permission_denied,"event exceeds explicit observer kind/bytes"};}
             alias_state* producing{};bool operation{};
             if(!ipc::event_control(header.kind))
             {
@@ -483,9 +638,25 @@ namespace uwvm2::imported::ros
                 // their explicitly granted per-delivery rate plus body bytes.
                 operation=header.kind!=ipc::event_kind::service_response;
                 auto r{response?validate_response_payload(v,producing->cap,body):validate_message(v,producing->cap,body)};if(!r) {return r;}
-                if(!available(*producing,body.size(),operation)) {return {errc::rate_limited,"source delivery credit exhausted"};}
             }
-            auto wire{body.size()+ipc::event_header_bytes};if(!available(*observing,wire,false)) {return {errc::rate_limited,"observer delivery credit exhausted"};}
+            auto wire{body.size()+ipc::event_header_bytes};
+            for(;;)
+            {
+                // Neither side is debited until both are ready under the same
+                // lock. Waiting retains the already received native response.
+                if(producing)
+                { if(auto r{wait_quotas(bound,*producing,guard,source_handle,body.size(),false,operation,{},false)};!r) { return r; } }
+                if(auto r{wait_quotas(bound,*observing,guard,observer_handle,wire,false,false,{},false)};!r) { return r; }
+                alias_state* checked{};
+                if(auto r{lookup(bound,observer_handle,entry,checked)};!r) { return r; }
+                if(checked!=observing) { return {errc::bad_handle,"observer changed during admission"}; }
+                if(producing)
+                {
+                    if(auto r{lookup(bound,source_handle,entry,checked)};!r) { return r; }
+                    if(checked!=producing) { return {errc::bad_handle,"source changed during admission"}; }
+                }
+                if((!producing||available(*producing,body.size(),operation))&&available(*observing,wire,false)) { break; }
+            }
             if(producing) {(void)consume(*producing,body.size(),false,operation);set_lease(source,instance,bound,*producing,::std::unique_lock<::std::recursive_mutex>{bound.mutex});}
             (void)consume(*observing,wire,false,false);set_lease(observer,instance,bound,*observing,::std::move(guard));return {};
         }
@@ -499,7 +670,7 @@ namespace uwvm2::imported::ros
             auto& bound{backend(*instance,v)};::std::unique_lock guard{bound.mutex};handle_entry* entry{};alias_state* cap{};
             if(auto r{lookup(bound,handle,entry,cap)};!r) { return r; }
             if(cap->cap.operation!="event.observe") { return {errc::permission_denied,"observer operation required"}; }
-            if(auto r{consume(*cap,bytes,false,false)};!r) { return r; }
+            if(auto r{wait_quotas(bound,*cap,guard,handle,bytes,false,false)};!r) { return r; }
             set_lease(out,instance,bound,*cap,::std::move(guard));return {};
         }
         result close(void const* object, ::std::uint64_t generation, version v, ::std::uint64_t handle,
@@ -513,6 +684,7 @@ namespace uwvm2::imported::ros
             handle_entry* entry{}; alias_state* cap{};
             if(auto r{lookup(bound, handle, entry, cap)}; !r) { return r; }
             invalidate(*entry); if(cap->open_count) { --cap->open_count; }
+            notify_waiters(bound);
             if(last_open_handle) { *last_open_handle = cap->open_count == 0; }
             audit_decision(bound, *cap, "resource-close", errc::success);
             return {};
@@ -526,7 +698,7 @@ namespace uwvm2::imported::ros
             if(!bound.alive) { return {errc::permission_denied, "runtime instance torn down"}; }
             auto cap{bound.aliases.find(alias)};
             if(cap == bound.aliases.end()) { return {errc::permission_denied, "unknown effective capability"}; }
-            cap->second.revoked = true; cap->second.open_count = 0; audit_decision(bound, cap->second, "capability-revoke", errc::success);
+            cap->second.revoked = true; cap->second.open_count = 0; notify_waiters(bound); audit_decision(bound, cap->second, "capability-revoke", errc::success);
             for(auto& [slot, entry] : bound.handles) { if(entry.active && entry.alias == alias) { invalidate(entry); } }
             return {};
         }

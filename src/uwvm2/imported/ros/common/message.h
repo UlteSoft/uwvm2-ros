@@ -17,6 +17,7 @@
 #include <fast_io.h>
 #endif
 #include "types.h"
+#include "quota.h"
 #include "parameter_search_contract.h"
 #include "../ipc/image.h"
 #include "../ipc/transform.h"
@@ -171,8 +172,8 @@ namespace uwvm2::imported::ros
     inline result custom_payload_quota(capability_spec const& cap, ::std::string_view key,
                                       ::std::size_t size, ::std::size_t prefix = 0)
     {
-        auto limit{cap.limits.find(key)}; ::std::uint64_t maximum{};
-        if(limit == cap.limits.end() || !parse_u64(limit->second, maximum) || !maximum)
+        auto const quota_key{key}; ::std::uint64_t maximum{};
+        if(!read_quota(cap,quota_key,maximum))
         { return {errc::invalid_argument, "custom interface requires an explicit byte quota"}; }
         if(size < prefix) { return {errc::invalid_argument, "custom interface envelope is truncated"}; }
         return size - prefix <= maximum ? result{} : result{errc::too_large, "custom interface exceeds its explicit byte quota"};
@@ -192,9 +193,9 @@ namespace uwvm2::imported::ros
 
     inline result validate_transform_payload(version v, capability_spec const& cap, ::std::span<::std::byte const> bytes)
     {
-        auto maximum_it{cap.limits.find("max-message-bytes")};
+        auto const quota_key{"max-message-bytes"};
         ::std::uint64_t maximum{};
-        if(maximum_it == cap.limits.end() || !parse_u64(maximum_it->second, maximum))
+        if(!read_quota(cap,quota_key,maximum))
         { return {errc::invalid_argument, "explicit transform byte quota required"}; }
         if(bytes.size() > maximum) { return {errc::too_large, "transform exceeds explicit byte quota"}; }
         // Preserve quota/error precedence while rejecting impossible canonical
@@ -236,7 +237,7 @@ namespace uwvm2::imported::ros
             { return {errc::permission_denied,"availability custom codec identity mismatch"}; }
             ipc::client_availability::packet request{};::std::uint64_t maximum{};
             if(!ipc::client_availability::decode_request(data,bytes.size(),request)||request.binding.backend!=static_cast<unsigned>(v)||
-               request.operation==ipc::client_availability::command::retire||!parse_u64(cap.limits.at("max-wait-ns"),maximum)||request.value>maximum)
+               request.operation==ipc::client_availability::command::retire||!read_quota(cap,"max-wait-ns",maximum)||request.value>maximum)
             { return {errc::invalid_argument,"invalid bounded availability envelope"}; }
             return {};
         }
@@ -272,8 +273,8 @@ namespace uwvm2::imported::ros
             if(cap.operation != "topic.publish" && cap.operation != "topic.subscribe")
             { return {errc::unsupported, "custom fixed profile supports Topic messages only"}; }
             if(!custom_topic_codec_matches(v, cap)) { return {errc::permission_denied, "custom codec identity differs from trusted registry"}; }
-            auto limit{cap.limits.find("max-message-bytes")};::std::uint64_t maximum{};
-            if(limit == cap.limits.end() || !parse_u64(limit->second, maximum) || !maximum)
+            auto const quota_key{"max-message-bytes"};::std::uint64_t maximum{};
+            if(!read_quota(cap,quota_key,maximum))
             { return {errc::invalid_argument, "custom Topic requires explicit message byte quota"}; }
             if(bytes.size() > maximum) { return {errc::too_large, "custom Topic exceeds explicit message byte quota"}; }
             // Mandatory shape/Bool/finite checks apply even with validator=none.
@@ -283,7 +284,7 @@ namespace uwvm2::imported::ros
         if(cap.operation.starts_with("action."))
         {
             auto data{reinterpret_cast<::std::uint8_t const*>(bytes.data())};
-            auto maximum=[&](char const* key) { ::std::uint64_t n{};auto it{cap.limits.find(key)};if(it!=cap.limits.end()) { parse_u64(it->second,n); }return n; };
+            auto maximum=[&](char const* key) { return quota_value(cap,key); };
             if(cap.operation=="action.send-goal"||cap.operation=="action.advertise")
             {
                 if(cap.operation=="action.advertise"&&bytes.empty()) { return {}; }
@@ -308,8 +309,8 @@ namespace uwvm2::imported::ros
         {
             bool typed{ipc::parameter_event_type(v,cap.type)!=ipc::parameter_kind::unsupported};
             if(bytes.empty()) { return typed?result{static_cast<errc>(ipc::validate_parameter_contract(v,cap)),"typed event contract"}:result{}; }
-            ::std::uint64_t maximum{}; auto limit{cap.limits.find("max-parameter-bytes")};
-            if(limit == cap.limits.end() || !parse_u64(limit->second, maximum)) { return {errc::invalid_argument, "explicit parameter-event byte quota required"}; }
+            ::std::uint64_t maximum{}; auto const quota_key{"max-parameter-bytes"};
+            if(!read_quota(cap,quota_key,maximum)) { return {errc::invalid_argument, "explicit parameter-event byte quota required"}; }
             if(bytes.size() > maximum) { return {errc::too_large, "parameter event exceeds explicit byte quota"}; }
             ::std::vector<::std::uint8_t> canonical{}; canonical.reserve(bytes.size());
             for(auto byte : bytes) { canonical.push_back(::std::to_integer<::std::uint8_t>(byte)); }
@@ -334,9 +335,9 @@ namespace uwvm2::imported::ros
         {
             bool const needs_string{cap.operation == "log.write" || cap.operation == "param.set" || cap.operation == "param.declare"};
             if(!needs_string) { return bytes.empty() ? result{} : result{errc::invalid_argument, "parameter request must be empty"}; }
-            auto max_it{cap.limits.find(cap.operation == "log.write" ? "max-message-bytes" : "max-parameter-bytes")};
+            auto const quota_key{cap.operation == "log.write" ? "max-message-bytes" : "max-parameter-bytes"};
             ::std::uint64_t maximum{};
-            if(max_it == cap.limits.end() || !parse_u64(max_it->second, maximum)) { return {errc::invalid_argument, "explicit string byte quota required"}; }
+            if(!read_quota(cap,quota_key,maximum)) { return {errc::invalid_argument, "explicit string byte quota required"}; }
             return validate_canonical_string(bytes, maximum);
         }
         if(cap.operation == "service.advertise")
@@ -357,9 +358,9 @@ namespace uwvm2::imported::ros
             return validate_service_response(v, response_cap, bytes.subspan(8));
         }
         bool const service{cap.operation == "service.call"};
-        auto max_it{cap.limits.find(service ? "max-request-bytes" : "max-message-bytes")};
+        auto const quota_key{service ? "max-request-bytes" : "max-message-bytes"};
         ::std::uint64_t maximum{};
-        if(max_it == cap.limits.end() || !parse_u64(max_it->second, maximum) || !maximum)
+        if(!read_quota(cap,quota_key,maximum))
         { return {errc::invalid_argument, "explicit message/request byte limit is required"}; }
         if(bytes.size() > maximum) { return {errc::too_large, "message exceeds explicit byte limit"}; }
         if(cap.type == "sensor_msgs/Image" || cap.type == "sensor_msgs/msg/Image")
@@ -437,9 +438,9 @@ namespace uwvm2::imported::ros
         bool const add{v == version::ros2 && cap.type == "example_interfaces/srv/AddTwoInts"};
         if(!empty && !add && cap.type != "std_srvs/Trigger" && cap.type != "std_srvs/srv/Trigger" && cap.type != "std_srvs/SetBool" && cap.type != "std_srvs/srv/SetBool")
         { return {errc::unsupported, "service response has no trusted adapter"}; }
-        auto max_it{cap.limits.find("max-response-bytes")};
+        auto const quota_key{"max-response-bytes"};
         ::std::uint64_t maximum{};
-        if(max_it == cap.limits.end() || !parse_u64(max_it->second, maximum) || !maximum) { return {errc::invalid_argument, "explicit response byte limit required"}; }
+        if(!read_quota(cap,quota_key,maximum)) { return {errc::invalid_argument, "explicit response byte limit required"}; }
         if(bytes.size() > maximum) { return {errc::too_large, "response exceeds explicit limit"}; }
         if(empty) { return bytes.empty() ? result{} : result{errc::invalid_argument, "Empty response must have zero canonical bytes"}; }
         if(add) { return bytes.size() == 8 ? result{} : result{errc::invalid_argument, "AddTwoInts response requires one canonical i64 field"}; }
@@ -500,8 +501,8 @@ namespace uwvm2::imported::ros
                 return goal?result{}:result{errc::invalid_argument,"generated goal ID must be nonzero"};
             }
             if(cap.operation=="action.cancel-own-goal"||cap.operation=="action.cancel-any-goal") { return bytes.size()==1&&::std::to_integer<unsigned char>(bytes[0])<=1?result{}:result{errc::invalid_argument,"cancel response requires canonical boolean"}; }
-            auto key{cap.operation=="action.receive-feedback"?"max-feedback-bytes":"max-result-bytes"};::std::uint64_t maximum{};auto it{cap.limits.find(key)};
-            if(it==cap.limits.end()||!parse_u64(it->second,maximum)) { return {errc::invalid_argument,"explicit action event quota required"}; }
+            auto key{cap.operation=="action.receive-feedback"?"max-feedback-bytes":"max-result-bytes"};::std::uint64_t maximum{};auto const quota_key{key};
+            if(!read_quota(cap,quota_key,maximum)) { return {errc::invalid_argument,"explicit action event quota required"}; }
             if(bytes.size()>maximum) { return {errc::too_large,"action event exceeds explicit quota"}; }
             auto data{reinterpret_cast<::std::uint8_t const*>(bytes.data())};bool result{cap.operation=="action.receive-result"};
             return ipc::validate_action_sequence(data,bytes.size(),result)&&(!result||data[8]>=2)?ros::result{}:ros::result{errc::invalid_argument,"invalid canonical action feedback/result"};
@@ -509,8 +510,8 @@ namespace uwvm2::imported::ros
         if(cap.operation == "tf.lookup") { return validate_transform_payload(v, cap, bytes); }
         if(cap.operation.starts_with("lifecycle."))
         {
-            ::std::uint64_t maximum{}; auto limit{cap.limits.find("max-response-bytes")};
-            if(limit == cap.limits.end() || !parse_u64(limit->second, maximum)) { return {errc::invalid_argument, "explicit lifecycle response byte quota required"}; }
+            ::std::uint64_t maximum{}; auto const quota_key{"max-response-bytes"};
+            if(!read_quota(cap,quota_key,maximum)) { return {errc::invalid_argument, "explicit lifecycle response byte quota required"}; }
             if(bytes.size() > maximum) { return {errc::too_large, "lifecycle response exceeds explicit byte quota"}; }
             if(cap.operation == "lifecycle.change-state")
             { return bytes.size() == 1 && ::std::to_integer<unsigned char>(bytes[0]) <= 1 ? result{} : result{errc::invalid_argument, "lifecycle change response requires canonical boolean"}; }
@@ -519,8 +520,9 @@ namespace uwvm2::imported::ros
         }
         if(cap.operation.starts_with("time."))
         {
-            ::std::uint64_t maximum{}; auto limit{cap.limits.find("max-response-bytes")};
-            if(limit == cap.limits.end() || !parse_u64(limit->second, maximum) || maximum < 8) { return {errc::invalid_argument, "explicit time response byte quota must allow 8 bytes"}; }
+            ::std::uint64_t maximum{}; auto const quota_key{"max-response-bytes"};
+            if(!read_quota(cap,quota_key,maximum)) { return {errc::invalid_argument,"invalid time response byte quota"}; }
+            if(bytes.size()>maximum) { return {errc::too_large,"time response exceeds explicit byte quota"}; }
             return bytes.size() == 8 ? result{} : result{errc::invalid_argument, "time response requires u64 nanoseconds"};
         }
         if(cap.operation == "param.subscribe-events" || cap.operation == "tf.broadcast" || cap.operation == "service.advertise" || cap.operation == "service.respond" || cap.operation == "log.write" || (cap.operation == "param.set" || cap.operation == "param.delete" || cap.operation == "param.declare" || cap.operation == "param.undeclare"))
@@ -531,8 +533,8 @@ namespace uwvm2::imported::ros
         { return {static_cast<errc>(ipc::validate_parameter_value(v,cap,reinterpret_cast<::std::uint8_t const*>(bytes.data()),bytes.size())), "typed parameter response validation"}; }
         if(cap.operation == "param.get" || cap.operation == "param.describe" || cap.operation == "param.search" || cap.operation == "param.list" || cap.operation.starts_with("graph."))
         {
-            ::std::uint64_t maximum{}; auto limit{cap.limits.find(cap.operation.starts_with("graph.") ? "max-graph-result-bytes" : "max-parameter-bytes")};
-            if(limit == cap.limits.end() || !parse_u64(limit->second, maximum)) { return {errc::invalid_argument, "explicit parameter byte quota required"}; }
+            ::std::uint64_t maximum{}; auto const quota_key{cap.operation.starts_with("graph.") ? "max-graph-result-bytes" : "max-parameter-bytes"};
+            if(!read_quota(cap,quota_key,maximum)) { return {errc::invalid_argument, "explicit parameter byte quota required"}; }
             auto encoded{validate_canonical_string(bytes, maximum)};
             if(!encoded || cap.operation != "param.search") { return encoded; }
             // Search returns a resource name, rather than arbitrary text.

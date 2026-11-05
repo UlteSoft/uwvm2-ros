@@ -6,6 +6,7 @@
 #pragma once
 #ifndef UWVM_MODULE
 #include <uwvm2/imported/ros/common/rmw_service_bindings.h>
+#include <uwvm2/imported/ros/common/quota.h>
 #endif
 #ifndef UWVM_MODULE
 #include <uwvm2/imported/ros/ipc/rmw_service.h>
@@ -16,6 +17,7 @@
 #include <span>
 #include <chrono>
 #include <new>
+#include <stdexcept>
 #include <utility>
 
 namespace uwvm2::uwvm::imported::ros::host
@@ -51,15 +53,41 @@ namespace uwvm2::uwvm::imported::ros::host
          */
         inline std::uint32_t clamp_deadline(deadline entered,std::uint64_t millis,deadline& output)noexcept
         {
-            if(!millis||millis>ipc::max_timeout_ms)return 22;
+            if(millis==::uwvm2::imported::ros::unlimited_quota)return 0;
+            if(millis>ipc::max_timeout_ms)return 22;
             output=std::min(output,entered+std::chrono::milliseconds(millis));return 0;
         }
         inline std::uint32_t entry_deadline(deadline entered,std::uint64_t connection_millis,
             std::uint64_t source_millis,deadline& output)noexcept
         {
-            if(!connection_millis||connection_millis>ipc::max_timeout_ms||!source_millis||source_millis>ipc::max_timeout_ms)return 22;
-            auto next=entered+std::chrono::milliseconds(connection_millis);
-            (void)clamp_deadline(entered,source_millis,next);output=next;return 0;
+            auto next=deadline::max();
+            if(auto error=clamp_deadline(entered,connection_millis,next))return error;
+            if(auto error=clamp_deadline(entered,source_millis,next))return error;
+            output=next;return 0;
+        }
+        // SIZE_MAX means no host quota; finite values must fit this ABI.
+        inline std::uint32_t quota_extent(std::uint64_t value,std::size_t& output) noexcept
+        {
+            if(value==::uwvm2::imported::ros::unlimited_quota){output=SIZE_MAX;return 0;}
+            if(value>SIZE_MAX)return 90;
+            output=static_cast<std::size_t>(value);return 0;
+        }
+        template<typename Target>
+        inline std::uint32_t connection_deadline(Target const* target,deadline entered,deadline& output) noexcept
+        {
+            if(!target)return 22;
+            auto millis=::uwvm2::imported::ros::unlimited_quota;
+            auto found=target->connection.find("connect-timeout-ms");
+            if(found!=target->connection.end()&&!::uwvm2::imported::ros::quota_integer(found->second,millis))return 22;
+            auto next=deadline::max();
+            if(auto error=clamp_deadline(entered,millis,next))return error;
+            output=next;return 0;
+        }
+        template<typename Capability>
+        inline bool unsupported_wait(Capability const& cap,std::string_view key)
+        {
+            auto found=cap.limits.find(std::string{key}+".on-exhausted");
+            return found!=cap.limits.end()&&found->second=="wait";
         }
         /** ACTUAL post-association exception boundary. It routes allocation or
          * other exceptions to original exact-borrow compensation, never to a
@@ -73,7 +101,7 @@ namespace uwvm2::uwvm::imported::ros::host
 #if defined(__cpp_exceptions)
             try{return std::forward<Work>(work)();}
             catch(std::bad_alloc const&){return failure(12);}
-            catch(...){return failure(5);}
+            catch(std::length_error const&){return failure(90);}
 #else
             return std::forward<Work>(work)();
 #endif

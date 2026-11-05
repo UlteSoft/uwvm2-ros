@@ -12,6 +12,7 @@
         namespace ws = ::uwvm2::uwvm::debugger::wasm_state;
         namespace wm = ::uwvm2::uwvm::debugger::wasm_mutation;
         wm::result out{}; out.target=selection.target;out.module=selection.module;out.index=selection.index;out.element=selection.element;
+        if(!::uwvm2::utils::control::management::debug_allowed()) { out.status = ws::status::unavailable_activation; return out; }
         if(!wm::valid(selection) || (selection.source==wm::source_kind::original_path || selection.target==wm::destination::member_path)) { out.status = ws::status::invalid_selection; return out; }
 # if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS)
         if(!ticket) { out.status = ws::status::requires_current_cooperative_stop; return out; }

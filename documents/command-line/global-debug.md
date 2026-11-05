@@ -10,11 +10,37 @@ Source focus:
 
 | Command | Aliases | Arguments | Repeatability | Availability | Behavior |
 | --- | --- | --- | --- | --- | --- |
-| `--help` | `-h` | `([all|global|debug|wasm|runtime|log|wasi])` | Once | Core | Print category help and return success immediately. |
+| `--help` | `-h` | `([all|global|debug|update|wasm|secure|log|runtime|wasi|ros1|ros2])` | Once | Core | Print category help and return success immediately. |
 | `--mode` | `-m` | `[section-details|validation|run]` | Once | Core | Select the top-level operation mode. |
 | `--run` | `-r`, `--` | `<file argv[0]:path> <argv[1]:str> ...` | One parser boundary | Core | Set the guest Wasm file and stop host option parsing. |
 | `--version` | `-v`, `-ver` | None | Once | Core | Print the build and feature report, then return success immediately. |
 | `--debug-test` | None | None | Once | `_DEBUG` only | Run an internal debug-only test hook. |
+
+## Trusted management profile
+
+`--management-profile release|dev` is a launch decision. The robot product
+uses `release` by default, independently of ROS, WASI and the compiler backend.
+Release seals interactive inspection and mutation for the process lifetime;
+runtime reset, reconnect and checkpoint restoration cannot reopen it.
+`-m debug`/`--runtime-debug` in release emits a bounded profile diagnostic and
+executes normally. Interactive debug FD/HANDLE channels are refused in release.
+
+Development requires `--management-profile dev` before `--run`. Debugging uses
+a separate authenticated inherited FD/HANDLE, with the same exact guest
+permission contract as normal execution. The Linux `tools/debug/secure_server.py`
+launcher explicitly selects this development profile. A stdin console is refused
+by the robot product; it must not rebind or silently remove guest stdin.
+
+These controls do not grant WASI/ROS imports, resources or native address access.
+Console typed actions, including mutation/scripts carried by a status envelope,
+and the runtime capture, mutation, source-memory, replacement and checkpoint
+entry points check the management policy. On Linux LLVM full,
+`--diagnostic-control-fd <fd>` supplies a separate authenticated, bounded read-only
+observer. It can coexist with production updates and cannot pause or mutate the
+guest. See [RELEASE diagnostics](../runtime/release-diagnostics.md),
+[DEV world rebuild](../runtime/dev-world-rebuild.md) and
+[production updates](../runtime/production-update.md) for commands, transport
+requirements and explicit supported boundaries.
 
 ## `--help`
 
@@ -25,6 +51,9 @@ Accepted extra help names:
 - `all`: every compiled command in the current binary.
 - `global`: global commands only.
 - `debug`: debug commands only.
+- `update`: independent managed launch and production update commands.
+- `secure`: offline artifact verification commands, when compiled.
+- `ros1` / `ros2`: exact ROS binding and operation commands, when compiled.
 - `wasm`: WebAssembly commands only.
 - `runtime`: runtime commands only.
 - `log`: logging commands only.
@@ -137,3 +166,8 @@ Behavior:
 - In release builds it is not registered. The same token is then an invalid parameter.
 
 Use it only when working on the VM itself.
+
+In the ROS product, DEV can inspect the configured Guest WASIp1 arguments,
+environment, descriptors and preopens. It cannot modify their launch contract,
+create or duplicate native descriptors, or restore a prior host resource table.
+These requests are rejected at the runtime boundary as well as the command parser.

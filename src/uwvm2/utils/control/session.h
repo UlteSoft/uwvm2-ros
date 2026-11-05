@@ -6,6 +6,7 @@
 #pragma once
 #ifndef UWVM_MODULE
 # include <uwvm2/utils/macro/push_macros.h>
+# include "management.h"
 # include "protocol.h"
 # if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
 # include <memory>
@@ -30,6 +31,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::control
 
     struct launch_config
     {
+        #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        management::execution_profile profile{management::execution_profile::release};
+#else
+        management::execution_profile profile{management::execution_profile::dev};
+#endif
+        bool diagnostic_enabled{};
         bool debug_enabled{}, replacement_enabled{}; // Both disabled by default.
         backend compiler{backend::interpreter};
         compile_mode mode{compile_mode::full};
@@ -40,7 +47,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::control
     };
     [[nodiscard]] inline constexpr error qualify(launch_config const& config) noexcept
     {
-        if(!config.debug_enabled && !config.replacement_enabled) { return error::disabled; }
+        if(!config.diagnostic_enabled && !config.debug_enabled && !config.replacement_enabled) { return error::disabled; }
         if(config.compiler != backend::llvm) { return error::unsupported_backend; }
         if(config.mode != compile_mode::full) { return error::unsupported_mode; }
         bool nonzero{};
@@ -219,6 +226,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::control
         [[nodiscard]] error parse_command(frame_header const& header, input_buffer bytes, command& out) const
         {
             auto const command_kind{header.command};
+            if(command_kind != operation::status && command_kind != operation::detach &&
+               (owner->config.profile != management::execution_profile::dev || !management::debug_allowed()))
+            { return error::unavailable_capability; }
             if(command_kind == operation::replace_function)
             {
                 if(!owner->config.replacement_enabled) { return error::unavailable_capability; }

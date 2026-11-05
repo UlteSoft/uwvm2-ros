@@ -65,6 +65,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
     inline ::uwvm2::runtime::compiler::uwvm_int::optable::unreachable_func_t trap_integer_overflow_func{};               // [global]
     inline ::uwvm2::runtime::compiler::uwvm_int::optable::unreachable_func_t trap_null_reference_func{}; // [global]
     inline ::uwvm2::runtime::compiler::uwvm_int::optable::unreachable_func_t trap_array_out_of_bounds_func{}; // [global]
+    inline ::uwvm2::runtime::compiler::uwvm_int::optable::unreachable_func_t trap_data_segment_out_of_bounds_func{}; // [global]
     inline ::uwvm2::runtime::compiler::uwvm_int::optable::unreachable_func_t trap_gc_allocation_failure_func{}; // [global]
     inline ::uwvm2::runtime::compiler::uwvm_int::optable::unreachable_func_t trap_cast_failure_func{}; // [global]
     inline ::uwvm2::runtime::compiler::uwvm_int::optable::unreachable_func_t trap_table_out_of_bounds_func{};            // [global]

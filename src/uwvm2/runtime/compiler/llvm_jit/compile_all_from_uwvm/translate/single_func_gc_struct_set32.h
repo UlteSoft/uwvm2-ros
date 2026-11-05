@@ -171,6 +171,7 @@
         emit_llvm_jit_current_stack_pointer(builder, context_intptr)};
     auto const trap_call{apply_llvm_jit_host_calling_conv(builder.CreateCall(trap_type, trap_callee, trap_arguments))};
     trap_call->setTailCallKind(::llvm::CallInst::TCK_NoTail);
+    trap_call->setMetadata("uwvm.managed.trap.candidate", ::llvm::MDNode::get(builder.getContext(), {}));
     emit_llvm_jit_memory_clobber(builder);
     builder.CreateUnreachable();
     // [terminated cold block][success insertion cursor]

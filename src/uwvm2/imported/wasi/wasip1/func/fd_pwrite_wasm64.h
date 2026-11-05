@@ -98,12 +98,28 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         ::uwvm2::imported::wasi::wasip1::abi::filesize_wasm64_t offset,
         ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_wasm64_t nwritten) noexcept
     {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        if(!env.exposes(u8"fd_pwrite")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+        if(fd >= 0 && fd < 3 && !env.grants_stdio(static_cast<unsigned>(fd)))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+
+#endif
+
         auto const memory_pointer{env.get_memory()};
         if(memory_pointer == nullptr) [[unlikely]] { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
         auto& memory{*memory_pointer};
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        // Validate every result buffer before any native side effect or partial
+        // output. Memory may grow, but cannot shrink during an active host call.
+        if(!check_wasip1_memory_bounds_wasm64(memory, nwritten, 8uz))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
+#endif
 
-        check_wasip1_guest_pointer_alignment<8uz>(iovs, u8"fd_pwrite_wasm64.iovs (ciovec64)");
-        check_wasip1_guest_pointer_alignment<8uz>(nwritten, u8"fd_pwrite_wasm64.nwritten (size64)");
+
+        if(!check_wasip1_guest_pointer_alignment<8uz>(iovs, u8"fd_pwrite_wasm64.iovs (ciovec64)"))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::einval; }
+        if(!check_wasip1_guest_pointer_alignment<8uz>(nwritten, u8"fd_pwrite_wasm64.nwritten (size64)"))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::einval; }
 
         auto const trace_wasip1_call{env.trace_wasip1_call};
 
@@ -282,6 +298,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 
         if(scatter_length == 0uz)
         {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            ::uwvm2::imported::wasi::wasip1::environment::budget_reservation reservation{
+                ::uwvm2::imported::wasi::wasip1::environment::fd_io_budget(static_cast<unsigned>(fd)), env.limits, 0u};
+            if(!reservation) { return reservation.template error<::uwvm2::imported::wasi::wasip1::abi::errno_t>(); }
+#endif
+
             ::uwvm2::imported::wasi::wasip1::memory::store_basic_wasm_type_to_memory_wasm64(
                 memory,
                 nwritten,
@@ -294,9 +316,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         auto const scatter_p_off{static_cast<::fast_io::intfpos_t>(static_cast<underlying_offset_t>(offset))};
 
         // check memory bounds
-        ::uwvm2::imported::wasi::wasip1::memory::check_memory_bounds_wasm64(memory,
+        if(!::uwvm2::imported::wasi::wasip1::func::check_wasip1_memory_bounds_wasm64(memory,
                                                                             iovs,
-                                                                            iovs_len * ::uwvm2::imported::wasi::wasip1::abi::size_of_wasi_ciovec_wasm64_t);
+                                                                            iovs_len * ::uwvm2::imported::wasi::wasip1::abi::size_of_wasi_ciovec_wasm64_t))
+            { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
 
         ::uwvm2::imported::wasi::wasip1::func::fast_io_io_scatter_t_allocator_guard tmp_allocator_guard{};
 
@@ -326,6 +349,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         else
         {
             scatter_base = ::uwvm2::imported::wasi::wasip1::func::fast_io_io_scatter_t_allocator_guard::allocator::allocate(scatter_length);
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            if(scatter_base == nullptr) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enomem; }
+#endif
             tmp_allocator_guard.ptr = scatter_base;
         }
 
@@ -368,7 +394,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                     iovs_curr += ::uwvm2::imported::wasi::wasip1::abi::size_of_wasi_size_wasm64_t;
                 }
 
-                ::uwvm2::imported::wasi::wasip1::memory::check_memory_bounds_wasm64_unlocked(memory, wasm_base, wasm_len);
+                if(!::uwvm2::imported::wasi::wasip1::func::check_wasip1_memory_bounds_wasm64_unlocked(memory, wasm_base, wasm_len))
+            { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
 
                 auto& curr_tmp_scatter_base{scatter_base[i]};
                 curr_tmp_scatter_base.base = memory.memory_begin + wasm_base;
@@ -412,6 +439,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 # endif
             }
 
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            ::uwvm2::imported::wasi::wasip1::environment::budget_reservation reservation{
+                ::uwvm2::imported::wasi::wasip1::environment::fd_io_budget(static_cast<unsigned>(fd)), env.limits, static_cast<::std::uint64_t>(length_counter)};
+            if(!reservation) { return reservation.template error<::uwvm2::imported::wasi::wasip1::abi::errno_t>(); }
+#endif
             if(env.debug_io_observed!=nullptr) { env.debug_io_observed(static_cast<::std::uint64_t>(length_counter),0u,false); }
 
 # if defined(_WIN32) && !defined(__CYGWIN__)

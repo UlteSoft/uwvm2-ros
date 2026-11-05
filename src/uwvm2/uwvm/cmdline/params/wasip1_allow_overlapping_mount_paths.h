@@ -58,7 +58,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
     inline constexpr ::uwvm2::utils::cmdline::parameter wasip1_allow_overlapping_mount_paths{
         .name{u8"--wasip1-allow-overlapping-mount-paths"},
         .describe{u8"Allow duplicate or overlapping WASI Preview 1 mount guest paths."},
+#  if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
         .alias{::uwvm2::utils::cmdline::kns_u8_str_scatter_t{::std::addressof(details::wasip1_allow_overlapping_mount_paths_alias), 1uz}},
+#  endif
         .is_exist{::std::addressof(::uwvm2::uwvm::imported::wasi::wasip1::storage::wasip1_allow_overlapping_mount_paths)},
         .cate{::uwvm2::utils::cmdline::categorization::wasi}};
 #  if defined(__clang__)

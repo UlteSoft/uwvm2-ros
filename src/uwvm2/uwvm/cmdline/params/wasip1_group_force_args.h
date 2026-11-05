@@ -74,7 +74,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
         .name{u8"--wasip1-group-force-args"},
         .describe{u8"Replace one named group's WASI Preview 1 argv vector with an explicit argument list."},
         .usage{u8"<group:str> <num:size_t> [arg:str]..."},
+#  if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
         .alias{::uwvm2::utils::cmdline::kns_u8_str_scatter_t{::std::addressof(details::wasip1_group_force_args_alias), 1uz}},
+#  endif
         .handle{::std::addressof(details::wasip1_group_force_args_callback)},
         .pretreatment{::std::addressof(details::wasip1_group_force_args_pretreatment)},
         .cate{::uwvm2::utils::cmdline::categorization::wasi}};

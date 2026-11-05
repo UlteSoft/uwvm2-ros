@@ -146,6 +146,7 @@
         llvm_jit_debug_source_binding_owner const& binding,
         void* context, llvm_jit_debug_source_memory_callback callback) noexcept
     {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS)
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
         using manager = runtime_checkpoint_coherent_manager;

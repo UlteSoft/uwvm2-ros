@@ -66,7 +66,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
         .name{u8"--wasip1-single-set-argv0"},
         .describe{u8"Override WASI Preview 1 argv[0] for one single module."},
         .usage{u8"<module:str> <argv0:str>"},
+#  if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
         .alias{::uwvm2::utils::cmdline::kns_u8_str_scatter_t{::std::addressof(details::wasip1_single_set_argv0_alias), 1uz}},
+#  endif
         .handle{::std::addressof(details::wasip1_single_set_argv0_callback)},
         .cate{::uwvm2::utils::cmdline::categorization::wasi}};
 #  if defined(__clang__)

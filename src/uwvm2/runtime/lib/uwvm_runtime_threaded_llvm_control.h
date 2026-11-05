@@ -17,6 +17,10 @@
                 if(bridge.original==address(&llvm_jit_runtime_trap))replacement=address(&trap);
                 else if(bridge.original==address(&llvm_jit_memory_out_of_bounds_trap))replacement=address(&memory_trap);
                 else if(bridge.original==address(&details::llvm_jit_call_raw_from_generated_wasm_abi_bridge))replacement=address(&import_call);
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+                else if(bridge.original==address(&llvm_jit_seed_ros_provenance))replacement=address(&seed_ros_provenance);
+                else if(bridge.original==address(&llvm_jit_publish_ros_provenance))replacement=address(&publish_ros_provenance);
+#endif
                 else if(bridge.original==address(&emit::llvm_jit_atomic_wait_notify_bridge<0u>))replacement=address(&wait_notify<0u>);
                 else if(bridge.original==address(&emit::llvm_jit_atomic_wait_notify_bridge<1u>))replacement=address(&wait_notify<1u>);
                 else if(bridge.original==address(&emit::llvm_jit_atomic_wait_notify_bridge<2u>))replacement=address(&wait_notify<2u>);
@@ -79,6 +83,25 @@
                 if(f.isDeclaration())continue;
                 auto const function=native_function_index(f,entries_,imports_);if(function==SIZE_MAX)return false;
                 if(f.hasPersonalityFn()||f.isVarArg())return false;
+                // Keep fixed native-frame allocations in the true entry block.
+                // Splitting before them turns LLVM's static allocas into dynamic
+                // allocas and correctly fails the later stack witness. Hoist only
+                // already-static entry allocas; no Guest load/call/effect may run
+                // ahead of the genuine entry/depth/cancellation check.
+                auto& entry=f.getEntryBlock();
+                ::llvm::SmallVector<::llvm::AllocaInst*,16> frame_allocas;
+                for(auto& instruction:entry)
+                    if(auto* allocation=::llvm::dyn_cast<::llvm::AllocaInst>(&instruction))
+                    {
+                        if(!allocation->isStaticAlloca()||allocation->getAlign().value()>16u)return false;
+                        frame_allocas.push_back(allocation);
+                    }
+                for(auto current=frame_allocas.rbegin();current!=frame_allocas.rend();++current)
+                {
+                    auto point=entry.getFirstInsertionPt();
+                    if(point==entry.end())return false;
+                    if(::std::addressof(*point)!=*current)(*current)->moveBefore(entry,point);
+                }
                 ::std::vector<::llvm::CallInst*> calls;
                 ::std::vector<::llvm::BasicBlock*> blocks;
                 ::std::vector<::llvm::CallInst*> traps;
@@ -141,8 +164,11 @@
                 };
                 for(auto* block:blocks)
                 {
-                    auto first=block->getFirstInsertionPt();if(first==block->end())return false;
-                    probe(::std::addressof(*first),block==::std::addressof(f.getEntryBlock())?enter_fn:poll_fn);
+                    auto first=block->getFirstInsertionPt();
+                    bool const entry_block=block==::std::addressof(f.getEntryBlock());
+                    if(entry_block)while(first!=block->end()&&::llvm::isa<::llvm::AllocaInst>(*first))++first;
+                    if(first==block->end())return false;
+                    probe(::std::addressof(*first),entry_block?enter_fn:poll_fn);
                 }
                 for(auto* call:calls)
                 {

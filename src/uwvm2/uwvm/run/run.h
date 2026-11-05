@@ -41,6 +41,7 @@
 
 #pragma once
 #include <uwvm2/runtime/lib/uwvm_runtime_posix_abi.h>
+#include "release_diagnostics.h"
 
 #ifndef UWVM_MODULE
 // std
@@ -79,6 +80,7 @@
 # endif
 // import
 # include <fast_io.h>
+# include <uwvm2/runtime/lib/uwvm_runtime_guest_exit.h>
 # include <uwvm2/utils/control/impl.h>
 # include <uwvm2/utils/ansies/impl.h>
 # include <uwvm2/utils/debug/impl.h>
@@ -105,6 +107,7 @@
 # include "retval.h"
 # include "loader.h"
 # include "owned_source.h"
+# include "update_cli.h"
 #endif
 
 #ifndef UWVM_MODULE_EXPORT
@@ -1159,6 +1162,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
             if(::uwvm2::runtime::lib::runtime_llvm_jit_debug_registered_worker_stopping_host_api()) { return; }
         }
 #endif
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        ::uwvm2::runtime::lib::guest_exit::clear();
+#endif
         ::uwvm2::runtime::gc::scoped_cli_gc_execution gc_cli_execution{};
         // Derived by runtime from the actual initializer-owned native map and
         // mode. No external bool or raw module/handle can assert this closure.
@@ -1206,6 +1212,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
             start_cfg.entry_function_index = static_cast<::std::size_t>(start.start_idx);
             start_cfg.module_start = true;
             run_entry(module.module_name, start_cfg);
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            if(::uwvm2::runtime::lib::guest_exit::last.requested ||
+               ::uwvm2::runtime::lib::runtime_guest_fault_detected_host_api()) { return; }
+#endif
         }
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
         if constexpr(::std::is_same_v<RunConfig, ::uwvm2::runtime::lib::full_compile_run_config>)
@@ -1225,6 +1235,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
             start_cfg.entry_function_index = static_cast<::std::size_t>(start.start_idx);
             start_cfg.module_start = true;
             run_entry(main_module_name, start_cfg);
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            if(::uwvm2::runtime::lib::guest_exit::last.requested ||
+               ::uwvm2::runtime::lib::runtime_guest_fault_detected_host_api()) { return; }
+#endif
             // A pure core module, or an explicit selection of its initializer, runs it once.
             if(cfg.entry_function_index == start_cfg.entry_function_index) { return; }
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
@@ -1949,6 +1963,89 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
 
     inline constexpr int run() noexcept
     {
+#if defined(__linux__) && defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
+        ::std::unique_ptr<production_update_cli::channel> update_channel{};
+        {
+            namespace options = ::uwvm2::uwvm::cmdline::params::details;
+            bool const requested{options::update_control_fd_exists || options::update_public_key_exists || options::update_contract_exists || options::update_scope_exists || options::update_call_export_exists};
+            if(requested)
+            {
+                namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
+                if(options::management_development || options::debug_jit_control_fd >= 0 || options::debug_jit_control_handle != 0 ||
+                   options::update_control_fd < 3 || !options::update_public_key_exists || !options::update_contract_exists || !options::update_scope_exists ||
+                   mode::global_runtime_mode != mode::runtime_mode_t::full_compile || mode::global_runtime_compiler != mode::runtime_compiler_t::llvm_jit_only ||
+                   (::uwvm2::uwvm::wasm::storage::execute_wasm_mode != ::uwvm2::uwvm::wasm::base::mode::run &&
+                    ::uwvm2::uwvm::wasm::storage::execute_wasm_mode != ::uwvm2::uwvm::wasm::base::mode::debug_jit) ||
+                   !(update_channel = production_update_cli::channel::adopt(options::update_control_fd)))
+                {
+                    ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output, u8"uwvm: [error] update requires RELEASE, LLVM full, key/contract/scope and a direct-parent Unix stream");
+                    return static_cast<int>(retval::parameter_error);
+                }
+            }
+        }
+#else
+        if(::uwvm2::uwvm::cmdline::params::details::update_control_fd_exists || ::uwvm2::uwvm::cmdline::params::details::update_public_key_exists ||
+           ::uwvm2::uwvm::cmdline::params::details::update_contract_exists || ::uwvm2::uwvm::cmdline::params::details::update_scope_exists ||
+           ::uwvm2::uwvm::cmdline::params::details::update_call_export_exists)
+        {
+            ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output, u8"uwvm: [error] production updates require Linux LLVM full with native threads and exceptions");
+            return static_cast<int>(retval::parameter_error);
+        }
+#endif
+
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        namespace management = ::uwvm2::utils::control::management;
+        auto const development{::uwvm2::uwvm::cmdline::params::details::management_development};
+        if(!management::configure_trusted_launch(development ? management::execution_profile::dev : management::execution_profile::release))
+        {
+            ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output, u8"uwvm: [error] management profile is permanently sealed for this process");
+            return static_cast<int>(retval::parameter_error);
+        }
+        bool const managed_channel{::uwvm2::uwvm::cmdline::params::details::debug_jit_control_fd >= 0 ||
+            ::uwvm2::uwvm::cmdline::params::details::debug_jit_control_handle != 0u};
+        if(!development && managed_channel)
+        {
+            ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output, u8"uwvm: [error] RELEASE denies the interactive debugger channel; use bounded runtime diagnostics");
+            return static_cast<int>(retval::parameter_error);
+        }
+        if(::uwvm2::uwvm::wasm::storage::execute_wasm_mode == ::uwvm2::uwvm::wasm::base::mode::debug_jit)
+        {
+            if(!development)
+            {
+                ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                    u8"uwvm: [diagnostic] profile=RELEASE debug=sealed; execution continues without interactive inspection");
+                ::uwvm2::uwvm::cmdline::params::details::release_diagnostic_requested = true;
+                ::uwvm2::uwvm::wasm::storage::execute_wasm_mode = ::uwvm2::uwvm::wasm::base::mode::run;
+            }
+            else if(!managed_channel)
+            {
+                ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                    u8"uwvm: [error] DEV debugger requires a separate authenticated control FD/HANDLE; Guest stdio policy is unchanged");
+                return static_cast<int>(retval::parameter_error);
+            }
+        }
+#endif
+
+#if defined(__linux__) && defined(SYS_pidfd_open) && defined(SCM_CREDENTIALS) && defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
+        ::std::unique_ptr<::uwvm2::uwvm::debugger::linux_control_fd> diagnostic_channel{};
+        if(::uwvm2::uwvm::cmdline::params::details::diagnostic_control_fd_exists)
+        {
+            namespace options = ::uwvm2::uwvm::cmdline::params::details;
+            namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
+            if(options::management_development || options::debug_jit_control_fd >= 0 || options::debug_jit_control_handle != 0u ||
+               mode::global_runtime_mode != mode::runtime_mode_t::full_compile || mode::global_runtime_compiler != mode::runtime_compiler_t::llvm_jit_only ||
+               ::uwvm2::uwvm::wasm::storage::execute_wasm_mode != ::uwvm2::uwvm::wasm::base::mode::run ||
+               !(diagnostic_channel = ::uwvm2::uwvm::debugger::linux_control_fd::adopt(options::diagnostic_control_fd, true)))
+            {
+                ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output, u8"uwvm: [error] diagnostics require RELEASE LLVM full and an authenticated, separate Unix seqpacket endpoint");
+                return static_cast<int>(retval::parameter_error);
+            }
+        }
+#else
+        if(::uwvm2::uwvm::cmdline::params::details::diagnostic_control_fd_exists)
+        { return static_cast<int>(retval::parameter_error); }
+#endif
+
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
         struct ros_cleanup
         {
@@ -1956,7 +2053,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
         } cleanup_ros_sessions{};
         // The owned LLVM source path initializes its runtime before the ordinary
         // mapped loader. Reject it before either path can initialize or run Guest.
-        if(!::uwvm2::uwvm::imported::ros::diagnostic_only())
+        bool const ros_nonexecuting_mode{
+            ::uwvm2::uwvm::wasm::storage::execute_wasm_mode == ::uwvm2::uwvm::wasm::base::mode::validation ||
+            ::uwvm2::uwvm::wasm::storage::execute_wasm_mode == ::uwvm2::uwvm::wasm::base::mode::section_details};
+        if(!::uwvm2::uwvm::imported::ros::diagnostic_only() && !ros_nonexecuting_mode)
         {
             if(auto result{::uwvm2::uwvm::imported::ros::validate_execution_backend()}; !result)
             { ::uwvm2::uwvm::imported::ros::print_policy_error(result); return static_cast<int>(retval::parameter_error); }
@@ -2068,15 +2168,20 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
         if(!owned_full_prepared)
         {
         namespace runtime_mode = ::uwvm2::uwvm::runtime::runtime_mode;
-        // Debug/reserved LLVM-full may own a pure-Wasm preload graph. Ordinary
-        // full with preload providers retains its previous mapped loader path.
+        // Product LLVM-full also owns the complete pure-Wasm preload graph:
+        // every protected activation must bind a real source owner. Other
+        // products keep their existing mapped-loader selection.
         // This supplies lifetime only: source values still need a completed
         // validation epoch, stopped ticket and actual function/code generation.
         bool own_single_source{(::uwvm2::uwvm::wasm::storage::execute_wasm_mode == ::uwvm2::uwvm::wasm::base::mode::run ||
                                 ::uwvm2::uwvm::wasm::storage::execute_wasm_mode == ::uwvm2::uwvm::wasm::base::mode::debug_jit) &&
             runtime_mode::global_runtime_mode == runtime_mode::runtime_mode_t::full_compile &&
             runtime_mode::global_runtime_compiler == runtime_mode::runtime_compiler_t::llvm_jit_only &&
-            (::uwvm2::uwvm::wasm::storage::preloaded_wasm.empty() ||
+            (
+# if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+             true ||
+# endif
+             ::uwvm2::uwvm::wasm::storage::preloaded_wasm.empty() ||
              ::uwvm2::uwvm::wasm::storage::execute_wasm_mode == ::uwvm2::uwvm::wasm::base::mode::debug_jit ||
              ::uwvm2::uwvm::cmdline::params::details::debug_jit_control_fd >= 0 ||
              ::uwvm2::uwvm::cmdline::params::details::debug_jit_control_handle != 0u)};
@@ -2098,6 +2203,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
             // ordinary full without those modes keeps mapped source behavior.
             // The FD/HANDLE was authenticated above before any input effects.
             bool const retain_debug_image{
+                ::uwvm2::uwvm::cmdline::params::details::diagnostic_control_fd_exists ||
+                ::uwvm2::uwvm::cmdline::params::details::release_diagnostic_requested ||
+                ::uwvm2::uwvm::cmdline::params::details::update_control_fd >= 0 ||
                 ::uwvm2::uwvm::wasm::storage::execute_wasm_mode == ::uwvm2::uwvm::wasm::base::mode::debug_jit ||
                 ::uwvm2::uwvm::cmdline::params::details::debug_jit_control_fd >= 0 ||
                 ::uwvm2::uwvm::cmdline::params::details::debug_jit_control_handle != 0u
@@ -2122,17 +2230,28 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
         if(::uwvm2::uwvm::imported::ros::policy_configured)
         {
             bool const inspect_only{::uwvm2::uwvm::imported::ros::diagnostic_only()};
-            if(auto result{::uwvm2::uwvm::imported::ros::validate_loaded_policy(!inspect_only)}; !result)
+            if(auto result{::uwvm2::uwvm::imported::ros::validate_loaded_policy(!inspect_only && !ros_nonexecuting_mode)}; !result)
             { ::uwvm2::uwvm::imported::ros::print_policy_error(result); return static_cast<int>(retval::parameter_error); }
             if(inspect_only)
             { return static_cast<int>(::uwvm2::uwvm::imported::ros::dump_effective_policy() ? retval::ok : retval::parameter_error); }
+            if(!ros_nonexecuting_mode)
             if(auto result{::uwvm2::uwvm::imported::ros::host::preflight()}; !result)
             { ::uwvm2::uwvm::imported::ros::print_policy_error(result); return static_cast<int>(retval::parameter_error); }
         }
 #endif
 
+        // Validation constructs only immutable builtin metadata; it cannot open
+        // WASI descriptors, copy host state, or execute local provider init hooks.
+        bool const initialize_host_resources{
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            ::uwvm2::uwvm::wasm::storage::execute_wasm_mode != ::uwvm2::uwvm::wasm::base::mode::validation &&
+            ::uwvm2::uwvm::wasm::storage::execute_wasm_mode != ::uwvm2::uwvm::wasm::base::mode::section_details
+#else
+            true
+#endif
+        };
         // Load explicitly-provided local modules.  These participate in normal import resolution and duplicate checks.
-        if(auto const ret{::uwvm2::uwvm::run::load_local_modules()}; ret != static_cast<int>(::uwvm2::uwvm::run::retval::ok)) [[unlikely]] { return ret; }
+        if(auto const ret{::uwvm2::uwvm::run::load_local_modules(false, initialize_host_resources)}; ret != static_cast<int>(::uwvm2::uwvm::run::retval::ok)) [[unlikely]] { return ret; }
 
         // Load weak-symbol modules after normal modules so they can provide fallback definitions without changing the
         // primary module load order.
@@ -2140,7 +2259,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
 
         // Build the unified module table used by later export/import/runtime resolution.  Duplicate module names are
         // rejected before any mode tries to inspect or execute ambiguous module storage.
-        if(auto const ret{::uwvm2::uwvm::wasm::loader::construct_all_module_and_check_duplicate_module()};
+        if(auto const ret{::uwvm2::uwvm::wasm::loader::construct_all_module_and_check_duplicate_module(initialize_host_resources)};
            ret != ::uwvm2::uwvm::wasm::loader::load_and_check_modules_rtl::ok) [[unlikely]]
         {
             return static_cast<int>(::uwvm2::uwvm::run::retval::check_module_error);
@@ -2181,6 +2300,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
             }
             case ::uwvm2::uwvm::wasm::base::mode::validation:
             {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                // Product validation checks the selected namespace contract and
+                // actual import signatures without starting Guest/native effects.
+                if(auto const result{::uwvm2::uwvm::wasm::loader::check_import_exist_and_detect_cycles()};
+                   result != ::uwvm2::uwvm::wasm::loader::load_and_check_modules_rtl::ok)
+                { return static_cast<int>(::uwvm2::uwvm::run::retval::check_module_error); }
+#endif
                 // Validate all wasm code with the parser/runtime validator entry point, but do not initialize executable
                 // runtime state.  This path is for validity checks, not compilation, partitioning, or backend execution.
                 // `validate_all_wasm_code` already emits its own verbose progress diagnostics.
@@ -2221,13 +2347,143 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
         }
 
         // Initialize runtime storage, link metadata, and backend-visible module data after import resolution succeeds.
-        if(!owned_full_prepared) { ::uwvm2::uwvm::runtime::initializer::initialize_runtime(true); }
+        if(!owned_full_prepared && !::uwvm2::uwvm::runtime::initializer::initialize_runtime(true))
+        { return static_cast<int>(retval::check_module_error); }
 
         // Resolve global execution knobs after runtime storage exists.  Entry resolution needs runtime function type
         // storage, and compile-thread resolution publishes the value consumed by full-translation runtime code.
         resolve_runtime_compile_threads();
         auto runtime_entry{resolve_runtime_entry_invocation(::uwvm2::uwvm::wasm::storage::active_execute_wasm().module_name)};
         int execution_exit_code{static_cast<int>(retval::ok)};
+#if defined(__linux__) && defined(SYS_pidfd_open) && defined(SCM_CREDENTIALS) && defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
+        ::std::atomic<bool> diagnostic_finished{};
+        ::std::thread diagnostic_worker{};
+        struct diagnostic_completion
+        {
+            ::std::atomic<bool>& finished; ::std::thread& worker; bool log{};
+            ~diagnostic_completion()
+            {
+                finished.store(true, ::std::memory_order_release);
+                if(worker.joinable()) { worker.join(); }
+                if(log)
+                {
+                    auto text{release_diagnostics::snapshot()};
+                    if(!text.empty()) { ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output, ::fast_io::mnp::code_cvt(text)); }
+                }
+            }
+        } diagnostic_cleanup{diagnostic_finished, diagnostic_worker};
+        if(diagnostic_channel || ::uwvm2::uwvm::cmdline::params::details::release_diagnostic_requested)
+        {
+            if(!::uwvm2::runtime::lib::runtime_diagnostic_initialize_host_api())
+            { ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output, u8"uwvm: [error] bounded diagnostic source capture unavailable"); return static_cast<int>(retval::parameter_error); }
+            diagnostic_cleanup.log = ::uwvm2::uwvm::cmdline::params::details::release_diagnostic_requested;
+            if(diagnostic_channel)
+            {
+                try { diagnostic_worker = ::std::thread{[&]() noexcept { diagnostic_channel->serve_diagnostics(diagnostic_finished, release_diagnostics::snapshot); }}; }
+                catch(...) { return static_cast<int>(retval::parameter_error); }
+            }
+        }
+#endif
+
+#if defined(__linux__) && defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
+        if(update_channel)
+        {
+            namespace options = ::uwvm2::uwvm::cmdline::params::details;
+            namespace runtime = ::uwvm2::runtime::lib;
+            namespace update = ::uwvm2::utils::update;
+            auto const& file{::uwvm2::uwvm::wasm::storage::active_execute_wasm()};
+            using start_section = ::uwvm2::parser::wasm::standard::wasm1::features::start_section_storage_t;
+            auto const& start{::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<start_section>(file.wasm_module_storage.wasm_binfmt_ver1_storage.sections)};
+            // Active segments are initialized once before opening the manager.
+            // A start-section handoff has a different execution contract; reject.
+            if(start.sec_span.sec_begin != nullptr || !owned_full_prepared ||
+               !::uwvm2::uwvm::wasm::storage::preloaded_wasm.empty())
+            {
+                ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output, u8"uwvm: [error] production update profile requires a single owned module without a start section");
+                return static_cast<int>(retval::parameter_error);
+            }
+            update::configuration config{options::update_public_key, options::update_contract, options::update_scope};
+            auto const configured{runtime::runtime_update_configure_host_api(config)};
+            if(configured != update::status::ok)
+            {
+                ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output, u8"uwvm: [error] production update configuration refused: ", static_cast<unsigned>(configured));
+                return static_cast<int>(retval::parameter_error);
+            }
+            ::uwvm2::uwvm::runtime::initializer::apply_runtime_active_segments(file.module_name);
+            auto const found{::uwvm2::uwvm::runtime::storage::active_runtime_registry().find(file.module_name)};
+            if(found == ::uwvm2::uwvm::runtime::storage::active_runtime_registry().end()) { return static_cast<int>(retval::parameter_error); }
+            production_update_cli::business_export allowed_call{};
+            if(options::update_call_export_exists)
+            {
+                using external_types = ::uwvm2::parser::wasm::standard::wasm1::type::external_types;
+                auto const exports{::uwvm2::uwvm::wasm::storage::all_module_export.find(file.module_name)};
+                bool valid{};
+                if(exports != ::uwvm2::uwvm::wasm::storage::all_module_export.end())
+                {
+                    auto const named{exports->second.find(options::update_call_export)};
+                    if(named != exports->second.end())
+                    {
+                        auto const* ex{named->second.storage.wasm_file_export_storage_ptr.storage.wasm_binfmt_ver1_export_storage_ptr};
+                        if(ex && ex->type == external_types::func)
+                        {
+                            auto const index{static_cast<::std::size_t>(ex->storage.func_idx)};
+                            auto const imports{found->second.imported_function_vec_storage.size()};
+                            if(index <= UINT32_MAX && index >= imports && index - imports < found->second.local_defined_function_vec_storage.size())
+                            {
+                                auto const* type{found->second.local_defined_function_vec_storage.index_unchecked(index - imports).function_type_ptr};
+                                auto bytes{[](auto const& values, ::std::uint32_t& size) noexcept
+                                {
+                                    for(auto p{values.begin}; p != values.end; ++p)
+                                    {
+                                        auto const width{wasm_entry_scalar_abi_size(wasm_entry_type_code(*p))};
+                                        if(width == 0 || size + width > 4096u) { return false; }
+                                        size += static_cast<::std::uint32_t>(width);
+                                    }
+                                    return true;
+                                }};
+                                if(type && bytes(type->parameter, allowed_call.input_bytes) && bytes(type->result, allowed_call.output_bytes))
+                                { allowed_call.function_index = static_cast<::std::uint32_t>(index); allowed_call.enabled = valid = true; }
+                            }
+                        }
+                    }
+                }
+                if(!valid)
+                {
+                    ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output, u8"uwvm: [error] update business entry must name a locally defined scalar export with a bounded ABI");
+                    return static_cast<int>(retval::parameter_error);
+                }
+            }
+            if(update_channel->await_launch() != 0)
+            {
+                ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output, u8"uwvm: [error] managed launch authorization unavailable; safe stop");
+                ::std::_Exit(75);
+            }
+            runtime::full_compile_run_config entry_config{}; configure_runtime_entry_buffers(entry_config, runtime_entry);
+            ::std::atomic<bool> admitted{}, finished{}; int entry_code{};
+            entry_config.entry_admitted = ::std::addressof(admitted);
+            ::std::thread worker{[&]() noexcept
+            {
+                runtime::full_compile_and_run_main_module(file.module_name, entry_config);
+                if(runtime::guest_exit::last.requested) { entry_code = static_cast<int>(runtime::guest_exit::last.code & 255u); }
+                finished.store(true, ::std::memory_order_release);
+            }};
+            // Do not process a queued PREPARE before the one launch worker has
+            // actually acquired its root lease. An OS thread existing is not an ACK.
+            while(!admitted.load(::std::memory_order_acquire) && !finished.load(::std::memory_order_acquire))
+            { ::std::this_thread::yield(); }
+            auto const outcome{update_channel->serve(finished, ::std::addressof(found->second), allowed_call)};
+            if(outcome == 75)
+            {
+                // Process containment, not ABORT: retain the fence until exit.
+                // The external supervisor owns durable decisions and recovery.
+                ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output, u8"uwvm: [error] update decision pending or committed but not active; safe stop");
+                ::std::_Exit(75);
+            }
+            worker.join(); runtime::reset_runtime_state_host_api();
+            return outcome == 0 ? entry_code : outcome;
+        }
+#endif
+
 
         // Dispatch matrix:
         //
@@ -2279,6 +2535,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
                     restart.pending = false;
                 }
                 control::launch_config config{};
+                config.profile = control::management::execution_profile::dev;
                 config.debug_enabled = true;
                 // Let the authenticated host controller validate replace requests; the runtime currently rejects
                 // publication until an independently validated single-function compiler and old-code owner exist.
@@ -2369,7 +2626,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
                         auto& actual{*static_cast<actual_guest_launch_state*>(state)};
                         run_full_module_graph(::uwvm2::uwvm::wasm::storage::active_execute_wasm().module_name, actual.config);
                         actual.control->notify_guest_exit(
-                            ::uwvm2::runtime::lib::runtime_llvm_jit_debug_registered_worker_exit_code_host_api());
+                            ::uwvm2::runtime::lib::guest_exit::last.requested ? ::uwvm2::runtime::lib::guest_exit::last.code :
+                                ::uwvm2::runtime::lib::runtime_llvm_jit_debug_registered_worker_exit_code_host_api());
                     })};
                 if(launched.status != ::uwvm2::runtime::lib::llvm_jit_debug_guest_worker_launch_status::started || !launched.worker)
                 { return static_cast<int>(::uwvm2::uwvm::run::retval::parameter_error); }
@@ -2478,7 +2736,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
                         }
                         if(threaded.prelaunch_signal_code)outcome=threaded.prelaunch_signal_code;
                         if(outcome == static_cast<int>(retval::parameter_error))
-                        { ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output, u8"uwvm: [error] Unable to run the requested Wasm threads profile.\n"); }
+                        { ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
+                            u8"uwvm: [error] Unable to run the requested Wasm threads profile; start_status=",
+                            static_cast<unsigned>(threaded.start_status),u8", status=",static_cast<unsigned>(threaded.status),
+                            u8", termination_kind=",threaded.kind,u8", code=",threaded.code,u8".\n"); }
                         // Real full Source reset is a second phase AFTER native
                         // join. Its actual deleter completion gates re-opening;
                         // an externally retained prepared owner keeps it pending.
@@ -2508,7 +2769,33 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
                 {
                     namespace debugger = ::uwvm2::uwvm::debugger;
                     namespace control = ::uwvm2::utils::control;
+#  if defined(__linux__) && defined(SYS_pidfd_open) && defined(SCM_CREDENTIALS)
+                    debugger::linux_control_fd::rebuild_request rebuild{};
+                    rebuild.allowed = dev_rebuild_supported();
+                    rebuild.preload_count = ::uwvm2::uwvm::wasm::storage::active_preloaded_wasm().size();
+#  endif
+                    for(;;)
+                    {
+                    bool rebuilding{};
+#  if defined(__linux__) && defined(SYS_pidfd_open) && defined(SCM_CREDENTIALS)
+                    if(rebuild.ready)
+                    {
+                        // The prior loop scope has destroyed the old controller,
+                        // physically joined guest owner and GC execution wrapper.
+                        // Only fixed input DATA and the original channel survive.
+                        dev_rebuild_input input{::std::move(rebuild.path), ::std::move(rebuild.image), rebuild.module_index};
+                        auto const prepared{prepare_owned_full_cli_source(true, true, ::std::addressof(input))};
+                        if(prepared != static_cast<int>(retval::ok))
+                        {
+                            static_cast<void>(debug_channel->notify_rebuild_result(false));
+                            return 75; // No old source/authority rollback after retirement.
+                        }
+                        runtime_entry = resolve_runtime_entry_invocation(::uwvm2::uwvm::wasm::storage::active_execute_wasm().module_name);
+                        rebuild.ready = false; rebuild.allowed = dev_rebuild_supported(); rebuilding = true;
+                    }
+#  endif
                     control::launch_config config{};
+                    config.profile = control::management::execution_profile::dev;
                     config.debug_enabled = true;
                     // The externally authorized debug channel shares the console's fail-closed replacement protocol.
                     config.replacement_enabled = true;
@@ -2536,7 +2823,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
                            ::uwvm2::runtime::lib::llvm_jit_debug_configure_result::ok ||
                        !::uwvm2::runtime::lib::llvm_jit_prepare_debug_host_api() ||
                        !install_debug_source_maps(*controller) ||
-                       (::uwvm2::uwvm::wasm::storage::execute_wasm_mode == ::uwvm2::uwvm::wasm::base::mode::debug_jit &&
+                       ((rebuilding || ::uwvm2::uwvm::wasm::storage::execute_wasm_mode == ::uwvm2::uwvm::wasm::base::mode::debug_jit) &&
                         !controller->arm_initial_pause()))
                     {
                         ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
@@ -2545,6 +2832,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
                             ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
                             u8"Unable to prepare late LLVM full debugger before guest execution.\n\n",
                             ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
+#  if defined(__linux__) && defined(SYS_pidfd_open) && defined(SCM_CREDENTIALS)
+                        if(rebuilding) { static_cast<void>(debug_channel->notify_rebuild_result(false)); return 75; }
+#  endif
                         return static_cast<int>(::uwvm2::uwvm::run::retval::parameter_error);
                     }
                     // A late channel needs the same real registered guest as
@@ -2573,6 +2863,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
                             auto& actual{*static_cast<actual_late_guest_launch_state*>(state)};
                             run_full_module_graph(::uwvm2::uwvm::wasm::storage::active_execute_wasm().module_name, actual.config);
                             actual.control->notify_guest_exit(
+                                ::uwvm2::runtime::lib::guest_exit::last.requested ? ::uwvm2::runtime::lib::guest_exit::last.code :
                                 ::uwvm2::runtime::lib::runtime_llvm_jit_debug_registered_worker_exit_code_host_api());
                         })};
                     if(launched.status != ::uwvm2::runtime::lib::llvm_jit_debug_guest_worker_launch_status::started ||
@@ -2581,7 +2872,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
                     // Keep the original authenticated endpoint and controller
                     // on the normal host management thread. Peer loss/quit
                     // detaches and resumes; it does not cancel the guest.
+#  if defined(__linux__) && defined(SYS_pidfd_open) && defined(SCM_CREDENTIALS)
+                    if(rebuilding && !debug_channel->notify_rebuild_result(true))
+                    {
+                        // Serve owns the ordinary authenticated peer-loss path;
+                        // never adopt a replacement FD or leave a paused orphan.
+                        debug_channel->serve(*controller);
+                    }
+                    else { debug_channel->serve(*controller, ::std::addressof(shutdown), ::std::addressof(rebuild)); }
+                    if(rebuild.ready) { continue; } // Physical retirement completed in serve; owners leave this scope.
+#  else
                     debug_channel->serve(*controller);
+#  endif
                     auto finished{controller->inspect()};
                     while(finished.execution != debugger::execution_status::exited &&
                           finished.execution != debugger::execution_status::closed)
@@ -2620,6 +2922,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
                         }
                     }
                     break;
+                    } // Each world has fresh controller, native worker and code owners.
+                    break;
                 }
 # endif
                 // Only `run` reaches the runtime library.  `runtime_entry` has already been resolved so every branch below
@@ -2641,6 +2945,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
                                 ::uwvm2::runtime::lib::full_compile_run_config cfg{};
                                 configure_runtime_entry_buffers(cfg, runtime_entry);
                                 run_full_module_graph(::uwvm2::uwvm::wasm::storage::active_execute_wasm().module_name, cfg);
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                                if(::uwvm2::runtime::lib::guest_exit::last.requested)
+                                { execution_exit_code = static_cast<int>(::uwvm2::runtime::lib::guest_exit::last.code & 255u); }
+#endif
 
                                 break;
                             }
@@ -2652,7 +2960,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
                                 // runtime library from the globally configured runtime-mode storage.
                                 ::uwvm2::runtime::lib::full_compile_run_config cfg{};
                                 configure_runtime_entry_buffers(cfg, runtime_entry);
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                                ::uwvm2::runtime::gc::scoped_cli_gc_execution fault_gc_owner{};
+                                static_cast<void>(::uwvm2::runtime::lib::runtime_gc_prepare_cli_collection_host_api());
+                                if(!::uwvm2::runtime::lib::runtime_prepare_guest_fault_containment_host_api())
+                                {
+                                    ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,u8"uwvm: [error] Unable to prepare safe Guest fault containment.");
+                                    return static_cast<int>(retval::parameter_error);
+                                }
+#endif
                                 run_full_module_graph(::uwvm2::uwvm::wasm::storage::active_execute_wasm().module_name, cfg);
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                                if(::uwvm2::runtime::lib::runtime_guest_fault_detected_host_api()) { execution_exit_code=126; }
+                                else if(::uwvm2::runtime::lib::guest_exit::last.requested)
+                                { execution_exit_code = static_cast<int>(::uwvm2::runtime::lib::guest_exit::last.code & 255u); }
+#endif
 
                                 break;
                             }

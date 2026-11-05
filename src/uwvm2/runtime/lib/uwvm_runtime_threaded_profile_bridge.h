@@ -181,6 +181,10 @@ extern "C++"
             ::std::span<::std::byte> results, ::std::span<::std::byte const> params) noexcept
         {
             if(!actual_lease(actual, instance) || current_host_ != nullptr) { return dispatch_status::rejected; }
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            if(::uwvm2::utils::thread::process_exit::exit_claimed.load(::std::memory_order_acquire))
+            { ::uwvm2::utils::thread::process_exit::request_process_exit(0u); }
+#endif
             if(actual.cancellation().stop_requested()) { return dispatch_status::group_stopped; }
             auto const* caller{instance.module(module)};
             if(!caller || caller_function < caller->imported_function_vec_storage.size() ||
@@ -208,11 +212,45 @@ extern "C++"
                 {
                     if(leaf.exits)
                     {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(UWVM_IMPORT_WASI_WASIP1) && !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1)
+                        auto& env{resolve_wasip1_env_for_runtime_module_id(instance.source_module_id())};
+                        if(!env.exposes(u8"proc_exit") || !env.permits(::uwvm2::imported::wasi::wasip1::environment::permission_t::proc_exit))
+                        {
+                            struct denied_exit { lease* actual;::std::size_t module,function; } fault{&actual,module,caller_function};
+                            // A known denied Guest exit is also a Guest fault.
+                            // If an authorized exit already won, do not let this
+                            // later denial cancel another operation's exit-wait.
+                            if(!::uwvm2::utils::thread::process_exit::run_before_exit_request([](void* pointer) noexcept
+                            {
+                                auto const& current=*static_cast<denied_exit*>(pointer);
+                                current.actual->request_trap(0x57415303u,current.module,current.function,0u);
+                            },::std::addressof(fault)))
+                            {::uwvm2::utils::thread::process_exit::request_process_exit(0u);}
+                            return dispatch_status::rejected;
+                        }
+#endif
                         ::std::uint32_t code{}; ::std::memcpy(&code, params.data(), sizeof(code));
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(UWVM_IMPORT_WASI_WASIP1) && !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1)
+                        ::uwvm2::utils::thread::process_exit::request_process_exit(code);
+#else
                         actual.request_proc_exit(code); return dispatch_status::group_stopped;
+#endif
                     }
                     if(leaf.spawn)
                     {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(UWVM_IMPORT_WASI_WASIP1) && !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1)
+                        auto& env{resolve_wasip1_env_for_runtime_module_id(instance.source_module_id())};
+                        if(!env.exposes(u8"thread-spawn") || !env.permits(::uwvm2::imported::wasi::wasip1::environment::permission_t::thread_spawn))
+                        {
+                            ::std::int32_t const denied{-1};
+                            ::std::memcpy(results.data(), &denied, sizeof(denied));
+                            return dispatch_status::returned;
+                        }
+#elif defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                        ::std::int32_t const denied{-1};
+                        ::std::memcpy(results.data(), &denied, sizeof(denied));
+                        return dispatch_status::returned;
+#endif
                         ::std::uint32_t argument{}; ::std::memcpy(&argument, params.data(), sizeof(argument));
                         auto const tid{spawn_actual(actual, argument)};
                         ::std::memcpy(results.data(), &tid, sizeof(tid));
@@ -242,6 +280,10 @@ extern "C++"
                     memory_attribute.memory_access_mode = ::uwvm2::uwvm::wasm::type::preload_module_memory_access_mode_t::copy;
                     preload_call_context_guard context{&memory_attribute, nullptr, instance.source_module_id(), true};
                     if(actual.cancellation().stop_requested()) { return dispatch_status::group_stopped; }
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                    ::uwvm2::imported::ros::synchronous_wait_context current_wait{
+                        [](void* pointer) noexcept { return static_cast<lease*>(pointer)->cancellation().stop_requested(); }, &actual};
+#endif
                     leaf.provider->call_func_index(leaf.index, results.data(), params.data());
                     return actual.cancellation().stop_requested() ? dispatch_status::group_stopped : dispatch_status::returned;
 #else
@@ -250,6 +292,13 @@ extern "C++"
                 }();
             } // Provider/preload/Host TLS/cancellation scopes, THEN census ended.
             // No provider/backend/Host/shard/allocator lock is retained here.
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            // Join the same process exit only AFTER this actual Host operation
+            // retires. Never return ECANCELED into Guest or stop the whole Group
+            // while another operation owns an explicitly selected exit-wait.
+            if(::uwvm2::utils::thread::process_exit::exit_claimed.load(::std::memory_order_acquire))
+            { ::uwvm2::utils::thread::process_exit::request_process_exit(0u); }
+#endif
             if(actual.group_->debug_control_&&!actual.group_->debug_poll(*actual.slot_,
                 ::uwvm2::runtime::wasm_threads::debug_stop_site::host_boundary))
             {

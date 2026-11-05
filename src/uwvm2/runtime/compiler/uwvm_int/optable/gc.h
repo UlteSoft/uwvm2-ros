@@ -163,6 +163,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
             {
                 if(trap_array_out_of_bounds_func != nullptr) { trap_array_out_of_bounds_func(); }
             }
+            if(status == status_t::data_segment_out_of_bounds)
+            {
+                // Segments need no linear memory; do not fabricate a memory index.
+                if(trap_data_segment_out_of_bounds_func != nullptr) { trap_data_segment_out_of_bounds_func(); }
+            }
+            if(status == status_t::element_segment_out_of_bounds)
+            {
+                if(trap_table_out_of_bounds_func != nullptr) { trap_table_out_of_bounds_func(); }
+            }
             if(status == status_t::out_of_memory || status == status_t::size_overflow)
             {
                 if(trap_gc_allocation_failure_func != nullptr) { trap_gc_allocation_failure_func(); }

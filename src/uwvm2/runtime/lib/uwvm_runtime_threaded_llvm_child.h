@@ -55,10 +55,44 @@ extern "C++"
         ThreadedLlvmChild(ThreadedLlvmChild const&)=delete;
         ThreadedLlvmChild& operator=(ThreadedLlvmChild const&)=delete;
         ThreadedLlvmChild(ThreadedLlvmChild&&)=delete;
-        static void fail(::std::uint32_t kind) noexcept
+        static void fail(::std::uint32_t kind, [[maybe_unused]] bool specified_guest_exception=false) noexcept
         {
             auto* const e=active_;
             if(e==nullptr)return; // Missing scope is rejected by raw entry, never guest success.
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            bool specified_guest_trap{specified_guest_exception};
+            switch(static_cast<llvm_jit_trap_kind>(kind))
+            {
+                case llvm_jit_trap_kind::unreachable:
+                case llvm_jit_trap_kind::invalid_conversion_to_integer:
+                case llvm_jit_trap_kind::integer_divide_by_zero:
+                case llvm_jit_trap_kind::integer_overflow:
+                case llvm_jit_trap_kind::call_indirect_table_out_of_bounds:
+                case llvm_jit_trap_kind::call_indirect_null_element:
+                case llvm_jit_trap_kind::call_indirect_type_mismatch:
+                case llvm_jit_trap_kind::memory_out_of_bounds:
+                case llvm_jit_trap_kind::table_out_of_bounds:
+                case llvm_jit_trap_kind::unaligned_atomic:
+                case llvm_jit_trap_kind::atomic_wait_non_shared:
+                case llvm_jit_trap_kind::null_reference:
+                case llvm_jit_trap_kind::array_out_of_bounds:
+                case llvm_jit_trap_kind::gc_allocation_failure:
+                case llvm_jit_trap_kind::cast_failure: specified_guest_trap=true;break;
+                default:break; // Internal/native failures retain their original path.
+            }
+            if(specified_guest_trap)
+            {
+                struct fault_transition { execution* actual;::std::uint32_t kind; } fault{e,kind};
+                if(!::uwvm2::utils::thread::process_exit::run_before_exit_request([](void* pointer) noexcept
+                {
+                    auto const& current=*static_cast<fault_transition*>(pointer);
+                    current.actual->rejected=true;
+                    current.actual->lease->request_trap(current.kind,0u,current.actual->function,UINT64_MAX);
+                },::std::addressof(fault)))
+                {::uwvm2::utils::thread::process_exit::request_process_exit(0u);}
+                return;
+            }
+#endif
             e->rejected=true;
             e->lease->request_trap(kind,0u,e->function,UINT64_MAX);
         }
@@ -91,6 +125,27 @@ extern "C++"
         static void memory_trap(::std::size_t,::std::uint64_t,::std::uint64_t,::std::uint32_t,
             ::std::uint64_t,::std::size_t,::std::uintptr_t,::std::uintptr_t) noexcept
         {fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::memory_out_of_bounds));}
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+        // The private compiler has exactly one Wasm module, indexed zero. Its
+        // generated provenance token is therefore 2, independently of the
+        // source module's global registry index. Host authority is still derived
+        // by observed_caller from the real ChildLease/admission, never this token.
+        [[nodiscard]] static bool accepts_ros_provenance(::std::uintptr_t token) noexcept
+        {
+            auto* const e=active_;
+            if(e==nullptr||e->child==nullptr||e->lease==nullptr)return false;
+            if(token!=2u||!e->lease->owns_current_native_thread()||
+               ::std::addressof(e->lease->world())!=e->child->world_.get()||
+               e->child->world_->module_count()!=1u||e->child->world_->entry_module_index()!=0u||
+               ::std::addressof(e->lease->admission())!=::std::addressof(e->child->world_->admission()))
+            {fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::runtime_invariant_failure));return false;}
+            return !stopped();
+        }
+        [[nodiscard]] static ::std::uintptr_t seed_ros_provenance(::std::uintptr_t own_module) noexcept
+        {return accepts_ros_provenance(own_module)?2u:0u;}
+        static void publish_ros_provenance(::std::uintptr_t token) noexcept
+        {(void)accepts_ros_provenance(token);}
+#endif
         [[nodiscard]] static memory_type* actual_memory(::std::uintptr_t address) noexcept
         {
             if(active_==nullptr)return nullptr;

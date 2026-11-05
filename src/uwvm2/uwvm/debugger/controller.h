@@ -4668,7 +4668,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             ::std::size_t capacity = 256u, trace_ref (*capture)() noexcept =
                 ::uwvm2::runtime::lib::llvm_jit_capture_debug_stack_host_api, memory_reader reader = nullptr)
         {
-            if(capacity == 0u || capacity > 4096u || config.origin != ::uwvm2::utils::control::launch_origin::console ||
+            if(!::uwvm2::utils::control::management::debug_allowed() ||
+               config.profile != ::uwvm2::utils::control::management::execution_profile::dev ||
+               capacity == 0u || capacity > 4096u || config.origin != ::uwvm2::utils::control::launch_origin::console ||
                ::uwvm2::utils::control::qualify(config) != control_error::none || !config.debug_enabled)
             { return {}; }
             // No actual execution has been paused yet; arm_initial_pause is the
@@ -5149,6 +5151,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             management_wait_interrupt_observation observed_interrupt{interrupt};
             if(interrupt.requested != nullptr) { interrupt = observed_interrupt.borrow(); }
             auto command{input_command};
+            // Authorize the actual typed action before inspect, relocation,
+            // script expansion or any status-wrapped extension can run.
+            if(!::uwvm2::utils::control::management::debug_allowed() ||
+               config_.profile != ::uwvm2::utils::control::management::execution_profile::dev)
+            { controller_reply denied{}; denied.status = control_error::unavailable_capability; return denied; }
             auto initial{inspect()};
             if(admission_ != control_error::none) { initial.status = admission_; return initial; }
             if(command.kind==console_command_kind::execution_relocate)

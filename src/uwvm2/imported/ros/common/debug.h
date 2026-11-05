@@ -2,6 +2,9 @@
  * UWVM2 bounded, read-only ROS debugger DATA. APL-2.0.     *
  *************************************************************/
 #pragma once
+#ifndef UWVM_MODULE
+#include <uwvm2/utils/thread/monotonic_clock.h>
+#endif
 #include <array>
 #include <atomic>
 #include <chrono>
@@ -149,7 +152,7 @@ namespace uwvm2::imported::ros::debug
     }
     inline std::uint64_t monotonic_nanoseconds() noexcept
     {
-        auto n{std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count()};
+        auto n{std::chrono::duration_cast<std::chrono::nanoseconds>(::uwvm2::utils::host_clock::now().time_since_epoch()).count()};
         return n>0?static_cast<std::uint64_t>(n):0;
     }
     class interface_store

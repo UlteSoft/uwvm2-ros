@@ -87,6 +87,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                                              env,
                                          ::uwvm2::imported::wasi::wasip1::abi::exitcode_t code) noexcept
     {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        if(!env.exposes(u8"proc_exit") || !env.permits(::uwvm2::imported::wasi::wasip1::environment::permission_t::proc_exit))
+        {
+            env.proc_exit_requested = true; env.proc_exit_denied = true;
+            env.proc_exit_code = static_cast<::std::uint32_t>(code); return;
+        }
+        // The process coordinator honors each already-pending operation's
+        // configured exit action. No host callback or Guest can bypass it.
+        ::uwvm2::utils::thread::process_exit::request_process_exit(static_cast<::std::uint32_t>(code));
+#else
         if(env.wasip1_proc_exit_func_ptr != nullptr)
         {
             env.wasip1_proc_exit_func_ptr(static_cast<::uwvm2::parser::wasm::standard::wasm1::type::wasm_i32>(code));
@@ -102,11 +112,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             ::uwvm2::imported::wasi::wasip1::func::posix::exit(static_cast<int>(code));
 # endif
         }
+#endif
     }
 
     inline constexpr void proc_exit(::uwvm2::imported::wasi::wasip1::environment::wasip1_environment<::uwvm2::object::memory::linear::native_memory_t> & env,
                                     ::uwvm2::imported::wasi::wasip1::abi::exitcode_t code) noexcept
     {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        if(!env.exposes(u8"proc_exit")) { env.proc_exit_requested = true; env.proc_exit_denied = true; return; }
+#endif
+
         auto const trace_wasip1_call{env.trace_wasip1_call};
 
         if(trace_wasip1_call) [[unlikely]]

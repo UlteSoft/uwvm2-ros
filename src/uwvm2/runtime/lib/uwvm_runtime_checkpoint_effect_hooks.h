@@ -28,9 +28,9 @@ namespace
     enum class checkpoint_resolved_effect : unsigned char
     { defined_wasm, unadapted_host, invalid_actual_owner };
 
-    [[nodiscard]] bool checkpoint_effect_actual_full_owner(::std::size_t module_id) noexcept
+    [[nodiscard]] bool checkpoint_effect_actual_full_owner(::std::size_t module_id, bool require_checkpoint = true) noexcept
     {
-        if(module_id >= g_runtime.modules.size() || !g_runtime.checkpoint_profile) { return false; }
+        if(module_id >= g_runtime.modules.size() || (require_checkpoint && !g_runtime.checkpoint_profile)) { return false; }
         // [actual generation-pinned module records ... module_id ... count] end
         // [safe                                                        ] check
         // membership before indexing; no caller pointer is dereferenced here.
@@ -38,10 +38,13 @@ namespace
         auto const publication{record.llvm_jit_full_publication.get()};
         auto const module{record.runtime_module};
         if(module == nullptr || publication == nullptr || !record.llvm_jit_ready ||
-           !publication->engine || !publication->context || publication->plan ||
-           !publication->checkpoint_profile || publication->checkpoint_profile != g_runtime.checkpoint_profile ||
+           !publication->engine || !publication->context || publication->plan) { return false; }
+        if(require_checkpoint && (!publication->checkpoint_profile || publication->checkpoint_profile != g_runtime.checkpoint_profile ||
            publication->checkpoint_profile.owner_before(g_runtime.checkpoint_profile) ||
-           g_runtime.checkpoint_profile.owner_before(publication->checkpoint_profile)) { return false; }
+           g_runtime.checkpoint_profile.owner_before(publication->checkpoint_profile))) { return false; }
+        if(!require_checkpoint && (!g_runtime.debug_pause_control ||
+           publication->debug_source_runtime_epoch != current_runtime_generation() ||
+           publication->debug_shutdown_abi_revision.load(::std::memory_order_acquire) != 1u)) { return false; }
         auto const& source{publication->source};
         if(!::uwvm2::uwvm::runtime::full::full_source_instance::has_canonical_owner(source) ||
            !source->initialized_from_actual_state()) { return false; }
@@ -50,7 +53,7 @@ namespace
     }
 
     [[nodiscard]] checkpoint_resolved_effect checkpoint_effect_actual_cached_leaf(
-        cached_import_target const& target) noexcept
+        cached_import_target const& target, bool require_checkpoint = true) noexcept
     {
         // Only an actual cache member may reach this helper. The cache owns the
         // final leaf; an import name, user enum or replay-adapter boolean is not
@@ -63,7 +66,7 @@ namespace
                 return checkpoint_resolved_effect::unadapted_host;
             case cached_import_target::kind::defined:
             {
-                if(!checkpoint_effect_actual_full_owner(target.frame.module_id))
+                if(!checkpoint_effect_actual_full_owner(target.frame.module_id,require_checkpoint))
                 { return checkpoint_resolved_effect::invalid_actual_owner; }
                 auto const module{g_runtime.modules.index_unchecked(target.frame.module_id).runtime_module};
                 auto const imports{module->imported_function_vec_storage.size()};
@@ -84,14 +87,14 @@ namespace
 
     [[nodiscard]] checkpoint_resolved_effect checkpoint_effect_actual_import(
         ::std::uintptr_t module_address, ::std::uintptr_t function_index,
-        ::std::size_t parameter_bytes, ::std::size_t result_bytes) noexcept
+        ::std::size_t parameter_bytes, ::std::size_t result_bytes, bool require_checkpoint = true) noexcept
     {
         // [comparison-only native address] no object permission from arithmetic
         // [safe                          ] resolve actual registry membership
         // BEFORE any module read. The execution lease pins this generation.
         auto const candidate{reinterpret_cast<runtime_module_storage_t const*>(module_address)};
         auto const module_id{find_runtime_module_id_from_storage_ptr(candidate)};
-        if(!checkpoint_effect_actual_full_owner(module_id))
+        if(!checkpoint_effect_actual_full_owner(module_id,require_checkpoint))
         { return checkpoint_resolved_effect::invalid_actual_owner; }
         auto const module{g_runtime.modules.index_unchecked(module_id).runtime_module};
         auto const imports{module->imported_function_vec_storage.size()};
@@ -109,12 +112,12 @@ namespace
         auto const& target{cache.index_unchecked(function_index)};
         if(target.origin_module_id != module_id || target.param_bytes != parameter_bytes || target.result_bytes != result_bytes)
         { return checkpoint_resolved_effect::invalid_actual_owner; }
-        return checkpoint_effect_actual_cached_leaf(target);
+        return checkpoint_effect_actual_cached_leaf(target,require_checkpoint);
     }
 
     [[nodiscard]] checkpoint_resolved_effect checkpoint_effect_actual_raw_target(
         ::std::uintptr_t entry_address, ::std::uintptr_t context_address,
-        ::std::size_t parameter_bytes, ::std::size_t result_bytes) noexcept
+        ::std::size_t parameter_bytes, ::std::size_t result_bytes, bool require_checkpoint = true) noexcept
     {
         if(entry_address == reinterpret_cast<::std::uintptr_t>(llvm_jit_raw_call_cached_import_entry))
         {
@@ -130,7 +133,7 @@ namespace
                 auto const bytes{count * sizeof(cached_import_target)};
                 if(begin > UINTPTR_MAX - bytes || context_address < begin || context_address - begin >= bytes) { continue; }
                 auto const offset{context_address - begin};
-                if(offset % sizeof(cached_import_target) != 0u || !checkpoint_effect_actual_full_owner(module_id))
+                if(offset % sizeof(cached_import_target) != 0u || !checkpoint_effect_actual_full_owner(module_id,require_checkpoint))
                 { return checkpoint_resolved_effect::invalid_actual_owner; }
                 auto const index{offset / sizeof(cached_import_target)};
                 // [actual cache0 ... exact index ... count] cache_end
@@ -140,7 +143,7 @@ namespace
                 auto const& target{cache.index_unchecked(index)};
                 if(target.origin_module_id != module_id || target.param_bytes != parameter_bytes || target.result_bytes != result_bytes)
                 { return checkpoint_resolved_effect::invalid_actual_owner; }
-                return checkpoint_effect_actual_cached_leaf(target);
+                return checkpoint_effect_actual_cached_leaf(target,require_checkpoint);
             }
             return checkpoint_resolved_effect::invalid_actual_owner;
         }
@@ -152,7 +155,7 @@ namespace
         {
             for(::std::size_t module_id{}; module_id != g_runtime.modules.size(); ++module_id)
             {
-                if(!checkpoint_effect_actual_full_owner(module_id)) { continue; }
+                if(!checkpoint_effect_actual_full_owner(module_id,require_checkpoint)) { continue; }
                 auto const& entries{g_runtime.modules.index_unchecked(module_id).llvm_jit_local_raw_entry_addresses};
                 for(auto const actual : entries)
                 { if(actual != 0u && actual == entry_address) { return checkpoint_resolved_effect::defined_wasm; } }
@@ -201,6 +204,43 @@ namespace
 
 }
 #endif
+
+extern "C++" void details::llvm_jit_debug_classified_import_abi_bridge(
+    ::std::uintptr_t module, ::std::uintptr_t function, ::std::uintptr_t result,
+    ::std::size_t result_bytes, ::std::uintptr_t parameters, ::std::size_t parameter_bytes) UWVM_THROWS
+{
+    if(get_llvm_jit_generated_bridge_scope_depth()==0u) { ::fast_io::fast_terminate(); }
+#if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
+    auto const effect{checkpoint_effect_actual_import(module,function,parameter_bytes,result_bytes,false)};
+    if(effect==checkpoint_resolved_effect::invalid_actual_owner) { ::fast_io::fast_terminate(); }
+    if(effect==checkpoint_resolved_effect::defined_wasm)
+    {
+        details::llvm_jit_call_raw_from_generated_wasm_abi_bridge(
+            module,function,result,result_bytes,parameters,parameter_bytes);
+        return;
+    }
+#endif
+    details::llvm_jit_debug_host_scope scope{};
+    details::llvm_jit_call_raw_from_generated_wasm_abi_bridge(
+        module,function,result,result_bytes,parameters,parameter_bytes);
+}
+extern "C++" void details::llvm_jit_debug_classified_raw_target_abi_bridge(
+    ::std::uintptr_t entry_address, ::std::uintptr_t context, ::std::uintptr_t result,
+    ::std::size_t result_bytes, ::std::uintptr_t parameters, ::std::size_t parameter_bytes) UWVM_THROWS
+{
+    if(entry_address==0u || get_llvm_jit_generated_bridge_scope_depth()==0u) { ::fast_io::fast_terminate(); }
+    using entry_type=void(UWVM2_RUNTIME_LLVM_JIT_RAW_ENTRY_PTR_ABI*)(
+        ::std::uintptr_t,::std::uintptr_t,::std::size_t,::std::uintptr_t,::std::size_t);
+    auto const entry{reinterpret_cast<entry_type>(entry_address)};
+#if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
+    auto const effect{checkpoint_effect_actual_raw_target(entry_address,context,parameter_bytes,result_bytes,false)};
+    if(effect==checkpoint_resolved_effect::invalid_actual_owner) { ::fast_io::fast_terminate(); }
+    if(effect==checkpoint_resolved_effect::defined_wasm)
+    { entry(context,result,result_bytes,parameters,parameter_bytes);return; }
+#endif
+    details::llvm_jit_debug_host_scope scope{};
+    entry(context,result,result_bytes,parameters,parameter_bytes);
+}
 
 extern "C++" void details::llvm_jit_checkpoint_call_raw_from_generated_wasm_abi_bridge(
     ::std::uintptr_t module_address, ::std::uintptr_t function_index,

@@ -11,6 +11,7 @@
     {
         namespace ws = ::uwvm2::uwvm::debugger::wasm_state;
         ws::view out{}; out.requested = ws::unavailable_request(selection);
+        if(!::uwvm2::utils::control::management::debug_allowed()) { out.result = ws::status::unavailable_activation; return out; }
         if(!ws::valid(selection)) { out.result = ws::status::invalid_selection; return out; }
 # if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS)
         if(!ticket) { out.result = ws::status::requires_current_cooperative_stop; return out; }

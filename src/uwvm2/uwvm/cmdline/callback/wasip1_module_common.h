@@ -85,6 +85,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
             hide_host_api,
             noinherit_system_environment,
             inherit_system_environment,
+            set_resource_limit,
+            set_resource_limit_action,
+            set_resource_limit_exit_action,
             grant_permission,
             deny_permission,
             disable_utf8_check,
@@ -96,6 +99,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
             delete_system_environment,
             add_or_replace_environment,
             mount_dir,
+            mount_dir_rights,
 #  if defined(UWVM_IMPORT_WASI_WASIP1_SUPPORT_SOCKET)
             socket_tcp_connect,
             socket_tcp_listen,
@@ -116,6 +120,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
             else if(text == u8"hide-host-api") { action = target_action_t::hide_host_api; }
             else if(text == u8"noinherit-system-environment") { action = target_action_t::noinherit_system_environment; }
             else if(text == u8"inherit-system-environment") { action = target_action_t::inherit_system_environment; }
+            else if(text == u8"limit") { action = target_action_t::set_resource_limit; }
+            else if(text == u8"limit-action") { action = target_action_t::set_resource_limit_action; }
+            else if(text == u8"limit-exit-action") { action = target_action_t::set_resource_limit_exit_action; }
             else if(text == u8"grant") { action = target_action_t::grant_permission; }
             else if(text == u8"deny") { action = target_action_t::deny_permission; }
             else if(text == u8"disable-utf8-check") { action = target_action_t::disable_utf8_check; }
@@ -127,6 +134,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
             else if(text == u8"delete-system-environment") { action = target_action_t::delete_system_environment; }
             else if(text == u8"add-or-replace-environment") { action = target_action_t::add_or_replace_environment; }
             else if(text == u8"mount-dir") { action = target_action_t::mount_dir; }
+            else if(text == u8"mount-dir-rights") { action = target_action_t::mount_dir_rights; }
 #  if defined(UWVM_IMPORT_WASI_WASIP1_SUPPORT_SOCKET)
             else if(text == u8"socket-tcp-connect") { action = target_action_t::socket_tcp_connect; }
             else if(text == u8"socket-tcp-listen") { action = target_action_t::socket_tcp_listen; }
@@ -803,6 +811,171 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
                     mark_consumed(extra1);
                     return parameter_return_type::def;
                 }
+                case target_action_t::set_resource_limit_action:
+                case target_action_t::set_resource_limit_exit_action:
+                {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                    if(extra1 == para_end || extra1->type != parameter_type::arg || extra1 + 1u == para_end || (extra1 + 1u)->type != parameter_type::arg)
+                    { return print_usage_error(parameter, u8"Missing WASI limit name or overflow action."); }
+                    auto const name{::uwvm2::utils::container::u8string_view{extra1->str}};
+                    auto const action_name{::uwvm2::utils::container::u8string_view{(extra1 + 1u)->str}};
+                    bool const exit_policy{action == target_action_t::set_resource_limit_exit_action};
+                    using action_type = ::uwvm2::imported::wasi::wasip1::environment::limit_action;
+                    using exit_type = ::uwvm2::imported::wasi::wasip1::environment::exit_wait_action;
+                    action_type action{};
+                    if(action_name == u8"wait") { action = action_type::wait; }
+                    else if(action_name != (exit_policy ? u8"cancel" : u8"reject"))
+                    {
+                        if(exit_policy) { return print_usage_error(parameter, u8"WASI limit exit action must be cancel or wait."); }
+                        return print_usage_error(parameter, u8"WASI limit action must be reject or wait.");
+                    }
+                    constexpr ::uwvm2::utils::container::u8string_view budgets[]{u8"random",u8"stdin",u8"stdout",u8"stderr",u8"realtime",u8"monotonic",u8"process",u8"thread",u8"poll",u8"signal",u8"yield",u8"filesystem"};
+                    constexpr ::uwvm2::utils::container::u8string_view fields[]{u8"request-bytes",u8"window-bytes",u8"window-calls",u8"total-bytes",u8"total-calls",u8"concurrent"};
+                    for(unsigned budget{};budget<12u;++budget)
+                    {
+                        auto const prefix{budgets[budget]};
+                        if(name.size()<=prefix.size() || name[prefix.size()]!=u8'.')continue;
+                        if(::uwvm2::utils::container::u8string_view{name.data(),prefix.size()}!=prefix)continue;
+                        auto const field_name{::uwvm2::utils::container::u8string_view{name.data()+prefix.size()+1u,name.size()-prefix.size()-1u}};
+                        if(exit_policy && field_name==u8"native-wait")
+                        {
+                            target.env.limits.operations[budget].native_wait_exit_action=action==action_type::wait ? exit_type::wait : exit_type::cancel;
+                            mark_consumed(extra1 + 1u);
+                            return parameter_return_type::def;
+                        }
+                        for(unsigned field{};field<6u;++field)
+                        {
+                            if(field_name!=fields[field])continue;
+                            if(action==action_type::wait && field!=1u && field!=2u && field!=5u)
+                            { return print_usage_error(parameter, u8"Wait requires a replenishing window or concurrency limit; request and lifetime ceilings only support reject."); }
+                            if(exit_policy) { target.env.limits.operations[budget].exit_actions[field]=action==action_type::wait ? exit_type::wait : exit_type::cancel; }
+                            else { target.env.limits.operations[budget].actions[field]=action; }
+                            mark_consumed(extra1 + 1u);
+                            return parameter_return_type::def;
+                        }
+                    }
+                    return print_usage_error(parameter, u8"Unknown WASI operation limit.");
+#else
+                    return print_usage_error(parameter, u8"WASI resource limit actions require the ROS product policy.");
+#endif
+                }
+                case target_action_t::set_resource_limit:
+                {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                    if(extra1 == para_end || extra1->type != parameter_type::arg || extra1 + 1u == para_end || (extra1 + 1u)->type != parameter_type::arg)
+                    { return print_usage_error(parameter, u8"Missing WASI limit name or decimal value."); }
+                    auto const name{::uwvm2::utils::container::u8string_view{extra1->str}};
+                    auto const number{::uwvm2::utils::container::u8string_view{(extra1 + 1u)->str}};
+                    ::std::uint64_t value{};
+                    if(number == u8"unlimited") { value = ::uwvm2::imported::wasi::wasip1::environment::unlimited; }
+                    else
+                    {
+                        if(number.empty() || number.size() > 20u) { return print_usage_error(parameter, u8"Invalid WASI limit value."); }
+                        for(auto c : number)
+                        {
+                            if(c < u8'0' || c > u8'9' || value > (UINT64_MAX - static_cast<unsigned>(c - u8'0')) / 10u)
+                            { return print_usage_error(parameter, u8"Invalid or overflowing WASI limit value."); }
+                            value = value * 10u + static_cast<unsigned>(c - u8'0');
+                        }
+                    }
+                    auto& limits{target.env.limits};
+                    ::std::uint64_t* destination{};
+                    if(name == u8"poll-subscriptions") { destination = &limits.max_poll_subscriptions; }
+                    if(name == u8"poll-wait-ns") { destination = &limits.max_poll_wait_ns; }
+                    if(name == u8"args-env-bytes") { destination = &limits.max_args_env_bytes; }
+                    if(name == u8"filesystem.base-rights") { destination = &limits.filesystem_base_rights; }
+                    if(name == u8"filesystem.inheriting-rights") { destination = &limits.filesystem_inheriting_rights; }
+                    if(name == u8"realtime.granularity-ns") { destination = &limits.clock_granularity_ns[0u]; }
+                    if(name == u8"monotonic.granularity-ns") { destination = &limits.clock_granularity_ns[1u]; }
+                    if(name == u8"process.granularity-ns") { destination = &limits.clock_granularity_ns[2u]; }
+                    if(name == u8"thread.granularity-ns") { destination = &limits.clock_granularity_ns[3u]; }
+                    if(name == u8"random.request-bytes") { destination = &limits.operations[0u].request_bytes; }
+                    if(name == u8"random.window-bytes") { destination = &limits.operations[0u].window_bytes; }
+                    if(name == u8"random.window-calls") { destination = &limits.operations[0u].window_calls; }
+                    if(name == u8"random.total-bytes") { destination = &limits.operations[0u].total_bytes; }
+                    if(name == u8"random.total-calls") { destination = &limits.operations[0u].total_calls; }
+                    if(name == u8"random.concurrent") { destination = &limits.operations[0u].concurrent; }
+                    if(name == u8"stdin.request-bytes") { destination = &limits.operations[1u].request_bytes; }
+                    if(name == u8"stdin.window-bytes") { destination = &limits.operations[1u].window_bytes; }
+                    if(name == u8"stdin.window-calls") { destination = &limits.operations[1u].window_calls; }
+                    if(name == u8"stdin.total-bytes") { destination = &limits.operations[1u].total_bytes; }
+                    if(name == u8"stdin.total-calls") { destination = &limits.operations[1u].total_calls; }
+                    if(name == u8"stdin.concurrent") { destination = &limits.operations[1u].concurrent; }
+                    if(name == u8"stdout.request-bytes") { destination = &limits.operations[2u].request_bytes; }
+                    if(name == u8"stdout.window-bytes") { destination = &limits.operations[2u].window_bytes; }
+                    if(name == u8"stdout.window-calls") { destination = &limits.operations[2u].window_calls; }
+                    if(name == u8"stdout.total-bytes") { destination = &limits.operations[2u].total_bytes; }
+                    if(name == u8"stdout.total-calls") { destination = &limits.operations[2u].total_calls; }
+                    if(name == u8"stdout.concurrent") { destination = &limits.operations[2u].concurrent; }
+                    if(name == u8"stderr.request-bytes") { destination = &limits.operations[3u].request_bytes; }
+                    if(name == u8"stderr.window-bytes") { destination = &limits.operations[3u].window_bytes; }
+                    if(name == u8"stderr.window-calls") { destination = &limits.operations[3u].window_calls; }
+                    if(name == u8"stderr.total-bytes") { destination = &limits.operations[3u].total_bytes; }
+                    if(name == u8"stderr.total-calls") { destination = &limits.operations[3u].total_calls; }
+                    if(name == u8"stderr.concurrent") { destination = &limits.operations[3u].concurrent; }
+                    if(name == u8"realtime.request-bytes") { destination = &limits.operations[4u].request_bytes; }
+                    if(name == u8"realtime.window-bytes") { destination = &limits.operations[4u].window_bytes; }
+                    if(name == u8"realtime.window-calls") { destination = &limits.operations[4u].window_calls; }
+                    if(name == u8"realtime.total-bytes") { destination = &limits.operations[4u].total_bytes; }
+                    if(name == u8"realtime.total-calls") { destination = &limits.operations[4u].total_calls; }
+                    if(name == u8"realtime.concurrent") { destination = &limits.operations[4u].concurrent; }
+                    if(name == u8"monotonic.request-bytes") { destination = &limits.operations[5u].request_bytes; }
+                    if(name == u8"monotonic.window-bytes") { destination = &limits.operations[5u].window_bytes; }
+                    if(name == u8"monotonic.window-calls") { destination = &limits.operations[5u].window_calls; }
+                    if(name == u8"monotonic.total-bytes") { destination = &limits.operations[5u].total_bytes; }
+                    if(name == u8"monotonic.total-calls") { destination = &limits.operations[5u].total_calls; }
+                    if(name == u8"monotonic.concurrent") { destination = &limits.operations[5u].concurrent; }
+                    if(name == u8"process.request-bytes") { destination = &limits.operations[6u].request_bytes; }
+                    if(name == u8"process.window-bytes") { destination = &limits.operations[6u].window_bytes; }
+                    if(name == u8"process.window-calls") { destination = &limits.operations[6u].window_calls; }
+                    if(name == u8"process.total-bytes") { destination = &limits.operations[6u].total_bytes; }
+                    if(name == u8"process.total-calls") { destination = &limits.operations[6u].total_calls; }
+                    if(name == u8"process.concurrent") { destination = &limits.operations[6u].concurrent; }
+                    if(name == u8"thread.request-bytes") { destination = &limits.operations[7u].request_bytes; }
+                    if(name == u8"thread.window-bytes") { destination = &limits.operations[7u].window_bytes; }
+                    if(name == u8"thread.window-calls") { destination = &limits.operations[7u].window_calls; }
+                    if(name == u8"thread.total-bytes") { destination = &limits.operations[7u].total_bytes; }
+                    if(name == u8"thread.total-calls") { destination = &limits.operations[7u].total_calls; }
+                    if(name == u8"thread.concurrent") { destination = &limits.operations[7u].concurrent; }
+                    if(name == u8"poll.request-bytes") { destination = &limits.operations[8u].request_bytes; }
+                    if(name == u8"poll.window-bytes") { destination = &limits.operations[8u].window_bytes; }
+                    if(name == u8"poll.window-calls") { destination = &limits.operations[8u].window_calls; }
+                    if(name == u8"poll.total-bytes") { destination = &limits.operations[8u].total_bytes; }
+                    if(name == u8"poll.total-calls") { destination = &limits.operations[8u].total_calls; }
+                    if(name == u8"poll.concurrent") { destination = &limits.operations[8u].concurrent; }
+                    if(name == u8"signal.request-bytes") { destination = &limits.operations[9u].request_bytes; }
+                    if(name == u8"signal.window-bytes") { destination = &limits.operations[9u].window_bytes; }
+                    if(name == u8"signal.window-calls") { destination = &limits.operations[9u].window_calls; }
+                    if(name == u8"signal.total-bytes") { destination = &limits.operations[9u].total_bytes; }
+                    if(name == u8"signal.total-calls") { destination = &limits.operations[9u].total_calls; }
+                    if(name == u8"signal.concurrent") { destination = &limits.operations[9u].concurrent; }
+                    if(name == u8"yield.request-bytes") { destination = &limits.operations[10u].request_bytes; }
+                    if(name == u8"yield.window-bytes") { destination = &limits.operations[10u].window_bytes; }
+                    if(name == u8"yield.window-calls") { destination = &limits.operations[10u].window_calls; }
+                    if(name == u8"yield.total-bytes") { destination = &limits.operations[10u].total_bytes; }
+                    if(name == u8"yield.total-calls") { destination = &limits.operations[10u].total_calls; }
+                    if(name == u8"yield.concurrent") { destination = &limits.operations[10u].concurrent; }
+                    if(name == u8"filesystem.request-bytes") { destination = &limits.operations[11u].request_bytes; }
+                    if(name == u8"filesystem.window-bytes") { destination = &limits.operations[11u].window_bytes; }
+                    if(name == u8"filesystem.window-calls") { destination = &limits.operations[11u].window_calls; }
+                    if(name == u8"filesystem.total-bytes") { destination = &limits.operations[11u].total_bytes; }
+                    if(name == u8"filesystem.total-calls") { destination = &limits.operations[11u].total_calls; }
+                    if(name == u8"filesystem.concurrent") { destination = &limits.operations[11u].concurrent; }
+                    if(destination == nullptr) { return print_usage_error(parameter, u8"Unknown WASI resource limit."); }
+                    // Policy ceilings exist only when the host supplies them.
+                    // Clock granularity is a positive precision floor, not a quota.
+                    if((name == u8"realtime.granularity-ns" || name == u8"monotonic.granularity-ns" ||
+                        name == u8"process.granularity-ns" || name == u8"thread.granularity-ns") && (value == 0u || number == u8"unlimited"))
+                    { return print_usage_error(parameter, u8"Clock granularity requires a positive number; 1 adds no coarsening."); }
+                    if((name == u8"filesystem.base-rights" || name == u8"filesystem.inheriting-rights") && number == u8"unlimited")
+                    { return print_usage_error(parameter, u8"Filesystem rights require an explicit operation mask."); }
+                    *destination = value;
+                    mark_consumed(extra1 + 1u);
+                    return parameter_return_type::def;
+#else
+                    return print_usage_error(parameter, u8"Resource policy requires the ROS product profile.");
+#endif
+                }
                 case target_action_t::grant_permission: [[fallthrough]];
                 case target_action_t::deny_permission:
                 {
@@ -888,6 +1061,48 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
                     }
                     mark_consumed(extra2);
                     return parameter_return_type::def;
+                }
+                case target_action_t::mount_dir_rights:
+                {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                    if(para_end - extra1 < 3 || extra1->type != parameter_type::arg ||
+                       (extra1 + 1u)->type != parameter_type::arg || (extra1 + 2u)->type != parameter_type::arg)
+                    { return print_usage_error(parameter, u8"Expected an existing guest preopen name and two decimal rights masks."); }
+                    auto normalized{wasip1_global_mount_dir_details::normalize_mount_path(extra1->str)};
+                    if(!normalized.valid) { return print_usage_error(parameter, u8"Invalid guest preopen name."); }
+                    mount_dir_root_t* selected{};
+                    for(auto& root: target.mount_dir_roots)
+                    {
+                        auto const name{wasip1_global_mount_dir_details::normalize_mount_path(::uwvm2::utils::container::u8string_view{root.preload_dir.data(), root.preload_dir.size()})};
+                        if(name.valid && name.normalized == normalized.normalized)
+                        {
+                            if(selected != nullptr) { return print_usage_error(parameter, u8"Ambiguous guest preopen name."); }
+                            selected = ::std::addressof(root);
+                        }
+                    }
+                    if(selected == nullptr) { return print_usage_error(parameter, u8"Declare this target's mount-dir before its rights."); }
+                    if(selected->rights_configured) { return print_usage_error(parameter, u8"Duplicate or conflicting rights for this preopen."); }
+                    ::std::uint64_t masks[2]{};
+                    for(unsigned i{}; i != 2u; ++i)
+                    {
+                        auto const number{::uwvm2::utils::container::u8string_view{(extra1 + 1u + i)->str}};
+                        if(number.empty() || number.size() > 20u)
+                        { return print_usage_error(parameter, u8"Preopen rights require explicit decimal uint64 masks."); }
+                        for(auto c: number)
+                        {
+                            if(c < u8'0' || c > u8'9' || masks[i] > (UINT64_MAX - static_cast<unsigned>(c - u8'0')) / 10u)
+                            { return print_usage_error(parameter, u8"Invalid or overflowing preopen rights mask."); }
+                            masks[i] = masks[i] * 10u + static_cast<unsigned>(c - u8'0');
+                        }
+                    }
+                    selected->rights_base = masks[0];
+                    selected->rights_inheriting = masks[1];
+                    selected->rights_configured = true;
+                    mark_consumed(extra1 + 2u);
+                    return parameter_return_type::def;
+#else
+                    return print_usage_error(parameter, u8"Per-preopen rights require the ROS product policy.");
+#endif
                 }
                 case target_action_t::mount_dir:
                 {

@@ -16,7 +16,13 @@
         ::std::vector<::std::byte> eh_payload_{};
         ::std::size_t eh_record_used_{},eh_payload_used_{},eh_pending_{};
         static void exception_failure(eh_failure value) noexcept
-        {fail(static_cast<::std::uint32_t>(value));}
+        {
+            // Only a validated uncaught tag or exhaustion of this actual
+            // precharged Guest arena is a classified Guest failure. Invalid
+            // tokens/schema/ownership retain the native invariant path.
+            fail(static_cast<::std::uint32_t>(value),
+                 value==eh_failure::uncaught||value==eh_failure::resource);
+        }
         [[nodiscard]] eh_schema const* exception_schema(::std::size_t tag) const noexcept
         {return tag<eh_schemas_.size()?::std::addressof(eh_schemas_[tag]):nullptr;}
         [[nodiscard]] eh_record const* exception_record(::std::size_t token) const noexcept

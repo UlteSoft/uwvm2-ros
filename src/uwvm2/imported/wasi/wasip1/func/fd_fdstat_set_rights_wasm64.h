@@ -87,6 +87,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         ::uwvm2::imported::wasi::wasip1::abi::rights_wasm64_t fs_rights_base,
         ::uwvm2::imported::wasi::wasip1::abi::rights_wasm64_t fs_rights_inheriting) noexcept
     {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        if(!env.exposes(u8"fd_fdstat_set_rights")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+#endif
+
         auto const trace_wasip1_call{env.trace_wasip1_call};
 
         if(trace_wasip1_call) [[unlikely]]

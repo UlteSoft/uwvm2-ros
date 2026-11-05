@@ -217,6 +217,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                     curr_fd_native_observer = file_fd;
                 }
 
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                // Charge the final extent conservatively. A size snapshot can
+                // become stale through another descriptor or host-side alias.
+                auto const growth_charge{static_cast<::std::uint64_t>(size)};
+                ::uwvm2::imported::wasi::wasip1::environment::budget_reservation reservation{
+                    ::uwvm2::imported::wasi::wasip1::environment::budget_kind::filesystem_io, env.limits, growth_charge};
+                if(!reservation) { return reservation.template error<::uwvm2::imported::wasi::wasip1::abi::errno_t>(); }
+#endif
+
 # if defined(_WIN32) && !defined(__CYGWIN__)
                 auto const& curr_fd_native_file{curr_fd_native_observer};
 
@@ -363,6 +372,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         ::uwvm2::imported::wasi::wasip1::abi::wasi_posix_fd_t fd,
         ::uwvm2::imported::wasi::wasip1::abi::filesize_t size) noexcept
     {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        if(!env.exposes(u8"fd_filestat_set_size")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+        if(fd >= 0 && fd < 3 && !env.grants_stdio(static_cast<unsigned>(fd)))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+
+#endif
+
         auto const trace_wasip1_call{env.trace_wasip1_call};
 
         if(trace_wasip1_call) [[unlikely]]

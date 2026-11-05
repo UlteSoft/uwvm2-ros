@@ -29,7 +29,7 @@ namespace uwvm2::uwvm::cmdline::params::details::ros_details
 {
     namespace model = ::uwvm2::imported::ros;
     namespace storage = ::uwvm2::uwvm::imported::ros;
-    enum class action { create, add_module, enable, disable, connection, grant, set, check, dump };
+    enum class action { create, add_module, bind_global_module, enable, disable, connection, grant, set, check, dump };
     using status = ::uwvm2::utils::cmdline::parameter_return_type;
     template<model::scope Scope>
     inline void set_pretreatment(char8_t const* const*& argv_curr,
@@ -200,6 +200,7 @@ namespace uwvm2::uwvm::cmdline::params::details::ros_details
         if constexpr(selector != 0) { name = args[0]; }
         model::result result{};
         if constexpr(Action == action::create) { result = storage::runtime_policy.create_target(Version, Scope, name); }
+        else if constexpr(Action == action::bind_global_module) { result = storage::runtime_policy.bind_global_module(Version, args[0]); }
         else if constexpr(Action == action::add_module) { result = storage::runtime_policy.bind_module(Version, name, args[1]); }
         else if constexpr(Action == action::enable || Action == action::disable)
         {

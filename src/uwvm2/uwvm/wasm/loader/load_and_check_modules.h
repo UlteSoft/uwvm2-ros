@@ -58,6 +58,9 @@
 # include <uwvm2/uwvm/wasm/feature/impl.h>
 # include <uwvm2/uwvm/wasm/custom/impl.h>
 # include <uwvm2/uwvm/wasm/warning/impl.h>
+# if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#  include <uwvm2/uwvm/imported/ros/storage.h>
+# endif
 # include "wasm_file.h"
 # include "dl.h"
 # include "detect_cycle.h"
@@ -77,7 +80,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
         local_imported_module_init_error
     };
 
-    inline constexpr load_and_check_modules_rtl construct_all_module_and_check_duplicate_module() noexcept
+    inline constexpr load_and_check_modules_rtl construct_all_module_and_check_duplicate_module(bool initialize_local_imports = true) noexcept
     {
 #ifdef UWVM_TIMER
         ::uwvm2::utils::debug::timer parsing_timer{u8"construct all module and check duplicate module"};
@@ -170,7 +173,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                 auto const module_name{lim.get_module_name()};
 
                 // initialize local imported module
-                if(!lim.init_local_imported_module()) [[unlikely]]
+                if(initialize_local_imports && !lim.init_local_imported_module()) [[unlikely]]
                 {
                     ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
                                         ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
@@ -323,7 +326,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
         // `--wasip1-single-disable` or `--wasip1-group-disable` could still link
         // against the globally loaded local import and fail later at runtime.
         auto const wasip1_import_visible_for_module{
-            [](auto curr_module_type, ::uwvm2::utils::container::u8string_view curr_module_name) constexpr noexcept -> bool
+            [](auto curr_module_type, ::uwvm2::utils::container::u8string_view curr_module_name, [[maybe_unused]] ::uwvm2::utils::container::u8string_view function_name) constexpr noexcept -> bool
             {
                 switch(curr_module_type)
                 {
@@ -334,9 +337,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                                curr_module_name)};
                            override_state != nullptr && override_state->enabled_is_set) [[unlikely]]
                         {
+                            #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                            return override_state->enabled && ::uwvm2::imported::wasi::wasip1::environment::host_function_bit(function_name) != 0u;
+#else
                             return override_state->enabled;
+#endif
                         }
+                        #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                        return false;
+#else
                         return ::uwvm2::uwvm::wasm::storage::local_preload_wasip1;
+#endif
                     }
                     case ::uwvm2::uwvm::wasm::type::module_type_t::preloaded_wasm:
                     {
@@ -345,9 +356,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                                curr_module_name)};
                            override_state != nullptr && override_state->enabled_is_set) [[unlikely]]
                         {
+                            #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                            return override_state->enabled && ::uwvm2::imported::wasi::wasip1::environment::host_function_bit(function_name) != 0u;
+#else
                             return override_state->enabled;
+#endif
                         }
+                        #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                        return false;
+#else
                         return ::uwvm2::uwvm::wasm::storage::local_preload_wasip1;
+#endif
                     }
                     default:
                     {
@@ -457,11 +476,29 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                                 }
 
                                 // Check dependencies
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+                                if(!::uwvm2::uwvm::imported::ros::host_import_visible(curr_module_name, import_module_name, import_extern_name))
+                                {
+                                    ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                                        u8"uwvm: [error] ROS namespace is not enabled for this component");
+                                    return {load_and_check_modules_rtl::module_dependency_error, ::std::move(adjacency_list)};
+                                }
+#endif
 #ifndef UWVM_DISABLE_LOCAL_IMPORTED_WASIP1
 # if defined(UWVM_IMPORT_WASI_WASIP1)
-                                if(import_module_name == u8"wasi_snapshot_preview1" &&
-                                   !wasip1_import_visible_for_module(curr_module.second.type, curr_module_name)) [[unlikely]]
+                                if((import_module_name == u8"wasi_snapshot_preview1"
+#  if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                                    || (import_module_name == u8"wasi" && import_extern_name == u8"thread-spawn")
+#  endif
+                                    ) &&
+                                   !wasip1_import_visible_for_module(curr_module.second.type, curr_module_name, import_extern_name)) [[unlikely]]
                                 {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                                    // Import names are untrusted bytes. One constant diagnostic per
+                                    // refused load prevents control sequences and output amplification.
+                                    ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                                        u8"uwvm: [error] WASI Preview 1 namespace is not enabled for this component");
+#else
                                     ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
                                                         ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
                                                         u8"uwvm: ",
@@ -478,6 +515,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                                                         ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                                         u8"\". The module-specific WASI Preview 1 setting disables this import.\n\n",
                                                         ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
+#endif
 
                                     return {load_and_check_modules_rtl::module_dependency_error, ::std::move(adjacency_list)};
                                 }
@@ -487,6 +525,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                                 if(import_module == world.declarations().end()) [[unlikely]]
                                 {
                                     // Output missing module dependency error
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                                    // Import names are untrusted bytes. One constant diagnostic per
+                                    // refused load prevents control sequences and output amplification.
+                                    ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                                        u8"uwvm: [error] Missing module dependency: an import has no approved provider");
+#else
                                     ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
                                                         ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
                                                         u8"uwvm: ",
@@ -503,6 +547,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                                                         ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                                         u8"\".\n\n",
                                                         ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
+#endif
 
                                     return {load_and_check_modules_rtl::module_dependency_error, ::std::move(adjacency_list)};
                                 }
@@ -726,6 +771,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                                 if(curr_exported_module_exported == curr_exported->second.end()) [[unlikely]]
                                 {
                                     // Output missing export error in module a, dependency from module b
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                                    // Import names are untrusted bytes. One constant diagnostic per
+                                    // refused load prevents control sequences and output amplification.
+                                    ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                                        u8"uwvm: [error] Missing export: an import has no approved function binding");
+#else
                                     ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
                                                         ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
                                                         u8"uwvm: ",
@@ -746,11 +797,47 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                                                         ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
                                                         u8"\".\n\n",
                                                         ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
+#endif
 
                                     return {load_and_check_modules_rtl::module_dependency_error, ::std::move(adjacency_list)};
                                 }
 
-                                // Subsequent internal state checks are left to the initializer.
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                                // Product validation resolves actual builtin signatures without
+                                // instantiating Guest memories, invoking providers or opening IPC.
+                                auto const& resolved{curr_exported_module_exported->second};
+                                if(resolved.type == ::uwvm2::uwvm::wasm::type::module_type_t::local_import &&
+                                   (import_module_name == u8"wasi_snapshot_preview1" || import_module_name == u8"wasi" ||
+                                    import_module_name.starts_with(u8"uwvm_ros1_") || import_module_name.starts_with(u8"uwvm_ros2_") ||
+                                    import_module_name == u8"uwvm_portable_robot_v1"))
+                                {
+                                    auto const& bound{resolved.storage.local_imported_export_storage_ptr};
+                                    bool matches{imports.imports.type == ::uwvm2::parser::wasm::standard::wasm1::type::external_types::func &&
+                                        bound.type == ::uwvm2::uwvm::wasm::type::local_imported_export_type_t::func && bound.storage};
+                                    if(matches)
+                                    {
+                                        auto const expected{imports.imports.storage.function};
+                                        auto const actual{bound.storage->get_function_information_from_index(bound.index)};
+                                        auto same_range=[](auto const& left,auto const& right) noexcept
+                                        {
+                                            auto const left_size{left.begin==left.end?0uz:static_cast<::std::size_t>(left.end-left.begin)};
+                                            auto const right_size{right.begin==right.end?0uz:static_cast<::std::size_t>(right.end-right.begin)};
+                                            if(left_size!=right_size)return false;
+                                            for(::std::size_t i{};i!=left_size;++i)if(left.begin[i]!=right.begin[i])return false;
+                                            return true;
+                                        };
+                                        matches=expected && actual.successed && same_range(expected->parameter,actual.function_type.parameter) &&
+                                            same_range(expected->result,actual.function_type.result);
+                                    }
+                                    if(!matches)
+                                    {
+                                        ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                                            u8"uwvm: [error] Host import does not match its registered function signature");
+                                        return {load_and_check_modules_rtl::module_dependency_error, ::std::move(adjacency_list)};
+                                    }
+                                }
+#endif
+                                // Other internal state checks are left to the initializer.
                             }
 
                             break;

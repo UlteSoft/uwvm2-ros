@@ -70,8 +70,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
     inline constexpr ::uwvm2::utils::cmdline::parameter wasip1_global_expose_host_api{
         .name{u8"--wasip1-global-expose-host-api"},
         .describe{u8"Expose the stable WASI Preview 1 preload host API globally by default; module-specific settings may override it."},
+#  if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
         .alias{::uwvm2::utils::cmdline::kns_u8_str_scatter_t{details::wasip1_global_expose_host_api_alias.data(),
                                                              details::wasip1_global_expose_host_api_alias.size()}},
+#  endif
         .handle{::std::addressof(details::wasip1_global_expose_host_api_callback)},
         .is_exist{::std::addressof(details::wasip1_global_expose_host_api_is_exist)},
         .cate{::uwvm2::utils::cmdline::categorization::wasi}};

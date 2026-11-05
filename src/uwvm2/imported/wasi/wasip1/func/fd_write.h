@@ -98,12 +98,28 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         ::uwvm2::imported::wasi::wasip1::abi::wasi_size_t iovs_len,
         ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_t nwritten) noexcept
     {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        if(!env.exposes(u8"fd_write")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+        if(fd >= 0 && fd < 3 && !env.grants_stdio(static_cast<unsigned>(fd)))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+
+#endif
+
         auto const memory_pointer{env.get_memory()};
         if(memory_pointer == nullptr) [[unlikely]] { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
         auto& memory{*memory_pointer};
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        // Validate every result buffer before any native side effect or partial
+        // output. Memory may grow, but cannot shrink during an active host call.
+        if(!check_wasip1_memory_bounds_wasm32(memory, nwritten, 4uz))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
+#endif
 
-        check_wasip1_guest_pointer_alignment<4uz>(iovs, u8"fd_write.iovs (ciovec)");
-        check_wasip1_guest_pointer_alignment<4uz>(nwritten, u8"fd_write.nwritten (size)");
+
+        if(!check_wasip1_guest_pointer_alignment<4uz>(iovs, u8"fd_write.iovs (ciovec)"))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::einval; }
+        if(!check_wasip1_guest_pointer_alignment<4uz>(nwritten, u8"fd_write.nwritten (size)"))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::einval; }
 
         auto const trace_wasip1_call{env.trace_wasip1_call};
 
@@ -237,6 +253,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         // After checking all items, determine whether the result equals zero.
         if(scatter_length == 0uz)
         {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            // Empty vectors are still authorized host calls and consume their
+            // call/concurrency quota before publishing a successful result.
+            auto const budget{::uwvm2::imported::wasi::wasip1::environment::fd_io_budget(static_cast<unsigned>(fd))};
+            ::uwvm2::imported::wasi::wasip1::environment::budget_reservation reservation{budget, env.limits, 0u};
+            if(!reservation) { return reservation.template error<::uwvm2::imported::wasi::wasip1::abi::errno_t>(); }
+#endif
             // If the length of iovs is 0, the system call returns successfully with nwritten=0.
             ::uwvm2::imported::wasi::wasip1::memory::store_basic_wasm_type_to_memory_wasm32(
                 memory,
@@ -248,9 +271,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         }
 
         // check memory bounds
-        ::uwvm2::imported::wasi::wasip1::memory::check_memory_bounds_wasm32(memory,
+        if(!::uwvm2::imported::wasi::wasip1::func::check_wasip1_memory_bounds_wasm32(memory,
                                                                             iovs,
-                                                                            iovs_len * ::uwvm2::imported::wasi::wasip1::abi::size_of_wasi_ciovec_t);
+                                                                            iovs_len * ::uwvm2::imported::wasi::wasip1::abi::size_of_wasi_ciovec_t))
+            { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
 
         // If using reassignment
         ::uwvm2::imported::wasi::wasip1::func::fast_io_io_scatter_t_allocator_guard tmp_allocator_guard{};
@@ -285,6 +309,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             // When the bytes count is greater than 1024, it exists on the heap.
             // The allocator crashes upon failure.
             scatter_base = ::uwvm2::imported::wasi::wasip1::func::fast_io_io_scatter_t_allocator_guard::allocator::allocate(scatter_length);
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            if(scatter_base == nullptr) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enomem; }
+#endif
 
             // Start the raii guard to deallocate the memory.
             tmp_allocator_guard.ptr = scatter_base;
@@ -334,7 +361,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                 }
 
                 // It is necessary to verify whether the memory referenced within the WASM is sufficient.
-                ::uwvm2::imported::wasi::wasip1::memory::check_memory_bounds_wasm32_unlocked(memory, wasm_base, wasm_len);
+                if(!::uwvm2::imported::wasi::wasip1::func::check_wasip1_memory_bounds_wasm32_unlocked(memory, wasm_base, wasm_len))
+            { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
 
                 auto& curr_tmp_scatter_base{scatter_base[i]};
 
@@ -396,6 +424,22 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                 return ::uwvm2::imported::wasi::wasip1::abi::errno_t::eio;
             }
 
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            auto const budget{::uwvm2::imported::wasi::wasip1::environment::fd_io_budget(static_cast<unsigned>(fd))};
+            ::uwvm2::imported::wasi::wasip1::environment::budget_reservation reservation{budget, env.limits, static_cast<::std::uint64_t>(length_counter)};
+            if(!reservation) { return reservation.template error<::uwvm2::imported::wasi::wasip1::abi::errno_t>(); }
+#endif
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(__linux__)
+            if(fd < 3)
+            {
+                ::std::size_t completed{};
+                auto const result{::uwvm2::imported::wasi::wasip1::environment::bounded_stdio(curr_fd, scatter_base, scatter_length,
+                    static_cast<::std::uint64_t>(length_counter), true, completed)};
+                if(result != ::uwvm2::imported::wasi::wasip1::abi::errno_t::esuccess) { return result; }
+                total_bytes_write = static_cast<::fast_io::intfpos_t>(completed);
+            }
+            else
+#endif
             if(env.debug_console_write!=nullptr &&
                env.debug_console_write(curr_fd.wasi_fd.ptr->checkpoint_stdio_index,scatter_base,scatter_length))
             { for(::std::size_t i{}; i<scatter_length; ++i) { total_bytes_write+=scatter_base[i].len; } }

@@ -31,11 +31,52 @@
 #endif
 UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
 {
+    // Native authenticated launcher input, never a guest authority token. The
+    // original management profile and existing target contracts are rechecked.
+    struct dev_rebuild_input
+    {
+        ::std::u8string path{};
+        ::uwvm2::utils::control::owned_file_image::owner image{};
+        ::std::size_t module_index{}; // 0 = main; 1..N = startup preload order, never a new identity.
+    };
+    [[nodiscard]] inline bool dev_rebuild_supported() noexcept
+    {
+#if defined(__linux__) && defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS)
+        if(::uwvm2::utils::security::wsea::secure_enabled() ||
+           !::uwvm2::utils::control::management::debug_allowed() ||
+           ::uwvm2::uwvm::runtime::runtime_mode::global_runtime_compiler !=
+               ::uwvm2::uwvm::runtime::runtime_mode::runtime_compiler_t::llvm_jit_only ||
+           ::uwvm2::uwvm::runtime::runtime_mode::global_runtime_mode !=
+               ::uwvm2::uwvm::runtime::runtime_mode::runtime_mode_t::full_compile ||
+           !::uwvm2::uwvm::wasm::storage::active_execute_wasm().has_owned_source_image()) { return false; }
+# if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+        // ROS provider/physical authority continuity requires its own stable
+        // runtime domain. A new debug source is not permission to recreate it.
+        if(::uwvm2::uwvm::imported::ros::policy_configured) { return false; }
+# endif
+# if UWVM2_HAS_THREADED_PROFILE_HOST_API
+        if(::uwvm2::runtime::lib::runtime_threaded_profile_builtin_requested_host_api()) { return false; }
+# endif
+# if defined(UWVM_SUPPORT_PRELOAD_DL)
+        if(!::uwvm2::uwvm::wasm::storage::preloaded_dl.empty()) { return false; }
+# endif
+# if defined(UWVM_SUPPORT_WEAK_SYMBOL)
+        if(!::uwvm2::uwvm::wasm::storage::weak_symbol.empty()) { return false; }
+# endif
+        for(auto const& provider : ::uwvm2::uwvm::wasm::storage::preload_local_imported)
+        { if(provider.ptr == nullptr || provider.get_module_name() != u8"wasi_snapshot_preview1") { return false; } }
+        for(auto const& preload : ::uwvm2::uwvm::wasm::storage::active_preloaded_wasm())
+        { if(!preload.has_owned_source_image()) { return false; } }
+        return true;
+#else
+        return false;
+#endif
+    }
     // Actual owning CLI preparation: real parse/init occurs once in the
     // existing drained maintenance callback. Numeric eligibility is decided
     // later by the actual full validator/publisher, with native fallback.
     // Native administration/flags/preload mutations are externally serialized.
-    [[nodiscard]] inline int prepare_owned_full_cli_source(bool retain_immutable_image = false, bool restart_after_retirement = false) noexcept
+    [[nodiscard]] inline int prepare_owned_full_cli_source(bool retain_immutable_image = false, bool restart_after_retirement = false, dev_rebuild_input* rebuild = nullptr) noexcept
     {
 #if (defined(UWVM_RUNTIME_UWVM_INTERPRETER) || defined(UWVM_RUNTIME_LLVM_JIT)) && \
     defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
@@ -60,6 +101,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
 # if defined(UWVM_SUPPORT_WEAK_SYMBOL)
         if(!::uwvm2::uwvm::wasm::storage::weak_symbol.empty()) { return static_cast<int>(retval::parameter_error); }
 # endif
+        if(rebuild && (!retain_immutable_image || !restart_after_retirement || !rebuild->image || !dev_rebuild_supported() ||
+            rebuild->module_index > ::uwvm2::uwvm::wasm::storage::active_preloaded_wasm().size()))
+        { return static_cast<int>(retval::parameter_error); }
         struct context
         {
             // Real owned inputs captured before the old selection is retired.
@@ -69,11 +113,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
 # if defined(UWVM_RUNTIME_LLVM_JIT)
             mode::runtime_llvm_jit_exception_dispatch_t dispatch{mode::global_runtime_llvm_jit_exception_dispatch};
 # endif
-            bool restart{};
+            bool restart{}, preserve_host_state{};
             bool ordinary_cache_input{}; // Derived below from actual CLI setup, never supplied as a certificate.
             int result{static_cast<int>(retval::parameter_error)};
         } state{};
         state.restart = restart_after_retirement;
+        state.preserve_host_state = rebuild != nullptr;
 # if defined(UWVM_RUNTIME_LLVM_JIT) && !defined(UWVM_MODULE)
         state.ordinary_cache_input = !retain_immutable_image && !restart_after_retirement &&
             ::uwvm2::uwvm::wasm::storage::execute_wasm_mode == ::uwvm2::uwvm::wasm::base::mode::run &&
@@ -84,10 +129,26 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
         try
         {
             auto const path{::uwvm2::uwvm::cmdline::wasm_file_ppos->str};
-            auto const rename{::uwvm2::uwvm::wasm::storage::execute_wasm.module_name};
+            auto const rename{rebuild ? ::uwvm2::uwvm::wasm::storage::active_execute_wasm().module_name :
+                ::uwvm2::uwvm::wasm::storage::execute_wasm.module_name};
             state.path = ::fast_io::u8concat_std(path);
             state.rename = ::fast_io::u8concat_std(rename);
-            if(retain_immutable_image)
+            if(rebuild)
+            {
+                if(rebuild->module_index == 0u)
+                { state.path = ::std::move(rebuild->path); state.image = ::std::move(rebuild->image); }
+                else
+                {
+                    auto const& original{::uwvm2::uwvm::wasm::storage::active_execute_wasm()};
+                    state.path = ::fast_io::u8concat_std(original.file_name);
+                    auto input{::uwvm2::utils::control::owned_file_image::copy_owned_bytes(
+                        {reinterpret_cast<::std::byte const*>(original.source_cbegin()), original.source_size()},
+                        ::uwvm2::utils::control::owned_file_image::maximum_bytes)};
+                    if(!input) { return static_cast<int>(retval::load_main_module_error); }
+                    state.image = ::std::move(input.image);
+                }
+            }
+            else if(retain_immutable_image)
             {
                 // Cold host input DATA only. Read into private owned bytes BEFORE
                 // any parser/initializer body/type/segment pointer can escape.
@@ -107,7 +168,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
             // Copy command-line preload INPUTS before old source selection is
             // retired. Never move/reuse a previously parsed map/Core3 context:
             // every final source-owned preload below is parsed from scratch.
-            auto const& original_preloads{::uwvm2::uwvm::wasm::storage::preloaded_wasm};
+            auto const& original_preloads{rebuild ? ::uwvm2::uwvm::wasm::storage::active_preloaded_wasm() :
+                ::uwvm2::uwvm::wasm::storage::preloaded_wasm};
             state.preloads.reserve(original_preloads.size());
             auto remaining_bytes{::uwvm2::utils::control::owned_file_image::maximum_bytes};
             if(state.image)
@@ -115,15 +177,26 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
                 if(state.image->size() > remaining_bytes) { return static_cast<int>(retval::load_main_module_error); }
                 remaining_bytes -= state.image->size(); // BEFORE any next private-image allocation.
             }
+            ::std::size_t preload_index{};
             for(auto const& original : original_preloads)
             {
+                ++preload_index;
                 ::uwvm2::uwvm::runtime::full::full_preload_input input{};
                 input.file_name = ::fast_io::u8concat_std(original.file_name);
                 input.module_name = ::fast_io::u8concat_std(original.module_name);
                 input.parameters = original.wasm_parameter; // Exact original per-module feature policy.
-                if(retain_immutable_image)
+                if(rebuild && rebuild->module_index == preload_index)
                 {
-                    auto loaded{::uwvm2::utils::control::owned_file_image::read(input.file_name, remaining_bytes)};
+                    if(!rebuild->image || rebuild->image->size() > remaining_bytes)
+                    { return static_cast<int>(retval::load_main_module_error); }
+                    remaining_bytes -= rebuild->image->size();
+                    input.image = ::std::move(rebuild->image); input.file_name = ::std::move(rebuild->path);
+                }
+                else if(retain_immutable_image)
+                {
+                    auto loaded{rebuild ? ::uwvm2::utils::control::owned_file_image::copy_owned_bytes(
+                        {reinterpret_cast<::std::byte const*>(original.source_cbegin()), original.source_size()}, remaining_bytes) :
+                        ::uwvm2::utils::control::owned_file_image::read(input.file_name, remaining_bytes)};
                     if(!loaded || loaded.image->size() > remaining_bytes)
                     {
                         ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
@@ -184,7 +257,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
 #endif
                     // Native standard pipeline, with original provider behavior.
                     // No guest may execute inside this maintenance callback.
-                    if(auto const code{load_local_modules()}; code != static_cast<int>(retval::ok))
+                    if(auto const code{load_local_modules(ctx.preserve_host_state)}; code != static_cast<int>(retval::ok))
                     { ctx.result = code; return false; }
                     if(auto const code{load_weak_symbol_modules()}; code != static_cast<int>(retval::ok))
                     { ctx.result = code; return false; }
@@ -193,7 +266,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
                        ::uwvm2::uwvm::wasm::loader::check_import_exist_and_detect_cycles() !=
                        ::uwvm2::uwvm::wasm::loader::load_and_check_modules_rtl::ok)
                     { ctx.result = static_cast<int>(retval::check_module_error); return false; }
-                    ::uwvm2::uwvm::runtime::initializer::initialize_runtime(true);
+                    if(!::uwvm2::uwvm::runtime::initializer::initialize_runtime(true))
+                    { ctx.result = static_cast<int>(retval::check_module_error); return false; }
                     if(!candidate->seal_actual_initializer()) { return false; }
                     auto const* main{candidate->initialized_main_module()};
                     if(main == nullptr) { return false; }
@@ -227,6 +301,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
 #else
         static_cast<void>(retain_immutable_image);
         static_cast<void>(restart_after_retirement);
+        static_cast<void>(rebuild);
         return static_cast<int>(retval::parameter_error);
 #endif
     }

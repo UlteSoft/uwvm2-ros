@@ -32,6 +32,7 @@
         llvm_jit_debug_activation_capture_owner const& capture, void const* native_session_identity,
         llvm_jit_debug_native_position& out) noexcept
     {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
         out = {};
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && UWVM2_RUNTIME_NATIVE_STEP_PLATFORM
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;

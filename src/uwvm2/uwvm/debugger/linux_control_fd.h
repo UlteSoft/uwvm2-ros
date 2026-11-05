@@ -16,6 +16,7 @@
 #  include <new>
 #  include <fast_io.h>
 #  include <string>
+#  include <string_view>
 #  include <type_traits>
 #  include <utility>
 #  include <fcntl.h>
@@ -25,6 +26,8 @@
 #  include <unistd.h>
 #  include "posix_abi.h"
 #  include <uwvm2/utils/control/sealed_input.h>
+#  include <uwvm2/utils/control/owned_file_image.h>
+#  include "managed_cli_shutdown.h"
 #  include "console.h"
 # endif
 #endif
@@ -157,8 +160,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         {
             linux_control_fd& channel;
             controller& control;
+            managed_cli_shutdown* shutdown{};
+            bool handoff{};
             ~close_on_serve_exit()
             {
+                if(handoff) { return; }
+                // A partially retired world cannot be resumed or abandoned.
+                if(shutdown && shutdown->requested()) { posix_abi::_exit_noexcept(75); }
                 // A detached manager cannot leave a selected guest parked in
                 // the SIGTRAP futex. If the host cannot safely reopen that gate,
                 // fail closed instead of hanging the inferior indefinitely.
@@ -174,7 +182,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             close_endpoint();
             // peer_pidfd_ retires exactly once with its native_file member.
         }
-        [[nodiscard]] static ::std::unique_ptr<linux_control_fd> adopt(int fd) noexcept
+        [[nodiscard]] static ::std::unique_ptr<linux_control_fd> adopt(int fd, bool diagnostic = false) noexcept
         {
             if(fd < 3) { return {}; }
             // The VM takes ownership at entry, including every rejected launch.
@@ -209,9 +217,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             int const flags{posix_abi::fcntl_noexcept(fd, F_GETFD)};
             // This host-startup socket opt-in follows peer/type/pidfd checks;
             // every received packet must still authenticate the original peer.
+            auto const sealed{diagnostic ? ::uwvm2::utils::control::seal_diagnostic_control_host_api(fd) :
+                ::uwvm2::utils::control::seal_console_input_host_api(fd, true)};
             if(posix_abi::setsockopt_noexcept(fd, SOL_SOCKET, SO_PASSCRED, &enable, sizeof(enable)) != 0 ||
                flags == -1 || posix_abi::fcntl_noexcept(fd, F_SETFD, flags | FD_CLOEXEC) == -1 ||
-               ::uwvm2::utils::control::seal_console_input_host_api(fd, true) != ::uwvm2::utils::control::sealed_input_status::ok)
+               (sealed != ::uwvm2::utils::control::sealed_input_status::ok &&
+                !(sealed == ::uwvm2::utils::control::sealed_input_status::already_sealed &&
+                  ::uwvm2::utils::control::inspect_guest_file_host_api(fd) == ::uwvm2::utils::control::sealed_input_decision::denied)))
             { return {}; }
             for(int guest_stdio{}; guest_stdio != 3; ++guest_stdio)
             {
@@ -223,14 +235,51 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             }
             return result;
         }
-        void serve(controller& control) noexcept
+        // A separate launch grant selects this immutable read-only dispatcher.
+        // It never constructs a controller or interprets console/DAP commands.
+        void serve_diagnostics(::std::atomic<bool> const& finished, ::std::string (*snapshot)() noexcept) noexcept
         {
-            close_on_serve_exit close_after_guest_detach{*this, control};
+            struct close_when_done { linux_control_fd& channel; ~close_when_done() { channel.close_endpoint(); } } close{*this};
+            while(!finished.load(::std::memory_order_acquire) && peer_live())
+            {
+                ::pollfd input{descriptor_.native_handle(), POLLIN, 0};
+                int const ready{posix_abi::poll_noexcept(&input, 1, 50)};
+                if(ready < 0) { if(errno == EINTR) continue; return; }
+                if(ready == 0) continue;
+                auto packet{receive_packet()};
+                if(packet.closed) return;
+                if(!packet.valid) continue;
+                ::std::string_view raw{packet.bytes.data(),packet.size};
+                if(raw == "close") return; // Disconnects observation only, never the Guest.
+                if(raw == "help")
+                { if(!send_literal("status | modules | health | crash | update | close; RELEASE read-only diagnostics\n")) return; }
+                else if(raw == "status" || raw == "modules" || raw == "health" || raw == "crash" || raw == "update")
+                { auto text{snapshot()}; if(text.empty() || !send_text(text)) return; }
+                else if(!send_literal("error: diagnostic grant denies this operation\n")) return;
+            }
+            // One bounded post-execution report; a blocked/disconnected reader
+            // cannot prevent Guest completion or make this thread wait on send.
+            auto text{snapshot()}; if(!text.empty()) (void)send_text(text);
+        }
+        struct rebuild_request
+        {
+            ::std::u8string path{};
+            ::uwvm2::utils::control::owned_file_image::owner image{};
+            ::std::size_t module_index{}, preload_count{};
+            bool allowed{}, ready{};
+        };
+        [[nodiscard]] bool notify_rebuild_result(bool success) const noexcept
+        { return success ? send_literal("rebuild complete\n") : send_literal("rebuild failed; execution stopped\n"); }
+        void serve(controller& control, managed_cli_shutdown* shutdown = nullptr, rebuild_request* rebuild = nullptr) noexcept
+        {
+            close_on_serve_exit close_after_guest_detach{*this, control, shutdown};
             using command_view = ::fast_io::string_view;
             for(;;)
             {
                 auto const state{control.inspect().execution};
-                if(state == execution_status::exited || state == execution_status::closed || !peer_live()) { break; }
+                bool const guest_faulted{::uwvm2::runtime::lib::runtime_guest_fault_detected_host_api()};
+                if(((state == execution_status::exited || state == execution_status::closed) &&
+                    !guest_faulted && !(shutdown && shutdown->requested())) || !peer_live()) { break; }
                 ::pollfd wait_for[2]{{descriptor_.native_handle(), POLLIN, 0}, {peer_pidfd_.native_handle(), POLLIN, 0}};
                 int ready{};
                 do { ready = posix_abi::poll_noexcept(wait_for, 2u, 50); } while(ready == -1 && errno == EINTR);
@@ -240,6 +289,87 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 auto const packet{receive_packet()};
                 if(packet.closed) { break; }
                 if(!packet.valid) { continue; }
+                ::std::string_view const raw{packet.bytes.data(), packet.size};
+                // A known Guest fault has already unwound and closed admission.
+                // Keep the authenticated status/quit channel alive, but never
+                // resume or mutate this stopped world through the DEV transport.
+                if(::uwvm2::runtime::lib::runtime_guest_fault_detected_host_api() &&
+                   raw != "status" && raw != "quit" && raw != "help")
+                { if(!send_literal("error: Guest faulted; execution stopped\n")) { return; } continue; }
+                if(raw == "help rebuild")
+                {
+                    if(!send_literal("rebuild <path>  DEV-only complete guest-world reconstruction; host grants/resources/quotas persist\n"
+                                     "rebuild-module <index> <path>  replace main (0) or a preload (1..N startup order)\n"
+                                     "rebuild         retry the same pending retirement; old world cannot resume\n")) { return; }
+                    continue;
+                }
+                if(raw == "rebuild" || raw.starts_with("rebuild ") || raw.starts_with("rebuild-module "))
+                {
+                    if(!rebuild || !rebuild->allowed || !shutdown || !shutdown->matches_controller(control) ||
+                       !::uwvm2::utils::control::management::debug_allowed())
+                    { if(!send_literal("error: rebuild unsupported for this launch\n")) { return; } continue; }
+                    if(!rebuild->image)
+                    {
+                        ::std::size_t path_begin{8u}, selected{};
+                        bool valid{raw.find('\0') == ::std::string_view::npos};
+                        if(raw.starts_with("rebuild-module "))
+                        {
+                            path_begin = 15u; auto const first{path_begin};
+                            for(; path_begin < raw.size() && raw[path_begin] != ' '; ++path_begin)
+                            {
+                                auto c{raw[path_begin]};
+                                if(c < '0' || c > '9' || selected > rebuild->preload_count / 10u)
+                                { valid = false; break; }
+                                selected = selected * 10u + static_cast<unsigned>(c - '0');
+                            }
+                            valid = valid && path_begin > first && selected <= rebuild->preload_count;
+                            ++path_begin;
+                        }
+                        if(!valid || path_begin >= raw.size())
+                        { if(!send_literal("error: rebuild requires an existing module index and path\n")) { return; } continue; }
+                        rebuild->module_index = selected;
+#ifdef UWVM_CPP_EXCEPTIONS
+                        try
+#endif
+                        {
+                            rebuild->path.assign(reinterpret_cast<char8_t const*>(raw.data() + path_begin), raw.size() - path_begin);
+                            auto input{::uwvm2::utils::control::owned_file_image::read(rebuild->path,
+                                ::uwvm2::utils::control::owned_file_image::maximum_bytes)};
+                            if(input) { rebuild->image = ::std::move(input.image); }
+                        }
+#ifdef UWVM_CPP_EXCEPTIONS
+                        catch(...) {}
+#endif
+                        if(!rebuild->image)
+                        { if(!send_literal("error: rebuild input unavailable\n")) { return; } continue; }
+                    }
+                    else if(raw != "rebuild")
+                    { if(!send_literal("error: rebuild already pending; retry rebuild\n")) { return; } continue; }
+                    auto const retired{shutdown->attempt_until(::std::chrono::steady_clock::now() + ::std::chrono::seconds{2})};
+                    if(retired.phase == managed_cli_shutdown_phase::completed)
+                    {
+                        rebuild->ready = true;
+                        close_after_guest_detach.handoff = true;
+                        return; // Same authenticated descriptor/pidfd retained by the launcher.
+                    }
+                    switch(retired.phase)
+                    {
+                        case managed_cli_shutdown_phase::pending_native:
+                        case managed_cli_shutdown_phase::pending_execution:
+                        case managed_cli_shutdown_phase::pending_producers:
+                        case managed_cli_shutdown_phase::pending_guest_thread:
+                        case managed_cli_shutdown_phase::pending_release:
+                        case managed_cli_shutdown_phase::busy:
+                            if(!send_literal("rebuild pending\n")) { return; }
+                            break;
+                        default:
+                            static_cast<void>(send_literal("rebuild failed; execution stopped\n"));
+                            posix_abi::_exit_noexcept(75); // Retain every incomplete owner until process containment.
+                    }
+                    continue;
+                }
+                if(shutdown && shutdown->requested())
+                { if(!send_literal("error: rebuild pending; retry rebuild\n")) { return; } continue; }
                 auto const command{parse_console_command(command_view{packet.bytes.data(), packet.size})};
                 switch(command.kind)
                 {
@@ -248,10 +378,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                         {
                             auto const text{console_help::format(command_view{command.help_topic.data(), command.help_topic_size})};
                             if(!send_text(text.data(), text.size())) { return; }
+                             if(rebuild && rebuild->allowed && !send_literal("rebuild <path>  replace the DEV guest world; retain host grants and state\n")) { return; }
                         }
                         continue;
                     case console_command_kind::quit:
-                        static_cast<void>(send_literal("debug control detached; guest continues\n"));
+                        if(::uwvm2::runtime::lib::runtime_guest_fault_detected_host_api())
+                        { static_cast<void>(send_literal("debug control detached; Guest remains stopped\n")); }
+                        else { static_cast<void>(send_literal("debug control detached; guest continues\n")); }
                         return;
                     case console_command_kind::unsupported:
                         {

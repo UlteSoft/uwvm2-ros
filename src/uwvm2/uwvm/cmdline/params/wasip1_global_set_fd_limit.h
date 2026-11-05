@@ -70,8 +70,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
         .name{u8"--wasip1-global-set-fd-limit"},
         .describe{u8"Set the global-default WASI Preview 1 file descriptor limit (0 = maximum)."},
         .usage{u8"<limit:size_t>"},
+#  if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
         .alias{
             ::uwvm2::utils::cmdline::kns_u8_str_scatter_t{details::wasip1_global_set_fd_limit_alias.data(), details::wasip1_global_set_fd_limit_alias.size()}},
+#  endif
         .handle{::std::addressof(details::wasip1_global_set_fd_limit_callback)},
         .is_exist{::std::addressof(details::wasip1_global_set_fd_limit_is_exist)},
         .cate{::uwvm2::utils::cmdline::categorization::wasi}};

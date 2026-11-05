@@ -117,6 +117,7 @@
     extern "C++" llvm_jit_checkpoint_capture_result llvm_jit_checkpoint_capture_thread_host_api(
         ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const& ticket) noexcept
     {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
         // The actual producer checks the live generated entry/depth/observer,
         // private episode, activation chain, exact sealed plan and typed DATA.
         // It does not expose a constructor or accept a caller's copied frame.
@@ -152,6 +153,7 @@
         ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const& ticket,
         ::std::span<llvm_jit_checkpoint_thread_capture_owner const> supplied) noexcept
     {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
         using manager = runtime_checkpoint_coherent_manager;
         using resources = runtime_checkpoint_resource_inputs;
         llvm_jit_checkpoint_resource_observation out{};
@@ -265,6 +267,7 @@
         ::std::span<llvm_jit_checkpoint_thread_capture_owner const> supplied,
         ::std::span<llvm_jit_wasip1_environment_capsule_owner const> saved, bool strict) noexcept
     {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return llvm_jit_wasip1_environment_capsule_status::unavailable_capture; }
         using output=llvm_jit_wasip1_environment_capsule_status;
         if(!ticket || supplied.empty() || supplied.size()>256u || saved.empty() || saved.size()>16u)
         { return output::invalid_capsule_owner; }
@@ -283,6 +286,7 @@
         ::std::span<llvm_jit_checkpoint_thread_capture_owner const> supplied,
         ::std::span<llvm_jit_wasip1_environment_capsule_request const> selected) noexcept
     {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
         using status=llvm_jit_wasip1_environment_capsule_status;
         namespace mode=::uwvm2::uwvm::runtime::runtime_mode;
         if(mode::global_runtime_mode!=mode::runtime_mode_t::full_compile || mode::global_runtime_compiler!=mode::runtime_compiler_t::llvm_jit_only)
@@ -306,6 +310,7 @@
         ::std::span<llvm_jit_checkpoint_thread_capture_owner const> supplied,
         ::std::span<llvm_jit_wasip1_environment_capsule_request const> selected) noexcept
     {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
         using status=llvm_jit_wasip1_environment_capsule_status;
         namespace mode=::uwvm2::uwvm::runtime::runtime_mode;
         if(mode::global_runtime_mode!=mode::runtime_mode_t::full_compile || mode::global_runtime_compiler!=mode::runtime_compiler_t::llvm_jit_only)
@@ -330,6 +335,7 @@
         ::std::array<::std::byte, 16u> const& label,
         ::uwvm2::uwvm::debugger::checkpoint::limits const& budget) noexcept
     {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
         using output_status = llvm_jit_checkpoint_instance_capture_status;
         llvm_jit_checkpoint_instance_capture_result out{};
@@ -386,6 +392,7 @@
         ::std::array<::std::byte, 16u> const& label,
         ::uwvm2::uwvm::debugger::checkpoint::limits const& budget) noexcept
     {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
         using output_status = llvm_jit_checkpoint_instance_capture_status;
         llvm_jit_checkpoint_instance_capture_result out{};
@@ -435,28 +442,34 @@
         ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const&,
         ::std::span<llvm_jit_checkpoint_thread_capture_owner const>,
         ::std::span<llvm_jit_wasip1_environment_capsule_request const>) noexcept
-    { return {llvm_jit_wasip1_environment_capsule_status::unavailable_capture,{}}; }
+    {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; } return {llvm_jit_wasip1_environment_capsule_status::unavailable_capture,{}}; }
     extern "C++" llvm_jit_wasip1_portable_environment_group_result llvm_jit_checkpoint_capture_portable_wasip1_environment_group_host_api(
         ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const&,
         ::std::span<llvm_jit_checkpoint_thread_capture_owner const>,
         ::std::span<llvm_jit_wasip1_environment_capsule_request const>) noexcept
-    { return {llvm_jit_wasip1_environment_capsule_status::unavailable_capture,{}}; }
+    {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; } return {llvm_jit_wasip1_environment_capsule_status::unavailable_capture,{}}; }
     extern "C++" llvm_jit_wasip1_environment_capsule_status llvm_jit_checkpoint_restore_wasip1_environment_group_host_api(
         ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const&,
         ::std::span<llvm_jit_checkpoint_thread_capture_owner const>,
         ::std::span<llvm_jit_wasip1_environment_capsule_owner const>,bool) noexcept
-    { return llvm_jit_wasip1_environment_capsule_status::unavailable_capture; }
+    {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return llvm_jit_wasip1_environment_capsule_status::unavailable_capture; } return llvm_jit_wasip1_environment_capsule_status::unavailable_capture; }
     extern "C++" llvm_jit_checkpoint_capture_result llvm_jit_checkpoint_capture_thread_host_api(
-        ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const&) noexcept { return {}; }
+        ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const&) noexcept {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; } return {}; }
     extern "C++" llvm_jit_checkpoint_resource_observation llvm_jit_checkpoint_query_resource_inputs_host_api(
         ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const&,
-        ::std::span<llvm_jit_checkpoint_thread_capture_owner const>) noexcept { return {}; }
+        ::std::span<llvm_jit_checkpoint_thread_capture_owner const>) noexcept {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; } return {}; }
 extern "C++" llvm_jit_checkpoint_instance_capture_result llvm_jit_checkpoint_capture_instance_host_api(
     ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const&,
     ::std::span<llvm_jit_checkpoint_thread_capture_owner const>,
     ::std::array<::std::byte, 16u> const&,
     ::uwvm2::uwvm::debugger::checkpoint::limits const&) noexcept
 {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
     llvm_jit_checkpoint_instance_capture_result out{};
 #if defined(UWVM_RUNTIME_LLVM_JIT)
     out.status = llvm_jit_checkpoint_instance_capture_status::unavailable_capture;
@@ -469,7 +482,8 @@ extern "C++" llvm_jit_checkpoint_instance_capture_result llvm_jit_checkpoint_cap
         ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const&,
         ::std::span<llvm_jit_checkpoint_thread_capture_owner const>,
         ::std::array<::std::byte,16u> const&, ::uwvm2::uwvm::debugger::checkpoint::limits const&) noexcept
-    { llvm_jit_checkpoint_instance_capture_result result{};result.status=llvm_jit_checkpoint_instance_capture_status::requires_llvm_jit_full;return result; }
+    {
+        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; } llvm_jit_checkpoint_instance_capture_result result{};result.status=llvm_jit_checkpoint_instance_capture_status::requires_llvm_jit_full;return result; }
 
 # endif
 #endif

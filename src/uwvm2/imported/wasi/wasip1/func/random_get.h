@@ -40,6 +40,9 @@
 // import
 # include <fast_io.h>
 # include <fast_io_device.h>
+# if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(__linux__)
+#  include <sys/random.h>
+# endif
 # include <uwvm2/uwvm_predefine/utils/ansies/impl.h>
 # include <uwvm2/uwvm_predefine/io/impl.h>
 # include <uwvm2/utils/mutex/impl.h>
@@ -85,6 +88,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_t buf,
         ::uwvm2::imported::wasi::wasip1::abi::wasi_size_t buf_len) noexcept
     {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        if(!env.exposes(u8"random_get")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+#endif
+
         auto const trace_wasip1_call{env.trace_wasip1_call};
 
         if(trace_wasip1_call) [[unlikely]]
@@ -99,6 +106,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable;
         }
 
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        ::uwvm2::imported::wasi::wasip1::environment::budget_reservation reservation{
+            ::uwvm2::imported::wasi::wasip1::environment::budget_kind::random, env.limits, static_cast<::std::uint64_t>(buf_len)};
+        if(!reservation) { return reservation.template error<::uwvm2::imported::wasi::wasip1::abi::errno_t>(); }
+#endif
         auto const memory_pointer{env.get_memory()};
         if(memory_pointer == nullptr) [[unlikely]] { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
         auto& memory{*memory_pointer};
@@ -107,7 +119,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             // Full locking is required during reading.
             [[maybe_unused]] auto const memory_locker_guard{::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory)};
 
-            ::uwvm2::imported::wasi::wasip1::memory::check_memory_bounds_wasm32_unlocked(memory, buf, buf_len);
+            if(!::uwvm2::imported::wasi::wasip1::func::check_wasip1_memory_bounds_wasm32_unlocked(memory, buf, buf_len))
+            { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
 
             auto const write_memory_begin{memory.memory_begin + buf};
             auto const write_memory_end{write_memory_begin + buf_len};
@@ -120,9 +133,28 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                 // is impossible to pre-generate the random number and then copy it to memory—this is a security measure.
 
                 // If an error occurs at the underlying layer, the buffer is not guaranteed to retain its state prior to the call.
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(__linux__)
+                auto* cursor{write_memory_begin};
+                unsigned interrupted{};
+                while(cursor != write_memory_end)
+                {
+                    auto& ledger{::uwvm2::imported::wasi::wasip1::environment::process_budget_ledger};
+                    if(::uwvm2::imported::wasi::wasip1::environment::host_wait_cancelled()) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::ecanceled; }
+                    ledger.native_random_calls.fetch_add(1u, ::std::memory_order_relaxed);
+                    auto const n{::getrandom(cursor, static_cast<::std::size_t>(write_memory_end-cursor), GRND_NONBLOCK)};
+                    if(n > 0) { cursor += n; continue; }
+                    if(n < 0 && errno == EINTR && ++interrupted < 8u) { continue; }
+                    return n < 0 && (errno == EAGAIN || errno == EINTR) ? ::uwvm2::imported::wasi::wasip1::abi::errno_t::eagain :
+                        ::uwvm2::imported::wasi::wasip1::abi::errno_t::eio;
+                }
+#else
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                ::uwvm2::imported::wasi::wasip1::environment::process_budget_ledger.native_random_calls.fetch_add(1u, ::std::memory_order_relaxed);
+#endif
                 ::fast_io::operations::read_all_bytes(::fast_io::native_white_hole{},
                                                       reinterpret_cast<::std::byte*>(write_memory_begin),
                                                       reinterpret_cast<::std::byte*>(write_memory_end));
+#endif
             }
 # ifdef UWVM_CPP_EXCEPTIONS
             catch(::fast_io::error e)

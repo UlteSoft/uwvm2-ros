@@ -14,6 +14,12 @@
 #endif
 namespace uwvm2::uwvm::cmdline::params
 {
+    inline constexpr ::uwvm2::utils::cmdline::parameter ros2_global_add_module{
+        .name{u8"--ros2-global-add-module"},
+        .describe{u8"Bind one exact loaded module to the explicit Global contract; unbound modules stay denied."},
+        .usage{u8"<module:str>"},
+        .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::global, details::ros_details::action::bind_global_module, 1>)},
+        .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_buffer_audit_limits{
         .name{u8"--ros2-buffer-audit-limits"},
         .describe{u8"Explicit process-global journal quotas/profile reference; must immediately precede --ros2-buffer-audit. Grants no authority."},
@@ -46,7 +52,7 @@ namespace uwvm2::uwvm::cmdline::params
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_global_enable{
         .name{u8"--ros2-global-enable"},
-        .describe{u8"Explicit ROS2 global enable configuration; default deny."},
+        .describe{u8"Enable the complete ROS2 namespace family for this target; grants no operation or resource."},
         .usage{u8""},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::global, details::ros_details::action::enable, 0>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
@@ -141,6 +147,12 @@ namespace uwvm2::uwvm::cmdline::params
         .usage{u8"<value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::global, details::ros_details::action::connection, 1>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
+    inline constexpr ::uwvm2::utils::cmdline::parameter ros2_global_connect_timeout_ms_on_proc_exit{
+        .name{u8"--ros2-global-connect-timeout-ms.on-proc-exit"},
+        .describe{u8"ROS2 global connection wait on proc_exit: cancel (default) or wait."},
+        .usage{u8"<cancel|wait>"},
+        .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::global, details::ros_details::action::connection, 1>)},
+        .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_global_grant{
         .name{u8"--ros2-global-grant"},
         .describe{u8"Explicit ROS2 global grant configuration; default deny."},
@@ -162,7 +174,7 @@ namespace uwvm2::uwvm::cmdline::params
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_single_enable{
         .name{u8"--ros2-single-enable"},
-        .describe{u8"Explicit ROS2 single enable configuration; default deny."},
+        .describe{u8"Enable the complete ROS2 namespace family for this target; grants no operation or resource."},
         .usage{u8"<module:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::single, details::ros_details::action::enable, 1>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
@@ -271,6 +283,14 @@ namespace uwvm2::uwvm::cmdline::params
             details::ros_details::
                 callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::single, details::ros_details::action::connection, 2>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
+    inline constexpr ::uwvm2::utils::cmdline::parameter ros2_single_connect_timeout_ms_on_proc_exit{
+        .name{u8"--ros2-single-connect-timeout-ms.on-proc-exit"},
+        .describe{u8"ROS2 single connection wait on proc_exit: cancel (default) or wait."},
+        .usage{u8"<module:str> <cancel|wait>"},
+        .handle{::std::addressof(
+            details::ros_details::
+                callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::single, details::ros_details::action::connection, 2>)},
+        .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_single_grant{
         .name{u8"--ros2-single-grant"},
         .describe{u8"Explicit ROS2 single grant configuration; default deny."},
@@ -300,7 +320,7 @@ namespace uwvm2::uwvm::cmdline::params
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_group_enable{
         .name{u8"--ros2-group-enable"},
-        .describe{u8"Explicit ROS2 group enable configuration; default deny."},
+        .describe{u8"Enable the complete ROS2 namespace family for this target; grants no operation or resource."},
         .usage{u8"<group:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::group, details::ros_details::action::enable, 1>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
@@ -393,6 +413,12 @@ namespace uwvm2::uwvm::cmdline::params
         .name{u8"--ros2-group-connect-timeout-ms"},
         .describe{u8"Explicit ROS2 group connect-timeout-ms configuration; default deny."},
         .usage{u8"<group:str> <value:str>"},
+        .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::group, details::ros_details::action::connection, 2>)},
+        .cate{::uwvm2::utils::cmdline::categorization::ros2}};
+    inline constexpr ::uwvm2::utils::cmdline::parameter ros2_group_connect_timeout_ms_on_proc_exit{
+        .name{u8"--ros2-group-connect-timeout-ms.on-proc-exit"},
+        .describe{u8"ROS2 group connection wait on proc_exit: cancel (default) or wait."},
+        .usage{u8"<group:str> <cancel|wait>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::group, details::ros_details::action::connection, 2>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_group_grant{

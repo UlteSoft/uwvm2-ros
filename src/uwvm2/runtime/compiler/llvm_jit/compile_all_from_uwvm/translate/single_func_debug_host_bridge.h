@@ -45,6 +45,18 @@ struct llvm_jit_debug_host_bridge_wrapper<Function, Return (__attribute__((sysv_
     }
 };
 #endif
+// An import may resolve to another Wasm module. Resolve its actual final leaf
+// before suspending the ledger; only genuine foreign calls form host islands.
+template<>
+struct llvm_jit_debug_host_bridge_wrapper<
+    ::uwvm2::runtime::lib::details::llvm_jit_call_raw_from_generated_wasm_abi_bridge>
+{
+    static void invoke(::std::uintptr_t module, ::std::uintptr_t function,
+        ::std::uintptr_t result, ::std::size_t result_bytes,
+        ::std::uintptr_t parameters, ::std::size_t parameter_bytes) UWVM_THROWS
+    { ::uwvm2::runtime::lib::details::llvm_jit_debug_classified_import_abi_bridge(
+        module,function,result,result_bytes,parameters,parameter_bytes); }
+};
 template<auto A, auto B>
 inline constexpr bool llvm_jit_same_debug_bridge{[]() constexpr noexcept
 {

@@ -4,6 +4,8 @@
 #pragma once
 #include "protocol.h"
 #include "../common/types.h"
+#include "../common/quota.h"
+#include <algorithm>
 #include <cmath>
 #include <charconv>
 #include <cstring>
@@ -96,7 +98,8 @@ namespace uwvm2::imported::ros::ipc
         default:return 0;
         }
     }
-    inline constexpr std::size_t parameter_max_elements{1048576};
+    // The array count is a u32 wire field, not an implicit resource quota.
+    inline constexpr std::size_t parameter_max_elements{UINT32_MAX};
     inline constexpr std::size_t parameter_wire_limit{max_payload_bytes-518};
     inline constexpr parameter_kind parameter_event_type(version backend,std::string_view type) noexcept
     {
@@ -243,7 +246,7 @@ namespace uwvm2::imported::ros::ipc
     }
     // No allocation before complete shape/element validation. Malformed arrays
     // return 22 before the element quota is considered; a well-formed count
-    // exceeding either the explicit limit or the hard ceiling returns 90.
+    // exceeding the explicit limit or wire representation returns 90.
     inline std::uint32_t preflight_parameter_array(parameter_kind type,std::uint8_t const* bytes,std::size_t size,std::size_t max_elements,std::uint32_t& count)
     {
         if(!array_parameter(type)) { return 95; }
@@ -398,13 +401,12 @@ namespace uwvm2::imported::ros::ipc
         if((event?parameter_event_identity(backend,cap.type):parameter_identity(backend,cap.type))!=cap.type_identity) { return 13; }
         if(array_parameter(type))
         {
-            std::int64_t count{};
-            if(elements==cap.limits.end()||!parse_parameter_integer(elements->second,count)||count<=0||static_cast<std::uint64_t>(count)>parameter_max_elements) { return 22; }
+            std::uint64_t count{};
+            if(!read_quota(cap,"max-parameter-elements",count)) { return 22; }
         }
         else if(elements!=cap.limits.end()) { return 22; }
-        auto quota{cap.limits.find("max-parameter-bytes")};std::int64_t bytes{};
-        if(quota==cap.limits.end()||!parse_parameter_integer(quota->second,bytes)||
-           bytes<(event?1:static_cast<std::int64_t>(parameter_width(type)))) { return 22; }
+        std::uint64_t bytes{};
+        if(!read_quota(cap,"max-parameter-bytes",bytes)) { return 22; }
         if(!numeric_parameter(type)) { return bounded?22:0; }
         if(minimum==cap.limits.end()||maximum==cap.limits.end()) { return 22; }
         if(float64_parameter(type))
@@ -418,10 +420,19 @@ namespace uwvm2::imported::ros::ipc
         if(backend!=version::ros2||cap.operation!="param.subscribe-events"||parameter_event_type(backend,cap.type)==parameter_kind::unsupported) { return 95; }
         auto error{validate_parameter_contract(backend,cap)};if(error) { return error; }
         if(value.type!=parameter_event_type(backend,cap.type)) { return 13; }
+        // Validate a native event value before its canonical copy. The complete
+        // envelope is checked separately; even its payload cannot exceed the
+        // explicit byte quota or the existing wire representation.
+        if(value.type!=parameter_kind::deletion)
+        {
+            std::size_t payload_size{};auto encoded{parameter_encoded_size(value,payload_size)};if(encoded)return encoded;
+            std::uint64_t maximum{};(void)read_quota(cap,"max-parameter-bytes",maximum);
+            if(payload_size>maximum)return 90;
+        }
         if(array_parameter(value.type))
         {
-            std::int64_t count{};parse_parameter_integer(cap.limits.at("max-parameter-elements"),count);
-            if(parameter_array_size(value)>static_cast<std::uint64_t>(count)||parameter_array_size(value)>parameter_max_elements) { return 90; }
+            std::uint64_t count{};(void)read_quota(cap,"max-parameter-elements",count);
+            if(parameter_array_size(value)>count||parameter_array_size(value)>parameter_max_elements) { return 90; }
             if(value.type==parameter_kind::boolean_array)
             { for(auto item:value.bool_array_value) { if(item>1) { return 22; } } }
             else if(value.type==parameter_kind::string_array)
@@ -449,11 +460,12 @@ namespace uwvm2::imported::ros::ipc
     inline std::uint32_t validate_parameter_value(version backend,capability_spec const& cap,std::uint8_t const* bytes,std::size_t size,parameter_value* output=nullptr)
     {
         auto contract{validate_parameter_contract(backend,cap)};if(contract) { return contract; }
-        auto quota{cap.limits.find("max-parameter-bytes")};std::int64_t maximum{};
-        if(quota==cap.limits.end()||!parse_parameter_integer(quota->second,maximum)||maximum<0) { return 22; }
-        if(size>static_cast<std::uint64_t>(maximum)) { return 90; }
+        std::uint64_t maximum{};
+        if(!read_quota(cap,"max-parameter-bytes",maximum)) { return 22; }
+        if(size>maximum||size>parameter_wire_limit) { return 90; }
         auto type{parameter_type(backend,cap.type)};std::size_t elements{parameter_max_elements};
-        if(array_parameter(type)) { std::int64_t count{};parse_parameter_integer(cap.limits.at("max-parameter-elements"),count);elements=static_cast<std::size_t>(count); }
+        if(array_parameter(type))
+        {std::uint64_t count{};(void)read_quota(cap,"max-parameter-elements",count);elements=static_cast<std::size_t>(std::min<std::uint64_t>(count,parameter_max_elements));}
         if(array_parameter(type))
         {
             // Validate borrowed wire bytes before allocating a decoded value.

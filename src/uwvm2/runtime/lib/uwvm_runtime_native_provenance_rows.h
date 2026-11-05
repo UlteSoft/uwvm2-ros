@@ -366,7 +366,7 @@ namespace uwvm2::runtime::lib::details::native_loaded_provenance
         [[nodiscard]] bool collect(::std::uint64_t object_key, ::llvm::object::ObjectFile const& object,
             ::llvm::LoadedObjectInfo const& loaded)
         {
-            if(!valid_ || object_key == 0u || object.getData().size() > max_object_bytes ||
+            if(!valid_ || object_key == 0u || object.getData().size() > PTRDIFF_MAX ||
                objects_.size() == max_objects) { return false; }
             for(auto const key: objects_) { if(key == object_key) { return false; } }
             auto const first_text{text_.size()};

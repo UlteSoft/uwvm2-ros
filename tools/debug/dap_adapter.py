@@ -2981,8 +2981,10 @@ class Adapter:
                 # Keep IDs session-unique so an old request cannot alias a
                 # different frame after this snapshot is replaced.
                 if notify:
-                    self.event("stopped", {"reason": reason, "threadId": threads[0]["id"] if threads else 1,
-                                           "allThreadsStopped": True})
+                    event = {"reason": reason, "allThreadsStopped": True}
+                    if threads:
+                        event["threadId"] = threads[0]["id"]
+                    self.event("stopped", event)
                 return True
         elif state == "exited":
             self.invalidate_stop()
@@ -3819,19 +3821,33 @@ class Adapter:
             elif command == "threads":
                 self.observe(self.command("status"))
                 self.respond(request, {"threads": [{"id": t["id"], "name": f"Wasm thread {t['id']}"}
-                                                    for t in self.threads] or
-                                                   ([{"id": 1, "name": "Wasm thread 1"}] if self.state != "exited" else [])})
+                                                    for t in self.threads]})
             elif command == "pause":
                 reply = self.command("pause")
                 observation = self._decode_status(reply)
                 self.respond(request)
                 self._commit_status(observation)
             elif command == "continue":
-                thread = unsigned_id(args.get("threadId", 1), "Wasm threadId")
+                thread = args.get("threadId")
+                if type(thread) is not int or not 0 <= thread < (1 << 64):
+                    raise ValueError("explicit Wasm threadId required")
+                if args.get("singleThread", False) is not False:
+                    raise ValueError("single-thread continue is unavailable")
+                if self.state != "stopped":
+                    raise ValueError("continue requires a stopped execution domain")
+                if thread == 0:
+                    if self.threads or args.get("singleThread") is not False or self.stop_key is None:
+                        raise ValueError("global launch resume requires an identified empty stop")
+                elif not any(entry["id"] == thread for entry in self.threads):
+                    raise ValueError("selected participant is not in the observed stop")
+                # Resume may succeed before a transport failure. Retire all
+                # stopped references before sending this state-changing command.
+                self.invalidate_stop()
                 reply = self.command("continue")
                 observation = self._decode_status(reply)
                 self.respond(request, {"allThreadsContinued": True})
-                self.event("continued", {"threadId": thread, "allThreadsContinued": True})
+                if thread:
+                    self.event("continued", {"threadId": thread, "allThreadsContinued": True})
                 self._commit_status(observation)
             elif command in ("stepIn", "next", "stepOut"):
                 thread = unsigned_id(args.get("threadId"), "Wasm threadId")

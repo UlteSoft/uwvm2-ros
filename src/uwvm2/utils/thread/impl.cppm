@@ -28,6 +28,8 @@ export import :native_thread_join;
 export import :keyed_wait_set;
 export import :execution_lifetime;
 export import :execution_domain;
+export import :process_exit;
+export import :monotonic_clock;
 export import :checkpoint_host_admission;
 export import :cooperative_pause_domain;
 export import :collection_pause_domain;

@@ -24,6 +24,7 @@
 #ifndef UWVM_MODULE
 // std
 # include <array>
+# include <atomic>
 # include <cstddef>
 # include <chrono>
 # include <cstdint>
@@ -1050,6 +1051,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
     /// no guest PC/stack exists yet. Entry selection and active segments are handled
     /// by the normal run API. Call during serialized host setup, not from callbacks.
     extern "C++" bool llvm_jit_prepare_debug_host_api() noexcept;
+    /// Product ordinary LLVM-full CLI containment. Installs no debugger authority
+    /// or observer; requires the same actual source/cleanup/control proof.
+    extern "C++" bool runtime_prepare_guest_fault_containment_host_api() noexcept;
+    /// Bounded current-epoch fault fact, independent of WASI proc_exit facts.
+    extern "C++" bool runtime_guest_fault_detected_host_api() noexcept;
     struct llvm_jit_debug_safe_point_view
     {
         // Borrowed only for one serialized host management operation. Runtime
@@ -1158,6 +1164,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
         entry_function_abi_buffers entry_abi_buffers{};
         /// @brief A validated start-section invocation may target a host import with signature () -> ().
         bool module_start{};
+        /// @brief Optional host notification after the actual root lease is admitted.
+        /// @note No authority is conferred; retain this flag until the invocation returns.
+        ::std::atomic<bool>* entry_admitted{};
     };
 
     struct lazy_compile_run_config

@@ -104,12 +104,27 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         ::uwvm2::imported::wasi::wasip1::abi::wasi_posix_fd_wasm64_t fd,
         ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_wasm64_t buf_ptrsz) noexcept
     {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        if(!env.exposes(u8"fd_prestat_get")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+        if(fd >= 0 && fd < 3 && !env.grants_stdio(static_cast<unsigned>(fd)))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+
+#endif
+
         auto const memory_pointer{env.get_memory()};
         if(memory_pointer == nullptr) [[unlikely]] { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
         auto& memory{*memory_pointer};
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        // Validate every result buffer before any native side effect or partial
+        // output. Memory may grow, but cannot shrink during an active host call.
+        if(!check_wasip1_memory_bounds_wasm64(memory, buf_ptrsz, 16uz))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
+#endif
+
 
         // This project's wasm64 mirror expands pr_name_len to u64 at offset 8, so the guest record alignment is 8.
-        check_wasip1_guest_pointer_alignment<8uz>(buf_ptrsz, u8"fd_prestat_get_wasm64.buf (prestat64)");
+        if(!check_wasip1_guest_pointer_alignment<8uz>(buf_ptrsz, u8"fd_prestat_get_wasm64.buf (prestat64)"))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::einval; }
 
         auto const trace_wasip1_call{env.trace_wasip1_call};
 
@@ -271,7 +286,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             }
         }
 
-        ::uwvm2::imported::wasi::wasip1::memory::check_memory_bounds_wasm64(memory, buf_ptrsz, size_of_wasi_prestat_wasm64_t);
+        if(!::uwvm2::imported::wasi::wasip1::func::check_wasip1_memory_bounds_wasm64(memory, buf_ptrsz, size_of_wasi_prestat_wasm64_t))
+            { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
 
         if constexpr(is_default_wasi_prestat_wasm64_data_layout())
         {

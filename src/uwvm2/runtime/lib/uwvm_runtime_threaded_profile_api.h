@@ -130,6 +130,14 @@ namespace uwvm2::runtime::lib
         ::uwvm2::runtime::wasm_threads::threaded_debug_control_limits const&) noexcept;
     extern "C++" [[nodiscard]] ::uwvm2::runtime::wasm_threads::threaded_debug_control_session
         runtime_threaded_profile_debug_control_session_host_api() noexcept;
+    // Pure CLI aggregate derivation. No Runtime publication or execution grant.
+    // Explicit native callers retain their original max_live_storage_bytes.
+    extern "C++" [[nodiscard]] bool runtime_threaded_profile_complete_cli_limits_host_api(
+        ::uwvm2::runtime::wasm_threads::threaded_profile_limits&) noexcept;
+    // CLI-only derivation also charges explicitly selected auxiliary owners
+    // at actual cold startup, after all option ordering has been resolved.
+    extern "C++" [[nodiscard]] bool runtime_threaded_profile_configure_cli_host_api(
+        ::uwvm2::runtime::wasm_threads::threaded_profile_limits const&) noexcept;
     extern "C++" [[nodiscard]] bool runtime_threaded_profile_configure_host_api(
         ::uwvm2::runtime::wasm_threads::threaded_profile_limits const&) noexcept;
     // Cold loader namespace selection only, never execution permission.

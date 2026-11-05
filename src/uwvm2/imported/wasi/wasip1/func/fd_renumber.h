@@ -90,6 +90,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         // The negative value fd is invalid, and this check prevents subsequent undefined behavior.
         if(fd_from < 0 || fd_to < 0) [[unlikely]] { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::ebadf; }
 
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        if(fd_from < 3 || fd_to < 3) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+#endif
         auto& wasm_fd_storage{env.fd_storage};
 
         // Prevent operations to obtain the size or perform resizing at this time.
@@ -141,6 +144,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 
             // Manipulating fd_manager requires a unique_lock.
             ::uwvm2::utils::mutex::rw_fair_unique_guard_t fds_lock{wasm_fd_storage.fds_rwlock};
+
+            // WASIp1 replaces an existing descriptor; unlike dup2, it cannot
+            // claim an arbitrary free number. Validate the destination while
+            // holding the same table lock, before detaching the source.
+            if(wasm_fd_storage.opens.size() > fd_opens_pos_to)
+            {
+                auto const& target{wasm_fd_storage.opens.index_unchecked(fd_opens_pos_to)};
+                if(target.fd_p == nullptr || target.fd_p->close_pos != SIZE_MAX)
+                { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::ebadf; }
+            }
+            else if(wasm_fd_storage.renumber_map.find(fd_to) == wasm_fd_storage.renumber_map.end())
+            { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::ebadf; }
 
             // from
 
@@ -294,6 +309,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         ::uwvm2::imported::wasi::wasip1::abi::wasi_posix_fd_t fd_from,
         ::uwvm2::imported::wasi::wasip1::abi::wasi_posix_fd_t fd_to) noexcept
     {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        if(!env.exposes(u8"fd_renumber")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+#endif
+
         auto const trace_wasip1_call{env.trace_wasip1_call};
 
         if(trace_wasip1_call) [[unlikely]]

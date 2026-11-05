@@ -35,6 +35,10 @@ static void create_managed_file(fd_ref const& resource)
     namespace ws=::uwvm2::uwvm::debugger::wasip1_state;
     namespace fm=::uwvm2::imported::wasi::wasip1::fd_manager;
     view out{};out.module=selected.module;out.operation=selected.operation;
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+    // A DeveloperGrant controls guest state, not native resources or fd rights.
+    out.result=status::unavailable_environment;return out;
+#endif
     try
     {
     auto& table{environment.fd_storage};

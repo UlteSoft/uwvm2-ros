@@ -23,6 +23,7 @@
 module;
 
 // std
+#include <array>
 #include <memory>
 #include <cstdint>
 // macro

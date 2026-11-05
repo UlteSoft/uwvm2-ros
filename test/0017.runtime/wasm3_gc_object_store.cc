@@ -333,12 +333,12 @@ int main()
         check(store.array_get(data_array, 1u, false, result) == r::gc_object_status::ok &&
               result.as<::std::uint32_t>() == 0x0201u, "array.init_data value");
         check(r::uwvm2_gc_array_new_data(&store, &module, 1u, 0u, 3u, 1u, &data_array) ==
-              r::gc_object_status::out_of_bounds, "array.new_data byte bounds");
+              r::gc_object_status::data_segment_out_of_bounds, "array.new_data byte bounds");
         check(r::uwvm2_gc_array_init_data(&store, &module, 1u, 0u, &data_array, 2u, 0u, 1u) ==
               r::gc_object_status::out_of_bounds, "array.init_data destination bounds");
         r::drop_wasm_data_segment_payload(module.local_defined_data_vec_storage.index_unchecked(0u).data);
         check(r::uwvm2_gc_array_new_data(&store, &module, 1u, 0u, 0u, 1u, &data_array) ==
-              r::gc_object_status::out_of_bounds, "array.new_data dropped segment");
+              r::gc_object_status::data_segment_out_of_bounds, "array.new_data dropped segment");
         check(r::uwvm2_gc_array_new_data(&store, &module, 1u, 0u, 0u, 0u, &data_array) ==
               r::gc_object_status::ok, "array.new_data zero length after drop");
 
@@ -368,7 +368,7 @@ int main()
               "array.init_elem identity");
         r::drop_wasm_element_segment_payload(module.local_defined_element_vec_storage.index_unchecked(0u).element);
         check(r::uwvm2_gc_array_new_elem(&store, &module, 3u, 0u, 0u, 1u, &element_array) ==
-              r::gc_object_status::out_of_bounds, "array.new_elem dropped segment");
+              r::gc_object_status::element_segment_out_of_bounds, "array.new_elem dropped segment");
 
         g::wasm_global_ref_t parallel{};
         check(store.array_new_default(1u, 8u, parallel) == r::gc_object_status::ok,

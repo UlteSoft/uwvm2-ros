@@ -473,6 +473,7 @@ template <auto Function>
 }
 
 #include "single_func_debug_host_bridge.h"
+template<auto Function> struct llvm_jit_managed_memory_target { static constexpr bool selected{false}; static constexpr auto value{Function}; };
 
 // Selection is a compiler decision from the actual debug-full emit state. It
 // adds no runtime flag/TLS probe to ordinary memory/global/provider functions.
@@ -487,6 +488,18 @@ template <auto Function>
     //  ^^ neither handle is a guest/native-stack address and no cursor advances.
     auto const block{ir_builder.GetInsertBlock()};
     auto const function{block == nullptr ? nullptr : block->getParent()};
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(UWVM_CPP_EXCEPTIONS) && defined(__linux__)
+    if constexpr(llvm_jit_managed_memory_target<Function>::selected)
+    {
+        if(function && function->hasFnAttribute("uwvm.debug.activation"))
+        {
+            auto* target{get_llvm_runtime_bridge_function_symbol_value_unwrapped<llvm_jit_managed_memory_target<Function>::value>(ir_builder, function_type, discriminator)};
+            if(auto* declared{::llvm::dyn_cast_or_null<::llvm::Function>(target)}) { declared->addFnAttr("uwvm.managed.helper"); }
+            else { return nullptr; }
+            return target;
+        }
+    }
+#endif
     if constexpr(!llvm_jit_debug_control_bridge<Function>)
     {
         if(function != nullptr && function->hasFnAttribute("uwvm.debug.activation"))
@@ -500,6 +513,21 @@ template <auto Function>
         }
     }
     return get_llvm_runtime_bridge_function_symbol_value_unwrapped<Function>(ir_builder, function_type, discriminator);
+}
+
+template<auto Ordinary, auto Managed>
+[[nodiscard]] inline ::llvm::Value* get_llvm_managed_helper_symbol(::llvm::IRBuilder<>& builder,
+    ::llvm::FunctionType* type, ::uwvm2::utils::container::u8string_view tag = {}) noexcept
+{
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(UWVM_CPP_EXCEPTIONS) && defined(__linux__)
+    if(builder.GetInsertBlock()->getParent()->hasFnAttribute("uwvm.debug.activation"))
+    {
+        auto* target{get_llvm_runtime_bridge_function_symbol_value_unwrapped<Managed>(builder,type,tag)};
+        if(auto* function{::llvm::dyn_cast_or_null<::llvm::Function>(target)}) { function->addFnAttr("uwvm.managed.helper"); return target; }
+        return nullptr;
+    }
+#endif
+    return get_llvm_runtime_bridge_function_symbol_value<Ordinary>(builder,type,tag);
 }
 
 [[nodiscard]] inline constexpr ::llvm::Value* get_llvm_external_host_object_pointer(::llvm::IRBuilder<>& ir_builder,
@@ -1301,6 +1329,7 @@ inline constexpr void emit_llvm_runtime_trap(::llvm::IRBuilder<>& ir_builder, ::
     call_arguments.emplace_back(emit_llvm_jit_current_frame_address(ir_builder, llvm_intptr_param_type));
     call_arguments.emplace_back(emit_llvm_jit_current_stack_pointer(ir_builder, llvm_intptr_param_type));
     auto trap_call{ir_builder.CreateCall(function_type, bridge_pointer, {call_arguments.data(), call_arguments.size()})};
+    trap_call->setMetadata("uwvm.managed.trap.candidate", ::llvm::MDNode::get(llvm_context, {}));
     trap_call->setTailCallKind(::llvm::CallInst::TCK_NoTail);
     apply_llvm_jit_host_calling_conv(trap_call);
     if(!ir_builder.getCurrentDebugLocation())
@@ -1415,6 +1444,7 @@ inline constexpr void emit_llvm_memory_out_of_bounds_trap(::llvm::IRBuilder<>& i
     call_arguments.emplace_back(emit_llvm_jit_current_frame_address(ir_builder, llvm_intptr_param_type));
     call_arguments.emplace_back(emit_llvm_jit_current_stack_pointer(ir_builder, llvm_intptr_param_type));
     auto trap_call{ir_builder.CreateCall(function_type, bridge_pointer, {call_arguments.data(), call_arguments.size()})};
+    trap_call->setMetadata("uwvm.managed.trap.candidate", ::llvm::MDNode::get(llvm_context, {}));
     trap_call->setTailCallKind(::llvm::CallInst::TCK_NoTail);
     apply_llvm_jit_host_calling_conv(trap_call);
 
@@ -2959,7 +2989,8 @@ struct runtime_global_access_info_t
     auto llvm_value_type{get_llvm_type_from_wasm_value_type(llvm_context, value_type)};
     if(llvm_value_type == nullptr) [[unlikely]] { return nullptr; }
 
-    if(engine_owned_pending)
+    auto const* immutable_binding{immutable_globals::select(::std::addressof(runtime_module), global_index)};
+    if(engine_owned_pending || immutable_binding != nullptr)
     {
         // Numeric pending bodies never publish generation-owned data through
         // DynamicLibrary::AddSymbol. Only an exact same-engine binding below
@@ -2973,7 +3004,9 @@ struct runtime_global_access_info_t
         auto const& record{runtime_module.local_defined_global_vec_storage.index_unchecked(index)};
         if(record.global_type_ptr == nullptr ||
            ::std::addressof(record.global) != global_storage_ptr ||
-           static_cast<runtime_operand_stack_value_type>(record.global_type_ptr->type) != value_type)
+           static_cast<runtime_operand_stack_value_type>(record.global_type_ptr->type) != value_type ||
+           (immutable_binding && (record.global_type_ptr->is_mutable ||
+             immutable_binding->data.type != static_cast<unsigned char>(record.global_type_ptr->type))))
         { return nullptr; }
         switch(value_type)
         {
@@ -3985,6 +4018,8 @@ template<unsigned Operation, bool ManagedShutdown = false>
             return static_cast<llvm_jit_atomic_address_carrier_t>(Operation == 0u ? result.notified : static_cast<unsigned>(result.status));
         case waiting::wait_status::unaligned: failure=trap::unaligned_atomic; break;
         case waiting::wait_status::out_of_bounds:
+            if constexpr(ManagedShutdown)
+            { ::uwvm2::runtime::lib::llvm_jit_managed_runtime_trap(trap::memory_out_of_bounds,0u,0u); }
             llvm_jit_memory_bridge_trap(memory->diagnostic_owner_memory_index, offset,
                 llvm_jit_compute_wasm32_effective_offset(address, offset), result.memory_length, Operation == 2u ? 8uz : 4uz);
             ::fast_io::fast_terminate();
@@ -3996,6 +4031,7 @@ template<unsigned Operation, bool ManagedShutdown = false>
         case waiting::wait_status::too_many_waiters: failure=trap::atomic_wait_limit; break;
     }
     // All registry/pinning scopes ended before entering either stack reporter.
+    if constexpr(ManagedShutdown) { ::uwvm2::runtime::lib::llvm_jit_managed_runtime_trap(failure,0u,0u); }
     ::uwvm2::runtime::lib::llvm_jit_runtime_trap(failure, 0u, 0u);
     ::fast_io::fast_terminate();
 }
@@ -4023,6 +4059,8 @@ template<unsigned Operation, bool ManagedShutdown = false>
             return static_cast<llvm_jit_atomic_address_carrier_t>(Operation == 0u ? result.notified : static_cast<unsigned>(result.status));
         case waiting::wait_status::unaligned: failure=trap::unaligned_atomic; break;
         case waiting::wait_status::out_of_bounds:
+            if constexpr(ManagedShutdown)
+            { ::uwvm2::runtime::lib::llvm_jit_managed_runtime_trap(trap::memory_out_of_bounds,0u,0u); }
             ::uwvm2::runtime::lib::llvm_jit_memory_out_of_bounds_trap(memory->diagnostic_owner_memory_index, offset,
                 effective, effective < address ? 1u : 0u, result.memory_length, Operation == 2u ? 8uz : 4uz, 0u, 0u);
             ::fast_io::fast_terminate();
@@ -4034,6 +4072,7 @@ template<unsigned Operation, bool ManagedShutdown = false>
         case waiting::wait_status::too_many_waiters: failure=trap::atomic_wait_limit; break;
     }
     // All registry/pinning scopes ended before entering either stack reporter.
+    if constexpr(ManagedShutdown) { ::uwvm2::runtime::lib::llvm_jit_managed_runtime_trap(failure,0u,0u); }
     ::uwvm2::runtime::lib::llvm_jit_runtime_trap(failure, 0u, 0u);
     ::fast_io::fast_terminate();
 }
@@ -4563,9 +4602,9 @@ UWVM_ALWAYS_INLINE inline constexpr void llvm_jit_simd_write_bridge_value(::std:
 // Native fallback for a memory64 access. The generic range checker stores
 // its low offset in u64 on every host; construct a genuine u65 sum here instead
 // of applying the memory32 computation's u33 overflow rule.
-template<typename Fn>
+template<bool ManagedTraps = false, typename Fn>
 inline void llvm_jit_with_checked_memory64_access(::std::uintptr_t owner, ::std::uint64_t offset,
-    ::std::uint64_t address, ::std::size_t width, Fn&& fn) noexcept
+    ::std::uint64_t address, ::std::size_t width, Fn&& fn) noexcept(!ManagedTraps)
 {
     // [live native memory owner] retained by the current VM execution lease.
     // ^^ memory: translator-owned relocation, never an address chosen by Wasm.
@@ -4579,6 +4618,8 @@ inline void llvm_jit_with_checked_memory64_access(::std::uintptr_t owner, ::std:
     // u64-versus-native allocation proof, including on a 32-bit host.
     if(!llvm_jit_try_checked_memory_access(*memory, effective, width, length, ::std::forward<Fn>(fn))) [[unlikely]]
     {
+        if constexpr(ManagedTraps)
+        { ::uwvm2::runtime::lib::llvm_jit_managed_runtime_trap(::uwvm2::runtime::lib::llvm_jit_trap_kind::memory_out_of_bounds,0u,0u); }
         ::uwvm2::runtime::lib::llvm_jit_memory_out_of_bounds_trap(memory->diagnostic_owner_memory_index,
             offset, low, effective.offset_65_bit ? 1u : 0u, length, width, 0u, 0u);
         ::fast_io::fast_terminate();
@@ -4588,15 +4629,15 @@ inline void llvm_jit_with_checked_memory64_access(::std::uintptr_t owner, ::std:
 // Use one unsigned i64 carrier for scalar bit patterns on every native ABI.
 // This keeps i32 ABI extension rules and floating-point NaN canonicalization out
 // of fallback calls; the LLVM caller reconstructs the exact Wasm result type.
-template<unsigned ResultBits, ::std::size_t Bytes, bool Signed>
+template<unsigned ResultBits, ::std::size_t Bytes, bool Signed, bool ManagedTraps = false>
 [[nodiscard]] inline ::std::uint64_t llvm_jit_memory64_scalar_load_bridge(
-    ::std::uintptr_t owner, ::std::uint64_t offset, ::std::uint64_t address) noexcept
+    ::std::uintptr_t owner, ::std::uint64_t offset, ::std::uint64_t address) noexcept(!ManagedTraps)
 {
     static_assert(ResultBits == 32u || ResultBits == 64u);
     static_assert(Bytes == 1uz || Bytes == 2uz || Bytes == 4uz || Bytes == 8uz);
     static_assert(Bytes * 8uz <= ResultBits);
     ::std::uint64_t result{};
-    llvm_jit_with_checked_memory64_access(owner, offset, address, Bytes,
+    llvm_jit_with_checked_memory64_access<ManagedTraps>(owner, offset, address, Bytes,
         [&](::std::byte* begin, ::std::size_t effective) noexcept
     {
         // [native allocation ... complete Bytes-byte source ...] end
@@ -4618,12 +4659,12 @@ template<unsigned ResultBits, ::std::size_t Bytes, bool Signed>
     return result;
 }
 
-template<::std::size_t Bytes>
+template<::std::size_t Bytes, bool ManagedTraps = false>
 inline void llvm_jit_memory64_scalar_store_bridge(::std::uintptr_t owner,
-    ::std::uint64_t offset, ::std::uint64_t address, ::std::uint64_t bits) noexcept
+    ::std::uint64_t offset, ::std::uint64_t address, ::std::uint64_t bits) noexcept(!ManagedTraps)
 {
     static_assert(Bytes == 1uz || Bytes == 2uz || Bytes == 4uz || Bytes == 8uz);
-    llvm_jit_with_checked_memory64_access(owner, offset, address, Bytes,
+    llvm_jit_with_checked_memory64_access<ManagedTraps>(owner, offset, address, Bytes,
         [&](::std::byte* begin, ::std::size_t effective) noexcept
     {
         // [native allocation ... complete Bytes-byte destination ...] end
@@ -4656,7 +4697,7 @@ template<unsigned ValueBits, ::std::size_t Bytes, bool Signed, bool Store>
         if(value == nullptr || value->getType() != value_type) { return nullptr; }
         auto const type{::llvm::FunctionType::get(b.getVoidTy(), {intptr, b.getInt64Ty(), b.getInt64Ty(), b.getInt64Ty()}, false)};
         auto const discriminator{::fast_io::u8concat_fast_io(u8"memory64.scalar.store.", Bytes)};
-        auto const bridge{get_llvm_runtime_bridge_function_symbol_value<llvm_jit_memory64_scalar_store_bridge<Bytes>>(
+        auto const bridge{get_llvm_managed_helper_symbol<llvm_jit_memory64_scalar_store_bridge<Bytes>, llvm_jit_memory64_scalar_store_bridge<Bytes, true>>(
             b, type, ::uwvm2::utils::container::u8string_view{discriminator.data(), discriminator.size()})};
         if(bridge == nullptr) { return nullptr; }
         // Bitcasts do not perform floating-point arithmetic, including for signalling NaNs.
@@ -4669,7 +4710,7 @@ template<unsigned ValueBits, ::std::size_t Bytes, bool Signed, bool Store>
     {
         auto const type{::llvm::FunctionType::get(b.getInt64Ty(), {intptr, b.getInt64Ty(), b.getInt64Ty()}, false)};
         auto const discriminator{::fast_io::u8concat_fast_io(u8"memory64.scalar.load.", ValueBits, u8".", Bytes, u8".", Signed)};
-        auto const bridge{get_llvm_runtime_bridge_function_symbol_value<llvm_jit_memory64_scalar_load_bridge<ValueBits, Bytes, Signed>>(
+        auto const bridge{get_llvm_managed_helper_symbol<llvm_jit_memory64_scalar_load_bridge<ValueBits, Bytes, Signed>, llvm_jit_memory64_scalar_load_bridge<ValueBits, Bytes, Signed, true>>(
             b, type, ::uwvm2::utils::container::u8string_view{discriminator.data(), discriminator.size()})};
         if(bridge == nullptr) { return nullptr; }
         auto const call{b.CreateCall(type, bridge, {owner, offset, address})};
@@ -4678,10 +4719,10 @@ template<unsigned ValueBits, ::std::size_t Bytes, bool Signed, bool Store>
     }
 }
 
-template<llvm_jit_simd_code Op>
+template<llvm_jit_simd_code Op, bool ManagedTraps = false>
 inline void llvm_jit_memory64_simd_load_bridge(::std::uintptr_t owner, ::std::uint64_t offset,
     ::std::uint64_t address, ::std::uintptr_t old_address, llvm_jit_atomic_address_carrier_t lane,
-    ::std::uintptr_t result_address) noexcept
+    ::std::uintptr_t result_address) noexcept(!ManagedTraps)
 {
     runtime_wasm_v128 old{};
     if constexpr(Op == llvm_jit_simd_code::v128_load8_lane || Op == llvm_jit_simd_code::v128_load16_lane ||
@@ -4689,7 +4730,7 @@ inline void llvm_jit_memory64_simd_load_bridge(::std::uintptr_t owner, ::std::ui
     { old = llvm_jit_simd_read_bridge_value<runtime_wasm_v128>(old_address); }
     constexpr auto width{llvm_jit_simd_details::simd_memory_access_size<Op>()};
     runtime_wasm_v128 result{};
-    llvm_jit_with_checked_memory64_access(owner, offset, address, width, [&](::std::byte* begin, ::std::size_t effective) noexcept
+    llvm_jit_with_checked_memory64_access<ManagedTraps>(owner, offset, address, width, [&](::std::byte* begin, ::std::size_t effective) noexcept
     {
         // [native allocation ... complete width-byte span ...] end
         // [safe                                              ]
@@ -4703,13 +4744,13 @@ inline void llvm_jit_memory64_simd_load_bridge(::std::uintptr_t owner, ::std::ui
     llvm_jit_simd_write_bridge_value(result_address, result);
 }
 
-template<llvm_jit_simd_code Op>
+template<llvm_jit_simd_code Op, bool ManagedTraps = false>
 inline void llvm_jit_memory64_simd_store_bridge(::std::uintptr_t owner, ::std::uint64_t offset,
-    ::std::uint64_t address, ::std::uintptr_t value_address, llvm_jit_atomic_address_carrier_t lane) noexcept
+    ::std::uint64_t address, ::std::uintptr_t value_address, llvm_jit_atomic_address_carrier_t lane) noexcept(!ManagedTraps)
 {
     auto const value{llvm_jit_simd_read_bridge_value<runtime_wasm_v128>(value_address)};
     constexpr auto width{llvm_jit_simd_details::simd_memory_access_size<Op>()};
-    llvm_jit_with_checked_memory64_access(owner, offset, address, width, [&](::std::byte* begin, ::std::size_t effective) noexcept
+    llvm_jit_with_checked_memory64_access<ManagedTraps>(owner, offset, address, width, [&](::std::byte* begin, ::std::size_t effective) noexcept
     {
         // [native allocation ... complete width-byte destination ...] end
         // [safe                                                     ]
@@ -4741,7 +4782,7 @@ template<llvm_jit_simd_code Op>
     if constexpr(store)
     {
         auto const type{::llvm::FunctionType::get(b.getVoidTy(), {intptr, b.getInt64Ty(), b.getInt64Ty(), intptr, carrier}, false)};
-        auto const bridge{get_llvm_runtime_bridge_function_symbol_value<llvm_jit_memory64_simd_store_bridge<Op>>(b, type, tag)};
+        auto const bridge{get_llvm_managed_helper_symbol<llvm_jit_memory64_simd_store_bridge<Op>, llvm_jit_memory64_simd_store_bridge<Op, true>>(b, type, tag)};
         if(bridge == nullptr) { return nullptr; }
         call = b.CreateCall(type, bridge, {owner, offset, address, vector_address, ::llvm::ConstantInt::get(carrier, lane)});
         // call borrows the newly created function-owned IR node; no guest pointer is formed.
@@ -4750,7 +4791,7 @@ template<llvm_jit_simd_code Op>
     {
         if(result_address == nullptr || result_address->getType() != intptr) { return nullptr; }
         auto const type{::llvm::FunctionType::get(b.getVoidTy(), {intptr, b.getInt64Ty(), b.getInt64Ty(), intptr, carrier, intptr}, false)};
-        auto const bridge{get_llvm_runtime_bridge_function_symbol_value<llvm_jit_memory64_simd_load_bridge<Op>>(b, type, tag)};
+        auto const bridge{get_llvm_managed_helper_symbol<llvm_jit_memory64_simd_load_bridge<Op>, llvm_jit_memory64_simd_load_bridge<Op, true>>(b, type, tag)};
         if(bridge == nullptr) { return nullptr; }
         call = b.CreateCall(type, bridge, {owner, offset, address, vector_address, ::llvm::ConstantInt::get(carrier, lane), result_address});
         // call borrows the new call node; both native buffer identities came from translation.
@@ -5506,6 +5547,7 @@ inline constexpr void llvm_jit_local_imported_memory_init_bridge(::std::uintptr_
 }
 
 #include "opcode/local_imported_memory64_bulk_bridge.h"
+#include "single_func_managed_memory.h"
 
 // Reference/table bridge helpers keep the generated ABI target-independent. LLVM holds a reference as opaque integer
 // bits, while every C++ bridge reads or writes the real runtime object through an explicitly passed buffer address.
@@ -5861,12 +5903,14 @@ template<typename Offset, typename Length>
 [[nodiscard]] inline constexpr bool llvm_jit_table_range_oob(Offset offset, Length length, ::std::size_t bound) noexcept
 { return offset > bound || length > bound - offset; }
 
-template<typename Address = runtime_wasm_i32>
+template<typename Address = runtime_wasm_i32, bool ManagedTraps = false>
 inline constexpr void llvm_jit_table_get_bridge(::std::uintptr_t runtime_module_address,
                                                 runtime_wasm_u32 table_index,
                                                 Address element_index_i32,
-                                                ::std::uintptr_t result_address) noexcept
+                                                ::std::uintptr_t result_address) noexcept(!ManagedTraps)
 {
+    auto const complete{[&]() constexpr noexcept -> bool
+    {
     ::uwvm2::runtime::lib::details::llvm_jit_debug_table_guard debug_table_guard{};
     auto runtime_module{reinterpret_cast<runtime_module_storage_t*>(runtime_module_address)};
     auto result_ptr{reinterpret_cast<void*>(result_address)};
@@ -5875,7 +5919,7 @@ inline constexpr void llvm_jit_table_get_bridge(::std::uintptr_t runtime_module_
     auto table{llvm_jit_resolve_mutable_runtime_table(*runtime_module, table_index)};
     if(table == nullptr || table->table_type_ptr == nullptr) [[unlikely]] { ::fast_io::fast_terminate(); }
     auto const element_index{llvm_jit_table_address_bits(element_index_i32)};
-    if(element_index >= table->elems.size()) [[unlikely]] { llvm_jit_table_out_of_bounds_bridge_trap(); }
+    if(element_index >= table->elems.size()) [[unlikely]] { return false; }
 
     if(llvm_jit_runtime_table_is_funcref(*table))
     {
@@ -5913,7 +5957,7 @@ inline constexpr void llvm_jit_table_get_bridge(::std::uintptr_t runtime_module_
         {
             bool const local{own->local_defined_table(*runtime_module, table, table_index)};
             if(local && own->authenticates_local_compact(result))
-            { ::std::memcpy(result_ptr, &result, sizeof(result)); return; } // current OR older canonical issued range; NO per-step drain
+            { ::std::memcpy(result_ptr, &result, sizeof(result)); return true; } // current OR older canonical issued range; NO per-step drain
             else if(!local || (result.kind != ::uwvm2::object::global::wasm_ref_kind::wasm_null &&
                 result.kind != ::uwvm2::object::global::wasm_ref_kind::wasm_i31))
             { ::uwvm2::runtime::gc::managed_page_boundary(true); } // ORIGINAL foreign/unknown cold path
@@ -5925,7 +5969,7 @@ inline constexpr void llvm_jit_table_get_bridge(::std::uintptr_t runtime_module_
             if(page->local_defined_table(*runtime_module, table, table_index))
             {
                 if(page->is_pending(result))
-                { ::std::memcpy(result_ptr, &result, sizeof(result)); return; }
+                { ::std::memcpy(result_ptr, &result, sizeof(result)); return true; }
                 // Already published local/null/i31 carriers retain original
                 // checked behavior; only foreign/forged objects revoke.
                 if(result.kind != ::uwvm2::object::global::wasm_ref_kind::wasm_null &&
@@ -5945,14 +5989,25 @@ inline constexpr void llvm_jit_table_get_bridge(::std::uintptr_t runtime_module_
     {
         ::fast_io::fast_terminate();
     }
+
+        return true;
+    }()};
+    if(!complete)
+    {
+        if constexpr(ManagedTraps)
+        { ::uwvm2::runtime::lib::llvm_jit_managed_runtime_trap(::uwvm2::runtime::lib::llvm_jit_trap_kind::table_out_of_bounds,0u,0u); }
+        else { llvm_jit_table_out_of_bounds_bridge_trap(); }
+    }
 }
 
-template<typename Address = runtime_wasm_i32>
+template<typename Address = runtime_wasm_i32, bool ManagedTraps = false>
 inline constexpr void llvm_jit_table_set_bridge(::std::uintptr_t runtime_module_address,
                                                 runtime_wasm_u32 table_index,
                                                 Address element_index_i32,
-                                                ::std::uintptr_t value_address) noexcept
+                                                ::std::uintptr_t value_address) noexcept(!ManagedTraps)
 {
+    auto const complete{[&]() constexpr noexcept -> bool
+    {
     ::uwvm2::runtime::lib::details::llvm_jit_debug_table_guard debug_table_guard{};
     auto runtime_module{reinterpret_cast<runtime_module_storage_t*>(runtime_module_address)};
     auto value_ptr{reinterpret_cast<void const*>(value_address)};
@@ -5961,7 +6016,7 @@ inline constexpr void llvm_jit_table_set_bridge(::std::uintptr_t runtime_module_
     auto table{llvm_jit_resolve_mutable_runtime_table(*runtime_module, table_index)};
     if(table == nullptr || table->table_type_ptr == nullptr) [[unlikely]] { ::fast_io::fast_terminate(); }
     auto const element_index{llvm_jit_table_address_bits(element_index_i32)};
-    if(element_index >= table->elems.size()) [[unlikely]] { llvm_jit_table_out_of_bounds_bridge_trap(); }
+    if(element_index >= table->elems.size()) [[unlikely]] { return false; }
 
     if(llvm_jit_runtime_table_is_funcref(*table))
     {
@@ -6000,7 +6055,7 @@ inline constexpr void llvm_jit_table_set_bridge(::std::uintptr_t runtime_module_
             if(local && own->authenticates_local_compact(value))
             { table->elems.index_unchecked(static_cast<::std::size_t>(element_index)) =
                         ::uwvm2::uwvm::runtime::storage::runtime_table_slot_from_gc_reference(value);
-                    return; } // current OR older canonical issued range; NO per-step drain
+                    return true; } // current OR older canonical issued range; NO per-step drain
             else if(!local || (value.kind != ::uwvm2::object::global::wasm_ref_kind::wasm_null &&
                 value.kind != ::uwvm2::object::global::wasm_ref_kind::wasm_i31))
             { ::uwvm2::runtime::gc::managed_page_boundary(true); } // ORIGINAL foreign/unknown cold path
@@ -6017,7 +6072,7 @@ inline constexpr void llvm_jit_table_set_bridge(::std::uintptr_t runtime_module_
                     // enter ORIGINAL static census after pre-pause drain.
                     table->elems.index_unchecked(static_cast<::std::size_t>(element_index)) =
                         ::uwvm2::uwvm::runtime::storage::runtime_table_slot_from_gc_reference(value);
-                    return;
+                    return true;
                 }
                 if(value.kind != ::uwvm2::object::global::wasm_ref_kind::wasm_null &&
                    value.kind != ::uwvm2::object::global::wasm_ref_kind::wasm_i31 &&
@@ -6035,6 +6090,15 @@ inline constexpr void llvm_jit_table_set_bridge(::std::uintptr_t runtime_module_
     else
     {
         ::fast_io::fast_terminate();
+    }
+
+        return true;
+    }()};
+    if(!complete)
+    {
+        if constexpr(ManagedTraps)
+        { ::uwvm2::runtime::lib::llvm_jit_managed_runtime_trap(::uwvm2::runtime::lib::llvm_jit_trap_kind::table_out_of_bounds,0u,0u); }
+        else { llvm_jit_table_out_of_bounds_bridge_trap(); }
     }
 }
 
@@ -6055,14 +6119,16 @@ inline constexpr void llvm_jit_elem_drop_bridge(::std::uintptr_t runtime_module_
     ::uwvm2::uwvm::runtime::storage::drop_wasm_element_segment_payload(element);
 }
 
-template<typename Address = runtime_wasm_i32>
+template<typename Address = runtime_wasm_i32, bool ManagedTraps = false>
 inline constexpr void llvm_jit_table_init_bridge(::std::uintptr_t runtime_module_address,
                                                  runtime_wasm_u32 element_index,
                                                  runtime_wasm_u32 table_index,
                                                  Address dst_i32,
                                                  runtime_wasm_i32 src_i32,
-                                                 runtime_wasm_i32 len_i32) noexcept
+                                                 runtime_wasm_i32 len_i32) noexcept(!ManagedTraps)
 {
+    auto const complete{[&]() constexpr noexcept -> bool
+    {
 #if defined(UWVM_EXPERIMENTAL_MANAGED_NUMERIC_PAGE)
     ::uwvm2::runtime::gc::managed_page_boundary(false);
 #endif
@@ -6102,7 +6168,7 @@ inline constexpr void llvm_jit_table_init_bridge(::std::uintptr_t runtime_module
                                    : static_cast<::std::size_t>(funcref_end - funcref_begin)};
         if(llvm_jit_table_range_oob(src_wide, len_wide, source_size) || llvm_jit_table_range_oob(dst_wide, len_wide, table->elems.size())) [[unlikely]]
         {
-            llvm_jit_table_out_of_bounds_bridge_trap();
+            return false;
         }
         // [source/destination range] lies in live table/segment allocations; narrow only after proof.
         auto const dst{static_cast<::std::size_t>(dst_wide)};
@@ -6137,7 +6203,7 @@ inline constexpr void llvm_jit_table_init_bridge(::std::uintptr_t runtime_module
         auto const source_size{begin == nullptr ? 0uz : static_cast<::std::size_t>(end - begin)};
         if(llvm_jit_table_range_oob(src_wide, len_wide, source_size) || llvm_jit_table_range_oob(dst_wide, len_wide, table->elems.size())) [[unlikely]]
         {
-            llvm_jit_table_out_of_bounds_bridge_trap();
+            return false;
         }
         // [source/destination range] lies in live table/segment allocations; narrow only after proof.
         auto const dst{static_cast<::std::size_t>(dst_wide)};
@@ -6161,7 +6227,7 @@ inline constexpr void llvm_jit_table_init_bridge(::std::uintptr_t runtime_module
         auto const source_size{begin == nullptr ? 0uz : static_cast<::std::size_t>(end - begin)};
         if(llvm_jit_table_range_oob(src_wide, len_wide, source_size) ||
            llvm_jit_table_range_oob(dst_wide, len_wide, table->elems.size())) [[unlikely]]
-        { llvm_jit_table_out_of_bounds_bridge_trap(); }
+        { return false; }
         // [begin, begin + source_size) and [table.begin, table.end) remain live.
         // [safe                       ] validated ranges prove src+i and dst+i stay inside.
         auto const dst{static_cast<::std::size_t>(dst_wide)};
@@ -6185,7 +6251,7 @@ inline constexpr void llvm_jit_table_init_bridge(::std::uintptr_t runtime_module
         auto const source_size{begin == nullptr ? 0uz : static_cast<::std::size_t>(end - begin)};
         if(llvm_jit_table_range_oob(src_wide, len_wide, source_size) ||
            llvm_jit_table_range_oob(dst_wide, len_wide, table->elems.size())) [[unlikely]]
-        { llvm_jit_table_out_of_bounds_bridge_trap(); }
+        { return false; }
         // [begin, end) and [table.elems.begin, table.elems.end) are live; both
         // ranges were checked before narrowing or deriving an element address.
         auto const dst{static_cast<::std::size_t>(dst_wide)};
@@ -6205,17 +6271,28 @@ inline constexpr void llvm_jit_table_init_bridge(::std::uintptr_t runtime_module
     {
         ::fast_io::fast_terminate();
     }
+
+        return true;
+    }()};
+    if(!complete)
+    {
+        if constexpr(ManagedTraps)
+        { ::uwvm2::runtime::lib::llvm_jit_managed_runtime_trap(::uwvm2::runtime::lib::llvm_jit_trap_kind::table_out_of_bounds,0u,0u); }
+        else { llvm_jit_table_out_of_bounds_bridge_trap(); }
+    }
 }
 
 template<typename Destination = runtime_wasm_i32, typename Source = runtime_wasm_i32,
-         typename Length = ::std::conditional_t<(sizeof(Destination) == 8u && sizeof(Source) == 8u), runtime_wasm_i64, runtime_wasm_i32>>
+         typename Length = ::std::conditional_t<(sizeof(Destination) == 8u && sizeof(Source) == 8u), runtime_wasm_i64, runtime_wasm_i32>, bool ManagedTraps = false>
 inline constexpr void llvm_jit_table_copy_bridge(::std::uintptr_t runtime_module_address,
                                                  runtime_wasm_u32 dst_table_index,
                                                  runtime_wasm_u32 src_table_index,
                                                  Destination dst_i32,
                                                  Source src_i32,
-                                                 Length len_i32) noexcept
+                                                 Length len_i32) noexcept(!ManagedTraps)
 {
+    auto const complete{[&]() constexpr noexcept -> bool
+    {
 #if defined(UWVM_EXPERIMENTAL_MANAGED_NUMERIC_PAGE)
     ::uwvm2::runtime::gc::managed_page_boundary(false);
 #endif
@@ -6238,7 +6315,7 @@ inline constexpr void llvm_jit_table_copy_bridge(::std::uintptr_t runtime_module
     if(llvm_jit_table_range_oob(src_wide, len_wide, src_table->elems.size()) ||
        llvm_jit_table_range_oob(dst_wide, len_wide, dst_table->elems.size())) [[unlikely]]
     {
-        llvm_jit_table_out_of_bounds_bridge_trap();
+        return false;
     }
     // [source/destination range] lies in live table/segment allocations; narrow only after proof.
     auto const dst{static_cast<::std::size_t>(dst_wide)};
@@ -6286,6 +6363,15 @@ inline constexpr void llvm_jit_table_copy_bridge(::std::uintptr_t runtime_module
             ::uwvm2::runtime::lib::llvm_jit_refresh_call_indirect_table_views(
                 dst_table, ::uwvm2::uwvm::runtime::storage::llvm_jit_call_indirect_table_mutation_kind::copy, dst, len);
         }
+    }
+
+        return true;
+    }()};
+    if(!complete)
+    {
+        if constexpr(ManagedTraps)
+        { ::uwvm2::runtime::lib::llvm_jit_managed_runtime_trap(::uwvm2::runtime::lib::llvm_jit_trap_kind::table_out_of_bounds,0u,0u); }
+        else { llvm_jit_table_out_of_bounds_bridge_trap(); }
     }
 }
 
@@ -6375,13 +6461,15 @@ template<typename Address = runtime_wasm_i32>
     return static_cast<Address>(table->elems.size());
 }
 
-template<typename Address = runtime_wasm_i32>
+template<typename Address = runtime_wasm_i32, bool ManagedTraps = false>
 inline constexpr void llvm_jit_table_fill_bridge(::std::uintptr_t runtime_module_address,
                                                  runtime_wasm_u32 table_index,
                                                  Address dst_i32,
                                                  ::std::uintptr_t value_address,
-                                                 Address len_i32) noexcept
+                                                 Address len_i32) noexcept(!ManagedTraps)
 {
+    auto const complete{[&]() constexpr noexcept -> bool
+    {
 #if defined(UWVM_EXPERIMENTAL_MANAGED_NUMERIC_PAGE)
     ::uwvm2::runtime::gc::managed_page_boundary(false);
 #endif
@@ -6395,7 +6483,7 @@ inline constexpr void llvm_jit_table_fill_bridge(::std::uintptr_t runtime_module
 
     auto const dst_wide{llvm_jit_table_address_bits(dst_i32)};
     auto const len_wide{llvm_jit_table_address_bits(len_i32)};
-    if(llvm_jit_table_range_oob(dst_wide, len_wide, table->elems.size())) [[unlikely]] { llvm_jit_table_out_of_bounds_bridge_trap(); }
+    if(llvm_jit_table_range_oob(dst_wide, len_wide, table->elems.size())) [[unlikely]] { return false; }
     // [source/destination range] lies in live table/segment allocations; narrow only after proof.
     auto const dst{static_cast<::std::size_t>(dst_wide)};
     auto const len{static_cast<::std::size_t>(len_wide)};
@@ -6443,7 +6531,42 @@ inline constexpr void llvm_jit_table_fill_bridge(::std::uintptr_t runtime_module
         ::uwvm2::runtime::lib::llvm_jit_refresh_call_indirect_table_views(
             table, ::uwvm2::uwvm::runtime::storage::llvm_jit_call_indirect_table_mutation_kind::fill, dst, len);
     }
+
+        return true;
+    }()};
+    if(!complete)
+    {
+        if constexpr(ManagedTraps)
+        { ::uwvm2::runtime::lib::llvm_jit_managed_runtime_trap(::uwvm2::runtime::lib::llvm_jit_trap_kind::table_out_of_bounds,0u,0u); }
+        else { llvm_jit_table_out_of_bounds_bridge_trap(); }
+    }
 }
+template<> struct llvm_jit_managed_memory_target<llvm_jit_table_get_bridge<runtime_wasm_i32, false>>
+{ static constexpr bool selected{true}; static constexpr auto value{llvm_jit_table_get_bridge<runtime_wasm_i32, true>}; };
+template<> struct llvm_jit_managed_memory_target<llvm_jit_table_get_bridge<runtime_wasm_i64, false>>
+{ static constexpr bool selected{true}; static constexpr auto value{llvm_jit_table_get_bridge<runtime_wasm_i64, true>}; };
+template<> struct llvm_jit_managed_memory_target<llvm_jit_table_set_bridge<runtime_wasm_i32, false>>
+{ static constexpr bool selected{true}; static constexpr auto value{llvm_jit_table_set_bridge<runtime_wasm_i32, true>}; };
+template<> struct llvm_jit_managed_memory_target<llvm_jit_table_set_bridge<runtime_wasm_i64, false>>
+{ static constexpr bool selected{true}; static constexpr auto value{llvm_jit_table_set_bridge<runtime_wasm_i64, true>}; };
+template<> struct llvm_jit_managed_memory_target<llvm_jit_table_init_bridge<runtime_wasm_i32, false>>
+{ static constexpr bool selected{true}; static constexpr auto value{llvm_jit_table_init_bridge<runtime_wasm_i32, true>}; };
+template<> struct llvm_jit_managed_memory_target<llvm_jit_table_init_bridge<runtime_wasm_i64, false>>
+{ static constexpr bool selected{true}; static constexpr auto value{llvm_jit_table_init_bridge<runtime_wasm_i64, true>}; };
+template<> struct llvm_jit_managed_memory_target<llvm_jit_table_fill_bridge<runtime_wasm_i32, false>>
+{ static constexpr bool selected{true}; static constexpr auto value{llvm_jit_table_fill_bridge<runtime_wasm_i32, true>}; };
+template<> struct llvm_jit_managed_memory_target<llvm_jit_table_fill_bridge<runtime_wasm_i64, false>>
+{ static constexpr bool selected{true}; static constexpr auto value{llvm_jit_table_fill_bridge<runtime_wasm_i64, true>}; };
+template<> struct llvm_jit_managed_memory_target<llvm_jit_table_copy_bridge<runtime_wasm_i32, runtime_wasm_i32, runtime_wasm_i32, false>>
+{ static constexpr bool selected{true}; static constexpr auto value{llvm_jit_table_copy_bridge<runtime_wasm_i32, runtime_wasm_i32, runtime_wasm_i32, true>}; };
+template<> struct llvm_jit_managed_memory_target<llvm_jit_table_copy_bridge<runtime_wasm_i32, runtime_wasm_i64, runtime_wasm_i32, false>>
+{ static constexpr bool selected{true}; static constexpr auto value{llvm_jit_table_copy_bridge<runtime_wasm_i32, runtime_wasm_i64, runtime_wasm_i32, true>}; };
+template<> struct llvm_jit_managed_memory_target<llvm_jit_table_copy_bridge<runtime_wasm_i64, runtime_wasm_i32, runtime_wasm_i32, false>>
+{ static constexpr bool selected{true}; static constexpr auto value{llvm_jit_table_copy_bridge<runtime_wasm_i64, runtime_wasm_i32, runtime_wasm_i32, true>}; };
+template<> struct llvm_jit_managed_memory_target<llvm_jit_table_copy_bridge<runtime_wasm_i64, runtime_wasm_i64, runtime_wasm_i64, false>>
+{ static constexpr bool selected{true}; static constexpr auto value{llvm_jit_table_copy_bridge<runtime_wasm_i64, runtime_wasm_i64, runtime_wasm_i64, true>}; };
+
+
 
 // Acquire a validated length snapshot for a local-imported memory. This is used only for memory.size-style queries;
 // actual loads/stores stay on bridge functions so provider locks do not outlive the snapshot. In particular, do not
@@ -6814,6 +6937,11 @@ struct llvm_jit_control_context_t
     // Lexical clause order is retained; every throwing call searches inner to
     // outer contexts. These are compile-time records, never a TLS handler stack.
     ::uwvm2::utils::container::vector<llvm_jit_exception_handler_t> exception_handlers{};
+
+    // One native catch chain per lexical try scope. Reuse requires no
+    // call-site reference operands or checkpoint state. Local reference
+    // slots are loaded afresh inside the shared block on every exception.
+    ::llvm::BasicBlock* native_exception_entry{};
 };
 
 // Normalized branch target for br/br_if/br_table/return.  For blocks and ifs this targets the end block; for loops it
@@ -7200,6 +7328,7 @@ struct runtime_local_func_llvm_jit_emit_state_t
     ::llvm::Argument* pending_numeric_context{};
 
     bool native_guest_exceptions{};
+    ::llvm::BasicBlock* native_exception_cleanup{}; // same function-owned frame cleanup
     ::uwvm2::runtime::compiler::llvm_jit::native_exception_symbols::declarations native_exception_imports{};
     ::uwvm2::runtime::compiler::llvm_jit::native_exception_landingpad::catch_runtime native_exception_runtime{};
 
@@ -7457,6 +7586,8 @@ struct runtime_local_func_llvm_jit_emit_state_t
 
 [[nodiscard]] inline bool emit_runtime_local_func_llvm_jit_debug_shutdown_poll(
     runtime_local_func_llvm_jit_emit_state_t&, ::std::size_t opcode_offset, ::llvm::CallBase* actual_safe_point) noexcept;
+
+[[nodiscard]] inline bool qualify_runtime_local_func_llvm_jit_managed_traps(runtime_local_func_llvm_jit_emit_state_t&) noexcept;
 
 // Record only the actual compiler-owned, validator-typed numeric SSA stack.
 // Called again after a successfully lowered opcode so its result lives in the
@@ -8396,12 +8527,6 @@ namespace sealed_compact_codegen {
     state.ir_builder->CreateBr(state.self_tail_entry_block);
     state.ir_builder->SetInsertPoint(state.self_tail_entry_block);
     if(!snapshot_runtime_local_func_llvm_jit_gc_roots(state)) { return false; }
-    // Self-tail reentry visits this point; genuine musttail call/return adjacency
-    // is unchanged because no instruction is appended to a tail-call sequence.
-    if(state.emit_debug_safe_points && state.debug_safe_point_granularity == llvm_jit_debug_safe_point_granularity::entry_loop &&
-       !emit_runtime_local_func_llvm_jit_debug_safe_point(state, 0uz))
-        [[unlikely]] { return false; }
-
     state.return_block = ::llvm::BasicBlock::Create(llvm_context, get_llvm_string_ref(u8"return"), state.llvm_function);
     if(!create_runtime_local_func_llvm_jit_result_phis(llvm_context,
                                                        state.return_block,
@@ -8428,6 +8553,14 @@ namespace sealed_compact_codegen {
     // The implicit function label sits at branch depth equal to the outermost target.  `return` reuses the same branch
     // machinery as `br` by selecting this first branch-target entry.
     state.valid = true;
+    // The entry safepoint includes a potentially throwing shutdown poll. Its
+    // ordinary exception emitter requires a valid function/control context,
+    // so emit it only after the real function label and return PHIs exist.
+    // Self-tail reentry still visits this same body block; no instruction is
+    // appended between a musttail call and its return.
+    if(state.emit_debug_safe_points && state.debug_safe_point_granularity == llvm_jit_debug_safe_point_granularity::entry_loop &&
+       !emit_runtime_local_func_llvm_jit_debug_safe_point(state, 0uz))
+    { state.valid = false; return false; }
     return true;
 }
 
@@ -8678,6 +8811,7 @@ namespace sealed_compact_codegen {
     if(state.pending_numeric_plan != nullptr && !emit_pending_numeric_public_wrapper(state)) { return false; }
     if(!emit_runtime_local_func_llvm_jit_raw_entry_wrapper()) [[unlikely]] { return false; }
 
+    if(!qualify_runtime_local_func_llvm_jit_managed_traps(state)) { return false; }
     if(!finalize_runtime_llvm_jit_gc_root_frame(state.gc_root_frame, true)) { return false; }
     if(!state.emit_debug_safe_points && state.debug_native_provenance == nullptr && !state.emit_call_stack_frames)
     { coalesce_runtime_llvm_jit_generic_trap_blocks(*state.llvm_function); }
@@ -8866,6 +9000,7 @@ inline constexpr void push_runtime_local_func_llvm_jit_tuple(
 #include "single_func_checkpoint_nested_child_emit.h"
 #include "single_func_checkpoint_retirement_emit.h"
 #include "single_func_debug_shutdown_emit.h"
+#include "single_func_managed_trap_emit.h"
 
 // Emit Wasm `nop`.  It has no IR effect but still validates that the emitter is in a usable structured context.
 [[nodiscard]] inline constexpr bool try_emit_runtime_local_func_llvm_jit_nop(runtime_local_func_llvm_jit_emit_state_t& state) noexcept
@@ -9663,6 +9798,20 @@ template <auto BridgeFunction, bool MayThrowWasm = false>
 
     auto& ir_builder{*state.ir_builder};
 
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(UWVM_CPP_EXCEPTIONS) && defined(__linux__)
+    if constexpr(!MayThrowWasm && llvm_jit_managed_memory_target<BridgeFunction>::selected)
+    {
+        if(state.debug_activation_enabled)
+        {
+            auto* bridge{get_llvm_runtime_bridge_function_symbol_value_unwrapped<
+                llvm_jit_managed_memory_target<BridgeFunction>::value>(ir_builder, bridge_function_type)};
+            if(!bridge) { return nullptr; }
+            auto* call{apply_llvm_jit_host_calling_conv(ir_builder.CreateCall(bridge_function_type, bridge, arguments))};
+            call->setMetadata("uwvm.managed.helper.candidate", ::llvm::MDNode::get(ir_builder.getContext(), {}));
+            return call;
+        }
+    }
+#endif
     auto bridge_pointer{get_llvm_runtime_bridge_function_symbol_value<BridgeFunction>(ir_builder, bridge_function_type)};
     if(bridge_pointer == nullptr) [[unlikely]] { return nullptr; }
     if constexpr(MayThrowWasm)
@@ -12069,10 +12218,20 @@ template<bool NormalizedScalarMemory, bool NormalizedPageMemory = false, bool No
         // Wasm traps and does not protect any actual host continuation.
         if(state.debug_activation_enabled)
         {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(UWVM_CPP_EXCEPTIONS) && defined(__linux__)
+            auto const target{wide ? get_llvm_runtime_bridge_function_symbol_value_unwrapped<llvm_jit_managed_memory_target<Wide>::value>(*state.ir_builder, type) :
+                get_llvm_runtime_bridge_function_symbol_value_unwrapped<llvm_jit_managed_memory_target<Narrow>::value>(*state.ir_builder, type)};
+#else
             auto const target{wide ? get_llvm_runtime_bridge_function_symbol_value_unwrapped<Wide>(*state.ir_builder, type) :
                 get_llvm_runtime_bridge_function_symbol_value_unwrapped<Narrow>(*state.ir_builder, type)};
+#endif
             if(target == nullptr) { return static_cast<::llvm::CallInst*>(nullptr); }
-            return apply_llvm_jit_host_calling_conv(state.ir_builder->CreateCall(type, target, arguments));
+            auto* call{apply_llvm_jit_host_calling_conv(state.ir_builder->CreateCall(type, target, arguments))};
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(UWVM_CPP_EXCEPTIONS) && defined(__linux__)
+            if(wide ? llvm_jit_managed_memory_target<Wide>::selected : llvm_jit_managed_memory_target<Narrow>::selected)
+            { call->setMetadata("uwvm.managed.helper.candidate", ::llvm::MDNode::get(state.ir_builder->getContext(), {})); }
+#endif
+            return call;
         }
         if(wide) { return emit_runtime_local_func_llvm_jit_runtime_bridge_call<Wide>(state, type, arguments); }
         return emit_runtime_local_func_llvm_jit_runtime_bridge_call<Narrow>(state, type, arguments);

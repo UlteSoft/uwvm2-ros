@@ -814,6 +814,10 @@ namespace uwvm2::utils::security::wsea
             if(end<limit) { limit=end; } return true;
         }
         inline result revocation_memory(policy const& p, ::std::string const& pin, bool record);
+        // Deployment tools share this exact evidence verifier. Only the VM
+        // consults its persistent revocation memory here; deployment performs
+        // its own read-only state gate and never obtains an execution receipt.
+        template<bool ReadRevocationMemory = true>
         inline result verify_crypto(policy const& p, manifest const& m, ::std::string_view certificate_pem,
                                     ::std::string_view crl_pem, ::std::time_t now, ::std::uint64_t& valid_until, ::std::string& signer_identity)
         {
@@ -883,8 +887,11 @@ namespace uwvm2::utils::security::wsea
             rule const* authorized{};
             for(auto const& r : p.rules) { if(r.id==m.id && r.accepts(signer_identity)) { authorized=&r; break; } }
             if(!authorized) { return deny("CERT_006","Signer is not authorized for this module identity"); }
-            auto remembered{revocation_memory(p,signer_identity,false)};
-            if(!remembered) { return remembered; }
+            if constexpr(ReadRevocationMemory)
+            {
+                auto remembered{revocation_memory(p,signer_identity,false)};
+                if(!remembered) { return remembered; }
+            }
             if(!(authorized->algorithms & profile_bit(*m.algorithm))) { return deny("SIG_005","Signature algorithm is not explicitly authorized for this module"); }
             if(m.version<authorized->version || m.epoch<authorized->epoch) { return deny("POL_001","Module is below a protected version floor"); }
             if(m.abi!=authorized->abi || (m.capabilities & ~authorized->capabilities)) { return deny("POL_003","Manifest exceeds locally authorized capabilities"); }

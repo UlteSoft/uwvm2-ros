@@ -291,7 +291,7 @@ namespace uwvm2::runtime::lib::details::native_owner_function_claims
     [[nodiscard]] inline bool collect(::llvm::object::ObjectFile const& object,image& output)
     {
         output={};image candidate{};
-        if(!object.isRelocatableObject() || object.getData().size()>graph::detail::max_object_bytes) { return false; }
+        if(!object.isRelocatableObject() || object.getData().size()>PTRDIFF_MAX) { return false; }
         if(::llvm::isa<::llvm::object::ELFObjectFileBase>(object))
         {
             unsigned ordinary_tables{},dynamic_tables{};::std::size_t section_count{};
@@ -362,7 +362,7 @@ namespace uwvm2::runtime::lib::details::native_owner_function_claims
                 auto const& section{**selected};auto address{symbol.getAddress()};
                 if(!address) { ::llvm::consumeError(address.takeError());return false; }
                 auto const base{section.getAddress()},size{section.getSize()};
-                if(*address<base || *address-base>size || size>graph::detail::max_object_bytes) { return false; }
+                if(*address<base || *address-base>size || size>PTRDIFF_MAX) { return false; }
                 value.section=section.getIndex();value.offset=*address-base;value.section_size=size;
                 value.located=true;value.text=section.isText();
             }
