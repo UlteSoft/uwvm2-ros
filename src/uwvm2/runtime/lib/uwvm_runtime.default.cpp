@@ -14721,11 +14721,17 @@ namespace uwvm2::runtime::lib
                        *runtime_module, ir, option.emit_unwind_call_stack_frames,
                        option.native_exception_target_machine))
                 { return {llvm_jit_debug_replace_status::compile_failure, generation, nullptr}; }
-                // Validate the replacement expression while emitting private
-                // IR, as in normal full compilation; no body prepass precedes it.
+                // Fused Wasm validation is unchanged. Defer LLVM's per-function
+                // checks until finalize_runtime_llvm_jit_module_storage below:
+                // this private module contains only this replacement and its
+                // wrappers, and the module verifier checks every definition.
+                // No optimization, native emission or publication precedes that
+                // mandatory check. Optimization also verifies its input/output.
+                // Checkpoint metadata is sealed before module finalization, so
+                // that mode retains its required early function verification.
                 translate_details::validate_runtime_local_func(
                     validation_module, local, validation_error, ::std::addressof(ir),
-                    option.verify_llvm_jit_ir, false,
+                    static_cast<bool>(option.checkpoint_profile), false,
                     option.emit_call_stack_frames, option.emit_unwind_call_stack_frames,
                     feature_parameter, true, option.compilation_mode, option.debug_safe_point_granularity,
                     option.debug_full_patchable_typed_target_base_address,

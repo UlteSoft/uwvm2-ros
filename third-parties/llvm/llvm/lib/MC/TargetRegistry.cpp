@@ -16,7 +16,6 @@
 #include "llvm/MC/MCLFI.h"
 #include "llvm/MC/MCObjectStreamer.h"
 #include "llvm/MC/MCObjectWriter.h"
-#include "llvm/Support/Regex.h"
 #include "llvm/Support/raw_ostream.h"
 #include <cassert>
 #include <vector>
@@ -26,11 +25,20 @@ using namespace llvm;
 static Target *FirstTarget = nullptr;
 
 bool Target::isValidFeatureListFormat(StringRef Features) {
-  if (Features.empty())
-    return true;
-
-  static const llvm::Regex pattern("^([+-][^,]+)(,[+-][^,]+)*,?$");
-  return pattern.match(Features);
+  // Equivalent to ^([+-][^,]+)(,[+-][^,]+)*,?$ (plus the empty list).
+  // Keep names unrestricted: this checks the list grammar, not CPU features.
+  while (!Features.empty()) {
+    if (Features.front() != '+' && Features.front() != '-')
+      return false;
+    Features = Features.drop_front();
+    const auto Comma = Features.find(',');
+    if (Features.empty() || Comma == 0)
+      return false;
+    if (Comma == StringRef::npos)
+      return true;
+    Features = Features.drop_front(Comma + 1);
+  }
+  return true;
 }
 
 MCStreamer *Target::createMCObjectStreamer(

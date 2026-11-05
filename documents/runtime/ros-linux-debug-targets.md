@@ -18,7 +18,7 @@ wrong pointer width, big-endian ARM or mismatched ARM floating-point PCS fails
 compilation. Cross builds still need the target's libc headers/libraries, compiler
 builtins, and the product's paired libc++/libc++abi/libunwind and bundled LLVM.
 A system LLVM or another target's archive is not a substitute. The current
-provider contract is `23.1.1-uwvm-ros.16`, including the ARM epilogue-CFI capability.
+provider contract is `23.1.1-uwvm-ros.17`, including the ARM epilogue-CFI capability.
 
 The VM communicates with a separately deployed native ROS Gateway over the
 existing typed protocol. Admission of a VM ABI does not assert availability of

@@ -87,7 +87,7 @@ The hash distinguishes source/patch content, compiler binaries, ABI-affecting
 flags, target backends and cross configuration. LLVM archives are linked by
 absolute path even when the application's system libraries remain dynamic;
 runtime loader search paths cannot replace libLLVM with another installation.
-The version suffix `-uwvm-ros.16` separates the native-object cache from
+The version suffix `-uwvm-ros.17` separates the native-object cache from
 unpatched upstream LLVM and earlier downstream revisions. Revision 2 added
 VE/AVR/MSP430 repairs; revision 3 fixes FP-predicate inversion and MIPS R6
 strict comparison selection/exception preservation. Otherwise an old cache

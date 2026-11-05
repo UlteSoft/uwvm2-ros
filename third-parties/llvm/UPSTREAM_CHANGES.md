@@ -181,7 +181,7 @@ The ordinary repository supplies the same
   were not imported. Required libc shared math headers remain.
 - Three internal mlgo utility symlinks were materialized with identical target
   bytes for Windows checkouts. Vendor line-ending conversion is disabled.
-- ROS xmake builds Release static archives with suffix `-uwvm-ros.16` and
+- ROS xmake builds Release static archives with suffix `-uwvm-ros.17` and
   verifies `sources.sha256`. Its CMake metadata target exports include paths,
   definitions and the complete ordered static-library closure.
 - Separately from compiler-source edits, ROS native MIPS target selection uses
@@ -463,3 +463,17 @@ exception and backtrace provider; DWARF debug rows do not replace it. The
 runtime still rejects unproven/stale r11 restores and never reads retired
 callee stack slots. LLVM_UWVM_ROS_ARM_DEBUG_EPILOGUE_CFI identifies this
 capability alongside the revision-16 source manifest and archive contract.
+
+## Revision 17: allocation-free MC feature-list grammar
+
+TargetRegistry::isValidFeatureListFormat now scans each signed, nonempty
+comma-separated feature once instead of invoking the POSIX regular-expression
+engine for every MC subtarget. It retains the empty-list and single-trailing-comma
+cases, and deliberately leaves feature-name bytes unrestricted. This is format
+validation only; target selection and feature interpretation are unchanged.
+
+The actual patched function was compared with revision 16's regex on 635,543
+inputs: exhaustive short lists, embedded NUL/newline bytes, random byte strings,
+and long valid and malformed lists. Native x86_64 VM measurements exercise
+authenticated broker/DAP disassembly, with instruction ownership checks intact.
+The source manifest and exact provider contract advance together to revision 17.
