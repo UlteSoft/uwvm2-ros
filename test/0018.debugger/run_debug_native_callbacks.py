@@ -57,8 +57,12 @@ try:
  for command in [f'disable {identifier}',f'enable {identifier}',f'ignore {identifier} 0',f'condition {identifier}']:
   reply=c.evaluate(command).decode();check('native-'+command,'error:' not in reply,reply)
  before_condition=m.actual_location(c)
- c.request('evaluate',{'expression':f'condition {identifier} true','context':'repl'},success=False)
- check('asm-expression-condition-explicitly-unavailable',m.actual_location(c)['stop']==before_condition['stop'])
+ c.evaluate(f'condition {identifier} $pc != 0')
+ check('native-condition-install-keeps-stop',m.actual_location(c)['stop']==before_condition['stop'])
+ for expression in ('$sp != 0','$not_a_register == 1','$pc[0] == 1','*(pc) == 1','system(1)','p$c == 1'):
+  c.request('evaluate',{'expression':f'condition {identifier} {expression}','context':'repl'},success=False)
+  check('native-condition-deny:'+expression,m.actual_location(c)['stop']==before_condition['stop'])
+
  oldref=frame.get('instructionPointerReference')
  continue_to_stop()
  for _ in range(20):
@@ -74,9 +78,17 @@ try:
  temp_reply=c.evaluate(f'tbreak bi {target[0]}').decode()
  temp=int(re.search(r'breakpoint (\d+)',temp_reply)[1])
  c.evaluate(f'commands {temp} echo native-temporary;info all-registers')
+ c.evaluate(f'condition {temp} $pc == 0')
  persistent=int(re.search(r'breakpoint (\d+)',c.evaluate(f'bi {target[0]}').decode())[1])
  watch_reply=c.evaluate('watch memory 0 0 0 4').decode()
  watch=int(re.search(r'watchpoint (\d+)',watch_reply)[1])
+ c.evaluate(f'condition {persistent} ($pc == 0x{target[1]:x}) && (($pc + 1) > $pc)')
+ continue_to_stop()
+ first=c.evaluate('wait').decode()
+ points=c.evaluate('info breakpoints').decode()
+ check('native-false-condition-stays-registered','stopped: native breakpoint' in first and f'breakpoint {temp} ' in points,first+points)
+ check('native-false-condition-no-callback','native-temporary' not in c.evaluate('callbacks').decode())
+ c.evaluate(f'condition {temp} ($pc == 0x{target[1]:x}) ? true : false')
  continue_to_stop()
  for _ in range(20):
   stopped=c.evaluate('wait').decode()
@@ -87,6 +99,22 @@ try:
  check('native-persistent-retained',f'breakpoint {persistent} ' in points,points)
  logs=c.evaluate('callbacks').decode()
  check('native-callback-ordered-values','native-temporary' in logs and 'known-bits=' in logs,logs)
+ # A runtime arithmetic failure keeps the actual native stop and its
+ # temporary point; it cannot silently continue or consume that point.
+ bad=int(re.search(r'breakpoint (\d+)',c.evaluate(f'tbreak bi {target[0]}').decode())[1])
+ c.evaluate(f'condition {bad} ($pc / ($pc - $pc)) != 0')
+ import time
+ deadline=time.monotonic()+30
+ while True:
+  number=c.queue([('evaluate',{'expression':'continue','context':'repl'})])[0]
+  response=c.response(number)
+  if not response.get('success'):break
+  assert 'continue time slice ended;' in response['body']['result'],response
+  assert time.monotonic()<deadline
+ stopped=m.actual_location(c)
+ check('native-condition-arithmetic-failure-stays-native','native-pc=' in stopped['raw'],response)
+ check('native-condition-error-keeps-temporary',f'breakpoint {bad} ' in c.evaluate('info breakpoints').decode())
+ c.evaluate(f'delete {bad}')
  c.evaluate(f'watchpoints disable {watch}')
  c.evaluate(f'watchpoints delete {watch}')
  c.evaluate(f'delete {persistent}')

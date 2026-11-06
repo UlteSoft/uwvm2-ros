@@ -94,11 +94,118 @@
             }
             catch(...) { result.status=control_error::exhausted;return result; }
         }
+        // This accepts only compiler-qualified numeric register VALUES from
+        // registers_locked(), never the private full kernel register snapshot.
+        // A parsed identifier/PC is data, not a native-memory read capability.
+        [[nodiscard]] static bool native_condition_register(source_dwarf::source_expression const& reference,
+            native_registers::display_snapshot const& registers,source_scalar_expression::integer& value,bool type_only=false) noexcept
+        {
+            if(!reference.steps.empty()) { return false; }
+            // A condition is already bounded by the console's 256-byte
+            // syntax field. Copy its ASCII token without aliasing char storage
+            // through char8_t or allocating during a breakpoint hit.
+            ::std::array<char8_t,256u> name{};
+            if(reference.root_name.size()>name.size()) { return false; }
+            for(::std::size_t i{};i!=reference.root_name.size();++i)
+            { name[i]=static_cast<char8_t>(static_cast<unsigned char>(reference.root_name[i])); }
+            auto const index{native_registers::index_of(registers.machine,{name.data(),reference.root_name.size()})};
+            if(index>=registers.size() || registers.unavailable_registers[index] ||
+               registers.known_bits[index]!=registers.word_bits ||
+               (registers.word_bits!=32u && registers.word_bits!=64u)) { return false; }
+            value={type_only ? 0u : registers.values[index],registers.word_bits,true,false,source_scalar_expression::value_category::integer};
+            return true;
+        }
+        [[nodiscard]] static control_error validate_native_condition(source_scalar_expression::program const& program,
+            native_registers::display_snapshot const& registers) noexcept
+        {
+            using enum source_scalar_expression::operation;
+            for(auto const& node:program.nodes)
+            {
+                // No pointers, dereference, member/index access, type queries
+                // or source-language coercion can turn a register into authority.
+                if(node.op==size || node.op==type_size || node.op==expression_size ||
+                   node.op==cast || node.op==zig_coerce) { return control_error::unsupported_command; }
+                if(node.op==reference)
+                {
+                    source_scalar_expression::integer value{};
+                    if(!native_condition_register(node.reference,registers,value,true))
+                    { return control_error::unsupported_command; }
+                }
+            }
+            return control_error::none;
+        }
+        [[nodiscard]] control_error current_native_condition_registers_locked(controller_reply& result)
+        {
+            console_command query{};query.kind=console_command_kind::assembly_registers;
+            query.requested_step_thread=native_participant_;query.disassembly_stop_identifier=stop_identifier_;
+            registers_locked(query,result);
+            return result.status;
+        }
+        [[nodiscard]] control_error prepare_native_condition_locked(::std::string_view expression,
+            ::std::shared_ptr<source_scalar_expression::program const>& out)
+        {
+            out={};
+            controller_reply actual{};
+            auto const state{current_native_condition_registers_locked(actual)};
+            if(state!=control_error::none) { return state; }
+            try
+            {
+                ::std::string normalized{expression};
+                for(::std::size_t i{};i!=normalized.size();++i)
+                {
+                    auto const byte{normalized[i]};
+                    if(byte=='\'' || byte=='"' || byte=='\\') { return control_error::unsupported_command; }
+                    if(byte!='$') { continue; }
+                    if(i+1u==normalized.size() ||
+                       (!::fast_io::char_category::is_c_alpha(normalized[i+1u]) && normalized[i+1u]!='_'))
+                    { return control_error::malformed; }
+                    // Preserve token separation: p$c must never become pc.
+                    normalized[i]=' ';
+                }
+                auto syntax{::std::make_shared<source_scalar_expression::program>()};
+                auto const parsed{source_scalar_expression::parse(normalized,*syntax)};
+                if(parsed!=source_scalar_expression::error::none)
+                { return parsed==source_scalar_expression::error::allocation_failure ?
+                    control_error::exhausted:control_error::malformed; }
+                // Assembly conditions have language-independent integer
+                // truth: true/false are 1/0. Do not infer a source language/CU
+                // or borrow its narrower Boolean type identity.
+                for(auto& node:syntax->nodes)
+                { if(node.boolean_literal) { node.boolean_literal=false; } }
+                auto const checked{validate_native_condition(*syntax,actual.registers)};
+                if(checked!=control_error::none) { return checked; }
+                out=::std::move(syntax);return control_error::none;
+            }
+            catch(...) { return control_error::exhausted; }
+        }
+        [[nodiscard]] control_error evaluate_native_condition_locked(breakpoint const& point,bool& matches)
+        {
+            matches=false;
+            if(!point.native_condition) { return control_error::invalid_state; }
+            controller_reply actual{};
+            auto const state{current_native_condition_registers_locked(actual)};
+            if(state!=control_error::none) { return state; }
+            auto const checked{validate_native_condition(*point.native_condition,actual.registers)};
+            if(checked!=control_error::none) { return checked; }
+            source_scalar_expression::integer value{};
+            auto const evaluated{source_scalar_expression::evaluate(*point.native_condition,
+                [&](source_dwarf::source_expression const& reference,bool size,source_scalar_expression::integer& result) noexcept
+                { return !size && native_condition_register(reference,actual.registers,result); },
+                value,actual.registers.word_bits,
+                [&](source_dwarf::source_expression const& reference,bool size,source_scalar_expression::integer& result) noexcept
+                { return !size && native_condition_register(reference,actual.registers,result,true); })};
+            if(evaluated!=source_scalar_expression::error::none)
+            { return evaluated==source_scalar_expression::error::allocation_failure ?
+                control_error::exhausted:control_error::unsupported_command; }
+            if(value.floating || !value.width) { return control_error::unsupported_command; }
+            matches=value.bits!=0u;return control_error::none;
+        }
         [[nodiscard]] control_error evaluate_breakpoint_locked(breakpoint const& point,controller_reply const& stopped,bool& matches)
         {
             matches=false;
             if(!point.condition_size) { matches=true;return control_error::none; }
             if(point.condition_size>point.condition.size()) { return control_error::malformed; }
+            if(point.assembly) { return evaluate_native_condition_locked(point,matches); }
             auto expression{::fast_io::string_view{point.condition.data(),point.condition_size}};
             // Literal truth needs no guessed DWARF scope, also for pure WAT.
             if(expression=="true" || expression=="1") { matches=true;return control_error::none; }

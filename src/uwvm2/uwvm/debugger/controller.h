@@ -107,6 +107,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         ::std::vector<console_command> callbacks{};
         ::std::vector<::std::string> callback_scripts{};
         ::std::uint64_t participant{}, function_generation{}, runtime_epoch{};
+        ::std::shared_ptr<source_scalar_expression::program const> native_condition{};
     };
     struct data_watchpoint
     {
@@ -4120,7 +4121,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 }
                 auto const initial{inspect()};
                 if(initial.execution != execution_status::stopped) { return result; }
-                result = execute_native_step(participant, initial, deadline - clock_type::now(), false, interrupt, false, true);
+                // The manager slice is checked only BETWEEN owned stops. A
+                // nearly expired slice must not turn a freshly issued native
+                // instruction into an immediate timeout and retire its trap.
+                // Give that one instruction the same bounded wait as an
+                // explicit step; the next iteration observes the slice end.
+                result = execute_native_step(participant, initial, budget, false, interrupt, false, true);
                 if(result.error != control_error::none || result.completed != completion::stepped) { return result; }
                 ::std::lock_guard lock{mutex_};
                 static_cast<void>(filter_watchpoints_locked());
@@ -5554,7 +5560,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 source_scalar_expression::program syntax{};
                 auto const condition_text{::fast_io::concat_fast_io("(",::fast_io::string_view{
                     command.breakpoint_condition.data(),command.breakpoint_condition_size},") != false")};
-                if(command.breakpoint_condition_size != 0u && source_scalar_expression::parse_admitted(
+                if(command.breakpoint_condition_size != 0u && !breakpoint_control && source_scalar_expression::parse_admitted(
                     {condition_text.data(),condition_text.size()},syntax) != source_scalar_expression::error::none)
                 { initial.status = control_error::malformed; return initial; }
             }
@@ -5812,6 +5818,33 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 if(acknowledged != control_error::none) { result.status = acknowledged; return result; }
                 ::std::lock_guard lock{mutex_};
                 if(exited_ || domain_->is_closed()) { result.status = control_error::invalid_state; return result; }
+                // Parse once before changing ANY selected point. Native
+                // conditions share immutable numeric syntax, never a retained
+                // register value/capture or permission to read host storage.
+                ::std::shared_ptr<source_scalar_expression::program const> native_condition{};
+                if(command.breakpoint_policy == breakpoint_action::condition && command.breakpoint_condition_size)
+                {
+                    bool native_selected{},source_selected{};
+                    for(auto const& point:breakpoints_)
+                    {
+                        if(!point.identifier || (command.breakpoint_id && point.identifier!=command.breakpoint_id)) { continue; }
+                        native_selected |= point.assembly;source_selected |= !point.assembly;
+                    }
+                    if(source_selected)
+                    {
+                        source_scalar_expression::program syntax{};
+                        auto const text{::fast_io::concat_fast_io("(",::fast_io::string_view{
+                            command.breakpoint_condition.data(),command.breakpoint_condition_size},") != false")};
+                        if(source_scalar_expression::parse_admitted({text.data(),text.size()},syntax)!=source_scalar_expression::error::none)
+                        { result.status=control_error::malformed;return result; }
+                    }
+                    if(native_selected)
+                    {
+                        result.status=prepare_native_condition_locked(
+                            {command.breakpoint_condition.data(),command.breakpoint_condition_size},native_condition);
+                        if(result.status!=control_error::none) { return result; }
+                    }
+                }
                 bool found{};
                 for(auto& point : breakpoints_)
                 {
@@ -5819,9 +5852,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                     found = true;
                     if(command.breakpoint_policy == breakpoint_action::ignore) { point.ignore_remaining = command.breakpoint_ignore; }
                     else if(command.breakpoint_policy == breakpoint_action::condition)
-                    { if(point.assembly && command.breakpoint_condition_size != 0u)
-                      { result.status = control_error::unsupported_command; return result; }
-                      point.condition = command.breakpoint_condition; point.condition_size = command.breakpoint_condition_size; }
+                    { point.condition = command.breakpoint_condition; point.condition_size = command.breakpoint_condition_size;
+                      point.native_condition = point.assembly ? native_condition : nullptr; }
                     else { point.enabled = command.breakpoint_policy == breakpoint_action::enable; }
                 }
                 if(!found && command.breakpoint_id != 0u) { result.status = control_error::invalid_breakpoint_target; }
