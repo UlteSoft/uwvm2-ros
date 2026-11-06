@@ -82,7 +82,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_wasm64_t time_ptrsz) noexcept
     {
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-        if(!env.exposes(u8"clock_time_get")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+        if(!env.allows_interface(u8"clock_time_get_wasm64")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
 #endif
 
         auto const memory_pointer{env.get_memory()};

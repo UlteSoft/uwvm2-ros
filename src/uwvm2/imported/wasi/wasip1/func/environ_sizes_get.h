@@ -66,7 +66,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_t environ_buf_size_ptrsz) noexcept
     {
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-        if(!env.exposes(u8"environ_sizes_get")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+        if(!env.allows_interface(u8"environ_sizes_get")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
         if(!env.permits(::uwvm2::imported::wasi::wasip1::environment::permission_t::environ)) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
 #endif
 
@@ -78,7 +78,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         for(auto const text : env.envs)
         {
             if(text.size() >= env.limits.max_args_env_bytes || data_bytes > env.limits.max_args_env_bytes - text.size() - 1u)
-            { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::e2big; }
+            { ::uwvm2::utils::control::host_diagnostics::limited("args-env-bytes",false); return ::uwvm2::imported::wasi::wasip1::abi::errno_t::e2big; }
             data_bytes += text.size() + 1u;
         }
 #endif

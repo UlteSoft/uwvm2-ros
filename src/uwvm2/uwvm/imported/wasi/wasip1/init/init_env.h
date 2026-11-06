@@ -1069,6 +1069,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
         // particular, a target deny can remove an explicit global grant while
         // unrelated global permissions continue to follow the existing model.
         state.env.interface_enabled = state.enabled_is_set && state.enabled;
+        state.env.interfaces = state.interfaces;
         state.env.non_fd_permissions = effective_wasip1_permissions(
             default_wasip1_env.non_fd_permissions, state.non_fd_permissions, state.permission_presence);
         state.env.wasip1_proc_exit_func_ptr = default_wasip1_env.wasip1_proc_exit_func_ptr;

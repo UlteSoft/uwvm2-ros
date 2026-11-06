@@ -1,5 +1,6 @@
 #if defined(UWVM_IMPORT_ROS1)
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros1_global_add_module),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::ros1_global_interface),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros1_global_enable),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros1_global_disable),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros1_global_master_uri),
@@ -18,6 +19,7 @@
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros1_global_grant),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros1_global_set),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros1_single_create),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::ros1_single_interface),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros1_single_enable),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros1_single_disable),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros1_single_master_uri),
@@ -38,6 +40,7 @@
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros1_single_set),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros1_group_create),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros1_group_add_module),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::ros1_group_interface),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros1_group_enable),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros1_group_disable),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros1_group_master_uri),

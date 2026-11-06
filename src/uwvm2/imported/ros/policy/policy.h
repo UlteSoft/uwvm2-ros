@@ -286,12 +286,22 @@ namespace uwvm2::imported::ros
                  name_space == "uwvm_ros2_rmw_srv_v1" || name_space == "uwvm_portable_robot_v1");
         }
         [[nodiscard]] bool host_import_visible(version v, ::std::string_view module,
-                                                ::std::string_view name_space) const noexcept
+                                                ::std::string_view name_space, ::std::string_view function) const noexcept
         {
             auto const target{effective(v, module)};
             // Version enable exposes its complete registered ABI. It creates
             // no operation, resource, native connection or portable grant.
-            return namespace_matches(v,name_space) && target && target->enabled;
+            return namespace_matches(v,name_space) && target && target->enabled && target->interfaces.exposed(
+                ::uwvm2::utils::control::host_interfaces::find(name_space,function));
+        }
+        result set_interface(version v, scope s, ::std::string_view name, ::std::string_view key, ::std::string_view state)
+        {
+            namespace api=::uwvm2::utils::control::host_interfaces;
+            auto target=mutable_target(v,s,name);api::access value{};
+            auto index=api::find(v==version::ros1?api::family::ros1:api::family::ros2,key);
+            if(!target || !api::parse_access(state,value) || !target->interfaces.set(index,value))
+            { return {errc::invalid_argument,"unknown target, API, duplicate policy or invalid access (hidden|deny|allow)"}; }
+            return {};
         }
         result set_enabled(version v, scope s, ::std::string_view name, bool enabled)
         {
@@ -403,6 +413,14 @@ namespace uwvm2::imported::ros
                 bool first{true};
                 for(auto const& [field, value] : target.connection)
                 { if(!first) { ::fast_io::print(stream,","); } first = false; ::fast_io::print(stream,json_quoted{field},":",json_quoted{value}); }
+                ::fast_io::print(stream,"},\"interfaces\":{"); first = true;
+                namespace api=::uwvm2::utils::control::host_interfaces;
+                for(::std::size_t i{};i<api::catalogue.size();++i)
+                {
+                    if(!target.interfaces.configured[i])continue;
+                    if(!first)::fast_io::print(stream,",");first=false;
+                    ::fast_io::print(stream,json_quoted{api::catalogue[i].key},":",json_quoted{api::name(target.interfaces.entries[i])});
+                }
                 ::fast_io::print(stream,"},\"capabilities\":["); first = true;
                 for(auto const& [alias, cap] : target.capabilities)
                 {

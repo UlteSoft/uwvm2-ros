@@ -21,6 +21,7 @@
  ****************************************/
 
 #pragma once
+#include <uwvm2/uwvm/io/host_diagnostics.h>
 
 #ifndef UWVM_MODULE
 // std
@@ -225,10 +226,31 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::local_imported
             using local_imported_function_type = typename base::local_imported_function_type;
             inline static constexpr void call(local_imported_function_type& function) noexcept
             {
-                namespace detail = ::uwvm2::utils::debug::host_calls;
-                if(!::std::is_constant_evaluated() && detail::observing(detail::channel::wasi))
-                { observed_call(function);return; }
+                if(!::std::is_constant_evaluated()) { checked_call(function);return; }
                 metadata_call(function);
+            }
+            inline static void checked_call(local_imported_function_type& function) noexcept
+            {
+                namespace api=::uwvm2::utils::control::host_interfaces;
+                namespace diagnostic=::uwvm2::utils::control::host_diagnostics;
+                namespace environment=::uwvm2::imported::wasi::wasip1::environment;
+                auto& env=::uwvm2::uwvm::imported::wasi::wasip1::storage::current_wasip1_env();
+                constexpr auto id=api::find(api::family::wasip1,::uwvm2::utils::container::u8string_view{Name});
+                static_assert(id!=api::invalid);
+
+                diagnostic::call_scope quota{id,environment::diagnostic_scope(env),environment::diagnostic_target(env)};
+                namespace detail=::uwvm2::utils::debug::host_calls;
+                if(detail::observing(detail::channel::wasi))observed_call(function);
+                else metadata_call(function);
+                if constexpr(::fast_io::tuple_size<decltype(function.res)>::value!=0u)
+                    if(env.allows_interface(function_name) && static_cast<::std::uint32_t>(::uwvm2::utils::container::get<0>(function.res))==
+                        static_cast<::std::uint32_t>(::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable))
+                    {
+                        ::std::uint64_t first{UINT64_MAX};
+                        if constexpr(::fast_io::tuple_size<decltype(function.params)>::value!=0u)
+                            first=static_cast<::std::uint64_t>(::uwvm2::utils::container::get<0>(function.params));
+                        environment::diagnostic_denied(env,id,false,first);
+                    }
             }
             inline static void observed_call(local_imported_function_type& function) noexcept
             {
@@ -261,10 +283,27 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::local_imported
                 if(observation.value) {observations::capture(env,*observation.value,true,has_result&&result==0);}
                 observation.finish(has_result,result);
             }
+            inline static constexpr void admitted_call(local_imported_function_type& function) noexcept
+            {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                namespace api=::uwvm2::utils::control::host_interfaces;
+                namespace environment=::uwvm2::imported::wasi::wasip1::environment;
+                constexpr auto id=api::find(api::family::wasip1,::uwvm2::utils::container::u8string_view{Name});
+                auto& env=::uwvm2::uwvm::imported::wasi::wasip1::storage::current_wasip1_env();
+                if(!env.allows_interface(function_name))
+                {
+                    if(!::std::is_constant_evaluated())environment::diagnostic_denied(env,id,true);
+                    if constexpr(::fast_io::tuple_size<decltype(function.res)>::value!=0u)
+                        ::uwvm2::utils::container::get<0>(function.res)=static_cast<::std::uint32_t>(::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable);
+                    return;
+                }
+#endif
+                base::call(function);
+            }
             inline static constexpr void metadata_call(local_imported_function_type& function) noexcept
             {
                 namespace calls = ::uwvm2::uwvm::debugger::wasip1_calls;
-                if(::std::is_constant_evaluated() || !calls::enabled.load(::std::memory_order_relaxed)) { base::call(function); return; }
+                if(::std::is_constant_evaluated() || !calls::enabled.load(::std::memory_order_relaxed)) { admitted_call(function); return; }
                 calls::record row{};
                 row.environment=::uwvm2::uwvm::imported::wasi::wasip1::storage::current_wasip1_env().debug_trace_identity;
                 constexpr auto count{::fast_io::tuple_size<decltype(function.params)>::value};
@@ -276,7 +315,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::local_imported
                 }(::std::make_index_sequence<count>{});
                 auto observed{calls::enter(function_name, row)};
                 calls::call_scope diagnostic_scope{observed};
-                base::call(function); // only the genuine builtin wrapper emits return
+                admitted_call(function); // only the genuine builtin wrapper emits return
                 if constexpr(::fast_io::tuple_size<decltype(function.res)>::value == 0u) { calls::leave(observed, false, 0u); }
                 else { calls::leave(observed, true, static_cast<::std::uint64_t>(::uwvm2::utils::container::get<0>(function.res))); }
             }

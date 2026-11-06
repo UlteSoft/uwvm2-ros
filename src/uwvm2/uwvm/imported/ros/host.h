@@ -2,6 +2,7 @@
  * UWVM2 ROS Runtime Extension. APL-2.0.                     *
  *************************************************************/
 #pragma once
+#include <uwvm2/uwvm/io/host_diagnostics.h>
 #include <uwvm2/utils/debug/host_calls.h>
 #ifndef UWVM_MODULE
 #include <uwvm2/utils/thread/monotonic_clock.h>
@@ -100,7 +101,12 @@ namespace uwvm2::uwvm::imported::ros
         inline ::std::uint32_t rmw_service_cancel(::std::uint64_t,::std::uint64_t,::std::uint64_t,::std::uint64_t) noexcept;
         inline ::std::uint32_t rmw_client_available(::std::uint64_t,::std::uint64_t,::std::uint64_t,::std::uint64_t,::std::uint32_t,::std::uint64_t) noexcept;
         inline ::std::uint32_t rmw_service_retire(::std::uint64_t,::std::uint64_t) noexcept;
-        inline ::std::uint32_t code(core::result const& r) noexcept { return static_cast<::std::uint32_t>(r.code); }
+        inline ::std::uint32_t code(core::result const& r) noexcept
+        {
+            if(r.code==core::errc::permission_denied)
+                ::uwvm2::utils::control::host_diagnostics::denial_detail(r.detail);
+            return static_cast<::std::uint32_t>(r.code);
+        }
         inline ::std::uint32_t audit_denial(core::version version, ::std::uint32_t error) noexcept;
         // Emergency diagnostics never allocate, retry a native operation or
         // rewrite an already completed business result. Counters saturate.
@@ -1334,16 +1340,33 @@ namespace uwvm2::uwvm::imported::ros
             static void invoke(local_imported_function_type& call) noexcept
             {
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                namespace api=::uwvm2::utils::control::host_interfaces;
+                namespace diagnostic=::uwvm2::utils::control::host_diagnostics;
+                constexpr auto id=api::find(Namespace,function_name);static_assert(id!=api::invalid);
+                constexpr auto version=api::catalogue[id].group==api::family::ros1?
+                    ::uwvm2::imported::ros::version::ros1 : ::uwvm2::imported::ros::version::ros2;
                 runtime::ros_caller_identity caller{};
-                if(!runtime::ros_observed_caller_identity_host_api(caller) ||
-                   !host_import_visible(caller.module_name, Namespace, function_name))
+                bool const identified=runtime::ros_observed_caller_identity_host_api(caller);
+                auto const* policy=identified?runtime_policy.effective(version,diagnostic::view(caller.module_name)):nullptr;
+                auto scope=policy?::uwvm2::imported::ros::to_string(policy->target_scope):"single";
+                auto target=policy?::std::string_view{policy->name}:diagnostic::view(caller.module_name);
+                if(!policy || !policy->enabled || !policy->interfaces.allowed(id))
                 {
-                    ::uwvm2::utils::container::get<0>(call.res) = 13; // Before any native effect or Guest write.
-                    return;
+                    diagnostic::report(id,diagnostic::event::denied,scope,target,"interface calls are not allowed");
+                    ::uwvm2::utils::container::get<0>(call.res)=13;return;
                 }
+                diagnostic::call_scope quota{id,scope,target,true};
 #endif
                 auto result{[&]<::std::size_t... I>(::std::index_sequence<I...>) noexcept
                 { return Fn(static_cast<A>(::uwvm2::utils::container::get<I>(call.params))...); }(::std::make_index_sequence<sizeof...(A)>{})};
+                #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                if constexpr(function_name!=u8"abi_version" && function_name!=u8"features")
+                if(result==13)
+                {
+                    diagnostic::resource_denied(id,scope,target,quota.denied_reason.empty()?
+                        ::std::string_view{"operation, capability or resource authority was not granted"} : ::std::string_view{quota.denied_reason});
+                }
+#endif
                 ::uwvm2::utils::container::get<0>(call.res)=static_cast<::std::remove_cvref_t<decltype(::uwvm2::utils::container::get<0>(call.res))>>(result);
             }
         };

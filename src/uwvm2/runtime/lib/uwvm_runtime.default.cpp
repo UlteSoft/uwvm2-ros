@@ -5452,9 +5452,14 @@ namespace uwvm2::runtime::lib
                     auto& current{resolve_wasip1_env_for_runtime_module_id(caller_module_id)};
                     ::std::uint32_t code{};
                     ::std::memcpy(::std::addressof(code), param_buffer, sizeof(code));
-                    bool const denied{!current.exposes(u8"proc_exit") ||
+                    bool const denied{!current.allows_interface(information.function_name) ||
                         !current.permits(::uwvm2::imported::wasi::wasip1::environment::permission_t::proc_exit)};
-                    if(denied) { ::uwvm2::runtime::lib::guest_exit::request(true, code); }
+                    if(denied) {
+                        ::uwvm2::imported::wasi::wasip1::environment::diagnostic_denied(current,
+                            ::uwvm2::utils::control::host_interfaces::find(::uwvm2::utils::control::host_interfaces::family::wasip1,information.function_name),
+                            !current.allows_interface(information.function_name));
+                        ::uwvm2::runtime::lib::guest_exit::request(true, code);
+                    }
                     ::uwvm2::utils::thread::process_exit::request_process_exit(code);
                 }
             }

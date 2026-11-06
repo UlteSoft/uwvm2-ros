@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/control/host_diagnostics.h>
 #ifndef UWVM_MODULE
 #include <uwvm2/utils/thread/monotonic_clock.h>
 #endif
@@ -41,6 +42,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::environment
     enum class budget_kind : unsigned { random, stdin_read, stdout_write, stderr_write, realtime, monotonic, process, thread, poll, signal, yield, filesystem_io, count };
     [[nodiscard]] inline constexpr budget_kind fd_io_budget(unsigned fd) noexcept
     { return fd == 0u ? budget_kind::stdin_read : fd == 1u ? budget_kind::stdout_write : fd == 2u ? budget_kind::stderr_write : budget_kind::filesystem_io; }
+    inline void quota_diagnostic(budget_kind kind,::std::string_view field,bool wait) noexcept
+    {
+        if(!::uwvm2::utils::control::host_diagnostics::active)return;
+#if defined(__cpp_exceptions)
+        try
+#endif
+        {
+            constexpr ::std::string_view names[]{"random","stdin","stdout","stderr","realtime","monotonic","process","thread","poll","signal","yield","filesystem"};
+            ::std::string key{names[static_cast<unsigned>(kind)]};key+='.';key+=field;
+            ::uwvm2::utils::control::host_diagnostics::limited(key,wait);
+        }
+#if defined(__cpp_exceptions)
+        catch(...) {}
+#endif
+    }
     enum class limit_action : ::std::uint8_t { reject, wait };
     using exit_wait_action = ::uwvm2::utils::thread::process_exit::wait_action;
     enum class budget_failure : unsigned { none, exhausted, request_too_large, cancelled, waiting, clock_unavailable };
@@ -105,7 +121,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::environment
             if(cancelled.load(::std::memory_order_acquire)) { return budget_failure::cancelled; }
             // No amount of window replenishment can admit a request larger than
             // its entire capacity. Do not turn that condition into an endless wait.
-            if(bytes > limit.request_bytes || bytes > limit.window_bytes) { return budget_failure::request_too_large; }
+            if(bytes > limit.request_bytes || bytes > limit.window_bytes) {
+                quota_diagnostic(kind,bytes>limit.request_bytes?"request-bytes":"window-bytes",false);
+                return budget_failure::request_too_large;
+            }
             auto const now{::uwvm2::utils::host_clock::now()};
             if(!::uwvm2::utils::host_clock::available()) { return budget_failure::clock_unavailable; }
             if(now - window_start >= ::std::chrono::seconds{1})
@@ -122,6 +141,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::environment
             for(unsigned i{}; i < blocked.size(); ++i)
             {
                 if(!blocked[i]) { continue; }
+                constexpr ::std::string_view fields[]{"request-bytes","window-bytes","window-calls","total-bytes","total-calls","concurrent"};
+                bool const can_wait=i!=3u && i!=4u && limit.actions[i]==limit_action::wait &&
+                    !(i==2u && limit.window_calls==0u) && !(i==5u && limit.concurrent==0u);
+                quota_diagnostic(kind,fields[i],can_wait);
                 // Persistent ceilings cannot replenish. Even an invalid native
                 // policy cannot turn them into an unbounded impossible wait.
                 if(i == 3u || i == 4u || limit.actions[i] != limit_action::wait ||
@@ -247,6 +270,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::environment
             scope.pending = false;
             scope.wake_at = ::std::chrono::steady_clock::time_point::max();
             invoke();
+            ::uwvm2::utils::control::host_diagnostics::flush_limits();
             if(!scope.pending) { return quota_call_result::completed; }
 #if defined(__linux__)
             if(!native.ready())

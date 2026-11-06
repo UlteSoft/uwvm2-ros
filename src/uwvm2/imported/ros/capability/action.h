@@ -51,7 +51,7 @@ namespace uwvm2::imported::ros
                 if(g.live && g.ros_version == v && g.resource == resource && g.backend_goal_id == backend_goal_id) { return {errc::conflict, "backend goal already has an owner"}; }
                 if(g.live && !terminal(g.phase) && g.owner == owner && g.runtime_generation == runtime_generation && g.ros_version == v && g.resource == resource) { ++active; }
             }
-            if(active >= maximum_active) { return {errc::rate_limited, "explicit active goal limit exhausted"}; }
+            if(active >= maximum_active) { return quota_failure(errc::rate_limited,"explicit active goal limit exhausted","max-active-goals"); }
             if(next_slot > ::std::numeric_limits<::std::uint32_t>::max()) { return {errc::too_large, "goal namespace exhausted"}; }
             auto slot{static_cast<::std::uint32_t>(next_slot++)};
             goals.emplace(slot, goal{owner, runtime_generation, v, ::std::string(resource), ::std::string(backend_goal_id)});

@@ -120,7 +120,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_wasm64_t stat_ptrsz) noexcept
     {
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-        if(!env.exposes(u8"fd_filestat_get")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+        if(!env.allows_interface(u8"fd_filestat_get_wasm64")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
         if(fd >= 0 && fd < 3 && !env.grants_stdio(static_cast<unsigned>(fd)))
         { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
         if(fd >= 0 && fd < 3 && !env.permits(::uwvm2::imported::wasi::wasip1::environment::permission_t::stdio_metadata))

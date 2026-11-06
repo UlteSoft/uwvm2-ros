@@ -33,7 +33,7 @@ Every ROS guest starts without a WASI namespace or host import, without host
 stdio objects, argv/environment, clocks, random, files, sockets or process
 operations. A pure Wasm computation needs no host grant. Missing interfaces fail
 linking before start. A Single/Group must be created and explicitly enabled,
-which exposes the registered Preview 1 interface set with its exact ABI.
+and each imported API needs an explicit --wasip1-{single,group}-interface TARGET API hidden|deny|allow state. The default state is hidden.
 Namespace enablement grants no operation or resource authority. Validation mode
 also checks namespace admission and import signatures without initializing
 stdio/providers or running start. Explicit preopen configuration can open its
@@ -45,16 +45,17 @@ are removed from its command table. Ordinary uwvm retains its separate defaults.
 ```bash
 uwvm2-ros --wasm-set-main-module-name main \
   --wasip1-single-create main --wasip1-single-enable main \
+  --wasip1-single-interface main fd_write allow \
   --wasip1-single-grant main stdout.write \
   --run stdout-only.wasm
 ```
 
-Namespace enablement lets libc's registered imports link, including `fd_write`,
-`fd_close`, `fd_fdstat_get`, `fd_seek`, and `proc_exit`. Each operation still
-checks its own authority. The example grants only stdout writing. Calling
-`proc_exit` without `proc-exit` is a controlled Guest rejection, never an
-unauthorized host exit. The SDK writes explicit namespace enables and audited
-operation grants; binary imports do not generate grants automatically.
+Every libc import needs an exact interface state, including unused imports.
+The deny state exposes its ABI but rejects calls; allow preserves all underlying
+operation checks. See [exact host permissions](host-permissions.md) for the
+complete three-state model and warning selectors. The SDK test launcher emits
+the built module's exact import states within explicitly enabled namespaces.
+Production run configurations always supply their own exact interface map.
 
 | Command | Arguments | Effect |
 | --- | --- | --- |
@@ -702,8 +703,8 @@ Host `system-dir` behavior:
 
 - On Windows NT builds, a path beginning with `::NT::` enters the NT/kernel opener branch after stripping the first six bytes.
 - The mount callback emits the `nt-path` warning for `::NT::` system directories when warning output is enabled.
-- `--log-disable-warning nt-path` suppresses that warning.
-- `--log-convert-warn-to-fatal nt-path` makes the warning fatal before opening.
+- `--disable-warning nt-path` suppresses that warning.
+- `--warning-as-error nt-path` makes the warning fatal before opening.
 - On non-Windows-NT builds, `::NT::...` is just an ordinary path string for the platform opener.
 - On Windows 9x builds, mounts can emit a `toctou` warning because safe directory-handle semantics are unavailable there.
 
@@ -939,7 +940,7 @@ uwvm2-ros --wasip1-global-mount-dir /data ::NT::\??\C:\sandbox\data --run app.wa
 
 On Windows NT, this strips `::NT::`, uses the NT opener, and can emit or fatalize the `nt-path` warning according to logging configuration.
 
-Live WASI policy manifests use `UWPOL4` with twelve operation-budget classes;
+Live WASI policy manifests use `UWPOL5` with twelve operation-budget classes;
 `filesystem` is appended after the preceding eleven. Each class encodes six
 64-bit limits followed by six one-byte reject/wait actions and six one-byte
 cancel/wait actions for guest exit, then one native-wait guest-exit action. Older `UWPOL1` and

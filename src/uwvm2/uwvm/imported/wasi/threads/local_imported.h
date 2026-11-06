@@ -1,4 +1,6 @@
 #pragma once
+#include <uwvm2/uwvm/imported/wasi/wasip1/storage/env.h>
+#include <uwvm2/uwvm/io/host_diagnostics.h>
 #ifndef UWVM_MODULE
 #include <cstdint>
 #endif
@@ -18,6 +20,13 @@ namespace uwvm2::uwvm::imported::wasi::threads
         inline static constexpr ::uwvm2::utils::container::u8string_view function_name{u8"thread-spawn"};
         static void call(local_imported_function_type& call) noexcept
         {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(UWVM_IMPORT_WASI_WASIP1) && !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1)
+            auto& env=::uwvm2::uwvm::imported::wasi::wasip1::storage::current_wasip1_env();
+            if(!env.allows_interface(function_name) || !env.permits(::uwvm2::imported::wasi::wasip1::environment::permission_t::thread_spawn))
+                ::uwvm2::imported::wasi::wasip1::environment::diagnostic_denied(env,
+                    ::uwvm2::utils::control::host_interfaces::find(::uwvm2::utils::control::host_interfaces::family::wasip1,function_name),
+                    !env.allows_interface(function_name));
+#endif
             // Ordinary execution has no genuine Group/ChildLease. Actual
             // threaded dispatch intercepts this concrete factory member and
             // invokes Runtime's real reservation/world/compiler/native launch.

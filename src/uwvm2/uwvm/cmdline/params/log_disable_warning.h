@@ -61,9 +61,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
 # pragma clang diagnostic ignored "-Wbraced-scalar-init"
 #endif
     inline constexpr ::uwvm2::utils::cmdline::parameter log_disable_warning{
-        .name{u8"--log-disable-warning"},
+        .name{u8"--disable-warning"},
         .describe{u8"Disable selected warning categories."},
-        .usage{u8"[all|vm|untrusted-dl"
+        .usage{u8"[all_host_calls[_FAMILY]|all_host_denied[_FAMILY]|all_host_limited[_FAMILY]|host_call_FAMILY.API|host_denied_FAMILY.API|host_limited_FAMILY.API|all|vm|untrusted-dl"
 #if defined(UWVM_SUPPORT_PRELOAD_DL)
                u8"|dl"
 #endif
@@ -78,7 +78,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
                u8"|toctou"
 #endif
                u8"|runtime|runtime-compile-threads" u8"]"},
-        .alias{::uwvm2::utils::cmdline::kns_u8_str_scatter_t{::std::addressof(details::log_disable_warning_alias), 1uz}},
         .handle{::std::addressof(details::log_disable_warning_callback)},
         .cate{::uwvm2::utils::cmdline::categorization::log}};
 #if defined(__clang__)

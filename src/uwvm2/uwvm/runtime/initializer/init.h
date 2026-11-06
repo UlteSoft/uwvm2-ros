@@ -167,7 +167,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                        override_state != nullptr && override_state->enabled_is_set) [[unlikely]]
                     {
                         #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-                        return override_state->enabled && ::uwvm2::imported::wasi::wasip1::environment::host_function_bit(function_name) != 0u;
+                        return override_state->enabled && override_state->interfaces.exposed(::uwvm2::utils::control::host_interfaces::find(::uwvm2::utils::control::host_interfaces::family::wasip1,function_name));
 #else
                         return override_state->enabled;
 #endif
@@ -186,7 +186,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                        override_state != nullptr && override_state->enabled_is_set) [[unlikely]]
                     {
                         #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-                        return override_state->enabled && ::uwvm2::imported::wasi::wasip1::environment::host_function_bit(function_name) != 0u;
+                        return override_state->enabled && override_state->interfaces.exposed(::uwvm2::utils::control::host_interfaces::find(::uwvm2::utils::control::host_interfaces::family::wasip1,function_name));
 #else
                         return override_state->enabled;
 #endif

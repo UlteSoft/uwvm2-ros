@@ -20,6 +20,7 @@
  ****************************************/
 
 #pragma once
+#include <uwvm2/uwvm/io/host_diagnostics.h>
 
 #ifndef UWVM_MODULE
 // std
@@ -86,6 +87,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
         // Setting the argument is already taken
         currp1->type = ::uwvm2::utils::cmdline::parameter_parsing_results_type::occupied_arg;
 
+        if(::uwvm2::utils::control::host_diagnostics::configure(currp1->str,
+            ::uwvm2::utils::control::host_diagnostics::severity::warning) && currp1->str != u8"all")
+        { return ::uwvm2::utils::cmdline::parameter_return_type::def; }
         if(auto currp1_str{currp1->str}; currp1_str == u8"all")
         {
             ::uwvm2::uwvm::io::show_parser_warning = true;

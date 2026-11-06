@@ -14,6 +14,27 @@
 #endif
 namespace uwvm2::uwvm::cmdline::params
 {
+    inline constexpr ::uwvm2::utils::cmdline::parameter ros2_group_interface{
+        .name{u8"--ros2-group-interface"},
+        .describe{u8"Configure exact namespace.function: hidden fails linking; deny exposes but rejects; allow retains capability checks. Default hidden."},
+        .usage{u8"<group:str> <namespace.function:str> <hidden|deny|allow>"},
+        .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::group, details::ros_details::action::interface, 3>)},
+        .cate{::uwvm2::utils::cmdline::categorization::ros2}};
+
+    inline constexpr ::uwvm2::utils::cmdline::parameter ros2_single_interface{
+        .name{u8"--ros2-single-interface"},
+        .describe{u8"Configure exact namespace.function: hidden fails linking; deny exposes but rejects; allow retains capability checks. Default hidden."},
+        .usage{u8"<single:str> <namespace.function:str> <hidden|deny|allow>"},
+        .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::single, details::ros_details::action::interface, 3>)},
+        .cate{::uwvm2::utils::cmdline::categorization::ros2}};
+
+    inline constexpr ::uwvm2::utils::cmdline::parameter ros2_global_interface{
+        .name{u8"--ros2-global-interface"},
+        .describe{u8"Configure exact namespace.function: hidden fails linking; deny exposes but rejects; allow retains capability checks. Default hidden."},
+        .usage{u8"<namespace.function:str> <hidden|deny|allow>"},
+        .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::global, details::ros_details::action::interface, 2>)},
+        .cate{::uwvm2::utils::cmdline::categorization::ros2}};
+
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_global_add_module{
         .name{u8"--ros2-global-add-module"},
         .describe{u8"Bind one exact loaded module to the explicit Global contract; unbound modules stay denied."},
@@ -52,7 +73,7 @@ namespace uwvm2::uwvm::cmdline::params
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_global_enable{
         .name{u8"--ros2-global-enable"},
-        .describe{u8"Enable the complete ROS2 namespace family for this target; grants no operation or resource."},
+        .describe{u8"Enable the ROS2 namespace; exact interfaces remain hidden until explicitly configured."},
         .usage{u8""},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::global, details::ros_details::action::enable, 0>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
@@ -174,7 +195,7 @@ namespace uwvm2::uwvm::cmdline::params
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_single_enable{
         .name{u8"--ros2-single-enable"},
-        .describe{u8"Enable the complete ROS2 namespace family for this target; grants no operation or resource."},
+        .describe{u8"Enable the ROS2 namespace; exact interfaces remain hidden until explicitly configured."},
         .usage{u8"<module:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::single, details::ros_details::action::enable, 1>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
@@ -320,7 +341,7 @@ namespace uwvm2::uwvm::cmdline::params
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_group_enable{
         .name{u8"--ros2-group-enable"},
-        .describe{u8"Enable the complete ROS2 namespace family for this target; grants no operation or resource."},
+        .describe{u8"Enable the ROS2 namespace; exact interfaces remain hidden until explicitly configured."},
         .usage{u8"<group:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::group, details::ros_details::action::enable, 1>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};

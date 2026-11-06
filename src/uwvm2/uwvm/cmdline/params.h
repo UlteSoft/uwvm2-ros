@@ -205,6 +205,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
 #  if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_global_deny),
 #  endif
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_single_interface),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_group_interface),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_single_grant),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_single_mount_dir_rights),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_group_mount_dir_rights),

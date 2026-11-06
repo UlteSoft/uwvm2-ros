@@ -4,6 +4,8 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/control/host_interfaces.h>
+#include <uwvm2/utils/control/host_diagnostics.h>
 
 #include <cstdint>
 #include <map>
@@ -29,6 +31,11 @@ namespace uwvm2::imported::ros
         explicit operator bool() const noexcept { return code == errc::success; }
     };
 
+    inline result quota_failure(errc code,::std::string_view detail,::std::string_view field,::std::string_view alias={})
+    {
+        ::uwvm2::utils::control::host_diagnostics::limited(field,false,alias);
+        return {code,::std::string{detail}};
+    }
     struct capability_spec
     {
         ::std::string alias{};
@@ -47,6 +54,7 @@ namespace uwvm2::imported::ros
         bool enabled{};
         ::std::map<::std::string, ::std::string, ::std::less<>> connection{};
         ::std::map<::std::string, capability_spec, ::std::less<>> capabilities{};
+        ::uwvm2::utils::control::host_interfaces::policy interfaces{};
     };
 
     constexpr ::std::string_view to_string(version v) noexcept { return v == version::ros1 ? "ros1" : "ros2"; }

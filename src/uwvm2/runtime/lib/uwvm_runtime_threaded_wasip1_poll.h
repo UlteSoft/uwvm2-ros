@@ -6,7 +6,8 @@ extern "C++"
         ::std::uint32_t output,::std::uint32_t count,::std::uint32_t completed) noexcept -> error
     {
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-        if(count > call.env.limits.max_poll_subscriptions) return error::e2big;
+        if(count > call.env.limits.max_poll_subscriptions)
+        { ::uwvm2::utils::control::host_diagnostics::limited("poll-subscriptions",false); return error::e2big; }
 #endif
         if(count==0u)return error::einval;
         if((count != 0u && 48uz > SIZE_MAX / static_cast<::std::size_t>(count)) || static_cast<::std::uint64_t>(count) + 1u > SIZE_MAX) return error::eoverflow;
@@ -110,7 +111,8 @@ extern "C++"
                             }
                         }
                     }
-                    if(remaining > call.env.limits.max_poll_wait_ns) { return error::enotcapable; }
+                    if(remaining > call.env.limits.max_poll_wait_ns)
+                    { ::uwvm2::utils::control::host_diagnostics::limited("poll-wait-ns",false); return error::eagain; }
                 }
                 sub.timeout=timeout;
             }

@@ -24,6 +24,7 @@ namespace uwvm2::utils::update
     struct wasi_policy_spec
     {
         bool interface_enabled{};
+        ::uwvm2::utils::control::host_interfaces::policy interfaces{};
         wasi_policy_environment::permission_t non_fd_permissions{};
         ::std::uint64_t fd_limit{static_cast<::std::uint64_t>(::std::numeric_limits<::uwvm2::imported::wasi::wasip1::abi::wasi_posix_fd_t>::max())};
         wasi_policy_environment::resource_limits limits{};
@@ -31,7 +32,7 @@ namespace uwvm2::utils::update
     };
     namespace wasi_policy_detail
     {
-        inline constexpr ::std::array<unsigned char,8> magic{'U','W','P','O','L','4',0,0};
+        inline constexpr ::std::array<unsigned char,8> magic{'U','W','P','O','L','5',0,0};
         [[nodiscard]] inline bool valid_text(::uwvm2::utils::container::u8string_view value) noexcept
         {
             // Strict UTF-8, including rejection of embedded NUL, surrogates,
@@ -82,6 +83,12 @@ namespace uwvm2::utils::update
             auto const permissions{static_cast<::std::uint32_t>(spec.non_fd_permissions)};
             if((permissions&~permission_mask)!=0u ||
                spec.fd_limit<3u || spec.fd_limit>static_cast<::std::uint64_t>(::std::numeric_limits<::uwvm2::imported::wasi::wasip1::abi::wasi_posix_fd_t>::max()))return false;
+            for(::std::size_t i{};i<spec.interfaces.entries.size();++i)
+            {
+                namespace api=::uwvm2::utils::control::host_interfaces;
+                if(static_cast<unsigned>(spec.interfaces.entries[i])>2u ||
+                    (api::catalogue[i].group!=api::family::wasip1 && spec.interfaces.entries[i]!=api::access::hidden))return false;
+            }
             if(!spec.interface_enabled && (permissions!=0u || !spec.argv.empty() || !spec.envs.empty()))return false;
             for(auto const& limit:spec.limits.operations)
             {
@@ -130,6 +137,12 @@ namespace uwvm2::utils::update
             if(bytes.size()>maximum_wasi_policy_bytes || bytes.size()<magic.size() || !::std::equal(magic.begin(),magic.end(),bytes.begin()))return false;
             reader input{bytes,magic.size()};::std::uint64_t enabled{},permissions{};
             if(!input.number(enabled)||enabled>1u||!input.number(permissions)||permissions>UINT32_MAX||!input.number(spec.fd_limit))return false;
+            for(::std::size_t i{};i<spec.interfaces.entries.size();++i)
+            {
+                if(input.position==bytes.size() || bytes[input.position]>2u)return false;
+                spec.interfaces.entries[i]=static_cast<::uwvm2::utils::control::host_interfaces::access>(bytes[input.position++]);
+                spec.interfaces.configured[i]=true;
+            }
             spec.interface_enabled=enabled!=0u;spec.non_fd_permissions=static_cast<wasi_policy_environment::permission_t>(permissions);
             for(auto& limit:spec.limits.operations)
             {if(!input.number(limit.request_bytes)||!input.number(limit.window_bytes)||!input.number(limit.window_calls)||!input.number(limit.total_bytes)||!input.number(limit.total_calls)||!input.number(limit.concurrent))return false;for(auto& action:limit.actions)if(!input.action(action))return false;for(auto& action:limit.exit_actions)if(!input.action(action))return false;if(!input.action(limit.native_wait_exit_action))return false;}
@@ -153,6 +166,8 @@ namespace uwvm2::utils::update
         template<wasi_policy_environment::wasip1_memory Memory>
         [[nodiscard]] inline bool tightens(wasi_policy_environment::wasip1_environment<Memory> const& env,wasi_policy_spec const& next) noexcept
         {
+            for(::std::size_t i{};i<env.interfaces.entries.size();++i)
+                if(env.interfaces.entries[i]>next.interfaces.entries[i])return true;
             if((env.interface_enabled&&!next.interface_enabled) ||
                (static_cast<::std::uint32_t>(env.non_fd_permissions)&~static_cast<::std::uint32_t>(next.non_fd_permissions))!=0u ||
                next.fd_limit<env.fd_storage.fd_limit || !same_strings(env.argv,next.argv) || !same_strings(env.envs,next.envs))return true;
@@ -204,6 +219,7 @@ namespace uwvm2::utils::update
         ::std::vector<unsigned char> output(wasi_policy_detail::magic.begin(),wasi_policy_detail::magic.end());
         auto number{[&](::std::uint64_t n){append_u64(output,n);}};
         number(spec.interface_enabled);number(static_cast<::std::uint32_t>(spec.non_fd_permissions));number(spec.fd_limit);
+        for(auto value:spec.interfaces.entries)output.push_back(static_cast<unsigned char>(value));
         for(auto const& limit:spec.limits.operations)
         {number(limit.request_bytes);number(limit.window_bytes);number(limit.window_calls);number(limit.total_bytes);number(limit.total_calls);number(limit.concurrent);for(auto action:limit.actions)output.push_back(static_cast<unsigned char>(action));for(auto action:limit.exit_actions)output.push_back(static_cast<unsigned char>(action));output.push_back(static_cast<unsigned char>(limit.native_wait_exit_action));}
         for(auto grain:spec.limits.clock_granularity_ns)number(grain);
@@ -217,7 +233,7 @@ namespace uwvm2::utils::update
     template<wasi_policy_environment::wasip1_memory Memory>
     [[nodiscard]] inline wasi_policy_spec current_wasi_policy(wasi_policy_environment::wasip1_environment<Memory> const& env)
     {
-        wasi_policy_spec result{};result.interface_enabled=env.interface_enabled;
+        wasi_policy_spec result{};result.interface_enabled=env.interface_enabled;result.interfaces=env.interfaces;
         result.non_fd_permissions=env.non_fd_permissions;result.fd_limit=env.fd_storage.fd_limit;result.limits=env.limits;
         for(auto value:env.argv)result.argv.emplace_back(value);
         for(auto value:env.envs)result.envs.emplace_back(value);
@@ -333,7 +349,7 @@ namespace uwvm2::utils::update
         auto const old_permissions{env.non_fd_permissions};
         env.policy_owned_argv.swap(plan.proposed_.argv);env.argv.swap(plan.argv_views_);
         env.policy_owned_envs.swap(plan.proposed_.envs);env.envs.swap(plan.env_views_);
-        env.interface_enabled=plan.proposed_.interface_enabled;
+        env.interface_enabled=plan.proposed_.interface_enabled;env.interfaces=plan.proposed_.interfaces;
         env.non_fd_permissions=plan.proposed_.non_fd_permissions;env.limits=plan.proposed_.limits;
         env.fd_storage.fd_limit=static_cast<::std::size_t>(plan.proposed_.fd_limit);
         for(unsigned i{};i<3u&&i<env.fd_storage.opens.size();++i)

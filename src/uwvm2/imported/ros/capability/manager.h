@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/control/host_diagnostics.h>
 #ifndef UWVM_MODULE
 #include <uwvm2/utils/thread/monotonic_clock.h>
 #endif
@@ -224,11 +225,15 @@ namespace uwvm2::imported::ros
                 auto check=[&](::std::string_view key)
                 {
                     wait_on_exit=wait_on_exit||quota_wait_on_exit(state.cap,key);
-                    return quota_wait_enabled(state.cap,key);
+                    auto const wait=quota_wait_enabled(state.cap,key);
+                    ::uwvm2::utils::control::host_diagnostics::limited(key,wait,state.cap.alias);
+                    return wait;
                 };
                 if(calls)
                 {
-                    if(!state.burst || !state.rate || !check("max-rate-hz"))
+                    if((!state.burst || !state.rate) ?
+                        (::uwvm2::utils::control::host_diagnostics::limited("max-rate-hz",false,state.cap.alias),true) :
+                        !check("max-rate-hz"))
                     { return {errc::rate_limited,"operation rate quota exhausted"}; }
                     wait_on_exit=wait_on_exit||quota_wait_on_exit(state.cap,"burst");
                     seconds=(1-(creation?state.creation_fraction:state.token_fraction))/state.rate;
@@ -237,15 +242,18 @@ namespace uwvm2::imported::ros
                                       ::std::uint64_t fraction,::std::string_view key)->result
                 {
                     if(!blocked) { return {}; }
-                    if(bytes>ceiling) { return {errc::too_large,"request exceeds one full byte-credit bucket"}; }
-                    if(!ceiling || !check(key)) { return {errc::rate_limited,"byte rate quota exhausted"}; }
+                    if(bytes>ceiling) {
+                        ::uwvm2::utils::control::host_diagnostics::limited(key,false,state.cap.alias);
+                        return {errc::too_large,"request exceeds one full byte-credit bucket"}; }
+                    if(!check(key)) { return {errc::rate_limited,"byte rate quota exhausted"}; }
                     seconds=(::std::max)(seconds,(static_cast<long double>(bytes-credit)-
                         static_cast<long double>(fraction)/1000000000.L)/ceiling);
                     return {};
                 };
                 if(auto r{check_bytes(data,state.bandwidth,state.byte_tokens,state.byte_fraction,"max-bytes-per-second")};!r) { return r; }
                 if(auto r{check_bytes(log,state.log_bandwidth,state.log_tokens,state.log_fraction,"max-log-bytes-per-second")};!r) { return r; }
-                if(count && (!maximum || !check(count_field)))
+                if(count && (!maximum ?
+                    (::uwvm2::utils::control::host_diagnostics::limited(count_field,false,state.cap.alias),true) : !check(count_field)))
                 { return {errc::rate_limited,"resource count quota exhausted"}; }
                 if(!waiter)
                 {
@@ -267,6 +275,7 @@ namespace uwvm2::imported::ros
                 // the exhausted predicate and the eventfd notification.
                 waiting_operation pending{waiter,bound.waiters};bound.waiters=&pending;
                 guard.unlock();
+                ::uwvm2::utils::control::host_diagnostics::flush_limits();
                 auto const outcome{waiter->until(deadline)};
                 guard.lock();
                 auto** link{&bound.waiters};

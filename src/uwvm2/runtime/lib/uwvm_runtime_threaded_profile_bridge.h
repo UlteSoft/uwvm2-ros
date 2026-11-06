@@ -214,8 +214,12 @@ extern "C++"
                     {
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(UWVM_IMPORT_WASI_WASIP1) && !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1)
                         auto& env{resolve_wasip1_env_for_runtime_module_id(instance.source_module_id())};
-                        if(!env.exposes(u8"proc_exit") || !env.permits(::uwvm2::imported::wasi::wasip1::environment::permission_t::proc_exit))
+                        auto exit_name=leaf.provider->get_function_information_from_index(leaf.index).function_name;
+                        if(!env.allows_interface(exit_name) || !env.permits(::uwvm2::imported::wasi::wasip1::environment::permission_t::proc_exit))
                         {
+                            ::uwvm2::imported::wasi::wasip1::environment::diagnostic_denied(env,
+                                ::uwvm2::utils::control::host_interfaces::find(::uwvm2::utils::control::host_interfaces::family::wasip1,exit_name),
+                                !env.allows_interface(exit_name));
                             struct denied_exit { lease* actual;::std::size_t module,function; } fault{&actual,module,caller_function};
                             // A known denied Guest exit is also a Guest fault.
                             // If an authorized exit already won, do not let this
@@ -240,8 +244,11 @@ extern "C++"
                     {
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(UWVM_IMPORT_WASI_WASIP1) && !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1)
                         auto& env{resolve_wasip1_env_for_runtime_module_id(instance.source_module_id())};
-                        if(!env.exposes(u8"thread-spawn") || !env.permits(::uwvm2::imported::wasi::wasip1::environment::permission_t::thread_spawn))
+                        if(!env.allows_interface(u8"thread-spawn") || !env.permits(::uwvm2::imported::wasi::wasip1::environment::permission_t::thread_spawn))
                         {
+                            ::uwvm2::imported::wasi::wasip1::environment::diagnostic_denied(env,
+                                ::uwvm2::utils::control::host_interfaces::find(::uwvm2::utils::control::host_interfaces::family::wasip1,::fast_io::u8string_view{u8"thread-spawn"}),
+                                !env.allows_interface(u8"thread-spawn"));
                             ::std::int32_t const denied{-1};
                             ::std::memcpy(results.data(), &denied, sizeof(denied));
                             return dispatch_status::returned;

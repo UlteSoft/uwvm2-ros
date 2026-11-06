@@ -22,7 +22,7 @@ extern "C++"
         using native_fd=::uwvm2::imported::wasi::wasip1::fd_manager::wasi_fd_t;
         using fd_ref=::uwvm2::imported::wasi::wasip1::fd_manager::wasi_fd_ref_t;
         enum class operation {args_sizes,args_get,env_sizes,env_get,clock_time,clock_res,yield,random,read,write,poll};
-        struct binding {operation code{};environment* env{};::std::size_t parameter_bytes{};};
+        struct binding {operation code{};environment* env{};::std::size_t parameter_bytes{};::std::size_t interface_id{};};
         static constexpr ::std::size_t transfer_bytes{PIPE_BUF}; // Native packet capacity; legal partial I/O, never a request limit.
         template<typename T> [[nodiscard]] static ::std::unique_ptr<T[]> allocate_array(::std::size_t count) noexcept
         {
@@ -140,13 +140,13 @@ extern "C++"
             if(static_cast<unsigned>(signature->result.begin[0])!=0x7fu)return false;
             auto& env=resolve_wasip1_env_for_runtime_module_id(instance.source_module_id());
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-            if(!env.exposes(name)) return false;
+            if(!env.interfaces.exposed(::uwvm2::utils::control::host_interfaces::find(::uwvm2::utils::control::host_interfaces::family::wasip1, name))) return false;
 #endif
             // These are actual pre-existing overrides, not readiness/authority.
             // No bypass into a possibly blocking debugger/trace callback.
             if(env.trace_wasip1_call||env.debug_console_read!=nullptr||env.debug_console_write!=nullptr||
                (op==operation::yield&&env.wasip1_sched_yield_func_ptr!=nullptr))return false;
-            out={op,&env,bytes};return true;
+            out={op,&env,bytes,::uwvm2::utils::control::host_interfaces::find(::uwvm2::utils::control::host_interfaces::family::wasip1,name)};return true;
         }
         [[nodiscard]] static admission_status admit(world const& instance,::std::size_t module,::std::size_t imported,provider const& actual) noexcept
         {binding found{};return authenticate(instance,module,imported,actual,found)?admission_status::allowed:admission_status::unsupported;}
@@ -159,7 +159,8 @@ extern "C++"
             for(auto const& string:strings)
             {if(call.stopped())return error::ecanceled;if(string.size()>=UINT32_MAX-total)return error::eoverflow;total+=string.size()+1u;}
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-            if(total > call.env.limits.max_args_env_bytes) return error::e2big;
+            if(total > call.env.limits.max_args_env_bytes)
+            { ::uwvm2::utils::control::host_diagnostics::limited("args-env-bytes",false); return error::e2big; }
 #endif
             ::std::byte* unused{};
             if(!call.aligned(first,4u)||!call.bounds(first,sizes?4uz:strings.size()*4uz,unused)||
@@ -265,6 +266,17 @@ extern "C++"
             if(&actual.world()!=&instance||&actual.admission()!=&instance.admission()||!actual.owns_current_native_thread())return dispatch_status::rejected;
             if(actual.cancellation().stop_requested())return dispatch_status::group_stopped;
             binding found{};if(!authenticate(instance,module,imported,native,found)||results.size()!=4u||params.size()!=found.parameter_bytes)return dispatch_status::rejected;
+            namespace diagnostic=::uwvm2::utils::control::host_diagnostics;
+            namespace wasi_environment=::uwvm2::imported::wasi::wasip1::environment;
+            diagnostic::call_scope quota{found.interface_id,wasi_environment::diagnostic_scope(*found.env),wasi_environment::diagnostic_target(*found.env)};
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            if(!found.env->interfaces.allowed(found.interface_id))
+            {
+                wasi_environment::diagnostic_denied(*found.env,found.interface_id,true);
+                ::std::uint32_t result{static_cast<::std::uint32_t>(error::enotcapable)};
+                ::std::memcpy(results.data(),&result,4u);return dispatch_status::returned;
+            }
+#endif
             auto const* unit=instance.module(module);
             if(!unit||caller<unit->imported_function_vec_storage.size()||caller-unit->imported_function_vec_storage.size()>=unit->local_defined_function_vec_storage.size())return dispatch_status::rejected;
             auto const* shared=instance.shared_memory(0u);if(!shared||!::uwvm2::runtime::wasm_threads::is_shared(shared->memory)||shared->memory.custom_page_size_log2!=16u)return dispatch_status::rejected;
@@ -342,6 +354,11 @@ extern "C++"
             invoke_provider();
 #endif
             if(call.stopped())return dispatch_status::group_stopped;
+            if(code==error::enotcapable)
+            {
+                ::std::uint32_t first{UINT32_MAX};if(params.size()>=4u)::std::memcpy(&first,params.data(),4);
+                wasi_environment::diagnostic_denied(*found.env,found.interface_id,false,first);
+            }
             ::std::uint32_t result{static_cast<::std::uint32_t>(code)};::std::memcpy(results.data(),&result,4u);return dispatch_status::returned;
         }
     };

@@ -79,6 +79,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
         // second string parser for each concrete command name.
         enum class target_action_t : unsigned
         {
+            interface,
             enable,
             disable,
             expose_host_api,
@@ -556,6 +557,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
 
             switch(action)
             {
+                case target_action_t::interface:
+                {
+                    namespace api=::uwvm2::utils::control::host_interfaces;
+                    if(extra1==para_end || extra1->type!=parameter_type::arg ||
+                       extra1+1==para_end || extra1[1].type!=parameter_type::arg)
+                    { return print_usage_error(parameter,u8"Expected exact API and hidden|deny|allow."); }
+                    auto index=api::find(api::family::wasip1,extra1->str);api::access value{};
+                    if(!api::parse_access(extra1[1].str,value) || !target.interfaces.set(index,value))
+                    { return print_usage_error(parameter,u8"Unknown or duplicate WASIp1 interface policy."); }
+                    mark_consumed(extra1+1);return parameter_return_type::def;
+                }
                 case target_action_t::enable: return apply_module_enable_disable_action(true);
                 case target_action_t::disable: return apply_module_enable_disable_action(false);
                 case target_action_t::expose_host_api:

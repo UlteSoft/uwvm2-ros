@@ -278,7 +278,14 @@ u32, reserved-zero u32, followed by memory rows of five u64
 then global rows of two u64 (source index, destination index). At least one row
 is required. This declares exact bounded copies, not a programmable write API.
 
-Canonical policy encoding begins with eight bytes `UWPOL4\0\0`, followed by
+Interface exposure/call states are part of the policy measurement. The current
+wire format includes one byte per registry entry after enabled/permissions/fd
+limit: 0 hidden, 1 deny, 2 allow. Non-WASIp1 entries must be hidden in a WASI
+policy. Truncated maps, unknown states and old wire versions are rejected; no
+compatibility decoder is retained. A copied environment/checkpoint preserves
+the exact map.
+
+Canonical policy encoding begins with eight bytes `UWPOL5\0\0`, followed by
 LE64 values: enabled, operation mask, fd limit; twelve operation
 budget rows, each containing six LE64 limits (request bytes, window bytes,
 window calls, total bytes, total calls, concurrent), then six u8 actions in the

@@ -99,7 +99,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         }
 
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-        if(!env.exposes(u8"proc_raise")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+        if(!env.allows_interface(u8"proc_raise")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
         if(env.wasip1_proc_raise_func_ptr == nullptr) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotsup; }
         ::uwvm2::imported::wasi::wasip1::environment::budget_reservation reservation{
             ::uwvm2::imported::wasi::wasip1::environment::budget_kind::signal, env.limits, 0u};
@@ -142,7 +142,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         ::uwvm2::imported::wasi::wasip1::abi::signal_t code) noexcept
     {
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-        if(!env.exposes(u8"proc_raise")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+        if(!env.allows_interface(u8"proc_raise")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
 #endif
 
         auto const trace_wasip1_call{env.trace_wasip1_call};

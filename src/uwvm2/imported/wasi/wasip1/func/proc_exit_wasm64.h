@@ -88,7 +88,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                                            ::uwvm2::imported::wasi::wasip1::abi::exitcode_wasm64_t code) noexcept
     {
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-        if(!env.exposes(u8"proc_exit")) { env.proc_exit_requested = true; env.proc_exit_denied = true; return; }
+        if(!env.allows_interface(u8"proc_exit_wasm64")) { env.proc_exit_requested = true; env.proc_exit_denied = true; return; }
 #endif
 
         auto const trace_wasip1_call{env.trace_wasip1_call};

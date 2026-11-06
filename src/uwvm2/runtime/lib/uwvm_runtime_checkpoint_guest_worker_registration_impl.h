@@ -231,8 +231,14 @@ extern "C++"
         ::std::uint32_t raw_code{}; ::std::memcpy(::std::addressof(raw_code),params,4u);
         auto& env{resolve_wasip1_env_for_runtime_module_id(module_id)};
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-        if(!env.exposes(u8"proc_exit") || !env.permits(::uwvm2::imported::wasi::wasip1::environment::permission_t::proc_exit))
-        { ::uwvm2::runtime::lib::guest_exit::request(true, raw_code); }
+        auto exit_name=binding.exit_wasm64?::fast_io::u8string_view{u8"proc_exit_wasm64"} : ::fast_io::u8string_view{u8"proc_exit"};
+        if(!env.allows_interface(exit_name) || !env.permits(::uwvm2::imported::wasi::wasip1::environment::permission_t::proc_exit))
+        {
+            ::uwvm2::imported::wasi::wasip1::environment::diagnostic_denied(env,
+                ::uwvm2::utils::control::host_interfaces::find(::uwvm2::utils::control::host_interfaces::family::wasip1,exit_name),
+                !env.allows_interface(exit_name));
+            ::uwvm2::runtime::lib::guest_exit::request(true, raw_code);
+        }
         ::uwvm2::utils::thread::process_exit::request_process_exit(raw_code);
 #endif
         if(env.trace_wasip1_call)

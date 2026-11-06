@@ -61,10 +61,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
 # pragma clang diagnostic ignored "-Wbraced-scalar-init"
 #endif
     inline constexpr ::uwvm2::utils::cmdline::parameter log_enable_warning{
-        .name{u8"--log-enable-warning"},
-        .describe{u8"Enable selected warning categories."},
-        .usage{u8"[all|parser|wasip1]"},
-        .alias{::uwvm2::utils::cmdline::kns_u8_str_scatter_t{::std::addressof(details::log_enable_warning_alias), 1uz}},
+        .name{u8"--enable-warning"},
+        .describe{u8"Enable warnings; host quota diagnostics default off. Select all_host_calls[_wasip1|_ros1|_ros2], all_host_denied/all_host_limited, or host_denied_FAMILY.API / host_limited_FAMILY.API."},
+        .usage{u8"[all_host_calls[_FAMILY]|all_host_denied[_FAMILY]|all_host_limited[_FAMILY]|host_call_FAMILY.API|host_denied_FAMILY.API|host_limited_FAMILY.API|all|parser|wasip1]"},
         .handle{::std::addressof(details::log_enable_warning_callback)},
         .cate{::uwvm2::utils::cmdline::categorization::log}};
 #if defined(__clang__)

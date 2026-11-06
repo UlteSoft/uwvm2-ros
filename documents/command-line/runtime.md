@@ -5,10 +5,11 @@ full-module LLVM AOT compilation. `--runtime-aot` (`-Raot`) selects that backend
 it is also the product default. Native EH, CFI, the real per-process generated
 unwind witness and crash stack recovery are mandatory and cannot be disabled.
 
-The broader interpreter and platform implementations remain in the source for
-upstream capability testing and future qualification. They are not ROS product
-execution modes. LLVM AOT rejects unsupported lowering instead of falling back
-to an interpreter or instruction-based exception propagation.
+Interpreter-enabled builds also accept `--runtime-int` (`-Rint`). Both backends
+use the same host namespace, exact interface and operation/resource policy.
+The interpreter does not provide the LLVM source/Wasm/assembly debugger. LLVM
+AOT rejects unsupported lowering instead of silently falling back to the
+interpreter or instruction-based exception propagation.
 
 Source focus:
 
@@ -23,6 +24,7 @@ Source focus:
 | Command | Alias | Arguments | Availability | Behavior |
 | --- | --- | --- | --- | --- |
 | `--runtime-aot` | `-Raot` | None | LLVM backend | Select full-module LLVM AOT compilation. |
+| `--runtime-int` | `-Rint` | None | Interpreter-enabled builds | Select the interpreter with the same host policy. |
 | `--runtime-compiler-log` | `-Rclog` | `[out\|err\|file <path>]` | Runtime backend support | Route compiler diagnostics. |
 | `--runtime-compile-threads` | `-Rct` | `[default\|aggressive\|<count>]` | Runtime backend support | Configure full-module translation workers. |
 | `--runtime-scheduling-policy` | `-Rsp` | `[func_count <count>\|code_size <bytes>]` | Runtime backend support | Split full-module translation work. |
@@ -30,9 +32,9 @@ Source focus:
 | `--runtime-llvm-jit-full-policy` | `-Rllvm-full-policy` | `[auto\|debug\|legacy-light\|pb-o1\|pb-o2\|pb-o3]` | LLVM backend | Select the concrete full-module optimizer pipeline. |
 | `--runtime-llvm-jit-cache-path` | `-Rllvm-cache-path` | `[disable\|default\|path <path>]` | LLVM backend | Configure the AOT object cache. |
 
-Interpreter translation tuning is an upstream-only interface. Use a separately
-identified ordinary Uwvm2 checkout for its full interpreter acceptance matrix;
-those results do not qualify an interpreter-enabled uwvm2-ros product.
+The independent WASI Threads execution profile has its own backend admission.
+Its LLVM implementation is currently limited to x86_64; ordinary non-threaded
+interpreter/AOT results do not qualify threaded AOT on other architectures.
 
 ## Runtime Selection
 
@@ -41,6 +43,7 @@ those results do not qualify an interpreter-enabled uwvm2-ros product.
 | Shortcut | Backend | Preparation rule |
 | --- | --- | --- |
 | `--runtime-aot` | LLVM AOT | Generate, optimize, and materialize the complete module before entering it. |
+| `--runtime-int` | Interpreter | Translate the module for interpreter execution. |
 
 The ROS build requires the LLVM AOT backend. Runtime shortcuts reject duplicate or conflicting selections.
 

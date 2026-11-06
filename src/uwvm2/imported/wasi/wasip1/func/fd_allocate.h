@@ -838,7 +838,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         ::uwvm2::imported::wasi::wasip1::abi::filesize_t len) noexcept
     {
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-        if(!env.exposes(u8"fd_allocate")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+        if(!env.allows_interface(u8"fd_allocate")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
         if(fd >= 0 && fd < 3 && !env.grants_stdio(static_cast<unsigned>(fd)))
         { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
 

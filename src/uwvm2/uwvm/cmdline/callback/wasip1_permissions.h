@@ -236,6 +236,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
         ::uwvm2::uwvm::imported::wasi::wasip1::storage::wasip1_noinherit_system_environment = true;
         return ::uwvm2::utils::cmdline::parameter_return_type::def;
     }
+    inline constexpr ::uwvm2::utils::cmdline::parameter_return_type wasip1_single_interface_callback(
+        ::uwvm2::utils::cmdline::parameter_parsing_results*,
+        ::uwvm2::utils::cmdline::parameter_parsing_results* current,
+        ::uwvm2::utils::cmdline::parameter_parsing_results* end) noexcept
+    { return wasip1_single_details::apply_action(::uwvm2::uwvm::cmdline::params::wasip1_single_interface,current,end,
+        wasip1_module_details::target_action_t::interface); }
+    inline constexpr ::uwvm2::utils::cmdline::parameter_return_type wasip1_group_interface_callback(
+        ::uwvm2::utils::cmdline::parameter_parsing_results*,
+        ::uwvm2::utils::cmdline::parameter_parsing_results* current,
+        ::uwvm2::utils::cmdline::parameter_parsing_results* end) noexcept
+    { return wasip1_group_details::apply_action(::uwvm2::uwvm::cmdline::params::wasip1_group_interface,current,end,
+        wasip1_module_details::target_action_t::interface); }
 # endif
 #endif
 }

@@ -22,8 +22,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::environment
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
         auto number{[&](::std::uint64_t value) {for(unsigned i{};i!=8u;++i)sink(static_cast<unsigned char>(value>>(i*8u)));}};
         auto text{[&](auto const& value) {number(value.size());for(auto c:value)sink(static_cast<unsigned char>(c));}};
-        text(::uwvm2::utils::container::u8string_view{u8"uwvm.wasip1.policy.v5"});
-        number(configuration.interface_enabled);number(static_cast<::std::uint32_t>(configuration.non_fd_permissions));
+        text(::uwvm2::utils::container::u8string_view{u8"uwvm.wasip1.policy.v6"});
+        number(configuration.interface_enabled);
+        for(auto value:configuration.interfaces.entries)sink(static_cast<unsigned char>(value));number(static_cast<::std::uint32_t>(configuration.non_fd_permissions));
         if constexpr(requires { configuration.fd_limit; }) { number(configuration.fd_limit); }
         else { number(configuration.fd_storage.fd_limit); }
         number(env.disable_utf8_check);

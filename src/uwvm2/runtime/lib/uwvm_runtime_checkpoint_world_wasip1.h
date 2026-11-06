@@ -122,6 +122,7 @@ bool wasip1_dispatch_tls_restored_{};
         // authority; the private candidate uses the live target's exact mask.
         next.non_fd_permissions = original.non_fd_permissions;
         next.interface_enabled = original.interface_enabled;
+        next.interfaces = original.interfaces;
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
         next.limits = original.limits;
         next.policy_resources = original.policy_resources;

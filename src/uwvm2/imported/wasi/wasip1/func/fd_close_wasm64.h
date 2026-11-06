@@ -87,7 +87,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         ::uwvm2::imported::wasi::wasip1::abi::wasi_posix_fd_wasm64_t fd) noexcept
     {
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-        if(!env.exposes(u8"fd_close")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+        if(!env.allows_interface(u8"fd_close_wasm64")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
 #endif
 
         auto const trace_wasip1_call{env.trace_wasip1_call};

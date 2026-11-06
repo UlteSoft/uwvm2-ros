@@ -1,0 +1,4235 @@
+[
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "args_get",
+    "params": [
+      "i32",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "args_sizes_get",
+    "params": [
+      "i32",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "clock_res_get",
+    "params": [
+      "i32",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      256
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "clock_time_get",
+    "params": [
+      "i32",
+      "i64",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      256
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "environ_get",
+    "params": [
+      "i32",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "environ_sizes_get",
+    "params": [
+      "i32",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_advise",
+    "params": [
+      "i32",
+      "i64",
+      "i64",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_allocate",
+    "params": [
+      "i32",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_close",
+    "params": [
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_datasync",
+    "params": [
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_fdstat_get",
+    "params": [
+      "i32",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_fdstat_set_flags",
+    "params": [
+      "i32",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_fdstat_set_rights",
+    "params": [
+      "i32",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_filestat_get",
+    "params": [
+      "i32",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_filestat_set_size",
+    "params": [
+      "i32",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_filestat_set_times",
+    "params": [
+      "i32",
+      "i64",
+      "i64",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_pread",
+    "params": [
+      "i32",
+      "i32",
+      "i32",
+      "i64",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_prestat_dir_name",
+    "params": [
+      "i32",
+      "i32",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_prestat_get",
+    "params": [
+      "i32",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_pwrite",
+    "params": [
+      "i32",
+      "i32",
+      "i32",
+      "i64",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_read",
+    "params": [
+      "i32",
+      "i32",
+      "i32",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_readdir",
+    "params": [
+      "i32",
+      "i32",
+      "i32",
+      "i64",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_renumber",
+    "params": [
+      "i32",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      1
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_seek",
+    "params": [
+      "i32",
+      "i64",
+      "i32",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_sync",
+    "params": [
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_tell",
+    "params": [
+      "i32",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_write",
+    "params": [
+      "i32",
+      "i32",
+      "i32",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "path_create_directory",
+    "params": [
+      "i32",
+      "i32",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "path_filestat_get",
+    "params": [
+      "i32",
+      "i32",
+      "i32",
+      "i32",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "path_filestat_set_times",
+    "params": [
+      "i32",
+      "i32",
+      "i32",
+      "i32",
+      "i64",
+      "i64",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "path_link",
+    "params": [
+      "i32",
+      "i32",
+      "i32",
+      "i32",
+      "i32",
+      "i32",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "path_open",
+    "params": [
+      "i32",
+      "i32",
+      "i32",
+      "i32",
+      "i32",
+      "i64",
+      "i64",
+      "i32",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "path_readlink",
+    "params": [
+      "i32",
+      "i32",
+      "i32",
+      "i32",
+      "i32",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "path_remove_directory",
+    "params": [
+      "i32",
+      "i32",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "path_rename",
+    "params": [
+      "i32",
+      "i32",
+      "i32",
+      "i32",
+      "i32",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "path_symlink",
+    "params": [
+      "i32",
+      "i32",
+      "i32",
+      "i32",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      0,
+      0,
+      1,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "path_unlink_file",
+    "params": [
+      "i32",
+      "i32",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "poll_oneoff",
+    "params": [
+      "i32",
+      "i32",
+      "i32",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      0,
+      256,
+      1,
+      512
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "proc_raise",
+    "params": [
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "random_get",
+    "params": [
+      "i32",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "sched_yield",
+    "params": [],
+    "results": [
+      "i32"
+    ],
+    "args": []
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "sock_accept",
+    "params": [
+      "i32",
+      "i32",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "sock_recv",
+    "params": [
+      "i32",
+      "i32",
+      "i32",
+      "i32",
+      "i32",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "sock_send",
+    "params": [
+      "i32",
+      "i32",
+      "i32",
+      "i32",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "sock_shutdown",
+    "params": [
+      "i32",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "args_get_wasm64",
+    "params": [
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "args_sizes_get_wasm64",
+    "params": [
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "clock_res_get_wasm64",
+    "params": [
+      "i32",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      256
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "clock_time_get_wasm64",
+    "params": [
+      "i32",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      256
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "environ_get_wasm64",
+    "params": [
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "environ_sizes_get_wasm64",
+    "params": [
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_advise_wasm64",
+    "params": [
+      "i32",
+      "i64",
+      "i64",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_allocate_wasm64",
+    "params": [
+      "i32",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_close_wasm64",
+    "params": [
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_datasync_wasm64",
+    "params": [
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_fdstat_get_wasm64",
+    "params": [
+      "i32",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_fdstat_set_flags_wasm64",
+    "params": [
+      "i32",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_fdstat_set_rights_wasm64",
+    "params": [
+      "i32",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_filestat_get_wasm64",
+    "params": [
+      "i32",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_filestat_set_size_wasm64",
+    "params": [
+      "i32",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_filestat_set_times_wasm64",
+    "params": [
+      "i32",
+      "i64",
+      "i64",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_pread_wasm64",
+    "params": [
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_prestat_dir_name_wasm64",
+    "params": [
+      "i32",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_prestat_get_wasm64",
+    "params": [
+      "i32",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_pwrite_wasm64",
+    "params": [
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_read_wasm64",
+    "params": [
+      "i32",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_readdir_wasm64",
+    "params": [
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_renumber_wasm64",
+    "params": [
+      "i32",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      1
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_seek_wasm64",
+    "params": [
+      "i32",
+      "i64",
+      "i32",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_sync_wasm64",
+    "params": [
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_tell_wasm64",
+    "params": [
+      "i32",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "fd_write_wasm64",
+    "params": [
+      "i32",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "path_create_directory_wasm64",
+    "params": [
+      "i32",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "path_filestat_get_wasm64",
+    "params": [
+      "i32",
+      "i32",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "path_filestat_set_times_wasm64",
+    "params": [
+      "i32",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "path_link_wasm64",
+    "params": [
+      "i32",
+      "i32",
+      "i64",
+      "i64",
+      "i32",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "path_open_wasm64",
+    "params": [
+      "i32",
+      "i32",
+      "i64",
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i32",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "path_readlink_wasm64",
+    "params": [
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "path_remove_directory_wasm64",
+    "params": [
+      "i32",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "path_rename_wasm64",
+    "params": [
+      "i32",
+      "i64",
+      "i64",
+      "i32",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "path_symlink_wasm64",
+    "params": [
+      "i64",
+      "i64",
+      "i32",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      0,
+      0,
+      1,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "path_unlink_file_wasm64",
+    "params": [
+      "i32",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "poll_oneoff_wasm64",
+    "params": [
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      0,
+      256,
+      1,
+      512
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "proc_raise_wasm64",
+    "params": [
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "random_get_wasm64",
+    "params": [
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "sched_yield_wasm64",
+    "params": [],
+    "results": [
+      "i32"
+    ],
+    "args": []
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "sock_accept_wasm64",
+    "params": [
+      "i32",
+      "i32",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "sock_recv_wasm64",
+    "params": [
+      "i32",
+      "i64",
+      "i64",
+      "i32",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "sock_send_wasm64",
+    "params": [
+      "i32",
+      "i64",
+      "i64",
+      "i32",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "sock_shutdown_wasm64",
+    "params": [
+      "i32",
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "abi_version",
+    "params": [],
+    "results": [
+      "i32"
+    ],
+    "args": []
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "capability_open",
+    "params": [
+      "i32",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      0,
+      0,
+      1,
+      32
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "capability_close",
+    "params": [
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "capability_revoke",
+    "params": [
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "topic_publish",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "topic_subscribe",
+    "params": [
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "event_poll",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "event_watch",
+    "params": [
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "event_poll_v1",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "event_ready",
+    "params": [
+      "i64",
+      "i32",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "service_submit",
+    "params": [
+      "i64",
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "service_call",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "service_advertise",
+    "params": [
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "service_respond",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "action_send_goal",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "action_cancel_own_goal",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "action_cancel_any_goal",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "action_receive_feedback",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "action_receive_result",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "action_advertise",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "action_respond",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "tf_lookup",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "tf_broadcast",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "parameter_get",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "parameter_set",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "parameter_delete",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "parameter_exists",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "parameter_list",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "parameter_search",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "graph_inspect_topic",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "graph_inspect_node",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "graph_inspect_service",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "graph_list_topics",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "graph_list_nodes",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "graph_list_services",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "time_read_ros",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "time_read_wall",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_v1",
+    "name": "log_write",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_client_v1",
+    "name": "abi_version",
+    "params": [],
+    "results": [
+      "i32"
+    ],
+    "args": []
+  },
+  {
+    "ns": "uwvm_ros1_client_v1",
+    "name": "features",
+    "params": [
+      "i64",
+      "i64",
+      "i32",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros1_client_v1",
+    "name": "service_available",
+    "params": [
+      "i64",
+      "i64",
+      "i64",
+      "i32",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "abi_version",
+    "params": [],
+    "results": [
+      "i32"
+    ],
+    "args": []
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "capability_open",
+    "params": [
+      "i32",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      0,
+      0,
+      1,
+      32
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "capability_close",
+    "params": [
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "capability_revoke",
+    "params": [
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "topic_publish",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "topic_subscribe",
+    "params": [
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "event_poll",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "event_watch",
+    "params": [
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "event_poll_v1",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "event_ready",
+    "params": [
+      "i64",
+      "i32",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "service_submit",
+    "params": [
+      "i64",
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "service_call",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "service_advertise",
+    "params": [
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "service_respond",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "action_send_goal",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "action_server_is_ready",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "action_send_begin",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "action_goal_response",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "action_goal_status",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "action_cancel_begin_own",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "action_cancel_response",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "action_cancel_own_goal",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "action_cancel_any_goal",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "action_receive_feedback",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "action_receive_result",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "action_advertise",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "action_respond",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "tf_lookup",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "tf_broadcast",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "parameter_get",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "parameter_set",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "parameter_list",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "parameter_describe",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "parameter_declare",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "parameter_undeclare",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "graph_inspect_topic",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "graph_inspect_node",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "graph_inspect_service",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "graph_inspect_action",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "parameter_subscribe_events",
+    "params": [
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "graph_list_topics",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "graph_list_nodes",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "graph_list_services",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "lifecycle_get_state",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "lifecycle_change_state",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "time_read_ros",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "time_read_system",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "time_read_steady",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_v1",
+    "name": "log_write",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_client_v1",
+    "name": "abi_version",
+    "params": [],
+    "results": [
+      "i32"
+    ],
+    "args": []
+  },
+  {
+    "ns": "uwvm_ros2_client_v1",
+    "name": "features",
+    "params": [
+      "i64",
+      "i64",
+      "i32",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_client_v1",
+    "name": "service_available",
+    "params": [
+      "i64",
+      "i64",
+      "i64",
+      "i32",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_rmw_v1",
+    "name": "abi_version",
+    "params": [],
+    "results": [
+      "i32"
+    ],
+    "args": []
+  },
+  {
+    "ns": "uwvm_ros2_rmw_v1",
+    "name": "publisher_activate",
+    "params": [
+      "i64",
+      "i32",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_rmw_v1",
+    "name": "publisher_inspect",
+    "params": [
+      "i64",
+      "i64",
+      "i32",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_rmw_v1",
+    "name": "publisher_publish",
+    "params": [
+      "i64",
+      "i64",
+      "i32",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_rmw_v1",
+    "name": "publisher_retire",
+    "params": [
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_rmw_sub_v1",
+    "name": "abi_version",
+    "params": [],
+    "results": [
+      "i32"
+    ],
+    "args": []
+  },
+  {
+    "ns": "uwvm_ros2_rmw_sub_v1",
+    "name": "subscription_activate",
+    "params": [
+      "i64",
+      "i32",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_rmw_sub_v1",
+    "name": "subscription_inspect",
+    "params": [
+      "i64",
+      "i64",
+      "i32",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_rmw_sub_v1",
+    "name": "subscription_peek",
+    "params": [
+      "i64",
+      "i64",
+      "i32",
+      "i32",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_rmw_sub_v1",
+    "name": "subscription_commit",
+    "params": [
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_rmw_sub_v1",
+    "name": "subscription_cancel",
+    "params": [
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_rmw_sub_v1",
+    "name": "subscription_retire",
+    "params": [
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_rmw_srv_v1",
+    "name": "abi_version",
+    "params": [],
+    "results": [
+      "i32"
+    ],
+    "args": []
+  },
+  {
+    "ns": "uwvm_ros2_rmw_srv_v1",
+    "name": "client_activate",
+    "params": [
+      "i64",
+      "i64",
+      "i32",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_rmw_srv_v1",
+    "name": "service_activate",
+    "params": [
+      "i64",
+      "i64",
+      "i32",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_rmw_srv_v1",
+    "name": "endpoint_inspect",
+    "params": [
+      "i64",
+      "i64",
+      "i32",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_rmw_srv_v1",
+    "name": "client_submit",
+    "params": [
+      "i64",
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_rmw_srv_v1",
+    "name": "client_abandon",
+    "params": [
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_rmw_srv_v1",
+    "name": "service_respond",
+    "params": [
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i32",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_rmw_srv_v1",
+    "name": "endpoint_peek",
+    "params": [
+      "i64",
+      "i64",
+      "i32",
+      "i32",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_rmw_srv_v1",
+    "name": "endpoint_commit",
+    "params": [
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_rmw_srv_v1",
+    "name": "endpoint_cancel",
+    "params": [
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_rmw_srv_v1",
+    "name": "client_available",
+    "params": [
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i32",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_ros2_rmw_srv_v1",
+    "name": "endpoint_retire",
+    "params": [
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_portable_robot_v1",
+    "name": "abi_version",
+    "params": [],
+    "results": [
+      "i32"
+    ],
+    "args": []
+  },
+  {
+    "ns": "uwvm_portable_robot_v1",
+    "name": "open",
+    "params": [
+      "i32",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      0,
+      0,
+      1,
+      32
+    ]
+  },
+  {
+    "ns": "uwvm_portable_robot_v1",
+    "name": "describe",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_portable_robot_v1",
+    "name": "read_state",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_portable_robot_v1",
+    "name": "submit",
+    "params": [
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_portable_robot_v1",
+    "name": "wait",
+    "params": [
+      "i64",
+      "i64",
+      "i32",
+      "i64",
+      "i64",
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "ns": "uwvm_portable_robot_v1",
+    "name": "close",
+    "params": [
+      "i64"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      1
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "proc_exit",
+    "params": [
+      "i32"
+    ],
+    "results": [],
+    "args": [
+      0
+    ]
+  },
+  {
+    "ns": "wasi_snapshot_preview1",
+    "name": "proc_exit_wasm64",
+    "params": [
+      "i32"
+    ],
+    "results": [],
+    "args": [
+      0
+    ]
+  },
+  {
+    "ns": "wasi",
+    "name": "thread-spawn",
+    "params": [
+      "i32"
+    ],
+    "results": [
+      "i32"
+    ],
+    "args": [
+      0
+    ]
+  }
+]

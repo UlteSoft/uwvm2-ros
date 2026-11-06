@@ -88,7 +88,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                                          ::uwvm2::imported::wasi::wasip1::abi::exitcode_t code) noexcept
     {
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-        if(!env.exposes(u8"proc_exit") || !env.permits(::uwvm2::imported::wasi::wasip1::environment::permission_t::proc_exit))
+        if(!env.permits(::uwvm2::imported::wasi::wasip1::environment::permission_t::proc_exit))
         {
             env.proc_exit_requested = true; env.proc_exit_denied = true;
             env.proc_exit_code = static_cast<::std::uint32_t>(code); return;
@@ -119,7 +119,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                                     ::uwvm2::imported::wasi::wasip1::abi::exitcode_t code) noexcept
     {
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-        if(!env.exposes(u8"proc_exit")) { env.proc_exit_requested = true; env.proc_exit_denied = true; return; }
+        if(!env.allows_interface(u8"proc_exit")) { env.proc_exit_requested = true; env.proc_exit_denied = true; return; }
 #endif
 
         auto const trace_wasip1_call{env.trace_wasip1_call};

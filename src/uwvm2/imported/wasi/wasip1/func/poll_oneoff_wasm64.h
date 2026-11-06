@@ -226,7 +226,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_wasm64_t nevents) noexcept
     {
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-        if(!env.exposes(u8"poll_oneoff")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+        if(!env.allows_interface(u8"poll_oneoff_wasm64")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
 #endif
 
 
@@ -274,7 +274,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
         if(nsubscriptions > env.limits.max_poll_subscriptions)
-        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::e2big; }
+        { ::uwvm2::utils::control::host_diagnostics::limited("poll-subscriptions",false); return ::uwvm2::imported::wasi::wasip1::abi::errno_t::e2big; }
 #endif
         // Early exit: zero subscriptions -> zero events.
         if(nsubscriptions == 0u) { return ::uwvm2::imported::wasi::wasip1::abi::errno_wasm64_t::einval; }
@@ -526,7 +526,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                         }
                     }
                 }
-                if(remaining > env.limits.max_poll_wait_ns) { return error::enotcapable; }
+                if(remaining > env.limits.max_poll_wait_ns) { ::uwvm2::utils::control::host_diagnostics::limited("poll-wait-ns",false); return error::eagain; }
             }
             clock.timeout = static_cast<decltype(clock.timeout)>(timeout);
         }

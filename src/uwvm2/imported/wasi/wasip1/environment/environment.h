@@ -21,6 +21,7 @@
  ****************************************/
 
 #pragma once
+#include <uwvm2/utils/control/host_interfaces.h>
 
 #ifndef UWVM_MODULE
 // std
@@ -372,15 +373,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::environment
         // Namespace admission is separate from operation/resource authority.
         // Cached imports recheck admission against the immediate caller.
         bool interface_enabled{};
+        ::uwvm2::utils::control::host_interfaces::policy interfaces{};
         bool proc_exit_requested{};
         bool proc_exit_denied{};
         ::std::uint32_t proc_exit_code{};
 
-        [[nodiscard]] inline constexpr bool exposes(::uwvm2::utils::container::u8string_view name) const noexcept
+        [[nodiscard]] inline constexpr bool allows_interface(::uwvm2::utils::container::u8string_view name) const noexcept
         {
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-            auto const bit{host_function_bit(name)};
-            return interface_enabled && bit != 0u;
+            return interface_enabled && interfaces.allowed(::uwvm2::utils::control::host_interfaces::find(
+                ::uwvm2::utils::control::host_interfaces::family::wasip1, name));
 #else
             static_cast<void>(name); return true;
 #endif
@@ -443,3 +445,5 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::environment
 # include <uwvm2/imported/wasi/wasip1/feature/feature_pop_macro.h>
 # include <uwvm2/utils/macro/pop_macros.h>
 #endif
+
+#include "diagnostics.h"

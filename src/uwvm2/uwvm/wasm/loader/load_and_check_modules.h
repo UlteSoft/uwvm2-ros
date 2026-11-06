@@ -21,6 +21,7 @@
  ****************************************/
 
 #pragma once
+#include <uwvm2/uwvm/io/host_diagnostics.h>
 
 #ifndef UWVM_MODULE
 // std
@@ -338,7 +339,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                            override_state != nullptr && override_state->enabled_is_set) [[unlikely]]
                         {
                             #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-                            return override_state->enabled && ::uwvm2::imported::wasi::wasip1::environment::host_function_bit(function_name) != 0u;
+                            return override_state->enabled && override_state->interfaces.exposed(::uwvm2::utils::control::host_interfaces::find(::uwvm2::utils::control::host_interfaces::family::wasip1,function_name));
 #else
                             return override_state->enabled;
 #endif
@@ -357,7 +358,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                            override_state != nullptr && override_state->enabled_is_set) [[unlikely]]
                         {
                             #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-                            return override_state->enabled && ::uwvm2::imported::wasi::wasip1::environment::host_function_bit(function_name) != 0u;
+                            return override_state->enabled && override_state->interfaces.exposed(::uwvm2::utils::control::host_interfaces::find(::uwvm2::utils::control::host_interfaces::family::wasip1,function_name));
 #else
                             return override_state->enabled;
 #endif
@@ -479,8 +480,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
                                 if(!::uwvm2::uwvm::imported::ros::host_import_visible(curr_module_name, import_module_name, import_extern_name))
                                 {
-                                    ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
-                                        u8"uwvm: [error] ROS namespace is not enabled for this component");
+                                    namespace diagnostic=::uwvm2::utils::control::host_diagnostics;
+                                    namespace api=::uwvm2::utils::control::host_interfaces;
+                                    auto family=diagnostic::view(import_module_name).starts_with("uwvm_ros1_")?api::family::ros1:api::family::ros2;
+                                    auto version=family==api::family::ros1?::uwvm2::imported::ros::version::ros1 : ::uwvm2::imported::ros::version::ros2;
+                                    auto target=::uwvm2::uwvm::imported::ros::runtime_policy.effective(version,diagnostic::view(curr_module_name));
+                                    diagnostic::missing(api::find(import_module_name,import_extern_name),family,
+                                        target?::uwvm2::imported::ros::to_string(target->target_scope):"single",
+                                        target?::std::string_view{target->name}:diagnostic::view(curr_module_name),
+                                        target!=nullptr,target && target->enabled,diagnostic::view(import_module_name),diagnostic::view(import_extern_name));
                                     return {load_and_check_modules_rtl::module_dependency_error, ::std::move(adjacency_list)};
                                 }
 #endif
@@ -496,8 +504,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
                                     // Import names are untrusted bytes. One constant diagnostic per
                                     // refused load prevents control sequences and output amplification.
-                                    ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
-                                        u8"uwvm: [error] WASI Preview 1 namespace is not enabled for this component");
+                                    namespace diagnostic=::uwvm2::utils::control::host_diagnostics;
+                                    namespace api=::uwvm2::utils::control::host_interfaces;
+                                    namespace storage=::uwvm2::uwvm::imported::wasi::wasip1::storage;
+                                    auto state=storage::find_wasip1_module_override_const(
+                                        curr_module.second.type==::uwvm2::uwvm::wasm::type::module_type_t::exec_wasm?
+                                        storage::wasip1_module_target_kind_t::main_wasm:storage::wasip1_module_target_kind_t::preload_wasm,curr_module_name);
+                                    auto scope=state && state->trace_wasip1_group_kind==::uwvm2::imported::wasi::wasip1::environment::trace_wasip1_group_kind_t::custom_group?"group":"single";
+                                    auto target=state?diagnostic::view(state->trace_wasip1_group_name_storage):diagnostic::view(curr_module_name);
+                                    diagnostic::missing(api::find(import_module_name,import_extern_name),api::family::wasip1,scope,target,
+                                        state!=nullptr,state && state->enabled,diagnostic::view(import_module_name),diagnostic::view(import_extern_name));
 #else
                                     ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
                                                         ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
@@ -528,8 +544,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
                                     // Import names are untrusted bytes. One constant diagnostic per
                                     // refused load prevents control sequences and output amplification.
-                                    ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
-                                        u8"uwvm: [error] Missing module dependency: an import has no approved provider");
+                                    if(import_module_name == u8"wasi" && import_extern_name == u8"thread-spawn")
+                                    {
+                                        ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                                            u8"uwvm: [error] wasi.thread-spawn is exposed but the WASI Threads execution profile is disabled. Configure: --wasm-feature-enable-threads --wasi-threads <max-active> <max-spawns> <native-stack-bytes> <per-child-storage> <per-child-code> <shared-memory-bytes>; see --help runtime.");
+                                    }
+                                    else
+                                    {
+                                        ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                                            u8"uwvm: [error] Missing module dependency: an import has no approved provider");
+                                    }
 #else
                                     ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
                                                         ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),

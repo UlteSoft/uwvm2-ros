@@ -47,6 +47,36 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
         .usage{u8"<group:str> <guest-dir:str> <base:u64> <inheriting:u64>"},
         .handle = ::std::addressof(details::wasip1_group_mount_dir_rights_callback),
         .cate = ::uwvm2::utils::cmdline::categorization::wasi};
+    namespace details {
+#  if defined(UWVM_MODULE)
+    extern "C++"
+#  else
+    inline constexpr
+#  endif
+    ::uwvm2::utils::cmdline::parameter_return_type wasip1_single_interface_callback(
+        ::uwvm2::utils::cmdline::parameter_parsing_results*, ::uwvm2::utils::cmdline::parameter_parsing_results*,
+        ::uwvm2::utils::cmdline::parameter_parsing_results*) noexcept; }
+    inline constexpr ::uwvm2::utils::cmdline::parameter wasip1_single_interface{
+        .name{u8"--wasip1-single-interface"},
+        .describe{u8"Configure one exact WASIp1 API: hidden fails linking; deny exposes but rejects; allow retains resource checks. Default hidden."},
+        .usage{u8"<single:str> <api:str> <hidden|deny|allow>"},
+        .handle = ::std::addressof(details::wasip1_single_interface_callback),
+        .cate = ::uwvm2::utils::cmdline::categorization::wasi};
+    namespace details {
+#  if defined(UWVM_MODULE)
+    extern "C++"
+#  else
+    inline constexpr
+#  endif
+    ::uwvm2::utils::cmdline::parameter_return_type wasip1_group_interface_callback(
+        ::uwvm2::utils::cmdline::parameter_parsing_results*, ::uwvm2::utils::cmdline::parameter_parsing_results*,
+        ::uwvm2::utils::cmdline::parameter_parsing_results*) noexcept; }
+    inline constexpr ::uwvm2::utils::cmdline::parameter wasip1_group_interface{
+        .name{u8"--wasip1-group-interface"},
+        .describe{u8"Configure one exact WASIp1 API: hidden fails linking; deny exposes but rejects; allow retains resource checks. Default hidden."},
+        .usage{u8"<group:str> <api:str> <hidden|deny|allow>"},
+        .handle = ::std::addressof(details::wasip1_group_interface_callback),
+        .cate = ::uwvm2::utils::cmdline::categorization::wasi};
     // These options configure authority, independently of import visibility and
     // native API exposure. Permissions have finite names; there is no wildcard.
     // Repeat grant/deny only for distinct bits. One bit cannot be configured

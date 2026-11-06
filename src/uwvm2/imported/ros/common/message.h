@@ -176,12 +176,12 @@ namespace uwvm2::imported::ros
         if(!read_quota(cap,quota_key,maximum))
         { return {errc::invalid_argument, "custom interface requires an explicit byte quota"}; }
         if(size < prefix) { return {errc::invalid_argument, "custom interface envelope is truncated"}; }
-        return size - prefix <= maximum ? result{} : result{errc::too_large, "custom interface exceeds its explicit byte quota"};
+        return size - prefix <= maximum ? result{} : quota_failure(errc::too_large,"custom interface exceeds its explicit byte quota",key,cap.alias);
     }
 
     inline result validate_canonical_string(::std::span<::std::byte const> bytes, ::std::uint64_t maximum)
     {
-        if(bytes.size() > maximum) { return {errc::too_large, "canonical string exceeds explicit byte quota"}; }
+        if(bytes.size() > maximum) { return quota_failure(errc::too_large,"canonical string exceeds explicit byte quota","max-message-bytes"); }
         if(bytes.size() < 4) { return {errc::invalid_argument, "canonical string length truncated"}; }
         ::std::uint32_t length{};
         for(unsigned i{}; i != 4; ++i) { length |= ::std::uint32_t(::std::to_integer<unsigned char>(bytes[i])) << (8 * i); }
@@ -197,7 +197,7 @@ namespace uwvm2::imported::ros
         ::std::uint64_t maximum{};
         if(!read_quota(cap,quota_key,maximum))
         { return {errc::invalid_argument, "explicit transform byte quota required"}; }
-        if(bytes.size() > maximum) { return {errc::too_large, "transform exceeds explicit byte quota"}; }
+        if(bytes.size() > maximum) { return quota_failure(errc::too_large,"transform exceeds explicit byte quota",quota_key,cap.alias); }
         // Preserve quota/error precedence while rejecting impossible canonical
         // extents before a potentially large allocation/copy. Do not inspect or
         // borrow payload fields here: the owned copy is still fully decoded.
@@ -276,7 +276,7 @@ namespace uwvm2::imported::ros
             auto const quota_key{"max-message-bytes"};::std::uint64_t maximum{};
             if(!read_quota(cap,quota_key,maximum))
             { return {errc::invalid_argument, "custom Topic requires explicit message byte quota"}; }
-            if(bytes.size() > maximum) { return {errc::too_large, "custom Topic exceeds explicit message byte quota"}; }
+            if(bytes.size() > maximum) { return quota_failure(errc::too_large,"custom Topic exceeds explicit message byte quota",quota_key,cap.alias); }
             // Mandatory shape/Bool/finite checks apply even with validator=none.
             return ipc::validate_custom_topic(*descriptor, reinterpret_cast<::std::uint8_t const*>(bytes.data()), bytes.size()) ?
                    result{} : result{errc::invalid_argument, "invalid custom fixed Topic payload"};
@@ -290,7 +290,7 @@ namespace uwvm2::imported::ros
                 if(cap.operation=="action.advertise"&&bytes.empty()) { return {}; }
                 auto offset{cap.operation=="action.advertise"?8U:0U};
                 if(bytes.size()!=offset+4||(offset&&!ipc::get(data,8))) { return {errc::invalid_argument,"invalid canonical action goal"}; }
-                if(bytes.size()-offset>maximum("max-goal-bytes")) { return {errc::too_large,"action goal exceeds explicit quota"}; }
+                if(bytes.size()-offset>maximum("max-goal-bytes")) { return quota_failure(errc::too_large,"action goal exceeds explicit quota","max-goal-bytes",cap.alias); }
                 ::std::int32_t order{};
                 if(!ipc::fibonacci_order(data+offset,bytes.size()-offset,order)) { return {errc::invalid_argument,"Fibonacci order outside safe generated adapter range"}; }
                 if(static_cast<::std::uint64_t>(order)>maximum("fibonacci.max-order")) { return {errc::permission_denied,"Fibonacci order exceeds explicit bound"}; }
@@ -300,7 +300,7 @@ namespace uwvm2::imported::ros
             {
                 if(!ipc::validate_action_sequence(data,bytes.size(),true)) { return {errc::invalid_argument,"invalid canonical action server response"}; }
                 auto limit{maximum(data[8]==1?"max-feedback-bytes":"max-result-bytes")};
-                return bytes.size()<=limit?result{}:result{errc::too_large,"action server response exceeds explicit quota"};
+                return bytes.size()<=limit?result{}:quota_failure(errc::too_large,"action server response exceeds explicit quota",data[8]==1?"max-feedback-bytes":"max-result-bytes",cap.alias);
             }
             if(bytes.size()!=8||(cap.operation!="action.cancel-any-goal"&&!ipc::get(data,8))) { return {errc::invalid_argument,"action operation requires explicit nonzero goal ID"}; }
             return {};
@@ -311,7 +311,7 @@ namespace uwvm2::imported::ros
             if(bytes.empty()) { return typed?result{static_cast<errc>(ipc::validate_parameter_contract(v,cap)),"typed event contract"}:result{}; }
             ::std::uint64_t maximum{}; auto const quota_key{"max-parameter-bytes"};
             if(!read_quota(cap,quota_key,maximum)) { return {errc::invalid_argument, "explicit parameter-event byte quota required"}; }
-            if(bytes.size() > maximum) { return {errc::too_large, "parameter event exceeds explicit byte quota"}; }
+            if(bytes.size() > maximum) { return quota_failure(errc::too_large,"parameter event exceeds explicit byte quota",quota_key,cap.alias); }
             ::std::vector<::std::uint8_t> canonical{}; canonical.reserve(bytes.size());
             for(auto byte : bytes) { canonical.push_back(::std::to_integer<::std::uint8_t>(byte)); }
             if(typed) { return {static_cast<errc>(ipc::validate_typed_parameter_event(v,cap,canonical)),"selected typed parameter event validation"}; }
@@ -362,7 +362,7 @@ namespace uwvm2::imported::ros
         ::std::uint64_t maximum{};
         if(!read_quota(cap,quota_key,maximum))
         { return {errc::invalid_argument, "explicit message/request byte limit is required"}; }
-        if(bytes.size() > maximum) { return {errc::too_large, "message exceeds explicit byte limit"}; }
+        if(bytes.size() > maximum) { return quota_failure(errc::too_large,"message exceeds explicit byte limit",quota_key,cap.alias); }
         if(cap.type == "sensor_msgs/Image" || cap.type == "sensor_msgs/msg/Image")
         {
             ipc::image_view image{};
@@ -441,7 +441,7 @@ namespace uwvm2::imported::ros
         auto const quota_key{"max-response-bytes"};
         ::std::uint64_t maximum{};
         if(!read_quota(cap,quota_key,maximum)) { return {errc::invalid_argument, "explicit response byte limit required"}; }
-        if(bytes.size() > maximum) { return {errc::too_large, "response exceeds explicit limit"}; }
+        if(bytes.size() > maximum) { return quota_failure(errc::too_large,"response exceeds explicit limit",quota_key,cap.alias); }
         if(empty) { return bytes.empty() ? result{} : result{errc::invalid_argument, "Empty response must have zero canonical bytes"}; }
         if(add) { return bytes.size() == 8 ? result{} : result{errc::invalid_argument, "AddTwoInts response requires one canonical i64 field"}; }
         if(bytes.size() < 5 || ::std::to_integer<unsigned char>(bytes[0]) > 1) { return {errc::invalid_argument, "truncated or noncanonical service response"}; }
@@ -503,7 +503,7 @@ namespace uwvm2::imported::ros
             if(cap.operation=="action.cancel-own-goal"||cap.operation=="action.cancel-any-goal") { return bytes.size()==1&&::std::to_integer<unsigned char>(bytes[0])<=1?result{}:result{errc::invalid_argument,"cancel response requires canonical boolean"}; }
             auto key{cap.operation=="action.receive-feedback"?"max-feedback-bytes":"max-result-bytes"};::std::uint64_t maximum{};auto const quota_key{key};
             if(!read_quota(cap,quota_key,maximum)) { return {errc::invalid_argument,"explicit action event quota required"}; }
-            if(bytes.size()>maximum) { return {errc::too_large,"action event exceeds explicit quota"}; }
+            if(bytes.size()>maximum) { return quota_failure(errc::too_large,"action event exceeds explicit quota",quota_key,cap.alias); }
             auto data{reinterpret_cast<::std::uint8_t const*>(bytes.data())};bool result{cap.operation=="action.receive-result"};
             return ipc::validate_action_sequence(data,bytes.size(),result)&&(!result||data[8]>=2)?ros::result{}:ros::result{errc::invalid_argument,"invalid canonical action feedback/result"};
         }
@@ -512,7 +512,7 @@ namespace uwvm2::imported::ros
         {
             ::std::uint64_t maximum{}; auto const quota_key{"max-response-bytes"};
             if(!read_quota(cap,quota_key,maximum)) { return {errc::invalid_argument, "explicit lifecycle response byte quota required"}; }
-            if(bytes.size() > maximum) { return {errc::too_large, "lifecycle response exceeds explicit byte quota"}; }
+            if(bytes.size() > maximum) { return quota_failure(errc::too_large,"lifecycle response exceeds explicit byte quota",quota_key,cap.alias); }
             if(cap.operation == "lifecycle.change-state")
             { return bytes.size() == 1 && ::std::to_integer<unsigned char>(bytes[0]) <= 1 ? result{} : result{errc::invalid_argument, "lifecycle change response requires canonical boolean"}; }
             if(cap.operation == "lifecycle.get-state")
@@ -522,7 +522,7 @@ namespace uwvm2::imported::ros
         {
             ::std::uint64_t maximum{}; auto const quota_key{"max-response-bytes"};
             if(!read_quota(cap,quota_key,maximum)) { return {errc::invalid_argument,"invalid time response byte quota"}; }
-            if(bytes.size()>maximum) { return {errc::too_large,"time response exceeds explicit byte quota"}; }
+            if(bytes.size()>maximum) { return quota_failure(errc::too_large,"time response exceeds explicit byte quota",quota_key,cap.alias); }
             return bytes.size() == 8 ? result{} : result{errc::invalid_argument, "time response requires u64 nanoseconds"};
         }
         if(cap.operation == "param.subscribe-events" || cap.operation == "tf.broadcast" || cap.operation == "service.advertise" || cap.operation == "service.respond" || cap.operation == "log.write" || (cap.operation == "param.set" || cap.operation == "param.delete" || cap.operation == "param.declare" || cap.operation == "param.undeclare"))

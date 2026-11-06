@@ -174,8 +174,8 @@ The source behavior is:
 - `path.subview(6uz)` is the path handed to the NT/kernel opener.
 - The remaining string is expected to be an NT object-manager path, such as `\??\C:\...` or `\Device\...`.
 - A warning class `nt-path` is emitted by most NT-aware call sites before opening.
-- `--log-disable-warning nt-path` suppresses that warning where the call site checks it.
-- `--log-convert-warn-to-fatal nt-path` turns the warning into a fatal termination where the call site checks it.
+- `--disable-warning nt-path` suppresses that warning where the call site checks it.
+- `--warning-as-error nt-path` turns the warning into a fatal termination where the call site checks it.
 
 NT-aware path support appears in these command paths:
 
@@ -377,8 +377,8 @@ On `_WIN32_WINDOWS` builds, `--wasip1-*-mount-dir` can emit a `toctou` warning. 
 
 Controls:
 
-- `--log-disable-warning toctou` suppresses this warning.
-- `--log-convert-warn-to-fatal toctou` turns it into a fatal termination.
+- `--disable-warning toctou` suppresses this warning.
+- `--warning-as-error toctou` turns it into a fatal termination.
 
 ## Practical Parser Rules
 

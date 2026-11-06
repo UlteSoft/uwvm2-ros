@@ -14,9 +14,9 @@ Source focus:
 | --- | --- | --- | --- | --- | --- |
 | `--log-output` | `-log` | `[out|err|file <file:path>]` | Once | Core; file target gated on constrained platforms | Route main diagnostics to stdout, stderr, or file. |
 | `--log-color` | `-log-c` | `[enable|disable]` | Repeatable | Core | Force colored diagnostic output on or off. |
-| `--log-enable-warning` | `-log-ew` | `[all|parser]` | Repeatable | Core | Enable selected warning categories. |
-| `--log-disable-warning` | `-log-dw` | `[all|vm|untrusted-dl|dl|weak-symbol|depend|nt-path|toctou|runtime|runtime-compile-threads]` | Repeatable | Core; some categories gated | Disable selected warning categories. |
-| `--log-convert-warn-to-fatal` | `-log-wfatal` | `[all|vm|parser|untrusted-dl|dl|weak-symbol|depend|nt-path|toctou|runtime|runtime-compile-threads]` | Repeatable | Core; some categories gated | Convert selected warning categories to fatal termination. |
+| `--enable-warning` | None | `[all|parser]` | Repeatable | Core | Enable selected warning categories. |
+| `--disable-warning` | None | `[all|vm|untrusted-dl|dl|weak-symbol|depend|nt-path|toctou|runtime|runtime-compile-threads]` | Repeatable | Core; some categories gated | Disable selected warning categories. |
+| `--warning-as-error` | None | `[all|vm|parser|untrusted-dl|dl|weak-symbol|depend|nt-path|toctou|runtime|runtime-compile-threads]` | Repeatable | Core; some categories gated | Convert selected warning categories to fatal termination. |
 | `--log-verbose` | `-log-vb` | None | Once | Core | Enable verbose progress diagnostics. |
 | `--log-win32-use-ansi` | `-log-ansi` | None | Once | Legacy Win32 color configurations | Use ANSI escapes for colored logs instead of Win32 console attributes. |
 
@@ -96,7 +96,7 @@ Warning categories referenced by the current command-line source:
 
 Gated categories are only accepted when their compile-time feature/platform branch is present. Otherwise the same category string is invalid for that binary.
 
-## `--log-enable-warning`
+## `--enable-warning`
 
 Accepted values:
 
@@ -107,17 +107,17 @@ Current source behavior:
 
 - `parser` enables parser warnings.
 - `all` also enables parser warnings.
-- It does not enable every warning class; most non-parser warning classes default to enabled and are controlled by `--log-disable-warning`.
+- It does not enable every warning class; most non-parser warning classes default to enabled and are controlled by `--disable-warning`.
 
 The option is parser-repeatable. Repeating it with `parser` or `all` is harmless because it sets the same bool to `true`.
 
 Example:
 
 ```bash
-uwvm2-ros --log-enable-warning parser --run app.wasm
+uwvm2-ros --enable-warning parser --run app.wasm
 ```
 
-## `--log-disable-warning`
+## `--disable-warning`
 
 Accepted values:
 
@@ -135,18 +135,18 @@ Accepted values:
 Behavior:
 
 - `all` disables every compiled non-parser warning class handled by this callback.
-- Parser warnings are not disabled by `all` in this callback, because parser warnings are enabled through `--log-enable-warning` and fatalized through `--log-convert-warn-to-fatal`.
+- Parser warnings are not disabled by `all` in this callback, because parser warnings are enabled through `--enable-warning` and fatalized through `--warning-as-error`.
 - Repeating the command is allowed and simply sets the relevant show flag to `false`.
 - Disabling a warning does not unset its fatal-conversion flag if you set fatal conversion separately; avoid contradictory configurations if you need predictable operator-facing behavior.
 
 Examples:
 
 ```bash
-uwvm2-ros --log-disable-warning runtime-compile-threads --runtime-compile-threads 999 --run app.wasm
-uwvm2-ros --log-disable-warning nt-path --log-output file ::NT::\??\C:\tmp\uwvm.log --run app.wasm
+uwvm2-ros --disable-warning runtime-compile-threads --runtime-compile-threads 999 --run app.wasm
+uwvm2-ros --disable-warning nt-path --log-output file ::NT::\??\C:\tmp\uwvm.log --run app.wasm
 ```
 
-## `--log-convert-warn-to-fatal`
+## `--warning-as-error`
 
 Accepted values:
 
@@ -172,13 +172,13 @@ Behavior:
 Order matters when a warning-producing option appears on the same command line:
 
 ```bash
-uwvm2-ros --log-convert-warn-to-fatal nt-path --log-output file ::NT::\??\C:\tmp\uwvm.log
+uwvm2-ros --warning-as-error nt-path --log-output file ::NT::\??\C:\tmp\uwvm.log
 ```
 
 The log-output NT warning is fatal.
 
 ```bash
-uwvm2-ros --log-output file ::NT::\??\C:\tmp\uwvm.log --log-convert-warn-to-fatal nt-path
+uwvm2-ros --log-output file ::NT::\??\C:\tmp\uwvm.log --warning-as-error nt-path
 ```
 
 The log-output NT warning has already happened before fatal conversion is set.
@@ -235,3 +235,5 @@ Output routing:
 - `--log-output` affects where later main diagnostics are written.
 - `--runtime-compiler-log` has its own output object and is documented in [Runtime Commands](runtime.md).
 - `--wasip1-*-trace` has its own output handling and is documented in [WASI Commands](wasi.md).
+
+Host call selectors and default severities are specified in [exact host permissions](host-permissions.md).

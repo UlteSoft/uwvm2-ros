@@ -110,6 +110,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
         // or disable the built-in `wasi_snapshot_preview1` module.
         bool enabled{};
         bool enabled_is_set{};
+        ::uwvm2::utils::control::host_interfaces::policy interfaces{};
 
         // Host API export visibility override. This controls whether the stable
         // local WASI Preview 1 host API is exported to preload-DL/weak-symbol
@@ -181,7 +182,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
 
         [[nodiscard]] inline constexpr bool has_override() const noexcept
         {
-            return this->enabled_is_set || this->expose_host_api_is_set || this->noinherit_system_environment_is_set || this->disable_utf8_check_is_set ||
+            return this->enabled_is_set || this->interfaces.any_configured() || this->expose_host_api_is_set || this->noinherit_system_environment_is_set || this->disable_utf8_check_is_set ||
                    this->permission_presence != ::uwvm2::imported::wasi::wasip1::environment::permission_t{} ||
                    this->fd_limit_is_set || this->argv0_is_set || this->force_args_is_set || this->trace_wasip1_call_is_set ||
                    !this->delete_system_environment.empty() || !this->add_or_replace_environment.empty() || !this->mount_dir_roots.empty()
@@ -742,7 +743,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
         auto const state{find_wasip1_group_state(it->second)};
         if(state == nullptr) [[unlikely]] { ::fast_io::fast_terminate(); }
         state->trace_wasip1_group_kind = ::uwvm2::imported::wasi::wasip1::environment::trace_wasip1_group_kind_t::single;
-        state->trace_wasip1_group_name_storage.clear();
+        state->trace_wasip1_group_name_storage = ::uwvm2::utils::container::u8string{module_name};
         return state;
     }
 
