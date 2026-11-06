@@ -14,7 +14,7 @@ namespace uwvm2::utils::control::host_diagnostics
     struct settings
     {
         std::array<severity,api::catalogue.size()> denied{},limited{};
-        constexpr settings() { denied.fill(severity::warning); }
+        constexpr settings() { for(auto& level:denied) level=severity::warning; }
     };
     // Configured by host CLI before workers start; guest code has no setter.
     inline settings configuration{};
