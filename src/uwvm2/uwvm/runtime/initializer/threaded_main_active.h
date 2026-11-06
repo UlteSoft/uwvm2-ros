@@ -10,7 +10,7 @@
 namespace uwvm2::uwvm::runtime::initializer
 {
     enum class threaded_main_active_status : unsigned char
-    { applied, busy, invalid_identity, invalid_reservation, already_effectful, unsupported_shape, bounds, stopped };
+    { applied, invalid_identity, invalid_reservation, already_effectful, unsupported_shape, bounds, stopped };
 
     class ThreadedMainActiveSegments final
     {
@@ -36,8 +36,12 @@ namespace uwvm2::uwvm::runtime::initializer
                parent_world->source_owner()!=actual.source_owner()) { return threaded_main_active_status::invalid_identity; }
             auto const code{parent_world->validated_code()};
             if(!code || !code->covers(*parent_world)) { return threaded_main_active_status::invalid_identity; }
-            ::std::unique_lock lock{native.mutex_,::std::try_to_lock};
-            if(!lock.owns_lock()) { return threaded_main_active_status::busy; }
+            // This runs only on the dedicated compiler worker, outside the
+            // Runtime registry/publication and Group locks. Management waiters
+            // release this mutex before waiting for worker retirement. Ordinary
+            // contention is not an invalid admission: wait for the lock, then
+            // recheck the retained reservation and stop state before any effect.
+            ::std::unique_lock lock{native.mutex_};
             if(reservation.group_!=&native || reservation.retained_group_.get()!=&native || reservation.position_!=0uz ||
                reservation.tid_!=0u || native.initialization_error_!=0 || native.stop_fd_<0 || !native.accepting_ ||
                !native.slots_ || native.slots_[0].group!=&native || native.occupied_!=1uz || native.occupied_children_!=0uz ||

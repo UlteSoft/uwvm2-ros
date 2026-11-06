@@ -18,7 +18,10 @@ def main():
     parser.add_argument("--sdk",required=True,type=Path)
     parser.add_argument("--engines",nargs="+",default=["interpreter","aot"])
     parser.add_argument("--threaded-engines",nargs="+",help="Explicitly qualified threaded backends; ordinary engines are always tested")
-    args=parser.parse_args();args.threaded_engines=args.threaded_engines or args.engines;out=args.output.resolve();out.mkdir(parents=True,exist_ok=True)
+    parser.add_argument("--thread-start-repetitions",type=int,default=1,help="Repeat real threaded starts to detect admission/management lock races")
+    args=parser.parse_args()
+    if args.thread_start_repetitions < 1:parser.error("--thread-start-repetitions must be positive")
+    args.threaded_engines=args.threaded_engines or args.engines;out=args.output.resolve();out.mkdir(parents=True,exist_ok=True)
     rows=json.loads(Path(__file__).with_name("host-interface-signatures.json").read_text())
     sdk=args.sdk/"example/language/wat/library_kinds/static_math.wat"
     text=sdk.read_text();arithmetic=text[text.index("  (func"):text.rindex(")")]
@@ -160,8 +163,10 @@ def main():
         memory=' (memory (export "memory") 1) ' if row["ns"]!="wasi" else ' (import "env" "memory" (memory 4 256 shared)) (export "memory" (memory 0)) (func (export "wasi_thread_start") (param i32 i32)) '
         file=compile("special-"+row["name"],"(module "+declare(row,0)+memory+' (func (export "_start") '+body+"))")
         for engine in (args.threaded_engines if row["ns"]=="wasi" else args.engines):
-            run("denied-"+row["name"],engine,policy([row],"deny")+ (thread_flags if row["ns"]=="wasi" else []),file,bool(row["results"]),
-                ("wasip1."+row["name"]+" denied","'main'"))
+            for iteration in range(args.thread_start_repetitions if row["ns"]=="wasi" else 1):
+                label="denied-"+row["name"]+("-start-"+str(iteration) if iteration else "")
+                run(label,engine,policy([row],"deny")+ (thread_flags if row["ns"]=="wasi" else []),file,bool(row["results"]),
+                    ("wasip1."+row["name"]+" denied","'main'"))
     # The separately admitted thread adapter must preserve exposed-deny semantics.
     threaded_random=compile("thread-random","(module "+declare(random,0)+
         ' (import "env" "memory" (memory 4 256 shared)) (export "memory" (memory 0)) (func (export "wasi_thread_start") (param i32 i32))'+
@@ -188,6 +193,6 @@ def main():
         out/"random-76.wasm")
     assert b"[warning]" not in value.stderr and "wasip1.random_get denied" in logfile.read_text()
     (out/"results.json").write_text(json.dumps({"complete":True,"cases":reports,"registered":len(rows),
-        "engines":args.engines,"threaded_engines":args.threaded_engines,"sdk_example":str(sdk),"sdk_example_sha256":hashlib.sha256(sdk.read_bytes()).hexdigest()},indent=2))
+        "engines":args.engines,"threaded_engines":args.threaded_engines,"thread_start_repetitions":args.thread_start_repetitions,"sdk_example":str(sdk),"sdk_example_sha256":hashlib.sha256(sdk.read_bytes()).hexdigest()},indent=2))
     print(json.dumps({"complete":True,"cases":len(reports),"registered":len(rows)}))
 if __name__=="__main__":main()

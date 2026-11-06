@@ -50,3 +50,8 @@ The companion SDK tests are
 Xmake Lua and Python serializers, exact imports, explicit hidden/deny overrides,
 module/Group/Global binding, guest argument separation and rejection of old
 policy contracts.
+
+Use `--thread-start-repetitions 100` to stress real worker startup while the
+management thread polls completion. Every start must reach the denied guest
+import and preserve its ABI result; transient internal mutex contention must
+not become an EINVAL startup failure. This is a correctness test under QEMU.
