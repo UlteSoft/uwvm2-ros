@@ -1,5 +1,5 @@
 // Runtime-private, immutable exact-event capture. No public constructor;
-// control-block identity is checked against the private bounded registry before
+// control-block identity is checked against the private weak registry before
 // any caller-provided shared_ptr is dereferenced. Owns only copies/ticket/control,
 // never an executable stack address or an independent executable-code pin.
 #if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)

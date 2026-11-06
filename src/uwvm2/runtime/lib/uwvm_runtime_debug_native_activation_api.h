@@ -202,7 +202,7 @@
     namespace
     {
         ::std::mutex g_debug_native_activation_cursor_mutex{};
-        ::std::weak_ptr<llvm_jit_debug_native_activation_cursor const> g_debug_native_activation_cursors[256u]{};
+        ::std::vector<::std::weak_ptr<llvm_jit_debug_native_activation_cursor const>> g_debug_native_activation_cursors{};
         [[nodiscard]] llvm_jit_debug_native_activation_cursor_owner canonical_native_activation_cursor(
             llvm_jit_debug_native_activation_cursor_owner const& supplied) noexcept
         {
@@ -352,7 +352,8 @@
             ::std::lock_guard registry{g_debug_native_activation_cursor_mutex};
             for(auto& slot : g_debug_native_activation_cursors)
             { if(slot.expired()) { slot = candidate; return candidate; } }
-            return {};
+            g_debug_native_activation_cursors.emplace_back(candidate);
+            return candidate;
         }
         catch(...) { return {}; }
 #else

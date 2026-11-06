@@ -406,19 +406,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         native_continuation_linux::event_owner native_continuation_event_{};
 #if defined(__linux__) && (defined(__x86_64__) || UWVM2_DEBUG_NATIVE_LINUX_SOFTWARE)
         ::uwvm2::runtime::lib::llvm_jit_debug_native_activation_cursor_owner native_activation_cursor_{};
-        // SAME actual native session may run several NI plans while its worker
-        // remains borrowed in a real signal handler. Retain every canonical
-        // closed call owner until disable -> actual worker ACK -> backend clear.
-        // Fixed cold capacity avoids allocation after event enable or unpark.
-        ::std::array<::uwvm2::runtime::lib::llvm_jit_debug_native_call_continuation_owner, 256u> native_call_continuation_owners_{};
-        // A successful perf trap disables but does NOT retire this worker's
-        // signal-handler/TLS borrow. Retain each real descriptor alongside its
-        // canonical owner until disable ALL -> actual worker ACK -> clear.
-        ::std::array<native_continuation_linux::event_owner, 256u> native_call_continuation_events_{};
-        ::std::size_t native_call_continuation_count_{};
-        ::std::array<::uwvm2::runtime::lib::llvm_jit_debug_native_return_event, 256u> native_return_continuation_owners_{};
-        ::std::array<native_continuation_linux::event_owner, 256u> native_return_continuation_events_{};
-        ::std::size_t native_return_continuation_count_{};
+        // Only the in-flight operation is retained. A completed trap retires
+        // its descriptor/proof after the actual worker's final event access;
+        // the backend's sealed plan/provider owns every live callback context.
+        // Canceled operations still survive disable -> worker ACK -> clear.
+        // Storage therefore depends on live work, never cumulative step count.
+        ::uwvm2::runtime::lib::llvm_jit_debug_native_call_continuation_owner native_call_continuation_owner_{};
+        native_continuation_linux::event_owner native_call_continuation_event_{};
+        ::uwvm2::runtime::lib::llvm_jit_debug_native_return_event native_return_continuation_owner_{};
+        native_continuation_linux::event_owner native_return_continuation_event_{};
 #endif
         // Code inspection only; never resurrect previous source/locals after a native step.
         ::uwvm2::runtime::lib::llvm_jit_debug_activation_capture_owner native_code_capture_{};
@@ -3008,33 +3004,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             // especially when close wakes the guest before release_one succeeds.
             // Failed clear NEVER retires controller ownership of that borrower.
 #if defined(__linux__) && (defined(__x86_64__) || UWVM2_DEBUG_NATIVE_LINUX_SOFTWARE)
-            if(native_call_continuation_count_ > native_call_continuation_owners_.size() ||
-               native_call_continuation_events_.size() != native_call_continuation_owners_.size() ||
-               native_return_continuation_count_ > native_return_continuation_owners_.size() ||
-               native_return_continuation_events_.size() != native_return_continuation_owners_.size()) { ::fast_io::fast_terminate(); }
-            bool const has_continuation_events{native_call_continuation_count_ != 0u ||
-                native_return_continuation_count_ != 0u || native_continuation_event_.owns_descriptor()};
+            bool const has_continuation_events{native_call_continuation_owner_ ||
+                native_return_continuation_owner_.valid() || native_continuation_event_.owns_descriptor() ||
+                native_call_continuation_event_.owns_descriptor() || native_return_continuation_event_.owns_descriptor()};
             if(has_continuation_events)
             {
                 auto const state{native_session_.state.load(::std::memory_order_acquire)};
                 if((state == native_step::phase::continuation_running || state == native_step::phase::continuation_cancel_pending) &&
                    !native_step::release(native_session_)) { return false; }
             }
-            if(native_call_continuation_count_ != 0u)
-            {
-                for(::std::size_t index{}; index != native_call_continuation_count_; ++index)
-                {
-                    // [fixed retained event owners0 ... checked count<=256) end
-                    // [safe] disable every actual plan BEFORE worker retirement;
-                    //  ^^ no descriptor closes/reuses while its TLS may borrow it.
-                    if(!native_call_continuation_events_[index].disable_retained()) { return false; }
-                }
-            }
-            if(native_return_continuation_count_ != 0u)
-            {
-                for(::std::size_t index{}; index != native_return_continuation_count_; ++index)
-                { if(!native_return_continuation_events_[index].disable_retained()) { return false; } }
-            }
+            if(!native_call_continuation_event_.disable_retained() ||
+               !native_return_continuation_event_.disable_retained()) { return false; }
             if(native_continuation_event_.owns_descriptor())
             {
                 if(!native_continuation_event_.disable_retained()) { return false; }
@@ -3072,42 +3052,48 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             // Backend clear has removed its provider borrow AFTER the real
             // worker ACK. Only now may the private cursor/context be destroyed.
             native_activation_cursor_ = {};
-            if(native_call_continuation_count_ > native_call_continuation_owners_.size()) { ::fast_io::fast_terminate(); }
-            for(::std::size_t index{}; index != native_call_continuation_count_; ++index)
-            {
-                // [actual fixed call-owner array 0 ... count<=256) owners_end
-                // [safe] capacity was checked BEFORE insertion; release only
-                //  ^^ AFTER this exact session's real worker ACK and clear.
-                native_call_continuation_events_[index].disable_close();
-                native_call_continuation_owners_[index] = {};
-            }
-            native_call_continuation_count_ = 0u;
-            for(::std::size_t index{}; index != native_return_continuation_count_; ++index)
-            {
-                // Fixed bound checked before retirement; backend clear has
-                // already removed every real signal/TLS provider borrow.
-                native_return_continuation_events_[index].disable_close();
-                native_return_continuation_owners_[index] = {};
-            }
-            native_return_continuation_count_ = 0u;
+            native_call_continuation_event_.disable_close();
+            native_call_continuation_owner_ = {};
+            native_return_continuation_event_.disable_close();
+            native_return_continuation_owner_ = {};
 #endif
             return true;
         }
         void retire_completed_native_event_locked() noexcept
         {
-#if defined(__linux__) && defined(__x86_64__) && __SIZEOF_POINTER__ == 8 && defined(PERF_ATTR_SIZE_VER7) && !defined(__ILP32__)
+#if defined(__linux__) && (defined(__x86_64__) || UWVM2_DEBUG_NATIVE_LINUX_SOFTWARE)
+            // Called only after the current trap, physical activation and
+            // publication have been authenticated and adopted by the controller.
+            // A canceled/unobserved event keeps its owner until full worker ACK.
+            bool parked{};
+            if(!native_step::with_owned_trap(&native_session_,
+                [&](auto,auto,auto,auto) noexcept { parked=true; }) || !parked) { return; }
+#if defined(__x86_64__) && __SIZEOF_POINTER__ == 8 && defined(PERF_ATTR_SIZE_VER7) && !defined(__ILP32__)
             auto const descriptor{native_step::take_completed_continuation_descriptor(native_session_)};
-            if(descriptor < 0) { return; }
-            auto const close_matching{[&](auto& event) noexcept
+            if(descriptor >= 0)
             {
-                if(event.owns_descriptor() && event.file_.native_handle() == descriptor)
-                { event.disable_close(); return true; }
-                return false;
-            }};
-            if(close_matching(native_continuation_event_)) { return; }
-            for(auto& event : native_call_continuation_events_) { if(close_matching(event)) { return; } }
-            for(auto& event : native_return_continuation_events_) { if(close_matching(event)) { return; } }
-            ::fast_io::fast_terminate(); // A worker cannot own an unregistered descriptor.
+                auto const close_matching{[&](auto& event) noexcept
+                {
+                    if(event.owns_descriptor() && event.file_.native_handle() == descriptor)
+                    { event.disable_close(); return true; }
+                    return false;
+                }};
+                if(!close_matching(native_continuation_event_) &&
+                   !close_matching(native_call_continuation_event_) &&
+                   !close_matching(native_return_continuation_event_))
+                { ::fast_io::fast_terminate(); } // Worker descriptor must have a real host owner.
+            }
+#endif
+            // Never reuse an event while its descriptor still has a borrower.
+            if(native_continuation_event_.owns_descriptor() || native_call_continuation_event_.owns_descriptor() ||
+               native_return_continuation_event_.owns_descriptor()) { return; }
+            // Software traps restored every patched site before publishing the
+            // authenticated stop. Hardware traps acknowledged final FD access.
+            // Plan/provider copies retain their cursor independently; neither
+            // handler borrows these synchronous issuer proof objects.
+            native_step::acknowledge_continuation_event_retired(native_session_);
+            native_call_continuation_owner_ = {};
+            native_return_continuation_owner_ = {};
 #endif
         }
         void cancel_step_locked() noexcept
@@ -3207,7 +3193,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
     defined(UWVM2_ENABLE_DEBUG_NATIVE_CONTINUATION_LINUX_PRODUCT) && UWVM2_ENABLE_DEBUG_NATIVE_CONTINUATION_LINUX_PRODUCT == 1 && \
     ((defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__x86_64__) && defined(PERF_ATTR_SIZE_VER7) && !defined(__ILP32__)) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))
             auto deadline{clock_type::now() + wait_budget};
-            ::std::size_t event_index{};
             {
                 ::std::lock_guard lock{mutex_};
                 if(!pause_ || !native_owned_ || !native_external_parked_ || native_participant_ != selected ||
@@ -3219,8 +3204,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 if(interrupt.pending())
                 { result.completed = completion::paused; result.error = control_error::none;
                   result.next_reason = native_next_policy::reason::none; return result; }
-                if(native_return_continuation_count_ >= native_return_continuation_events_.size())
-                { result.next_reason = native_next_policy::reason::return_continuation_capacity_exhausted; return result; }
+                if(native_return_continuation_owner_.valid() || native_return_continuation_event_.owns_descriptor())
+                { result.next_reason = native_next_policy::reason::return_continuation_event_unavailable; return result; }
                 auto proof{::uwvm2::runtime::lib::llvm_jit_debug_mint_native_return_continuation_host_api(
                     native_activation_cursor_,::std::addressof(native_session_))};
                 if(!proof) { return result; } // Root/host/unknown CFI never opens the gate.
@@ -3229,9 +3214,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                     controller& manager;
                     clock_type::time_point& deadline;
                     clock_type::duration wait_budget;
-                    ::std::size_t index;
                     bool woke{};
-                } context{*this,deadline,wait_budget,native_return_continuation_count_};
+                } context{*this,deadline,wait_budget};
                 auto const from{native_pc_};
                 bool const committed{::uwvm2::runtime::lib::llvm_jit_debug_resume_native_return_event_host_api(
                     proof,::std::addressof(native_session_),::std::addressof(context),
@@ -3244,14 +3228,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                     auto& context{*static_cast<return_resume_context*>(opaque)};
                     auto& manager{context.manager};
                     if(!plan.valid() || plan.thread() != manager.native_session_.target_thread ||
-                       context.index != manager.native_return_continuation_count_ ||
-                       context.index >= manager.native_return_continuation_events_.size()) { return; }
-                    // [fixed arrays 0 ... checked index<256) end
-                    // [safe] retain the entire sealed provider/proof BEFORE enable.
-                    // Its strong origin chain must survive all later return hops
-                    // until disable ALL -> real worker ACK -> backend clear.
-                    auto& retained{manager.native_return_continuation_owners_[context.index]};
-                    auto& event{manager.native_return_continuation_events_[context.index]};
+                       manager.native_return_continuation_owner_.valid() ||
+                       manager.native_return_continuation_event_.owns_descriptor()) { return; }
+                    // Retain before event enable. A successful trap transfers
+                    // callback lifetime to its independently owned provider.
+                    auto& retained{manager.native_return_continuation_owner_};
+                    auto& event{manager.native_return_continuation_event_};
                     retained = plan;
                     auto const cookie{mint_native_continuation_cookie()};
 #if ((defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips)))
@@ -3271,12 +3253,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                     }))
                     { event.disable_close(); retained = {}; return; }
                     manager.native_external_parked_ = false;
-                    ++manager.native_return_continuation_count_;
                     context.woke = true;
                 })};
                 if(!committed || !context.woke)
                 { result.next_reason = native_next_policy::reason::return_continuation_event_unavailable; return result; }
-                event_index = context.index; result.from = from;
+                result.from = from;
                 clear_traces_locked(); // Departing child locals/source are no longer current.
             }
             auto const retain_cooperative_pause{[&]()
@@ -3319,14 +3300,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 ::std::lock_guard lock{mutex_};
                 if(native_owned_ && !native_external_parked_ && pause_ && native_participant_ == selected &&
                    !native_session_.abort_requested.load(::std::memory_order_acquire) &&
-                   event_index < native_return_continuation_count_)
+                   native_return_continuation_owner_.valid())
                 {
                     // Keep the ORIGINAL cooperative anchor for the runtime join.
                     // It is never rewritten to a fabricated parent safe point.
                     if(domain_->external_park(pause_,selected,native_anchor_location_))
                     {
                         native_external_parked_ = true;
-                        auto const& event{native_return_continuation_owners_[event_index]};
+                        auto const& event{native_return_continuation_owner_};
                         ::uwvm2::runtime::lib::llvm_jit_debug_native_return_stop parent{};
                         ::uwvm2::runtime::lib::llvm_jit_debug_native_caller_view identity{};
                         ::uwvm2::runtime::lib::llvm_jit_debug_native_function_image actual{};
@@ -3500,10 +3481,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                     if(linear || (!permitted &&
                        permitted.unavailable_reason == native_next_policy::reason::call_continuation_unavailable))
                     {
-                        if(!linear && native_call_continuation_count_ >= native_call_continuation_owners_.size())
+                        if(!linear && (native_call_continuation_owner_ || native_call_continuation_event_.owns_descriptor()))
                         {
                             result.error = control_error::unsupported_command;
-                            result.next_reason = native_next_policy::reason::call_continuation_capacity_exhausted;
+                            result.next_reason = native_next_policy::reason::call_continuation_event_unavailable;
                             return result; // Exact trap retained; no new event or unpark.
                         }
                         // The issuer takes NO requested PC, target, register
@@ -3527,12 +3508,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                             ::uwvm2::runtime::lib::llvm_jit_debug_native_call_continuation_owner const& call;
                             clock_type::time_point& deadline;
                             clock_type::duration wait_budget;
-                            ::std::size_t index{};
                             ::std::uintptr_t continuation{};
                             native_next_policy::reason failed{native_next_policy::reason::call_target_unavailable};
                             bool woke{};
                             bool linear_run{};
-                        } context{*this, copied, call, deadline, wait_budget, native_call_continuation_count_};
+                        } context{*this, copied, call, deadline, wait_budget};
                         context.linear_run=bool(linear);
                         // [complete host-stack context] exact synchronous borrow
                         // [safe] this opaque pointer is from addressof(context),
@@ -3554,8 +3534,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                                actual.module != expected.module || actual.function != expected.function ||
                                actual.function_generation != expected.function_generation || actual.runtime_epoch != expected.runtime_epoch ||
                                actual.continuation_pc <= expected.stop_pc || actual.continuation_pc >= expected.owner_end ||
-                               context.index != manager.native_call_continuation_count_ ||
-                               (!context.linear_run && context.index >= manager.native_call_continuation_owners_.size())) { return; }
+                               (!context.linear_run && (manager.native_call_continuation_owner_ ||
+                                   manager.native_call_continuation_event_.owns_descriptor()))) { return; }
                             if(context.linear_run)
                             {
                                 context.woke=resume.commit([&]() noexcept
@@ -3564,12 +3544,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                                 { manager.native_external_parked_=false;context.continuation=actual.continuation_pc; }
                                 return;
                             }
-                            // [fixed stable cap/event arrays0 ... checked index<256) end
-                            // [safe] bounds precede BOTH owner selections. Strong
-                            // ownership is installed BEFORE precise event enable;
-                            // shared_ptr copy allocates nothing and cannot throw.
-                            auto& event{manager.native_call_continuation_events_[context.index]};
-                            auto& retained{manager.native_call_continuation_owners_[context.index]};
+                            // The previous operation has completed and retired.
+                            // Install strong ownership before enabling this event.
+                            auto& event{manager.native_call_continuation_event_};
+                            auto& retained{manager.native_call_continuation_owner_};
                             retained = context.call;
                             auto const cookie{mint_native_continuation_cookie()};
                             if(cookie == 0u || !event.open_disabled(actual.thread, actual.continuation_pc, cookie) || !event.enable())
@@ -3599,7 +3577,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                                 context.failed = native_next_policy::reason::call_continuation_event_unavailable; return;
                             }
                             manager.native_external_parked_ = false;
-                            ++manager.native_call_continuation_count_; // index<256 above, fixed no-overflow insertion.
                             context.continuation = actual.continuation_pc;
                             context.woke = true;
                         })};
@@ -3619,8 +3596,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                     if(!permitted && (ordinary_next || UWVM2_DEBUG_NATIVE_LEVEL_TRANSITIONS) &&
                        permitted.unavailable_reason==native_next_policy::reason::call_continuation_unavailable)
                     {
-                        if(native_call_continuation_count_>=native_call_continuation_owners_.size())
-                        { result.error=control_error::unsupported_command;result.next_reason=native_next_policy::reason::call_continuation_capacity_exhausted;return result; }
+                        if(native_call_continuation_owner_ || native_call_continuation_event_.owns_descriptor())
+                        { result.error=control_error::unsupported_command;result.next_reason=native_next_policy::reason::call_continuation_event_unavailable;return result; }
                         auto const call{::uwvm2::runtime::lib::llvm_jit_debug_mint_native_call_continuation_host_api(
                             native_code_capture_,native_activation_cursor_,::std::addressof(native_session_))};
                         if(!call)
@@ -3643,14 +3620,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                         {
                             auto& context{*static_cast<software_call_resume_context*>(opaque)};
                             auto& manager{context.manager};auto const& expected{context.expected};
-                            auto const index{manager.native_call_continuation_count_};
-                            if(index>=manager.native_call_continuation_owners_.size() ||
+                            if(manager.native_call_continuation_owner_ || manager.native_call_continuation_event_.owns_descriptor() ||
                                actual.thread!=manager.native_session_.target_thread || actual.origin_pc!=expected.stop_pc ||
                                actual.owner_begin!=expected.owner_begin || actual.owner_end!=expected.owner_end ||
                                actual.module!=expected.module || actual.function!=expected.function ||
                                actual.function_generation!=expected.function_generation || actual.runtime_epoch!=expected.runtime_epoch ||
                                actual.continuation_pc<=expected.stop_pc || actual.continuation_pc>=expected.owner_end) { return; }
-                            auto& retained{manager.native_call_continuation_owners_[index]};retained=context.call;
+                            auto& retained{manager.native_call_continuation_owner_};retained=context.call;
                             context.deadline=clock_type::now()+context.wait_budget;
                             // Only the synchronous runtime-issued seal can patch
                             // the caller's return point under this actual domain
@@ -3658,7 +3634,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                             if(!resume.commit([&]() noexcept
                             { return ::uwvm2::runtime::lib::llvm_jit_debug_continue_native_call_event_host_api(&manager.native_session_,event); }))
                             { retained={};return; }
-                            manager.native_external_parked_=false;++manager.native_call_continuation_count_;
+                            manager.native_external_parked_=false;
                             context.continuation=actual.continuation_pc;context.woke=true;
                         })};
                         if(!committed || !context.woke)

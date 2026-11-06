@@ -99,13 +99,14 @@
                 if(code_owner == nullptr) { return {}; }
                 candidate->code_owners_.push_back(code_owner);
             }
-            // Publish only the complete privately minted owner. Old live labels
-            // can exhaust the bounded cold registry; that returns unavailable,
-            // never evicts a live owner or accepts an alias as its replacement.
+            // Publish only the complete privately minted owner. Reuse expired
+            // registrations and grow for live owners, without a fixed quota.
+            // Never evict a live owner or accept an alias as its replacement.
             ::std::lock_guard lock{g_debug_activation_capture_mutex};
             for(auto& slot : g_debug_activation_captures)
             { if(slot.expired()) { slot = candidate; return candidate; } }
-            return {};
+            g_debug_activation_captures.emplace_back(candidate);
+            return candidate;
         }
         catch(...) { return {}; }
 #else

@@ -1207,7 +1207,7 @@ namespace uwvm2::runtime::lib
         // Cold canonical-owner registry. Never trust or dereference a public
         // shared_ptr alias before a private minted control block matches here.
         ::std::mutex g_debug_activation_capture_mutex{};
-        ::std::weak_ptr<llvm_jit_debug_activation_capture const> g_debug_activation_captures[256u]{};
+        ::std::vector<::std::weak_ptr<llvm_jit_debug_activation_capture const>> g_debug_activation_captures{};
 
 
         struct debug_native_safe_point_site

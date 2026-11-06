@@ -659,7 +659,7 @@
     namespace
     {
         ::std::mutex g_debug_native_return_continuation_mutex{};
-        ::std::weak_ptr<llvm_jit_debug_native_return_continuation const> g_debug_native_return_continuations[256u]{};
+        ::std::vector<::std::weak_ptr<llvm_jit_debug_native_return_continuation const>> g_debug_native_return_continuations{};
         [[nodiscard, maybe_unused]] llvm_jit_debug_native_return_continuation_owner canonical_native_return_continuation(
             llvm_jit_debug_native_return_continuation_owner const& supplied) noexcept
         {
@@ -692,13 +692,14 @@
             if(!llvm_jit_debug_native_return_continuation::observe(cursor, session, trace, 1u, ::std::addressof(candidate->evidence_)) ||
                trace.count != 1u || !trace.frames[0u].valid) { return {}; }
             candidate->cursor_ = cursor; candidate->session_ = session;
-            // A bounded weak registry never evicts live proofs. The strong
+            // Reuse expired registrations, growing only for live proofs. The strong
             // handle retains the originating cursor/ticket/stack registration,
             // but does not independently keep a departed OS stack alive.
             ::std::lock_guard lock{g_debug_native_return_continuation_mutex};
             for(auto& slot : g_debug_native_return_continuations)
             { if(slot.expired()) { slot = candidate; return candidate; } }
-            return {};
+            g_debug_native_return_continuations.emplace_back(candidate);
+            return candidate;
         }
         catch(...) { return {}; }
 #else
@@ -882,9 +883,20 @@
             }
             ::std::weak_ptr<llvm_jit_debug_activation_capture const>* capture_slot{};
             ::std::weak_ptr<llvm_jit_debug_native_activation_cursor const>* cursor_slot{};
-            for(auto& slot : g_debug_activation_captures) { if(slot.expired()) { capture_slot=::std::addressof(slot); break; } }
-            for(auto& slot : g_debug_native_activation_cursors) { if(slot.expired()) { cursor_slot=::std::addressof(slot); break; } }
-            if(!capture_slot || !cursor_slot) { return false; }
+            // Allocate only on this cold host path, while the real worker is
+            // parked. Obtain BOTH slots before publishing either authority.
+            // A failed allocation leaves only empty weak slots and preserves
+            // the existing stop; it never evicts a live owner or terminates.
+            try
+            {
+                for(auto& slot : g_debug_activation_captures)
+                { if(slot.expired()) { capture_slot=::std::addressof(slot); break; } }
+                if(!capture_slot) { capture_slot=::std::addressof(g_debug_activation_captures.emplace_back()); }
+                for(auto& slot : g_debug_native_activation_cursors)
+                { if(slot.expired()) { cursor_slot=::std::addressof(slot); break; } }
+                if(!cursor_slot) { cursor_slot=::std::addressof(g_debug_native_activation_cursors.emplace_back()); }
+            }
+            catch(...) { return false; }
             // The sealed event owns this exact mutable private provider. It is
             // fully kernel-witnessed and externally parked; capture_ changes
             // once, before cold registration, and never on the worker/signal path.

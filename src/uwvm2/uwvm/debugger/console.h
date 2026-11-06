@@ -212,9 +212,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 case call_continuation_unavailable: return "a qualified call continuation is unavailable; current stop retained";
                 case call_target_unavailable: return "the current call has no proved Wasm typed target; current stop retained";
                 case call_continuation_event_unavailable: return "the precise owned continuation event is unavailable; current stop retained";
-                case call_continuation_capacity_exhausted: return "native continuation owner capacity is exhausted; use step wasm THREAD to retire this session; current stop retained";
                 case return_continuation_event_unavailable: return "the precise owned parent return event is unavailable; current stop retained";
-                case return_continuation_capacity_exhausted: return "native return owner capacity is exhausted; retire this native session before another finish; current stop retained";
                 case caller_unwind_unavailable: return "native caller/unwind continuation is unavailable; current stop retained";
                 case branch_continuation_unavailable: return "branch target continuation is unavailable; current stop retained";
                 case trap_instruction: return "trap instruction is not an ordinary native next; current stop retained";

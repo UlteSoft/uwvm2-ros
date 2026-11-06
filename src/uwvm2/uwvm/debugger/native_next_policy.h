@@ -21,8 +21,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_next_policy
         trap_instruction, other_control_flow, inconsistent_descriptor,
         current_native_trap_required, decoder_disagreement,
         call_target_unavailable, call_continuation_event_unavailable,
-        call_continuation_capacity_exhausted, return_continuation_event_unavailable,
-        return_continuation_capacity_exhausted
+        return_continuation_event_unavailable
     };
     struct selection
     {

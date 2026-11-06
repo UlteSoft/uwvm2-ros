@@ -435,7 +435,7 @@
     namespace
     {
         ::std::mutex g_debug_native_call_continuation_mutex{};
-        ::std::weak_ptr<llvm_jit_debug_native_call_continuation const> g_debug_native_call_continuations[256u]{};
+        ::std::vector<::std::weak_ptr<llvm_jit_debug_native_call_continuation const>> g_debug_native_call_continuations{};
         [[nodiscard]] llvm_jit_debug_native_call_continuation_owner canonical_native_call_continuation(
             llvm_jit_debug_native_call_continuation_owner const& supplied) noexcept
         {
@@ -525,6 +525,8 @@
                 ::std::lock_guard registry{g_debug_native_call_continuation_mutex};
                 for(auto& slot:g_debug_native_call_continuations)
                 { if(slot.expired()) { slot=candidate; return candidate; } }
+                g_debug_native_call_continuations.emplace_back(candidate);
+                return candidate;
 #endif
                 return {};
             }
@@ -693,7 +695,8 @@
             ::std::lock_guard registry{g_debug_native_call_continuation_mutex};
             for(auto& slot : g_debug_native_call_continuations)
             { if(slot.expired()) { slot = candidate; return candidate; } }
-            return {}; // Bounded256 capacity exhaustion retains the trapped stop.
+            g_debug_native_call_continuations.emplace_back(candidate);
+            return candidate;
         }
         catch(...) { return {}; }
 #else

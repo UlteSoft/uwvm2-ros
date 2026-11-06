@@ -327,3 +327,129 @@ eight-thread separation and thread-local cleanup pass ASan/UBSan; builds without
 an LLVM provider remain unavailable. The metadata/cache module partitions
 compile independently; this is not a full product module-build qualification.
 The entire run uses the existing 64 GiB, zero-swap cgroup with no OOM events.
+
+## Continuation lifetime and long-session stepping
+
+Native stepping no longer accumulates completed continuation owners in fixed
+256-entry controller arrays. The controller retains the current call/return
+operation. After authenticating the real stop, it consumes the worker's final
+hardware-descriptor access acknowledgement, closes that exact descriptor and
+releases the completed issuer proof. Software completion has already restored
+its patches before publishing the stop. Backend plans/providers independently
+own every callback context that remains live. Cancellation still requires
+disable, actual worker acknowledgement and backend clear before retirement.
+
+The four private weak registries for activation captures, native cursors, call
+proofs and return proofs also no longer impose 256-entry limits. Registration
+reuses expired slots and grows only when all existing slots name live objects.
+Canonicalization still compares both the object pointer and its ownership
+control block before dereference. Parent-return publication obtains both
+registry slots before publishing either owner; allocation failure is caught on
+the host path and grants no partial authority. No registry allocation or mutex
+operation is added to signal callbacks. There is no cumulative call, step or
+finish quota and no requirement to switch to Wasm mode to clear history.
+
+This follows the operation-lifetime principle used by
+[GDB's step-resume breakpoint cleanup](https://gnu.googlesource.com/binutils-gdb/+/d01e823438c7dc264d6885fbbfeace4d8955dcb7/gdb/infrun.c)
+and [LLDB's completed step-plan breakpoint cleanup](https://github.com/llvm/llvm-project/blob/main/lldb/source/Target/ThreadPlanStepOverRange.cpp).
+Their unrestricted host debugging policy is not adopted: all current Wasm
+owner, generation, publication, trap and stale-reference checks remain.
+
+The old controller limit was reproduced during a 12,000-request native C
+profile: request 8,914 failed with continuation-owner capacity exhausted.
+That collection is a failed run, not a successful latency sample. An initial
+controller-only repair passed long call stepping but the 300-level recursion
+test then exposed the separate registry limit after 255 native finishes.
+Both failures motivated the complete fix above.
+
+## Native C single-step cost attribution
+
+The first-100-request measurements above describe that initial instruction
+window. Three longer, unprofiled 6,000-step runs of the same SDK C Wasm on the
+decoder-optimized baseline give uwvm2-ros medians of 0.339, 0.342 and 0.340 ms,
+against Wasmtime/GDB medians of 0.299, 0.299 and 0.301 ms. Their median-of-medians
+difference is about 14%, rather than the initial window's 77%. Both products
+use the same CPU placement: the VM on logical CPU 21 and the client on CPU 20,
+which are E-cores on this machine. Different generated instruction streams and
+debugger authority still prevent interpreting this as equal guest work or
+general engine throughput.
+
+Hardware Hotspots sampling with stacks attributes 26.8% of sampled VM CPU
+time to LLVM's X86GenericDisassembler::getInstruction. About 91% of that
+function's samples arrive through instruction_size and decode_window_with:
+forward decoding of the prefix needed to prove the current instruction boundary.
+Other exclusive hotspots include current code-permission/provenance checks
+(9.45%), LLVM instruction translation (8.66%), memset (6.3%) and memmove (3.94%).
+The 6,000-step capture retires approximately 11.34 billion host instructions,
+about 1.89 million per requested guest step, and samples 1.260 seconds of VM
+CPU time. Inclusive call-tree rows must not be added to exclusive totals.
+
+Microarchitecture Exploration's E-core aggregate reports roughly 50.3%
+retiring, 26.8% front-end bound, 6.7% bad speculation and 16.2% back-end bound;
+the memory-subsystem component is 3.6%. Together with the call stacks, this
+points to instruction volume and decoder/front-end work as the main cost,
+rather than primarily DRAM stalls. P-core rows are not meaningful for a
+target pinned to CPU 21. This aggregate collection uses summary mode; it
+does not provide per-source microarchitecture attribution. The separate
+hardware Hotspots build includes release optimization plus source line tables.
+Prebuilt LLVM and restricted kernel symbols still limit their line attribution.
+
+An independently instrumented 6,000-step run observes exactly one broker
+"step asm" command per DAP step. Mean adapter-to-broker time is about 264 us,
+of which broker-to-VM exchange is about 219 us. Adapter request handling uses
+about 71 us of process CPU, including about 15 us parsing status. These are
+nested intervals from an instrumented run, not additive independent costs or
+unperturbed latency results. They establish that repeated broker round trips
+are not the cause; VM boundary/provenance work and Python protocol processing
+both contribute.
+
+The complete capacity repair passes the same 40 call/mode variants and 65 live
+regression groups on rebuilt x86_64, i686, AArch64, ARM soft-float and ARM
+hard-float products, including 4,555 update assertions and 535 DAP tests without
+skips. A single native session additionally performs 60,000 assembly steps on
+x86_64 and 30,000 on each other ABI: 180,000 stress steps in total. A separate
+300-level recursive SDK-derived WAT performs 301 consecutive native finishes
+per ABI, 1,505 in total, rejecting old frame/disassembly references after every
+finish. Every stop must remain native; cooperative fallback is a failure.
+The five products' hashes are checked before and after the runs.
+
+All sampled stopped states retain seven process file descriptors. Native
+x86_64 RSS varies by only 64 KiB over its 60,000 steps. QEMU process RSS includes
+the emulator and is recorded separately; it is not a VM-only allocation
+measurement. All work runs in the existing aggregate 64 GiB, zero-swap cgroup,
+with no OOM events. Temporary fixtures, cross products and profiler data stay
+under .tmp and are excluded from Git.
+
+After all compilation and correctness work finishes, three fresh 6,000-step
+rounds on the final native product produce median-of-round-medians of
+0.342 ms versus GDB's 0.300 ms, about 14% slower. The corresponding means are
+0.377/0.303 ms, P95 values 0.513/0.324 ms and P99 values 1.175/0.347 ms.
+The tail is therefore materially farther from parity than the median.
+The capacity repair does not claim a latency speedup.
+
+Final-source VTune hardware Hotspots and detailed Microarchitecture Exploration
+each complete 30,000 native requests. Source/function and hardware-event line
+reports resolve the owned prefix walk in native_disassembly_window.h and the
+provenance checks in uwvm_runtime_native_provenance_rows.h. Hotspots samples
+6.022 seconds of VM CPU and 53.148 billion retired instructions, about 1.77
+million per request. The x86 decoder accounts for 23.8% of VM CPU samples;
+87.5% of its samples have the instruction_size prefix-walk caller. Code
+permissions and LLVM translation each account for 7.5%, and memset for 8.0%.
+Detailed E-core metrics are 46.8% retiring, 25.8% front-end bound, 9.0% bad
+speculation and 18.4% back-end bound, including 4.0% memory-subsystem bound.
+The default raw-stack capture skips some older frames; kernel symbols and
+prebuilt LLVM source lines remain incomplete. Those gaps are not counted as
+resolved source attribution.
+
+A separate response-recording probe associates all 59 broker-to-VM exchanges
+longer than 1 ms with callq continuation commands, among 174 calls in 6,000
+steps. Their median exchange is 834 us, against 182 us for other instructions.
+A further read-only /proc task sampler observes the VM control thread in
+__wait_rcu_gp during x86_64 syscall 298 (perf_event_open), with three observed
+RCU-wait spans of approximately 15--20 ms. This identifies a concrete off-CPU
+source of the rare tens-of-milliseconds spikes, separate from CPU decoder work
+and ordinary call-proof/event-setup overhead. Diagnostic instrumentation is
+excluded from the unprofiled comparison. No global ptrace or kernel-symbol
+restriction is changed. Reusing or modifying hardware events would require
+preserving the exact cookie, queued-delivery and worker-retirement proof;
+this repair keeps those checks intact.
