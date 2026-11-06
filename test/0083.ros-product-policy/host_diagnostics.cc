@@ -1,3 +1,4 @@
+#include <iomanip> // The gateway includes this before diagnostics; prevent std::quoted ADL.
 #include <uwvm2/utils/control/host_diagnostics.h>
 #include <cassert>
 #include <cstdlib>
@@ -49,7 +50,7 @@ int main()
     assert(d::configure(std::string_view{"host_denied_wasip1.random_get"},d::severity::error));
     fail_allocation=true;d::report(random,d::event::denied,"single","main","denied");fail_allocation=false;
     assert(fatal_count==2);
-    std::string name(20000,'x');name+="\n\x1b'";auto escaped=d::quoted(name);
+    std::string name(20000,'x');name+="\n\x1b'";auto escaped=d::quote_argument(name);
     assert(escaped.size()>20000 && escaped.find('\n')==escaped.npos && escaped.find('\x1b')==escaped.npos);
     a::policy p;assert(!p.exposed(random));assert(p.set(random,a::access::deny));
     assert(p.exposed(random)&&!p.allowed(random));assert(!p.set(random,a::access::allow));

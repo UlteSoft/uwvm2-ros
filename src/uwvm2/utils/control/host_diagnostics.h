@@ -51,7 +51,7 @@ namespace uwvm2::utils::control::host_diagnostics
     }
     // Diagnostic text never executes terminal controls, shell substitutions or
     // new lines from module/target names. No input length cap is introduced.
-    inline std::string quoted(std::string_view value)
+    inline std::string quote_argument(std::string_view value)
     {
         constexpr char digits[]="0123456789abcdef";std::string result{"'"};
         for(unsigned char c:value)
@@ -67,7 +67,7 @@ namespace uwvm2::utils::control::host_diagnostics
     inline std::string command(api::family family,std::string_view scope,std::string_view target,std::string_view action)
     {
         std::string out{"--"};out+=api::name(family);out+='-';out+=scope;out+='-';out+=action;
-        if(scope!="global"){out+=' ';out+=quoted(target);}return out;
+        if(scope!="global"){out+=' ';out+=quote_argument(target);}return out;
     }
     inline void report(std::size_t id,event kind,std::string_view scope,std::string_view target,
                        std::string_view reason,std::string_view remedy={}) noexcept
@@ -80,7 +80,7 @@ namespace uwvm2::utils::control::host_diagnostics
             auto const& entry=api::catalogue[id];
             std::string text=level==severity::error?"uwvm: [error] ":"uwvm: [warning] ";
             text+=api::name(entry.group);text+='.';text+=entry.key;text+=" ";text+=kind==event::denied?"denied":"limited";
-            text+=" for ";text+=scope;text+=' ';text+=quoted(target);text+=": ";text+=reason;
+            text+=" for ";text+=scope;text+=' ';text+=quote_argument(target);text+=": ";text+=reason;
             text+=". Configure: ";text+=remedy.empty()?command(entry.group,scope,target,"interface")+" "+std::string(entry.key)+" allow":std::string(remedy);
             text+=". [host_";text+=kind==event::denied?"denied_":"limited_";text+=api::name(entry.group);text+='.';text+=entry.key;text+="]";
             if(sink)sink(text);
@@ -115,8 +115,8 @@ namespace uwvm2::utils::control::host_diagnostics
         try
 #endif
         {
-            std::string text{"uwvm: [error] Cannot link import "};text+=quoted(name_space);text+='.';text+=quoted(function);
-            text+=" for ";text+=scope;text+=' ';text+=quoted(target);text+=": ";
+            std::string text{"uwvm: [error] Cannot link import "};text+=quote_argument(name_space);text+='.';text+=quote_argument(function);
+            text+=" for ";text+=scope;text+=' ';text+=quote_argument(target);text+=": ";
             if(id==api::invalid)text+="unknown host interface; no permission can enable an unregistered interface";
             else
             {
@@ -164,7 +164,7 @@ namespace uwvm2::utils::control::host_diagnostics
                     if(!notice.detail.empty()){reason+=" (";reason+=notice.detail;reason+=')';}
                     if(!remedy.empty())remedy+="; ";
                     remedy+=command(entry.group,scope,target,entry.group==api::family::wasip1?"limit":"set");
-                    remedy+=' ';if(entry.group!=api::family::wasip1){remedy+=notice.detail.empty()?"<capability-alias>":quoted(notice.detail);remedy+=' ';}
+                    remedy+=' ';if(entry.group!=api::family::wasip1){remedy+=notice.detail.empty()?"<capability-alias>":quote_argument(notice.detail);remedy+=' ';}
                     remedy+=notice.key;remedy+=" <approved-limit>";
                 }
                 notices.clear();
