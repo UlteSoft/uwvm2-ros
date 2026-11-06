@@ -14046,6 +14046,12 @@ namespace uwvm2::runtime::lib
 #endif
     }
 
+// The LLVM block includes the full diagnostics implementation above.
+// Interpreter-only builds still need its explicit unavailable-backend definitions.
+#if !defined(UWVM_RUNTIME_LLVM_JIT)
+#include "uwvm_runtime_diagnostics_impl.h"
+#endif
+
     extern "C++" UWVM_NOINLINE void full_compile_and_run_main_module(::uwvm2::utils::container::u8string_view main_module_name, full_compile_run_config cfg) noexcept
     {
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS) && \
