@@ -62,7 +62,7 @@ UWVM_ALWAYS_INLINE details::llvm_jit_checkpoint_observer_entry_result checkpoint
     auto const allocate{[&]() -> ::std::uintptr_t
     {
         namespace cp=::uwvm2::runtime::checkpoint;
-        static_assert(cp::observer_site_bytes == sizeof(::std::uint64_t));
+        static_assert(cp::observer_site_bytes == 2u*sizeof(::std::uint64_t));
         auto const workspace{[&] UWVM_ALWAYS_INLINE
         {
             if constexpr(SmallCapacity) { return g_debug_operand_workspaces->enter_small(compiler_bytes); }

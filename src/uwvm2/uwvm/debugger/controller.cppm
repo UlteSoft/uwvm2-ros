@@ -3,6 +3,7 @@ module;
 #if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
 #include <fast_io.h>
 #include <algorithm>
+#include <bit>
 #include <array>
 #include <cerrno>
 #include <chrono>

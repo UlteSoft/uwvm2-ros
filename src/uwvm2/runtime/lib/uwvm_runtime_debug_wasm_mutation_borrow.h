@@ -562,6 +562,42 @@
                 capture const* actual{};
                 for(auto const& owner:captures_) { if(owner->participant_==requested.participant) { actual=owner.get();break; } }
                 if(actual==nullptr) { result.status=copy_status::missing_participant;return result; }
+                if(requested.target==wm::destination::local || requested.target==wm::destination::operand)
+                {
+                    if(actual->suspended_wait_ || actual->actual_shadow_==nullptr || actual->frames_.empty())
+                    { result.status=copy_status::unavailable_typed_site;return result; }
+                    auto& saved{actual->frames_.back()}; auto& frame{saved.logical};
+                    if(capture::check_owned_values(frame,capture::value_use::live_observation)!=checkpoint_thread_capture_status::captured)
+                    { result.status=copy_status::unavailable_typed_site;return result; }
+                    auto const& site{frame.plan->get().sites[static_cast<::std::size_t>(frame.site-1u)]};
+                    auto const count{requested.target==wm::destination::local ? site.local_count:site.operand_count};
+                    if(requested.index>=count || saved.activation.module>=state.modules.size())
+                    { result.status=copy_status::out_of_range;return result; }
+                    auto const slot{static_cast<::std::size_t>(requested.index)+
+                        (requested.target==wm::destination::local ? 0u:static_cast<::std::size_t>(site.local_count))};
+                    if(slot>=frame.values.size() || !frame.values[slot].declaration.initialized)
+                    { result.status=copy_status::unavailable_typed_site;return result; }
+                    auto const owner{static_cast<::std::size_t>(saved.activation.module)};
+                    auto const declared{frame.values[slot].declaration.type};
+                    native_value value{};reference ref{};
+                    ::std::lock_guard table_lock{g_runtime.debug_table_mutex};
+                    if(!mutation_source(state,*actual,requested,owner,declared,value,ref,result)) { return result; }
+                    if(declared.kind==core_kind::reference)
+                    {
+                        if(value.type.kind!=core_kind::reference || !mutation_retain(state,owner,declared,ref,result.reason))
+                        { result.status=copy_status::available;return result; }
+                        ::std::memcpy(value.carrier.bits.data(),::std::addressof(ref),sizeof(ref));
+                    }
+                    else if(value.type.kind!=declared.kind)
+                    { result.status=copy_status::available;result.reason=wm::refusal::type_mismatch;return result; }
+                    auto next{frame.values[slot]};next.bits=value.carrier.bits;
+                    if(!current_scope() || !actual->actual_shadow_->mutate_observer_slot(frame.identity,frame.plan,frame.site,slot,next))
+                    { result.status=copy_status::stale_stop_or_generation;return result; }
+                    frame.values[slot]=next;frame.numeric_packet_pending=false;
+                    result.status=copy_status::available;result.reason=wm::refusal::none;
+                    result.applied=true;result.runtime_epoch=epoch_;result.module=state.modules[owner].id;
+                    return result;
+                }
                 if(requested.target==wm::destination::memory)
                 {
                     ::std::lock_guard table_lock{g_runtime.debug_table_mutex};

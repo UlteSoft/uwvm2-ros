@@ -1,7 +1,8 @@
 # 三层调试命令：五个平台的实现范围与 GDB/LLDB 差距
 
 本次核对 Linux x86_64、i686、AArch64、ARM soft-float、ARM hard-float。
-五者使用同一套源码/Wasm 命令、条件求值和权限判定；汇编解码、寄存器、
+数据 watchpoint、通用临时断点、命令回调及当前帧类型化修改见
+[数据控制命令](debug-data-controls.md)。五者使用同一套源码/Wasm 命令、条件求值和权限判定；汇编解码、寄存器、
 陷阱和 Unwind 各有 ABI 实现，需要分别实际运行。
 
 **五个平台一致，不等于已经与 GDB/LLDB 的基础功能完全等价。**
@@ -24,8 +25,8 @@
   检查源码栈帧、局部值和只读表达式。可用的 DWARF 内联帧、
   结构体成员、类型和 pretty-printer 查询不涉及宿主代码求值。
 - `display EXPR` 提供每次新停止时的自动显示，属于交互 CLI 功能。
-- `jump src LINE` 仅在操作数栈、控制栈和恢复入口兼容时移动执行位置。
-  无法证明时保留原停止点；不回滚外部 I/O。
+- `jump src LINE` 具有解析和拒绝诊断；当前没有可用的源码恢复入口，
+  返回 `restore_state_unavailable` 并保留原停止点，不能算作已实现的源码跳转。
 - 交互 CLI 的 `run`、`start`、`kill` 管理客体生命周期；
   `continue`、`pause`、`status` 管理运行与停止。
 
@@ -43,17 +44,18 @@
   `table`、`memory` 检查逻辑 Wasm 帧、类型化值和线性内存。
 - `controls`、`handlers` 及参数/结果布局查询检查结构化控制流；
   `members` / `path` 查询 GC 引用内的字段和元素。
-- `set wasm memory|global|table|member` 修改允许修改的客体状态，
-  不等于任意局部变量、原生寄存器或宿主内存赋值。
+- `set wasm local|operand|memory|global|table|member` 修改允许修改的客体状态，
+  当前帧 local/operand 的修改写回实际执行状态；不接受原生寄存器或宿主内存赋值。
 - `catch wasm` 支持 call、memory、table、atomic、SIMD、GC、
   reference、control、throw/exception、trap、uncaught 等事件。
   `trace wasm` 记录相应观察，`wasm-script` 可组合受限诊断命令。
-- `jump wasm OFFSET` 要求兼容的操作数/控制栈和合法恢复入口。
+- `jump wasm OFFSET` 当前同样返回 `restore_state_unavailable`；
+  类型化 local/operand 写回不等于任意 Wasm PC/控制栈迁移。
 
 **当前 `bw ... if EXPR` 仍使用源码表达式求值器。**
 有可用源码上下文时与源码断点共用条件语义；纯 WAT、移除 DWARF
 的模块不能用 local、operand、global 等 Wasm 原生选择器作为条件。
-即使 `if true` 也会报告源码上下文不可用，而不是默默忽略条件。
+`true`、`false`、`1`、`0` 可在无 DWARF 时求值；其他表达式仍需要源码上下文。
 无 DWARF 的普通断点、单步和类型化状态查询仍可用。
 Wasm 条件执行与其普通状态查询尚未达到同等覆盖面。
 
@@ -85,19 +87,14 @@ Wasm 条件执行与其普通状态查询尚未达到同等覆盖面。
 - 行/函数断点、普通进入/越过/返回、栈帧、变量和反汇编已有对应能力。
   UWVM 额外提供逻辑 Wasm 栈、GC 引用、结构化控制和 ABI 观察。
 - 汇编条件表达式缺失；无源码元数据的 Wasm 条件表达式也缺失。
-- 变量或内存值变化触发的 data watchpoint 未实现。
-  GDB [watchpoint](https://sourceware.org/gdb/current/onlinedocs/gdb.html/Set-Watchpoints.html)
-  与 LLDB watchpoint 可监视写入/变化。`catch wasm memory` 是指令类别事件，
-  DAP Watch 是停止时读取表达式，二者都不能冒充 watchpoint。
+- 已提供软件值变化 watchpoint；同值写入和读访问不触发，详情及边界见数据控制文档。
 - 不提供一般源码赋值、任意 native register 写入、任意函数求值调用。
-  类型化 Wasm 状态修改与经过验证的 jump 覆盖的是较小范围。
-- 未实现通用 `tbreak`、断点命中后的命令列表/回调及 DAP logpoint。
-  `start` 的内部临时断点、只读 display、不能继续执行的 wasm-script
-  不等于上述通用功能。DAP hitCondition 只支持 `>=N` 与 `>N`，
-  不支持精确第 N 次或模运算策略。
+  类型化 Wasm 状态修改与经过验证的汇编 jump 覆盖的是较小范围；
+  源码/Wasm jump 尚未实现可恢复入口。
+- 已提供通用 `tbreak` 和命令回调。DAP logpoint 仍未提供；DAP hitCondition
+  仍只支持 `>=N` 与 `>N`。
 - 汇编断点不是通用持久地址断点：当前激活绑定、指令边界证明和受限
-  继续策略会拒绝不能证明安全的目标。原有 65,536 字节断点偏移/
-  原生推进上限属于当前实现限制，不能称为完整 GDB 等价行为，
+  继续策略会拒绝不能证明安全的目标。原有 65,536 字节断点偏移上限属于当前实现限制，不能称为完整 GDB 等价行为，
   也不是本次 JSON 历史记录的容量上限。
 - DAP `setInstructionBreakpoints` 接收 `wasm:MODULE:FUNCTION:OFFSET`。
   原生断点需要调试控制台显式发送 `breakasm`，不能宣称 IDE
@@ -123,15 +120,15 @@ DAP 应使用标准 stepIn/next/stepOut，或带明确线程选择器的协议�
 
 ## 验证范围
 
-本轮五个产品 ELF 与此前完整调试、热更新、Unwind、安全边界矩阵
-验证的字节一致；新增功能只修改宿主 Python 工具。
+以下保留的是引入数据控制命令之前的验证记录。新增数据控制包含 JIT/控制器修改，
+使用重新构建的五个平台 ELF 和数据控制文档列出的维护中测试，不沿用旧 ELF 结论。
 
 每个平台通过真实 broker/DAP 执行 SDK C/WAT 模块，检查：
 源码和 Wasm 条件真/假/不可用、更新和删除条件、ignore、启停；
 汇编断点、单步、寄存器分页、无效地址和过期引用拒绝；
 汇编条件表达式的明确拒绝；
 WASI/ROS 三类调用 JSON 分页、70,000 字节随机输出和失败返回；
-纯 WAT 条件不可用、普通断点仍可用，以及原生停止点拒绝导出。
+当时的纯 WAT 条件不可用检查、普通断点，以及原生停止点拒绝导出。
 
 另在每个平台分别运行真实 ROS1 和 ROS2 gateway 与原生接收端，
 核对保存的 topic_publish 输入字节与实际收到的消息。

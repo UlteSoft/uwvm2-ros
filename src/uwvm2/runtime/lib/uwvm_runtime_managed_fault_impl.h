@@ -1,5 +1,17 @@
 #pragma once
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
+bool runtime_managed_fault::ordinary_enabled() noexcept
+{
+    auto const epoch{current_runtime_generation()};
+    // Only the internal preparation of an actual owned full source enables
+    // this epoch, after eager validation/materialization. No Guest import can
+    // manufacture it. The outer execution lease pins all code/source owners.
+    return epoch != 0u && ordinary_epoch_.load(::std::memory_order_acquire) == epoch &&
+        enabled_epoch_.load(::std::memory_order_acquire) == epoch &&
+        get_runtime_execution_entry_depth() == 1u && get_llvm_jit_generated_bridge_scope_depth() != 0u &&
+        !g_runtime.debug_pause_control && !g_debug_observer_active &&
+        g_runtime.compiled_all.load(::std::memory_order_acquire);
+}
 bool runtime_managed_fault::raise(llvm_jit_trap_kind kind)
 {
     // Only specified Guest traps, never an invariant/protocol/helper failure.
@@ -140,9 +152,20 @@ bool runtime_managed_fault::accept_uncaught(::uwvm2::runtime::exception::guest_e
     auto const& record{g_runtime.modules.index_unchecked(tag.module_id)};
     auto const* code{record.llvm_jit_full_publication.get()};
     if(!record.runtime_module || !record.llvm_jit_ready || !code ||
-       code->debug_source_runtime_epoch!=current_runtime_generation() ||
        !::uwvm2::uwvm::runtime::full::full_source_instance::has_canonical_owner(code->source) ||
        code->source->bound_initialized_file(tag.module_id,record.runtime_module)==nullptr) { return false; }
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+    if(ordinary_enabled())
+    {
+        // This typed catch ran genuine native cleanup. No debug ledger exists
+        // in the ordinary profile; GC roots must still all have been retired.
+        if(::uwvm2::runtime::gc::current_root_frames() != nullptr) { return false; }
+        ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+            u8"uwvm: [error] uncaught Guest exception; execution stopped");
+        ::uwvm2::utils::thread::process_exit::request_process_exit(126u);
+    }
+#endif
+    if(code->debug_source_runtime_epoch!=current_runtime_generation()) { return false; }
     // Native cleanup must have retired every activation, GC root and shadow
     // frame. This same private stop orders against the FIRST proc_exit claim,
     // so a late uncaught tag cannot cancel an already selected wait owner.

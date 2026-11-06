@@ -3323,12 +3323,16 @@ namespace uwvm2::runtime::lib
         void debug_observe_actual_trap(trap_kind) noexcept;
 #endif
 
-#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(UWVM_RUNTIME_UWVM_INTERPRETER)
-        inline void finish_interpreter_guest_fault(trap_kind k) noexcept
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        inline void finish_cli_guest_fault(trap_kind k) noexcept
         {
             namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
-            if(mode::global_runtime_compiler != mode::runtime_compiler_t::uwvm_interpreter_only ||
-               get_runtime_execution_entry_depth() == 0uz) { return; }
+            if(get_runtime_execution_entry_depth() == 0uz) { return; }
+            bool ordinary_native{};
+#if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
+            ordinary_native = runtime_managed_fault::ordinary_enabled();
+#endif
+            if(!ordinary_native && mode::global_runtime_compiler != mode::runtime_compiler_t::uwvm_interpreter_only) { return; }
             // Only specified Guest faults take this path. Internal invariants
             // and failures of the native runtime retain their fatal handling.
             switch(k)
@@ -3351,10 +3355,15 @@ namespace uwvm2::runtime::lib
                 default: return;
             }
             ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
-                u8"uwvm: [error] managed Guest trap; execution stopped (interpreter: ", trap_kind_name(k), u8")");
-            // Interpreter callbacks are noexcept. Do not throw through them or
-            // turn a Wasm trap into a host SIGILL. The trusted exit coordinator
-            // preserves the first exit code and explicit pending-operation waits.
+                u8"uwvm: [error] managed Guest trap; execution stopped (",
+                ordinary_native ? ::uwvm2::utils::container::u8string_view{u8"LLVM: "} : ::uwvm2::utils::container::u8string_view{u8"interpreter: "}, trap_kind_name(k), u8")");
+            // Ordinary CLI execution has no observer or replacement controller.
+            // Its specified traps end the process through the same coordinator
+            // as the interpreter, without recording every successful activation.
+            // Native frames remain live for an explicitly selected Unwind trace.
+            if(ordinary_native) { dump_call_stack_for_trap(k); }
+            // Preserve the FIRST exit code and all explicit pending-operation
+            // waits. Never throw through the ordinary noexcept helper ABI.
             ::uwvm2::utils::thread::process_exit::request_process_exit(126u);
         }
 #endif
@@ -3364,8 +3373,8 @@ namespace uwvm2::runtime::lib
 #endif
         [[noreturn]] UWVM_NOINLINE inline constexpr void trap_fatal(trap_kind k) noexcept
         {
-#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(UWVM_RUNTIME_UWVM_INTERPRETER)
-            if(!::std::is_constant_evaluated()) { finish_interpreter_guest_fault(k); }
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            if(!::std::is_constant_evaluated()) { finish_cli_guest_fault(k); }
 #endif
             // Keep termination behind a volatile function pointer and signal fence so compilers do not fold away diagnostic work
             // before noreturn termination.
@@ -3540,8 +3549,8 @@ namespace uwvm2::runtime::lib
 
         inline constexpr void print_memory_out_of_bounds_trap(::uwvm2::object::memory::error::memory_error_t const& memerr) noexcept
         {
-#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(UWVM_RUNTIME_UWVM_INTERPRETER)
-            if(!::std::is_constant_evaluated()) { finish_interpreter_guest_fault(trap_kind::memory_out_of_bounds); }
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            if(!::std::is_constant_evaluated()) { finish_cli_guest_fault(trap_kind::memory_out_of_bounds); }
 #endif
             // Memory traps include structured memory-error details before the generic runtime trap headline and wasm call stack.
             ::uwvm2::object::memory::error::output_memory_error_line(memerr);
@@ -15354,7 +15363,7 @@ namespace uwvm2::runtime::lib
 # endif
         return false;
     }
-    static bool prepare_native_guest_control() noexcept
+    static bool prepare_native_guest_control(bool require_debug_domain = true) noexcept
     {
 # if defined(UWVM_RUNTIME_LLVM_JIT)
 # if UWVM2_HAS_THREADED_PROFILE_HOST_API
@@ -15376,7 +15385,8 @@ namespace uwvm2::runtime::lib
         runtime_execution_entry_scope entry{};
         ::uwvm2::runtime::lib::details::scoped_llvm_wasm_fp_environment fp{get_llvm_wasm_fp_environment_active_marker()};
         if(!fp.ready()) [[unlikely]] { ::fast_io::fast_terminate(); }
-        if(!g_runtime.debug_pause_control || g_runtime.debug_pause_control->is_closed()) { return false; }
+        if(require_debug_domain && (!g_runtime.debug_pause_control || g_runtime.debug_pause_control->is_closed())) { return false; }
+        if(!require_debug_domain && g_runtime.debug_pause_control) { return false; }
         for(auto const& record : g_runtime.modules)
         {
             if(record.llvm_jit_full_publication && record.llvm_jit_full_publication->plan) { return false; }
@@ -15390,7 +15400,7 @@ namespace uwvm2::runtime::lib
 # endif
         compile_all_modules_if_needed();
 # if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
-        runtime_managed_fault::enable(current_runtime_generation());
+        runtime_managed_fault::enable(current_runtime_generation(), !require_debug_domain);
 # endif
         return true;
 # else
@@ -15414,14 +15424,25 @@ namespace uwvm2::runtime::lib
            !source->initialized_from_actual_state()) { return false; }
         for(::std::size_t id{};id!=g_runtime.modules.size();++id)
         { if(source->bound_initialized_file(id,g_runtime.modules.index_unchecked(id).runtime_module)==nullptr) { return false; } }
-        try
+        // Explicit RELEASE diagnostics retain their requested fault-frame
+        // recording and post-fault supervisor lifetime. The default/off path
+        // must not pay for that optional observation.
+        if(diagnostic_detail::enabled.load(::std::memory_order_acquire))
         {
-            auto domain=::std::make_shared<::uwvm2::utils::thread::cooperative_pause_domain>(256u);
-            if(configure_native_guest_control(::std::move(domain),{},llvm_jit_debug_safe_point_granularity::entry_loop,true)!=
-                llvm_jit_debug_configure_result::ok) { return false; }
-            return prepare_native_guest_control();
+            try
+            {
+                auto domain = ::std::make_shared<::uwvm2::utils::thread::cooperative_pause_domain>(256u);
+                if(configure_native_guest_control(::std::move(domain), {}, llvm_jit_debug_safe_point_granularity::entry_loop, true) !=
+                    llvm_jit_debug_configure_result::ok) { return false; }
+                return prepare_native_guest_control();
+            }
+            catch(...) { return false; }
         }
-        catch(...) { return false; }
+        // Compile the ordinary full profile. A specified CLI trap uses the
+        // process-exit coordinator on its cold failure edge; it does not need
+        // cooperative safepoints, debugger host wrappers or an activation ledger.
+        // Debug and release-update preparation retain their explicit domains.
+        return prepare_native_guest_control(false);
 #else
         return false;
 #endif

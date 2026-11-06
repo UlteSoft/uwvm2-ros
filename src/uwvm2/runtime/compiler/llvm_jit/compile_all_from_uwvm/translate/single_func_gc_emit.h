@@ -1076,7 +1076,19 @@ template<bool Signed>
         // [live native declaration][four exact integer ABI arguments]
         // [safe                                                     ] only
         // compiler/native carrier bits are transmitted; no guest pointer.
-        auto const result{apply_llvm_jit_host_calling_conv(builder.CreateCall(bridge_type, callee, arguments))};
+        auto const result{builder.CreateCall(bridge_type, callee, arguments)};
+#if !defined(UWVM_EXPERIMENTAL_MANAGED_NUMERIC_PAGE)
+        if(!state.debug_activation_enabled)
+        {
+            // This exact checked getter cannot invoke Guest/host callbacks or
+            // collection (see its bridge contract above). Publishing a ROS host
+            // continuation for each field read is unnecessary. Real imports,
+            // provider calls and debug wrappers keep their provenance boundary.
+            apply_llvm_jit_calling_conv(result, get_llvm_jit_host_calling_conv());
+        }
+        else
+#endif
+        { apply_llvm_jit_host_calling_conv(result); }
         result->setDoesNotThrow();
         return result;
     }};

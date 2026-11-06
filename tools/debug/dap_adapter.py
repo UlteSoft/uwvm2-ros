@@ -2475,10 +2475,10 @@ def parse_status(text):
         if line.startswith("stopped: "):
             state = "stopped"
             uncaught_stop = line == "stopped: Uncaught Wasm exception before unwind; continue propagates"
-            reason = ("exception" if uncaught_stop or line == "stopped: Wasm trap after failure; pre-trap operands; continue terminates" else
+            reason = ("data breakpoint" if "data watchpoint" in line else "exception" if uncaught_stop or line == "stopped: Wasm trap after failure; pre-trap operands; continue terminates" else
                       "breakpoint" if "breakpoint" in line else "step" if "step" in line else "pause")
             native_breakpoint_stop = line == "stopped: native breakpoint"
-            native_stop = line in ("stopped: native instruction step", "stopped: native breakpoint",
+            native_stop = line in ("stopped: native data watchpoint", "stopped: native instruction step", "stopped: native breakpoint",
                                    "stopped: first Wasm instruction JIT entry", "stopped: execution relocated")
             if line in ("stopped: first Wasm instruction", "stopped: first Wasm instruction JIT entry"):
                 reason = "entry"
@@ -2646,6 +2646,8 @@ class Adapter:
         self.stop_key = None
         self.breakpoints = {}
         self.instruction_breakpoints = []
+        self.data_breakpoint_handles = {}
+        self.data_breakpoints = {}
         self.frames = {}
         self.scopes = {}
         self.wasm_local_scope_stops = {}
@@ -2761,6 +2763,7 @@ class Adapter:
 
     def invalidate_stop(self):
         self.stop_key = None
+        self.data_breakpoint_handles.clear()
         self.frames.clear()
         self.scopes.clear()
         self.wasm_local_scope_stops.clear()
@@ -2972,6 +2975,7 @@ class Adapter:
                                   t["generation"], t.get("native_pc"), t.get("stop_id")) for t in threads))
             if key != self.stop_key:
                 self.stop_key = key
+                self.data_breakpoint_handles.clear()
                 self.frames.clear()
                 self.scopes.clear()
                 self.wasm_local_scope_stops.clear()
@@ -3767,12 +3771,198 @@ class Adapter:
                     self.wasm_object_views[ref] = (expected_key, obj, anchor)
             item = {"name": value["name"], "type": value["type"], "value": value["value"],
                     "variablesReference": ref, "presentationHint": {"attributes": ["readOnly"]}}
+            if (parent is None and expected_key is not None and expected_key[0] != "exception" and value["type"] in ("i32", "i64", "f32", "f64", "v128")
+                    and (locus[3] == "globals" or (locus[3] in ("locals", "operands") and locus[2] == 0))):
+                item.pop("presentationHint", None)
             if ref and obj["total"] < 1 << 31:
                 # DAP counts are int32 display hints, never a root, path or
                 # memory capability. Larger Wasm cardinalities stay unclamped.
                 item.update(indexedVariables=obj["total"], namedVariables=0)
             result.append(item)
         return result
+
+    def selected_numeric_slot(self, reference, name):
+        """Resolve a current scope, never a host address or copied value token."""
+        if type(reference) is not int or not isinstance(name, str):
+            raise ValueError("current Wasm scope and original slot name required")
+        if reference in self.wasm_local_scope_stops:
+            expected = self.wasm_local_scope_stops[reference]
+            thread = self.scopes[reference]
+            current = [x for x in self.threads if x["id"] == thread]
+            if len(current) != 1:
+                raise ValueError("Wasm participant retired")
+            selection = (thread, current[0]["module"], 0, "locals", 0)
+        elif reference in self.wasm_scope_stops:
+            expected, selection = self.wasm_scope_stops[reference]
+        else:
+            raise ValueError("only current typed Wasm locals, operands and globals are mutable/watchable here")
+        thread, module, frame, selected, table = selection
+        if expected is None or expected[0] == "exception":
+            raise ValueError("terminal snapshots are read-only")
+        if selected not in ("locals", "operands", "globals"):
+            raise ValueError("slot is not a mutable numeric Wasm value")
+        prefix = {"locals": "local", "operands": "operand", "globals": "global"}[selected]
+        match = re.fullmatch(re.escape(prefix) + r" (0|[1-9][0-9]{0,19})", name)
+        if not match:
+            raise ValueError("original typed slot name required")
+        index = int(match[1])
+        if index >= 1 << 64:
+            raise ValueError("slot index overflow")
+        _, copied = self.query_wasm_state(thread, module, frame, selected, index, 1, table, expected_stop=expected)
+        if copied.get("unavailable") or len(copied["rows"]) != 1 or copied["rows"][0]["index"] != index:
+            raise ValueError("current slot unavailable")
+        row = copied["rows"][0]
+        if row["type"] not in ("i32", "i64", "f32", "f64", "v128"):
+            raise ValueError("numeric/vector slot required")
+        return expected, selection, index, row
+
+    def set_numeric_variable(self, arguments):
+        expected, selection, index, before = self.selected_numeric_slot(arguments.get("variablesReference"), arguments.get("name"))
+        thread, module, frame, selected, table = selection
+        if selected != "globals" and frame != 0:
+            raise ValueError("only the current top Wasm frame can be edited")
+        value = arguments.get("value")
+        if not isinstance(value, str) or not 0 < len(value) <= 128:
+            raise ValueError("bounded numeric value or bits HEX required")
+        kind = before["type"]
+        width = {"i32": 32, "f32": 32, "i64": 64, "f64": 64, "v128": 128}[kind]
+        if value.startswith("bits "):
+            raw = value[5:].strip()
+            if re.fullmatch(r"(?:0x)?[0-9a-fA-F]+", raw) is None:
+                raise ValueError("hexadecimal bit pattern required")
+            bits = int(raw, 16)
+            if bits >= 1 << width:
+                raise ValueError("bit pattern exceeds destination width")
+        elif kind.startswith("i"):
+            if re.fullmatch(r"-?(?:0x[0-9a-fA-F]+|[0-9]+)", value) is None:
+                raise ValueError("integer literal required")
+            integer = int(value, 16 if "0x" in value else 10)
+            if not -(1 << (width-1)) <= integer < (1 << width):
+                raise ValueError("integer exceeds destination width")
+            bits = integer % (1 << width)
+        elif kind.startswith("f"):
+            import struct
+            if re.fullmatch(r"[+-]?(?:(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?|inf|nan)", value, re.I) is None:
+                raise ValueError("floating-point literal or bits HEX required")
+            try:
+                bits = int.from_bytes(struct.pack("<f" if width == 32 else "<d", float(value)), "little")
+            except (ValueError, OverflowError):
+                raise ValueError("floating-point literal is not representable")
+        else:
+            raise ValueError("v128 requires bits HEX")
+        target = {"locals": "local", "operands": "operand", "globals": "global"}[selected]
+        selector = f"{module} {index} {thread}" if selected == "globals" else f"{thread} {index}"
+        encoded = f"{bits:x}" if width != 128 else f"{bits & ((1 << 64)-1):x} {bits >> 64:x}"
+        self.invalidate_stop()
+        reply = self.command(f"set wasm {target} {selector} bits {kind} {encoded}")
+        acknowledgement = re.fullmatch(
+            r"wasm-stop ([1-9][0-9]{0,19})\nWasm mutation v=3 status=available applied=1 reason=none "
+            r"runtime=([1-9][0-9]{0,19}) module=([0-9]{1,20}) target=(local|operand|global) "
+            r"index=([0-9]{1,20}) element=0 bytes=0 address-bytes=0\n", reply)
+        previous_stops = {entry[-1] for entry in expected[1]}
+        if (acknowledgement is None or any(int(acknowledgement[k]) >= 1 << 64 for k in (1, 2, 3, 5))
+                or int(acknowledgement[1]) in previous_stops
+                or (int(acknowledgement[3]), acknowledgement[4], int(acknowledgement[5])) != (module, target, index)):
+            raise ValueError("Wasm edit was refused or its outcome is unconfirmed; inspect before retrying: " + reply.strip())
+        _, copied = self.query_wasm_state(thread, module, frame, selected, index, 1, table)
+        if len(copied["rows"]) != 1:
+            raise ValueError("committed slot could not be read back")
+        result = {"value": copied["rows"][0]["value"], "variablesReference": 0}
+        if self.supports_variable_type:
+            result["type"] = kind
+        return result
+
+    def data_breakpoint_info(self, arguments):
+        name = arguments.get("name")
+        reference = arguments.get("variablesReference", 0)
+        if type(reference) is not int or reference < 0:
+            raise ValueError("current Wasm scope reference required")
+        if reference == 0 and isinstance(name, str):
+            match = re.fullmatch(r"wasm-memory:([0-9]+):([0-9]+):([0-9]+):([0-9]+)", name)
+            if not match:
+                return {"dataId": None, "description": "Use a typed Wasm scope or wasm-memory:MODULE:MEMORY:OFFSET:LENGTH"}
+            module, memory, offset, count = map(int, match.groups())
+            if module >= 1 << 64 or memory >= 1 << 32 or not count or offset >= 1 << 64 or count >= (1 << 64)-offset:
+                raise ValueError("invalid Wasm memory interval")
+            self.read_wasm_memory(module, memory, offset, 0)
+            self.read_wasm_memory(module, memory, offset+count, 0)
+            expected = self.stop_key
+            command = f"watch memory {module} {memory} {offset} {count}"
+        else:
+            expected, selection, index, row = self.selected_numeric_slot(reference, name)
+            thread, module, frame, selected, table = selection
+            command = (f"watch globals {thread} {module} {index} 1" if selected == "globals" else
+                       f"watch {'locals wasm' if selected == 'locals' else 'operands'} {thread} {frame} {index} 1")
+        identifier = f"wasm-data:{self.new_reference()}"
+        self.data_breakpoint_handles[identifier] = (expected, command)
+        return {"dataId": identifier, "description": name + " (value change)", "accessTypes": ["write"], "canPersist": False}
+
+    def registered_data_watchpoint(self, identifier):
+        """Read actual manager state; missing/disabled IDs confer no watch."""
+        first = 0
+        while True:
+            page = self.command(f"watchpoints {first} 64")
+            cursor = re.search(r"watchpoint-next=([0-9]+) total=([0-9]+)\n$", page)
+            if cursor is None:
+                raise ValueError("watchpoint list did not provide a complete page")
+            following, total = map(int, cursor.groups())
+            if not first <= following <= total < 1 << 64 or following - first > 64:
+                raise ValueError("invalid watchpoint page range")
+            found = re.search(rf"(?m)^watchpoint {identifier} enabled=(yes|no) ", page)
+            if found:
+                return found[1] == "yes"
+            if following == total:
+                return None
+            if following <= first:
+                raise ValueError("watchpoint page made no progress")
+            first = following
+
+    def set_data_breakpoints(self, arguments):
+        points = arguments.get("breakpoints")
+        if not isinstance(points, list):
+            raise ValueError("data breakpoint list required")
+        registered, retained = [], {}
+        for point in points:
+            try:
+                if not isinstance(point, dict) or set(point)-{"dataId", "accessType", "condition", "hitCondition"}:
+                    raise ValueError("invalid data breakpoint")
+                if point.get("accessType", "write") != "write" or point.get("condition") or point.get("hitCondition"):
+                    raise ValueError("software watches support value-changing writes; read/access/conditional watches are unavailable")
+                data_id = point.get("dataId")
+                if data_id in retained:
+                    identifier = retained[data_id]
+                elif data_id in self.data_breakpoints:
+                    identifier = self.data_breakpoints[data_id]
+                    enabled = self.registered_data_watchpoint(identifier)
+                    if enabled is None:
+                        raise ValueError("watchpoint no longer exists")
+                    if not enabled:
+                        raise ValueError("watched activation retired or watchpoint is disabled; select a current value")
+                else:
+                    expected, command = self.data_breakpoint_handles[data_id]
+                    self.observe(self.command("status"), notify=False)
+                    if self.state != "stopped" or self.stop_key != expected:
+                        raise ValueError("data selector belongs to a retired stop")
+                    packet = self.command(command)
+                    match = re.fullmatch(r"watchpoint ([1-9][0-9]*) registered\n", packet)
+                    if not match:
+                        raise ValueError("watchpoint registration failed")
+                    identifier = int(match[1])
+                retained[data_id] = identifier
+                registered.append({"id": identifier, "verified": True})
+            except (KeyError, TypeError, ValueError, RuntimeError) as error:
+                registered.append({"verified": False, "message": str(error)})
+        for data_id, identifier in self.data_breakpoints.items():
+            if data_id not in retained:
+                # A console command or retired activation may already have
+                # removed the manager point. Never retry a new registration
+                # to compensate for a stale ID, or retain an orphan duplicate.
+                if self.registered_data_watchpoint(identifier) is not None:
+                    reply = self.command(f"watchpoints delete {identifier}")
+                    if reply != "watchpoint policy updated\n":
+                        raise ValueError("watchpoint deletion outcome is unconfirmed")
+        self.data_breakpoints = retained
+        return {"breakpoints": registered}
 
     def handle(self, request):
         command = request.get("command")
@@ -3797,6 +3987,8 @@ class Adapter:
                                        "supportsHitConditionalBreakpoints": True,
                                        "supportsConditionalBreakpoints": True,
                                        "supportsLogPoints": False,
+                                       "supportsDataBreakpoints": True,
+                                       "supportsSetVariable": True,
                                        "supportsReadMemoryRequest": True,
                                        "supportsWriteMemoryRequest": True,
                                        "supportsDisassembleRequest": True,
@@ -4239,6 +4431,14 @@ class Adapter:
                         (thread, copied["module"], frame, selected, table), (root, tuple(path)))
                     self.respond(request, {"variables": variables, "total": target["total"], "first": target["first"],
                         "next": target["next"], "more": target["more"], "moduleId": copied["module"], "runtimeEpoch": copied["epoch"]})
+            elif command == "setVariable":
+                self.respond(request, self.set_numeric_variable(args))
+                if self.supports_invalidated_event:
+                    self.event("invalidated", {"areas": ["stacks", "variables"]})
+            elif command == "dataBreakpointInfo":
+                self.respond(request, self.data_breakpoint_info(args))
+            elif command == "setDataBreakpoints":
+                self.respond(request, self.set_data_breakpoints(args))
             elif command == "variables":
                 reference = unsigned_id(args.get("variablesReference"), "variablesReference")
                 if reference in self.ros_scope_stops:

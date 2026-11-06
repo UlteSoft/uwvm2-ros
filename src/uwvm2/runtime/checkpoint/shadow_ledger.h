@@ -153,7 +153,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
             site_id = 0u;
             auto const storage{observer_storage_[index]};
             if(storage.empty()) { return status::ok; }
-            ::std::memcpy(::std::addressof(site_id), storage.data(), observer_site_bytes);
+            ::std::memcpy(::std::addressof(site_id), storage.data(), sizeof(site_id));
             if(site_id == 0u) { return status::ok; }
             auto const& plan{frames_[index].plan};
             if(site_id > plan->get().sites.size()) { return status::invalid_layout; }
@@ -417,7 +417,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
             if(storage.size() < observer_site_bytes ||
                locals > (storage.size()-observer_site_bytes)/(observer_local_metadata_bytes+native_slot_bytes))
             { fail(status::invalid_layout); return failure_; }
-            ::std::uint64_t site{}; ::std::memcpy(::std::addressof(site),storage.data(),observer_site_bytes);
+            ::std::uint64_t site{}; ::std::memcpy(::std::addressof(site),storage.data(),sizeof(site));
             if(site != 0u) { fail(status::invalid_layout); return failure_; }
             observer_storage_[active_frame_count_-1u]=storage; return status::ok;
         }
@@ -433,6 +433,34 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
             if(active_frames_empty() || observer_storage_[active_frame_count_-1u].data() != actual_storage)
             { fail(status::invalid_activation); for(auto& storage : observer_storage_) { storage={}; } return; }
             observer_storage_[active_frame_count_-1u]={};
+        }
+        // The runtime calls this only inside its authenticated all-stop/N
+        // borrow. No native stack address escapes. The generated cold return
+        // path reloads exactly these typed slots before executing the opcode.
+        [[nodiscard]] bool mutate_observer_slot(activation_identity identity,
+            sealed_function_plan::owner const& plan, ::std::uint64_t site_id,
+            ::std::size_t slot, native_value const& value) noexcept
+        {
+            if(failure_!=status::ok || active_frames_empty() || active_frame().identity!=identity ||
+               active_frame().plan!=plan || plan.owner_before(active_frame().plan) ||
+               active_frame().plan.owner_before(plan)) { return false; }
+            auto const index{active_frame_count_-1u}; ::std::uint64_t current{};
+            if(observer_site(index,current)!=status::ok || current==0u || current!=site_id) { return false; }
+            auto const& site{plan->get().sites[static_cast<::std::size_t>(current-1u)]};
+            if(site.phase!=frame_phase::before_opcode || slot>=site.local_count+site.operand_count ||
+               slot>=site.slots.size() || value.declaration.type!=site.slots[slot].type ||
+               !value.declaration.initialized || !site.slots[slot].initialized) { return false; }
+            auto const storage{observer_storage_[index]};
+            auto const workspace{storage.subspan(observer_site_bytes)};
+            auto const prefix{site.local_count*observer_local_metadata_bytes};
+            // observer_site authenticated the COMPLETE packet extent first.
+            auto* cell{workspace.data()+prefix+slot*native_slot_bytes};
+            ::std::memcpy(cell,value.bits.data(),native_slot_bytes);
+            storage[sizeof(::std::uint64_t)]=::std::byte{1u};
+            if(active_frame().values.size()==site.slots.size())
+            { active_frame().values[slot]=value; }
+            active_frame().numeric_packet_pending=false;
+            return true;
         }
         // A genuine safe-point bridge can keep this exact typed packet in
         // its bound slots. Inspectors still authenticate their actual stop;

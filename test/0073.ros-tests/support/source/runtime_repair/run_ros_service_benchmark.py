@@ -3,7 +3,7 @@
 @file run_ros_service_benchmark.py
 @brief Compare identical native Trigger exchanges and retain every raw result.
 @details The caller owns the global test lease. This driver verifies its actual
-64 GiB, zero-swap cgroup and pins the process tree to one physical CPU. Native
+64 GiB, zero-swap cgroup and pins the process tree to one selected native CPU. Native
 requests, response bytes, warm-up counts and peer callback counts must match.
 An optional paused VTune collection resumes only after discovery, compilation,
 capability binding and warm-up; instrumented durations are explicitly excluded
@@ -39,6 +39,8 @@ def main():
     parser.add_argument("--rounds", type=int, default=9)
     parser.add_argument("--warmup-rounds", type=int, default=2)
     parser.add_argument("--modes", default="native,ipc,wasm")
+    parser.add_argument("--cpu", type=int, help="Native CPU for the complete comparison process tree")
+    parser.add_argument("--socket-root", type=Path, default=Path(__file__).resolve().parents[5] / ".tmp")
     parser.add_argument("--vtune", type=Path)
     parser.add_argument("--profile-result", type=Path)
     parser.add_argument("--runtime-loader", type=Path)
@@ -112,13 +114,18 @@ def main():
                            check=True, timeout=30, stdout=subprocess.DEVNULL)
 
     try:
-        cg = Path("/sys/fs/cgroup")
+        membership = next(line for line in Path("/proc/self/cgroup").read_text().splitlines() if line.startswith("0::"))
+        cg = Path("/sys/fs/cgroup") / membership.split("::", 1)[1].lstrip("/")
+        if not (cg / "memory.max").is_file():
+            cg = Path("/sys/fs/cgroup")  # A cgroup namespace can expose its own root.
+
         report["cgroup"] = {name: (cg / name).read_text().strip()
                             for name in ("memory.max", "memory.swap.max", "cgroup.procs", "cpu.max", "cpu.stat")}
         assert report["cgroup"]["memory.max"] == "68719476736"
         assert report["cgroup"]["memory.swap.max"] == "0"
         assert str(os.getpid()) in report["cgroup"]["cgroup.procs"].split()
-        cpu = min(os.sched_getaffinity(0))
+        cpu = args.cpu if args.cpu is not None else min(os.sched_getaffinity(0))
+        assert cpu in os.sched_getaffinity(0)
         os.sched_setaffinity(0, {cpu})
         report["cpu_affinity"] = [cpu]
         report["cpuinfo"] = Path("/proc/cpuinfo").read_text()
@@ -136,7 +143,8 @@ def main():
         # Receipt paths can be arbitrarily deep; AF_UNIX addresses cannot.
         # mkdtemp creates an exclusive private directory for this driver. Keep
         # its lifetime until every owned worker and gateway has been reaped.
-        sockets = tempfile.TemporaryDirectory(prefix="uwvm-ros-bench-", dir="/tmp")
+        args.socket_root.mkdir(parents=True, exist_ok=True)
+        sockets = tempfile.TemporaryDirectory(prefix="ros-bench-", dir=args.socket_root)
         socket_dir = Path(sockets.name)
         report["socket_directory"] = str(socket_dir)
         connection = {"node-name": "benchmark_gateway", "namespace": "/uwvm_perf", "domain-id": "191",
@@ -178,7 +186,7 @@ def main():
             grant, limits = resource_configuration(args.operation, args.ros_version, limits)
             report["resource_case"] = {"number": RESOURCE_CASES[args.operation][0],
                                        "import": RESOURCE_CASES[args.operation][1], "grant": grant, "limits": limits}
-        option = f"--ros{args.ros_version}-global-"
+        option = f"--ros{args.ros_version}-single-"
         report["policy"] = {"connection": connection, "grant": grant, "limits": limits}
         server = start("server", [args.peer, "server"])
         wait_for(lambda: "BENCH_SERVER_READY=1" in (args.out / "server.log").read_text(), server)
@@ -208,8 +216,12 @@ def main():
                     command = [runtime_binary, "-Raot", "-Rct", "0", "-Rllvm-policy", "max",
                                "--log-verbose",
                                "--runtime-compiler-log", "err",
-                               "--wasip1-global-noinherit-system-environment",
-                               "--wasip1-global-grant", "monotonic-clock", option + "enable"]
+                               "--wasm-set-main-module-name", "main",
+                               "--wasip1-single-create", "main", "--wasip1-single-enable", "main",
+                               "--wasip1-single-grant", "main", "monotonic-clock",
+                               "--wasip1-single-grant", "main", "stdin.read",
+                               "--wasip1-single-grant", "main", "stderr.write",
+                               option + "create", "main", option + "enable", "main"]
                     if args.cache_mode == "signed":
                         command += ["--runtime-llvm-jit-cache-seal-process", "-Rllvm-cache-path", "path", args.cache]
                     else:
@@ -219,10 +231,10 @@ def main():
                                      "audit-deny-max-bytes": "1048576"}
                     for key, value in {**connection, **worker_limits, "gateway-socket": str(socket),
                                        "gateway-uid": str(os.getuid())}.items():
-                        command += [option + key, value]
-                    command += [option + "grant", *grant]
+                        command += [option + key, "main", value]
+                    command += [option + "grant", "main", *grant]
                     for key, value in limits.items():
-                        command += [option + "set", "client", key, value]
+                        command += [option + "set", "main", "client", key, value]
                     command += ["--run", args.wasm]
                     if args.runtime_loader:
                         command = [args.runtime_loader, "--library-path", args.runtime_library_path, *command]

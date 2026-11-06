@@ -18,7 +18,7 @@
 UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasm_mutation
 {
     inline constexpr unsigned protocol_version{3u};
-    enum class destination : unsigned char { global, table, member, member_path, memory };
+    enum class destination : unsigned char { global, table, member, member_path, memory, local, operand };
     enum class source_kind : unsigned char { numeric_bits, null, i31, function, original_root, original_path, bytes };
     enum class refusal : unsigned char
     { none, immutable_global, type_mismatch, unavailable_source, retention_failed, immutable_member };
@@ -57,9 +57,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasm_mutation
     };
     [[nodiscard]] constexpr bool valid(request const& input) noexcept
     {
-        if(input.participant==0u || static_cast<unsigned>(input.target)>static_cast<unsigned>(destination::memory) ||
+        if(input.participant==0u || static_cast<unsigned>(input.target)>static_cast<unsigned>(destination::operand) ||
            static_cast<unsigned>(input.source)>static_cast<unsigned>(source_kind::bytes) ||
-           (input.target==destination::global && input.element!=0u)) { return false; }
+           ((input.target==destination::global || input.target==destination::local || input.target==destination::operand) && input.element!=0u) ||
+           ((input.target==destination::local || input.target==destination::operand) && input.module!=0u)) { return false; }
         if(input.target==destination::memory)
         {
             if(input.source!=source_kind::bytes || input.memory_size==0u || input.memory_size>input.memory_bytes.size() ||
@@ -177,7 +178,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasm_mutation
             if(count==tokens.size()) { return false; }
             tokens[count++]=line.subview(begin,cursor-begin); // bounded begin<=cursor<=size BEFORE view.
         }
-        if(count<7u || tokens[0]!="set" || tokens[1]!="wasm") { return false; }
+        if(count<6u || tokens[0]!="set" || tokens[1]!="wasm") { return false; }
         request next{};
         // Each textual pair is parsed by FastIO. Preserve byte order exactly
         // on either host endian; a request contains no interpreted host address.
@@ -245,12 +246,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasm_mutation
             if(current>=count || tokens[current++]!="at" || current>=count ||
                !details::number<false>(tokens[current++],next.element) || current>=count) { return false; }
         }
+        else if(tokens[2]=="local" || tokens[2]=="operand")
+        {
+            next.target=tokens[2]=="local" ? destination::local : destination::operand;
+            if(!details::number<false>(tokens[3],next.participant) ||
+               !details::number<false>(tokens[4],next.index)) { return false; }
+            current=5u;
+        }
         else
         {
             if(tokens[2]=="global") { next.target=destination::global; }
             else if(tokens[2]=="table") { next.target=destination::table; }
             else { return false; }
-            if(!details::number<false>(tokens[3],next.module) || !details::number<false>(tokens[4],next.index)) { return false; }
+            if(count<7u || !details::number<false>(tokens[3],next.module) || !details::number<false>(tokens[4],next.index)) { return false; }
             current=5u;
             if(next.target==destination::table)
             { if(current>=count || !details::number<false>(tokens[current++],next.element)) { return false; } }
@@ -349,7 +357,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasm_mutation
     {
         return ::fast_io::concat_std("Wasm mutation v=",protocol_version," status=",wasm_state::status_text(out.status),
             " applied=",out.applied ? 1u : 0u," reason=",refusal_text(out.reason)," runtime=",out.runtime_epoch,
-            " module=",out.module," target=",out.target==destination::global ? ::fast_io::string_view{"global"} : out.target==destination::table ? ::fast_io::string_view{"table"} : out.target==destination::memory ? ::fast_io::string_view{"memory"} : ::fast_io::string_view{"member"},
+            " module=",out.module," target=",out.target==destination::global ? ::fast_io::string_view{"global"} : out.target==destination::table ? ::fast_io::string_view{"table"} : out.target==destination::memory ? ::fast_io::string_view{"memory"} : out.target==destination::local ? ::fast_io::string_view{"local"} :
+            out.target==destination::operand ? ::fast_io::string_view{"operand"} : ::fast_io::string_view{"member"},
             " index=",out.index," element=",out.element," bytes=",out.memory_size," address-bytes=",static_cast<unsigned>(out.address_bytes),"\n");
     }
 }

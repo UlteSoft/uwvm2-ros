@@ -72,7 +72,8 @@ class ScopePages(unittest.TestCase):
         if selected in ("locals", "operands", "saved", "globals"):
             self.assertEqual([r["value"] for r in rows], [str(1000+i) for i in indices])
         self.assertTrue(all(r["variablesReference"] == 0 and "memoryReference" not in r and
-                            r["presentationHint"]["attributes"] == ["readOnly"] for r in rows))
+                            r.get("presentationHint", {}).get("attributes", []) ==
+                            ([] if selected in ("locals", "operands", "globals") else ["readOnly"]) for r in rows))
         self.assertTrue(all(int(c.split()[-1]) <= 64 for c in self.broker.commands if c != "status" and c.split()[0] in TITLES))
         return reply
     def test_all_seven_scopes_cross_boundary_tail_and_empty(self):

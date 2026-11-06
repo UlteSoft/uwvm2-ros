@@ -293,8 +293,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::local_imported
         inline constexpr char8_t name_args_sizes_get[] = u8"args_sizes_get";
         using args_sizes_get = wasip1_local_imported_function<::std::addressof(::uwvm2::imported::wasi::wasip1::func::args_sizes_get), name_args_sizes_get>;
 
+        // Audited Linux product queries: clock resolution conversion and
+        // getrandom transfer are integer-only, including refusal and tracing.
+        // Preserve the original conservative contract on other host backends.
+        inline constexpr auto linux_integer_query_fp_policy{
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(__linux__)
+            ::uwvm2::uwvm::wasm::type::local_imported_wasm_fp_control_policy_t::preserves_wasm_control
+#else
+            ::uwvm2::uwvm::wasm::type::local_imported_wasm_fp_control_policy_t::may_modify
+#endif
+        };
+
         inline constexpr char8_t name_clock_res_get[] = u8"clock_res_get";
-        using clock_res_get = wasip1_local_imported_function<::std::addressof(::uwvm2::imported::wasi::wasip1::func::clock_res_get), name_clock_res_get>;
+        using clock_res_get = wasip1_local_imported_function<::std::addressof(::uwvm2::imported::wasi::wasip1::func::clock_res_get), name_clock_res_get, linux_integer_query_fp_policy>;
 
         inline constexpr char8_t name_clock_time_get[] = u8"clock_time_get";
         // Audited built-in fast path: the clock query, nanosecond conversion, and guest store are integer-only. The external
@@ -429,7 +440,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::local_imported
         using proc_raise = wasip1_local_imported_function<::std::addressof(::uwvm2::imported::wasi::wasip1::func::proc_raise), name_proc_raise>;
 
         inline constexpr char8_t name_random_get[] = u8"random_get";
-        using random_get = wasip1_local_imported_function<::std::addressof(::uwvm2::imported::wasi::wasip1::func::random_get), name_random_get>;
+        using random_get = wasip1_local_imported_function<::std::addressof(::uwvm2::imported::wasi::wasip1::func::random_get), name_random_get, linux_integer_query_fp_policy>;
 
         inline constexpr char8_t name_sched_yield[] = u8"sched_yield";
         using sched_yield = wasip1_local_imported_function<::std::addressof(::uwvm2::imported::wasi::wasip1::func::sched_yield), name_sched_yield>;
@@ -459,7 +470,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::local_imported
 
         inline constexpr char8_t name_clock_res_get_wasm64[] = u8"clock_res_get_wasm64";
         using clock_res_get_wasm64 =
-            wasip1_local_imported_function<::std::addressof(::uwvm2::imported::wasi::wasip1::func::clock_res_get_wasm64), name_clock_res_get_wasm64>;
+            wasip1_local_imported_function<::std::addressof(::uwvm2::imported::wasi::wasip1::func::clock_res_get_wasm64), name_clock_res_get_wasm64, linux_integer_query_fp_policy>;
 
         inline constexpr char8_t name_clock_time_get_wasm64[] = u8"clock_time_get_wasm64";
         // Same audited Wasm-control contract as clock_time_get; accrued status flags may change, while fd_write and every
@@ -616,7 +627,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::local_imported
 
         inline constexpr char8_t name_random_get_wasm64[] = u8"random_get_wasm64";
         using random_get_wasm64 =
-            wasip1_local_imported_function<::std::addressof(::uwvm2::imported::wasi::wasip1::func::random_get_wasm64), name_random_get_wasm64>;
+            wasip1_local_imported_function<::std::addressof(::uwvm2::imported::wasi::wasip1::func::random_get_wasm64), name_random_get_wasm64, linux_integer_query_fp_policy>;
 
         inline constexpr char8_t name_sched_yield_wasm64[] = u8"sched_yield_wasm64";
         using sched_yield_wasm64 =

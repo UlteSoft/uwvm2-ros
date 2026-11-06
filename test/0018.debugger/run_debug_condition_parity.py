@@ -102,7 +102,7 @@ def main():
         answer = run()
         check("unavailable source predicate retains real stop", "unavailable code=" in answer and "actual stop retained" in answer)
         prior = live.actual_location(client)
-        for rejected in (f"condition {point} system()", f"condition {point} i = 0", "watch i"):
+        for rejected in (f"condition {point} system()", f"condition {point} i = 0", "watch memory 18446744073709551615 0 0 1"):
             client.request("evaluate", {"expression": rejected, "context": "repl"}, success=False)
             check("denied without continuing: "+rejected, live.actual_location(client)["stop"] == prior["stop"])
         cmd(f"condition {point}")

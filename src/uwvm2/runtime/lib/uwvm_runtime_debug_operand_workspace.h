@@ -89,7 +89,7 @@ namespace uwvm2::runtime::lib::details
         // All site/flags/carrier/padding bytes are zero BEFORE returning.
         [[nodiscard]] UWVM_ALWAYS_INLINE ::std::span<::std::byte> enter_small(::std::size_t bytes)
         {
-            constexpr ::std::size_t capacity{64u}, prefix{sizeof(::std::uint64_t)};
+            constexpr ::std::size_t capacity{64u}, prefix{2u*sizeof(::std::uint64_t)};
             if(bytes == 0u || bytes > capacity) { return {}; }
             if(active_ == buffers_.size() || buffers_[active_].bytes.size() < capacity+prefix)
             {

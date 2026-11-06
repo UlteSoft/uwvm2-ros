@@ -311,7 +311,14 @@ template <typename LoadLength>
                                                        info.stable_memory_reserved_span_bytes, ::uwvm2::utils::container::u8string_view{name.data(), name.size()});
         // Instrumented Wasm failures must reach the cold runtime observer,
         // outside an OS signal handler. Ordinary JIT keeps its guard strategy.
-        if(!state.emit_debug_safe_points && !threaded_host_emission_scope::selected() && !info.mmap_requires_dynamic_bounds)
+        if(
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+           // Product CLI traps must reach the exit coordinator outside signal
+           // context, including configured pending-message waits. Keep explicit
+           // bounds without enabling the debugger merely to obtain them.
+           false &&
+#endif
+           !state.emit_debug_safe_points && !threaded_host_emission_scope::selected() && !info.mmap_requires_dynamic_bounds)
         {
             if(info.mmap_covers_wasm32_effective_domain) { protection = llvm_jit_memory_protection::full_wasm32_guard; }
             else if(info.mmap_uses_partial_protection) { protection = llvm_jit_memory_protection::partial_guard; }

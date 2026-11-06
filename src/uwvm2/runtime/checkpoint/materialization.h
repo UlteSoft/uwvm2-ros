@@ -42,7 +42,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
     inline constexpr ::std::size_t observer_local_metadata_bytes{2u + sizeof(::std::uintptr_t)};
     // Private activation-owned site cell precedes the original workspace.
     // It is not a serialized PC or a stop/restore credential.
-    inline constexpr ::std::size_t observer_site_bytes{sizeof(::std::uint64_t)};
+    inline constexpr ::std::size_t observer_site_bytes{2u*sizeof(::std::uint64_t)};
     // Compiler/native bridge packet format tag; the public local view strips
     // it after matching the current activation-owned workspace. No count/PC
     // from debugger commands can nominate one of these private buffers.
@@ -212,7 +212,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
             // Observation v59 applies non-CFG scalar cleanup after the admitted
             // numeric-local SSA pass. Every side-effecting observation and
             // exception cleanup remains; old generated cache entries expire.
-            auto const policy{purpose_ == compilation_purpose::observe_values ? 64u : 17u};
+            auto const policy{purpose_ == compilation_purpose::observe_values ? 65u : 17u};
             return {0x554357504c4f4731u, policy, state_schema_revision, native_resume_abi_revision, native_slot_bytes, cap_.frames, cap_.slots_per_frame, cap_.controls_per_frame, cap_.handlers_per_frame, native_workspace_limit};
         }
         // One canonical serializer visits the ENTIRE declared tuple, including

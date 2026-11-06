@@ -33,6 +33,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::console_messages
         using enum console_command_kind;
         switch(command.kind)
         {
+            case watchpoint: return "watch";
+            case breakpoint_commands: return "commands";
+            case callback_echo: return "echo";
             case module_list: return "info modules";
             case ros_state:return "ros";
             case execution_relocate: return "jump";
@@ -73,6 +76,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::console_messages
                     case wasm_mutation::destination::table: return "set wasm table";
                     case wasm_mutation::destination::member: case wasm_mutation::destination::member_path: return "set wasm member";
                     case wasm_mutation::destination::memory: return "set wasm memory";
+                    case wasm_mutation::destination::local: return "set wasm local";
+                    case wasm_mutation::destination::operand: return "set wasm operand";
                 }
                 return "wasm set";
             case wasm_path: return "path"; case wasm_event: return "wasm events";

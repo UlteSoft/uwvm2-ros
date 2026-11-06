@@ -7721,6 +7721,10 @@ struct runtime_local_func_llvm_jit_emit_state_t
         }
     }
     ::llvm::BasicBlock* observation_resume{};
+    ::llvm::BasicBlock* observation_bypass{};
+    ::std::vector<::llvm::Value*> original_operands;
+    original_operands.reserve(state.operand_stack.size());
+    for(auto const& operand:state.operand_stack) { original_operands.push_back(operand.value); }
     ::llvm::Value* post_packet_demand{};
     // Exact single-byte GC subopcodes: field/element reads, writes and length.
     // No allocation, bulk helper, conversion, call or host wait is admitted.
@@ -7742,6 +7746,7 @@ struct runtime_local_func_llvm_jit_emit_state_t
     }
     auto const emit_observation_gate{[&](::llvm::Value* requested, [[maybe_unused]] ::llvm::Value* demand_address=nullptr)
     {
+        observation_bypass=builder.GetInsertBlock();
         auto* const capture{::llvm::BasicBlock::Create(builder.getContext(),"debug.observe.capture",state.llvm_function)};
         observation_resume=::llvm::BasicBlock::Create(builder.getContext(),"debug.observe.resume",state.llvm_function);
         auto const weights{::llvm::MDNode::get(builder.getContext(),
@@ -7973,11 +7978,89 @@ struct runtime_local_func_llvm_jit_emit_state_t
     // old noexcept/naked wrapper and never a Wasm typed exception handler.
     if(!emit_runtime_local_func_llvm_jit_debug_shutdown_poll(state, wasm_expr_byte_offset, call)) { return false; }
     if(!emit_runtime_local_func_llvm_jit_checkpoint_retirement_poll(state, wasm_expr_byte_offset)) { return false; }
+    // The selected observer owns a complete private packet. A manager may
+    // change typed current-frame values only while the actual cohort is parked.
+    // Ordinary code has no workspace and emits NONE of this return path.
+    bool mutable_packet{};
+    if(state.checkpoint_observer_workspace!=nullptr && state.checkpoint_plan!=nullptr &&
+       state.checkpoint_current_site!=0u && state.checkpoint_current_site<=state.checkpoint_plan->sites.size())
+    {
+        namespace cp=::uwvm2::runtime::checkpoint;
+        auto const& site{state.checkpoint_plan->sites[static_cast<::std::size_t>(state.checkpoint_current_site-1u)]};
+        mutable_packet=site.opcode_offset==wasm_expr_byte_offset && site.phase==cp::frame_phase::before_opcode &&
+            site.local_count==state.local_pointers.size() && site.operand_count==state.operand_stack.size();
+        if(mutable_packet)
+        {
+            auto const flag{builder.CreateInBoundsGEP(builder.getInt8Ty(),state.checkpoint_observer_workspace,
+                builder.getInt64(-static_cast<::std::int64_t>(cp::observer_site_bytes-sizeof(::std::uint64_t))))};
+            auto const dirty{builder.CreateLoad(builder.getInt8Ty(),flag)};dirty->setAlignment(::llvm::Align{1u});
+            auto const clean{builder.GetInsertBlock()};
+            auto const edit{::llvm::BasicBlock::Create(builder.getContext(),"debug.state.apply",state.llvm_function)};
+            auto const join{::llvm::BasicBlock::Create(builder.getContext(),"debug.state.ready",state.llvm_function)};
+            builder.CreateCondBr(builder.CreateICmpNE(dirty,builder.getInt8(0u)),edit,join);builder.SetInsertPoint(edit);
+            auto const payload{builder.CreateInBoundsGEP(builder.getInt8Ty(),state.checkpoint_observer_workspace,
+                builder.getInt64(site.local_count*cp::observer_local_metadata_bytes))};
+            for(::std::size_t i{};i!=site.local_count;++i)
+            {
+                if(!site.slots[i].initialized) { continue; }
+                auto const type{get_llvm_type_from_wasm_value_type(builder.getContext(),state.local_types.index_unchecked(i))};
+                if(type==nullptr) { return false; }
+                auto const cell{builder.CreateInBoundsGEP(builder.getInt8Ty(),payload,builder.getInt64(i*cp::native_slot_bytes))};
+                auto const value{builder.CreateLoad(type,cell)};value->setAlignment(::llvm::Align{1u});
+                builder.CreateStore(value,state.local_pointers.index_unchecked(i));
+            }
+            ::std::vector<::llvm::Value*> edited;edited.reserve(site.operand_count);
+            for(::std::size_t i{};i!=site.operand_count;++i)
+            {
+                auto const cell{builder.CreateInBoundsGEP(builder.getInt8Ty(),payload,
+                    builder.getInt64((site.local_count+i)*cp::native_slot_bytes))};
+                auto const value{builder.CreateLoad(original_operands[i]->getType(),cell)};value->setAlignment(::llvm::Align{1u});
+                edited.push_back(value);
+            }
+            builder.CreateStore(builder.getInt8(0u),flag)->setAlignment(::llvm::Align{1u});
+            builder.CreateBr(join);builder.SetInsertPoint(join);
+            for(::std::size_t i{};i!=site.operand_count;++i)
+            {
+                auto const value{builder.CreatePHI(original_operands[i]->getType(),2u,"debug.state.operand")};
+                value->addIncoming(original_operands[i],clean);value->addIncoming(edited[i],edit);
+                state.operand_stack.index_unchecked(i).value=value;
+            }
+            // A later observation must not reuse SSA witnesses of the pre-edit
+            // packet, even if the edited bytes happened to compare equal.
+            state.checkpoint_observer_nonlocals.clear();state.checkpoint_observer_nonlocal_block=nullptr;
+            state.debug_native_numeric_definitions.clear();state.debug_native_numeric_block=nullptr;
+            for(auto& operand:state.operand_stack)
+            {
+                // Manager edits can replace ref.func and GC values. No old
+                // direct-call or immutable-object witness survives this edge.
+                operand.known_ref_func_index=SIZE_MAX;
+                operand.immutable_gc_values_witness=nullptr;
+                operand.immutable_gc_values_witness_block=nullptr;
+                operand.immutable_gc_values_witness_next_offset=SIZE_MAX;
+            }
+#if defined(UWVM_EXPERIMENTAL_ARRAY_LENGTH_VALUES) && UWVM_EXPERIMENTAL_ARRAY_LENGTH_VALUES == 1
+            state.array_length_value_facts.clear();
+            for(auto const& local:state.array_length_value_locals)
+            { if(local.valid!=nullptr) { builder.CreateStore(builder.getFalse(),local.valid); } }
+#endif
+        }
+    }
     if(observation_resume != nullptr)
     {
+        auto const observed{builder.GetInsertBlock()};
         bool const guarded_packet{state.checkpoint_observer_packet_epoch!=nullptr &&
             state.checkpoint_observer_nonlocal_block==builder.GetInsertBlock()};
         builder.CreateBr(observation_resume);builder.SetInsertPoint(observation_resume);
+        if(mutable_packet)
+        {
+            for(::std::size_t i{};i!=state.operand_stack.size();++i)
+            {
+                auto const current{state.operand_stack.index_unchecked(i).value};
+                auto const value{builder.CreatePHI(current->getType(),2u,"debug.state.observed.operand")};
+                value->addIncoming(original_operands[i],observation_bypass);value->addIncoming(current,observed);
+                state.operand_stack.index_unchecked(i).value=value;
+            }
+        }
         if(guarded_packet) { state.checkpoint_observer_nonlocal_block=observation_resume; }
         else
         {

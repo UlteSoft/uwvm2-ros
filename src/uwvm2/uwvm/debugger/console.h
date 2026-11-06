@@ -249,6 +249,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 reply.status == ::uwvm2::utils::control::error::source_debug_info_invalid ||
                 reply.status == ::uwvm2::utils::control::error::source_location_unmapped))
             { return ::fast_io::concat_std("error: current source frames unavailable: valid embedded -g DWARF and a current private source/activation capture are required\n"); }
+            if(reply.status != ::uwvm2::utils::control::error::none && !reply.watchpoint_error.empty())
+            { return ::fast_io::concat_std("error: watchpoint unavailable: ",::std::string_view{reply.watchpoint_error},"\n"); }
             if(reply.status != ::uwvm2::utils::control::error::none)
             {
                 ::fast_io::io::print(output, "error: ");
@@ -703,7 +705,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             if(reply.timed_out)
             {
                 ::fast_io::io::print(output, ::fast_io::mnp::os_c_str(command.wait_for_event ?
-                    "wait timed out; " : "pause/step timed out; "));
+                    "wait timed out; " : command.operation==::uwvm2::utils::control::operation::resume ?
+                    "continue time slice ended; " : "pause/step timed out; "));
                 if(reply.execution == execution_status::stopping)
                 { ::fast_io::io::print(output, "cooperative pause remains pending; no complete stop established\n"); }
                 else if(reply.execution == execution_status::running)
@@ -735,6 +738,34 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                reply.execution == execution_status::stopped && reply.native_step_from != 0u && reply.native_step_to != 0u)
             { ::fast_io::io::print(output,"native finish 0x",::fast_io::mnp::hex<false,true>(reply.native_step_from),
                 " -> 0x",::fast_io::mnp::hex<false,true>(reply.native_step_to),"\n"); }
+            if(command.kind==console_command_kind::breakpoint_commands)
+            {
+                ::fast_io::io::print(output,::std::string_view{reply.callback_output});
+                if(!command.breakpoint_id) { ::fast_io::io::print(output,"callback-next=",reply.callback_next," byte=",reply.callback_next_byte," total=",reply.callback_total,"\n"); }
+                else if(reply.callback_output.empty()) { ::fast_io::io::print(output,"breakpoint callbacks updated\n"); }
+                return text;
+            }
+            if(command.kind==console_command_kind::watchpoint)
+            {
+                if(command.watchpoint_policy==watchpoint_action::read_old || command.watchpoint_policy==watchpoint_action::read_new)
+                {
+                    ::fast_io::io::print(output,"watchpoint ",reply.watchpoint_identifier,
+                        ::fast_io::mnp::os_c_str(command.watchpoint_policy==watchpoint_action::read_old ? " old":" new"),
+                        " first=",reply.watchpoint_value_first," total=",reply.watchpoint_value_total," bytes=");
+                    for(auto byte:reply.watchpoint_before)
+                    { ::fast_io::io::print(output,::fast_io::mnp::hex<false,true>(::std::to_integer<unsigned char>(byte))," "); }
+                    ::fast_io::io::print(output,"\n");return text;
+                }
+                if(reply.watchpoint_identifier) { ::fast_io::io::print(output,"watchpoint ",reply.watchpoint_identifier," registered\n"); }
+                for(auto const& point:reply.watchpoints)
+                { ::fast_io::io::print(output,"watchpoint ",point.identifier," enabled=",::fast_io::mnp::os_c_str(point.enabled ? "yes":"no"),
+                    " hits=",point.hits," ",::std::string_view{point.description},"\n"); }
+                if(!reply.watchpoint_error.empty()) { ::fast_io::io::print(output,"watchpoint unavailable: ",::std::string_view{reply.watchpoint_error},"\n"); }
+                if(command.watchpoint_policy==watchpoint_action::list)
+                { ::fast_io::io::print(output,"watchpoint-next=",reply.watchpoint_next," total=",reply.watchpoint_total,"\n"); }
+                if(text.empty()) { ::fast_io::io::print(output,"watchpoint policy updated\n"); }
+                return text;
+            }
             if(reply.breakpoint_identifier != 0u)
             {
                 if(command.kind == console_command_kind::assembly_breakpoint)
@@ -768,6 +799,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                                         " module=", ::fast_io::mnp::dec(point.module), " function=", ::fast_io::mnp::dec(point.function),
                                         " kind=", ::fast_io::mnp::cond(point.assembly, "asm", "wasm"),
                                         " byte-offset=", ::fast_io::mnp::dec(point.offset),
+                                        " temporary=", ::fast_io::mnp::os_c_str(point.temporary ? "yes" : "no"),
                                         " enabled=", ::fast_io::mnp::os_c_str(point.enabled ? "yes" : "no"), " hits=", ::fast_io::mnp::dec(point.hits),
                                         " ignore=", ::fast_io::mnp::dec(point.ignore_remaining));
                     if(point.condition_size != 0u && point.condition_size <= point.condition.size())
@@ -967,6 +999,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 case execution_status::stopping: ::fast_io::io::print(output, "pause requested; executions are not all stopped\n"); break;
                 case execution_status::stopped:
                     ::fast_io::io::print(output, ::fast_io::mnp::os_c_str(reply.reason == stop_reason::initial ? "prepared; no Wasm instruction executed\n" :
+                        reply.reason == stop_reason::watchpoint ?
+                            (::std::any_of(reply.threads.begin(),reply.threads.end(),[](auto const& row){return row.native_pc.has_value();}) ?
+                                "stopped: native data watchpoint\n":"stopped: data watchpoint\n") :
                         reply.reason == stop_reason::breakpoint ? "stopped: breakpoint\n" :
                         reply.reason == stop_reason::native_breakpoint ? "stopped: native breakpoint\n" :
                         reply.reason == stop_reason::wasm_entry ? "stopped: first Wasm instruction\n" :
@@ -979,6 +1014,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                         reply.reason == stop_reason::step ? "stopped: selected participant step\n" : "stopped: pause\n"));
                     if(reply.reason == stop_reason::wasm_uncaught && reply.wasm_terminal_participant != 0u)
                     { ::fast_io::io::print(output, "uncaught-thread ", ::fast_io::mnp::dec(reply.wasm_terminal_participant), "\n"); }
+                    if(reply.watchpoint_identifier)
+                    {
+                        ::fast_io::io::print(output,"watchpoint ",reply.watchpoint_identifier," old=");
+                        for(auto byte:reply.watchpoint_before) { ::fast_io::io::print(output,::fast_io::mnp::hex<false,true>(::std::to_integer<unsigned char>(byte)), " "); }
+                        ::fast_io::io::print(output," new=");
+                        for(auto byte:reply.watchpoint_after) { ::fast_io::io::print(output,::fast_io::mnp::hex<false,true>(::std::to_integer<unsigned char>(byte)), " "); }
+                        if(reply.watchpoint_value_total>reply.watchpoint_before.size())
+                        { ::fast_io::io::print(output," preview-only total-bytes=",reply.watchpoint_value_total,
+                            "; use watchpoints old|new ",reply.watchpoint_identifier," FIRST COUNT"); }
+                        ::fast_io::io::print(output,"\n");
+                    }
+                    if(!reply.watchpoint_error.empty()) { ::fast_io::io::print(output,"watchpoint unavailable: ",::std::string_view{reply.watchpoint_error},"\n"); }
                     if(reply.native_breakpoint_hit != 0u)
                     { ::fast_io::io::print(output, "native-breakpoint ", ::fast_io::mnp::dec(reply.native_breakpoint_hit), "\n"); }
                     if(reply.stop_identifier != 0u)
@@ -2398,6 +2445,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 case console_command_kind::source_type:
                 case console_command_kind::source_value:
                 case console_command_kind::source_frame:
+                case console_command_kind::watchpoint:
+                case console_command_kind::breakpoint_commands:
+                case console_command_kind::callback_echo:
                 case console_command_kind::breakpoint_control:
                 case console_command_kind::replacement_file:
                 case console_command_kind::protocol: break;

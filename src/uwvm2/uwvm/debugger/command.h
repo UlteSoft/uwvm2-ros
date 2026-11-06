@@ -31,13 +31,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
     inline constexpr ::std::size_t max_command_bytes{512};
     inline constexpr ::std::size_t max_input_command_bytes{wasip1_state::maximum_command_bytes}; // Long input is restricted to bounded WASIp1 edits and HOST pretty-printer configuration.
     using command_text_view = ::fast_io::string_view;
-    enum class console_command_kind { assembly_breakpoint, module_list, protocol, source_step, source_breakpoint, source_locals, assembly_step, replacement_file, help, quit, unsupported, invalid, empty, assembly_disassemble, assembly_disassemble_range, wasm_event, wasm_script, assembly_registers, source_type, source_value, assembly_next, source_frame, wasm_state, wasip1_state, wasm_path, wasm_mutation, wasm_step, breakpoint_control, assembly_finish, execution_relocate, ros_state, source_print_options, source_printer_config, host_trace };
+    enum class console_command_kind { assembly_breakpoint, module_list, protocol, source_step, source_breakpoint, source_locals, assembly_step, replacement_file, help, quit, unsupported, invalid, empty, assembly_disassemble, assembly_disassemble_range, wasm_event, wasm_script, assembly_registers, source_type, source_value, assembly_next, source_frame, wasm_state, wasip1_state, wasm_path, wasm_mutation, wasm_step, breakpoint_control, assembly_finish, execution_relocate, ros_state, source_print_options, source_printer_config, host_trace, watchpoint, breakpoint_commands, callback_echo };
     enum class unavailable_step_level { none, source, assembly };
     enum class source_step_policy { into, over, out };
     enum class source_run_to_policy { none, until, advance };
     enum class wasm_step_policy { into, over, out };
     enum class source_frame_action { list, show, select, up, down };
     enum class breakpoint_action { enable, disable, ignore, condition };
+    enum class watchpoint_action { create, list, erase, enable, disable, read_old, read_new };
     enum class console_launch_action { none, run, start, start_wasm, start_instruction, kill };
     enum class relocation_level { source, wasm, assembly };
     enum class source_print_action { set_pretty, show_pretty, set_elements, show_elements, list_printers };
@@ -97,6 +98,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         breakpoint_action breakpoint_policy{};
         ::std::uint64_t breakpoint_id{}, breakpoint_ignore{};
         ::std::uint64_t native_breakpoint_offset{}; // Function-relative DATA, never a host address.
+        watchpoint_action watchpoint_policy{};
+        bool watchpoint_memory{};
+        ::std::uint64_t watchpoint_id{};
+        bool breakpoint_temporary{};
         bool breakpoint_source_display{}; // Display provenance only; does not affect breakpoint admission.
         bool breakpoint_initial_ignore{}; // Installed under the same lock as a new breakpoint.
         bool breakpoint_initial_condition{};
@@ -213,6 +218,114 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         line = line.subview(details::skip_command_space(line, 0u));
         auto const head_end{details::command_word_end(line, 0u)};
         auto const head{line.subview(0u, head_end)};
+        // One-shot policy uses exactly the ordinary target validator. A
+        // separate point never changes a persistent point at the same address.
+        if(head == "tbreak")
+        {
+            auto result{parse_console_command(line.subview(details::skip_command_space(line,head_end)),
+                allow_initial_ignore,allow_initial_condition)};
+            if(result.breakpoint_temporary ||
+               (result.operation != ::uwvm2::utils::control::operation::breakpoint_set &&
+                result.kind != console_command_kind::assembly_breakpoint)) { return {}; }
+            result.breakpoint_temporary=true; return result;
+        }
+        if(head=="callbacks")
+        {
+            console_command result{};result.kind=console_command_kind::breakpoint_commands;
+            result.operation=::uwvm2::utils::control::operation::status;
+            result.wasm_state_request.count=64u;result.wasm_state_request.index=32768u;
+            ::std::array<::std::uint64_t*,4u> fields{&result.breakpoint_ignore,&result.wasm_state_request.count,
+                &result.wasm_state_request.first,&result.wasm_state_request.index};
+            auto cursor{details::skip_command_space(line,head_end)};
+            for(auto field:fields)
+            {
+                if(cursor==line.size()) { break; }
+                auto const next{details::command_word_end(line,cursor)};
+                if(!details::parse_decimal(line.subview(cursor,next-cursor),*field)) { return {}; }
+                cursor=details::skip_command_space(line,next);
+            }
+            if(cursor!=line.size() || !result.wasm_state_request.count ||
+               result.wasm_state_request.index<8u || result.wasm_state_request.index>32768u) { return {}; }
+            return result;
+        }
+        if(head == "watch" || head == "watchpoints" || head=="commands" || head=="echo")
+        {
+            console_command result{};
+            result.operation=::uwvm2::utils::control::operation::status;
+            auto tail{line.subview(details::skip_command_space(line,head_end))};
+            if(head=="echo")
+            {
+                result.kind=console_command_kind::callback_echo;
+            }
+            else if(head=="commands")
+            {
+                auto const end{details::command_word_end(tail,0u)};
+                if(!details::parse_decimal(tail.subview(0u,end),result.breakpoint_id) || !result.breakpoint_id) { return {}; }
+                tail=tail.subview(details::skip_command_space(tail,end));
+                result.kind=console_command_kind::breakpoint_commands;
+            }
+            else
+            {
+                result.kind=console_command_kind::watchpoint;
+                if(head=="watchpoints")
+                {
+                    if(tail.empty() || (tail[0]>='0' && tail[0]<='9'))
+                    {
+                        result.watchpoint_policy=watchpoint_action::list;result.wasm_state_request.count=64u;
+                        auto const end{details::command_word_end(tail,0u)};
+                        if(!tail.empty() && !details::parse_decimal(tail.subview(0u,end),result.wasm_state_request.first)) { return {}; }
+                        auto const rest{tail.subview(details::skip_command_space(tail,end))};
+                        if(!rest.empty() && !details::parse_decimal(rest,result.wasm_state_request.count)) { return {}; }
+                        if(!result.wasm_state_request.count || result.wasm_state_request.count>64u) { return {}; }
+                        return result;
+                    }
+                    if(tail.starts_with("old ") || tail.starts_with("new "))
+                    {
+                        result.watchpoint_policy=tail[0]=='o' ? watchpoint_action::read_old:watchpoint_action::read_new;
+                        ::std::array<::std::uint64_t*,3u> fields{&result.watchpoint_id,
+                            &result.wasm_state_request.first,&result.wasm_state_request.count};
+                        ::std::size_t cursor{4u};
+                        for(auto field:fields)
+                        {
+                            cursor=details::skip_command_space(tail,cursor);
+                            auto const next{details::command_word_end(tail,cursor)};
+                            if(!details::parse_decimal(tail.subview(cursor,next-cursor),*field)) { return {}; }cursor=next;
+                        }
+                        if(details::skip_command_space(tail,cursor)!=tail.size() || !result.watchpoint_id ||
+                           !result.wasm_state_request.count || result.wasm_state_request.count>256u) { return {}; }
+                        return result;
+                    }
+                    auto const end{details::command_word_end(tail,0u)};auto const action{tail.subview(0u,end)};
+                    result.watchpoint_policy=action=="delete" ? watchpoint_action::erase : action=="enable" ? watchpoint_action::enable :
+                        action=="disable" ? watchpoint_action::disable : watchpoint_action::create;
+                    if(result.watchpoint_policy==watchpoint_action::create ||
+                       !details::parse_decimal(tail.subview(details::skip_command_space(tail,end)),result.watchpoint_id) ||
+                       !result.watchpoint_id) { return {}; }
+                    return result;
+                }
+                auto const end{details::command_word_end(tail,0u)};
+                if(tail.subview(0u,end)=="memory")
+                {
+                    ::std::array<::std::uint64_t*,4u> fields{&result.wasm_state_request.module,
+                        &result.wasm_state_request.index,&result.wasm_state_request.first,&result.wasm_state_request.count};
+                    auto cursor{end};
+                    for(auto field:fields)
+                    {
+                        cursor=details::skip_command_space(tail,cursor);auto const next{details::command_word_end(tail,cursor)};
+                        if(!details::parse_decimal(tail.subview(cursor,next-cursor),*field)) { return {}; }cursor=next;
+                    }
+                    if(details::skip_command_space(tail,cursor)!=tail.size() || !result.wasm_state_request.count ||
+                       result.wasm_state_request.index>UINT32_MAX ||
+                       result.wasm_state_request.count>UINT64_MAX-result.wasm_state_request.first) { return {}; }
+                    result.watchpoint_memory=true;return result;
+                }
+                if(tail.empty()) { return {}; }
+            }
+            if(tail.size()>result.script_text.size()) { return {}; }
+            result.script_size=tail.size();
+            for(::std::size_t i{};i!=tail.size();++i) { result.script_text[i]=tail[i]; }
+            return result;
+        }
         bool const breakpoint_head{head == "breakwasm" || head == "bw" || head == "breaksource" || head == "bs"};
         if(allow_initial_condition && line.size() <= max_command_bytes && breakpoint_head)
         {

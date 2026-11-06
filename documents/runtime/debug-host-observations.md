@@ -152,6 +152,11 @@ memory. Disabling a recorder avoids collection work; it does not promise a
 literal zero-instruction flag check. Native benchmark evidence belongs alongside
 the qualification results. QEMU results qualify functional behavior only.
 
+Ordinary CLI fault handling is also separated from the optional cooperative
+debug domain; see [ordinary execution performance](ordinary-execution-performance.md)
+for the source changes, native comparisons and qualification. Explicit RELEASE
+diagnostics retain their selected fault-frame accounting.
+
 ## ARM unwind correction
 
 The extended import stress test exposed an ARM soft-float crash while parking

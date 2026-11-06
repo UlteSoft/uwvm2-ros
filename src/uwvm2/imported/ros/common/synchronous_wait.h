@@ -95,11 +95,77 @@ namespace uwvm2::imported::ros
     class synchronous_quota_wait
     {
 #if defined(__linux__)
+        // Cache only idle kernel resources, never an operation, permission or
+        // cancellation owner. Nested waits allocate independently; this single
+        // reuse slot imposes no limit on the number of live waits.
+        inline static thread_local unsigned descriptor_cache_state{};
+        struct idle_descriptors
+        {
+            int event{-1}, timer{-1};
+            pid_t process{};
+            idle_descriptors() noexcept { descriptor_cache_state=1u; }
+            ~idle_descriptors()
+            {
+                descriptor_cache_state=2u; // Later TLS destructors must not borrow a dead cache.
+                if(event>=0) { ::close(event); }
+                if(timer>=0) { ::close(timer); }
+            }
+        };
+        static idle_descriptors& descriptor_cache() noexcept
+        { static thread_local idle_descriptors idle; return idle; }
         struct descriptors
         {
-            int event{::eventfd(0u,EFD_NONBLOCK|EFD_CLOEXEC)};
-            int timer{::timerfd_create(CLOCK_MONOTONIC,TFD_NONBLOCK|TFD_CLOEXEC)};
-            ~descriptors() { if(event>=0) { ::close(event); } if(timer>=0) { ::close(timer); } }
+            int event{-1}, timer{-1};
+            pid_t process{::getpid()};
+            descriptors() noexcept
+            {
+                if(descriptor_cache_state!=2u)
+                {
+                    auto& idle{descriptor_cache()};
+                    // fork() copies TLS but shares the kernel open-file objects.
+                    // Never drain or rearm another process's cached resources.
+                    if(idle.process!=process)
+                    {
+                        if(idle.event>=0) { ::close(idle.event); }
+                        if(idle.timer>=0) { ::close(idle.timer); }
+                        idle.event=idle.timer=-1; idle.process=process;
+                    }
+                    event=idle.event; timer=idle.timer; idle.event=idle.timer=-1;
+                }
+                if(event>=0 && timer>=0)
+                {
+                    // The previous exit owner was unregistered before release,
+                    // and this new owner has not been registered yet. Drain its
+                    // old event without racing any writer to the new operation.
+                    ::std::uint64_t count{};
+                    ssize_t n;
+                    do { n=::read(event,&count,sizeof(count)); } while(n<0 && errno==EINTR);
+                    if(n==static_cast<ssize_t>(sizeof(count)) || (n<0 && errno==EAGAIN)) { return; }
+                }
+                if(event>=0) { ::close(event); }
+                if(timer>=0) { ::close(timer); }
+                event=::eventfd(0u,EFD_NONBLOCK|EFD_CLOEXEC);
+                timer=::timerfd_create(CLOCK_MONOTONIC,TFD_NONBLOCK|TFD_CLOEXEC);
+            }
+            ~descriptors()
+            {
+                // Member destruction unregisters exit_owner FIRST. A cached
+                // descriptor cannot receive a later notification for this owner.
+                // Disarm before caching so a completed operation schedules no
+                // later timer wakeup. until() rearms before every actual poll.
+                // An inherited live owner may only close its child descriptors;
+                // it must never disarm the parent's shared kernel timer.
+                if(event>=0 && timer>=0 && descriptor_cache_state!=2u && process==::getpid())
+                {
+                    auto& idle{descriptor_cache()};
+                    if(idle.event<0 && idle.timer<0 && idle.process==process &&
+                       ::uwvm2::utils::host_clock::arm_timer(timer,::std::chrono::steady_clock::time_point::max()))
+                    { idle.event=event; idle.timer=timer; event=timer=-1; }
+                }
+                if(event>=0) { ::close(event); }
+                if(timer>=0) { ::close(timer); }
+            }
+            descriptors(descriptors const&)=delete;
         } handles;
 #endif
         ::uwvm2::utils::thread::process_exit::operation exit_owner{
