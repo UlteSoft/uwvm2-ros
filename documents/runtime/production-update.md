@@ -286,7 +286,8 @@ compatibility decoder is retained. A copied environment/checkpoint preserves
 the exact map.
 
 Canonical policy encoding begins with eight bytes `UWPOL5\0\0`, followed by
-LE64 values: enabled, operation mask, fd limit; twelve operation
+LE64 values: enabled, operation mask, fd limit; one u8 interface state per
+entry in the complete host registry, in registry order; twelve operation
 budget rows, each containing six LE64 limits (request bytes, window bytes,
 window calls, total bytes, total calls, concurrent), then six u8 actions in the
 same order (`0` reject, `1` synchronous wait), then six u8 guest-exit actions
@@ -300,13 +301,15 @@ defaults to 1 ns. Descriptor counts are bounded by the WASI descriptor ABI range
 are valid only for window-byte, window-call and concurrent-operation limits.
 Guest-exit wait is likewise valid only for those three quota dimensions; the
 separate native-wait guest-exit action controls actual provider waiting. Each
-operation row occupies 61 bytes; an empty policy occupies 852 bytes. Changing
+operation row occupies 61 bytes. With empty argv/env lists, a policy occupies
+`852 + N` bytes, where `N` is the complete host-registry entry count (currently
+217 entries and 1,069 bytes). Changing
 either action requires a new revocation generation, as do other restrictions.
 
 The management payload is at most 64 KiB; this is a control-frame bound, not a
 runtime args/env quota. NUL, malformed UTF-8, duplicate environment keys and
 unknown bits/actions are refused. The twelfth budget is filesystem I/O; the
-preceding eleven indices retain their order. Older `UWPOL1` and `UWPOL2` payloads
+preceding eleven indices retain their order. Older `UWPOL1` through `UWPOL4` payloads
 are rejected. Budget order and permission/function bit identities are defined in
 `environment/resource_limits.h` and `environment/environment.h`. Read operation 8
 or use `current_wasi_policy`/`encode_wasi_policy` to preserve canonical fields.

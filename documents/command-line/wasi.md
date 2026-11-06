@@ -124,9 +124,12 @@ explicitly approved file, terminal or device binding. It does not modify inherit
 open-file-description flags. Byte-stream pipe writes and stream sockets use
 nonblocking operations and cancellable readiness waits. Pipe reads (including
 blocking inputs) and packet-mode writes retain native read/write semantics,
-including packet truncation; a read end cannot identify another writer's mode. Reads and writes may make a short
-transfer through a PIPE_BUF-sized private staging buffer; this is transfer
-progress, not a maximum guest request. Callers must handle short transfers.
+including packet truncation; a read end cannot identify another writer's mode.
+A PIPE_BUF-sized private buffer bounds temporary memory, not a guest request.
+Blocking writes advance through every vector and chunk. Nonblocking writes and
+reads may return short transfers. If cancellation or a native error occurs after
+some bytes were written, the call reports that actual progress; with no progress
+it returns the corresponding error. Callers must still handle short transfers.
 
 A blocking stream has no implicit timeout. Quota waits use the configured
 reject/wait policy and native timer. A pipe read, file, terminal or device syscall already
@@ -943,8 +946,10 @@ On Windows NT, this strips `::NT::`, uses the NT opener, and can emit or fataliz
 Live WASI policy manifests use `UWPOL5` with twelve operation-budget classes;
 `filesystem` is appended after the preceding eleven. Each class encodes six
 64-bit limits followed by six one-byte reject/wait actions and six one-byte
-cancel/wait actions for guest exit, then one native-wait guest-exit action. Older `UWPOL1` and
-`UWPOL2` payloads are rejected rather than reinterpreted. The signed transition keeps the same
+cancel/wait actions for guest exit, then one native-wait guest-exit action. The
+interface-state map precedes these budget rows, after enabled/permissions/fd
+limit. Older `UWPOL1` through `UWPOL4` payloads are rejected rather than
+reinterpreted. The signed transition keeps the same
 environment/resources and process ledger; lowering a limit does not erase
 already consumed work. Policy expiration is not an implemented WASI grant
 field: signature/activation-ticket expiry must not be described as automatic
