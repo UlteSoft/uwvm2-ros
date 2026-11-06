@@ -57,46 +57,61 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_decoder_cache
     {
         target_key key{};
         ::std::unique_ptr<Decoder> decoder{};
+        ::std::unique_ptr<slot> next{};
+
+        ~slot() noexcept
+        {
+            // Destroy an arbitrary nesting depth iteratively at thread exit.
+            while(next)
+            {
+                auto retired{::std::move(next)};
+                next = ::std::move(retired->next);
+            }
+        }
     };
 
     template<typename Decoder>
-    [[nodiscard]] inline slot<Decoder>& local_slot() noexcept
+    [[nodiscard]] inline ::std::unique_ptr<slot<Decoder>>& local_slot() noexcept
     {
-        // One idle owner per decoder type and host thread, never a global
-        // mutable LLVM context. A lease removes it from this slot entirely.
-        static thread_local slot<Decoder> value{};
+        // One idle chain per decoder type and host thread. Each active lease
+        // removes its node; nested queries never share mutable LLVM state.
+        // The chain grows only to the observed simultaneous lease depth.
+        static thread_local ::std::unique_ptr<slot<Decoder>> value{};
         return value;
     }
 
     template<typename Decoder, typename Description>
     class lease final
     {
-        target_key key_{};
-        ::std::unique_ptr<Decoder> decoder_{};
+        ::std::unique_ptr<slot<Decoder>> owner_{};
+        Decoder* decoder_{};
 
         void acquire(Description const& description)
         {
             if(!native_target_metadata::valid(description)) { return; }
             auto& idle{local_slot<Decoder>()};
-            if(idle.decoder && idle.key.matches(description))
+            if(idle)
             {
-                key_ = ::std::move(idle.key);
-                decoder_ = ::std::move(idle.decoder);
-                return;
+                owner_ = ::std::move(idle);
+                idle = ::std::move(owner_->next);
             }
-            // A nested/reentrant query owns a separate context. It cannot
-            // mutate or evict a context that the outer query is still using.
-            idle.decoder.reset();
-            key_.assign(description);
-            decoder_.reset(new (::std::nothrow) Decoder{description});
-            if(decoder_ && !*decoder_) { decoder_.reset(); }
+            else { owner_.reset(new (::std::nothrow) slot<Decoder>{}); }
+            if(!owner_) { return; }
+            if(!owner_->decoder || !owner_->key.matches(description))
+            {
+                owner_->decoder.reset();
+                owner_->key.assign(description);
+                owner_->decoder.reset(new (::std::nothrow) Decoder{description});
+            }
+            if(owner_->decoder && *owner_->decoder) { decoder_ = owner_->decoder.get(); }
+            else { owner_.reset(); }
         }
     public:
         explicit lease(Description const& description) noexcept
         {
 #if defined(__cpp_exceptions) || defined(__EXCEPTIONS) || defined(_CPPUNWIND)
             try { acquire(description); }
-            catch(...) { decoder_.reset(); }
+            catch(...) { owner_.reset(); decoder_ = nullptr; }
 #else
             acquire(description);
 #endif
@@ -107,11 +122,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_decoder_cache
         lease& operator=(lease&&) = delete;
         ~lease() noexcept
         {
-            if(decoder_)
+            if(owner_)
             {
                 auto& idle{local_slot<Decoder>()};
-                idle.decoder = ::std::move(decoder_);
-                idle.key = ::std::move(key_);
+                // Return without allocation, including in noexcept builds.
+                // Keep inner leases instead of destroying their MC contexts
+                // when an outer query finishes.
+                owner_->next = ::std::move(idle);
+                idle = ::std::move(owner_);
             }
         }
         [[nodiscard]] explicit operator bool() const noexcept { return decoder_ && static_cast<bool>(*decoder_); }
