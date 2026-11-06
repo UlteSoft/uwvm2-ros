@@ -61,7 +61,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::ros_state
         return false;
     }
     // This bounded HOST grammar accepts DATA filters only. No command can open,
-    // revoke, refresh, resume, change tracing or call a native ROS operation.
+    // revoke, refresh, resume or call a native ROS operation. Diagnostic trace
+    // collection has an independent host-only on/off control.
     inline bool parse(::fast_io::string_view line,request& output) noexcept
     {
         ::fast_io::array<::fast_io::string_view,16> words{};::std::size_t count{},cursor{};
@@ -77,6 +78,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::ros_state
         request query{};::std::size_t first{2};
         if(words[0]=="trace") {query.selected=selection::trace;}
         else {if(count<3||!parse_selection(words[2],query.selected)) {return false;}first=3;}
+        if(query.selected==selection::trace&&count>2&&(words[2]=="on"||words[2]=="off"))
+        {query.trace_control=words[2]=="on"?1u:2u;first=3;}
         unsigned seen{};
         for(auto i{first};i<count;++i)
         {

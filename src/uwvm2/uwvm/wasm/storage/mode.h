@@ -38,6 +38,9 @@
 
 UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::storage
 {
+    // Diagnostic setup selection only; actual management authority still requires
+    // authenticated channel adoption. Guest input never writes this launch flag.
+    inline bool debug_control_requested{};
     inline ::uwvm2::uwvm::wasm::base::mode execute_wasm_mode{
         ::uwvm2::uwvm::wasm::base::mode::run};  // [global] No global variable dependencies from other translation units
 

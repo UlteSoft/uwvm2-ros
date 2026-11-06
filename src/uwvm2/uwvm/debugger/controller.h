@@ -231,6 +231,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         ::std::vector<console_command> script_commands{};
         ::std::vector<controller_reply> script_replies{};
         ros_state::view ros_state_values{};
+        ::std::string host_trace_values{};
     };
 
     // Exactly one trusted management thread calls command/status methods. Guest
@@ -665,6 +666,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
               capture_trace_{capture}, read_memory_{reader}
         {
             wasip1_calls::begin_debug_session();
+            ::uwvm2::imported::ros::debug::enabled.store(true,::std::memory_order_relaxed);
             admission_ = authority_.status();
             if(admission_ == control_error::none) { admission_ = session_.attach_console(authority_.issue_permit()); }
             if(admission_ == control_error::none)
@@ -5379,6 +5381,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             bool const wasm_mutation_query{command.kind == console_command_kind::wasm_mutation};
             bool const wasm_path_query{command.kind == console_command_kind::wasm_path};
             bool const wasip1_state_query{command.kind == console_command_kind::wasip1_state};
+            bool const host_trace_query{command.kind == console_command_kind::host_trace};
             bool const ros_state_query{command.kind == console_command_kind::ros_state};
             bool const wasm_script{command.kind == console_command_kind::wasm_script};
             bool const source_value{command.kind == console_command_kind::source_value};
@@ -5395,7 +5398,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             { initial.status = control_error::malformed; return initial; }
             if(((command.breakpoint_initial_ignore || command.breakpoint_initial_condition) && (command.operation != operation::breakpoint_set ||
                    (command.kind != console_command_kind::protocol && !source_breakpoint))) ||
-               (command.kind != console_command_kind::protocol && !replacement_file && !source_step && !wasm_step && !source_breakpoint && !assembly_step && !source_locals && !disassembly && !registers && !wasm_event && !wasm_script && !source_type && !source_frame && !wasm_state_query && !wasip1_state_query && !ros_state_query && !wasm_path_query && !wasm_mutation_query && !breakpoint_control && !assembly_breakpoint) ||
+               (command.kind != console_command_kind::protocol && !replacement_file && !source_step && !wasm_step && !source_breakpoint && !assembly_step && !source_locals && !disassembly && !registers && !wasm_event && !wasm_script && !source_type && !source_frame && !wasm_state_query && !wasip1_state_query && !ros_state_query && !host_trace_query && !wasm_path_query && !wasm_mutation_query && !breakpoint_control && !assembly_breakpoint) ||
                (assembly_breakpoint && (command.operation != operation::status || command.payload_size != 0u ||
                     command.wait_for_event || command.native_breakpoint_offset > 65536u ||
                     command.breakpoint_initial_condition || command.breakpoint_initial_ignore)) ||
@@ -5407,6 +5410,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                ((wasm_event || wasm_script) && (command.operation != operation::status || command.payload_size != 0u || command.wait_for_event)) ||
                (wasip1_state_query && (command.operation != operation::status || command.payload_size != 0u ||
                                       command.wait_for_event || !wasip1_state::valid(command.wasip1_state_request))) ||
+               (host_trace_query && (command.operation!=operation::status||command.payload_size!=0u||command.wait_for_event||!host_trace::valid(command.host_trace_request))) ||
                (ros_state_query && (command.operation!=operation::status||command.payload_size!=0u||command.wait_for_event||!ros_state::valid(command.ros_state_request))) ||
                (wasm_path_query && (command.operation!=operation::status || command.payload_size!=0u ||
                                      command.wait_for_event || !wasm_path::valid(command.wasm_path_request))) ||
@@ -5478,7 +5482,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             bool const running{initial.execution == execution_status::running || initial.execution == execution_status::stopping};
             if(((command.operation == operation::resume || command.operation == operation::step ||
                  command.operation == operation::backtrace || command.operation == operation::read_memory ||
-                 command.operation == operation::locals || replacement_file || assembly_breakpoint || wasm_state_query || ros_state_query ||
+                 command.operation == operation::locals || replacement_file || assembly_breakpoint || wasm_state_query || ros_state_query || host_trace_query ||
                  (wasip1_state_query && !wasip1_calls::is_trace(command.wasip1_state_request.operation)) || wasm_mutation_query ||
                  (wasm_path_query && command.wasm_path_request.action!=wasm_path::operation::clear)) && !stopped) ||
                (command.operation == operation::pause && !running))
@@ -6116,6 +6120,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             }
             if(wasip1_state_query && result.status == control_error::none)
             { ::std::lock_guard lock{mutex_}; query_wasip1_state_locked(command.wasip1_state_request, result, command.disassembly_stop_identifier); }
+            if(host_trace_query&&result.status==control_error::none)
+            {
+                ::std::lock_guard lock{mutex_};
+                auto const& query{command.host_trace_request};
+                if(!pause_||exited_||native_owned_||result.execution!=execution_status::stopped||
+                    !result.stop_identifier||result.stop_identifier!=stop_identifier_||
+                    (query.stop&&query.stop!=stop_identifier_)||
+                    domain_->capture(pause_).result!=::uwvm2::utils::thread::cooperative_pause_result::paused)
+                {result.status=control_error::invalid_state;}
+                else {result.host_trace_values=host_trace::apply(query);}
+            }
             if(ros_state_query&&result.status==control_error::none)
             {::std::lock_guard lock{mutex_};query_ros_state_locked(command.ros_state_request,result);}
             if(wasm_path_query && result.status==control_error::none)

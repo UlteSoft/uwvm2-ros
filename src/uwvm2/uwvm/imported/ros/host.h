@@ -2,6 +2,7 @@
  * UWVM2 ROS Runtime Extension. APL-2.0.                     *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/debug/host_calls.h>
 #ifndef UWVM_MODULE
 #include <uwvm2/utils/thread/monotonic_clock.h>
 #endif
@@ -125,7 +126,7 @@ namespace uwvm2::uwvm::imported::ros
             ::std::uint32_t finish(::std::uint32_t value) noexcept { return result.finish(value); }
             core::debug::text<255> source_alias{};::std::uint64_t client_session_label{},client_features{};
             bool client_features_observed{};
-            ::std::uint64_t debug_started_ns{core::debug::monotonic_nanoseconds()};
+            ::std::uint64_t debug_started_ns{core::debug::enabled.load(::std::memory_order_relaxed)?core::debug::monotonic_nanoseconds():0};
             ~audit_result() noexcept;
         };
         inline bool memory_range(::std::uint32_t memory, ::std::uint64_t offset, ::std::uint64_t length) noexcept
@@ -139,17 +140,29 @@ namespace uwvm2::uwvm::imported::ros
             }
             return false;
         }
+        inline bool observed_read(::std::uint32_t memory,::std::uint64_t offset,void* bytes,::std::size_t size) noexcept
+        {
+            bool ok=runtime::preload_memory_read_host_api(memory,offset,bytes,size);
+            if(ok) {::uwvm2::utils::debug::host_calls::capture(memory,offset,bytes,size,false);}
+            return ok;
+        }
+        inline bool observed_write(::std::uint32_t memory,::std::uint64_t offset,void const* bytes,::std::size_t size) noexcept
+        {
+            bool ok=runtime::preload_memory_write_host_api(memory,offset,bytes,size);
+            if(ok) {::uwvm2::utils::debug::host_calls::capture(memory,offset,bytes,size,true);}
+            return ok;
+        }
         inline bool write_u64(::std::uint32_t memory, ::std::uint64_t offset, ::std::uint64_t value) noexcept
         {
             ::std::array<::std::uint8_t,8> encoded{};
             for(unsigned i{}; i != 8; ++i) { encoded[i] = static_cast<::std::uint8_t>(value >> (8*i)); }
-            return runtime::preload_memory_write_host_api(memory,offset,encoded.data(),encoded.size());
+            return observed_write(memory,offset,encoded.data(),encoded.size());
         }
         inline bool read_bytes(::std::uint32_t memory, ::std::uint64_t offset, ::std::uint64_t length, ::std::vector<::std::uint8_t>& bytes)
         {
             if(length > core::ipc::max_payload_bytes || !memory_range(memory,offset,length)) { return false; }
             bytes.resize(static_cast<::std::size_t>(length));
-            return runtime::preload_memory_read_host_api(memory,offset,bytes.data(),bytes.size());
+            return observed_read(memory,offset,bytes.data(),bytes.size());
         }
 
         struct watched_event
@@ -281,6 +294,8 @@ namespace uwvm2::uwvm::imported::ros
         try
 #endif
         {
+            if(debug_started_ns)
+            {
             // Diagnostic metadata is independent of the existing audit sink.
             // No payload, address, socket/session credential or audit body is
             // copied; try-lock failure merely marks the label unresolved.
@@ -294,6 +309,7 @@ namespace uwvm2::uwvm::imported::ros
             trace.duration_known=debug_started_ns&&finished>=debug_started_ns;
             trace.duration_ns=trace.duration_known?finished-debug_started_ns:0;
             debug_trace.append(trace);
+            }
             if(result.known)
             {
                 auto recorded{capabilities.record_result(object,generation,version,alias,result.error ? "gateway-error" : "gateway-result",static_cast<core::errc>(result.error))};
@@ -339,6 +355,8 @@ namespace uwvm2::uwvm::imported::ros
             runtime::ros_caller_identity observed{};
             if(!error) {return error;}
             bool const available{runtime::ros_observed_caller_identity_host_api(observed)};
+            if(core::debug::enabled.load(::std::memory_order_relaxed))
+            {
             core::debug::trace_record trace{};trace.backend=static_cast<unsigned>(version);trace.error=error;
             trace.unresolved=true;trace.function.assign("unresolved-denial");
             if(available)
@@ -347,6 +365,7 @@ namespace uwvm2::uwvm::imported::ros
                 trace.generation=observed.generation;
             }
             debug_trace.append(trace);
+            }
             if(!available) {return error;}
             ::std::string_view name{reinterpret_cast<char const*>(observed.module_name.data()),observed.module_name.size()};
             auto const target{runtime_policy.effective(version,name)};
@@ -407,6 +426,7 @@ namespace uwvm2::uwvm::imported::ros
 
         inline void trace_retirement(void const* object,instance const& state,core::management::transition reason) noexcept
         {
+            if(!core::debug::enabled.load(::std::memory_order_relaxed)) {return;}
             // The existing fixed-capacity, try-locked trace owns only detached
             // labels. No payload, handle, object address or launch credential is
             // copied, and a busy diagnostic sink cannot block retirement.
@@ -523,6 +543,7 @@ namespace uwvm2::uwvm::imported::ros
         template <core::version Version>
         inline ::std::uint32_t abi_version() noexcept
         {
+            if(!core::debug::enabled.load(::std::memory_order_relaxed)) {return 1;}
             core::debug::trace_record trace{};trace.backend=static_cast<unsigned>(Version);
             trace.function.assign("abi_version");trace.unresolved=true;debug_trace.append(trace);return 1;
         }
@@ -860,7 +881,7 @@ namespace uwvm2::uwvm::imported::ros
                 if(!write_u64(memory,length_offset,result.payload.size())) { return finish(22); }
                 observed.length_written=true;
                 if(result.payload.size() > capacity) { return finish(90); }
-                if(!runtime::preload_memory_write_host_api(memory,out_offset,result.payload.data(),result.payload.size())) { return finish(22); }
+                if(!observed_write(memory,out_offset,result.payload.data(),result.payload.size())) { return finish(22); }
                 observed.output_written=true;
             }
             return finish(0);
@@ -986,7 +1007,7 @@ namespace uwvm2::uwvm::imported::ros
             if(!granted) {return code(granted)==11?audit.finish(11):malformed();}
             if(watched.delivered==UINT64_MAX) { return audit.finish(90); }
             auto native_sequence{header.sequence};header.sequence=watched.delivered+1;if(!core::ipc::encode_event_header(header,result.payload.data(),result.payload.size())) { return audit.finish(13); }
-            if(!runtime::preload_memory_write_host_api(memory,out,result.payload.data(),result.payload.size())) {backend.connection.close();backend.connected=false;backend.retire_observations(22);return audit.finish(22);}
+            if(!observed_write(memory,out,result.payload.data(),result.payload.size())) {backend.connection.close();backend.connected=false;backend.retire_observations(22);return audit.finish(22);}
             core::ipc::call_result committed;
             if(from_local) {committed.error=watched.local->commit(native_sequence);}
             else {::std::vector<::std::uint8_t> argument;core::ipc::put(argument,native_sequence,8);committed=backend.connection.call("event.commit",watched.observer.alias,::std::move(argument),backend.timeout);}
@@ -1032,7 +1053,7 @@ namespace uwvm2::uwvm::imported::ros
             if(!watched.retired&&watched.local->readiness().ready_events)
             { auto ready{watched.local->readiness()};auto native{core::ipc::get(result.payload.data(),8)};core::ipc::event_put(result.payload.data(),native>UINT64_MAX-ready.ready_events?UINT64_MAX:native+ready.ready_events,8);core::ipc::event_put(result.payload.data()+8,ready.next_event_bytes,8); }
             granted=capabilities.charge_observation(caller.runtime_instance,caller.generation,Version,observer_handle,result.payload.size(),observer);if(!granted) { return audit.finish(code(granted)); }
-            return audit.finish(runtime::preload_memory_write_host_api(memory,out,result.payload.data(),result.payload.size())?0u:22u);
+            return audit.finish(observed_write(memory,out,result.payload.data(),result.payload.size())?0u:22u);
         }
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
         catch(::std::bad_alloc const&) { return allocation_failure(); }
@@ -1169,7 +1190,7 @@ namespace uwvm2::uwvm::imported::ros
                     audit.client_features=response.value;audit.client_features_observed=true;return audit.finish(0);
                 }
                 auto value{static_cast<::std::uint8_t>(response.value)};
-                return audit.finish(runtime::preload_memory_write_host_api(memory,output,&value,1)?0u:22u);
+                return audit.finish(observed_write(memory,output,&value,1)?0u:22u);
             }
 #if defined(__cpp_exceptions)
             catch(::std::bad_alloc const&) { return allocation_failure(); }
@@ -1291,6 +1312,26 @@ namespace uwvm2::uwvm::imported::ros
             using local_imported_function_type = ::uwvm2::uwvm::wasm::type::local_imported_function_type_t<result_tuple,parameter_tuple>;
             inline static constexpr ::uwvm2::utils::container::u8string_view function_name{Name};
             static void call(local_imported_function_type& call) noexcept
+            {
+                namespace detail=::uwvm2::utils::debug::host_calls;
+                constexpr auto family=Namespace.starts_with(u8"uwvm_ros1")?detail::channel::ros1:detail::channel::ros2;
+                if(!detail::observing(family)) {invoke(call);return;}
+                detail::scope observation{family,{reinterpret_cast<char const*>(Namespace.data()),Namespace.size()},
+                    {reinterpret_cast<char const*>(function_name.data()),function_name.size()}};
+                if(observation.value)
+                {
+                    runtime::ros_caller_identity caller{};
+                    if(runtime::ros_observed_caller_identity_host_api(caller))
+                    {observation.identity({reinterpret_cast<char const*>(caller.module_name.data()),caller.module_name.size()},caller.generation);}
+                    ::std::lock_guard lock{detail::mutex};
+                    auto& row=*observation.value;static_assert(sizeof...(A)<=16);row.count=sizeof...(A);
+                    [&]<::std::size_t... I>(::std::index_sequence<I...>)
+                    {((row.arguments[I]=static_cast<::std::uint64_t>(static_cast<::std::make_unsigned_t<A>>(::uwvm2::utils::container::get<I>(call.params))),
+                       row.widths[I]=sizeof(A)*8),...);}(::std::make_index_sequence<sizeof...(A)>{});
+                }
+                invoke(call);observation.finish(true,static_cast<::std::uint64_t>(::uwvm2::utils::container::get<0>(call.res)));
+            }
+            static void invoke(local_imported_function_type& call) noexcept
             {
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
                 runtime::ros_caller_identity caller{};

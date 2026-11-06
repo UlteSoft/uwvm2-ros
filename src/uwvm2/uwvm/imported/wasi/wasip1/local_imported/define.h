@@ -1,4 +1,4 @@
-﻿/*************************************************************
+/*************************************************************
  * UlteSoft WebAssembly Virtual Machine (Version 2)          *
  * Copyright (c) 2025-present UlteSoft. All rights reserved. *
  * Licensed under the APL-2.0 License (see LICENSE file).    *
@@ -45,6 +45,7 @@
 # include <uwvm2/uwvm/imported/wasi/wasip1/storage/impl.h>
 # include <uwvm2/uwvm/wasm/type/impl.h>
 # include <uwvm2/uwvm/debugger/wasip1_calls.h>
+# include "observations.h"
 #endif
 
 #ifndef UWVM_MODULE_EXPORT
@@ -223,6 +224,44 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::local_imported
             using base = wasip1_local_imported_function_base<Fn>;
             using local_imported_function_type = typename base::local_imported_function_type;
             inline static constexpr void call(local_imported_function_type& function) noexcept
+            {
+                namespace detail = ::uwvm2::utils::debug::host_calls;
+                if(!::std::is_constant_evaluated() && detail::observing(detail::channel::wasi))
+                { observed_call(function);return; }
+                metadata_call(function);
+            }
+            inline static void observed_call(local_imported_function_type& function) noexcept
+            {
+                namespace detail = ::uwvm2::utils::debug::host_calls;
+                namespace calls = ::uwvm2::uwvm::debugger::wasip1_calls;
+                detail::scope observation{detail::channel::wasi,"wasi_snapshot_preview1",
+                    {reinterpret_cast<char const*>(function_name.data()),function_name.size()}};
+                auto& env=::uwvm2::uwvm::imported::wasi::wasip1::storage::current_wasip1_env();
+                if(observation.value)
+                {
+                    {
+                    ::std::lock_guard lock{detail::mutex};
+                    auto& row=*observation.value;
+                    row.environment=env.debug_trace_identity;
+                    row.module=calls::current_labels.module;row.participant=calls::current_labels.participant;
+                    constexpr auto count=::fast_io::tuple_size<decltype(function.params)>::value;
+                    static_assert(count<=16);row.count=count;
+                    [&]<::std::size_t... I>(::std::index_sequence<I...>)
+                    {
+                        ((row.arguments[I]=static_cast<::std::uint64_t>(static_cast<::std::make_unsigned_t<::std::remove_cvref_t<decltype(::uwvm2::utils::container::get<I>(function.params))>>>(::uwvm2::utils::container::get<I>(function.params))),
+                          row.widths[I]=sizeof(::uwvm2::utils::container::get<I>(function.params))*8),...);
+                    }(::std::make_index_sequence<count>{});
+                    }
+                    observations::capture(env,*observation.value,false,true);
+                }
+                metadata_call(function);
+                constexpr bool has_result=::fast_io::tuple_size<decltype(function.res)>::value!=0;
+                ::std::uint64_t result{};
+                if constexpr(has_result) {result=static_cast<::std::uint64_t>(::uwvm2::utils::container::get<0>(function.res));}
+                if(observation.value) {observations::capture(env,*observation.value,true,has_result&&result==0);}
+                observation.finish(has_result,result);
+            }
+            inline static constexpr void metadata_call(local_imported_function_type& function) noexcept
             {
                 namespace calls = ::uwvm2::uwvm::debugger::wasip1_calls;
                 if(::std::is_constant_evaluated() || !calls::enabled.load(::std::memory_order_relaxed)) { base::call(function); return; }

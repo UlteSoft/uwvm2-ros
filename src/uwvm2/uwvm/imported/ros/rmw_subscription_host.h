@@ -131,7 +131,7 @@ namespace uwvm2::uwvm::imported::ros::host
             if(!rmw_remaining(until)){return fail_borrow(110);}
             // Runtime's checked writer validates the whole range before writing.
             // There is no second length-pointer write or post-copy error path.
-            if(!runtime::preload_memory_write_host_api(memory,output,result.payload.data(),result.payload.size()))
+            if(!observed_write(memory,output,result.payload.data(),result.payload.size()))
             {return fail_borrow(22);}
             rpc.armed=false;return finish(0);
         }

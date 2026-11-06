@@ -212,7 +212,7 @@ namespace uwvm2::uwvm::imported::ros::host
             else{backend.rmw_endpoints.cleanup_result(handle,0);}
             if(error){return audit.finish(error);}
             if(!rmw_remaining(until)){rpc.reason=110;return audit.finish(110);}
-            if(command!=rmw_wire::command::retire&&!runtime::preload_memory_write_host_api(memory,output,result.payload.data(),result.payload.size()))
+            if(command!=rmw_wire::command::retire&&!observed_write(memory,output,result.payload.data(),result.payload.size()))
             {rpc.reason=22;return audit.finish(22);}
             rpc.armed=false;return audit.finish(0);
         }
@@ -253,7 +253,7 @@ namespace uwvm2::uwvm::imported::ros::host
             // then the fixed envelope is filled without another payload copy.
             ::std::vector<::std::uint8_t> packet(core::ipc::rmw_publish::header_bytes+static_cast<::std::size_t>(length));
             auto body{::std::span<::std::uint8_t>{packet.data()+core::ipc::rmw_publish::header_bytes,static_cast<::std::size_t>(length)}};
-            if(!runtime::preload_memory_read_host_api(memory,input,body.data(),body.size())){return audit.finish(22);}
+            if(!observed_read(memory,input,body.data(),body.size())){return audit.finish(22);}
             core::authorization admitted;granted=capabilities.authorize(caller.runtime_instance,caller.generation,version,handle,"topic.publish",::std::as_bytes(body),admitted,true,true);
             if(!granted){return audit.finish(code(granted));}
             ::std::array<::std::uint8_t,core::ipc::rmw_publish::header_bytes> raw{};

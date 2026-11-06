@@ -408,6 +408,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                     case console_command_kind::source_value:
                     case console_command_kind::source_frame:
                     case console_command_kind::wasip1_state:
+                    case console_command_kind::host_trace:
                     case console_command_kind::ros_state:
                     case console_command_kind::breakpoint_control:
                     case console_command_kind::assembly_next:

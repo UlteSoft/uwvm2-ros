@@ -50,6 +50,13 @@
 #  define UWVM_RUNTIME_LLVM_JIT_GNU_WIN64_SEH 1
 #  define UWVM_RUNTIME_LLVM_JIT_GNU_WIN64_ARM64_SEH 1
 # endif
+# if defined(UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT) && UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT == 1 && \
+    defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__)
+#  define UWVM_RUNTIME_LLVM_JIT_ARM_LOCAL_PERSONALITY 1
+# endif
+# if defined(UWVM_RUNTIME_LLVM_JIT_GNU_WIN64_SEH) || defined(UWVM_RUNTIME_LLVM_JIT_ARM_LOCAL_PERSONALITY)
+#  define UWVM_RUNTIME_LLVM_JIT_LOCAL_PERSONALITY 1
+# endif
 UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::native_exception_symbols
 {
     // This infrastructure does not select a host C++ ABI or enable guest EH. The caller must have
@@ -62,6 +69,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::native_exceptio
     // A JIT-local executable wrapper is required because .xdata's ADDR32NB
     // relocation otherwise creates a non-executable stub inside .xdata.
     inline constexpr char host_personality_symbol[]{"uwvm_guest_seh_host_personality_v1"};
+#elif defined(UWVM_RUNTIME_LLVM_JIT_ARM_LOCAL_PERSONALITY)
+    // EHABI PREL31 reaches only +/-1 GiB. Keep the personality in every JIT
+    // object; its tail branch can use LLVM's full-address executable veneer.
+    inline constexpr char personality_symbol[]{"__gxx_personality_v0"};
+    inline constexpr char host_personality_symbol[]{"uwvm_guest_arm_host_personality_v1"};
 #else
     inline constexpr char personality_symbol[]{"__gxx_personality_v0"};
 #endif
@@ -97,25 +109,37 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::native_exceptio
                 value->getAddressSpace() == 0u && value->getValueType()->isIntegerTy(8u) &&
                 !value->hasDLLImportStorageClass() && !value->hasDLLExportStorageClass();
         }
+#if defined(UWVM_RUNTIME_LLVM_JIT_LOCAL_PERSONALITY)
+        [[nodiscard]] inline bool valid_local_personality_type(::llvm::FunctionType const* type) noexcept
+        {
+            if(type->isVarArg() || !type->getReturnType()->isIntegerTy(32u)) { return false; }
+# if defined(UWVM_RUNTIME_LLVM_JIT_ARM_LOCAL_PERSONALITY)
+            return type->getNumParams()==3u && type->getParamType(0u)->isIntegerTy(32u) &&
+                type->getParamType(1u)->isPointerTy() && type->getParamType(2u)->isPointerTy();
+# else
+            if(type->getNumParams()!=4u) { return false; }
+            for(auto const* param:type->params()) { if(!param->isPointerTy()) { return false; } }
+            return true;
+# endif
+        }
+#endif
         [[nodiscard]] inline bool valid_personality(::llvm::Function const* value) noexcept
         {
             if(value == nullptr || value->getName() != personality_symbol || value->getAddressSpace() != 0u ||
                value->getCallingConv() != ::llvm::CallingConv::C || value->hasDLLImportStorageClass() ||
                value->hasDLLExportStorageClass()) { return false; }
             auto const type{value->getFunctionType()}; // borrowed from the live LLVM context
-#if defined(UWVM_RUNTIME_LLVM_JIT_GNU_WIN64_SEH)
+#if defined(UWVM_RUNTIME_LLVM_JIT_LOCAL_PERSONALITY)
             if(value->isDeclaration() || !value->hasLinkOnceODRLinkage() || value->getComdat() == nullptr ||
-               !value->doesNotThrow() ||
-               type->getNumParams() != 4u || type->isVarArg() || !type->getReturnType()->isIntegerTy(32u))
+               !value->doesNotThrow() || !valid_local_personality_type(type))
             { return false; }
-            for(auto const* param: type->params()) { if(!param->isPointerTy()) { return false; } }
             return true;
 #else
             if(!value->isDeclaration() || !value->hasExternalLinkage()) { return false; }
             return type->getReturnType()->isIntegerTy(32u) && type->isVarArg() && type->getNumParams() == 0u;
 #endif
         }
-#if defined(UWVM_RUNTIME_LLVM_JIT_GNU_WIN64_SEH)
+#if defined(UWVM_RUNTIME_LLVM_JIT_LOCAL_PERSONALITY)
         [[nodiscard]] inline bool valid_host_personality(::llvm::Function const* value) noexcept
         {
             if(value == nullptr || value->getName() != host_personality_symbol || !value->isDeclaration() ||
@@ -123,9 +147,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::native_exceptio
                value->getCallingConv() != ::llvm::CallingConv::C || value->hasDLLImportStorageClass() ||
                value->hasDLLExportStorageClass()) { return false; }
             auto const type{value->getFunctionType()}; // borrowed from the live LLVM context
-            if(type->isVarArg() || type->getNumParams() != 4u || !type->getReturnType()->isIntegerTy(32u) ||
-               !value->doesNotThrow()) { return false; }
-            for(auto const* param: type->params()) { if(!param->isPointerTy()) { return false; } }
+            if(!valid_local_personality_type(type) || !value->doesNotThrow()) { return false; }
             return true;
         }
 #endif
@@ -133,7 +155,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::native_exceptio
 
     [[nodiscard]] inline bool is_object_local_personality_symbol(::llvm::StringRef name) noexcept
     {
-#if defined(UWVM_RUNTIME_LLVM_JIT_GNU_WIN64_SEH)
+#if defined(UWVM_RUNTIME_LLVM_JIT_LOCAL_PERSONALITY)
         return name == personality_symbol;
 #else
         (void)name;
@@ -143,7 +165,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::native_exceptio
 
     [[nodiscard]] inline bool is_object_local_personality_definition(::llvm::Function const& function) noexcept
     {
-#if defined(UWVM_RUNTIME_LLVM_JIT_GNU_WIN64_SEH)
+#if defined(UWVM_RUNTIME_LLVM_JIT_LOCAL_PERSONALITY)
         // [live partition-owned definition] Function metadata is borrowed only
         // [safe                           ] while its owning module is alive.
         // ^^ function: preserve this checked executable definition and its COMDAT
@@ -208,19 +230,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::native_exceptio
            module.getDataLayout() != machine.createDataLayout()) { return {.status = error::incompatible_module}; }
         auto const existing_type{module.getNamedValue(type_info_symbol)}; // nullable module-owned borrow
         auto const existing_personality{module.getNamedValue(personality_symbol)};
-#if defined(UWVM_RUNTIME_LLVM_JIT_GNU_WIN64_SEH)
+#if defined(UWVM_RUNTIME_LLVM_JIT_LOCAL_PERSONALITY)
         auto const existing_host_personality{module.getNamedValue(host_personality_symbol)};
 #endif
         auto type_info{::llvm::dyn_cast_or_null<::llvm::GlobalVariable>(existing_type)};
         auto personality{::llvm::dyn_cast_or_null<::llvm::Function>(existing_personality)};
-#if defined(UWVM_RUNTIME_LLVM_JIT_GNU_WIN64_SEH)
+#if defined(UWVM_RUNTIME_LLVM_JIT_LOCAL_PERSONALITY)
         auto host_personality{::llvm::dyn_cast_or_null<::llvm::Function>(existing_host_personality)};
 #endif
         // Check ALL names before mutating the module: a conflicting alias/function/global cannot
         // leave half of the EH declarations installed or be silently renamed by LLVM.
         if((existing_type != nullptr && !details::valid_type_info(type_info)) ||
            (existing_personality != nullptr && !details::valid_personality(personality))
-#if defined(UWVM_RUNTIME_LLVM_JIT_GNU_WIN64_SEH)
+#if defined(UWVM_RUNTIME_LLVM_JIT_LOCAL_PERSONALITY)
            || (existing_host_personality != nullptr && !details::valid_host_personality(host_personality))
 #endif
           )
@@ -234,10 +256,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::native_exceptio
             type_info = new ::llvm::GlobalVariable(module, ::llvm::Type::getInt8Ty(context), true,
                 ::llvm::GlobalValue::ExternalLinkage, nullptr, type_info_symbol);
         }
-#if defined(UWVM_RUNTIME_LLVM_JIT_GNU_WIN64_SEH)
+#if defined(UWVM_RUNTIME_LLVM_JIT_LOCAL_PERSONALITY)
         auto const pointer_type{::llvm::PointerType::getUnqual(context)};
         auto const seh_type{::llvm::FunctionType::get(::llvm::Type::getInt32Ty(context),
+# if defined(UWVM_RUNTIME_LLVM_JIT_ARM_LOCAL_PERSONALITY)
+            {::llvm::Type::getInt32Ty(context), pointer_type, pointer_type}, false)};
+# else
             {pointer_type, pointer_type, pointer_type, pointer_type}, false)};
+# endif
         if(host_personality == nullptr)
         {
 # if defined(UWVM_RUNTIME_LLVM_JIT_GNU_WIN64_ARM64_SEH)
@@ -258,9 +284,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::native_exceptio
         }
         if(personality == nullptr)
         {
-            // [module-owned executable definition] each COFF object owns its
-            // [safe                              ] local .text target for .xdata's
-            // ADDR32NB personality relocation. LinkOnceODR permits IR merging.
+            // [module-owned executable definition] each ARM ELF/COFF object owns its
+            // [safe                              ] local .text target for PREL31 or
+            // ADDR32NB personality relocations. LinkOnceODR permits IR merging.
             // ^^ personality: Function::Create transfers ownership to module.
             personality = ::llvm::Function::Create(seh_type,
                 ::llvm::GlobalValue::LinkOnceODRLinkage, personality_symbol, module);
@@ -275,7 +301,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::native_exceptio
             for(auto& arg: personality->args()) { args.push_back(&arg); }
             // [module-owned host declaration] [module-owned call instruction]
             // [safe                         ] the call's pointer operands are
-            // copied from the four live wrapper arguments, never guest memory.
+            // copied from the live wrapper arguments, never guest memory.
             // ^^ call: CreateCall inserts the instruction into entry.
             auto* call{builder.CreateCall(seh_type, host_personality, args)};
             call->setDoesNotThrow();
@@ -313,13 +339,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::native_exceptio
     {
         if(symbols.status != error::ok || actual_type_info == nullptr || personality_address == 0u ||
            !details::valid_type_info(symbols.type_info) || !details::valid_personality(symbols.personality)
-#if defined(UWVM_RUNTIME_LLVM_JIT_GNU_WIN64_SEH)
+#if defined(UWVM_RUNTIME_LLVM_JIT_LOCAL_PERSONALITY)
            || !details::valid_host_personality(symbols.host_personality)
 #endif
           )
         { return error::invalid_binding; }
         auto const module{symbols.type_info->getParent()}; // module retains both live declarations
-#if defined(UWVM_RUNTIME_LLVM_JIT_GNU_WIN64_SEH)
+#if defined(UWVM_RUNTIME_LLVM_JIT_LOCAL_PERSONALITY)
         auto const mapped_personality_global{symbols.host_personality}; // external host entry, not local .text wrapper
 #else
         auto const mapped_personality_global{symbols.personality};
@@ -353,6 +379,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::native_exceptio
         return error::ok;
     }
 }
+# if defined(UWVM_RUNTIME_LLVM_JIT_LOCAL_PERSONALITY)
+#  undef UWVM_RUNTIME_LLVM_JIT_LOCAL_PERSONALITY
+# endif
+# if defined(UWVM_RUNTIME_LLVM_JIT_ARM_LOCAL_PERSONALITY)
+#  undef UWVM_RUNTIME_LLVM_JIT_ARM_LOCAL_PERSONALITY
+# endif
 # if defined(UWVM_RUNTIME_LLVM_JIT_GNU_WIN64_ARM64_SEH)
 #  undef UWVM_RUNTIME_LLVM_JIT_GNU_WIN64_ARM64_SEH
 # endif

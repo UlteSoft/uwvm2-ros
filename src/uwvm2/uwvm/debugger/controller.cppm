@@ -73,6 +73,7 @@ import uwvm2.uwvm.debugger.wasm_mutation;
 import uwvm2.uwvm.debugger.wasm_path;
 import uwvm2.uwvm.debugger.wasip1_state;
 import uwvm2.uwvm.debugger.ros_state;
+import uwvm2.uwvm.debugger.host_trace;
 import uwvm2.uwvm.debugger.wasip1_portable_checkpoint;
 import uwvm2.uwvm.debugger.wasip1_calls;
 import :native_disassembly;

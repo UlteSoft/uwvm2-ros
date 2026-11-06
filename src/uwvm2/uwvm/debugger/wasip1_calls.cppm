@@ -8,6 +8,7 @@ module;
 export module uwvm2.uwvm.debugger.wasip1_calls;
 import fast_io;
 import uwvm2.uwvm.debugger.wasip1_state;
+import uwvm2.utils.thread;
 #define UWVM_MODULE
 #define UWVM_MODULE_EXPORT export
 #include "wasip1_calls.h"

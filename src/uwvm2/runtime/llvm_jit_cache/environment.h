@@ -569,6 +569,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
 #if defined(UWVM_EXPERIMENTAL_PENDING_NUMERIC_FUSED_CATCH) && UWVM_EXPERIMENTAL_PENDING_NUMERIC_FUSED_CATCH == 1
         details::append_cache_key_value(out, u8"pending-numeric-payload", u8"immutable-schema-packed-tuple-fused-catch-v6-256");
 #endif
+#if defined(UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT) && UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT == 1 && \
+    defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__)
+        // Old objects address the host through a limited-range PREL31 relocation.
+        details::append_cache_key_value(out, u8"arm-ehabi-personality", u8"object-local-tail-wrapper-v1");
+#endif
         // COFF partitions must retain an executable local SEH personality;
         // reject objects emitted by the earlier declaration-only partitioner.
         details::append_cache_key_value(out, u8"seh-personality-partition", u8"local-definition-v1");

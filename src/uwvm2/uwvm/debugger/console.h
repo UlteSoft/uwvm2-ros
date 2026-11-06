@@ -862,6 +862,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                     " total=", ::fast_io::mnp::dec(reply.source_locals.size()), " truncated=true\n"); }
                 return text;
             }
+            if(command.kind==console_command_kind::host_trace) {return reply.host_trace_values;}
             if(command.kind==console_command_kind::ros_state)
             {
                 ::std::string text;auto output{::fast_io::ostring_ref_std{::std::addressof(text)}};
@@ -2390,6 +2391,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 case console_command_kind::wasm_mutation:
                 case console_command_kind::wasm_path:
                 case console_command_kind::wasip1_state:
+                case console_command_kind::host_trace:
                 case console_command_kind::ros_state:
                 case console_command_kind::wasm_event:
                 case console_command_kind::wasm_script:

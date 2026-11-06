@@ -485,6 +485,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
                                   return true;
                               }};
 
+        if(::uwvm2::uwvm::wasm::storage::execute_wasm_mode == ::uwvm2::uwvm::wasm::base::mode::debug_jit ||
+           ::uwvm2::uwvm::wasm::storage::debug_control_requested)
+        {
+            env.debug_trace_identity=::uwvm2::uwvm::debugger::wasip1_calls::new_environment();
+            env.debug_fd_created=::uwvm2::uwvm::debugger::wasip1_calls::created_descriptor;
+            env.debug_io_observed=::uwvm2::uwvm::debugger::wasip1_calls::observe_io;
+        }
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
         // Preserve the logical numbers forever, without opening a host object
         // for an ungranted stream. DEV and RELEASE use this identical policy.
@@ -511,9 +518,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
         if(::uwvm2::uwvm::wasm::storage::execute_wasm_mode == ::uwvm2::uwvm::wasm::base::mode::debug_jit)
         { env.debug_console_write=::uwvm2::uwvm::debugger::console_stdio::write;
           env.debug_console_read=::uwvm2::uwvm::debugger::console_stdio::read;
-          env.debug_trace_identity=::uwvm2::uwvm::debugger::wasip1_calls::new_environment();
-          env.debug_fd_created=::uwvm2::uwvm::debugger::wasip1_calls::created_descriptor;
-          env.debug_io_observed=::uwvm2::uwvm::debugger::wasip1_calls::observe_io; }
+        }
         // Native stdin/stdout/stderr are always installed first as fds 0, 1, 2.
         // WASI Preview 1 assumes these descriptors exist; therefore fd_limit
         // smaller than 3 is rejected before this point.

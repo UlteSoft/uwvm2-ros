@@ -19,6 +19,7 @@
 # include "wasm_path.h"
 # include "wasip1_state.h"
 # include "ros_state.h"
+# include "host_trace.h"
 # include "source_pretty_registry.h"
 # include "console_help_catalog.h"
 #endif
@@ -30,7 +31,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
     inline constexpr ::std::size_t max_command_bytes{512};
     inline constexpr ::std::size_t max_input_command_bytes{wasip1_state::maximum_command_bytes}; // Long input is restricted to bounded WASIp1 edits and HOST pretty-printer configuration.
     using command_text_view = ::fast_io::string_view;
-    enum class console_command_kind { assembly_breakpoint, module_list, protocol, source_step, source_breakpoint, source_locals, assembly_step, replacement_file, help, quit, unsupported, invalid, empty, assembly_disassemble, assembly_disassemble_range, wasm_event, wasm_script, assembly_registers, source_type, source_value, assembly_next, source_frame, wasm_state, wasip1_state, wasm_path, wasm_mutation, wasm_step, breakpoint_control, assembly_finish, execution_relocate, ros_state, source_print_options, source_printer_config };
+    enum class console_command_kind { assembly_breakpoint, module_list, protocol, source_step, source_breakpoint, source_locals, assembly_step, replacement_file, help, quit, unsupported, invalid, empty, assembly_disassemble, assembly_disassemble_range, wasm_event, wasm_script, assembly_registers, source_type, source_value, assembly_next, source_frame, wasm_state, wasip1_state, wasm_path, wasm_mutation, wasm_step, breakpoint_control, assembly_finish, execution_relocate, ros_state, source_print_options, source_printer_config, host_trace };
     enum class unavailable_step_level { none, source, assembly };
     enum class source_step_policy { into, over, out };
     enum class source_run_to_policy { none, until, advance };
@@ -105,6 +106,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         ::std::uint64_t relocation_target{};
         bool relocation_absolute{};
         bool source_frame_explicit{}; // per-request ordinal, never activation/read authority.
+        host_trace::request host_trace_request{};
         ros_state::request ros_state_request{}; // Append-only diagnostic DATA, no ROS authority.
     };
     // Console-owned preferences survive a CLI run/restart. Explicit /r and /p
@@ -619,6 +621,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             };
             auto first{word()};return (first=="info"||first=="trace")&&word()=="ros";
         };
+        if(line.starts_with("trace host"))
+        {
+            console_command result{console_command_kind::host_trace};
+            if(!host_trace::parse(line,result.host_trace_request)) {return {};}
+            result.operation=::uwvm2::utils::control::operation::status;return result;
+        }
         if(ros_prefix())
         {
             console_command result{console_command_kind::ros_state};

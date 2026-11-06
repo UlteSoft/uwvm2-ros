@@ -211,7 +211,7 @@ namespace uwvm2::uwvm::imported::ros::host
             if(error){return call.finish(error);}call.journal->receipt_observed=true;
             if(!rmw_remaining(call.until)){guard.reason=110;return call.finish(110);}
             // Public receipt is UMRE256 only; UMRC is independently checked.
-            if(operation!=rmw_srv_wire::command::retire&&!runtime::preload_memory_write_host_api(memory,output,
+            if(operation!=rmw_srv_wire::command::retire&&!observed_write(memory,output,
                 result.payload.data()+rmw_srv_wire::header_bytes,rmw_wire::packet_bytes)){guard.reason=22;return call.finish(22);}
             guard.armed=false;return call.finish(0);
         });
@@ -251,7 +251,7 @@ namespace uwvm2::uwvm::imported::ros::host
             if(length>maximum){return call.finish(90);}
             ::std::vector<::std::uint8_t> raw(rmw_srv_wire::header_bytes+static_cast<::std::size_t>(length));
             auto body{::std::span<::std::uint8_t>{raw.data()+rmw_srv_wire::header_bytes,static_cast<::std::size_t>(length)}};
-            if(!runtime::preload_memory_read_host_api(memory,input,body.data(),body.size())){return call.finish(22);}
+            if(!observed_read(memory,input,body.data(),body.size())){return call.finish(22);}
             core::authorization admitted;core::result granted;
             if(respond)
             {
@@ -366,7 +366,7 @@ namespace uwvm2::uwvm::imported::ros::host
                 // full structural/source association is still verified above. A
                 // client additionally requires its actual observer control mask.
                 if(!rmw_remaining(call.until)){return fail_borrow(110);}
-                if(!runtime::preload_memory_write_host_api(memory,output,result.payload.data(),result.payload.size())){return fail_borrow(22);}
+                if(!observed_write(memory,output,result.payload.data(),result.payload.size())){return fail_borrow(22);}
                 // No fallible action follows the one complete checked Guest write.
                 guard.armed=false;return call.finish(0);
             },fail_borrow);
@@ -494,7 +494,7 @@ namespace uwvm2::uwvm::imported::ros::host
             if(!grant){guard.armed=false;return call.finish(code(grant));}
             if(!rmw_remaining(call.until)){guard.reason=110;return call.finish(110);}
             auto value{static_cast<::std::uint8_t>(reply.value)};
-            if(!runtime::preload_memory_write_host_api(memory,output,&value,1)){guard.reason=22;return call.finish(22);}
+            if(!observed_write(memory,output,&value,1)){guard.reason=22;return call.finish(22);}
             guard.armed=false;return call.finish(0);
         });
     }

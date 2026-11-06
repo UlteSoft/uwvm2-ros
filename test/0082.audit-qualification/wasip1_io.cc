@@ -65,7 +65,7 @@ template<bool Wide> static void io_cases(char const* root)
     using renumber=std::conditional_t<Wide,li::fd_renumber_wasm64,li::fd_renumber>;
     using reduce=std::conditional_t<Wide,li::fd_fdstat_set_rights_wasm64,li::fd_fdstat_set_rights>;
     uwvm2::object::memory::linear::native_memory_t memory{};memory.init_by_page_count(1u);
-    storage::wasip1_env_type env{};env.wasip1_memory=std::addressof(memory);env.fd_storage.opens.resize(8u);env.fd_storage.fd_limit=64u;
+    storage::wasip1_env_type env{};env.wasip1_memory=std::addressof(memory);env.fd_storage.opens.resize(13u);env.fd_storage.fd_limit=64u;
     env.debug_trace_identity=calls::new_environment();env.debug_fd_created=calls::created_descriptor;env.debug_io_observed=calls::observe_io;
     storage::scoped_current_wasip1_env_t selected{env};calls::observe_thread(7,9);
     ws::request query{};query.operation=ws::action::trace_clear;(void)calls::apply(query);calls::observe_thread(7,9);
@@ -79,6 +79,7 @@ template<bool Wide> static void io_cases(char const* root)
     fast_io::dir_file output_directory{fast_io::mnp::os_c_str(root)};
     native_file(*env.fd_storage.opens.index_unchecked(3u).fd_p,
         fast_io::native_file{fast_io::at(output_directory),u8"trace.bin",fast_io::open_mode::in|fast_io::open_mode::out|fast_io::open_mode::creat|fast_io::open_mode::trunc});
+    native_file(*env.fd_storage.opens.index_unchecked(12u).fd_p,fast_io::native_file{u8"/dev/null",fast_io::open_mode::out});
     constexpr char payload[]{"PRIVATE_PAYLOAD_MUST_NOT_BE_LOGGED"};
     memory_io::write_all_to_memory(memory,1024u,reinterpret_cast<std::byte const*>(payload),reinterpret_cast<std::byte const*>(payload)+sizeof(payload));
     auto iov=[&](size length)

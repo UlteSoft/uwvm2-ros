@@ -20,6 +20,7 @@ namespace uwvm2::imported::ros::debug
 {
     // Even fully escaped bounded text plus every u64 counter fits the existing
     // 65536-byte authenticated console reply cap at these page sizes.
+    inline std::atomic<bool> enabled{};
     inline constexpr std::size_t maximum_rows{8}, maximum_trace_rows{16}, trace_capacity{256},maximum_scan{4096};
     enum class selection:std::uint8_t {capabilities,sessions,queues,services,actions,parameters,tf,graph,statistics,calls,trace};
     enum class status:std::uint8_t {ok,invalid_request,not_selected,busy,requires_cooperative_stop,stale_stop,resource_limit};
@@ -38,12 +39,12 @@ namespace uwvm2::imported::ros::debug
     {
         selection selected{selection::capabilities};std::uint8_t backend{};
         std::uint64_t instance{},first{},count{maximum_rows},after{},stop{};
-        std::uint32_t error{};bool error_filter{};text<255> alias{},module{};
+        std::uint32_t error{};bool error_filter{};unsigned trace_control{};text<255> alias{},module{};
         text<64> function{},operation{};
     };
     inline bool valid(request const& query) noexcept
     {
-        return query.selected<=selection::trace&&query.backend<=2&&query.alias.size<=query.alias.bytes.size()&&
+        return query.trace_control<=2&&(!query.trace_control||query.selected==selection::trace)&&query.selected<=selection::trace&&query.backend<=2&&query.alias.size<=query.alias.bytes.size()&&
             !query.alias.truncated&&query.module.size<=query.module.bytes.size()&&!query.module.truncated&&
             query.function.size<=query.function.bytes.size()&&!query.function.truncated&&
             query.operation.size<=query.operation.bytes.size()&&!query.operation.truncated&&

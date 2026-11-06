@@ -2,6 +2,7 @@
 // memory borrow, callback, OS handle or execution/restore authority is carried.
 #pragma once
 #ifndef UWVM_MODULE
+# include <uwvm2/utils/thread/monotonic_clock.h>
 # include <atomic>
 # include <chrono>
 # include <cstddef>
@@ -57,8 +58,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasip1_calls
     }
     [[nodiscard]] inline ::std::uint64_t monotonic_ns() noexcept
     {
-        auto value{::std::chrono::duration_cast<::std::chrono::nanoseconds>(::std::chrono::steady_clock::now().time_since_epoch()).count()};
-        return value>0 ? static_cast<::std::uint64_t>(value) : 0u;
+        auto value{::std::chrono::duration_cast<::std::chrono::nanoseconds>(::uwvm2::utils::host_clock::now().time_since_epoch()).count()};
+        return ::uwvm2::utils::host_clock::available() && value>0 ? static_cast<::std::uint64_t>(value) : 0u;
     }
     struct thread_labels { ::std::uint64_t participant{}, module{}, session{}; };
     inline thread_local thread_labels current_labels{};

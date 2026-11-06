@@ -7,12 +7,25 @@
 #include <uwvm2/runtime/lib/uwvm_runtime.h>
 #include <uwvm2/uwvm/runtime/storage/builtin_ros_loader.h>
 #include <mutex>
+#include <uwvm2/utils/debug/host_calls.h>
 
 namespace uwvm2::uwvm::imported::ros::portable_host
 {
     namespace model=::uwvm2::imported::ros::portable;
     namespace api=::uwvm2::runtime::lib;
     using model::error;
+    inline bool observed_read(::std::uint32_t memory,::std::uint64_t offset,void* bytes,::std::size_t size) noexcept
+    {
+        bool ok=api::preload_memory_read_host_api(memory,offset,bytes,size);
+        if(ok) {::uwvm2::utils::debug::host_calls::capture(memory,offset,bytes,size,false);}
+        return ok;
+    }
+    inline bool observed_write(::std::uint32_t memory,::std::uint64_t offset,void const* bytes,::std::size_t size) noexcept
+    {
+        bool ok=api::preload_memory_write_host_api(memory,offset,bytes,size);
+        if(ok) {::uwvm2::utils::debug::host_calls::capture(memory,offset,bytes,size,true);}
+        return ok;
+    }
     struct owner_state
     {
         model::owner_key owner{};
@@ -57,13 +70,13 @@ namespace uwvm2::uwvm::imported::ros::portable_host
     inline model::memory_shape memory(api::ros_caller_source_facts const& facts) noexcept
     { return {facts.memory_bytes,1,0,false}; }
     inline bool write_word(::std::uint64_t offset,::std::uint64_t value) noexcept
-    { ::std::array<::std::uint8_t,8> bytes{};model::wire_detail::put(bytes,0,value,8);return api::preload_memory_write_host_api(0,offset,bytes.data(),bytes.size()); }
+    { ::std::array<::std::uint8_t,8> bytes{};model::wire_detail::put(bytes,0,value,8);return observed_write(0,offset,bytes.data(),bytes.size()); }
     inline error output_preflight(api::ros_caller_source_facts const& facts,::std::uint32_t selector,
         ::std::uint64_t offset,::std::uint64_t capacity,::std::uint64_t length,::std::size_t required,model::memory_span request={}) noexcept
     {
         auto e{model::preflight_output(memory(facts),selector,{offset,capacity},length,required,request)};
         if(e!=error::ok&&e!=error::too_small) { return e; }
-        if(!api::preload_memory_write_host_api(0,offset,nullptr,0)||!write_word(length,required)) { return error::malformed; }
+        if(!observed_write(0,offset,nullptr,0)||!write_word(length,required)) { return error::malformed; }
         return e;
     }
     inline error admitted(::std::uint64_t handle,model::owner_key const& owner,model::deployment_selection::owner const& deployment) noexcept
@@ -99,9 +112,9 @@ namespace uwvm2::uwvm::imported::ros::portable_host
             if(auto e{caller(1,facts,owner,deployment)};e!=error::ok) { return e; }
             if(auto e{model::preflight_open(memory(facts),selector,{alias_at,alias_bytes},handle_out)};e!=error::ok) { return e; }
             ::std::array<char,255> alias{};
-            if(!api::preload_memory_read_host_api(0,alias_at,alias.data(),static_cast<::std::size_t>(alias_bytes))||
+            if(!observed_read(0,alias_at,alias.data(),static_cast<::std::size_t>(alias_bytes))||
                ::std::string_view{alias.data(),static_cast<::std::size_t>(alias_bytes)}!=deployment->alias||
-               !api::preload_memory_write_host_api(0,handle_out,nullptr,0)) { return error::denied; }
+               !observed_write(0,handle_out,nullptr,0)) { return error::denied; }
             ::std::lock_guard lock{registry_mutex};
             if(selected_owner||next_handle==UINT64_MAX) { return error::bad_handle; }
             selected_owner=::std::make_unique<owner_state>();auto& state{*selected_owner};
@@ -125,7 +138,7 @@ namespace uwvm2::uwvm::imported::ros::portable_host
             auto required{64u+40u*deployment->mapping.count};
             if(auto e{output_preflight(facts,selector,output,capacity,length,required)};e!=error::ok) { return e; }
             ::std::array<::std::uint8_t,704> bytes{};auto encoded{model::encode(deployment->mapping,bytes)};
-            return encoded.status==error::ok&&api::preload_memory_write_host_api(0,output,bytes.data(),encoded.bytes)?error::ok:error::malformed;
+            return encoded.status==error::ok&&observed_write(0,output,bytes.data(),encoded.bytes)?error::ok:error::malformed;
         });
     }
     inline ::std::uint32_t read_state(::std::uint64_t handle,::std::uint32_t selector,::std::uint64_t output,::std::uint64_t capacity,::std::uint64_t length) noexcept
@@ -146,7 +159,7 @@ namespace uwvm2::uwvm::imported::ros::portable_host
                sample.valid_until_ns-sample.observed_ns>250000000u) { return error::no_fresh_state; }
             for(::std::uint32_t i{};i!=sample.count;++i)
             { auto const& bound{deployment->mapping.joints[i]};if(sample.positions[i]<bound.lower||sample.positions[i]>bound.upper) { return error::unsupported; } }
-            if(!api::preload_memory_write_host_api(0,output,response.data(),response.size())) { return error::malformed; }
+            if(!observed_write(0,output,response.data(),response.size())) { return error::malformed; }
             state.latest=sample;
             if(model::runtime_audit::runtime.enabled())
             {
@@ -173,7 +186,7 @@ namespace uwvm2::uwvm::imported::ros::portable_host
             if(input_bytes!=80u+16u*deployment->mapping.count) { return error::malformed; }
             if(auto e{output_preflight(facts,selector,output,capacity,length,96,{input,input_bytes})};e!=error::ok) { return e; }
             ::std::array<::std::uint8_t,336> bytes{};auto size{static_cast<::std::size_t>(input_bytes)};
-            if(!api::preload_memory_read_host_api(0,input,bytes.data(),size)) { return error::malformed; }
+            if(!observed_read(0,input,bytes.data(),size)) { return error::malformed; }
             model::command request{};if(!model::decode({bytes.data(),size},request)) { return error::malformed; }
             auto& state{*selected_owner};auto now{model::monotonic_ns()};auto hash{model::hash_bytes({reinterpret_cast<char const*>(bytes.data()),size})};
             if(auto e{state.command.reserve(state.binding,request,deployment->mapping,state.latest,hash,now,model::command_state::maximum_wait_ns)};e!=error::ok) { return e; }
@@ -190,7 +203,7 @@ namespace uwvm2::uwvm::imported::ros::portable_host
             if(auto e{state.command.accepted(state.binding,1u,accepted.observed_ns)};e!=error::ok) { state.native.close();return e; }
             model::receipt receipt{};if(auto e{state.command.snapshot(state.binding,now,receipt)};e!=error::ok) { return e; }
             ::std::array<::std::uint8_t,96> encoded{};auto result{model::encode(receipt,encoded)};
-            if(result.status!=error::ok||!api::preload_memory_write_host_api(0,output,encoded.data(),encoded.size()))
+            if(result.status!=error::ok||!observed_write(0,output,encoded.data(),encoded.size()))
             { (void)state.command.mark_indeterminate(state.binding);state.native.close();return error::malformed; }
             if(model::runtime_audit::runtime.enabled())
             {
@@ -232,7 +245,7 @@ namespace uwvm2::uwvm::imported::ros::portable_host
             { (void)state.command.mark_indeterminate(state.binding);state.native.close();return e; }
             model::receipt receipt{};if(auto e{state.command.snapshot(state.binding,now,receipt)};e!=error::ok) { return e; }
             ::std::array<::std::uint8_t,96> encoded{};auto e{model::encode(receipt,encoded)};
-            if(e.status!=error::ok||!api::preload_memory_write_host_api(0,output,encoded.data(),encoded.size())) { return error::malformed; }
+            if(e.status!=error::ok||!observed_write(0,output,encoded.data(),encoded.size())) { return error::malformed; }
             if(model::runtime_audit::runtime.enabled())
             {
                 (void)model::runtime_audit::runtime.emit(*deployment,

@@ -69,6 +69,7 @@
 extern "C" EXCEPTION_DISPOSITION __gxx_personality_seh0(
     PEXCEPTION_RECORD, void*, PCONTEXT, PDISPATCHER_CONTEXT);
 # elif defined(__arm__) && !defined(__ARM_DWARF_EH__)
+#  define UWVM_RUNTIME_NATIVE_EXCEPTION_HOST_ARM_LOCAL_PERSONALITY 1
 extern "C" _Unwind_Reason_Code __gxx_personality_v0(_Unwind_State, _Unwind_Control_Block*, _Unwind_Context*);
 # else
 extern "C" _Unwind_Reason_Code __gxx_personality_v0(int, _Unwind_Action,
@@ -139,12 +140,18 @@ namespace uwvm2::runtime::lib::details::native_exception_host
                 function->getCallingConv() == ::llvm::CallingConv::C && function->getFunctionType() == type &&
                 !function->hasDLLImportStorageClass() && !function->hasDLLExportStorageClass();
         }
-#if defined(UWVM_RUNTIME_NATIVE_EXCEPTION_HOST_WIN64_SEH)
+#if defined(UWVM_RUNTIME_NATIVE_EXCEPTION_HOST_WIN64_SEH) || defined(UWVM_RUNTIME_NATIVE_EXCEPTION_HOST_ARM_LOCAL_PERSONALITY)
         [[nodiscard]] inline bool valid_seh_personality_wrapper(::llvm::Function const* function,
             ::llvm::Module const* module, ::llvm::FunctionType* type) noexcept
         {
             return function != nullptr && function->getParent() == module &&
-                function->getName() == "__gxx_personality_seh0" && !function->isDeclaration() &&
+                function->getName() ==
+# if defined(UWVM_RUNTIME_NATIVE_EXCEPTION_HOST_ARM_LOCAL_PERSONALITY)
+                "__gxx_personality_v0" &&
+# else
+                "__gxx_personality_seh0" &&
+# endif
+                !function->isDeclaration() && function->doesNotThrow() &&
                 function->hasLinkOnceODRLinkage() && function->getComdat() != nullptr &&
                 function->getAddressSpace() == 0u && function->getCallingConv() == ::llvm::CallingConv::C &&
                 function->getFunctionType() == type && !function->hasDLLImportStorageClass() &&
@@ -187,12 +194,20 @@ namespace uwvm2::runtime::lib::details::native_exception_host
         if(!details::valid_seh_personality_wrapper(symbols.personality, module, seh_personality_type) ||
            !details::valid_function(symbols.host_personality, module, host_personality_name, seh_personality_type))
         { return false; }
+# elif defined(UWVM_RUNTIME_NATIVE_EXCEPTION_HOST_ARM_LOCAL_PERSONALITY)
+        auto const arm_personality_type{::llvm::FunctionType::get(::llvm::Type::getInt32Ty(context),
+            {::llvm::Type::getInt32Ty(context), pointer, pointer}, false)};
+        constexpr char host_personality_name[]{"uwvm_guest_arm_host_personality_v1"};
+        auto const personality_address{reinterpret_cast<void*>(reinterpret_cast<::std::uintptr_t>(&::__gxx_personality_v0))};
+        if(!details::valid_seh_personality_wrapper(symbols.personality,module,arm_personality_type) ||
+           !details::valid_function(symbols.host_personality,module,host_personality_name,arm_personality_type))
+        { return false; }
 # else
         constexpr char personality_name[]{"__gxx_personality_v0"};
         auto const personality_address{reinterpret_cast<void*>(reinterpret_cast<::std::uintptr_t>(&::__gxx_personality_v0))};
 # endif
         if(
-# if !defined(UWVM_RUNTIME_NATIVE_EXCEPTION_HOST_WIN64_SEH)
+# if !defined(UWVM_RUNTIME_NATIVE_EXCEPTION_HOST_WIN64_SEH) && !defined(UWVM_RUNTIME_NATIVE_EXCEPTION_HOST_ARM_LOCAL_PERSONALITY)
            !details::valid_function(symbols.personality, module, personality_name,
                 ::llvm::FunctionType::get(::llvm::Type::getInt32Ty(context), true)) ||
 # endif
@@ -210,7 +225,7 @@ namespace uwvm2::runtime::lib::details::native_exception_host
         // the executable wrapper itself remains a module-owned definition.
         ::std::array<mapping, 5uz> const mappings{{
             {type_info, const_cast<void*>(actual_type_info)},
-# if defined(UWVM_RUNTIME_NATIVE_EXCEPTION_HOST_WIN64_SEH)
+# if defined(UWVM_RUNTIME_NATIVE_EXCEPTION_HOST_WIN64_SEH) || defined(UWVM_RUNTIME_NATIVE_EXCEPTION_HOST_ARM_LOCAL_PERSONALITY)
             {symbols.host_personality, personality_address},
 # else
             {symbols.personality, personality_address},
@@ -296,4 +311,8 @@ namespace uwvm2::runtime::lib::details::native_exception_host
 #endif
 #if defined(UWVM_RUNTIME_NATIVE_EXCEPTION_HOST_GNU_CXX)
 # undef UWVM_RUNTIME_NATIVE_EXCEPTION_HOST_GNU_CXX
+#endif
+
+#if defined(UWVM_RUNTIME_NATIVE_EXCEPTION_HOST_ARM_LOCAL_PERSONALITY)
+# undef UWVM_RUNTIME_NATIVE_EXCEPTION_HOST_ARM_LOCAL_PERSONALITY
 #endif

@@ -833,6 +833,24 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::details
                           if(owned.table && extab >= begin && extab - begin <= owned.size &&
                              owned.size - (extab - begin) >= 4u) { bounded = true; } }
                         if(!bounded || extab % 4u != 0u) { return false; }
+                        auto const* personality_word{reinterpret_cast<::std::uint32_t const*>(extab)};
+                        ::std::uint32_t personality_encoding{};
+                        ::std::memcpy(&personality_encoding,personality_word,sizeof(personality_encoding));
+                        if((personality_encoding & 0x80000000u)==0u)
+                        {
+                            // Generic EHABI personalities must target this object's
+                            // generated tail wrapper. Refuse a truncated PREL31
+                            // before publishing any unwind table or guest entry.
+                            auto const personality{arm_ehabi_prel31(personality_word) & ~::std::uintptr_t{1u}};
+                            bool executable{};
+                            for(auto const& owned:arm_ehabi_sections_)
+                            {
+                                auto const begin{reinterpret_cast<::std::uintptr_t>(owned.address)};
+                                if(owned.code && personality>=begin && personality-begin<owned.size)
+                                { executable=true;break; }
+                            }
+                            if(!executable) { return false; }
+                        }
                     }
                     table.functions.push_back({start, end - start});
                 }

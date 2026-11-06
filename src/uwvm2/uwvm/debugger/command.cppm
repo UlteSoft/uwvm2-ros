@@ -16,6 +16,7 @@ import uwvm2.uwvm.debugger.wasm_mutation;
 import uwvm2.uwvm.debugger.wasm_path;
 import uwvm2.uwvm.debugger.wasip1_state;
 import uwvm2.uwvm.debugger.ros_state;
+import uwvm2.uwvm.debugger.host_trace;
 #define UWVM_MODULE
 #define UWVM_MODULE_EXPORT export
 #include "command.h"

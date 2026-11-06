@@ -185,6 +185,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
         }
         next->type = ::uwvm2::utils::cmdline::parameter_parsing_results_type::occupied_arg;
         debug_jit_control_fd = parsed;
+        ::uwvm2::uwvm::wasm::storage::debug_control_requested = true;
         return ::uwvm2::utils::cmdline::parameter_return_type::def;
     }
     // Host launcher passes only a decimal inherited HANDLE value; no guest
@@ -237,6 +238,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
         }
         next->type = ::uwvm2::utils::cmdline::parameter_parsing_results_type::occupied_arg;
         debug_jit_control_handle = parsed;
+        ::uwvm2::uwvm::wasm::storage::debug_control_requested = true;
         return ::uwvm2::utils::cmdline::parameter_return_type::def;
     }
 #if defined(UWVM_MODULE)

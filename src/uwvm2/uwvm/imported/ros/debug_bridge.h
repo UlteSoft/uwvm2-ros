@@ -9,6 +9,7 @@ namespace uwvm2::uwvm::imported::ros::host
     inline void debug_snapshot(core::debug::request const& query,core::debug::view& output) noexcept
     {
         using namespace core::debug;
+        if(query.trace_control) {enabled.store(query.trace_control==1,std::memory_order_relaxed);}
         if(query.selected==selection::trace) {debug_trace.read(query,output);return;}
         if(query.selected==selection::calls) {debug_trace.read_calls(query,output);return;}
         bool const sessions{query.selected==selection::sessions||query.selected==selection::statistics};

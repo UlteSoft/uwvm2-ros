@@ -23,6 +23,14 @@
 module;
 
 // std
+#include <algorithm>
+#include <array>
+#include <atomic>
+#include <cstring>
+#include <mutex>
+#include <string>
+#include <string_view>
+#include <vector>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -46,6 +54,7 @@ import uwvm2.imported.wasi.wasip1;
 import uwvm2.uwvm.imported.wasi.wasip1.storage;
 import uwvm2.uwvm.wasm.type;
 import uwvm2.uwvm.debugger.wasip1_calls;
+import uwvm2.utils.debug.host_calls;
 
 #ifndef UWVM_MODULE
 # define UWVM_MODULE
@@ -54,4 +63,5 @@ import uwvm2.uwvm.debugger.wasip1_calls;
 # define UWVM_MODULE_EXPORT export
 #endif
 
+#include "observations.h"
 #include "define.h"
