@@ -74,8 +74,8 @@ class Tests(unittest.TestCase):
                      ("0x1234", "wasm:0:2:4", "uwvm-native-stop:0", "uwvm-native-stop:999999999999", "uwvm-native-stop:1;quit")]+[
                      {"memoryReference": "$CURRENT", "instructionCount": value} for value in (0, 513, True, "1")]+[
                      {"memoryReference": "$CURRENT", "instructionCount": 1, name: value}
-                     for name, value in (("offset", 65537), ("offset", -65537), ("offset", True),
-                                         ("instructionOffset", -8193), ("instructionOffset", "0"), ("resolveSymbols", "yes"))]:
+                     for name, value in (("offset", 1 << 63), ("offset", -(1 << 63)-1), ("offset", True),
+                                         ("instructionOffset", -(1 << 63)-1), ("instructionOffset", "0"), ("resolveSymbols", "yes"))]:
             with self.subTest(args=args):
                 # Recreate the real protocol display state after each fail-closed retirement.
                 frame = self.frame(); args = dict(args)

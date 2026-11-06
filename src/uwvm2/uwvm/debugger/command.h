@@ -1040,8 +1040,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         }
         else if((name == "breakasm" || name == "bi") && count == 2u)
         {
-            if(!details::parse_decimal(words[1], result.native_breakpoint_offset) ||
-               result.native_breakpoint_offset > 65536u) { return {}; }
+            if(!details::parse_decimal(words[1], result.native_breakpoint_offset)) { return {}; }
             result.kind = console_command_kind::assembly_breakpoint;
             result.operation = status; // Existing authenticated host policy admission.
         }
@@ -1087,9 +1086,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                !details::parse_decimal(words[2], result.disassembly_stop_identifier) || result.disassembly_stop_identifier == 0u ||
                !details::parse_decimal(words[3], result.disassembly_count) || result.disassembly_count == 0u || result.disassembly_count > 32u ||
                !details::parse_signed_decimal(words[4], result.disassembly_byte_offset) ||
-               result.disassembly_byte_offset < -65536 || result.disassembly_byte_offset > 65536 ||
                !details::parse_signed_decimal(words[5], result.disassembly_instruction_offset) ||
-               result.disassembly_instruction_offset < -(INT64_MAX / 2) || result.disassembly_instruction_offset > INT64_MAX / 2 ||
                !details::parse_decimal(words[6], symbols) || symbols > 1u) { return {}; }
             result.disassembly_resolve_symbols = symbols != 0u;
             result.kind = console_command_kind::assembly_disassemble_range;

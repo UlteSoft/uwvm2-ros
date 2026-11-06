@@ -2362,7 +2362,7 @@ def parse_native_disassembly(text, location, count):
     owner_begin = None
     total_bytes = 0
     for index, line in enumerate(lines[1:-1]):
-        row = re.fullmatch(r"  instruction ([0-9]{1,2}) pc=0x([0-9a-fA-F]{1,16})(?: function-offset=([0-9]{1,5}) bytes=([0-9a-fA-F]{2}(?: [0-9a-fA-F]{2}){0,31})  (.{1,1024})| (unavailable))", line)
+        row = re.fullmatch(r"  instruction ([0-9]{1,2}) pc=0x([0-9a-fA-F]{1,16})(?: function-offset=([0-9]{1,20}) bytes=([0-9a-fA-F]{2}(?: [0-9a-fA-F]{2}){0,31})  (.{1,1024})| (unavailable))", line)
         if row is None or int(row[1]) != index or int(row[2], 16) != pc or pc == 0:
             raise ValueError("invalid or noncontiguous native-disassembly row")
         if row[6] is not None:
@@ -2373,7 +2373,7 @@ def parse_native_disassembly(text, location, count):
         if unavailable:
             raise ValueError("decoded row follows unavailable native boundary")
         function_offset = int(row[3])
-        if function_offset >= 65536 or function_offset >= pc:
+        if function_offset >= pc:
             raise ValueError("native instruction has an invalid function offset")
         current_begin = pc - function_offset
         if owner_begin is not None and current_begin != owner_begin:
@@ -2401,7 +2401,7 @@ def parse_native_disassembly_range(text, location, count, byte_offset, instructi
     header = re.fullmatch(r"native-disassembly-range stop=([0-9]{1,20}) thread=([0-9]{1,20}) module=([0-9]{1,20}) "
                           r"function=([0-9]{1,20}) function-generation=([0-9]{1,20}) runtime-epoch=([0-9]{1,20}) "
                           r"(?:origin=(?:native-instruction-stop|safepoint-code-view) )?reference-pc=0x([0-9a-fA-F]{1,16}) owner-begin=0x([0-9a-fA-F]{1,16}) owner-end=0x([0-9a-fA-F]{1,16}) "
-                          r"byte-offset=(-?[0-9]{1,6}) instruction-offset=(-?[0-9]{1,5}) resolve-symbols=([01])", lines[0])
+                          r"byte-offset=(-?[0-9]{1,20}) instruction-offset=(-?[0-9]{1,20}) resolve-symbols=([01])", lines[0])
     if header is None:
         raise ValueError("invalid owned-function disassembly header")
     stop, thread, module, function, generation, epoch = map(int, header.groups()[:6])
@@ -2410,7 +2410,8 @@ def parse_native_disassembly_range(text, location, count, byte_offset, instructi
             or not 0 <= function < 1 << 64 or not 0 < generation < 1 << 64 or not 0 < epoch < 1 << 64
             or (stop, thread, module, function, epoch) !=
                (location["stop_id"], location["id"], location["module"], location["function"], location["generation"])
-            or not 0 < begin <= pc < end < 1 << 64 or not 0 < end - begin <= 65536
+            or not 0 < begin <= pc < end < 1 << 64
+            or not -(1 << 63) <= byte_offset < 1 << 63 or not -(1 << 63) <= instruction_offset < 1 << 63
             or ("native_pc" in location and pc != int(location["native_pc"], 16))
             or tuple(map(int, header.groups()[9:])) != (byte_offset, instruction_offset, int(resolve_symbols))):
         raise ValueError("owned-function reply belongs to another stop, owner or offset")
@@ -2438,7 +2439,7 @@ def parse_native_disassembly_range(text, location, count, byte_offset, instructi
                 trailing = True
             instructions.append({"address": "-1", "instruction": "<unavailable instruction>", "presentationHint": "invalid"})
             continue
-        row = re.fullmatch(r"  instruction ([0-9]{1,2}) function-offset=([0-9]{1,5}) pc=0x([0-9a-fA-F]{1,16}) bytes=([0-9a-fA-F]{2}(?: [0-9a-fA-F]{2}){0,31})  (.{1,1024})", line)
+        row = re.fullmatch(r"  instruction ([0-9]{1,2}) function-offset=([0-9]{1,20}) pc=0x([0-9a-fA-F]{1,16}) bytes=([0-9a-fA-F]{2}(?: [0-9a-fA-F]{2}){0,31})  (.{1,1024})", line)
         if row is None or int(row[1]) != index or trailing:
             raise ValueError("malformed or resumed-after-gap instruction row")
         address = int(row[3], 16)
@@ -3096,7 +3097,18 @@ class Adapter:
             self.observe(self.command("status"))
             if self.state != "stopped" or self.stop_key != expected_key:
                 raise ValueError("native stop changed before disassembly page")
-            page_identity, page = self.native_range_page(location, page_count, byte_offset, instruction_offset + first, resolve)
+            page_offset = instruction_offset + first
+            if page_offset >= 1 << 63:
+                # Later pages beyond the signed wire extent cannot name an
+                # instruction in a representable owned function. Keep checking
+                # the exact live stop, and emit only address-free invalid rows.
+                if identity is None:
+                    raise ValueError("native page has no qualified owner")
+                page_identity = identity
+                page = [{"address": "-1", "instruction": "<unavailable instruction>",
+                         "presentationHint": "invalid"} for _ in range(page_count)]
+            else:
+                page_identity, page = self.native_range_page(location, page_count, byte_offset, page_offset, resolve)
             self.observe(self.command("status"))
             if (self.state != "stopped" or self.stop_key != expected_key or
                     (kind == "stop" and identifier not in self.native_frames) or
@@ -4282,10 +4294,10 @@ class Adapter:
                 reference = args.get("memoryReference")
                 count = args.get("instructionCount")
                 if (not isinstance(reference, str) or type(count) is not int or not 1 <= count <= 512
-                        or type(args.get("offset", 0)) is not int or not -65536 <= args.get("offset", 0) <= 65536
-                        or type(args.get("instructionOffset", 0)) is not int or not -8192 <= args.get("instructionOffset", 0) <= 8192
+                        or type(args.get("offset", 0)) is not int or not -(1 << 63) <= args.get("offset", 0) < 1 << 63
+                        or type(args.get("instructionOffset", 0)) is not int or not -(1 << 63) <= args.get("instructionOffset", 0) < 1 << 63
                         or type(args.get("resolveSymbols", False)) is not bool):
-                    raise ValueError("native disassembly requires a current opaque reference, count 1..512 and bounded signed offsets")
+                    raise ValueError("native disassembly requires a current opaque reference, count 1..512 and signed 64-bit offsets")
                 # Preserve the original r2 zero-offset <=32 native-stop wire
                 # subset. IDE symbols, offsets, bigger windows and cooperative
                 # code references always use the new exact-owner range query.

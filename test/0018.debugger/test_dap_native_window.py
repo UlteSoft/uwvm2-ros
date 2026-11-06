@@ -24,6 +24,7 @@ class Broker:
         self.header_change = None
         self.hide_current = False
         self.hide_tail_in_first_page = False
+        self.begin, self.end, self.pc = 0x1000, 0x1600, 0x1100
     def request(self, command):
         self.commands.append(command)
         if command == "status": return self.status
@@ -37,14 +38,14 @@ class Broker:
             count, byte_offset, offset, symbols = map(int, (count, byte_offset, offset, symbols))
             generation = self.generation + (self.header_change is not None and self.pages >= self.header_change)
             header = (f"native-disassembly-range stop={stop} thread={thread} module=0 function=2 function-generation={generation} runtime-epoch=8 "
-                      f"reference-pc=0x1100 owner-begin=0x1000 owner-end=0x1600 byte-offset={byte_offset} instruction-offset={offset} resolve-symbols={symbols}\n")
+                      f"reference-pc=0x{self.pc:x} owner-begin=0x{self.begin:x} owner-end=0x{self.end:x} byte-offset={byte_offset} instruction-offset={offset} resolve-symbols={symbols}\n")
             if symbols: header += "native-function-name demo\\x1Bname\n"
             rows = ""
             for index in range(count):
-                pc = 0x1100 + byte_offset + offset + index
-                if self.hide_current or (self.hide_tail_in_first_page and offset == 0 and index >= 1) or not 0x1000 <= 0x1100 + byte_offset < 0x1600 or not 0x1000 <= pc < 0x1600:
+                pc = self.pc + byte_offset + offset + index
+                if self.hide_current or (self.hide_tail_in_first_page and offset == 0 and index >= 1) or not self.begin <= self.pc + byte_offset < self.end or not self.begin <= pc < self.end:
                     rows += f"  instruction {index} unavailable\n"
-                else: rows += f"  instruction {index} function-offset={pc - 0x1000} pc=0x{pc:x} bytes=90  nop\n"
+                else: rows += f"  instruction {index} function-offset={pc - self.begin} pc=0x{pc:x} bytes=90  nop\n"
             self.pages += 1
             if self.after_page is not None and self.pages >= self.after_page:
                 self.status = self.status.replace("stop-id 17", "stop-id 18")
@@ -168,8 +169,8 @@ class Tests(unittest.TestCase):
                              instructionCount=64, instructionOffset=-10, resolveSymbols=True)
         self.assertFalse(response["success"]); self.assertNotIn("body", response)
     def test_user_budgets_types_raw_addresses_and_retired_ids_reject_before_query(self):
-        for arguments in ({"instructionCount":513},{"instructionCount":True},{"offset":-65537},
-                          {"offset":True},{"instructionOffset":8193},{"instructionOffset":-8193},
+        for arguments in ({"instructionCount":513},{"instructionCount":True},{"offset":-(1 << 63)-1},
+                          {"offset":True},{"instructionOffset":1 << 63},{"instructionOffset":-(1 << 63)-1},{"offset":1 << 63},
                           {"instructionOffset":"-1"},{"resolveSymbols":1}):
             frame = self.frame(); old = list(self.broker.commands)
             request = {"memoryReference":frame["instructionPointerReference"],"instructionCount":1}; request.update(arguments)
@@ -178,6 +179,36 @@ class Tests(unittest.TestCase):
             old = list(self.broker.commands)
             self.assertFalse(self.send("disassemble", memoryReference=reference, instructionCount=400, resolveSymbols=True)["success"])
             self.assertEqual(old,self.broker.commands)
+    def test_large_function_and_offsets_use_the_actual_owned_extent(self):
+        self.broker.end, self.broker.pc = 0x80000, 0x21000
+        frame = self.frame()
+        for arguments in ({"offset":70000}, {"offset":-70000},
+                          {"instructionOffset":90000}, {"instructionOffset":-90000}):
+            response = self.send("disassemble", memoryReference=frame["instructionPointerReference"],
+                                 instructionCount=64, **arguments)
+            self.assertTrue(response["success"], response)
+            rows = response["body"]["instructions"]
+            self.assertEqual(len(rows), 64)
+            self.assertTrue(all(row["presentationHint"] == "normal" for row in rows))
+            self.assertEqual(int(rows[0]["address"], 16),
+                             self.broker.pc + arguments.get("offset", 0) + arguments.get("instructionOffset", 0))
+    def test_complete_signed_offsets_return_only_unavailable_owned_pages(self):
+        frame = self.frame()
+        for key in ("offset", "instructionOffset"):
+            for offset in (-(1 << 63), (1 << 63)-1):
+                response = self.send("disassemble", memoryReference=frame["instructionPointerReference"],
+                                     instructionCount=64, **{key: offset})
+                self.assertTrue(response["success"], response)
+                self.assertEqual(len(response["body"]["instructions"]), 64)
+                self.assertTrue(all(row["address"] == "-1" and row["presentationHint"] == "invalid"
+                                    for row in response["body"]["instructions"]))
+    def test_large_legacy_native_row_keeps_exact_owner_offset(self):
+        location = dap.parse_status(NATIVE.replace("native-pc=0x1100", "native-pc=0x21000"))[2][0]
+        reply = ("native-disassembly stop=17 thread=3 module=0 function=2 function-generation=2 runtime-epoch=8\n"
+                 "  instruction 0 pc=0x21000 function-offset=131072 bytes=90  nop\n"
+                 "native-disassembly-end\n")
+        rows = dap.parse_native_disassembly(reply, location, 1)
+        self.assertEqual(rows[0]["address"], "0x21000")
     def test_display_name_controls_rows_and_owner_boundary_failclosed(self):
         location = dap.parse_status(NATIVE)[2][0]
         text = Broker(native=True).request("disassemble-range 3 17 1 0 0 1")

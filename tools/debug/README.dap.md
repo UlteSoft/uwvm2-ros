@@ -163,12 +163,14 @@ offset, source location, caller frames or local-variable scope. Resume,
 transport/protocol failure, a changed stop, detach and exit retire those IDs.
 The display reference grants no native memory read/write or breakpoint access.
 A current identified native stop supports the r2 zero-offset <=32-row subset.
-The r3 source candidate also accepts bounded signed byte/instruction offsets,
+The range query also accepts signed 64-bit byte/instruction offsets,
 instructionCount 1..512 and resolveSymbols=true. A 400-row initial IDE window
 is paged into <=32-row console queries with fresh complete stop checks around
-every page. One private-owned current function image (<=64KiB) is decoded
-forward from its real entry, limited to 8192 instructions; no guessed backwards
-x86 boundaries or neighboring function bytes are read. Out-of-owner rows use
+every page. The complete private-owned current function image is decoded
+forward from its real entry without a function-size or instruction-count quota.
+Only one response page is retained; signed arithmetic is checked before forming
+any byte view. No guessed backwards x86 boundaries or neighboring function
+bytes are read. Out-of-owner rows use
 invalid filler address "-1". Symbol lookup attempts only the actual current
 owner's optional full bounded Wasm custom name, safely escaped.
 

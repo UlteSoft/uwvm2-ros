@@ -5499,7 +5499,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                    (command.kind != console_command_kind::protocol && !source_breakpoint))) ||
                (command.kind != console_command_kind::protocol && !replacement_file && !source_step && !wasm_step && !source_breakpoint && !assembly_step && !source_locals && !disassembly && !registers && !wasm_event && !wasm_script && !source_type && !source_frame && !wasm_state_query && !wasip1_state_query && !ros_state_query && !host_trace_query && !wasm_path_query && !wasm_mutation_query && !breakpoint_control && !assembly_breakpoint) ||
                (assembly_breakpoint && (command.operation != operation::status || command.payload_size != 0u ||
-                    command.wait_for_event || command.native_breakpoint_offset > 65536u ||
+                    command.wait_for_event ||
                     command.breakpoint_initial_condition || command.breakpoint_initial_ignore)) ||
                (breakpoint_control && (command.operation != operation::status || command.payload_size != 0u || command.wait_for_event ||
                     (command.breakpoint_policy != breakpoint_action::enable && command.breakpoint_policy != breakpoint_action::disable &&
@@ -5530,9 +5530,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                                   (command.source_frame_explicit && (command.disassembly_stop_identifier == 0u || command.requested_step_thread == 0u)))) ||
                (disassembly && (command.operation != operation::backtrace || command.payload_size != 8u ||
                                 command.disassembly_stop_identifier == 0u || command.disassembly_count == 0u ||
-                                command.disassembly_count > 32u ||
-                                (disassembly_range && (command.disassembly_byte_offset < -65536 || command.disassembly_byte_offset > 65536 ||
-                                  command.disassembly_instruction_offset < -(INT64_MAX / 2) || command.disassembly_instruction_offset > INT64_MAX / 2)))) ||
+                                command.disassembly_count > 32u)) ||
                (source_breakpoint && (command.operation != operation::breakpoint_set || command.payload_size != 0u ||
                                       command.source_line == 0u || command.source_path_size == 0u ||
                                       command.source_path_size >= command.source_path.size())) ||
