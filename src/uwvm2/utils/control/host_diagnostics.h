@@ -27,14 +27,14 @@ namespace uwvm2::utils::control::host_diagnostics
         std::string text;for(auto c:input)text+=static_cast<char>(c);
         bool deny{},limit{};std::string_view selector{text};
         if(selector=="all") { configuration.denied.fill(value);configuration.limited.fill(value);return true; }
-        if(selector.starts_with("all_host_calls")){deny=limit=true;selector.remove_prefix(14);}
-        else if(selector.starts_with("all_host_denied")){deny=true;selector.remove_prefix(15);}
-        else if(selector.starts_with("all_host_limited")){limit=true;selector.remove_prefix(16);}
+        if(selector.substr(0,14)=="all_host_calls"){deny=limit=true;selector.remove_prefix(14);}
+        else if(selector.substr(0,15)=="all_host_denied"){deny=true;selector.remove_prefix(15);}
+        else if(selector.substr(0,16)=="all_host_limited"){limit=true;selector.remove_prefix(16);}
         else
         {
-            if(selector.starts_with("host_call_")){deny=limit=true;selector.remove_prefix(10);}
-            else if(selector.starts_with("host_denied_")){deny=true;selector.remove_prefix(12);}
-            else if(selector.starts_with("host_limited_")){limit=true;selector.remove_prefix(13);}
+            if(selector.substr(0,10)=="host_call_"){deny=limit=true;selector.remove_prefix(10);}
+            else if(selector.substr(0,12)=="host_denied_"){deny=true;selector.remove_prefix(12);}
+            else if(selector.substr(0,13)=="host_limited_"){limit=true;selector.remove_prefix(13);}
             else return false;
             auto dot=selector.find('.');if(dot==selector.npos)return false;
             auto family=selector.substr(0,dot);auto key=selector.substr(dot+1);
