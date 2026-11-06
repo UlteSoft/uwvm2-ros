@@ -47,6 +47,65 @@ journals retain explicit retention/loss counters. To stop all Host diagnostic
 collection, use all three off commands. User-configured security/audit sinks
 are separate and retain their policy and error handling.
 
+## Save human-readable JSON on the host
+
+The DAP Debug Console accepts:
+
+    trace host save "/absolute/host/path/calls.json"
+
+This is an adapter command; it is not a VM import or a native-console file
+operation. Start recording explicitly with `trace host on`, run the workload,
+then reach a complete cooperative stop before saving. Saving does not enable,
+disable, clear, or drain the recorder. Existing files, including symlinks, are
+refused. Choose a new filename.
+
+For an IDE/custom DAP client, send `uwvm/exportHostTrace` with arguments:
+
+```json
+{"path": "/absolute/host/path/calls.json", "family": "all"}
+```
+
+`family` is optional and may be `all`, `wasip1`, `ros1`, or `ros2`. A host shell
+can export from an existing private Unix broker when the IDE has released its
+connection:
+
+```sh
+python3 tools/debug/export_host_trace.py \
+  --socket-dir /absolute/private/broker \
+  --output /absolute/host/path/calls.json --family all
+```
+
+Keep `export_host_trace.py` alongside `dap_adapter.py` when distributing the
+adapter. The destination belongs to the host adapter machine. Guest filesystem
+permissions do not grant this command; existing DEV broker authentication is
+required. Native instruction stops, running guests and stale stops refuse.
+
+The versioned `uwvm.host-trace.v1` JSON contains readable namespace/function
+names, arguments with widths, unsigned return bits, normal-return status,
+duration in nanoseconds, module/participant/generation/environment identities,
+complete module-name bytes, and every recorded input/output segment.
+Segments retain memory index, guest offset, direction and snapshot/transfer
+semantics. Each chunk has an offset, lossless hex and `utf8IfValid`; concatenate
+hex chunks to reconstruct binary data, including NUL and invalid UTF-8.
+UTF-8 readability is assessed per chunk, so a split multibyte character can
+produce a null text field without losing any bytes. Numeric ABI values and
+64-bit quantities use decimal strings, preserving them in JavaScript readers.
+
+The exporter streams pages without an overall call, buffer, label or output-size
+limit. It checks the journal epoch, cursor, enabled mask and loss counters on
+every page, asserts the exact stop in every broker request, and rechecks the
+participant cohort at completion. Allocation loss, invalid ranges, incomplete
+calls and calls without a normal return remain explicit. An export is the
+retained observation history, not proof that every call since process startup
+was recorded. The file also records the WASI snapshot and ROS transfer caveats.
+
+Output is written to a private temporary file in the destination directory,
+flushed, and atomically published without overwriting an existing path.
+A malformed page, changed stop/journal, disconnected broker or write failure
+does not publish a partial JSON document. The temporary file is cleaned up.
+This work runs only on explicit export in the host tool; it adds no VM
+execution, stepping or disabled-tracing work.
+
 ## Meaning and limits of observations
 
 ROS segments are captured from the validated Host-owned buffers used by actual

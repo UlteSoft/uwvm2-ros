@@ -7,6 +7,15 @@ through `secure_server.py` (Linux), `secure_server_macos.py` (macOS), or
 it cannot enable debug instrumentation inside an unprepared VM. The guest gets
 neither the broker listener nor the authorization token.
 
+The Debug Console can save retained WASI/ROS observations with
+`trace host save "/absolute/host/path/calls.json"`. Recording remains explicitly
+opt-in through `trace host on`; saving requires a current cooperative stop and
+does not change execution or permissions. `uwvm/exportHostTrace` provides the
+same operation with `path` and optional `family` arguments. Keep
+`export_host_trace.py` beside this adapter. See the
+[JSON format and standalone exporter](../../documents/runtime/debug-host-observations.md#save-human-readable-json-on-the-host)
+and the [three-level command comparison](../../documents/runtime/debug-command-parity.md).
+
 Source and Wasm instruction breakpoints accept the finite DAP hit conditions
 `>=N` and `>N`, with an unsigned 64-bit `N`. `>18446744073709551615` is
 rejected because the saturating counter cannot represent a greater hit count.

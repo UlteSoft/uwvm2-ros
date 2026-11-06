@@ -3201,6 +3201,13 @@ class Adapter:
             raise ValueError("Wasm memory requires a current identified cooperative stop")
         return self.stop_key, min(t["id"] for t in self.threads), self.threads[0]["stop_id"]
 
+    def export_host_trace(self, args):
+        from export_host_trace import save_host_trace
+        if not isinstance(args, dict) or args.keys() - {"path", "family"}:
+            raise ValueError("host trace export accepts path and optional family")
+        return save_host_trace(self.command, self.cooperative_memory_stop,
+                               args.get("path"), args.get("family", "all"))
+
     def read_wasm_memory(self, module, memory, address, count):
         """Fresh guest selector, never a native address or cached frame capability."""
         expected, _, _ = self.cooperative_memory_stop()
@@ -4193,6 +4200,8 @@ class Adapter:
                         self.ros_scope_stops[reference] = (self.stop_key, selected)
                         scopes.append({"name": title, "variablesReference": reference, "expensive": True})
                 self.respond(request, {"scopes": scopes})
+            elif command == "uwvm/exportHostTrace":
+                self.respond(request, self.export_host_trace(args))
             elif command == "uwvm/rosState":
                 self.respond(request, self.query_ros_state(args))
             elif command == "uwvm/wasip1Edit":
@@ -4543,6 +4552,15 @@ class Adapter:
                 expression = args.get("expression")
                 if not isinstance(expression, str):
                     raise ValueError("debug console expression required")
+                if args.get("context", "repl") == "repl" and expression.split()[:3] == ["trace", "host", "save"]:
+                    import shlex
+                    words = shlex.split(expression)
+                    if len(words) != 4:
+                        raise ValueError("usage: trace host save PATH (quote paths containing spaces)")
+                    exported = self.export_host_trace({"path": words[3]})
+                    self.respond(request, {"result": json.dumps(exported, ensure_ascii=True, indent=2),
+                                           "variablesReference": 0})
+                    return
                 language_frame = self.source_frame_ordinals.get(args.get("frameId")) if type(args.get("frameId")) is int else None
                 source_context = args.get("context") in ("watch", "hover", "variables")
                 if source_context and type(args.get("frameId")) is int and args["frameId"] in self.native_frames:

@@ -8,16 +8,20 @@ implemented and tested with real C, C++ and Rust `-g` Wasm modules. Native
 single-instruction stepping is qualified on Linux x86-64, i686, AArch64,
 ARM soft-float, ARM hard-float and macOS ARM64;
 Windows product qualification remains in progress. Exact embedded-DWARF
-file/line breakpoints use `breaksource MODULE FILE:LINE`. Source-language
-variables and inline caller frames remain unimplemented: `locals` reports
-Wasm locals, and unavailable source mappings fail closed.
+file/line breakpoints use `breaksource MODULE FILE:LINE`. Source values,
+typed expressions, DWARF inline frames and pretty-printers are implemented
+through authenticated stopped-frame queries. Missing or optimized-out
+locations remain explicitly unavailable. See the
+[current command parity and limitations](debug-command-parity.md); cross-platform
+parity does not imply all GDB/LLDB features are implemented.
 
 ## Address and ownership model
 
 The current safe-point location is `(module instance ID, public function index,
 Wasm expression offset)`. Its source lookup adds a file, line and column.
-Function generation, DWARF compilation unit, discriminator and inline call
-chain belong to the planned richer stop record.
+Function generation, stop identity and validated source/inline-frame metadata
+qualify queries; cached references retire when execution or replacement changes
+their ownership.
 A native location adds `(JIT code owner, [start,end), native PC)`; only an
 authenticated JIT owner may translate or disassemble that address. Hot
 replacement publishes a new generation with a new map. Old code, CFI, line
