@@ -490,6 +490,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
 #else
         details::append_cache_key_value(out, u8"x86-tailcc-aligned-frame-backport", u8"unqualified");
 #endif
+#if defined(__arm__) || defined(_M_ARM)
+        // This repair changes generated caller code without changing the
+        // argument layout. Old objects/checkpoints must not bypass admission.
+        details::append_cache_key_value(out, u8"arm-tailcc-admission", u8"callee-pop-sp-capability-v1");
+# if defined(LLVM_UWVM_ARM_CALLEE_POP_SP_FIXED) && LLVM_UWVM_ARM_CALLEE_POP_SP_FIXED == 1
+        details::append_cache_key_value(out, u8"arm-tailcc-callee-pop-sp", u8"fixed");
+# else
+        details::append_cache_key_value(out, u8"arm-tailcc-callee-pop-sp", u8"unfixed");
+# endif
+#endif
 #if defined(__aarch64__) || defined(_M_ARM64)
         // This calling-convention admission changes generated AArch64 code.
         // Bind both the effective capability and explicit external opt-in to

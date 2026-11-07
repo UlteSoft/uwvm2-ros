@@ -95,6 +95,9 @@
  * arguments on every normal return, including shrink-wrap bypass paths. */
 #define LLVM_UWVM_ROS_ARM_TAILCC_STACK_RESTORE 1
 
+/* Restore reserved caller SP before post-call spill reloads on ARM/Thumb2. */
+#define LLVM_UWVM_ARM_CALLEE_POP_SP_FIXED 1
+
 /* Restore reserved SP before a post-call frame-index reload on AArch64. */
 #define LLVM_UWVM_AARCH64_CALLEE_POP_SP_FIXED 1
 

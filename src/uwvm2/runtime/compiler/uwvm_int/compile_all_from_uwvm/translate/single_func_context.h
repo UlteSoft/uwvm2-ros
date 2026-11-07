@@ -71,6 +71,9 @@ struct block_t
     ::uwvm2::runtime::compiler::shared::wasm_exception_control::handlers exception_handlers{};
     bool then_polymorphic_end{};  // only meaningful for if/else frames
     bool codegen_entry_reachable{true};
+    // Ordinary incoming edges exist even when the interpreter has no register
+    // cache. Do not infer execution reachability from optional cache snapshots.
+    bool codegen_has_end_edge{};
     // Index of a cold exception target; no runtime work or allocation for functions without EH.
     ::std::size_t exception_target_index{SIZE_MAX};
 

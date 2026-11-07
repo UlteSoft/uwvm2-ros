@@ -429,6 +429,15 @@ thunks.clear();
 // Emit a fixed-size placeholder now and record the site for the final fixup pass.
 auto const emit_ptr_label_placeholder{[&](::std::size_t label_id, bool in_thunk) constexpr UWVM_THROWS
                                       {
+                                          // Record every real branch independently of stack-top caching.
+                                          // The label owns its lexical frame index; a popped frame or a
+                                          // loop-header label cannot acquire an end-edge through this path.
+                                          auto const frame_index{labels.index_unchecked(label_id).end_frame_index};
+                                          if(codegen_reachable && !is_polymorphic && frame_index < control_flow_stack.size())
+                                          {
+                                              auto& frame{control_flow_stack.index_unchecked(frame_index)};
+                                              if(frame.end_label_id == label_id) { frame.codegen_has_end_edge = true; }
+                                          }
                                           rel_offset_t const placeholder{};
                                           ::std::size_t const site{in_thunk ? thunks.size() : bytecode.size()};
                                           if(runtime_log_on) [[unlikely]]

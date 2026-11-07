@@ -490,3 +490,20 @@ The fix preserves the following CFI and Windows epilogue markers, jump target,
 implicit register operands, call-site metadata and NoMerge flag. Tail calls and
 native Unwind remain enabled. The exact provider contract and source manifest
 advance to revision 18; old archive receipts are not relabelled.
+
+## Unreleased ARM reserved caller-frame repair
+
+The ARM/Thumb2 reserved-frame path now restores a normal callee-pop call's SP
+immediately after the call, before register-allocation spill reloads. The previous
+location at ADJCALLSTACKUP could read a different slot even though the callee
+returned the correct scalar result and the final stack pointer was correct.
+Zero-pop setup/ordinary calls remain unchanged. Argument layout, tail-call
+transfer, native unwind selection and Wasm memory checks are unchanged.
+
+The source inventory and LLVM_UWVM_ARM_CALLEE_POP_SP_FIXED capability identify
+this repair within the unreleased paired source. ROS ARM builds require the
+actual rebuilt backend and capability; changing the version string or a header
+alone is not qualification. ARM object/checkpoint keys include the repair
+capability. A portable patch and the minimal cross-platform Wasm regression
+are retained in documents/toolchain/patches/llvm-arm-callee-pop.patch and
+test/0013.uwvm_int/wasm3/fixtures/exception_control_joins/call_i64_spill.wat.

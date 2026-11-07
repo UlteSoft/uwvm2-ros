@@ -880,7 +880,7 @@ case wasm1_code::end:
         }
     }
 
-    codegen_reachable = codegen_fallthrough_before_merge || frame.stacktop_has_end_state ||
+    codegen_reachable = codegen_fallthrough_before_merge || frame.codegen_has_end_edge || frame.stacktop_has_end_state ||
                         frame.stacktop_has_then_end_state ||
                         (frame.type == block_type::if_ && frame.codegen_entry_reachable);
 #if defined(UWVM_CPP_EXCEPTIONS)

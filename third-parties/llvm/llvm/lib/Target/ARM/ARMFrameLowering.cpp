@@ -3553,10 +3553,16 @@ MachineBasicBlock::iterator ARMFrameLowering::eliminateCallFramePseudoInstr(
                      Pred, PredReg);
       }
     }
-  } else if (CalleePopAmount != -1U) {
-    // If the calling convention demands that the callee pops arguments from the
-    // stack, we want to add it back if we have a reserved call frame.
-    emitSPUpdate(isARM, MBB, I, dl, TII, -CalleePopAmount,
+  } else if (CalleePopAmount != 0 && CalleePopAmount != -1U) {
+    // A callee-pop call has already advanced SP when it returns. Register
+    // allocation may insert a frame-index reload before ADJCALLSTACKUP;
+    // that reload still addresses the caller's reserved frame. Restore SP
+    // immediately after the call, before any such reload, as on X86/AArch64.
+    auto InsertPt = I;
+    while (InsertPt != MBB.begin() && !std::prev(InsertPt)->isCall())
+      --InsertPt;
+    assert(InsertPt != MBB.begin() && "callee-pop adjustment without a call");
+    emitSPUpdate(isARM, MBB, InsertPt, dl, TII, -CalleePopAmount,
                  MachineInstr::NoFlags, Pred, PredReg);
   }
   return MBB.erase(I);

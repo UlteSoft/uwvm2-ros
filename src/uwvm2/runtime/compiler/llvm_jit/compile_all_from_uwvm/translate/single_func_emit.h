@@ -1015,6 +1015,11 @@ inline constexpr CallSite* apply_llvm_jit_raw_entry_calling_conv(CallSite* call_
     // ROS requires this capability at build time. Ordinary providers keep their
     // established ABI until rebuilt, and the musttail guards remain authoritative.
     static_cast<void>(type);
+# elif (defined(__arm__) || defined(_M_ARM)) && \
+       !(defined(LLVM_UWVM_ARM_CALLEE_POP_SP_FIXED) && LLVM_UWVM_ARM_CALLEE_POP_SP_FIXED == 1)
+    // ARM also needs the reserved caller-frame restore before spill reloads;
+    // final callee stack alignment alone does not qualify this convention.
+    static_cast<void>(type);
 # else
     if(!type.getReturnType()->isAggregateType())
     {

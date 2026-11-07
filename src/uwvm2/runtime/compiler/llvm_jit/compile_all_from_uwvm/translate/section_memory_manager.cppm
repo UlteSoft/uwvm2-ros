@@ -37,6 +37,7 @@ module;
 // platform
 #if defined(UWVM_RUNTIME_LLVM_JIT)
 # include <llvm/Config/llvm-config.h>
+# include "native_compiler_builtins.h"
 #if defined(LLVM_VERSION_MAJOR) && LLVM_VERSION_MAJOR >= 23 && !defined(_WIN32) && \
     defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
 # include <array>

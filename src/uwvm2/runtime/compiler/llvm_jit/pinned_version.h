@@ -31,6 +31,13 @@
 # error "uwvm2-ros ARM requires the rebuilt bundled TailCC stack-restoration capability"
 #endif
 
+// A restored final SP is insufficient: caller spills must be read only after
+// undoing a normal callee-pop call. Require the rebuilt backend capability.
+#if (defined(__arm__) || defined(_M_ARM)) && \
+    (!defined(LLVM_UWVM_ARM_CALLEE_POP_SP_FIXED) || LLVM_UWVM_ARM_CALLEE_POP_SP_FIXED != 1)
+# error "uwvm2-ros ARM requires the rebuilt caller-spill callee-pop backend repair"
+#endif
+
 // Revision 16 gives the owned A32 debugger exact epilogue DWARF rows.
 #if defined(__arm__) && \
     (!defined(LLVM_UWVM_ROS_ARM_DEBUG_EPILOGUE_CFI) || LLVM_UWVM_ROS_ARM_DEBUG_EPILOGUE_CFI != 1)

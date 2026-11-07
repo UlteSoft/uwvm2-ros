@@ -23,6 +23,7 @@
 #include <uwvm2/runtime/lib/uwvm_runtime_posix_abi.h>
 #ifndef UWVM_MODULE
 # include "arm_ehabi_registration.h"
+# include "native_compiler_builtins.h"
 #endif
 
 #ifndef UWVM_MODULE
@@ -393,6 +394,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::details
 # if UWVM2_RUNTIME_LLVM_JIT_SECTION_MEMORY_MANAGER_HAS_RESERVE_ALLOC
 #  if UWVM2_RUNTIME_LLVM_JIT_SECTION_MEMORY_MANAGER_HAS_RISCV64_LOW_MAPPER
             ::llvm::SectionMemoryManager(::std::addressof(get_runtime_llvm_jit_riscv64_low_address_memory_mapper()), true)
+#  elif defined(__aarch64__) || defined(_M_ARM64) || defined(__arm__) || defined(_M_ARM)
+            // AArch64 jump tables still use ADRP with the large code model;
+            // ARM unwind/constant references also have finite displacement.
+            // An unrelated Wasm reservation can separate independent mmap
+            // allocations by many GiB. Reserve each object's actual sections
+            // together; LLVM still applies RX/R/RW protections separately.
+            ::llvm::SectionMemoryManager(nullptr, true)
 #  else
             ::llvm::SectionMemoryManager(nullptr, UWVM2_RUNTIME_LLVM_JIT_SECTION_MEMORY_MANAGER_HAS_WIN64_SEH != 0)
 #  endif
@@ -530,6 +538,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::details
 
         [[nodiscard]] inline ::llvm::JITSymbol findSymbol(::std::string const& name) override
         {
+# if defined(__linux__) && (defined(__i386__) || defined(__arm__))
+            if(auto const builtin{native_compiler_builtins::find(name)}; builtin != 0u)
+            { return ::llvm::JITSymbol{builtin, ::llvm::JITSymbolFlags::Exported}; }
+# endif
 # if defined(UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT) && UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT == 1 && \
     defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__)
             // Backend-generated compact unwind relocations refer to these
