@@ -23,7 +23,7 @@ int main()
     auto value{plan(::std::array<unsigned char, 5u>{0xedu, 0u, 0x81u, 1u, 0x9fu})};
     check(value.kind == plan_kind::wasm_local_value && value.local_index == 129u, "local stack-value plan");
     value = plan(::std::array<unsigned char, 3u>{0xedu, 0u, 1u});
-    check(value.kind == plan_kind::unavailable && value.reason == unavailable_reason::indirect_or_ambiguous_local, "plain local never grants value read");
+    check(value.kind == plan_kind::wasm_local_guest_offset && value.kind != plan_kind::wasm_local_value && value.local_index == 1u, "plain local is only a guest-offset recipe, never a copied value");
     value = plan(::std::array<unsigned char, 3u>{0xedu, 0u, 1u}, position_role::frame_base);
     check(value.kind == plan_kind::wasm_local_frame_base && value.local_index == 1u, "frame-base metadata only");
     value = plan(::std::array<unsigned char, 2u>{0x91u, 0x7cu});

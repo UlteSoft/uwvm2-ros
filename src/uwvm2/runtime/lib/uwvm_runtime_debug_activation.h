@@ -13,7 +13,9 @@
 namespace uwvm2::runtime::lib::details::debug_activation
 {
     inline constexpr ::std::size_t frames_per_block{64u};
-    inline constexpr ::std::size_t default_storage_budget{256u * 1024u * 1024u};
+    // Storage grows by stable blocks. Only a caller-selected quota, actual
+    // allocation failure or representability may exhaust the ledger.
+    inline constexpr ::std::size_t default_storage_budget{(::std::numeric_limits<::std::size_t>::max)()};
     enum class failure { none, invalid_identity, resource_exhausted, allocation_failed, identity_exhausted };
     enum class exit_kind : unsigned { returned, typed_tail, host_tail, exception };
     struct frame
@@ -196,7 +198,7 @@ namespace uwvm2::runtime::lib::details::debug_activation
         // neither a reused SP nor a new host island is a descendant witness.
         [[nodiscard]] bool matches_native_descendant(frame const* expected, ::std::size_t expected_count) const noexcept
         {
-            if(poisoned_ || host_count_!=0u || island_==0u || count_<=expected_count || count_>262144u ||
+            if(poisoned_ || host_count_!=0u || island_==0u || count_<=expected_count ||
                pending_.continuation!=0u || pending_.parent!=0u || pending_.island!=0u || pending_.count!=0u ||
                !native_expected_chain(expected,expected_count)) { return false; }
             for(::std::size_t i{};i!=count_;++i)

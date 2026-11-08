@@ -1,5 +1,7 @@
 // Formatting of copied Wasm memory only. No host address is dereferenced.
 #pragma once
+#ifndef UWVM_MODULE
+#include <uwvm2/extension/memtag/color.h>
 #include <bit>
 #include <cstddef>
 #include <cstdint>
@@ -8,7 +10,11 @@
 #include <fast_io.h>
 #include <fast_io_dsal/string.h>
 #include <fast_io_dsal/string_view.h>
-namespace uwvm2::uwvm::debugger::console_memory
+#endif
+#ifndef UWVM_MODULE_EXPORT
+# define UWVM_MODULE_EXPORT
+#endif
+UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::console_memory
 {
     using view=::fast_io::string_view;
     inline constexpr view types[]{"all","char","wc","utf8","utf16","utf32","i8","u8","i16","u16","i32","u32","i64","u64","f32","f64"};
@@ -16,7 +22,8 @@ namespace uwvm2::uwvm::debugger::console_memory
     { for(auto candidate:types) { if(candidate==type) { return true; } } return false; }
     [[nodiscard]] inline ::std::size_t row_bytes(::std::size_t columns) noexcept
     { return columns>=87u ? 16u : columns>=55u ? 8u : columns>=39u ? 4u : 1u; }
-    [[nodiscard]] inline ::fast_io::string dump(::std::span<::std::byte const> bytes,::std::uint64_t base,::std::size_t columns=120u)
+    [[nodiscard]] inline ::fast_io::string dump(::std::span<::std::byte const> bytes,::std::uint64_t base,::std::size_t columns=120u,
+        ::std::span<::std::byte const> tags={},::std::uint64_t first_granule=0u)
     {
         ::fast_io::string text{};
         // Append to the one owned result instead of constructing a transient
@@ -28,7 +35,14 @@ namespace uwvm2::uwvm::debugger::console_memory
         {
             ::fast_io::io::print(stream,::fast_io::mnp::hex0x<true>(base+start),": ");
             for(::std::size_t i{};i<width;++i)
-            { if(i<bytes.size()-start) { ::fast_io::io::print(stream,::fast_io::mnp::hex<false,true>(::std::to_integer<unsigned char>(bytes[start+i]))," "); }
+            { if(i<bytes.size()-start) {
+                auto const granule{(base+start+i)/16u};
+                bool const colored{granule>=first_granule && granule-first_granule<tags.size()};
+                if(colored) { auto const color{::uwvm2::extension::memtag::ansi_color_for_tag(
+                    ::std::to_integer<::std::uint8_t>(tags[static_cast<::std::size_t>(granule-first_granule)]))};
+                    text.append(reinterpret_cast<char const*>(color.bytes.data()),reinterpret_cast<char const*>(color.bytes.data())+color.size); }
+                ::fast_io::io::print(stream,::fast_io::mnp::hex<false,true>(::std::to_integer<unsigned char>(bytes[start+i])));
+                if(colored) { text.append("\x1b[0m"); }text.push_back(' '); }
               else { text.append("   "); } }
             text.append(" |");
             for(::std::size_t i{};i<width && i<bytes.size()-start;++i)

@@ -21,7 +21,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
     enum class scope_path_error { none, unavailable, malformed, ambiguous, limit_exceeded, allocation_failure };
     struct scope_path_limits
     {
-        ::std::size_t max_scopes{65536u}, max_ranges{65536u}, max_depth{64u}, max_keys{64u};
+        ::std::size_t max_scopes{(::std::numeric_limits<::std::size_t>::max)()}, max_ranges{(::std::numeric_limits<::std::size_t>::max)()}, max_depth{(::std::numeric_limits<::std::size_t>::max)()}, max_keys{(::std::numeric_limits<::std::size_t>::max)()};
     };
     struct concrete_scope_path
     {

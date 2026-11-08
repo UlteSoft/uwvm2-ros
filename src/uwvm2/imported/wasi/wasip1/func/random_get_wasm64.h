@@ -52,6 +52,7 @@
 # include <uwvm2/imported/wasi/wasip1/fd_manager/impl.h>
 # include <uwvm2/imported/wasi/wasip1/memory/impl.h>
 # include <uwvm2/imported/wasi/wasip1/environment/impl.h>
+# include "random_get.h"
 # include "base.h"
 # include "posix.h"
 #endif
@@ -114,6 +115,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         auto const memory_pointer{env.get_memory()};
         if(memory_pointer == nullptr) [[unlikely]] { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
         auto& memory{*memory_pointer};
+        if(memory.memtag_shadow.enabled() && memory.memtag_shadow.shared())
+        { return random_get_shared_tagged(memory,buf,buf_len); }
+
 
         {
             // Full locking is required during reading.
@@ -122,7 +126,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             if(!::uwvm2::imported::wasi::wasip1::func::check_wasip1_memory_bounds_wasm64_unlocked(memory, buf, buf_len))
             { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
 
-            auto const write_memory_begin{memory.memory_begin + buf};
+            auto const output_span{::uwvm2::imported::wasi::wasip1::memory::checked_span_unlocked(memory,buf,buf_len)};
+            if(!output_span) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
+            auto const write_memory_begin{output_span.data};
             auto const write_memory_end{write_memory_begin + buf_len};
 
 # ifdef UWVM_CPP_EXCEPTIONS
@@ -130,7 +136,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 # endif
             {
                 // The construction of the native_white_hole component may throw exceptions on certain platforms. Additionally, even if interrupted mid-read, it
-                // is impossible to pre-generate the random number and then copy it to memory—this is a security measure.
+                // the native source may return a partial result before reporting an error.
 
                 // If an error occurs at the underlying layer, the buffer is not guaranteed to retain its state prior to the call.
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(__linux__)

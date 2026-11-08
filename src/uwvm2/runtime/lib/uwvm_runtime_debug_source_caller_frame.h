@@ -32,14 +32,14 @@
         ::std::uint_least64_t expected_incarnation,
         void* context, llvm_jit_debug_source_memory_callback callback) noexcept
     {
-        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
+        if(!::uwvm2::utils::control::debug_permissions::inspection_allowed()) { return {}; }
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS)
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
         namespace checkpoint = ::uwvm2::runtime::checkpoint;
         using manager = runtime_checkpoint_coherent_manager;
         using domain = ::uwvm2::utils::thread::cooperative_pause_domain;
         using typed_capture = runtime_checkpoint_thread_capture;
-        if(!ticket || supplied.empty() || supplied.size() > 256u || !capture || !binding ||
+        if(!ticket || supplied.empty() || !capture || !binding ||
            expected_incarnation == 0u || callback == nullptr ||
            mode::global_runtime_mode != mode::runtime_mode_t::full_compile ||
            mode::global_runtime_compiler != mode::runtime_compiler_t::llvm_jit_only ||
@@ -54,10 +54,11 @@
             // shared_ptr can nominate another VM/native activation owner.
             if(!canonical || !canonical->control_ || !canonical->ticket_ ||
                canonical->snapshot_.participant == 0u || canonical->snapshot_.frames.empty()) { return false; }
-            typed_capture::owner captures[256u]{};
+            runtime_checkpoint_capture_buffer captures{supplied.size()};
+            if(!captures) { return false; }
             for(::std::size_t n{}; n != supplied.size(); ++n)
             {
-                // [request-owned wrappers ... n<size<=256] end
+                // [request-owned wrappers ... n<size] end
                 // [safe] bounds precede index and canonical registry lookup.
                 auto const wrapper{llvm_jit_checkpoint_thread_capture::canonical(supplied[n])};
                 if(!wrapper) { return false; }
@@ -71,7 +72,7 @@
                 ::std::uint_least64_t expected_incarnation;
                 void* context;
                 llvm_jit_debug_source_memory_callback callback;
-            } request{canonical, binding, {captures, supplied.size()}, expected_incarnation, context, callback};
+            } request{canonical, binding, {captures.data(), supplied.size()}, expected_incarnation, context, callback};
             auto const read{+[](void* opaque, ::std::span<domain::stopped_participant const> actual_slots) noexcept
             {
                 if(opaque == nullptr) { return false; }
@@ -285,7 +286,7 @@
                 }
                 catch(...) { return false; }
             }};
-            auto const observed{manager::with_current_source_memory(ticket, {captures, supplied.size()},
+            auto const observed{manager::with_current_source_memory(ticket, {captures.data(), supplied.size()},
                 canonical->ticket_, ::std::addressof(request), read)};
             return observed.observation == manager::status::coherent_typed_data;
         }

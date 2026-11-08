@@ -252,7 +252,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 ::std::string_view raw{packet.bytes.data(),packet.size};
                 if(raw == "close") return; // Disconnects observation only, never the Guest.
                 if(raw == "help")
-                { if(!send_literal("status | modules | health | crash | update | close; RELEASE read-only diagnostics\n")) return; }
+                { if(!send_literal("status | modules | health | crash | update | close; non-sensitive diagnostics\n")) return; }
                 else if(raw == "status" || raw == "modules" || raw == "health" || raw == "crash" || raw == "update")
                 { auto text{snapshot()}; if(text.empty() || !send_text(text)) return; }
                 else if(!send_literal("error: diagnostic grant denies this operation\n")) return;
@@ -294,11 +294,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 // Keep the authenticated status/quit channel alive, but never
                 // resume or mutate this stopped world through the DEV transport.
                 if(::uwvm2::runtime::lib::runtime_guest_fault_detected_host_api() &&
-                   raw != "status" && raw != "quit" && raw != "help")
+                   raw != "status" && raw != "quit" && raw != "help" && raw != "permissions")
                 { if(!send_literal("error: Guest faulted; execution stopped\n")) { return; } continue; }
                 if(raw == "help rebuild")
                 {
-                    if(!send_literal("rebuild <path>  DEV-only complete guest-world reconstruction; host grants/resources/quotas persist\n"
+                    if(!send_literal("rebuild <path>  Full-permission complete guest-world reconstruction; host grants/resources/quotas persist\n"
                                      "rebuild-module <index> <path>  replace main (0) or a preload (1..N startup order)\n"
                                      "rebuild         retry the same pending retirement; old world cannot resume\n")) { return; }
                     continue;
@@ -306,7 +306,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 if(raw == "rebuild" || raw.starts_with("rebuild ") || raw.starts_with("rebuild-module "))
                 {
                     if(!rebuild || !rebuild->allowed || !shutdown || !shutdown->matches_controller(control) ||
-                       !::uwvm2::utils::control::management::debug_allowed())
+                       !::uwvm2::utils::control::debug_permissions::full_allowed())
                     { if(!send_literal("error: rebuild unsupported for this launch\n")) { return; } continue; }
                     if(!rebuild->image)
                     {
@@ -370,15 +370,24 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 }
                 if(shutdown && shutdown->requested())
                 { if(!send_literal("error: rebuild pending; retry rebuild\n")) { return; } continue; }
+                if(command_view{packet.bytes.data(), packet.size} == "permissions")
+                {
+                    auto const text=::fast_io::concat_std("permissions ",::std::string{::uwvm2::utils::control::debug_permissions::name()},"\n");
+                    if(!send_text(text.data(),text.size()))return;
+                    continue;
+                }
                 auto const command{parse_console_command(command_view{packet.bytes.data(), packet.size})};
                 switch(command.kind)
                 {
                     case console_command_kind::empty: if(!send_literal("error: empty command\n")) { return; } continue;
                     case console_command_kind::help:
                         {
+                            if(!::uwvm2::utils::control::debug_permissions::inspection_allowed())
+                            { if(!send_literal("permissions | status | dump wasm <stop-id> <path> | continue (terminal fault only) | quit; limited diagnostics\n"))return;continue; }
+
                             auto const text{console_help::format(command_view{command.help_topic.data(), command.help_topic_size})};
                             if(!send_text(text.data(), text.size())) { return; }
-                             if(rebuild && rebuild->allowed && !send_literal("rebuild <path>  replace the DEV guest world; retain host grants and state\n")) { return; }
+                             if(rebuild && rebuild->allowed && !send_literal("rebuild <path>  replace the guest world with full debugger permissions; retain host grants and state\n")) { return; }
                         }
                         continue;
                     case console_command_kind::quit:
@@ -425,6 +434,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                     case console_command_kind::replacement_file:
                     case console_command_kind::source_print_options:
                     case console_command_kind::source_printer_config:
+                    case console_command_kind::wasm_disassemble:
+                    case console_command_kind::wasm_dump:
                     case console_command_kind::module_list:
                     case console_command_kind::protocol: break;
                 }

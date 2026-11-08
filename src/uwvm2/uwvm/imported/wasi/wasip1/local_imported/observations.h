@@ -28,15 +28,23 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::local_imported
         std::uint64_t const width=wide?8:4;
         auto const& a=row.arguments;
         auto valid=[&](std::uint64_t offset,std::uint64_t length) {
-            return ::uwvm2::imported::wasi::wasip1::func::wasip1_guest_range_valid_unlocked(*mem,offset,length);
+            return static_cast<bool>(::uwvm2::imported::wasi::wasip1::memory::checked_span_unlocked<false>(*mem,offset,length));
         };
         auto bytes=[&](std::uint64_t offset,std::uint64_t length,bool output) {
-            if(!valid(offset,length)) {journal::missing_range();return;}
-            journal::capture(0,offset,mem->memory_begin+static_cast<std::size_t>(offset),static_cast<std::size_t>(length),output,true);
+            // Observation cannot record a fault or change permission/quota denial.
+            // Keep the original tagged address in the journal, while dereferencing
+            // only the complete checked span under the existing relocation pin.
+            auto const span=::uwvm2::imported::wasi::wasip1::memory::checked_span_unlocked<false>(*mem,offset,length);
+            if(!span) {journal::missing_range();return;}
+            journal::capture(0,offset,span.data,span.bytes,output,true);
         };
         auto integer=[&](std::uint64_t offset,std::uint64_t size,std::uint64_t& value) {
-            if(!valid(offset,size)) {journal::missing_range();return false;}
-            value=0;for(std::uint64_t i{};i<size;++i) {value|=static_cast<std::uint64_t>(std::to_integer<unsigned char>(mem->memory_begin[static_cast<std::size_t>(offset+i)]))<<(i*8);}
+            std::array<std::byte,8> raw{};
+            if(size>raw.size() || !::uwvm2::imported::wasi::wasip1::memory::copy_guest_bytes_unlocked<false,false>(
+                *mem,offset,raw.data(),static_cast<std::size_t>(size)))
+            {journal::missing_range();return false;}
+            value=0;for(std::uint64_t i{};i<size;++i)
+            {value|=static_cast<std::uint64_t>(std::to_integer<unsigned char>(raw[i]))<<(i*8);}
             return true;
         };
         bool const reading=name=="fd_read"||name=="fd_pread"||name=="sock_recv";
@@ -97,7 +105,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::local_imported
         else if(name=="fd_seek") {bytes(a[3],8,true);}
         else if(name=="fd_tell") {bytes(a[1],8,true);}
         else if(name=="path_open") {bytes(a[8],4,true);}
-        else if(name=="sock_accept") {bytes(a[2],4,true);}
+        else if(name=="sock_accept") {bytes(a[2],4,true);if constexpr(requires{env.wasix_socket_abi;}){if(!wide&&env.wasix_socket_abi)bytes(a[3],20,true);}}
         else if(name=="random_get") {bytes(a[0],a[1],true);}
         else if(name=="path_readlink"||name=="fd_readdir")
         {

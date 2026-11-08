@@ -26,6 +26,7 @@ module;
 #include <cstdint>
 #include <limits>
 #include <memory>
+#include <span>
 #include <utility>
 // macro
 #include <uwvm2/utils/macro/push_macros.h>
@@ -45,6 +46,7 @@ import uwvm2.parser.wasm.standard.wasm1p1.type;
 import uwvm2.parser.wasm.standard.wasm3.type;
 import uwvm2.parser.wasm.binfmt.binfmt_ver1;
 import uwvm2.validation;
+import uwvm2.extension.memtag.usage;
 import uwvm2.validation.standard.wasm1;
 import uwvm2.validation.standard.wasm1p1;
 import uwvm2.validation.standard.wasm3;

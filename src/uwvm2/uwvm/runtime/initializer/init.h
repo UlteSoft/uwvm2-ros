@@ -30,6 +30,9 @@
 #ifndef UWVM_MODULE
 // std
 # include <atomic>
+# include <array>
+# include <span>
+# include <vector>
 # include <cstddef>
 # include <cstdlib>
 # include <cstdint>
@@ -72,6 +75,12 @@
 # include <uwvm2/uwvm/imported/wasi/wasip1/storage/impl.h>
 # include <uwvm2/uwvm/wasm/impl.h>
 # include <uwvm2/uwvm/runtime/storage/impl.h>
+# include <uwvm2/uwvm/runtime/runtime_mode/impl.h>
+# include <uwvm2/uwvm/runtime/validator/validate.h>
+# include <uwvm2/extension/memtag/globals.h>
+# include <uwvm2/extension/memtag/checkpoint.h>
+# include <uwvm2/extension/memtag/debug_view.h>
+# include <uwvm2/runtime/memtag/bridge.h>
 # include <uwvm2/runtime/lib/uwvm_runtime_generated_wasm_bridge.h>
 # include "init_limit.h"
 # include "threaded_registry_view.h"
@@ -7978,7 +7987,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                             // [safe                                                ]
                             //                            ^^ destination; offset <= mem_length <= SIZE_MAX, then byte_count <= mem_length - offset.
                             // Native narrowing and pointer addition occur only after the complete u64 range proof.
-                            ::fast_io::freestanding::my_memcpy(memory_begin + static_cast<::std::size_t>(offset), byte_begin, byte_count);
+                            if(target_memory!=nullptr && target_memory->memory.memtag_shadow.hardware_active())
+                            {
+                                if(!::uwvm2::extension::memtag::copy_debug_memory(target_memory->memory.memtag_shadow,
+                                    {memory_begin,mem_length},offset,const_cast<::std::byte*>(byte_begin),byte_count,true))
+                                { ::fast_io::fast_terminate(); }
+                            }
+                            else
+                            { ::fast_io::freestanding::my_memcpy(memory_begin + static_cast<::std::size_t>(offset), byte_begin, byte_count); }
                         }
 
                     }};
@@ -9622,6 +9638,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             initialization_context<initialization_purpose::ordinary> world{};
             return error_on_unresolved_imports_after_linking_in_context(world);
         }
+#include "memtag_init.h"
     }  // namespace details
 
     inline constexpr void apply_runtime_active_segments(::uwvm2::utils::container::u8string_view module_name) noexcept
@@ -9637,6 +9654,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         ::uwvm2::runtime::lib::details::llvm_jit_debug_table_guard table_guard{};
 #endif
         details::apply_wasm1_active_element_and_data_segments_for_module(module_name, pos->second);
+        details::initialization_context<details::initialization_purpose::ordinary> world{};
+        if(!details::activate_memtag_hardware_in_context(world)) { ::std::_Exit(127); }
     }
 
     // Embedding callers retain the eager-initialization default. The CLI
@@ -9807,6 +9826,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         if(::uwvm2::uwvm::io::show_verbose) [[unlikely]] { details::verbose_info(u8"initializer: Validate linked import types. "); }
         if(!details::validate_wasm_file_module_import_types_after_linking()) { return false; }
 
+        {
+            details::initialization_context<details::initialization_purpose::ordinary> world{};
+            if(!details::prepare_memtag_after_linking_in_context(world)) { return false; }
+        }
+
         if(::uwvm2::uwvm::io::show_verbose) [[unlikely]] { details::verbose_info(u8"initializer: Finalize wasm1 globals. "); }
         details::finalize_wasm1_globals_after_linking();
         details::initialize_wasm3_table_expressions_after_linking();
@@ -9819,7 +9843,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         }
 
         if(::uwvm2::uwvm::io::show_verbose) [[unlikely]] { details::verbose_info(u8"initializer: Apply wasm1 active elem/data segments. "); }
-        if(!defer_active_segments) { details::apply_wasm1_active_element_and_data_segments_after_linking(); }
+        if(!defer_active_segments)
+        {
+            details::apply_wasm1_active_element_and_data_segments_after_linking();
+            details::initialization_context<details::initialization_purpose::ordinary> world{};
+            if(!details::activate_memtag_hardware_in_context(world)) { return false; }
+        }
         ::uwvm2::runtime::gc::publish_owned_initializer(gc_initializer_serial);
 
         // finalize time

@@ -98,6 +98,29 @@ case static_cast<wasm_byte>(wasm1p1_code::atomic_prefix):
         if(address64) { emit_imm_to(bytecode, instruction.memory.offset); }
         else { emit_imm_to(bytecode, static_cast<::std::uint32_t>(instruction.memory.offset)); }
     }};
+    resolve_memory_storage();
+    if(resolved_memory.memory_p->memtag_shadow.enabled())
+    {
+#ifdef UWVM_ENABLE_UWVM_INT_COMBINE_OPS
+        flush_conbine_pending();
+#endif
+        stacktop_flush_all_to_operand_stack(bytecode);
+        namespace mtopt=::uwvm2::runtime::compiler::uwvm_int::optable;
+        emit_opfunc_to(bytecode,mtopt::translate::get_uwvmint_memtag_dispatch_from_tuple<CompileOption>(interpreter_tuple));
+        emit_imm_to(bytecode,resolved_memory.memory_p);
+        auto select{[&]<typename Address>() constexpr
+        {
+            if(resolved_memory.memory_p->memtag_shadow.shared())
+            { return mtopt::memtag_details::atomic_action<Address,true>(instruction.opcode); }
+            return mtopt::memtag_details::atomic_action<Address,false>(instruction.opcode);
+        }};
+        emit_imm_to(bytecode,address64 ? select.template operator()<::std::uint64_t>() :
+                                         select.template operator()<::std::uint32_t>());
+        emit_imm_to(bytecode,instruction.memory.offset);
+        if(is_store) { stacktop_after_pop_n_if_reachable(bytecode,count); }
+        else { stacktop_after_pop_n_push1_memory_typed_if_reachable(bytecode,count,result_type); }
+        break;
+    }
     ensure_memory_resolved();
     if(is_wait || instruction.descriptor.kind == atomic::atomic_instruction_kind::notify)
     {

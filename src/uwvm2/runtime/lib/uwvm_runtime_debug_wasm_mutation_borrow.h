@@ -501,7 +501,9 @@
             // fully checked BEFORE begin+offset and the ONE complete byte copy.
             // ALL genuine managed participants are stopped; actual host/N/pub
             // and nonwaiting backend stabilization remain live through commit.
-            ::fast_io::freestanding::my_memcpy(begin+offset,requested.memory_bytes.data(),requested.memory_size);
+            if(!::uwvm2::extension::memtag::copy_debug_memory(actual.memory.memtag_shadow,
+                {begin,length},offset,const_cast<::std::byte*>(requested.memory_bytes.data()),requested.memory_size,true))
+            { result.status=copy_status::invalid_data;return false; }
             result.runtime_epoch=epoch_;result.memory_size=requested.memory_size;
             result.address_bytes=declaration.address64 ? 8u:4u;
             result.status=copy_status::available;result.applied=true;return true;

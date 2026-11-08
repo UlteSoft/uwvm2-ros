@@ -20,6 +20,7 @@
  ****************************************/
 
 module;
+#include <uwvm2/utils/security/trusted_driver.h>
 #include <uwvm2/utils/security/wsea.h>
 
 // std

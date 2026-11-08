@@ -2,6 +2,7 @@
 // debugger component, fake publication epoch or caller-created source pin.
 #include "mandatory_native_fixture.h"
 #include <uwvm2/uwvm/run/owned_source.h>
+#include <uwvm2/uwvm/cmdline/callback/impl.h>
 #include <fast_io.h>
 #include <uwvm2/utils/container/string_concat.h>
 #include <array>
@@ -68,11 +69,12 @@ static auto prepare(uwvm2::utils::cmdline::parameter_parsing_results& path)
         "prepare receives actual global parsed argument");
     uwvm2::uwvm::cmdline::wasm_file_ppos = ::std::addressof(path);
     uwvm2::uwvm::wasm::storage::execute_wasm.module_name = u8"binding-test";
-    check(uwvm2::uwvm::run::prepare_owned_full_cli_source() == static_cast<int>(uwvm2::uwvm::run::retval::ok), "actual owned CLI parse/initializer");
+    check(uwvm2::uwvm::run::prepare_owned_full_cli_source(true) == static_cast<int>(uwvm2::uwvm::run::retval::ok), "actual owned CLI parse/initializer");
     auto state{::std::make_shared<observer>()};
     check(lib::llvm_jit_configure_debug_session_host_api(state->control, {state, observer::stop, observer::before_park},
         lib::llvm_jit_debug_safe_point_granularity::instruction) == lib::llvm_jit_debug_configure_result::ok, "real host observer configuration");
     check(lib::llvm_jit_prepare_debug_host_api(), "actual fused full validation and complete native publication");
+    ::uwvm2::uwvm::runtime::initializer::apply_runtime_active_segments(u8"binding-test");
     auto owner{source::selected_full_source_owner_pin()};
     check(source::full_source_instance::has_canonical_owner(owner), "actual canonical source");
     auto const module{owner->bound_initialized_main_module_id()};
@@ -80,6 +82,21 @@ static auto prepare(uwvm2::utils::cmdline::parameter_parsing_results& path)
     check(static_cast<bool>(binding), "factory from complete native publisher");
     lib::llvm_jit_debug_source_image image{};
     check(lib::llvm_jit_debug_copy_source_image_host_api(binding, image) && image.functions.size() == 2u, "source copy from actual owner");
+#if defined(UWVM_TEST_SOURCE_METADATA_CAPACITY)
+    check(image.sections.size() > 64u, "all input-owned metadata sections remain visible");
+    bool long_section{}, long_symbol{}, large_expression{};
+    for(auto const& section : image.sections) { long_section = long_section || section.name.size() > 64u; }
+    for(auto const& symbol : image.symbols) { long_symbol = long_symbol || symbol.name.size() > 4096u; }
+    for(auto const& function : image.functions)
+    {
+        if(function.expression_size > 65536u)
+        {
+            check(function.expression_bytes.size() == function.expression_size, "large actual function expression copied completely");
+            large_expression = true;
+        }
+    }
+    check(long_section && long_symbol && large_expression, "actual module exceeds removed source-image capacity thresholds");
+#endif
     check(owner->actual_full_validation_epoch() != 0u, "actual native publisher recorded validation");
     return ::std::tuple{state, binding, module};
 }
@@ -202,11 +219,15 @@ int main(int argc, char** argv)
         else { return 2; }
     }
 
+    // The real native launcher chooses DEV before the immutable launch seal.
+    // Wasm cannot invoke this host-only configuration path.
+    check(::uwvm2::utils::control::debug_permissions::configure_trusted_launch(
+        ::uwvm2::utils::control::debug_permissions::permission_level::full), "trusted native DEV launcher");
     mode::global_runtime_mode = mode::runtime_mode_t::full_compile;
     mode::global_runtime_compiler = mode::runtime_compiler_t::llvm_jit_only;
     mode::global_runtime_llvm_jit_exception_dispatch = mode::runtime_llvm_jit_exception_dispatch_t::native_unwind;
 
-    mode::global_runtime_compile_threads = 0; mode::runtime_compile_threads_existed = true;
+    mode::global_runtime_compile_threads = 1; mode::runtime_compile_threads_existed = true;
     mode::global_runtime_llvm_jit_cache_path_mode = mode::runtime_llvm_jit_cache_path_mode_t::disabled;
     uwvm2::utils::cmdline::parameter_parsing_results path{};
     // [host-owned terminated argv[1]] argv_end

@@ -276,12 +276,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 if(state == execution_status::exited || state == execution_status::closed || !parent_live()) { break; }
                 auto const message{receive_message(control)};
                 if(!message.valid) { break; }
+                if(command_view{message.bytes.data(), message.size} == "permissions")
+                {
+                    auto const text=::fast_io::concat_std("permissions ",::std::string{::uwvm2::utils::control::debug_permissions::name()},"\n");
+                    if(!send_text(text.data(),text.size()))return;
+                    continue;
+                }
                 auto const command{parse_console_command(command_view{message.bytes.data(), message.size})};
                 switch(command.kind)
                 {
                     case console_command_kind::empty: if(!send_literal("error: empty command\n")) { return; } continue;
                     case console_command_kind::help:
                         {
+                            if(!::uwvm2::utils::control::debug_permissions::inspection_allowed())
+                            { if(!send_literal("permissions | status | dump wasm <stop-id> <path> | continue (terminal fault only) | quit; limited diagnostics\n"))return;continue; }
+
                             auto const text{console_help::format(command_view{command.help_topic.data(), command.help_topic_size})};
                             if(!send_text(text.data(), text.size())) { return; }
                         }
@@ -325,6 +334,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                     case console_command_kind::replacement_file:
                     case console_command_kind::source_print_options:
                     case console_command_kind::source_printer_config:
+                    case console_command_kind::wasm_disassemble:
+                    case console_command_kind::wasm_dump:
                     case console_command_kind::module_list:
                     case console_command_kind::protocol: break;
                 }

@@ -46,13 +46,13 @@ static cache::cache_context context(cp::module_feature_policy const& policy)
     result.llvm_version=u8"component-llvm";
     result.uwvm_abi=u8"component-product-native-abi2";
     result.codegen_policy=cache::details::make_cache_key(u8"llvm-jit-full-codegen-policy");
-    cache::details::append_cache_key_value(result.codegen_policy,u8"original-module-syntax-policy-v1",text(policy));
+    cache::details::append_cache_key_value(result.codegen_policy,u8"original-module-syntax-policy-v2",text(policy));
     result.cache_key_is_complete=true;
     return result;
 }
 int main()
 {
-    constexpr ::std::array<bool parameters::*,19u> members{
+    constexpr ::std::array<bool parameters::*,20u> members{
         &parameters::disable_multi_value,&parameters::disable_reference_types,
         &parameters::disable_table_instructions,&parameters::disable_multiple_tables,
         &parameters::disable_bulk_memory,&parameters::disable_sign_extension,
@@ -61,13 +61,13 @@ int main()
         &parameters::disable_relaxed_simd,&parameters::disable_multi_memory,
         &parameters::disable_tail_call,&parameters::disable_memory64,&parameters::disable_table64,
         &parameters::disable_function_references,&parameters::disable_gc,
-        &parameters::disable_exceptions,&parameters::disable_threads};
+        &parameters::disable_exceptions,&parameters::disable_threads,&parameters::disable_memtag_extension};
     parameters parameter{};
     for(auto member:members) { parameter.*member=false; }
     auto const baseline{cp::module_feature_policy::from_actual_parameter(parameter)};
-    require(baseline.valid() && baseline.cache_identity()==cp::module_feature_policy::identity{1u,0u,0u,0u},"actual default fields copied without padding/CLI bookkeeping");
+    require(baseline.valid() && baseline.cache_identity()==cp::module_feature_policy::identity{2u,0u,0u,0u},"actual default fields copied without padding/CLI bookkeeping");
     require(baseline.compatibility_mask()==((::std::uint64_t{1u}<<18u)-1u),"all explicitly enabled capabilities map to known file bits");
-    containers::u8string const zero{u8"1/0/0/0"}; require(same(text(baseline),zero),"canonical fast_io decimal policy serializer");
+    containers::u8string const zero{u8"2/0/0/0"}; require(same(text(baseline),zero),"canonical fast_io decimal policy serializer");
     auto const original{context(baseline)};
     auto const original_metadata{cache::make_context_metadata(original)};
     auto const original_digest{cache::details::cache_key_hash(original)};
@@ -82,7 +82,7 @@ int main()
     {
         auto changed{parameter}; changed.*members[index]=true;
         auto const policy{cp::module_feature_policy::from_actual_parameter(changed)};
-        require(policy.disabled==(::std::uint64_t{1u}<<index) && policy.cli_mode==0u && policy.controlled==0u,"nineteen independent disable bits in declared order");
+        require(policy.disabled==(::std::uint64_t{1u}<<index) && policy.cli_mode==0u && policy.controlled==0u,"twenty independent disable bits in declared order");
         distinct(policy);
     }
     for(::std::uint64_t mode{1u};mode!=5u;++mode)
@@ -103,7 +103,7 @@ int main()
     auto bookkeeping{parameter}; bookkeeping.explicit_enable_gc=true; bookkeeping.explicit_enable_threads=true;
     require(cp::module_feature_policy::from_actual_parameter(bookkeeping)==baseline,"CLI conflict ownership is not executable policy");
     cp::module_feature_policy invalid{5u,0u,0u}; require(!invalid.valid(),"reserved CLI mode fails");
-    invalid={0u,::std::uint64_t{1u}<<19u,0u}; require(!invalid.valid(),"reserved disable flag fails");
+    invalid={0u,::std::uint64_t{1u}<<20u,0u}; require(!invalid.valid(),"reserved disable flag fails");
     invalid={0u,0u,4u}; require(!invalid.valid(),"reserved controllable flag fails");
-    ::fast_io::io::println("module feature policy 22 fields DATA PASS; runtime/restore=false");
+    ::fast_io::io::println("module feature policy 23 fields DATA PASS; runtime/restore=false");
 }

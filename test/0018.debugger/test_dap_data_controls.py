@@ -65,8 +65,8 @@ class DataControls(unittest.TestCase):
 
     def test_capabilities_match_current_typed_controls(self):
         result = self.send("initialize")["body"]
-        self.assertTrue(result["supportsSetVariable"])
-        self.assertTrue(result["supportsDataBreakpoints"])
+        self.assertFalse(result["supportsSetVariable"])
+        self.assertFalse(result["supportsDataBreakpoints"])
         self.assertFalse(result["supportsLogPoints"])
 
     def test_actual_slot_name_width_and_stale_scope_before_write(self):

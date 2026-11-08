@@ -1,0 +1,10 @@
+export module uwvm2.extension.memtag;
+export import uwvm2.extension.memtag.instruction;
+export import uwvm2.extension.memtag.shadow;
+export import uwvm2.extension.memtag.globals;
+export import uwvm2.extension.memtag.operations;
+export import uwvm2.extension.memtag.storage;
+export import uwvm2.extension.memtag.color;
+export import uwvm2.extension.memtag.hardware_mte;
+export import uwvm2.extension.memtag.tag_image;
+export import uwvm2.extension.memtag.checkpoint;

@@ -7,7 +7,7 @@ case wasm1_code::i32_load:
     // Validate the static memarg before touching combine state; malformed immediates must be
     // reported at the opcode site even if a preceding `local.get` could otherwise be fused away.
     auto const full_offset{validate_mem_load.template operator()<0x28u>(u8"i32.load", 2u, wasm_value_type_u::i32)};
-    ensure_memory_resolved();
+    resolve_memory_storage();
     if(emit_memory64_scalar_if_selected.template operator()<wasm_i32, 4uz, false, false>(
            full_offset, curr_operand_stack_value_type::i32)) { break; }
     // The selected memory32 type was checked before narrowing its static offset.
@@ -180,7 +180,7 @@ case wasm1_code::i64_load:
     // 64-bit loads still consume an i32 address in Wasm MVP, but produce an i64 stack value.
     // The stack-top bookkeeping below reflects that cross-type pop/push transition explicitly.
     auto const full_offset{validate_mem_load.template operator()<0x29u>(u8"i64.load", 3u, wasm_value_type_u::i64)};
-    ensure_memory_resolved();
+    resolve_memory_storage();
     if(emit_memory64_scalar_if_selected.template operator()<wasm_i64, 8uz, false, false>(
            full_offset, curr_operand_stack_value_type::i64)) { break; }
     // The selected memory32 type was checked before narrowing its static offset.
@@ -292,7 +292,7 @@ case wasm1_code::i64_load:
 case wasm1_code::f32_load:
 {
     auto const full_offset{validate_mem_load.template operator()<0x2au>(u8"f32.load", 2u, wasm_value_type_u::f32)};
-    ensure_memory_resolved();
+    resolve_memory_storage();
     if(emit_memory64_scalar_if_selected.template operator()<wasm_f32, 4uz, false, false>(
            full_offset, curr_operand_stack_value_type::f32)) { break; }
     // The selected memory32 type was checked before narrowing its static offset.
@@ -393,7 +393,7 @@ case wasm1_code::f32_load:
 case wasm1_code::f64_load:
 {
     auto const full_offset{validate_mem_load.template operator()<0x2bu>(u8"f64.load", 3u, wasm_value_type_u::f64)};
-    ensure_memory_resolved();
+    resolve_memory_storage();
     if(emit_memory64_scalar_if_selected.template operator()<wasm_f64, 8uz, false, false>(
            full_offset, curr_operand_stack_value_type::f64)) { break; }
     // The selected memory32 type was checked before narrowing its static offset.
@@ -492,7 +492,7 @@ case wasm1_code::f64_load:
 case wasm1_code::i32_load8_s:
 {
     auto const full_offset{validate_mem_load.template operator()<0x2cu>(u8"i32.load8_s", 0u, wasm_value_type_u::i32)};
-    ensure_memory_resolved();
+    resolve_memory_storage();
     if(emit_memory64_scalar_if_selected.template operator()<wasm_i32, 1uz, true, false>(
            full_offset, curr_operand_stack_value_type::i32)) { break; }
     // The selected memory32 type was checked before narrowing its static offset.
@@ -538,7 +538,7 @@ case wasm1_code::i32_load8_s:
 case wasm1_code::i32_load8_u:
 {
     auto const full_offset{validate_mem_load.template operator()<0x2du>(u8"i32.load8_u", 0u, wasm_value_type_u::i32)};
-    ensure_memory_resolved();
+    resolve_memory_storage();
     if(emit_memory64_scalar_if_selected.template operator()<wasm_i32, 1uz, false, false>(
            full_offset, curr_operand_stack_value_type::i32)) { break; }
     // The selected memory32 type was checked before narrowing its static offset.
@@ -584,7 +584,7 @@ case wasm1_code::i32_load8_u:
 case wasm1_code::i32_load16_s:
 {
     auto const full_offset{validate_mem_load.template operator()<0x2eu>(u8"i32.load16_s", 1u, wasm_value_type_u::i32)};
-    ensure_memory_resolved();
+    resolve_memory_storage();
     if(emit_memory64_scalar_if_selected.template operator()<wasm_i32, 2uz, true, false>(
            full_offset, curr_operand_stack_value_type::i32)) { break; }
     // The selected memory32 type was checked before narrowing its static offset.
@@ -630,7 +630,7 @@ case wasm1_code::i32_load16_s:
 case wasm1_code::i32_load16_u:
 {
     auto const full_offset{validate_mem_load.template operator()<0x2fu>(u8"i32.load16_u", 1u, wasm_value_type_u::i32)};
-    ensure_memory_resolved();
+    resolve_memory_storage();
     if(emit_memory64_scalar_if_selected.template operator()<wasm_i32, 2uz, false, false>(
            full_offset, curr_operand_stack_value_type::i32)) { break; }
     // The selected memory32 type was checked before narrowing its static offset.
@@ -691,7 +691,7 @@ case wasm1_code::i32_load16_u:
 case wasm1_code::i64_load8_s:
 {
     auto const full_offset{validate_mem_load.template operator()<0x30u>(u8"i64.load8_s", 0u, wasm_value_type_u::i64)};
-    ensure_memory_resolved();
+    resolve_memory_storage();
     if(emit_memory64_scalar_if_selected.template operator()<wasm_i64, 1uz, true, false>(
            full_offset, curr_operand_stack_value_type::i64)) { break; }
     // The selected memory32 type was checked before narrowing its static offset.
@@ -729,7 +729,7 @@ case wasm1_code::i64_load8_s:
 case wasm1_code::i64_load8_u:
 {
     auto const full_offset{validate_mem_load.template operator()<0x31u>(u8"i64.load8_u", 0u, wasm_value_type_u::i64)};
-    ensure_memory_resolved();
+    resolve_memory_storage();
     if(emit_memory64_scalar_if_selected.template operator()<wasm_i64, 1uz, false, false>(
            full_offset, curr_operand_stack_value_type::i64)) { break; }
     // The selected memory32 type was checked before narrowing its static offset.
@@ -767,7 +767,7 @@ case wasm1_code::i64_load8_u:
 case wasm1_code::i64_load16_s:
 {
     auto const full_offset{validate_mem_load.template operator()<0x32u>(u8"i64.load16_s", 1u, wasm_value_type_u::i64)};
-    ensure_memory_resolved();
+    resolve_memory_storage();
     if(emit_memory64_scalar_if_selected.template operator()<wasm_i64, 2uz, true, false>(
            full_offset, curr_operand_stack_value_type::i64)) { break; }
     // The selected memory32 type was checked before narrowing its static offset.
@@ -805,7 +805,7 @@ case wasm1_code::i64_load16_s:
 case wasm1_code::i64_load16_u:
 {
     auto const full_offset{validate_mem_load.template operator()<0x33u>(u8"i64.load16_u", 1u, wasm_value_type_u::i64)};
-    ensure_memory_resolved();
+    resolve_memory_storage();
     if(emit_memory64_scalar_if_selected.template operator()<wasm_i64, 2uz, false, false>(
            full_offset, curr_operand_stack_value_type::i64)) { break; }
     // The selected memory32 type was checked before narrowing its static offset.
@@ -843,7 +843,7 @@ case wasm1_code::i64_load16_u:
 case wasm1_code::i64_load32_s:
 {
     auto const full_offset{validate_mem_load.template operator()<0x34u>(u8"i64.load32_s", 2u, wasm_value_type_u::i64)};
-    ensure_memory_resolved();
+    resolve_memory_storage();
     if(emit_memory64_scalar_if_selected.template operator()<wasm_i64, 4uz, true, false>(
            full_offset, curr_operand_stack_value_type::i64)) { break; }
     // The selected memory32 type was checked before narrowing its static offset.
@@ -881,7 +881,7 @@ case wasm1_code::i64_load32_s:
 case wasm1_code::i64_load32_u:
 {
     auto const full_offset{validate_mem_load.template operator()<0x35u>(u8"i64.load32_u", 2u, wasm_value_type_u::i64)};
-    ensure_memory_resolved();
+    resolve_memory_storage();
     if(emit_memory64_scalar_if_selected.template operator()<wasm_i64, 4uz, false, false>(
            full_offset, curr_operand_stack_value_type::i64)) { break; }
     // The selected memory32 type was checked before narrowing its static offset.
@@ -921,7 +921,7 @@ case wasm1_code::i32_store:
     // Stores consume address and value. Fusion is valuable here because common Wasm emits both as
     // locals, and skipping two stack materializations reduces dispatch and memory traffic.
     auto const full_offset{validate_mem_store.template operator()<0x36u>(u8"i32.store", 2u, wasm_value_type_u::i32)};
-    ensure_memory_resolved();
+    resolve_memory_storage();
     if(emit_memory64_scalar_if_selected.template operator()<wasm_i32, 4uz, false, true>(
            full_offset, curr_operand_stack_value_type::i32)) { break; }
     // The selected memory32 type was checked before narrowing its static offset.
@@ -1020,7 +1020,7 @@ case wasm1_code::i32_store:
 case wasm1_code::i64_store:
 {
     auto const full_offset{validate_mem_store.template operator()<0x37u>(u8"i64.store", 3u, wasm_value_type_u::i64)};
-    ensure_memory_resolved();
+    resolve_memory_storage();
     if(emit_memory64_scalar_if_selected.template operator()<wasm_i64, 8uz, false, true>(
            full_offset, curr_operand_stack_value_type::i64)) { break; }
     // The selected memory32 type was checked before narrowing its static offset.
@@ -1065,7 +1065,7 @@ case wasm1_code::i64_store:
 case wasm1_code::f32_store:
 {
     auto const full_offset{validate_mem_store.template operator()<0x38u>(u8"f32.store", 2u, wasm_value_type_u::f32)};
-    ensure_memory_resolved();
+    resolve_memory_storage();
     if(emit_memory64_scalar_if_selected.template operator()<wasm_f32, 4uz, false, true>(
            full_offset, curr_operand_stack_value_type::f32)) { break; }
     // The selected memory32 type was checked before narrowing its static offset.
@@ -1116,7 +1116,7 @@ case wasm1_code::f32_store:
 case wasm1_code::f64_store:
 {
     auto const full_offset{validate_mem_store.template operator()<0x39u>(u8"f64.store", 3u, wasm_value_type_u::f64)};
-    ensure_memory_resolved();
+    resolve_memory_storage();
     if(emit_memory64_scalar_if_selected.template operator()<wasm_f64, 8uz, false, true>(
            full_offset, curr_operand_stack_value_type::f64)) { break; }
     // The selected memory32 type was checked before narrowing its static offset.
@@ -1168,7 +1168,7 @@ case wasm1_code::f64_store:
 case wasm1_code::i32_store8:
 {
     auto const full_offset{validate_mem_store.template operator()<0x3au>(u8"i32.store8", 0u, wasm_value_type_u::i32)};
-    ensure_memory_resolved();
+    resolve_memory_storage();
     if(emit_memory64_scalar_if_selected.template operator()<wasm_i32, 1uz, false, true>(
            full_offset, curr_operand_stack_value_type::i32)) { break; }
     // The selected memory32 type was checked before narrowing its static offset.
@@ -1225,7 +1225,7 @@ case wasm1_code::i32_store8:
 case wasm1_code::i32_store16:
 {
     auto const full_offset{validate_mem_store.template operator()<0x3bu>(u8"i32.store16", 1u, wasm_value_type_u::i32)};
-    ensure_memory_resolved();
+    resolve_memory_storage();
     if(emit_memory64_scalar_if_selected.template operator()<wasm_i32, 2uz, false, true>(
            full_offset, curr_operand_stack_value_type::i32)) { break; }
     // The selected memory32 type was checked before narrowing its static offset.
@@ -1312,7 +1312,7 @@ case wasm1_code::i32_store16:
 case wasm1_code::i64_store8:
 {
     auto const full_offset{validate_mem_store.template operator()<0x3cu>(u8"i64.store8", 0u, wasm_value_type_u::i64)};
-    ensure_memory_resolved();
+    resolve_memory_storage();
     if(emit_memory64_scalar_if_selected.template operator()<wasm_i64, 1uz, false, true>(
            full_offset, curr_operand_stack_value_type::i64)) { break; }
     // The selected memory32 type was checked before narrowing its static offset.
@@ -1338,7 +1338,7 @@ case wasm1_code::i64_store8:
 case wasm1_code::i64_store16:
 {
     auto const full_offset{validate_mem_store.template operator()<0x3du>(u8"i64.store16", 1u, wasm_value_type_u::i64)};
-    ensure_memory_resolved();
+    resolve_memory_storage();
     if(emit_memory64_scalar_if_selected.template operator()<wasm_i64, 2uz, false, true>(
            full_offset, curr_operand_stack_value_type::i64)) { break; }
     // The selected memory32 type was checked before narrowing its static offset.
@@ -1364,7 +1364,7 @@ case wasm1_code::i64_store16:
 case wasm1_code::i64_store32:
 {
     auto const full_offset{validate_mem_store.template operator()<0x3eu>(u8"i64.store32", 2u, wasm_value_type_u::i64)};
-    ensure_memory_resolved();
+    resolve_memory_storage();
     if(emit_memory64_scalar_if_selected.template operator()<wasm_i64, 4uz, false, true>(
            full_offset, curr_operand_stack_value_type::i64)) { break; }
     // The selected memory32 type was checked before narrowing its static offset.
@@ -1437,7 +1437,7 @@ case wasm1_code::memory_size:
 
     validate_checked_memory_page(op_begin, memory_address_type_at(memory_index), false);
 
-    ensure_memory_resolved();
+    resolve_memory_storage();
     namespace translate = ::uwvm2::runtime::compiler::uwvm_int::optable::translate;
 #ifdef UWVM_ENABLE_UWVM_INT_COMBINE_OPS
     flush_conbine_pending();
@@ -1486,7 +1486,7 @@ case wasm1_code::memory_grow:
 
     validate_checked_memory_page(op_begin, memory_address_type_at(memory_index), true);
 
-    ensure_memory_resolved();
+    resolve_memory_storage();
     namespace translate = ::uwvm2::runtime::compiler::uwvm_int::optable::translate;
 #ifdef UWVM_ENABLE_UWVM_INT_COMBINE_OPS
     flush_conbine_pending();

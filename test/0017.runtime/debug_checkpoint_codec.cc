@@ -152,7 +152,7 @@ int main(int argc, char** argv)
         require(::fast_io::string_view{::fast_io::mnp::os_c_str(argv[2])} == "--require-big", "exact endian selector");
         require(::std::endian::native == ::std::endian::big, "real native big-endian target, not a swapped little-endian simulation");
     }
-    static_assert(cp::database_format_version == 6u);
+    static_assert(cp::database_format_version == 7u);
     auto const empty_tables{empty_nonnullable_tables()};
     require(cp::validate_graph(empty_tables) == cp::error::none, "empty nonnullable table32/table64 retain only exact declared type");
     auto const empty_bytes{encode(empty_tables)}; cp::state empty_decoded{};

@@ -182,7 +182,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
 
         [[nodiscard]] inline constexpr bool has_override() const noexcept
         {
-            return this->enabled_is_set || this->interfaces.any_configured() || this->expose_host_api_is_set || this->noinherit_system_environment_is_set || this->disable_utf8_check_is_set ||
+            return this->enabled_is_set ||
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                   !this->env.socket_rights.empty() ||
+#endif
+ this->interfaces.any_configured() || this->expose_host_api_is_set || this->noinherit_system_environment_is_set || this->disable_utf8_check_is_set ||
                    this->permission_presence != ::uwvm2::imported::wasi::wasip1::environment::permission_t{} ||
                    this->fd_limit_is_set || this->argv0_is_set || this->force_args_is_set || this->trace_wasip1_call_is_set ||
                    !this->delete_system_environment.empty() || !this->add_or_replace_environment.empty() || !this->mount_dir_roots.empty()
@@ -193,6 +197,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
         }
     };
 
+    // Native startup selection only; never exposed as a guest or debug command.
+    inline bool wasip1_wasix_socket_abi{};
+    inline bool wasip1_socket_abi_is_set{};
     using wasip1_module_override_t = wasip1_group_state_t;
     using wasip1_group_index_t = ::std::size_t;
     inline constexpr wasip1_group_index_t invalid_wasip1_group_index{static_cast<wasip1_group_index_t>(-1)};

@@ -148,22 +148,23 @@ extern "C++"
         ::std::span<llvm_jit_checkpoint_thread_capture_owner const> supplied,
         llvm_jit_checkpoint_prepare_request const& requested) noexcept
     {
-        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
+        if(!::uwvm2::utils::control::debug_permissions::full_allowed()) { return {}; }
         namespace mode=::uwvm2::uwvm::runtime::runtime_mode;
         llvm_jit_checkpoint_prepare_result out{};
         if(mode::global_runtime_mode!=mode::runtime_mode_t::full_compile ||
            mode::global_runtime_compiler!=mode::runtime_compiler_t::llvm_jit_only)
         { out.status=llvm_jit_checkpoint_prepare_status::requires_llvm_jit_full;return out; }
-        if(!ticket || supplied.empty() || supplied.size()>256u)
+        if(!ticket || supplied.empty())
         { out.status=llvm_jit_checkpoint_prepare_status::unavailable_capture;return out; }
-        runtime_checkpoint_thread_capture::owner captured[256u]{};
+        runtime_checkpoint_capture_buffer captured{supplied.size()};
+        if(!captured) { out.status = llvm_jit_checkpoint_prepare_status::allocation_failed; return out; }
         for(::std::size_t index{};index<supplied.size();++index)
         {
             auto const actual{llvm_jit_checkpoint_thread_capture::canonical(supplied[index])};
             if(!actual) { out.status=llvm_jit_checkpoint_prepare_status::unavailable_capture;return out; }
             captured[index]=actual->actual_;
         }
-        return runtime_checkpoint_coherent_manager::prepare_current_instance(ticket,{captured,supplied.size()},requested);
+        return runtime_checkpoint_coherent_manager::prepare_current_instance(ticket,{captured.data(), supplied.size()},requested);
     }
 }
 #else
@@ -185,7 +186,7 @@ extern "C++" llvm_jit_checkpoint_prepare_result llvm_jit_checkpoint_prepare_inst
     ::std::span<llvm_jit_checkpoint_thread_capture_owner const>,
     llvm_jit_checkpoint_prepare_request const&) noexcept
 {
-        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
+        if(!::uwvm2::utils::control::debug_permissions::full_allowed()) { return {}; }
     llvm_jit_checkpoint_prepare_result out{};out.status=llvm_jit_checkpoint_prepare_status::unavailable_capture;return out;
 }
 #endif

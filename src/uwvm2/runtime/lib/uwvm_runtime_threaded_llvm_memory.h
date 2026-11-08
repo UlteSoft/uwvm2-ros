@@ -1,18 +1,25 @@
 // ThreadedLlvmChild private member fragment: one admitted native code arena.
         class native_arena final:public ::llvm::RTDyldMemoryManager
+#if defined(UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT) && UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT == 1 && defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__)
+            ,private ::llvm::JITEventListener,private ::uwvm2::runtime::compiler::llvm_jit::details::arm_ehabi_registration_owner
+#endif
         {
-            struct section {::llvm::sys::MemoryBlock bytes;bool executable{},read_only{};};
+            struct section {::llvm::sys::MemoryBlock bytes;bool executable{},read_only{};
+#if defined(UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT) && UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT == 1 && defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__)
+                ::std::size_t allocated{},object_size{};bool index{},table{},authenticated{};
+#endif
+            };
             ::llvm::sys::MemoryBlock arena_{};
             ::std::vector<section> sections_{};
             ::std::array<::llvm::RTDyldMemoryManager::EHFrame,4096u> frames_{};
             ::std::size_t frame_count_{},used_{};
             ::std::vector<external> const* externals_{};
             bool failed_{},finalized_{};
-            [[nodiscard]] ::std::uint8_t* allocate(::std::uintptr_t size,unsigned alignment,bool code,bool read_only) noexcept
+            [[nodiscard]] ::std::uint8_t* allocate(::std::uintptr_t size,unsigned alignment,bool code,bool read_only,[[maybe_unused]] ::llvm::StringRef name) noexcept
             {
                 // The complete real object was checked before loader creation:
                 // <=4096 sections, no commons/TLS, alignment<=64KiB, plus bounded
-                // x86-64 reloc/stub/GOT allowance. Unexpected request is a trusted
+                // native reloc/stub/GOT allowance. Unexpected request is a trusted
                 // LLVM/contract failure, never an allocation-at-limit fallback.
                 if(failed_||finalized_||!valid()||alignment>65536u||
                    (alignment!=0u&&!::std::has_single_bit(alignment))||sections_.size()==sections_.capacity())
@@ -28,15 +35,37 @@
                 if(padded>arena_.allocatedSize()-offset){failed_=true;return nullptr;}
                 used_=offset+padded;
                 auto* pointer=reinterpret_cast<::std::uint8_t*>(aligned);
-                sections_.push_back({::llvm::sys::MemoryBlock{pointer,padded},code,read_only});return pointer;
+                sections_.push_back({::llvm::sys::MemoryBlock{pointer,padded},code,read_only});
+#if defined(UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT) && UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT == 1 && defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__)
+                auto& section=sections_.back();section.allocated=size;
+                section.index=name==".ARM.exidx"||name.starts_with(".ARM.exidx.");
+                section.table=name==".ARM.extab"||name.starts_with(".ARM.extab.");
+                if((section.index||section.table)&&(code||!read_only))failed_=true;
+#endif
+                return pointer;
             }
+#if defined(UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT) && UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT == 1 && defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__)
+#include "uwvm_runtime_threaded_llvm_arm_ehabi.h"
+#endif
         public:
-            native_arena(::std::size_t cap,::std::vector<external> const& bindings):externals_{&bindings}
+            [[nodiscard]] static constexpr ::std::size_t unwind_storage_precharge([[maybe_unused]] ::std::size_t functions) noexcept
+            {
+#if defined(UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT) && UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT == 1 && defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__)
+                return 8192u*sizeof(::uwvm2::runtime::compiler::llvm_jit::details::arm_ehabi_owned_table)+
+                    (functions*2u+256u)*sizeof(::uwvm2::runtime::compiler::llvm_jit::details::arm_ehabi_owned_range);
+#else
+                return 0u;
+#endif
+            }
+            native_arena(::std::size_t cap,::std::vector<external> const& bindings,[[maybe_unused]] ::std::size_t native_functions):externals_{&bindings}
             {
                 // Acquire the ENTIRE finite code budget fallibly BEFORE LLVM
                 // can load/relocate any object. No live guest calls this method.
                 if(cap==0u||cap%65536u!=0u||::llvm::sys::Process::getPageSizeEstimate()>65536u)return;
                 sections_.reserve(8192u);
+#if defined(UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT) && UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT == 1 && defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__)
+                arm_function_limit_=native_functions;
+#endif
                 ::std::error_code error;
                 arena_=::llvm::sys::Memory::allocateMappedMemory(cap,nullptr,
                     ::llvm::sys::Memory::MF_READ|::llvm::sys::Memory::MF_WRITE,error);
@@ -47,7 +76,11 @@
             [[nodiscard]] bool has_finalization_failure() const noexcept{return failed_||!finalized_;}
             [[nodiscard]] ::std::size_t owned_bytes() const noexcept{return arena_.allocatedSize();}
             [[nodiscard]] ::std::size_t retained_storage_bytes() const noexcept
-            {return sizeof(*this)+sections_.capacity()*sizeof(section);}
+            {return sizeof(*this)+sections_.capacity()*sizeof(section)
+#if defined(UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT) && UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT == 1 && defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__)
+                +arm_registry_bytes_
+#endif
+                ;}
             [[nodiscard]] ::std::size_t debug_cfi_count() const noexcept{return frame_count_;}
             // Metadata only: bytes remain owned/registered by THIS arena until
             // actual Group join. No unwinder/parser is implied by these ranges.
@@ -57,10 +90,10 @@
                 for(::std::size_t i{};i!=frame_count_;++i)
                     out[i]={reinterpret_cast<::std::uintptr_t>(frames_[i].Addr),frames_[i].Size};
             }
-            ::std::uint8_t* allocateCodeSection(::std::uintptr_t size,unsigned alignment,unsigned,::llvm::StringRef) override
-            {return allocate(size,alignment,true,true);}
-            ::std::uint8_t* allocateDataSection(::std::uintptr_t size,unsigned alignment,unsigned,::llvm::StringRef,bool ro) override
-            {return allocate(size,alignment,false,ro);}
+            ::std::uint8_t* allocateCodeSection(::std::uintptr_t size,unsigned alignment,unsigned,::llvm::StringRef name) override
+            {return allocate(size,alignment,true,true,name);}
+            ::std::uint8_t* allocateDataSection(::std::uintptr_t size,unsigned alignment,unsigned,::llvm::StringRef name,bool ro) override
+            {return allocate(size,alignment,false,ro,name);}
             bool finalizeMemory(::std::string* =nullptr) override
             {
                 if(failed_||!valid())return true;
@@ -73,6 +106,9 @@
                     if(::llvm::sys::Memory::protectMappedMemory(section.bytes,flags))failed_=true;
                     if(section.executable)::llvm::sys::Memory::InvalidateInstructionCache(section.bytes.base(),section.bytes.allocatedSize());
                 }
+#if defined(UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT) && UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT == 1 && defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__)
+                if(!failed_&&!publish_arm_tables())failed_=true;
+#endif
                 finalized_=!failed_;return failed_;
             }
             ::std::uint64_t getSymbolAddress(::std::string const& name) override
@@ -88,6 +124,9 @@
             }
             void deregisterEHFrames() override
             {
+#if defined(UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT) && UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT == 1 && defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__)
+                retire_arm_ehabi_tables();arm_registry_bytes_=0u;
+#endif
                 while(frame_count_!=0u){auto const& frame=frames_[--frame_count_];
                     ::llvm::RTDyldMemoryManager::deregisterEHFramesInProcess(frame.Addr,frame.Size);}
             }
@@ -100,6 +139,10 @@
             native_arena& actual_;
         public:
             explicit loader_memory_adapter(native_arena& actual) noexcept:actual_{actual}{}
+#if defined(UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT) && UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT == 1 && defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__)
+            void notifyObjectLoaded(::llvm::ExecutionEngine* engine,::llvm::object::ObjectFile const&) override
+            {actual_.observe_arm_engine(engine);}
+#endif
             ::std::uint8_t* allocateCodeSection(::std::uintptr_t n,unsigned a,unsigned id,::llvm::StringRef name) override
             {return actual_.allocateCodeSection(n,a,id,name);}
             ::std::uint8_t* allocateDataSection(::std::uintptr_t n,unsigned a,unsigned id,::llvm::StringRef name,bool ro) override

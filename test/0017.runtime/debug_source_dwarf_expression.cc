@@ -98,7 +98,7 @@ int main()
     check(path.root_name == "outer::value" && path.steps.size() == 6u &&
         step(path, 0u, source_expression_step_kind::dereference) && step(path, 1u, source_expression_step_kind::member, "a") &&
         step(path, 2u, source_expression_step_kind::index, {}, -2) && step(path, 3u, source_expression_step_kind::dereference) &&
-        step(path, 4u, source_expression_step_kind::member, "bw") && step(path, 5u, source_expression_step_kind::member, "0"),
+        step(path, 4u, source_expression_step_kind::member, "b") && step(path, 5u, source_expression_step_kind::member, "0"),
         "whitespace, exact namespace root, arrows, signed indices and Rust numeric member");
     auto const star_arrow{parse("*p->a")};
     check(star_arrow.steps.size() == 3u && step(star_arrow, 0u, source_expression_step_kind::dereference) &&
@@ -121,31 +121,32 @@ int main()
     deny({nul.data(), nul.size()}); // [safe] fixed three initialized chars define complete bounded input, embedded NUL is not end.
     ::std::array<char, 2u> control{'p', '\x01'}; deny({control.data(), control.size()});
     auto stars{::fast_io::concat_std(::std::string(32u, '*'), "p")};
-    check(parse(stars).steps.size() == 32u, "32 unary operations and recursion are accepted");
-    deny(::fast_io::concat_std("*", stars));
+    check(parse(stars).steps.size() == 32u, "32 unary operations are accepted");
+    check(parse(::fast_io::concat_std("*", stars)).steps.size() == 33u, "no fixed unary ceiling");
     auto parens{::fast_io::concat_std(::std::string(32u, '('), "p", ::std::string(32u, ')'))};
     check(parse(parens).steps.empty(), "32 parenthesis nests are accepted without fake operations");
-    deny(::fast_io::concat_std("(", parens, ")"));
+    check(parse(::fast_io::concat_std("(", parens, ")")).steps.empty(), "no fixed nesting ceiling");
     auto mixed{::fast_io::concat_std(::std::string(16u, '('), ::std::string(16u, '*'), "p", ::std::string(16u, ')'))};
-    check(parse(mixed).steps.size() == 16u, "mixed unary and parenthesis recursion shares one bounded depth");
-    deny(::fast_io::concat_std("*", mixed));
+    check(parse(mixed).steps.size() == 16u, "mixed unary and parenthesis nesting");
+    check(parse(::fast_io::concat_std("*", mixed)).steps.size() == 17u, "mixed nesting has no fixed ceiling");
     ::std::string members{"p"}, arrows{"p"};
     for(unsigned i{}; i != 32u; ++i) // [safe] fixture-only scalar counter has finite 32 bound.
     { members = ::fast_io::concat_std(::std::string_view{members}, ".x"); }
     for(unsigned i{}; i != 16u; ++i) // [safe] each arrow costs exactly two bounded operations.
     { arrows = ::fast_io::concat_std(::std::string_view{arrows}, "->x"); }
     check(parse(members).steps.size() == 32u && parse(arrows).steps.size() == 32u, "32 member steps and 16 arrows accepted");
-    deny(::fast_io::concat_std(::std::string_view{members}, ".x")); deny(::fast_io::concat_std(::std::string_view{arrows}, "->x"));
+    check(parse(::fast_io::concat_std(::std::string_view{members}, ".x")).steps.size() == 33u &&
+        parse(::fast_io::concat_std(::std::string_view{arrows}, "->x")).steps.size() == 34u, "no fixed step ceiling");
     auto bytes4096{::fast_io::concat_std(::std::string(4095u, ' '), "p")};
     check(parse(bytes4096).root_name == "p", "4096 total bytes including whitespace accepted");
-    deny(::fast_io::concat_std(::std::string_view{bytes4096}, " "));
+    check(parse(::fast_io::concat_std(::std::string_view{bytes4096}, " ")).root_name == "p", "no fixed text ceiling");
     source_expression_limits lowered{}; lowered.max_steps = 1u; deny("p->x", lowered);
     lowered = {}; lowered.max_nesting = 0u; deny("(p)", lowered); deny("*p", lowered);
     lowered = {}; lowered.max_expression_bytes = 1u; deny(" p", lowered);
-    source_expression_limits raised{99999u, 99999u, 99999u};
-    deny(::fast_io::concat_std("*", stars), raised); deny(::fast_io::concat_std("(", parens, ")"), raised);
-    deny(::fast_io::concat_std(::std::string_view{members}, ".x"), raised);
-    deny(::fast_io::concat_std(::std::string_view{bytes4096}, " "), raised);
+    source_expression_limits explicit_budget{4096u, 32u, 32u};
+    deny(::fast_io::concat_std("*", stars), explicit_budget); deny(::fast_io::concat_std("(", parens, ")"), explicit_budget);
+    deny(::fast_io::concat_std(::std::string_view{members}, ".x"), explicit_budget);
+    deny(::fast_io::concat_std(::std::string_view{bytes4096}, " "), explicit_budget);
 
     ::std::vector<type_record> types{scalar(4u), pointer(0u, 4u), pointer(0u, 8u)};
     auto const memory32{encoded<32u>(0xfffffffcu)}; auto const memory64{encoded<64u>(0x100000044ULL)};
@@ -268,5 +269,5 @@ int main()
     ::std::vector<object_selector_step> invalid{{static_cast<object_selector_kind>(999u), {}, 0}};
     check(plan_copied_guest_pointer(types, 2u, invalid, memory64, out) == inline_query_error::malformed, "invalid operation enum rejected by selected-object query"); cleared(out);
     check(plan_copied_guest_pointer(types, types.size(), {}, memory64, out) == inline_query_error::malformed, "root type index checked before borrow"); cleared(out);
-    ::fast_io::io::println("PASS finite source-expression precedence/bounds and copied guest-pointer planning; no runtime qualification");
+    ::fast_io::io::println("PASS source-expression precedence/budgets and copied guest-pointer planning; no runtime qualification");
 }

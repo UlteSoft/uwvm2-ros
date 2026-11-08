@@ -246,7 +246,7 @@ extern "C++" ::uwvm2::utils::update::status runtime_update_configure_host_api(
     namespace u = ::uwvm2::utils::update;
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS) && !defined(UWVM_TERMINATE_IMME_WHEN_PARSE)
     namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
-    if(::uwvm2::utils::control::management::debug_allowed() || production_update_detail::current ||
+    if(production_update_detail::current ||
        ::uwvm2::utils::security::wsea::secure_enabled() ||
        mode::global_runtime_mode != mode::runtime_mode_t::full_compile || mode::global_runtime_compiler != mode::runtime_compiler_t::llvm_jit_only)
     { return u::status::unsupported; }
@@ -268,7 +268,7 @@ extern "C++" ::uwvm2::utils::update::status runtime_update_configure_host_api(
         ::std::copy(state->policy_fingerprint.begin(), state->policy_fingerprint.end(), policy.begin()+32);
         if(!u::hash(policy, measured_config.contract)) { return u::status::unsupported; }
         if(auto result{state->protocol.configure(measured_config, base)}; result != u::status::ok) { return result; }
-        auto domain{::std::make_shared<::uwvm2::utils::thread::cooperative_pause_domain>(256u)};
+        auto domain{::std::make_shared<::uwvm2::utils::thread::cooperative_pause_domain>()};
         bool configured{};
         if(get_runtime_execution_entry_depth() != 0 || get_runtime_state_publication_depth() != 0 ||
            get_runtime_compilation_metadata_callback_depth() != 0) { return u::status::invalid_state; }
@@ -285,7 +285,6 @@ extern "C++" ::uwvm2::utils::update::status runtime_update_configure_host_api(
             if(g_runtime.compiled_all.load(::std::memory_order_acquire) || g_runtime.debug_pause_control || g_runtime.bridges_initialized.load(::std::memory_order_acquire)) { return; }
             // The same code-generation machinery is private to this production
             // profile; no observer/controller/DeveloperGrant is installed.
-            ::uwvm2::utils::control::management::seal_release();
             g_runtime.debug_pause_control = ::std::move(domain);
             g_runtime.debug_granularity = llvm_jit_debug_safe_point_granularity::entry_loop;
             state->runtime_generation = current_runtime_generation(); configured = true;

@@ -102,6 +102,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::runtime_mode
     inline bool is_runtime_mode_code_aot_existed{};  // [global]
 #endif
 
+    // Host startup policy; guest code cannot modify tag execution.
+    inline bool runtime_disable_memtag{};
+
     /// @brief Whether the runtime compile thread count was explicitly configured.
     /// @details When this is false, the runtime will use its default thread selection policy.
     inline bool runtime_compile_threads_existed{};  // [global]

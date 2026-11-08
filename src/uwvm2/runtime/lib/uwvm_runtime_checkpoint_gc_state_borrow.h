@@ -100,7 +100,7 @@ extern "C++"
             return execution_ && !execution_.stop_requested() && closed_ && exclusion_ &&
                 epoch_ != 0u && current_runtime_generation() == epoch_ &&
                 get_runtime_state_publication_depth() == 1u && !cohort_.empty() &&
-                cohort_.size() == captures_.size() && cohort_.size() <= 256u &&
+                cohort_.size() == captures_.size() &&
                 same_owner(profile_, g_runtime.checkpoint_profile) &&
                 g_runtime.compiled_all.load(::std::memory_order_acquire);
         }

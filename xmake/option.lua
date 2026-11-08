@@ -9,11 +9,11 @@ option("ros-product-policy", function()
     add_deps("target", "llvm-target", "execution-int", "execution-jit", "use-llvm-compiler",
         "llvm-runtimes-provider", "stdlib", "llvm-build-jobs", "llvm-build-targets", "llvm-cmake-toolchain",
         "use-thread-local", "fno-exceptions", "enable-wsea", "linux-native-debug", "detailed-debug-check",
-        "disable-local-imported-wasip1", "enable-local-imported-wasip1-wasm64", "import-ros1", "import-ros2",
+        "disable-local-imported-wasip1", "enable-local-imported-wasip1-wasm64", "enable-local-imported-wasip1-socket", "import-ros1", "import-ros2",
         "wasm-memory-model", "use-cxx-module", "enable-lto", "numeric-exception-fused", "gc-jit-access-profile",
         "gc-allocation-profile", "mingw-min", "apple-platform", "macos-x64-native-step", "macos-4gib-test",
         "enable-uwvm-int-combine-ops", "enable-uwvm-int-delay-local", "enable-uwvm-int-instruction-reorder",
-        "enable-uwvm-int-loop-unwind")
+        "enable-uwvm-int-loop-unwind", "host-mte")
     after_check(function()
         local product = import("utility.ros_product", {anonymous = true})
         product.uwvm_ros_product_check_current()
@@ -286,6 +286,18 @@ option("execution-jit", function()
     )
     set_default("llvm")
     set_values("none", "llvm")
+end)
+
+-- This is a fail-closed prerequisite request, not a flags-only sanitizer mode.
+option("host-mte", function()
+    set_default("off")
+    set_values("off", "required")
+    set_description(
+        "Native VM host MTE prerequisite policy, separate from guest WasmMTE.",
+        "off: preserve the ordinary host build (default).",
+        "required: require qualified AArch64 Linux stack, heap, globals, loader and thread providers.",
+        "No complete host provider is qualified yet; required currently fails before dependency acquisition.",
+        "See documents/toolchain/native-host-mte.md; compiler flags alone do not satisfy this requirement.")
 end)
 
 option("llvm-runtimes-provider", function()
@@ -697,7 +709,7 @@ end)
 option("disable-local-imported-wasip1", function()
     set_description
     (
-        "Disable the import of wasip1 during compilation. For platforms that do not support wasip1, this option is ignored.",
+        "Required false in uwvm2-ros: every WASI Preview 1 interface is compiled; true is rejected.",
         "default = false"
     )
     set_default(false)
@@ -706,8 +718,7 @@ end)
 option("enable-local-imported-wasip1-wasm64", function()
     set_description
     (
-        "Enable the wasip1 extension for the wasm64 version.",
-        "Prerequisite: disable-local-imported-wasip1 == false",
+        "Required true in uwvm2-ros: memory32 and memory64 WASI interfaces are always compiled.",
         "default = true"
     )
     set_default(true)
@@ -716,12 +727,11 @@ end)
 option("enable-local-imported-wasip1-socket", function()
     set_description
     (
-        "Enable the socket extension in wasip1.",
-        "Prerequisite: disable-local-imported-wasip1 == false",
-        "default = wasip1",
-        [[    none: Disable extensions.]],
-        [[    wasip1: Enable the official wasip1 extension.]],
-        [[    wasix: Enable the wasix extension. The difference from wasip1 is that sock_accept has an additional parameter: `ro_addr`.]]
+        "Required wasip1 in uwvm2-ros: compile both standard and WASIX socket implementations.",
+        "none and wasix are rejected build configurations.",
+        "Select the process ABI with runtime --wasip1-socket-abi standard|wasix.",
+        "Compilation grants no interface exposure, calls or socket rights.",
+        "default = wasip1"
     )
     set_default("wasip1")
     set_values("none", "wasip1", "wasix")
@@ -731,12 +741,12 @@ end)
 option("import-ros1", function()
     set_default(true)
     set_showmenu(true)
-    set_description("Compile explicit ROS1 capability host imports (Linux, header build).")
+    set_description("Required true: compile all ROS1 host imports; runtime exposure and grants default to none.")
 end)
 option("import-ros2", function()
     set_default(true)
     set_showmenu(true)
-    set_description("Compile explicit ROS2 capability host imports (Linux, header build).")
+    set_description("Required true: compile all ROS2 host imports; runtime exposure and grants default to none.")
 end)
 option("ros-custom-registry-header", function()
     set_default("none")

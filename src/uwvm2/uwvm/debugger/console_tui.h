@@ -389,7 +389,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::console_tui
         mutable bool drawing_tooltip_{};
         mutable ::fast_io::array<::fast_io::string,100u> painted_rows_{};
         mutable ::fast_io::array<::std::size_t,100u> painted_columns_{};
-        ::std::vector<::std::byte> memory_bytes_{};
+        ::std::vector<::std::byte> memory_bytes_{},memory_tags_{};
+        ::std::uint64_t memory_first_granule_{};
         ::std::uint64_t memory_offset_{},memory_stop_{},memory_epoch_{};
         ::std::size_t memory_first_{},memory_last_{};
         bool memory_selected_{};
@@ -739,7 +740,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::console_tui
             ::fast_io::string memory_text{};
             if(which==layout::memory && !memory_bytes_.empty())
             { memory_text=::fast_io::concat_fast_io("Wasm memory | select bytes; memory format ",memory_format_,"\n",
-                console_memory::dump(memory_bytes_,memory_offset_,size.columns-5u)); }
+                console_memory::dump(memory_bytes_,memory_offset_,size.columns-5u,memory_tags_,memory_first_granule_)); }
             if(which==layout::memory) { memory_rendered_rows_=rows(memory_text); }
             auto const content{memory_text.empty() ? panels_[selected].subview(0u) : memory_text.subview(0u)};
             auto first{pane_scroll_[selected]};
@@ -1023,7 +1024,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::console_tui
                       valid &= !token.empty() && scan.code==::fast_io::parse_code::ok && scan.iter==token.cend(); }
                     if(!valid || !command.empty() || values[1]>0xffffffffu || values[3]==0u || values[3]>256u || values[2]>UINT64_MAX-values[3])
                     { output("error: memory MODULE MEMORY OFFSET COUNT (COUNT 1..256)\n"); return true; }
-                    memory_bytes_.clear();memory_selected_=false;tooltip_.clear();
+                    memory_bytes_.clear();memory_tags_.clear();memory_selected_=false;tooltip_.clear();
                     memory_query_=::fast_io::concat_fast_io("memory ",values[0]," ",values[1]," ",values[2]," ",values[3]);pending_query_=memory_query_;return true;
                 }
                 if(sub == "source" && !command.empty())
@@ -1152,7 +1153,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::console_tui
         }
         void wasip1_module(::std::uint64_t module) noexcept { wasip1_module_=module; }
         void observe_stop(::std::uint64_t stop,::std::uint64_t epoch=0u)
-        { if(memory_stop_!=stop || memory_epoch_!=epoch) { memory_stop_=stop;memory_epoch_=epoch;assembly_first_=assembly_valid_first_=0;assembly_lower_=-(INT64_MAX/2);assembly_upper_=INT64_MAX/2;pane_scroll_[1u]=0u;execution_drag_=command_pane+1u;drop_hint_.clear();memory_bytes_.clear();memory_selected_=false;selection_valid_=false;tooltip_.clear();hover_token_.clear(); } }
+        { if(memory_stop_!=stop || memory_epoch_!=epoch) { memory_stop_=stop;memory_epoch_=epoch;assembly_first_=assembly_valid_first_=0;assembly_lower_=-(INT64_MAX/2);assembly_upper_=INT64_MAX/2;pane_scroll_[1u]=0u;execution_drag_=command_pane+1u;drop_hint_.clear();memory_bytes_.clear();memory_tags_.clear();memory_selected_=false;selection_valid_=false;tooltip_.clear();hover_token_.clear(); } }
+        void memory_tags_snapshot(::std::span<::std::byte const> tags,::std::uint64_t first_granule)
+        { memory_tags_.assign(tags.begin(),tags.end());memory_first_granule_=first_granule; }
         void memory_snapshot(::std::span<::std::byte const> bytes,::std::uint64_t offset)
         { if(offset!=memory_offset_ || bytes.size()!=memory_bytes_.size() || !::std::equal(bytes.begin(),bytes.end(),memory_bytes_.begin()))
             { memory_selected_=false; }memory_offset_=offset;memory_bytes_.assign(bytes.begin(),bytes.end()); }

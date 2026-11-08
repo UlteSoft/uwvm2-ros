@@ -91,7 +91,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         if(fd_from < 0 || fd_to < 0) [[unlikely]] { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::ebadf; }
 
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-        if(fd_from < 3 || fd_to < 3) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+        // Interface authority does not grant either inherited stream. The
+        // moved resource keeps its original rights, quotas and socket identity.
+        if((fd_from < 3 && !env.grants_stdio(static_cast<unsigned>(fd_from))) ||
+           (fd_to < 3 && !env.grants_stdio(static_cast<unsigned>(fd_to))))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
 #endif
         auto& wasm_fd_storage{env.fd_storage};
 
@@ -144,6 +148,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 
             // Manipulating fd_manager requires a unique_lock.
             ::uwvm2::utils::mutex::rw_fair_unique_guard_t fds_lock{wasm_fd_storage.fds_rwlock};
+
+            if(fd_opens_pos_to < wasm_fd_storage.opens.size() &&
+               wasm_fd_storage.opens.index_unchecked(fd_opens_pos_to).fd_p->close_pos ==
+                   ::uwvm2::imported::wasi::wasip1::fd_manager::pending_fd_slot)
+            { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::ebadf; }
 
             // WASIp1 replaces an existing descriptor; unlike dup2, it cannot
             // claim an arbitrary free number. Validate the destination while
@@ -218,6 +227,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                 auto const new_close_pos_from{::std::addressof(wasm_fd_storage.closes.emplace_back(fd_opens_pos_from))};
                 fd_uniptr.fd_p->close_pos = static_cast<::std::size_t>(new_close_pos_from - wasm_fd_storage.closes.cbegin());
             }
+
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            if(fd_to < 3)
+            {
+                // A logical standard stream cannot gain operations that its
+                // host grant did not allow. Source authority is only reduced.
+                curr_fd_p_from->rights_base = curr_fd_p_from->rights_base & env.stdio_base_rights(fd_to == 0);
+                curr_fd_p_from->rights_inherit = {};
+            }
+#endif
 
             // Ensure that `curr_fd_p_from->close_pos` remains at `SIZE_MAX`, indicating that the file descriptor is active.
 

@@ -59,6 +59,7 @@ export import :runtime_llvm_jit_full_policy;
 export import :runtime_llvm_jit_exception_dispatch;
 export import :runtime_llvm_jit_cache_path;
 export import :runtime_llvm_jit_cache_seal_process;
+export import :runtime_disable_memtag;
 export import :runtime_int;
 export import :runtime_uwvm_int_disable_loop_unwind;
 export import :runtime_uwvm_int_set_opcode_conbination_level;

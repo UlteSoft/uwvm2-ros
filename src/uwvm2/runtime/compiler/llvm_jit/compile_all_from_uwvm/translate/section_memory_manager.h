@@ -837,14 +837,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::details
                     { auto const next{arm_ehabi_prel31(entry + 2u) & ~::std::uintptr_t{1u}};
                       if(next <= start) { return false; } end = (::std::min)(end, next); }
                     ::std::uint32_t content{}; ::std::memcpy(&content, entry + 1u, sizeof(content));
+                    if((content & 0x80000000u) != 0u && !arm_ehabi_unwind_extent_valid(entry + 1u, 4u, true)) { return false; }
                     if(content != 1u && (content & 0x80000000u) == 0u)
                     {
-                        auto const extab{arm_ehabi_prel31(entry + 1u)}; bool bounded{};
+                        auto const extab{arm_ehabi_prel31(entry + 1u)}; ::std::size_t available{};
                         for(auto const& owned: arm_ehabi_sections_)
                         { auto const begin{reinterpret_cast<::std::uintptr_t>(owned.address)};
-                          if(owned.table && extab >= begin && extab - begin <= owned.size &&
-                             owned.size - (extab - begin) >= 4u) { bounded = true; } }
-                        if(!bounded || extab % 4u != 0u) { return false; }
+                          if(owned.table && extab >= begin && extab - begin < owned.size)
+                          { if(available != 0u) { return false; } available = owned.size - (extab - begin); } }
+                        if(extab % 4u != 0u || !arm_ehabi_unwind_extent_valid(reinterpret_cast<void const*>(extab), available, false))
+                        { return false; }
                         auto const* personality_word{reinterpret_cast<::std::uint32_t const*>(extab)};
                         ::std::uint32_t personality_encoding{};
                         ::std::memcpy(&personality_encoding,personality_word,sizeof(personality_encoding));

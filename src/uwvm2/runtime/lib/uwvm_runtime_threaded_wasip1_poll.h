@@ -12,9 +12,9 @@ extern "C++"
         if(count==0u)return error::einval;
         if((count != 0u && 48uz > SIZE_MAX / static_cast<::std::size_t>(count)) || static_cast<::std::uint64_t>(count) + 1u > SIZE_MAX) return error::eoverflow;
         if(!call.aligned(input,8u)||!call.aligned(output,8u)||!call.aligned(completed,4u))return error::efault;
-        ::std::byte* unused{};
-        if(!call.bounds(input,static_cast<::std::size_t>(count)*48uz,unused)||
-           !call.bounds(output,static_cast<::std::size_t>(count)*32uz,unused)||!call.bounds(completed,4uz,unused))return error::efault;
+
+        if(!call.bounds(input,static_cast<::std::size_t>(count)*48uz)||
+           !call.bounds(output,static_cast<::std::size_t>(count)*32uz)||!call.bounds(completed,4uz))return error::efault;
         struct subscription
         {
             ::std::uint64_t userdata{},timeout{};::std::uint32_t id{},fd{};unsigned kind{};bool absolute{},immediate{},deferred{};

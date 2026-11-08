@@ -22,6 +22,7 @@
 module;
 
 // std
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <climits>

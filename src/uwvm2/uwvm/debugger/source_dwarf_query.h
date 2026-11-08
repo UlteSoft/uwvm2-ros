@@ -26,7 +26,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
     };
     struct inline_query_limits
     {
-        ::std::size_t max_scopes{65536u}, max_ranges{65536u}, max_depth{64u}, max_frames{64u}, max_string_bytes{16384u};
+        ::std::size_t max_scopes{(::std::numeric_limits<::std::size_t>::max)()}, max_ranges{(::std::numeric_limits<::std::size_t>::max)()}, max_depth{(::std::numeric_limits<::std::size_t>::max)()}, max_frames{(::std::numeric_limits<::std::size_t>::max)()}, max_string_bytes{(::std::numeric_limits<::std::size_t>::max)()};
     };
     // Pure metadata query. PC is Code-relative; this function supplies NO runtime
     // stop, generation, source, frame or read authority. Production first obtains
@@ -46,10 +46,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
             // The shared selector owns physical/inline identities and performs
             // every range, parent and enum check before display copies. The
             // physical key is additional to this API's inline-frame budget.
-            if(cap.max_frames == (::std::numeric_limits<::std::size_t>::max)())
-            { return inline_query_error::limit_exceeded; }
             concrete_scope_path path{};
-            scope_path_limits const path_cap{cap.max_scopes, cap.max_ranges, cap.max_depth, cap.max_frames + 1u};
+            // Saturate the optional inline quota when adding the physical key;
+            // the actual path cannot contain more records than the owned input.
+            auto const path_keys{cap.max_frames == (::std::numeric_limits<::std::size_t>::max)() ? cap.max_frames : cap.max_frames + 1u};
+            scope_path_limits const path_cap{cap.max_scopes, cap.max_ranges, cap.max_depth, path_keys};
             auto const selected{query_concrete_scope_path(scopes, pc, path, path_cap, scope_owner)};
             switch(selected)
             {

@@ -39,9 +39,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::environment
         if(now > clock::time_point::max() - delta) { return clock::time_point::max(); }
         return now + delta;
     }
-    enum class budget_kind : unsigned { random, stdin_read, stdout_write, stderr_write, realtime, monotonic, process, thread, poll, signal, yield, filesystem_io, count };
+    enum class budget_kind : unsigned { random, stdin_read, stdout_write, stderr_write, realtime, monotonic, process, thread, poll, signal, yield, filesystem_io, socket_read, socket_write, socket_accept, socket_shutdown, count };
     [[nodiscard]] inline constexpr budget_kind fd_io_budget(unsigned fd) noexcept
     { return fd == 0u ? budget_kind::stdin_read : fd == 1u ? budget_kind::stdout_write : fd == 2u ? budget_kind::stderr_write : budget_kind::filesystem_io; }
+    // Descriptor numbers are guest mutable. A quota belongs to the approved
+    // native resource, including after moving a file into/out of stdio slots.
+    template<typename Resource>
+    [[nodiscard]] inline constexpr budget_kind fd_io_budget(Resource const& resource) noexcept
+        requires requires { resource.checkpoint_stdio_index; }
+    { return fd_io_budget(resource.checkpoint_stdio_index >= 0 ?
+        static_cast<unsigned>(resource.checkpoint_stdio_index) : 3u); }
     inline void quota_diagnostic(budget_kind kind,::std::string_view field,bool wait) noexcept
     {
         if(!::uwvm2::utils::control::host_diagnostics::active)return;
@@ -49,7 +56,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::environment
         try
 #endif
         {
-            constexpr ::std::string_view names[]{"random","stdin","stdout","stderr","realtime","monotonic","process","thread","poll","signal","yield","filesystem"};
+            constexpr ::std::string_view names[]{"random","stdin","stdout","stderr","realtime","monotonic","process","thread","poll","signal","yield","filesystem","socket-read","socket-write","socket-accept","socket-shutdown"};
             ::std::string key{names[static_cast<unsigned>(kind)]};key+='.';key+=field;
             ::uwvm2::utils::control::host_diagnostics::limited(key,wait);
         }

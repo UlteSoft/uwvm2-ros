@@ -1,0 +1,108 @@
+diff --git a/dlmalloc/src/dlmalloc.c b/dlmalloc/src/dlmalloc.c
+index 331536b..2af51fb 100644
+--- a/dlmalloc/src/dlmalloc.c
++++ b/dlmalloc/src/dlmalloc.c
+@@ -12,8 +12,9 @@
+ // WebAssembly doesn't support shrinking linear memory.
+ #define MORECORE_CANNOT_TRIM 1
+ 
+-// Disable sanity checks to reduce code size.
+-#define ABORT __builtin_unreachable()
++// Preserve allocator corruption checks as observable Wasm traps. Declaring
++// this path unreachable lets optimization erase the checks protecting metadata.
++#define ABORT __builtin_trap()
+ 
+ // If threads are enabled, enable support for threads.
+ #ifdef _REENTRANT
+diff --git a/dlmalloc/src/malloc.c b/dlmalloc/src/malloc.c
+index 8fc8643..7d451cb 100644
+--- a/dlmalloc/src/malloc.c
++++ b/dlmalloc/src/malloc.c
+@@ -4578,6 +4578,25 @@ static void* tmalloc_small(mstate m, size_t nb) {
+ static void try_init_allocator(void);
+ #endif
+ 
++#if defined(__wasilibc_dlmalloc_enable_memtag)
++/* Zero is reserved for allocator metadata and retired allocations. A fresh
++   active allocation must therefore use a nonzero tag. The execution-disabled
++   case must not loop on memtag.extract (which correctly returns zero then).
++   Retagging after reuse is still probabilistic; this is not a generation ID. */
++static void* memtag_new_allocation(void* mem, size_t bytes, int zero) {
++  if (__builtin_wasm_memtag_status(0) != 0) {
++    do {
++      mem = __builtin_wasm_memtag_random(0, mem);
++    } while (__builtin_wasm_memtag_extract(0, mem) == 0);
++  }
++  if (zero)
++    __builtin_wasm_memtag_storez(0, mem, bytes);
++  else
++    __builtin_wasm_memtag_store(0, mem, bytes);
++  return mem;
++}
++#endif
++
+ static void* dlmalloc_common_internal(size_t bytes, int flag) {
+   /*
+      Basic algorithm:
+@@ -4714,18 +4733,18 @@ static void* dlmalloc_common_internal(size_t bytes, int flag) {
+ 
+   postaction:
+ #if defined(__wasilibc_dlmalloc_enable_memtag)
+-    if (flag != 2){
++    if (mem != 0 && flag != 2){
+       mchunkptr p  = mem2chunk(mem);
+       size_t usablesize = chunksize(p)-CHUNK_OVERHEAD;
+       if (flag == 1) {
+-        mem = __builtin_wasm_memtag_randomstorez(0, mem, usablesize);
++        mem = memtag_new_allocation(mem, usablesize, 1);
+       }
+       else {
+-        mem = __builtin_wasm_memtag_randomstore(0, mem, usablesize);
++        mem = memtag_new_allocation(mem, usablesize, 0);
+       }
+     }
+ #else
+-    if (flag == 1) {
++    if (mem != 0 && flag == 1) {
+       mchunkptr p  = mem2chunk(mem);
+       memset(mem, 0, chunksize(p)-CHUNK_OVERHEAD);
+     }
+@@ -4758,6 +4777,11 @@ void dlfree(void* mem) {
+     }
+ #endif
+     mchunkptr p  = mem2chunk(mem);
++#if defined(__wasilibc_dlmalloc_enable_memtag)
++    /* Validate the guest pointer above, then address metadata with its own zero
++       tag before FOOTERS, DEBUG, and ok_inuse read the chunk header. */
++    p = __builtin_wasm_memtag_untag(0, p);
++#endif
+ #if FOOTERS
+     mstate fm = get_mstate_for(p);
+     if (!ok_magic(fm)) {
+@@ -4770,9 +4794,6 @@ void dlfree(void* mem) {
+     if (!PREACTION(fm)) {
+       check_inuse_chunk(fm, p);
+       if (RTCHECK(ok_address(fm, p) && ok_inuse(p))) {
+-#if defined(__wasilibc_dlmalloc_enable_memtag)
+-        p= __builtin_wasm_memtag_untag(0, p);
+-#endif
+         size_t psize = chunksize(p);
+ #if defined(__wasilibc_dlmalloc_enable_memtag)
+         mem = __builtin_wasm_memtag_untagstore(0, mem, psize - CHUNK_OVERHEAD);
+@@ -4870,6 +4891,7 @@ void* dlcalloc(size_t n_elements, size_t elem_size) {
+ #if defined(__wasilibc_dlmalloc_enable_memtag)
+   if(__builtin_mul_overflow(n_elements, elem_size, &req))
+   {
++    MALLOC_FAILURE_ACTION;
+     return 0;
+   }
+   mem = dlmalloc_common_internal(req, 1);
+@@ -5064,7 +5086,7 @@ static void* internal_memalign(mstate m, size_t alignment, size_t bytes) {
+       assert(((size_t)mem & (alignment - 1)) == 0);
+       check_inuse_chunk(m, p);
+ #if defined(__wasilibc_dlmalloc_enable_memtag)
+-      mem = __builtin_wasm_memtag_randomstore(0, mem ,chunksize(p)-CHUNK_OVERHEAD);
++      mem = memtag_new_allocation(mem, chunksize(p)-CHUNK_OVERHEAD, 0);
+ #endif
+       POSTACTION(m);
+     }

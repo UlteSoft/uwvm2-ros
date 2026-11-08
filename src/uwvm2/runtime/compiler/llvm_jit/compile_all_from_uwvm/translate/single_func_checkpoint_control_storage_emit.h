@@ -283,17 +283,26 @@ inline void invalidate_runtime_local_func_llvm_jit_checkpoint_value_witness(
     return true;
 }
 
-// Logical landings replace every live operand, including values below a
-// structured construct. Carry that prefix through real CFG edges as well as
+// A parked debugger can edit the observed operand packet as well as a
+// resumable landing. Both modes replace SSA values below structured labels;
+// neither may carry a value defined in the then arm into the else arm.
+[[nodiscard]] inline bool checkpoint_control_prefix_selected(runtime_local_func_llvm_jit_emit_state_t const& state) noexcept
+{
+    return checkpoint_saved_control_selected(state) ||
+        (state.emit_debug_safe_points && checkpoint_observer_workspace_selected(state) &&
+         state.checkpoint_observer_workspace != nullptr);
+}
+// Logical landings and mutable debug observations replace every live operand,
+// including values below a structured construct. Carry that prefix through real CFG edges as well as
 // the declared label tuple; otherwise an else/end/backedge can retain an SSA
 // handle produced exclusively by another arm or iteration. Ordinary and
-// observation-only compilation add no prefix PHIs.
+// read-only observation compilation add no prefix PHIs.
 [[nodiscard]] inline bool prepare_runtime_local_func_llvm_jit_checkpoint_control_prefix(
     runtime_local_func_llvm_jit_emit_state_t& state, ::std::size_t count,
     ::llvm::BasicBlock* end, ::llvm::BasicBlock* loop, ::llvm::BasicBlock* predecessor,
     llvm_jit_checkpoint_control_prefix_t& out) noexcept
 {
-    if(!checkpoint_saved_control_selected(state)) { return true; }
+    if(!checkpoint_control_prefix_selected(state)) { return true; }
     if(count > state.operand_stack.size() || end == nullptr || end->getParent() != state.llvm_function ||
        (loop != nullptr && (loop->getParent() != state.llvm_function || predecessor == nullptr))) { return false; }
     out.loop_block=loop;
@@ -349,7 +358,13 @@ inline void invalidate_runtime_local_func_llvm_jit_checkpoint_value_witness(
             if(phi == nullptr || phi->getNumIncomingValues() == 0u) { return false; }
             value.value=phi;
         }
-        invalidate_runtime_local_func_llvm_jit_checkpoint_value_witness(state,value);
+        // A debug-edited prefix has no immutable/ref.func witness from its
+        // pre-branch producer, including an observation-only checkpoint profile.
+        value.known_ref_func_index=SIZE_MAX;
+        value.immutable_gc_values_witness=nullptr;
+        value.immutable_gc_values_witness_block=nullptr;
+        value.immutable_gc_values_witness_type=0u;
+        value.immutable_gc_values_witness_next_offset=SIZE_MAX;
         state.operand_stack.index_unchecked(i)=value;
     }
     return true;

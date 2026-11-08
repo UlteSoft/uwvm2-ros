@@ -39,6 +39,7 @@ class FakeBroker:
         self.status = "prepared; no Wasm instruction executed\nthread 1 module=0 function=1 byte-offset=3 generation=1\n"
 
     def request(self, command):
+        if command == "permissions": return "permissions full\n"
         self.commands.append(command)
         if command == "status":
             return self.status
@@ -91,6 +92,7 @@ class NativeBroker(FakeBroker):
         self.backtrace = NATIVE_BACKTRACE
 
     def request(self, command):
+        if command == "permissions": return "permissions full\n"
         if command == "bt 1":
             self.commands.append(command)
             return self.backtrace
@@ -207,13 +209,31 @@ class DapAdapterTests(unittest.TestCase):
             sender.close()
             receiver.close()
 
+    def test_four_permission_capabilities_and_mutations(self):
+        mutation = ("next", "stepIn", "stepOut", "setVariable", "writeMemory", "setBreakpoints", "setInstructionBreakpoints", "uwvm/wasip1Edit")
+        for level in dap.DEBUG_PERMISSIONS:
+            caps = dap.debug_capabilities(level)
+            self.assertEqual(caps["supportsWriteMemoryRequest"], level == "full")
+            self.assertEqual(caps["supportsReadMemoryRequest"], level in ("full", "read-only"))
+            self.assertEqual(caps["supportsSteppingGranularity"], level == "full")
+            for command in mutation:
+                self.assertEqual(dap.dap_permission_allowed(level, command), level == "full")
+            self.assertEqual(dap.dap_permission_allowed(level, "uwvm/dump"), level != "none")
+        for level in ("read-only", "limited"):
+            self.adapter.debug_permissions = level
+            for command in mutation:
+                response = self.send(command)[0]
+                self.assertFalse(response["success"])
+                self.assertIn("permission", response["message"])
+        self.assertFalse(self.send("attach", debugPermissions="none")[0]["success"])
+
     def test_attach_and_three_step_levels(self):
         fake = FakeBroker()
-        self.assertTrue(self.send("initialize")[0]["body"]["supportsSteppingGranularity"])
+        self.assertFalse(self.send("initialize")[0]["body"]["supportsSteppingGranularity"])
         with mock.patch.object(dap, "UnixBroker", return_value=fake):
             attached = self.send("attach", socketDir="/private/host-owned", moduleId=0)
-        self.assertEqual([item["type"] for item in attached], ["response", "event", "event"])
-        self.assertEqual(attached[2]["body"]["reason"], "entry")
+        self.assertEqual([item["type"] for item in attached], ["response", "event", "event", "event", "event"])
+        self.assertEqual(next(x for x in attached if x.get("event")=="stopped")["body"]["reason"], "entry")
         self.assertNotIn("capability", self.output.getvalue().decode())
         for granularity, request, expected in (
             ("statement", "stepIn", "step source 1 into"),
@@ -338,10 +358,10 @@ class DapAdapterTests(unittest.TestCase):
         self.assertEqual(response["body"]["totalFrames"], 1)
         return response["body"]["stackFrames"][0]
 
-    def test_native_stop_has_only_an_instruction_position_label(self):
+    def test_native_stop_is_selectable_without_fabricating_source(self):
         frame = self.native_frame()
         self.assertEqual(self.adapter.broker.commands, ["status", "bt 1"])
-        self.assertEqual((frame["line"], frame["column"], frame["presentationHint"]), (0, 0, "label"))
+        self.assertEqual((frame["line"], frame["column"], frame["presentationHint"]), (0, 0, "normal"))
         self.assertIn("Native JIT instruction", frame["name"])
         self.assertIn("Wasm origin module=1 function=1 generation=1", frame["name"])
         self.assertNotIn("byte-offset", frame["name"])
@@ -370,7 +390,7 @@ class DapAdapterTests(unittest.TestCase):
         ])[0]["body"]["breakpoints"]
         self.assertEqual([point["verified"] for point in points], [False, False])
         self.assertEqual(self.adapter.broker.commands, commands)
-        self.assertTrue(self.send("initialize")[0]["body"].get("supportsDisassembleRequest", False))
+        self.assertFalse(self.send("initialize")[0]["body"].get("supportsDisassembleRequest", False))
 
     def test_native_status_rejects_malformed_or_unbound_pc(self):
         malformed = [

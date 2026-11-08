@@ -256,7 +256,7 @@ class SourceFrameTests(unittest.TestCase):
                 self.assertEqual(self.broker.commands[before:], ["status", "print-frame 1 41 1 (*ptr).field", "status"])
                 self.assert_retired()
 
-    def test_source_expression_precedence_namespaces_and_exact_finite_limits(self):
+    def test_source_expression_precedence_namespaces_and_dynamic_input(self):
         # Pure syntax DATA. Different unary/postfix order is retained verbatim
         # for the controller's existing parse_source_expression to interpret.
         cases = (("*ptr[1]", "*ptr[1]"), ("(*ptr)[1]", "(*ptr)[1]"),
@@ -271,11 +271,13 @@ class SourceFrameTests(unittest.TestCase):
                  ("p" + "->x" * 16, "p" + "->x" * 16),
                  ("(" * 31 + "*p" + ")" * 31, "(" * 31 + "*p" + ")" * 31),
                  ("*" + "p" * 255, "*" + "p" * 255))
+        cases += tuple((text, text) for text in (
+            "p" + ".*" * 33, "*" * 33 + "p", "p" + ".x" * 33,
+            "p" + "->x" * 17, "(" * 32 + "*p" + ")" * 32, "*" + "p" * 256))
         for expression, token in cases:
             with self.subTest(expression=expression):
                 self.assertEqual(dap.validate_source_expression(expression), token)
-        invalid = ("p" + ".*" * 33, "p.?", "p. *", "p.*()", "p.*;continue", "*" * 33 + "p", "p" + ".x" * 33, "p" + "->x" * 17,
-                   "(" * 32 + "*p" + ")" * 32, "*" + "p" * 256,
+        invalid = ("p.?", "p. *", "p.*()", "p.*;continue",
                    "ptr[-9223372036854775809]", "ptr[9223372036854775808]",
                    "a b", "ns ::p", "ns:: p", "ptr.0field", "ptr[01]")
         for expression in invalid:
@@ -323,6 +325,9 @@ class SourceFrameTests(unittest.TestCase):
             expression = row["expression"]
             with self.subTest(expression=expression):
                 self.assertEqual(dap.validate_source_evaluation_expression(expression), expression)
+        for expression in corpus.get("dynamic_admission", []):
+            with self.subTest(expression=expression):
+                self.assertEqual(dap.validate_source_evaluation_expression(expression), expression)
         for expression in corpus["negative"]:
             with self.subTest(expression=expression):
                 frame = self.frames()[0]
@@ -331,7 +336,7 @@ class SourceFrameTests(unittest.TestCase):
                 self.assertFalse(result["success"], result)
                 self.assertEqual(self.broker.commands[before:], [])
 
-    def test_scalar_watch_exact_bounds_include_unselected_operands(self):
+    def test_scalar_watch_dynamic_input_includes_unselected_operands(self):
         for expression in ("1+" * 31 + "1", "!" * 30 + "1", "(" * 15 + "1" + ")" * 15,
                            "p" + ".*" * 32 + "+1", "p" + "->x" * 16 + "+1",
                            "*" + "p" + ".*" * 31 + "+1", "1+" + "a" * 254):
@@ -342,8 +347,7 @@ class SourceFrameTests(unittest.TestCase):
                            "*" + "p" + ".*" * 32 + "+1", "1+" + "a" * 255,
                            "0 && (" + "!" * 30 + "1)"):
             with self.subTest(expression=expression):
-                with self.assertRaises(ValueError):
-                    dap.validate_source_evaluation_expression(expression)
+                self.assertEqual(dap.validate_source_evaluation_expression(expression), expression)
 
     def test_scalar_watch_rejects_unsafe_unselected_arms_before_broker(self):
         cases = ("0 && call()", "1 || (value=2)", "0 && *(value + 1)",
@@ -438,6 +442,8 @@ class SourceFrameTests(unittest.TestCase):
         for ordinal, frame in enumerate(frames):
             scopes = self.send("scopes", frameId=frame["id"])["body"]["scopes"]
             expected = ["Source variables", "Wasm locals", "WASIp1 arguments", "WASIp1 environment", "WASIp1 descriptors", "WASIp1 preopens"] if ordinal == 2 else ["Caller variables unavailable"] if ordinal == 3 else ["Source variables"]
+            if ordinal == 2:
+                expected += ["WASIp1 calls (recorded)", "ROS1 calls (recorded)", "ROS2 calls (recorded)"]
             if ordinal == 2 and hasattr(self.adapter, "ros_scope_stops"):
                 expected += ["ROS capabilities (process-owned)", "ROS instances (backend sessions)", "ROS event queues (metadata only)"]
                 self.assertTrue(all(row["expensive"] and row["variablesReference"] > 0 for row in scopes[6:]))
@@ -496,7 +502,7 @@ class SourceFrameTests(unittest.TestCase):
             before = len(self.broker.commands)
             self.assertFalse(self.send("evaluate", frameId=identifier, context="watch", expression="value")["success"])
             self.assertEqual(self.broker.commands[before:], [])
-        for expression in ("value()", "value;continue", "value[+1]", "value[01]", "value\nstatus", "λ", "a" * 257):
+        for expression in ("value()", "value;continue", "value[+1]", "value[01]", "value\nstatus", "λ", "a" * 513):
             frame = self.frames()[0]
             before = len(self.broker.commands)
             self.assertFalse(self.send("evaluate", frameId=frame["id"], context="hover", expression=expression)["success"])

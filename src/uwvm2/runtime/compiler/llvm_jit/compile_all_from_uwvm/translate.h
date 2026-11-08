@@ -24,9 +24,6 @@
 
 #ifndef UWVM_MODULE
 // std
-# if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS) && !defined(UWVM_TERMINATE_IMME_WHEN_PARSE) && defined(__linux__) && !defined(UWVM_MODULE)
-#  include <uwvm2/runtime/lib/threaded_exception_abi.h>
-# endif
 # include <atomic>
 # include <bit>
 # include <climits>
@@ -46,6 +43,9 @@
 # include <uwvm2/utils/macro/push_macros.h>
 # include <uwvm2/uwvm_predefine/utils/ansies/uwvm_color_push_macro.h>
 # include <uwvm2/uwvm/runtime/macro/push_macros.h>
+# if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS) && !defined(UWVM_TERMINATE_IMME_WHEN_PARSE) && defined(__linux__) && !defined(UWVM_MODULE)
+#  include <uwvm2/runtime/lib/threaded_exception_abi.h>
+# endif
 // platform
 # if defined(UWVM_RUNTIME_LLVM_JIT)
 #  include <uwvm2/runtime/compiler/llvm_jit/pinned_version.h>
@@ -64,6 +64,11 @@
 #  include <llvm/IR/Constants.h>
 #  include <llvm/IR/Function.h>
 #  include <llvm/IR/IRBuilder.h>
+#  include "translate/memtag_disabled_ir.h"
+#  include "translate/memtag_enabled_ir.h"
+#  include <uwvm2/runtime/memtag/bridge.h>
+#  include <uwvm2/runtime/memtag/wait.h>
+#  include "translate/memtag_check_ir.h"
 #  include <llvm/IR/InlineAsm.h>
 #  include <llvm/IR/Intrinsics.h>
 #  include <llvm/IR/LLVMContext.h>
@@ -175,7 +180,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
         null_reference,
         array_out_of_bounds,
         gc_allocation_failure,
-        cast_failure
+        cast_failure,
+        memtag_violation
     };
 
     extern "C++"
@@ -198,6 +204,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
                                                               ::std::size_t memory_type_size,
                                                               [[maybe_unused]] ::std::uintptr_t frame_address,
                                                               [[maybe_unused]] ::std::uintptr_t stack_pointer) noexcept;
+
+    extern "C++" UWVM_NOINLINE void llvm_jit_memtag_trap(::std::size_t memory_index,
+        ::std::uint64_t pointer, ::std::uint64_t granule, ::std::uint32_t pointer_tag,
+        ::std::uint32_t allocation_tag) noexcept;
+
+    extern "C++" UWVM_NOINLINE void llvm_jit_managed_memtag_trap(::std::size_t memory_index,
+        ::std::uint64_t pointer, ::std::uint64_t granule, ::std::uint32_t pointer_tag,
+        ::std::uint32_t allocation_tag) UWVM_THROWS;
 
     // Selected only by the compiler's qualified managed-trap cleanup pass.
     // Unlike fatal diagnostic helpers these entries may unwind real Wasm frames.

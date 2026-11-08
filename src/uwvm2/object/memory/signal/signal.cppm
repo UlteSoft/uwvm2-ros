@@ -23,6 +23,7 @@ module;
 
 // std
 #include <cstddef>
+#include <cstdlib>
 #include <cstdint>
 #include <cstring>
 #include <limits>
@@ -50,6 +51,7 @@ import uwvm2.uwvm_predefine.io;
 import uwvm2.uwvm_predefine.utils.ansies;
 import uwvm2.utils.container;
 import uwvm2.object.memory.error;
+import uwvm2.extension.memtag.hardware_mte;
 
 #ifndef UWVM_MODULE
 # define UWVM_MODULE

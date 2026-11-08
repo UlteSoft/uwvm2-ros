@@ -36,7 +36,7 @@ class Tests(unittest.TestCase):
             request = lambda seq, command, args: adapter.handle(dict(seq=seq, type='request', command=command, arguments=args))
             request(1, 'initialize', dict(supportsVariableType=capability))
             initialize = [r for r in frames.messages(output.getvalue()) if r.get('command') == 'initialize'][0]
-            self.assertTrue(initialize['body']['supportsEvaluateForHovers'])
+            self.assertFalse(initialize['body']['supportsEvaluateForHovers'])
             output.seek(0); output.truncate()
             request(2, 'stackTrace', dict(threadId=1))
             stack = [r for r in frames.messages(output.getvalue()) if r.get('command') == 'stackTrace'][0]
@@ -99,9 +99,11 @@ class Tests(unittest.TestCase):
     def test_client_only_first_request_has_startup_wait(self):
         broker = object.__new__(dap.UnixBroker); broker.channel = Channel(); broker.first_request = True
         broker.send_raw = lambda data: None; broker.receive_raw = lambda: b'ok\n'
-        with patch.object(dap.sys, 'platform', 'linux'):
+        with patch.object(dap.sys, 'platform', 'linux'), patch.object(dap.select, 'poll') as poll:
+            poll.return_value.poll.return_value = [(1, dap.select.POLLIN)]
             self.assertEqual(broker.request('status'), 'ok\n'); broker.request('pause')
-        self.assertEqual(broker.channel.timeouts, [125, 8, 8, 8])
+            poll.return_value.poll.assert_called_once_with(None)
+        self.assertEqual(broker.channel.timeouts, [None, 8, 8, 8])
         broker.receive_raw = lambda: (_ for _ in ()).throw(TimeoutError('late packet'))
         with self.assertRaises(TimeoutError): broker.request('status')
         self.assertTrue(broker.channel.closed)
@@ -110,12 +112,15 @@ class Tests(unittest.TestCase):
         pending = [True]; channel = Channel()
         guest = type('Guest', (), {'poll': lambda self: None})()
         sent = []
-        for expected in (120, 6):
-            replies = iter((b'c'*32, b'pause', b'ok\n', b'disconnect'))
+        for first in (True, False):
+            replies = iter((b'c'*32, b'pause', *(() if first else (b'ok\n',)), b'disconnect'))
             with patch.object(server, 'checked_packet', side_effect=lambda *a: next(replies)), \
-                 patch.object(server, 'send_packet', side_effect=lambda target, data: sent.append(data)):
+                 patch.object(server, 'send_packet', side_effect=lambda target, data: sent.append(data)), \
+                 patch.object(server, 'wait_startup_reply', return_value=b'ok\n') as readiness:
                 self.assertFalse(server.serve_client(None, None, None, channel, b'c'*32, guest, pending))
-            self.assertEqual(channel.timeouts[-2:], [expected, 6])
+                self.assertEqual(readiness.call_count, int(first))
+                if first: self.assertIsNone(readiness.call_args.args[-1])
+            self.assertEqual(channel.timeouts[-2:], [6, 6])
         self.assertFalse(pending[0])
         unauthorized = [True]
         with patch.object(server, 'checked_packet', return_value=b'x'*32), self.assertRaises(RuntimeError):
@@ -128,12 +133,13 @@ class Tests(unittest.TestCase):
         guest = type('Guest', (), {'poll': lambda self: None})()
         for response in (None, server._TIMEOUT):
             channel = Channel(); pending = [True]
-            replies = iter((b'c'*32, b'pause', response))
+            replies = iter((b'c'*32, b'pause'))
             with patch.object(server, 'checked_packet', side_effect=lambda *a: next(replies)), \
-                 patch.object(server, 'send_packet'), self.assertRaises(server.VMChannelFailure):
+                 patch.object(server, 'send_packet'), \
+                 patch.object(server, 'wait_startup_reply', return_value=response), self.assertRaises(server.VMChannelFailure):
                 server.serve_client(None, None, None, channel, b'c'*32, guest, pending)
             self.assertFalse(pending[0])
-            self.assertEqual(channel.timeouts, [120, 6])
+            self.assertEqual(channel.timeouts, [6, 6])
         channel = Channel(); pending = [False]
         replies = iter((b'c'*32, b'pause'))
         def send(target, data):
@@ -157,7 +163,7 @@ class Tests(unittest.TestCase):
             def kill(self): raise AssertionError('unnecessary force kill')
         guest = Guest(); left, right = socket.socketpair(socket.AF_UNIX, socket.SOCK_SEQPACKET)
         peerfd = os.pidfd_open(os.getpid())
-        with tempfile.TemporaryDirectory(prefix='dap-integer-unit-', dir='/tmp') as name:
+        with tempfile.TemporaryDirectory(prefix='dap-integer-unit-', dir=Path(__file__).resolve().parents[2] / ".tmp") as name:
             folder = Path(name)
             args = SimpleNamespace(socket_dir=str(folder), uwvm=Path('/detached-test-data'), vm_args=['--', '-m', 'run'])
             try:

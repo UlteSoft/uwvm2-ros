@@ -23,6 +23,64 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
 #  else
     inline constexpr
 #  endif
+    ::uwvm2::utils::cmdline::parameter_return_type wasip1_single_socket_rights_callback(
+        ::uwvm2::utils::cmdline::parameter_parsing_results*,::uwvm2::utils::cmdline::parameter_parsing_results*,
+        ::uwvm2::utils::cmdline::parameter_parsing_results*) noexcept; }
+    inline constexpr ::uwvm2::utils::cmdline::parameter wasip1_single_socket_rights{
+        .name{u8"--wasip1-single-socket-rights"},
+        .describe{u8"Grant only this preopened socket or inherited stdio socket: read,write,accept,shutdown,readiness,flags,metadata. Default none; grants no interfaces."},
+        .usage{u8"<single:str> <initial-fd:i32> <base:csv|none> <accepted-child:csv|none>"},.handle=::std::addressof(details::wasip1_single_socket_rights_callback),
+        .cate=::uwvm2::utils::cmdline::categorization::wasi};
+    namespace details {
+#  if defined(UWVM_MODULE)
+    extern "C++"
+#  else
+    inline constexpr
+#  endif
+    ::uwvm2::utils::cmdline::parameter_return_type wasip1_group_socket_rights_callback(
+        ::uwvm2::utils::cmdline::parameter_parsing_results*,::uwvm2::utils::cmdline::parameter_parsing_results*,
+        ::uwvm2::utils::cmdline::parameter_parsing_results*) noexcept; }
+    inline constexpr ::uwvm2::utils::cmdline::parameter wasip1_group_socket_rights{
+        .name{u8"--wasip1-group-socket-rights"},
+        .describe{u8"Grant only this preopened socket or inherited stdio socket: read,write,accept,shutdown,readiness,flags,metadata. Default none; grants no interfaces."},
+        .usage{u8"<group:str> <initial-fd:i32> <base:csv|none> <accepted-child:csv|none>"},.handle=::std::addressof(details::wasip1_group_socket_rights_callback),
+        .cate=::uwvm2::utils::cmdline::categorization::wasi};
+    namespace details {
+#  if defined(UWVM_MODULE)
+    extern "C++"
+#  else
+    inline constexpr
+#  endif
+    ::uwvm2::utils::cmdline::parameter_return_type wasip1_global_socket_rights_callback(
+        ::uwvm2::utils::cmdline::parameter_parsing_results*,::uwvm2::utils::cmdline::parameter_parsing_results*,
+        ::uwvm2::utils::cmdline::parameter_parsing_results*) noexcept; }
+    inline constexpr ::uwvm2::utils::cmdline::parameter wasip1_global_socket_rights{
+        .name{u8"--wasip1-global-socket-rights"},
+        .describe{u8"Grant only this preopened socket or inherited stdio socket: read,write,accept,shutdown,readiness,flags,metadata. Default none; grants no interfaces."},
+        .usage{u8"<initial-fd:i32> <base:csv|none> <accepted-child:csv|none>"},.handle=::std::addressof(details::wasip1_global_socket_rights_callback),
+        .cate=::uwvm2::utils::cmdline::categorization::wasi};
+    namespace details {
+#  if defined(UWVM_MODULE)
+    extern "C++"
+#  else
+    inline constexpr
+#  endif
+    ::uwvm2::utils::cmdline::parameter_return_type wasip1_socket_abi_callback(
+        ::uwvm2::utils::cmdline::parameter_parsing_results*,::uwvm2::utils::cmdline::parameter_parsing_results*,
+        ::uwvm2::utils::cmdline::parameter_parsing_results*) noexcept; }
+    inline constexpr ::uwvm2::utils::cmdline::parameter wasip1_socket_abi{
+        .name{u8"--wasip1-socket-abi"},
+        .describe{u8"Choose the immutable wasm32 sock_accept ABI for this process: standard (default, 3 arguments) or wasix (4 arguments, peer address). Grants no interfaces or socket rights."},
+        .usage{u8"<standard|wasix>"},.handle=::std::addressof(details::wasip1_socket_abi_callback),
+        .is_exist=::std::addressof(::uwvm2::uwvm::imported::wasi::wasip1::storage::wasip1_socket_abi_is_set),
+        .cate=::uwvm2::utils::cmdline::categorization::wasi};
+
+    namespace details {
+#  if defined(UWVM_MODULE)
+    extern "C++"
+#  else
+    inline constexpr
+#  endif
     ::uwvm2::utils::cmdline::parameter_return_type wasip1_single_mount_dir_rights_callback(
         ::uwvm2::utils::cmdline::parameter_parsing_results*, ::uwvm2::utils::cmdline::parameter_parsing_results*,
         ::uwvm2::utils::cmdline::parameter_parsing_results*) noexcept; }

@@ -98,8 +98,8 @@ class Tests(unittest.TestCase):
 
     def test_capabilities_are_explicit(self):
         body = self.send("initialize")["body"]
-        self.assertTrue(body["supportsHitConditionalBreakpoints"])
-        self.assertTrue(body["supportsConditionalBreakpoints"])
+        self.assertFalse(body["supportsHitConditionalBreakpoints"])
+        self.assertFalse(body["supportsConditionalBreakpoints"])
         self.assertFalse(body["supportsLogPoints"])
 
 

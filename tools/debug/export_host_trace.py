@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stream retained DEV host-call observations to a private, readable JSON file.
+"""Stream retained host-call observations to a private, readable JSON file.
 
 Only authenticated, stop-bound broker queries are used. No guest permission is
 changed, no recording is enabled, and no native pointer is dereferenced.
@@ -290,7 +290,7 @@ def save_host_trace(request, checkpoint, path, family="all"):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--socket-dir", required=True, help="Existing private DEV broker directory")
+    parser.add_argument("--socket-dir", required=True, help="Existing private full or read-only debugger broker directory")
     parser.add_argument("--output", required=True, help="New host JSON file; existing files are refused")
     parser.add_argument("--family", choices=("all", *FAMILIES.values()), default="all")
     args = parser.parse_args()

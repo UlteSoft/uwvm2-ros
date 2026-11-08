@@ -4,11 +4,13 @@
 #include <atomic>
 #include <cstddef>
 #include <cstdlib>
+#include <exception>
 #include <limits>
 #include <memory>
 #include <new>
 #include <type_traits>
 #include <utility>
+#include <fast_io.h>
 
 #endif
 #ifndef UWVM_MODULE_EXPORT
@@ -53,6 +55,36 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             if(bytes == 0uz) { return nullptr; }
             return charge(bytes) ? ::std::malloc(bytes) : nullptr;
         }
+#if defined(__linux__)
+        // The vector keeps its original typed c_malloc deallocator. For an
+        // over-aligned value that deallocator recovers the raw malloc pointer
+        // from the preceding header, so use the matching fast_io fallback.
+        template<typename T> [[nodiscard]] T* try_c_malloc_vector_storage(::std::size_t count) noexcept
+        {
+            using native = ::fast_io::c_malloc_allocator;
+            using compatible = ::fast_io::generic_allocator_adapter<native>;
+            static_assert(!::fast_io::details::native_allocate_aligned_has_ops<native> &&
+                !::fast_io::details::has_deallocate_aligned_impl<native> &&
+                !::fast_io::details::has_deallocate_aligned_n_impl<native>,
+                "The bounded vector allocator must match the c_malloc aligned-storage contract.");
+            if(count == 0uz || count > (SIZE_MAX / sizeof(T))) { return nullptr; }
+            auto const bytes{count * sizeof(T)};
+            if constexpr(alignof(T) <= compatible::default_alignment)
+            { return static_cast<T*>(try_malloc(bytes)); }
+            else
+            {
+                constexpr auto alignment{alignof(T) < sizeof(void*) ? sizeof(void*) : alignof(T)};
+                constexpr auto overhead{alignment + sizeof(void*)};
+                if(bytes > SIZE_MAX - overhead) { return nullptr; }
+                // Charge the actual raw allocation, including alignment slack
+                // and the allocator's pointer header; failure stays nonfatal.
+                auto const request{::fast_io::details::allocator_compute_aligned_total_size_impl(alignment, bytes)};
+                auto* raw{try_malloc(request)};
+                if(raw == nullptr) { return nullptr; }
+                return static_cast<T*>(::fast_io::details::allocator_adjust_ptr_to_aligned_impl(raw, alignment));
+            }
+        }
+#endif
         [[nodiscard]] void* try_new_array(::std::size_t actual_bytes) noexcept
         { return charge(actual_bytes) ? ::operator new[](actual_bytes, ::std::nothrow) : nullptr; }
         [[nodiscard]] void* try_new_array(::std::size_t actual_bytes, ::std::align_val_t alignment) noexcept

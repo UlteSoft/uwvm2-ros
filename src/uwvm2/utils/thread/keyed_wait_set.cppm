@@ -21,6 +21,7 @@ module;
 # include <stop_token>
 #endif
 export module uwvm2.utils.thread:keyed_wait_set;
+import fast_io;
 #define UWVM_MODULE
 #define UWVM_MODULE_EXPORT export
 #include "keyed_wait_set.h"

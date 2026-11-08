@@ -20,7 +20,7 @@
         auto const count{call->arg_size()};
         bool const helper{call->getMetadata("uwvm.managed.helper.candidate") != nullptr ||
             (call->getCalledFunction() && call->getCalledFunction()->hasFnAttribute("uwvm.managed.helper"))};
-        if(!helper && count != 3u && count != 8u) { return false; }
+        if(!helper && count != 3u && count != 5u && count != 8u) { return false; }
         auto* original_target{call->getCalledOperand()};
         auto* block{call->getParent()};
         auto* continuation{block->splitBasicBlock(call->getNextNode(), "guest.trap.never")};
@@ -33,6 +33,8 @@
         builder.SetInsertPoint(block); builder.SetCurrentDebugLocation(location);
         auto* bridge{helper ? original_target : count == 3u ? get_llvm_runtime_bridge_function_symbol_value_unwrapped<
             ::uwvm2::runtime::lib::llvm_jit_managed_runtime_trap>(builder, type) :
+            count == 5u ? get_llvm_runtime_bridge_function_symbol_value_unwrapped<
+            ::uwvm2::runtime::lib::llvm_jit_managed_memtag_trap>(builder, type) :
             get_llvm_runtime_bridge_function_symbol_value_unwrapped<
             ::uwvm2::runtime::lib::llvm_jit_managed_memory_trap>(builder, type)};
         auto* invoked{emit_runtime_local_func_llvm_jit_may_throw_call(state, type, bridge, args, false)};

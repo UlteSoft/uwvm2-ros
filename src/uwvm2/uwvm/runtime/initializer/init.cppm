@@ -24,6 +24,9 @@ module;
 // std
 #include <concepts>
 #include <atomic>
+#include <array>
+#include <span>
+#include <vector>
 #include <cstddef>
 #include <cstdlib>
 #include <cstdint>
@@ -68,6 +71,19 @@ import uwvm2.uwvm.utils.ansies;
 import uwvm2.uwvm.imported.wasi.wasip1.storage;
 import uwvm2.uwvm.wasm;
 import uwvm2.uwvm.runtime.storage;
+import uwvm2.uwvm.runtime.runtime_mode;
+import uwvm2.uwvm.runtime.validator;
+import uwvm2.extension.memtag.globals;
+import uwvm2.extension.memtag.checkpoint;
+import uwvm2.extension.memtag.debug_view;
+import uwvm2.extension.memtag.hardware_mte;
+import uwvm2.runtime.memtag.native_pointer;
+import uwvm2.extension.memtag.tag_image;
+import uwvm2.extension.memtag.usage;
+import uwvm2.extension.memtag.shadow;
+import uwvm2.extension.memtag.storage;
+import uwvm2.runtime.memtag.bridge;
+import uwvm2.runtime.memtag.random;
 import :init_limit;
 import :threaded_registry_view;
 

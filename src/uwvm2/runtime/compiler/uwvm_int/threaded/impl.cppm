@@ -43,10 +43,16 @@ module;
 
 export module uwvm2.runtime.compiler.uwvm_int.threaded;
 import fast_io;
+import uwvm2.runtime.diagnostic.crash_policy;
 import uwvm2.utils.container;
 import uwvm2.uwvm.runtime.storage;
 import uwvm2.uwvm.runtime.initializer;
 import uwvm2.runtime.wasm_threads;
+import uwvm2.runtime.memtag.hardware_thread;
+import uwvm2.runtime.memtag.bridge;
+import uwvm2.runtime.memtag.wait;
+import uwvm2.extension.memtag.instruction;
+import uwvm2.runtime.compiler.shared.wasm1p1_simd;
 import uwvm2.validation.error;
 import uwvm2.validation.standard.wasm3.reference_policy;
 import uwvm2.validation.standard.wasm3.exception_immediate;

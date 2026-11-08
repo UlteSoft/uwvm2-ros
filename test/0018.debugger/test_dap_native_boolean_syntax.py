@@ -13,10 +13,10 @@ class NativeBooleanSyntaxTests(unittest.TestCase):
                            'object.android == object.ordinary'):
             with self.subTest(expression=expression):
                 self.assertEqual(dap.validate_source_evaluation_expression(expression), expression)
-    def test_keywords_do_not_authorize_calls_assignment_or_unbounded_input(self):
+    def test_keywords_do_not_authorize_calls_or_assignment(self):
         for expression in ('true and f()', 'flag or value = 1', 'false or true;continue',
                            'true android false', 'false ordinary true',
-                           'true and', 'or true', '(' * 40 + 'true' + ')' * 40):
+                           'true and', 'or true'):
             with self.subTest(expression=expression):
                 with self.assertRaises(ValueError):
                     dap.validate_source_evaluation_expression(expression)

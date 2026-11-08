@@ -61,7 +61,7 @@
 #endif
     extern "C++" llvm_jit_debug_source_binding_owner llvm_jit_debug_bind_source_host_api(::std::size_t module_id) noexcept
     {
-        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
+        if(!::uwvm2::utils::control::debug_permissions::inspection_allowed()) { return {}; }
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
         if(mode::global_runtime_mode != mode::runtime_mode_t::full_compile ||
@@ -98,7 +98,7 @@
             if(publication->debug_source_binding) { return publication->debug_source_binding; }
             auto const& functions{rec.runtime_module->local_defined_function_vec_storage};
             auto const imports{rec.runtime_module->imported_function_vec_storage.size()};
-            if(functions.size() > 65536u || functions.size() != rec.llvm_jit_debug_full_entry_generations.size() ||
+            if(functions.size() != rec.llvm_jit_debug_full_entry_generations.size() ||
                functions.size() != rec.llvm_jit_debug_full_safe_points.size()) { return {}; }
             ::std::shared_ptr<llvm_jit_debug_source_binding> candidate{new llvm_jit_debug_source_binding};
             // [canonical source owner][live unique code publication] owner_end
@@ -128,6 +128,10 @@
                 if(begin == 0u || end < begin || code_begin < begin || code_end < code_begin || code_end > end)
                 { valid = false; return; }
                 candidate->image_.code_section_content_size = code_end - code_begin;
+                // Metadata is copied from this already validated immutable module.
+                // Its actual extent bounds the aggregate; a valid compiler section
+                // does not lose source authority because it crosses a fixed byte quota.
+                auto const source_bytes{end - begin};
                 ::std::size_t copied{};
                 for(auto const& entry : custom.customs)
                 {
@@ -142,11 +146,10 @@
                     if(!debug_name && name != u8"name" && name != u8"external_debug_info" && name != u8".gnu_debugaltlink" && name != u8".gnu_debuglink") { continue; }
                     auto const payload_begin{reinterpret_cast<::std::uintptr_t>(entry.custom_begin)};
                     auto const payload_end{reinterpret_cast<::std::uintptr_t>(entry.sec_span.sec_end)};
-                    if(name == u8"name" && (payload_end < payload_begin || payload_end - payload_begin > 1024u * 1024u || candidate->image_.sections.size()==64u ||
-                        payload_end-payload_begin>8u*1024u*1024u-copied)) { continue; }
-                    if(name.size() > 64u || candidate->image_.sections.size() == 64u || payload_begin < begin ||
-                       payload_end < payload_begin || payload_end > end || payload_end - payload_begin > 1024u * 1024u ||
-                       payload_end - payload_begin > 8u * 1024u * 1024u - copied) { valid = false; return; }
+                    if(payload_begin < begin ||
+                       payload_end < payload_begin || payload_end > end || copied > source_bytes ||
+                       name.size() > source_bytes - copied ||
+                       payload_end - payload_begin > source_bytes - copied - name.size()) { valid = false; return; }
                     llvm_jit_debug_source_section saved{};
                     // [canonical source-owned name/payload ...] checked end
                     // [safe                                  ] one-past
@@ -154,7 +157,7 @@
                     saved.name.assign(reinterpret_cast<char const*>(name.data()), name.size());
                     saved.payload.assign(reinterpret_cast<::std::byte const*>(payload_begin),
                                          reinterpret_cast<::std::byte const*>(payload_end));
-                    copied += saved.payload.size(); candidate->image_.sections.push_back(::std::move(saved));
+                    copied += saved.name.size() + saved.payload.size(); candidate->image_.sections.push_back(::std::move(saved));
                 }
                 // Copy import/export fallbacks from the same canonical parsed
                 // module. Per-kind indices never mix function and global spaces.
@@ -165,8 +168,8 @@
                 auto add_symbol{[&](bool global, ::std::uint64_t index, auto name)
                 {
                     auto const address{reinterpret_cast<::std::uintptr_t>(name.data())};
-                    if(name.empty() || name.size()>4096u || address<begin || address>end || name.size()>end-address ||
-                       candidate->image_.symbols.size()>=65536u || name.size()>8u*1024u*1024u-copied) { return; }
+                    if(name.empty() || address<begin || address>end || name.size()>end-address ||
+                       copied>source_bytes || name.size()>source_bytes-copied) { return; }
                     candidate->image_.symbols.push_back({index,global,{reinterpret_cast<char const*>(name.data()),name.size()}});
                     copied+=name.size();
                 }};
@@ -201,8 +204,11 @@
                     //  ^^ only checked integer offsets are copied, not parser pointers.
                     llvm_jit_debug_source_function saved{imports + local, expression - code_begin, expression_end - expression, 1u};
                     auto const bytes{expression_end - expression};
-                    constexpr ::std::size_t max_expression_bytes{65536u}, max_module_expression_bytes{8u * 1024u * 1024u};
-                    if(bytes <= max_expression_bytes && bytes <= max_module_expression_bytes - expression_bytes_copied)
+                    // Every expression belongs to this immutable Code section.
+                    // Bound aggregate copies by its real extent, not a fixed
+                    // per-function or per-module debug capacity.
+                    if(expression_bytes_copied > code_end - code_begin || bytes > code_end - code_begin - expression_bytes_copied)
+                    { valid = false; return; }
                     {
                         // [canonical source Code ... expression bytes ...] code_end
                         // [safe                                          ] unsafe (one-past)
@@ -219,15 +225,14 @@
                         auto const bitmap_bytes{bytes/8u + (bytes%8u != 0u)};
                         if(g_runtime.debug_granularity == llvm_jit_debug_safe_point_granularity::instruction &&
                            point.bits != nullptr && point.byte_count == bitmap_bytes &&
-                           bitmap_bytes <= 1024u*1024u - instruction_bitmap_bytes_copied)
+                           instruction_bitmap_bytes_copied <= code_end - code_begin &&
+                           bitmap_bytes <= code_end - code_begin - instruction_bitmap_bytes_copied)
                         {
                             saved.instruction_safe_point_bits.assign(point.bits,point.bits+point.byte_count);
                             saved.instruction_safe_points_complete = true;
                             instruction_bitmap_bytes_copied += static_cast<::std::size_t>(bitmap_bytes);
                         }
                     }
-                    // Large bodies preserve source stepping/metadata. Only their
-                    // optional opcode category inspection is reported unavailable.
                     candidate->image_.functions.push_back(::std::move(saved));
                 }
             }(::uwvm2::uwvm::wasm::feature::wasm_binfmt1_features);
@@ -243,7 +248,7 @@
     extern "C++" bool llvm_jit_debug_copy_source_image_host_api(llvm_jit_debug_source_binding_owner const& binding,
         llvm_jit_debug_source_image& out) noexcept
     {
-        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
+        if(!::uwvm2::utils::control::debug_permissions::inspection_allowed()) { return {}; }
         out = {};
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
@@ -281,7 +286,7 @@
         ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const& ticket,
         ::std::uint_least64_t participant, llvm_jit_debug_source_position& out) noexcept
     {
-        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
+        if(!::uwvm2::utils::control::debug_permissions::inspection_allowed()) { return {}; }
         out = {};
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;

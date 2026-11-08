@@ -23,6 +23,9 @@
 
 #ifndef UWVM_MODULE
 // std
+# include <uwvm2/extension/memtag/debug_types.h>
+# include <uwvm2/runtime/diagnostic/wasm_coredump.h>
+# include <uwvm2/runtime/diagnostic/crash_policy.h>
 # include <array>
 # include <atomic>
 # include <cstddef>
@@ -76,6 +79,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
 #endif
 
 #if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
+    // Host-only stopped DEV export. The actual ticket, current epoch and
+    // canonical source owners are revalidated; output never contains native pointers.
+    extern "C++" ::uwvm2::runtime::diagnostic::wasm_coredump::result runtime_dump_stopped_guest_host_api(
+        ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const&,
+        ::std::uint64_t expected_epoch, ::std::string_view executable, ::std::string_view reason,
+        void* writer_context, ::uwvm2::runtime::diagnostic::wasm_coredump::write_function) noexcept;
     // Privileged native foundation entry; never exported as a guest import.
     // Its callback owns/parses/initializes real storage while this same runtime's
     // execution_domain maintenance callback excludes entries and publication.
@@ -1098,6 +1107,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
         ::std::uint_least32_t memory_index, ::std::uint_least64_t offset, void* destination,
         ::std::size_t size) noexcept;
 
+    // Same complete-stop and guest-owner requirements as read_memory above.
+    // One allocation-tag byte per intersecting 16-byte granule; never a host
+    // address or a copied shadow pointer. Disabled is distinct from zero tags.
+    extern "C++" ::uwvm2::extension::memtag::debug_tag_view llvm_jit_debug_read_memory_tags_host_api(
+        ::std::uint_least64_t module_index, ::std::uint_least32_t memory_index,
+        ::std::uint_least64_t offset, ::std::size_t bytes, ::std::uint8_t* destination,
+        ::std::size_t capacity) noexcept;
+
     enum class llvm_jit_debug_replace_status : unsigned
     { replaced, unsupported_mode, invalid_state, invalid_target, stale_generation, invalid_body, abi_mismatch, compile_failure, exhausted };
     struct llvm_jit_debug_replace_result
@@ -1366,6 +1383,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
 
 #endif
 
+    // Observation-only identity of the active builtin call's immediate Wasm owner.
+    // Borrowed names must be copied before the call returns. This query grants no
+    // interface, operation, capability, module ancestry or management authority.
+    struct host_observer_caller_identity
+    {
+        void const* runtime_instance{};
+        ::std::uint_least64_t generation{};
+        ::uwvm2::utils::container::u8string_view module_name{};
+    };
+    extern "C++" bool builtin_observed_caller_identity_host_api(host_observer_caller_identity& out) noexcept;
+
     // Internal trusted identity for builtin ROS imports. The name borrows the admitted runtime generation;
     // it must be copied before the host call ends. No guest argument supplies any part of this identity.
     struct ros_caller_identity
@@ -1408,6 +1436,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
     extern "C++" ::std::size_t preload_memory_descriptor_count_host_api() noexcept;
     extern "C++" bool preload_memory_descriptor_at_host_api(::std::size_t descriptor_index,
                                                             ::uwvm2::uwvm::wasm::type::uwvm_preload_memory_descriptor_t* out) noexcept;
+    extern "C++" bool preload_memory_normalize_range_host_api(::std::size_t memory_index, ::std::uint_least64_t offset, ::std::size_t size, ::std::uint64_t& normalized) noexcept;
+    extern "C++" bool preload_memory_range_host_api(::std::size_t memory_index, ::std::uint_least64_t offset, ::std::size_t size) noexcept;
     extern "C++" bool preload_memory_read_host_api(::std::size_t memory_index, ::std::uint_least64_t offset, void* destination, ::std::size_t size) noexcept;
     extern "C++" bool preload_memory_write_host_api(::std::size_t memory_index, ::std::uint_least64_t offset, void const* source, ::std::size_t size) noexcept;
 }  // namespace uwvm2::runtime::lib

@@ -2,29 +2,40 @@
 // Only an immutable declared minimum is a lifetime-safe bound: a grown size may
 // shrink on checkpoint restore. Imported/provider memories keep minimum zero.
 // This proof does not assume any host access width is atomic or naturally aligned.
+[[nodiscard]] inline bool llvm_jit_address_span_within_minimum(
+    ::llvm::Value* address, ::std::uint64_t static_offset, ::std::size_t access_size,
+    ::std::uint64_t minimum, ::llvm::DataLayout const& layout) noexcept
+{
+    if(address == nullptr || access_size == 0uz || minimum == 0u ||
+       (!address->getType()->isIntegerTy(32u) && !address->getType()->isIntegerTy(64u))) { return false; }
+    // This is an unsigned, conservative upper bound. Unknown bits stay one;
+    // no assumption is made from memarg alignment, a current grown length,
+    // profile data, or a pointer tag. In particular it reasons through the
+    // original low address bits preserved by memtag.load/random lowering.
+    auto const maximum{::llvm::computeKnownBits(address, layout).getMaxValue().getZExtValue()};
+    return maximum <= minimum && static_offset <= minimum - maximum &&
+        access_size <= minimum - maximum - static_offset;
+}
+
 [[nodiscard]] inline bool llvm_jit_memory_span_within_declared_minimum(
     runtime_memory_access_info_t const& info, ::llvm::Value* address,
     ::std::uint64_t static_offset, ::std::size_t access_size) noexcept
 {
-    if(address == nullptr || access_size == 0uz ||
+    if(address == nullptr ||
        (!address->getType()->isIntegerTy(32u) && !address->getType()->isIntegerTy(64u))) { return false; }
-    ::llvm::ConstantInt* bound{::llvm::dyn_cast<::llvm::ConstantInt>(address)};
-    if(bound == nullptr)
+    auto const instruction{::llvm::dyn_cast<::llvm::Instruction>(address)};
+    // Constants need no data layout. For other values use their real module,
+    // never infer native pointer width from the Wasm address type.
+    if(auto const constant{::llvm::dyn_cast<::llvm::ConstantInt>(address)})
     {
-        // x & mask is unsigned and never exceeds mask, including for negative x.
-        // Other dynamic expressions keep the existing fault/bounds path.
-        if(auto const operation{::llvm::dyn_cast<::llvm::BinaryOperator>(address)};
-           operation != nullptr && operation->getOpcode() == ::llvm::Instruction::And)
-        {
-            bound = ::llvm::dyn_cast<::llvm::ConstantInt>(operation->getOperand(0u));
-            if(bound == nullptr) { bound = ::llvm::dyn_cast<::llvm::ConstantInt>(operation->getOperand(1u)); }
-        }
+        auto const maximum{constant->getZExtValue()};
+        auto const minimum{info.declared_minimum_byte_length};
+        return access_size != 0uz && maximum <= minimum && static_offset <= minimum-maximum &&
+            access_size <= minimum-maximum-static_offset;
     }
-    if(bound == nullptr) { return false; }
-    auto const maximum{bound->getZExtValue()};
-    auto const minimum{info.declared_minimum_byte_length};
-    return maximum <= minimum && static_offset <= minimum - maximum &&
-        access_size <= minimum - maximum - static_offset;
+    if(instruction == nullptr || instruction->getModule() == nullptr) { return false; }
+    return llvm_jit_address_span_within_minimum(address, static_offset, access_size,
+        info.declared_minimum_byte_length, instruction->getModule()->getDataLayout());
 }
 
 
@@ -194,7 +205,8 @@ template <typename LoadLength>
 [[nodiscard]] inline ::llvm::Value* emit_llvm_jit_memory_address(
     ::llvm::IRBuilder<>& b, ::llvm::Value* base, ::llvm::Value* address,
     ::std::uint64_t static_offset, ::std::size_t access_size,
-    llvm_jit_memory_protection protection, ::std::uint64_t partial_limit, LoadLength&& load_length, ::std::size_t memory_index = 0uz) noexcept
+    llvm_jit_memory_protection protection, ::std::uint64_t partial_limit, LoadLength&& load_length,
+    ::std::size_t memory_index = 0uz, ::std::uint64_t declared_minimum = 0u) noexcept
 {
     if(base == nullptr || address == nullptr || !address->getType()->isIntegerTy() || access_size == 0uz) { return nullptr; }
     auto address_bits{address->getType()->getIntegerBitWidth()};
@@ -227,6 +239,13 @@ template <typename LoadLength>
 
     auto const check{[&]() noexcept -> bool
     {
+        // Only the owner's immutable declared minimum can remove a bounds
+        // read. Shared growth, checkpoint restore and calls cannot invalidate
+        // that minimum. Imported/provider owners supply zero and keep checks.
+        // Tag proofs below are independent and are never removed by this test.
+        if((pointer_bits == 64u || declared_minimum <= 0xffff'ffffull) &&
+           llvm_jit_address_span_within_minimum(address, static_offset, access_size,
+               declared_minimum, module.getDataLayout())) { return true; }
         auto length{load_length()};
         if(length == nullptr) { return false; }
         // The native memory extent is size_t. Reject an inconsistent bridge ABI
@@ -266,7 +285,7 @@ template <typename LoadLength>
     return b.CreateGEP(b.getInt8Ty(), base, index, "memory.addr");
 }
 
-[[nodiscard]] inline ::llvm::Value* emit_llvm_jit_memory_length(runtime_local_func_llvm_jit_emit_state_t& state) noexcept
+[[nodiscard]] inline ::llvm::Value* emit_llvm_jit_memory_length(runtime_local_func_llvm_jit_emit_state_t& state, bool bounds_only = false) noexcept
 {
     auto& info{state.selected_memory_access_info};
     auto module{state.local_func_storage_ptr->runtime_module_ptr};
@@ -282,6 +301,30 @@ template <typename LoadLength>
     auto load{b.CreateLoad(type, pointer, "memory.length")};
     load->setAlignment(::llvm::Align{alignof(::std::uintptr_t)});
     if constexpr(runtime_native_memory_t::can_mmap) { load->setAtomic(::llvm::AtomicOrdering::Acquire); }
+    // Preserve the same immutable-owner lower bound through later LLVM
+    // simplification. Locals/PHIs and tag recomposition can hide a provable
+    // address range during initial emission. Range metadata removes redundant
+    // comparisons once those expressions simplify; it does NOT turn an acquire
+    // into a plain load or assert that memory cannot grow.
+    if(info.declared_minimum_byte_length != 0uz)
+    {
+        load->setMetadata(::llvm::LLVMContext::MD_range, ::llvm::MDNode::get(b.getContext(), {
+            ::llvm::ConstantAsMetadata::get(::llvm::ConstantInt::get(type,info.declared_minimum_byte_length)),
+            ::llvm::ConstantAsMetadata::get(::llvm::ConstantInt::get(type,0u))}));
+    }
+    if constexpr(runtime_native_memory_t::can_mmap)
+    {
+        // Only a stable owner's internal bounds read may be discarded after
+        // optimization proves that its current length is no longer used.
+        // Version this private witness; memory.size and Guest atomic reads
+        // never enter this path with bounds_only set.
+        if(bounds_only && info.declared_minimum_byte_length != 0uz)
+        {
+            load->setMetadata("uwvm.bounds.minimum", ::llvm::MDNode::get(b.getContext(), {
+                ::llvm::ConstantAsMetadata::get(b.getInt32(1u)),
+                ::llvm::ConstantAsMetadata::get(::llvm::ConstantInt::get(type, info.declared_minimum_byte_length))}));
+        }
+    }
     return load;
 }
 
@@ -298,6 +341,11 @@ template <typename LoadLength>
     }
     auto const& info{state.selected_memory_access_info};
     if(info.memory_p == nullptr) { return nullptr; } // Provider-owned accesses must keep their callback/lock lifetime.
+    // A stable base is not a tag-lifetime lease. Decide BEFORE registering a
+    // host data/shadow span or emitting any GEP/check/load: the complete shared
+    // tagged scalar/atomic operation must execute in its authenticated helper.
+    if(info.memory_p->memtag_shadow.enabled() && info.memory_p->memtag_shadow.shared())
+    { return nullptr; }
     if constexpr(!runtime_native_memory_t::can_mmap && runtime_native_memory_t::support_multi_thread)
     { return nullptr; } // Moving shared allocations need a pin spanning the actual load/store, not just a snapshot.
 
@@ -336,8 +384,70 @@ template <typename LoadLength>
         load->setAlignment(::llvm::Align{alignof(::std::uintptr_t)});
         base = load;
     }
+    auto const raw_address{address};
+    bool const tagged{info.memory_p->memtag_shadow.enabled()};
+    if(tagged)
+    {
+        // Owner policy is immutable during execution. This is a C++ translation
+        // branch, not a generated runtime flag check. Ordinary IR is unchanged.
+        if(!state.execute_memtag || !runtime_native_memory_t::can_mmap || access_size > 16u ||
+           address == nullptr || (!address->getType()->isIntegerTy(32u) && !address->getType()->isIntegerTy(64u)))
+        { return nullptr; }
+        auto const address64{address->getType()->isIntegerTy(64u)};
+        if(info.memory_p->memtag_shadow.width() != (address64 ?
+            ::uwvm2::extension::memtag::address_width::i64 : ::uwvm2::extension::memtag::address_width::i32))
+        { return nullptr; }
+        auto const mask{address64 ? 0x00ffffffffffffffull : 0x0fffffffull};
+        address = b.CreateAnd(address, ::llvm::ConstantInt::get(address->getType(), mask), "memory.untagged");
+        protection = llvm_jit_memory_protection::software;
+    }
     auto pointer{emit_llvm_jit_memory_address(b, base, address, static_offset, access_size, protection,
-                                        get_runtime_partial_protection_limit_escape_offset(), [&]() noexcept { return emit_llvm_jit_memory_length(state); }, state.current_memory_index)};
+                                        get_runtime_partial_protection_limit_escape_offset(), [&]() noexcept { return emit_llvm_jit_memory_length(state, true); }, state.current_memory_index, info.declared_minimum_byte_length)};
+    if(pointer != nullptr && tagged)
+    {
+        auto const& shadow{info.memory_p->memtag_shadow};
+        auto const tag_extent{shadow.maximum_memory_bytes() / 16u + (shadow.maximum_memory_bytes() % 16u != 0u)};
+        if(tag_extent > SIZE_MAX || !shadow.stable_address() || shadow.tag_data() == nullptr) { return nullptr; }
+        auto tag_name{::uwvm2::utils::container::u8concat_uwvm(get_llvm_runtime_module_symbol_prefix(*module),
+            u8"_memory", state.current_memory_index, u8"_memtag")};
+        auto const tags{get_llvm_external_host_byte_span_pointer(b,reinterpret_cast<::std::uintptr_t>(shadow.tag_data()),
+            static_cast<::std::size_t>(tag_extent),::uwvm2::utils::container::u8string_view{tag_name.data(),tag_name.size()})};
+        auto const effective{b.CreateAdd(b.CreateZExtOrTrunc(address,b.getInt64Ty()),b.getInt64(static_offset))};
+        bool emitted{true};
+        if(!emit_memtag_scalar_check(b,tags,raw_address,effective,access_size,shadow.shared(),
+            [&](::llvm::Value* raw, ::llvm::Value* granule, ::llvm::Value* pointer_tag, ::llvm::Value* stored_tag) noexcept
+            {
+                auto const native{b.getIntNTy(sizeof(::std::uintptr_t)*CHAR_BIT)};
+                auto const type{::llvm::FunctionType::get(b.getVoidTy(),
+                    {native,b.getInt64Ty(),b.getInt64Ty(),b.getInt32Ty(),b.getInt32Ty()},false)};
+                auto const bridge{get_llvm_runtime_bridge_function_symbol_value<
+                    ::uwvm2::runtime::lib::llvm_jit_memtag_trap>(b,type)};
+                if(bridge == nullptr) { emitted = false; b.CreateUnreachable(); return; }
+                auto const call{b.CreateCall(type,bridge,{::llvm::ConstantInt::get(native,
+                    info.memory_p->diagnostic_owner_memory_index),raw,granule,pointer_tag,stored_tag})};
+                call->setTailCallKind(::llvm::CallInst::TCK_NoTail);
+                // This five-argument Guest trap uses the same final managed
+                // Invoke/cleanup qualification as integer and bounds traps.
+                call->setMetadata("uwvm.managed.trap.candidate", ::llvm::MDNode::get(b.getContext(), {}));
+                apply_llvm_jit_host_calling_conv(call);
+                emit_llvm_jit_memory_clobber(b);
+                b.CreateUnreachable();
+            }) || !emitted) { return nullptr; }
+#if defined(__linux__) && defined(__aarch64__)
+        if(shadow.hardware_selected())
+        {
+            // Software64 retains its full eight-bit proof; hardware mirrors the
+            // low four bits. This baseline does not remove software comparisons.
+            auto const logical_tag{b.CreateAnd(b.CreateLShr(
+                b.CreateZExtOrTrunc(raw_address,b.getInt64Ty()),
+                b.getInt64(raw_address->getType()->isIntegerTy(32u) ? 28u : 56u)),b.getInt64(15u))};
+            auto const native_address{b.CreateAnd(b.CreatePtrToInt(pointer,b.getInt64Ty()),
+                b.getInt64(0x00ffffffffffffffull))};
+            pointer = b.CreateIntToPtr(b.CreateOr(native_address,b.CreateShl(logical_tag,b.getInt64(56u))),
+                pointer->getType(),"memory.hardware.tagged");
+        }
+#endif
+    }
     if(pointer != nullptr && is_store && protection != llvm_jit_memory_protection::software)
     {
         auto effective{b.CreateAdd(b.CreateZExtOrTrunc(address, b.getInt64Ty()), b.getInt64(static_offset))};

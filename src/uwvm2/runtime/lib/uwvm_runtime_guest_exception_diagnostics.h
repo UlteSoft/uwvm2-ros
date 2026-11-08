@@ -177,7 +177,8 @@
                 // fault signal. Stop through the same process exit coordinator.
                 ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
                     u8"uwvm: [error] uncaught Guest exception; execution stopped");
-                ::uwvm2::utils::thread::process_exit::request_process_exit(126u);
+                apply_guest_crash_policy(trap_kind::uncatched_int_tag,true);
+                ::uwvm2::utils::thread::process_exit::request_process_exit(::uwvm2::runtime::diagnostic::crash::exit_status());
             }
 #endif
             // This catch owns the immutable value/trace after all callee cleanup. Never reconstruct
@@ -280,6 +281,11 @@
                 }
                 ::fast_io::io::print(output, u8"\n");
             }
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            apply_guest_crash_policy(trap_kind::uncatched_int_tag,true);
+            ::uwvm2::utils::thread::process_exit::request_process_exit(
+                ::uwvm2::runtime::diagnostic::crash::exit_status());
+#endif
             ::fast_io::fast_terminate();
         }
 #endif

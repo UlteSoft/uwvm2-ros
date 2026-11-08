@@ -50,10 +50,22 @@
             auto const next=old+delta;result.attempted_length=next;
             if(base>UINTPTR_MAX-next)return result;
             if(delta==0u){result.status=phase::success;return result;}
+            if(memtag_shadow.enabled())
+            {
+                auto const shadow_error{memtag_shadow.prepare_growth(next)};
+                if(shadow_error != ::uwvm2::extension::memtag::storage_error::none)
+                {
+                    result.status = shadow_error == ::uwvm2::extension::memtag::storage_error::capacity_exceeded ||
+                                    shadow_error == ::uwvm2::extension::memtag::storage_error::address_not_representable
+                                    ? phase::limit : phase::commit_failed;
+                    return result;
+                }
+            }
             // Both ends are exact native page boundaries, so [base+old,base+next)
             // is disjoint from ALL previously valid bytes, including rollback.
             auto* begin=memory_begin+old;
-            if(details::threaded_profile_mprotect(begin,delta,PROT_READ|PROT_WRITE)!=0)
+            if(details::threaded_profile_mprotect(begin,delta,PROT_READ|PROT_WRITE|\
+                ::uwvm2::extension::memtag::hardware_mte::protection_for(memtag_shadow.hardware_active()))!=0)
             {
                 result.os_error=errno;
                 // POSIX may partially change permissions before an error.

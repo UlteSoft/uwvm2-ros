@@ -32,6 +32,7 @@ module;
 export module uwvm2.validation.standard.wasm1p1:validator;
 
 import fast_io;
+import uwvm2.extension.memtag.instruction;
 import uwvm2.utils.container;
 import uwvm2.utils.debug;
 import uwvm2.utils.intrinsics;

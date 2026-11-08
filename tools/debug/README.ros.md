@@ -1,18 +1,13 @@
-# ROS diagnostics in the DEV DAP debugger
+# ROS diagnostics in the DAP debugger
 
-The adapter exposes the DEV Runtime's existing read-only ROS Host
+The adapter exposes the inspected Runtime's existing read-only ROS Host
 snapshot through `uwvm/rosState` and three Variables scopes. It uses the same
 authenticated broker and cooperative Runtime stop as other debugger requests.
 It creates no ROS context, session, capability, queue, publisher or subscriber.
 It cannot open, revoke, grant, refresh or consume a capability or event.
 
 
-The robot product requires an explicit `--management-profile dev` at trusted
-launch and a separate authenticated control FD/HANDLE. The Linux secure server
-passes this profile itself. Default RELEASE execution rejects this interactive
-channel, including DAP live variables, readMemory, writeMemory, REPL, scripts,
-stepping and status-wrapped mutation. Hiding a DAP capability is not the security
-boundary: the VM controller and cold runtime APIs enforce the same sealed policy.
+The robot product uses immutable `--debug-permissions full|read-only|limited|none`. Full and read-only permissions allow these sensitive ROS views. Limited permits only non-sensitive diagnostics; none denies the endpoint. The authenticated host broker preserves the VM command line, and `-Rdbg` defaults to full. Permissions never grant ROS interfaces or resources. See [Debugger permissions](../../documents/command-line/debug-permissions.md).
 
 At a cooperative frame-zero stop the Variables view offers:
 
@@ -115,19 +110,19 @@ Runtime integration Guest prints `pause`, `quit`, `replace` and `wasm-script`
 as WASI stdout and requires the real controller to remain running. That source
 assertion becomes transport evidence only when the real job executes.
 
-An explicitly authorized DEV execution domain may change guest code while
+A debugger with explicit full permissions may change guest code while
 continuing its existing ROS contract. Function editing does not add permissions,
-reissue quotas or clear an already retired authority. RELEASE rejects this debug
-replacement entry; separately authorized release updates use their own transaction
+reissue quotas or clear an already retired authority. Read-only, limited and none reject this debug
+replacement entry; separately authorized production updates use their own transaction
 boundary. Failed preparation/commit never creates replacement authority.
 
-For an active DEV contract, function publication retains the original capability,
+For an active ROS contract, function publication retains the original capability,
 session and quota owners. It does not retire or recreate them merely because
 code changed. The retirement cleanup hook acts only on an already retired actual
 module incarnation; no command clears that retirement flag. Existing native ROS
-effects remain real effects. Full-world DEV reconstruction currently refuses
+effects remain real effects. Full-world debugger reconstruction currently refuses
 ROS providers because their resource handoff is not implemented; see
-[DEV world rebuild](../../documents/runtime/dev-world-rebuild.md).
+[Debugger world rebuild](../../documents/runtime/dev-world-rebuild.md).
 
 DAP references are invalidated **before** sending `replace` or `wasm-script`,
 even for malformed/rejected requests and transport errors. Successful

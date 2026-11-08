@@ -1,10 +1,6 @@
-# RELEASE diagnostics
+# Non-sensitive runtime diagnostics
 
-Trusted startup permanently seals full debugging in RELEASE, the default robot
-profile. `--mode debug` and `--runtime-debug` request a bounded final diagnostic
-record; they do not install a controller. All cold debugger, mutation, script,
-checkpoint and source-replacement APIs still enforce the actual profile gate.
-DEV requires its own explicit startup grant and authenticated debugger endpoint.
+The separate metadata endpoint is available with full, read-only or limited debugger permissions. None refuses it. This endpoint never provides interactive inspection or mutation; see [Debugger permissions](../command-line/debug-permissions.md) for the independently selected full/partial dump channel.
 
 On Linux LLVM full, `--diagnostic-control-fd <fd>` grants an independent observer
 on an inherited AF_UNIX SOCK_SEQPACKET socket. The launcher should enable

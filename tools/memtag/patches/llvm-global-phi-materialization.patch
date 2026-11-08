@@ -1,0 +1,336 @@
+diff --git a/llvm/lib/Target/WebAssembly/WebAssemblyGlobalsTagging.cpp b/llvm/lib/Target/WebAssembly/WebAssemblyGlobalsTagging.cpp
+--- a/llvm/lib/Target/WebAssembly/WebAssemblyGlobalsTagging.cpp
++++ b/llvm/lib/Target/WebAssembly/WebAssemblyGlobalsTagging.cpp
+@@ -127,8 +127,8 @@
+ 
+ static bool
+ containsTaggedGlobal(const Constant *C,
+-                     const DenseSet<const GlobalVariable *> &TaggedGlobals) {
+-  if (const auto *G = dyn_cast<GlobalVariable>(C))
++                     const DenseSet<const GlobalValue *> &TaggedGlobals) {
++  if (const auto *G = dyn_cast<GlobalValue>(C))
+     return TaggedGlobals.contains(G);
+   for (const Value *Op : C->operands())
+     if (const auto *OpC = dyn_cast<Constant>(Op))
+@@ -147,28 +147,77 @@
+ class TaggedGlobalUseMaterializer {
+ public:
+   TaggedGlobalUseMaterializer(
+-      Function &F, const DenseSet<const GlobalVariable *> &TaggedGlobals,
++      Function &F, const DenseSet<const GlobalValue *> &TaggedGlobals,
+       Function *MemtagLoad)
+       : F(F), TaggedGlobals(TaggedGlobals), MemtagLoad(MemtagLoad) {}
+ 
+   void run() {
++    // Materialization can split the entry block and create PHIs. Visit only
++    // original instructions: rewriting a generated fallback pointer would
++    // otherwise turn the new PHI into its own incoming value.
++    SmallVector<Instruction *> Worklist;
+     for (BasicBlock &BB : F)
+       for (Instruction &I : BB)
+-        rewriteOperands(I);
++        Worklist.push_back(&I);
++    for (Instruction *I : Worklist)
++      rewriteOperands(*I);
+   }
+ 
+ private:
+-  Value *getTaggedPtr(GlobalVariable *G) {
++  Value *getTaggedPtr(GlobalValue *G) {
+     auto It = TaggedPtrs.find(G);
+     if (It != TaggedPtrs.end())
+       return It->second;
+ 
+     BasicBlock &Entry = F.getEntryBlock();
+-    IRBuilder<> Builder(&*Entry.getFirstInsertionPt());
+-    CallInst *TaggedPtr =
++    if (auto *Variable = dyn_cast<GlobalVariable>(G);
++        Variable && !Variable->isDeclaration()) {
++      IRBuilder<> Builder(&*Entry.getFirstInsertionPt());
++      CallInst *TaggedPtr =
++          Builder.CreateCall(MemtagLoad, {Builder.getInt32(0), G});
++      TaggedPtrs.insert({G, TaggedPtr});
++      return TaggedPtr;
++    }
++
++    // External data declarations also describe linker address constants such
++    // as __heap_end. An address exactly at/past memory end is valid for address
++    // arithmetic, but there is no allocation tag to read there. Preserve that
++    // raw address; a later actual dereference still performs ordinary bounds
++    // and tag checks. Do not weaken memtag.load or maintain a symbol blacklist.
++    auto *IntPtrTy = F.getParent()->getDataLayout().getIntPtrType(F.getContext());
++    auto *Continue = Entry.splitBasicBlock(Entry.getFirstInsertionPt(),
++                                          "memtag.global.cont");
++    Entry.getTerminator()->eraseFromParent();
++    auto *Load = BasicBlock::Create(F.getContext(), "memtag.global.load", &F,
++                                   Continue);
++    IRBuilder<> Builder(&Entry);
++    Value *Address = Builder.CreatePtrToInt(G, IntPtrTy);
++    Function *MemorySize = Intrinsic::getOrInsertDeclaration(
++        F.getParent(), Intrinsic::wasm_memory_size, {IntPtrTy});
++    Value *Pages = Builder.CreateCall(MemorySize, {Builder.getInt32(0)});
++    // Compare page numbers instead of multiplying page count by 65536, which
++    // would overflow at the full memory32/memory64 address-space boundary.
++    Value *Inside = Builder.CreateICmpULT(
++        Builder.CreateLShr(Address, 16), Pages);
++    // An unresolved extern_weak data symbol has the null address. Loading
++    // granule zero's allocation tag would turn it into a nonnull pointer if
++    // that granule was retagged. Keep weak null tests independent of shadow
++    // contents; a real null dereference still goes through runtime checking.
++    if (G->hasExternalWeakLinkage())
++      Inside = Builder.CreateAnd(
++          Inside, Builder.CreateICmpNE(
++                      G, ConstantPointerNull::get(cast<PointerType>(G->getType()))));
++    Builder.CreateCondBr(Inside, Load, Continue);
++    Builder.SetInsertPoint(Load);
++    Value *TaggedPtr =
+         Builder.CreateCall(MemtagLoad, {Builder.getInt32(0), G});
+-    TaggedPtrs.insert({G, TaggedPtr});
+-    return TaggedPtr;
++    Builder.CreateBr(Continue);
++    auto *Result = PHINode::Create(G->getType(), 2, "memtag.global.pointer",
++                                  Continue->begin());
++    Result->addIncoming(G, &Entry);
++    Result->addIncoming(TaggedPtr, Load);
++    TaggedPtrs.insert({G, Result});
++    return Result;
+   }
+ 
+   Value *materializeConstantExpr(ConstantExpr *CE, Instruction *InsertBefore) {
+@@ -176,12 +225,14 @@
+     NewI->insertBefore(InsertBefore->getIterator());
+     for (Use &U : NewI->operands()) {
+       Value *Op = U.get();
+-      if (auto *G = dyn_cast<GlobalVariable>(Op);
++      if (auto *G = dyn_cast<GlobalValue>(Op);
+           G && TaggedGlobals.contains(G)) {
+         U.set(getTaggedPtr(G));
+       } else if (auto *Nested = dyn_cast<ConstantExpr>(Op);
+                  Nested && containsTaggedGlobal(Nested, TaggedGlobals)) {
+-        U.set(materializeConstantExpr(Nested, InsertBefore));
++        // A nested expression must dominate the newly materialized user,
++        // not merely the original instruction using the outer expression.
++        U.set(materializeConstantExpr(Nested, NewI));
+       }
+     }
+     return NewI;
+@@ -194,20 +245,28 @@
+ 
+     for (Use &U : I.operands()) {
+       Value *Op = U.get();
+-      if (auto *G = dyn_cast<GlobalVariable>(Op);
++      if (auto *G = dyn_cast<GlobalValue>(Op);
+           G && TaggedGlobals.contains(G)) {
+         U.set(getTaggedPtr(G));
+       } else if (auto *CE = dyn_cast<ConstantExpr>(Op);
+                  CE && containsTaggedGlobal(CE, TaggedGlobals)) {
+-        U.set(materializeConstantExpr(CE, &I));
++        // A PHI operand is evaluated on its incoming edge. Inserting before
++        // the PHI would both split the PHI group and fail to dominate that
++        // edge. These pure constant expressions may safely be evaluated
++        // before the predecessor terminator, including on a critical edge.
++        Instruction *InsertBefore = &I;
++        if (auto *Phi = dyn_cast<PHINode>(&I))
++          InsertBefore =
++              Phi->getIncomingBlock(U.getOperandNo())->getTerminator();
++        U.set(materializeConstantExpr(CE, InsertBefore));
+       }
+     }
+   }
+ 
+   Function &F;
+-  const DenseSet<const GlobalVariable *> &TaggedGlobals;
++  const DenseSet<const GlobalValue *> &TaggedGlobals;
+   Function *MemtagLoad;
+-  DenseMap<GlobalVariable *, CallInst *> TaggedPtrs;
++  DenseMap<GlobalValue *, Value *> TaggedPtrs;
+ };
+ 
+ } // anonymous namespace
+@@ -252,21 +311,42 @@
+     GlobalsToTag.push_back(&G);
+   }
+ 
+-  DenseSet<const GlobalVariable *> TaggedGlobals;
++  DenseSet<const GlobalValue *> TaggedGlobals;
+   for (GlobalVariable *G : GlobalsToTag)
+     TaggedGlobals.insert(tagGlobalDefinition(M, G));
+ 
+-  if (TaggedGlobals.empty())
+-    return false;
+-
+-  Function *MemtagLoad =
+-      Intrinsic::getOrInsertDeclaration(&M, Intrinsic::wasm_memtag_load);
++  // An instrumented function can refer to a tagged definition in another
++  // translation unit. Weak data aliases may also resolve to such a definition
++  // at link time (musl __stdio_exit is one example). Materialize the resolved
++  // symbol's tag rather than assuming that an external/aliased address is tag 0.
++  // Untagged definitions naturally load tag 0. Function/table identities are
++  // not linear-memory pointers and must never enter this path.
++  DenseSet<const GlobalValue *> InstrumentedGlobals(TaggedGlobals);
++  for (GlobalVariable &G : M.globals())
++    if (G.isDeclaration() && !G.isThreadLocal() &&
++        !G.getName().starts_with("llvm."))
++      InstrumentedGlobals.insert(&G);
++  for (GlobalAlias &A : M.aliases())
++    if (!A.getValueType()->isFunctionTy())
++      InstrumentedGlobals.insert(&A);
++
++  bool Changed = !TaggedGlobals.empty();
++  Function *MemtagLoad = nullptr;
+   for (Function &F : M) {
+     if (F.isDeclaration())
+       continue;
+-    TaggedGlobalUseMaterializer(F, TaggedGlobals, MemtagLoad).run();
+-  }
+-  return true;
++    const auto &Candidates = F.hasFnAttribute(Attribute::SanitizeMemTag)
++                                 ? InstrumentedGlobals
++                                 : TaggedGlobals;
++    if (Candidates.empty())
++      continue;
++    if (!MemtagLoad)
++      MemtagLoad =
++          Intrinsic::getOrInsertDeclaration(&M, Intrinsic::wasm_memtag_load);
++    TaggedGlobalUseMaterializer(F, Candidates, MemtagLoad).run();
++    Changed = true;
++  }
++  return Changed;
+ }
+ 
+ INITIALIZE_PASS_BEGIN(WebAssemblyGlobalsTagging, "WebAssembly-globals-tagging",
+diff --git a/llvm/test/CodeGen/WebAssembly/memtag-global-phi.ll b/llvm/test/CodeGen/WebAssembly/memtag-global-phi.ll
+--- /dev/null
++++ b/llvm/test/CodeGen/WebAssembly/memtag-global-phi.ll
+@@ -0,0 +1,57 @@
++; RUN: llc < %s -verify-each -stop-after=WebAssembly-globals-tagging | FileCheck %s
++; RUN: llc < %s -verify-each -filetype=obj -o /dev/null
++
++target triple = "wasm32-unknown-unknown"
++@arr = global [16 x i8] zeroinitializer, sanitize_memtag, align 16
++
++; Rewritten expressions belong to their incoming blocks, not the PHI block.
++; CHECK-LABEL: define ptr @phi_edges(
++; CHECK: entry:
++; CHECK: call ptr @llvm.wasm.memtag.load(i32 0, ptr @arr)
++; CHECK: left:
++; CHECK: getelementptr
++; CHECK: br label %join
++; CHECK: right:
++; CHECK: getelementptr
++; CHECK: br label %join
++; CHECK: join:
++; CHECK-NEXT: %a = phi ptr
++; CHECK-NEXT: %b = phi i32
++define ptr @phi_edges(i1 %cond) {
++entry:
++  br i1 %cond, label %left, label %right
++left:
++  br label %join
++right:
++  br label %join
++join:
++  %a = phi ptr [ getelementptr ([16 x i8], ptr @arr, i32 0, i32 1), %left ],
++               [ getelementptr ([16 x i8], ptr @arr, i32 0, i32 2), %right ]
++  %b = phi i32 [ 1, %left ], [ 2, %right ]
++  %result = getelementptr i8, ptr %a, i32 %b
++  ret ptr %result
++}
++
++; A loop backedge/critical edge must retain PHI grouping and dominance.
++; CHECK-LABEL: define ptr @loop(
++; CHECK: loop:
++; CHECK-NEXT: %p = phi ptr
++define ptr @loop(i1 %again) {
++entry:
++  br label %loop
++loop:
++  %p = phi ptr [ getelementptr ([16 x i8], ptr @arr, i32 0, i32 3), %entry ],
++               [ getelementptr ([16 x i8], ptr @arr, i32 0, i32 4), %loop ]
++  br i1 %again, label %loop, label %exit
++exit:
++  ret ptr %p
++}
++
++; Recursively expanded operands must precede their users.
++; CHECK-LABEL: define i32 @nested(
++; CHECK: call ptr @llvm.wasm.memtag.load(i32 0, ptr @arr)
++; CHECK: getelementptr
++; CHECK: ptrtoint
++define i32 @nested() {
++  ret i32 ptrtoint (ptr getelementptr ([16 x i8], ptr @arr, i32 0, i32 5) to i32)
++}
+diff --git a/llvm/test/CodeGen/WebAssembly/memtag-global-external.ll b/llvm/test/CodeGen/WebAssembly/memtag-global-external.ll
+--- /dev/null
++++ b/llvm/test/CodeGen/WebAssembly/memtag-global-external.ll
+@@ -0,0 +1,70 @@
++; RUN: llc < %s -verify-each -stop-after=WebAssembly-globals-tagging | FileCheck %s
++; RUN: llc < %s -verify-each -filetype=obj -o /dev/null
++target triple = "wasm32-unknown-unknown"
++@external_data = external global i32
++@external_tls = external thread_local global i32
++@__heap_end = external global i8
++@dummy = internal global ptr null, sanitize_memtag
++@weak_data = weak alias ptr, ptr @dummy
++@function_alias = weak alias void (), ptr @plain_function
++
++; Even a TU with no locally taggable definitions must repair external and weak
++; data references in instrumented functions after final symbol resolution.
++; CHECK-LABEL: define i32 @external_use(
++; CHECK: call ptr @llvm.wasm.memtag.load(i32 0, ptr @external_data)
++; CHECK: load volatile i32
++define i32 @external_use() sanitize_memtag {
++  %x = load volatile i32, ptr @external_data
++  ret i32 %x
++}
++; CHECK-LABEL: define ptr @alias_use(
++; CHECK: call ptr @llvm.wasm.memtag.load(i32 0, ptr @weak_data)
++; CHECK: load volatile ptr
++define ptr @alias_use() sanitize_memtag {
++  %x = load volatile ptr, ptr @weak_data
++  ret ptr %x
++}
++; Do not introduce an extension into an uninstrumented external reference.
++; CHECK-LABEL: define i32 @uninstrumented(
++; CHECK-NOT: call ptr @llvm.wasm.memtag.load
++; CHECK: load volatile i32, ptr @external_data
++define i32 @uninstrumented() {
++  %x = load volatile i32, ptr @external_data
++  ret i32 %x
++}
++; Do not treat a function/table alias as a linear-memory pointer.
++; CHECK-LABEL: define ptr @function_pointer(
++; CHECK-NOT: call ptr @llvm.wasm.memtag.load
++; CHECK: ret ptr @function_alias
++define ptr @function_pointer() sanitize_memtag {
++  ret ptr @function_alias
++}
++define void @plain_function() { ret void }
++
++; Linker addresses and external data use a runtime in-range guard, avoiding an
++; invalid tag load when a symbol denotes one-past-the-end instead of an object.
++; CHECK-LABEL: define i32 @linker_address(
++; CHECK: call i32 @llvm.wasm.memory.size.i32(i32 0)
++; CHECK: icmp ult
++; CHECK: br i1
++; CHECK: memtag.global.load:
++; CHECK: call ptr @llvm.wasm.memtag.load(i32 0, ptr @__heap_end)
++; CHECK: memtag.global.cont:
++; CHECK: phi ptr [ @__heap_end, %0 ],
++define i32 @linker_address() sanitize_memtag {
++  ret i32 ptrtoint (ptr @__heap_end to i32)
++}
++
++@optional_data = extern_weak global i32
++; Do not let a nonzero tag on address zero turn an absent weak symbol nonnull.
++; CHECK-LABEL: define i1 @weak_null(
++; CHECK: icmp ult
++; CHECK: [[NONNULL:%.*]] = icmp ne ptr @optional_data, null
++; CHECK: and i1 {{.*}}, [[NONNULL]]
++; CHECK: br i1
++; CHECK: call ptr @llvm.wasm.memtag.load(i32 0, ptr @optional_data)
++; CHECK: phi ptr [ @optional_data,
++define i1 @weak_null() sanitize_memtag {
++  %present = icmp ne ptr @optional_data, null
++  ret i1 %present
++}

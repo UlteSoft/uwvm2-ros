@@ -22,8 +22,12 @@ extern "C++" void details::llvm_jit_checkpoint_observe_call_raw_from_generated_w
 #endif
     // An unknown/unadapted target keeps the original incomplete-host-island
     // distinction, including nested callback entry and native C++ unwinding.
-    details::llvm_jit_debug_host_scope foreign{};
-    details::llvm_jit_call_raw_from_generated_wasm_abi_bridge(
-        module_address,function_index,result,result_bytes,parameters,parameter_bytes);
+    deferred_builtin_memtag_fault fault{};
+    {
+        details::llvm_jit_debug_host_scope foreign{};
+        details::llvm_jit_call_raw_from_generated_wasm_abi_bridge(
+            module_address,function_index,result,result_bytes,parameters,parameter_bytes);
+    }
+    fault.finish();
 }
 #endif

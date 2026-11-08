@@ -6,7 +6,7 @@
 #pragma once
 #ifndef UWVM_MODULE
 # include <uwvm2/utils/macro/push_macros.h>
-# include "management.h"
+# include "debug_permissions.h"
 # include "protocol.h"
 # if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
 # include <memory>
@@ -32,9 +32,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::control
     struct launch_config
     {
         #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-        management::execution_profile profile{management::execution_profile::release};
+        debug_permissions::permission_level profile{debug_permissions::permission_level::limited};
 #else
-        management::execution_profile profile{management::execution_profile::dev};
+        debug_permissions::permission_level profile{debug_permissions::permission_level::full};
 #endif
         bool diagnostic_enabled{};
         bool debug_enabled{}, replacement_enabled{}; // Both disabled by default.
@@ -226,8 +226,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::control
         [[nodiscard]] error parse_command(frame_header const& header, input_buffer bytes, command& out) const
         {
             auto const command_kind{header.command};
-            if(command_kind != operation::status && command_kind != operation::detach &&
-               (owner->config.profile != management::execution_profile::dev || !management::debug_allowed()))
+            if(!debug_permissions::diagnostics_allowed() || owner->config.profile!=debug_permissions::selected())
+            { return error::unavailable_capability; }
+            if(!debug_permissions::full_allowed() && command_kind!=operation::status && command_kind!=operation::detach &&
+               command_kind!=operation::resume && !(debug_permissions::inspection_allowed() &&
+               (command_kind==operation::pause || command_kind==operation::backtrace ||
+                command_kind==operation::read_memory || command_kind==operation::locals || command_kind==operation::breakpoint_list)))
             { return error::unavailable_capability; }
             if(command_kind == operation::replace_function)
             {

@@ -22,7 +22,7 @@
         friend class ::uwvm2::runtime::lib::runtime_checkpoint_continuation_dispatcher;
         runtime_checkpoint_thread_capture::owner actual_{};
         inline static ::std::mutex registry_mutex_{};
-        inline static ::std::weak_ptr<llvm_jit_checkpoint_thread_capture const> registry_[256u]{};
+        inline static ::std::vector<::std::weak_ptr<llvm_jit_checkpoint_thread_capture const>> registry_{};
         // Qualified function friends nominate the real global-module APIs
         // first declared with C++ linkage in runtime.h. This class keeps its
         // runtime module attachment; no new friend overload is introduced.
@@ -117,7 +117,7 @@
     extern "C++" llvm_jit_checkpoint_capture_result llvm_jit_checkpoint_capture_thread_host_api(
         ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const& ticket) noexcept
     {
-        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
+        if(!::uwvm2::utils::control::debug_permissions::inspection_allowed()) { return {}; }
         // The actual producer checks the live generated entry/depth/observer,
         // private episode, activation chain, exact sealed plan and typed DATA.
         // It does not expose a constructor or accept a caller's copied frame.
@@ -145,7 +145,8 @@
             {
                 if(weak.expired()) { weak = wrapper; return {llvm_jit_checkpoint_capture_status::captured, ::std::move(wrapper)}; }
             }
-            return {llvm_jit_checkpoint_capture_status::registry_exhausted, {}};
+            llvm_jit_checkpoint_thread_capture::registry_.push_back(wrapper);
+            return {llvm_jit_checkpoint_capture_status::captured, ::std::move(wrapper)};
         }
         catch(...) { return {llvm_jit_checkpoint_capture_status::allocation_failed, {}}; }
     }
@@ -153,16 +154,17 @@
         ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const& ticket,
         ::std::span<llvm_jit_checkpoint_thread_capture_owner const> supplied) noexcept
     {
-        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
+        if(!::uwvm2::utils::control::debug_permissions::inspection_allowed()) { return {}; }
         using manager = runtime_checkpoint_coherent_manager;
         using resources = runtime_checkpoint_resource_inputs;
         llvm_jit_checkpoint_resource_observation out{};
-        if(!ticket || supplied.empty() || supplied.size() > 256u)
+        if(!ticket || supplied.empty())
         { out.status = llvm_jit_checkpoint_query_status::incomplete_cohort; return out; }
-        // [request-owned complete owner span] end; counts<=256 BEFORE indexing.
+        // [request-owned complete owner span] end; actual counts checked BEFORE indexing.
         // Canonical wrappers are independent copied DATA lifetimes. No runtime
         // publication/host-state field is read until the manager's actual lease.
-        runtime_checkpoint_thread_capture::owner captures[256u]{};
+        runtime_checkpoint_capture_buffer captures{supplied.size()};
+        if(!captures) { out.status = llvm_jit_checkpoint_query_status::allocation_failed; return out; }
         for(::std::size_t i{}; i != supplied.size(); ++i)
         {
             auto canonical{llvm_jit_checkpoint_thread_capture::canonical(supplied[i])};
@@ -171,7 +173,7 @@
             // [safe] actual_ read only AFTER real registry get+control equality.
             captures[i] = canonical->actual_;
         }
-        auto actual{manager::inspect_current(ticket, {captures, supplied.size()})};
+        auto actual{manager::inspect_current(ticket, {captures.data(), supplied.size()})};
         switch(actual.observation)
         {
 #define UWVM_CHECKPOINT_QUERY_STATUS(x) case manager::status::x: out.status = llvm_jit_checkpoint_query_status::x; break
@@ -191,7 +193,7 @@
         try
         {
             // All below reads are detached owned DATA, not live VM resources.
-            // Manager budgets bound <=256 threads and <=2^20 slots; the immutable
+            // Actual vectors and checked sums bound threads and slots; the immutable
             // profile supplies the frame quota (zero means unlimited observation).
             llvm_jit_checkpoint_resource_observation candidate{}; candidate.status = out.status;
             candidate.observed_runtime_epoch = actual.observed_runtime_epoch;
@@ -213,7 +215,7 @@
                 data.location = thread.observed_location; data.frame_count = thread.frames.size();
                 for(auto const& frame : thread.frames)
                 {
-                    if(frame.values.size() > 1048576u - data.typed_slots)
+                    if(frame.values.size() > (::std::numeric_limits<decltype(data.typed_slots)>::max)() - data.typed_slots)
                     { out.status = llvm_jit_checkpoint_query_status::budget_exceeded; return out; }
                     data.typed_slots += frame.values.size(); // bounded BEFORE advance
                     for(auto const& value : frame.values)
@@ -246,12 +248,13 @@
         if(mode::global_runtime_mode != mode::runtime_mode_t::full_compile ||
            mode::global_runtime_compiler != mode::runtime_compiler_t::llvm_jit_only)
         { return outcome::requires_llvm_jit_full; }
-        if(!ticket || supplied.empty() || supplied.size() > 256u)
+        if(!ticket || supplied.empty())
         { return outcome::rejected_current_cohort; }
-        runtime_checkpoint_thread_capture::owner captured[256u]{};
+        runtime_checkpoint_capture_buffer captured{supplied.size()};
+        if(!captured) { return outcome::rejected_current_cohort; }
         for(::std::size_t index{}; index != supplied.size(); ++index)
         {
-            // [request-owned wrapper span ... index<size<=256] end
+            // [request-owned wrapper span ... index<size] end
             // [safe] real registry compares get AND control block BEFORE any
             // supplied pointee access; never cast a public capture-owner span.
             auto const wrapper{llvm_jit_checkpoint_thread_capture::canonical(supplied[index])};
@@ -260,18 +263,19 @@
         }
         // Actual private capture registry is rechecked by the manager under
         // its real lease/ONE complete cohort; wrappers are not retire authority.
-        return runtime_checkpoint_coherent_manager::retire_current(ticket, {captured, supplied.size()});
+        return runtime_checkpoint_coherent_manager::retire_current(ticket, {captured.data(), supplied.size()});
     }
     extern "C++" llvm_jit_wasip1_environment_capsule_status llvm_jit_checkpoint_restore_wasip1_environment_group_host_api(
         ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const& ticket,
         ::std::span<llvm_jit_checkpoint_thread_capture_owner const> supplied,
         ::std::span<llvm_jit_wasip1_environment_capsule_owner const> saved, bool strict) noexcept
     {
-        if(!::uwvm2::utils::control::management::debug_allowed()) { return llvm_jit_wasip1_environment_capsule_status::unavailable_capture; }
+        if(!::uwvm2::utils::control::debug_permissions::full_allowed()) { return llvm_jit_wasip1_environment_capsule_status::unavailable_capture; }
         using output=llvm_jit_wasip1_environment_capsule_status;
-        if(!ticket || supplied.empty() || supplied.size()>256u || saved.empty() || saved.size()>16u)
+        if(!ticket || supplied.empty() || saved.empty() || saved.size()>16u)
         { return output::invalid_capsule_owner; }
-        runtime_checkpoint_thread_capture::owner captured[256u]{};
+        runtime_checkpoint_capture_buffer captured{supplied.size()};
+        if(!captured) { return output::allocation_failed; }
         for(::std::size_t index{};index!=supplied.size();++index)
         {
             auto const actual{llvm_jit_checkpoint_thread_capture::canonical(supplied[index])};
@@ -279,23 +283,24 @@
             captured[index]=actual->actual_;
         }
         return runtime_checkpoint_coherent_manager::restore_current_wasip1_environment_group(
-            ticket,{captured,supplied.size()},saved,strict);
+            ticket,{captured.data(), supplied.size()},saved,strict);
     }
     extern "C++" llvm_jit_wasip1_environment_capsule_result llvm_jit_checkpoint_restore_portable_wasip1_environment_group_host_api(
         ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const& ticket,
         ::std::span<llvm_jit_checkpoint_thread_capture_owner const> supplied,
         ::std::span<llvm_jit_wasip1_environment_capsule_request const> selected) noexcept
     {
-        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
+        if(!::uwvm2::utils::control::debug_permissions::full_allowed()) { return {}; }
         using status=llvm_jit_wasip1_environment_capsule_status;
         namespace mode=::uwvm2::uwvm::runtime::runtime_mode;
         if(mode::global_runtime_mode!=mode::runtime_mode_t::full_compile || mode::global_runtime_compiler!=mode::runtime_compiler_t::llvm_jit_only)
         { return {status::requires_llvm_jit_full,{}}; }
-        if(!ticket || supplied.empty() || supplied.size()>256u)
+        if(!ticket || supplied.empty())
         { return {status::unavailable_capture,{}}; }
         if(selected.empty() || selected.size()>16u)
         { return {status::invalid_portable_snapshot,{}}; }
-        runtime_checkpoint_thread_capture::owner captured[256u]{};
+        runtime_checkpoint_capture_buffer captured{supplied.size()};
+        if(!captured) { return {status::allocation_failed,{}}; }
         for(::std::size_t index{};index!=supplied.size();++index)
         {
             auto const actual{llvm_jit_checkpoint_thread_capture::canonical(supplied[index])};
@@ -303,23 +308,24 @@
             captured[index]=actual->actual_;
         }
         return runtime_checkpoint_coherent_manager::restore_current_portable_wasip1_environment_group(
-            ticket,{captured,supplied.size()},selected);
+            ticket,{captured.data(), supplied.size()},selected);
     }
     extern "C++" llvm_jit_wasip1_portable_environment_group_result llvm_jit_checkpoint_capture_portable_wasip1_environment_group_host_api(
         ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const& ticket,
         ::std::span<llvm_jit_checkpoint_thread_capture_owner const> supplied,
         ::std::span<llvm_jit_wasip1_environment_capsule_request const> selected) noexcept
     {
-        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
+        if(!::uwvm2::utils::control::debug_permissions::full_allowed()) { return {}; }
         using status=llvm_jit_wasip1_environment_capsule_status;
         namespace mode=::uwvm2::uwvm::runtime::runtime_mode;
         if(mode::global_runtime_mode!=mode::runtime_mode_t::full_compile || mode::global_runtime_compiler!=mode::runtime_compiler_t::llvm_jit_only)
         { return {status::requires_llvm_jit_full,{}}; }
-        if(!ticket || supplied.empty() || supplied.size()>256u)
+        if(!ticket || supplied.empty())
         { return {status::unavailable_capture,{}}; }
         if(selected.empty() || selected.size()>16u)
         { return {status::invalid_portable_snapshot,{}}; }
-        runtime_checkpoint_thread_capture::owner captured[256u]{};
+        runtime_checkpoint_capture_buffer captured{supplied.size()};
+        if(!captured) { return {status::allocation_failed,{}}; }
         for(::std::size_t index{};index!=supplied.size();++index)
         {
             auto const actual{llvm_jit_checkpoint_thread_capture::canonical(supplied[index])};
@@ -327,7 +333,7 @@
             captured[index]=actual->actual_;
         }
         return runtime_checkpoint_coherent_manager::capture_current_portable_wasip1_environment_group(
-            ticket,{captured,supplied.size()},selected);
+            ticket,{captured.data(), supplied.size()},selected);
     }
     extern "C++" llvm_jit_checkpoint_instance_capture_result llvm_jit_checkpoint_capture_instance_host_api(
         ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const& ticket,
@@ -335,7 +341,7 @@
         ::std::array<::std::byte, 16u> const& label,
         ::uwvm2::uwvm::debugger::checkpoint::limits const& budget) noexcept
     {
-        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
+        if(!::uwvm2::utils::control::debug_permissions::full_allowed()) { return {}; }
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
         using output_status = llvm_jit_checkpoint_instance_capture_status;
         llvm_jit_checkpoint_instance_capture_result out{};
@@ -344,12 +350,13 @@
         { out.status = output_status::requires_llvm_jit_full; return out; }
         runtime_checkpoint_coherent_manager::complete_instance_request requested{};
         requested.recording_id = label; requested.budget = budget;
-        if(!ticket || supplied.empty() || supplied.size() > 256u)
+        if(!ticket || supplied.empty())
         { out.status = output_status::unavailable_capture; return out; }
-        runtime_checkpoint_thread_capture::owner captures[256u]{};
+        runtime_checkpoint_capture_buffer captures{supplied.size()};
+        if(!captures) { out.status = output_status::allocation_failed; return out; }
         for(::std::size_t index{}; index != supplied.size(); ++index)
         {
-            // [request-owned wrapper span ... index<size<=256] end
+            // [request-owned wrapper span ... index<size] end
             // [safe] canonical registry compares get AND control block BEFORE
             // reading supplied payload; no public/private span cast is allowed.
             auto const wrapper{llvm_jit_checkpoint_thread_capture::canonical(supplied[index])};
@@ -359,7 +366,7 @@
         // The manager resolves the second private capture registry again under
         // its genuine lease/ONE complete cohort before any native field access.
         auto actual{runtime_checkpoint_coherent_manager::capture_complete_current_instance(
-            ticket, {captures, supplied.size()}, requested)};
+            ticket, {captures.data(), supplied.size()}, requested)};
         out.data_error = actual.data_error;
         out.wasip1_checkpoint_required=actual.wasip1_checkpoint_required;
         out.wasip1_captured_together=actual.wasip1_captured_together;
@@ -392,7 +399,7 @@
         ::std::array<::std::byte, 16u> const& label,
         ::uwvm2::uwvm::debugger::checkpoint::limits const& budget) noexcept
     {
-        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
+        if(!::uwvm2::utils::control::debug_permissions::full_allowed()) { return {}; }
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
         using output_status = llvm_jit_checkpoint_instance_capture_status;
         llvm_jit_checkpoint_instance_capture_result out{};
@@ -401,12 +408,13 @@
         { out.status = output_status::requires_llvm_jit_full; return out; }
         runtime_checkpoint_coherent_manager::complete_instance_request requested{};
         requested.recording_id = label; requested.budget = budget; requested.include_wasip1=true;
-        if(!ticket || supplied.empty() || supplied.size() > 256u)
+        if(!ticket || supplied.empty())
         { out.status = output_status::unavailable_capture; return out; }
-        runtime_checkpoint_thread_capture::owner captures[256u]{};
+        runtime_checkpoint_capture_buffer captures{supplied.size()};
+        if(!captures) { out.status = output_status::allocation_failed; return out; }
         for(::std::size_t index{}; index != supplied.size(); ++index)
         {
-            // [request-owned wrapper span ... index<size<=256] end
+            // [request-owned wrapper span ... index<size] end
             // [safe] canonical registry compares get AND control block BEFORE
             // reading supplied payload; no public/private span cast is allowed.
             auto const wrapper{llvm_jit_checkpoint_thread_capture::canonical(supplied[index])};
@@ -416,7 +424,7 @@
         // The manager resolves the second private capture registry again under
         // its genuine lease/ONE complete cohort before any native field access.
         auto actual{runtime_checkpoint_coherent_manager::capture_complete_current_instance(
-            ticket, {captures, supplied.size()}, requested)};
+            ticket, {captures.data(), supplied.size()}, requested)};
         out.data_error = actual.data_error;
         out.wasip1_checkpoint_required=actual.wasip1_checkpoint_required;
         out.wasip1_captured_together=actual.wasip1_captured_together;
@@ -443,33 +451,33 @@
         ::std::span<llvm_jit_checkpoint_thread_capture_owner const>,
         ::std::span<llvm_jit_wasip1_environment_capsule_request const>) noexcept
     {
-        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; } return {llvm_jit_wasip1_environment_capsule_status::unavailable_capture,{}}; }
+        if(!::uwvm2::utils::control::debug_permissions::full_allowed()) { return {}; } return {llvm_jit_wasip1_environment_capsule_status::unavailable_capture,{}}; }
     extern "C++" llvm_jit_wasip1_portable_environment_group_result llvm_jit_checkpoint_capture_portable_wasip1_environment_group_host_api(
         ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const&,
         ::std::span<llvm_jit_checkpoint_thread_capture_owner const>,
         ::std::span<llvm_jit_wasip1_environment_capsule_request const>) noexcept
     {
-        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; } return {llvm_jit_wasip1_environment_capsule_status::unavailable_capture,{}}; }
+        if(!::uwvm2::utils::control::debug_permissions::full_allowed()) { return {}; } return {llvm_jit_wasip1_environment_capsule_status::unavailable_capture,{}}; }
     extern "C++" llvm_jit_wasip1_environment_capsule_status llvm_jit_checkpoint_restore_wasip1_environment_group_host_api(
         ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const&,
         ::std::span<llvm_jit_checkpoint_thread_capture_owner const>,
         ::std::span<llvm_jit_wasip1_environment_capsule_owner const>,bool) noexcept
     {
-        if(!::uwvm2::utils::control::management::debug_allowed()) { return llvm_jit_wasip1_environment_capsule_status::unavailable_capture; } return llvm_jit_wasip1_environment_capsule_status::unavailable_capture; }
+        if(!::uwvm2::utils::control::debug_permissions::full_allowed()) { return llvm_jit_wasip1_environment_capsule_status::unavailable_capture; } return llvm_jit_wasip1_environment_capsule_status::unavailable_capture; }
     extern "C++" llvm_jit_checkpoint_capture_result llvm_jit_checkpoint_capture_thread_host_api(
         ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const&) noexcept {
-        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; } return {}; }
+        if(!::uwvm2::utils::control::debug_permissions::full_allowed()) { return {}; } return {}; }
     extern "C++" llvm_jit_checkpoint_resource_observation llvm_jit_checkpoint_query_resource_inputs_host_api(
         ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const&,
         ::std::span<llvm_jit_checkpoint_thread_capture_owner const>) noexcept {
-        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; } return {}; }
+        if(!::uwvm2::utils::control::debug_permissions::full_allowed()) { return {}; } return {}; }
 extern "C++" llvm_jit_checkpoint_instance_capture_result llvm_jit_checkpoint_capture_instance_host_api(
     ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const&,
     ::std::span<llvm_jit_checkpoint_thread_capture_owner const>,
     ::std::array<::std::byte, 16u> const&,
     ::uwvm2::uwvm::debugger::checkpoint::limits const&) noexcept
 {
-        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
+        if(!::uwvm2::utils::control::debug_permissions::full_allowed()) { return {}; }
     llvm_jit_checkpoint_instance_capture_result out{};
 #if defined(UWVM_RUNTIME_LLVM_JIT)
     out.status = llvm_jit_checkpoint_instance_capture_status::unavailable_capture;
@@ -483,7 +491,7 @@ extern "C++" llvm_jit_checkpoint_instance_capture_result llvm_jit_checkpoint_cap
         ::std::span<llvm_jit_checkpoint_thread_capture_owner const>,
         ::std::array<::std::byte,16u> const&, ::uwvm2::uwvm::debugger::checkpoint::limits const&) noexcept
     {
-        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; } llvm_jit_checkpoint_instance_capture_result result{};result.status=llvm_jit_checkpoint_instance_capture_status::requires_llvm_jit_full;return result; }
+        if(!::uwvm2::utils::control::debug_permissions::full_allowed()) { return {}; } llvm_jit_checkpoint_instance_capture_result result{};result.status=llvm_jit_checkpoint_instance_capture_status::requires_llvm_jit_full;return result; }
 
 # endif
 #endif

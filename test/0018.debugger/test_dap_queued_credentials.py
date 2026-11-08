@@ -53,7 +53,7 @@ class QueuedCredentialsTest(unittest.TestCase):
             children.append(child)
             return child
 
-        with tempfile.TemporaryDirectory(prefix="uwvm-queued-", dir="/tmp") as raw:
+        with tempfile.TemporaryDirectory(prefix="uwvm-queued-", dir=Path(__file__).resolve().parents[2] / ".tmp") as raw:
             directory = Path(raw)
             arguments = argparse.Namespace(socket_dir=directory, uwvm=Path(sys.executable), vm_args=["transport-test"])
 

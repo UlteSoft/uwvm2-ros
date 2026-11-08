@@ -103,8 +103,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
     {
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
         if(!env.allows_interface(u8"sock_send")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
-        // No qualified per-endpoint bounded network provider in this profile.
+#if defined(__linux__)
+        return socket_capability::transfer<4>(env,sock_fd,si_data_ptrsz,si_data_len,static_cast<unsigned>(si_flags),ret_data_len_ptrsz,0u,true);
+#else
         return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotsup;
+#endif
 #endif
 
 
@@ -442,7 +445,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                     auto& curr_tmp_scatter_base{scatter_base[i]};
 
                     // Already verified as legitimate
-                    curr_tmp_scatter_base.base = memory.memory_begin + wasm_base;
+                    auto const payload_span{::uwvm2::imported::wasi::wasip1::memory::checked_span_unlocked(memory,wasm_base,wasm_len)};
+                    if(!payload_span) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
+                    curr_tmp_scatter_base.base = payload_span.data;
 
                     // check counter
                     if(wasm_len > ::std::numeric_limits<::uwvm2::imported::wasi::wasip1::abi::wasi_size_t>::max() - length_counter) [[unlikely]]
@@ -681,7 +686,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                         }
                     }
 
-                    wsabufs[i].buf = reinterpret_cast<char*>(memory.memory_begin + wasm_base);
+                    auto const payload_span{::uwvm2::imported::wasi::wasip1::memory::checked_span_unlocked(memory,wasm_base,wasm_len)};
+                    if(!payload_span) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
+                    wsabufs[i].buf = reinterpret_cast<char*>(payload_span.data);
                     wsabufs[i].len = static_cast<::std::uint_least32_t>(wasm_len);
                 }
 

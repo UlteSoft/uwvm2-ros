@@ -286,7 +286,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::base
         gc,
         exceptions,
         extended_const,
-        table_initializer
+        table_initializer,
+        memtag_extension
     };
 
     /// @brief WebAssembly 1.1 syntax/semantic site used by wasm1p1-specific diagnostics.

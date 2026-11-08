@@ -15,16 +15,17 @@ extern "C++" llvm_jit_checkpoint_native_retirement_result llvm_jit_checkpoint_re
 {
     llvm_jit_checkpoint_native_retirement_result out{};
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
-    if(!ticket || supplied.empty() || supplied.size() > 256u)
+    if(!ticket || supplied.empty())
     { out.status = llvm_jit_checkpoint_native_retirement_status::rejected_current_cohort; return out; }
-    runtime_checkpoint_thread_capture::owner captures[256u]{};
+    runtime_checkpoint_capture_buffer captures{supplied.size()};
+    if(!captures) { out.status = llvm_jit_checkpoint_native_retirement_status::allocation_failed; return out; }
     for(::std::size_t index{}; index < supplied.size(); ++index)
     {
         auto const actual{llvm_jit_checkpoint_thread_capture::canonical(supplied[index])};
         if(!actual) { out.status = llvm_jit_checkpoint_native_retirement_status::rejected_current_cohort; return out; }
         captures[index] = actual->actual_;
     }
-    return runtime_checkpoint_coherent_manager::begin_native_retirement(ticket, {captures, supplied.size()}, deadline);
+    return runtime_checkpoint_coherent_manager::begin_native_retirement(ticket, {captures.data(), supplied.size()}, deadline);
 #else
     static_cast<void>(ticket); static_cast<void>(supplied); static_cast<void>(deadline); return out;
 #endif
@@ -47,16 +48,17 @@ extern "C++" llvm_jit_checkpoint_native_retirement_result llvm_jit_checkpoint_pr
 {
     llvm_jit_checkpoint_native_retirement_result out{};
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
-    if(!ticket || supplied.empty() || supplied.size()>256u)
+    if(!ticket || supplied.empty())
     { out.status=llvm_jit_checkpoint_native_retirement_status::rejected_current_cohort;return out; }
-    runtime_checkpoint_thread_capture::owner captures[256u]{};
+    runtime_checkpoint_capture_buffer captures{supplied.size()};
+    if(!captures) { out.status = llvm_jit_checkpoint_native_retirement_status::allocation_failed; return out; }
     for(::std::size_t index{};index<supplied.size();++index)
     {
         auto const actual{llvm_jit_checkpoint_thread_capture::canonical(supplied[index])};
         if(!actual) { out.status=llvm_jit_checkpoint_native_retirement_status::rejected_current_cohort;return out; }
         captures[index]=actual->actual_;
     }
-    return runtime_checkpoint_coherent_manager::begin_native_retirement(ticket,{captures,supplied.size()},deadline,::std::addressof(request));
+    return runtime_checkpoint_coherent_manager::begin_native_retirement(ticket,{captures.data(), supplied.size()},deadline,::std::addressof(request));
 #else
     static_cast<void>(ticket);static_cast<void>(supplied);static_cast<void>(request);static_cast<void>(deadline);return out;
 #endif

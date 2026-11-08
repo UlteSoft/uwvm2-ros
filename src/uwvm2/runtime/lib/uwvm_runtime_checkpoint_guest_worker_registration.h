@@ -82,8 +82,8 @@ extern "C++"
             // Completed owners belong to the separate weak canonical history.
         };
         inline static ::std::mutex registry_mutex_{};
-        inline static registry_slot registry_[256u]{};
-        // The 256 slots bound genuine, not-yet-joined native workers. A caller
+        inline static ::std::vector<registry_slot> registry_{};
+        // Live worker storage grows before native thread creation. A caller
         // may retain a completed owner for retry without occupying a live slot.
         // Weak history authenticates those control blocks without retaining
         // native/source/launch resources. Expired entries are reused at launch.
@@ -177,7 +177,7 @@ extern "C++"
         private:
             ::std::weak_ptr<join_cohort> canonical_{};
             retirement::owner request_{};
-            mutable_owner members_[256u]{};
+            ::std::vector<mutable_owner> members_{}, tentative_{};
             ::std::size_t size_{};
             enum class phase : unsigned char { empty, sealed, joined } phase_{};
             actual_physical_join physical_{*this};
@@ -191,7 +191,7 @@ extern "C++"
         // Fallible preallocation precedes old retirement. Empty storage has no
         // permission. The sole manager fills it only from the authentic request
         // that already owns ONE complete cohort and the still-closed host gate.
-        [[nodiscard]] static pending_join_owner prepare_join_storage() noexcept;
+        [[nodiscard]] static pending_join_owner prepare_join_storage(::std::size_t) noexcept;
         [[nodiscard]] static bool seal_from_actual_retirement_while_cohort_owned(
             pending_join_owner const&, retirement::owner const&) noexcept;
         [[nodiscard]] static actual_physical_join_owner join_after_actual_drain_until(

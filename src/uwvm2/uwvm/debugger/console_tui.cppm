@@ -1,6 +1,5 @@
 module;
 #include <uwvm2/uwvm/debugger/console_stdio.h>
-#include <uwvm2/uwvm/debugger/console_memory.h>
 #include <uwvm2/uwvm/debugger/console_layout.h>
 #include <vector>
 #include <span>
@@ -14,6 +13,7 @@ module;
 #endif
 export module uwvm2.uwvm.debugger:console_tui;
 import fast_io;
+import :console_memory;
 import uwvm2.uwvm.utils.ansies;
 import :console_line_editor;
 #define UWVM_MODULE

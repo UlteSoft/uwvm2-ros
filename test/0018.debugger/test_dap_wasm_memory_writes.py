@@ -68,8 +68,8 @@ class WasmMemoryWrites(unittest.TestCase):
 
     def test_initialize_announces_writes_and_negotiates_events(self):
         reply = self.send("initialize", supportsMemoryEvent=True, supportsInvalidatedEvent=True)
-        self.assertTrue(reply['success']); self.assertTrue(reply['body']['supportsWriteMemoryRequest'])
-        self.assertTrue(reply['body']['supportsReadMemoryRequest']); self.assertEqual(self.broker.commands, [])
+        self.assertTrue(reply['success']); self.assertFalse(reply['body']['supportsWriteMemoryRequest'])
+        self.assertFalse(reply['body']['supportsReadMemoryRequest']); self.assertEqual(self.broker.commands, [])
         self.assertTrue(self.adapter.supports_memory_event); self.assertTrue(self.adapter.supports_invalidated_event)
         self.send("initialize"); self.assertFalse(self.adapter.supports_memory_event)
         self.assertFalse(self.adapter.supports_invalidated_event)

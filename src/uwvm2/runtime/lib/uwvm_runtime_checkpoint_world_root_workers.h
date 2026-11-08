@@ -147,7 +147,7 @@ public:
     {
         auto const count{world_.prepared_threads_.size()};
         auto const control_bytes{pause_domain::fixed_native_payload_bytes(count)};
-        if(count==0u || count>maximum_workers || count>256u || count>packets_.max_size() ||
+        if(count==0u || count>maximum_workers || count>packets_.max_size() ||
            control_bytes==SIZE_MAX || !world_.actual_prepared_profile_ ||
            !world_.charge_native(1u,control_bytes) ||
            !world_.charge_native(count,sizeof(::std::unique_ptr<packet>)+sizeof(packet)+sizeof(::fast_io::native_thread)+

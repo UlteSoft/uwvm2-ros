@@ -18,7 +18,7 @@ extern "C++"
         // no caller-created control block, roster, numeric ID or DATA enters.
         auto const installed{g_runtime.checkpoint_host_state};
         if(!same_owner(installed, configuration) || !g_runtime.checkpoint_host_enabled.load(::std::memory_order_acquire) ||
-           captured.empty() || captured.size() > 256u || captured.size() != actual_slots.size() ||
+           captured.empty() || captured.size() != actual_slots.size() ||
            get_runtime_state_publication_depth() == 0u || get_llvm_jit_generated_bridge_scope_depth() != 0u ||
            g_debug_observer_active || !runtime_checkpoint_host_bridge::current_coherent_state(installed, closed) ||
            installed->epoch_ != current_runtime_generation() ||

@@ -130,7 +130,7 @@ class ReplacementLifetimeTests(unittest.TestCase):
     def assert_retired(self):
         self.assertIsNone(self.adapter.stop_key)
         for attribute in ("frames", "scopes", "native_frames", "native_code_refs",
-                          "source_frames", "source_scope_stops", "inline_frames", "source_frame_ordinals", "wasip1_scope_stops"):
+                          "source_frames", "source_scope_stops", "inline_frames", "source_frame_ordinals", "wasip1_scope_stops", "host_trace_views"):
             self.assertFalse(getattr(self.adapter, attribute), attribute)
         self.assertFalse(getattr(self.adapter, "ros_scope_stops", {}), "ROS scope references")
 
@@ -159,7 +159,7 @@ class ReplacementLifetimeTests(unittest.TestCase):
                             "ROS instances (backend sessions)": "instances",
                             "ROS event queues (metadata only)": "events"} if hasattr(self.adapter, "ros_scope_stops") else {}
             self.assertEqual({row["name"] for row in ros_scopes}, set(expected_ros))
-            self.assertEqual(len(scopes), 6 + len(expected_ros))
+            self.assertEqual(len(scopes), 9 + len(expected_ros))
             for row in ros_scopes:
                 self.assertEqual(self.adapter.ros_scope_stops[row["variablesReference"]],
                                  (self.adapter.stop_key, expected_ros[row["name"]]))

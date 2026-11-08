@@ -147,7 +147,7 @@
                     budget.storage_bytes = limits.max_child_storage_bytes - before;
                     budget.source_bytes = limits.max_child_code_bytes;
                     budget.instruction_bytes = limits.max_child_code_bytes;
-                    budget.values = limits.max_value_stack_bytes / sizeof(::std::uint64_t);
+                    budget.values = limits.max_value_stack_bytes / sizeof(integer::stack_value);
                     budget.controls = limits.max_control_frames;
                     budget.calls = limits.max_call_frames;
                     budget.functions = world_->module(0u)->imported_function_vec_storage.size() +
@@ -156,7 +156,7 @@
                     budget.exception_objects = limits.max_call_frames;
                     budget.exception_values = budget.values;
                     ::uwvm2::validation::error::code_validation_error_impl error{};
-                    auto built{integer::engine::compile(world_, budget, error)};
+                    auto built{integer::engine::compile(world_, budget, error,!::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag)};
                     if(!built.code || !built.outcome.normal()) { return false; }
                     integer_ = ::std::move(built.code);
                 }
@@ -186,6 +186,12 @@
                 if(integer_)
                 {
                     auto const result{integer_->run_entry(actual, entry, results, parameters)};
+                    if(result.code==::uwvm2::runtime::compiler::uwvm_int::threaded::status::trap_memtag)
+                    {
+                        // run_entry has released every memory snapshot/guard.
+                        print_memtag_fault(0u,result.memtag_pointer,result.memtag_granule,
+                            result.memtag_pointer_tag,result.memtag_allocation_tag);
+                    }
                     if(result.normal()) { return group::child_completion::returned; }
                     return actual.cancellation().stop_requested() ? group::child_completion::group_stopped : group::child_completion::rejected;
                 }
@@ -634,9 +640,12 @@
             if(state->joined)
             {
                 if(state->requires_reset || state->ordinary_reopened) { return {true, state->requires_reset, 0u, 0u, state->signal_retirement_error}; }
+                // Keep the same registry -> maintenance order as start,
+                // configuration and source reset. Waiting for the registry
+                // while owning maintenance would invert reset's real locks.
+                ::std::lock_guard registry{control_owner().registry};
                 auto maintenance{g_runtime.execution_domain.try_maintenance_transition()};
                 if(!maintenance) { return {true, false, 0u, 0u, EBUSY}; }
-                ::std::lock_guard registry{control_owner().registry};
                 if(control_owner().profile.get() != state.get() ||
                    !g_runtime.execution_domain.reopen_public_admission(maintenance, state->gate))
                 { return {true, false, 0u, 0u, EBUSY}; }
@@ -659,9 +668,12 @@
             if(!joined.physically_joined)
             { return {false, reset, joined.preparing, joined.native_pending, joined.native_error,
                 joined.compiler_tickets_pending, joined.native_cleanup_pending}; }
+            // Native workers have physically joined outside both locks.
+            // Re-enter the canonical registry -> maintenance order before
+            // inspecting ownership or publishing retirement.
+            ::std::lock_guard registry{control_owner().registry};
             auto maintenance{g_runtime.execution_domain.try_maintenance_transition()};
             if(!maintenance) { return {false, reset, 0u, 0u, EBUSY}; }
-            ::std::lock_guard registry{control_owner().registry};
             if(control_owner().profile.get() != state.get()) { return {}; }
             state->outcome = state->native->read_outcome(); state->requires_reset = reset;
 #if defined(UWVM_IMPORT_WASI_WASIP1) && !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1)

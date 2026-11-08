@@ -1,0 +1,9 @@
+Manifest-Version: 1.0
+OpenIDE-Module: org.uwvm.debug
+OpenIDE-Module-Name: UWVM authenticated Wasm debugger
+OpenIDE-Module-Specification-Version: 1.0
+OpenIDE-Module-Public-Packages: org.uwvm.debug.*
+OpenIDE-Module-Module-Dependencies: org.netbeans.modules.lsp.client/0 > 1.29, com.google.gson > 2.7, org.openide.awt > 7.70, org.openide.util > 9.10
+OpenIDE-Module-Requires: org.openide.modules.ModuleFormat1
+OpenIDE-Module-Java-Dependencies: Java > 17
+

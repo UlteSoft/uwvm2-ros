@@ -41,6 +41,7 @@
 # include <uwvm2/utils/mutex/impl.h>
 # include <uwvm2/utils/allocator/fast_io_strict/impl.h>
 # include <uwvm2/object/memory/wasm_page/impl.h>
+# include <uwvm2/extension/memtag/storage.h>
 #endif
 
 #ifndef UWVM_MODULE_EXPORT
@@ -327,6 +328,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
         // publishes only after allocation, copy and zero initialization finish.
         ::std::atomic_size_t ordered_memory_length{};
 
+        // Optional owner-bound shadow; all pre-existing hot-field offsets stay unchanged.
+        ::uwvm2::extension::memtag::shadow_storage memtag_shadow{};
+
 
         // constexpr data
 
@@ -374,6 +378,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
 
             // Since there is only one pop, directly counting the number of zeros suffices to calculate log2
             this->custom_page_size_log2 = ::std::countr_zero(custom_page_size);
+        }
+
+        // Configure only after native initialization and before guest publication.
+        [[nodiscard]] inline ::uwvm2::extension::memtag::storage_error enable_memtag(
+            ::uwvm2::extension::memtag::address_width width, bool shared) noexcept
+        {
+            namespace mt = ::uwvm2::extension::memtag;
+            if(this->memory_begin == nullptr) { return mt::storage_error::invalid_configuration; }
+            return this->memtag_shadow.enable(width, shared, mt::storage_backend::growable,
+                this->memory_length, ::std::numeric_limits<::std::size_t>::max());
         }
 
         /// @brief      Initialize the memory.
@@ -475,6 +489,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
 
             // After realloc, write new_memory_length
             auto const new_memory_length{curr_memory_length + memory_grow_size};
+
+            if(this->memtag_shadow.enabled() && this->memtag_shadow.prepare_growth(new_memory_length) !=
+               ::uwvm2::extension::memtag::storage_error::none) [[unlikely]] { return false; }
 
             // In this model, regardless of whether `memory_begin` changes, no thread safety issues will arise.
             // Therefore, realloc_zero is used by default here.
@@ -615,6 +632,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
             // After realloc, write new_memory_length
             auto const new_memory_length{curr_memory_length + memory_grow_size};
 
+            if(this->memtag_shadow.enabled() && this->memtag_shadow.prepare_growth(new_memory_length) !=
+               ::uwvm2::extension::memtag::storage_error::none) [[unlikely]] { return false; }
+
             // In this model, regardless of whether `memory_begin` changes, no thread safety issues will arise.
             // Therefore, realloc_zero is used by default here.
             ::std::byte* temp_memory_begin;  // no init required
@@ -688,6 +708,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
             this->memory_length = other.memory_length;
             this->custom_page_size_log2 = other.custom_page_size_log2;
             this->diagnostic_owner_memory_index = other.diagnostic_owner_memory_index;
+            this->memtag_shadow = ::std::move(other.memtag_shadow);
             this->sequentially_consistent_size = other.sequentially_consistent_size;
             this->ordered_memory_length.store(other.ordered_memory_length.load(::std::memory_order_relaxed), ::std::memory_order_relaxed);
             this->growing_flag_p = other.growing_flag_p;
@@ -716,6 +737,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
             this->memory_length = other.memory_length;
             this->custom_page_size_log2 = other.custom_page_size_log2;
             this->diagnostic_owner_memory_index = other.diagnostic_owner_memory_index;
+            this->memtag_shadow = ::std::move(other.memtag_shadow);
             this->sequentially_consistent_size = other.sequentially_consistent_size;
             this->ordered_memory_length.store(other.ordered_memory_length.load(::std::memory_order_relaxed), ::std::memory_order_relaxed);
             this->growing_flag_p = other.growing_flag_p;
@@ -740,6 +762,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
         ///             WASM execution.
         inline constexpr void clear() noexcept
         {
+            this->memtag_shadow.reset();
             this->diagnostic_owner_memory_index = 0uz;
             Alloc::deallocate_aligned_n(this->memory_begin, alignment, this->memory_length);  // dealloc includes built-in nullptr checking
 
@@ -754,6 +777,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
         ///             WASM execution.
         inline constexpr void clear_destroy() noexcept
         {
+            this->memtag_shadow.reset();
             this->diagnostic_owner_memory_index = 0uz;
             Alloc::deallocate_aligned_n(this->memory_begin, alignment, this->memory_length);  // dealloc includes built-in nullptr checking
 

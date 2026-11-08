@@ -144,7 +144,9 @@ int main(int argc,char const* const* argv)
  check(s::parse("sizeof -value",code)==s::error::none,"unary size without a type callback syntax");value_reads=extent_queries=0u;
  check(s::evaluate(code,value_copy{32u},out,32u,s::details::no_type_resolver{},s::language_semantics::cpp)==s::error::unavailable && value_reads==0u && extent_queries==0u,"no type callback never falls back to reading operand values");
  ::std::string deep{};for(unsigned i{};i!=40u;++i)deep=::fast_io::concat_std(deep,"sizeof ");deep=::fast_io::concat_std(deep,"1");
- check(s::parse(deep,code)==s::error::limit_exceeded,"unary sizeof recursion stays bounded");
+ check(s::parse(deep,code)==s::error::none && s::evaluate(code,value_copy{32u},out,32u,type_query{32u},s::language_semantics::cpp)==s::error::none && out.bits==4u,"deep unary sizeof uses heap continuations");
+ s::expression_limits cap{};cap.max_nesting=32u;
+ check(s::parse(deep,code,s::language_semantics::shared_numeric,cap)==s::error::limit_exceeded && code.nodes.empty(),"explicit caller nesting quota stays atomic");
  check(s::parse("sizeof -1 ? 2 : 3",code)==s::error::none && s::evaluate(code,value_copy{32u},out,32u,type_query{32u},s::language_semantics::cpp)==s::error::none && out.bits==2u,"conditional remains outside the unary sizeof operand");
  ::fast_io::io::println("debug_source_sizeof_unary: PASS checks=",checks," native sizeof/unary precedence and finite declaration DATA only");
 }

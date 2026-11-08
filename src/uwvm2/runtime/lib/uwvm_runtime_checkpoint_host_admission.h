@@ -5,11 +5,13 @@
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
 extern "C++"
 {
+    class runtime_crash_dump_collector;
     class runtime_checkpoint_coherent_manager; // Same actual nonexported global-module attachment.
     class runtime_checkpoint_retirement_bridge;
     class runtime_checkpoint_guest_worker_bridge;
     class runtime_checkpoint_host_bridge final
     {
+        friend class ::uwvm2::runtime::lib::runtime_crash_dump_collector;
         friend class ::uwvm2::runtime::lib::runtime_checkpoint_coherent_manager;
         friend class ::uwvm2::runtime::lib::runtime_checkpoint_retirement_bridge;
         friend class ::uwvm2::runtime::lib::runtime_checkpoint_guest_worker_bridge;

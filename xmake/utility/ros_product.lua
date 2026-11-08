@@ -44,6 +44,17 @@ function uwvm_ros_product_check(get, host, host_arch, reject_configuration)
             local reserved_macro = macro and (macro:match("^UWVM") or macro:match("^__")
                 or macro:match("^_LIBCPP_") or macro:match("^_LIBCXXABI_")
                 or macro:match("^_LIBUNWIND") or macro:match("^_GLIBCXX_"))
+            -- ISA availability (+memtag) is not instrumentation. Reject only
+            -- raw requests which pretend to configure native MTE protection.
+            -- The named prerequisite policy owns that complete provider contract.
+            local raw_memtag = ((flag:match("^%-f.*sanitize") or flag:match("^%-Wl,"))
+                    and flag:find("memtag", 1, true))
+                or flag:match("^memtag[%-%=]") or flag == "memtag"
+                or flag:match("^%-%-android%-memtag")
+            if raw_memtag then
+                reject("raw " .. field .. " cannot enable or alter native host MTE: " .. flag ..
+                    "; use --host-mte=required for complete-provider prerequisite checks")
+            end
             local forbidden = reserved_macro or flag:find("@", 1, true) or flag:match("^%-Xclang")
                 or flag:match("^%-Wp,") or flag == "-Xpreprocessor"
                 or flag:match("^%-%-define%-macro") or flag:match("^%-%-undefine%-macro")
@@ -69,6 +80,12 @@ function uwvm_ros_product_check(get, host, host_arch, reject_configuration)
                 or flag:find("--allow-multiple-definition", 1, true) or flag:find("-z,muldefs", 1, true)
             if forbidden then reject("raw " .. field .. " overrides a required ABI/EH contract: " .. flag) end
         end
+    end
+    -- Weak-symbol provider discovery is a legacy upstream emergency ABI.
+    -- ROS requires explicit native-driver admission; do not expose an option
+    -- that silently restores implicit weak providers on any supported ABI.
+    for _, option in ipairs({"enable-weak-symbol", "enable-weak-symbols", "weak-symbol"}) do
+        if get(option) ~= nil then reject("--" .. option .. " has been removed; ROS never admits weak-symbol providers") end
     end
     local plat = value("plat", host)
     if plat ~= "linux" then
@@ -104,18 +121,35 @@ function uwvm_ros_product_check(get, host, host_arch, reject_configuration)
             end
         end
     end
+    local host_mte = value("host-mte", "off")
+    if host_mte ~= "off" and host_mte ~= "required" then
+        reject("--host-mte must be off or required")
+    end
+    if host_mte == "required" then
+        if arch ~= "aarch64" then
+            reject("--host-mte=required needs the AArch64 Linux GNU ABI; guest WasmMTE remains a separate runtime feature")
+        end
+        reject("--host-mte=required has no qualified complete native host provider: compiler and linker support alone " ..
+            "does not prove protected main/worker stacks, globals/TLS, allocator lifecycle, strict synchronous " ..
+            "thread initialization, or paired LLVM/C++/unwind/ROS library coverage; run the native host probes " ..
+            "in test/0086.memtag/host_native and consult documents/toolchain/native-host-mte.md")
+    end
     -- Modern ROS threads, C++ EH, signed caches and the genuine AOT backend are
     -- product requirements. Legacy DOS/Win9x workarounds cannot silently alter them.
     for _, option in ipairs({"use-thread-local", "use-llvm-compiler", "enable-wsea", "linux-native-debug",
-        "enable-local-imported-wasip1-wasm64", "detailed-debug-check"}) do
+        "enable-local-imported-wasip1-wasm64", "detailed-debug-check", "import-ros1", "import-ros2"}) do
         if value(option, true) ~= true then reject("--" .. option .. "=false is not recommended or supported") end
     end
     for _, option in ipairs({"fno-exceptions", "disable-local-imported-wasip1",
         "macos-x64-native-step", "macos-4gib-test", "numeric-exception-fused", "use-cxx-module", "enable-lto"}) do
         if value(option, false) ~= false then reject("--" .. option .. " is not supported by this product") end
     end
-    if not value("import-ros1", true) and not value("import-ros2", true) then
-        reject("at least one qualified ROS bridge must be included")
+    -- Every host interface is present in the ROS product. Exposure and grants
+    -- are immutable per-module runtime policy, never a build-time omission.
+    -- Both socket ABIs are compiled; the process selects one before linking.
+    if value("enable-local-imported-wasip1-socket", "wasip1") ~= "wasip1" then
+        reject("--enable-local-imported-wasip1-socket must be wasip1; socket interfaces cannot be removed " ..
+            "or selected at build time; use --wasip1-socket-abi standard|wasix at runtime")
     end
     -- Optional interpreter execution shares the same per-module host policy.
     -- Keep LLVM present for the native debugger and managed update compiler.

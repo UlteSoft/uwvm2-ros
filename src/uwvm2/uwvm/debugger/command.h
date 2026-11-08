@@ -10,9 +10,11 @@
 # include <cstdint>
 # include <limits>
 # include <memory>
+# include <string>
 # include <fast_io.h>
 # include <fast_io_dsal/string_view.h>
 # include <uwvm2/utils/control/protocol.h>
+# include <uwvm2/utils/control/debug_permissions.h>
 # include "wasm_events.h"
 # include "wasm_state.h"
 # include "wasm_mutation.h"
@@ -31,7 +33,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
     inline constexpr ::std::size_t max_command_bytes{512};
     inline constexpr ::std::size_t max_input_command_bytes{wasip1_state::maximum_command_bytes}; // Long input is restricted to bounded WASIp1 edits and HOST pretty-printer configuration.
     using command_text_view = ::fast_io::string_view;
-    enum class console_command_kind { assembly_breakpoint, module_list, protocol, source_step, source_breakpoint, source_locals, assembly_step, replacement_file, help, quit, unsupported, invalid, empty, assembly_disassemble, assembly_disassemble_range, wasm_event, wasm_script, assembly_registers, source_type, source_value, assembly_next, source_frame, wasm_state, wasip1_state, wasm_path, wasm_mutation, wasm_step, breakpoint_control, assembly_finish, execution_relocate, ros_state, source_print_options, source_printer_config, host_trace, watchpoint, breakpoint_commands, callback_echo };
+    enum class console_command_kind { wasm_disassemble, assembly_breakpoint, module_list, protocol, source_step, source_breakpoint, source_locals, assembly_step, replacement_file, help, quit, unsupported, invalid, empty, assembly_disassemble, assembly_disassemble_range, wasm_event, wasm_script, assembly_registers, source_type, source_value, assembly_next, source_frame, wasm_state, wasip1_state, wasm_path, wasm_mutation, wasm_step, breakpoint_control, assembly_finish, execution_relocate, ros_state, source_print_options, source_printer_config, host_trace, watchpoint, breakpoint_commands, callback_echo, wasm_dump };
     enum class unavailable_step_level { none, source, assembly };
     enum class source_step_policy { into, over, out };
     enum class source_run_to_policy { none, until, advance };
@@ -56,6 +58,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         ::std::uint64_t module_help_page{1u}; // Host metadata page, never a runtime operation.
         ::fast_io::array<char, max_command_bytes> source_path{};
         ::std::size_t source_path_size{};
+        ::std::string dump_path{}; // Owned HOST output path; never a Guest FD or memory address.
+        ::std::uint64_t dump_stop_identifier{};
+        bool memory_tags{}; // Read-only tag projection of the same authenticated guest memory range.
         bool wait_for_event{}; // Host observation using an authenticated status request.
         bool run_from_entry{}; // Standalone launcher request; never a wire resume/restart capability.
         console_launch_action launch_action{}; // HOST CLI only; controller/transport cannot execute it.
@@ -114,6 +119,45 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         host_trace::request host_trace_request{};
         ros_state::request ros_state_request{}; // Append-only diagnostic DATA, no ROS authority.
     };
+    // Shared by the controller and every transport BEFORE status-wrapped
+    // extensions, file reads, callbacks or adapter conveniences are evaluated.
+    [[nodiscard]] inline bool command_permission_allowed(console_command const& c) noexcept
+    {
+        namespace p=::uwvm2::utils::control::debug_permissions;
+        using op=::uwvm2::utils::control::operation;
+        if(!p::diagnostics_allowed())return false;
+        if(p::full_allowed())return true;
+        if(c.kind!=console_command_kind::protocol && c.operation!=op::status)return false;
+        if(c.operation==op::step || c.operation==op::replace_function || c.operation==op::breakpoint_set ||
+           c.operation==op::breakpoint_clear)return false;
+        if(c.run_from_entry || c.launch_action!=console_launch_action::none)return false;
+        if(c.kind==console_command_kind::help || c.kind==console_command_kind::quit ||
+           c.kind==console_command_kind::wasm_dump)return true;
+        if(c.kind==console_command_kind::protocol)
+        {
+            if(c.operation==op::status || c.operation==op::detach || c.operation==op::resume)return true;
+            return p::inspection_allowed() && (c.operation==op::pause || c.operation==op::backtrace ||
+                   c.operation==op::read_memory || c.operation==op::locals || c.operation==op::breakpoint_list);
+        }
+        if(!p::inspection_allowed())return false;
+        switch(c.kind)
+        {
+            case console_command_kind::wasm_disassemble: case console_command_kind::module_list:
+            case console_command_kind::source_locals: case console_command_kind::source_type:
+            case console_command_kind::source_value: case console_command_kind::source_frame:
+            case console_command_kind::wasm_state: case console_command_kind::wasm_path:
+            case console_command_kind::assembly_disassemble: case console_command_kind::assembly_disassemble_range:
+            case console_command_kind::assembly_registers: case console_command_kind::ros_state:
+            case console_command_kind::source_print_options: case console_command_kind::source_printer_config:return true;
+            case console_command_kind::wasip1_state:return !wasip1_state::is_mutation(c.wasip1_state_request.operation);
+            case console_command_kind::host_trace:return c.host_trace_request.operation!=host_trace::action::clear;
+            case console_command_kind::wasm_event:return c.wasm_request.command==wasm_events::command_kind::trace_read ||
+                c.wasm_request.command==wasm_events::command_kind::catch_list;
+            case console_command_kind::watchpoint:return c.watchpoint_policy==watchpoint_action::list ||
+                c.watchpoint_policy==watchpoint_action::read_old || c.watchpoint_policy==watchpoint_action::read_new;
+            default:return false;
+        }
+    }
     // Console-owned preferences survive a CLI run/restart. Explicit /r and /p
     // apply to one query; changing a preference never captures a source value.
     struct console_print_preferences
@@ -218,6 +262,29 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         line = line.subview(details::skip_command_space(line, 0u));
         auto const head_end{details::command_word_end(line, 0u)};
         auto const head{line.subview(0u, head_end)};
+        if(head=="dump")
+        {
+            auto at{details::skip_command_space(line,head_end)};
+            auto end{details::command_word_end(line,at)};
+            if(line.subview(at,end-at)!="wasm")return {};
+            at=details::skip_command_space(line,end);end=details::command_word_end(line,at);
+            console_command result{};
+            if(!details::parse_decimal(line.subview(at,end-at),result.dump_stop_identifier) || !result.dump_stop_identifier)return {};
+            at=details::skip_command_space(line,end);
+            if(at==line.size())return {};
+            auto const path{line.subview(at)};
+            for(auto ch:path)if(ch=='\0')return {};
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+            try {
+#endif
+                result.dump_path.assign(path.data(),path.size());
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+            } catch(...) { return {}; }
+#endif
+            result.kind=console_command_kind::wasm_dump;
+            result.operation=::uwvm2::utils::control::operation::status;
+            return result;
+        }
         // One-shot policy uses exactly the ordinary target validator. A
         // separate point never changes a persistent point at the same address.
         if(head == "tbreak")
@@ -1067,6 +1134,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 ::fast_io::io::print(output,::fast_io::mnp::le_put<64>(result.requested_step_thread));
             }
         }
+        else if(name == "wasm-code" && count == 6u)
+        {
+            if(!details::parse_decimal(words[1],result.requested_step_thread) || !result.requested_step_thread ||
+               !details::parse_decimal(words[2],result.disassembly_stop_identifier) || !result.disassembly_stop_identifier ||
+               !details::parse_decimal(words[3],result.disassembly_count) || !result.disassembly_count || result.disassembly_count>32u ||
+               !details::parse_signed_decimal(words[4],result.disassembly_byte_offset) ||
+               !details::parse_signed_decimal(words[5],result.disassembly_instruction_offset)) { return {}; }
+            result.kind=console_command_kind::wasm_disassemble;
+        }
         else if(name == "disassemble" && count == 4u)
         {
             if(!details::parse_decimal(words[1], result.requested_step_thread) || result.requested_step_thread == 0u ||
@@ -1164,7 +1240,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             }
             else { return {}; }
         }
-        else if(name == "memory" && count == 5u)
+        else if((name == "memory" || name == "memtags") && count == 5u)
         {
             ::fast_io::array<::std::uint64_t, 4> fields{};
             for(::std::size_t i{}; i != fields.size(); ++i)
@@ -1174,6 +1250,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             if(fields[1] > (::std::numeric_limits<::std::uint32_t>::max)() ||
                fields[3] > 256u || fields[2] > (::std::numeric_limits<::std::uint64_t>::max)() - fields[3]) { return {}; }
             result.operation = read_memory;
+            result.memory_tags = name == "memtags";
             result.payload_size = 32u;
             ::fast_io::io::print(output, ::fast_io::mnp::le_put<64>(fields[0]),
                                 ::fast_io::mnp::le_put<32>(static_cast<::std::uint32_t>(fields[1])), ::fast_io::mnp::le_put<32>(::std::uint32_t{}),

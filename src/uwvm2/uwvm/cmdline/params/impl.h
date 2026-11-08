@@ -59,6 +59,7 @@
 # include "runtime_llvm_jit_exception_dispatch.h"
 # include "runtime_llvm_jit_cache_path.h"
 # include "runtime_llvm_jit_cache_seal_process.h"
+# include "runtime_disable_memtag.h"
 # include "runtime_int.h"
 # include "runtime_aot.h"
 # include "runtime_uwvm_int_disable_loop_unwind.h"

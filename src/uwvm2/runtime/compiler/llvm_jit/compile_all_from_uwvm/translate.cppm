@@ -103,6 +103,13 @@ module;
 #endif
 export module uwvm2.runtime.compiler.llvm_jit.compile_all_from_uwvm:translate;
 
+import uwvm2.runtime.compiler.llvm_jit.compile_all_from_uwvm.translate.memtag_disabled_ir;
+import uwvm2.runtime.compiler.llvm_jit.compile_all_from_uwvm.translate.memtag_enabled_ir;
+import uwvm2.runtime.memtag.bridge;
+import uwvm2.runtime.memtag.wait;
+import uwvm2.extension.memtag.instruction;
+import uwvm2.runtime.compiler.llvm_jit.compile_all_from_uwvm.translate.memtag_check_ir;
+
 import uwvm2.validation.standard.wasm3.relaxed_simd;
 import uwvm2.validation.standard.wasm3.threads;
 import uwvm2.validation.standard.wasm3.tail_call;

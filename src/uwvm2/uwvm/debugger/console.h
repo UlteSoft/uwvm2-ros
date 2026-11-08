@@ -22,6 +22,7 @@
 # include <fast_io_dsal/string.h>
 # include <fast_io.h>
 # include <fast_io_unit/string.h>
+# include <uwvm2/extension/memtag/color.h>
 # include "command.h"
 # include "controller.h"
 # include "managed_cli_shutdown.h"
@@ -225,6 +226,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         }
         [[nodiscard]] inline ::std::string format_reply(controller_reply const& reply, console_command const& command)
         {
+            if(command.kind==console_command_kind::wasm_dump)
+            {
+                if(reply.status==::uwvm2::utils::control::error::none && reply.dump_published)
+                    return ::fast_io::concat_std("wasm-dump saved stop=",reply.stop_identifier,"; current stop retained; inspect capture completeness metadata\n");
+                return ::fast_io::concat_std("error: wasm-dump rejected status=",reply.dump_status,
+                    "; requires an exact current cooperative stop and a new writable output path; current stop retained\n");
+            }
             ::std::string text;
             ::fast_io::ostring_ref_std output{__builtin_addressof(text)};
             if(command.kind==console_command_kind::execution_relocate)
@@ -694,6 +702,25 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 ::uwvm2::utils::control::input_buffer fields{command.payload};
                 ::fast_io::io::scan(fields,::fast_io::mnp::le_get<64>(module),::fast_io::mnp::le_get<32>(memory),
                     ::fast_io::mnp::le_get<32>(reserved),::fast_io::mnp::le_get<64>(offset));
+                if(command.memory_tags)
+                {
+                    ::std::uint32_t length{};
+                    ::fast_io::io::scan(fields,::fast_io::mnp::le_get<32>(length));
+                    auto const& tags{reply.memory_tag_info};
+                    using enum ::uwvm2::extension::memtag::debug_tag_status;
+                    auto const status{tags.status==available ? "available" : tags.status==disabled ? "disabled" : "unsupported-memory"};
+                    ::fast_io::io::print(output,"Wasm memory tags module=",module," index=",memory," offset=",offset,
+                        " bytes=",length," status=",::fast_io::mnp::os_c_str(status)," memory-bytes=",tags.memory_bytes,
+                        " tag-bits=",tags.tag_bits," first-granule=",tags.first_granule," count=",reply.memory.size(),"\n");
+                    for(::std::size_t i{};i!=reply.memory.size();++i)
+                    {
+                        auto const tag{::std::to_integer<::std::uint8_t>(reply.memory[i])};
+                        auto const color{::uwvm2::extension::memtag::hex_color_for_tag(tag)};
+                        ::fast_io::io::print(output,"tag offset=",(tags.first_granule+i)*16u," value=0x",
+                            ::fast_io::mnp::hex<false,true>(tag)," color=",::fast_io::string_view{color.data(),color.size()},"\n");
+                    }
+                    ::fast_io::io::print(output,"memory-tags-end\n");return text;
+                }
                 ::fast_io::io::print(output,"Wasm memory module=",module," index=",memory," offset=",offset," bytes=",reply.memory.size(),"\n",
                     console_memory::dump(reply.memory,offset)); return text;
             }
@@ -1187,8 +1214,20 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         // the existing controller validation and machine-readable formatter.
         [[nodiscard]] inline ::std::string execute_control_command(controller& control, console_command const& command)
         {
+            if(!command_permission_allowed(command))return "error: debugger permission denies this operation\n";
+            if(!::uwvm2::utils::control::debug_permissions::inspection_allowed())
+            {
+                auto r=control.execute(command);
+                if(r.status!=::uwvm2::utils::control::error::none)return "error: limited diagnostic operation refused\n";
+                if(command.kind==console_command_kind::wasm_dump)
+                    return r.dump_published ? "wasm-dump saved; limited, sensitive state omitted\n" : "error: dump unavailable\n";
+                return ::fast_io::concat_std("limited status=",::fast_io::mnp::dec(static_cast<unsigned>(r.execution)),
+                    " stop-id ",::fast_io::mnp::dec(r.stop_identifier)," participants=",::fast_io::mnp::dec(r.threads.size()),
+                    " reason=",::fast_io::mnp::dec(static_cast<unsigned>(r.reason))," exit-status=",::fast_io::mnp::dec(r.guest_exit_code),"\n");
+            }
             if(command.kind == console_command_kind::source_print_options || command.kind == console_command_kind::source_printer_config)
             { return control.configure_transport_source_print(command); }
+            if(command.kind == console_command_kind::wasm_disassemble) { return control.wasm_code_page(command); }
             if(command.kind == console_command_kind::module_list)
             {
                 auto const text{console_module_help::format(control.source_module_page(command.module_help_page), false, 80u)};
@@ -1643,7 +1682,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             auto const reply{control_.execute(command)}; auto const text{details::format_reply(reply,command)};
             if(command.operation==::uwvm2::utils::control::operation::read_memory)
             { if(reply.status==::uwvm2::utils::control::error::none) { ::std::uint64_t module{},offset{};::std::uint32_t memory{},reserved{};::uwvm2::utils::control::input_buffer fields{command.payload};
-                ::fast_io::io::scan(fields,::fast_io::mnp::le_get<64>(module),::fast_io::mnp::le_get<32>(memory),::fast_io::mnp::le_get<32>(reserved),::fast_io::mnp::le_get<64>(offset));screen_.memory_snapshot(reply.memory,offset); }
+                ::fast_io::io::scan(fields,::fast_io::mnp::le_get<64>(module),::fast_io::mnp::le_get<32>(memory),::fast_io::mnp::le_get<32>(reserved),::fast_io::mnp::le_get<64>(offset));
+                if(!command.memory_tags)
+                {
+                    screen_.memory_snapshot(reply.memory,offset);
+                    auto tag_command{command};tag_command.memory_tags=true;
+                    auto const tags{control_.execute(tag_command)};
+                    if(tags.status==::uwvm2::utils::control::error::none && tags.stop_identifier==reply.stop_identifier &&
+                       tags.memory_tag_info.status==::uwvm2::extension::memtag::debug_tag_status::available)
+                    { screen_.memory_tags_snapshot(tags.memory,tags.memory_tag_info.first_granule); }
+                    else { screen_.memory_tags_snapshot({},0u); }
+                } }
               else { screen_.memory_snapshot({},0u); } }
             screen_.output(::fast_io::string_view{text.data(),text.size()});
         }
@@ -2392,6 +2441,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             else if(command.kind != console_command_kind::empty) { editor.forget_repeat(); }
             switch(command.kind)
             {
+                case console_command_kind::wasm_disassemble:
+                    { auto text{control.wasm_code_page(command)}; output(::fast_io::string_view{text.data(),text.size()}); continue; }
                 case console_command_kind::module_list:
                 {
                     auto const size{console_tui::terminal_dimensions()};
@@ -2447,6 +2498,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 case console_command_kind::source_frame:
                 case console_command_kind::watchpoint:
                 case console_command_kind::breakpoint_commands:
+                case console_command_kind::wasm_dump:
                 case console_command_kind::callback_echo:
                 case console_command_kind::breakpoint_control:
                 case console_command_kind::replacement_file:

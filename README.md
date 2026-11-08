@@ -28,7 +28,7 @@ UlteSoft WebAssembly Virtual Machine 2 for ROS
 Most wasm standards are supported. See [feature.md](documents/features.md). For detailed changes in each WebAssembly release, see [wasm-release.md](documents/wasm-release.md).
 
 ### Supports multiple platforms
-Supports over 100 triplet platforms, including DOS series, POSIX series, Windows 9x series, Windows NT series, and the Host C Library Series. Runtime execution is deliberately limited to the full-translation UWVM interpreter and the full-module LLVM AOT mode; lazy and tiered execution are not part of this fork. See [support.md](documents/support.md) for details.
+The ROS product admits Linux GNU builds for x86_64, i686, AArch64, ARMv7 soft-float (arm) and ARMv7 hard-float (armhf). The broader upstream platform sources are retained, but they are not additional supported ROS deployment targets. LLVM full-module execution is required; the interpreter is an optional execution backend. See the [product build policy](xmake/utility/ros_product.lua) and [operator whitepaper](documents/user-whitepaper.md).
 
 ### Runtime execution backends
 UWVM2 retains two explicit runtime backends: the full-translation interpreter and full-module LLVM AOT. See [runtime compiler documentation](src/uwvm2/runtime/compiler/readme.md). For the u2 interpreter (“register-ring stack-top cache”) architecture, see [u2 interpreter documentation](src/uwvm2/runtime/compiler/uwvm_int/readme.md).
@@ -47,13 +47,13 @@ completed test snapshots from remaining platform/build coverage.
 High-performance, spec-compliant WebAssembly binary parser built on concept-oriented C++26 with SIMD-aware design and extensive fuzzing for safety and robustness. See [readme.md](src/uwvm2/parser/readme.md) for details.
 
 ### WASI host extensions
-WebAssembly System Interface Preview 1 (WASI P1) host bindings for `wasm32-wasip1` and `wasm64-wasip1` targets, built on the same cross-platform runtime as UWVM2 and exposing file-system and related services to WebAssembly modules. UWVM2 can route WASI P1 through global defaults, anonymous single-module targets, or named shared groups that apply to the main module, preloaded Wasm modules, native preload dynamic libraries, and weak-symbol modules. See [imported/readme.md](src/uwvm2/imported/readme.md) and [WASI Commands](documents/command-line/wasi.md) for details.
+WASI Preview 1 implementations for memory32 and memory64 are compiled into the ROS product. Each module starts with no exposed WASI imports and no host authority. Explicit Single or Group policies separately enable the namespace, select each interface's hidden/deny/allow state, and grant operations and resources. Socket implementations are present but convey no default rights. See [WASI commands](documents/command-line/wasi.md) and [host permissions](documents/command-line/host-permissions.md).
 
 ### Plugin-facing host APIs
 Preload modules (dynamic libraries / weak-symbol plugins) can consume a stable host-side API for linear-memory access, and can optionally consume the UWVM2 WASI Preview 1 host API as well. The WASI table is disabled by default and must be explicitly enabled from the command line. When enabled for a single target or named group, plugin-facing WASI calls are resolved against that target's WASI environment rather than one process-wide table. Native dynamic libraries still execute as host code and must be treated as trusted host extensions.
 
 ### ROS 1 and ROS 2 runtime extensions
-Optional Linux interpreter extensions expose independently configured ROS 1 and ROS 2 capabilities through separate native Gateways. Each Wasm instance receives its own capability table; explicit Global, Single and Group configuration controls Topic, Service, Parameter, Graph, Action, TF, Time, Logging and ROS 2 Lifecycle access. The core build requires no ROS libraries. See the [ROS 1 CLI](documents/command-line/ros1.md), [ROS 2 CLI](documents/command-line/ros2.md) and [numbered ROS test suites](test/0073.ros-tests/README.md).
+ROS 1 and ROS 2 host interfaces are mandatory build components, with no default guest exposure or authority. They use separately configured native Gateways. Each Wasm instance receives its explicit policy for Topic, Service, Parameter, Graph, Action, TF, Time, Logging and ROS 2 Lifecycle access; enabling a namespace alone grants none of these operations. The core build requires no ROS libraries. See the [ROS 1 CLI](documents/command-line/ros1.md), [ROS 2 CLI](documents/command-line/ros2.md) and [numbered ROS test suites](test/0073.ros-tests).
 
 The [uwvm2-ros SDK](https://github.com/UlteSoft/uwvm2-ros-sdk) is maintained
 in a separate MIT-licensed repository. It provides language bindings, platform
@@ -85,19 +85,19 @@ $ uwvm2-ros <param0> <param1> ... --run <wasm:path> <argv1:str> <argv2:str> ...
 $ uwvm2-ros <param0> <param1> ... <wasm:path> <argv1:str> <argv2:str> ...
 ```
 When `--run`, `-r`, or `--` is omitted, trailing plain arguments are treated as the Wasm path and guest argv.
-* WASI mount dir (wasip1)
-```bash
-$ uwvm2-ros --wasip1-mount-dir <wasi dir> <system dir> ... --run ...
-```
+* Configure WASI permissions and preopened directories using the explicit
+  [WASI policy guide](documents/command-line/wasi.md). Namespace admission,
+  per-interface exposure, operation grants and descriptor rights are separate.
+  The removed `--wasip1-mount-dir` spelling is not accepted by this product.
 
 ## How to build
-* Windows (aka. unknown-windows-msvc). See [windows.md](documents/how-to-build/windows.md)
-* MinGW (aka. unknown-windows-gnu, unknown-w64-mingw32). See [mingw.md](documents/how-to-build/mingw.md)
-* Linux (aka. unknown-linux-unknown). See [linux.md](documents/how-to-build/linux.md)
-* Darwin (aka. unknown-apple-darwin). See [darwin.md](documents/how-to-build/darwin.md)
-* FreeBSD (aka. unknown-freebsd(Version)). See [freebsd.md](documents/how-to-build/freebsd.md)
-* WASM-WASI (self-hosting) (aka. [wasm32|wasm64]-[wasip1|wasip2]-(threads)). See [wasm-wasi.md](documents/how-to-build/wasm-wasi.md)
-* Other platforms: See [how-to-build](documents/how-to-build)
+
+Start with the [Linux ROS build guide](documents/how-to-build/linux.md), the
+[Xmake option reference](documents/xmake-options.md) and the
+[operator whitepaper](documents/user-whitepaper.md). The build rejects non-Linux
+ROS targets and attempts to remove required WASI, ROS or socket interfaces.
+Upstream platform guides describe retained source portability, not additional
+qualified ROS products.
 
 ## Releases
 * [Dev](https://github.com/UlteSoft/uwvm2/tree/master): branch `master`

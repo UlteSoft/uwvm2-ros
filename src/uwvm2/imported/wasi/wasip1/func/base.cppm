@@ -44,6 +44,13 @@ module;
 // platform
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(__linux__)
 # include <sys/vfs.h>
+# include <sys/epoll.h>
+# include <poll.h>
+# include <sys/socket.h>
+# include <sys/uio.h>
+# include <netinet/in.h>
+# include <fcntl.h>
+# include <unistd.h>
 #endif
 #if !defined(_WIN32)
 # include <errno.h>

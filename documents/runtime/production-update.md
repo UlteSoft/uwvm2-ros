@@ -1,9 +1,11 @@
 # Production updates
 
 The `update` command category is independent of `debug`. `uwvm2-ros --help`
-lists both; `--help update` lists the launch options. Updates use RELEASE
-execution with private compilation and publication machinery; no debugger
-controller or DeveloperGrant is installed.
+lists both; `--help update` lists the launch options. Updates use separately
+authorized private compilation and publication machinery. Debugger permissions
+do not grant or remove update authority. An update coordinator and an interactive
+debugger cannot simultaneously own the same execution domain; selecting `full`
+alone does not install a debugger or prevent an authorized update.
 
 ## Supported changes and execution boundary
 
@@ -95,7 +97,7 @@ Wasm API. No SDK, cosign or uwgit executable is required by or called from the V
 ## Launch and trust
 
 ```text
-uwvm2-ros --runtime-aot --management-profile release \
+uwvm2-ros --runtime-aot --debug-permissions limited \
   --update-control-fd <connected-unix-stream-fd> \
   --update-public-key <64-lowercase-hex-ed25519-public-key> \
   --update-contract <approved-initial-contract-reference-sha256> \
@@ -122,7 +124,7 @@ a close-on-exec duplicate and closes the inherited descriptor before guest setup
 The retained management endpoint is sealed against guest descriptor/preopen
 aliases. A separate `--diagnostic-control-fd` may coexist; it has its own sealed
 endpoint and a strictly read-only dispatcher described in
-[RELEASE diagnostics](release-diagnostics.md).
+[Non-sensitive diagnostics](release-diagnostics.md).
 The launch Ed25519 key stays fixed; OpenSSL verifies every permit. No caller
 verification callback or `verified=true` is accepted. An internal cryptographic
 RNG creates a fresh 256-bit nonce independently of guest random permission.

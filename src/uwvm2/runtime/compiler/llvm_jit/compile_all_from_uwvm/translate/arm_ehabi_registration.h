@@ -11,6 +11,7 @@
     defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__)
 # include <features.h>
 # if defined(__GLIBC__)
+#  include "arm_ehabi_extent.h"
 #  include <climits>
 #  include <cstdint>
 #  include <cstring>

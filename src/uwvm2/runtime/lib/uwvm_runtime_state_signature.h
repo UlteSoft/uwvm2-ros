@@ -24,6 +24,7 @@ namespace uwvm2::runtime::lib::details
         runtime_state_kind kind{};
         ::std::uint_least32_t runtime_compiler{};
         ::std::uint_least32_t runtime_mode{};
+        bool memtag_execution_disabled{};
         bool gc_precise_roots_requested{};
         ::std::uint_least32_t gc_root_abi_version{};
 
@@ -60,6 +61,7 @@ namespace uwvm2::runtime::lib::details
     [[nodiscard]] inline constexpr bool operator== (runtime_state_signature const& lhs, runtime_state_signature const& rhs) noexcept
     {
         return lhs.kind == rhs.kind && lhs.runtime_compiler == rhs.runtime_compiler && lhs.runtime_mode == rhs.runtime_mode &&
+               lhs.memtag_execution_disabled == rhs.memtag_execution_disabled &&
                lhs.gc_precise_roots_requested == rhs.gc_precise_roots_requested &&
                lhs.gc_root_abi_version == rhs.gc_root_abi_version &&
                lhs.runtime_compile_threads_existed == rhs.runtime_compile_threads_existed &&

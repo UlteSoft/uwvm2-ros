@@ -470,17 +470,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         // Deallocation later goes through this EXACT allocator implementation.
         // No malloc block is adopted by a mimalloc/custom/Windows allocator.
         using compatible = ::fast_io::generic_allocator_adapter<::fast_io::c_malloc_allocator>;
-        if constexpr(!::std::is_same_v<typename Vector::allocator_type, compatible> ||
-            alignof(value) > alignof(::std::max_align_t)) { return false; }
+        if constexpr(!::std::is_same_v<typename Vector::allocator_type, compatible>) { return false; }
         else
         {
             if(!vector.empty() || vector.capacity() != 0uz ||
                 count > static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)()) / sizeof(value))
             { return false; }
-            auto* memory{static_cast<value*>(allocation_.get().try_malloc(count * sizeof(value)))};
+            auto* memory{allocation_.get().template try_c_malloc_vector_storage<value>(count)};
             if(memory == nullptr) { return false; }
-            // malloc starts an implicit-lifetime storage region. No T object is
-            // claimed live until the vector's normal resize/push constructs it.
+            // The matching allocator storage starts an implicit-lifetime region.
+            // No T is live until normal vector resize/push constructs it.
             vector.imp = {memory, memory, memory + count};
             return true;
         }

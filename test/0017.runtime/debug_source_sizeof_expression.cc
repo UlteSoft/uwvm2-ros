@@ -139,13 +139,16 @@ int main(int argc,char const* const* argv)
  }
  {
   auto text{::fast_io::concat_std("sizeof(",balanced(64u),")")};size(text,4u);scalar::program code{};
-  check(scalar::parse(text,code)==scalar::error::none && code.nodes.size()==128u,"sizeof AST shares original exact node cap");
-  text=::fast_io::concat_std("sizeof(",balanced(65u),")");check(scalar::parse(text,code)==scalar::error::limit_exceeded && code.nodes.empty(),"oversized sizeof AST refused atomically");
+  check(scalar::parse(text,code)==scalar::error::none && code.nodes.size()==128u,"sizeof owned AST node count");
+  text=::fast_io::concat_std("sizeof(",balanced(65u),")");size(text,4u);
+  check(scalar::parse(text,code)==scalar::error::none && code.nodes.size()==130u,"sizeof AST grows beyond former default cap");
+  scalar::expression_limits cap{};cap.max_nodes=128u;
+  check(scalar::parse(text,code,scalar::language_semantics::shared_numeric,cap)==scalar::error::limit_exceeded && code.nodes.empty(),"explicit caller node quota refused atomically");
  }
  {
   scalar::program code{};scalar::integer out{};check(scalar::parse("sizeof(1+2)",code)==scalar::error::none,"cycle probe syntax");
   code.nodes[code.root].lhs=code.root;reads=queries=0u;
-  check(scalar::evaluate(code,values,out,32u,types{})==scalar::error::limit_exceeded && reads==0u && queries==0u,"hostile DATA cycle uses bounded type recursion");
+  check(scalar::evaluate(code,values,out,32u,types{})==scalar::error::malformed && reads==0u && queries==0u && out.bits==0u,"hostile DATA cycle refused before callbacks");
  }
  ::fast_io::io::println("debug_source_sizeof_expression: PASS checks=",checks);
 }

@@ -39,6 +39,9 @@ module;
 export module uwvm2.runtime;
 export import :threaded_profile;
 
+import uwvm2.extension.memtag.debug_types;
+export import uwvm2.runtime.diagnostic.wasm_coredump;
+export import uwvm2.runtime.diagnostic.crash_policy;
 import uwvm2.utils.container;
 import uwvm2.utils.thread;
 import uwvm2.runtime.exception;

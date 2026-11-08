@@ -14,7 +14,7 @@ module;
 #endif
 export module uwvm2.utils.control:session;
 import fast_io;
-import :management;
+import :debug_permissions;
 import :protocol;
 #define UWVM_MODULE
 #define UWVM_MODULE_EXPORT export

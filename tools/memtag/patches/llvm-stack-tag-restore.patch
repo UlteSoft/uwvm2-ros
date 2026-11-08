@@ -1,0 +1,64 @@
+diff --git a/llvm/lib/Target/WebAssembly/WebAssemblyStackTagging.cpp b/llvm/lib/Target/WebAssembly/WebAssemblyStackTagging.cpp
+index f6514008a..28a66b076 100644
+--- a/llvm/lib/Target/WebAssembly/WebAssemblyStackTagging.cpp
++++ b/llvm/lib/Target/WebAssembly/WebAssemblyStackTagging.cpp
+@@ -38,7 +38,7 @@ struct WebAssemblyStackTagging : public FunctionPass {
+   AAResults *AA = nullptr;
+   WebAssemblyStackTagging() : FunctionPass(ID) {}
+ 
+-  void untagAlloca(AllocaInst *AI, Instruction *InsertBefore, uint64_t Size,
++  void restoreAllocaTag(AllocaInst *AI, Instruction *InsertBefore, uint64_t Size,
+                    Function *StoreTagDecl, Type *ArgOp0Type);
+ 
+   Instruction *insertBaseTaggedPointer(
+@@ -96,7 +96,7 @@ static const inline Align kTagGranuleSize = Align(16);
+ 
+ } // namespace
+ 
+-void WebAssemblyStackTagging::untagAlloca(AllocaInst *AI,
++void WebAssemblyStackTagging::restoreAllocaTag(AllocaInst *AI,
+                                           Instruction *InsertBefore,
+                                           uint64_t Size, Function *StoreTagDecl,
+                                           Type *ArgOp0Type) {
+@@ -195,8 +195,12 @@ bool WebAssemblyStackTagging::runOnFunction(Function &Fn) {
+   Type *Int64Type = llvm::Type::getInt64Ty(Ctx);
+   Type *IntPtrType = iswasm32 ? Int32Type : Int64Type;
+ 
+-  Function *UntagStoreDecl = Intrinsic::getOrInsertDeclaration(
+-      F->getParent(), Intrinsic::wasm_memtag_untagstore, {IntPtrType});
++  // Lifetime end restores the original alloca pointer's stack allocation tag.
++  // Emit this explicitly: a VM must not infer stack-vs-heap semantics from
++  // whether an untagstore length happens to be constant after optimization.
++  // All cleanup calls are created after RAUW and use the original padded AI.
++  Function *RestoreStackTagDecl = Intrinsic::getOrInsertDeclaration(
++      F->getParent(), Intrinsic::wasm_memtag_store, {IntPtrType});
+ 
+   for (auto &I : AllocasToInstrument) {
+     memtag::AllocaInfo &Info = I.second;
+@@ -267,7 +271,7 @@ bool WebAssemblyStackTagging::runOnFunction(Function &Fn) {
+         TagPCall->setOperand(1, Info.AI);
+         IntrinsicInst *End = Info.LifetimeEnd.front();
+         IRBuilder<> IRBEnd(End);
+-        IRBEnd.CreateCall(UntagStoreDecl,
++        IRBEnd.CreateCall(RestoreStackTagDecl,
+                           {ConstantInt::get(Int32Type, 0), Info.AI,
+                            ConstantInt::get(IntPtrType, Size)});
+         Start->eraseFromParent();
+@@ -292,7 +296,7 @@ bool WebAssemblyStackTagging::runOnFunction(Function &Fn) {
+                            ConstantInt::get(IntPtrType, Size)});
+         }
+         auto TagEnd = [&](Instruction *Node) {
+-          untagAlloca(AI, Node, Size, UntagStoreDecl, IntPtrType);
++          restoreAllocaTag(AI, Node, Size, RestoreStackTagDecl, IntPtrType);
+         };
+         memtag::forAllReachableExits(*DT, *PDT, *LI, Info, SInfo.RetVec,
+                                      TagEnd);
+@@ -325,7 +329,7 @@ bool WebAssemblyStackTagging::runOnFunction(Function &Fn) {
+       Info.AI->replaceAllUsesWith(TagPCall);
+       TagPCall->setOperand(1, Info.AI);
+       for (auto *RI : SInfo.RetVec) {
+-        untagAlloca(AI, RI, Size, UntagStoreDecl, IntPtrType);
++        restoreAllocaTag(AI, RI, Size, RestoreStackTagDecl, IntPtrType);
+       }
+       // We may have inserted tag/untag outside of any lifetime interval.
+       // Remove all lifetime intrinsics for this alloca.

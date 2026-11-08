@@ -1,0 +1,12 @@
+{
+  "repository": "https://github.com/trcrsired/llvm-project.git",
+  "branch": "mt-2",
+  "revision": "3b5342c56f38dea910d9ffe1264add1aaa3bcd36",
+  "patches": [
+    "patches/llvm-stack-tag-restore.patch",
+    "patches/llvm-global-phi-materialization.patch"
+  ],
+  "preserved_opcode_family": "0xfc20-0xfc2f,0xfc33,0xfc36-0xfc38",
+  "purpose": "Research baseline: stack-tag restoration, dominance-correct globals, and guarded cross-translation-unit data addresses; successor ISA under design",
+  "status": "compiler integration work; runtime qualification pending"
+}

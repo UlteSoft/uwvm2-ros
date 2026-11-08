@@ -94,7 +94,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_step
         // may then be a prologue/epilogue hole; this flag grants no permission.
         bool metadata_ready{};
     };
-    struct limits { ::std::size_t max_path{64u}, max_depth{(::std::numeric_limits<::std::size_t>::max)()}, max_file_bytes{4096u}; };
+    // Optional caller quotas only. Default comparisons consume the complete
+    // owned source metadata, bounded by its actual extents and checked sums.
+    struct limits
+    {
+        ::std::size_t max_path{(::std::numeric_limits<::std::size_t>::max)()},
+            max_depth{(::std::numeric_limits<::std::size_t>::max)()},
+            max_file_bytes{(::std::numeric_limits<::std::size_t>::max)()};
+    };
     enum class error
     {
         none, unmapped, ambiguous, native_position, stale_generation, missing_trace,
@@ -351,7 +358,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_step
             auto const& anchor{saved.returned_anchor};
             auto const anchored{details::inspect(anchor,cap,false)};
             if(anchored != error::none) { return decline(anchored); }
-            if(saved.requested == policy::into || anchor.trace != trace_status::complete ||
+            if(anchor.trace != trace_status::complete || initial.trace != trace_status::complete ||
+               initial.activation != activation_relation::same ||
                !anchor.source_owner || !anchor.metadata_ready || anchor.runtime_epoch != initial.runtime_epoch ||
                anchor.physical_depth >= initial.physical_depth) { return decline(error::inconsistent_activation); }
             if(current.trace != trace_status::complete) { return decline(error::missing_trace); }
@@ -366,9 +374,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_step
                 current.activation == activation_relation::returned ? current.physical_depth < anchor.physical_depth :
                 current.activation == activation_relation::tail_successor && current.physical_depth == anchor.physical_depth};
             if(!valid_relation) { return decline(error::inconsistent_activation); }
-            // A newly called helper under the proven returned-to ancestor is
-            // not that ancestor's next statement, even if its source is mapped.
-            if(current.activation == activation_relation::deeper || current.activation == activation_relation::tail_successor ||
+            // next/finish skip a newly called helper under the authenticated
+            // returned-to ancestor. step may stop in its first genuine mapped
+            // statement; the controller compared this NEW pause to that exact
+            // retained ancestor chain, never to an unproven sibling identity.
+            if((saved.requested != policy::into &&
+                (current.activation == activation_relation::deeper || current.activation == activation_relation::tail_successor)) ||
                !mapped || !current.is_statement) { return {action::keep_running,error::none,{}}; }
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
             try
@@ -481,7 +492,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_step
     // The production controller must ALSO retain that exact activation chain.
     [[nodiscard]] inline error observe_return(origin& saved, position const& current, limits const& cap = {}) noexcept
     {
-        if(!saved.ready || saved.requested == policy::into) { return error::unsupported_policy; }
+        if(!saved.ready || (saved.requested != policy::into && saved.requested != policy::over && saved.requested != policy::out))
+        { return error::unsupported_policy; }
+        if(saved.initial.trace != trace_status::complete || saved.initial.activation != activation_relation::same)
+        { return error::inconsistent_activation; }
         auto const depth{saved.returned_anchor_ready ? saved.returned_anchor.physical_depth : saved.initial.physical_depth};
         if(current.activation != activation_relation::returned || current.physical_depth >= depth ||
            (!saved.seeking_source && (!current.source_owner || !current.metadata_ready))) { return error::inconsistent_activation; }

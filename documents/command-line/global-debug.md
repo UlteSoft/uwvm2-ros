@@ -1,5 +1,7 @@
 # Global And Debug Commands
 
+Debugger permission levels are `full`, `read-only`, `limited` and `none`, selected only at launch. `-Rdbg` defaults to `full`; other launches default to `limited`. See [Debugger permissions](debug-permissions.md) for dump redaction, independent update authority and IDE negotiation.
+
 Source focus:
 
 - `src/uwvm2/uwvm/cmdline/params/{help,mode,run,version,debug_test}.h`
@@ -11,36 +13,18 @@ Source focus:
 | Command | Aliases | Arguments | Repeatability | Availability | Behavior |
 | --- | --- | --- | --- | --- | --- |
 | `--help` | `-h` | `([all|global|debug|update|wasm|secure|log|runtime|wasi|ros1|ros2])` | Once | Core | Print category help and return success immediately. |
-| `--mode` | `-m` | `[section-details|validation|run]` | Once | Core | Select the top-level operation mode. |
+| `--mode` | `-m` | `[section-details|validation|run|debug]` | Once | Core | Select the top-level operation mode. |
 | `--run` | `-r`, `--` | `<file argv[0]:path> <argv[1]:str> ...` | One parser boundary | Core | Set the guest Wasm file and stop host option parsing. |
 | `--version` | `-v`, `-ver` | None | Once | Core | Print the build and feature report, then return success immediately. |
 | `--debug-test` | None | None | Once | `_DEBUG` only | Run an internal debug-only test hook. |
 
-## Trusted management profile
+## Debugger permissions
 
-`--management-profile release|dev` is a launch decision. The robot product
-uses `release` by default, independently of ROS, WASI and the compiler backend.
-Release seals interactive inspection and mutation for the process lifetime;
-runtime reset, reconnect and checkpoint restoration cannot reopen it.
-`-m debug`/`--runtime-debug` in release emits a bounded profile diagnostic and
-executes normally. Interactive debug FD/HANDLE channels are refused in release.
+Use `--debug-permissions full|read-only|limited|none`. `-Rdbg` defaults to `full`; other launches default to `limited`. Explicit selections win, and the permission cannot be changed during a session. The host broker preserves the exact launch selection and does not silently grant full permissions.
 
-Development requires `--management-profile dev` before `--run`. Debugging uses
-a separate authenticated inherited FD/HANDLE, with the same exact guest
-permission contract as normal execution. The Linux `tools/debug/secure_server.py`
-launcher explicitly selects this development profile. A stdin console is refused
-by the robot product; it must not rebind or silently remove guest stdin.
+`full` permits inspection and qualified mutation. `read-only` permits complete inspection and dumps while refusing state/code mutation and stepping. `limited` permits non-sensitive status and redacted dumps. `none` starts no debugger endpoint and denies dump. A separate authenticated FD/HANDLE is required for an actual session; Guest stdin is never repurposed.
 
-These controls do not grant WASI/ROS imports, resources or native address access.
-Console typed actions, including mutation/scripts carried by a status envelope,
-and the runtime capture, mutation, source-memory, replacement and checkpoint
-entry points check the management policy. On Linux LLVM full,
-`--diagnostic-control-fd <fd>` supplies a separate authenticated, bounded read-only
-observer. It can coexist with production updates and cannot pause or mutate the
-guest. See [RELEASE diagnostics](../runtime/release-diagnostics.md),
-[DEV world rebuild](../runtime/dev-world-rebuild.md) and
-[production updates](../runtime/production-update.md) for commands, transport
-requirements and explicit supported boundaries.
+See [Debugger permissions](debug-permissions.md) for the exact command and IDE contract, [bounded diagnostics](../runtime/release-diagnostics.md) for the metadata-only endpoint, and [production updates](../runtime/production-update.md) for independently signed update authority.
 
 ## `--help`
 
@@ -57,7 +41,7 @@ Accepted extra help names:
 - `wasm`: WebAssembly commands only.
 - `runtime`: runtime commands only.
 - `log`: logging commands only.
-- `wasi`: WASI commands only, when WASI support is compiled.
+- `wasi`: WASI commands only; WASI implementations are mandatory in this ROS product.
 
 The extra help name is a normal argument and is marked occupied by the callback. Unknown names fail with an "Invalid Extra Help Name" error and show usage. Because the command returns immediately, do not place options after it expecting normal execution to continue.
 
@@ -78,6 +62,7 @@ Accepted values:
 - `run`: load, validate/initialize as required, and execute the selected entry.
 - `validation`: validate the module graph without executing it.
 - `section-details`: inspect and print section-level details instead of running the guest.
+- `debug`: request the LLVM debugger, subject to the immutable debugger permissions and authenticated host channel; this mode grants no guest authority.
 
 Notes:
 
@@ -167,7 +152,7 @@ Behavior:
 
 Use it only when working on the VM itself.
 
-In the ROS product, DEV can inspect the configured Guest WASIp1 arguments,
+In the ROS product, full and read-only debugging can inspect the configured Guest WASIp1 arguments,
 environment, descriptors and preopens. It cannot modify their launch contract,
 create or duplicate native descriptors, or restore a prior host resource table.
 These requests are rejected at the runtime boundary as well as the command parser.

@@ -1,11 +1,17 @@
 # LLVM-full IDE attachment
 
+Debugger permission levels are `full`, `read-only`, `limited` and `none`, selected only at launch. `-Rdbg` defaults to `full`; other launches default to `limited`. See [Debugger permissions](../../documents/command-line/debug-permissions.md) for dump redaction, independent update authority and IDE negotiation.
+
 `dap_adapter.py` exposes the host-owned debugger broker through the standard
 Debug Adapter Protocol (DAP) over stdin/stdout. The VM must have been launched
 through `secure_server.py` (Linux), `secure_server_macos.py` (macOS), or
 `uwvm-debug-server.exe serve` (Windows). The adapter attaches to the broker;
 it cannot enable debug instrumentation inside an unprepared VM. The guest gets
 neither the broker listener nor the authorization token.
+
+Use the [unified project importer](README.ide-import.md) for isolated Code/Cursor
+workspaces and local or authenticated SSH transport. The [Neovim integration](README.neovim.md)
+also presents actual Wasm/native instructions, host-call JSON and colored memory tags.
 
 The Debug Console can save retained WASI/ROS observations with
 `trace host save "/absolute/host/path/calls.json"`. Recording remains explicitly
@@ -21,12 +27,12 @@ Source and Wasm instruction breakpoints accept the finite DAP hit conditions
 rejected because the saturating counter cannot represent a greater hit count.
 For example, `>=4` ignores the
 first three matching executable safe-point visits and stops on every later
-visit. The adapter sends one `breaksource ... ignore 3` or `break ... ignore 3`
+visit. The adapter sends one `breaksource ... ignore 3` or `breakwasm ... ignore 3`
 command; the controller installs the breakpoint and initial policy under one
 lock. Explicit reconfiguration of an existing target resets its hit counter,
 reenables it and installs the new ignore count. Empty fields preserve an
 ordinary breakpoint. A nonempty language `condition` is sent in the same
-atomic registration command, for example `break ... ignore 3 if counter == 4`.
+atomic registration command, for example `breakwasm ... ignore 3 if counter == 4`.
 Conditions must be printable single-line expressions of at most 256 ASCII
 bytes; the controller validates and evaluates them against the selected source
 context. Unsupported expressions produce an unverified breakpoint.
@@ -65,6 +71,21 @@ it as a VSIX. It contributes the `uwvm-llvm-full` debug type. A Unix
   }]
 }
 ```
+
+An optional host-owned `sourceMap` maps compiler path prefixes to local source
+roots. For an SDK build with reproducible C-family paths, for example:
+
+```json
+"sourceMap": {
+  "/sdk": "/absolute/path/to/uwvm2-ros-sdk",
+  "/application": "/absolute/path/to/example"
+}
+```
+
+Mappings must be absolute and unambiguous. The adapter applies the inverse
+mapping when the IDE installs a breakpoint; guest paths never authorize a host
+file read. Do not apply these C-family prefixes to a compiler that already emits
+the actual source path. See [native compiler metadata](../../documents/runtime/debug-native-languages.md).
 
 On Windows use `pipeName` from the broker's startup output and ask VS Code for
 the capability at session start. Do not save the capability in `launch.json`.
@@ -121,8 +142,8 @@ See [R41 pagination and Linux startup acceptance](../../test/0018.debugger/READM
 for examples and actual test coverage.
 
 Wasm instruction breakpoints use
-the `wasm:MODULE:FUNCTION:BYTE_OFFSET` reference in stack frames. Source breakpoints require
-embedded `-g` DWARF and exact path matching. Stack traces, Wasm locals,
+the `wasm:MODULE:FUNCTION:BYTE_OFFSET` reference in stack frames. Source breakpoints require embedded DWARF or a validated compiler Source Map v3
+and exact path matching. A source map supplies lines, not typed variable locations. Stack traces, Wasm locals,
 bounded `readMemory` requests using `wasm-memory:MODULE:MEMORY:BYTE_OFFSET`,
 pause/continue, and an authenticated debug console are exposed. `readMemory`
 accepts `count` 0..65536 and a signed byte `offset`, with a decimal numeric
@@ -152,10 +173,17 @@ old-frame or optimistic `if-stop` write capability. Native/code/stack/host
 references and ASM traps are refused.
 See [R46 bounded memory writes and Linux acceptance](../../test/0018.debugger/README.wasm-memory-writes.md). The console
 accepts `replace MODULE FUNCTION GENERATION BODY_FILE` for same-ABI function
-hot replacement while fully stopped. The Wasm fallback source is currently a
-function label, not a disassembled WAT listing;
-native instruction text appears in the Debug Console after native stepping.
-At a native trap, `stackTrace` now returns one instruction-position label from
+hot replacement while fully stopped. At Wasm level, the adapter exposes a virtual instruction document containing
+only the selected function's validated decoded instructions. Its source reference
+and gutter breakpoints belong to the current identified stop and retire on
+resume. The VS Code/Cursor extension uses its own `uwvm-wasm:` read-only
+document scheme and forwards content requests to the genuine DAP `source`
+operation. It registers no provider for `debug:`, `file:` or another
+debugger's scheme. The adapter accepts only a registered URI belonging to the
+current IDE session/frame/stop; opening a URI grants no host file access.
+Other DAP clients retain ordinary `sourceReference` documents. Native
+instruction text is also available in the IDE disassembly view.
+At a native trap, `stackTrace` returns one selectable instruction position from
 the authenticated controller's stopped PC. It compares a fresh complete
 `status` with the selected `bt THREAD` reply, then gives the label a
 session-unique `uwvm-native-stop:ID` display reference. It exposes no old Wasm
@@ -176,8 +204,9 @@ owner's optional full bounded Wasm custom name, safely escaped.
 
 Only attach.stepLevel=native may give the selected top physical cooperative
 frame a separate uwvm-native-code:ID, after genuine readonly owner-copy success
-and fresh matching complete status. Source/Wasm/inline references remain
-without code access. Native traps retain uwvm-native-stop:ID. Both are opaque
+and fresh matching complete status. At native level, an inline source frame belonging to that same selected physical
+JIT frame shares its authenticated code reference. Other source/Wasm frames
+remain without code access. Native traps retain uwvm-native-stop:ID. Both are opaque
 display/query references, not memory/write/breakpoint/restart/locals authority.
 Build the runtime and adapter from the same revision when using this view.
 If the stopped runtime cannot return a valid current range, the adapter emits
@@ -344,10 +373,16 @@ are syntax for the existing numeric evaluator, never guest function calls.
 Producer types and the current guest ABI determine availability and values;
 this does not implement each language's complete expression semantics.
 
-The adapter validates the entire 256-byte printable ASCII input before
-contacting the broker. Reference leaves have at most 32 selector steps;
-scalar syntax has 128 nodes and 32 combined nesting levels. Scalar spaces
-are retained for numeric type names, Rust `as` and character literals.
+The adapter validates the entire printable ASCII input before contacting the
+broker. Its selector and scalar parsers use an explicit heap work list rather
+than Python recursion, with no fixed expression-byte, selector-step, node or
+nesting budget. Scalar spaces are retained for numeric type names, Rust `as`
+and character literals. The execution protocol still limits the complete
+`print-frame THREAD STOP_ID FRAME EXPR` command to 512 bytes. Watch/hover rejects
+larger commands explicitly before broker I/O; it never truncates an expression.
+The DAP message limit, the transport's separate command envelope and the
+256-byte breakpoint-condition DTO remain in effect. These syntax changes do
+not make complete end-to-end expressions unbounded.
 Selector-only expressions retain their established normalization and
 canonical decimal-index rule. Calls, assignment, contiguous increment or
 decrement, pointer casts, address-of, numeric dereference and injected commands
@@ -406,11 +441,27 @@ operands 1 4096 0 64
 ```
 
 The activation ledger grows in stable 64-frame blocks; 64 is a block size,
-not a call-depth limit. Its default identity-storage budget is 256 MiB and the
-cold host API `llvm_jit_configure_debug_activation_storage_host_api(bytes)` can
-configure it before publication. Resource failure closes precise capture instead
-of publishing a partial chain. Observation has no fixed frame count; resumable
-checkpoint profiles retain a separate finite default budget of 4096 frames.
+not a call-depth limit. Identity storage has no default byte quota. The cold
+host API `llvm_jit_configure_debug_activation_storage_host_api(bytes)` can
+select an explicit quota before publication. Allocation failure or integer
+representation exhaustion closes precise capture instead of publishing a
+partial chain. Observation has no fixed frame count; resumable checkpoint
+profiles retain a separate finite default budget of 4096 frames.
+
+The default cooperative pause domain and its private capture/worker registries
+grow with actual participants. An explicitly sized host-created domain retains
+that caller-selected quota. Capturing 257 threads still requires every current
+participant: a missing member, duplicate, foreign shared-owner control block or
+stale pause cannot authorize a query. Preparing complete cohort storage may
+fail; that failure returns unavailable without publishing a partial snapshot or
+starting retirement.
+
+Source-map paths and source contents are validated against their actual owned
+input extents, without the former fixed filename/content byte ceilings. Nested
+unknown Source Map v3 fields use an iterative parser. Source stepping has no
+arbitrary stop-count cutoff; interruption and the existing deadline remain
+effective. These changes do not remove the separate DWARF parser/type limits
+or the bounded diagnostic `bt` array.
 
 Operand scopes explicitly say `last safepoint; may differ from native state`.
 Console and `uwvm/wasmState.snapshotNote` replies include:
@@ -471,7 +522,7 @@ authority. See [limits and examples](../../test/0018.debugger/README.wasip1-scop
 
 ### R36 finite TinyGo collection acceptance (2026-10-07)
 
-The Linux launch broker permits 120 seconds for its first authenticated VM command to accommodate full JIT compilation. This launch-owned allowance cannot be renewed by reconnecting; subsequent commands retain the 6-second VM timeout. UnixBroker authentication/ordinary requests retain 8 seconds, with 125 seconds for the first Linux request. VM transport loss retires the original launch rather than reusing an unsequenced late reply.
+The Linux launch broker waits for the first authenticated VM command using socket and original-process readiness events, without a default compilation deadline. A host may explicitly set a startup deadline; it cannot be renewed by reconnecting. Subsequent commands retain the 6-second VM timeout, and UnixBroker authentication/ordinary requests retain 8 seconds. Cancellation, VM exit, or transport loss retires the pending original launch rather than reusing an unsequenced late reply.
 
 After the actual `stackTrace` source frame is obtained, Watch/Hover/Variables evaluation of qualified TinyGo map/channel `len`/`cap` returns a read-only scalar (`3`, type `int`, variablesReference `0`), instead of the console packet. The adapter advertises Hover support and the new evaluate type field honors the client's `supportsVariableType`. REPL keeps console text; unknown/compound copied objects remain opaque. No display projection creates memory, expansion, expression or host-VM authority.
 
@@ -534,3 +585,21 @@ The adapter provides read-only `uwvm/rosState` plus current-stop capability,
 instance/session and event-queue Variables scopes. See [ROS DAP diagnostics](README.ros.md)
 for exact filters, bounded pagination, byte-preserving metadata, stop lifetime
 and actual integration scope. These commands grant no ROS or WASI rights.
+
+
+Allocation tags and the IDE colored memory snapshot are described in [WasmMTE allocation-tag inspection](../../documents/runtime/debug-memory-tags.md). Use `uwvm/memoryTags` or the **UWVM: Show Memory Tags** command; both retain the existing complete-stop and owned-Wasm-memory requirements.
+
+
+Linux full-JIT startup waits for the first authenticated VM reply, the original
+VM process to exit, or the IDE to cancel. It has no default compilation deadline.
+The private broker and DAP adapter use socket/pidfd readiness; neither grants a
+guest additional interfaces or executes guest code to manufacture readiness.
+Authentication and later command transport deadlines remain separate.
+
+An operator may set `startupTimeoutSeconds` to a positive finite number in the
+IDE profile or DAP attach configuration. The broker CLI exposes the corresponding
+`--startup-timeout SECONDS` option before `--`. This is an explicit deadline for
+the first reply, not a permission quota. IDE Cancel, Disconnect, stdin closure,
+or peer exit interrupts a pending attach. Once a command has been forwarded,
+cancellation retires that original launch and its private endpoint, so a late
+unsequenced reply cannot satisfy a later client's command.

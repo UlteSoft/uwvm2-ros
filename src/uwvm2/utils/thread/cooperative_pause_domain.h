@@ -57,7 +57,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
             bool release_once{};
             bool externally_parked{};
         };
-        ::std::mutex mutex_{};
+        mutable ::std::mutex mutex_{};
         ::std::condition_variable changed_{};
         pause_waker* waker_first_{}; // Stack registrations, ONLY under mutex_.
         ::std::size_t waker_count_{}; // Cold opt-in waits; ordinary poll unchanged.
@@ -66,6 +66,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
         // handles resume/re-pause races without trusting a stale fast-path read.
         ::std::atomic_bool requested_{};
         ::std::vector<slot> slots_;
+        bool growable_{}; // Default debugger domain; sized constructors remain explicit quotas.
         ::std::shared_ptr<void const> identity_{::std::make_shared<unsigned char>()};
         ::std::size_t active_{}, parked_{}, admission_waiters_{};
         ::std::uint_least64_t serial_{}, next_participant_{1};
@@ -78,7 +79,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
         void leave(::std::size_t index) noexcept
         {
             ::std::lock_guard lock{mutex_};
-            // [slots_: fixed capacity] index belongs exclusively to this lease.
+            // [slots_: owned stable indices] index belongs exclusively to this lease.
             // [safe                  ] domain destruction drains leases first.
             auto& entry{slots_[index]};
             if(entry.parked) { --parked_; }
@@ -98,12 +99,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
             ::std::forward<BeforePark>(before_park)();
             ::std::unique_lock lock{mutex_};
             if(!requested_.load(::std::memory_order_relaxed) || closed_) { return; }
-            // [slots_: fixed capacity] index names the caller's live leased slot.
-            // [safe                  ] no slot storage reallocation after construction.
-            auto& entry{slots_[index]};
-            entry.location = location;
-            entry.parked = true;
-            entry.externally_parked = false;
+            // [slots_: owned stable indices] index names the live leased slot.
+            // [safe] no reference crosses the wait's mutex release; admission
+            // may grow storage after resume, so each wake reacquires by index.
+            slots_[index].location = location;
+            slots_[index].parked = true;
+            slots_[index].externally_parked = false;
             ++parked_;
             changed_.notify_all();
             // A closed domain must not wake a saved native cohort before the
@@ -112,13 +113,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
             // unchanged. Reset releases the hold and publishes its prior setup.
             changed_.wait(lock, [&]
             {
-                return !transition_held_ && (!requested_.load(::std::memory_order_relaxed) || closed_ || entry.release_once);
+                return !transition_held_ && (!requested_.load(::std::memory_order_relaxed) || closed_ || slots_[index].release_once);
             });
             // A host-selected native step already decremented parked_ before
             // waking this one participant. Resume can race that wakeup, so
             // inspect the actual slot instead of decrementing a second time.
-            if(entry.parked) { entry.parked = false; --parked_; }
-            entry.release_once = false;
+            auto& resumed{slots_[index]};
+            if(resumed.parked) { resumed.parked = false; --parked_; }
+            resumed.release_once = false;
             // Releasing mutex_ publishes resumed state. A new request made before
             // this waiter reacquires it simply keeps this participant parked.
         }
@@ -156,7 +158,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
             {
                 if(owner == nullptr || wake == nullptr) { return; }
                 ::std::lock_guard lock{owner->mutex_};
-                if(owner->closed_ || owner->waker_count_ == owner->slots_.size()) { return; }
+                if(owner->closed_ || owner->waker_count_ == (::std::numeric_limits<::std::size_t>::max)() || (!owner->growable_ && owner->waker_count_ == owner->slots_.size())) { return; }
                 // [real leased domain][this stack node][registered live head]
                 // [safe] bound registrations by fixed participant capacity;
                 // link only while the actual domain mutex protects lifetimes.
@@ -309,21 +311,22 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
             friend class cooperative_pause_domain;
             cooperative_pause_domain* owner_{};
             ::std::size_t index_{};
-            participant(cooperative_pause_domain& owner, ::std::size_t index) noexcept
-                : owner_{::std::addressof(owner)}, index_{index} {}
+            ::std::uint_least64_t identifier_{};
+            participant(cooperative_pause_domain& owner, ::std::size_t index, ::std::uint_least64_t identifier) noexcept
+                : owner_{::std::addressof(owner)}, index_{index}, identifier_{identifier} {}
         public:
             participant() noexcept = default;
             participant(participant const&) = delete;
             participant& operator=(participant const&) = delete;
             participant(participant&& other) noexcept
-                : owner_{::std::exchange(other.owner_, nullptr)}, index_{other.index_} {}
+                : owner_{::std::exchange(other.owner_, nullptr)}, index_{other.index_}, identifier_{other.identifier_} {}
             participant& operator=(participant&& other) noexcept
             {
                 if(this != ::std::addressof(other))
                 {
                     reset();
                     owner_ = ::std::exchange(other.owner_, nullptr);
-                    index_ = other.index_;
+                    index_ = other.index_; identifier_ = other.identifier_;
                 }
                 return *this;
             }
@@ -331,9 +334,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
             [[nodiscard]] explicit operator bool() const noexcept { return owner_ != nullptr; }
             [[nodiscard]] ::std::uint_least64_t identifier() const noexcept
             {
-                // [leased slot: fixed allocation] exclusively retained by this participant.
-                // Its id is assigned before admission and never changes until reset releases it.
-                return owner_ == nullptr ? 0u : owner_->slots_[index_].id;
+                // Privately minted at admission under the domain mutex. Keep
+                // the immutable scalar here: another participant may grow the
+                // slot vector while this lock-free observer reads its own ID.
+                return owner_ == nullptr ? 0u : identifier_;
             }
             // One native thread owns/uses this participant at a time. A nested
             // callback must reuse the outer participant, not create a second one.
@@ -385,12 +389,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
             constexpr auto fixed{sizeof(cooperative_pause_domain)+sizeof(unsigned char)};
             return max_concurrent>(SIZE_MAX-fixed)/sizeof(slot) ? SIZE_MAX : fixed+max_concurrent*sizeof(slot);
         }
+        cooperative_pause_domain() : growable_{true} {}
         explicit cooperative_pause_domain(::std::size_t max_concurrent) : slots_(max_concurrent) {}
         // Requested object/array payload for an owning profile's finite quota.
         // Includes the actual vector capacity and identity payload, excludes
         // implementation allocator/control-block overhead as other profiles do.
         [[nodiscard]] ::std::size_t requested_storage_bytes() const noexcept
         {
+            ::std::lock_guard lock{mutex_};
             constexpr auto maximum{::std::numeric_limits<::std::size_t>::max()};
             if(slots_.capacity()>(maximum-sizeof(*this)-sizeof(unsigned char))/sizeof(slot))return maximum;
             return sizeof(*this)+sizeof(unsigned char)+slots_.capacity()*sizeof(slot);
@@ -412,14 +418,25 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
             changed_.wait(lock, [&] { return !requested_.load(::std::memory_order_relaxed) || closed_; });
             --admission_waiters_;
             changed_.notify_all();
-            if(closed_ || active_ == slots_.size() || next_participant_ == 0) { return {}; }
+            if(closed_ || next_participant_ == 0) { return {}; }
+            if(active_ == slots_.size())
+            {
+                if(!growable_ || slots_.size() == slots_.max_size()) { return {}; }
+                // All slot access is mutex-owned. Parked waiters keep an index,
+                // not a reference across unlock; their original identity stays.
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+                try { slots_.emplace_back(); } catch(...) { return {}; }
+#else
+                slots_.emplace_back();
+#endif
+            }
             for(::std::size_t index{}; index != slots_.size(); ++index)
             {
-                auto& entry{slots_[index]}; // index is strictly inside the fixed slot vector.
+                auto& entry{slots_[index]}; // index is strictly inside the current owned slot vector.
                 if(entry.id != 0) { continue; }
                 entry.id = next_participant_++;
                 ++active_;
-                return participant{*this, index};
+                return participant{*this, index, entry.id};
             }
             return {};
         }
@@ -429,7 +446,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
         {
             ::std::lock_guard lock{mutex_};
             return actual.owner_==this && actual.index_<slots_.size() &&
-                slots_[actual.index_].id!=0u && !closed_;
+                slots_[actual.index_].id==actual.identifier_ && actual.identifier_!=0u && !closed_;
         }
         [[nodiscard]] pause_ticket request_pause()
         {

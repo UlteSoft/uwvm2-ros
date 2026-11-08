@@ -42,9 +42,15 @@ module;
 #endif
 export module uwvm2.uwvm.debugger:controller;
 import fast_io;
+import uwvm2.extension.memtag.debug_types;
+import uwvm2.extension.memtag.instruction;
 import uwvm2.utils.control;
 import uwvm2.utils.thread;
 import uwvm2.runtime;
+import uwvm2.runtime.diagnostic.crash_policy;
+import uwvm2.runtime.diagnostic.crash_file;
+import uwvm2.runtime.diagnostic.wasm_coredump;
+import uwvm2.uwvm.io;
 import uwvm2.runtime.exception;
 import :command;
 import uwvm2.uwvm.debugger.source_pretty_registry;

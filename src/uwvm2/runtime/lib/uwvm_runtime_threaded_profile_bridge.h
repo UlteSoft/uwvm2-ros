@@ -352,14 +352,53 @@ extern "C++"
                 .partial_protection_limit_bytes = 0u, .mmap_view_begin = nullptr, .dynamic_length_atomic_object = nullptr};
             return true;
         }
+        [[nodiscard]] static bool memory_normalize_range(::std::size_t index,::std::uint_least64_t offset,
+            ::std::size_t bytes,::std::uint64_t& normalized) noexcept
+        {
+            normalized=0u;
+            auto const call{checked_host()}; preload_memory_descriptor_t descriptor{};
+            if(!call || index!=0u || !memory_descriptor(0u,&descriptor)) { return false; }
+            auto const* shared{call->instance->shared_memory(0u)};
+            if(!shared) { return false; }
+            if(shared->memory.memtag_shadow.enabled())
+            {
+                auto const checked{::uwvm2::runtime::memtag::check_host_access(shared->memory,offset,bytes)};
+                ::uwvm2::runtime::memtag::record_host_fault(index,offset,checked);
+                if(!checked) { return false; }
+                normalized=checked.address;return true;
+            }
+            if(offset>descriptor.byte_length || bytes>descriptor.byte_length-offset) { return false; }
+            normalized=offset;return true;
+        }
         [[nodiscard]] static bool memory_copy(::std::size_t index, ::std::uint_least64_t offset,
             void* buffer, ::std::size_t bytes, bool write) noexcept
         {
             auto const call{checked_host()}; preload_memory_descriptor_t descriptor{};
             if(!call || index != 0u || !memory_descriptor(0u, &descriptor) ||
-               (buffer == nullptr && bytes != 0u) || offset > descriptor.byte_length || bytes > descriptor.byte_length - offset)
+               (buffer == nullptr && bytes != 0u))
             { return false; }
             auto const* shared{call->instance->shared_memory(0u)};
+            if(!shared) { return false; }
+            if(shared->memory.memtag_shadow.enabled())
+            {
+                bool completed{true};
+                auto const checked{::uwvm2::runtime::memtag::with_host_access(
+                    shared->memory,offset,bytes,[&](::std::span<::std::byte> data) noexcept
+                    {
+                        auto* native{static_cast<::std::byte*>(buffer)};
+                        for(::std::size_t i{};i!=data.size();++i)
+                        {
+                            if((i & 4095u)==0u && call->actual->cancellation().stop_requested())
+                            { completed=false; return; }
+                            ::std::atomic_ref<::std::byte> cell{data[i]};
+                            if(write) { cell.store(native[i],::std::memory_order_relaxed); }
+                            else { native[i]=cell.load(::std::memory_order_relaxed); }
+                        }
+                    })};
+                ::uwvm2::runtime::memtag::record_host_fault(index,offset,checked);
+                return static_cast<bool>(checked) && completed;
+            }
+            if(offset>descriptor.byte_length || bytes>descriptor.byte_length-offset) { return false; }
             auto* const base{shared->memory.memory_begin};
             auto* const native{static_cast<::std::byte*>(buffer)};
             if(bytes != 0u && base == nullptr) { return false; }

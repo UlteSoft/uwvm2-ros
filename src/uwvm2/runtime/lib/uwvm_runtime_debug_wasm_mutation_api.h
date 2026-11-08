@@ -12,16 +12,17 @@
         namespace ws = ::uwvm2::uwvm::debugger::wasm_state;
         namespace wm = ::uwvm2::uwvm::debugger::wasm_mutation;
         wm::result out{}; out.target=selection.target;out.module=selection.module;out.index=selection.index;out.element=selection.element;
-        if(!::uwvm2::utils::control::management::debug_allowed()) { out.status = ws::status::unavailable_activation; return out; }
+        if(!::uwvm2::utils::control::debug_permissions::full_allowed()) { out.status = ws::status::unavailable_activation; return out; }
         if(!wm::valid(selection) || (selection.source==wm::source_kind::original_path || selection.target==wm::destination::member_path)) { out.status = ws::status::invalid_selection; return out; }
 # if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS)
         if(!ticket) { out.status = ws::status::requires_current_cooperative_stop; return out; }
-        if(supplied.empty() || supplied.size() > 256u)
+        if(supplied.empty())
         { out.status = ws::status::incomplete_cohort; return out; }
-        runtime_checkpoint_thread_capture::owner captures[256u]{};
+        runtime_checkpoint_capture_buffer captures{supplied.size()};
+        if(!captures) { out.status = ws::status::allocation_failed; return out; }
         for(::std::size_t index{}; index != supplied.size(); ++index)
         {
-            // [request-owned opaque capture array, size<=256] end
+            // [request-owned opaque capture array, size] end
             // [safe                                        ] index < size BEFORE owner read.
             auto canonical{llvm_jit_checkpoint_thread_capture::canonical(supplied[index])};
             if(!canonical) { out.status = ws::status::unavailable_activation; return out; }
@@ -35,7 +36,7 @@
         // not wrap this call in a second domain/GC guard or use count0/public
         // labels as root/world-stop permission.
         return runtime_checkpoint_coherent_manager::mutate_current_wasm_state(
-            ticket, {captures, supplied.size()}, selection);
+            ticket, {captures.data(), supplied.size()}, selection);
 # else
         out.status = ws::status::requires_llvm_jit_full; return out;
 # endif

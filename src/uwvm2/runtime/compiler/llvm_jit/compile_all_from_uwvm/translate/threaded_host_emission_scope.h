@@ -21,6 +21,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::compile_all_fro
         ::llvm::Function* declaration{};
         ::std::uintptr_t original{}; // actual compiler-selected native Fn, not wire DATA
     };
+    struct threaded_forbidden_memory_span final
+    {
+        ::std::uintptr_t begin{};
+        ::std::size_t bytes{};
+        [[nodiscard]] constexpr bool contains(::std::uintptr_t address) const noexcept
+        { return begin!=0u&&address>=begin&&address-begin<bytes; }
+    };
     class threaded_host_emission_scope final
     {
         friend class ::uwvm2::runtime::lib::ThreadedLlvmChild;
@@ -30,18 +37,22 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::compile_all_fro
         ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const* wasm_module_{};
         ::std::uintptr_t original_views_{},owned_views_{};
         ::std::vector<threaded_native_bridge>* bridges_{};
+        threaded_forbidden_memory_span const* forbidden_{};
+        ::std::size_t forbidden_count_{};
         threaded_host_emission_scope* previous_{};
         bool valid_{true};
         threaded_host_emission_scope(
             ::uwvm2::uwvm::runtime::initializer::ThreadedChildWorld const& world,
             ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const& wasm_module,
             ::llvm::Module const& module, ::std::vector<threaded_native_bridge>& bridges,
-            ::std::uintptr_t original_views, ::std::uintptr_t owned_views) noexcept
-            : world_{::std::addressof(world)},module_{::std::addressof(module)},wasm_module_{::std::addressof(wasm_module)},original_views_{original_views},owned_views_{owned_views},bridges_{::std::addressof(bridges)},previous_{current_}
+            ::std::uintptr_t original_views, ::std::uintptr_t owned_views,
+            threaded_forbidden_memory_span const* forbidden,::std::size_t forbidden_count) noexcept
+            : world_{::std::addressof(world)},module_{::std::addressof(module)},wasm_module_{::std::addressof(wasm_module)},original_views_{original_views},owned_views_{owned_views},bridges_{::std::addressof(bridges)},forbidden_{forbidden},forbidden_count_{forbidden_count},previous_{current_}
         {
             // The factory has already checked genuine owner/module membership
             // and reserved the finite bridge array before lowering can allocate.
-            if(previous_!=nullptr || bridges.capacity()<256u || !bridges.empty())valid_=false;
+            if(previous_!=nullptr || bridges.capacity()<256u || !bridges.empty() ||
+               forbidden_count>32u || (forbidden_count!=0u&&forbidden==nullptr))valid_=false;
             current_=this;
         }
         threaded_host_emission_scope(threaded_host_emission_scope const&)=delete;
@@ -52,6 +63,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::compile_all_fro
         [[nodiscard]] bool valid() const noexcept{return valid_;}
         [[nodiscard]] static ::std::uintptr_t object_address(::std::uintptr_t original) noexcept
         {
+            // Tagged shared Guest data and allocation tags must never enter
+            // generated raw pointer IR. Owner/length objects remain legitimate
+            // authenticated helper operands; only actual backing spans refuse.
+            if(current_!=nullptr&&!current_->valid_)return 0u;
+            if(current_!=nullptr)
+                for(::std::size_t i{};i<current_->forbidden_count_;++i)
+                    if(current_->forbidden_[i].contains(original))
+                    {current_->valid_=false;return 0u;}
             if(current_!=nullptr&&original!=0u&&original==current_->original_views_)
             {if(current_->owned_views_==0u){current_->valid_=false;return 0u;}return current_->owned_views_;}
             return original;

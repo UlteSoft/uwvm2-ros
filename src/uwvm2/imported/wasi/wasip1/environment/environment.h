@@ -296,6 +296,23 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::environment
     };
 #endif
 
+    // Trusted startup policy: rights attach to the initial resource, never to
+    // the integer chosen later by fd_renumber. Configuration grants no imports.
+    struct socket_rights_t
+    {
+        ::uwvm2::imported::wasi::wasip1::abi::wasi_posix_fd_t fd{};
+        ::uwvm2::imported::wasi::wasip1::abi::rights_t base{}, inheriting{};
+    };
+    inline constexpr auto socket_data_rights =
+        ::uwvm2::imported::wasi::wasip1::abi::rights_t::right_fd_read |
+        ::uwvm2::imported::wasi::wasip1::abi::rights_t::right_fd_write |
+        ::uwvm2::imported::wasi::wasip1::abi::rights_t::right_sock_shutdown |
+        ::uwvm2::imported::wasi::wasip1::abi::rights_t::right_poll_fd_readwrite |
+        ::uwvm2::imported::wasi::wasip1::abi::rights_t::right_fd_fdstat_set_flags |
+        ::uwvm2::imported::wasi::wasip1::abi::rights_t::right_fd_filestat_get;
+    inline constexpr auto socket_all_rights = socket_data_rights |
+        ::uwvm2::imported::wasi::wasip1::abi::rights_t::right_sock_accept;
+
     struct policy_resource_binding
     {
         ::std::uint64_t kind{}, logical_slot{}, incarnation{};
@@ -365,6 +382,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::environment
         permission_t non_fd_permissions{};
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
         resource_limits limits{};
+        ::uwvm2::utils::container::vector<socket_rights_t> socket_rights{};
+        // The selected import ABI is immutable for this native loader instance.
+        bool wasix_socket_abi{};
+        [[nodiscard]] inline constexpr socket_rights_t socket_rights_for(int fd) const noexcept
+        { for(auto const& item:socket_rights) if(item.fd==fd) return item; return {fd}; }
+
         // Immutable approved resource identities, installed by the initializer.
         // Guest close/seek do not rewrite the approval contract. No owners are
         // retained here, so close still releases its native stream normally.

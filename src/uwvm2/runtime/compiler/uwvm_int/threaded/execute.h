@@ -54,7 +54,9 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
     inline bool engine::step(threads::ThreadedGroup::ChildLease& lease, instruction const& ins) noexcept
     {
         auto& frame{calls_[call_top_-1uz]};auto& bound{modules_[frame.module]};auto const* instance{bound.program.instance};
-        auto const op{ins.opcode};::std::uint64_t a{},b{},c{};
+        auto const op{ins.opcode};::std::uint64_t a{},c{};
+        if(op>=0x10000u) { return ins.simd_handler?ins.simd_handler(*this,ins):fail(status::invariant_failure); }
+        if(op>=0x400u) { return memtag_operation(ins); }
         if(op>=0x300u) { return bulk_memory(lease,ins); }
         if(op>=0x200u) { return floating(op); }
         if(op>=0x100u) { return atomic(ins,*bound.memory); }
@@ -112,12 +114,13 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                 return enter(target);
             }
             case 0x1a:return pop(a);
-            case 0x1b:case 0x1c:if(!pop(c)||!pop(b)||!pop(a)) { return false; }return push(static_cast<::std::uint32_t>(c)?a:b);
+            case 0x1b:case 0x1c:
+            { stack_value left{},right{};if(!pop(c)||!pop(right)||!pop(left)) { return false; }return push(static_cast<::std::uint32_t>(c)?left:right); }
             case 0x20:case 0x21:case 0x22:
             {
                 if(ins.immediate>=frame.base-frame.locals) { return fail(status::invariant_failure); }
                 auto& local{values_[frame.locals+ins.immediate]};
-                if(op==0x20u) { return push(local); }if(!pop(a)) { return false; }local=a;return op==0x21u||push(a);
+                if(op==0x20u) { return push(local); }stack_value value{};if(!pop(value)) { return false; }local=value;return op==0x21u||push(value);
             }
             case 0x23:case 0x24:
             {
@@ -132,11 +135,13 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                     case k::wasm_i64:cell=::std::addressof(global->storage.i64);break;
                     case k::wasm_f32:cell=::std::addressof(global->storage.f32);break;
                     case k::wasm_f64:cell=::std::addressof(global->storage.f64);break;
+                    case k::wasm_v128:cell=::std::addressof(global->storage.v128);break;
                     default:return fail(status::invariant_failure);
                 }
-                if(op==0x23u) { ::std::memcpy(::std::addressof(a),cell,wide?8uz:4uz);return push(a); }
-                if(!global->is_mutable || !pop(a)) { return fail(status::invariant_failure); }
-                ::std::memcpy(cell,::std::addressof(a),wide?8uz:4uz);return true;
+                auto const width{global->kind==k::wasm_v128?16uz:wide?8uz:4uz};stack_value value{};
+                if(op==0x23u) { ::std::memcpy(::std::addressof(value),cell,width);return push(value); }
+                if(!global->is_mutable || !pop(value)) { return fail(status::invariant_failure); }
+                ::std::memcpy(cell,::std::addressof(value),width);return true;
             }
             case 0x3f:
             {

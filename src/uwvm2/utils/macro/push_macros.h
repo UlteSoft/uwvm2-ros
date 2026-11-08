@@ -592,10 +592,15 @@
 # error "UWVM_FORCE_USE_MMAP requested, but mmap-backed linear memory is unavailable on this platform/toolchain"
 #endif
 
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(UWVM_SUPPORT_WEAK_SYMBOL)
+# error "uwvm2-ros forbids weak-symbol providers; use explicit trusted driver registration"
+#endif
 #pragma push_macro("UWVM_SUPPORT_WEAK_SYMBOL")
 #undef UWVM_SUPPORT_WEAK_SYMBOL
-// Currently only supports ELF weak symbols.
-#if defined(__ELF__) && UWVM_HAS_CPP_ATTRIBUTE(__gnu__::__weak__) && UWVM_HAS_CPP_ATTRIBUTE(__gnu__::__used__)
+// Weak imported providers are an upstream legacy/emergency ABI. ROS requires
+// explicit trusted-driver admission and cannot discover native code through a
+// weak linker symbol. No ROS build option may re-enable this fallback.
+#if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(__ELF__) && UWVM_HAS_CPP_ATTRIBUTE(__gnu__::__weak__) && UWVM_HAS_CPP_ATTRIBUTE(__gnu__::__used__)
 # define UWVM_SUPPORT_WEAK_SYMBOL
 #endif
 

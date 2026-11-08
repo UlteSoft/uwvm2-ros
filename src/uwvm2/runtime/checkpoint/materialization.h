@@ -23,7 +23,7 @@
 #endif
 UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
 {
-    inline constexpr ::std::uint32_t state_schema_revision{6u};
+    inline constexpr ::std::uint32_t state_schema_revision{7u};
     namespace types = ::uwvm2::parser::wasm::standard::wasm3::type;
     inline constexpr ::std::size_t native_slot_bytes{16u};
     // Actual runtime/compiler continuation protocol, shared by both selected
@@ -80,13 +80,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
     }
     // Resolved original-module syntax/validation policy DATA. Every effective
     // field that changes Core parsing/validation is represented: cli_mode,
-    // nineteen proposal switches and two legacy controllable restrictions.
+    // nineteen proposal switches, the independent memtag extension policy, and
+    // two legacy controllable restrictions.
     // CLI ownership bookkeeping and parser resource quotas are separate; this
     // record is not a parser budget, compilation owner or restore credential.
     struct module_feature_policy
     {
-        inline static constexpr ::std::uint64_t revision{1u};
-        inline static constexpr ::std::uint64_t disable_mask{(::std::uint64_t{1u} << 19u) - 1u};
+        inline static constexpr ::std::uint64_t revision{2u};
+        inline static constexpr ::std::uint64_t disable_mask{(::std::uint64_t{1u} << 20u) - 1u};
         ::std::uint64_t cli_mode{}, disabled{}, controlled{};
         [[nodiscard]] constexpr bool valid() const noexcept
         { return cli_mode <= 4u && (disabled & ~disable_mask) == 0u && controlled <= 3u; }
@@ -95,12 +96,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
         {
             module_feature_policy copied{};
             copied.cli_mode = static_cast<::std::uint64_t>(p.cli_mode);
-            ::std::array<bool, 19u> const fields{p.disable_multi_value, p.disable_reference_types,
+            ::std::array<bool, 20u> const fields{p.disable_multi_value, p.disable_reference_types,
                 p.disable_table_instructions, p.disable_multiple_tables, p.disable_bulk_memory,
                 p.disable_sign_extension, p.disable_nontrapping_float_to_int, p.disable_simd,
                 p.disable_extended_const, p.disable_table_initializer, p.disable_relaxed_simd,
                 p.disable_multi_memory, p.disable_tail_call, p.disable_memory64, p.disable_table64,
-                p.disable_function_references, p.disable_gc, p.disable_exceptions, p.disable_threads};
+                p.disable_function_references, p.disable_gc, p.disable_exceptions, p.disable_threads,
+                p.disable_memtag_extension};
             for(::std::size_t n{}; n != fields.size(); ++n)
             { if(fields[n]) { copied.disabled |= ::std::uint64_t{1u} << n; } }
             copied.controlled = (p.controllable_allow_multi_result_vector ? 1u : 0u) |

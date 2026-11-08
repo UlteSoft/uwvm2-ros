@@ -43,6 +43,7 @@
 # include "retained_plan.h"
 // import
 # include <fast_io.h>
+# include <uwvm2/extension/memtag/instruction.h>
 # include <uwvm2/utils/container/impl.h>
 # include <uwvm2/utils/debug/impl.h>
 # include <uwvm2/utils/intrinsics/impl.h>
@@ -6902,6 +6903,42 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
 
                     auto const subopcode{
                         details::read_leb128<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32>(code_curr, code_end, op_begin, err, u8"numeric_prefix")};
+
+                    if(auto const* memtag{::uwvm2::extension::memtag::find_instruction(subopcode)}; memtag != nullptr)
+                    {
+                        if(wasm1p1_para.disable_memtag_extension) [[unlikely]]
+                        {
+                            details::fail_feature_required(op_begin, err, subopcode,
+                                ::uwvm2::parser::wasm::base::wasm1p1_feature_kind::memtag_extension,
+                                ::uwvm2::parser::wasm::base::wasm1p1_error_subject::instruction);
+                        }
+                        auto const memory_index{details::read_leb128<
+                            ::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32>(
+                                code_curr, code_end, op_begin, err, u8"memtag.memoryidx")};
+                        if(wasm1p1_para.disable_multi_memory && memory_index != 0u) [[unlikely]]
+                        {
+                            details::fail_feature_required(op_begin, err, subopcode,
+                                ::uwvm2::parser::wasm::base::wasm1p1_feature_kind::multi_memory,
+                                ::uwvm2::parser::wasm::base::wasm1p1_error_subject::instruction);
+                        }
+                        check_memory_index(op_begin, memory_index, u8"memtag");
+                        auto const address_type{memory_operand_type(memory_index)};
+                        if(!is_polymorphic && concrete_operand_count() < memtag->operand_count) [[unlikely]]
+                        { report_operand_stack_underflow(op_begin, u8"memtag", memtag->operand_count); }
+                        for(unsigned operand{}; operand != memtag->operand_count; ++operand)
+                        { validate_storage_operand(op_begin, u8"memtag", address_type); }
+                        if(memtag->result_count != 0u) { operand_stack.push_back({address_type}); }
+                        if constexpr(requires { validated_operations.observe_memtag(memory_index,
+                            ::uwvm2::extension::memtag::opcode{}, ::uwvm2::extension::memtag::address_width{}); })
+                        {
+                            validated_operations.observe_memtag(memory_index,
+                                static_cast<::uwvm2::extension::memtag::opcode>(subopcode),
+                                address_type == curr_operand_stack_value_type::i64 ?
+                                    ::uwvm2::extension::memtag::address_width::i64 :
+                                    ::uwvm2::extension::memtag::address_width::i32);
+                        }
+                        break;
+                    }
                     auto const numeric_code{static_cast<wasm1p1_numeric_code>(subopcode)};
 
                     switch(numeric_code)

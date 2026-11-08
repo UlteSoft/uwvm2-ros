@@ -18,15 +18,8 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         ::std::uint64_t size{},source{},destination{};
         if(!pop(size) || !pop(source) || !pop(destination)) { return false; }
         auto const n{static_cast<::std::size_t>(static_cast<::std::uint32_t>(size))};
-        auto const dst{static_cast<::std::size_t>(static_cast<::std::uint32_t>(destination))};
-        auto const src{static_cast<::std::size_t>(static_cast<::std::uint32_t>(source))};
-        ::std::size_t length{};::std::byte* memory{};
-        if(!threads::details::access(*bound.memory,0u,0uz,length,[&](::std::byte* p) noexcept { memory=p; }))
-        { return fail(status::trap_memory); }
-        // Validate complete source AND destination before the first write,
-        // including zero length/end-of-memory cases. Mmap address never moves;
-        // concurrent grow only increases logical length after real commit.
-        if(dst>length || n>length-dst) { return fail(status::trap_memory); }
+        auto const dst{static_cast<::std::uint32_t>(destination)};
+        auto const src{static_cast<::std::uint32_t>(source)};
         ::std::byte const* payload{};
         if(sub==8u)
         {
@@ -34,27 +27,40 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
             auto const data{storage::load_wasm_data_segment_payload(instance->local_defined_data_vec_storage.index_unchecked(ins.immediate).data)};
             auto const extent{data.byte_begin==data.byte_end?0uz:static_cast<::std::size_t>(data.byte_end-data.byte_begin)};
             if(src>extent || n>extent-src) { return fail(status::trap_memory); }
-            // A dropped/empty segment is a logical zero-size source. Avoid
-            // arithmetic on a null pointer even when the checked count is zero.
             if(n) { payload=data.byte_begin+src; }
         }
-        else if(sub==10u && (src>length || n>length-src)) { return fail(status::trap_memory); }
         using byte_type=typename ::uwvm2::runtime::compiler::shared::wasm_threads::atomic_access_traits<1>::type;
-        bool const backwards{sub==10u && dst>src && dst-src<n};
-        for(::std::size_t i{};i<n;++i)
+        bool cancelled{};
+        auto copy{[&](::std::span<::std::byte> destination_bytes,::std::span<::std::byte> source_bytes) noexcept
         {
-            // Cancellation may leave an already-written prefix/suffix. The
-            // Group then stops ALL execution and requires full source reset;
-            // this is never returned as a completed Wasm bulk instruction.
-            if((i&1023uz)==0u && lease.cancellation().stop_requested()) { return fail(status::cancelled); }
-            auto const at{backwards?n-1uz-i:i};
-            byte_type value{};
-            if(sub==8u) { value=static_cast<byte_type>(::std::to_integer<unsigned char>(payload[at])); }
-            else if(sub==10u) { value=__atomic_load_n(reinterpret_cast<byte_type*>(memory+src+at),__ATOMIC_RELAXED); }
-            else { value=static_cast<byte_type>(source); }
-            __atomic_store_n(reinterpret_cast<byte_type*>(memory+dst+at),value,__ATOMIC_RELAXED);
+            using view=::uwvm2::extension::memtag::shadow_view<::std::uint32_t,true>;
+            auto const destination_offset{bound.memory->memtag_shadow.enabled()?view::untag(dst):dst};
+            auto const source_offset{bound.memory->memtag_shadow.enabled()?view::untag(src):src};
+            bool const backwards{sub==10u && destination_offset>source_offset && destination_offset-source_offset<n};
+            for(::std::size_t i{};i<n;++i)
+            {
+                // A cancelled bulk instruction may have an already-written
+                // prefix/suffix. The whole Group stops and requires reset.
+                if((i&1023uz)==0u && lease.cancellation().stop_requested()) { cancelled=true;return; }
+                auto const at{backwards?n-1uz-i:i};
+                byte_type value{};
+                if(sub==8u) { value=static_cast<byte_type>(payload[at]); }
+                else if(sub==10u) { value=__atomic_load_n(reinterpret_cast<byte_type*>(source_bytes.data()+at),__ATOMIC_RELAXED); }
+                else { value=static_cast<byte_type>(source); }
+                __atomic_store_n(reinterpret_cast<byte_type*>(destination_bytes.data()+at),value,__ATOMIC_RELAXED);
+            }
+        }};
+        // Both full ranges are checked before any byte is copied, including
+        // zero-length end-of-memory cases. No native pointer outlives the pin.
+        if(sub==10u)
+        {
+            auto const checked{::uwvm2::runtime::memtag::with_checked_copy<::std::uint32_t,::std::uint32_t>(
+                *bound.memory,*bound.memory,dst,src,n,copy)};
+            if(!checked) { return access_failure(checked.access,checked.source_failed?src:dst); }
         }
-        return !lease.cancellation().stop_requested() || fail(status::cancelled);
+        else if(!memory_span(*bound.memory,dst,0u,n,[&](::std::span<::std::byte> destination_bytes) noexcept
+            { copy(destination_bytes,{}); })) { return false; }
+        return (!cancelled && !lease.cancellation().stop_requested()) || fail(status::cancelled);
     }
 
     template<typename Memory>

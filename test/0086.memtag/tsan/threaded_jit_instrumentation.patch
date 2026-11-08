@@ -1,0 +1,50 @@
+--- a/src/uwvm2/runtime/lib/uwvm_runtime.default.cpp
++++ b/src/uwvm2/runtime/lib/uwvm_runtime.default.cpp
+@@ -241,6 +241,7 @@
+ #  include "uwvm_runtime_threaded_wasip1_includes.h"
+ #  if defined(UWVM_RUNTIME_LLVM_JIT)
+ #   include "uwvm_runtime_threaded_llvm_headers.h"
++#   include "uwvm_runtime_tsan_test.h"
+ #  endif
+ #  if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+ #   include <uwvm2/imported/ros/ipc/cancellation_scope.h>
+--- a/src/uwvm2/runtime/lib/uwvm_runtime_threaded_llvm_factory.h
++++ b/src/uwvm2/runtime/lib/uwvm_runtime_threaded_llvm_factory.h
+@@ -330,9 +330,14 @@
+                 target->Options.EmitStackSizeSection=true;
+                 set_llvm_module_target_triple_from_machine(llvm_module,*target);llvm_module.setDataLayout(target->createDataLayout());
+                 apply_runtime_llvm_jit_native_target_function_attrs(llvm_module,cpu,cpu,*target);
+-                if(!optimize_runtime_llvm_jit_module(llvm_module,*target,policy.pipeline,policy.codegen_opt_level,true,false)||
+-                   !ir_fits()||!data->check_static_stack_ir(llvm_module)||!prove_stop_cycles(llvm_module)||::llvm::verifyModule(llvm_module))return {{},status::native_failure};
+-                if(!data->record_native_call_graph(llvm_module))return {{},status::native_failure};
++                auto test_failure=[](char const* stage){::std::fprintf(stderr,"TSAN_TEST_FACTORY rejected stage=%s\n",stage);return false;};
++                if(!optimize_runtime_llvm_jit_module(llvm_module,*target,policy.pipeline,policy.codegen_opt_level,true,false)){test_failure("optimize");return {{},status::native_failure};}
++                if(!::uwvm_tsan_test::instrument(llvm_module,*target,[&](::llvm::Function& fn,::std::uintptr_t pointer){return data->add_external(fn,pointer);})){test_failure("instrument");return {{},status::native_failure};}
++                if(!ir_fits()){test_failure("ir_budget");return {{},status::native_failure};}
++                if(!data->check_static_stack_ir(llvm_module)){test_failure("static_stack");return {{},status::native_failure};}
++                if(!prove_stop_cycles(llvm_module)){test_failure("stop_cycles");return {{},status::native_failure};}
++                if(::llvm::verifyModule(llvm_module)){test_failure("verify");return {{},status::native_failure};}
++                if(!data->record_native_call_graph(llvm_module)){test_failure("call_graph");return {{},status::native_failure};}
+                 // Strict FP legalization can introduce this integer-only
+                 // helper after the initial import bridge pass, notably for
+                 // i686 i64 conversions. Authenticate its exact IR ABI before
+@@ -354,16 +359,16 @@
+                     observed_native_pass_manager native{*data};
+                     if(target->addPassesToEmitFile(native,output,nullptr,::llvm::CodeGenFileType::ObjectFile))return {{},status::native_failure};
+                     native.run(llvm_module);
+-                    if(!native.valid())return {{},status::native_failure};
++                    if(!native.valid()){test_failure("machine_frame");return {{},status::native_failure};}
+                 }
+                 if(compiler.cancellation().stop_requested())return {{},status::invalid_world};
+-                if(!output.valid())return {{},status::budget};
++                if(!output.valid()){test_failure("object_output_budget");return {{},status::budget};}
+                 auto buffer=::llvm::MemoryBuffer::getMemBufferCopy(output.bytes(),"uwvm.threaded.child.object");
+                 if(!buffer)return {{},status::native_failure};
+                 auto parsed=::llvm::object::ObjectFile::createObjectFile(buffer->getMemBufferRef());
+                 if(!parsed){::llvm::consumeError(parsed.takeError());return {{},status::native_failure};}
+                 ::std::vector<::std::string> definitions;
+-                if(!data->check_object(**parsed,data->native_bytes_,definitions))return {{},status::budget};
++                if(!data->check_object(**parsed,data->native_bytes_,definitions)){test_failure("object_budget_symbols");return {{},status::budget};}
+                 for(auto const& entry:data->entries_)
+                 {
+                     bool raw{},typed{};for(auto const& name:definitions){raw|=name==entry.raw_name;typed|=name==entry.typed_name;}

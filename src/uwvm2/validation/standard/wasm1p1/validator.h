@@ -40,6 +40,7 @@
 # include <uwvm2/utils/macro/push_macros.h>
 // import
 # include <fast_io.h>
+# include <uwvm2/extension/memtag/instruction.h>
 # include <uwvm2/utils/container/impl.h>
 # include <uwvm2/utils/debug/impl.h>
 # include <uwvm2/utils/intrinsics/impl.h>
@@ -4513,6 +4514,23 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm1p1
 
                     auto const subopcode{
                         details::read_leb128<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32>(code_curr, code_end, op_begin, err, u8"numeric_prefix")};
+
+                    if(auto const* memtag{::uwvm2::extension::memtag::find_instruction(subopcode)}; memtag != nullptr)
+                    {
+                        if(wasm1p1_para.disable_memtag_extension) [[unlikely]]
+                        {
+                            details::fail_feature_required(op_begin, err, subopcode,
+                                ::uwvm2::parser::wasm::base::wasm1p1_feature_kind::memtag_extension,
+                                ::uwvm2::parser::wasm::base::wasm1p1_error_subject::instruction);
+                        }
+                        auto const memory_index{details::read_leb128<
+                            ::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32>(
+                                code_curr, code_end, op_begin, err, u8"memtag.memoryidx")};
+                        check_memory_index_zero(op_begin, memory_index, u8"memtag");
+                        validate_i32_operands(op_begin, u8"memtag", memtag->operand_count);
+                        if(memtag->result_count != 0u) { operand_stack.push_back({curr_operand_stack_value_type::i32}); }
+                        break;
+                    }
                     auto const numeric_code{static_cast<wasm1p1_numeric_code>(subopcode)};
 
                     switch(numeric_code)

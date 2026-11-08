@@ -56,7 +56,7 @@ int main(int argc,char** argv)
 {
     if(argc==2) { REQUIRE(::std::string_view{argv[1]}=="--require-big" && ::std::endian::native==::std::endian::big); }
     else { REQUIRE(argc==1); }
-    static_assert(cp::database_format_version==6u && cp::binding::state_version==6u);
+    static_assert(cp::database_format_version==7u && cp::binding::state_version==7u);
     auto original{sample()};REQUIRE(cp::validate_graph(original)==cp::error::none);
     REQUIRE(original.objects[3u].links[0u]!=original.objects[4u].links[0u] && original.objects[5u].bytes==original.objects[6u].bytes);
     auto wire{encode(original)};cp::state decoded{};

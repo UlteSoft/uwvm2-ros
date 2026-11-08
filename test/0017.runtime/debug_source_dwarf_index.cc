@@ -292,6 +292,34 @@ static void component_tests()
         auto corrupt{dead}; corrupt.info.pop_back();
         rejected(corrupt, error::malformed); // full structural preflight remains mandatory.
     }
+    {
+        ::std::string long_name(4097u, 'n');
+        auto large{make_fixture(4u, 4u, false, true, long_name)};
+        ::std::unique_ptr<metadata_index> parsed{};
+        check(parse(large, parsed) == error::none && parsed->variables()[0u].declaration_file == long_name,
+            "input-owned source names exceed former default quota");
+        limits manual{}; manual.max_string_bytes = 4096u;
+        rejected(large, error::limit_exceeded, manual);
+        auto one{make_fixture()};
+        large = one;
+        for(::std::size_t i{1u}; i != 257u; ++i)
+        { large.info.insert(large.info.end(), one.info.begin(), one.info.end()); }
+        check(parse(large, parsed) == error::none && parsed->variables().size() == 257u * 3u,
+            "all actual CUs survive default unbounded aggregate metadata capacity");
+        manual = {}; manual.max_units = 256u;
+        rejected(large, error::limit_exceeded, manual);
+        auto sections{one.sections()};
+        ::std::vector<::std::string> names{};
+        names.reserve(65u);
+        for(::std::size_t i{}; i != 65u; ++i)
+        { names.emplace_back(::std::string(65u, 'n') + ::std::to_string(i)); }
+        for(auto const& name : names) { sections.push_back({name, {}}); }
+        check(metadata_index::parse({sections, 100u, 4u}, parsed) == error::none,
+            "passive input section count and names have no arbitrary fixed quota");
+        manual = {}; manual.max_sections = 64u;
+        check(metadata_index::parse({sections, 100u, 4u}, parsed, manual) == error::limit_exceeded && !parsed,
+            "explicit metadata section quota remains enforced transactionally");
+    }
     auto good{make_fixture()}; auto bad{good}; bad.info.pop_back(); rejected(bad, error::malformed);
     bad = good; bad.info[4u] = ::std::byte{3u}; rejected(bad, error::unsupported_dwarf);
     bad = make_fixture(5u); bad.info[6u] = ::std::byte{4u}; rejected(bad, error::unsupported_external);
@@ -394,6 +422,18 @@ int main(int argc, char** argv)
         first.info.insert(first.info.end(), second.info.begin(), second.info.end());
         check(parse(first, out) == error::none && out->line_directories().size() == 1u,
               "identical shared line-table owner is deduplicated");
+        // A real linked Rust standard library can carry a .debug_str section
+        // above one MiB. Loader-bounded passive bytes do not create new DIEs
+        // or source-read authority; an explicit byte quota must still reject.
+        auto large{make("/large")};
+        auto large_sections{large.sections()};
+        bytes strings(1024u * 1024u + 257u, ::std::byte{});
+        large_sections.push_back({".debug_str", strings});
+        check(metadata_index::parse({large_sections, 128u, 4u}, out) == error::none,
+              "default raw metadata extent has no one MiB capacity ceiling");
+        limits explicit_quota{}; explicit_quota.max_section_bytes = 1024u * 1024u;
+        check(metadata_index::parse({large_sections, 128u, 4u}, out, explicit_quota) == error::limit_exceeded && !out,
+              "explicit metadata byte quota rejects atomically");
         component_tests();
     }
     else

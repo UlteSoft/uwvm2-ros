@@ -140,7 +140,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                 ::std::vector<::std::string_view> seen{};
                 for(auto const& entry : input.sections)
                 {
-                    if(entry.name.size() > 64u || entry.payload.size() > cap.max_section_bytes ||
+                    if(entry.name.size() > cap.max_string_bytes || entry.payload.size() > cap.max_section_bytes ||
                        !charge(entry.payload.size(), cap.max_total_bytes, used.bytes)) { return fail(error::limit_exceeded); }
                     if(::std::find(seen.begin(), seen.end(), entry.name) != seen.end()) { return fail(error::malformed); }
                     seen.push_back(entry.name); // borrowed only until parse returns; input owns this name.

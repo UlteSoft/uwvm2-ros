@@ -20,6 +20,7 @@
  ****************************************/
 
 #pragma once
+#include <uwvm2/utils/security/trusted_driver.h>
 
 #ifndef UWVM_MODULE
 // std
@@ -179,13 +180,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                                          ::uwvm2::utils::container::u8string_view rename_module_name,
                                          ::uwvm2::uwvm::wasm::type::wasm_parameter_t para) noexcept
     {
-        // Native constructors run during dlopen and could bypass the selected
-        // module's security boundary. Secure processes admit trusted built-ins only.
-        if(::uwvm2::utils::security::wsea::secure_enabled())
+        if(::uwvm2::utils::security::trusted_driver::process_verifier.selected())
         {
-            ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
-                u8"uwvm: [POL_003] DENIED: native dynamic-library loading is unavailable with --secure.");
-            return load_dl_rtl::load_error;
+            if(auto error=wd.verified_image.prepare(reinterpret_cast<char const*>(load_file_name.data())))
+            {
+                ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                    u8"uwvm: [error] trusted driver rejected before loading: ",
+                    ::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(error)));
+                return load_dl_rtl::load_error;
+            }
         }
         if(::uwvm2::uwvm::io::show_untrusted_dl_warning)
         {
@@ -210,7 +213,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                     ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_YELLOW),
                     u8"[warn]  ",
                     ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
-                    u8"Loading an untrusted preload dl is equivalent to loading untrusted native code in the same process; it may install hooks and read or modify arbitrary process memory. Only load trusted modules. ",
+                    u8"A native driver runs with host process authority. The deployer owns trust and dependency policy. Use --wasm-driver-verify to enable secondary signature verification before constructors run. ",
                     ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_ORANGE),
                     u8"(untrusted-dl)\n",
                     ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
@@ -361,8 +364,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
             ::uwvm2::utils::debug::timer parsing_timer{u8"dl loader"};
 #  endif
 
-            // dl always follow symlink
-            wd.import_dll_file = ::fast_io::native_dll_file{load_file_name, ::fast_io::dll_mode::posix_rtld_lazy};
+            if(wd.verified_image.descriptor()>=0)
+            {
+                auto const sealed_name=::fast_io::u8concat_fast_io(u8"/proc/self/fd/",wd.verified_image.descriptor());
+                wd.import_dll_file = ::fast_io::native_dll_file{sealed_name, ::fast_io::dll_mode::posix_rtld_now};
+            }
+            else { wd.import_dll_file = ::fast_io::native_dll_file{load_file_name, ::fast_io::dll_mode::posix_rtld_now}; }
         }
 #  ifdef UWVM_CPP_EXCEPTIONS
         catch(::fast_io::error e)

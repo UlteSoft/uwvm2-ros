@@ -17,15 +17,19 @@ import os
 from pathlib import Path
 import queue
 import re
+import select
 import socket
 import stat
 import struct
 import sys
 import threading
+import time
+from urllib.parse import unquote
 
 
 MAX_DAP_MESSAGE = 1 << 20
 MAX_COMMAND = 8448  # bounded WASIp1 text; VM retains other grammar limits
+MAX_SOURCE_COMMAND = 512  # command.h::max_command_bytes; execution packet, not syntax capacity
 MAX_REPLY = 65536
 THREAD_RE = re.compile(r"^thread (\d+) module=(\d+) function=(\d+) byte-offset=(\d+) generation=(\d+)$")
 FRAME_RE = re.compile(r"^\s*#(\d+) module=(\d+) function=(\d+)\b")
@@ -40,6 +44,44 @@ BREAK_RE = re.compile(r"^breakpoint (\d+)\b")
 WASM_LOCATION_RE = re.compile(r"^wasm:(\d{1,20}):(\d{1,20}):(\d{1,20})$")
 WASM_MEMORY_RE = re.compile(r"^wasm-memory:(\d{1,20}):(\d{1,10}):(\d{1,20})$")
 EXIT_RE = re.compile(r"^guest exited: (-?\d+)$")
+
+
+def parse_memory_tags_page(text, module, memory, offset, count):
+    lines = text.splitlines()
+    if not text.endswith("\n") or "\r" in text or len(lines) < 2 or lines[-1] != "memory-tags-end":
+        raise ValueError("invalid memory tag page framing")
+    match = re.fullmatch(r"Wasm memory tags module=([0-9]{1,20}) index=([0-9]{1,10}) offset=([0-9]{1,20}) bytes=([0-9]{1,10}) status=(available|disabled|unsupported-memory) memory-bytes=([0-9]{1,20}) tag-bits=([048]) first-granule=([0-9]{1,20}) count=([0-9]{1,10})", lines[0])
+    if not match or tuple(map(int, match.group(1,2,3,4))) != (module,memory,offset,count):
+        raise ValueError("memory tag page selector differs")
+    status, memory_bytes, tag_bits, first, amount = match[5], int(match[6]), int(match[7]), int(match[8]), int(match[9])
+    if memory_bytes >= 1 << 64 or first >= 1 << 64 or len(lines) != amount+2:
+        raise ValueError("invalid memory tag extent")
+    if status == "unsupported-memory":
+        if (memory_bytes,tag_bits,first,amount) != (0,0,0,0):
+            raise ValueError("unsupported memory carries fabricated tags")
+    else:
+        if offset > memory_bytes or count > memory_bytes-offset or first != offset//16:
+            raise ValueError("memory tag range exceeds current memory")
+        if status == "disabled":
+            if tag_bits or amount:
+                raise ValueError("disabled memory carries fabricated tags")
+        elif (tag_bits not in (4,8) or memory_bytes > (1 << (28 if tag_bits == 4 else 56))
+              or amount != (0 if not count else (offset+count-1)//16-first+1)):
+            raise ValueError("memory tag coverage or address width differs")
+    rows=[]
+    for index,line in enumerate(lines[1:-1]):
+        row=re.fullmatch(r"tag offset=([0-9]{1,20}) value=0x([0-9a-f]{2}) color=(#[0-9a-f]{6})",line)
+        if not row or int(row[1]) != (first+index)*16 or int(row[2],16) >= 1 << tag_bits:
+            raise ValueError("invalid allocation tag row")
+        tag=int(row[2],16)
+        # Mirror the canonical C++ palette, validating the transported RGB cue.
+        hue=((tag*137)&255)*6;rise=64+(hue%256)*191//255;fall=319-rise
+        rgb=((255,rise,64),(fall,255,64),(64,255,rise),(64,fall,255),(rise,64,255),(255,64,fall))[hue//256]
+        color="#%02x%02x%02x" % rgb
+        if row[3] != color:
+            raise ValueError("allocation tag palette differs")
+        rows.append({"offset":str((first+index)*16),"tag":tag,"hex":"0x%02x"%tag,"color":color})
+    return {"status":status,"memoryBytes":str(memory_bytes),"tagBits":tag_bits,"granuleBytes":16,"tags":rows}
 
 
 def parse_wasm_memory_page(reply, module, memory, address, count):
@@ -352,20 +394,37 @@ def breakpoint_ignore_count(point):
     return max(0, threshold - 1) if match.group(1) == ">=" else threshold
 
 
-def validate_source_expression(expression):
-    """Validate bounded read-only source syntax DATA, then form one CLI token.
+def _run_source_syntax(root):
+    """Drive heap parser continuations without recursive Python calls.
 
-    This mirrors source_dwarf_expression's unary/postfix precedence and hard
-    32-step/32-nesting ceilings under the adapter's existing 256-byte limit.
-    Canonical decimal indices retain the prior DAP rule (no redundant leading
-    zeroes). No type, variable, address, reference, pause or read authority is
-    created; the controller still authenticates the actual current stop/frame
-    and copies every pointer target inside its coherent guest transaction.
+    A yielded generator is scheduled, never resumed by its parent. Closing the
+    work list deepest first also prevents recursive destruction on bad input.
     """
-    if (not isinstance(expression, str) or not expression or len(expression) > 256
-            or any(not 32 <= ord(char) < 127 for char in expression)):
-        raise ValueError("bounded printable ASCII read-only source expression required")
-    cursor, steps, terminal_builtin = 0, 0, False
+    work, result = [root], None
+    try:
+        while work:
+            try:
+                child = work[-1].send(result)
+            except StopIteration as completed:
+                work.pop()
+                result = completed.value
+            else:
+                work.append(child)
+                result = None
+        return result
+    finally:
+        while work:
+            work.pop().close()
+
+
+def _parse_source_selector(expression, start=0, primary_only=False):
+    """Parse already-checked syntax DATA; return its end and selector shape.
+
+    The explicit continuation driver owns nesting. A primary-only entry leaves
+    postfix/operators for the scalar parser that owns the surrounding operand.
+    This does not select a frame, type, guest address or read transaction.
+    """
+    cursor, steps, terminal_builtin = start, 0, False
 
     def space():
         nonlocal cursor
@@ -393,8 +452,6 @@ def validate_source_expression(expression):
 
     def add_steps(count):
         nonlocal steps
-        if count > 32 - steps:
-            raise ValueError("source expression exceeds 32 steps")
         steps += count
 
     def primary(depth):
@@ -403,10 +460,8 @@ def validate_source_expression(expression):
         if cursor == len(expression):
             raise ValueError("source expression operand required")
         if expression[cursor] == "(":
-            if depth >= 32:
-                raise ValueError("source expression exceeds 32 nesting levels")
             cursor += 1
-            unary(depth + 1)
+            (yield unary(depth + 1))
             space()
             if cursor == len(expression) or expression[cursor] != ")":
                 raise ValueError("source expression closing parenthesis required")
@@ -425,10 +480,8 @@ def validate_source_expression(expression):
         if root in ("len", "cap"):
             space()
             if cursor < len(expression) and expression[cursor] == "(":
-                if depth >= 32:
-                    raise ValueError("source expression exceeds 32 nesting levels")
                 cursor += 1
-                unary(depth + 1)
+                (yield unary(depth + 1))
                 if terminal_builtin:
                     raise ValueError("Go builtin argument requires one producer reference")
                 space()
@@ -440,7 +493,7 @@ def validate_source_expression(expression):
 
     def postfix(depth):
         nonlocal cursor
-        primary(depth)
+        (yield primary(depth))
         while True:
             space()
             if cursor == len(expression):
@@ -471,6 +524,10 @@ def validate_source_expression(expression):
                     cursor += 1
                 if cursor == digits or cursor - digits > 1 and expression[digits] == "0":
                     raise ValueError("source expression canonical decimal index required")
+                # Canonical i64 indices cannot have more than 19 digits.
+                # Reject by semantic width before Python's decimal-int limit.
+                if cursor - digits > 19:
+                    raise ValueError("source expression index exceeds signed 64-bit range")
                 index = int(expression[start:cursor])
                 if not -(1 << 63) <= index < (1 << 63):
                     raise ValueError("source expression index exceeds signed 64-bit range")
@@ -487,27 +544,32 @@ def validate_source_expression(expression):
         if cursor == len(expression):
             raise ValueError("source expression operand required")
         if expression[cursor] != "*":
-            postfix(depth)
+            (yield postfix(depth))
             return
-        if depth >= 32:
-            raise ValueError("source expression exceeds 32 nesting levels")
         cursor += 1
-        unary(depth + 1)  # Postfix binds before this dereference: *p[1].
+        (yield unary(depth + 1))  # Postfix binds before this dereference: *p[1].
         if terminal_builtin:
             raise ValueError("Go builtin scalar cannot be dereferenced")
         add_steps(1)
 
-    unary(0)
-    space()
+    _run_source_syntax(primary(0) if primary_only else unary(0))
+    return cursor, steps, terminal_builtin
+
+
+def validate_source_expression(expression):
+    """Admit read-only selector syntax DATA; runtime read/packet quotas differ."""
+    if (not isinstance(expression, str) or not expression
+            or any(not 32 <= ord(char) < 127 for char in expression)):
+        raise ValueError("printable ASCII read-only source expression required")
+    cursor, _, _ = _parse_source_selector(expression)
     if cursor != len(expression):
         raise ValueError("source expression has unsupported trailing tokens")
-    # Spaces are discarded only AFTER the whole finite grammar accepts them.
-    # No joined roots, line controls, calls, casts or injected commands survive.
+    # Normalize spaces only after the complete selector grammar accepts them.
     return expression.replace(" ", "")
 
 
 def validate_source_evaluation_expression(expression):
-    """Bound the controller's read-only scalar syntax before any broker I/O.
+    """Admit read-only scalar syntax DATA before any broker I/O.
 
     Selector-only queries retain their established grammar and normalization.
     Scalar expressions keep their original spaces (Rust `as`, builtin types,
@@ -523,9 +585,9 @@ def validate_source_evaluation_expression(expression):
         return normalized
     except ValueError:
         pass
-    if (not isinstance(expression, str) or not expression or len(expression) > 256
+    if (not isinstance(expression, str) or not expression
             or any(not 32 <= ord(char) < 127 for char in expression)):
-        raise ValueError("bounded printable ASCII read-only source expression required")
+        raise ValueError("printable ASCII read-only source expression required")
     numeric_types = {
         "float", "f32", "float32", "double", "f64", "float64", "bool", "_Bool",
         "char8_t", "char16_t", "char32_t", "char", "signed char", "i8", "int8", "unsigned char", "u8", "uint8", "byte",
@@ -574,19 +636,53 @@ def validate_source_evaluation_expression(expression):
         # Keep word boundaries. The printable-ASCII gate above remains in force.
         return " ".join(text.split())
 
+    def builtin_close(start, closing):
+        end = start
+        while end < len(expression) and expression[end] != closing:
+            char = expression[end]
+            if char != " " and char != "_" and not char.isalnum():
+                return -1  # A nested operand is not a builtin type spelling.
+            end += 1
+        return end if end < len(expression) else -1
+
+    def finite_u64(digits, base):
+        significant = digits.lstrip("0") or "0"
+        # These limits come from the exact unsigned 64-bit numeric carrier.
+        if len(significant) > {2: 64, 8: 22, 10: 20, 16: 16}[base]:
+            raise ValueError("source integer literal exceeds unsigned 64-bit range")
+        value = int(significant, base)
+        if value >= 1 << 64:
+            raise ValueError("source integer literal exceeds unsigned 64-bit range")
+        return value
+
+    def rust_candidate(start):
+        # Avoid quadratic regex backtracking on long non-Rust radix tokens.
+        # Only an exact suffix and valid radix alphabet reach that same grammar.
+        end = start
+        while end < len(expression):
+            char = expression[end]
+            if char.isalnum() or char in "_'." or (char in "+-" and end > start and expression[end-1] in "eE"):
+                end += 1
+            else:
+                break
+        suffix = re.compile(r"(?:[iu](?:8|16|32|64|size)|f32|f64)$").search(expression, start, end)
+        if suffix is None:
+            return False
+        body = start
+        radix = expression[start:start+2]
+        allowed = "0123456789_.eE+-"
+        if radix in ("0x", "0b", "0o"):
+            body += 2
+            allowed = {"0x": "0123456789abcdefABCDEF_", "0b": "01_", "0o": "01234567_"}[radix]
+        return all(expression[index] in allowed for index in range(body, suffix.start()))
+
     def append():
         nonlocal nodes
         nodes += 1
-        if nodes > 128:
-            raise ValueError("source scalar expression exceeds 128 nodes")
 
     def require(token):
         if not consume(token):
             raise ValueError("source scalar expression delimiter required")
-
-    def bounded(depth):
-        if depth >= 32:
-            raise ValueError("source scalar expression exceeds 32 nesting levels")
 
     def selector(text):
         normalized = validate_source_expression(text.strip())
@@ -609,7 +705,7 @@ def validate_source_evaluation_expression(expression):
                 cost = 2 if expression.startswith("->", cursor) else 1
                 cursor += cost
                 space()
-                member = re.match(r"(?:[0-9]+|[A-Za-z_][A-Za-z_0-9]*)", expression[cursor:])
+                member = re.compile(r"(?:[0-9]+|[A-Za-z_][A-Za-z_0-9]*)").match(expression, cursor)
                 if member is None:
                     raise ValueError("source scalar reference member required")
                 cursor += len(member[0])
@@ -619,14 +715,12 @@ def validate_source_evaluation_expression(expression):
                 token = expression[cursor:end].strip() if end >= 0 else ""
                 if not re.fullmatch(r"-?(?:0|[1-9][0-9]*)", token):
                     raise ValueError("source scalar reference canonical decimal index required")
-                if not -(1 << 63) <= int(token) < (1 << 63):
+                if len(token.removeprefix("-")) > 19 or not -(1 << 63) <= int(token) < (1 << 63):
                     raise ValueError("source scalar reference index exceeds signed 64-bit range")
                 cursor = end + 1
                 cost = 1
             else:
                 break
-            if cost > 32 - steps:
-                raise ValueError("source scalar reference exceeds 32 steps")
             steps += cost
             changed = True
         if changed:
@@ -683,7 +777,7 @@ def validate_source_evaluation_expression(expression):
                     pos += 1
                 if pos == begin:
                     raise ValueError("numeric character escape requires digits")
-                value = int(expression[begin:pos], 16 if escaped == "x" else 8)
+                value = finite_u64(expression[begin:pos], 16 if escaped == "x" else 8)
             else:
                 simple = {"a": 7, "b": 8, "f": 12, "n": 10, "r": 13, "t": 9, "v": 11,
                           "\\": 92, "'": 39, '"': 34, "?": 63}
@@ -703,60 +797,26 @@ def validate_source_evaluation_expression(expression):
 
     def primary(depth):
         nonlocal cursor
-        bounded(depth)
         space()
         if cursor == len(expression):
             raise ValueError("source scalar expression operand required")
-        builtin = re.match(r"(?:len|cap)\s*\(", expression[cursor:])
+        builtin = re.compile(r"(?:len|cap)\s*\(").match(expression, cursor)
         if builtin:
-            start, nesting = cursor, 1
-            cursor += len(builtin[0])
-            while cursor < len(expression) and nesting:
-                char = expression[cursor]
-                cursor += 1
-                nesting += (char == "(") - (char == ")")
-                if depth + nesting >= 32:
-                    raise ValueError("Go builtin operand exceeds its nesting bound")
-            if nesting:
-                raise ValueError("Go builtin closing parenthesis required")
-            validate_source_expression(expression[start:cursor])
+            cursor, _, _ = _parse_source_selector(expression, cursor, primary_only=True)
             append()
-            return None  # int scalar: arithmetic may follow, source postfix cannot.
-        if re.match(r"sizeof\b", expression[cursor:]):
+            return None  # A builtin scalar never gains selector postfix syntax.
+        if re.compile(r"sizeof\b").match(expression, cursor):
             cursor += 6
             if not consume("("):
-                unary(depth + 1)
+                (yield unary(depth + 1))
                 append()
                 return None
-            start, nesting = cursor, 1
-            while cursor < len(expression) and nesting:
-                char = expression[cursor]
-                cursor += 1
-                if char == "'":
-                    try:
-                        cursor = character(cursor - 1)
-                    except ValueError:
-                        pass  # Failed probes consume no token; scalar parse rejects it.
-                    else:
-                        continue
-                nesting += (char == "(") - (char == ")")
-                if nesting > 32:
-                    raise ValueError("sizeof operand exceeds its nesting bound")
-            if nesting:
-                raise ValueError("sizeof closing parenthesis required")
-            end = cursor
-            operand = expression[start:end - 1].strip()
-            if typename(operand) not in numeric_types:
-                try:
-                    normalized = validate_source_expression(operand)
-                    if re.fullmatch(r"\(*\s*(?:true|false)\s*\)*", normalized):
-                        raise ValueError("sizeof Boolean literal is a scalar operand")
-                except ValueError:
-                    cursor = start
-                    parse(1, depth + 1)
-                    require(")")
-                    if cursor != end:
-                        raise ValueError("sizeof scalar operand delimiter required")
+            end = builtin_close(cursor, ")")
+            if end >= 0 and typename(expression[cursor:end]) in numeric_types:
+                cursor = end + 1
+            else:
+                (yield parse(1, depth + 1))
+                require(")")
             append()
             return None
         for name, opening, closing, types in (("@as", "(", ",", zig_types), ("static_cast", "<", ">", numeric_types)):
@@ -767,26 +827,26 @@ def validate_source_evaluation_expression(expression):
                 cursor = end + 1
                 if name == "static_cast":
                     require("(")
-                parse(1, depth + 1)
+                (yield parse(1, depth + 1))
                 require(")")
                 append()
                 return None
         if consume("("):
-            end = expression.find(")", cursor)
+            end = builtin_close(cursor, ")")
             if end >= 0 and typename(expression[cursor:end]) in numeric_types:
                 cursor = end + 1
-                unary(depth + 1)
+                (yield unary(depth + 1))
                 append()
                 return None
-            reference_steps = parse(1, depth + 1)
+            reference_steps = (yield parse(1, depth + 1))
             require(")")
             return postfix(reference_steps) if reference_steps is not None else None
-        name = re.match(r"[A-Za-z_][A-Za-z_0-9]*", expression[cursor:])
+        name = re.compile(r"[A-Za-z_][A-Za-z_0-9]*").match(expression, cursor)
         if name:
             saved = cursor
             cursor += len(name[0])
             if name[0] in numeric_types and consume("("):
-                parse(1, depth + 1)
+                (yield parse(1, depth + 1))
                 require(")")
                 append()
                 return None
@@ -804,9 +864,7 @@ def validate_source_evaluation_expression(expression):
             rust_digits = r"[0-9][0-9_]*"
             rust_suffix = r"(?:[iu](?:8|16|32|64|size)|f32|f64)"
             rust_real = rf"(?:{rust_digits}\.[0-9][0-9_]*(?:[eE][+-]?_*{rust_digits})?|{rust_digits}[eE][+-]?_*{rust_digits})"
-            rust_number = re.match(
-                rf"(?P<content>0x[0-9a-fA-F_]*[0-9a-fA-F][0-9a-fA-F_]*|0b[01_]*[01][01_]*|0o[0-7_]*[0-7][0-7_]*|{rust_real}|{rust_digits})(?P<suffix>{rust_suffix})(?![A-Za-z0-9_\'.])",
-                expression[cursor:])
+            rust_number = (re.compile(rf"(?P<content>0x[0-9a-fA-F_]*[0-9a-fA-F][0-9a-fA-F_]*|0b[01_]*[01][01_]*|0o[0-7_]*[0-7][0-7_]*|{rust_real}|{rust_digits})(?P<suffix>{rust_suffix})(?![A-Za-z0-9_\'.])").match(expression, cursor) if rust_candidate(cursor) else None)
             if rust_number and rust_number["content"].startswith(("0x", "0b", "0o")) and rust_number["suffix"] in ("f32", "f64"):
                 rust_number = None  # hex f32/f64 may be digits, never a radix float suffix
             if rust_number:
@@ -831,12 +889,12 @@ def validate_source_evaluation_expression(expression):
                         narrowed = struct.unpack("!f", packed)[0]
                         if not math.isfinite(narrowed):
                             raise ValueError("finite Rust float32 literal required")
-                elif int(content[2:] if radix != 10 else content, radix) >= 1 << 64:
+                elif finite_u64(content[2:] if radix != 10 else content, radix) >= 1 << 64:
                     raise ValueError("Rust literal exceeds finite 64-bit carrier")
                 cursor += len(rust_number[0])
                 append()
                 return None
-            real = re.match(rf"(?:(?:{decimal_digits}\.(?:{decimal_digits})?|\.{decimal_digits})(?:[eE][+-]?{decimal_digits})?|{decimal_digits}[eE][+-]?{decimal_digits})[fF]?", expression[cursor:])
+            real = re.compile(rf"(?:(?:{decimal_digits}\.(?:{decimal_digits})?|\.{decimal_digits})(?:[eE][+-]?{decimal_digits})?|{decimal_digits}[eE][+-]?{decimal_digits})[fF]?").match(expression, cursor)
             if real:
                 literal = real[0]
                 normalized = literal.rstrip("fF").replace("_", "").replace("'", "")
@@ -863,13 +921,13 @@ def validate_source_evaluation_expression(expression):
                 cursor += len(literal)
                 append()
                 return None
-            number = re.match(r"(?:0[xX]_?[0-9a-fA-F](?:[0-9a-fA-F]|['_](?=[0-9a-fA-F]))*|0[bB]_?[01](?:[01]|['_](?=[01]))*|0[oO]_?[0-7](?:[0-7]|['_](?=[0-7]))*|[0-9](?:[0-9]|['_](?=[0-9]))*)(?:[uU](?:ll|LL|[lL])?|(?:ll|LL|[lL])[uU]?)?", expression[cursor:])
+            number = re.compile(r"(?:0[xX]_?[0-9a-fA-F](?:[0-9a-fA-F]|['_](?=[0-9a-fA-F]))*|0[bB]_?[01](?:[01]|['_](?=[01]))*|0[oO]_?[0-7](?:[0-7]|['_](?=[0-7]))*|[0-9](?:[0-9]|['_](?=[0-9]))*)(?:[uU](?:ll|LL|[lL])?|(?:ll|LL|[lL])[uU]?)?").match(expression, cursor)
             if number is None:
                 raise ValueError("source numeric literal required")
             literal = number[0]
             digits = re.sub(r"[uUlL]+$", "", literal).replace("_", "").replace("'", "")
             base = 16 if digits[:2].lower() == "0x" else 2 if digits[:2].lower() == "0b" else 8 if digits[:2].lower() == "0o" or len(digits) > 1 and digits[0] == "0" else 10
-            if int(digits[2:] if digits[:2].lower() in ("0x", "0b", "0o") else digits, base) >= 1 << 64:
+            if finite_u64(digits[2:] if digits[:2].lower() in ("0x", "0b", "0o") else digits, base) >= 1 << 64:
                 raise ValueError("source integer literal exceeds unsigned 64-bit range")
             cursor += len(literal)
             append()
@@ -877,8 +935,14 @@ def validate_source_evaluation_expression(expression):
         start, brackets = cursor, 0
         while cursor < len(expression):
             char = expression[cursor]
-            if not brackets and char == " " and re.match(r"(?:as |(?:and|or)\b)", expression[cursor:].lstrip(" ")):
-                break
+            if not brackets and char == " ":
+                look = cursor
+                while look < len(expression) and expression[look] == " ":
+                    look += 1
+                if re.compile(r"(?:as |(?:and|or)\b)").match(expression, look):
+                    break
+                cursor = look
+                continue
             if not brackets and expression.startswith((".*", "->"), cursor):
                 cursor += 2
                 continue
@@ -897,33 +961,31 @@ def validate_source_evaluation_expression(expression):
         return selector(expression[start:cursor])
 
     def unary(depth):
-        bounded(depth)
         space()
         if expression.startswith(("++", "--"), cursor):
             raise ValueError("source increment/decrement is unavailable")
         if consume("*"):
-            steps = unary(depth + 1)
-            if steps is None or steps >= 32:
-                raise ValueError("source dereference requires a bounded producer reference")
+            steps = (yield unary(depth + 1))
+            if steps is None:
+                raise ValueError("source dereference requires a producer reference")
             append()
             return steps + 1
         for prefix in ("+", "-", "~", "!"):
             if consume(prefix):
-                unary(depth + 1)
+                (yield unary(depth + 1))
                 append()
                 return None
-        return primary(depth)
+        return (yield primary(depth))
 
     def parse(minimum, depth):
         nonlocal cursor
-        bounded(depth)
-        reference_steps = unary(depth + 1)
+        reference_steps = (yield unary(depth + 1))
         while True:
             space()
             if minimum <= 11 and expression.startswith("as ", cursor):
                 cursor += 3
                 space()
-                name = re.match(r"[A-Za-z_][A-Za-z_0-9]*", expression[cursor:])
+                name = re.compile(r"[A-Za-z_][A-Za-z_0-9]*").match(expression, cursor)
                 if name is None or name[0] not in numeric_types:
                     raise ValueError("only builtin numeric conversions are available")
                 cursor += len(name[0])
@@ -937,27 +999,26 @@ def validate_source_evaluation_expression(expression):
             candidate = next(((token, rank) for token, rank in operators
                               if expression.startswith(token, cursor) and
                               (token not in ("and", "or") or
-                               not re.match(r"[A-Za-z_0-9]", expression[cursor + len(token):]))), None)
+                               not re.compile(r"[A-Za-z_0-9]").match(expression, cursor + len(token)))), None)
             if candidate is None or candidate[1] < minimum:
                 break
             cursor += len(candidate[0])
-            parse(candidate[1] + 1, depth + 1)
+            (yield parse(candidate[1] + 1, depth + 1))
             append()
             reference_steps = None
         if minimum == 1 and consume("?"):
-            parse(1, depth + 1)
+            (yield parse(1, depth + 1))
             require(":")
-            parse(1, depth + 1)
+            (yield parse(1, depth + 1))
             append()
             reference_steps = None
         return reference_steps
 
-    parse(1, 0)
+    _run_source_syntax(parse(1, 0))
     space()
     if cursor != len(expression):
         raise ValueError("source scalar expression has unsupported trailing tokens")
     return expression.strip()
-
 
 def _validate_source_metadata_label(label):
     """Count the formatter's original bytes without unescaping display text.
@@ -2184,6 +2245,18 @@ def private_capability(directory):
     return root, capability
 
 
+def startup_timeout_seconds(value):
+    if value is None:
+        return None
+    try:
+        converted = float(value) if type(value) in (int, float) else math.nan
+    except OverflowError:
+        converted = math.inf
+    if not math.isfinite(converted) or converted <= 0:
+        raise ValueError("startupTimeoutSeconds must be a positive finite number or omitted")
+    return converted
+
+
 class UnixBroker:
     def __init__(self, directory):
         root, capability = private_capability(directory)
@@ -2196,6 +2269,7 @@ class UnixBroker:
             if self.receive_raw() != b"ready\n":
                 raise ValueError("debug broker rejected the capability")
             self.first_request = True
+            self.startup_timeout = None
         except BaseException:
             self.channel.close()
             raise
@@ -2245,12 +2319,25 @@ class UnixBroker:
         data = command.encode("utf-8")
         if not 0 < len(data) <= MAX_COMMAND:
             raise ValueError("debug command exceeds 8448 UTF-8 input bytes")
-        # Linux's launch broker permits one bounded wait for full JIT startup.
-        # Authentication still uses 8 seconds; later commands also use 8.
+        # Initial Linux full-JIT readiness is event-driven. Authentication and
+        # subsequent commands retain their independent transport deadlines.
         startup, self.first_request = self.first_request, False
-        self.channel.settimeout(125 if startup and sys.platform == "linux" else 8)
+        startup = startup and sys.platform == "linux"
+        self.channel.settimeout(None if startup else 8)
         try:
             self.send_raw(data)
+            if startup:
+                timeout = startup_timeout_seconds(getattr(self, "startup_timeout", None))
+                deadline = None if timeout is None else time.monotonic() + timeout
+                watched = select.poll()
+                watched.register(self.channel.fileno(), select.POLLIN | select.POLLHUP | select.POLLERR)
+                while True:
+                    remaining = None if deadline is None else max(0.0, deadline - time.monotonic())
+                    milliseconds = None if remaining is None else math.ceil(min(2147483.647, remaining) * 1000)
+                    if watched.poll(milliseconds):
+                        break
+                    if deadline is not None and time.monotonic() >= deadline:
+                        raise TimeoutError("VM startup exceeded the explicit IDE deadline")
             return self.receive_raw().decode("utf-8", "replace")
         except BaseException:
             # A timed-out packet has no sequence number. Retire this connection
@@ -2262,6 +2349,10 @@ class UnixBroker:
                 self.channel.settimeout(8)
 
     def close(self):
+        try:
+            self.channel.shutdown(socket.SHUT_RDWR)
+        except OSError:
+            pass
         self.channel.close()
 
 
@@ -2637,11 +2728,89 @@ def native_register_selector(expression, architecture):
     return name
 
 
+def compile_source_map(value):
+    """Host launch configuration only; never interpret a guest path as a map."""
+    if not isinstance(value, dict):
+        raise ValueError("sourceMap must map compiler source roots to local absolute directories")
+    result = []
+    for original, local in value.items():
+        roots = []
+        for root in (original, local):
+            if (not isinstance(root, str) or not root or
+                    any(ord(c) < 32 or ord(c) == 127 for c in root)):
+                raise ValueError("sourceMap roots must be nonempty paths without control characters")
+            root = root.replace("\\", "/")
+            if not (root.startswith("/") or re.match(r"^[A-Za-z]:/", root)):
+                raise ValueError("sourceMap roots must be absolute")
+            if any(part in (".", "..") for part in root.split("/")) or "//" in root:
+                raise ValueError("sourceMap roots must be normalized")
+            roots.append(root.rstrip("/") or "/")
+        if any(roots[0] == old[0] or roots[1] == old[1] for old in result):
+            raise ValueError("sourceMap roots must have an unambiguous reverse mapping")
+        result.append(tuple(roots))
+    return tuple(result)
+
+
+def map_source_path(path, mappings, reverse=False):
+    """Map complete path components in either direction; longest root wins."""
+    normalized = path.replace("\\", "/")
+    pairs = [(b, a) if reverse else (a, b) for a, b in mappings]
+    for original, local in sorted(pairs, key=lambda pair: len(pair[0]), reverse=True):
+        prefix = original.rstrip("/") + "/"
+        if normalized == original or normalized.startswith(prefix):
+            suffix = "" if normalized == original else normalized[len(prefix):]
+            if any(part in (".", "..") for part in suffix.split("/")):
+                raise ValueError("mapped source path contains a traversal component")
+            return local.rstrip("/") + ("/" + suffix if suffix else "") or "/"
+    return path
+
+
+DEBUG_PERMISSIONS = ("full", "read-only", "limited", "none")
+
+
+def debug_capabilities(permission):
+    full = permission == "full"
+    inspect = permission in ("full", "read-only")
+    return {"supportsConfigurationDoneRequest": True, "supportsEvaluateForHovers": inspect,
+            "supportsSteppingGranularity": full, "supportsInstructionBreakpoints": full,
+            "supportsHitConditionalBreakpoints": full, "supportsConditionalBreakpoints": full,
+            "supportsLogPoints": False, "supportsDataBreakpoints": full,
+            "supportsSetVariable": full, "supportsReadMemoryRequest": inspect,
+            "supportsWriteMemoryRequest": full, "supportsDisassembleRequest": inspect,
+            "supportsTerminateRequest": False, "supportsCancelRequest": True}
+
+
+def dap_permission_allowed(permission, command):
+    if command in ("initialize", "attach", "disconnect", "cancel", "configurationDone"):
+        return True
+    if permission == "none":
+        return False
+    if permission == "full":
+        return True
+    if permission == "limited":
+        return command in ("threads", "evaluate", "uwvm/diagnostics", "uwvm/dump", "uwvm/permissions")
+    return command not in ("next", "stepIn", "stepOut", "stepBack", "reverseContinue", "restart", "terminate",
+                           "goto", "gotoTargets", "setVariable", "setExpression", "writeMemory", "setBreakpoints",
+                           "setFunctionBreakpoints", "setInstructionBreakpoints", "setDataBreakpoints", "setExceptionBreakpoints",
+                           "uwvm/wasip1Edit")
+
+
 class Adapter:
-    def __init__(self, output):
+    def __init__(self, output, wasm_source_session=None):
+        if wasm_source_session is not None and (not isinstance(wasm_source_session, str) or
+                re.fullmatch(r"[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}", wasm_source_session) is None):
+            raise ValueError("valid host IDE source session required")
+        self.wasm_source_session = wasm_source_session
+        self.wasm_source_uris = {}
         self.output = output
         self.sequence = 1
         self.broker = None
+        self.debug_permissions = "full"  # No transport authority until authenticated attach.
+        self.limited_stop_id = 0
+        self.startup_lock = threading.Lock()
+        self.startup_request = None
+        self.startup_broker = None
+        self.startup_canceled = False
         self.threads = []
         self.state = "detached"
         self.stop_key = None
@@ -2650,6 +2819,8 @@ class Adapter:
         self.data_breakpoint_handles = {}
         self.data_breakpoints = {}
         self.frames = {}
+        self.wasm_source_lines = {}
+        self.source_map = ()
         self.scopes = {}
         self.wasm_local_scope_stops = {}
         self.native_frames = set()
@@ -2666,6 +2837,8 @@ class Adapter:
         self.wasm_scope_stops = {}
         self.wasip1_scope_stops = {}
         self.ros_scope_stops = {}
+        self.host_trace_views = {}
+        self.host_trace_view_epoch = None
         self.wasm_object_views = {}
         self.deep_wasm_paths = {}
         self.wasm_path_indices = 0
@@ -2677,6 +2850,56 @@ class Adapter:
         self.supports_memory_event = False
         self.supports_invalidated_event = False
         self.supports_variable_type = False
+
+    def note_input(self, request):
+        """Reader-thread cancellation only; responses/state stay serialized."""
+        closing = None
+        with self.startup_lock:
+            command = None if request is None else request.get("command")
+            if command == "attach" and self.startup_request is None:
+                self.startup_request = request["seq"]
+                self.startup_canceled = False
+            elif self.startup_request is not None:
+                args = {} if request is None else request.get("arguments") or {}
+                matching_cancel = (command == "cancel" and isinstance(args, dict) and
+                    not set(args) - {"requestId", "progressId"} and
+                    type(args.get("requestId")) is int and 0 < args["requestId"] < 1 << 31 and
+                    args["requestId"] == self.startup_request)
+                if request is None or command == "disconnect" or matching_cancel:
+                    self.startup_canceled = True
+                    closing = self.startup_broker
+        if closing is not None:
+            closing.close()
+
+    def begin_startup(self, sequence):
+        with self.startup_lock:
+            if self.startup_request is None:
+                self.startup_request = sequence
+                self.startup_canceled = False
+            if self.startup_request != sequence or self.startup_canceled:
+                raise RuntimeError("debugger startup canceled by the IDE")
+
+    def bind_startup_broker(self, sequence, broker):
+        with self.startup_lock:
+            if self.startup_request != sequence or self.startup_canceled:
+                raise RuntimeError("debugger startup canceled by the IDE")
+            self.startup_broker = broker
+
+    def commit_startup_broker(self, sequence, broker):
+        with self.startup_lock:
+            if self.startup_request != sequence or self.startup_canceled:
+                raise RuntimeError("debugger startup canceled by the IDE")
+            self.broker = broker
+            self.startup_request = None
+            self.startup_broker = None
+            self.startup_canceled = False
+
+    def finish_startup(self, sequence):
+        with self.startup_lock:
+            if self.startup_request == sequence:
+                self.startup_request = None
+                self.startup_broker = None
+                self.startup_canceled = False
 
     def emit(self, message):
         message["seq"] = self.sequence
@@ -2762,10 +2985,35 @@ class Adapter:
                                    "all debugger references remain retired: " + str(error)) from error
         return reply
 
+    def wasm_document_source(self, reference, location):
+        name = f"module {location['module']} function {location['function']}.wat"
+        suffix = f"/module-{location['module']}/function-{location['function']}/stop-{location['stop_id']}.wat"
+        if self.wasm_source_session is None:
+            return {"name": name, "sourceReference": reference, "path": "/uwvm-wasm" + suffix}
+        # Only this host IDE session uses the extension's own URI scheme.
+        # It is display metadata; every content/breakpoint query still verifies
+        # the current frame and complete stopped generation through the broker.
+        uri = f"uwvm-wasm:{suffix}?session={self.wasm_source_session}&ref={reference}"
+        self.wasm_source_uris[uri] = reference
+        return {"name": name, "sourceReference": 0, "path": uri}
+
+    def wasm_document_reference(self, path):
+        if not isinstance(path, str) or not path.startswith("uwvm-wasm:"):
+            return None
+        # VS Code may percent-encode the query separators when translating a
+        # document URI back to DAP Source.path. Only an exact registered URI
+        # after one decode is accepted; no filesystem/network lookup occurs.
+        reference = self.wasm_source_uris.get(unquote(path))
+        if reference is None or reference not in self.frames:
+            raise ValueError("unknown or retired Wasm document URI")
+        return reference
+
     def invalidate_stop(self):
         self.stop_key = None
         self.data_breakpoint_handles.clear()
         self.frames.clear()
+        self.wasm_source_lines.clear()
+        self.wasm_source_uris.clear()
         self.scopes.clear()
         self.wasm_local_scope_stops.clear()
         self.native_frames.clear()
@@ -2781,6 +3029,7 @@ class Adapter:
         self.wasm_scope_stops.clear()
         self.wasip1_scope_stops.clear()
         self.ros_scope_stops.clear()
+        self.host_trace_views.clear()
         self.wasm_object_views.clear(); self.deep_wasm_paths.clear(); self.wasm_path_indices = 0
         self.inline_frames.clear()
 
@@ -2958,6 +3207,17 @@ class Adapter:
 
     def _decode_status(self, reply):
         try:
+            if self.debug_permissions == "limited":
+                match = re.fullmatch(r"limited status=([0-4]) stop-id ([0-9]+) participants=([0-9]+) reason=([0-9]+) exit-status=([0-9]+)\n", reply)
+                if match is None:
+                    raise ValueError("invalid limited diagnostic status")
+                state, stop, count, reason, code = map(int, match.groups())
+                if any(n >= 1 << 64 for n in (stop, count, reason, code)):
+                    raise ValueError("limited diagnostic integer exceeds u64")
+                self.limited_stop_id = stop
+                self.event("uwvm/diagnostics", {"permissions": "limited", "stopId": stop,
+                           "participants": count, "reason": reason, "redacted": True})
+                return ("running", "running", "stopped", "exited", "closed")[state], "exception", [], code
             return parse_status(reply)
         except ValueError:
             self.invalidate_stop()
@@ -3224,6 +3484,131 @@ class Adapter:
         return save_host_trace(self.command, self.cooperative_memory_stop,
                                args.get("path"), args.get("family", "all"))
 
+    def query_host_trace(self, args, *, byte_page=False, expected=None):
+        from host_trace_view import query
+        def checkpoint():
+            value = self.cooperative_memory_stop()
+            if expected is not None and value[0] != expected:
+                raise ValueError("retired host observation view")
+            return value
+        try:
+            return query(self.command, checkpoint, args, byte_page=byte_page)
+        except (OSError, ValueError, RuntimeError):
+            self.invalidate_stop()
+            raise
+
+    def host_trace_variable(self, title, value, view=None):
+        ref = 0
+        if view is not None:
+            ref = self.new_reference()
+            self.host_trace_views[ref] = (self.stop_key, self.host_trace_view_epoch, view)
+        return {"name": title, "value": value, "variablesReference": ref,
+                "presentationHint": {"attributes": ["readOnly"]}}
+
+    def host_trace_variables(self, reference, args):
+        expected, epoch, view = self.host_trace_views[reference]
+        if args.get("filter") not in (None, "named", "indexed"):
+            raise ValueError("invalid observation variable filter")
+        start, count = args.get("start", 0), args.get("count", 0)
+        if type(start) is not int or type(count) is not int or start < 0 or not 0 <= count <= 1024:
+            raise ValueError("invalid observation variable page")
+        if self.cooperative_memory_stop()[0] != expected or reference not in self.host_trace_views:
+            raise ValueError("retired observation view")
+        kind, detail = view
+        # Clear can retire retained records without moving the guest. A copied
+        # record is display data, never proof that it still belongs to a journal.
+        journal = self.query_host_trace({"count": 1}, expected=expected)["journal"]
+        if epoch is not None and journal["epoch"] != epoch:
+            self.host_trace_views.pop(reference, None)
+            raise ValueError("host observation journal was cleared")
+        self.host_trace_view_epoch = journal["epoch"]
+        leaf = self.host_trace_variable
+        values = []
+        if kind == "calls":
+            page = self.query_host_trace(detail, expected=expected)
+            values.append(leaf("Recording and loss", json.dumps(page["journal"], sort_keys=True)))
+            for call in page["calls"]:
+                values.append(leaf(call["id"] + ": " + str(call["namespace"]) + "." + str(call["function"]),
+                    "returned=" + call["returned"] + " result=" + call["result"] +
+                    " duration-ns=" + call["duration-ns"] + " incomplete=" + call["incomplete"], ("call", call)))
+            if page["more"]:
+                values.append(leaf("More calls", "after " + page["next"],
+                                   ("calls", {**detail, "after": page["next"]})))
+        elif kind == "call":
+            for name, value in detail.items():
+                values.append(leaf(name, json.dumps(value, ensure_ascii=True) if not isinstance(value, str) else value))
+            values.append(leaf("Complete module name", "raw bytes",
+                ("bytes", {"call": detail["id"], "segment": str((1 << 64)-1)})))
+            if int(detail["segments"]):
+                values.append(leaf("Buffers", detail["segments"] + " recorded segments",
+                    ("segments", {"call": detail["id"], "total": detail["segments"], "first": 0})))
+        elif kind == "segments":
+            first, total = detail["first"], int(detail["total"])
+            for index in range(first, min(first+8, total)):
+                values.append(leaf("Segment " + str(index), "expand to read bytes",
+                    ("bytes", {"call": detail["call"], "segment": str(index)})))
+            if first+8 < total:
+                values.append(leaf("More segments", "from " + str(first+8),
+                    ("segments", {**detail, "first": first+8})))
+        elif kind == "bytes":
+            page = self.query_host_trace(detail, byte_page=True, expected=expected)
+            for name, value in page.items():
+                values.append(leaf(name, json.dumps(value, ensure_ascii=True) if not isinstance(value, str) else value))
+            if page["more"]:
+                values.append(leaf("More bytes", "offset " + page["next"],
+                    ("bytes", {**detail, "offset": page["next"]})))
+        else:
+            raise ValueError("invalid retained observation view")
+        return values[start: start+count if count else None]
+
+    def wasm_disassembly(self, reference, count, byte_offset=0, instruction_offset=0):
+        match = re.fullmatch(r"wasm:([0-9]+):([0-9]+):([0-9]+)", reference or "")
+        if match is None:
+            raise ValueError("current Wasm instruction reference required")
+        module, function, offset = map(int, match.groups())
+        expected = self.stop_key
+        candidates = [v for v in self.frames.values() if v[1] == 0 and v[2:] == (module, function)]
+        if expected is None or not candidates:
+            raise ValueError("retired Wasm instruction reference")
+        self.cooperative_memory_stop()
+        current = [v for v in self.threads if v["id"] == candidates[0][0] and
+                   (v["module"], v["function"], v["offset"]) == (module, function, offset)]
+        if self.stop_key != expected or len(current) != 1:
+            raise ValueError("Wasm instruction reference differs from the current stop")
+        location, result, identity = current[0], [], None
+        for first in range(0, count, 32):
+            amount = min(32, count-first)
+            text = self.command(f"wasm-code {location['id']} {location['stop_id']} {amount} {byte_offset} {instruction_offset+first}")
+            lines = text.splitlines()
+            head = re.fullmatch(r"wasm-code thread=(\d+) stop=(\d+) module=(\d+) function=(\d+) epoch=(\d+) generation=(\d+) pc=(\d+) size=(\d+) first=(-?\d+) count=(\d+)", lines[0] if lines else "")
+            if head is None or len(lines) != amount+1:
+                raise ValueError("incomplete Wasm instruction page")
+            h = list(map(int, head.groups()))
+            if (h[:5] != [location["id"], location["stop_id"], module, function, location["generation"]]
+                    or h[5] == 0 or h[6] != offset or h[7] <= offset or h[9] != amount
+                    or identity is not None and (h[:8] != identity[:8] or h[8] != identity[8]+first)):
+                raise ValueError("Wasm instruction page identity changed")
+            if identity is None: identity = h
+            previous_end = None
+            for line in lines[1:]:
+                if line == "wasm-op unavailable":
+                    result.append({"address": "-1", "instruction": "<outside current Wasm function>",
+                                   "presentationHint": "invalid"})
+                    continue
+                row = re.fullmatch(r"wasm-op offset=(\d+) size=(\d+) text=([ -~]+)", line)
+                if row is None:
+                    raise ValueError("invalid Wasm instruction row")
+                at, size = int(row[1]), int(row[2])
+                if size == 0 or at+size > h[7] or previous_end is not None and at != previous_end:
+                    raise ValueError("Wasm instruction boundaries differ")
+                previous_end = at+size
+                result.append({"address": str(at), "instruction": row[3],
+                               "symbol": f"wasm:{module}:{function}:{at}"})
+            self.cooperative_memory_stop()
+            if self.stop_key != expected:
+                raise ValueError("Wasm instruction page stop retired")
+        return result
+
     def read_wasm_memory(self, module, memory, address, count):
         """Fresh guest selector, never a native address or cached frame capability."""
         expected, _, _ = self.cooperative_memory_stop()
@@ -3243,6 +3628,33 @@ class Adapter:
                 raise ValueError("Wasm memory stop changed during page copy")
             data.extend(copied)
         return bytes(data)
+
+    def read_memory_tags(self, args):
+        reference=args.get("memoryReference")
+        match=WASM_MEMORY_RE.fullmatch(reference) if isinstance(reference,str) else None
+        count=args.get("count",256);delta=args.get("offset",0)
+        if not match or type(count) is not int or not 0<=count<=256 or type(delta) is not int:
+            raise ValueError("memory tags require a Wasm memory reference and a 0..256-byte page")
+        module,memory,address=map(int,match.groups());address+=delta
+        if module>=1<<64 or memory>=1<<32 or not 0<=address<1<<64 or count>(1<<64)-1-address:
+            raise ValueError("memory tag selector is not representable")
+        include_bytes=args.get("includeBytes",False)
+        if type(include_bytes) is not bool:
+            raise ValueError("includeBytes must be boolean")
+        expected,_,stop_id=self.cooperative_memory_stop()
+        reply=self.command(f"memtags {module} {memory} {address} {count}")
+        parsed=parse_memory_tags_page(reply,module,memory,address,count)
+        self.observe(self.command("status"),notify=False)
+        if self.state!="stopped" or self.stop_key!=expected:
+            raise ValueError("memory tag stop changed during copy")
+        if include_bytes:
+            copied=self.read_wasm_memory(module,memory,address,count)
+            if self.stop_key!=expected:
+                raise ValueError("memory tag stop changed during byte copy")
+            parsed["data"]=base64.b64encode(copied).decode("ascii")
+        parsed.update(memoryReference=f"wasm-memory:{module}:{memory}:{address}",offset=str(address),count=count,
+                      stopId=str(stop_id),nextMemoryReference=f"wasm-memory:{module}:{memory}:{address+count}" if address+count<int(parsed["memoryBytes"]) else None)
+        return parsed
 
     def write_wasm_memory(self, module, memory, address, data):
         """One complete native commit; no chunked or replayed partial writes."""
@@ -3984,6 +4396,8 @@ class Adapter:
             self.respond(request, error="invalid DAP request")
             return
         try:
+            if not dap_permission_allowed(self.debug_permissions, command):
+                raise ValueError("debugger permission " + self.debug_permissions + " denies " + command)
             if command == "initialize":
                 if any(type(args.get(key, False)) is not bool for key in ("supportsMemoryEvent", "supportsInvalidatedEvent")):
                     raise ValueError("memory and invalidation event capabilities must be boolean")
@@ -3992,25 +4406,21 @@ class Adapter:
                 self.supports_memory_event = args.get("supportsMemoryEvent", False)
                 self.supports_invalidated_event = args.get("supportsInvalidatedEvent", False)
                 self.supports_variable_type = args.get("supportsVariableType", False)
-                self.respond(request, {"supportsConfigurationDoneRequest": True,
-                                       "supportsEvaluateForHovers": True,
-                                       "supportsSteppingGranularity": True,
-                                       "supportsInstructionBreakpoints": True,
-                                       "supportsHitConditionalBreakpoints": True,
-                                       "supportsConditionalBreakpoints": True,
-                                       "supportsLogPoints": False,
-                                       "supportsDataBreakpoints": True,
-                                       "supportsSetVariable": True,
-                                       "supportsReadMemoryRequest": True,
-                                       "supportsWriteMemoryRequest": True,
-                                       "supportsDisassembleRequest": True,
-                                       "supportsTerminateRequest": False})
+                # Capabilities are conservative until the actual VM answers.
+                self.respond(request, debug_capabilities("none"))
             elif command == "attach":
+                if args.get("debugPermissions") == "none":
+                    raise ValueError("Debugger disabled; no connection or dump is permitted")
+                self.begin_startup(request["seq"])
+                startup_timeout = startup_timeout_seconds(args.get("startupTimeoutSeconds"))
+                if startup_timeout is not None and sys.platform != "linux":
+                    raise ValueError("startupTimeoutSeconds currently requires the Linux broker")
                 if self.broker is not None:
                     raise ValueError("already attached")
                 step_level = args.get("stepLevel", "source")
                 if step_level not in ("source", "wasm", "native"):
                     raise ValueError("stepLevel must be source, wasm or native")
+                source_map = compile_source_map(args.get("sourceMap", {}))
                 module_id = args.get("moduleId", 0)
                 if type(module_id) is not int or not 0 <= module_id < (1 << 32):
                     raise ValueError("moduleId out of range")
@@ -4025,21 +4435,53 @@ class Adapter:
                 else:
                     raise ValueError("host platform lacks a qualified debug broker")
                 try:
+                    broker.startup_timeout = startup_timeout
+                    self.bind_startup_broker(request["seq"], broker)
+                    permission_reply = broker.request("permissions")
+                    if isinstance(permission_reply, bytes):
+                        permission_reply = permission_reply.decode("ascii", "strict")
+                    selected = permission_reply.removeprefix("permissions ").removesuffix("\n")
+                    if permission_reply != "permissions " + selected + "\n" or selected not in DEBUG_PERMISSIONS or selected == "none":
+                        raise ValueError("VM did not authorize a debugger permission level")
+                    expected = args.get("debugPermissions")
+                    if expected is not None and (expected not in DEBUG_PERMISSIONS or expected != selected):
+                        raise ValueError("IDE debugPermissions does not match the immutable VM launch permission")
+                    self.debug_permissions = selected
                     initial = broker.request("status")
                     if isinstance(initial, bytes):
                         initial = initial.decode("utf-8", "replace")
                     if initial.startswith("error: "):
                         raise RuntimeError(initial.strip())
                     observation = self._decode_status(initial)
+                    self.commit_startup_broker(request["seq"], broker)
                 except BaseException:
                     broker.close()
                     raise
-                self.broker = broker
                 self.module_id = module_id
+                self.source_map = source_map
                 self.step_level = step_level
                 self.respond(request)
+                self.event("capabilities", {"capabilities": debug_capabilities(self.debug_permissions)})
+                self.event("uwvm/permissions", {"permissions": self.debug_permissions})
                 self.event("initialized")
                 self._commit_status(observation)
+            elif command == "uwvm/permissions":
+                self.respond(request, {"permissions": self.debug_permissions})
+            elif command == "uwvm/diagnostics":
+                reply = self.command("status")
+                self.respond(request, {"permissions": self.debug_permissions, "text": reply,
+                                       "redacted": self.debug_permissions == "limited"})
+            elif command == "uwvm/dump":
+                path = args.get("path")
+                stop = args.get("stopId")
+                if isinstance(stop, str) and re.fullmatch(r"[1-9][0-9]{0,19}", stop):
+                    stop = int(stop)
+                if not isinstance(path, str) or not path.startswith("/") or any(ord(c) < 32 for c in path):
+                    raise ValueError("dump path must be an absolute path on the VM host without control characters")
+                if type(stop) is not int or not 0 < stop < (1 << 64):
+                    raise ValueError("dump requires the exact current nonzero stopId")
+                reply = self.command("dump wasm " + str(stop) + " " + path)
+                self.respond(request, {"text": reply, "redacted": self.debug_permissions == "limited"})
             elif command == "configurationDone":
                 self.respond(request)
             elif command == "threads":
@@ -4162,6 +4604,8 @@ class Adapter:
                                      "line": 0, "column": 0, "moduleId": str(row["module"]), "canRestart": False}
                             if row["ordinal"] == 0:
                                 frame["instructionPointerReference"] = f"wasm:{location['module']}:{location['function']}:{location['offset']}"
+                                frame["source"] = self.wasm_document_source(frame_id, location)
+                                frame["line"], frame["column"] = 2, 1
                             frames.append(frame)
                         self.respond(request, {"stackFrames": frames, "totalFrames": page["total"]})
                         if changed:
@@ -4204,13 +4648,14 @@ class Adapter:
                         frame = {"id": frame_id, "name": row["name"] or "<anonymous>", "line": 0, "column": 0,
                                  "moduleId": str(row["module"]), "canRestart": False}
                         if row["ordinal"] == 0 and source:
-                            frame["source"] = {"name": Path(source["path"]).name, "path": source["path"]}
+                            frame["source"] = {"name": Path(source["path"]).name, "path": map_source_path(source["path"], self.source_map)}
                             frame["line"], frame["column"] = source["line"], source["column"]
                         elif row["kind"] == "caller":
                             availability = "saved caller values" if row["current"] else "caller values unavailable"
                             frame["name"] += f" module={row['module']} function={row['function']} ({availability})"
                             frame["presentationHint"] = "label"
-                        if row["kind"] == "physical":
+                        if (row["kind"] == "physical" or
+                                self.step_level == "native" and row["kind"] == "inline" and row["current"]):
                             # The actual current physical Code PC is shared by
                             # its inline scopes; no older caller PC is invented.
                             frame["instructionPointerReference"] = (
@@ -4251,7 +4696,7 @@ class Adapter:
                                    "name": ("Native JIT instruction (Wasm origin "
                                             f"module={location['module']} function={location['function']} "
                                             f"generation={location['generation']})"),
-                                   "line": 0, "column": 0, "presentationHint": "label",
+                                   "line": 0, "column": 0, "presentationHint": "normal",
                                    "moduleId": str(location["module"]), "canRestart": False,
                                    "instructionPointerReference": f"uwvm-native-stop:{frame_id}"})
                 for line in (() if total_frames is not None else trace.splitlines()):
@@ -4270,7 +4715,7 @@ class Adapter:
                     if index == 0 and source:
                         if "stop_id" in location:
                             self.source_frames.add(frame_id)
-                        frame["source"] = {"name": Path(source["path"]).name, "path": source["path"]}
+                        frame["source"] = {"name": Path(source["path"]).name, "path": map_source_path(source["path"], self.source_map)}
                         frame["line"], frame["column"] = source["line"], source["column"]
                     else:
                         frame["source"] = {"name": f"wasm module {module}", "sourceReference": frame_id}
@@ -4279,6 +4724,11 @@ class Adapter:
                         if native_reference is not None:
                             frame["instructionPointerReference"] = native_reference
                     frames.append(frame)
+                if self.step_level == "wasm" and "native_pc" not in location:
+                    for frame in frames:
+                        if self.frames[frame["id"]][1] == 0:
+                            frame["source"] = self.wasm_document_source(frame["id"], location)
+                            frame["line"], frame["column"] = 2, 1
                 # A failed/private query cannot leave labels whose stop retired
                 # while this stack display was being assembled.
                 if self.state != "stopped" or any(frame["id"] not in self.frames for frame in frames):
@@ -4298,6 +4748,10 @@ class Adapter:
                         or type(args.get("instructionOffset", 0)) is not int or not -(1 << 63) <= args.get("instructionOffset", 0) < 1 << 63
                         or type(args.get("resolveSymbols", False)) is not bool):
                     raise ValueError("native disassembly requires a current opaque reference, count 1..512 and signed 64-bit offsets")
+                if reference.startswith("wasm:"):
+                    self.respond(request, {"instructions": self.wasm_disassembly(reference, count,
+                        args.get("offset", 0), args.get("instructionOffset", 0))})
+                    return
                 # Preserve the original r2 zero-offset <=32 native-stop wire
                 # subset. IDE symbols, offsets, bigger windows and cooperative
                 # code references always use the new exact-owner range query.
@@ -4394,6 +4848,11 @@ class Adapter:
                         reference = self.new_reference()
                         self.wasip1_scope_stops[reference] = (self.stop_key, frame[2], selected)
                         scopes.append({"name": title, "variablesReference": reference, "expensive": True})
+                    for title, family in (("WASIp1 calls (recorded)", "wasip1"),
+                                          ("ROS1 calls (recorded)", "ros1"), ("ROS2 calls (recorded)", "ros2")):
+                        reference = self.new_reference()
+                        self.host_trace_views[reference] = (self.stop_key, None, ("calls", {"family": family}))
+                        scopes.append({"name": title, "variablesReference": reference, "expensive": True})
                     # These process-owned ROS identities are deliberately not
                     # inferred from the frame's numeric Wasm module ordinal.
                     # The real Host reports ROS-off/BUSY as an explicit error.
@@ -4404,6 +4863,12 @@ class Adapter:
                         self.ros_scope_stops[reference] = (self.stop_key, selected)
                         scopes.append({"name": title, "variablesReference": reference, "expensive": True})
                 self.respond(request, {"scopes": scopes})
+            elif command == "uwvm/memoryTags":
+                self.respond(request,self.read_memory_tags(args))
+            elif command == "uwvm/hostTrace":
+                self.respond(request, self.query_host_trace(args))
+            elif command == "uwvm/hostTraceBytes":
+                self.respond(request, self.query_host_trace(args, byte_page=True))
             elif command == "uwvm/exportHostTrace":
                 self.respond(request, self.export_host_trace(args))
             elif command == "uwvm/rosState":
@@ -4453,6 +4918,9 @@ class Adapter:
                 self.respond(request, self.set_data_breakpoints(args))
             elif command == "variables":
                 reference = unsigned_id(args.get("variablesReference"), "variablesReference")
+                if reference in self.host_trace_views:
+                    self.respond(request, {"variables": self.host_trace_variables(reference, args)})
+                    return
                 if reference in self.ros_scope_stops:
                     expected_key, selected = self.ros_scope_stops[reference]
                     first, count = args.get("start", 0), args.get("count", 0)
@@ -4680,13 +5148,25 @@ class Adapter:
                     self.event("invalidated", {"areas": ["stacks", "variables"]})
             elif command == "source":
                 ref = unsigned_id(args.get("sourceReference"), "sourceReference")
+                supplied_source = args.get("source") or {}
+                if not isinstance(supplied_source, dict):
+                    raise ValueError("invalid Wasm document source")
+                uri_reference = self.wasm_document_reference(supplied_source.get("path"))
+                if uri_reference is not None and uri_reference != ref:
+                    raise ValueError("Wasm document URI/reference mismatch")
                 frame = self.frames.get(ref)
                 if frame is None or ref in self.native_frames or ref in self.inline_frames:
                     raise ValueError("unknown Wasm frame source")
                 frame = self.current_frame(ref)
-                self.respond(request, {"content": f";; module {frame[2]} function {frame[3]}\n"
-                                                  ";; Exact byte offset is shown in the current thread location.\n",
-                                       "mimeType": "text/x-wat"})
+                if frame[1] != 0:
+                    raise ValueError("saved caller instruction PC unavailable")
+                location = next(t for t in self.threads if t["id"] == frame[0])
+                rows = self.wasm_disassembly(f"wasm:{frame[2]}:{frame[3]}:{location['offset']}", 64)
+                self.wasm_source_lines[ref] = (self.stop_key, [None] + [int(r["address"]) for r in rows if r.get("presentationHint") != "invalid"])
+                content = f";; module {frame[2]} function {frame[3]}; current stopped instruction first\n"
+                content += "\n".join(";; " + r["address"] + "  " + r["instruction"]
+                                     for r in rows if r.get("presentationHint") != "invalid") + "\n"
+                self.respond(request, {"content": content, "mimeType": "text/x-wat"})
             elif command == "setBreakpoints":
                 source = args.get("source") or {}
                 if not isinstance(source, dict) or not isinstance(args.get("breakpoints", []), list):
@@ -4694,6 +5174,18 @@ class Adapter:
                 path = source.get("path")
                 if not isinstance(path, str) or not path or any(ord(c) < 32 for c in path):
                     raise ValueError("source path required")
+                wasm_source = None
+                uri_reference = self.wasm_document_reference(path)
+                source_reference = source.get("sourceReference", 0)
+                if uri_reference is not None and source_reference not in (0, uri_reference):
+                    raise ValueError("Wasm document URI/reference mismatch")
+                if source_reference or uri_reference is not None:
+                    ref = unsigned_id(source_reference or uri_reference, "Wasm source reference")
+                    wasm_source = self.current_frame(ref)
+                    document = self.wasm_source_lines.get(ref)
+                    if wasm_source[1] != 0 or document is None or document[0] != self.stop_key:
+                        raise ValueError("current Wasm instruction document required")
+                    wasm_lines = document[1]
                 for identifier in self.breakpoints.pop(path, []):
                     try:
                         self.command(f"delete {identifier}")
@@ -4711,7 +5203,13 @@ class Adapter:
                     try:
                         ignore = breakpoint_ignore_count(point)
                         suffix = ("" if ignore is None else f" ignore {ignore}") + breakpoint_condition_suffix(point)
-                        reply = self.command(f"breaksource {self.module_id} {path}:{line}{suffix}")
+                        if wasm_source is not None:
+                            if line > len(wasm_lines) or wasm_lines[line-1] is None:
+                                raise ValueError("select an executable Wasm instruction line")
+                            reply = self.command(f"breakwasm {wasm_source[2]} {wasm_source[3]} {wasm_lines[line-1]}{suffix}")
+                        else:
+                            compiler_path = map_source_path(path, self.source_map, reverse=True)
+                            reply = self.command(f"breaksource {self.module_id} {compiler_path}:{line}{suffix}")
                         match = BREAK_RE.match(reply)
                         if not match:
                             raise RuntimeError(reply.strip())
@@ -4793,10 +5291,13 @@ class Adapter:
                     if not row["current"]:
                         raise ValueError("caller source PC and locals were not captured")
                     source_expression = validate_source_evaluation_expression(expression)
+                    source_command = f"print-frame {row['thread']} {row['stop_id']} {row['ordinal']} {source_expression}"
+                    if len(source_command.encode("ascii")) > MAX_SOURCE_COMMAND:
+                        raise ValueError("source evaluation exceeds the controller's 512-byte command packet capacity")
                     self.observe(self.command("status"), notify=False)
                     if self.state != "stopped" or self.stop_key != expected_key or args["frameId"] not in self.source_frame_ordinals:
                         raise ValueError("selected source frame belongs to a retired stop")
-                    result = self.command(f"print-frame {row['thread']} {row['stop_id']} {row['ordinal']} {source_expression}")
+                    result = self.command(source_command)
                     self.observe(self.command("status"), notify=False)
                     if self.state != "stopped" or self.stop_key != expected_key or args["frameId"] not in self.source_frame_ordinals:
                         raise ValueError("selected source frame retired during value copy")
@@ -4821,6 +5322,12 @@ class Adapter:
                     # Commit after the response, without reparsing. A terminal
                     # reply still emits exited before the endpoint's idle poll.
                     self._commit_status(observation)
+            elif command == "cancel":
+                if set(args) - {"requestId", "progressId"} or ("requestId" in args and
+                        (type(args["requestId"]) is not int or not 0 < args["requestId"] < 1 << 31)):
+                    raise ValueError("cancel requires an actual DAP requestId")
+                self.note_input(request)
+                self.respond(request)
             elif command == "disconnect":
                 self.invalidate_stop()
                 if self.broker is not None:
@@ -4832,24 +5339,40 @@ class Adapter:
                     self.event("terminated")
             else:
                 raise ValueError(f"DAP request {command!r} is unavailable")
-        except (OSError, ValueError, RuntimeError, ConnectionError, KeyError) as error:
+        except (OSError, ValueError, RuntimeError, ConnectionError, KeyError, MemoryError) as error:
             self.invalidate_stop()
-            self.respond(request, error=error)
+            if isinstance(error, MemoryError):
+                error = RuntimeError("debug adapter allocation failed")
+            failure_body = None
+            if command == "attach":
+                with self.startup_lock:
+                    if self.startup_request == request["seq"] and self.startup_canceled:
+                        # DAP defines this spelling so a requested cancellation
+                        # does not appear as a spurious transport-error dialog.
+                        error = RuntimeError("cancelled")
+                        failure_body = {"error": {"id": 1, "format": "Debugger startup was canceled by the IDE.",
+                                                  "showUser": False}}
+            self.respond(request, body=failure_body, error=error)
+        finally:
+            if command == "attach":
+                self.finish_startup(request["seq"])
 
 
 def main():
-    adapter = Adapter(sys.stdout.buffer)
+    adapter = Adapter(sys.stdout.buffer, os.environ.get("UWVM_DAP_SOURCE_SESSION"))
     inbox = queue.Queue()
 
     def input_reader():
         try:
             while True:
                 request = read_dap(sys.stdin.buffer)
+                adapter.note_input(request)
                 inbox.put(request)
                 if request is None:
                     break
         except (EOFError, ValueError, json.JSONDecodeError) as error:
             print(f"DAP input: {error}", file=sys.stderr)
+            adapter.note_input(None)
             inbox.put(None)
 
     threading.Thread(target=input_reader, daemon=True).start()

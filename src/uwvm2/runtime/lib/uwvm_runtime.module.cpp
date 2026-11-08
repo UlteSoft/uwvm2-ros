@@ -24,7 +24,7 @@ module;
 #include "uwvm_runtime_diagnostics.h"
 
 #include <uwvm2/utils/security/wsea.h>
-#include <uwvm2/utils/control/management.h>
+#include <uwvm2/utils/control/debug_permissions.h>
 #include "uwvm_runtime_guest_exit.h"
 
 // std
@@ -174,6 +174,8 @@ module;
 # include <llvm/Transforms/InstCombine/InstCombine.h>
 # include <llvm/Transforms/Scalar.h>
 # include <llvm/Transforms/Scalar/GVN.h>
+# include <llvm/Transforms/Scalar/SimplifyCFG.h>
+# include <uwvm2/runtime/compiler/llvm_jit/memory_minimum_proof.h>
 # include <llvm/Transforms/Utils.h>
 #endif
 
@@ -197,6 +199,13 @@ module;
 #endif
 
 module uwvm2.runtime;
+import uwvm2.extension.memtag.debug_types;
+import uwvm2.extension.memtag.debug_view;
+import uwvm2.runtime.memtag.hardware_thread;
+
+import uwvm2.extension.memtag.color;
+import uwvm2.runtime.memtag.host_access;
+import uwvm2.runtime.memtag.host_fault;
 
 #if defined(UWVM_RUNTIME_LLVM_JIT)
 // The primary runtime interface does not depend on this aggregate. Import the

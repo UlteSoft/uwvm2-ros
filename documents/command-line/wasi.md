@@ -13,14 +13,12 @@ Source focus:
 
 ## Availability
 
-The WASI command category is compiled only when WASI support is enabled.
-
-- `--wasi-disable-utf8-check` requires `UWVM_IMPORT_WASI`.
-- WASI Preview 1 commands require local WASI Preview 1 support, `UWVM_IMPORT_WASI_WASIP1`, and no `UWVM_DISABLE_LOCAL_IMPORTED_WASIP1`.
-- Socket preopen commands require `UWVM_IMPORT_WASI_WASIP1_SUPPORT_SOCKET`.
-- Unix-domain socket syntax additionally depends on `UWVM_SUPPORT_UNIX_PATH_SOCKET` and runtime platform support for local sockets.
-
-If a command is not compiled into the binary, the parser treats its name as an invalid parameter.
+WASI Preview 1, memory64 bindings and both socket ABI implementations are
+mandatory components of the Linux ROS build. Xmake rejects attempts to remove
+them. The guest's namespace and exact interface states still default to hidden.
+`--wasip1-socket-abi standard|wasix` selects the process's immutable memory32
+socket ABI; it does not grant socket rights. Unix-domain preopens use the Linux
+local-socket implementation.
 
 ## ROS product: zero initial authority
 
@@ -271,677 +269,595 @@ execution. Generic guest/debug writes cannot access them. Changes require a
 host management transaction with execution quiescence; raw concurrent writes
 to environment fields are not an authorization API.
 
-## Ordinary uwvm target model and shared command definitions
+## Explicit target binding
 
-The following Global/default and preload host-API commands describe ordinary
-uwvm. They are not accepted by `uwvm2-ros`. In the ROS product, only the
-Single/Group commands apply, without short compatibility aliases or
-`expose-host-api`/`hide-host-api`. Use the ROS binary's `--help wasi` for its
-compiled command table.
+Create a Single target before setting its properties. Its module name must match
+the loaded main/preload identity exactly. A Group must also be created before
+members are added or properties configured. Adding a member does not expose its
+imports; the group's namespace and exact interface states still apply.
+Unknown modules receive no global-default WASI environment.
 
-### Target Model
+The ROS command table has no former global-enable, global-mount, global-argv,
+global-environment or preload host-API expose/hide commands. The remaining
+`--wasip1-global-socket-rights` command is specifically a per-descriptor socket
+rights record; it is not a replacement global WASI permission model.
+Use the exact commands below rather than historical upstream aliases.
 
-WASI Preview 1 configuration has three layers:
+## Arguments and environment
 
-| Layer | Purpose | How to configure |
-| --- | --- | --- |
-| Global default | Ordinary uwvm defaults only; absent from the ROS product command table. | `--wasip1-global-*` commands and their short aliases. |
-| Single target | One anonymous per-module override group, keyed by a Wasm module name. | `--wasip1-single-create <module>`, then `--wasip1-single-* <module> ...`. |
-| Named group | One named shared override group that can be bound to multiple modules. | `--wasip1-group-create <group>`, `--wasip1-group-add-module <group> <module>`, then `--wasip1-group-* <group> ...`. |
+`single/group-set-argv0` and `single/group-force-args` configure guest argument
+values. The latter consumes an explicit count and that many argument tokens.
+`force-args` and `set-argv0` for the same target are mutually exclusive.
+Configuring values does not grant the `args` operation or expose `args_get` and
+`args_sizes_get`.
 
-The module names used by single/group bindings are WebAssembly module names, not host file names. They are affected by main/preload module naming commands such as `--wasm-set-main-module-name`, the optional rename of `--wasm-preload-library`, and the optional rename of `--wasm-register-dl`.
+Host environment inheritance is off by default. A target can explicitly select
+inheritance, then delete inherited entries or add/replace named values.
+These settings do not expose the environment APIs or grant `environ`.
+Secrets needed by the host launcher, debugger, signer or Gateway should remain
+outside the guest environment. A guest's environment does not configure the
+host management profile.
 
-Loaded modules are checked under these target kinds:
+## Directory preopens and descriptor limits
 
-- `main_wasm`
-- `preload_wasm`
-- `preloaded_dl`
-- `weak_symbol`
+`--wasip1-single-mount-dir MODULE GUEST HOST` and the corresponding Group
+command bind an approved host directory handle. Parsing opens that directory;
+validation mode does not undo that host action. The host selects the root,
+while later guest traversal remains constrained by descriptor rights and
+the path resolver. Choosing a root is not a grant to every filesystem API.
 
-One module name cannot be configured as both a single target and a member of a named group. The command-line callbacks prevent most conflicts immediately, and `run/loader.h` validates loaded module bindings again before initializing WASI environments.
+Guest mount names are normalized unless explicitly disabled. Empty names,
+embedded NUL, disallowed dot segments and ambiguous repeated separators are
+rejected. Duplicate and ancestor/descendant guest mounts conflict unless
+`--wasip1-allow-overlapping-mount-paths` is selected. Disabling normalization
+does not independently disable overlap checking. UTF-8 relaxation still rejects
+embedded NUL.
 
-## WASI Preview 1 Groups And Plugin-Facing Host APIs
+Use `--wasip1-single-mount-dir-rights` or its Group counterpart for the explicit
+base and inheriting rights on an already-declared guest root. The full pair
+belongs to the immutable initial resource identity. Rights reduction by the
+guest cannot create a broader child descriptor.
 
-UWVM2 treats WASI Preview 1 configuration as a target selection problem, not as one process-wide WASI table. Every loaded module resolves to exactly one WASI target:
+The target `set-fd-limit` option controls the descriptor resource policy.
+It neither creates a descriptor nor grants an operation. Preopened socket FD
+numbers and dynamically allocated descriptors must remain compatible with that
+policy and the WASI FD integer range. No new implicit request or path-length
+ceiling accompanies a mount or descriptor grant.
 
-- The global default target, when no override is configured (no import visibility in the ROS product).
-- An anonymous single-module target created with `--wasip1-single-create <module>`.
-- A named shared target created with `--wasip1-group-create <group>` and populated with `--wasip1-group-add-module <group> <module>`.
+## Socket preopens and ABI selection
 
-A target owns the effective WASI Preview 1 capability policy for the modules that resolve to it. That policy includes WASI import visibility, plugin-facing host API exposure, inherited and explicit environment variables, argv construction, directory preopens, socket preopens, fd limits, UTF-8 checking, and trace routing. Target environments are initialized from global defaults plus target-specific overrides, so a group can share common global mounts while adding private mounts, sockets, or environment variables for only the modules in that group.
+The Single/Group TCP connect/listen and UDP connect/bind commands describe the
+approved socket at launch. Connect forms accept an IP address or DNS name with
+a port; bind/listen forms require a concrete local address. Unix-domain forms
+use `unix PATH`, including the Linux abstract namespace where supported.
+Address resolution and native bind/connect failures are reported through the
+host launch path. No public listener is created merely by exposing a WASI API.
 
-Named groups are the shared form of this model. All module names bound to the same group use the same target configuration and the same initialized WASI environment for UWVM2's WASI host calls. A group can contain any loaded target kind recognized by the runtime:
+Assign preopens outside the reserved standard-stream slots and avoid duplicate
+FD assignments. Per-target wrappers reject duplicate descriptors. A socket
+preopen is not sufficient authority for guest traffic. Use the corresponding
+`socket-rights` command to select base rights and accepted-child rights:
+`read,write,accept,shutdown,readiness,flags,metadata`, or `none`.
 
-- `main_wasm`
-- `preload_wasm`
-- `preloaded_dl`
-- `weak_symbol`
+An inherited stdio object that is itself a socket must also satisfy its actual
+socket authority. Renumbering or accepting a socket cannot turn it into an
+unrestricted file or another module's approved endpoint. Closing and reopening
+an object must not revive an old capability identity.
 
-This is intentionally different from a model where each plugin receives an unrelated store-local WASI context. In UWVM2, a Wasm preload module and a native preload plugin can be bound to the same named group so both use the same group-level WASI capability policy.
+`--wasip1-socket-abi standard|wasix` selects the memory32 `sock_accept`
+signature before linking. Standard uses three arguments; the supported WASIX
+variant has the additional peer-address output. Both implementations are
+compiled, but their conflicting import signatures cannot be selected
+simultaneously in one process. Memory64 has its own explicit ABI. This switch
+does not provide the rest of the WASIX API and grants no resources.
 
-The plugin-facing WASI Preview 1 host API follows the same target lookup:
+Networking is controlled by preopened objects and their rights. There is no
+protocol-identification heuristic that claims to recognize all ROS, debugger
+or tunneled traffic. A deployment requiring those boundaries must choose
+endpoints and host network authority accordingly; guest code has no management
+import regardless of its network grants.
 
-- The API table is hidden by default.
-- `--wasip1-global-expose-host-api` exposes it globally by default.
-- `--wasip1-single-expose-host-api <module>` exposes it for one single-module target.
-- `--wasip1-group-expose-host-api <group>` exposes it for one named group.
-- The matching `hide-host-api` commands can explicitly hide it for a target when that target is configured.
+## Tracing and diagnostics
 
-When UWVM2 calls a native preload-DL or weak-symbol plugin function, the runtime records the owning plugin module and selects the WASI environment for that owner before plugin-facing WASI calls are dispatched. If that owner is bound to a named group, plugin-facing WASI calls made during that UWVM2 preload invocation use the group's environment. Calls made by native code outside UWVM2's preload invocation context are native host behavior and should not be relied on for group selection. For native preload-DL and weak-symbol plugins, place target-level `expose-host-api` or `hide-host-api` configuration before registering/loading the target plugin so the loader installs the intended table. The global expose command also refreshes already loaded native preload-DL and weak-symbol modules when those features are compiled.
+`single/group-trace` selects `none`, `out`, `err` or `file PATH` for the
+target's WASI trace. The output is a host diagnostic destination, not a guest
+filesystem grant. Tracing is independent of permission-denial and quota warning
+selectors described above. Debugger host observations and JSON export have a
+separate [observation contract](../runtime/debug-host-observations.md).
 
-This target model is a VM feature, not a proof that no other runtime can emulate a similar policy in an embedding application. Embedders for other runtimes can manually create multiple stores, linkers, or WASI contexts. UWVM2's documented behavior is that this selection is available as a first-class command-line model across the main Wasm module, preloaded Wasm modules, native preload dynamic libraries, and weak-symbol modules.
+All examples that only configure values or resources are launch fragments.
+An actual application must also enable its namespace, expose every exact import,
+grant its required operations, and select its module path. Adding broad grants
+merely to silence a diagnostic defeats the explicit deployment contract.
 
-Native dynamic libraries are not WebAssembly sandboxes. A native `.so`, `.dll`, or `.dylib` can execute host code outside WASI unless the operating system or deployment environment applies an additional sandbox. WASI grouping controls which UWVM2 WASI host API table and WASI environment the plugin receives; it does not by itself confine arbitrary native code.
+## Current command inventory
 
-Example: keep the application modules on the global default target, while binding a crypto Wasm module and a native acceleration plugin to a private `crypto` group:
+The following entries are generated from the same actual binary help capture
+as the [complete CLI catalog](cli-catalog.md). The usage line includes only
+advertised spellings. It describes the accepted arguments; the authority and
+lifetime rules above still apply.
 
-```bash
-uwvm \
-  --wasm-set-main-module-name main \
-  --wasip1-global-mount-dir /app ./app \
-  --wasip1-group-create crypto \
-  --wasip1-group-add-module crypto crypto \
-  --wasip1-group-add-module crypto crypto_accelerate \
-  --wasip1-group-enable crypto \
-  --wasip1-group-expose-host-api crypto \
-  --wasip1-group-mount-dir crypto /crypto ./crypto-data \
-  --wasip1-group-set-fd-limit crypto 64 \
-  --wasm-preload-library utility.wasm utility \
-  --wasm-preload-library crypto.wasm crypto \
-  --wasm-register-dl ./crypto_accelerate.so crypto_accelerate \
-  --run main.wasm
+### `--wasi-disable-utf8-check`
+
+```text
+[--wasi-disable-utf8-check|-Iu8relax]
 ```
 
-In this example:
+Disable WASI path/name UTF-8 checks for command-line and runtime; does not affect wasm parsing or module-name validation.
 
-- `main.wasm`, named as `main`, and `utility.wasm`, named as `utility`, have no WASI imports visible in the ROS product because neither name is explicitly bound and enabled.
-- `crypto.wasm`, named as `crypto`, and `crypto_accelerate.so`, named as `crypto_accelerate`, both resolve to the `crypto` group.
-- The global target sees the `/app` preopen.
-- The `crypto` group sees the global target's inherited configuration plus its own `/crypto` preopen and fd limit.
-- The plugin-facing WASI Preview 1 host API is exposed to the `crypto` group, not to every preload module by default.
+### `--wasi-thread-signals`
 
-## Core WASI Command
-
-| Command | Alias | Arguments | Repeatability | Behavior |
-| --- | --- | --- | --- | --- |
-| `--wasi-disable-utf8-check` | `-Iu8relax` | None | Once | Disable WASI path/name UTF-8 checks for command-line and runtime WASI handling. |
-
-`--wasi-disable-utf8-check` sets the global WASI disable flag and also sets the default WASI Preview 1 environment's `disable_utf8_check` flag. It does not relax WebAssembly binary parsing or module-name validation. Module names used by single/group commands must still be valid Wasm UTF-8 names.
-
-For WASI mount paths, this flag changes command-line validation from "valid UTF-8 and no embedded zero" to "no embedded zero". Target-specific `--wasip1-*-enable-utf8-check` can set the target runtime environment back to checked mode, but it does not retroactively revalidate command-line mount paths that were parsed while the global relaxed flag was active.
-
-## Global Command Table
-
-| Command | Aliases | Arguments | Repeatability | Behavior |
-| --- | --- | --- | --- | --- |
-| `--wasip1-global-trace` | `--wasip1-trace`, `-I1trace` | `[none|out|err|file <file:path>]` | Once | Route global-default WASI call trace output. |
-| `--wasip1-global-expose-host-api` | `--wasip1-expose-host-api`, `-I1exportapi` | None | Once | Make the stable WASI Preview 1 preload host API visible globally by default. |
-| `--wasip1-global-disable` | `--wasip1-disable`, `-I1disable` | None | Once | Disable the global-default built-in WASI Preview 1 module unless a target override re-enables it. |
-| `--wasip1-global-set-fd-limit` | `--wasip1-set-fd-limit`, `-I1fdlim` | `<limit:size_t>` | Once | Set the default WASI fd limit. `0` maps to the maximum WASI fd value. |
-| `--wasip1-global-mount-dir` | `--wasip1-mount-dir`, `-I1dir` | `<wasi dir:str> <system dir:path>` | Repeatable | Mount a host directory into the default WASI preopen set. |
-| `--wasip1-disable-mount-path-normalization` | `-I1nomntnorm` | None | Once | Store raw WASI mount guest paths instead of normalized paths. |
-| `--wasip1-allow-overlapping-mount-paths` | `-I1allowoverlap` | None | Once | Allow duplicate or overlapping WASI mount guest paths. |
-| `--wasip1-global-set-argv0` | `--wasip1-set-argv0`, `-I1argv0` | `<argv0:str>` | Once | Override global-default WASI `argv[0]`. |
-| `--wasip1-global-force-args` | `--wasip1-force-args`, `-I1fargs` | `<num:size_t> [arg:str]...` | Once, conflicts with global set-argv0 | Replace the complete global-default WASI argv vector. `num` may be `0`. |
-| `--wasip1-global-noinherit-system-environment` | `--wasip1-noinherit-system-environment`, `-I1nosysenv` | None | Once | Start the global-default WASI environment without inheriting host environment variables. |
-| `--wasip1-global-inherit-system-environment` | None | None | Once, conflicts with global noinherit | Explicitly inherit the host environment; default inheritance is disabled. |
-| `--wasip1-global-delete-system-environment` | `--wasip1-delete-system-environment`, `-I1delsysenv` | `<env:str>` | Repeatable, no duplicate name | Remove one inherited host environment variable by name. Repeating the same name is rejected. |
-| `--wasip1-global-add-or-replace-environment` | `--wasip1-add-or-replace-environment`, `-I1addrepenv` | `<env:str> <value:str>` | Repeatable | Add or replace one WASI environment variable. Repeating the same name is allowed; the last value wins. |
-| `--wasip1-global-socket-tcp-listen` | `--wasip1-socket-tcp-listen`, `-I1tcplisten` | `<fd:i32> [<ipv4|ipv6>:<port>|unix <path>]` | Repeatable | Create a default TCP listening socket. |
-| `--wasip1-global-socket-tcp-connect` | `--wasip1-socket-tcp-connect`, `-I1tcpcon` | `<fd:i32> [<ipv4|ipv6|dns>:<port>|unix <path>]` | Repeatable | Create a default connected TCP client socket. |
-| `--wasip1-global-socket-udp-bind` | `--wasip1-socket-udp-bind`, `-I1udpbind` | `<fd:i32> [<ipv4|ipv6>:<port>|unix <path>]` | Repeatable | Create a default bound UDP socket. |
-| `--wasip1-global-socket-udp-connect` | `--wasip1-socket-udp-connect`, `-I1udpcon` | `<fd:i32> [<ipv4|ipv6|dns>:<port>|unix <path>]` | Repeatable | Create a default connected UDP socket. |
-
-The socket aliases above are available only when socket support is compiled. The exact alias strings come from the socket parameter headers; use `uwvm2-ros --help wasi` on the built binary if you need the authoritative compiled list.
-
-Mount guest paths are normalized by default before they are stored and before overlap checks run. Normalization collapses repeated slashes, removes `.` path components, resolves `..` within the preopen root, and removes trailing slashes except for `/`; a relative path that normalizes to empty becomes `.`.
-
-`--wasip1-disable-mount-path-normalization` changes storage only: the raw guest path is stored in the preopen table. If overlapping mount paths are still disallowed, uwvm still normalizes paths internally for the conflict check. `--wasip1-allow-overlapping-mount-paths` skips duplicate and ancestor/child conflict rejection. When both switches are set, mount path normalization is skipped entirely.
-
-### Mount Path Safety Notes
-
-These two switches are compatibility escape hatches. Use them only when the guest runtime and the preopen layout are intentionally relying on raw WASI capability behavior rather than a POSIX-like mount namespace.
-
-Disabling mount path normalization can make different spellings of the same logical guest path remain distinct in the preopen table. Examples include `/lib`, `//lib///`, `/./lib`, and `/a/../lib`. POSIX-like guest runtimes such as wasi-libc commonly normalize application paths before matching preopens, so storing raw unnormalized preopen names can make a path fail to match the preopen the user expected, or match a different normalized shape than the command line appears to describe.
-
-Allowing overlapping mount paths can break POSIX path equivalence for guests that expose `open`/`openat` style APIs. For example, mounting one host directory at `/` and another at `/lib` can make `open("/lib/file")` resolve through the `/lib` preopen while `openat(open("/"), "lib/file")` resolves through the real `lib` subdirectory inside the `/` preopen. This follows WASI's independent directory-capability model, but it is surprising for POSIX-like code and can give the false impression that a more specific preopen masks or replaces a subtree of its parent.
-
-Using both switches together disables the two protections at once: raw unnormalized names are stored, and duplicate or ancestor/child relationships are not rejected. This may be appropriate for low-level WASI tests, but it is risky for general POSIX-like workloads. The ambiguity is documented in [Wasmtime issue #13544](https://github.com/bytecodealliance/wasmtime/issues/13544); uwvm rejects normalized overlaps by default to make this behavior explicit.
-
-## Single Target Command Table
-
-All single commands require a module name. The module name must be non-empty and valid according to the Wasm text-format name validation path.
-
-| Command | Alias | Arguments | Repeatability | Behavior |
-| --- | --- | --- | --- | --- |
-| `--wasip1-single-create` | `-I1Screate` | `<module:str>` | Once per module | Create an anonymous per-module WASI target. Must appear before other single commands for that module. |
-| `--wasip1-single-enable` | `-I1Senable` | `<module:str>` | Once per target with disable conflict | Enable WASI Preview 1 for that module. |
-| `--wasip1-single-disable` | `-I1Sdisable` | `<module:str>` | Once per target with enable conflict | Disable WASI Preview 1 for that module. |
-| `--wasip1-single-expose-host-api` | `-I1Sexportapi` | `<module:str>` | Once per target with hide conflict | Expose the Preview 1 preload host API for that module. |
-| `--wasip1-single-hide-host-api` | `-I1Shideapi` | `<module:str>` | Once per target with expose conflict | Hide the Preview 1 preload host API for that module. |
-| `--wasip1-single-inherit-system-environment` | `-I1Ssysenv` | `<module:str>` | Once per target with noinherit conflict | Force host environment inheritance for that module. |
-| `--wasip1-single-noinherit-system-environment` | `-I1Snosysenv` | `<module:str>` | Once per target with inherit conflict | Disable host environment inheritance for that module. |
-| `--wasip1-single-enable-utf8-check` | `-I1Su8strict` | `<module:str>` | Once per target with disable conflict | Enable runtime WASI UTF-8 checks for that module. |
-| `--wasip1-single-disable-utf8-check` | `-I1Su8relax` | `<module:str>` | Once per target with enable conflict | Disable runtime WASI UTF-8 checks for that module. |
-| `--wasip1-single-trace` | `-I1Strace` | `<module:str> <none|out|err|file <file:path>>` | Once per target | Route that module's WASI trace output. A bare path is also accepted as file output. |
-| `--wasip1-single-set-argv0` | `-I1Sargv0` | `<module:str> <argv0:str>` | Once per target | Override WASI `argv[0]` for that module. |
-| `--wasip1-single-force-args` | `-I1Sfargs` | `<module:str> <num:size_t> [arg:str]...` | Once per target, conflicts with target set-argv0 | Replace the complete WASI argv vector for that module. `num` may be `0`. |
-| `--wasip1-single-set-fd-limit` | `-I1Sfdlim` | `<module:str> <limit:size_t>` | Once per target | Override the fd limit for that module. |
-| `--wasip1-single-add-or-replace-environment` | `-I1Saddrepenv` | `<module:str> <env:str> <value:str>` | Repeatable | Add or replace one variable for that module. Repeating the same name is allowed; the last value wins. |
-| `--wasip1-single-delete-system-environment` | `-I1Sdelsysenv` | `<module:str> <env:str>` | Repeatable, no duplicate name inside target | Delete one inherited variable for that module. Repeating the same name is rejected. |
-| `--wasip1-single-mount-dir` | `-I1Sdir` | `<module:str> <wasi dir:str> <system dir:path>` | Repeatable with mount-overlap checks | Add one module-specific directory mount. |
-| `--wasip1-single-socket-tcp-listen` | `-I1Stcplisten` | `<module:str> <fd:i32> [<ipv4|ipv6>:<port>|unix <path>]` | Repeatable, no duplicate fd inside target | Add one TCP listening socket for the target. |
-| `--wasip1-single-socket-tcp-connect` | `-I1Stcpcon` | `<module:str> <fd:i32> [<ipv4|ipv6|dns>:<port>|unix <path>]` | Repeatable, no duplicate fd inside target | Add one connected TCP socket for the target. |
-| `--wasip1-single-socket-udp-bind` | `-I1Sudpbind` | `<module:str> <fd:i32> [<ipv4|ipv6>:<port>|unix <path>]` | Repeatable, no duplicate fd inside target | Add one bound UDP socket for the target. |
-| `--wasip1-single-socket-udp-connect` | `-I1Sudpcon` | `<module:str> <fd:i32> [<ipv4|ipv6|dns>:<port>|unix <path>]` | Repeatable, no duplicate fd inside target | Add one connected UDP socket for the target. |
-
-The single action callbacks first look up an existing single target. If `--wasip1-single-create <module>` has not already succeeded, later `--wasip1-single-* <module>` commands fail with a "single module does not exist" style error.
-
-## Group Command Table
-
-Group names must be non-empty. Unlike module names, group names are not validated through the Wasm UTF-8 name parser. Module names added to a group must be non-empty and valid Wasm UTF-8 names.
-
-| Command | Alias | Arguments | Repeatability | Behavior |
-| --- | --- | --- | --- | --- |
-| `--wasip1-group-create` | `-I1Gcreate` | `<group:str>` | Once per group | Create a named shared WASI target. |
-| `--wasip1-group-add-module` | `-I1Gaddmod` | `<group:str> <module:str>` | Repeatable | Bind one module name to an existing group. A module can be bound only once. |
-| `--wasip1-group-enable` | `-I1Genable` | `<group:str>` | Once per group with disable conflict | Enable WASI Preview 1 for the group. |
-| `--wasip1-group-disable` | `-I1Gdisable` | `<group:str>` | Once per group with enable conflict | Disable WASI Preview 1 for the group. |
-| `--wasip1-group-expose-host-api` | `-I1Gexportapi` | `<group:str>` | Once per group with hide conflict | Expose the Preview 1 preload host API for the group. |
-| `--wasip1-group-hide-host-api` | `-I1Ghideapi` | `<group:str>` | Once per group with expose conflict | Hide the Preview 1 preload host API for the group. |
-| `--wasip1-group-inherit-system-environment` | `-I1Gsysenv` | `<group:str>` | Once per group with noinherit conflict | Force host environment inheritance for the group. |
-| `--wasip1-group-noinherit-system-environment` | `-I1Gnosysenv` | `<group:str>` | Once per group with inherit conflict | Disable host environment inheritance for the group. |
-| `--wasip1-group-enable-utf8-check` | `-I1Gu8strict` | `<group:str>` | Once per group with disable conflict | Enable runtime WASI UTF-8 checks for the group. |
-| `--wasip1-group-disable-utf8-check` | `-I1Gu8relax` | `<group:str>` | Once per group with enable conflict | Disable runtime WASI UTF-8 checks for the group. |
-| `--wasip1-group-trace` | `-I1Gtrace` | `<group:str> <none|out|err|file <file:path>>` | Once per group | Route the group's WASI trace output. A bare path is also accepted as file output. |
-| `--wasip1-group-set-argv0` | `-I1Gargv0` | `<group:str> <argv0:str>` | Once per group | Override WASI `argv[0]` for the group. |
-| `--wasip1-group-force-args` | `-I1Gfargs` | `<group:str> <num:size_t> [arg:str]...` | Once per group, conflicts with group set-argv0 | Replace the complete WASI argv vector for the group. `num` may be `0`. |
-| `--wasip1-group-set-fd-limit` | `-I1Gfdlim` | `<group:str> <limit:size_t>` | Once per group | Override the fd limit for the group. |
-| `--wasip1-group-add-or-replace-environment` | `-I1Gaddrepenv` | `<group:str> <env:str> <value:str>` | Repeatable | Add or replace one variable for the group. Repeating the same name is allowed; the last value wins. |
-| `--wasip1-group-delete-system-environment` | `-I1Gdelsysenv` | `<group:str> <env:str>` | Repeatable, no duplicate name inside group | Delete one inherited variable for the group. Repeating the same name is rejected. |
-| `--wasip1-group-mount-dir` | `-I1Gdir` | `<group:str> <wasi dir:str> <system dir:path>` | Repeatable with mount-overlap checks | Add one group-specific directory mount. |
-| `--wasip1-group-socket-tcp-listen` | `-I1Gtcplisten` | `<group:str> <fd:i32> [<ipv4|ipv6>:<port>|unix <path>]` | Repeatable, no duplicate fd inside group | Add one TCP listening socket for the group. |
-| `--wasip1-group-socket-tcp-connect` | `-I1Gtcpcon` | `<group:str> <fd:i32> [<ipv4|ipv6|dns>:<port>|unix <path>]` | Repeatable, no duplicate fd inside group | Add one connected TCP socket for the group. |
-| `--wasip1-group-socket-udp-bind` | `-I1Gudpbind` | `<group:str> <fd:i32> [<ipv4|ipv6>:<port>|unix <path>]` | Repeatable, no duplicate fd inside group | Add one bound UDP socket for the group. |
-| `--wasip1-group-socket-udp-connect` | `-I1Gudpcon` | `<group:str> <fd:i32> [<ipv4|ipv6|dns>:<port>|unix <path>]` | Repeatable, no duplicate fd inside group | Add one connected UDP socket for the group. |
-
-Group action commands fail if the group does not already exist. Use `--wasip1-group-create <group>` before `--wasip1-group-* <group> ...`.
-
-## Global Defaults And Overrides
-
-In ordinary uwvm the built-in Preview 1 module is globally enabled by default; in the ROS product it is disabled until an explicitly bound Single/Group enables its namespace; operation grants remain independent. `--wasip1-global-disable` sets `local_preload_wasip1` to false. A single or group target can then re-enable WASI for selected modules with `--wasip1-single-enable` or `--wasip1-group-enable`.
-
-Import visibility resolution is:
-
-- If the loaded module has a single/group override and that override explicitly set enable/disable, use the target value.
-- Otherwise use the global `local_preload_wasip1` value.
-
-Host API exposure has a similar default/override shape:
-
-- `--wasip1-global-expose-host-api` sets the global exposure default and refreshes already loaded preload-DL and weak-symbol module host API state when those features are compiled.
-- Target `expose-host-api` and `hide-host-api` set a target-specific boolean and conflict with each other.
-- Native DL and weak-symbol loaders consult target overrides first; otherwise they use the global exposure default.
-
-The existence of any target override can cause the WASI environment initialization path to run even when the global built-in module is disabled.
-
-## Target Creation And Binding
-
-Single target sequence:
-
-```bash
-uwvm \
-  --wasip1-single-create app \
-  --wasip1-single-enable app \
-  --wasip1-single-mount-dir app /data ./data \
-  --run app.wasm
+```text
+[--wasi-thread-signals] <read-fd> <cookie> <max-frames> <max-pipe-bytes> <grace-ms> <retire-ms>
 ```
 
-Rules:
+Explicit Linux CLI SIGINT/SIGTERM delivery to the Source-owned WASI pipe; separately requires --wasi-threads.
 
-- `app` must be a valid Wasm UTF-8 module name.
-- Creating the same single target twice is an error.
-- Creating a single target for a module already bound to a named group is an error.
-- Applying a single action before `--wasip1-single-create` is an error.
+### `--wasi-threads`
 
-Named group sequence:
-
-```bash
-uwvm \
-  --wasip1-group-create workers \
-  --wasip1-group-add-module workers worker_a \
-  --wasip1-group-add-module workers worker_b \
-  --wasip1-group-set-fd-limit workers 256 \
-  --run app.wasm
+```text
+[--wasi-threads] <max-active> <max-spawns> <native-stack-bytes> <per-child-storage> <per-child-code> <shared-memory-bytes>
 ```
 
-Rules:
+Select finite WASI Threads quotas; the stack value bounds each Guest AND compiler mapping, including guards.
 
-- `workers` must be non-empty.
-- Creating the same group twice is an error.
-- `--wasip1-group-add-module` requires an existing group.
-- A module can be added to only one named group.
-- A module already configured as a single target cannot be added to a named group.
+### `--wasip1-allow-overlapping-mount-paths`
 
-## Shared Target Conflict Rules
-
-Single and group actions share the same target-action engine.
-
-For one target, these pairs are mutually exclusive and cannot be repeated:
-
-- `enable` and `disable`
-- `expose-host-api` and `hide-host-api`
-- `inherit-system-environment` and `noinherit-system-environment`
-- `enable-utf8-check` and `disable-utf8-check`
-
-Other single-assignment actions:
-
-- `set-argv0` can be set once per target.
-- `force-args` can be set once per target and conflicts with `set-argv0`.
-- `set-fd-limit` can be set once per target.
-- `trace` can be set once per target, even if the second trace setting is identical.
-
-Environment action rules inside one target:
-
-- Environment names must be non-empty.
-- Environment names must not contain `=`.
-- `add-or-replace-environment NAME VALUE` conflicts with `delete-system-environment NAME` in the same target.
-- `delete-system-environment NAME` conflicts with a later `add-or-replace-environment NAME VALUE` in the same target.
-- Repeating `add-or-replace-environment NAME VALUE` is accepted. If the value differs, the later value replaces the earlier one.
-- Repeating `delete-system-environment NAME` is rejected.
-
-Socket action rules inside one target:
-
-- Target-specific socket commands reject duplicate fd numbers inside that same target.
-- They do not reject a target fd that duplicates a global preopened socket fd during command parsing.
-- Global plus target fd conflicts are detected later during WASI environment initialization as duplicate preopened fds.
-
-## Environment Variable Semantics
-
-Global environment initialization order:
-
-1. If inheritance is enabled, read the host process environment.
-2. Filter out host entries whose key is empty.
-3. If inheritance is enabled, apply global delete rules.
-4. Apply global add/replace rules. Add wins over delete.
-5. Store final owned strings and expose string views to the WASI environment.
-
-`--wasip1-global-noinherit-system-environment` disables step 1. Global delete rules then have nothing inherited to delete, but global add rules still create variables in the WASI environment.
-
-Target environment initialization starts from the global command-line settings, then combines target settings:
-
-- Target noinherit/inherit overrides the global inheritance mode when explicitly set.
-- Global delete names and target delete names are merged.
-- Global add-or-replace entries and target add-or-replace entries are merged; target values replace global values for the same name.
-- Target mounts are appended after global mounts.
-- Target sockets are appended after global sockets.
-
-Because add-or-replace entries run after delete handling, target `add-or-replace-environment` can override a global `add-or-replace-environment` for the same variable. Target delete rules can remove inherited host variables, but they cannot remove a global add-or-replace rule for the same name because all add-or-replace rules run after all delete rules. Target callbacks reject conflicting add/delete pairs inside one target, but they do not reject a target action that interacts with global defaults.
-
-Examples:
-
-```bash
-uwvm \
-  --wasip1-global-noinherit-system-environment \
-  --wasip1-global-add-or-replace-environment MODE global \
-  --wasip1-single-create app \
-  --wasip1-single-inherit-system-environment app \
-  --wasip1-single-add-or-replace-environment MODE app \
-  --run app.wasm
+```text
+[--wasip1-allow-overlapping-mount-paths]
 ```
 
-For module `app`, host environment inheritance is re-enabled and `MODE=app` wins over the global `MODE=global`.
+Allow duplicate or overlapping WASI Preview 1 mount guest paths.
 
-```bash
-uwvm \
-  --wasip1-global-delete-system-environment SECRET \
-  --wasip1-global-add-or-replace-environment SECRET public \
-  --run app.wasm
+### `--wasip1-disable-mount-path-normalization`
+
+```text
+[--wasip1-disable-mount-path-normalization]
 ```
 
-The final WASI environment contains `SECRET=public` because add/replace is applied after delete.
+Store raw WASI Preview 1 mount guest paths instead of normalized paths.
 
-## argv Semantics
+### `--wasip1-global-socket-rights`
 
-`--run` defines the default WASI argv vector:
-
-- The Wasm path selected by `--run` participates in the guest argument list.
-- Remaining tokens after `--run` become guest argv entries.
-
-If a target has no argv override, it uses that default vector. This default vector is not the same thing as the global target's argv configuration: `--wasip1-global-force-args` changes only the global-default target and does not change what single/group targets inherit as their default argv.
-
-`set-argv0` is a first-argument replacement for one target. For example:
-
-```bash
-uwvm2-ros --wasip1-single-create app \
-  --wasip1-single-set-argv0 app testhh \
-  --wasm-set-main-module-name app \
-  --run app.wasm arg0
+```text
+[--wasip1-global-socket-rights] <initial-fd:i32> <base:csv|none> <accepted-child:csv|none>
 ```
 
-For module `app`, the final WASI argv is `["testhh", "arg0"]`.
+Grant only this preopened socket or inherited stdio socket: read,write,accept,shutdown,readiness,flags,metadata. Default none; grants no interfaces.
 
-`force-args` is a complete argv replacement for one target. It ignores both the `--run` Wasm path and the trailing `--run` arguments for that target. The first operand is a `size_t` count, followed by exactly that many argument strings, so `0` is a valid empty argv vector and arguments that look like uwvm options can still be passed unambiguously:
+### `--wasip1-group-add-module`
 
-```bash
-uwvm2-ros --wasip1-global-force-args 3 tool --literal -x --run app.wasm ignored
+```text
+[--wasip1-group-add-module] <group:str> <module:str>
 ```
 
-For the global-default target, the final WASI argv is `["tool", "--literal", "-x"]`.
+Bind one module name to an existing named WASI Preview 1 group.
 
-For the same target, `force-args` and `set-argv0` are mutually exclusive. This applies separately to the global-default target, each single target, and each named group.
+### `--wasip1-group-add-or-replace-environment`
 
-Use `--wasm-set-main-module-name` for internal module naming. Use WASI `set-argv0` only for the guest-visible argument vector.
-
-## fd Limit Semantics
-
-`--wasip1-global-set-fd-limit`, `--wasip1-single-set-fd-limit`, and `--wasip1-group-set-fd-limit` parse a `size_t`.
-
-Rules:
-
-- The whole token must parse as `size_t`.
-- If `size_t` can represent values larger than the WASI fd type, values above the WASI fd maximum are rejected.
-- A value of `0` is translated by the command-line callback to the maximum WASI fd value.
-- If no fd limit is set, ROS initialization uses the WASI descriptor ABI range without an additional descriptor quota; ordinary uwvm keeps its default `1024`.
-- Initialization requires room for stdio fds 0, 1, and 2. A configured limit below 3 parses successfully but fails during WASI environment initialization.
-- Preopened sockets and directories count against the fd limit.
-
-Directory preopens are assigned from fd 3 upward, skipping explicit socket fds. Explicit socket fds 0, 1, or 2 conflict with stdio during initialization.
-
-Practical pattern:
-
-```bash
-uwvm \
-  --wasip1-global-set-fd-limit 256 \
-  --wasip1-global-socket-tcp-listen 10 127.0.0.1:8080 \
-  --wasip1-global-mount-dir /data ./data \
-  --run app.wasm
+```text
+[--wasip1-group-add-or-replace-environment] <group:str> <env:str> <value:str>
 ```
 
-The socket is assigned fd 10. Directory mounts use the next available fd starting at 3.
+Add or replace one environment variable for one named group.
 
-## Trace Output
+### `--wasip1-group-create`
 
-Global trace syntax:
-
-```bash
-uwvm2-ros --wasip1-global-trace none
-uwvm2-ros --wasip1-global-trace out
-uwvm2-ros --wasip1-global-trace err
-uwvm2-ros --wasip1-global-trace file wasi.trace
+```text
+[--wasip1-group-create] <group:str>
 ```
 
-Single/group trace syntax:
+Create one named shared WASI Preview 1 module group.
 
-```bash
-uwvm2-ros --wasip1-single-trace app none
-uwvm2-ros --wasip1-single-trace app out
-uwvm2-ros --wasip1-single-trace app err
-uwvm2-ros --wasip1-single-trace app file app.trace
-uwvm2-ros --wasip1-single-trace app app.trace
+### `--wasip1-group-delete-system-environment`
+
+```text
+[--wasip1-group-delete-system-environment] <group:str> <env:str>
 ```
 
-Differences:
+Delete one inherited host environment variable for one named group.
 
-- Global trace accepts only `none`, `out`, `err`, or `file <path>`.
-- Target trace accepts those forms and also accepts a bare path as a convenience for file output.
-- A trace file is opened during command-line processing to verify it can be opened.
-- File trace is reopened during environment initialization.
-- On Windows NT, trace file opening supports the `::NT::` branch through `reopen_wasip1_trace_output_file`, but that helper does not emit the same `nt-path` warning that Wasm loading, log output, compiler log output, and mounts emit.
+### `--wasip1-group-deny`
 
-`none` explicitly disables trace for that layer. A target trace setting overrides the global trace setting for that target. If a target does not set trace, it inherits the global trace configuration.
-
-## Mount Directory Semantics
-
-Syntax:
-
-```bash
-uwvm2-ros --wasip1-global-mount-dir <wasi-dir> <system-dir>
-uwvm2-ros --wasip1-single-mount-dir <module> <wasi-dir> <system-dir>
-uwvm2-ros --wasip1-group-mount-dir <group> <wasi-dir> <system-dir>
+```text
+[--wasip1-group-deny] <group:str> <permission:str>
 ```
 
-Mount parsing opens the host system directory immediately and stores a directory handle. It follows symlinks when opening. Runtime environment initialization later duplicates or observes that handle depending on the platform.
+Explicitly deny one finite WASI permission for the named group.
 
-Host `system-dir` behavior:
+### `--wasip1-group-disable`
 
-- On Windows NT builds, a path beginning with `::NT::` enters the NT/kernel opener branch after stripping the first six bytes.
-- The mount callback emits the `nt-path` warning for `::NT::` system directories when warning output is enabled.
-- `--disable-warning nt-path` suppresses that warning.
-- `--warning-as-error nt-path` makes the warning fatal before opening.
-- On non-Windows-NT builds, `::NT::...` is just an ordinary path string for the platform opener.
-- On Windows 9x builds, mounts can emit a `toctou` warning because safe directory-handle semantics are unavailable there.
-
-Guest `wasi-dir` rules:
-
-- The value must be non-empty.
-- A path starting with `/` is treated as absolute.
-- Any other path is treated as relative.
-- Relative `.` is allowed and means the relative root.
-- Relative `./name`, `name/.`, `name/..`, and dot-only segments are rejected.
-- Absolute `.` and `..` segments are rejected.
-- `//` is rejected in both absolute and relative forms.
-- Trailing `/` is removed for comparison and storage except for absolute root `/`.
-- Relative trailing `/` is also removed.
-- With UTF-8 checks enabled, `wasi-dir` must be valid RFC 3629 UTF-8 and contain no embedded zero.
-- With UTF-8 checks disabled, embedded zero is still rejected.
-
-Overlap checks:
-
-- Exact duplicate mount points are rejected.
-- Prefix overlaps are rejected in both directions.
-- `/` conflicts with any other absolute mount.
-- Relative `.` conflicts with any other relative mount.
-- `/data` conflicts with `/data/cache`.
-- `data` conflicts with `data/cache`.
-- Absolute and relative namespaces are compared according to their own prefix rules; `/data` and `data` are not the same namespace.
-
-Target mounts are validated by temporarily combining global mounts and the target's current mounts, so a target mount cannot overlap a global mount either.
-
-Examples:
-
-```bash
-uwvm2-ros --wasip1-global-mount-dir /data ./data --run app.wasm
-uwvm2-ros --wasip1-global-mount-dir data ./data --run app.wasm
-uwvm2-ros --wasip1-global-mount-dir . ./sandbox --run app.wasm
+```text
+[--wasip1-group-disable] <group:str>
 ```
 
-Invalid combinations:
+Disable WASI Preview 1 for one named group.
 
-```bash
-uwvm2-ros --wasip1-global-mount-dir /data ./data --wasip1-global-mount-dir /data/cache ./cache
-uwvm2-ros --wasip1-global-mount-dir ./data ./data
-uwvm2-ros --wasip1-global-mount-dir /data/../secret ./secret
-uwvm2-ros --wasip1-global-mount-dir /data//cache ./cache
+### `--wasip1-group-disable-utf8-check`
+
+```text
+[--wasip1-group-disable-utf8-check] <group:str>
 ```
 
-## Socket Semantics
+Disable WASI Preview 1 UTF-8 checks for one named group.
 
-Socket commands parse socket descriptions during command-line processing and open/connect/bind/listen sockets during WASI environment initialization.
+### `--wasip1-group-enable`
 
-Common fd rules:
-
-- `<fd:i32>` is parsed through the WASI fd underlying type.
-- The token must parse completely.
-- Values greater than the WASI fd maximum are rejected during command-line processing.
-- Negative-looking values normally cannot be consumed because these commands do not have parser pretreatment for `-1`; such tokens are treated as parameters before the callback sees them.
-- Even when a negative fd reaches initialization through some future path, initialization rejects negative preopened socket fds.
-- Fds 0, 1, and 2 conflict with stdio during initialization.
-- Duplicate fds in global socket commands are not rejected during parsing, but initialization fails with duplicate preopened fd.
-- Duplicate fds inside one single/group target are rejected immediately by the target wrapper.
-- Duplicate fds between global and target sockets are detected during target environment initialization.
-
-Address forms:
-
-| Command kind | IP forms | DNS form | Unix form | Runtime behavior |
-| --- | --- | --- | --- | --- |
-| TCP listen | `<ipv4>:<port>`, `<ipv6>:<port>` | No | `unix <path>` when compiled | `bind`, then `listen` backlog 128. |
-| TCP connect | `<ipv4>:<port>`, `<ipv6>:<port>` | `<dns>:<port>` | `unix <path>` when compiled | `connect`. |
-| UDP bind | `<ipv4>:<port>`, `<ipv6>:<port>` | No | `unix <path>` when compiled | `bind`. |
-| UDP connect | `<ipv4>:<port>`, `<ipv6>:<port>` | `<dns>:<port>` | `unix <path>` when compiled | `connect`. |
-
-IP/DNS parsing order:
-
-1. Try IPv4 with port.
-2. If that fails, try IPv6 with port.
-3. For connect commands only, if IPv6 also fails, try DNS with port.
-
-DNS details:
-
-- DNS is split at the first `:` after IP parsing fails.
-- The DNS name is resolved during command-line processing.
-- The first resolved address is stored.
-- The port is parsed as an unsigned 16-bit value.
-- If DNS lookup returns no address, the command fails.
-
-Unix-domain details:
-
-- The `unix <path>` form is available only when compiled.
-- For global socket callbacks, `unix` without a following path falls through into normal address parsing and usually fails as a malformed address or missing DNS port.
-- For single/group socket wrappers, `unix` without a following path is rejected as missing Unix socket path before the shared global parser is called.
-- Filesystem Unix socket paths reject embedded NUL at initialization.
-- Linux abstract namespace is supported by using a path that starts with `@`; this maps to a leading NUL in `sockaddr_un`.
-- For Unix bind/listen in filesystem namespace, initialization tries to unlink an existing socket file before binding.
-- Unix listen uses backlog 128.
-- Empty Unix paths fail during initialization.
-- Overlong Unix paths fail during initialization.
-
-Protocol mapping:
-
-- TCP commands create stream sockets with TCP protocol.
-- UDP commands create datagram sockets with UDP protocol.
-- Unix local sockets use local socket family and are stored with the requested connect/bind/listen handle type.
-
-Examples:
-
-```bash
-uwvm2-ros --wasip1-global-socket-tcp-listen 3 127.0.0.1:8080 --run server.wasm
-uwvm2-ros --wasip1-global-socket-tcp-connect 3 example.com:443 --run client.wasm
-uwvm2-ros --wasip1-global-socket-udp-bind 5 0.0.0.0:5353 --run dns.wasm
-uwvm2-ros --wasip1-global-socket-udp-connect 6 example.com:53 --run dns-client.wasm
+```text
+[--wasip1-group-enable] <group:str>
 ```
 
-Unix socket examples when compiled:
+Enable WASI Preview 1 for one named group.
 
-```bash
-uwvm2-ros --wasip1-global-socket-tcp-listen 3 unix ./server.sock --run server.wasm
-uwvm2-ros --wasip1-global-socket-tcp-connect 3 unix ./server.sock --run client.wasm
-uwvm2-ros --wasip1-global-socket-udp-bind 4 unix @abstract-name --run app.wasm
+### `--wasip1-group-enable-utf8-check`
+
+```text
+[--wasip1-group-enable-utf8-check] <group:str>
 ```
 
-## Initialization And Combination Order
+Enable WASI Preview 1 UTF-8 checks for one named group.
 
-WASI environment initialization happens after Wasm/preload modules have been loaded enough for module names and target bindings to be known.
+### `--wasip1-group-force-args`
 
-The loader initializes the default environment when any of these are true:
-
-- Global local WASI Preview 1 preload is enabled.
-- Global host API exposure is enabled.
-- Any single/group target override exists.
-
-Then it initializes every configured target group that has an override.
-
-For one target environment:
-
-1. Copy or override trace from global.
-2. Copy or override UTF-8 check flag from global.
-3. Copy selected WASI callback pointers from global.
-4. Copy or override fd limit from global.
-5. Copy global sockets, then append target sockets.
-6. Combine global and target environment delete/add rules.
-7. Use target `force-args` when set; otherwise use the default `--run` argv, with target `set-argv0` replacing the first argument when set.
-8. Copy global mounts, then append target mounts.
-9. Run the normal environment initialization flow to produce argv/env/fd state.
-
-This means a target inherits global mounts, sockets, environment variables, trace, fd limit, and UTF-8 behavior unless that target explicitly overrides the relevant field. Argv is intentionally target-local: single/group targets use the `--run` default argv unless they set their own `set-argv0` or `force-args`. Target mounts and sockets are additive rather than replacements.
-
-## Ordering Notes
-
-Because callbacks run from left to right, order matters when a command performs immediate work.
-
-Examples:
-
-```bash
-uwvm2-ros --wasi-disable-utf8-check --wasip1-global-mount-dir data ./data --run app.wasm
+```text
+[--wasip1-group-force-args] <group:str> <num:size_t> [arg:str]...
 ```
 
-The mount's guest path is parsed under relaxed UTF-8 checking.
+Replace one named group's WASI Preview 1 argv vector with an explicit argument list.
 
-```bash
-uwvm2-ros --wasip1-global-mount-dir data ./data --wasi-disable-utf8-check --run app.wasm
+### `--wasip1-group-grant`
+
+```text
+[--wasip1-group-grant] <group:str> <permission:str>
 ```
 
-The mount was already validated before UTF-8 relaxation was enabled.
+Explicitly grant one finite WASI permission for the named group.
 
-```bash
-uwvm2-ros --wasip1-global-trace file wasi.trace --run app.wasm
+### `--wasip1-group-inherit-system-environment`
+
+```text
+[--wasip1-group-inherit-system-environment] <group:str>
 ```
 
-The trace file is opened during parsing. If it cannot be opened, normal execution never starts.
+Inherit host environment variables into one named group.
 
-```bash
-uwvm2-ros --wasip1-single-enable app --wasip1-single-create app --run app.wasm
+### `--wasip1-group-interface`
+
+```text
+[--wasip1-group-interface] <group:str> <api:str> <hidden|deny|allow>
 ```
 
-Invalid: the single target does not exist when the enable command is processed.
+Configure one exact WASIp1 API: hidden fails linking; deny exposes but rejects; allow retains resource checks. Default hidden.
 
-```bash
-uwvm2-ros --wasip1-single-create app --wasip1-single-enable app --run app.wasm
+### `--wasip1-group-limit`
+
+```text
+[--wasip1-group-limit] <group:str> <limit:str> <value:u64|unlimited>
 ```
 
-Valid: the target exists before the action.
+Set one explicit WASI resource limit (decimal or unlimited; no implicit grant).
 
-## Practical Patterns
+### `--wasip1-group-limit-action`
 
-Global sandbox with mounted data:
-
-```bash
-uwvm \
-  --wasip1-global-noinherit-system-environment \
-  --wasip1-global-add-or-replace-environment PATH /bin \
-  --wasip1-global-mount-dir /data ./data \
-  --run app.wasm
+```text
+[--wasip1-group-limit-action] <group:str> <limit:str> <reject|wait>
 ```
 
-Disable WASI by default, then enable only one module:
+Choose reject or synchronous wait for an explicit operation limit; wait supports windows and concurrency.
 
-```bash
-uwvm \
-  --wasip1-global-disable \
-  --wasip1-single-create plugin \
-  --wasip1-single-enable plugin \
-  --wasm-preload-library plugin.wasm plugin \
-  --run app.wasm
+### `--wasip1-group-limit-exit-action`
+
+```text
+[--wasip1-group-limit-exit-action] <group:str> <limit:str> <cancel|wait>
 ```
 
-Shared group for multiple preloaded modules:
+Choose cancel or wait on guest exit for one window/concurrency quota or native-wait; default cancel.
 
-```bash
-uwvm \
-  --wasip1-group-create workers \
-  --wasip1-group-add-module workers worker_a \
-  --wasip1-group-add-module workers worker_b \
-  --wasip1-group-mount-dir workers /work ./work \
-  --wasm-preload-library worker-a.wasm worker_a \
-  --wasm-preload-library worker-b.wasm worker_b \
-  --run app.wasm
+### `--wasip1-group-mount-dir`
+
+```text
+[--wasip1-group-mount-dir] <group:str> <wasi dir:str> <system dir:path>
 ```
 
-Per-module trace file:
+Mount a host directory into one named group's WASI Preview 1 sandbox.
 
-```bash
-uwvm \
-  --wasip1-single-create app \
-  --wasip1-single-trace app file app.wasi.trace \
-  --run app.wasm
+### `--wasip1-group-mount-dir-rights`
+
+```text
+[--wasip1-group-mount-dir-rights] <group:str> <guest-dir:str> <base:u64> <inheriting:u64>
 ```
 
-Windows NT mount path:
+Set explicit base/inheriting rights for one previously declared preopen; other roots are unchanged.
 
-```bash
-uwvm2-ros --wasip1-global-mount-dir /data ::NT::\??\C:\sandbox\data --run app.wasm
+### `--wasip1-group-noinherit-system-environment`
+
+```text
+[--wasip1-group-noinherit-system-environment] <group:str>
 ```
 
-On Windows NT, this strips `::NT::`, uses the NT opener, and can emit or fatalize the `nt-path` warning according to logging configuration.
+Do not inherit host environment variables into one named group.
+
+### `--wasip1-group-set-argv0`
+
+```text
+[--wasip1-group-set-argv0] <group:str> <argv0:str>
+```
+
+Override WASI Preview 1 argv[0] for one named group.
+
+### `--wasip1-group-set-fd-limit`
+
+```text
+[--wasip1-group-set-fd-limit] <group:str> <limit:size_t>
+```
+
+Set the WASI Preview 1 fd limit for one named group.
+
+### `--wasip1-group-socket-rights`
+
+```text
+[--wasip1-group-socket-rights] <group:str> <initial-fd:i32> <base:csv|none> <accepted-child:csv|none>
+```
+
+Grant only this preopened socket or inherited stdio socket: read,write,accept,shutdown,readiness,flags,metadata. Default none; grants no interfaces.
+
+### `--wasip1-group-socket-tcp-connect`
+
+```text
+[--wasip1-group-socket-tcp-connect] <group:str> <fd:i32> [<ipv4|ipv6|dns>:<port>|unix <path>]
+```
+
+Connect a WASI Preview 1 TCP client socket for one named group.
+
+### `--wasip1-group-socket-tcp-listen`
+
+```text
+[--wasip1-group-socket-tcp-listen] <group:str> <fd:i32> [<ipv4|ipv6>:<port>|unix <path>]
+```
+
+Listen on a WASI Preview 1 TCP server socket for one named group.
+
+### `--wasip1-group-socket-udp-bind`
+
+```text
+[--wasip1-group-socket-udp-bind] <group:str> <fd:i32> [<ipv4|ipv6>:<port>|unix <path>]
+```
+
+Bind a WASI Preview 1 UDP socket for one named group.
+
+### `--wasip1-group-socket-udp-connect`
+
+```text
+[--wasip1-group-socket-udp-connect] <group:str> <fd:i32> [<ipv4|ipv6|dns>:<port>|unix <path>]
+```
+
+Connect a WASI Preview 1 UDP socket for one named group.
+
+### `--wasip1-group-trace`
+
+```text
+[--wasip1-group-trace] <group:str> <none|out|err|file <file:path>>
+```
+
+Route one named group's WASI Preview 1 trace output.
+
+### `--wasip1-single-add-or-replace-environment`
+
+```text
+[--wasip1-single-add-or-replace-environment] <module:str> <env:str> <value:str>
+```
+
+Add or replace one environment variable for one single module.
+
+### `--wasip1-single-create`
+
+```text
+[--wasip1-single-create] <module:str>
+```
+
+Create one anonymous module-local WASI Preview 1 group.
+
+### `--wasip1-single-delete-system-environment`
+
+```text
+[--wasip1-single-delete-system-environment] <module:str> <env:str>
+```
+
+Delete one inherited host environment variable for one single module.
+
+### `--wasip1-single-deny`
+
+```text
+[--wasip1-single-deny] <module:str> <permission:str>
+```
+
+Explicitly deny one finite WASI permission for the single module.
+
+### `--wasip1-single-disable`
+
+```text
+[--wasip1-single-disable] <module:str>
+```
+
+Disable WASI Preview 1 for one single module.
+
+### `--wasip1-single-disable-utf8-check`
+
+```text
+[--wasip1-single-disable-utf8-check] <module:str>
+```
+
+Disable WASI Preview 1 UTF-8 checks for one single module.
+
+### `--wasip1-single-enable`
+
+```text
+[--wasip1-single-enable] <module:str>
+```
+
+Enable WASI Preview 1 for one single module.
+
+### `--wasip1-single-enable-utf8-check`
+
+```text
+[--wasip1-single-enable-utf8-check] <module:str>
+```
+
+Enable WASI Preview 1 UTF-8 checks for one single module.
+
+### `--wasip1-single-force-args`
+
+```text
+[--wasip1-single-force-args] <module:str> <num:size_t> [arg:str]...
+```
+
+Replace one single module's WASI Preview 1 argv vector with an explicit argument list.
+
+### `--wasip1-single-grant`
+
+```text
+[--wasip1-single-grant] <module:str> <permission:str>
+```
+
+Explicitly grant one finite WASI permission for the single module.
+
+### `--wasip1-single-inherit-system-environment`
+
+```text
+[--wasip1-single-inherit-system-environment] <module:str>
+```
+
+Inherit host environment variables into one single module.
+
+### `--wasip1-single-interface`
+
+```text
+[--wasip1-single-interface] <single:str> <api:str> <hidden|deny|allow>
+```
+
+Configure one exact WASIp1 API: hidden fails linking; deny exposes but rejects; allow retains resource checks. Default hidden.
+
+### `--wasip1-single-limit`
+
+```text
+[--wasip1-single-limit] <single:str> <limit:str> <value:u64|unlimited>
+```
+
+Set one explicit WASI resource limit (decimal or unlimited; no implicit grant).
+
+### `--wasip1-single-limit-action`
+
+```text
+[--wasip1-single-limit-action] <single:str> <limit:str> <reject|wait>
+```
+
+Choose reject or synchronous wait for an explicit operation limit; wait supports windows and concurrency.
+
+### `--wasip1-single-limit-exit-action`
+
+```text
+[--wasip1-single-limit-exit-action] <single:str> <limit:str> <cancel|wait>
+```
+
+Choose cancel or wait on guest exit for one window/concurrency quota or native-wait; default cancel.
+
+### `--wasip1-single-mount-dir`
+
+```text
+[--wasip1-single-mount-dir] <module:str> <wasi dir:str> <system dir:path>
+```
+
+Mount a host directory into one single module's WASI Preview 1 sandbox.
+
+### `--wasip1-single-mount-dir-rights`
+
+```text
+[--wasip1-single-mount-dir-rights] <single:str> <guest-dir:str> <base:u64> <inheriting:u64>
+```
+
+Set explicit base/inheriting rights for one previously declared preopen; other roots are unchanged.
+
+### `--wasip1-single-noinherit-system-environment`
+
+```text
+[--wasip1-single-noinherit-system-environment] <module:str>
+```
+
+Do not inherit host environment variables into one single module.
+
+### `--wasip1-single-set-argv0`
+
+```text
+[--wasip1-single-set-argv0] <module:str> <argv0:str>
+```
+
+Override WASI Preview 1 argv[0] for one single module.
+
+### `--wasip1-single-set-fd-limit`
+
+```text
+[--wasip1-single-set-fd-limit] <module:str> <limit:size_t>
+```
+
+Set the WASI Preview 1 fd limit for one single module.
+
+### `--wasip1-single-socket-rights`
+
+```text
+[--wasip1-single-socket-rights] <single:str> <initial-fd:i32> <base:csv|none> <accepted-child:csv|none>
+```
+
+Grant only this preopened socket or inherited stdio socket: read,write,accept,shutdown,readiness,flags,metadata. Default none; grants no interfaces.
+
+### `--wasip1-single-socket-tcp-connect`
+
+```text
+[--wasip1-single-socket-tcp-connect] <module:str> <fd:i32> [<ipv4|ipv6|dns>:<port>|unix <path>]
+```
+
+Connect a WASI Preview 1 TCP client socket for one single module.
+
+### `--wasip1-single-socket-tcp-listen`
+
+```text
+[--wasip1-single-socket-tcp-listen] <module:str> <fd:i32> [<ipv4|ipv6>:<port>|unix <path>]
+```
+
+Listen on a WASI Preview 1 TCP server socket for one single module.
+
+### `--wasip1-single-socket-udp-bind`
+
+```text
+[--wasip1-single-socket-udp-bind] <module:str> <fd:i32> [<ipv4|ipv6>:<port>|unix <path>]
+```
+
+Bind a WASI Preview 1 UDP socket for one single module.
+
+### `--wasip1-single-socket-udp-connect`
+
+```text
+[--wasip1-single-socket-udp-connect] <module:str> <fd:i32> [<ipv4|ipv6|dns>:<port>|unix <path>]
+```
+
+Connect a WASI Preview 1 UDP socket for one single module.
+
+### `--wasip1-single-trace`
+
+```text
+[--wasip1-single-trace] <module:str> <none|out|err|file <file:path>>
+```
+
+Route one single module's WASI Preview 1 trace output.
+
+### `--wasip1-socket-abi`
+
+```text
+[--wasip1-socket-abi] <standard|wasix>
+```
+
+Choose the immutable wasm32 sock_accept ABI for this process: standard (default, 3 arguments) or wasix (4 arguments, peer address). Grants no interfaces or socket rights.
+
+## Signed policy encoding
 
 Live WASI policy manifests use `UWPOL5` with twelve operation-budget classes;
 `filesystem` is appended after the preceding eleven. Each class encodes six

@@ -20,7 +20,7 @@ ordinary upstream defaults.
 | process exit | denied | explicit process-exit grant | first exit code wins; default immediate process exit, with independently selected existing waits allowed to finish |
 | signal/yield/spawn | denied | independent permissions; threads also need a configured host profile | Core threads do not authorize host spawn |
 | ROS1/ROS2 | no module binding, hidden interfaces | explicit version namespace, exact interface states and independent resource capabilities | link or per-call denial; Global requires explicit module membership |
-| DEV debugging | absent | trusted launch `--management-profile dev` and independent control endpoint | cannot edit host policy/FD resources or restore their capsules |
+| DEV debugging | absent | trusted launch `--debug-permissions full` and independent control endpoint | cannot edit host policy/FD resources or restore their capsules |
 | RELEASE debugging | permanently sealed | bounded diagnostics only | runtime APIs, typed wrappers, checkpoint and reconnect cannot enable debugger writes |
 | production updates | absent | fixed local deployment key, exact signed transaction, real fence | independent update protocol; no debugger grant or rollback |
 

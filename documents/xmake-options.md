@@ -1,6 +1,17 @@
 # UWVM Xmake Project Options (`xmake/option.lua`)
 
 This document describes the **project-specific** configuration options defined in `xmake/option.lua` and how they affect compilation/linking when using Xmake. The historical `jit` option and source-directory names are retained for build compatibility, but this fork builds only the full-module LLVM AOT path.
+
+The ROS product applies the mandatory
+[product admission policy](../xmake/utility/ros_product.lua) before acquiring
+dependencies. The reference below also describes retained upstream option
+machinery; values outside that policy are rejected, not alternative supported
+ROS builds. In particular, Linux and one of the five ROS ABIs, LLVM execution,
+paired libc++/libunwind, exceptions, thread-local storage, WSEA, WASI32/64, socket
+implementations, ROS1 and ROS2 are required. Native host MTE is a separate
+[provider qualification gate](toolchain/native-host-mte.md), currently with no
+qualified complete provider. Use the [Linux build examples](how-to-build/linux.md)
+for an admitted configuration.
 These flags are specific to this repository (they are not part of upstream Xmake).
 
 To see the authoritative list as your local Xmake prints it, run:
@@ -349,33 +360,37 @@ Selects the WebAssembly linear memory backend.
   - `xmake f --wasm-memory-model=multi-thread-alloc`
   - `xmake f --wasm-memory-model=single-thread-alloc`
 
-### `--disable-local-imported-wasip1=[y|n]`
+### Mandatory WASI and ROS interfaces
 
-Disables importing the local WASI Preview 1 (wasip1) implementation during compilation (defines `UWVM_DISABLE_LOCAL_IMPORTED_WASIP1`). For platforms that do not support wasip1, the build scripts may ignore this option.
+The ROS product always compiles WASI Preview 1 for memory32 and memory64,
+both socket ABI implementations, ROS1 and ROS2. Removing an interface at
+build time is rejected during configuration, before compiler dependencies are
+acquired. These settings do not grant a module any host authority.
 
-- **Default:** `n`
-- **Impact:** Changes which WASI implementation is compiled/linked into the project.
-- **Example:**
-  - `xmake f --disable-local-imported-wasip1=y`
+The following options have exactly one admitted value:
 
-### `--enable-local-imported-wasip1-wasm64=[y|n]`
+- `--disable-local-imported-wasip1=n`
+- `--enable-local-imported-wasip1-wasm64=y`
+- `--enable-local-imported-wasip1-socket=wasip1`
+- `--import-ros1=y`
+- `--import-ros2=y`
 
-Enables wasip1 extensions for the wasm64 variant (defines `UWVM_ENABLE_LOCAL_IMPORTED_WASIP1_WASM64`).
+The socket build option's `none` and `wasix` values are rejected. Select
+the wasm32 socket ABI at process startup with
+`--wasip1-socket-abi standard|wasix`. This choice changes the validated
+`sock_accept` signature; it grants neither imports nor socket rights.
 
-- **Default:** `y`
-- **Prerequisite:** Intended to be used only when `--disable-local-imported-wasip1=n`.
-- **Example:**
-  - `xmake f --enable-local-imported-wasip1-wasm64=y`
+All interfaces remain hidden from guest modules until explicitly exposed by
+the runtime permission options. Exposure, call authorization, resource rights
+and optional quotas are separate controls. Vendor registry headers add reviewed
+type/schema descriptions; they do not replace or remove the mandatory host
+interface implementations.
 
-### `--enable-local-imported-wasip1-socket=MODE`
+## Native driver boundary
 
-Controls socket-related extensions in wasip1.
-
-- **Default:** `wasip1`
-- **Prerequisite:** Intended to be used only when `--disable-local-imported-wasip1=n`.
-- **Values:**
-  - `none`: Disable socket extensions.
-  - `wasip1`: Enable the official wasip1 socket extension (`UWVM_ENABLE_WASIP1_SOCKET`).
-  - `wasix`: Enable the wasix-flavored extension (`UWVM_ENABLE_WASIX_VER_WASIP1_SOCKET`). One noted difference is `sock_accept` having an additional `ro_addr` parameter.
-- **Example:**
-  - `xmake f --enable-local-imported-wasip1-socket=wasix`
+ROS does not expose weak-symbol provider build options. The product policy rejects
+legacy weak-provider settings and raw attempts to define the support macro. This
+fallback served upstream emergency/platform integration; ROS uses explicit native
+driver registration. Dynamic-library registration remains compiled and available.
+Optional secondary signature verification is selected at runtime with
+`--wasm-driver-verify`; see [trusted drivers](security/trusted-drivers.md).

@@ -44,9 +44,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
 {
     namespace details
     {
-        inline bool management_profile_is_exist{};
-        inline bool management_development{};
+        inline bool debug_permissions_is_exist{};
+        inline unsigned debug_permission_selection{}; // limited=0, full=1, read-only=2, none=3
+        inline bool runtime_debug_default_full{};
         inline bool mode_is_exist{};  // [global]
+        inline unsigned debug_crash_action{}; // default termination or explicitly requested pause
+        inline bool debug_crash_action_exists{};
+#if defined(UWVM_MODULE)
+        extern "C++"
+#else
+        inline
+#endif
+        ::uwvm2::utils::cmdline::parameter_return_type debug_crash_callback(
+            ::uwvm2::utils::cmdline::parameter_parsing_results*,
+            ::uwvm2::utils::cmdline::parameter_parsing_results*,
+            ::uwvm2::utils::cmdline::parameter_parsing_results*) noexcept;
         // An inherited, connected host socket is an explicit launch capability.
         // It is never a guest descriptor or a pathname to be opened later.
         inline int debug_jit_control_fd{-1};
@@ -92,7 +104,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
 #if defined(UWVM_MODULE)
         extern "C++"
 #endif
-        ::uwvm2::utils::cmdline::parameter_return_type management_profile_callback(
+        ::uwvm2::utils::cmdline::parameter_return_type debug_permissions_callback(
             ::uwvm2::utils::cmdline::parameter_parsing_results*,
             ::uwvm2::utils::cmdline::parameter_parsing_results*,
             ::uwvm2::utils::cmdline::parameter_parsing_results*) noexcept;
@@ -122,7 +134,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
             ::uwvm2::utils::cmdline::parameter_parsing_results*) noexcept;
     }
     inline constexpr ::uwvm2::utils::cmdline::parameter diagnostic_control_fd{
-        .name{u8"--diagnostic-control-fd"}, .describe{u8"RELEASE-only bounded read-only diagnostics on a separate authenticated Unix seqpacket socket."},
+        .name{u8"--diagnostic-control-fd"}, .describe{u8"Non-sensitive read-only diagnostics on a separate authenticated Unix seqpacket socket."},
         .usage{u8"<fd>"}, .handle{::std::addressof(details::update_option_callback)},
         .is_exist{::std::addressof(details::diagnostic_control_fd_exists)}, .cate{::uwvm2::utils::cmdline::categorization::debug}};
     inline constexpr ::uwvm2::utils::cmdline::parameter update_control_fd{
@@ -145,12 +157,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
         .name{u8"--update-scope"}, .describe{u8"Stable deployment/component/device scope SHA-256 assigned by the trusted launcher."},
         .usage{u8"<hex>"}, .handle{::std::addressof(details::update_option_callback)},
         .is_exist{::std::addressof(details::update_scope_exists)}, .cate{::uwvm2::utils::cmdline::categorization::update}};
-    inline constexpr ::uwvm2::utils::cmdline::parameter management_profile{
-        .name{u8"--management-profile"},
-        .describe{u8"Trusted launch profile: release (default, diagnostics only) or explicit dev Guest debugging. Does not grant Guest imports."},
-        .usage{u8"<release|dev>"},
-        .handle{::std::addressof(details::management_profile_callback)},
-        .is_exist{::std::addressof(details::management_profile_is_exist)},
+    inline constexpr ::uwvm2::utils::cmdline::parameter debug_crash{
+        .name{u8"--debug"},
+        .describe{u8"Report a terminal fault to the host and pause. The deployer may explicitly inspect/dump with an authorized debugger or manage an update; no automatic dump, retry, recovery or new authority. Omit this option for normal fault termination."},
+        .usage{u8"<pause>"},
+        .handle{::std::addressof(details::debug_crash_callback)},
+        .is_exist{::std::addressof(details::debug_crash_action_exists)},
+        .cate{::uwvm2::utils::cmdline::categorization::debug}};
+    inline constexpr ::uwvm2::utils::cmdline::parameter debug_permissions{
+        .name{u8"--debug-permissions"},
+        .describe{u8"Debugger launch permissions only: full (inspect/modify), read-only (inspect/full dump), limited (non-sensitive diagnostics/dump; default), none (no debugger or dump). -Rdbg defaults to full; explicit selection wins. Does not grant imports, drivers or updates."},
+        .usage{u8"<full|read-only|limited|none>"},
+        .handle{::std::addressof(details::debug_permissions_callback)},
+        .is_exist{::std::addressof(details::debug_permissions_is_exist)},
         .cate{::uwvm2::utils::cmdline::categorization::debug}};
     inline constexpr ::uwvm2::utils::cmdline::parameter mode{.name{u8"--mode"},
                                                              .describe{u8"Select the operation mode. Default: run."},
@@ -163,7 +182,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
     // the same LLVM/full defaults and incompatible-backend fatal as -m debug.
     inline constexpr ::uwvm2::utils::cmdline::parameter runtime_debug_jit{
         .name{u8"--runtime-debug"},
-        .describe{u8"Shortcut for -m debug; enter the built-in LLVM JIT full debugger."},
+        .describe{u8"Start the LLVM JIT debugger; default to full debug permissions unless --debug-permissions is explicit."},
         .alias{::uwvm2::utils::cmdline::kns_u8_str_scatter_t{::std::addressof(details::runtime_debug_jit_alias), 1uz}},
         .handle{::std::addressof(details::runtime_debug_jit_callback)},
         .is_exist{::std::addressof(details::mode_is_exist)},

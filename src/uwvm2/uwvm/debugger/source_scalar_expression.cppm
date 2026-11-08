@@ -1,5 +1,9 @@
 module;
+// Scalar token scanning also uses hex_get, which the fast_io module does not export.
+#include <fast_io.h>
 #include <bit>
+#include <coroutine>
+#include <exception>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>

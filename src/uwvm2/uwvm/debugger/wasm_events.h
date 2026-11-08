@@ -5,6 +5,7 @@
  *************************************************************/
 #pragma once
 #ifndef UWVM_MODULE
+# include <uwvm2/extension/memtag/instruction.h>
 # include <fast_io.h>
 # include <fast_io_dsal/array.h>
 # include <fast_io_dsal/string_view.h>
@@ -135,6 +136,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasm_events
                 if(result.extended <= 11u || (result.extended >= 84u && result.extended <= 93u)) { add(category::memory_instruction); }
             }
             else if(op == 0xfeu) { add(category::atomic_instruction); if(result.extended != 3u) { add(category::memory_instruction); } }
+            else if(::uwvm2::extension::memtag::find_instruction(result.extended)!=nullptr) { add(category::memory_instruction); }
             else if(result.extended >= 8u && result.extended <= 11u) { add(category::memory_instruction); }
             else if(result.extended >= 12u && result.extended <= 17u) { add(category::table_instruction); }
             return result;

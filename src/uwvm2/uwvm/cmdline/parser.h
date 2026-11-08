@@ -21,6 +21,7 @@
  ****************************************/
 
 #pragma once
+#include <uwvm2/utils/security/trusted_driver.h>
 
 #ifndef UWVM_MODULE
 // std
@@ -352,6 +353,27 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
             // Here, guard will perform destructors.
         }
 
+        // Select driver verification before ANY preload constructor, regardless
+        // of CLI option order. This never authorizes a Guest-controlled dlopen.
+        for(auto current{pr.begin()+1u};current!=end_pos;++current)
+        {
+            if(current->para!=::std::addressof(::uwvm2::uwvm::cmdline::params::driver_verify))continue;
+            auto certificate=current+1u;
+            using kind=::uwvm2::utils::cmdline::parameter_parsing_results_type;
+            if(certificate==end_pos || certificate->type!=kind::arg || certificate->str.empty())
+            {
+                ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,u8"uwvm: [error] --wasm-driver-verify requires a trusted PEM signer certificate");
+                return parsing_return_val::returnm1;
+            }
+            if(auto error=::uwvm2::utils::security::trusted_driver::process_verifier.select(
+                reinterpret_cast<char const*>(certificate->str.data())))
+            {
+                ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,u8"uwvm: [error] driver verification: ",
+                    ::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(error)));
+                return parsing_return_val::returnm1;
+            }
+            certificate->type=kind::occupied_arg;
+        }
         // Register all explicitly selected secure modules before ANY preload
         // callback. Unselected modules retain their ordinary loading behavior.
         bool secure_status_requested{};

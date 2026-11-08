@@ -95,6 +95,7 @@ class SourceValuesTests(unittest.TestCase):
     def source_reference(self):
         scopes = self.scopes()
         expected = ["Source variables", "Wasm locals", "WASIp1 arguments", "WASIp1 environment", "WASIp1 descriptors", "WASIp1 preopens"]
+        expected += ["WASIp1 calls (recorded)", "ROS1 calls (recorded)", "ROS2 calls (recorded)"]
         if hasattr(self.adapter, "ros_scope_stops"):
             expected += ["ROS capabilities (process-owned)", "ROS instances (backend sessions)", "ROS event queues (metadata only)"]
             self.assertTrue(all(row["expensive"] and row["variablesReference"] > 0 for row in scopes[6:]))

@@ -832,6 +832,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::fd_manager
         ::uwvm2::utils::container::u8string checkpoint_mount{},checkpoint_path{};
         int checkpoint_stdio_index{-1};
         bool checkpoint_reopenable{},checkpoint_follow{};
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        // Set only by native resource construction. Guest renumber/close/rights
+        // attenuation cannot reclassify a socket as a regular file or stdio.
+        enum class socket_type : unsigned char { none, stream, datagram, listener };
+        socket_type socket_kind{};
+        bool socket_nonblock{};
+        int socket_initial_fd{-1};
+#endif
         wasi_fd_storage_t wasi_fd_storage{};
     };
 

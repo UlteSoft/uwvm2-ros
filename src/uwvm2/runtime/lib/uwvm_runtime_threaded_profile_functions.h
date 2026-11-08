@@ -31,14 +31,14 @@
 
     extern "C++" bool runtime_threaded_profile_debug_observation_configure_host_api(
         ::uwvm2::runtime::wasm_threads::threaded_debug_observation purpose) noexcept
-    { if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; } return runtime_threaded_profile_bridge::configure_debug_observation(purpose); }
+    { if(!::uwvm2::utils::control::debug_permissions::inspection_allowed()) { return {}; } return runtime_threaded_profile_bridge::configure_debug_observation(purpose); }
     extern "C++" ::uwvm2::runtime::wasm_threads::threaded_debug_session runtime_threaded_profile_debug_session_host_api() noexcept
-    { if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; } return runtime_threaded_profile_bridge::debug_session(); }
+    { if(!::uwvm2::utils::control::debug_permissions::inspection_allowed()) { return {}; } return runtime_threaded_profile_bridge::debug_session(); }
     extern "C++" bool runtime_threaded_profile_debug_control_configure_host_api(
         ::uwvm2::runtime::wasm_threads::threaded_debug_control_limits const& purpose) noexcept
-    { if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }return runtime_threaded_profile_bridge::configure_debug_control(purpose);}
+    { if(!::uwvm2::utils::control::debug_permissions::full_allowed()) { return {}; }return runtime_threaded_profile_bridge::configure_debug_control(purpose);}
     extern "C++" ::uwvm2::runtime::wasm_threads::threaded_debug_control_session runtime_threaded_profile_debug_control_session_host_api() noexcept
-    { if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }return runtime_threaded_profile_bridge::debug_control_session();}
+    { if(!::uwvm2::utils::control::debug_permissions::full_allowed()) { return {}; }return runtime_threaded_profile_bridge::debug_control_session();}
     extern "C++" bool runtime_threaded_profile_complete_cli_limits_host_api(
         ::uwvm2::runtime::wasm_threads::threaded_profile_limits& limits) noexcept
     { return runtime_threaded_profile_bridge::complete_cli_storage_limits(limits); }
@@ -85,6 +85,8 @@
         inline bool memory_descriptor(::std::size_t index, preload_memory_descriptor_t* out) noexcept
         { return runtime_threaded_profile_bridge::memory_descriptor(index, out); }
         inline ::std::size_t memory_descriptor_count() noexcept { return runtime_threaded_profile_bridge::memory_descriptor_count(); }
+        inline bool memory_normalize_range(::std::size_t index,::std::uint_least64_t offset,::std::size_t bytes,::std::uint64_t& normalized) noexcept
+        { return runtime_threaded_profile_bridge::memory_normalize_range(index,offset,bytes,normalized); }
         inline bool memory_copy(::std::size_t index, ::std::uint_least64_t offset, void* buffer, ::std::size_t bytes, bool write) noexcept
         { return runtime_threaded_profile_bridge::memory_copy(index, offset, buffer, bytes, write); }
         inline void request_stop() noexcept { runtime_threaded_profile_bridge::request_stop(); }

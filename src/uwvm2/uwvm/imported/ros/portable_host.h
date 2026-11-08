@@ -71,10 +71,36 @@ namespace uwvm2::uwvm::imported::ros::portable_host
     { return {facts.memory_bytes,1,0,false}; }
     inline bool write_word(::std::uint64_t offset,::std::uint64_t value) noexcept
     { ::std::array<::std::uint8_t,8> bytes{};model::wire_detail::put(bytes,0,value,8);return observed_write(0,offset,bytes.data(),bytes.size()); }
+    // Canonical offsets are only for range/alias preflight. The eventual copy
+    // must retain the original tagged pointer so the actual owner rechecks it.
+    inline bool normalized_span(model::memory_span raw,model::memory_span& normalized) noexcept
+    {
+        normalized={};
+        if(raw.bytes>(::std::numeric_limits<::std::size_t>::max)()) { return false; }
+        ::std::uint64_t offset{};
+        if(!api::preload_memory_normalize_range_host_api(0,raw.offset,static_cast<::std::size_t>(raw.bytes),offset)) { return false; }
+        normalized={offset,raw.bytes};return true;
+    }
+    inline error open_preflight(api::ros_caller_source_facts const& facts,::std::uint32_t selector,
+        ::std::uint64_t alias_at,::std::uint64_t alias_bytes,::std::uint64_t handle_out) noexcept
+    {
+        auto const shape{memory(facts)};
+        if(auto result{model::valid_memory(shape,selector)};result!=error::ok) { return result; }
+        if(alias_bytes==0u || alias_bytes>255u) { return error::malformed; }
+        model::memory_span alias{},handle{};
+        if(!normalized_span({alias_at,alias_bytes},alias) || !normalized_span({handle_out,8u},handle))
+        { return error::malformed; }
+        return model::preflight_open(shape,selector,alias,handle.offset);
+    }
     inline error output_preflight(api::ros_caller_source_facts const& facts,::std::uint32_t selector,
         ::std::uint64_t offset,::std::uint64_t capacity,::std::uint64_t length,::std::size_t required,model::memory_span request={}) noexcept
     {
-        auto e{model::preflight_output(memory(facts),selector,{offset,capacity},length,required,request)};
+        auto const shape{memory(facts)};
+        if(auto result{model::valid_memory(shape,selector)};result!=error::ok) { return result; }
+        model::memory_span canonical_output{},canonical_length{},canonical_request{};
+        if(!normalized_span({offset,capacity},canonical_output) || !normalized_span({length,8u},canonical_length) ||
+           !normalized_span(request,canonical_request)) { return error::malformed; }
+        auto e{model::preflight_output(shape,selector,canonical_output,canonical_length.offset,required,canonical_request)};
         if(e!=error::ok&&e!=error::too_small) { return e; }
         if(!observed_write(0,offset,nullptr,0)||!write_word(length,required)) { return error::malformed; }
         return e;
@@ -110,7 +136,7 @@ namespace uwvm2::uwvm::imported::ros::portable_host
         return guarded([&]() -> error {
             api::ros_caller_source_facts facts{};model::owner_key owner{};model::deployment_selection::owner deployment{};
             if(auto e{caller(1,facts,owner,deployment)};e!=error::ok) { return e; }
-            if(auto e{model::preflight_open(memory(facts),selector,{alias_at,alias_bytes},handle_out)};e!=error::ok) { return e; }
+            if(auto e{open_preflight(facts,selector,alias_at,alias_bytes,handle_out)};e!=error::ok) { return e; }
             ::std::array<char,255> alias{};
             if(!observed_read(0,alias_at,alias.data(),static_cast<::std::size_t>(alias_bytes))||
                ::std::string_view{alias.data(),static_cast<::std::size_t>(alias_bytes)}!=deployment->alias||

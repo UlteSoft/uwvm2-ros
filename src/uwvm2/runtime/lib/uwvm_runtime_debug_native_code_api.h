@@ -84,7 +84,7 @@ namespace
         llvm_jit_debug_activation_capture_owner const& capture, void const* native_session_identity,
         llvm_jit_debug_native_code_bytes& out) noexcept
     {
-        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
+        if(!::uwvm2::utils::control::debug_permissions::inspection_allowed()) { return {}; }
         out = {};
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS)
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
@@ -201,7 +201,7 @@ namespace
         llvm_jit_debug_activation_capture_owner const& capture, void const* native_session_identity,
         llvm_jit_debug_native_function_image& out) noexcept
     {
-        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
+        if(!::uwvm2::utils::control::debug_permissions::inspection_allowed()) { return {}; }
         out = {};
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS)
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
@@ -340,7 +340,7 @@ namespace
         llvm_jit_debug_activation_capture_owner const& supplied, void const* session,
         llvm_jit_debug_activation_snapshot& out) noexcept
     {
-        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
+        if(!::uwvm2::utils::control::debug_permissions::inspection_allowed()) { return {}; }
         out={};
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && UWVM2_RUNTIME_NATIVE_STEP_PLATFORM
         try
@@ -376,7 +376,7 @@ namespace
     extern "C++" bool llvm_jit_debug_native_retirement_call_host_api(
         llvm_jit_debug_activation_capture_owner const& supplied, void const* session) noexcept
     {
-        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
+        if(!::uwvm2::utils::control::debug_permissions::full_allowed()) { return {}; }
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && UWVM2_DEBUG_NATIVE_LEVEL_TRANSITIONS
         try
         {
@@ -471,7 +471,7 @@ namespace
         bool absolute, ::std::uintptr_t& from, ::std::uintptr_t& to) noexcept
     {
         using result=llvm_jit_debug_relocation_status;from=to=0u;
-        if(!::uwvm2::utils::control::management::debug_allowed()) { return result::unavailable; }
+        if(!::uwvm2::utils::control::debug_permissions::full_allowed()) { return result::unavailable; }
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && defined(__APPLE__) && defined(__aarch64__) && TARGET_OS_OSX
         namespace dbg=::uwvm2::uwvm::debugger;
         try

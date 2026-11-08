@@ -248,7 +248,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         ::uwvm2::imported::wasi::wasip1::abi::timestamp_t st_ctim{};     // 56
 
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-        bool const filesystem_operation{fd >= 3};
+        bool const filesystem_operation{curr_fd.wasi_fd.ptr->checkpoint_stdio_index < 0};
         ::uwvm2::imported::wasi::wasip1::environment::budget_reservation filesystem_reservation{
             ::uwvm2::imported::wasi::wasip1::environment::budget_kind::filesystem_io, env.limits, 0u, filesystem_operation};
         if(filesystem_operation && !filesystem_reservation) { return filesystem_reservation.template error<::uwvm2::imported::wasi::wasip1::abi::errno_t>(); }
@@ -644,52 +644,24 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         }
 
         // write
-        if constexpr(is_default_wasi_filestat_data_layout())
+        // The native aggregate has padding after filetype. Never copy those
+        // indeterminate host bytes into the canonical Guest representation.
+        ::std::byte encoded_filestat[size_of_wasi_filestat_t]{};
+        auto const put_word{[&](::std::size_t offset,::std::uint64_t value,::std::size_t width) constexpr noexcept
         {
-            wasi_filestat_t const tmp_wasi_filestat{st_dev, st_ino, st_filetype, st_nlink, st_size, st_atim, st_mtim, st_ctim};
-
-            ::uwvm2::imported::wasi::wasip1::memory::write_all_to_memory_wasm32_unchecked(
-                memory,
-                stat_ptrsz,
-                reinterpret_cast<::std::byte const*>(::std::addressof(tmp_wasi_filestat)),
-                reinterpret_cast<::std::byte const*>(::std::addressof(tmp_wasi_filestat)) + sizeof(tmp_wasi_filestat));
-        }
-        else
-        {
-            // Fallback for non-default host layout: store members individually at WASI-defined offsets.
-            ::uwvm2::imported::wasi::wasip1::memory::store_basic_wasm_type_to_memory_wasm32_unchecked(
-                memory,
-                stat_ptrsz,
-                static_cast<::std::underlying_type_t<::std::remove_cvref_t<decltype(st_dev)>>>(st_dev));
-            ::uwvm2::imported::wasi::wasip1::memory::store_basic_wasm_type_to_memory_wasm32_unchecked(
-                memory,
-                stat_ptrsz + 8u,
-                static_cast<::std::underlying_type_t<::std::remove_cvref_t<decltype(st_ino)>>>(st_ino));
-            ::uwvm2::imported::wasi::wasip1::memory::store_basic_wasm_type_to_memory_wasm32_unchecked(
-                memory,
-                stat_ptrsz + 16u,
-                static_cast<::std::underlying_type_t<::std::remove_cvref_t<decltype(st_filetype)>>>(st_filetype));
-            ::uwvm2::imported::wasi::wasip1::memory::store_basic_wasm_type_to_memory_wasm32_unchecked(
-                memory,
-                stat_ptrsz + 24u,
-                static_cast<::std::underlying_type_t<::std::remove_cvref_t<decltype(st_nlink)>>>(st_nlink));
-            ::uwvm2::imported::wasi::wasip1::memory::store_basic_wasm_type_to_memory_wasm32_unchecked(
-                memory,
-                stat_ptrsz + 32u,
-                static_cast<::std::underlying_type_t<::std::remove_cvref_t<decltype(st_size)>>>(st_size));
-            ::uwvm2::imported::wasi::wasip1::memory::store_basic_wasm_type_to_memory_wasm32_unchecked(
-                memory,
-                stat_ptrsz + 40u,
-                static_cast<::std::underlying_type_t<::std::remove_cvref_t<decltype(st_atim)>>>(st_atim));
-            ::uwvm2::imported::wasi::wasip1::memory::store_basic_wasm_type_to_memory_wasm32_unchecked(
-                memory,
-                stat_ptrsz + 48u,
-                static_cast<::std::underlying_type_t<::std::remove_cvref_t<decltype(st_mtim)>>>(st_mtim));
-            ::uwvm2::imported::wasi::wasip1::memory::store_basic_wasm_type_to_memory_wasm32_unchecked(
-                memory,
-                stat_ptrsz + 56u,
-                static_cast<::std::underlying_type_t<::std::remove_cvref_t<decltype(st_ctim)>>>(st_ctim));
-        }
+            for(::std::size_t i{};i<width;++i)
+            { encoded_filestat[offset+i]=static_cast<::std::byte>(value>>(i*8u)); }
+        }};
+        put_word(0u,static_cast<::std::uint64_t>(st_dev),8u);
+        put_word(8u,static_cast<::std::uint64_t>(st_ino),8u);
+        put_word(16u,static_cast<::std::uint64_t>(st_filetype),1u);
+        put_word(24u,static_cast<::std::uint64_t>(st_nlink),8u);
+        put_word(32u,static_cast<::std::uint64_t>(st_size),8u);
+        put_word(40u,static_cast<::std::uint64_t>(st_atim),8u);
+        put_word(48u,static_cast<::std::uint64_t>(st_mtim),8u);
+        put_word(56u,static_cast<::std::uint64_t>(st_ctim),8u);
+        ::uwvm2::imported::wasi::wasip1::memory::write_all_to_memory_wasm32_unchecked(
+            memory,stat_ptrsz,encoded_filestat,encoded_filestat+sizeof(encoded_filestat));
 
         return ::uwvm2::imported::wasi::wasip1::abi::errno_t::esuccess;
     }

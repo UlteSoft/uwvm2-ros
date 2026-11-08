@@ -58,7 +58,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
             ::std::addressof(::uwvm2::uwvm::cmdline::params::run),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::help),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::mode),
-            ::std::addressof(::uwvm2::uwvm::cmdline::params::management_profile),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::debug_permissions),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::debug_crash),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::runtime_debug_jit),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::debug_jit_control_fd),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::debug_jit_control_handle),
@@ -73,7 +74,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
 # include "params/ros2_registry.inc"
 
             // wasm
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_disable_memtag_extension),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::secure),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::driver_verify),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_set_main_module_name),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_set_start_func),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_preload_library),
@@ -133,6 +136,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_memory_grow_strict),
 
         // runtime
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::runtime_disable_memtag),
 #if defined(UWVM_RUNTIME_HAS_BACKEND)
 # if defined(UWVM_RUNTIME_UWVM_INTERPRETER)
             ::std::addressof(::uwvm2::uwvm::cmdline::params::runtime_int),
@@ -208,6 +212,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_single_interface),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_group_interface),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_single_grant),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_socket_abi),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_single_socket_rights),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_group_socket_rights),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_global_socket_rights),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_single_mount_dir_rights),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_group_mount_dir_rights),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasip1_single_limit),

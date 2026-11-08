@@ -93,11 +93,11 @@
         [[nodiscard]] bool check_object(::llvm::object::ObjectFile const& object,::std::size_t& charge,
             ::std::vector<::std::string>& definitions)
         {
-            // A finite, deliberately conservative x86-64 ELF loader charge:
+            // A finite, deliberately conservative native ELF loader charge:
             // real section bytes, max alignment per section, relocation stub/GOT
             // allowance and three native page groups. No null allocator is used
             // to pretend RuntimeDyld's fatal allocation path is recoverable.
-            if(!object.isELF()||object.getArch()!=::llvm::Triple::x86_64||!object.isLittleEndian()||object.getBytesInAddress()!=8u)return false;
+            if(!object.isELF()||object.getArch()!=native_object_arch||!object.isLittleEndian()||object.getBytesInAddress()!=native_address_bytes)return false;
             charge=3u*65536u;::std::size_t sections{},relocations{},symbols{};
             auto add=[&](::std::size_t value){if(charge>code_limit_||value>code_limit_-charge)return false;charge+=value;return true;};
             for(auto const& section:object.sections())
@@ -128,6 +128,19 @@
                         if(*name=="memcpy")pointer=address(static_cast<void*(*)(void*,void const*,::std::size_t)>(&::std::memcpy));
                         else if(*name=="memmove")pointer=address(static_cast<void*(*)(void*,void const*,::std::size_t)>(&::std::memmove));
                         else if(*name=="memset")pointer=address(static_cast<void*(*)(void*,int,::std::size_t)>(&::std::memset));
+#if defined(__linux__) && (defined(__i386__) || defined(__arm__))
+                        // Only the existing finite compiler-runtime arithmetic
+                        // allowlist. No dynamic lookup or Guest import binding.
+                        else pointer=::uwvm2::runtime::compiler::llvm_jit::details::native_compiler_builtins::find(name->str());
+#endif
+#if defined(UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT) && UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT == 1 && \
+    defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__)
+                        // Native backend-generated compact unwind relocations,
+                        // paired with the same static libunwind as this process.
+                        if(*name=="__aeabi_unwind_cpp_pr0")pointer=reinterpret_cast<::std::uintptr_t>(&::__aeabi_unwind_cpp_pr0);
+                        else if(*name=="__aeabi_unwind_cpp_pr1")pointer=reinterpret_cast<::std::uintptr_t>(&::__aeabi_unwind_cpp_pr1);
+                        else if(*name=="__aeabi_unwind_cpp_pr2")pointer=reinterpret_cast<::std::uintptr_t>(&::__aeabi_unwind_cpp_pr2);
+#endif
                         if(pointer==0u||externals_.size()>=256u)return false;
                         externals_.push_back({name->str(),pointer});
                     }
@@ -155,7 +168,7 @@
             if(!actual_code||!actual_code->covers(*world)||actual_code->file()!=world->file(0u))return {};
             if(!world->admission().owns_actual_generation()||world->module_count()!=1u||world->entry_module_index()!=0u||
                world->module(0u)==nullptr||world->file(0u)==nullptr||world->feature_parameter(0u)==nullptr)return {};
-#if !defined(__x86_64__) || __SIZEOF_POINTER__ != 8
+#if !(((defined(__x86_64__) || defined(__aarch64__)) && __SIZEOF_POINTER__ == 8) || ((defined(__i386__) || defined(__arm__)) && __SIZEOF_POINTER__ == 4))
             return {{},status::unsupported_shape};
 #else
             try
@@ -188,6 +201,15 @@
                 auto const memory_count=module.imported_memory_vec_storage.size()+module.local_defined_memory_vec_storage.size();
                 if(memory_count>16u)return {{},status::budget};
                 data->memories_.reserve(memory_count);
+                ::std::array<emit::threaded_forbidden_memory_span,32u> forbidden_memtag_spans{};
+                ::std::size_t forbidden_memtag_count{};
+                bool requires_shared_memtag_lease{};
+                auto forbid_memtag_span=[&](::std::uintptr_t begin,::std::size_t bytes) noexcept
+                {
+                    if(bytes==0u)return true;
+                    if(begin==0u||bytes>UINTPTR_MAX-begin||forbidden_memtag_count==forbidden_memtag_spans.size())return false;
+                    forbidden_memtag_spans[forbidden_memtag_count++]={begin,bytes};return true;
+                };
                 for(::std::size_t i{};i<memory_count;++i)
                 {
                     auto const info=emit::resolve_runtime_memory_access_info(module,static_cast<::std::uint32_t>(i));
@@ -195,6 +217,17 @@
                        info.local_imported_module_ptr!=nullptr||info.stable_memory_begin==nullptr||
                        info.stable_memory_length_p==nullptr||info.custom_page_size_log2!=16u)return {{},status::unsupported_shape};
                     data->memories_.push_back(info.memory_p);
+                    auto const& tags=info.memory_p->memtag_shadow;
+                    if(tags.enabled())
+                    {
+                        if(!tags.shared()||!tags.shared_tag_lease_ready())return {{},status::unsupported_shape};
+                        requires_shared_memtag_lease=true;
+                        auto const count=tags.maximum_memory_bytes()/16u+(tags.maximum_memory_bytes()%16u!=0u);
+                        if(count>SIZE_MAX/sizeof(::std::atomic<::std::uint8_t>)||
+                           !forbid_memtag_span(reinterpret_cast<::std::uintptr_t>(info.stable_memory_begin),info.stable_memory_reserved_span_bytes)||
+                           !forbid_memtag_span(reinterpret_cast<::std::uintptr_t>(tags.tag_data()),static_cast<::std::size_t>(count)*sizeof(::std::atomic<::std::uint8_t>)))
+                            return {{},status::unsupported_shape};
+                    }
                 }
                 for(::std::size_t i{};i<data->imports_;++i)
                     if(::uwvm2::runtime::wasm_threads::admit_import(*data->world_,0u,i)!=
@@ -233,7 +266,7 @@
                 auto const fixed_debug=observing?sizeof(::uwvm2::runtime::wasm_threads::code_debug_image)+4096u*sizeof(::uwvm2::runtime::wasm_threads::debug_cfi_row):0u;
                 ::std::size_t const fixed_charge=sizeof(ThreadedLlvmChild)+sizeof(native_arena)+8192u*64u+
                     256u*(sizeof(external)+512u+sizeof(native_frame_record)+256u)+
-                    fixed_debug;
+                    fixed_debug+native_arena::unwind_storage_precharge(count);
                 if(fixed_charge>remaining||count>(remaining-fixed_charge)/(sizeof(local_type)+sizeof(entries)+sizeof(::std::uint_least32_t)+2u*sizeof(native_frame_record)+768u+per_debug_function))
                     return {{},status::budget};
                 if(observing)
@@ -267,15 +300,29 @@
                 emit::require_runtime_module_declaration_policy(module,*data->world_->feature_parameter(0u),error);
                 compile::compile_option options{};options.curr_wasm_id=0u;options.compiler_registry=nullptr; // private cold scope authenticates the exact single module
                 options.compilation_mode=compile::llvm_jit_compilation_mode::full;
+                options.execute_memtag=!::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag;
                 options.validator_feature_parameter=data->world_->feature_parameter(0u);options.verify_llvm_jit_ir=true;
                 options.emit_call_stack_frames=false;options.emit_unwind_call_stack_frames=false;
                 options.emit_precise_gc_root_frames=false;options.emit_debug_safe_points=false;
                 compile::llvm_jit_module_storage_t ir{};
                 if(!emit::try_prepare_runtime_llvm_jit_module_storage(module,ir,false,nullptr))return {{},status::invalid_body};
+                if(requires_shared_memtag_lease&&!emit::set_memtag_shared_lease_module_abi(*ir.llvm_module))
+                    return {{},status::unsupported_bridge};
+                auto& llvm_module=*ir.llvm_module;
+                // Pre- and post-pass finite IR quotas. These are NOT a claim of
+                // a hard bound on all LLVM optimizer heap allocations.
+                auto ir_fits=[&]
+                {
+                    ::std::size_t instructions{},blocks{};
+                    for(auto const& f:llvm_module)for(auto const& b:f)
+                    {if(++blocks>262144u||b.size()>1048576u-instructions)return false;instructions+=b.size();}
+                    return true;
+                };
                 {
                     emit::threaded_host_emission_scope owner{*data->world_,module,*ir.llvm_module,data->emitted_bridges_,
                         reinterpret_cast<::std::uintptr_t>(module.llvm_jit_call_indirect_table_views.data()),
-                        reinterpret_cast<::std::uintptr_t>(data->table_views_.data())};
+                        reinterpret_cast<::std::uintptr_t>(data->table_views_.data()),
+                        forbidden_memtag_spans.data(),forbidden_memtag_count};
                     for(::std::size_t i{};i<count;++i)
                     {
                         if(compiler.cancellation().stop_requested())return {{},status::invalid_world};
@@ -289,21 +336,17 @@
                         data->entries_[i].raw_name=emit::get_llvm_string_ref(raw).str();
                     }
                     if(!owner.valid()||!emit::finalize_runtime_llvm_jit_module_storage(ir,true))return {{},status::invalid_body};
+                    if(compiler.cancellation().stop_requested())return {{},status::invalid_world};
+                    if((requires_shared_memtag_lease&&!emit::has_memtag_shared_lease_module_abi(llvm_module))||
+                       !data->check_memtag_shared_lease_ir(llvm_module))return {{},status::unsupported_bridge};
+                    // Control host calls also publish ROS provenance. Keep the
+                    // actual owner scope alive until those late bridges have
+                    // been captured, including otherwise host-call-free bodies.
+                    if(!ir_fits()||!data->add_control(llvm_module)||!ir_fits()||
+                       !data->check_static_stack_ir(llvm_module))return {{},status::budget};
+                    if(!owner.valid())return {{},status::unsupported_bridge};
                 }
-                if(compiler.cancellation().stop_requested())return {{},status::invalid_world};
                 if(!data->bind_emitted_bridges())return {{},status::unsupported_bridge};
-                auto& llvm_module=*ir.llvm_module;
-                // Pre- and post-pass finite IR quotas. These are NOT a claim of
-                // a hard bound on all LLVM optimizer heap allocations.
-                auto ir_fits=[&]
-                {
-                    ::std::size_t instructions{},blocks{};
-                    for(auto const& f:llvm_module)for(auto const& b:f)
-                    {if(++blocks>262144u||b.size()>1048576u-instructions)return false;instructions+=b.size();}
-                    return true;
-                };
-                if(!ir_fits()||!data->add_control(llvm_module)||!ir_fits()||
-                   !data->check_static_stack_ir(llvm_module))return {{},status::budget};
                 if(!ensure_llvm_jit_native_target_initialized())return {{},status::native_failure};
                 auto const cpu=get_llvm_jit_host_cpu_name_storage();auto const attrs=get_llvm_jit_host_target_attribute_storage();
                 ::llvm::SmallVector<::llvm::StringRef,16> refs;append_llvm_jit_host_target_attribute_refs(attrs,refs);
@@ -318,6 +361,22 @@
                 apply_runtime_llvm_jit_native_target_function_attrs(llvm_module,cpu,cpu,*target);
                 if(!optimize_runtime_llvm_jit_module(llvm_module,*target,policy.pipeline,policy.codegen_opt_level,true,false)||
                    !ir_fits()||!data->check_static_stack_ir(llvm_module)||!prove_stop_cycles(llvm_module)||::llvm::verifyModule(llvm_module))return {{},status::native_failure};
+                if((requires_shared_memtag_lease&&!emit::has_memtag_shared_lease_module_abi(llvm_module))||
+                   !data->check_memtag_shared_lease_ir(llvm_module))return {{},status::unsupported_bridge};
+                if(!data->record_native_call_graph(llvm_module))return {{},status::native_failure};
+                // Strict FP legalization can introduce this integer-only
+                // helper after the initial import bridge pass, notably for
+                // i686 i64 conversions. Authenticate its exact IR ABI before
+                // binding the existing pure arithmetic implementation.
+                namespace strict_fp=::uwvm2::runtime::compiler::shared::strict_float_jit;
+                if(auto* helper=llvm_module.getFunction(strict_fp::symbol_name))
+                {
+                    auto& context=llvm_module.getContext();
+                    auto* i64=::llvm::Type::getInt64Ty(context);auto* i32=::llvm::Type::getInt32Ty(context);
+                    auto* signature=::llvm::FunctionType::get(i64,{i64,i64,i32},false);
+                    if(helper->getFunctionType()!=signature||helper->getCallingConv()!=::llvm::CallingConv::C||
+                       !data->add_external(*helper,address(&strict_fp::bridge)))return {{},status::unsupported_bridge};
+                }
                 bounded_object_stream output{data->code_limit_};
                 {
                     // Destroy codegen passes/MMI while their actual module,
@@ -344,6 +403,8 @@
                 // Native object is complete and checked BEFORE an empty loader
                 // engine is created. The original IR never gets compiled twice.
                 ir.llvm_module.reset();data->emitted_bridges_.clear();
+                ::std::vector<::std::string>{}.swap(data->native_call_names_);
+                ::std::vector<native_call_edge>{}.swap(data->native_call_edges_);
                 ir.llvm_context_holder.reset();
                 ir.llvm_context_holder=::uwvm2::utils::container::make_delete_owned<::llvm::LLVMContext>();
                 if(!ir.llvm_context_holder)return {{},status::native_failure};
@@ -351,7 +412,7 @@
                 if(!empty)return {{},status::native_failure};
                 set_llvm_module_target_triple_from_machine(*empty,*target);empty->setDataLayout(target->createDataLayout());
                 ir.llvm_module.reset();
-                data->native_arena_=::std::make_unique<native_arena>(data->code_limit_,data->externals_);
+                data->native_arena_=::std::make_unique<native_arena>(data->code_limit_,data->externals_,data->native_frames_.size());
                 if(!data->native_arena_||!data->native_arena_->valid())return {{},status::native_failure};
                 auto* memory_observer=data->native_arena_.get();
                 data->native_bytes_=memory_observer->owned_bytes();

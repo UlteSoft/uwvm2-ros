@@ -20,6 +20,7 @@
  ****************************************/
 
 module;
+#include <uwvm2/utils/security/trusted_driver.h>
 
 // std
 #include <cstdint>

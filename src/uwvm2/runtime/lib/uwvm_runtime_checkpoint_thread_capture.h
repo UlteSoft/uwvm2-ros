@@ -60,7 +60,7 @@ namespace
         ::uwvm2::runtime::gc::managed_entry_admission::shared_lease const* actual_gc_lease_{};
         ::uwvm2::runtime::gc::root_frame const* actual_gc_frames_{};
         inline static ::std::mutex registry_mutex_{};
-        inline static ::std::weak_ptr<runtime_checkpoint_thread_capture const> registry_[256u]{};
+        inline static ::std::vector<::std::weak_ptr<runtime_checkpoint_thread_capture const>> registry_{};
 
         template<typename Owner>
         [[nodiscard]] static bool same_owner(Owner const& a, Owner const& b) noexcept
@@ -312,17 +312,33 @@ namespace
                 candidate->suspended_wait_ = g_debug_activation_park_site.suspended_wait;
                 candidate->profile_ = g_runtime.checkpoint_profile;
                 if(candidate->participant_ == 0u) { return {checkpoint_thread_capture_status::invalid_activation, {}}; }
-                // Publish only a complete private capture in a bounded canonical
-                // registry; do not evict a live owner or accept a caller alias.
+                // Publish only a complete private capture. Reuse expired cells
+                // or grow the registry; never evict a live owner or accept aliases.
                 ::std::lock_guard lock{registry_mutex_};
                 for(auto& slot : registry_)
                 {
                     if(slot.expired()) { slot = candidate; return {checkpoint_thread_capture_status::captured, candidate}; }
                 }
-                return {checkpoint_thread_capture_status::registry_exhausted, {}};
+                registry_.push_back(candidate);
+                return {checkpoint_thread_capture_status::captured, candidate};
             }
             catch(...) { return {checkpoint_thread_capture_status::allocation_failed, {}}; }
         }
+    };
+    // Cold management storage only. Size comes from the complete caller-owned
+    // span; each owner still needs both canonical registries and current-cohort
+    // authentication. Allocation failure cannot escape a noexcept host API.
+    class runtime_checkpoint_capture_buffer
+    {
+        ::std::vector<runtime_checkpoint_thread_capture::owner> values_{};
+        bool ready_{};
+    public:
+        explicit runtime_checkpoint_capture_buffer(::std::size_t count) noexcept
+        { try { values_.resize(count); ready_=true; } catch(...) {} }
+        explicit operator bool() const noexcept { return ready_; }
+        [[nodiscard]] auto data() noexcept { return values_.data(); }
+        [[nodiscard]] auto size() const noexcept { return values_.size(); }
+        [[nodiscard]] auto& operator[](::std::size_t index) noexcept { return values_[index]; }
     };
 }
 #endif

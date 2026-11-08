@@ -26,6 +26,7 @@ import uwvm2.uwvm.utils.ansies;
 import uwvm2.uwvm.cmdline.params;
 import uwvm2.uwvm.wasm.storage;
 import uwvm2.uwvm.wasm.feature;
+import uwvm2.uwvm.runtime.runtime_mode;
 
 #ifndef UWVM_MODULE
 # define UWVM_MODULE

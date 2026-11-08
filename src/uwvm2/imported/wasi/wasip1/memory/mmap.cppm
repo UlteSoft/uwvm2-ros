@@ -37,6 +37,7 @@ module;
 
 export module uwvm2.imported.wasi.wasip1.memory:mmap;
 
+import :checked_access;
 import fast_io;
 import uwvm2.utils.debug;
 import uwvm2.object.memory;

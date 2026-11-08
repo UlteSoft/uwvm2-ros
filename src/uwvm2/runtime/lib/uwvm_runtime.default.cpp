@@ -48,6 +48,13 @@
 // - Full compilation walks every runtime module, emits selected backend artifacts, builds caches, and publishes a one-shot ready flag.
 // - Host entry points validate raw ABI buffers, pick LLVM-full or interpreter execution, then clean up current-thread runtime state.
 // std
+# include <uwvm2/extension/memtag/debug_view.h>
+# include <uwvm2/runtime/memtag/hardware_thread.h>
+# include <uwvm2/runtime/diagnostic/crash_policy.h>
+# include <uwvm2/runtime/diagnostic/crash_file.h>
+# include <uwvm2/runtime/diagnostic/wasm_coredump.h>
+# include <uwvm2/runtime/memtag/host_access.h>
+# include <uwvm2/runtime/memtag/host_fault.h>
 # include <uwvm2/runtime/lib/uwvm_runtime_update.h>
 # include <uwvm2/runtime/lib/uwvm_runtime_diagnostics.h>
 # include <algorithm>
@@ -55,6 +62,9 @@
 # include <atomic>
 # include <bit>
 # include <coroutine>
+# if defined(__linux__)
+#  include <csignal>
+# endif
 # include <chrono>
 # include <cstddef>
 # include <cstdint>
@@ -67,7 +77,7 @@
 # include <type_traits>
 # include <utility>
 # include <uwvm2/utils/security/wsea.h>
-# include <uwvm2/utils/control/management.h>
+# include <uwvm2/utils/control/debug_permissions.h>
 # include "uwvm_runtime_guest_exit.h"
 // macro
 # include <uwvm2/uwvm_predefine/utils/ansies/uwvm_color_push_macro.h>
@@ -103,6 +113,7 @@
 # include "uwvm_runtime_imported_function_lookup.h"
 # include "uwvm_runtime_local_imported_provider_callbacks.h"
 # include "uwvm_runtime_state_signature.h"
+# include <uwvm2/extension/memtag/color.h>
 # include "uwvm_runtime_wasip1_memory_bindings.h"
 #include "uwvm_runtime_wasip1_native_file.h"
 # include "uwvm_runtime_wasm_fp_environment.h"
@@ -157,6 +168,8 @@
 #  include <llvm/Transforms/InstCombine/InstCombine.h>
 #  include <llvm/Transforms/Scalar.h>
 #  include <llvm/Transforms/Scalar/GVN.h>
+#  include <llvm/Transforms/Scalar/SimplifyCFG.h>
+#  include <uwvm2/runtime/compiler/llvm_jit/memory_minimum_proof.h>
 #  include <llvm/Transforms/Utils.h>
 #  include <uwvm2/runtime/compiler/llvm_jit/debug_numeric_local_ssa.h>
 # endif
@@ -2203,7 +2216,8 @@ namespace uwvm2::runtime::lib
             null_reference,
             array_out_of_bounds,
             gc_allocation_failure,
-            cast_failure
+            cast_failure,
+            memtag_violation
 
         };
 
@@ -2243,6 +2257,7 @@ namespace uwvm2::runtime::lib
                 case trap_kind::array_out_of_bounds: return {u8"array access out of bounds"};
                 case trap_kind::gc_allocation_failure: return {u8"GC allocation failed: memory or size limit"};
                 case trap_kind::cast_failure: return {u8"reference cast failed: value does not match target heap type"};
+                case trap_kind::memtag_violation: return {u8"memory tag mismatch"};
                 case trap_kind::table_out_of_bounds:
                 {
                     return ::uwvm2::utils::container::u8string_view{u8"table access out of bounds"};
@@ -2402,7 +2417,7 @@ namespace uwvm2::runtime::lib
             if(module_id >= g_runtime.modules.size()) [[unlikely]] { return false; }
 
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-            if(!::uwvm2::utils::control::management::debug_allowed())
+            if(!::uwvm2::utils::control::debug_permissions::inspection_allowed())
             {
                 if(frame_index >= 16u) { return false; }
                 // IDs only: attacker-controlled names, paths and terminal bytes
@@ -3123,7 +3138,7 @@ namespace uwvm2::runtime::lib
             auto const emit_frame{[&](::std::size_t module, ::std::size_t function) constexpr noexcept
             {
 #  if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-                if(!::uwvm2::utils::control::management::debug_allowed() && printed_frame_count >= 16u)
+                if(!::uwvm2::utils::control::debug_permissions::inspection_allowed() && printed_frame_count >= 16u)
                 { display_truncated = true; return; }
 #  endif
                 if(dump_call_stack_frame_for_trap(u8log_output_ul, printed_frame_count, module, function)) { ++printed_frame_count; }
@@ -3284,7 +3299,7 @@ namespace uwvm2::runtime::lib
             for(::std::size_t i{frames.size()}; i != 0uz; --i)
             {
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-                if(!::uwvm2::utils::control::management::debug_allowed() && printed_frame_count >= 16u)
+                if(!::uwvm2::utils::control::debug_permissions::inspection_allowed() && printed_frame_count >= 16u)
                 { ::fast_io::io::perrln(u8log_output_ul, u8"uwvm: [info] stack truncated"); break; }
 #endif
                 auto const& fr{frames.index_unchecked(i - 1uz)};
@@ -3296,6 +3311,26 @@ namespace uwvm2::runtime::lib
                 }
             }
             ::fast_io::io::perrln(u8log_output_ul);
+        }
+
+        inline void print_memtag_fault(::std::size_t memory_index, ::std::uint64_t pointer,
+            ::std::uint64_t granule, ::std::uint32_t pointer_tag, ::std::uint32_t allocation_tag) noexcept
+        {
+            namespace mt = ::uwvm2::extension::memtag;
+            auto const pc{mt::ansi_color_for_tag(static_cast<::std::uint8_t>(pointer_tag))};
+            auto const ac{mt::ansi_color_for_tag(static_cast<::std::uint8_t>(allocation_tag))};
+            using view = ::uwvm2::utils::container::u8string_view;
+            ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
+                u8"uwvm: ", ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_LT_RED),
+                u8"[fatal] ", ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
+                u8"Memory tag mismatch in memory ", memory_index, u8"; pointer ",
+                ::uwvm2::uwvm::utils::ansies::diagnostic_color(view{pc.bytes.data(),pc.size}),
+                u8"0x", ::fast_io::mnp::hex(pointer), u8" (tag 0x", ::fast_io::mnp::hex(pointer_tag), u8")",
+                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE), u8"; granule ",
+                ::uwvm2::uwvm::utils::ansies::diagnostic_color(view{ac.bytes.data(),ac.size}),
+                u8"0x", ::fast_io::mnp::hex(granule), u8" (tag 0x", ::fast_io::mnp::hex(allocation_tag), u8")",
+                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
         }
 
 #if UWVM_HAS_CPP_ATTRIBUTE(clang::disable_tail_calls)
@@ -3318,6 +3353,8 @@ namespace uwvm2::runtime::lib
                                 u8")\n",
                                 ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
         }
+
+#include "uwvm_runtime_crash_policy_impl.h"
 
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
         void debug_observe_actual_trap(trap_kind) noexcept;
@@ -3351,9 +3388,11 @@ namespace uwvm2::runtime::lib
                 case trap_kind::null_reference:
                 case trap_kind::array_out_of_bounds:
                 case trap_kind::gc_allocation_failure:
+                case trap_kind::memtag_violation:
                 case trap_kind::cast_failure: break;
                 default: return;
             }
+            apply_guest_crash_policy(k);
             ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
                 u8"uwvm: [error] managed Guest trap; execution stopped (",
                 ordinary_native ? ::uwvm2::utils::container::u8string_view{u8"LLVM: "} : ::uwvm2::utils::container::u8string_view{u8"interpreter: "}, trap_kind_name(k), u8")");
@@ -3364,7 +3403,7 @@ namespace uwvm2::runtime::lib
             if(ordinary_native) { dump_call_stack_for_trap(k); }
             // Preserve the FIRST exit code and all explicit pending-operation
             // waits. Never throw through the ordinary noexcept helper ABI.
-            ::uwvm2::utils::thread::process_exit::request_process_exit(126u);
+            ::uwvm2::utils::thread::process_exit::request_process_exit(::uwvm2::runtime::diagnostic::crash::exit_status());
         }
 #endif
 
@@ -3376,6 +3415,7 @@ namespace uwvm2::runtime::lib
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             if(!::std::is_constant_evaluated()) { finish_cli_guest_fault(k); }
 #endif
+            if(!::std::is_constant_evaluated()) { apply_guest_crash_policy(k); }
             // Keep termination behind a volatile function pointer and signal fence so compilers do not fold away diagnostic work
             // before noreturn termination.
             print_trap_fatal_message(k);
@@ -3384,7 +3424,18 @@ namespace uwvm2::runtime::lib
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
             if(!::std::is_constant_evaluated()) { debug_observe_actual_trap(k); }
 #endif
-
+            if(!::std::is_constant_evaluated()) { apply_guest_crash_policy(k,true); }
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            // A recognized Guest fault that cannot qualify managed unwinding
+            // still terminates with the product's Guest-fault status. It never
+            // becomes a native SIGILL or resumes the rejected instruction.
+            if(!::std::is_constant_evaluated() && get_runtime_execution_entry_depth()!=0u && crash_policy_guest_fault(k))
+                ::uwvm2::utils::thread::process_exit::request_process_exit(::uwvm2::runtime::diagnostic::crash::exit_status());
+#endif
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            if(!::std::is_constant_evaluated() && get_runtime_execution_entry_depth()!=0u)
+                ::std::_Exit(static_cast<int>(::uwvm2::runtime::diagnostic::crash::exit_status()));
+#endif
             using terminate_func_t = void (*)() noexcept;
             terminate_func_t volatile terminate_func{::fast_io::fast_terminate};
             terminate_func();
@@ -3549,11 +3600,11 @@ namespace uwvm2::runtime::lib
 
         inline constexpr void print_memory_out_of_bounds_trap(::uwvm2::object::memory::error::memory_error_t const& memerr) noexcept
         {
+            // Report numeric Wasm memory evidence before terminal handling.
+            ::uwvm2::object::memory::error::output_memory_error_line(memerr);
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             if(!::std::is_constant_evaluated()) { finish_cli_guest_fault(trap_kind::memory_out_of_bounds); }
 #endif
-            // Memory traps include structured memory-error details before the generic runtime trap headline and wasm call stack.
-            ::uwvm2::object::memory::error::output_memory_error_line(memerr);
             print_trap_fatal_message(trap_kind::memory_out_of_bounds);
             dump_call_stack_for_trap(trap_kind::memory_out_of_bounds);
         }
@@ -3575,7 +3626,64 @@ namespace uwvm2::runtime::lib
             ::uwvm2::object::memory::error::output_mmap_memory_error_line(memerr);
             print_trap_fatal_message(trap_kind::memory_out_of_bounds);
             dump_call_stack_for_trap(trap_kind::memory_out_of_bounds);
+# if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(__linux__)
+            // The signal bridge authenticated this as Wasm-owned memory.
+            // No native unwind, allocation, controller or retry in this frame.
+            if(!::std::is_constant_evaluated())
+            {
+                namespace crash=::uwvm2::runtime::diagnostic::crash;
+                crash::report(crash::category::execution,"memory access out of bounds",2u);
+                crash::pause_process();
+                ::uwvm2::runtime::lib::posix_abi::_exit_noexcept(static_cast<int>(crash::exit_status()));
+            }
+# endif
         }
+
+# if defined(__linux__) && defined(__aarch64__)
+        inline void print_hardware_memtag_signal_fault(
+            ::uwvm2::object::memory::signal::hardware_memtag_fault const& fault) noexcept
+        {
+            char output[512u]{};::std::size_t used{};
+            auto append=[&](char const* text) noexcept { while(*text && used!=sizeof(output)) { output[used++]=*text++; } };
+            auto hex=[&](::std::uint64_t value) noexcept
+            {
+                constexpr char digits[]{"0123456789abcdef"};append("0x");
+                for(unsigned shift{64u};shift!=0u && used!=sizeof(output);) {shift-=4u;output[used++]=digits[(value>>shift)&15u];}
+            };
+            auto color=[&](::std::uint8_t tag) noexcept
+            {
+                if(::uwvm2::uwvm::utils::ansies::put_color)
+                {
+                    auto const value{::uwvm2::extension::memtag::ansi_color_for_tag(tag)};
+                    for(::std::size_t i{};i!=value.size && used!=sizeof(output);++i) { output[used++]=static_cast<char>(value.bytes[i]); }
+                }
+            };
+            append("uwvm: [fatal] Synchronous hardware MTE violation in Wasm-owned memory (memory=");
+            hex(fault.memory_index);append(", offset=");hex(fault.offset);
+            append(", allocation_tag=");color(fault.allocation_tag);hex(fault.allocation_tag);
+            if(::uwvm2::uwvm::utils::ansies::put_color) { append("\033[0m"); }
+            append(", hardware_allocation_tag=");hex(fault.hardware_allocation_tag);
+            append(", pointer_tag=");
+            if(fault.pointer_tag_available)
+            {
+                auto const tag{static_cast<::std::uint8_t>((fault.raw_address>>56u)&15u)};
+                color(tag);hex(tag);if(::uwvm2::uwvm::utils::ansies::put_color) { append("\033[0m"); }
+            }
+            else { append("unavailable"); }
+            // This fixed terminal report is also used in sealed RELEASE.
+            // Never disclose a native PC; owned source attribution belongs to
+            // a separately authenticated debugger capture outside the handler.
+            append(").\n");
+            static_cast<void>(::fast_io::posix_write_nothrow(
+                ::fast_io::posix_io_observer{::fast_io::posix_stderr_number},output,used));
+            // No controller, collector, C++ exception, allocation or unsafe
+            // unwind from the POSIX signal frame. Access has already been blocked.
+            namespace crash=::uwvm2::runtime::diagnostic::crash;
+            crash::report(crash::category::memtag,"synchronous hardware memory tag mismatch",2u);
+            crash::pause_process();
+            ::uwvm2::runtime::lib::posix_abi::_exit_noexcept(static_cast<int>(crash::exit_status()));
+        }
+# endif
 
         inline constexpr void ensure_memory_signal_trap_bridge_initialized() noexcept
         {
@@ -3587,6 +3695,9 @@ namespace uwvm2::runtime::lib
             {
                 ::uwvm2::object::memory::signal::detail::set_mmap_memory_out_of_bounds_with_context_handler(
                     print_mmap_memory_out_of_bounds_trap);
+# if defined(__linux__) && defined(__aarch64__)
+                ::uwvm2::object::memory::signal::detail::hardware_memtag_fault_func=print_hardware_memtag_signal_fault;
+# endif
                 return true;
             }()};
             (void)installed;
@@ -3699,9 +3810,22 @@ namespace uwvm2::runtime::lib
                                 ::fast_io::mnp::os_c_str(::uwvm2::uwvm::utils::ansies::put_color ? UWVM_COLOR_U8_RST_ALL : u8""),
                                 u8"\n\n");
 
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            // The immutable source position and validation diagnostic were
+            // proved above. Invalid guest code is an admission error, including
+            // a deliberately disabled extension; it is not a host SIGILL.
+# if defined(__wasi__)
+            ::uwvm2::utils::thread::process_exit::request_process_exit(1u);
+# else
+            ::uwvm2::utils::thread::process_exit::request_process_exit(127u);
+# endif
+#else
             ::fast_io::fast_terminate();
+#endif
         }
 #endif
+
+#include "uwvm_runtime_host_memtag_fault.h"
 
         enum class valtype_kind : unsigned
         {
@@ -4919,6 +5043,12 @@ namespace uwvm2::runtime::lib
 #if (defined(__linux__) || defined(__APPLE__)) && !defined(_WIN32)
                 if(!native_stack_scope.ready()) [[unlikely]] { ::uwvm2::runtime::lib::native_stack::setup_failed(); }
 #endif
+                if(!::uwvm2::runtime::memtag::prepare_hardware_thread()) [[unlikely]]
+                {
+                    ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                        u8"uwvm: [fatal] Cannot establish synchronous hardware MTE on this execution thread.");
+                    ::std::_Exit(127);
+                }
 #if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
                 ensure_runtime_process_lifetime();
 #endif
@@ -4935,7 +5065,7 @@ namespace uwvm2::runtime::lib
                 auto& depth{get_runtime_execution_entry_depth()};
                 if(depth == 0uz)
                 {
-                    ::uwvm2::utils::control::management::seal_default_before_execution();
+                    ::uwvm2::utils::control::debug_permissions::seal_default_before_execution();
                     ::uwvm2::runtime::lib::guest_exit::clear();
                 }
 #if defined(UWVM_EXPERIMENTAL_MANAGED_NUMERIC_PAGE) && defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
@@ -5525,6 +5655,7 @@ namespace uwvm2::runtime::lib
                     ::uwvm2::uwvm::imported::wasi::wasip1::storage::default_wasip1_env,
                     wasip1_memory_for_runtime_module_id(caller_module_id)};
                 invoke_host_with_llvm_wasm_fp_control_policy(fp_control_policy, invoke_provider);
+                finish_host_memtag_fault<true>();
                 return;
             }
 
@@ -5535,11 +5666,13 @@ namespace uwvm2::runtime::lib
             if(is_current_wasip1_env_selected(wasip1_env)) [[likely]]
             {
                 invoke_host_with_llvm_wasm_fp_control_policy(fp_control_policy, invoke_provider);
+                finish_host_memtag_fault<true>();
                 return;
             }
 
             ::uwvm2::uwvm::imported::wasi::wasip1::storage::scoped_current_wasip1_env_t wasip1_env_guard{wasip1_env};
             invoke_host_with_llvm_wasm_fp_control_policy(fp_control_policy, invoke_provider);
+            finish_host_memtag_fault<true>();
         }
 
         inline constexpr void call_capi_with_wasip1_env(capi_function_t const& function,
@@ -5558,6 +5691,7 @@ namespace uwvm2::runtime::lib
                     ::uwvm2::uwvm::imported::wasi::wasip1::storage::default_wasip1_env,
                     wasip1_memory_for_runtime_module_id(caller_module_id)};
                 invoke_host_preserving_llvm_wasm_fp_environment([&]() noexcept { function.func_ptr(result_buffer, param_buffer); });
+                finish_host_memtag_fault<false>();
                 return;
             }
 
@@ -5575,10 +5709,12 @@ namespace uwvm2::runtime::lib
                     {
                         ::uwvm2::uwvm::imported::wasi::wasip1::storage::scoped_current_wasip1_target_t wasip1_target_guard{target_kind, target_module_name};
                         invoke_host_preserving_llvm_wasm_fp_environment([&]() noexcept { function.func_ptr(result_buffer, param_buffer); });
+                        finish_host_memtag_fault<false>();
                     }
                     else
                     {
                         invoke_host_preserving_llvm_wasm_fp_environment([&]() noexcept { function.func_ptr(result_buffer, param_buffer); });
+                        finish_host_memtag_fault<false>();
                     }
                 }};
 
@@ -5612,6 +5748,7 @@ namespace uwvm2::runtime::lib
 #endif
             invoke_host_with_llvm_wasm_fp_control_policy(fp_control_policy,
                 [&]() noexcept { module.call_func_index(function_index, result_buffer, param_buffer); });
+            finish_host_memtag_fault<true>();
         }
 
         inline constexpr void call_capi_with_wasip1_env(capi_function_t const& function,
@@ -5622,6 +5759,7 @@ namespace uwvm2::runtime::lib
         {
             preload_call_context_guard preload_guard{preload_module_memory_attribute, ::std::addressof(function), caller_module_id};
             invoke_host_preserving_llvm_wasm_fp_environment([&]() noexcept { function.func_ptr(result_buffer, param_buffer); });
+                finish_host_memtag_fault<false>();
         }
 #endif
 
@@ -5896,6 +6034,11 @@ namespace uwvm2::runtime::lib
             // Honor the preload policy preference, but fall back to copy when mmap metadata is unavailable for this memory backend.
             if(!rights.allow_access) [[unlikely]] { return {}; }
 
+            // A raw mmap view has no access width or tag proof. Tagged owners
+            // remain available through the checked copy API and original rights.
+            if(resolved.native_memory != nullptr && resolved.native_memory->memtag_shadow.enabled())
+            { return {::uwvm2::uwvm::wasm::type::uwvm_preload_memory_delivery_copy}; }
+
             if(rights.prefer_mmap && resolved.mmap_delivery_state != ::uwvm2::uwvm::wasm::type::uwvm_preload_memory_delivery_none)
             {
                 return {resolved.mmap_delivery_state};
@@ -6018,6 +6161,13 @@ namespace uwvm2::runtime::lib
 
             resolved_preload_memory_t resolved{};
             if(!try_build_preload_memory_descriptor(memory_index, nullptr, ::std::addressof(resolved), nullptr)) [[unlikely]] { return false; }
+            if(resolved.native_memory != nullptr && resolved.native_memory->memtag_shadow.enabled())
+            {
+                auto const checked{::uwvm2::runtime::memtag::copy_host_access<false>(
+                    *resolved.native_memory,offset,destination,size)};
+                ::uwvm2::runtime::memtag::record_host_fault(memory_index,offset,checked);
+                return static_cast<bool>(checked);
+            }
             if(size == 0uz) [[unlikely]]
             {
                 // A zero-byte operation still names a position in the selected
@@ -6075,6 +6225,13 @@ namespace uwvm2::runtime::lib
 
             resolved_preload_memory_t resolved{};
             if(!try_build_preload_memory_descriptor(memory_index, nullptr, ::std::addressof(resolved), nullptr)) [[unlikely]] { return false; }
+            if(resolved.native_memory != nullptr && resolved.native_memory->memtag_shadow.enabled())
+            {
+                auto const checked{::uwvm2::runtime::memtag::copy_host_access<true>(
+                    *resolved.native_memory,offset,const_cast<void*>(source),size)};
+                ::uwvm2::runtime::memtag::record_host_fault(memory_index,offset,checked);
+                return static_cast<bool>(checked);
+            }
             if(size == 0uz) [[unlikely]]
             {
                 // A zero-byte operation still names a position in the selected
@@ -7793,6 +7950,7 @@ namespace uwvm2::runtime::lib
 
             details::runtime_state_signature signature{};
             signature.kind = details::runtime_state_kind::full;
+            signature.memtag_execution_disabled = runtime_mode::runtime_disable_memtag;
             signature.runtime_compiler = static_cast<::std::uint_least32_t>(runtime_mode::global_runtime_compiler);
             signature.runtime_mode = static_cast<::std::uint_least32_t>(runtime_mode::global_runtime_mode);
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
@@ -9466,6 +9624,21 @@ namespace uwvm2::runtime::lib
 
                 auto module_pass_manager{pass_builder.buildPerModuleDefaultPipeline(pipeline_opt_level)};
                 module_pass_manager.run(module, module_analysis_manager);
+                // A current-size acquire can become unused after range and
+                // address simplification. Only our versioned stable-minimum
+                // bounds witness permits removing it: a grown-suffix access
+                // still consumes the size and retains its publication acquire.
+                if(::uwvm2::runtime::compiler::llvm_jit::memory_minimum_proof::discard_unused_bounds_reads(module) != 0uz)
+                {
+                    module_analysis_manager.invalidate(module, ::llvm::PreservedAnalyses::none());
+                    ::llvm::FunctionPassManager cleanup;
+                    cleanup.addPass(::llvm::InstCombinePass{});
+                    cleanup.addPass(::llvm::GVNPass{});
+                    cleanup.addPass(::llvm::SimplifyCFGPass{});
+                    ::llvm::ModulePassManager finish;
+                    finish.addPass(::llvm::createModuleToFunctionPassAdaptor(::std::move(cleanup)));
+                    finish.run(module, module_analysis_manager);
+                }
             }
 
             ::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details::legalize_llvm_jit_native_vectors(module);
@@ -9910,14 +10083,54 @@ namespace uwvm2::runtime::lib
                 ::uwvm2::utils::container::u8string_ref_uwvm output{::std::addressof(identity)};
                 policy.print_cache_identity_to(output);
                 ::uwvm2::runtime::llvm_jit_cache::details::append_cache_key_value(
-                    llvm_jit_cache_codegen_policy, u8"original-module-syntax-policy-v1", identity);
+                    llvm_jit_cache_codegen_policy, u8"original-module-syntax-policy-v2", identity);
             }
             else
             {
                 // Ordinary native callers without parsed source do not acquire
                 // a source-bound checkpoint identity by using a fallback key.
                 ::uwvm2::runtime::llvm_jit_cache::details::append_cache_key_value(
-                    llvm_jit_cache_codegen_policy, u8"original-module-syntax-policy-v1", u8"unavailable");
+                    llvm_jit_cache_codegen_policy, u8"original-module-syntax-policy-v2", u8"unavailable");
+            }
+            // Keep an unchecked compilation out of a tag-enforcing cache hit,
+            // even if a particular module currently has no tag instructions.
+            ::uwvm2::runtime::llvm_jit_cache::details::append_cache_key_value(
+                llvm_jit_cache_codegen_policy, u8"memtag-execution-policy-v1",
+                ::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag ?
+                    ::uwvm2::utils::container::u8string_view{u8"disabled"} :
+                    ::uwvm2::utils::container::u8string_view{u8"enabled"});
+            // Include each resolved backing's immutable tag mode, not process
+            // addresses or module-local assumptions about an imported memory.
+            auto const tag_imports{runtime_module->imported_memory_vec_storage.size()};
+            auto const tag_locals{runtime_module->local_defined_memory_vec_storage.size()};
+            if(tag_locals > SIZE_MAX - tag_imports) { return false; }
+            auto const tag_count{tag_imports + tag_locals};
+            for(::std::size_t memory_index{}; memory_index != tag_count; ++memory_index)
+            {
+                if(memory_index > (::std::numeric_limits<::std::uint32_t>::max)()) { return false; }
+                auto const info{::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details::
+                    resolve_runtime_memory_access_info(*runtime_module,static_cast<::std::uint32_t>(memory_index))};
+                ::uwvm2::utils::container::u8string identity{};
+                if(info.memory_p == nullptr)
+                { identity = ::uwvm2::utils::container::u8concat_uwvm(memory_index,u8":external-provider"); }
+                else
+                {
+                    auto const& tags{info.memory_p->memtag_shadow};
+                    identity = ::uwvm2::utils::container::u8concat_uwvm(memory_index,u8":",
+                        tags.enabled(),u8":",static_cast<unsigned>(tags.width()),u8":",
+                        tags.shared(),u8":",tags.maximum_memory_bytes(),u8":",tags.hardware_selected());
+                    if(tags.enabled()&&tags.shared())
+                    {
+                        // Old raw shared accesses cannot reuse an enforcing
+                        // reader-data/writer-tag helper ABI object. Ordinary
+                        // untagged/nonshared cache identities stay unchanged.
+                        ::uwvm2::runtime::llvm_jit_cache::details::append_cache_key_value(
+                            llvm_jit_cache_codegen_policy,u8"shared-memtag-lifetime-abi-v1",
+                            ::uwvm2::utils::container::u8concat_uwvm(memory_index,u8":reader-data-writer-tag"));
+                    }
+                }
+                ::uwvm2::runtime::llvm_jit_cache::details::append_cache_key_value(
+                    llvm_jit_cache_codegen_policy,u8"memory-memtag-policy-v3",identity);
             }
             append_runtime_llvm_jit_native_target_codegen_policy(llvm_jit_cache_codegen_policy, host_cpu_name, host_tune_cpu_name);
             auto llvm_jit_cache_context{::uwvm2::runtime::llvm_jit_cache::default_cache_context(
@@ -10837,6 +11050,31 @@ namespace uwvm2::runtime::lib
         UWVM2_RUNTIME_INTERPRETER_CALLBACK_FUNC_ATTR inline constexpr void trap_cast_failure() noexcept
         { trap_fatal(trap_kind::cast_failure); }
 
+        UWVM2_RUNTIME_INTERPRETER_CALLBACK_FUNC_ATTR inline void trap_memtag(::std::size_t memory_index,
+            ::std::uint64_t pointer, ::std::uint64_t granule, ::std::uint32_t pointer_tag,
+            ::std::uint32_t allocation_tag) noexcept
+        {
+            print_memtag_fault(memory_index,pointer,granule,pointer_tag,allocation_tag);
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            namespace crash=::uwvm2::runtime::diagnostic::crash;
+            crash::memory_detail const evidence{memory_index,pointer,granule,pointer_tag,allocation_tag};
+            crash::report(crash::category::memtag,"memory tag mismatch",1u,UINT64_MAX,UINT64_MAX,UINT64_MAX,&evidence);
+#endif
+            trap_fatal(trap_kind::memtag_violation);
+        }
+
+        UWVM2_RUNTIME_INTERPRETER_CALLBACK_FUNC_ATTR inline void trap_memtag_operation(
+            unsigned bridge_error, unsigned operation_error) noexcept
+        {
+            using view = ::uwvm2::utils::container::u8string_view;
+            auto reason{bridge_error == static_cast<unsigned>(::uwvm2::runtime::memtag::bridge_error::entropy_unavailable) ? view{u8"host tag entropy is unavailable"} :
+                bridge_error == static_cast<unsigned>(::uwvm2::runtime::memtag::bridge_error::invalid_owner) ? view{u8"memory has no matching tag owner"} :
+                operation_error == static_cast<unsigned>(::uwvm2::extension::memtag::operation_error::undefined_placeholder) ? view{u8"memtag.add has no defined execution semantics"} :
+                view{u8"invalid internal memtag operation"}};
+            ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,u8"uwvm: [fatal] Memtag operation failed: ",reason,u8".");
+            trap_fatal(trap_kind::runtime_invariant_failure);
+        }
+
         UWVM2_RUNTIME_INTERPRETER_CALLBACK_FUNC_ATTR inline constexpr void trap_table_out_of_bounds() noexcept
         { trap_fatal(trap_kind::table_out_of_bounds); }
 
@@ -11500,6 +11738,8 @@ namespace uwvm2::runtime::lib
                 ::uwvm2::runtime::compiler::uwvm_int::optable::trap_unaligned_atomic_func = trap_unaligned_atomic;
                 ::uwvm2::runtime::compiler::uwvm_int::optable::trap_atomic_wait_func = trap_atomic_wait;
                 ::uwvm2::runtime::compiler::uwvm_int::optable::trap_memory_out_of_bounds_func = trap_memory_out_of_bounds;
+                ::uwvm2::runtime::compiler::uwvm_int::optable::trap_memtag_func = trap_memtag;
+                ::uwvm2::runtime::compiler::uwvm_int::optable::trap_memtag_operation_func = trap_memtag_operation;
 
                 g_runtime.bridges_initialized.store(true, ::std::memory_order_release);
             }
@@ -11924,6 +12164,7 @@ namespace uwvm2::runtime::lib
 # if defined(UWVM_RUNTIME_UWVM_INTERPRETER)
                 ::uwvm2::runtime::compiler::uwvm_int::optable::compile_option opt{};
                 opt.curr_wasm_id = module_id;
+                opt.execute_memtag = !::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag;
 # endif
                 // Resolve split sizing through the selected backend. A combined binary must make the same scheduling decision as the
                 // corresponding pure-backend binary rather than selecting an adapter at preprocessing time.
@@ -12105,6 +12346,7 @@ namespace uwvm2::runtime::lib
                         }
                         ::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::compile_option llvm_jit_opt{};
                         llvm_jit_opt.curr_wasm_id = module_id;
+                        llvm_jit_opt.execute_memtag = !::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag;
                         llvm_jit_opt.compilation_mode = ::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::llvm_jit_compilation_mode::full;
 # if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
                         llvm_jit_opt.emit_debug_safe_points = static_cast<bool>(g_runtime.debug_pause_control);
@@ -13196,6 +13438,7 @@ namespace uwvm2::runtime::lib
             case llvm_jit_trap_kind::array_out_of_bounds: trap_fatal(trap_kind::array_out_of_bounds); return;
             case llvm_jit_trap_kind::gc_allocation_failure: trap_fatal(trap_kind::gc_allocation_failure); return;
             case llvm_jit_trap_kind::cast_failure: trap_fatal(trap_kind::cast_failure); return;
+            case llvm_jit_trap_kind::memtag_violation: trap_fatal(trap_kind::memtag_violation); return;
             case llvm_jit_trap_kind::table_out_of_bounds:
             {
                 trap_fatal(trap_kind::table_out_of_bounds);
@@ -13212,6 +13455,25 @@ namespace uwvm2::runtime::lib
                 return;
             }
         }
+    }
+
+    extern "C++" UWVM_NOINLINE void llvm_jit_memtag_trap(::std::size_t memory_index,
+        ::std::uint64_t pointer, ::std::uint64_t granule, ::std::uint32_t pointer_tag,
+        ::std::uint32_t allocation_tag) noexcept
+    {
+# if UWVM_HAS_BUILTIN(__builtin_return_address)
+        auto const return_address{reinterpret_cast<::std::uintptr_t>(__builtin_return_address(0))};
+# else
+        constexpr ::std::uintptr_t return_address{};
+# endif
+        store_llvm_jit_trap_context(llvm_jit_trap_kind::memtag_violation,return_address);
+        print_memtag_fault(memory_index,pointer,granule,pointer_tag,allocation_tag);
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            namespace crash=::uwvm2::runtime::diagnostic::crash;
+            crash::memory_detail const evidence{memory_index,pointer,granule,pointer_tag,allocation_tag};
+            crash::report(crash::category::memtag,"memory tag mismatch",2u,UINT64_MAX,UINT64_MAX,UINT64_MAX,&evidence);
+#endif
+        trap_fatal(trap_kind::memtag_violation);
     }
 
     extern "C++"
@@ -14130,7 +14392,7 @@ namespace uwvm2::runtime::lib
 
     extern "C++" llvm_jit_debug_configure_result llvm_jit_configure_debug_activation_storage_host_api(::std::size_t bytes) noexcept
     {
-        if(!::uwvm2::utils::control::management::debug_allowed()) { return llvm_jit_debug_configure_result::invalid_context; }
+        if(!::uwvm2::utils::control::debug_permissions::inspection_allowed()) { return llvm_jit_debug_configure_result::invalid_context; }
 # if defined(UWVM_RUNTIME_LLVM_JIT)
         if(bytes < details::debug_activation::ledger::inline_storage_bytes ||
            !details::runtime_execution_entry_reset_allowed(get_runtime_execution_entry_depth()) ||
@@ -14243,13 +14505,16 @@ namespace uwvm2::runtime::lib
         ::std::shared_ptr<::uwvm2::utils::thread::cooperative_pause_domain> control, llvm_jit_debug_observer observer,
         llvm_jit_debug_safe_point_granularity granularity) noexcept
     {
-        if(!::uwvm2::utils::control::management::debug_allowed()) { return llvm_jit_debug_configure_result::invalid_context; }
+        if(!::uwvm2::utils::control::debug_permissions::diagnostics_allowed()) { return llvm_jit_debug_configure_result::invalid_context; }
         return configure_native_guest_control(::std::move(control),::std::move(observer),granularity);
     }
     static llvm_jit_debug_configure_result configure_actual_checkpoint_compilation_profile(
         ::uwvm2::runtime::checkpoint::compilation_profile::owner profile) noexcept
     {
-        if(!::uwvm2::utils::control::management::debug_allowed()) { return llvm_jit_debug_configure_result::invalid_context; }
+        if(!::uwvm2::utils::control::debug_permissions::diagnostics_allowed() ||
+           (!::uwvm2::utils::control::debug_permissions::full_allowed() && profile &&
+            profile->purpose() == ::uwvm2::runtime::checkpoint::compilation_purpose::resumable))
+        { return llvm_jit_debug_configure_result::invalid_context; }
 # if defined(UWVM_RUNTIME_LLVM_JIT)
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
         if(mode::global_runtime_mode != mode::runtime_mode_t::full_compile ||
@@ -14431,7 +14696,7 @@ namespace uwvm2::runtime::lib
     }
     extern "C++" bool llvm_jit_enable_debug_native_step_host_api() noexcept
     {
-        if(!::uwvm2::utils::control::management::debug_allowed()) { return false; }
+        if(!::uwvm2::utils::control::debug_permissions::full_allowed()) { return false; }
 # if defined(UWVM_RUNTIME_LLVM_JIT) && \
     UWVM2_RUNTIME_NATIVE_STEP_PLATFORM
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
@@ -14632,7 +14897,7 @@ namespace uwvm2::runtime::lib
         ::std::size_t body_size, bool production_update,
         ::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details::immutable_globals::owner global_binding = {}) noexcept
     {
-        if(!production_update && !::uwvm2::utils::control::management::debug_allowed())
+        if(!production_update && !::uwvm2::utils::control::debug_permissions::full_allowed())
         { return {llvm_jit_debug_replace_status::unsupported_mode, 0u, nullptr}; }
         (void)production_update; (void)global_binding;
         // A replacement body has no complete signed-module manifest. Native
@@ -14754,6 +15019,7 @@ namespace uwvm2::runtime::lib
 
             translator::compile_option option{};
             option.curr_wasm_id = transaction->module_id;
+            option.execute_memtag = !::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag;
             option.compilation_mode = translator::llvm_jit_compilation_mode::full;
             option.emit_debug_safe_points = true;
             option.debug_compiled_function_generation = static_cast<::std::uint64_t>(generation + 1u);
@@ -14804,7 +15070,8 @@ namespace uwvm2::runtime::lib
                     option.debug_full_patchable_typed_target_count,
                     ::std::addressof(transaction->debug_safe_point_bits),
                     option.emit_precise_gc_root_frames, nullptr, option.debug_compiled_function_generation,
-                    option.checkpoint_profile ? ::std::addressof(checkpoint_work) : nullptr);
+                    option.checkpoint_profile ? ::std::addressof(checkpoint_work) : nullptr,
+                     nullptr, nullptr, option.execute_memtag);
                 if(option.checkpoint_profile)
                 {
                     // Same fused Core3 validation/IR emission just completed;
@@ -15099,7 +15366,7 @@ namespace uwvm2::runtime::lib
     extern "C++" llvm_jit_debug_replace_result llvm_jit_debug_commit_function_replacement_host_api(
         llvm_jit_debug_replace_transaction* transaction) noexcept
     {
-        if(!::uwvm2::utils::control::management::debug_allowed())
+        if(!::uwvm2::utils::control::debug_permissions::full_allowed())
         { return {llvm_jit_debug_replace_status::unsupported_mode, 0u}; }
         // Recheck at publication too: a transaction prepared before secure
         // configuration cannot become an unsigned executable body afterwards.
@@ -15230,7 +15497,7 @@ namespace uwvm2::runtime::lib
         // under the pause-domain mutex. The controller drains the local Host
         // sessions after this bounded commit, while the Guest stays paused.
         // DEV contracts authorize mutable guest code; never revive a retired authority.
-        if(!::uwvm2::utils::control::management::debug_allowed())
+        if(!::uwvm2::utils::control::debug_permissions::full_allowed())
         { ::std::atomic_ref<bool>{rec.ros_authority_retired}.store(true, ::std::memory_order_release); }
 #endif
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS) && \
@@ -15331,7 +15598,7 @@ namespace uwvm2::runtime::lib
     extern "C++" bool llvm_jit_debug_read_memory_host_api(::std::uint_least64_t module_index,
         ::std::uint_least32_t memory_index, ::std::uint_least64_t offset, void* destination, ::std::size_t size) noexcept
     {
-        if(!::uwvm2::utils::control::management::debug_allowed()) { return false; }
+        if(!::uwvm2::utils::control::debug_permissions::inspection_allowed()) { return false; }
 # if defined(UWVM_RUNTIME_LLVM_JIT)
         // The sole management thread calls this only after controller::snapshot
         // confirms a complete cooperative stop. Runtime reset/publication and
@@ -15357,8 +15624,8 @@ namespace uwvm2::runtime::lib
                     if(!validate_preload_copy_range(length, offset, size, host_offset)) { return false; }
                     // [begin, begin + length): host_offset + size <= length was
                     // proven above. This is the only pointer advance for the copy.
-                    ::std::memcpy(destination, begin + host_offset, size);
-                    return true;
+                    return ::uwvm2::extension::memtag::copy_debug_memory(
+                        resolved.native_memory->memtag_shadow,{begin,length},host_offset,destination,size);
                 });
         }
         if(resolved.kind == resolved_preload_memory_t::target_kind::local_imported)
@@ -15374,6 +15641,43 @@ namespace uwvm2::runtime::lib
 # endif
         return false;
     }
+    extern "C++" ::uwvm2::extension::memtag::debug_tag_view llvm_jit_debug_read_memory_tags_host_api(
+        ::std::uint_least64_t module_index, ::std::uint_least32_t memory_index,
+        ::std::uint_least64_t offset, ::std::size_t bytes, ::std::uint8_t* destination,
+        ::std::size_t capacity) noexcept
+    {
+        namespace tags=::uwvm2::extension::memtag;
+        if(!::uwvm2::utils::control::debug_permissions::inspection_allowed()) { return {}; }
+# if defined(UWVM_RUNTIME_LLVM_JIT)
+        if(!g_runtime.debug_pause_control || g_runtime.debug_pause_control->is_closed() ||
+           !g_runtime.compiled_all.load(::std::memory_order_acquire) ||
+           (capacity!=0u && destination==nullptr) || module_index>=g_runtime.modules.size()) { return {}; }
+        auto const* module{g_runtime.modules.index_unchecked(static_cast<::std::size_t>(module_index)).runtime_module};
+        if(module==nullptr) { return {}; }
+        resolved_preload_memory_t resolved{};
+        if(!resolve_preload_memory(*module,memory_index,resolved)) { return {.status=tags::debug_tag_status::invalid_range}; }
+        if(resolved.kind!=resolved_preload_memory_t::target_kind::native_defined)
+        {
+            if(offset>resolved.byte_length || bytes>resolved.byte_length-offset)
+            { return {.status=tags::debug_tag_status::invalid_range}; }
+            return {.status=tags::debug_tag_status::unsupported_memory};
+        }
+        if(resolved.native_memory==nullptr) { return {}; }
+        tags::debug_tag_view result{};
+        auto const copied{with_native_preload_copy_access(*resolved.native_memory,
+            [&](::std::byte*, ::std::size_t length) noexcept
+            {
+                result=tags::copy_debug_tags(resolved.native_memory->memtag_shadow,length,offset,bytes,
+                    {destination,capacity});
+                return true;
+            })};
+        return copied ? result : tags::debug_tag_view{};
+# else
+        (void)module_index;(void)memory_index;(void)offset;(void)bytes;(void)destination;(void)capacity;
+        return {};
+# endif
+    }
+
     static bool prepare_native_guest_control(bool require_debug_domain = true) noexcept
     {
 # if defined(UWVM_RUNTIME_LLVM_JIT)
@@ -15420,7 +15724,7 @@ namespace uwvm2::runtime::lib
     }
     extern "C++" bool llvm_jit_prepare_debug_host_api() noexcept
     {
-        if(!::uwvm2::utils::control::management::debug_allowed()) { return false; }
+        if(!::uwvm2::utils::control::debug_permissions::diagnostics_allowed()) { return false; }
         return prepare_native_guest_control();
     }
     extern "C++" bool runtime_prepare_guest_fault_containment_host_api() noexcept
@@ -15442,7 +15746,7 @@ namespace uwvm2::runtime::lib
         {
             try
             {
-                auto domain = ::std::make_shared<::uwvm2::utils::thread::cooperative_pause_domain>(256u);
+                auto domain = ::std::make_shared<::uwvm2::utils::thread::cooperative_pause_domain>();
                 if(configure_native_guest_control(::std::move(domain), {}, llvm_jit_debug_safe_point_granularity::entry_loop, true) !=
                     llvm_jit_debug_configure_result::ok) { return false; }
                 return prepare_native_guest_control();
@@ -15469,7 +15773,7 @@ namespace uwvm2::runtime::lib
     extern "C++" llvm_jit_debug_safe_point_view llvm_jit_debug_safe_points_host_api(
         ::std::uint_least64_t module_index, ::std::uint_least64_t function_index) noexcept
     {
-        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
+        if(!::uwvm2::utils::control::debug_permissions::inspection_allowed()) { return {}; }
 # if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
         if(mode::global_runtime_mode != mode::runtime_mode_t::full_compile ||
@@ -17522,6 +17826,35 @@ namespace uwvm2::runtime::lib
 #endif
     }
 
+    extern "C++" bool builtin_observed_caller_identity_host_api(host_observer_caller_identity& out) noexcept
+    {
+        out = {};
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+        // These builds publish a private context for every builtin import. A
+        // preload C API cannot be attributed as an ordinary builtin Wasm call.
+        auto const& context{get_preload_call_context()};
+        if(context.capi_function != nullptr) { return false; }
+#if UWVM2_HAS_THREADED_PROFILE_HOST_API
+        // A shared child has separate admission/ownership. Never attribute its
+        // call using the outer runtime thread's context.
+        if(threaded_profile::has_active_host_call()) { return false; }
+#endif
+        if(get_runtime_execution_entry_depth() == 0uz) { return false; }
+        auto const module_id{context.module_id};
+        if(module_id >= g_runtime.modules.size()) { return false; }
+        auto const& module{g_runtime.modules.index_unchecked(module_id)};
+        if(module.runtime_module == nullptr) { return false; }
+        auto const entry{::uwvm2::uwvm::wasm::storage::all_module.find(module.module_name)};
+        if(entry == ::uwvm2::uwvm::wasm::storage::all_module.end()) { return false; }
+        using module_type = ::uwvm2::uwvm::wasm::type::module_type_t;
+        if(entry->second.type != module_type::exec_wasm && entry->second.type != module_type::preloaded_wasm) { return false; }
+        out = {module.runtime_module, current_runtime_generation(), module.module_name};
+        return true;
+#else
+        return false;
+#endif
+    }
+
     extern "C++" bool ros_observed_caller_identity_host_api(ros_caller_identity& out) noexcept
     {
         out = {};
@@ -17634,6 +17967,36 @@ namespace uwvm2::runtime::lib
         return preload_memory_descriptor_at_impl(descriptor_index, out);
     }
 
+    extern "C++" [[nodiscard]] bool preload_memory_normalize_range_host_api(
+        ::std::size_t memory_index, ::std::uint_least64_t offset, ::std::size_t size,
+        ::std::uint64_t& normalized) noexcept
+    {
+        normalized=0u;
+#if UWVM2_HAS_THREADED_PROFILE_HOST_API
+        if(threaded_profile::has_active_host_call())
+        { return threaded_profile::memory_normalize_range(memory_index,offset,size,normalized); }
+#endif
+        resolved_preload_memory_t resolved{};
+        if(!try_build_preload_memory_descriptor(memory_index,nullptr,::std::addressof(resolved),nullptr))
+        { return false; }
+        if(resolved.native_memory != nullptr && resolved.native_memory->memtag_shadow.enabled())
+        {
+            auto const checked{::uwvm2::runtime::memtag::check_host_access(*resolved.native_memory,offset,size)};
+            ::uwvm2::runtime::memtag::record_host_fault(memory_index,offset,checked);
+            if(!checked) { return false; }
+            normalized=checked.address;return true;
+        }
+        ::std::size_t checked{};
+        if(!validate_preload_copy_range(resolved.byte_length,offset,size,checked)) { return false; }
+        normalized=checked;return true;
+    }
+    extern "C++" [[nodiscard]] bool preload_memory_range_host_api(
+        ::std::size_t memory_index, ::std::uint_least64_t offset, ::std::size_t size) noexcept
+    {
+        ::std::uint64_t normalized{};
+        return preload_memory_normalize_range_host_api(memory_index,offset,size,normalized);
+    }
+
     extern "C++" [[nodiscard]] bool
         preload_memory_read_host_api(::std::size_t memory_index, ::std::uint_least64_t offset, void* destination, ::std::size_t size) noexcept
     {
@@ -17674,6 +18037,7 @@ namespace uwvm2::runtime::lib
 #include "uwvm_runtime_checkpoint_cold_resource_api.h"
 #include "uwvm_runtime_debug_source_memory_transaction.h"
 #include "uwvm_runtime_debug_source_caller_frame.h"
+#include "uwvm_runtime_crash_dump_impl.h"
 #include "uwvm_runtime_wasip1_debug_api.h"
 #include "uwvm_runtime_wasip1_environment_capsule_api.h"
 #include "uwvm_runtime_debug_wasm_state_api.h"

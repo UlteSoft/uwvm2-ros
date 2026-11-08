@@ -29,7 +29,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_frames
         dwarf::scope_kind kind{};
         ::std::string name{};
     };
-    struct limits { dwarf::scope_path_limits path{}; ::std::size_t max_string_bytes{65536u}; };
+    struct limits { dwarf::scope_path_limits path{}; ::std::size_t max_string_bytes{(::std::numeric_limits<::std::size_t>::max)()}; };
     // Frame 0 is innermost concrete inline instance, then enclosing inline
     // instances, then THIS physical function. Callers are deliberately absent:
     // an unwind label alone cannot authenticate that activation's local values.
@@ -128,7 +128,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_frame_variables
     struct limits
     {
         frames::limits frame_limits{};
-        ::std::size_t max_variables{65536u}, max_types{65536u}, max_string_bytes{1024u * 1024u}, max_name_bytes{4096u};
+        ::std::size_t max_variables{(::std::numeric_limits<::std::size_t>::max)()}, max_types{(::std::numeric_limits<::std::size_t>::max)()}, max_string_bytes{(::std::numeric_limits<::std::size_t>::max)()}, max_name_bytes{(::std::numeric_limits<::std::size_t>::max)()};
     };
     // A selected inline frame sees its own declarations and currently active
     // lexical descendants; nested INLINE frames have their own variables and

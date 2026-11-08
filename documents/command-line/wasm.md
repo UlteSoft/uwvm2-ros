@@ -167,28 +167,19 @@ Behavior:
 - Registers preload-DL C API functions for the loaded entry.
 - Repeating the option accumulates native preload modules.
 
-Path notes:
+Security and verification:
 
-- Dynamic libraries are loaded lazily by the platform loader path.
-- On Windows NT, `::NT::` is detected and the `nt-path` warning may be emitted, but the loader then terminates fatally because loading DLLs from NT paths is explicitly unsupported.
+- Native drivers execute with host process authority. They are trusted host extensions.
+- Registration remains available with secondary signature verification disabled by default.
+- `--wasm-driver-verify <trusted-signer.pem>` enables secondary verification for every registered DL, regardless of option order.
+- The accepted envelope is the Linux `scripts/sign-file` appended CMS format. OpenSSL verifies the complete ELF payload against the host-pinned signer before constructors run.
+- Verification snapshots and seals the signed input, then verifies and loads an immutable payload inode. The inode remains retained until after `dlclose`; a path replacement cannot substitute the verified bytes.
+- Full PKI, revocation, provenance, anti-rollback, dependency closure and dynamic-loader environment policy belong to external deployment. An embedded certificate is never a new trust anchor.
+- Verification loads the sealed payload through `/proc/self/fd`. Dependencies must already be resolvable through the approved host loader environment; `$ORIGIN` is not the original source directory in this mode.
+- ROS has no weak-symbol provider fallback or weak-provider build option. Legacy ELF weak registrations belonged to upstream emergency/platform integration and cannot silently add native providers to the ROS product.
+- Native-driver warning classes remain independently configurable.
 
-Security notes:
-
-- Native dynamic libraries execute host code. Treat them as trusted host extensions, not sandboxed guest code.
-- `untrusted-dl` and `dl` warning classes are controlled by the logging commands when compiled.
-
-## `--wasm-list-weak-symbol-module`
-
-This is an immediate inspection command available with `UWVM_SUPPORT_WEAK_SYMBOL`.
-
-Behavior:
-
-- Loads weak-symbol modules.
-- Prints registered module names.
-- Exits instead of continuing to normal execution.
-- Load failures are fatal for this command path.
-
-Use it to inspect weak-symbol registration in the current binary/runtime environment.
+See [trusted driver verification](../security/trusted-drivers.md).
 
 ## `--wasm-reset-import`
 
@@ -207,7 +198,7 @@ Behavior:
 - `<new-import-module>` and `<new-import-extern>` are the effective import module/name pair used by runtime initialization and dependency checks.
 - The parser-owned Wasm import section is not mutated.
 - The runtime initializer creates runtime-owned import descriptors for matching imports and points runtime import records at those descriptors.
-- Export names are not rewritten. This option does not rename Wasm exports, preload-DL exports, or weak-symbol plugin exports.
+- Export names are not rewritten. This option does not rename Wasm exports, preload-DL exports.
 - To expose a new export-shaped interface, add an explicit bridge/adaptor module instead of renaming an existing export.
 - The target `<module>` must resolve to a runtime-supported Wasm file module.
 - Each configured rule must match at least one import in the selected module; otherwise runtime initialization terminates fatally.

@@ -136,32 +136,52 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_map_v3
                 }
                 out=text.substr(begin,at-begin);return true;
             }
-            bool skip(unsigned depth=0u)
+            bool skip()
             {
-                if(depth>=32u) { return false; }space();if(at==text.size()) { return false; }
-                if(text[at]=='"') { ::fast_io::string ignored{};return string(ignored,16u*1024u*1024u); }
-                if(text[at]=='[' || text[at]=='{')
+                // Parse unknown JSON values with an input-sized explicit stack.
+                // Nesting cannot exhaust the native call stack, and every loop
+                // consumes an actual token or retires one owned stack entry.
+                ::std::vector<char> ends{};
+                for(;;)
                 {
-                    bool const object{text[at++]=='{'};char const end{object?'}':']'};
-                    if(take(end)) { return true; }
-                    do
+                    space(); if(at==text.size()) { return false; }
+                    if(text[at]=='[' || text[at]=='{')
                     {
-                        if(object) { ::fast_io::string key{};if(!string(key,4096u) || !take(':')) { return false; } }
-                        if(!skip(depth+1u)) { return false; }
-                        if(take(end)) { return true; }
-                    }while(take(','));
-                    return false;
+                        bool const object{text[at++]=='{'}; char const end{object?'}':']'};
+                        if(!take(end))
+                        {
+                            ends.push_back(end);
+                            if(object)
+                            { ::fast_io::string key{}; if(!string(key,text.size()) || !take(':')) { return false; } }
+                            continue;
+                        }
+                    }
+                    else if(text[at]=='"')
+                    { ::fast_io::string ignored{}; if(!string(ignored,text.size())) { return false; } }
+                    else
+                    {
+                        bool literal{};
+                        for(auto value:{::std::string_view{"true"},::std::string_view{"false"},::std::string_view{"null"}})
+                        { if(text.substr(at).starts_with(value)) { at+=value.size();literal=true;break; } }
+                        if(!literal) { ::std::string_view number_text{};if(!number(number_text)) { return false; } }
+                    }
+                    for(;;)
+                    {
+                        if(ends.empty()) { return true; }
+                        if(take(ends.back())) { ends.pop_back(); continue; }
+                        if(!take(',')) { return false; }
+                        if(ends.back()=='}')
+                        { ::fast_io::string key{};if(!string(key,text.size()) || !take(':')) { return false; } }
+                        break;
+                    }
                 }
-                for(auto literal:{::std::string_view{"true"},::std::string_view{"false"},::std::string_view{"null"}})
-                { if(text.substr(at).starts_with(literal)) { at+=literal.size();return true; } }
-                ::std::string_view value{};return number(value);
             }
             bool strings(::std::vector<::fast_io::string>& out,::std::size_t& total)
             {
                 if(!take('[')) { return false; }if(take(']')) { return true; }
                 do
                 {
-                    ::fast_io::string entry{};if(out.size()==65536u || !string(entry,4096u) || entry.size()>8u*1024u*1024u-total) { return false; }
+                    ::fast_io::string entry{};if(!string(entry,text.size()) || entry.size()>(::std::numeric_limits<::std::size_t>::max)()-total) { return false; }
                     total+=entry.size();out.push_back(::std::move(entry));
                     if(take(']')) { return true; }
                 }while(take(','));
@@ -205,21 +225,20 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_map_v3
     inline error parse(::std::string_view text,::std::uint64_t code_file_begin,
         ::std::uint64_t code_size,::std::uint64_t file_size,image& output)
     {
-        if(text.size()>16u*1024u*1024u) { return error::limit_exceeded; }
         if(code_file_begin>file_size || code_size>file_size-code_file_begin) { return error::malformed; }
         image candidate{};::fast_io::string mappings{};::std::vector<::fast_io::string> names{},keys{};
         detail::json_reader input{text};bool version{},sources{},mapped{};::std::size_t total{};
         if(!input.take('{') || input.take('}')) { return error::malformed; }
         do
         {
-            ::fast_io::string key{};if(keys.size()==128u || !input.string(key,4096u) || !input.take(':')) { return error::malformed; }
+            ::fast_io::string key{};if(!input.string(key,text.size()) || !input.take(':')) { return error::malformed; }
             for(auto const& previous:keys) { if(view(previous)==view(key)) { return error::malformed; } }
             auto const field{view(key)};
             if(field=="version") { ::std::string_view number{};if(!input.number(number) || number!="3") { return error::unsupported; }version=true; }
             else if(field=="sources") { if(!input.strings(candidate.sources,total)) { return error::malformed; }sources=true; }
             else if(field=="names") { if(!input.strings(names,total)) { return error::malformed; } }
-            else if(field=="sourceRoot") { if(!input.string(candidate.source_root,4096u)) { return error::malformed; } }
-            else if(field=="mappings") { if(!input.string(mappings,16u*1024u*1024u)) { return error::malformed; }mapped=true; }
+            else if(field=="sourceRoot") { if(!input.string(candidate.source_root,text.size())) { return error::malformed; } }
+            else if(field=="mappings") { if(!input.string(mappings,text.size())) { return error::malformed; }mapped=true; }
             else if(field=="sections") { return error::unsupported; }
             else if(!input.skip()) { return error::malformed; }
             keys.push_back(::std::move(key));
@@ -230,7 +249,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_map_v3
         for(auto const& path:candidate.sources)
         { if(path.empty()) { return error::malformed; }for(unsigned char c:view(path)) { if(c<32u || c==127u) { return error::malformed; } } }
         for(unsigned char c:view(candidate.source_root)) { if(c<32u || c==127u) { return error::malformed; } }
-        auto const encoded{view(mappings)};::std::size_t at{},segments{};
+        auto const encoded{view(mappings)};::std::size_t at{};
         ::std::int64_t generated{},source{},line{},column{},name{};
         bool pending{};row previous{};
         auto const close{[&](::std::uint64_t end)
@@ -244,7 +263,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_map_v3
         }};
         while(at<encoded.size())
         {
-            if(++segments>1024u*1024u) { return error::limit_exceeded; }
             ::std::int64_t values[5]{};unsigned count{};
             do
             { if(count==5u || !detail::vlq(encoded,at,values[count++])) { return error::malformed; } }

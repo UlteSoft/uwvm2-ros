@@ -97,7 +97,36 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
 #else
     inline
 #endif
-    ::uwvm2::utils::cmdline::parameter_return_type management_profile_callback(
+    ::uwvm2::utils::cmdline::parameter_return_type debug_crash_callback(
+        ::uwvm2::utils::cmdline::parameter_parsing_results*,
+        ::uwvm2::utils::cmdline::parameter_parsing_results* current,
+        ::uwvm2::utils::cmdline::parameter_parsing_results* end) noexcept
+    {
+        using status = ::uwvm2::utils::cmdline::parameter_return_type;
+        auto const next{current + 1u};
+        if(next == end || next->type != ::uwvm2::utils::cmdline::parameter_parsing_results_type::arg)
+        {
+            ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                u8"uwvm: [error] ", current->str, u8" requires a value");
+            return status::return_m1_imme;
+        }
+        if(next->str != u8"pause")
+        {
+            ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                u8"uwvm: [error] --debug accepts only pause; omit --debug for normal crash termination");
+            return status::return_m1_imme;
+        }
+        debug_crash_action = 1u;
+        next->type = ::uwvm2::utils::cmdline::parameter_parsing_results_type::occupied_arg;
+        return status::def;
+    }
+
+#if defined(UWVM_MODULE)
+    extern "C++"
+#else
+    inline
+#endif
+    ::uwvm2::utils::cmdline::parameter_return_type debug_permissions_callback(
         ::uwvm2::utils::cmdline::parameter_parsing_results*,
         ::uwvm2::utils::cmdline::parameter_parsing_results* current,
         ::uwvm2::utils::cmdline::parameter_parsing_results* end) noexcept
@@ -105,13 +134,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
         using status = ::uwvm2::utils::cmdline::parameter_return_type;
         auto const next{current + 1u};
         if(next == end || next->type != ::uwvm2::utils::cmdline::parameter_parsing_results_type::arg ||
-           (next->str != u8"release" && next->str != u8"dev"))
+           (next->str != u8"full" && next->str != u8"read-only" && next->str != u8"limited" && next->str != u8"none"))
         {
             ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
-                u8"uwvm: [error] --management-profile requires release or dev");
+                u8"uwvm: [error] --debug-permissions requires full, read-only, limited or none");
             return status::return_m1_imme;
         }
-        management_development = next->str == u8"dev";
+        debug_permission_selection = next->str == u8"full" ? 1u : next->str == u8"read-only" ? 2u : next->str == u8"none" ? 3u : 0u;
         next->type = ::uwvm2::utils::cmdline::parameter_parsing_results_type::occupied_arg;
         return status::def;
     }
@@ -129,6 +158,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
         // No operand is consumed and no input pointer is read or advanced.
         // Preserve explicitly selected runtime settings: prepare_debug_jit_mode
         // supplies defaults or reports the same unsupported-mode fatal as -m.
+        runtime_debug_default_full = true;
         ::uwvm2::uwvm::wasm::storage::execute_wasm_mode = ::uwvm2::uwvm::wasm::base::mode::debug_jit;
         return ::uwvm2::utils::cmdline::parameter_return_type::def;
     }

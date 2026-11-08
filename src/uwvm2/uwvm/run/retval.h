@@ -35,9 +35,10 @@
 UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
 {
     /// @brief      main return value
-    /// @details    In posix [0, 128) are available return values and [128, 256) are signal values. In wasi_proc_exit the available values are [0, 126), so
-    ///             [126, 128) can be used as error codes for non-executable parts of the VM, such as parameter errors, wasm parsing errors, etc. On the
-    ///             wasm-wasi version of uwvm, the error code is uniformly represented by 1.
+    /// @details    The Linux product uses 126 for parameter/controlled Guest failures and 127 for module load/check failures.
+    ///             An authorized WASI proc_exit retains its requested low eight bits, so numeric statuses can overlap.
+    ///             POSIX wait status distinguishes signal termination; a shell's 128+signal display is not a reserved exit-code range.
+    ///             The wasm-wasi build represents these VM admission errors with 1.
     enum class retval
     {
         ok = 0,

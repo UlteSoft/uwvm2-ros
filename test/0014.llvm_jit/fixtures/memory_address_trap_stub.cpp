@@ -8,6 +8,12 @@
 
 namespace uwvm2::runtime::lib
 {
+    void llvm_jit_publish_ros_provenance(std::size_t) noexcept
+    {
+        std::fputs("FAIL: address-decision test called a production provenance sink\n", stderr);
+        std::abort();
+    }
+
     void llvm_jit_memory_out_of_bounds_trap(std::size_t, std::uint_least64_t, std::uint_least64_t,
         std::uint_least32_t, std::uint_least64_t, std::size_t, std::uintptr_t, std::uintptr_t) noexcept
     {

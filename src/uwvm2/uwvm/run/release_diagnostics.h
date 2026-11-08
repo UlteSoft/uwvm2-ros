@@ -13,7 +13,7 @@ namespace uwvm2::uwvm::run::release_diagnostics
             if(!::uwvm2::runtime::lib::runtime_diagnostic_snapshot_host_api(v))
             { return "{\"schema\":1,\"status\":\"unavailable\",\"debug_sealed\":true}\n"; }
             ::std::string s{v.collection_lost ? "{\"schema\":1,\"status\":\"incomplete\"" : "{\"schema\":1,\"status\":\"ok\""};
-            s += ",\"product\":\"uwvm2-ros\",\"profile\":\"RELEASE\",\"debug_sealed\":true";
+            s += ",\"product\":\"uwvm2-ros\",\"diagnostic_scope\":\"non-sensitive\"";
             auto number{[&](char const* name, ::std::uint64_t n) { s += ",\""; s += name; s += "\":"; s += ::std::to_string(n); }};
             auto boolean{[&](char const* name, bool n) { s += ",\""; s += name; s += n ? "\":true" : "\":false"; }};
             auto hex{[&](auto const& bytes) { s += '"'; for(auto c : bytes) { s += "0123456789abcdef"[c>>4]; s += "0123456789abcdef"[c&15]; } s += '"'; }};

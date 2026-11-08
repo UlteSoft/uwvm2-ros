@@ -220,9 +220,13 @@ extern "C++" void details::llvm_jit_debug_classified_import_abi_bridge(
         return;
     }
 #endif
-    details::llvm_jit_debug_host_scope scope{};
-    details::llvm_jit_call_raw_from_generated_wasm_abi_bridge(
-        module,function,result,result_bytes,parameters,parameter_bytes);
+    deferred_builtin_memtag_fault fault{};
+    {
+        details::llvm_jit_debug_host_scope scope{};
+        details::llvm_jit_call_raw_from_generated_wasm_abi_bridge(
+            module,function,result,result_bytes,parameters,parameter_bytes);
+    }
+    fault.finish();
 }
 extern "C++" void details::llvm_jit_debug_classified_raw_target_abi_bridge(
     ::std::uintptr_t entry_address, ::std::uintptr_t context, ::std::uintptr_t result,
@@ -238,8 +242,12 @@ extern "C++" void details::llvm_jit_debug_classified_raw_target_abi_bridge(
     if(effect==checkpoint_resolved_effect::defined_wasm)
     { entry(context,result,result_bytes,parameters,parameter_bytes);return; }
 #endif
-    details::llvm_jit_debug_host_scope scope{};
-    entry(context,result,result_bytes,parameters,parameter_bytes);
+    deferred_builtin_memtag_fault fault{};
+    {
+        details::llvm_jit_debug_host_scope scope{};
+        entry(context,result,result_bytes,parameters,parameter_bytes);
+    }
+    fault.finish();
 }
 
 extern "C++" void details::llvm_jit_checkpoint_call_raw_from_generated_wasm_abi_bridge(
@@ -256,6 +264,8 @@ extern "C++" void details::llvm_jit_checkpoint_call_raw_from_generated_wasm_abi_
         // Private retained entry/generation/profile/control issues the counted
         // scope. The classification enum does NOT admit a host operation, and
         // a typed-tail caller need not have a fabricated top activation here.
+        deferred_builtin_memtag_fault fault{};
+        {
         runtime_checkpoint_host_bridge::foreign_operation_scope host_operation{};
         if(!host_operation.admitted()) [[unlikely]] { ::fast_io::fast_terminate(); }
 #if defined(UWVM2_TEST_CHECKPOINT_HOST_EFFECT_PRECALL) && UWVM2_TEST_CHECKPOINT_HOST_EFFECT_PRECALL == 1
@@ -267,7 +277,9 @@ extern "C++" void details::llvm_jit_checkpoint_call_raw_from_generated_wasm_abi_
         details::llvm_jit_debug_host_scope debug_host_operation{};
         details::llvm_jit_call_raw_from_generated_wasm_abi_bridge(
             module_address, function_index, result, result_bytes, parameters, parameter_bytes);
-        return; // actual operation releases on native return or C++ unwind
+        } // actual provider/island/admission guards have all left
+        fault.finish();
+        return;
     }
 #endif
     // The original dispatch retains ABI checks, Wasm FP/depth suspension,

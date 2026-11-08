@@ -1,6 +1,6 @@
 #pragma once
 #ifndef UWVM_MODULE
-# include "management.h"
+# include "debug_permissions.h"
 # include "protocol.h"
 # include "sealed_input.h"
 # include "protected_assets.h"

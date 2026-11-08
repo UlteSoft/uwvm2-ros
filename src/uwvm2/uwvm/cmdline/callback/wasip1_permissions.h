@@ -23,6 +23,65 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
 #  else
     inline constexpr
 #  endif
+    ::uwvm2::utils::cmdline::parameter_return_type wasip1_single_socket_rights_callback(
+        ::uwvm2::utils::cmdline::parameter_parsing_results*,
+        ::uwvm2::utils::cmdline::parameter_parsing_results* current,
+        ::uwvm2::utils::cmdline::parameter_parsing_results* end) noexcept
+    { return wasip1_single_details::apply_action(::uwvm2::uwvm::cmdline::params::wasip1_single_socket_rights,current,end,wasip1_module_details::target_action_t::socket_rights); }
+#  if defined(UWVM_MODULE)
+    extern "C++"
+#  else
+    inline constexpr
+#  endif
+    ::uwvm2::utils::cmdline::parameter_return_type wasip1_group_socket_rights_callback(
+        ::uwvm2::utils::cmdline::parameter_parsing_results*,
+        ::uwvm2::utils::cmdline::parameter_parsing_results* current,
+        ::uwvm2::utils::cmdline::parameter_parsing_results* end) noexcept
+    { return wasip1_group_details::apply_action(::uwvm2::uwvm::cmdline::params::wasip1_group_socket_rights,current,end,wasip1_module_details::target_action_t::socket_rights); }
+#  if defined(UWVM_MODULE)
+    extern "C++"
+#  else
+    inline constexpr
+#  endif
+    ::uwvm2::utils::cmdline::parameter_return_type wasip1_global_socket_rights_callback(
+        ::uwvm2::utils::cmdline::parameter_parsing_results*,
+        ::uwvm2::utils::cmdline::parameter_parsing_results* current,
+        ::uwvm2::utils::cmdline::parameter_parsing_results* end) noexcept
+    {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        return wasip1_module_details::apply_socket_rights(::uwvm2::uwvm::cmdline::params::wasip1_global_socket_rights,
+            ::uwvm2::uwvm::imported::wasi::wasip1::storage::default_wasip1_env,current+1u,end);
+#else
+        return wasip1_module_details::print_usage_error(::uwvm2::uwvm::cmdline::params::wasip1_global_socket_rights,u8"Requires ROS socket policy.");
+#endif
+    }
+#  if defined(UWVM_MODULE)
+    extern "C++"
+#  else
+    inline constexpr
+#  endif
+    ::uwvm2::utils::cmdline::parameter_return_type wasip1_socket_abi_callback(
+        ::uwvm2::utils::cmdline::parameter_parsing_results*,
+        ::uwvm2::utils::cmdline::parameter_parsing_results* current,
+        ::uwvm2::utils::cmdline::parameter_parsing_results* end) noexcept
+    {
+        using token=::uwvm2::utils::cmdline::parameter_parsing_results_type;
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(UWVM_IMPORT_WASI_WASIP1_SUPPORT_SOCKET) && defined(__linux__)
+        if(current+1u==end || current[1].type!=token::arg || (current[1].str!=u8"standard"&&current[1].str!=u8"wasix"))
+            return wasip1_module_details::print_usage_error(::uwvm2::uwvm::cmdline::params::wasip1_socket_abi,u8"Choose exactly standard or wasix; no automatic signature fallback.");
+        ::uwvm2::uwvm::imported::wasi::wasip1::storage::wasip1_wasix_socket_abi=current[1].str==u8"wasix";
+        current[1].type=token::occupied_arg;
+        return ::uwvm2::utils::cmdline::parameter_return_type::def;
+#else
+        return wasip1_module_details::print_usage_error(::uwvm2::uwvm::cmdline::params::wasip1_socket_abi,u8"Runtime socket ABI selection requires the Linux ROS socket provider.");
+#endif
+    }
+
+#  if defined(UWVM_MODULE)
+    extern "C++"
+#  else
+    inline constexpr
+#  endif
     ::uwvm2::utils::cmdline::parameter_return_type wasip1_single_mount_dir_rights_callback(
         [[maybe_unused]] ::uwvm2::utils::cmdline::parameter_parsing_results* begin,
         ::uwvm2::utils::cmdline::parameter_parsing_results* current, ::uwvm2::utils::cmdline::parameter_parsing_results* end) noexcept

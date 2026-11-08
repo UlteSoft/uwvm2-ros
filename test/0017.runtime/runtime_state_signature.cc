@@ -25,6 +25,9 @@ int main()
                        { return classify_runtime_state_transition(published, requested) == runtime_state_transition::reject_requires_reset; }};
 
     auto changed{published};
+    changed.memtag_execution_disabled = true;
+    if(!expect_reject(changed)) { return 19; }
+    changed = published;
     changed.runtime_compiler = 2u;
     if(!expect_reject(changed)) { return 4; }
     changed = published;

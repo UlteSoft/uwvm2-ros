@@ -452,8 +452,10 @@ select every dependency to protect the entire program. Runtime WASI permissions,
 ROS capabilities, resource limits and host authorization continue independently.
 Code signing proves origin and integrity, not correctness or sandbox isolation.
 
-Native dynamic-library preload is rejected while any secure selection is active,
-because native constructors execute outside a WASM signature boundary. Function
+Native dynamic-library preload remains an explicit host trust decision.
+WSEA checks selected Wasm modules; optional native-driver secondary verification
+is independently enabled with `--wasm-driver-verify`. Native constructors are
+outside the Wasm sandbox. See [trusted drivers](trusted-drivers.md). Function
 hot replacement and replacement of already compiled source are also rejected
 while secure selection is active. Initial debugger-owned source loading still
 passes through the signed loader; an old receipt cannot authenticate new bytes.

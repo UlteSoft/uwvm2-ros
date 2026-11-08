@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <exception>
 #include <span>
 #include <stop_token>
 #include <uwvm2/uwvm/runtime/initializer/threaded_child_world.h>
@@ -20,13 +21,15 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         cancelled, trap_unreachable, trap_divide_by_zero, trap_integer_overflow,
         trap_memory, trap_unaligned, trap_table, trap_null, trap_signature,
         proc_exit, host_denied, host_failure, invariant_failure, already_entered,
-        trap_invalid_conversion, trap_uncaught_exception, memory_failure
+        trap_invalid_conversion, trap_uncaught_exception, memory_failure, trap_memtag
     };
     struct execution_result
     {
         status code{status::ok};
         ::std::size_t module{}, function{}, wasm_offset{};
         ::std::uint32_t exit_code{};
+        ::std::uint64_t memtag_pointer{},memtag_granule{};
+        ::std::uint8_t memtag_pointer_tag{},memtag_allocation_tag{};
         [[nodiscard]] bool normal() const noexcept { return code == status::ok; }
     };
     struct limits

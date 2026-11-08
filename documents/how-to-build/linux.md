@@ -1,66 +1,21 @@
-# Linux
+# Build uwvm2-ros on Linux
 
 ## Prerequisites
-- Use the latest available Linux kernel headers for your target toolchain before building.
-- Install toolchains and xmake using your distro's package manager:
-  - Debian/Ubuntu: `sudo apt install build-essential gcc g++ llvm clang xmake`
-  - Fedora/RHEL: `sudo dnf install gcc gcc-c++ llvm clang xmake`
-  - Arch: `sudo pacman -S base-devel gcc llvm clang xmake`
 
-## Examples
-```shell
-# GCC toolchain
-xmake f -m release
-xmake
+Reuse a compatible C++26 Clang toolchain, Xmake, CMake and Ninja, together with
+the target Linux GNU headers and sysroot. The ROS product requires Clang,
+source-owned paired libc++/libunwind and the mandatory product options below;
+GCC-only, fully static libc and named-C++-module configurations are not admitted.
+Its bundled LLVM backend is distinct from the bootstrap Clang toolchain.
 
-# LLVM/Clang toolchain
-xmake f -m release --use-llvm-compiler=y
-xmake
+The build supports x86_64, i686, AArch64, ARMv7 soft-float and ARMv7 hard-float
+Linux GNU ABIs. Select and test an explicit ISA baseline for deployed artifacts;
+`--march=native` describes only the current build machine.
 
-# Install
-sudo xmake i -o /usr/local
-```
-
-## Use GCC
-1. Install [[xmake]](https://github.com/xmake-io/xmake/)
-2. Install [[GCC]](git://gcc.gnu.org/git/gcc.git)
-3. Build
-```shell
-$ xmake f -m [debug|release|releasedbg|minsizerel]
-$ xmake
-```
-4. Install UWVM2
-```shell
-$ xmake i -o <install_path>
-```
-
-### Additional Options
-1. `--static=none|non-system|compiler` Static linking policy (`compiler` uses global `-static` where supported)
-2. `--march` defaults to `none` (the configured toolchain baseline). Release artifacts must select and test a fixed baseline explicitly; `--march=native` is only for developer-local builds.
-3. `--use-cxx-module=y` Use cpp module to compile, compiler may not be supported
-
-## Use LLVM
-1. Install [[xmake]](https://github.com/xmake-io/xmake/)
-2. Install [[llvm]](https://github.com/llvm/llvm-project/releases)
-3. Build
-```shell
-$ xmake f -m [debug|release|releasedbg|minsizerel] --use-llvm-compiler=y
-$ xmake
-```
-4. Install UWVM2
-```shell
-$ xmake i -o <install_path>
-```
-
-### Additional Options
-1. `--static=none|non-system|compiler` Static linking policy (`compiler` uses global `-static` where supported)
-2. `--march` defaults to `none` (the configured toolchain baseline). Release artifacts must select and test a fixed baseline explicitly; `--march=native` is only for developer-local builds.
-3. `--use-cxx-module=y` Use cpp module to compile, compiler may not be supported
-
-## Caveat
-1. Add `--use-llvm-compiler` when you want to build with the LLVM/Clang compiler toolchain. This only selects the compiler toolchain and does not enable the LLVM AOT backend by itself.
-2. On some platforms such as the latest Android which only provide LLVM/Clang, you must also add `--use-llvm-compiler`, same as note 1.
-3. `--static=compiler` may have no effect on some platforms, such as Android. Use `--static=non-system` for release builds that should statically link non-platform dependencies without requesting full system static linking.
+After building, install into a host-owned destination with
+`xmake i -o /absolute/install/prefix` using the deployment account's actual
+write authority. Installation does not configure a Gateway, grant guest
+permissions or authorize management.
 
 ## ROS build configuration
 
@@ -77,65 +32,50 @@ There are three independent build products:
 | ROS1 or ROS2 Gateway | Matching native Gateway CMake project | Yes; use the chosen distribution's headers, libraries and generated interfaces |
 | Guest application, normally a `.wasm` | Each SDK example's `xmake.lua` | Not for the Wasm build; execution needs the deployed Runtime and Gateway |
 
-Both `--import-ros1` and `--import-ros2` default to `n`. Enabling either compiles
-the corresponding import implementation. It does not start a ROS context,
-select a distribution, grant a capability or build a Gateway. The Runtime uses
-Linux AF_UNIX sockets and `SO_PEERCRED`; native macOS and Windows Runtime
-targets explicitly reject these switches.
+Both ROS import families, WASI Preview 1 memory32/memory64, and socket
+implementations are mandatory. Disabling one at build time is rejected before
+dependency acquisition. Compiling an implementation neither exposes it to a
+guest nor grants any operation: all such authority is runtime policy.
 
-### ROS1, ROS2 and combined Runtime builds
+### Combined ROS runtime build
 
-These interpreter configurations make the execution backend explicit and avoid
-requiring the separate LLVM AOT dependency. A compiler with the project's C++26
-support is still required. `--use-llvm-compiler=y` selects the bootstrap Clang
-toolchain; it does not itself enable the LLVM execution backend.
+Reuse an existing compatible C++26 Clang toolchain, Xmake, CMake and Ninja.
+The runtime target is `uwvm2-ros`. The following configuration retains both
+execution engines and the mandatory native debugger/update backend:
 
 ```sh
-# ROS1 imports only.
-xmake f -y -c -m release -p linux -a x86_64 -o build/ros1 \
+xmake f -y -c -m release -p linux -a x86_64 -o build/ros \
   --use-llvm-compiler=y --use-cxx-module=n --march=none \
-  --execution-int=uwvm-int --execution-jit=none \
-  --import-ros1=y --import-ros2=n
-xmake -j1 uwvm2-ros
-
-# ROS2 imports only, in a separate output directory.
-xmake f -y -c -m release -p linux -a x86_64 -o build/ros2 \
-  --use-llvm-compiler=y --use-cxx-module=n --march=none \
-  --execution-int=uwvm-int --execution-jit=none \
-  --import-ros1=n --import-ros2=y
-xmake -j1 uwvm2-ros
-
-# Both import namespaces in the same Runtime.
-xmake f -y -c -m release -p linux -a x86_64 -o build/ros-dual \
-  --use-llvm-compiler=y --use-cxx-module=n --march=none \
-  --execution-int=uwvm-int --execution-jit=none \
+  --execution-int=uwvm-int --execution-jit=llvm \
+  --llvm-build-jobs=1 --llvm-build-targets=Native \
   --import-ros1=y --import-ros2=y
 xmake -j1 uwvm2-ros
 ```
 
-The combined build still uses independently configured ROS1 and ROS2 Gateway
-connections. It does not translate ROS1 traffic into ROS2 traffic. ROS1/ROS2
-distribution selection belongs to the native Gateway and the SDK application,
-not to a root-project option named `ros1_version` or `ros2_version`.
+`--execution-int=none` omits the optional interpreter. The ROS product rejects
+`--execution-jit=none`: LLVM is required for native debugging and managed update
+compilation. The retained `execution-jit` spelling selects the full-module LLVM
+backend; it does not enable tiering or lazy guest compilation.
 
-For an LLVM execution build, use the following configuration instead:
+The pinned LLVM sources under `third-parties/llvm` are built through
+[bundled_llvm.lua](../../xmake/utility/bundled_llvm.lua); an ambient
+`llvm-config` does not replace them. `--llvm-build-jobs` limits dependency build
+parallelism, not aggregate memory. The ROS policy uses the header route
+(`--use-cxx-module=n`), source-owned paired libc++/libunwind, native exception
+unwinding and the mmap memory backend. Refer to
+[all build options](../xmake-options.md) for the applicable product restrictions.
 
-```sh
-xmake f -y -c -m release -p linux -a x86_64 -o build/ros2-llvm \
-  --use-llvm-compiler=y --use-cxx-module=n --march=none \
-  --execution-int=uwvm-int --execution-jit=llvm \
-  --llvm-build-jobs=1 --llvm-build-targets=Native \
-  --import-ros1=n --import-ros2=y
-xmake -j1 uwvm2-ros
-```
+For cross compilation, select the target ABI with `-a` and provide a matching
+compiler target/sysroot plus `--llvm-cmake-toolchain`. The toolchain must declare
+the target `LLVM_HOST_TRIPLE` and build the LLVM backend for that target.
+The five product ABIs are x86_64, i686, aarch64, arm (ARMv7 soft-float) and
+armhf (ARMv7 hard-float). Do not reuse a CMake build directory copied from a
+different source or ABI. See the [cross-build contract](../../third-parties/llvm/README.md).
 
-`--execution-jit=llvm` is the retained build-option spelling for the full-module
-LLVM AOT backend. Its pinned LLVM dependency is selected by
-[`bundled_llvm.lua`](../../xmake/utility/bundled_llvm.lua); an ambient
-`llvm-config` does not replace it. `--llvm-build-jobs` limits dependency build
-parallelism, not memory. Named C++ modules are a separate
-`--use-cxx-module=y` choice and require a compatible compiler/module toolchain;
-the examples use the header route explicitly.
+ROS1 and ROS2 still use independent Gateway connections. Distribution selection
+belongs to the native Gateway and the SDK application, not a root-project
+`ros1_version` or `ros2_version` option. Building the runtime does not establish
+a Gateway, an official vendor simulator or a deployment permission contract.
 
 ### Vendor and ecosystem selections
 
@@ -165,8 +105,8 @@ For example, after generating and reviewing an ABB registry:
 REGISTRY=/absolute/reviewed/abb/manifest.hpp
 xmake f -y -c -m release -p linux -a x86_64 -o build/ros2-abb \
   --use-llvm-compiler=y --use-cxx-module=n --march=none \
-  --execution-int=uwvm-int --execution-jit=none \
-  --import-ros1=n --import-ros2=y \
+  --execution-int=uwvm-int --execution-jit=llvm \
+  --import-ros1=y --import-ros2=y \
   --ros-vendor-abb=y \
   --ros-vendor-abb-registry-header="$REGISTRY"
 xmake -j1 uwvm2-ros
@@ -182,8 +122,8 @@ selection is:
 REGISTRY=/absolute/reviewed/fanuc-kuka/manifest.hpp
 xmake f -y -c -m release -p linux -a x86_64 -o build/ros2-fanuc-kuka \
   --use-llvm-compiler=y --use-cxx-module=n --march=none \
-  --execution-int=uwvm-int --execution-jit=none \
-  --import-ros1=n --import-ros2=y \
+  --execution-int=uwvm-int --execution-jit=llvm \
+  --import-ros1=y --import-ros2=y \
   --ros-vendor-fanuc=y --ros-vendor-fanuc-registry-header="$REGISTRY" \
   --ros-vendor-kuka=y --ros-vendor-kuka-registry-header="$REGISTRY" \
   --ros-registry-max-interfaces=256 --ros-registry-max-cells=32768
@@ -276,8 +216,9 @@ xmake f -y -c -m release -p linux -a arm64 -o build/ros2-arm64 \
   --use-llvm-compiler=y --use-cxx-module=n --march=none \
   --target=aarch64-linux-gnu --llvm-target=aarch64-linux-gnu \
   --sysroot="$TARGET_SYSROOT" \
-  --execution-int=uwvm-int --execution-jit=none \
-  --import-ros1=n --import-ros2=y
+  --llvm-cmake-toolchain=/absolute/toolchains/aarch64-linux-gnu/llvm.cmake \
+  --execution-int=uwvm-int --execution-jit=llvm \
+  --import-ros1=y --import-ros2=y
 xmake -j1 uwvm2-ros
 ```
 
@@ -286,7 +227,7 @@ Gateway must be built separately with an ARM64 ROS SDK and a matching CMake
 cross-toolchain file. With LLVM execution enabled, also supply a matching
 `--llvm-cmake-toolchain=<file>` that sets the target and `LLVM_HOST_TRIPLE`;
 host libraries cannot stand in for target libraries. A QEMU user-mode smoke
-command for the interpreter build is:
+command for the target build is:
 
 ```sh
 qemu-aarch64 -L "$TARGET_SYSROOT" \

@@ -99,6 +99,57 @@ int main(int argc, char** argv)
         for(auto const& block: *fn) for(auto const& instruction: block)
         { if(llvm::isa<llvm::LoadInst>(instruction) || llvm::isa<llvm::CallInst>(instruction) || llvm::isa<llvm::ICmpInst>(instruction)) { return 8; } }
     }
+    {
+        // Immutable owner minimum is a proof, unlike a previously observed
+        // grown length. Exercise tagged low-bit arithmetic and both native
+        // pointer widths; a zero minimum models an imported/provider memory.
+        for(unsigned pointer_bits : {32u,64u}) for(unsigned address_bits : {32u,64u})
+        for(unsigned kind{}; kind!=7u; ++kind)
+        {
+            llvm::Module m{"minimum-proof", context};
+            m.setDataLayout(pointer_bits==32u ? "e-p:32:32" : "e-p:64:64");
+            llvm::IRBuilder<> b{context};
+            auto fn{llvm::Function::Create(llvm::FunctionType::get(b.getVoidTy(),
+                {b.getIntNTy(address_bits),b.getIntNTy(address_bits)},false),
+                llvm::Function::ExternalLinkage,"proof",m)};
+            b.SetInsertPoint(llvm::BasicBlock::Create(context,"entry",fn));
+            auto c{[&](std::uint64_t n){return llvm::ConstantInt::get(b.getIntNTy(address_bits),n);}};
+            auto address{b.CreateAdd(b.CreateAnd(fn->getArg(0),c(0xffcu)),c(0x10000u))};
+            std::uint64_t minimum{0x11000u}, offset{};unsigned width{4u};
+            bool expected{true};
+            if(kind==1u) { minimum=0u; expected=false; } // provider/import
+            if(kind==2u) { offset=1u; expected=false; } // crosses minimum
+            if(kind==3u) { width=16u; expected=false; } // complete SIMD span
+            if(kind==4u)
+            {
+                // Tag bits are unrelated to the address. Reason through the
+                // production representation without assuming their value.
+                auto shift{address_bits==32u ? 28u : 56u};
+                address=b.CreateOr(address,b.CreateShl(fn->getArg(1),c(shift)));
+                address=b.CreateAnd(address,c(address_bits==32u?0x0fffffffull:0x00ffffffffffffffull));
+            }
+            if(kind==5u) { address=fn->getArg(0); expected=false; }
+            if(kind==6u) { offset=address_bits==32u?0xffffffffull:UINT64_MAX; expected=false; }
+            unsigned length_reads{};
+            auto pointer{d::emit_llvm_jit_memory_address(b,
+                llvm::ConstantPointerNull::get(llvm::PointerType::getUnqual(context)),
+                address,offset,width,protection::software,0u,
+                [&]() -> llvm::Value* { ++length_reads; return b.getIntN(pointer_bits,minimum); },
+                0u,minimum)};
+            if(pointer==nullptr || length_reads!=(expected?0u:1u))
+            {
+                std::fprintf(stderr,"minimum proof mismatch ptr=%u addr=%u kind=%u reads=%u\\n",
+                    pointer_bits,address_bits,kind,length_reads);return 10;
+            }
+            b.CreateRetVoid();
+            if(llvm::verifyModule(m,&llvm::errs())) { return 11; }
+            if(expected)
+            {
+                for(auto const& block:*fn) for(auto const& ins:block)
+                    if(llvm::isa<llvm::CallInst>(ins)||llvm::isa<llvm::LoadInst>(ins)) { return 12; }
+            }
+        }
+    }
     auto module{std::make_unique<llvm::Module>("direct-memory-address", context)};
     std::vector<test_case> cases;
     std::size_t full_guard_configurations{};

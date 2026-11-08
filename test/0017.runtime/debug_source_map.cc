@@ -90,11 +90,11 @@ static void end_sequence(bytes& p)
 { put(p, 0u, 1u); uleb(p, 1u); put(p, 1u, 1u); }
 static bytes finish_unit(bytes const& body)
 { bytes result; put(result, body.size(), 4u); append(result, body); return result; }
-static bytes dwarf4(std::uint64_t begin = 10u)
+static bytes dwarf4(std::uint64_t begin = 10u, std::string_view filename = "main.c")
 {
     bytes h{base_header()};
     cstr(h, "src"); cstr(h, "");
-    cstr(h, "main.c"); uleb(h, 1u); uleb(h, 0u); uleb(h, 0u); cstr(h, "");
+    cstr(h, filename); uleb(h, 1u); uleb(h, 0u); uleb(h, 0u); cstr(h, "");
     bytes p; set_address(p, begin, 4u);
     put(p, 1u, 1u); // line 1 at Code offset 10
     put(p, 3u, 1u); sleb(p, 4); // line 5
@@ -298,6 +298,17 @@ static void check_synthetic()
     check(source_map::parse(99u, {view(bad), view(str), {}, 50u}, map) == source_map_error::malformed,
         "truncated unit rejected");
     check(map.lookup(11u, 60u).has_value(), "parse failure leaves old map unchanged");
+    // Default limits accept genuine DWARF paths beyond the old parser-side
+    // hard ceiling, not only Source Map v3 strings.
+    std::string long_name(32769u, 'p'); long_name += ".c";
+    auto long_path{dwarf4(10u, long_name)}; source_map long_map{};
+    check(source_map::parse(8u, {view(long_path), {}, {}, 40u}, long_map) == source_map_error::none &&
+          long_map.lookup(8u, 10u) && long_map.lookup(8u, 10u)->file.size() == long_name.size() + 4u,
+          "default DWARF path storage follows actual input");
+    auto path_quota{source_map_limits{}}; path_quota.max_path_bytes = 16384u;
+    check(source_map::parse(8u, {view(long_path), {}, {}, 40u}, long_map, path_quota) != source_map_error::none &&
+          long_map.lookup(8u, 10u)->file.size() == long_name.size() + 4u,
+          "explicit DWARF path quota rejects without partial publication");
     auto restrictive{source_map_limits{}}; restrictive.max_rows = 2u;
     check(source_map::parse(7u, {view(modern), view(str), {}, 50u}, map, restrictive) ==
         source_map_error::limit_exceeded, "row limit enforced");
@@ -426,11 +437,15 @@ int main(int argc, char** argv)
         check(source_map::parse(1u, sections, map) == source_map_error::malformed, "duplicate line-unit owner denied");
         directories[1u].line_unit_offset = first.size();
         std::string huge(4097u, 'x'); directories[1u].directory = huge;
-        check(source_map::parse(1u, sections, map) == source_map_error::limit_exceeded, "CU directory path budget");
+        check(source_map::parse(1u, sections, map) == source_map_error::none &&
+              map.lookup(1u, 50u)->file.size() > huge.size(), "default CU directory follows actual input");
+        source_map_limits directory_quota{}; directory_quota.max_path_bytes = 4096u;
+        check(source_map::parse(1u, sections, map, directory_quota) == source_map_error::limit_exceeded,
+              "explicit CU directory path budget");
     }
     check_leb_edges();
     check_synthetic();
     if(argc == 3) { check_wasm(argv[1], argv[2]); }
     else { check(argc == 1, "usage: debug_source_map [module.wasm expected-file]"); }
-    ::fast_io::io::println("PASS bounded DWARF4/5 source map");
+    ::fast_io::io::println("PASS checked DWARF4/5 source map");
 }

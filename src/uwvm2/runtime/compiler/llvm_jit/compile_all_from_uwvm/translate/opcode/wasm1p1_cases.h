@@ -1193,6 +1193,40 @@ case static_cast<wasm1_code>(wasm1p1_code::numeric_prefix):
         }
     }};
 
+    if(auto const* memtag{::uwvm2::extension::memtag::find_instruction(subopcode)}; memtag != nullptr)
+    {
+        if(wasm1p1_para.disable_memtag_extension) [[unlikely]]
+        {
+            fail_wasm1p1_feature_required(op_begin, subopcode,
+                ::uwvm2::parser::wasm::base::wasm1p1_feature_kind::memtag_extension,
+                ::uwvm2::parser::wasm::base::wasm1p1_error_subject::instruction);
+        }
+        auto const memory_index{::uwvm2::validation::standard::wasm3::read_memory_index(
+            code_curr, code_end, op_begin, !wasm1p1_para.disable_multi_memory, err)};
+        check_memory_index(memory_index, u8"memtag");
+        auto const type{memory_address_type_at(memory_index) ==
+            ::uwvm2::validation::standard::wasm3::storage_address_type::i64 ?
+            curr_operand_stack_value_type::i64 : curr_operand_stack_value_type::i32};
+        if(!is_polymorphic && concrete_operand_count() < memtag->operand_count) [[unlikely]]
+        { report_operand_stack_underflow(op_begin, u8"memtag", memtag->operand_count); }
+        for(unsigned index{}; index != memtag->operand_count; ++index)
+        {
+            auto const operand{try_pop_concrete_operand()};
+            if(operand.from_stack && !operand.is_unknown && operand.type != type) [[unlikely]]
+            {
+                err.err_curr = op_begin;
+                err.err_selectable.numeric_operand_type_mismatch = {.op_code_name = u8"memtag",
+                    .expected_type = to_wasm1_diagnostic_value_type(type),
+                    .actual_type = to_wasm1_diagnostic_value_type(operand.type)};
+                err.err_code = code_validation_error_code::numeric_operand_type_mismatch;
+                ::uwvm2::parser::wasm::base::throw_wasm_parse_code(::fast_io::parse_code::invalid);
+            }
+        }
+        if(memtag->result_count != 0u) { operand_stack_push(type); }
+        emit_validated_prefixed_instruction();
+        break;
+    }
+
     switch(numeric_code)
     {
         case wasm1p1_numeric_code::i32_trunc_sat_f32_s:

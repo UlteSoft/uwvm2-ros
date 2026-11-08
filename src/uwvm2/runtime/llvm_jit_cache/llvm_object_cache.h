@@ -91,10 +91,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
             os.flush();
 
             auto const first{reinterpret_cast<::std::byte const*>(bitcode.data())};
-            ::uwvm2::utils::container::vector<::std::byte> bytes{};
-            bytes.reserve(bitcode.size());
-            append_bytes(bytes, first, first + bitcode.size());
-            return sha256_hex_for_path(bytes);
+            // The complete serialization stays owned and unchanged until the
+            // digest returns. Hash it directly instead of duplicating the whole
+            // bitcode buffer, preserving exactly the existing cache identity.
+            return sha256_hex_for_path(first, first + bitcode.size());
         }
 
         [[nodiscard]] inline constexpr ::uwvm2::utils::container::u8string_view module_identifier_view(llvm::Module const& module) noexcept

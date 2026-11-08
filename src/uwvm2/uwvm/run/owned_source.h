@@ -43,7 +43,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
     {
 #if defined(__linux__) && defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS)
         if(::uwvm2::utils::security::wsea::secure_enabled() ||
-           !::uwvm2::utils::control::management::debug_allowed() ||
+           !::uwvm2::utils::control::debug_permissions::full_allowed() ||
            ::uwvm2::uwvm::runtime::runtime_mode::global_runtime_compiler !=
                ::uwvm2::uwvm::runtime::runtime_mode::runtime_compiler_t::llvm_jit_only ||
            ::uwvm2::uwvm::runtime::runtime_mode::global_runtime_mode !=
@@ -96,7 +96,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
            ::uwvm2::uwvm::wasm::storage::preloaded_wasm.size() > 4095u)
         { return static_cast<int>(retval::parameter_error); }
 # if defined(UWVM_SUPPORT_PRELOAD_DL)
-        if(!::uwvm2::uwvm::wasm::storage::preloaded_dl.empty()) { return static_cast<int>(retval::parameter_error); }
+        if(!::uwvm2::uwvm::wasm::storage::preloaded_dl.empty())
+        {
+            // Explicitly loaded trusted drivers have process lifetime. They do
+            // not prevent owning the genuine Wasm parser/registry/code graph.
+            // They remain foreign providers in the sealed census: this does
+            // not authorize cache reuse, arbitrary memory snapshots, native ASM
+            // debugging or restoring a driver into a new execution world.
+            if(restart_after_retirement || rebuild) { return static_cast<int>(retval::parameter_error); }
+#  if UWVM2_HAS_THREADED_PROFILE_HOST_API
+            if(::uwvm2::runtime::lib::runtime_threaded_profile_builtin_requested_host_api())
+            { return static_cast<int>(retval::parameter_error); }
+#  endif
+        }
 # endif
 # if defined(UWVM_SUPPORT_WEAK_SYMBOL)
         if(!::uwvm2::uwvm::wasm::storage::weak_symbol.empty()) { return static_cast<int>(retval::parameter_error); }

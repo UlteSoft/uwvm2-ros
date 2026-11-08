@@ -4,9 +4,9 @@ from pathlib import Path
 import importlib.util,io,json,os,subprocess,unittest
 SPEC=importlib.util.spec_from_file_location('go_dap',Path(__file__).resolve().parents[2]/'tools/debug/dap_adapter.py')
 dap=importlib.util.module_from_spec(SPEC);SPEC.loader.exec_module(dap)
-SELECTORS=['len(s)','cap(s)','len(((box.Numbers)))','cap((*p).Numbers)','len(p->Text)','len(arr[0].Text)','len(s[0])','length','capability','ns::len','len(ns::s)','len(s'+'.x'*31+')','len ','cap ','len .x','cap .x']
+SELECTORS=['len(s'+'.x'*32+')','len('+'('*33+'s'+')'*33+')','len(s)','cap(s)','len(((box.Numbers)))','cap((*p).Numbers)','len(p->Text)','len(arr[0].Text)','len(s[0])','length','capability','ns::len','len(ns::s)','len(s'+'.x'*31+')','len ','cap ','len .x','cap .x']
 SCALARS=['len(s)+cap(s)','len(s)-1','(cap(s))-1','len(s)*2','2*cap(s)','len(s)>>1','sizeof(len(s))','int(cap(s))','len(s)?cap(s):0','len(s) as i32','-len(s)','len(s) + (cap(s) - 1)']
-BAD=['len()','len(s,t)','len(s+1)','len(call())','cap(len(s))','len(cap(s))','len(s=1)','len(s)[0]','(len(s)).x','len(s)->x','*len(s)','*(len(s))','len(s);quit','len(s)\nquit','len(s'+'.x'*32+')','len('+'('*33+'s'+')'*33+')','len(s)++','len(s)--','len(s) value','len(s) + call()']
+BAD=['len()','len(s,t)','len(s+1)','len(call())','cap(len(s))','len(cap(s))','len(s=1)','len(s)[0]','(len(s)).x','len(s)->x','*len(s)','*(len(s))','len(s);quit','len(s)\nquit','len(s)++','len(s)--','len(s) value','len(s) + call()']
 class Broker:
     def __init__(self,retire=0):self.commands=[];self.statuses=0;self.retire=retire
     def request(self,text):

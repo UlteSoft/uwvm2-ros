@@ -11,9 +11,11 @@ the 256-bit launch capability. Packets from the VM's own PID are rejected.
 import argparse
 import array
 import hmac
+import math
 import os
 from pathlib import Path
 import secrets
+import select
 import signal
 import socket
 import stat
@@ -147,7 +149,66 @@ def finished_guest_reply(guest, packet, *, wait=False):
     return None if code is None else f"guest exited: {code}\n".encode("ascii")
 
 
-def serve_client(client, identity, pidfd, vm_channel, capability, guest, startup_pending=None):
+
+def startup_timeout_seconds(value):
+    value = float(value)
+    if not math.isfinite(value) or value <= 0:
+        raise ValueError("startup timeout must be a positive finite number of seconds")
+    return value
+
+
+def wait_startup_reply(client, identity, pidfd, vm_channel, guest, packet, timeout=None):
+    """One authenticated command: actual VM reply, exit, or client cancellation.
+
+    Compilation has no default wall-clock deadline. A canceled unsequenced
+    command retires this launch; its eventual reply can never be reused.
+    """
+    deadline = None if timeout is None else time.monotonic() + timeout
+    if guest.poll() is not None:
+        reply = finished_guest_reply(guest, packet)
+        if reply is not None:
+            return reply
+        raise VMChannelFailure("original VM exited before startup command completed")
+    guest_fd = os.pidfd_open(guest.pid, 0)
+    try:
+        watched = select.poll()
+        events = select.POLLIN | select.POLLERR | select.POLLHUP | select.POLLNVAL
+        for fd in (client.fileno(), pidfd, vm_channel.fileno(), guest_fd):
+            watched.register(fd, events)
+        while True:
+            remaining = None if deadline is None else max(0.0, deadline - time.monotonic())
+            # poll(2)'s signed millisecond argument bounds one wait, not the
+            # user's deadline or total compilation duration.
+            milliseconds = None if remaining is None else math.ceil(min(2147483.647, remaining) * 1000)
+            ready = dict(watched.poll(milliseconds))
+            if not ready:
+                if deadline is not None and time.monotonic() >= deadline:
+                    raise VMChannelFailure("VM debugger startup exceeded the explicit host deadline")
+                continue
+            if pidfd in ready or client.fileno() in ready:
+                if client.fileno() in ready:
+                    pending = checked_packet(client, MAX_COMMAND, identity, pidfd)
+                    if pending not in (None, b"disconnect"):
+                        raise VMChannelFailure("another debugger packet arrived before startup completed")
+                raise VMChannelFailure("debugger client canceled VM startup")
+            if vm_channel.fileno() in ready:
+                reply = checked_packet(vm_channel, MAX_REPLY)
+                if reply is not None and reply is not _TIMEOUT:
+                    return reply
+                reply = finished_guest_reply(guest, packet, wait=True)
+                if reply is not None:
+                    return reply
+                raise VMChannelFailure("VM debugger control channel closed before original guest exit")
+            if guest_fd in ready:
+                reply = finished_guest_reply(guest, packet)
+                if reply is not None:
+                    return reply
+                raise VMChannelFailure("original VM exited before startup command completed")
+    finally:
+        os.close(guest_fd)
+
+
+def serve_client(client, identity, pidfd, vm_channel, capability, guest, startup_pending=None, startup_timeout=None):
     deadline = time.monotonic() + 10
     while guest.poll() is None and time.monotonic() < deadline:
         packet = checked_packet(client, CAPABILITY_BYTES, identity, pidfd)
@@ -182,16 +243,17 @@ def serve_client(client, identity, pidfd, vm_channel, capability, guest, startup
             return False
         idle = time.monotonic() + 30
         # The VM independently parses the bounded grammar and checks state.
-        # Full JIT compilation precedes control-channel adoption. Consume this
-        # launch-owned allowance only once, after real peer/capability checks;
-        # a reconnect or failed command cannot renew the startup deadline.
+        # Full JIT compilation precedes control-channel adoption. Only the
+        # first authenticated command may wait for actual startup. Cancellation
+        # or failure retires this launch, never renewing/replaying the request.
         startup = startup_pending is not None and startup_pending[0]
         if startup:
             startup_pending[0] = False
-        vm_channel.settimeout(120 if startup else 6)
+        vm_channel.settimeout(6)
         try:
             send_packet(vm_channel, packet)
-            reply = checked_packet(vm_channel, MAX_REPLY)
+            reply = (wait_startup_reply(client, identity, pidfd, vm_channel, guest, packet, startup_timeout)
+                     if startup else checked_packet(vm_channel, MAX_REPLY))
             if reply is None:
                 reply = finished_guest_reply(guest, packet, wait=True)
                 if reply is None:
@@ -215,10 +277,21 @@ def serve_client(client, identity, pidfd, vm_channel, capability, guest, startup
 
 
 def serve(arguments):
-    directory, remove_directory = private_directory(arguments.socket_dir)
     vm_args = list(arguments.vm_args)
     if vm_args and vm_args[0] == "--":
         vm_args.pop(0)
+    boundary = next((i for i, value in enumerate(vm_args) if value in ("--run", "--")), len(vm_args))
+    options = vm_args[:boundary]
+    selectors = [i for i, value in enumerate(options) if value == "--debug-permissions"]
+    if len(selectors) > 1 or selectors and selectors[0] + 1 >= len(options):
+        raise RuntimeError("exactly one valid --debug-permissions value is required")
+    selected = options[selectors[0] + 1] if selectors else ("full" if any(x in options for x in ("-Rdbg", "--runtime-debug")) else "limited")
+    if selected not in ("full", "read-only", "limited", "none"):
+        raise RuntimeError("--debug-permissions requires full, read-only, limited or none")
+    if selected == "none":
+        # No socket, capability file, adapter or inherited control descriptor.
+        return subprocess.run([str(arguments.uwvm), *vm_args], check=False).returncode
+    directory, remove_directory = private_directory(arguments.socket_dir)
     try:
         if not vm_args:
             raise RuntimeError("guest command after -- is required")
@@ -259,7 +332,7 @@ def serve(arguments):
             # its inherited endpoint. Linux attaches sender credentials when
             # the packet is sent; enabling PASSCRED later loses that identity.
             vm_endpoint.setsockopt(socket.SOL_SOCKET, socket.SO_PASSCRED, 1)
-            command = [str(arguments.uwvm), "--management-profile", "dev", "--debug-jit-control-fd", str(vm_endpoint.fileno()), *vm_args]
+            command = [str(arguments.uwvm), "--debug-jit-control-fd", str(vm_endpoint.fileno()), *vm_args]
             guest = subprocess.Popen(command, pass_fds=(vm_endpoint.fileno(),))
         finally:
             vm_endpoint.close()
@@ -278,7 +351,7 @@ def serve(arguments):
             client, identity, pidfd = accepted
             try:
                 with client:
-                    detached = serve_client(client, identity, pidfd, supervisor, capability, guest, startup_pending)
+                    detached = serve_client(client, identity, pidfd, supervisor, capability, guest, startup_pending, getattr(arguments, "startup_timeout", None))
             except VMChannelFailure:
                 raise  # retire this original launch through serve()'s finally
             except (OSError, RuntimeError) as error:
@@ -332,12 +405,15 @@ def connect(arguments):
         send_packet(channel, capability)
         if checked_packet(channel, MAX_REPLY) != b"ready\n":
             raise RuntimeError("debugger authorization rejected")
+        first_request = True
         for command in arguments.commands:
             encoded = command.encode("ascii")
             if not 0 < len(encoded) <= MAX_COMMAND:
                 raise RuntimeError("command exceeds 8448 bytes")
             if encoded == b"disconnect":
                 return 0
+            channel.settimeout(getattr(arguments, "startup_timeout", None) if first_request else 8)
+            first_request = False
             send_packet(channel, encoded)
             reply = checked_packet(channel, MAX_REPLY)
             if reply is None or reply is _TIMEOUT:
@@ -357,6 +433,8 @@ def connect(arguments):
                 continue
             if encoded == b"disconnect":
                 return 0
+            channel.settimeout(getattr(arguments, "startup_timeout", None) if first_request else 8)
+            first_request = False
             send_packet(channel, encoded)
             reply = checked_packet(channel, MAX_REPLY)
             if reply is None or reply is _TIMEOUT:
@@ -373,10 +451,12 @@ def main():
     host = subcommands.add_parser("serve", help="launch a VM with an authenticated control server")
     host.add_argument("--uwvm", required=True, type=Path)
     host.add_argument("--socket-dir", type=Path, help="existing owner-only directory; default is a fresh private directory")
+    host.add_argument("--startup-timeout", type=startup_timeout_seconds, help="optional host deadline in seconds for the first authenticated VM reply; default waits for readiness, VM exit or client cancellation")
     host.add_argument("vm_args", nargs=argparse.REMAINDER)
     client = subcommands.add_parser("connect", help="send commands through a running host server")
     client.add_argument("--socket-dir", required=True, type=Path)
     client.add_argument("--command", dest="commands", action="append", default=[])
+    client.add_argument("--startup-timeout", type=startup_timeout_seconds, help="optional first-reply deadline in seconds")
     arguments = parser.parse_args()
     if sys.platform != "linux" or not hasattr(os, "pidfd_open"):
         parser.error("secure debugger server requires Linux pidfd support")

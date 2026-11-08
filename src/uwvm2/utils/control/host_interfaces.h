@@ -240,19 +240,91 @@ namespace uwvm2::utils::control::host_interfaces
         { if(static_cast<unsigned char>(value[i])!=static_cast<unsigned char>(expected[i])) { return false; } }
         return true;
     }
+    namespace lookup_details
+    {
+        template<typename Text>
+        constexpr ::std::uint32_t hash_text(Text const& text, ::std::uint32_t value = 2166136261u) noexcept
+        {
+            for(::std::size_t i{}; i != text.size(); ++i)
+            {
+                value ^= static_cast<unsigned char>(text[i]);
+                value *= 16777619u;
+            }
+            return value;
+        }
+        template<typename Text>
+        constexpr ::std::uint32_t key_hash(family group, Text const& key) noexcept
+        { return hash_text(key, (2166136261u ^ static_cast<unsigned char>(group)) * 16777619u); }
+        template<typename Namespace, typename Function>
+        constexpr ::std::uint32_t import_hash(Namespace const& ns, Function const& function) noexcept
+        { return hash_text(function, (hash_text(ns) ^ 0xffu) * 16777619u); }
+
+        // Derived from the catalogue, not an independent registry capacity.
+        inline constexpr ::std::size_t table_size = []() consteval
+        {
+            ::std::size_t size{1u};
+            while(size <= catalogue.size()) { size *= 2u; }
+            return size * 2u;
+        }();
+        using table_type = ::std::array<::std::size_t, table_size>;
+        consteval table_type make_table(bool imports)
+        {
+            table_type result{};
+            result.fill(invalid);
+            for(::std::size_t i{}; i != catalogue.size(); ++i)
+            {
+                auto const& item{catalogue[i]};
+                auto const hash{imports ? import_hash(item.name_space,item.function) : key_hash(item.group,item.key)};
+                ::std::size_t slot{hash & (table_size-1u)};
+                while(result[slot] != invalid) { slot = (slot+1u) & (table_size-1u); }
+                result[slot] = i;
+            }
+            return result;
+        }
+        inline constexpr auto keys{make_table(false)};
+        inline constexpr auto imports{make_table(true)};
+        inline constexpr auto longest = []() consteval
+        {
+            ::std::array<::std::size_t,3u> result{};
+            for(auto const& item:catalogue)
+            {
+                if(item.key.size() > result[0]) { result[0] = item.key.size(); }
+                if(item.name_space.size() > result[1]) { result[1] = item.name_space.size(); }
+                if(item.function.size() > result[2]) { result[2] = item.function.size(); }
+            }
+            return result;
+        }();
+    }
     template<typename Text>
     constexpr ::std::size_t find(family group, Text const& key) noexcept
     {
-        for(::std::size_t i{};i!=catalogue.size();++i)
-        { if(catalogue[i].group==group && equal(key,catalogue[i].key)) { return i; } }
-        return invalid;
+        // A longer name cannot match any registered entry. This avoids hashing
+        // arbitrary unregistered input in full; adding an entry updates this
+        // derived length automatically.
+        if(key.size() > lookup_details::longest[0]) { return invalid; }
+        ::std::size_t slot{lookup_details::key_hash(group,key) & (lookup_details::table_size-1u)};
+        for(;;)
+        {
+            auto const index{lookup_details::keys[slot]};
+            if(index == invalid) { return invalid; }
+            auto const& item{catalogue[index]};
+            if(item.group == group && equal(key,item.key)) { return index; }
+            slot = (slot+1u) & (lookup_details::table_size-1u);
+        }
     }
     template<typename Namespace,typename Function>
     constexpr ::std::size_t find(Namespace const& ns,Function const& function) noexcept
     {
-        for(::std::size_t i{};i!=catalogue.size();++i)
-        { if(equal(ns,catalogue[i].name_space) && equal(function,catalogue[i].function)) { return i; } }
-        return invalid;
+        if(ns.size() > lookup_details::longest[1] || function.size() > lookup_details::longest[2]) { return invalid; }
+        ::std::size_t slot{lookup_details::import_hash(ns,function) & (lookup_details::table_size-1u)};
+        for(;;)
+        {
+            auto const index{lookup_details::imports[slot]};
+            if(index == invalid) { return invalid; }
+            auto const& item{catalogue[index]};
+            if(equal(ns,item.name_space) && equal(function,item.function)) { return index; }
+            slot = (slot+1u) & (lookup_details::table_size-1u);
+        }
     }
     template<typename Text>
     constexpr bool parse_access(Text const& text,access& value) noexcept

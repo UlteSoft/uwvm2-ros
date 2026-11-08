@@ -32,7 +32,7 @@ namespace uwvm2::utils::update
     };
     namespace wasi_policy_detail
     {
-        inline constexpr ::std::array<unsigned char,8> magic{'U','W','P','O','L','5',0,0};
+        inline constexpr ::std::array<unsigned char,8> magic{'U','W','P','O','L','6',0,0};
         [[nodiscard]] inline bool valid_text(::uwvm2::utils::container::u8string_view value) noexcept
         {
             // Strict UTF-8, including rejection of embedded NUL, surrogates,
@@ -369,6 +369,11 @@ namespace uwvm2::utils::update
                     if((old_permissions&direction)==permission{})desired=env.stdio_base_rights(i==0u);
                     if((old_permissions&permission::stdio_metadata)==permission{} && env.permits(permission::stdio_metadata))desired|=rights::right_fd_filestat_get;
                     if((old_permissions&permission::stdio_readiness)==permission{} && env.permits(permission::stdio_readiness))desired|=rights::right_poll_fd_readwrite;
+                    // A signed stdio change does not silently acquire network
+                    // authority. Socket resource rights require their own
+                    // original trusted startup grant and cannot be manufactured.
+                    if(slot->wasi_fd.ptr->socket_kind!=::uwvm2::imported::wasi::wasip1::fd_manager::wasi_fd_rc_t::socket_type::none)
+                        desired=desired & env.socket_rights_for(slot->wasi_fd.ptr->socket_initial_fd).base;
                     slot->rights_base=desired;
                 }
                 slot->rights_inherit={};

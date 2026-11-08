@@ -51,6 +51,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
     inline interpreter_indirect_tail_transfer_func_t indirect_tail_transfer_func{}; // [global]
     inline interpreter_ref_tail_transfer_func_t ref_tail_transfer_func{}; // [global]
     inline interpreter_tail_transfer_func_t tail_transfer_func{}; // [global] installed before execution admission
+    inline memtag_trap_func_t trap_memtag_func{}; // host-installed before admission
+    inline memtag_operation_trap_func_t trap_memtag_operation_func{};
     inline atomic_wait_trap_func_t trap_atomic_wait_func{}; // [global] installed before execution admission
     inline ::uwvm2::runtime::compiler::uwvm_int::optable::unreachable_func_t trap_unaligned_atomic_func{}; // [global]
     inline ::uwvm2::runtime::compiler::uwvm_int::optable::unreachable_func_t unreachable_func{};                  // [global]

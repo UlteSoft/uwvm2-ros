@@ -1225,7 +1225,7 @@ namespace uwvm2test::uwvm_int_strict
 
         // Fully initialize runtime storage (preloaded modules + execute module) so imported refs (func/table/mem/global)
         // are properly linked. This matches the normal uwvm initialization pipeline.
-        ::uwvm2::uwvm::runtime::initializer::initialize_runtime();
+        if(!::uwvm2::uwvm::runtime::initializer::initialize_runtime()) { ::fast_io::fast_terminate(); }
 
         auto it = ::uwvm2::uwvm::runtime::storage::wasm_module_runtime_storage.find(module_name);
         if(it == ::uwvm2::uwvm::runtime::storage::wasm_module_runtime_storage.end()) { ::fast_io::fast_terminate(); }

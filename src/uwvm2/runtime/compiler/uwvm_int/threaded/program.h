@@ -6,12 +6,17 @@
 #include <cstring>
 #include <limits>
 #include <vector>
+#include <array>
+#include <type_traits>
+#include <uwvm2/runtime/compiler/shared/wasm1p1_simd.h>
+#include <uwvm2/extension/memtag/instruction.h>
 #include <uwvm2/uwvm/runtime/storage/impl.h>
 #include <uwvm2/validation/error/impl.h>
 #include <uwvm2/validation/standard/wasm3/reference_policy.h>
 #include <uwvm2/validation/standard/wasm3/exception_immediate.h>
 
 #endif
+#include "value.h"
 #if defined(__linux__) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
 namespace uwvm2::runtime::compiler::uwvm_int::threaded
 {
@@ -19,6 +24,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
     using signature = storage::wasm_binfmt1_final_function_type_t;
     using value_type = storage::wasm_binfmt1_final_value_type_t;
     namespace core = ::uwvm2::parser::wasm::standard::wasm3::type;
+    class engine;
     struct catch_clause { unsigned kind{}; ::std::uint32_t tag{}, label{}; };
     struct instruction
     {
@@ -27,6 +33,8 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         ::std::size_t offset{}, target{}, alternate{}, parameters{}, results{};
         ::std::vector<::std::uint32_t> labels{};
         ::std::vector<catch_clause> catches{};
+        ::std::array<::std::uint8_t,16u> literal{};
+        bool (*simd_handler)(engine&,instruction const&) noexcept{};
     };
     struct function_program
     {
@@ -42,17 +50,23 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
     namespace detail
     {
         [[nodiscard]] inline bool numeric_type(value_type t) noexcept
-        { return t==value_type::i32 || t==value_type::i64 || t==value_type::f32 || t==value_type::f64; }
+        { return t==value_type::i32 || t==value_type::i64 || t==value_type::f32 || t==value_type::f64 || t==value_type::v128; }
         [[nodiscard]] inline bool value_type_supported(core::core_value_type t) noexcept
         {
-            return t.kind<=core::value_kind::f64 || (t.kind==core::value_kind::reference &&
+            return t.kind<=core::value_kind::f64 || t.kind==core::value_kind::v128 || (t.kind==core::value_kind::reference &&
                 (t.heap.code==static_cast<::std::int64_t>(core::abstract_heap_type::exn) ||
                  t.heap.code==static_cast<::std::int64_t>(core::abstract_heap_type::noexn)));
         }
         [[nodiscard]] inline bool carrier_type(value_type t) noexcept
         { return numeric_type(t) || t==value_type::externref; }
         [[nodiscard]] inline ::std::size_t abi_bytes(value_type t) noexcept
-        { return t==value_type::i32 || t==value_type::f32 ? 4uz : 8uz; }
+        { return t==value_type::i32 || t==value_type::f32 ? 4uz : t==value_type::v128 ? 16uz : 8uz; }
+        [[nodiscard]] inline bool abi_fits(value_type const* begin,value_type const* end,::std::size_t limit) noexcept
+        {
+            for(auto at{begin};at!=end;++at)
+            { auto const bytes{abi_bytes(*at)};if(bytes>limit) { return false; }limit-=bytes; }
+            return true;
+        }
         [[nodiscard]] inline bool executable_signature(signature const* t) noexcept
         {
             if(!t) { return false; }
@@ -146,7 +160,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                 {
                     auto const block{static_cast<::std::int64_t>(input.leb(33u,true))};
                     if(block==-64) { }
-                    else if(block>=-4 && block<=-1) { ins.results=1; }
+                    else if(block>=-5 && block<=-1) { ins.results=1; }
                     else if(block==-23 || block==-12) { ins.results=1; }
                     else if(block==-29 || block==-28)
                     {
@@ -214,7 +228,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                     auto const t{static_cast<::std::int64_t>(input.leb(33u,true))};
                     if(t==-29 || t==-28)
                     { auto const heap{static_cast<::std::int64_t>(input.leb(33u,true))};if(heap!=-23&&heap!=-12) { return status::unsupported_profile; } }
-                    else if((t<-4||t>-1)&&t!=-23&&t!=-12) { return status::unsupported_profile; }
+                    else if((t<-5||t>-1)&&t!=-23&&t!=-12) { return status::unsupported_profile; }
                 }
                 else if(op==0xd0u)
                 { ins.immediate=input.leb(33u,true);if(static_cast<::std::int64_t>(ins.immediate)!=-23 && static_cast<::std::int64_t>(ins.immediate)!=-12) { return status::unsupported_profile; } }
@@ -228,7 +242,46 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                         ins.immediate=input.leb(32u);
                         if(sub==8u || sub==10u) { ins.target=input.leb(32u); }
                     }
+                    else if(auto const* tag{::uwvm2::extension::memtag::find_instruction(static_cast<::std::uint32_t>(sub))};
+                        tag!=nullptr && tag->operation!=::uwvm2::extension::memtag::opcode::add)
+                    {
+                        ins.opcode=0x400u+static_cast<unsigned>(sub);
+                        ins.target=input.leb(32u);
+                        if(ins.target!=0u) { return status::unsupported_profile; }
+                    }
                     else { return status::unsupported_profile; }
+                }
+                else if(op==0xfdu)
+                {
+                    namespace shared=::uwvm2::runtime::compiler::shared;
+                    auto const sub{input.leb(32u)};ins.opcode=0x10000u+static_cast<unsigned>(sub);
+                    bool const supported{shared::visit_wasm1p1_simd_instruction(static_cast<shared::simd_code>(sub),
+                        [&]<shared::simd_code Op,shared::wasm1p1_simd_instruction_kind Kind,
+                            shared::wasm1p1_simd_scalar_kind Scalar,::std::size_t Lanes,unsigned Align>() noexcept
+                        {
+                            using kind=shared::wasm1p1_simd_instruction_kind;
+                            if constexpr(Kind==kind::constant || Kind==kind::shuffle)
+                            {
+                                for(auto& byte:ins.literal)
+                                {
+                                    byte=static_cast<::std::uint8_t>(input.byte());
+                                    if constexpr(Kind==kind::shuffle) { if(byte>=32u) { input.valid=false; } }
+                                }
+                            }
+                            else if constexpr(Kind==kind::memory_load || Kind==kind::memory_store)
+                            {
+                                auto const flags{input.leb(32u)};
+                                if((flags&~127u)!=0u || (flags&63u)>Align) { input.valid=false;return true; }
+                                ins.target=(flags&64u)?input.leb(32u):0u;
+                                if(ins.target!=0u) { return false; }
+                                ins.immediate=input.leb(module.memory_declarations_require_memory64?64u:32u);
+                                if constexpr(Lanes!=0u) { ins.alternate=input.byte();if(ins.alternate>=Lanes) { input.valid=false; } }
+                            }
+                            else if constexpr(Kind==kind::extract_lane || Kind==kind::replace_lane)
+                            { ins.alternate=input.byte();if(ins.alternate>=Lanes) { input.valid=false; } }
+                            return true;
+                        })};
+                    if(!supported) { return status::unsupported_profile; }
                 }
                 else if((op>=0x28u&&op<=0x3eu) || op==0xfeu)
                 {

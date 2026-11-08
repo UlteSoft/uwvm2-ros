@@ -1,7 +1,7 @@
 # DEV guest-world rebuild
 
 The Linux authenticated debugger channel accepts `rebuild <path>` in a trusted
-`--management-profile dev` LLVM full launch. RELEASE cannot open that channel.
+`--debug-permissions full` LLVM full launch. RELEASE cannot open that channel.
 `rebuild-module <source-index> <path>` replaces either the main module (index 0)
 or one preload (indices 1..N in trusted startup order). These source indices are
 not debugger runtime module ordinals. An out-of-range index is refused before

@@ -1,0 +1,16 @@
+<idea-plugin>
+  <id>org.uwvm.debug</id>
+  <name>UWVM Host Debugger</name>
+  <version>0.1.0</version>
+  <vendor>UlteSoft</vendor>
+  <description>Attach through the host-owned UWVM broker using authenticated stdio transport.</description>
+  <idea-version since-build="242"/>
+  <depends>com.intellij.modules.platform</depends>
+  <depends>com.redhat.devtools.lsp4ij</depends>
+  <extensions defaultExtensionNs="com.redhat.devtools.lsp4ij">
+    <debugAdapterServer id="uwvm" name="UWVM host-owned debugger" factoryClass="org.uwvm.debug.UwvmDescriptorFactory"/>
+  </extensions>
+  <extensions defaultExtensionNs="com.intellij">
+    <toolWindow id="UWVM Inspection" anchor="bottom" factoryClass="org.uwvm.debug.UwvmInspection"/>
+  </extensions>
+</idea-plugin>

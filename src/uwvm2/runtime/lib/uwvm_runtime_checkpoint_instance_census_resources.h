@@ -488,7 +488,7 @@ struct census_allocator_quiescence
 };
 [[nodiscard]] static bool census_copy_memory_extent(complete_census_work& state, census_object_id wire,
     ::uwvm2::uwvm::runtime::storage::local_defined_memory_storage_t const& actual,
-    ::std::byte const* base, ::std::size_t length)
+    ::std::byte* base, ::std::size_t length)
 {
     auto const& declaration{*actual.memory_type_ptr};
     if(actual.memory.custom_page_size_log2 != 16u || length % 65536u != 0u ||
@@ -506,25 +506,32 @@ struct census_allocator_quiescence
     auto* memory{state.object(wire)}; if(memory == nullptr) { return false; }
     memory->flags = declaration.shared ? 1u : 0u;
     memory->words = {declaration.address64 ? 64u : 32u, pages, minimum, effective_max, 0u, 0u, 0u, 0u};
-    // Scan the ENTIRE committed allocation, retaining every nonzero page. This
-    // is a complete sparse snapshot, not a memory display window or quota truncation.
+    auto const& tags{actual.memory.memtag_shadow};
+    if(tags.enabled())
+    {
+        auto const count{length/16u};
+        if(!state.charge_payload(count)) { return false; }
+        memory->words[4u]=tags.width()==::uwvm2::extension::memtag::address_width::i32?4u:8u;
+        memory->bytes.resize(count);
+        auto const result{::uwvm2::extension::memtag::copy_debug_tags(tags,length,0u,length,
+            {reinterpret_cast<::std::uint8_t*>(memory->bytes.data()),count})};
+        if(result.status!=::uwvm2::extension::memtag::debug_tag_status::available || result.count!=count)
+        { return state.fail(census_error::invalid_shape); }
+    }
+    // Scan every committed page through the same allocation-tag-aware copy
+    // used by the paused debugger. Native tag bits are never serialized.
+    ::std::array<::std::byte,65536u> page{};
     for(::std::size_t offset{}; offset != length; offset += 65536u)
     {
+        if(!::uwvm2::extension::memtag::copy_debug_memory(tags,{base,length},offset,page.data(),page.size()))
+        { return state.fail(census_error::invalid_shape); }
         bool nonzero{};
-        for(::std::size_t i{}; i != 65536u; ++i)
-        {
-            // [actual committed immutable-at-stop base: offset+i<length] end
-            // [safe] length%65536==0, offset<length and base extent proved above.
-            if(base[offset + i] != ::std::byte{}) { nonzero = true; break; }
-        }
+        for(auto value:page) { if(value!=::std::byte{}) { nonzero=true;break; } }
         if(!nonzero) { continue; } // Omitted pages are explicitly all-zero DATA.
-        if(!state.charge_payload(65536u)) { return false; }
+        if(!state.charge_payload(page.size())) { return false; }
         auto const chunk{state.allocate(census_object_kind::memory_chunk)};
         if(chunk == 0u || !state.append_link(chunk, wire)) { return false; }
-        auto* item{state.object(chunk)}; item->words[0u] = offset; item->bytes.resize(65536u);
-        // [same actual committed owner ... offset][exact64KiB] ... end
-        // [safe] complete page proved before deriving base+offset; no guard hot path.
-        ::fast_io::freestanding::my_memcpy(item->bytes.data(), base + offset, 65536u);
+        auto* item{state.object(chunk)}; item->words[0u]=offset; item->bytes.assign(page.begin(),page.end());
     }
     return true;
 }

@@ -24,6 +24,7 @@
 #ifndef UWVM_MODULE
 // std
 # include <cstddef>
+# include <cstdlib>
 # include <cstdint>
 # include <cstring>
 # include <limits>
@@ -56,6 +57,7 @@
 # include <uwvm2/uwvm_predefine/utils/ansies/impl.h>
 # include <uwvm2/utils/container/impl.h>
 # include <uwvm2/object/memory/error/impl.h>
+# include <uwvm2/extension/memtag/hardware_mte.h>
 #endif
 
 #ifndef UWVM_MODULE_EXPORT
@@ -117,7 +119,24 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::signal
 
         /// @brief  Wasm linear-memory index used in diagnostics.
         ::std::size_t memory_idx{};
+# if defined(__linux__) && defined(__aarch64__)
+        // Stable mmap shadow and byte base, published only during quiescent
+        // activation. Both remain owned until the segment is unregistered.
+        ::std::byte const* memtag_base{};
+        ::std::uint8_t const* memtag_tags{};
+        bool memtag_shared{};
+# endif
     };
+# if defined(__linux__) && defined(__aarch64__)
+    struct hardware_memtag_fault
+    {
+        ::std::size_t memory_index{};
+        ::std::uint64_t offset{}, length{};
+        ::std::uintptr_t raw_address{}, instruction_address{};
+        ::std::uint8_t allocation_tag{}, hardware_allocation_tag{};
+        bool pointer_tag_available{};
+    };
+# endif
 
     /// @brief      Callback type invoked when a protected mmap segment is faulted.
     /// @details    The callback receives a fully populated fault report. It must not throw and it is
@@ -133,6 +152,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::signal
 
         /// @brief  Optional process-wide hook for translating mmap memory faults to a runtime-specific action.
         inline mmap_memory_out_of_bounds_func_t mmap_memory_out_of_bounds_func{};  // [global]
+# if defined(__linux__) && defined(__aarch64__)
+        // Signal-context callback: fixed storage and async-signal-safe actions
+        // only. It must not invoke debugger locks, heap allocation or unwinding.
+        using hardware_memtag_fault_func_t = void (*)(hardware_memtag_fault const&) noexcept;
+        inline hardware_memtag_fault_func_t hardware_memtag_fault_func{};
+        inline bool expose_memtag_bits{};
+# endif
 
         /// @brief  Internal runtime hook that receives the unchanged public fault report plus a borrowed native context.
         /// @note   The context is valid only for the synchronous callback. This separate channel preserves the ABI of
@@ -592,11 +618,54 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::signal
         ///             pointers are deliberately not seeded into the POSIX CFI native replacement path.
         ///             Other faults are delegated to the previous handler, or to the platform default action
         ///             when no previous handler is available.
+# if defined(__linux__) && defined(__aarch64__)
+        [[nodiscard]] inline bool dispatch_hardware_memtag_fault(::siginfo_t const* info,
+            ::std::uintptr_t pc) noexcept
+        {
+            static_assert(::std::atomic_ref<::std::uint8_t>::is_always_lock_free);
+            static_assert(::std::atomic_size_t::is_always_lock_free);
+            if(info==nullptr || info->si_code!=9 /* SEGV_MTESERR: synchronous */) { return false; }
+            auto const raw{reinterpret_cast<::std::uintptr_t>(info->si_addr)};
+            auto const address{raw&UINT64_C(0x00ffffffffffffff)};
+            for(auto const& segment:segments)
+            {
+                if(segment.memtag_base==nullptr || segment.memtag_tags==nullptr || segment.length_p==nullptr) { continue; }
+                auto const base{reinterpret_cast<::std::uintptr_t>(segment.memtag_base)};
+                auto const length{segment.length_p->load(::std::memory_order_acquire)};
+                if(address<base || address-base>=length) { continue; }
+                auto const offset{address-base};
+                auto* tag_pointer{const_cast<::std::uint8_t*>(segment.memtag_tags)+offset/16u};
+                auto const tag{segment.memtag_shared?
+                    ::std::atomic_ref<::std::uint8_t>{*tag_pointer}.load(::std::memory_order_relaxed):*tag_pointer};
+                auto const physical{::uwvm2::extension::memtag::hardware_mte::load_tag(
+                    const_cast<::std::byte*>(segment.memtag_base)+offset/16u*16u)};
+                hardware_memtag_fault const report{segment.memory_idx,offset,length,raw,pc,tag,physical,expose_memtag_bits};
+                if(hardware_memtag_fault_func) { hardware_memtag_fault_func(report); }
+                // No general runtime callback is safe here. Default standalone
+                // owner use still distinguishes MTE from a bounds fault.
+                constexpr char message[]{"uwvm: [fatal] Synchronous hardware MTE violation in Wasm-owned memory.\n"};
+                static_cast<void>(::fast_io::posix_write_nothrow(
+                    ::fast_io::posix_io_observer{::fast_io::posix_stderr_number},message,sizeof(message)-1u));
+                ::_Exit(126);
+            }
+            return false;
+        }
+# endif
+
         inline constexpr void posix_signal_handler(int signal, ::siginfo_t* siginfo, void* context) noexcept
         {
             auto const fault_addr{siginfo == nullptr ? nullptr : reinterpret_cast<::std::byte const*>(siginfo->si_addr)};
             auto const instruction_address{get_signal_instruction_address(context)};
 
+# if defined(__linux__) && defined(__aarch64__)
+            if(signal==SIGSEGV && siginfo!=nullptr && (siginfo->si_code==9 || siginfo->si_code==8))
+            {
+                if(dispatch_hardware_memtag_fault(siginfo,instruction_address)) { return; }
+                // Unowned or asynchronous tag faults are host faults, never
+                // reclassified as Wasm out-of-bounds merely by address.
+            }
+            else
+# endif
             if(handle_fault_address_with_context(fault_addr, instruction_address, 0u, 0u, nullptr)) { return; }
 
             if(signal == SIGSEGV && signal_handlers.has_previous_sigsegv)
@@ -631,6 +700,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::signal
             act.sa_sigaction = posix_signal_handler;
             sigemptyset(::std::addressof(act.sa_mask));
             act.sa_flags = SA_SIGINFO;
+# if defined(__linux__) && defined(__aarch64__)
+            // Linux UAPI SA_UNSUPPORTED|SA_EXPOSE_TAGBITS. Probe the installed
+            // flags below; do not claim a logical tag when the kernel strips it.
+            act.sa_flags |= 0x400 | 0x800;
+# endif
 #ifdef SA_ONSTACK
             // A later memory-provider installation may sit above the runtime's
             // native-stack handler. Preserve alternate-stack delivery so a
@@ -655,6 +729,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::signal
                 ::fast_io::fast_terminate();
             }
             signal_handlers.has_previous_sigsegv = true;
+# if defined(__linux__) && defined(__aarch64__)
+            struct ::sigaction installed{};
+            expose_memtag_bits = posix::sigaction(SIGSEGV,nullptr,::std::addressof(installed))==0 &&
+                (installed.sa_flags&0x400)==0 && (installed.sa_flags&0x800)!=0;
+# endif
 
 #  ifdef SIGBUS
             if(posix::sigaction(SIGBUS, ::std::addressof(act), ::std::addressof(signal_handlers.previous_sigbus)) != 0) [[unlikely]]
@@ -726,6 +805,25 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::signal
         detail::install_signal_handler();
         detail::segments.emplace_back(begin, end, length_p, memory_idx);
     }
+
+# if defined(__linux__) && defined(__aarch64__)
+    // Quiescent owner activation only; no guest supplies these native ranges.
+    [[nodiscard]] inline bool register_hardware_memtag_owner(::std::byte const* reservation,
+        ::std::byte const* base, ::std::uint8_t const* tags, bool shared) noexcept
+    {
+        if(base==nullptr || tags==nullptr) { return false; }
+        for(auto& segment:detail::segments)
+        {
+            if(segment.begin!=reservation || segment.length_p==nullptr) { continue; }
+            auto const begin{reinterpret_cast<::std::uintptr_t>(segment.begin)};
+            auto const end{reinterpret_cast<::std::uintptr_t>(segment.end)};
+            auto const address{reinterpret_cast<::std::uintptr_t>(base)};
+            if(address<begin || address>=end || segment.length_p->load(::std::memory_order_acquire)>end-address) { return false; }
+            segment.memtag_base=base;segment.memtag_tags=tags;segment.memtag_shared=shared;return true;
+        }
+        return false;
+    }
+# endif
 
     /// @brief      Remove a previously registered protected memory interval.
     /// @details    The interval is matched by the exact begin/end pair used at registration time. Missing

@@ -11,16 +11,17 @@
     {
         namespace ws = ::uwvm2::uwvm::debugger::wasm_state;
         ws::view out{}; out.requested = ws::unavailable_request(selection);
-        if(!::uwvm2::utils::control::management::debug_allowed()) { out.result = ws::status::unavailable_activation; return out; }
+        if(!::uwvm2::utils::control::debug_permissions::inspection_allowed()) { out.result = ws::status::unavailable_activation; return out; }
         if(!ws::valid(selection)) { out.result = ws::status::invalid_selection; return out; }
 # if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS)
         if(!ticket) { out.result = ws::status::requires_current_cooperative_stop; return out; }
-        if(supplied.empty() || supplied.size() > 256u)
+        if(supplied.empty())
         { out.result = ws::status::incomplete_cohort; return out; }
-        runtime_checkpoint_thread_capture::owner captures[256u]{};
+        runtime_checkpoint_capture_buffer captures{supplied.size()};
+        if(!captures) { out.result = ws::status::allocation_failed; return out; }
         for(::std::size_t index{}; index != supplied.size(); ++index)
         {
-            // [request-owned opaque capture array, size<=256] end
+            // [request-owned opaque capture array, size] end
             // [safe                                        ] index < size BEFORE owner read.
             auto canonical{llvm_jit_checkpoint_thread_capture::canonical(supplied[index])};
             if(!canonical) { out.result = ws::status::unavailable_activation; return out; }
@@ -34,7 +35,7 @@
         // not wrap this call in a second domain/GC guard or use count0/public
         // labels as root/world-stop permission.
         return runtime_checkpoint_coherent_manager::query_current_wasm_state(
-            ticket, {captures, supplied.size()}, selection);
+            ticket, {captures.data(), supplied.size()}, selection);
 # else
         out.result = ws::status::requires_llvm_jit_full; return out;
 # endif

@@ -142,7 +142,7 @@ public:
     try
     {
         actual = ::std::make_shared<native_retirement_state>(); actual->deadline = deadline;
-        actual->joined = runtime_checkpoint_guest_worker_bridge::prepare_join_storage();
+        actual->joined = runtime_checkpoint_guest_worker_bridge::prepare_join_storage(supplied.size());
         if(!actual->joined)
         { out.status = outcome::allocation_failed; lock.unlock(); actual.reset(); return out; }
         retirement_handoff handoff{}; handoff.native = actual.get();

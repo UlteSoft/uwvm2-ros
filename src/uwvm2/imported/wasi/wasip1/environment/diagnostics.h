@@ -8,7 +8,7 @@ namespace uwvm2::imported::wasi::wasip1::environment
     {return env.trace_wasip1_group_kind==trace_wasip1_group_kind_t::custom_group?"group":"single";}
     template<typename Env> inline std::string_view diagnostic_target(Env const& env) noexcept
     {return host_diagnostic::view(env.trace_wasip1_group_name_storage);}
-    template<typename Env> inline void diagnostic_denied(Env const& env,std::size_t id,bool interface,std::uint64_t first=UINT64_MAX) noexcept
+    template<typename Env> inline void diagnostic_denied(Env& env,std::size_t id,bool interface,std::uint64_t first=UINT64_MAX) noexcept
     {
         namespace api=::uwvm2::utils::control::host_interfaces;
         if(host_diagnostic::selected(id,host_diagnostic::event::denied)==host_diagnostic::severity::off)return;
@@ -58,8 +58,49 @@ namespace uwvm2::imported::wasi::wasip1::environment
                 }
                 else remedy="--help wasi; configure the exact socket/preopen rights required by this call";
             }
-            host_diagnostic::report(id,host_diagnostic::event::denied,diagnostic_scope(env),diagnostic_target(env),
-                interface?"interface calls are not allowed":"operation or resource authority was not granted",remedy);
+            std::string reason=interface?"interface calls are not allowed":"operation or resource authority was not granted";
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            if(!interface && first<=INT32_MAX)
+            {
+                auto function=api::catalogue[id].function;
+                if(function.starts_with("fd_")||function.starts_with("sock_"))
+                {
+                    int socket_slot{-1},stdio_slot{-1};
+                    {
+                        auto& table=env.fd_storage;
+                        ::uwvm2::utils::mutex::rw_fair_shared_guard_t table_lock{table.fds_rwlock};
+                        ::uwvm2::imported::wasi::wasip1::fd_manager::wasi_fd_t* object{};
+                        if(first<table.opens.size())object=table.opens.index_unchecked(static_cast<std::size_t>(first)).fd_p;
+                        else if(auto it=table.renumber_map.find(static_cast<int>(first));it!=table.renumber_map.end())object=it->second.fd_p;
+                        if(object)
+                        {
+                            ::uwvm2::utils::mutex::mutex_merely_release_guard_t fd_lock{};
+                            fd_lock.device_p=std::addressof(object->fd_mutex);fd_lock.lock();
+                            if(object->close_pos==SIZE_MAX && object->wasi_fd.ptr)
+                            {
+                                stdio_slot=object->wasi_fd.ptr->checkpoint_stdio_index;
+                                if(object->wasi_fd.ptr->socket_kind!=::uwvm2::imported::wasi::wasip1::fd_manager::wasi_fd_rc_t::socket_type::none)
+                                    socket_slot=object->wasi_fd.ptr->socket_initial_fd;
+                            }
+                        }
+                    }
+                    if(function.ends_with("_wasm64"))function.remove_suffix(7);
+                    if(stdio_slot>=0 && (function=="fd_fdstat_get" || function=="fd_filestat_get") &&
+                       !env.permits(permission_t::stdio_metadata))
+                    {
+                        reason="metadata authority for the original standard stream was not granted";
+                        remedy=host_diagnostic::command(api::family::wasip1,diagnostic_scope(env),diagnostic_target(env),"grant")+" stdio.metadata";
+                    }
+                    else if(socket_slot>=0)
+                    {
+                        reason="socket rights for initial fd "+std::to_string(socket_slot)+" were not granted";
+                        remedy=host_diagnostic::command(api::family::wasip1,diagnostic_scope(env),diagnostic_target(env),"socket-rights")+
+                            " "+std::to_string(socket_slot)+" <approved-base:csv|none> <approved-accepted-child:csv|none>";
+                    }
+                }
+            }
+#endif
+            host_diagnostic::report(id,host_diagnostic::event::denied,diagnostic_scope(env),diagnostic_target(env),reason,remedy);
         }
 #if defined(__cpp_exceptions)
         catch(...) {

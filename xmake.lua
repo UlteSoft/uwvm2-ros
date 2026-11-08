@@ -105,18 +105,11 @@ function def_build(opt)
 		add_defines("UWVM2_BUILD_SOURCE_ID=u8\"" .. build_source_id .. "\"")
 	end
 
-	for _, ros_version in ipairs({1, 2}) do
-		if get_config("import-ros" .. ros_version) then
-			-- Linux-only admission is enforced by the mandatory sandbox policy.
-			-- The VM talks to an external native ROS Gateway over the typed
-			-- wire protocol. Its CPU/PCS need not match a distro's binary packages.
-			-- Each VM still requires its own paired LLVM/libc++/unwind ABI.
-			uwvm_require_build_config(is_arch("x86_64", "x64", "amd64", "x86", "i386", "i686", "aarch64", "arm64",
-				"arm", "armsf", "armhf", "armv7", "armv7a", "armv7-a"),
-				"ROS host imports require Linux x86_64, i686, little-endian AArch64 or ARMv7 soft/hard-float")
-			add_defines("UWVM_IMPORT_ROS" .. ros_version)
-		end
-	end
+	-- The mandatory product check rejects all interface-removal options.
+	-- Compilation always includes both audited bridges; it grants no authority.
+	-- The product admission checks architecture after Xmake resolves options;
+	-- declarative menu loading has no selected architecture yet.
+	add_defines("UWVM_IMPORT_ROS1", "UWVM_IMPORT_ROS2")
 	-- @brief Apply the selected SDK registry capacities to every translation unit.
 	-- @details Runtime, CLI and test targets must share these compile-time limits.
 	-- Vendor catalogs can exceed the defaults; option declarations alone do not
@@ -205,24 +198,9 @@ function def_build(opt)
 		error("unsupported wasm-memory-model: " .. tostring(wasm_memory_model))
 	end
 
-	local disable_local_imported_wasip1 = get_config("disable-local-imported-wasip1")
-	if disable_local_imported_wasip1 then
-		add_defines("UWVM_DISABLE_LOCAL_IMPORTED_WASIP1")
-	end
-
-	local enable_local_imported_wasip1_wasm64 = get_config("enable-local-imported-wasip1-wasm64")
-	if enable_local_imported_wasip1_wasm64 then
-		add_defines("UWVM_ENABLE_LOCAL_IMPORTED_WASIP1_WASM64")
-	end
-
-	local enable_local_imported_wasip1_socket = get_config("enable-local-imported-wasip1-socket")
-	if not enable_local_imported_wasip1_socket or enable_local_imported_wasip1_socket == "none" then
-		-- do nothing
-	elseif enable_local_imported_wasip1_socket == "wasip1" then
-		add_defines("UWVM_ENABLE_WASIP1_SOCKET")
-	elseif enable_local_imported_wasip1_socket == "wasix" then
-		add_defines("UWVM_ENABLE_WASIX_VER_WASIP1_SOCKET")
-	end
+	-- Always build the complete interface set. Socket ABI selection is an
+	-- immutable runtime decision, independent of exposure and descriptor rights.
+	add_defines("UWVM_ENABLE_LOCAL_IMPORTED_WASIP1_WASM64", "UWVM_ENABLE_WASIP1_SOCKET")
 
 	local execution_int = get_config("execution-int")
 	if not execution_int or execution_int == "none" then

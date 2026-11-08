@@ -15,7 +15,7 @@
         ::std::uint_least64_t guest_offset, ::std::size_t size,
         ::std::uint_least8_t address_bytes, llvm_jit_debug_source_object_copy& out) noexcept
     {
-        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
+        if(!::uwvm2::utils::control::debug_permissions::inspection_allowed()) { return {}; }
         out = {};
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS)
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
@@ -73,8 +73,10 @@
                     [&](::std::byte* begin, ::std::size_t length) noexcept
                 {
                     if(begin == nullptr && length != 0u) { return false; }
+                    ::std::uint64_t canonical{};
                     ::std::size_t host_offset{};
-                    if(!validate_preload_copy_range(length, guest_offset, size, host_offset)) { return false; }
+                    if(!::uwvm2::extension::memtag::debug_canonical_address(memory.memory.memtag_shadow,guest_offset,canonical) ||
+                       !validate_preload_copy_range(length,canonical,size,host_offset)) { return false; }
                     if(size != 0u)
                     {
                         if(begin == nullptr || candidate.bytes.size() != size) { return false; }
@@ -84,7 +86,8 @@
                         //     size<=length-offset; destination owns exactly size bytes.
                         // The ONE all-stopped domain transaction and backend
                         // snapshot remain live throughout this bounded copy.
-                        ::std::memcpy(candidate.bytes.data(), begin + host_offset, size);
+                        if(!::uwvm2::extension::memtag::copy_debug_memory(memory.memory.memtag_shadow,
+                            {begin,length},host_offset,candidate.bytes.data(),size)) { return false; }
                     }
                     return true;
                 })};

@@ -1,5 +1,7 @@
 # UWVM Command-Line Reference
 
+Debugger permission levels are `full`, `read-only`, `limited` and `none`, selected only at launch. `-Rdbg` defaults to `full`; other launches default to `limited`. See [Debugger permissions](debug-permissions.md) for dump redaction, independent update authority and IDE negotiation.
+
 This directory is the source-driven command-line reference for the `uwvm2-ros` executable. It expands the compact `uwvm2-ros --help` output into behavior notes, parameter interaction rules, platform gates, path handling details, and practical combinations.
 
 The command registry and callbacks used for this reference are primarily in:
@@ -15,6 +17,9 @@ Build-time `xmake f ...` switches are documented separately in [`../xmake-option
 ## Documents
 
 - [Parsing And Paths](parsing-and-paths.md): argument preprocessing, duplicate handling, `--run`, strict parsing, file path classes, and Windows NT `::NT::` paths.
+- [Operator Whitepaper](../user-whitepaper.md): build, deployment, authority, debugging, updates and exit status.
+- [Complete CLI Catalog](cli-catalog.md): every command advertised by the qualified integration binary.
+- [Crash Policy](crash-policy.md): immutable crash handling and dump boundaries.
 - [Global And Debug Commands](global-debug.md): `--help`, `--mode`, `--run`, `--version`, and `--debug-test`.
 - [Language Debugger Build Options](language-debug-build.md): independent language switches, macros, explicit selection and build validation.
 - [WebAssembly Commands](wasm.md): module loading, explicit start-function invocation, preload modules, native dynamic libraries, import binding rewrites, weak symbols, parser limits, initializer limits, memory limits, preload memory attributes, and strict memory growth.
@@ -25,16 +30,15 @@ Build-time `xmake f ...` switches are documented separately in [`../xmake-option
 
 ## Quick Availability Model
 
-The command set is compiled conditionally. A binary may omit a command entirely when its feature is disabled. Important gates include:
+The ROS build always includes WASI Preview 1 (memory32 and memory64), both
+socket ABI implementations, ROS1 and ROS2. Xmake rejects attempts to remove
+those interfaces. Whether a guest may import or call them is an explicit
+per-module runtime policy; a compiled interface is not a permission grant.
 
-- `_DEBUG` for `--debug-test`.
-- `UWVM_SUPPORT_PRELOAD_DL` for native preload dynamic libraries.
-- `UWVM_SUPPORT_WEAK_SYMBOL` for weak-symbol listing.
-- `UWVM_SUPPORT_MMAP` for preload memory access mode `mmap`.
-- `UWVM_RUNTIME_*` backend macros for the full interpreter and full-module LLVM AOT commands.
-- `UWVM_IMPORT_WASI` and `UWVM_IMPORT_WASI_WASIP1` for WASI commands.
-- `UWVM_IMPORT_WASI_WASIP1_SUPPORT_SOCKET` for WASI socket preopen commands.
-- Windows platform macros for `::NT::` path handling, Windows 9x TOCTOU warnings, and legacy Win32 color mode.
+Other command availability can depend on the optional interpreter, internal
+debug build hooks, preload support and platform-specific management transport.
+The ROS product admits only its five Linux GNU target ABIs; a cross-platform
+help description does not admit a Windows or macOS ROS deployment.
 
 The binary itself is always authoritative:
 
@@ -42,6 +46,9 @@ The binary itself is always authoritative:
 uwvm2-ros --help all
 uwvm2-ros --help global
 uwvm2-ros --help debug
+uwvm2-ros --help update
+uwvm2-ros --help ros1
+uwvm2-ros --help ros2
 uwvm2-ros --help wasm
 uwvm2-ros --help runtime
 uwvm2-ros --help log

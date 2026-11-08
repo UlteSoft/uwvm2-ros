@@ -207,7 +207,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
         {
             namespace op = details::op_details;
             using Value = op::memory64_simd::simd::wasm_v128;
-            constexpr bool Store{op::memory64_simd::store<Op>};
+            [[maybe_unused]] constexpr bool Store{op::memory64_simd::store<Op>};
             if constexpr(!Option.is_tail_call)
             {
                 return static_cast<uwvm_interpreter_opfunc_byref_t<Type...>>(uwvmint_memory64_simd<Op, op::bounds_check_generic, Option, 0uz, 0uz, Type...>);

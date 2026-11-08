@@ -23,6 +23,7 @@
 
 #ifndef UWVM_MODULE
 // std
+# include <array>
 # include <cstddef>
 # include <cstdint>
 # include <climits>
@@ -80,6 +81,85 @@
 
 UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 {
+
+    // This buffer is a transfer batch, not a guest request limit. Keeping it in
+    // a separate frame leaves the ordinary untagged/nonshared path unchanged.
+    template<::std::size_t BatchBytes>
+    UWVM_NOINLINE inline ::uwvm2::imported::wasi::wasip1::abi::errno_t
+    random_get_shared_tagged_batch(
+        ::uwvm2::object::memory::linear::native_memory_t const& memory,
+        ::std::uint64_t raw, ::std::uint64_t bytes) noexcept
+    {
+        using error_type = ::uwvm2::imported::wasi::wasip1::abi::errno_t;
+        {
+            [[maybe_unused]] auto const pin{::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory)};
+            if(!::uwvm2::imported::wasi::wasip1::memory::with_checked_guest_bytes_unlocked(
+                memory,raw,bytes,[](::std::byte*,::std::size_t) noexcept {}))
+            { return error_type::efault; }
+        }
+        ::std::array<::std::byte,BatchBytes> owned;
+        ::std::uint64_t completed{};
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(__linux__)
+        unsigned interrupted{};
+#endif
+# ifdef UWVM_CPP_EXCEPTIONS
+        try
+# endif
+        {
+            while(completed != bytes)
+            {
+                auto const remaining{bytes-completed};
+                auto const count{static_cast<::std::size_t>(remaining < owned.size() ? remaining : owned.size())};
+                ::std::size_t available{count};
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(__linux__)
+                if(::uwvm2::imported::wasi::wasip1::environment::host_wait_cancelled())
+                { return error_type::ecanceled; }
+                ::uwvm2::imported::wasi::wasip1::environment::process_budget_ledger.native_random_calls.fetch_add(
+                    1u,::std::memory_order_relaxed);
+                auto const result{::getrandom(owned.data(),count,GRND_NONBLOCK)};
+                if(result <= 0)
+                {
+                    if(result < 0 && errno == EINTR && ++interrupted < 8u) { continue; }
+                    return result < 0 && (errno == EAGAIN || errno == EINTR) ? error_type::eagain : error_type::eio;
+                }
+                available=static_cast<::std::size_t>(result);
+#else
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                ::uwvm2::imported::wasi::wasip1::environment::process_budget_ledger.native_random_calls.fetch_add(
+                    1u,::std::memory_order_relaxed);
+#endif
+                ::fast_io::operations::read_all_bytes(::fast_io::native_white_hole{},owned.data(),owned.data()+count);
+#endif
+                // No guest pin, pointer or tag lease was retained during native
+                // entropy acquisition. Recheck once; never repeat native input
+                // after a stale output pointer fails.
+                {
+                    [[maybe_unused]] auto const pin{::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory)};
+                    if(!::uwvm2::imported::wasi::wasip1::memory::copy_guest_bytes_unlocked<true>(
+                        memory,raw+completed,owned.data(),available,true))
+                    { return error_type::efault; }
+                }
+                completed+=available;
+            }
+        }
+# ifdef UWVM_CPP_EXCEPTIONS
+        catch(::fast_io::error error)
+        { return ::uwvm2::imported::wasi::wasip1::func::path_errno_from_fast_io_error(error); }
+# endif
+        return error_type::esuccess;
+    }
+
+    inline ::uwvm2::imported::wasi::wasip1::abi::errno_t
+    random_get_shared_tagged(
+        ::uwvm2::object::memory::linear::native_memory_t const& memory,
+        ::std::uint64_t raw, ::std::uint64_t bytes) noexcept
+    {
+        // Small requests avoid probing a 64 KiB native stack frame. Large
+        // requests retain the same batch size and native-call count.
+        if(bytes <= 1024u) { return random_get_shared_tagged_batch<1024u>(memory,raw,bytes); }
+        return random_get_shared_tagged_batch<65536u>(memory,raw,bytes);
+    }
+
     /// @brief     WasiPreview1.random_get
     /// @details   __wasi_errno_t random_get(void *buf, size_t buf_len);
 
@@ -114,6 +194,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         auto const memory_pointer{env.get_memory()};
         if(memory_pointer == nullptr) [[unlikely]] { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
         auto& memory{*memory_pointer};
+        if(memory.memtag_shadow.enabled() && memory.memtag_shadow.shared())
+        { return random_get_shared_tagged(memory,buf,buf_len); }
+
 
         {
             // Full locking is required during reading.
@@ -122,7 +205,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             if(!::uwvm2::imported::wasi::wasip1::func::check_wasip1_memory_bounds_wasm32_unlocked(memory, buf, buf_len))
             { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
 
-            auto const write_memory_begin{memory.memory_begin + buf};
+            auto const output_span{::uwvm2::imported::wasi::wasip1::memory::checked_span_unlocked(memory,buf,buf_len)};
+            if(!output_span) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
+            auto const write_memory_begin{output_span.data};
             auto const write_memory_end{write_memory_begin + buf_len};
 
 # ifdef UWVM_CPP_EXCEPTIONS
@@ -130,7 +215,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 # endif
             {
                 // The construction of the native_white_hole component may throw exceptions on certain platforms. Additionally, even if interrupted mid-read, it
-                // is impossible to pre-generate the random number and then copy it to memory—this is a security measure.
+                // the native source may return a partial result before reporting an error.
 
                 // If an error occurs at the underlying layer, the buffer is not guaranteed to retain its state prior to the call.
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(__linux__)

@@ -44,6 +44,7 @@
 # include <uwvm2/parser/wasm/standard/wasm3/type/impl.h>
 # include <uwvm2/parser/wasm/binfmt/binfmt_ver1/impl.h>
 # include <uwvm2/validation/impl.h>
+# include <uwvm2/extension/memtag/usage.h>
 # include <uwvm2/validation/standard/wasm1/impl.h>
 # include <uwvm2/validation/standard/wasm1p1/impl.h>
 # include <uwvm2/validation/standard/wasm3/impl.h>
@@ -65,7 +66,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::validator
         ::uwvm2::parser::wasm::binfmt::ver1::wasm_binfmt_ver1_module_extensible_storage_t<Fs...> const& module_storage,
         ::uwvm2::parser::wasm::concepts::feature_parameter_t<Fs...> const& fs_para,
         [[maybe_unused]] ::uwvm2::utils::container::u8cstring_view file_name,
-        [[maybe_unused]] ::uwvm2::utils::container::u8string_view module_name) noexcept
+        [[maybe_unused]] ::uwvm2::utils::container::u8string_view module_name,
+        ::uwvm2::extension::memtag::usage_sink* memtag_usage = nullptr) noexcept
     {
         auto const& importsec{::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<
             ::uwvm2::parser::wasm::standard::wasm1::features::import_section_storage_t<Fs...>>(module_storage.sections)};
@@ -93,12 +95,31 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::validator
                 auto const code_begin_ptr{reinterpret_cast<::std::byte const*>(code.body.expr_begin)};
                 auto const code_end_ptr{reinterpret_cast<::std::byte const*>(code.body.code_end)};
                 v_err = {};
+                if(memtag_usage != nullptr)
+                {
+                    auto const bytes{::std::span<::std::byte const>{code_begin_ptr,code_end_ptr}};
+                    if(!::uwvm2::extension::memtag::may_contain_memtag(bytes)) { continue; }
+                    auto const& policy{::uwvm2::parser::wasm::standard::wasm1p1::features::get_wasm1p1_parameter(fs_para)};
+                    if(!::uwvm2::validation::standard::wasm3::uses_core3_validation_policy(policy))
+                    {
+                        // Preserve the selected legacy binary grammar before
+                        // using the Core 3 typed sink solely for metadata.
+                        ::uwvm2::validation::standard::wasm3::validate_code_with_runtime_policy(
+                            module_storage,import_func_count+local_idx,code_begin_ptr,code_end_ptr,v_err,fs_para);
+                    }
+                    ::uwvm2::validation::standard::wasm3::validate_code_to_sink(
+                        ::uwvm2::validation::standard::wasm3::wasm3_code_version{},module_storage,
+                        import_func_count+local_idx,code_begin_ptr,code_end_ptr,v_err,fs_para,*memtag_usage);
+                }
+                else
+                {
                 ::uwvm2::validation::standard::wasm3::validate_code_with_runtime_policy(module_storage,
                                                                                         import_func_count + local_idx,
                                                                                         code_begin_ptr,
                                                                                         code_end_ptr,
                                                                                         v_err,
                                                                                         fs_para);
+                }
             }
         }
 #ifdef UWVM_CPP_EXCEPTIONS

@@ -160,16 +160,22 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
             return out;
         }
 
+        // Borrow an already-owned byte range for this synchronous digest. No
+        // pointer escapes and no identity input is omitted or normalized.
         [[nodiscard]] inline constexpr ::uwvm2::utils::container::u8string
-            sha256_hex_for_path(::uwvm2::utils::container::vector<::std::byte> const& bytes) noexcept
+            sha256_hex_for_path(::std::byte const* first, ::std::byte const* last) noexcept
         {
-            auto const digest{sha256_bytes(bytes.cbegin(), bytes.cend())};
+            auto const digest{sha256_bytes(first, last)};
             ::uwvm2::utils::container::u8string out{};
             out.reserve(::uwvm2::runtime::llvm_jit_cache::cache_sha256_digest_size * 2uz);
             // Hex keeps cache file names portable across filesystems and shell tools.
             for(auto b: digest) { append_hex_byte(out, b); }
             return out;
         }
+
+        [[nodiscard]] inline constexpr ::uwvm2::utils::container::u8string
+            sha256_hex_for_path(::uwvm2::utils::container::vector<::std::byte> const& bytes) noexcept
+        { return sha256_hex_for_path(bytes.cbegin(), bytes.cend()); }
 
         inline constexpr void append_bytes_n(::uwvm2::utils::container::vector<::std::byte>& out, ::std::byte const* first, ::std::size_t size) noexcept
         {

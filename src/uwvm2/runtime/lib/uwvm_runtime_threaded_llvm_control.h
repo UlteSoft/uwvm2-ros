@@ -13,7 +13,7 @@
             for(auto const& bridge:emitted_bridges_)
             {
                 if(bridge.declaration==nullptr)return false;
-                ::std::uintptr_t replacement{};
+                ::std::uintptr_t replacement{memtag_bridge_replacement(*bridge.declaration,bridge.original)};
                 if(bridge.original==address(&llvm_jit_runtime_trap))replacement=address(&trap);
                 else if(bridge.original==address(&llvm_jit_memory_out_of_bounds_trap))replacement=address(&memory_trap);
                 else if(bridge.original==address(&details::llvm_jit_call_raw_from_generated_wasm_abi_bridge))replacement=address(&import_call);
@@ -129,7 +129,8 @@
                         }
                         bool is_trap{};
                         for(auto const& bridge:emitted_bridges_)if(bridge.declaration==target&&
-                            (bridge.original==address(&llvm_jit_runtime_trap)||bridge.original==address(&llvm_jit_memory_out_of_bounds_trap)))is_trap=true;
+                            (bridge.original==address(&llvm_jit_runtime_trap)||bridge.original==address(&llvm_jit_memory_out_of_bounds_trap)||
+                             bridge.original==address(&llvm_jit_memtag_trap)))is_trap=true;
                         if(is_trap)traps.push_back(call);else calls.push_back(call);
                     }
                 }

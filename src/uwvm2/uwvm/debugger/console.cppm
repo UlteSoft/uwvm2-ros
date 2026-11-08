@@ -20,6 +20,9 @@ module;
 #endif
 export module uwvm2.uwvm.debugger:console;
 import fast_io;
+import uwvm2.extension.memtag.color;
+import uwvm2.extension.memtag.debug_types;
+import :console_memory;
 import uwvm2.uwvm.debugger.source_pretty_registry;
 import :console_help;
 import :console_messages;

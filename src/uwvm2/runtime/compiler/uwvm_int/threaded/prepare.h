@@ -12,12 +12,12 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         ::std::size_t source_bytes{},code_bytes{},functions{},storage_bytes{sizeof(engine)};
         auto charge{[](::std::size_t count,::std::size_t width,::std::size_t& used,::std::size_t limit) noexcept
         { if(used>limit || count>(limit-used)/width) { return false; }used+=count*width;return true; }};
-        if(!charge(limits_.values,sizeof(::std::uint64_t),storage_bytes,limits_.storage_bytes) ||
+        if(!charge(limits_.values,sizeof(stack_value),storage_bytes,limits_.storage_bytes) ||
             !charge(limits_.calls,sizeof(activation),storage_bytes,limits_.storage_bytes) ||
             !charge(limits_.controls,sizeof(control),storage_bytes,limits_.storage_bytes) ||
             !charge(limits_.host_bytes,2uz,storage_bytes,limits_.storage_bytes) ||
             !charge(limits_.exception_objects,sizeof(exception_record),storage_bytes,limits_.storage_bytes) ||
-            !charge(limits_.exception_values,sizeof(::std::uint64_t),storage_bytes,limits_.storage_bytes) ||
+            !charge(limits_.exception_values,sizeof(stack_value),storage_bytes,limits_.storage_bytes) ||
             !charge(world_->module_count(),sizeof(bound_module),storage_bytes,limits_.storage_bytes) ||
             !charge(limits_.controls,sizeof(::std::size_t),code_bytes,limits_.instruction_bytes))
         { return status::resource_limit; }
@@ -27,7 +27,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         for(::std::size_t m{};m<modules_.size();++m)
         {
             auto const* module{world_->module(m)};if(!module || !world_->file(m) || !world_->feature_parameter(m)) { return status::invalid_world; }
-            if(module->type_section_storage.requires_simd || module->table_declarations_require_gc ||
+            if(module->table_declarations_require_gc ||
                 module->global_declarations_require_gc || module->element_declarations_require_gc ||
                 !module->imported_table_vec_storage.empty() || module->table_declarations_require_table64)
             { return status::unsupported_profile; }
@@ -66,7 +66,8 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                 auto const* type{function_type(m,f)};if(!detail::executable_signature(type)) { return status::unsupported_profile; }
                 auto const params{static_cast<::std::size_t>(type->parameter.end-type->parameter.begin)};
                 auto const results{static_cast<::std::size_t>(type->result.end-type->result.begin)};
-                if(params>limits_.values || results>limits_.values || params>limits_.host_bytes/8uz || results>limits_.host_bytes/8uz)
+                if(params>limits_.values || results>limits_.values || !detail::abi_fits(type->parameter.begin,type->parameter.end,limits_.host_bytes) ||
+                    !detail::abi_fits(type->result.begin,type->result.end,limits_.host_bytes))
                 { return status::resource_limit; }
             }
             // Refuse recursive/nominal/subtyped definitions that the finite
@@ -123,7 +124,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
             {
                 auto* g{resolve_global(*module,i)};if(!g) { return status::unsupported_profile; }
                 using kind=::uwvm2::object::global::global_type;
-                if((g->kind!=kind::wasm_i32 && g->kind!=kind::wasm_i64 && g->kind!=kind::wasm_f32 && g->kind!=kind::wasm_f64) ||
+                if((g->kind!=kind::wasm_i32 && g->kind!=kind::wasm_i64 && g->kind!=kind::wasm_f32 && g->kind!=kind::wasm_f64 && g->kind!=kind::wasm_v128) ||
                     (i<module->imported_global_vec_storage.size() && g->is_mutable)) { return status::unsupported_profile; }
                 bound.globals.push_back(g);
             }
@@ -145,8 +146,17 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                 auto const result{detail::lower(*module,module->local_defined_function_vec_storage.index_unchecked(f),
                     bound.program.functions[f],limits_,code_bytes,source_begin)};
                 if(result!=status::ok) { return result; }
-                for(auto const& ins: bound.program.functions[f].instructions)
+                for(auto& ins: bound.program.functions[f].instructions)
                 {
+                    if(ins.opcode>=0x10000u)
+                    {
+                        namespace sh=::uwvm2::runtime::compiler::shared;
+                        if(!sh::visit_wasm1p1_simd_instruction(static_cast<sh::simd_code>(ins.opcode-0x10000u),
+                            [&]<sh::simd_code Op,sh::wasm1p1_simd_instruction_kind Kind,
+                                sh::wasm1p1_simd_scalar_kind Scalar,::std::size_t Lanes,unsigned Align>() noexcept
+                            { ins.simd_handler=&engine::simd_execute<Op,Kind,Scalar,Lanes,Align>;return true; }))
+                        { return status::unsupported_profile; }
+                    }
                     if((ins.opcode==0x3fu || ins.opcode==0x40u) && ins.immediate!=0u) { return status::unsupported_profile; }
                     if((ins.opcode==0x308u || ins.opcode==0x309u) && ins.immediate>=module->local_defined_data_vec_storage.size())
                     { return status::validation_failed; }

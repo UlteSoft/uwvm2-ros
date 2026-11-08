@@ -185,8 +185,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
     {
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
         if(!env.allows_interface(u8"sock_accept")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
-        // No qualified per-endpoint bounded network provider in this profile.
+#if defined(__linux__)
+        return socket_capability::accept<4>(env,sock_fd,static_cast<unsigned>(fd_flags),ro_fd_ptrsz);
+#else
         return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotsup;
+#endif
 #endif
 
 

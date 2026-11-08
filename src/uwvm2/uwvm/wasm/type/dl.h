@@ -20,6 +20,7 @@
  ****************************************/
 
 #pragma once
+#include <uwvm2/utils/security/trusted_driver.h>
 
 #ifndef UWVM_MODULE
 // std
@@ -217,6 +218,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::type
         ::uwvm2::utils::container::u8cstring_view file_name{};
         // Accurate module names that must work
         ::uwvm2::utils::container::u8string_view module_name{};
+        // Retain the immutable file identity until AFTER dlclose. Closing and
+        // reusing a /proc/self/fd pathname early can alias another DSO in ld.so.
+        ::uwvm2::utils::security::trusted_driver::image verified_image{};
         // DL File
         ::fast_io::native_dll_file import_dll_file{};
         // DL handler
@@ -227,6 +231,27 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::type
         ::uwvm2::uwvm::wasm::type::wasm_parameter_t wasm_parameter{};
         // preload memory attribute
         ::uwvm2::uwvm::wasm::type::preload_module_memory_attribute_t preload_module_memory_attribute{};
+
+        wasm_dl_t() noexcept = default;
+        wasm_dl_t(wasm_dl_t const&) = delete;
+        wasm_dl_t& operator=(wasm_dl_t const&) = delete;
+        wasm_dl_t(wasm_dl_t&&) noexcept = default;
+        wasm_dl_t& operator=(wasm_dl_t&& other) noexcept
+        {
+            if(this!=::std::addressof(other))
+            {
+                // Retire the old loader handle before releasing its /proc FD
+                // identity, including vector move-assignment/compaction.
+                import_dll_file=::std::move(other.import_dll_file);
+                verified_image=::std::move(other.verified_image);
+                file_name=other.file_name;module_name=other.module_name;
+                wasm_dl_storage=::std::move(other.wasm_dl_storage);
+                set_wasip1_host_api_v1=other.set_wasip1_host_api_v1;
+                wasm_parameter=::std::move(other.wasm_parameter);
+                preload_module_memory_attribute=::std::move(other.preload_module_memory_attribute);
+            }
+            return *this;
+        }
     };
 #endif
 }  // namespace uwvm2::uwvm::wasm::storage

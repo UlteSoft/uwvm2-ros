@@ -38,7 +38,10 @@ export import :control;
 export import :convert;
 export import :memory;
 export import :memory64;
+export import :memtag;
+export import :memtag_bulk;
 export import :memory64_simd;
+export import :memtag_simd;
 export import :memory64_bulk;
 // The public selector API is declared by :register_ring and is consumed through
 // this primary interface by the retained full translator.
@@ -47,6 +50,7 @@ export import :wasm1p1;
 export import :gc;
 export import :table64;
 export import :threads;
+export import :memtag_threads;
 export import :memory64_atomic;
 export import :numeric;
 export import :stack;

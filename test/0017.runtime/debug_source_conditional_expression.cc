@@ -77,13 +77,16 @@ int main()
         auto const before{reads};check(scalar::evaluate(code,values,result)==scalar::error::unavailable && reads==before,"no value-resolver fallback for missing type resolver");
     }
     {
-        // A fabricated shared-node DATA graph cannot amplify type work beyond
-        // the 4096 visits. Production parses an owned tree with <=128 nodes.
+        // An owned shared DAG visits each node once instead of multiplying
+        // type/value work through every path. Optional quotas still refuse.
         scalar::program code{};scalar::node literal{};literal.op=scalar::operation::literal;literal.literal=1u;code.nodes.push_back(literal);
         for(::std::size_t i{1u};i!=18u;++i)
         { scalar::node n{};n.op=scalar::operation::add;n.lhs=i-1u;n.rhs=i-1u;code.nodes.push_back(n); }
         scalar::node n{};n.op=scalar::operation::conditional;n.lhs=0u;n.rhs=17u;n.third=0u;code.nodes.push_back(n);code.root=18u;
-        scalar::integer result{};auto const before{reads};check(scalar::evaluate(code,values,result,32u,types)==scalar::error::limit_exceeded && reads==before,"bounded type traversal");
+        scalar::integer result{};auto const before{reads};
+        check(scalar::evaluate(code,values,result,32u,types)==scalar::error::none && result.bits==131072u && reads==before,"shared DAG memoized type and value traversal");
+        scalar::expression_limits cap{};cap.max_type_work=8u;
+        check(scalar::evaluate(code,values,result,32u,types,scalar::language_semantics::shared_numeric,cap)==scalar::error::limit_exceeded && result.bits==0u && reads==before,"explicit caller type-work quota");
     }
     for(auto text : {"print 1 41 value > 0 ? value : 0", "print-frame 1 41 2 1 ? 7 : 1/0"})
     { auto const cmd{uwvm2::uwvm::debugger::parse_console_command(::fast_io::string_view{::fast_io::mnp::os_c_str(text)})};

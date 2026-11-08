@@ -3630,7 +3630,10 @@ inline constexpr void populate_runtime_memory_access_info_mmap_fields(runtime_me
                                                                                     ::std::size_t max_limit_memory_length) noexcept
 {
     auto const backend_max_limit_length{get_runtime_memory_backend_max_limit_length(memory)};
-    return backend_max_limit_length < max_limit_memory_length ? backend_max_limit_length : max_limit_memory_length;
+    auto result{backend_max_limit_length < max_limit_memory_length ? backend_max_limit_length : max_limit_memory_length};
+    if(memory.memtag_shadow.enabled() && memory.memtag_shadow.maximum_memory_bytes() < result)
+    { result = static_cast<::std::size_t>(memory.memtag_shadow.maximum_memory_bytes()); }
+    return result;
 }
 
 // Resolve memory index to either directly addressable native memory or a local-imported bridge provider.  The returned
@@ -4630,6 +4633,8 @@ inline void llvm_jit_with_checked_memory64_access(::std::uintptr_t owner, ::std:
         ::fast_io::fast_terminate();
     }
 }
+
+#include "memtag_bridges.h"
 
 // Use one unsigned i64 carrier for scalar bit patterns on every native ABI.
 // This keeps i32 ABI extension rules and floating-point NaN canonicalization out
@@ -7264,6 +7269,7 @@ struct runtime_local_func_llvm_jit_emit_state_t
 
     // Enables expensive LLVM verifier checks on generated functions/modules.
     bool verify_llvm_jit_ir{default_verify_llvm_jit_ir};
+    bool execute_memtag{true};
 
     // Forces Wasm calls through the runtime raw bridge instead of direct typed declarations.
     bool route_wasm_calls_through_runtime_bridge{};
@@ -11923,6 +11929,31 @@ template <llvm_jit_simd_code Op,
                 reinterpret_cast<::std::uintptr_t>(memory_info.memory_p),
                 ::uwvm2::utils::container::u8string_view{symbol_name.data(), symbol_name.size()})};
             if(memory_address == nullptr) [[unlikely]] { return false; }
+            if(memory_info.memory_p->memtag_shadow.enabled())
+            {
+                auto const wide{ir_builder.getInt64Ty()};
+                auto const signature{::llvm::FunctionType::get(llvm_void_type,
+                    {llvm_intptr_type,wide,wide,llvm_intptr_type,wide,llvm_intptr_type},false)};
+                ::llvm::Value* arguments[]{memory_address,ir_builder.getInt64(static_offset),
+                    ir_builder.CreateZExtOrTrunc(address.value,wide),vector_address,ir_builder.getInt64(lane),
+                    result_address==nullptr ? zero_intptr : result_address};
+                bool const shared{memory_info.memory_p->memtag_shadow.shared()};
+                auto const identity{::uwvm2::utils::container::u8concat_uwvm(u8"memtag-simd-v1-",
+                    static_cast<::std::uint_least32_t>(Op),u8"-",address64,u8"-",shared)};
+                auto const discriminator{::uwvm2::utils::container::u8string_view{identity.data(),identity.size()}};
+                auto typed{[&]<typename Address,bool Shared>() noexcept -> ::llvm::CallInst*
+                {
+                    auto const target{get_llvm_managed_helper_symbol<llvm_jit_memtag_simd_bridge<Op,Address,Shared>,
+                        llvm_jit_memtag_simd_bridge<Op,Address,Shared,true>>(ir_builder,signature,discriminator)};
+                    if(target==nullptr) { return nullptr; }
+                    return apply_llvm_jit_host_calling_conv(ir_builder.CreateCall(signature,target,arguments));
+                }};
+                if(address64) { call=shared ? typed.template operator()<::std::uint64_t,true>() : typed.template operator()<::std::uint64_t,false>(); }
+                else { call=shared ? typed.template operator()<::std::uint32_t,true>() : typed.template operator()<::std::uint32_t,false>(); }
+                if(call==nullptr) { return false; }
+                if constexpr(Kind==simd_kind::memory_load) { return push_v128_result(result_buffer); }
+                else { return true; }
+            }
             if(address64)
             {
                 // Reuse the qualified wide ABI; buffers are owned native stack slots,
@@ -12168,6 +12199,15 @@ template<bool NormalizedScalarMemory, bool NormalizedPageMemory = false, bool No
                                                                                                                                     arguments,
                                                                                                                                     discriminator);
                                         }};
+
+    auto const emit_memtag_bridge_call{[&]<auto Ordinary,auto Managed>(
+        ::llvm::FunctionType* type,::llvm::ArrayRef<::llvm::Value*> arguments,
+        ::uwvm2::utils::container::u8string_view discriminator) noexcept -> ::llvm::CallInst*
+    {
+        auto const target{get_llvm_managed_helper_symbol<Ordinary,Managed>(ir_builder,type,discriminator)};
+        if(target==nullptr) { return nullptr; }
+        return apply_llvm_jit_host_calling_conv(ir_builder.CreateCall(type,target,arguments));
+    }};
 
     // Select one of four scalar bridge functions based on the Wasm value type.  This keeps bridge signatures exact for
     // integer and floating-point globals/memory operations.
@@ -13349,6 +13389,46 @@ template<bool NormalizedScalarMemory, bool NormalizedPageMemory = false, bool No
                 {memory_address, ::llvm::ConstantInt::get(llvm_intptr_type, selected_memory_access_info.max_limit_memory_length), delta_value});
         }};
 
+    // Relocating native owners keep the snapshot pinned for the complete tag
+    // proof and access. The stable mmap path above remains fully inline.
+    auto const emit_memtag_scalar_call{[&]<unsigned ValueBits,::std::size_t Bytes,bool Signed,bool Store>(
+        ::std::uint64_t offset,::llvm::Value* address,::llvm::Value* input) noexcept -> ::llvm::CallInst*
+    {
+        auto const owner{emit_native_memory_object_address()};
+        if(owner==nullptr || address==nullptr) { return nullptr; }
+        auto const wide{ir_builder.getInt64Ty()};
+        auto const bits_type{ir_builder.getIntNTy(ValueBits)};
+        ::llvm::Value* input_bits{ir_builder.getInt64(0)};
+        if constexpr(Store)
+        {
+            if(input==nullptr) { return nullptr; }
+            input_bits=ir_builder.CreateZExtOrTrunc(ir_builder.CreateBitCast(input,bits_type),wide);
+        }
+        auto const signature{::llvm::FunctionType::get(wide,{owner->getType(),wide,wide,wide},false)};
+        ::llvm::Value* arguments[]{owner,ir_builder.getInt64(offset),ir_builder.CreateZExtOrTrunc(address,wide),input_bits};
+        bool const address64{selected_memory_is_address64()};
+        bool const shared{selected_memory_access_info.memory_p->memtag_shadow.shared()};
+        auto const prefix{shared ? ::uwvm2::utils::container::u8string_view{u8"memtag-scalar-shared-lease-v2-"} :
+            ::uwvm2::utils::container::u8string_view{u8"memtag-scalar-v1-"}};
+        auto const identity{::uwvm2::utils::container::u8concat_uwvm(prefix,Store,u8"-",ValueBits,
+            u8"-",Bytes,u8"-",Signed,u8"-",address64,u8"-",shared)};
+        auto const discriminator{::uwvm2::utils::container::u8string_view{identity.data(),identity.size()}};
+        auto typed{[&]<typename Address,bool Shared>() noexcept
+        {
+            auto const call{emit_memtag_bridge_call.template operator()<
+                llvm_jit_memtag_scalar_bridge<Address,Shared,ValueBits,Bytes,Signed,Store>,
+                llvm_jit_memtag_scalar_bridge<Address,Shared,ValueBits,Bytes,Signed,Store,true>>(signature,arguments,discriminator)};
+            if constexpr(Shared)
+            {
+                if(call==nullptr||!mark_memtag_shared_lease_call(*call,memtag_shared_access_family::scalar,
+                    sizeof(::std::uintptr_t)*CHAR_BIT,get_llvm_jit_host_calling_conv()))return static_cast<::llvm::CallInst*>(nullptr);
+            }
+            return call;
+        }};
+        if(address64) { return shared ? typed.template operator()<::std::uint64_t,true>() : typed.template operator()<::std::uint64_t,false>(); }
+        return shared ? typed.template operator()<::std::uint32_t,true>() : typed.template operator()<::std::uint32_t,false>();
+    }};
+
     // Complete a Wasm memory load instruction after the opcode case provides static offset, alignment, result type, width,
     // signedness, and the native bridge function.
     auto const emit_memory_load_call{
@@ -13377,6 +13457,16 @@ template<bool NormalizedScalarMemory, bool NormalizedPageMemory = false, bool No
                     push_operand(result_type, direct_value);
                     return true;
                 }
+            }
+
+            if(selected_memory_access_info.memory_p != nullptr &&
+               selected_memory_access_info.memory_p->memtag_shadow.enabled())
+            {
+                auto const loaded{emit_memtag_scalar_call.template operator()<ValueBits,Bytes,Signed,false>(static_offset,address.value,nullptr)};
+                if(loaded==nullptr) { return false; }
+                auto const bits{ir_builder.CreateZExtOrTrunc(loaded,ir_builder.getIntNTy(ValueBits))};
+                push_operand(result_type,ir_builder.CreateBitCast(bits,llvm_result_type));
+                return true;
             }
 
             if(selected_memory_is_address64())
@@ -13427,6 +13517,12 @@ template<bool NormalizedScalarMemory, bool NormalizedPageMemory = false, bool No
                     auto const memory_alignment{get_llvm_wasm_memory_access_alignment(store_bytes, memarg_align)};
                     return emit_direct_memory_store_value(direct_memory_pointer, value_type, value.value, store_bytes, memory_alignment) != nullptr;
                 }
+            }
+
+            if(selected_memory_access_info.memory_p != nullptr &&
+               selected_memory_access_info.memory_p->memtag_shadow.enabled())
+            {
+                return emit_memtag_scalar_call.template operator()<ValueBits,Bytes,false,true>(static_offset,address.value,value.value)!=nullptr;
             }
 
             if(selected_memory_is_address64())
@@ -13526,6 +13622,10 @@ template<bool NormalizedScalarMemory, bool NormalizedPageMemory = false, bool No
 
     auto const emit_memory_copy_call{[&](validation_module_traits_t::wasm_u32 source_memory_index) constexpr noexcept -> bool
                                      {
+                                         if(!ensure_selected_memory_access_info()) { return false; }
+                                         auto const* tagged_module{local_func_storage.runtime_module_ptr};
+                                         if(tagged_module == nullptr) { return false; }
+                                         auto const tag_source{resolve_runtime_memory_access_info(*tagged_module, source_memory_index)};
                                          if(operand_stack.size() < 3uz) [[unlikely]] { return false; }
 
                                          auto const len{operand_stack.back()};
@@ -13550,6 +13650,30 @@ template<bool NormalizedScalarMemory, bool NormalizedPageMemory = false, bool No
 
                                          if(!ensure_selected_memory_access_info()) [[unlikely]] { return false; }
 
+                                         if((selected_memory_access_info.memory_p!=nullptr && selected_memory_access_info.memory_p->memtag_shadow.enabled()) ||
+                                            (tag_source.memory_p!=nullptr && tag_source.memory_p->memtag_shadow.enabled()))
+                                         {
+                                             if(selected_memory_access_info.memory_p==nullptr || tag_source.memory_p==nullptr) { return false; }
+                                             auto const dst_owner{emit_native_memory_object_address()};
+                                             auto const source_name{get_llvm_native_memory_object_symbol_name(*module,source_memory_index)};
+                                             auto const src_owner{get_llvm_external_host_object_address(ir_builder,reinterpret_cast<::std::uintptr_t>(tag_source.memory_p),
+                                                 ::uwvm2::utils::container::u8string_view{source_name.data(),source_name.size()})};
+                                             if(dst_owner==nullptr || src_owner==nullptr) { return false; }
+                                             auto const native{ir_builder.getIntNTy(sizeof(::std::uintptr_t)*CHAR_BIT)};
+                                             auto const wide{ir_builder.getInt64Ty()};
+                                             auto const signature{::llvm::FunctionType::get(ir_builder.getVoidTy(),{native,native,wide,wide,wide},false)};
+                                             ::llvm::Value* args[]{dst_owner,src_owner,ir_builder.CreateZExtOrTrunc(dst.value,wide),
+                                                 ir_builder.CreateZExtOrTrunc(src.value,wide),ir_builder.CreateZExtOrTrunc(len.value,wide)};
+                                             auto const identity{::uwvm2::utils::container::u8concat_uwvm(u8"memtag-copy-v1-",destination64,u8"-",source64)};
+                                             auto const discriminator{::uwvm2::utils::container::u8string_view{identity.data(),identity.size()}};
+                                             auto emit{[&]<typename Destination,typename Source>() noexcept
+                                             { return emit_memtag_bridge_call.template operator()<llvm_jit_memtag_copy_bridge<Destination,Source>,
+                                                 llvm_jit_memtag_copy_bridge<Destination,Source,true>>(signature,args,discriminator)!=nullptr; }};
+                                             if(destination64 && source64) { return emit.template operator()<::std::uint64_t,::std::uint64_t>(); }
+                                             if(destination64) { return emit.template operator()<::std::uint64_t,::std::uint32_t>(); }
+                                             if(source64) { return emit.template operator()<::std::uint32_t,::std::uint64_t>(); }
+                                             return emit.template operator()<::std::uint32_t,::std::uint32_t>();
+                                         }
                                          if(destination64 || source64)
                                          {
                                              auto const source_info{resolve_runtime_memory_access_info(*module, source_memory_index)};
@@ -13616,6 +13740,7 @@ template<bool NormalizedScalarMemory, bool NormalizedPageMemory = false, bool No
 
     auto const emit_memory_fill_call{[&]() constexpr noexcept -> bool
                                      {
+                                         if(!ensure_selected_memory_access_info()) { return false; }
                                          if(operand_stack.size() < 3uz) [[unlikely]] { return false; }
 
                                          auto const len{operand_stack.back()};
@@ -13633,6 +13758,25 @@ template<bool NormalizedScalarMemory, bool NormalizedPageMemory = false, bool No
                                          }
 
                                          if(!ensure_selected_memory_access_info()) [[unlikely]] { return false; }
+                                         if(selected_memory_access_info.memory_p!=nullptr && selected_memory_access_info.memory_p->memtag_shadow.enabled())
+                                         {
+                                             auto const owner{emit_native_memory_object_address()};
+                                             if(owner==nullptr) { return false; }
+                                             auto const wide{ir_builder.getInt64Ty()};
+                                             auto const native{ir_builder.getIntNTy(sizeof(::std::uintptr_t)*CHAR_BIT)};
+                                             auto const signature{::llvm::FunctionType::get(ir_builder.getVoidTy(),{native,wide,wide,wide},false)};
+                                             ::llvm::Value* args[]{owner,ir_builder.CreateZExtOrTrunc(dst.value,wide),
+                                                 ir_builder.CreateZExtOrTrunc(value.value,wide),ir_builder.CreateZExtOrTrunc(len.value,wide)};
+                                             bool const address64{selected_memory_is_address64()};
+                                             bool const shared{selected_memory_access_info.memory_p->memtag_shadow.shared()};
+                                             auto const identity{::uwvm2::utils::container::u8concat_uwvm(u8"memtag-fill-v1-",address64,u8"-",shared)};
+                                             auto const discriminator{::uwvm2::utils::container::u8string_view{identity.data(),identity.size()}};
+                                             auto emit{[&]<typename Address,bool Shared>() noexcept
+                                             { return emit_memtag_bridge_call.template operator()<llvm_jit_memtag_fill_bridge<Address,Shared>,
+                                                 llvm_jit_memtag_fill_bridge<Address,Shared,true>>(signature,args,discriminator)!=nullptr; }};
+                                             if(address64) { return shared ? emit.template operator()<::std::uint64_t,true>() : emit.template operator()<::std::uint64_t,false>(); }
+                                             return shared ? emit.template operator()<::std::uint32_t,true>() : emit.template operator()<::std::uint32_t,false>();
+                                         }
                                          if(selected_memory_is_address64())
                                          {
                                              if(selected_memory_access_info.memory_p != nullptr)
@@ -13685,6 +13829,7 @@ template<bool NormalizedScalarMemory, bool NormalizedPageMemory = false, bool No
 
     auto const emit_memory_init_call{[&](validation_module_traits_t::wasm_u32 data_index) constexpr noexcept -> bool
                                      {
+                                         if(!ensure_selected_memory_access_info()) { return false; }
                                          if(!ensure_selected_memory_access_info() || operand_stack.size() < 3uz) [[unlikely]]
                                          {
                                              return false;
@@ -13711,6 +13856,26 @@ template<bool NormalizedScalarMemory, bool NormalizedPageMemory = false, bool No
                                          auto llvm_intptr_type{
                                              ::llvm::Type::getIntNTy(llvm_context, static_cast<unsigned>(sizeof(::std::uintptr_t) * 8u))};
 
+                                         if(selected_memory_access_info.memory_p!=nullptr && selected_memory_access_info.memory_p->memtag_shadow.enabled())
+                                         {
+                                             auto const owner{emit_native_memory_object_address()};
+                                             if(owner==nullptr) { return false; }
+                                             auto const wide{ir_builder.getInt64Ty()};
+                                             auto const signature{::llvm::FunctionType::get(llvm_void_type,
+                                                 {llvm_intptr_type,llvm_intptr_type,wide,wide,wide,wide},false)};
+                                             ::llvm::Value* args[]{owner,module_address,ir_builder.getInt64(data_index),
+                                                 ir_builder.CreateZExtOrTrunc(dst.value,wide),ir_builder.CreateZExtOrTrunc(src.value,wide),
+                                                 ir_builder.CreateZExtOrTrunc(len.value,wide)};
+                                             bool const address64{selected_memory_is_address64()};
+                                             bool const shared{selected_memory_access_info.memory_p->memtag_shadow.shared()};
+                                             auto const identity{::uwvm2::utils::container::u8concat_uwvm(u8"memtag-init-v1-",address64,u8"-",shared)};
+                                             auto const discriminator{::uwvm2::utils::container::u8string_view{identity.data(),identity.size()}};
+                                             auto emit{[&]<typename Address,bool Shared>() noexcept
+                                             { return emit_memtag_bridge_call.template operator()<llvm_jit_memtag_init_bridge<Address,Shared>,
+                                                 llvm_jit_memtag_init_bridge<Address,Shared,true>>(signature,args,discriminator)!=nullptr; }};
+                                             if(address64) { return shared ? emit.template operator()<::std::uint64_t,true>() : emit.template operator()<::std::uint64_t,false>(); }
+                                             return shared ? emit.template operator()<::std::uint32_t,true>() : emit.template operator()<::std::uint32_t,false>();
+                                         }
                                          if(selected_memory_is_address64())
                                          {
                                              if(selected_memory_access_info.memory_p != nullptr)
@@ -14371,6 +14536,94 @@ template<bool NormalizedScalarMemory, bool NormalizedPageMemory = false, bool No
 
         validation_module_traits_t::wasm_u32 subopcode{};
         if(!parse_wasm_leb128_immediate(code_curr, code_end, subopcode)) [[unlikely]] { return false; }
+
+        if(auto const* descriptor{::uwvm2::extension::memtag::find_instruction(subopcode)}; descriptor != nullptr)
+        {
+            if(!parse_selected_memory_index() || code_curr != code_end) { return false; }
+            auto const address_kind{selected_memory_is_address64() ?
+                runtime_operand_stack_value_type::i64 : runtime_operand_stack_value_type::i32};
+            auto const address_type{selected_memory_is_address64() ? ir_builder.getInt64Ty() : ir_builder.getInt32Ty()};
+            if(operand_stack.size() < descriptor->operand_count) { return false; }
+            ::std::array<::llvm::Value*, 4u> arguments{};
+            for(unsigned index{descriptor->operand_count}; index != 0u; --index)
+            {
+                auto const operand{operand_stack.back()}; operand_stack.pop_back();
+                if(operand.type != address_kind || operand.value == nullptr) { return false; }
+                arguments[index - 1u] = operand.value;
+            }
+            if(state.execute_memtag)
+            {
+                namespace mt=::uwvm2::extension::memtag;
+                if(!ensure_selected_memory_access_info() || selected_memory_access_info.memory_p==nullptr) { return false; }
+                auto const& shadow{selected_memory_access_info.memory_p->memtag_shadow};
+                if(!shadow.enabled() || shadow.width()!=(address_type->getBitWidth()==64u ? mt::address_width::i64 : mt::address_width::i32))
+                { return false; }
+                auto const lowered{emit_enabled_memtag_ir(ir_builder,static_cast<mt::opcode>(subopcode),address_type,
+                    ::std::span<::llvm::Value* const>{arguments.data(),descriptor->operand_count},
+                    [&](mt::opcode operation,::std::span<::llvm::Value* const> operands) noexcept -> enabled_memtag_ir_result
+                    {
+                        auto const owner{emit_native_memory_object_address()};
+                        if(owner==nullptr) { return {}; }
+                        auto const wide{ir_builder.getInt64Ty()};
+                        auto const native{ir_builder.getIntNTy(sizeof(::std::uintptr_t)*CHAR_BIT)};
+                        auto const signature{::llvm::FunctionType::get(wide,{native,wide,wide,wide,wide},false)};
+                        ::std::array<::llvm::Value*,5> call_arguments{owner,ir_builder.getInt64(0),ir_builder.getInt64(0),ir_builder.getInt64(0),ir_builder.getInt64(0)};
+                        for(::std::size_t index{};index!=operands.size();++index)
+                        { call_arguments[index+1u]=ir_builder.CreateZExtOrTrunc(operands[index],wide); }
+                        auto const identity{::uwvm2::utils::container::u8concat_uwvm(u8"memtag-operation-v1-",
+                            static_cast<unsigned>(operation),u8"-",address_type->getBitWidth(),u8"-",shadow.shared())};
+                        auto const discriminator{::uwvm2::utils::container::u8string_view{identity.data(),identity.size()}};
+                        auto emit{[&]<mt::opcode Operation>() noexcept -> ::llvm::Value*
+                        {
+                            auto choose{[&]<typename Address,bool Shared>() noexcept
+                            {
+                                return get_llvm_managed_helper_symbol<
+                                    llvm_jit_memtag_operation_bridge<Operation,Address,Shared>,
+                                    llvm_jit_memtag_operation_bridge<Operation,Address,Shared,true>>(
+                                        ir_builder,signature,discriminator);
+                            }};
+                            auto const target{address_type->getBitWidth()==64u ?
+                                (shadow.shared() ? choose.template operator()<::std::uint64_t,true>() : choose.template operator()<::std::uint64_t,false>()) :
+                                (shadow.shared() ? choose.template operator()<::std::uint32_t,true>() : choose.template operator()<::std::uint32_t,false>())};
+                            if(target==nullptr) { return nullptr; }
+                            return apply_llvm_jit_host_calling_conv(ir_builder.CreateCall(signature,target,call_arguments));
+                        }};
+                        ::llvm::Value* effect{};
+                        switch(operation)
+                        {
+                            case mt::opcode::load:effect=emit.template operator()<mt::opcode::load>();break;
+                            case mt::opcode::store:effect=emit.template operator()<mt::opcode::store>();break;
+                            case mt::opcode::storez:effect=emit.template operator()<mt::opcode::storez>();break;
+                            case mt::opcode::untagstore:effect=emit.template operator()<mt::opcode::untagstore>();break;
+                            case mt::opcode::untagstorez:effect=emit.template operator()<mt::opcode::untagstorez>();break;
+                            case mt::opcode::random:effect=emit.template operator()<mt::opcode::random>();break;
+                            case mt::opcode::randomstore:effect=emit.template operator()<mt::opcode::randomstore>();break;
+                            case mt::opcode::randomstorez:effect=emit.template operator()<mt::opcode::randomstorez>();break;
+                            case mt::opcode::hintstore:effect=emit.template operator()<mt::opcode::hintstore>();break;
+                            case mt::opcode::hintstorez:effect=emit.template operator()<mt::opcode::hintstorez>();break;
+                            default:return {};
+                        }
+                        if(effect==nullptr) { return {}; }
+                        return {true,ir_builder.CreateZExtOrTrunc(effect,address_type)};
+                    })};
+                if(!lowered.valid) { return false; }
+                if(descriptor->result_count!=0u) { push_operand(address_kind,lowered.value); }
+                return true;
+            }
+            auto const lowered{emit_disabled_memtag_ir(ir_builder,
+                static_cast<::uwvm2::extension::memtag::opcode>(subopcode), address_type,
+                ::std::span<::llvm::Value* const>{arguments.data(), descriptor->operand_count},
+                [&](::llvm::Value* destination, ::llvm::Value* length) noexcept
+                {
+                    push_operand(address_kind, destination);
+                    push_operand(runtime_operand_stack_value_type::i32, ir_builder.getInt32(0u));
+                    push_operand(address_kind, length);
+                    return emit_memory_fill_call();
+                })};
+            if(!lowered.valid) { return false; }
+            if(descriptor->result_count != 0u) { push_operand(address_kind, lowered.value); }
+            return true;
+        }
 
         switch(static_cast<wasm1p1_numeric_code>(subopcode))
         {

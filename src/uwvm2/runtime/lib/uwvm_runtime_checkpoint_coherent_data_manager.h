@@ -72,7 +72,7 @@ extern "C++"
         using host_bridge = runtime_checkpoint_host_bridge;
         using source_owner = ::uwvm2::uwvm::runtime::full::full_source_instance::owner;
         using logical_frame = ::uwvm2::runtime::checkpoint::logical_frame;
-        static constexpr ::std::size_t thread_limit{256u}, total_slot_limit{1048576u};
+        static constexpr ::std::size_t total_slot_limit{(::std::numeric_limits<::std::size_t>::max)()};
         runtime_checkpoint_coherent_manager() = delete;
         template<typename A, typename B>
         [[nodiscard]] static bool same_owner(A const& a, B const& b) noexcept
@@ -469,7 +469,7 @@ extern "C++"
                 requested != nullptr || observation != nullptr || wasip1_requested != nullptr || wasip1_observation != nullptr ||
                 retiring != nullptr || complete_requested != nullptr || complete_observation != nullptr || mutating != nullptr || mutated != nullptr))
             { out.observation = status::invalid_management_entry; return out; }
-            if(!ticket || supplied.empty() || supplied.size() > thread_limit)
+            if(!ticket || supplied.empty())
             { out.observation = status::incomplete_cohort; return out; }
 #if UWVM2_HAS_THREADED_PROFILE_HOST_API
             // Only the actual state-writing/preparing variants need this cold
@@ -530,23 +530,23 @@ extern "C++"
                    !same_owner(configuration->control_, g_runtime.debug_pause_control) ||
                    !same_owner(configuration->profile_, g_runtime.checkpoint_profile))
                 { out.observation = status::wrong_control_or_profile; return out; }
-                capture::owner canonical[thread_limit]{};
+                ::std::vector<capture::owner> canonical(supplied.size());
                 for(::std::size_t i{}; i != supplied.size(); ++i)
                 {
-                    // [request-owned owner span ... i<supplied.size()<=256] end
+                    // [request-owned owner span ... i<supplied.size()] end
                     // [safe] read only the shared_ptr object, then private-registry
                     // compare get+control block before ANY supplied pointee read.
                     canonical[i] = capture::canonical(supplied[i]);
                     if(!canonical[i]) { out.observation = status::invalid_capture_owner; return out; }
                     for(::std::size_t j{}; j != i; ++j)
                     {
-                        // [fully canonical fixed owner cells 0..i] no raw payload
-                        // [safe] j<i<=256; both owners already registry-qualified.
+                        // [fully canonical owned vector cells 0..i] no raw payload
+                        // [safe] j<i<actual extent; both owners already registry-qualified.
                         if(same_owner(canonical[j], canonical[i]) || canonical[j]->participant_ == canonical[i]->participant_)
                         { out.observation = status::incomplete_cohort; return out; }
                     }
                 }
-                domain::stopped_participant scratch[thread_limit]{};
+                ::std::vector<domain::stopped_participant> scratch(supplied.size());
                 result candidate{}; bool coherent{};
                 // One lexical proof body serves DATA and actual retirement.
                 // Retirement uses the indivisible transfer API below; never a
@@ -600,7 +600,7 @@ extern "C++"
                     // capture/control/participant and SAME current ticket checks
                     // above, while every genuine participant is still parked.
                     using gc_admission = ::uwvm2::runtime::gc::managed_entry_admission;
-                    gc_admission::shared_lease const* actual_gc_leases[thread_limit]{};
+                    ::std::vector<gc_admission::shared_lease const*> actual_gc_leases(supplied.size());
                     for(::std::size_t i{}; i != supplied.size(); ++i)
                     {
                         auto const& actual{*canonical[i]};
@@ -609,7 +609,7 @@ extern "C++"
                         actual_gc_leases[i] = actual.actual_gc_lease_;
                     }
                     auto gc_exclusive{::uwvm2::runtime::gc::runtime_gc_entry_admission.try_exclusive_owned(
-                        {actual_gc_leases, supplied.size()})};
+                        {actual_gc_leases.data(), supplied.size()})};
                     if(!gc_exclusive) { out.observation = status::gc_admission_denied; return; }
                     // Exclusion is not a root/census permission. Preflight each
                     // actually borrowed generated chain while native lifetimes
@@ -836,7 +836,7 @@ extern "C++"
                         // No debugger VIEW, copied bool or second callback can
                         // upgrade a value observation into this actual census.
                         runtime_checkpoint_gc_state_borrow borrow{lease, closed, gc_exclusive, publication,
-                            actual_slots, {canonical, supplied.size()}, configuration->profile_, epoch};
+                            actual_slots, {canonical.data(), supplied.size()}, configuration->profile_, epoch};
                         runtime_checkpoint_gc_state_borrow::complete_census_work census{};
                         census.cap = complete_requested->budget;
                         census.snapshot.recording_id = complete_requested->recording_id;
@@ -906,7 +906,7 @@ extern "C++"
                                 // worker joins finished in THIS exact proof scope.
                                 // Only now arm the real registered OLD native cohort.
                                 retiring->request=retirement::arm_current_while_cohort_owned(configuration,
-                                    {canonical,supplied.size()},actual_slots,closed,retirement::value_policy::live_native_roots);
+                                    {canonical.data(), supplied.size()},actual_slots,closed,retirement::value_policy::live_native_roots);
                                 if(!retiring->request || !runtime_checkpoint_guest_worker_bridge::seal_from_actual_retirement_while_cohort_owned(native.joined,retiring->request))
                                 { out.observation=status::invalid_typed_data;return; }
                                 native.request=retiring->request;native.host=configuration;
@@ -940,7 +940,7 @@ extern "C++"
                         // current compiled-generation preflight. No VIEW or
                         // caller bool can construct this lexical borrow.
                         runtime_checkpoint_gc_state_borrow borrow{lease,closed,gc_exclusive,publication,
-                            actual_slots,{canonical,supplied.size()},configuration->profile_,epoch};
+                            actual_slots,{canonical.data(), supplied.size()},configuration->profile_,epoch};
                         *mutated=borrow.mutate_selected(*mutating);
                         candidate.observed_runtime_epoch=epoch;candidate.observation=status::coherent_typed_data;
                         coherent=true;return;
@@ -966,7 +966,7 @@ extern "C++"
                         // borrow. In particular no raw logical-frame carriers
                         // enter result.threads or an executable continuation.
                         runtime_checkpoint_gc_state_borrow borrow{lease, closed, gc_exclusive, publication,
-                            actual_slots, {canonical, supplied.size()}, configuration->profile_, epoch};
+                            actual_slots, {canonical.data(), supplied.size()}, configuration->profile_, epoch};
                         *observation = runtime_checkpoint_debug_state_reader::copy(borrow, *requested);
                         candidate.observed_runtime_epoch = epoch;
                         candidate.observation = status::coherent_typed_data;
@@ -1013,7 +1013,7 @@ extern "C++"
                         // The private request retains the actual host guard;
                         // no public VIEW, bool, address or saved file mints it.
                         retiring->request = retirement::arm_current_while_cohort_owned(configuration,
-                            {canonical, supplied.size()}, actual_slots, closed,
+                            {canonical.data(), supplied.size()}, actual_slots, closed,
                             retiring->native != nullptr ? retirement::value_policy::live_native_roots : retirement::value_policy::executable_scalar);
                         if(!retiring->request) { out.observation = status::invalid_typed_data; return; }
                         if(retiring->native != nullptr)

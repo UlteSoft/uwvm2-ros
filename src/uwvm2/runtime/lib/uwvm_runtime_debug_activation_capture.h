@@ -5,6 +5,7 @@
 #if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
     class llvm_jit_debug_activation_capture final
     {
+        friend class runtime_crash_dump_collector;
         friend auto ::uwvm2::runtime::lib::llvm_jit_debug_with_source_memory_host_api(
             ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const&,
             ::std::span<llvm_jit_checkpoint_thread_capture_owner const>,

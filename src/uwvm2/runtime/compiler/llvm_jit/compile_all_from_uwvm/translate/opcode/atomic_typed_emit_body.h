@@ -6,6 +6,7 @@
         }
         select_memory(instruction.memory.memory_index);
         if(!ensure_selected_memory_access_info() || selected_memory_access_info.memory_p == nullptr) { return false; }
+        bool const tagged{selected_memory_access_info.memory_p->memtag_shadow.enabled()};
         bool const address64{selected_memory_is_address64()};
         if(!address64 && instruction.memory.offset > 0xffff'ffffull) { return false; }
         auto const address_type{address64 ? runtime_operand_stack_value_type::i64 : runtime_operand_stack_value_type::i32};
@@ -44,6 +45,31 @@
             if(address.type != address_type || address.value == nullptr) { return false; }
             auto const owner{emit_native_memory_object_address()};
             if(owner == nullptr) { return false; }
+            if(tagged)
+            {
+                auto const wide{ir_builder.getInt64Ty()};
+                auto const signature{::llvm::FunctionType::get(wide,{llvm_owner_type,wide,wide,wide,wide},false)};
+                ::llvm::Value* args[]{owner,ir_builder.getInt64(instruction.memory.offset),
+                    ir_builder.CreateZExtOrTrunc(address.value,wide),ir_builder.CreateZExtOrTrunc(expected.value,wide),
+                    waiting ? timeout.value : ir_builder.getInt64(0)};
+                bool const shared{selected_memory_access_info.memory_p->memtag_shadow.shared()};
+                auto const identity{::uwvm2::utils::container::u8concat_uwvm(u8"memtag-wait-v1-",instruction.opcode,
+                    u8"-",address64,u8"-",shared)};
+                auto const discriminator{::uwvm2::utils::container::u8string_view{identity.data(),identity.size()}};
+                auto emit{[&]<unsigned Operation>() noexcept -> ::llvm::CallInst*
+                {
+                    auto typed{[&]<typename Address,bool Shared>() noexcept
+                    { return emit_memtag_bridge_call.template operator()<llvm_jit_memtag_wait_notify_bridge<Operation,Address,Shared>,
+                        llvm_jit_memtag_wait_notify_bridge<Operation,Address,Shared,true>>(signature,args,discriminator); }};
+                    if(address64) { return shared ? typed.template operator()<::std::uint64_t,true>() : typed.template operator()<::std::uint64_t,false>(); }
+                    return shared ? typed.template operator()<::std::uint32_t,true>() : typed.template operator()<::std::uint32_t,false>();
+                }};
+                auto const result{instruction.opcode==0u ? emit.template operator()<0u>() :
+                    instruction.opcode==1u ? emit.template operator()<1u>() : emit.template operator()<2u>()};
+                if(result==nullptr) { return false; }
+                push_operand(runtime_operand_stack_value_type::i32,ir_builder.CreateTrunc(result,ir_builder.getInt32Ty()));
+                return true;
+            }
             auto const bridge_type{::llvm::FunctionType::get(llvm_address_carrier_type,
                 {llvm_owner_type, llvm_guest_address_type, llvm_guest_address_type,
                  ir_builder.getInt64Ty(), ir_builder.getInt64Ty()}, false)};
@@ -128,6 +154,41 @@
         auto const llvm_value_carrier_type{wide ? ir_builder.getInt64Ty() : llvm_address_carrier_type};
         if(!emit_llvm_jit_atomic_alignment(ir_builder, address.value, offset, bytes)) { return false; }
         auto const pointer{emit_llvm_jit_direct_memory_pointer(state, offset, bytes, address.value, is_store || is_rmw)};
+        if(tagged && pointer==nullptr)
+        {
+            auto const owner{emit_native_memory_object_address()};
+            if(owner==nullptr) { return false; }
+            auto const carrier{ir_builder.getInt64Ty()};
+            auto const signature{::llvm::FunctionType::get(carrier,
+                {llvm_owner_type,carrier,carrier,carrier,carrier,carrier},false)};
+            ::llvm::Value* arguments[]{owner,ir_builder.getInt64(offset),
+                ir_builder.CreateZExtOrTrunc(address.value,carrier),
+                store_value==nullptr ? ir_builder.getInt64(0) : ir_builder.CreateZExtOrTrunc(store_value,carrier),
+                expected_value==nullptr ? ir_builder.getInt64(0) : ir_builder.CreateZExtOrTrunc(expected_value,carrier),
+                ir_builder.getInt64(instruction.opcode)};
+            bool const shared{selected_memory_access_info.memory_p->memtag_shadow.shared()};
+            auto const prefix{shared ? ::uwvm2::utils::container::u8string_view{u8"memtag-atomic-shared-lease-v2-"} :
+                ::uwvm2::utils::container::u8string_view{u8"memtag-atomic-v1-"}};
+            auto const identity{::uwvm2::utils::container::u8concat_uwvm(prefix,address64,u8"-",shared)};
+            auto const discriminator{::uwvm2::utils::container::u8string_view{identity.data(),identity.size()}};
+            auto typed{[&]<typename Address,bool Shared>() noexcept
+            {
+                auto const call{emit_memtag_bridge_call.template operator()<llvm_jit_memtag_atomic_bridge<Address,Shared>,
+                    llvm_jit_memtag_atomic_bridge<Address,Shared,true>>(signature,arguments,discriminator)};
+                if constexpr(Shared)
+                {
+                    if(call==nullptr||!mark_memtag_shared_lease_call(*call,memtag_shared_access_family::atomic,
+                        sizeof(::std::uintptr_t)*CHAR_BIT,get_llvm_jit_host_calling_conv()))return static_cast<::llvm::CallInst*>(nullptr);
+                }
+                return call;
+            }};
+            auto const result{address64 ?
+                (shared ? typed.template operator()<::std::uint64_t,true>() : typed.template operator()<::std::uint64_t,false>()) :
+                (shared ? typed.template operator()<::std::uint32_t,true>() : typed.template operator()<::std::uint32_t,false>())};
+            if(result==nullptr) { return false; }
+            if(!is_store) { push_operand(result_type,ir_builder.CreateZExtOrTrunc(result,llvm_result_type)); }
+            return true;
+        }
         if(is_rmw)
         {
             if(pointer != nullptr)

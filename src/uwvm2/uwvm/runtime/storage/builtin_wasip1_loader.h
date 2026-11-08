@@ -44,20 +44,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
         using native_implementation = decltype(::std::declval<module>().ptr);
 #if !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1) && defined(UWVM_IMPORT_WASI_WASIP1) && defined(UWVM_CPP_EXCEPTIONS)
         using builtin = ::uwvm2::uwvm::imported::wasi::wasip1::local_imported::wasip1_local_imported_module_t;
-        using tuple = builtin::local_function_tuple;
+        template<bool Wasix> using tuple = typename ::uwvm2::uwvm::imported::wasi::wasip1::local_imported::basic_wasip1_local_imported_module_t<Wasix>::local_function_tuple;
 #endif
         native_implementation implementation_{};
         ::std::size_t ordinal_{};
+        bool wasix_socket_abi_{};
         ::std::weak_ptr<builtin_wasip1_loader_identity const> canonical_owner_{};
         inline static ::std::shared_ptr<builtin_wasip1_loader_identity const> selected_{};
-        explicit builtin_wasip1_loader_identity(native_implementation implementation, ::std::size_t ordinal) noexcept
-            : implementation_{implementation}, ordinal_{ordinal} {}
+        explicit builtin_wasip1_loader_identity(native_implementation implementation, ::std::size_t ordinal,bool wasix) noexcept
+            : implementation_{implementation}, ordinal_{ordinal},wasix_socket_abi_{wasix} {}
         friend class full_source_instance;
 #if !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1) && defined(UWVM_IMPORT_WASI_WASIP1) && defined(UWVM_CPP_EXCEPTIONS)
-        template<::uwvm2::parser::wasm::concepts::wasm_feature... Fs>
+        template<bool Wasix,::uwvm2::parser::wasm::concepts::wasm_feature... Fs>
         [[nodiscard]] static constexpr auto const& known_functions(::uwvm2::uwvm::wasm::type::feature_list<Fs...>) noexcept
         {
-            return ::uwvm2::uwvm::wasm::type::details::all_function_information_cache<tuple, Fs...>::function_information;
+            return ::uwvm2::uwvm::wasm::type::details::all_function_information_cache<tuple<Wasix>, Fs...>::function_information;
         }
 #endif
         [[nodiscard]] static bool canonical(::std::shared_ptr<builtin_wasip1_loader_identity const> const& value) noexcept
@@ -84,12 +85,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
             // sufficient: this also needs the concrete typed factory record.
             return memberships == 1u ? ::std::addressof(member) : nullptr;
         }
-        [[nodiscard]] bool copy_function(module const* actual, ::std::size_t index,
+        template<bool Wasix>
+        [[nodiscard]] bool copy_function_impl(module const* actual, ::std::size_t index,
             builtin_wasip1_function_data& output) const noexcept
         {
 #if !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1) && defined(UWVM_IMPORT_WASI_WASIP1) && defined(UWVM_CPP_EXCEPTIONS)
             if(actual == nullptr || current_member() != actual) { return false; }
-            auto const& known{known_functions(::uwvm2::uwvm::wasm::type::binfmt_ver1_feature_list_t{})};
+            auto const& known{known_functions<Wasix>(::uwvm2::uwvm::wasm::type::binfmt_ver1_feature_list_t{})};
             if(index >= known.size()) { return false; }
             // [known compile-time WASIp1 tuple0..size][index<size] end
             // [safe] bound BEFORE index, and read no user-provided signature.
@@ -176,6 +178,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
             (void)actual;(void)index;(void)output;return false;
 #endif
         }
+        [[nodiscard]] bool copy_function(module const* actual,::std::size_t index,builtin_wasip1_function_data& output) const noexcept
+        { return wasix_socket_abi_?copy_function_impl<true>(actual,index,output):copy_function_impl<false>(actual,index,output); }
     public:
         builtin_wasip1_loader_identity(builtin_wasip1_loader_identity const&) = delete;
         builtin_wasip1_loader_identity& operator=(builtin_wasip1_loader_identity const&) = delete;
@@ -211,6 +215,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
             auto& actual{::uwvm2::uwvm::wasm::storage::preload_local_imported};
             auto const ordinal{actual.size()};
             selected_.reset(); // A previous setup identity never survives reuse.
+            bool wasix{};
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(__linux__) && defined(UWVM_IMPORT_WASI_WASIP1_SUPPORT_SOCKET)
+            wasix=::uwvm2::uwvm::imported::wasi::wasip1::storage::wasip1_wasix_socket_abi;
+            if(wasix)actual.emplace_back(::uwvm2::uwvm::imported::wasi::wasip1::local_imported::wasix_socket_local_imported_module);
+            else
+#endif
             actual.emplace_back(::uwvm2::uwvm::imported::wasi::wasip1::local_imported::wasip1_local_imported_module);
             // Actual typed factory provenance also authenticates ordinary mapped
             // Full cache admission. This records identity, never a Guest grant.
@@ -222,7 +232,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
                 auto const implementation{actual.index_unchecked(ordinal).ptr};
                 if(implementation == nullptr) { return false; }
                 ::std::shared_ptr<builtin_wasip1_loader_identity> result{
-                    new builtin_wasip1_loader_identity{implementation,ordinal}};
+                    new builtin_wasip1_loader_identity{implementation,ordinal,wasix}};
                 result->canonical_owner_=result;selected_=::std::move(result);return true;
             }
             // Ordinary OOM preserves the previous native-loading result while

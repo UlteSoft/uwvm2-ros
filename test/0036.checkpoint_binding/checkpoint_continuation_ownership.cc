@@ -85,7 +85,7 @@ int main(int argc, char** argv)
     require(argc == 3,"private test directory and exact mode");
     auto const mode{::fast_io::string_view{::fast_io::mnp::os_c_str(argv[2])}};
     bool const baseline{mode == "--baseline"}; require(baseline || mode == "--fixed","exact test mode");
-    static_assert(cp::database_format_version == 6u);
+    static_assert(cp::database_format_version == 7u);
     unsigned positives{};
     for(unsigned flags{}; flags != 2u; ++flags)
     { auto s{sample()}; s.objects[5u].flags = flags; positive(s); ++positives; }

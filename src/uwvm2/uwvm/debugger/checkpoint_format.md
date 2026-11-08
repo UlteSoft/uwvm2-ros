@@ -1,4 +1,4 @@
-# UWVM checkpoint state database format 4
+# UWVM checkpoint state database format 7
 
 This document specifies the portable state/database and replay component contracts.
 It is not evidence that whole-VM save, restore or reverse execution has passed.
@@ -77,19 +77,19 @@ v128 low/high words preserve Wasm lane byte order. i8/i16 are packed storage
 values, never general locals or globals. i31 is an immediate unsigned 31-bit
 payload and does not allocate a logical object.
 
-State6 uses distinct magic `UWCPST6\0` and commit marker `UWCPSTE6`.
+State7 uses distinct magic `UWCPST7\0` and commit marker `UWCPSTE7`.
 The outer identity envelope keeps `UWCPDB4\0` / `UWCPEND4`, version4 and its
 160-byte header; inner and outer documents are never selected by guessing header
-lengths. State schema6 is also the third field of the actual per-engine checkpoint
+lengths. State schema7 is also the third field of the actual per-engine checkpoint
 profile/cache tuple. Binding identity revision2 stays unchanged; the native continuation ABI is
-independently recorded by the actual compiler profile and binary build; old schema5/4/3 profile/cache contexts cannot admit schema6 state.
+independently recorded by the actual compiler profile and binary build; old schema6/5/4/3 profile/cache contexts cannot admit schema7 state.
 
 Header length is 128 bytes. In order:
 
 | Field | Encoding |
 | --- | --- |
-| magic | 8 bytes `UWCPST6\0` |
-| format version, header bytes | u16 6, u16 128 |
+| magic | 8 bytes `UWCPST7\0` |
+| format version, header bytes | u16 7, u16 128 |
 | endian sentinel | u32 `0x04030201`, bytes `01 02 03 04` |
 | flags | u64 zero, reserved |
 | recording identifier | 16 opaque nonzero bytes, not authentication |
@@ -131,7 +131,7 @@ from an unset alloca; the conservative source-display availability packet cannot
 substitute for the complete runtime state. Versions 1 through 3 are preserved as
 immutable development artifacts and are not migrated by guessing missing state.
 
-The footer occupies 48 bytes: magic `UWCPSTE6`, u64 body count, and SHA-256 of the
+The footer occupies 48 bytes: magic `UWCPSTE7`, u64 body count, and SHA-256 of the
 exact header plus body using `fast_io::sha256_context`. Missing/footer mismatch,
 extra bytes, corruption and reserved fields fail. SHA-256 detects corruption; it
 is not management authentication or proof of mmap immutability. Decode builds
@@ -154,7 +154,7 @@ listed order, not sorted when their order is semantically significant.
 | module | flags 0 legacy detached DATA, all words zero; flags 1 actual resolved syntax policy: revision 1, CLI mode 0..4, nineteen disable bits, two controllable bits | Original validated Wasm bytes, including recursive type groups, all declarations, custom/debug sections and immutable initialization metadata. No links or values. |
 | instance | flags 0; counts of functions, tables, memories, globals, tags, data, elements | Module ID followed by those seven ordered index-to-store maps. Imported aliases use the same object IDs. No values/bytes. |
 | function | flags 0 Wasm / 1 host; local function index, body generation, type index | Instance ID; host additionally has adapter/resource ID. Original Wasm body uses the module; a replacement has its exact validated local-declaration/body bytes. Never native code. |
-| memory | flags 0 private / 1 shared; address bits 32/64, current pages, minimum, maximum | Byte pages are represented by memory chunks, omitted bytes explicitly zero. No pointers or mmap layout. |
+| memory | flags 0 private / 1 shared; address bits 32/64, current pages, minimum, maximum, allocation tag bits 0/4/8 | Byte pages are represented by memory chunks, omitted data bytes explicitly zero. Tag bits 0 requires an empty byte payload; 4 is valid only for memory32 and 8 only for memory64. Enabled memory carries exactly current pages × 4096 tag bytes, one per 16-byte granule, in ascending address order. Four-bit values must be at most 15; all eight software bits are preserved for memory64. No pointers or mmap layout. |
 | memory chunk | flags 0; unsigned byte offset | One memory ID; nonempty bytes. Chunks for each parent are ascending/nonoverlapping. Inclusive last-byte validation supports the final byte of a 2^64-byte memory without wrapping an exclusive end. |
 | table | flags 0; address bits 32/64, current size, minimum, maximum | Length zero: one canonical TYPE-ONLY reference descriptor (flag one, all carrier fields zero), never a default VALUE. Length nonzero: one initialized actual typed reference default value, overridden by table chunks. Exact declared type is retained in both cases. |
 | table chunk | flags 0; unsigned element offset | One table ID; nonempty typed reference values exactly matching the table descriptor. Ascending/nonoverlapping for each parent. |
@@ -183,7 +183,7 @@ objects retain their independent legal aliasing rules. A handler depth must name
 one of its owning frame's controls. An atomic-waiting thread has exactly one wait
 record after all frames; runnable/import-parked threads have none, and a terminated
 thread has no frames or wait. These graph checks do not issue executable restore,
-scheduler or native stack authority. The state6 wire layout remains unchanged.
+scheduler or native stack authority. The continuation record layout is unchanged from State6; State7 additionally preserves memory allocation tags.
 
 Sparse memory/table records do not reduce the runtime's reservation or restore
 resource requirements. The manager checks file/disk/address-space/heap quotas and
@@ -307,10 +307,10 @@ The new `debug_checkpoint_core3.wat` exercises new Core 3 constructs; parser/cod
 or design tests alone do not count as full-instance runtime acceptance.
 
 
-State6 diagnostic provenance
+State7 diagnostic provenance
 ---------------------------
 
-State6 also preserves the original immutable diagnostic trace attached to each
+State7 also preserves the original immutable diagnostic trace attached to each
 actual Wasm exception. A trace object with `words[0] == 1` has one value and
 function link per frame; each value is an i64 diagnostic instruction offset.
 `UINT64_MAX` explicitly means the producer did not record an instruction
@@ -372,7 +372,7 @@ product/build, native ABI and code-profile bindings before executing. No such
 whole-world issuer is supplied by this DATA census. Legacy module flags0 alone
 never supplies the missing original syntax policy for executable restoration.
 
-State6 original builtin import binding (DATA only)
+State7 original builtin import binding (DATA only)
 ------------------------------------------------
 
 `host_resource.flags == 3` records the original builtin code ABI, not a pure
@@ -395,7 +395,7 @@ chains may reuse that terminal function; different terminal direct imports in
 different instances remain different functions even when descriptors match.
 Unknown DL/native providers still require their genuine adapters and are denied.
 
-State6 function-generation semantic identity includes the exact binding bytes,
+State7 function-generation semantic identity includes the exact binding bytes,
 flags, kind/revision/index. It never equates equal ABI arity with equal providers.
 Bindings cannot be a `host_reference` issuer or event capability; the replay
 log explicitly refuses a graph containing them without real effect adaptation.
@@ -404,3 +404,7 @@ host resource/lifetime/ownership capability; this document grants none. Schema5
 is rejected, never migrated into these absent original provenance fields.
 Profile tuple field2 is6; actual native ABI2, profile res17/observe12, identity2,
 envelope4 and cache5 remain independent and unchanged.
+
+## State7 allocation tags
+
+State7 is incompatible with earlier state files and rejects them explicitly. The complete allocation-tag image is charged against payload and native restoration quotas. Untagged memory retains the full standard address domain. Tagged images must fit the selected 28-bit or 56-bit byte-address domain and have exact tag geometry, including zero tags. Restore initializes a private owner, restores data and allocation tags, then activates any supported hardware mirror before compilation and publication. Hardware mapping addresses and thread controls are not serialized. Imported aliases retain one logical memory ID and therefore one tag image. A restore request that disables required tag enforcement is rejected.

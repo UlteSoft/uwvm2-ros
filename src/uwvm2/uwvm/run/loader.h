@@ -544,8 +544,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
             if(!::uwvm2::uwvm::runtime::full::builtin_wasip1_loader_identity::append_actual_builtin_for_native_loader())
             { return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error); }
 # else
-            ::uwvm2::uwvm::wasm::storage::preload_local_imported.emplace_back(
-                ::uwvm2::uwvm::imported::wasi::wasip1::local_imported::wasip1_local_imported_module);
+            // ABI selection is a host startup policy in no-EH builds too.
+#  if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(__linux__) && defined(UWVM_IMPORT_WASI_WASIP1_SUPPORT_SOCKET)
+            if(::uwvm2::uwvm::imported::wasi::wasip1::storage::wasip1_wasix_socket_abi)
+                ::uwvm2::uwvm::wasm::storage::preload_local_imported.emplace_back(
+                    ::uwvm2::uwvm::imported::wasi::wasip1::local_imported::wasix_socket_local_imported_module);
+            else
+#  endif
+                ::uwvm2::uwvm::wasm::storage::preload_local_imported.emplace_back(
+                    ::uwvm2::uwvm::imported::wasi::wasip1::local_imported::wasip1_local_imported_module);
 # endif
         }
 # endif

@@ -22,7 +22,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasm_path
     // every page; matching labels NEVER substitute for that native proof.
     inline constexpr ::std::uint32_t protocol_version{1u};
     inline constexpr ::std::uint32_t bound_view_version{wasm_state::view_version};
-    inline constexpr ::std::size_t maximum_entries{128u}, maximum_cohort{256u};
+    inline constexpr ::std::size_t maximum_entries{128u};
     inline constexpr ::std::size_t maximum_indices{32768u}; // 256KiB path DATA/session.
     enum class operation : unsigned char { create, extend, members, clear };
     struct request
@@ -61,7 +61,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasm_path
     };
     [[nodiscard]] inline bool valid(stop_key const& key) noexcept
     {
-        if(key.stop==0u || key.runtime_epoch==0u || key.cohort.empty() || key.cohort.size()>maximum_cohort) { return false; }
+        if(key.stop==0u || key.runtime_epoch==0u || key.cohort.empty()) { return false; }
         ::std::uint64_t previous{};
         for(auto const& member:key.cohort)
         { if(member.participant<=previous || member.code_epoch!=key.runtime_epoch || member.function_generation==0u) { return false; }

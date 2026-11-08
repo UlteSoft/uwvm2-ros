@@ -20,7 +20,7 @@ The real CLI includes/imports that contract through its debugger implementation.
 Every required-cache object row must have format7. Formats5 and6 are rejected
 as `unsupported_cache_version`; changing an old row's number does not authenticate
 its object, create its owner or upgrade an old envelope. Identity revision2,
-envelope4 and state schema6 remain separate wire contracts. Their layouts,
+envelope4 and state schema7 remain separate wire contracts. Their layouts,
 continuation ABI and profile policy are not changed by this cache dependency.
 
 An accepted runtime cache row must come from genuine v7 origin admission and the
@@ -261,24 +261,24 @@ above is an UWVM design proposal, not a WebAssembly standard snapshot format.
 The precise revision2 function/event preimages and pending corruption regressions
 are specified in `test/0036.checkpoint_binding/README.state-identity.md`.
 
-## Historical schema6 migration notes (v5 cache baseline)
+## Historical schema7 migration notes (v5 cache baseline)
 
-State schema6 retains the empty table descriptor and revises the canonical state wire
-markers (`UWCPST6\0`, `UWCPSTE6`). Binding identity revision2, envelope4,
+State schema7 retains the empty table descriptor and revises the canonical state wire
+markers (`UWCPST7\0`, `UWCPSTE7`). Binding identity revision2, envelope4,
 cache format5 remain unchanged. The actual native compilation profile records
-state schema6 in tuple field2 and the genuine native continuation ABI in field3; all old state5/4/3
+state schema7 in tuple field2 and the genuine native continuation ABI in field3; all old state6/5/4/3
 profile/cache manifests are incompatible. Empty descriptor carrier bits and file
 IDs remain DATA, never runtime source ownership or checkpoint authority.
 
 
-State schema6 additionally binds preserved exception diagnostic origin/name
+State schema7 additionally binds preserved exception diagnostic origin/name
 payloads and the explicit unknown instruction/generation markers. Inner state
-magic and commit are `UWCPST6\0` / `UWCPSTE6`; state5/4/3 are never silently
+magic and commit are `UWCPST7\0` / `UWCPSTE7`; state6/5/4/3 are never silently
 migrated. Envelope4, cache format5 and identity2 remain unchanged. The complete ten-field
-actual compilation profile records schema6 and separately the genuine native ABI;
+actual compilation profile records schema7 and separately the genuine native ABI;
 profile policy versions are independently preserved, not reset by this bump.
 
-Controlled schema6 adds original builtin WASIp1 binding-only flag3 resources.
+Controlled schema7 adds original builtin WASIp1 binding-only flag3 resources.
 Their exact108-byte code-interface descriptor participates in the effective
 function-generation digest. Schema5 does not provide that provenance and is
 never silently upgraded. This changes the inner state ST6/STE6 and actual profile

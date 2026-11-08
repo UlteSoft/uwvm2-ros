@@ -77,6 +77,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
         // leading selector (module name or group name), and every semantic rule
         // for a WASI target lives in the switch below. That avoids maintaining a
         // second string parser for each concrete command name.
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        template<typename Env>
+        inline constexpr ::uwvm2::utils::cmdline::parameter_return_type apply_socket_rights(
+            ::uwvm2::utils::cmdline::parameter const& parameter, Env& env,
+            ::uwvm2::utils::cmdline::parameter_parsing_results* first,
+            ::uwvm2::utils::cmdline::parameter_parsing_results* end) noexcept;
+#endif
         enum class target_action_t : unsigned
         {
             interface,
@@ -101,6 +108,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
             add_or_replace_environment,
             mount_dir,
             mount_dir_rights,
+            socket_rights,
 #  if defined(UWVM_IMPORT_WASI_WASIP1_SUPPORT_SOCKET)
             socket_tcp_connect,
             socket_tcp_listen,
@@ -841,9 +849,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
                         if(exit_policy) { return print_usage_error(parameter, u8"WASI limit exit action must be cancel or wait."); }
                         return print_usage_error(parameter, u8"WASI limit action must be reject or wait.");
                     }
-                    constexpr ::uwvm2::utils::container::u8string_view budgets[]{u8"random",u8"stdin",u8"stdout",u8"stderr",u8"realtime",u8"monotonic",u8"process",u8"thread",u8"poll",u8"signal",u8"yield",u8"filesystem"};
+                    constexpr ::uwvm2::utils::container::u8string_view budgets[]{u8"random",u8"stdin",u8"stdout",u8"stderr",u8"realtime",u8"monotonic",u8"process",u8"thread",u8"poll",u8"signal",u8"yield",u8"filesystem",u8"socket-read",u8"socket-write",u8"socket-accept",u8"socket-shutdown"};
                     constexpr ::uwvm2::utils::container::u8string_view fields[]{u8"request-bytes",u8"window-bytes",u8"window-calls",u8"total-bytes",u8"total-calls",u8"concurrent"};
-                    for(unsigned budget{};budget<12u;++budget)
+                    for(unsigned budget{};budget<16u;++budget)
                     {
                         auto const prefix{budgets[budget]};
                         if(name.size()<=prefix.size() || name[prefix.size()]!=u8'.')continue;
@@ -973,6 +981,30 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
                     if(name == u8"filesystem.total-bytes") { destination = &limits.operations[11u].total_bytes; }
                     if(name == u8"filesystem.total-calls") { destination = &limits.operations[11u].total_calls; }
                     if(name == u8"filesystem.concurrent") { destination = &limits.operations[11u].concurrent; }
+                    if(name == u8"socket-read.request-bytes") { destination = &limits.operations[12u].request_bytes; }
+                    if(name == u8"socket-read.window-bytes") { destination = &limits.operations[12u].window_bytes; }
+                    if(name == u8"socket-read.window-calls") { destination = &limits.operations[12u].window_calls; }
+                    if(name == u8"socket-read.total-bytes") { destination = &limits.operations[12u].total_bytes; }
+                    if(name == u8"socket-read.total-calls") { destination = &limits.operations[12u].total_calls; }
+                    if(name == u8"socket-read.concurrent") { destination = &limits.operations[12u].concurrent; }
+                    if(name == u8"socket-write.request-bytes") { destination = &limits.operations[13u].request_bytes; }
+                    if(name == u8"socket-write.window-bytes") { destination = &limits.operations[13u].window_bytes; }
+                    if(name == u8"socket-write.window-calls") { destination = &limits.operations[13u].window_calls; }
+                    if(name == u8"socket-write.total-bytes") { destination = &limits.operations[13u].total_bytes; }
+                    if(name == u8"socket-write.total-calls") { destination = &limits.operations[13u].total_calls; }
+                    if(name == u8"socket-write.concurrent") { destination = &limits.operations[13u].concurrent; }
+                    if(name == u8"socket-accept.request-bytes") { destination = &limits.operations[14u].request_bytes; }
+                    if(name == u8"socket-accept.window-bytes") { destination = &limits.operations[14u].window_bytes; }
+                    if(name == u8"socket-accept.window-calls") { destination = &limits.operations[14u].window_calls; }
+                    if(name == u8"socket-accept.total-bytes") { destination = &limits.operations[14u].total_bytes; }
+                    if(name == u8"socket-accept.total-calls") { destination = &limits.operations[14u].total_calls; }
+                    if(name == u8"socket-accept.concurrent") { destination = &limits.operations[14u].concurrent; }
+                    if(name == u8"socket-shutdown.request-bytes") { destination = &limits.operations[15u].request_bytes; }
+                    if(name == u8"socket-shutdown.window-bytes") { destination = &limits.operations[15u].window_bytes; }
+                    if(name == u8"socket-shutdown.window-calls") { destination = &limits.operations[15u].window_calls; }
+                    if(name == u8"socket-shutdown.total-bytes") { destination = &limits.operations[15u].total_bytes; }
+                    if(name == u8"socket-shutdown.total-calls") { destination = &limits.operations[15u].total_calls; }
+                    if(name == u8"socket-shutdown.concurrent") { destination = &limits.operations[15u].concurrent; }
                     if(destination == nullptr) { return print_usage_error(parameter, u8"Unknown WASI resource limit."); }
                     // Policy ceilings exist only when the host supplies them.
                     // Clock granularity is a positive precision floor, not a quota.
@@ -1073,6 +1105,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
                     }
                     mark_consumed(extra2);
                     return parameter_return_type::def;
+                }
+                case target_action_t::socket_rights:
+                {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                    auto ret=apply_socket_rights(parameter,target.env,extra1,para_end);
+                    if(ret==parameter_return_type::def) mark_consumed(extra1+2u);
+                    return ret;
+#else
+                    return print_usage_error(parameter,u8"Socket rights require the ROS product policy.");
+#endif
                 }
                 case target_action_t::mount_dir_rights:
                 {
@@ -1255,6 +1297,56 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
                                 override_state_t& target,
                                 target_action_t action) noexcept
         { return apply_module_action(parameter, target_arg, target_arg, action, target_arg + 1u, para_end, target); }
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        template<typename Env>
+        inline constexpr ::uwvm2::utils::cmdline::parameter_return_type apply_socket_rights(
+            ::uwvm2::utils::cmdline::parameter const& parameter, Env& env,
+            ::uwvm2::utils::cmdline::parameter_parsing_results* first,
+            ::uwvm2::utils::cmdline::parameter_parsing_results* end) noexcept
+        {
+            using token=::uwvm2::utils::cmdline::parameter_parsing_results_type;
+            using rights=::uwvm2::imported::wasi::wasip1::abi::rights_t;
+            using text=::uwvm2::utils::container::u8string_view;
+            if(end-first<3 || first[0].type!=token::arg || first[1].type!=token::arg || first[2].type!=token::arg)
+                return print_usage_error(parameter,u8"Expected initial guest fd, base rights and accepted-child rights.");
+            ::std::uint64_t number{};text fd_text{first[0].str};
+            if(fd_text.empty()) return print_usage_error(parameter,u8"Missing initial guest fd.");
+            for(auto c:fd_text)
+            {
+                if(c<u8'0'||c>u8'9'||number>(INT32_MAX-static_cast<unsigned>(c-u8'0'))/10u)
+                    return print_usage_error(parameter,u8"Initial guest fd must be a nonnegative int32.");
+                number=number*10u+static_cast<unsigned>(c-u8'0');
+            }
+            for(auto const& item:env.socket_rights)
+                if(item.fd==static_cast<int>(number)) return print_usage_error(parameter,u8"Duplicate/conflicting socket rights for this initial fd.");
+            rights masks[2]{};
+            for(unsigned which{};which<2u;++which)
+            {
+                text value{first[1u+which].str};
+                if(value==u8"none") continue;
+                if(value.empty()) return print_usage_error(parameter,u8"Socket rights cannot be empty; use none.");
+                ::std::size_t start{};
+                for(::std::size_t at{};at<=value.size();++at)
+                {
+                    if(at<value.size()&&value[at]!=u8',')continue;
+                    text name{value.data()+start,at-start};rights bit{};
+                    if(name==u8"read")bit=rights::right_fd_read;
+                    else if(name==u8"write")bit=rights::right_fd_write;
+                    else if(name==u8"accept"&&which==0u)bit=rights::right_sock_accept;
+                    else if(name==u8"shutdown")bit=rights::right_sock_shutdown;
+                    else if(name==u8"readiness")bit=rights::right_poll_fd_readwrite;
+                    else if(name==u8"flags")bit=rights::right_fd_fdstat_set_flags;
+                    else if(name==u8"metadata")bit=rights::right_fd_filestat_get;
+                    else return print_usage_error(parameter,u8"Unknown socket right; use read,write,accept,shutdown,readiness,flags,metadata or none. Child accept is invalid.");
+                    if((masks[which]&bit)!=rights{})return print_usage_error(parameter,u8"Duplicate socket right.");
+                    masks[which]=masks[which]|bit;start=at+1u;
+                }
+            }
+            env.socket_rights.push_back({static_cast<int>(number),masks[0],masks[1]});
+            for(unsigned i{};i<3u;++i) first[i].type=token::occupied_arg;
+            return ::uwvm2::utils::cmdline::parameter_return_type::def;
+        }
+#endif
     }  // namespace wasip1_module_details
 
 # endif

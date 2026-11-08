@@ -904,9 +904,10 @@ extern "C++"
                 chunks.push_back({object.words[0u],{object.bytes.data(),object.bytes.size()}});
             }
             auto const remaining{maximum_native_bytes_-native_bytes_};
-            if(!charge_native(saved->words[1u],65536u) || remaining>SIZE_MAX ||
+            if(!charge_native(saved->words[1u],65536u) || !charge_native(saved->bytes.size(),1u) || remaining>SIZE_MAX ||
                !context_->stage_saved_memory_image(actual,static_cast<unsigned>(saved->words[0u]),saved->flags!=0u,
-                   saved->words[1u],saved->words[2u],saved->words[3u],{chunks.data(),chunks.size()},static_cast<::std::size_t>(remaining)))
+                   saved->words[1u],saved->words[2u],saved->words[3u],{chunks.data(),chunks.size()},
+                   static_cast<unsigned>(saved->words[4u]),{saved->bytes.data(),saved->bytes.size()},static_cast<::std::size_t>(remaining)))
             { return fail(preparation_status::allocation_failed); }
             return true;
         }

@@ -1,4 +1,5 @@
 module;
+#include <limits>
 #include <array>
 #include <memory>
 #include <mutex>

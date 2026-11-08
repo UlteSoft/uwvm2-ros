@@ -13,6 +13,7 @@ namespace threaded_profile
 #endif
     [[nodiscard]] bool memory_descriptor(::std::size_t, ::uwvm2::uwvm::wasm::type::uwvm_preload_memory_descriptor_t*) noexcept;
     [[nodiscard]] ::std::size_t memory_descriptor_count() noexcept;
+    [[nodiscard]] bool memory_normalize_range(::std::size_t, ::std::uint_least64_t, ::std::size_t, ::std::uint64_t&) noexcept;
     [[nodiscard]] bool memory_copy(::std::size_t, ::std::uint_least64_t, void*, ::std::size_t, bool) noexcept;
     void request_stop() noexcept;
     [[nodiscard]] threaded_retirement retire_before_management(::std::chrono::steady_clock::time_point,

@@ -48,6 +48,12 @@
 # endif
 # if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(__linux__)
 #  include <sys/vfs.h>
+# include <sys/epoll.h>
+# include <sys/socket.h>
+# include <sys/uio.h>
+# include <netinet/in.h>
+# include <fcntl.h>
+# include <unistd.h>
 # endif
 // import
 # include <fast_io.h>
@@ -79,16 +85,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
     template<typename Memory, ::std::unsigned_integral Offset, ::std::unsigned_integral Size>
     [[nodiscard]] inline constexpr bool wasip1_guest_range_valid_unlocked(Memory const& memory, Offset offset, Size bytes) noexcept
     {
-        if(memory.memory_begin == nullptr) { return false; }
-        ::std::size_t length{};
-        if constexpr(requires { memory.memory_length_p; })
-        {
-            if(memory.memory_length_p == nullptr) { return false; }
-            length = memory.memory_length_p->load(::std::memory_order_acquire);
-        }
-        else { length = memory.memory_length; }
-        // Compare before narrowing; subtraction avoids offset + bytes overflow.
-        return offset <= length && bytes <= length - static_cast<::std::size_t>(offset);
+        return static_cast<bool>(::uwvm2::imported::wasi::wasip1::memory::checked_span_unlocked(
+            memory,static_cast<::std::uint64_t>(offset),static_cast<::std::uint64_t>(bytes)));
     }
 
     template<typename Memory, ::std::unsigned_integral Offset, ::std::unsigned_integral Size>
@@ -2313,6 +2311,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
     }
 
 }  // namespace uwvm2::imported::wasi::wasip1::func
+
+#include "socket_capability.h"
 
 #endif
 

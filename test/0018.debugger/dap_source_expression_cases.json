@@ -1,5 +1,5 @@
 {
-  "scope": "finite syntax and owned scalar DATA; no real stop/memory authority",
+  "scope": "Read-only syntax and owned scalar DATA; no real stop/memory authority. Dynamic-admission rows are syntax DATA only; actual command packets retain their separate controller bound.",
   "positive": [
     {
       "expression": "value + 2 * 3",
@@ -5223,11 +5223,6 @@
     "&value",
     "*(1+2)",
     "*(int32(value))",
-    "1 + aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-    "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1",
-    "((((((((((((((((1))))))))))))))))",
-    "p.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*+1",
-    "p.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x+1",
     "value++1",
     "value--1",
     "++1",
@@ -5516,5 +5511,12 @@
     "0 && '\\x41' + call()",
     "1 ? 7 : '\\x41' + call()",
     "sizeof('\\x41' + call())"
+  ],
+  "dynamic_admission": [
+    "1 + aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1",
+    "((((((((((((((((1))))))))))))))))",
+    "p.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*.*+1",
+    "p.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x+1"
   ]
 }

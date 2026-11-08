@@ -217,7 +217,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         }
 
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-        bool const filesystem_operation{fd >= 3};
+        bool const filesystem_operation{curr_fd.wasi_fd.ptr != nullptr && curr_fd.wasi_fd.ptr->checkpoint_stdio_index < 0};
         ::uwvm2::imported::wasi::wasip1::environment::budget_reservation filesystem_reservation{
             ::uwvm2::imported::wasi::wasip1::environment::budget_kind::filesystem_io, env.limits, 0u, filesystem_operation};
         if(filesystem_operation && !filesystem_reservation) { return filesystem_reservation.template error<::uwvm2::imported::wasi::wasip1::abi::errno_t>(); }
@@ -463,6 +463,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         }
 #  endif
 # else
+#  if defined(__linux__)
+        // Select the real target seek ABI, including i386/ARM __NR__llseek.
+        // Passing intfpos_t directly to the 32-bit single-register lseek syscall
+        // shifts whence into the wrong argument and makes tell reset the cursor.
+        auto const native_position{::fast_io::posix_seek_nothrow(curr_fd_native_observer, int_fpos, seek_whence)};
+        if(!native_position)
+        {
+            if(native_position.error == EISDIR) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::espipe; }
+            return path_errno_from_fast_io_error(::fast_io::error{
+                ::fast_io::posix_domain_value,static_cast<::fast_io::error::value_type>(native_position.error)});
+        }
+        new_offset_fpos = native_position.position;
+#  else
 #  ifdef UWVM_CPP_EXCEPTIONS
         try
 #  endif
@@ -519,6 +532,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             }
         }
 #  endif
+
+#  endif // Linux checked native seek ABI
 
 # endif
 

@@ -15,6 +15,7 @@
 # include <span>
 # include <utility>
 # include <vector>
+# include <uwvm2/extension/memtag/tag_image.h>
 #endif
 #ifndef UWVM_MODULE_EXPORT
 # define UWVM_MODULE_EXPORT
@@ -338,11 +339,23 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::checkpoint
                 case object_kind::memory:
                 case object_kind::table:
                 {
-                    if(item.flags > 1u || !zeros_from(4u) || !item.links.empty() || !item.bytes.empty() ||
+                    bool const is_memory{item.kind==object_kind::memory};
+                    if(item.flags > 1u || !zeros_from(is_memory?5u:4u) || !item.links.empty() ||
+                       (!is_memory && !item.bytes.empty()) ||
                        (w[0] != 32u && w[0] != 64u) || w[1] < w[2] || w[1] > w[3] ||
-                       (w[0] == 32u && w[3] > (item.kind == object_kind::memory ? 65536u : 0xffffffffu))) { return error::invalid_shape; }
-                    if(item.kind == object_kind::memory)
-                    { if(!item.values.empty() || w[3] > (::std::uint64_t{1u} << 48u) || (item.flags != 0u && w[3] == (::std::numeric_limits<::std::uint64_t>::max)())) { return error::invalid_shape; } }
+                       (w[0] == 32u && w[3] > (is_memory ? 65536u : 0xffffffffu))) { return error::invalid_shape; }
+                    if(is_memory)
+                    {
+                        if(!item.values.empty() || w[3] > (::std::uint64_t{1u} << 48u) ||
+                           (item.flags != 0u && w[3] == (::std::numeric_limits<::std::uint64_t>::max)()) ||
+                           w[4]>8u) { return error::invalid_shape; }
+                        // Untagged memories retain the entire standard 2^64-byte
+                        // domain. Only tagged images need a representable byte count.
+                        if(w[4]==0u) { if(!item.bytes.empty()) { return error::invalid_shape; } }
+                        else if(w[1]>(::std::numeric_limits<::std::uint64_t>::max)()/65536u ||
+                           !::uwvm2::extension::memtag::valid_tag_image(static_cast<unsigned>(w[0]),
+                               static_cast<unsigned>(w[4]),w[1]*65536u,item.bytes)) { return error::invalid_shape; }
+                    }
                     else if(item.values.size() != 1u || item.values[0].type.kind != value_kind::reference || item.flags != 0u ||
                         item.values[0].initialized != (w[1] != 0u)) { return error::invalid_shape; }
                     break;

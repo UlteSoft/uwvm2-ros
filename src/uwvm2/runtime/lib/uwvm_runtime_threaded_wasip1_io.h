@@ -3,10 +3,10 @@ extern "C++"
 {
     struct runtime_threaded_wasip1_adapter::fd_pin final
     {
-        enum class kind {unsupported,pipe,stream_socket,native_descriptor};
+        enum class kind {unsupported,pipe,stream_socket,datagram_socket,native_descriptor};
         context* call{};native_fd* locked{};
         fd_ref retained{::uwvm2::imported::wasi::wasip1::fd_manager::wasi_no_construct};
-        int descriptor{-1},flags{};bool owns_descriptor{};kind type{kind::unsupported};
+        int descriptor{-1},flags{};bool owns_descriptor{},guest_nonblock{};kind type{kind::unsupported};
         fd_pin() noexcept=default;fd_pin(fd_pin const&)=delete;
         ~fd_pin() noexcept {if(owns_descriptor&&descriptor>=0)static_cast<void>(::close(descriptor));unlock();}
         void unlock() noexcept
@@ -23,11 +23,11 @@ extern "C++"
             }
         }
         struct acquisition {error failure{error::esuccess};bool deferred{};};
-        [[nodiscard]] acquisition acquire(context& actual,::std::uint32_t guest,right required,bool keep_lock,bool try_only=false,bool policy_only=false) noexcept
+        [[nodiscard]] acquisition acquire(context& actual,::std::uint32_t guest,right required,bool keep_lock,bool try_only=false,bool policy_only=false,bool metadata_only=false,bool require_stdio_grant=true) noexcept
         {
             call=&actual;if(guest>INT32_MAX)return {error::ebadf};
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-            if(guest < 3u && !actual.env.grants_stdio(guest)) return {error::enotcapable};
+            if(require_stdio_grant && guest < 3u && !actual.env.grants_stdio(guest)) return {error::enotcapable};
             if(guest < 3u && (required & right::right_poll_fd_readwrite) != right{} && !actual.env.permits(permission::stdio_readiness)) return {error::enotcapable};
 #endif
             auto& map=actual.env.fd_storage;
@@ -72,6 +72,10 @@ extern "C++"
             if((selected->rights_base&required)!=required)return {error::enotcapable};
             if(policy_only) { unlock(); return {error::esuccess}; }
             if(selected->wasi_fd.ptr==nullptr){static_cast<void>(actual.native_failure());return {error::eio};}
+            // Metadata readers need the actual retained binding without a
+            // native class probe, duplicate descriptor, or OFD flag query.
+            // Directory identity is examined only while this FD mutex is held.
+            if(metadata_only) { if(!keep_lock)unlock(); return {error::esuccess}; }
             // The map reader and fd mutex keep the explicit binding alive.
             // Ordinary files/devices are retained without dup/close, which can
             // otherwise introduce an extra filesystem flush. Their synchronous
@@ -89,11 +93,17 @@ extern "C++"
             int socket_type{};::socklen_t extent{sizeof(socket_type)};
             if(::getsockopt(borrowed,SOL_SOCKET,SO_TYPE,&socket_type,&extent)==0)
             {
-                // Datagram/seqpacket needs a separately reviewed full-message
-                // bounce policy; truncating at our finite 4KiB cap would lose a
-                // message that could have fit the Guest's larger vector.
-                if(extent!=sizeof(socket_type)||socket_type!=SOCK_STREAM)return {error::enotsup};
-                type=kind::stream_socket;
+                if(extent!=sizeof(socket_type)||(socket_type!=SOCK_STREAM&&socket_type!=SOCK_DGRAM))return {error::enotsup};
+                type=socket_type==SOCK_STREAM?kind::stream_socket:kind::datagram_socket;
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                // Actual native type must match the trusted resource binding.
+                // A guest cannot borrow an unclassified host socket as a file.
+                if(selected->wasi_fd.ptr->socket_kind==::uwvm2::imported::wasi::wasip1::fd_manager::wasi_fd_rc_t::socket_type::none)
+                    return {error::enotcapable};
+                guest_nonblock=selected->wasi_fd.ptr->socket_nonblock;
+#else
+                guest_nonblock=(flags&O_NONBLOCK)!=0;
+#endif
             }
             else
             {
@@ -150,8 +160,8 @@ extern "C++"
     {
         if(count != 0u && 8uz > SIZE_MAX / static_cast<::std::size_t>(count)) return error::eoverflow;
         if(!call.aligned(iovs,4u)||!call.aligned(completed,4u))return error::efault;
-        ::std::byte* unused{};
-        if(!call.bounds(iovs,static_cast<::std::size_t>(count)*8uz,unused)||!call.bounds(completed,4uz,unused))return error::efault;
+
+        if(!call.bounds(iovs,static_cast<::std::size_t>(count)*8uz)||!call.bounds(completed,4uz))return error::efault;
         struct vector {::std::uint32_t base{},size{};};
         auto vectors{allocate_array<vector>(count)};
         if(count != 0u && !vectors) return error::enomem;
@@ -160,18 +170,21 @@ extern "C++"
         {
             ::std::array<::std::byte,8> raw{};if(!call.copy_in(static_cast<::std::uint64_t>(iovs)+i*8u,raw))return error::efault;
             auto& v=vectors[i];v.base=static_cast<::std::uint32_t>(little(raw.data(),4));v.size=static_cast<::std::uint32_t>(little(raw.data()+4,4));
-            if(!call.bounds(v.base,v.size,unused))return error::efault;
+            if(!call.bounds(v.base,v.size))return error::efault;
             if(v.size>UINT32_MAX-total)return error::einval;total+=v.size;
         }
         fd_pin pinned{};auto acquired=pinned.acquire(call,guest,writing?right::right_fd_write:right::right_fd_read,true);
         if(acquired.failure!=error::esuccess)return acquired.failure;
         if(acquired.deferred){static_cast<void>(call.native_failure());return error::eio;}
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-        auto const kind{::uwvm2::imported::wasi::wasip1::environment::fd_io_budget(guest)};
+        using budgets=::uwvm2::imported::wasi::wasip1::environment::budget_kind;
+        bool const socket=pinned.type==fd_pin::kind::stream_socket||pinned.type==fd_pin::kind::datagram_socket;
+        auto const kind=socket?(writing?budgets::socket_write:budgets::socket_read):
+            ::uwvm2::imported::wasi::wasip1::environment::fd_io_budget(*pinned.locked->wasi_fd.ptr);
         ::uwvm2::imported::wasi::wasip1::environment::budget_reservation reservation{kind, call.env.limits, total};
         if(!reservation) return reservation.error<error>();
 #endif
-        if(total==0u)return call.store<4>(completed,0u)?error::esuccess:error::efault;
+        if(total==0u && (count==0u || pinned.type!=fd_pin::kind::datagram_socket))return call.store<4>(completed,0u)?error::esuccess:error::efault;
         // A read end cannot reveal packet-mode buffers from another writer.
         // Keep read(2)'s exact packet/drop semantics instead of consuming bytes
         // through splice. Blocking reads stay synchronous and retain their lease;
@@ -180,11 +193,12 @@ extern "C++"
         // Linux packet pipes split packets at PIPE_BUF. This capacity preserves
         // every packet a full Guest buffer could accept, while larger byte-stream
         // reads may legally report partial progress without a huge allocation.
-        auto const capacity{(::std::min)(total,static_cast<::std::uint64_t>(transfer_bytes))};
+        auto const capacity=pinned.type==fd_pin::kind::datagram_socket?total:
+            (::std::min)(total,static_cast<::std::uint64_t>(transfer_bytes));
         if(capacity > SIZE_MAX) return error::eoverflow;
         auto const wanted{static_cast<::std::size_t>(capacity)};
         auto bounce{allocate_array<::std::byte>(wanted)};
-        if(!bounce) return error::enomem;
+        if(wanted && !bounce) return error::enomem;
         if(writing)
         {
             ::std::size_t at{};
@@ -202,7 +216,7 @@ extern "C++"
             for(auto fd:pipe.ends){auto f=::fcntl(fd,F_GETFL);if(f<0||(f&O_NONBLOCK)==0){static_cast<void>(call.native_failure());return error::eio;}}
             if(writing)
             {
-                // Only our NEW OFDs are nonblocking. The actual inherited / 
+                // Only our NEW OFDs are nonblocking. The actual inherited /
                 // redirected descriptor and every user alias are unmodified.
                 auto const n=::write(pipe.ends[1],bounce.get(),wanted);
                 if(n<0)return native_error(errno);if(static_cast<::std::size_t>(n)!=wanted){static_cast<void>(call.native_failure());return error::eio;}
@@ -235,7 +249,7 @@ extern "C++"
             // Root excludes native policy mutation during the group lifetime.
             // Still fail on an observed flag drift rather than silently adapt.
             if(current!=pinned.flags){static_cast<void>(call.native_failure());return error::eio;}
-            if(pinned.type==fd_pin::kind::stream_socket)
+            if(pinned.type==fd_pin::kind::stream_socket||pinned.type==fd_pin::kind::datagram_socket)
             {transferred=writing ? ::send(pinned.descriptor,bounce.get(),wanted,MSG_DONTWAIT|MSG_NOSIGNAL) : ::recv(pinned.descriptor,bounce.get(),wanted,MSG_DONTWAIT);}
             else if(splice_pipe)
             {
@@ -249,7 +263,7 @@ extern "C++"
             auto const failure=errno;if(failure==EPIPE)pipe_signals.consume_new_epipe();
             if(failure==EINTR)continue;
             if(failure!=EAGAIN&&failure!=EWOULDBLOCK)return native_error(failure);
-            if(pinned.flags&O_NONBLOCK)return error::eagain; // preserve Guest's nonblocking policy.
+            if((pinned.type==fd_pin::kind::stream_socket||pinned.type==fd_pin::kind::datagram_socket)?pinned.guest_nonblock:(pinned.flags&O_NONBLOCK)!=0)return error::eagain; // preserve Guest's nonblocking policy.
             short ready{};auto waited=wait_ready(call,pinned.descriptor,writing?POLLOUT:POLLIN,ready);if(waited!=error::esuccess)return waited;
             if(ready&POLLNVAL)return error::ebadf;
         }

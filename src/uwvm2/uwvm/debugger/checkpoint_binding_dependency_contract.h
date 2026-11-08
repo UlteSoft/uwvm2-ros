@@ -20,7 +20,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::checkpoint::binding
 #if defined(UWVM_USE_LLVM_JIT) || defined(UWVM_USE_DEFAULT_JIT)
     static_assert(cache_format_revision == ::uwvm2::runtime::llvm_jit_cache::cache_format_version);
 #endif
-    static_assert(state_version == 6u && state_version == ::uwvm2::uwvm::debugger::checkpoint::database_format_version);
+    static_assert(state_version == 7u && state_version == ::uwvm2::uwvm::debugger::checkpoint::database_format_version);
     static_assert(::uwvm2::runtime::checkpoint::state_schema_revision == state_version);
     using binding_profile_identity_type = decltype(manifest{}.checkpoint_profile);
     static_assert(::std::is_same_v<binding_profile_identity_type,

@@ -180,6 +180,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable;
         }
 
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(__linux__)
+        if(curr_fd.wasi_fd.ptr && curr_fd.wasi_fd.ptr->socket_kind!=socket_capability::socket_type::none)
+        {
+            if((static_cast<unsigned>(flags)&~4u)!=0u)return ::uwvm2::imported::wasi::wasip1::abi::errno_t::einval;
+            curr_fd.wasi_fd.ptr->socket_nonblock=(static_cast<unsigned>(flags)&4u)!=0u;
+            return ::uwvm2::imported::wasi::wasip1::abi::errno_t::esuccess;
+        }
+#endif
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
         bool const filesystem_operation{fd >= 3};
         ::uwvm2::imported::wasi::wasip1::environment::budget_reservation filesystem_reservation{

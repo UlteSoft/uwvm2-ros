@@ -12,6 +12,11 @@
 # include <cmath>
 # include <limits>
 # include <memory>
+# include <string>
+# include <string_view>
+# include <vector>
+# include <coroutine>
+# include <exception>
 #endif
 #ifndef UWVM_MODULE_EXPORT
 # define UWVM_MODULE_EXPORT
@@ -38,7 +43,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
         unsigned utf_character_width{}; // owned C++ char8/16/32 syntax, never a language grant
         bool rust_character{}, rust_cast_as{};
         bool rust_numeric_literal{}, rust_numeric_suffix{};
-        ::fast_io::string rust_numeric_text{}; // owned normalized float digits, bounded by original 4096 bytes // copied Rust token grammar; actual CU still required // copied Rust scalar syntax, never CU authority
+        ::std::string rust_numeric_text{}; // owned Rust float syntax; never CU authority
         bool logical_keyword{}; // owned Zig and/or spelling, never language authority
     };
     // Explicit producer/syntax type identity. The default preserves old
@@ -58,10 +63,20 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
         }
         return false;
     }
+    struct expression_limits
+    {
+        // Optional caller quotas. Defaults use owned input and dynamic storage;
+        // nesting consumes heap continuations rather than the native call stack.
+        ::std::size_t max_expression_bytes{(::std::numeric_limits<::std::size_t>::max)()},
+            max_nodes{(::std::numeric_limits<::std::size_t>::max)()},
+            max_nesting{(::std::numeric_limits<::std::size_t>::max)()},
+            max_reference_steps{(::std::numeric_limits<::std::size_t>::max)()},
+            max_type_work{(::std::numeric_limits<::std::size_t>::max)()};
+    };
     struct program
     {
         ::std::vector<node> nodes{}; ::std::size_t root{};
-        ::fast_io::string original{}; // <=4096 owned syntax bytes, never a frame/location grant.
+        ::std::string original{}; // owned syntax bytes, never a frame/location grant.
         language_semantics syntax_language{language_semantics::shared_numeric};
     };
     // Only an actual selected-frame CU supplies these metadata bits. This
@@ -112,6 +127,183 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
     enum class error { none, malformed, unsupported, limit_exceeded, unavailable, arithmetic, allocation_failure };
     namespace details
     {
+
+        // Cold heap continuations. resume() never recursively resumes a child.
+        // The work vector owns suspended frames and destroys them deepest first,
+        // including failure paths. Awaiters borrow handles, so deep cleanup also
+        // cannot recurse through parent-owned coroutine destructors.
+        struct continuation_owner;
+        struct continuation_promise
+        {
+            continuation_owner* owner{};
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+            ::std::exception_ptr failure{};
+#endif
+        };
+        struct continuation_frame
+        {
+            ::std::coroutine_handle<> handle{};
+            continuation_promise* promise{};
+        };
+        struct node_memo
+        {
+            integer type{}, value{};
+            error type_status{}, value_status{};
+            bool type_ready{}, value_ready{};
+        };
+        struct continuation_owner
+        {
+            ::std::vector<continuation_frame> work{};
+            expression_limits cap{};
+            program const* memo_program{};
+            ::std::vector<node_memo> memo{};
+            bool bind(program const& code)
+            {
+                if(memo_program) { return memo_program==::std::addressof(code); }
+                memo.resize(code.nodes.size());memo_program=::std::addressof(code);return true;
+            }
+            void add(continuation_frame next)
+            {
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+                try { work.push_back(next); }
+                catch(...) { next.handle.destroy(); throw; }
+#else
+                work.push_back(next);
+#endif
+                next.promise->owner=this;
+            }
+            ~continuation_owner()
+            {
+                while(!work.empty())
+                {
+                    auto const current{work.back()};work.pop_back();
+                    current.handle.destroy();
+                }
+            }
+            continuation_owner()=default;
+            continuation_owner(continuation_owner const&)=delete;
+        };
+        template<typename Result>
+        struct continuation_task
+        {
+            struct promise_type : continuation_promise
+            {
+                Result result{};
+                continuation_task get_return_object() noexcept
+                { return {::std::coroutine_handle<promise_type>::from_promise(*this)}; }
+                ::std::suspend_always initial_suspend() const noexcept { return {}; }
+                ::std::suspend_always final_suspend() const noexcept { return {}; }
+                void return_value(Result value) noexcept { result=value; }
+                void unhandled_exception() noexcept
+                {
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+                    failure=::std::current_exception();
+#else
+                    ::fast_io::fast_terminate();
+#endif
+                }
+            };
+            ::std::coroutine_handle<promise_type> handle{};
+            bool await_ready() const noexcept { return false; }
+            template<typename Parent>
+            void await_suspend(::std::coroutine_handle<Parent> parent)
+            { parent.promise().owner->add({handle,::std::addressof(handle.promise())}); }
+            Result await_resume() noexcept
+            {
+                auto const result{handle.promise().result};handle.destroy();handle={};return result;
+            }
+        };
+        struct borrow_continuation_owner
+        {
+            continuation_owner* value{};
+            bool await_ready() const noexcept { return false; }
+            template<typename Promise>
+            bool await_suspend(::std::coroutine_handle<Promise> parent) noexcept
+            { value=parent.promise().owner;return false; }
+            continuation_owner& await_resume() const noexcept { return *value; }
+        };
+        template<typename Result>
+        [[nodiscard]] Result run_continuation(continuation_task<Result> root, expression_limits const& cap = {})
+        {
+            continuation_owner owner{};owner.cap=cap;
+            owner.add({root.handle,::std::addressof(root.handle.promise())});
+            for(;;)
+            {
+                auto const current{owner.work.back()};
+                current.handle.resume();
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+                if(current.promise->failure) { ::std::rethrow_exception(current.promise->failure); }
+#endif
+                if(current.handle.done())
+                {
+                    if(current.handle==root.handle) { return root.handle.promise().result; }
+                    // The parent consumes/destroys this child in await_resume.
+                    owner.work.pop_back();
+                }
+            }
+        }
+        [[nodiscard]] inline constexpr unsigned child_count(operation op) noexcept
+        {
+            switch(op)
+            {
+                case operation::literal:case operation::reference:case operation::size:case operation::type_size:return 0u;
+                case operation::cast:case operation::zig_coerce:case operation::positive:case operation::negative:
+                case operation::invert:case operation::logical_not:case operation::expression_size:return 1u;
+                case operation::conditional:return 3u;
+                case operation::add:case operation::subtract:case operation::multiply:case operation::divide:case operation::remainder:
+                case operation::left:case operation::right:case operation::less:case operation::less_equal:case operation::greater:
+                case operation::greater_equal:case operation::equal:case operation::unequal:case operation::bit_and:case operation::bit_clear:
+                case operation::bit_xor:case operation::bit_or:case operation::logical_and:case operation::logical_or:return 2u;
+            }
+            return 4u; // Invalid enum values cannot reach a resolver.
+        }
+        [[nodiscard]] inline constexpr ::std::size_t child_index(node const& n, unsigned ordinal) noexcept
+        { return ordinal==0u?n.lhs:ordinal==1u?n.rhs:n.third; }
+        // Validate the complete owned graph before any type or value callback,
+        // including unreachable nodes. Forward edges and shared acyclic nodes
+        // are valid; cycles, invalid operations and bad indices are refused.
+        inline error validate_graph(program const& code, expression_limits const& cap, ::std::vector<::std::size_t>& postorder)
+        {
+            if(code.nodes.empty() || code.nodes.size()>cap.max_nodes || code.original.size()>cap.max_expression_bytes || !cap.max_nesting)
+            { return error::limit_exceeded; }
+            if(code.root>=code.nodes.size()) { return error::malformed; }
+            for(auto const& n:code.nodes)
+            {
+                if(child_count(n.op)>3u) { return error::unsupported; }
+                if(n.reference.steps.size()>cap.max_reference_steps) { return error::limit_exceeded; }
+                for(unsigned child{};child!=child_count(n.op);++child)
+                { if(child_index(n,child)>=code.nodes.size()) { return error::malformed; } }
+            }
+            struct frame { ::std::size_t index{};unsigned next{}; };
+            ::std::vector<unsigned char> color(code.nodes.size());
+            ::std::vector<::std::size_t> height(code.nodes.size());
+            ::std::vector<frame> work{};postorder.clear();postorder.reserve(code.nodes.size());
+            for(::std::size_t start{};start!=code.nodes.size();++start)
+            {
+                if(color[start]) { continue; }
+                work.push_back({start,0u});color[start]=1u;
+                while(!work.empty())
+                {
+                    auto& current{work.back()};auto const& n{code.nodes[current.index]};
+                    if(current.next!=child_count(n.op))
+                    {
+                        auto const next{child_index(n,current.next++)};
+                        if(color[next]==1u) { return error::malformed; }
+                        if(!color[next]) { work.push_back({next,0u});color[next]=1u; }
+                        continue;
+                    }
+                    ::std::size_t depth{};
+                    for(unsigned child{};child!=child_count(n.op);++child)
+                    {
+                        auto const child_height{height[child_index(n,child)]};
+                        if(child_height>=cap.max_nesting-1u) { return error::limit_exceeded; }
+                        depth=(::std::max)(depth,child_height+1u);
+                    }
+                    height[current.index]=depth;color[current.index]=2u;postorder.push_back(current.index);work.pop_back();
+                }
+            }
+            return error::none;
+        }
         inline constexpr bool native_integer_language(language_semantics language) noexcept
         { return language == language_semantics::c || language == language_semantics::c23 || language == language_semantics::cpp; }
         inline constexpr bool native_boolean_language(language_semantics language) noexcept
@@ -364,12 +556,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
         }
         struct parser
         {
-            ::std::string_view text{}; ::std::size_t cursor{}; program pending{}; error status{}; language_semantics language{language_semantics::shared_numeric};
+            ::std::string_view text{}; ::std::size_t cursor{}; program pending{}; error status{}; language_semantics language{language_semantics::shared_numeric}; expression_limits cap{};
             void space() noexcept
             { while(cursor < text.size() && ::fast_io::char_category::is_c_space(text[cursor])) { ++cursor; } }
             ::std::size_t append(node value)
             {
-                if(pending.nodes.size() >= 128u) { status = error::limit_exceeded; return 0u; }
+                if(pending.nodes.size() >= cap.max_nodes) { status = error::limit_exceeded; return 0u; }
                 pending.nodes.push_back(::std::move(value)); return pending.nodes.size() - 1u;
             }
             bool consume(::std::string_view token) noexcept
@@ -381,6 +573,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
                 auto const saved{cursor};
                 if(consume(name) && consume(opening)) { return true; }
                 cursor = saved; return false; // a partial keyword/punctuation probe consumes no producer name.
+            }
+            ::std::size_t builtin_close(::std::size_t begin, char closing) const noexcept
+            {
+                // Builtin type names contain words and whitespace only. Stop at
+                // a group/operator immediately instead of rescanning its whole
+                // nested operand for a closing parenthesis at every depth.
+                auto end{begin};
+                while(end<text.size() && text[end]!=closing)
+                {
+                    auto const c{text[end]};
+                    if(c!='_' && !::fast_io::char_category::is_c_alnum(c) && !::fast_io::char_category::is_c_space(c))
+                    { return text.npos; }
+                    ++end;
+                }
+                return end==text.size()?text.npos:end;
             }
             bool builtin(::std::string_view text, numeric_type& type) const noexcept
             {
@@ -406,8 +613,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
                     base = prefix == 'x' ? 16u : prefix == 'o' ? 8u : prefix == 'b' ? 2u : 10u;
                     if(base != 10u) { cursor += 2u; }
                 }
-                char normalized[4096u]{}; ::std::size_t count{};
-                auto put{[&](char c) { if(count == sizeof(normalized)) { status=error::limit_exceeded; } else { normalized[count++]=c; } }};
+                ::std::string normalized{}; ::std::size_t count{};
+                auto put{[&](char c) { normalized.push_back(c);++count; }};
                 auto digits{[&](unsigned radix)
                 {
                     bool any{};
@@ -446,11 +653,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
                 value.rust_numeric_suffix = !suffix.empty();
                 if(status != error::none) { return 0u; }
                 if(suffix == "f32" || suffix == "f64") { if(base != 10u) { status=error::unsupported; return 0u; } real=true; }
-                auto const first{normalized}; auto const last{first+count};
+                auto const first{normalized.data()}; auto const last{first+count};
                 if(real)
                 {
                     if(!suffix.empty() && suffix != "f32" && suffix != "f64") { status=error::unsupported; return 0u; }
-                    if(suffix.empty()) { value.rust_numeric_text=::fast_io::concat_fast_io(::std::string_view{first,count}); }
+                    if(suffix.empty()) { value.rust_numeric_text.assign(first,count); }
                     value.floating_literal=true; value.literal_width=suffix == "f32" ? 32u : 64u;
                     if(value.literal_width == 32u)
                     {
@@ -484,10 +691,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
                 }
                 return append(::std::move(value));
             }
-            ::std::size_t primary(unsigned depth)
+            continuation_task<::std::size_t> primary_task(::std::size_t depth)
             {
-                space(); if(depth >= 32u) { status = error::limit_exceeded; return 0u; }
-                if(cursor >= text.size()) { status = error::malformed; return 0u; }
+                space(); if(depth >= cap.max_nesting) { status = error::limit_exceeded; co_return 0u; }
+                if(cursor >= text.size()) { status = error::malformed; co_return 0u; }
                 if(text.substr(cursor).starts_with("sizeof") && (text.size()-cursor == 6u ||
                     (!::fast_io::char_category::is_c_alnum(text[cursor+6u]) && text[cursor+6u] != '_')) && consume("sizeof"))
                 {
@@ -495,56 +702,42 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
                     {
                         // sizeof owns one unary operand. Binary/conditional
                         // operators remain outside its unevaluated type query.
-                        auto const child{unary(depth+1u)};
-                        if(status != error::none || child >= pending.nodes.size()) { return 0u; }
+                        auto const child{co_await unary_task(depth+1u)};
+                        if(status != error::none || child >= pending.nodes.size()) { co_return 0u; }
                         node value{}; value.op = operation::expression_size; value.lhs = child;
                         if(pending.nodes[child].op == operation::reference)
-                        { value.op = operation::size; value.reference = pending.nodes[child].reference; }
-                        return append(::std::move(value));
+                        { pending.nodes[child].op=operation::size;co_return child; }
+                        co_return append(::std::move(value));
                     }
-                    auto const begin{cursor}; unsigned nesting{1u};
-                    while(cursor < text.size() && nesting != 0u)
+                    auto const begin{cursor};auto const end{builtin_close(begin,')')};numeric_type type{};
+                    if(end!=text.npos && builtin(text.substr(begin,end-begin),type))
                     {
-                        auto const c{text[cursor++]};
-                        // Probe the same complete bounded character token used
-                        // by primary. Failed probes (including digit separators)
-                        // consume nothing and the operand parser rejects errors.
-                        if(c == '\'')
-                        {
-                            auto probe{cursor-1u}; ::std::uint64_t ignored{};
-                            if(character_literal(text,probe,ignored,language) == error::none) { cursor = probe; continue; }
-                        }
-                        if(c == '(') { if(++nesting > 32u) { status = error::limit_exceeded; return 0u; } }
-                        else if(c == ')') { --nesting; }
+                        cursor=end+1u;node value{};value.op=operation::type_size;
+                        value.literal_width=type.width;value.utf_character_width=type.utf_character_width;
+                        co_return append(::std::move(value));
                     }
-                    node value{}; value.op = operation::size; numeric_type type{};
-                    if(nesting == 0u && builtin(text.substr(begin, cursor - begin - 1u),type))
-                    { value.op = operation::type_size; value.literal_width = type.width; value.utf_character_width = type.utf_character_width; return append(::std::move(value)); }
-                    if(nesting != 0u) { status = error::unsupported; return 0u; }
-                    auto const end{cursor};
-                    if(dwarf::parse_source_expression(text.substr(begin,end-begin-1u),value.reference) == dwarf::object_selector_error::none &&
-                       !(value.reference.steps.empty() && (value.reference.root_name == "true" || value.reference.root_name == "false")))
-                    { return append(::std::move(value)); } // retain aggregate/pointer declaration-only sizeof.
-                    cursor = begin; value.op = operation::expression_size;
-                    value.lhs = expression(1u,depth+1u);
-                    if(status != error::none) { return 0u; }
-                    if(!consume(")") || cursor != end) { status = error::unsupported; return 0u; }
-                    return append(::std::move(value));
+                    auto const child{co_await expression_task(1u,depth+1u)};
+                    if(status!=error::none) { co_return 0u; }
+                    if(!consume(")")) { status=error::unsupported;co_return 0u; }
+                    node value{};value.op=operation::expression_size;value.lhs=child;
+                    if(child<pending.nodes.size() && pending.nodes[child].op==operation::reference)
+                    { pending.nodes[child].op=operation::size;co_return child; }
+                    co_return append(::std::move(value));
                 }
                 {
                     auto const saved{cursor};
                     if(named_open("len","(") || named_open("cap","("))
                     {
-                        dwarf::expression_details::parser state{text,{},saved,32u,32u};
+                        dwarf::expression_details::parser state{text,{},saved,cap.max_reference_steps,cap.max_nesting};
                         auto const result{state.primary(depth)};
                         if(result != dwarf::object_selector_error::none)
                         {
                             status = result == dwarf::object_selector_error::limit_exceeded ? error::limit_exceeded :
                                 result == dwarf::object_selector_error::malformed ? error::malformed : error::unsupported;
-                            return 0u;
+                            co_return 0u;
                         }
                         cursor = state.cursor; node value{}; value.op = operation::reference;
-                        value.reference = ::std::move(state.pending); return append(::std::move(value));
+                        value.reference = ::std::move(state.pending); co_return append(::std::move(value));
                     }
                 }
                 if(named_open("@as","("))
@@ -554,46 +747,45 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
                     // bool coercion, CTFE or context-free @intCast is invented.
                     auto const begin{cursor}; auto const end{text.find(',',cursor)}; numeric_type type{};
                     if(end == text.npos || !zig_builtin_type(text.substr(begin,end-begin),type) || type.boolean)
-                    { status = error::unsupported; return 0u; }
-                    cursor = end+1u; auto const child{expression(1u,depth+1u)};
-                    if(!consume(")")) { status = error::malformed; return 0u; }
-                    return cast_node(type,child,operation::zig_coerce);
+                    { status = error::unsupported; co_return 0u; }
+                    cursor = end+1u; auto const child{co_await expression_task(1u,depth+1u)};
+                    if(!consume(")")) { status = error::malformed; co_return 0u; }
+                    co_return cast_node(type,child,operation::zig_coerce);
                 }
                 if(named_open("static_cast","<"))
                 {
                     auto const begin{cursor}; auto const end{text.find('>',cursor)}; numeric_type type{};
-                    if(end == text.npos || !builtin(text.substr(begin,end-begin),type)) { status = error::unsupported; return 0u; }
-                    cursor = end + 1u; if(!consume("(")) { status = error::malformed; return 0u; }
-                    auto const child{expression(1u,depth+1u)}; if(!consume(")")) { status = error::malformed; return 0u; }
-                    return cast_node(type,child);
+                    if(end == text.npos || !builtin(text.substr(begin,end-begin),type)) { status = error::unsupported; co_return 0u; }
+                    cursor = end + 1u; if(!consume("(")) { status = error::malformed; co_return 0u; }
+                    auto const child{co_await expression_task(1u,depth+1u)}; if(!consume(")")) { status = error::malformed; co_return 0u; }
+                    co_return cast_node(type,child);
                 }
                 if(consume("("))
                 {
-                    auto const begin{cursor}; auto const end{text.find(')',cursor)}; numeric_type type{};
+                    auto const begin{cursor}; auto const end{builtin_close(cursor,')')}; numeric_type type{};
                     if(end != text.npos && builtin(text.substr(begin,end-begin),type))
-                    { cursor = end + 1u; return cast_node(type,unary(depth+1u)); }
-                    auto const result{expression(1u, depth + 1u)};
+                    { cursor = end + 1u; co_return cast_node(type,co_await unary_task(depth+1u)); }
+                    auto const result{co_await expression_task(1u, depth + 1u)};
                     if(status != error::none || !consume(")"))
-                    { if(status == error::none) { status = error::malformed; } return 0u; }
+                    { if(status == error::none) { status = error::malformed; } co_return 0u; }
                     if(result < pending.nodes.size() && pending.nodes[result].op == operation::reference)
                     {
                         // Parentheses preserve this existing producer reference.
                         // Postfix syntax cannot attach to arithmetic, literals,
                         // sizeof, casts or conditional numeric results.
-                        node value{pending.nodes[result]}; auto const old_steps{value.reference.steps.size()};
-                        dwarf::expression_details::parser state{text,::std::move(value.reference),cursor,32u,32u};
+                        auto& value{pending.nodes[result]};
+                        dwarf::expression_details::parser state{text,::std::move(value.reference),cursor,cap.max_reference_steps,cap.max_nesting};
                         auto const tail_status{state.postfix_tail(true)};
                         if(tail_status != dwarf::object_selector_error::none)
                         {
                             status = tail_status == dwarf::object_selector_error::limit_exceeded ? error::limit_exceeded :
                                 tail_status == dwarf::object_selector_error::malformed ? error::malformed : error::unsupported;
-                            return 0u;
+                            co_return 0u;
                         }
                         cursor = state.cursor;
-                        if(state.pending.steps.size() != old_steps)
-                        { value.reference = ::std::move(state.pending); return append(::std::move(value)); }
+                        value.reference = ::std::move(state.pending);
                     }
-                    return result;
+                    co_return result;
                 }
                 // Numeric conversion syntax is read-only; no guest/host function is called.
                 {
@@ -604,7 +796,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
                     {
                         cursor = end;
                         if(consume("("))
-                        { auto const child{expression(1u,depth+1u)}; if(!consume(")")) { status = error::malformed; return 0u; } return cast_node(type,child); }
+                        { auto const child{co_await expression_task(1u,depth+1u)}; if(!consume(")")) { status = error::malformed; co_return 0u; } co_return cast_node(type,child); }
                         cursor = begin;
                     }
                 }
@@ -612,19 +804,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
                 {
                     if(text.substr(cursor).starts_with(keyword) && (text.size()-cursor == keyword.size() ||
                        (!::fast_io::char_category::is_c_alnum(text[cursor+keyword.size()]) && text[cursor+keyword.size()] != '_')))
-                    { cursor += keyword.size(); node value{}; value.op = operation::literal; value.literal = keyword == "true"; value.boolean_literal = true; return append(::std::move(value)); }
+                    { cursor += keyword.size(); node value{}; value.op = operation::literal; value.literal = keyword == "true"; value.boolean_literal = true; co_return append(::std::move(value)); }
                 }
                 auto const begin{cursor};
                 if(text[cursor] == '\'' || (language == language_semantics::cpp && utf_character_prefix(text,cursor)))
                 {
                     ::std::uint64_t c{}; unsigned width{}; status = character_literal(text,cursor,c,language,&width);
-                    if(status != error::none) { return 0u; }
-                    node value{}; value.op = operation::literal; value.literal = c; value.character_literal = true; value.utf_character_width = width; value.rust_character = language == language_semantics::rust; return append(::std::move(value));
+                    if(status != error::none) { co_return 0u; }
+                    node value{}; value.op = operation::literal; value.literal = c; value.character_literal = true; value.utf_character_width = width; value.rust_character = language == language_semantics::rust; co_return append(::std::move(value));
                 }
                 if(::fast_io::char_category::is_c_digit(text[cursor]) ||
                    (text[cursor] == '.' && cursor+1u < text.size() && ::fast_io::char_category::is_c_digit(text[cursor+1u])))
                 {
-                    if(language == language_semantics::rust) { return rust_numeric_literal(); }
+                    if(language == language_semantics::rust) { co_return rust_numeric_literal(); }
                     node value{}; value.op = operation::literal;
                     value.hex_literal = text.size()-cursor >= 2u && text[cursor] == '0' && (text[cursor+1u] == 'x' || text[cursor+1u] == 'X');
                     if(!value.hex_literal)
@@ -633,11 +825,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
                         // in each significand/exponent segment, never beside . or a sign.
                         // Normalize owned syntax for fast_io; the integer path below
                         // keeps its existing base-prefix and candidate-type rules.
-                        char normalized[4096u]{}; ::std::size_t count{}; bool bad_separator{};
+                        ::std::string normalized{}; ::std::size_t count{}; bool bad_separator{};
                         auto const put{[&](char c)
                         {
-                            if(count == sizeof(normalized)) { status = error::limit_exceeded; }
-                            else { normalized[count++] = c; }
+                            normalized.push_back(c);++count;
                         }};
                         auto const digits{[&]()
                         {
@@ -666,25 +857,25 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
                             if(cursor < text.size() && (text[cursor] == '+' || text[cursor] == '-')) { put(text[cursor++]); }
                             if(!digits()) { bad_separator = true; }
                         }
-                        if(status != error::none) { return 0u; }
+                        if(status != error::none) { co_return 0u; }
                         if(real)
                         {
-                            if(bad_separator) { status = error::malformed; return 0u; }
+                            if(bad_separator) { status = error::malformed; co_return 0u; }
                             value.floating_literal = true; value.literal_width = 64u;
-                            auto const first{normalized}; auto const last{first+count};
+                            auto const first{normalized.data()}; auto const last{first+count};
                             if(cursor < text.size() && (text[cursor] == 'f' || text[cursor] == 'F'))
                             {
                                 ++cursor; float number{}; auto const parsed{::fast_io::parse_by_scan(first,last,number)};
-                                if(parsed.code != ::fast_io::parse_code::ok || parsed.iter != last || !::std::isfinite(number)) { status = error::malformed; return 0u; }
+                                if(parsed.code != ::fast_io::parse_code::ok || parsed.iter != last || !::std::isfinite(number)) { status = error::malformed; co_return 0u; }
                                 value.literal_width = 32u; value.literal = ::std::bit_cast<::std::uint32_t>(number);
                             }
                             else
                             {
                                 double number{}; auto const parsed{::fast_io::parse_by_scan(first,last,number)};
-                                if(parsed.code != ::fast_io::parse_code::ok || parsed.iter != last || !::std::isfinite(number)) { status = error::malformed; return 0u; }
+                                if(parsed.code != ::fast_io::parse_code::ok || parsed.iter != last || !::std::isfinite(number)) { status = error::malformed; co_return 0u; }
                                 value.literal = ::std::bit_cast<::std::uint64_t>(number);
                             }
-                            return append(::std::move(value));
+                            co_return append(::std::move(value));
                         }
                         cursor = begin;
                     }
@@ -703,28 +894,27 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
                         cursor += 2u;
                         if(cursor < text.size() && text[cursor] == '_') { ++cursor; }
                     }
-                    char normalized[4096u]{}; ::std::size_t count{}; bool separator{};
+                    ::std::string normalized{}; ::std::size_t count{}; bool separator{};
                     while(cursor < text.size())
                     {
                         auto const c{text[cursor]};
                         if(c == '\'' || c == '_')
                         {
-                            if(count == 0u || separator) { status = error::malformed; return 0u; }
+                            if(count == 0u || separator) { status = error::malformed; co_return 0u; }
                             separator = true; ++cursor; continue;
                         }
                         bool const digit{::fast_io::char_category::is_c_digit(c) ||
                             (base == 16u && ((c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')))};
                         if(!digit) { break; }
-                        if(count == sizeof(normalized)) { status = error::limit_exceeded; return 0u; }
-                        normalized[count++] = c; separator = false; ++cursor;
+                        normalized.push_back(c);++count;separator = false; ++cursor;
                     }
-                    if(count == 0u || separator) { status = error::malformed; return 0u; }
-                    auto const first{normalized}; auto const last{first + count};
+                    if(count == 0u || separator) { status = error::malformed; co_return 0u; }
+                    auto const first{normalized.data()}; auto const last{first + count};
                     auto const parsed{base == 16u ? ::fast_io::parse_by_scan(first,last,::fast_io::mnp::hex_get<true,true>(value.literal)) :
                         base == 8u ? ::fast_io::parse_by_scan(first,last,::fast_io::mnp::oct_get<true,true>(value.literal)) :
                         base == 2u ? ::fast_io::parse_by_scan(first,last,::fast_io::mnp::bin_get<true,true>(value.literal)) :
                         ::fast_io::parse_by_scan(first,last,::fast_io::mnp::dec_get<true,true>(value.literal))};
-                    if(parsed.code != ::fast_io::parse_code::ok || parsed.iter != last) { status = error::malformed; return 0u; }
+                    if(parsed.code != ::fast_io::parse_code::ok || parsed.iter != last) { status = error::malformed; co_return 0u; }
                     // A finite standard C suffix, not an arbitrary trailing identifier.
                     auto const suffix_begin{cursor};
                     while(cursor < text.size() && (text[cursor] == 'u' || text[cursor] == 'U' || text[cursor] == 'l' || text[cursor] == 'L')) { ++cursor; }
@@ -733,15 +923,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
                     {
                         if(suffix.front() == 'u' || suffix.front() == 'U') { value.literal_unsigned = true; suffix.remove_prefix(1u); }
                         if(!suffix.empty() && (suffix.back() == 'u' || suffix.back() == 'U'))
-                        { if(value.literal_unsigned) { status = error::malformed; return 0u; } value.literal_unsigned = true; suffix.remove_suffix(1u); }
-                        if(suffix.size() > 2u || (suffix.size() == 2u && suffix[0u] != suffix[1u])) { status = error::malformed; return 0u; }
+                        { if(value.literal_unsigned) { status = error::malformed; co_return 0u; } value.literal_unsigned = true; suffix.remove_suffix(1u); }
+                        if(suffix.size() > 2u || (suffix.size() == 2u && suffix[0u] != suffix[1u])) { status = error::malformed; co_return 0u; }
                         if(!suffix.empty()) { value.literal_width = suffix.size() == 2u ? 64u : 0u; value.guest_long_literal = suffix.size() == 1u; }
                     }
-                    return append(::std::move(value));
+                    co_return append(::std::move(value));
                 }
-                // A leaf is precisely the existing bounded producer-name/selector
+                // A leaf is precisely the existing producer-name/selector
                 // grammar. Operators outside [] are consumed by the scalar parser.
-                unsigned brackets{};
+                ::std::size_t brackets{};
                 while(cursor < text.size())
                 {
                     auto const c{text[cursor]};
@@ -767,27 +957,35 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
                     ++cursor;
                 }
                 node value{}; value.op = operation::reference;
-                if(begin == cursor || dwarf::parse_source_expression(text.substr(begin, cursor - begin), value.reference) != dwarf::object_selector_error::none)
-                { status = error::unsupported; return 0u; }
-                return append(::std::move(value));
+                if(begin==cursor) { status=error::unsupported;co_return 0u; }
+                auto const leaf_status{dwarf::parse_source_expression(text.substr(begin,cursor-begin),value.reference,
+                    {cap.max_expression_bytes,cap.max_reference_steps,cap.max_nesting})};
+                if(leaf_status!=dwarf::object_selector_error::none)
+                {
+                    status=leaf_status==dwarf::object_selector_error::allocation_failure?error::allocation_failure:
+                        leaf_status==dwarf::object_selector_error::limit_exceeded?error::limit_exceeded:error::unsupported;
+                    co_return 0u;
+                }
+                co_return append(::std::move(value));
             }
-            ::std::size_t unary(unsigned depth)
+            ::std::size_t primary(::std::size_t depth) { return run_continuation(primary_task(depth),cap); }
+            continuation_task<::std::size_t> unary_task(::std::size_t depth)
             {
-                if(depth >= 32u) { status = error::limit_exceeded; return 0u; }
+                if(depth >= cap.max_nesting) { status = error::limit_exceeded; co_return 0u; }
                 space();
                 if(text.substr(cursor).starts_with("++") || text.substr(cursor).starts_with("--"))
-                { status = error::unsupported; return 0u; }
+                { status = error::unsupported; co_return 0u; }
                 if(consume("*"))
                 {
-                    auto const child{unary(depth+1u)};
+                    auto const child{co_await unary_task(depth+1u)};
                     if(status != error::none || child >= pending.nodes.size() || pending.nodes[child].op != operation::reference)
-                    { status = error::unsupported; return 0u; }
-                    node value{pending.nodes[child]};
+                    { status = error::unsupported; co_return 0u; }
+                    auto& value{pending.nodes[child]};
                     if(!value.reference.steps.empty() && (value.reference.steps.back().kind == dwarf::source_expression_step_kind::go_length ||
                         value.reference.steps.back().kind == dwarf::source_expression_step_kind::go_capacity))
-                    { status = error::unsupported; return 0u; }
-                    if(value.reference.steps.size() >= 32u) { status = error::limit_exceeded; return 0u; }
-                    value.reference.steps.push_back({dwarf::source_expression_step_kind::dereference,{},{}}); return append(::std::move(value));
+                    { status = error::unsupported; co_return 0u; }
+                    if(value.reference.steps.size() >= cap.max_reference_steps) { status = error::limit_exceeded; co_return 0u; }
+                    value.reference.steps.push_back({dwarf::source_expression_step_kind::dereference,{},{}}); co_return child;
                 }
                 operation op{}; bool prefix{true};
                 if(consume("+")) { op = operation::positive; }
@@ -795,9 +993,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
                 else if(consume("~")) { op = operation::invert; }
                 else if(consume("!")) { op = operation::logical_not; }
                 else { prefix = false; }
-                if(!prefix) { return primary(depth); }
-                auto const child{unary(depth + 1u)}; node value{}; value.op = op; value.lhs = child; return append(::std::move(value));
+                if(!prefix) { co_return co_await primary_task(depth); }
+                auto const child{co_await unary_task(depth + 1u)}; node value{}; value.op = op; value.lhs = child; co_return append(::std::move(value));
             }
+            ::std::size_t unary(::std::size_t depth) { return run_continuation(unary_task(depth),cap); }
             struct binary { ::std::string_view token; operation op; unsigned precedence; bool keyword; };
             static constexpr binary operators[] = {
                 {"or",operation::logical_or,1u,true},{"and",operation::logical_and,2u,true},
@@ -835,10 +1034,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
                 }
                 return op.precedence;
             }
-            ::std::size_t expression(unsigned minimum, unsigned depth)
+            continuation_task<::std::size_t> expression_task(unsigned minimum, ::std::size_t depth)
             {
-                if(depth >= 32u) { status = error::limit_exceeded; return 0u; }
-                auto lhs{unary(depth + 1u)};
+                if(depth >= cap.max_nesting) { status = error::limit_exceeded; co_return 0u; }
+                auto lhs{co_await unary_task(depth + 1u)};
                 while(status == error::none)
                 {
                     space();
@@ -858,21 +1057,22 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
                          (!::fast_io::char_category::is_c_alnum(text[end]) && text[end] != '_')))
                       { next = ::std::addressof(candidate); break; } }
                     if(next == nullptr || precedence(*next) < minimum) { break; }
-                    cursor += next->token.size(); auto const rhs{expression(precedence(*next) + 1u, depth + 1u)};
+                    cursor += next->token.size(); auto const rhs{co_await expression_task(precedence(*next) + 1u, depth + 1u)};
                     node value{}; value.op = next->op; value.lhs = lhs; value.rhs = rhs; value.logical_keyword = next->keyword; lhs = append(::std::move(value));
                 }
                 if(status == error::none && minimum == 1u && consume("?"))
                 {
                     // Lowest precedence and right associative. Both arms must
                     // be fully parsed, including the one not evaluated later.
-                    auto const yes{expression(1u,depth+1u)};
-                    if(status != error::none || !consume(":")) { if(status == error::none) { status = error::malformed; } return 0u; }
-                    auto const no{expression(1u,depth+1u)};
+                    auto const yes{co_await expression_task(1u,depth+1u)};
+                    if(status != error::none || !consume(":")) { if(status == error::none) { status = error::malformed; } co_return 0u; }
+                    auto const no{co_await expression_task(1u,depth+1u)};
                     node value{}; value.op = operation::conditional; value.lhs = lhs; value.rhs = yes; value.third = no;
                     lhs = append(::std::move(value));
                 }
-                return lhs;
+                co_return lhs;
             }
+            ::std::size_t expression(unsigned minimum, ::std::size_t depth) { return run_continuation(expression_task(minimum,depth),cap); }
         };
         inline constexpr ::std::uint64_t mask(unsigned width) noexcept
         { return width == 64u ? ~::std::uint64_t{} : (::std::uint64_t{1u} << width) - 1u; }
@@ -1357,15 +1557,22 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
             return out;
         }
         template<typename TypeResolver>
-        error infer_type(program const& code, ::std::size_t index, unsigned depth, TypeResolver& resolve_type,
+        continuation_task<error> infer_type_task(program const& code, ::std::size_t index, ::std::size_t depth, TypeResolver& resolve_type,
             integer& out, unsigned guest_bits, ::std::size_t& budget, language_semantics language)
         {
-            if(depth >= 32u || index >= code.nodes.size() || budget == 0u) { return error::limit_exceeded; }
-            --budget; auto const& n{code.nodes[index]};
-            if(!native_syntax(n,language)) { return error::unsupported; }
+            auto& owner{co_await borrow_continuation_owner{}};
+            if(depth >= owner.cap.max_nesting || index >= code.nodes.size()) { co_return error::limit_exceeded; }
+            if(!owner.bind(code)) { co_return error::malformed; }
+            auto& memo{owner.memo[index]};
+            if(memo.type_ready) { out=memo.type;co_return memo.type_status; }
+            if(budget==0u) { co_return error::limit_exceeded; }--budget;
+            auto const finish{[&](error status) noexcept
+            { memo.type=out;memo.type_status=status;memo.type_ready=true;return status; }};
+            auto const& n{code.nodes[index]};
+            if(!native_syntax(n,language)) { co_return finish(error::unsupported); }
             if(n.op == operation::literal)
             {
-                auto const status{literal_value(n,out,guest_bits,language)}; out.bits = 0u; return status;
+                auto const status{literal_value(n,out,guest_bits,language)}; out.bits = 0u; co_return finish(status);
             }
             if(n.op == operation::size)
             {
@@ -1376,40 +1583,40 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
                 if constexpr(requires { resolve_type(n.reference,true,operand_type); })
                 {
                     if(!resolve_type(n.reference,true,operand_type) || !valid_size_extent(operand_type,guest_bits,language))
-                    { return error::unavailable; }
+                    { co_return finish(error::unavailable); }
                 }
-                else if(!resolve_type(n.reference,operand_type) || !valid_numeric(operand_type,guest_bits)) { return error::unavailable; }
-                out = size_value(0u,guest_bits,language); return error::none; // declaration/type only, no sizeof/value read.
+                else if(!resolve_type(n.reference,operand_type) || !valid_numeric(operand_type,guest_bits)) { co_return finish(error::unavailable); }
+                out = size_value(0u,guest_bits,language); co_return finish(error::none); // declaration/type only, no sizeof/value read.
             }
             if(n.op == operation::type_size)
-            { out = size_value(0u,guest_bits,language); return error::none; }
+            { out = size_value(0u,guest_bits,language); co_return finish(error::none); }
             if(n.op == operation::reference)
             {
                 if constexpr(requires { resolve_type(n.reference,false,out); })
-                { if(!resolve_type(n.reference,false,out)) { return error::unavailable; } }
-                else if(!resolve_type(n.reference,out)) { return error::unavailable; }
-                if(!valid_numeric(out,guest_bits)) { return error::unavailable; }
-                out.bits = 0u; return error::none; // type DATA only, never copied value bits.
+                { if(!resolve_type(n.reference,false,out)) { co_return finish(error::unavailable); } }
+                else if(!resolve_type(n.reference,out)) { co_return finish(error::unavailable); }
+                if(!valid_numeric(out,guest_bits)) { co_return finish(error::unavailable); }
+                out.bits = 0u; co_return finish(error::none); // type DATA only, never copied value bits.
             }
             if(is_rust_negative_literal(code,n,language))
-            { auto const status{rust_negative_literal(code,n,out,guest_bits)};out.bits=0u;return status; }
+            { auto const status{rust_negative_literal(code,n,out,guest_bits)};out.bits=0u;co_return finish(status); }
             integer a{},b{};bool const contextual_lhs{rust_context_binary(n.op,language) &&
                 rust_untyped_literal(code,n.lhs) && !rust_untyped_literal(code,n.rhs)};
-            auto status{contextual_lhs ? infer_type(code,n.rhs,depth+1u,resolve_type,b,guest_bits,budget,language) :
-                infer_type(code,n.lhs,depth+1u,resolve_type,a,guest_bits,budget,language)};
-            if(status != error::none) { return status; }
-            if(contextual_lhs) { status=rust_literal_as_type(code,n.lhs,b,a);if(status != error::none) { return status; } a.bits=0u; }
+            auto status{contextual_lhs ? co_await infer_type_task(code,n.rhs,depth+1u,resolve_type,b,guest_bits,budget,language) :
+                co_await infer_type_task(code,n.lhs,depth+1u,resolve_type,a,guest_bits,budget,language)};
+            if(status != error::none) { co_return finish(status); }
+            if(contextual_lhs) { status=rust_literal_as_type(code,n.lhs,b,a);if(status != error::none) { co_return finish(status); } a.bits=0u; }
             if(n.op == operation::expression_size)
             {
-                if(!valid_numeric(a,guest_bits) || (a.width & 7u) != 0u) { return error::unavailable; }
-                out = size_value(0u,guest_bits,language); return error::none;
+                if(!valid_numeric(a,guest_bits) || (a.width & 7u) != 0u) { co_return finish(error::unavailable); }
+                out = size_value(0u,guest_bits,language); co_return finish(error::none);
             }
             if(n.op == operation::cast)
-            { if(!boolean_cast_allowed(n,a,language)) { return error::unsupported; }
+            { if(!boolean_cast_allowed(n,a,language)) { co_return finish(error::unsupported); }
               out = {0u,n.literal_width ? n.literal_width : guest_bits,n.literal_unsigned,n.floating_literal,
                 n.boolean_cast ? value_category::boolean : n.floating_literal ? value_category::unspecified : value_category::integer,n.builtin_identity};
               out.utf_character_width = n.utf_character_width; out.rust_character = n.rust_character;out.rust_pointer_sized=language==language_semantics::rust && !n.literal_width;
-              if(native_integer_language(language)) { out.wide_identity = n.wide_identity; } return error::none; }
+              if(native_integer_language(language)) { out.wide_identity = n.wide_identity; } co_return finish(error::none); }
             if(n.op == operation::zig_coerce)
             {
                 auto const& child{code.nodes[n.lhs]}; auto source{a};
@@ -1418,77 +1625,82 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
                 if(auto const* constant{zig_coercion_constant(code,child)})
                 {
                     status = zig_constant_value(child,*constant,source,guest_bits);
-                    if(status != error::none) { return status; }
+                    if(status != error::none) { co_return finish(status); }
                 }
                 status = check_zig_coercion(code,n,child,source,guest_bits);
-                if(status != error::none) { return status; }
+                if(status != error::none) { co_return finish(status); }
                 out = {0u,n.literal_width ? n.literal_width : guest_bits,n.literal_unsigned,n.floating_literal,
                     n.floating_literal ? value_category::unspecified : value_category::integer};
-                return error::none;
+                co_return finish(error::none);
             }
             if(native_boolean_language(language) && n.op == operation::logical_not)
-            { status = boolean_not(a,out,language); out.bits = 0u; return status; }
+            { status = boolean_not(a,out,language); out.bits = 0u; co_return finish(status); }
             if(native_boolean_language(language) && (n.op == operation::positive || n.op == operation::negative || n.op == operation::invert) &&
-               (boolean_value(a) || (n.op == operation::invert && language != language_semantics::zig))) { return error::unsupported; }
+               (boolean_value(a) || (n.op == operation::invert && language != language_semantics::zig))) { co_return finish(error::unsupported); }
             if(a.rust_character && (language != language_semantics::rust || n.op == operation::positive ||
-                n.op == operation::negative || n.op == operation::invert)) { return error::unsupported; }
-            if(language == language_semantics::rust && n.op == operation::negative && a.unsigned_value) { return error::unsupported; }
+                n.op == operation::negative || n.op == operation::invert)) { co_return finish(error::unsupported); }
+            if(language == language_semantics::rust && n.op == operation::negative && a.unsigned_value) { co_return finish(error::unsupported); }
             auto const original_a{a};
             a = promote(a,language);
-            if(n.op == operation::logical_not) { out = predicate_value(false,language); return error::none; }
+            if(n.op == operation::logical_not) { out = predicate_value(false,language); co_return finish(error::none); }
             if(n.op == operation::positive || n.op == operation::negative || n.op == operation::invert)
             {
-                if(n.op == operation::invert && a.floating) { return error::unsupported; }
-                out = a; return error::none;
+                if(n.op == operation::invert && a.floating) { co_return finish(error::unsupported); }
+                out = a; co_return finish(error::none);
             }
             if(!contextual_lhs)
             {
                 status = rust_context_binary(n.op,language) && rust_untyped_literal(code,n.rhs) && !rust_untyped_literal(code,n.lhs) ?
-                    rust_literal_as_type(code,n.rhs,a,b) : infer_type(code,n.rhs,depth+1u,resolve_type,b,guest_bits,budget,language);
-                if(status != error::none) { return status; }
+                    rust_literal_as_type(code,n.rhs,a,b) : co_await infer_type_task(code,n.rhs,depth+1u,resolve_type,b,guest_bits,budget,language);
+                if(status != error::none) { co_return finish(status); }
                 b.bits=0u;
             }
             if(n.op == operation::conditional)
             {
-                integer c{}; status = infer_type(code,n.third,depth+1u,resolve_type,c,guest_bits,budget,language);
-                if(status != error::none) { return status; }
-                return conditional_numeric_type(code.nodes[n.rhs],code.nodes[n.third],b,c,out,language);
+                integer c{}; status = co_await infer_type_task(code,n.third,depth+1u,resolve_type,c,guest_bits,budget,language);
+                if(status != error::none) { co_return finish(status); }
+                co_return finish(conditional_numeric_type(code.nodes[n.rhs],code.nodes[n.third],b,c,out,language));
             }
             if(original_a.rust_character || b.rust_character)
-            { status=rust_character_binary(n.op,original_a,b,out,language);out.bits=0u;return status; }
+            { status=rust_character_binary(n.op,original_a,b,out,language);out.bits=0u;co_return finish(status); }
             if(native_boolean_language(language) && (boolean_value(original_a) || boolean_value(b)))
-            { status = boolean_binary(n.op,original_a,b,out,language); out.bits = 0u; return status; }
+            { status = boolean_binary(n.op,original_a,b,out,language); out.bits = 0u; co_return finish(status); }
             if(native_boolean_language(language) && (n.op == operation::logical_and || n.op == operation::logical_or))
-            { return error::unsupported; }
-            if(!rust_numeric_operands(n.op,a,b,language)) { return error::unsupported; }
+            { co_return finish(error::unsupported); }
+            if(!rust_numeric_operands(n.op,a,b,language)) { co_return finish(error::unsupported); }
             b = promote(b,language);
             switch(n.op)
             {
                 case operation::logical_and: case operation::logical_or:
                 case operation::less: case operation::less_equal: case operation::greater: case operation::greater_equal:
-                case operation::equal: case operation::unequal: out = predicate_value(false,language); return error::none;
+                case operation::equal: case operation::unequal: out = predicate_value(false,language); co_return finish(error::none);
                 case operation::left: case operation::right:
-                    if(a.floating || b.floating) { return error::unsupported; }
-                    out = a; return error::none;
+                    if(a.floating || b.floating) { co_return finish(error::unsupported); }
+                    out = a; co_return finish(error::none);
                 case operation::remainder:
-                    if((a.floating || b.floating) && language != language_semantics::rust) { return error::unsupported; }
-                    out = common_numeric_type(a,b,language); return valid_numeric(out) ? error::none : error::unavailable;
+                    if((a.floating || b.floating) && language != language_semantics::rust) { co_return finish(error::unsupported); }
+                    out = common_numeric_type(a,b,language); co_return finish(valid_numeric(out) ? error::none : error::unavailable);
                 case operation::bit_and: case operation::bit_clear: case operation::bit_xor: case operation::bit_or:
-                    if(a.floating || b.floating) { return error::unsupported; }
+                    if(a.floating || b.floating) { co_return finish(error::unsupported); }
                     [[fallthrough]];
                 case operation::add: case operation::subtract: case operation::multiply: case operation::divide:
-                    out = common_numeric_type(a,b,language); return valid_numeric(out) ? error::none : error::unavailable;
-                default: return error::unsupported;
+                    out = common_numeric_type(a,b,language); co_return finish(valid_numeric(out) ? error::none : error::unavailable);
+                default: co_return finish(error::unsupported);
             }
         }
+        template<typename TypeResolver>
+        error infer_type(program const& code, ::std::size_t index, ::std::size_t depth, TypeResolver& resolve_type,
+            integer& out, unsigned guest_bits, ::std::size_t& budget, language_semantics language, expression_limits const& cap = {})
+        { return run_continuation(infer_type_task(code,index,depth,resolve_type,out,guest_bits,budget,language),cap); }
 
-        // One bounded type variable per syntax node. Constraints copy primitive
+
+        // One owned type variable per syntax node. Constraints copy primitive
         // declaration DATA only; they cannot invoke the value/guest resolver.
         // Cast operands and shift counts have independent type variables.
         struct rust_type_constraints
         {
             struct group { ::std::size_t parent{}; unsigned hint{}; integer type{0u,0u,false}; };
-            ::std::array<group,128u> groups{};
+            ::std::vector<group> groups{};
             ::std::size_t count{};
             ::std::size_t find(::std::size_t i) noexcept
             {
@@ -1519,14 +1731,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
         };
         template<typename TypeResolver>
         error prepare_rust_types(program const& code, program& prepared, integer& root_type, unsigned guest_bits,
-            TypeResolver& resolve_type, ::std::size_t& budget)
+            TypeResolver& resolve_type, ::std::size_t& budget, ::std::vector<::std::size_t> const& postorder, expression_limits const& cap)
         {
-            if(code.nodes.empty() || code.nodes.size()>128u || code.root>=code.nodes.size()) { return error::limit_exceeded; }
-            rust_type_constraints plan{};plan.count=code.nodes.size();
-            ::std::array<unsigned,128u> heights{};
+            rust_type_constraints plan{};plan.count=code.nodes.size();plan.groups.resize(plan.count);
             for(::std::size_t i{};i!=plan.count;++i) { plan.groups[i].parent=i; }
             auto const boolean{predicate_value(false,language_semantics::rust)};
-            for(::std::size_t i{};i!=plan.count;++i)
+            for(auto const i : postorder)
             {
                 if(!budget) { return error::limit_exceeded; }--budget;
                 auto const& n{code.nodes[i]};if(!native_syntax(n,language_semantics::rust)) { return error::unsupported; }
@@ -1555,8 +1765,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
                 { status=plan.bind(i,size_value(0u,guest_bits,language_semantics::rust)); }
                 else
                 {
-                    if(n.lhs>=i) { return error::limit_exceeded; }
-                    heights[i]=heights[n.lhs]+1u;
                     switch(n.op)
                     {
                         case operation::cast:
@@ -1570,8 +1778,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
                         case operation::negative:case operation::logical_not:status=plan.join(i,n.lhs);break;
                         default:
                         {
-                            if(n.rhs>=i) { return error::limit_exceeded; }
-                            heights[i]=(::std::max)(heights[i],heights[n.rhs]+1u);
                             switch(n.op)
                             {
                                 case operation::left:case operation::right:status=plan.join(i,n.lhs);break;
@@ -1593,7 +1799,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
                     }
                 }
                 if(status!=error::none) { return status; }
-                if(heights[i]>=32u) { return error::limit_exceeded; }
             }
             for(::std::size_t i{};i!=plan.count;++i)
             {
@@ -1618,103 +1823,109 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
                 n.literal_unsigned=type.unsigned_value;n.rust_numeric_suffix=true;
             }
             // Complete type/range checking includes dead operands without their
-            // arithmetic or value reads. The existing depth and visit caps stay.
-            integer checked{};auto const status{infer_type(prepared,prepared.root,0u,resolve_type,checked,guest_bits,budget,language_semantics::rust)};
+            // arithmetic or value reads. Work obeys the optional caller quota.
+            integer checked{};auto const status{infer_type(prepared,prepared.root,0u,resolve_type,checked,guest_bits,budget,language_semantics::rust,cap)};
             if(status!=error::none) { return status; }
             root_type=plan.groups[plan.find(code.root)].type;
             return error::none;
         }
 
         template<typename Resolver, typename TypeResolver>
-        error evaluate(program const& code, ::std::size_t index, unsigned depth, Resolver& resolve, integer& out, unsigned guest_bits, TypeResolver& resolve_type, ::std::size_t& type_budget, language_semantics language)
+        continuation_task<error> evaluate_task(program const& code, ::std::size_t index, ::std::size_t depth, Resolver& resolve, integer& out, unsigned guest_bits, TypeResolver& resolve_type, ::std::size_t& type_budget, language_semantics language)
         {
-            if(depth >= 32u || index >= code.nodes.size()) { return error::limit_exceeded; }
+            auto& owner{co_await borrow_continuation_owner{}};
+            if(depth >= owner.cap.max_nesting || index >= code.nodes.size()) { co_return error::limit_exceeded; }
+            if(!owner.bind(code)) { co_return error::malformed; }
+            auto& memo{owner.memo[index]};
+            if(memo.value_ready) { out=memo.value;co_return memo.value_status; }
+            auto const finish{[&](error status) noexcept
+            { memo.value=out;memo.value_status=status;memo.value_ready=true;return status; }};
             auto const& n{code.nodes[index]};
-            if(!native_syntax(n,language)) { return error::unsupported; }
-            if(n.op == operation::literal) { return literal_value(n,out,guest_bits,language); }
-            if(is_rust_negative_literal(code,n,language)) { return rust_negative_literal(code,n,out,guest_bits); }
-            if(n.op == operation::type_size) { out = size_value((n.literal_width ? n.literal_width : guest_bits)/8u,guest_bits,language); return error::none; }
+            if(!native_syntax(n,language)) { co_return finish(error::unsupported); }
+            if(n.op == operation::literal) { co_return finish(literal_value(n,out,guest_bits,language)); }
+            if(is_rust_negative_literal(code,n,language)) { co_return finish(rust_negative_literal(code,n,out,guest_bits)); }
+            if(n.op == operation::type_size) { out = size_value((n.literal_width ? n.literal_width : guest_bits)/8u,guest_bits,language); co_return finish(error::none); }
             if(n.op == operation::expression_size)
             {
-                // The operand is never evaluated. Reuse bounded declaration
+                // The operand is never evaluated. Reuse owned declaration
                 // type inference; unavailable value/location bits are irrelevant.
                 integer operand_type{};
-                auto const status{infer_type(code,n.lhs,depth+1u,resolve_type,operand_type,guest_bits,type_budget,language)};
-                if(status != error::none) { return status; }
-                if(!valid_numeric(operand_type,guest_bits) || (operand_type.width & 7u) != 0u) { return error::unavailable; }
-                out = size_value(operand_type.width/8u,guest_bits,language); return error::none;
+                auto const status{co_await infer_type_task(code,n.lhs,depth+1u,resolve_type,operand_type,guest_bits,type_budget,language)};
+                if(status != error::none) { co_return finish(status); }
+                if(!valid_numeric(operand_type,guest_bits) || (operand_type.width & 7u) != 0u) { co_return finish(error::unavailable); }
+                out = size_value(operand_type.width/8u,guest_bits,language); co_return finish(error::none);
             }
             if(n.op == operation::reference || n.op == operation::size)
-            { if(!resolve(n.reference, n.op == operation::size, out)) { return error::unavailable; }
-              if(!valid_numeric(out,guest_bits)) { return error::unavailable; }
+            { if(!resolve(n.reference, n.op == operation::size, out)) { co_return finish(error::unavailable); }
+              if(!valid_numeric(out,guest_bits)) { co_return finish(error::unavailable); }
               if(n.op == operation::size && native_integer_language(language))
               {
                   if(!valid_size_extent(out,guest_bits,language))
-                  { return error::unavailable; }
+                  { co_return finish(error::unavailable); }
                   out = size_value(out.bits,guest_bits,language);
               }
-              out.bits &= mask(out.width); return error::none; }
+              out.bits &= mask(out.width); co_return finish(error::none); }
             if(n.op == operation::conditional)
             {
                 // Type-only metadata queries for both arms happen inside the
                 // same stopped transaction. No dead-arm value/sizeof resolver
                 // or arithmetic evaluation is allowed to supply its type.
                 integer yes_type{},no_type{};
-                auto status{infer_type(code,n.rhs,depth+1u,resolve_type,yes_type,guest_bits,type_budget,language)};
-                if(status != error::none) { return status; }
-                status = infer_type(code,n.third,depth+1u,resolve_type,no_type,guest_bits,type_budget,language);
-                if(status != error::none) { return status; }
+                auto status{co_await infer_type_task(code,n.rhs,depth+1u,resolve_type,yes_type,guest_bits,type_budget,language)};
+                if(status != error::none) { co_return finish(status); }
+                status = co_await infer_type_task(code,n.third,depth+1u,resolve_type,no_type,guest_bits,type_budget,language);
+                if(status != error::none) { co_return finish(status); }
                 integer common{};
                 status = conditional_numeric_type(code.nodes[n.rhs],code.nodes[n.third],yes_type,no_type,common,language);
-                if(status != error::none) { return status; }
+                if(status != error::none) { co_return finish(status); }
                 integer condition{},selected{};
-                status = evaluate(code,n.lhs,depth+1u,resolve,condition,guest_bits,resolve_type,type_budget,language);
-                if(status != error::none) { return status; }
-                status = evaluate(code,truth(condition) ? n.rhs : n.third,depth+1u,resolve,selected,guest_bits,resolve_type,type_budget,language);
-                if(status != error::none) { return status; }
+                status = co_await evaluate_task(code,n.lhs,depth+1u,resolve,condition,guest_bits,resolve_type,type_budget,language);
+                if(status != error::none) { co_return finish(status); }
+                status = co_await evaluate_task(code,truth(condition) ? n.rhs : n.third,depth+1u,resolve,selected,guest_bits,resolve_type,type_budget,language);
+                if(status != error::none) { co_return finish(status); }
                 auto const& selected_type{truth(condition) ? yes_type : no_type};
                 if(selected.width != selected_type.width || selected.unsigned_value != selected_type.unsigned_value ||
-                   selected.floating != selected_type.floating || selected.category != selected_type.category) { return error::unavailable; }
+                   selected.floating != selected_type.floating || selected.category != selected_type.category) { co_return finish(error::unavailable); }
                 if(selected_type.wide_identity != wide_builtin::unknown &&
                    (selected.wide_identity != selected_type.wide_identity ||
                     (selected_type.declaration_identity_known && (!selected.declaration_identity_known || selected.declaration_identity != selected_type.declaration_identity))))
-                { return error::unavailable; }
+                { co_return finish(error::unavailable); }
                 if(common.utf_character_width)
                 {
-                    if(!agrees_with_declared_type(selected,selected_type)) { return error::unavailable; }
-                    out = common;out.bits = selected.bits & mask(common.width);return error::none;
+                    if(!agrees_with_declared_type(selected,selected_type)) { co_return finish(error::unavailable); }
+                    out = common;out.bits = selected.bits & mask(common.width);co_return finish(error::none);
                 }
                 if(common.category == value_category::boolean)
-                { out = predicate_value(truth(selected),language); return error::none; }
+                { out = predicate_value(truth(selected),language); co_return finish(error::none); }
                 if(language == language_semantics::cpp && common.width < 32u && common.category == value_category::integer)
                 {
                     if(!same_narrow_identity(selected,selected_type) || (selected_type.declaration_identity_known &&
                         (!selected.declaration_identity_known || selected.declaration_identity != selected_type.declaration_identity)))
-                    { return error::unavailable; }
-                    out = common; out.bits = selected.bits & mask(common.width); return error::none;
+                    { co_return finish(error::unavailable); }
+                    out = common; out.bits = selected.bits & mask(common.width); co_return finish(error::none);
                 }
                 selected = promote(selected,language);
                 if(common.floating)
                 { out = selected.floating && selected.width == common.width ? selected : real_value(floating_number(selected),common.width); }
                 else
                 { out = common; out.bits = (selected.unsigned_value ? selected.bits : static_cast<::std::uint64_t>(signed_bits(selected))) & mask(common.width); }
-                return error::none;
+                co_return finish(error::none);
             }
             integer source_type{}; bool source_type_checked{}; node const* constant{};
             if(n.op == operation::zig_coerce)
             {
-                if(n.lhs >= code.nodes.size()) { return error::limit_exceeded; }
+                if(n.lhs >= code.nodes.size()) { co_return finish(error::limit_exceeded); }
                 auto const& child{code.nodes[n.lhs]};
-                if(!zig_coercion_source_supported(code,child)) { return error::unsupported; }
+                if(!zig_coercion_source_supported(code,child)) { co_return finish(error::unsupported); }
                 constant = zig_coercion_constant(code,child);
                 if(type_resolver_supplied(resolve_type) && constant == nullptr)
                 {
                     // The real stopped-frame callers supply declaration DATA.
                     // Reject unsafe/unknown source types before any value read.
-                    auto status{infer_type(code,n.lhs,depth+1u,resolve_type,source_type,guest_bits,type_budget,language)};
-                    if(status != error::none) { return status; }
+                    auto status{co_await infer_type_task(code,n.lhs,depth+1u,resolve_type,source_type,guest_bits,type_budget,language)};
+                    if(status != error::none) { co_return finish(status); }
                     status = check_zig_coercion(code,n,child,source_type,guest_bits);
-                    if(status != error::none) { return status; }
+                    if(status != error::none) { co_return finish(status); }
                     source_type_checked = true;
                 }
             }
@@ -1726,26 +1937,26 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
             integer logical_lhs_type{}, logical_rhs_type{};
             if(native_logical)
             {
-                auto status{infer_type(code,n.lhs,depth+1u,resolve_type,logical_lhs_type,guest_bits,type_budget,language)};
-                if(status != error::none) { return status; }
-                status = infer_type(code,n.rhs,depth+1u,resolve_type,logical_rhs_type,guest_bits,type_budget,language);
-                if(status != error::none) { return status; }
+                auto status{co_await infer_type_task(code,n.lhs,depth+1u,resolve_type,logical_lhs_type,guest_bits,type_budget,language)};
+                if(status != error::none) { co_return finish(status); }
+                status = co_await infer_type_task(code,n.rhs,depth+1u,resolve_type,logical_rhs_type,guest_bits,type_budget,language);
+                if(status != error::none) { co_return finish(status); }
                 if(native_boolean_language(language) && (!boolean_value(logical_lhs_type) || !boolean_value(logical_rhs_type)))
-                { return error::unsupported; }
+                { co_return finish(error::unsupported); }
             }
             integer a{},b{};
             bool const contextual_lhs{rust_context_binary(n.op,language) && rust_untyped_literal(code,n.lhs) && !rust_untyped_literal(code,n.rhs)};
             integer contextual_type{};
             if(contextual_lhs)
             {
-                auto const status{infer_type(code,n.rhs,depth+1u,resolve_type,contextual_type,guest_bits,type_budget,language)};
-                if(status != error::none) { return status; }
+                auto const status{co_await infer_type_task(code,n.rhs,depth+1u,resolve_type,contextual_type,guest_bits,type_budget,language)};
+                if(status != error::none) { co_return finish(status); }
             }
             auto status{contextual_lhs ? rust_literal_as_type(code,n.lhs,contextual_type,a) :
                 constant ? zig_constant_value(code.nodes[n.lhs],*constant,a,guest_bits) :
-                evaluate(code,n.lhs,depth+1u,resolve,a,guest_bits,resolve_type,type_budget,language)};
-            if(status != error::none) { return status; }
-            if(native_logical && !agrees_with_declared_type(a,logical_lhs_type)) { return error::unavailable; }
+                co_await evaluate_task(code,n.lhs,depth+1u,resolve,a,guest_bits,resolve_type,type_budget,language)};
+            if(status != error::none) { co_return finish(status); }
+            if(native_logical && !agrees_with_declared_type(a,logical_lhs_type)) { co_return finish(error::unavailable); }
             if(n.op == operation::zig_coerce)
             {
                 auto const& child{code.nodes[n.lhs]};
@@ -1753,24 +1964,24 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
                 // this conversion, even when both types fit the destination.
                 if(source_type_checked && (a.width != source_type.width ||
                     a.unsigned_value != source_type.unsigned_value || a.floating != source_type.floating || a.category != source_type.category))
-                { return error::unavailable; }
+                { co_return finish(error::unavailable); }
                 status = check_zig_coercion(code,n,child,a,guest_bits);
-                if(status != error::none) { return status; }
+                if(status != error::none) { co_return finish(status); }
                 auto const width{n.literal_width ? n.literal_width : guest_bits};
-                if(n.floating_literal) { out = real_value(floating_number(a),width); return error::none; }
+                if(n.floating_literal) { out = real_value(floating_number(a),width); co_return finish(error::none); }
                 out = {(a.unsigned_value ? a.bits : static_cast<::std::uint64_t>(signed_bits(a))) & mask(width),width,n.literal_unsigned,false,value_category::integer};
-                return error::none;
+                co_return finish(error::none);
             }
             if(n.op == operation::cast)
             {
-                if(!boolean_cast_allowed(n,a,language)) { return error::unsupported; }
+                if(!boolean_cast_allowed(n,a,language)) { co_return finish(error::unsupported); }
                 // A copied Boolean carries truth, not its storage magnitude.
                 // Normalize before every explicit numeric conversion, just as
                 // promotion does; genuine/legacy integers retain their value.
                 if(a.category == value_category::boolean) { a = promote(a,language); }
                 auto const width{n.literal_width ? n.literal_width : guest_bits};
-                if(n.boolean_cast) { out = {truth(a),8u,true,false,value_category::boolean}; return error::none; }
-                if(n.floating_literal) { out = real_value(floating_number(a),width); return error::none; }
+                if(n.boolean_cast) { out = {truth(a),8u,true,false,value_category::boolean}; co_return finish(error::none); }
+                if(n.floating_literal) { out = real_value(floating_number(a),width); co_return finish(error::none); }
                 if(a.floating)
                 {
                     auto const number{::std::trunc(floating_number(a))};
@@ -1787,47 +1998,47 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
                     else
                     {
                         if(!::std::isfinite(number) || number >= upper || number < (n.literal_unsigned ? 0.0 : -upper))
-                        { return error::arithmetic; }
+                        { co_return finish(error::arithmetic); }
                         bits=n.literal_unsigned ? static_cast<::std::uint64_t>(number) :
                             static_cast<::std::uint64_t>(static_cast<::std::int64_t>(number));
                     }
                     out = {bits,width,n.literal_unsigned,false,value_category::integer};
                 }
                 else { out = {(a.unsigned_value ? a.bits : static_cast<::std::uint64_t>(signed_bits(a))) & mask(width),width,n.literal_unsigned,false,value_category::integer}; }
-                out.builtin_identity = n.builtin_identity; out.utf_character_width = n.utf_character_width; out.rust_character = n.rust_character;out.rust_pointer_sized=language==language_semantics::rust && !n.literal_width; if(native_integer_language(language)) { out.wide_identity = n.wide_identity; } out.bits &= mask(width); return error::none;
+                out.builtin_identity = n.builtin_identity; out.utf_character_width = n.utf_character_width; out.rust_character = n.rust_character;out.rust_pointer_sized=language==language_semantics::rust && !n.literal_width; if(native_integer_language(language)) { out.wide_identity = n.wide_identity; } out.bits &= mask(width); co_return finish(error::none);
             }
-            if(native_boolean_language(language) && n.op == operation::logical_not) { return boolean_not(a,out,language); }
+            if(native_boolean_language(language) && n.op == operation::logical_not) { co_return finish(boolean_not(a,out,language)); }
             if(native_boolean_language(language) && (n.op == operation::positive || n.op == operation::negative || n.op == operation::invert) &&
-               (boolean_value(a) || (n.op == operation::invert && language != language_semantics::zig))) { return error::unsupported; }
+               (boolean_value(a) || (n.op == operation::invert && language != language_semantics::zig))) { co_return finish(error::unsupported); }
             if(a.rust_character && (language != language_semantics::rust || n.op == operation::positive ||
-                n.op == operation::negative || n.op == operation::invert)) { return error::unsupported; }
-            if(language == language_semantics::rust && n.op == operation::negative && a.unsigned_value) { return error::unsupported; }
+                n.op == operation::negative || n.op == operation::invert)) { co_return finish(error::unsupported); }
+            if(language == language_semantics::rust && n.op == operation::negative && a.unsigned_value) { co_return finish(error::unsupported); }
             auto const original_a{a};
             a = promote(a,language);
-            if(n.op == operation::positive) { out = a; return error::none; }
-            if(n.op == operation::logical_not) { out = predicate_value(!truth(a),language); return error::none; }
+            if(n.op == operation::positive) { out = a; co_return finish(error::none); }
+            if(n.op == operation::logical_not) { out = predicate_value(!truth(a),language); co_return finish(error::none); }
             if(n.op == operation::negative || n.op == operation::invert)
             {
                 if(a.floating)
-                { if(n.op != operation::negative) { return error::unsupported; } out = real_value(-floating_number(a),a.width); return error::none; }
-                if(n.op == operation::negative && !a.unsigned_value && a.bits == (::std::uint64_t{1u} << (a.width-1u))) { return error::arithmetic; }
-                a.bits = (n.op == operation::negative ? 0u-a.bits : ~a.bits) & mask(a.width); out = a; return error::none;
+                { if(n.op != operation::negative) { co_return finish(error::unsupported); } out = real_value(-floating_number(a),a.width); co_return finish(error::none); }
+                if(n.op == operation::negative && !a.unsigned_value && a.bits == (::std::uint64_t{1u} << (a.width-1u))) { co_return finish(error::arithmetic); }
+                a.bits = (n.op == operation::negative ? 0u-a.bits : ~a.bits) & mask(a.width); out = a; co_return finish(error::none);
             }
             // Short circuit before invoking the guest resolver for the right side.
             if((n.op == operation::logical_and && !truth(a)) || (n.op == operation::logical_or && truth(a)))
-            { out = predicate_value(truth(a),language); return error::none; }
+            { out = predicate_value(truth(a),language); co_return finish(error::none); }
             status = rust_context_binary(n.op,language) && rust_untyped_literal(code,n.rhs) && !rust_untyped_literal(code,n.lhs) ?
-                rust_literal_as_type(code,n.rhs,a,b) : evaluate(code,n.rhs,depth+1u,resolve,b,guest_bits,resolve_type,type_budget,language);
-            if(status != error::none) { return status; }
-            if(contextual_lhs && !agrees_with_declared_type(b,contextual_type)) { return error::unavailable; }
-            if(native_logical && !agrees_with_declared_type(b,logical_rhs_type)) { return error::unavailable; }
+                rust_literal_as_type(code,n.rhs,a,b) : co_await evaluate_task(code,n.rhs,depth+1u,resolve,b,guest_bits,resolve_type,type_budget,language);
+            if(status != error::none) { co_return finish(status); }
+            if(contextual_lhs && !agrees_with_declared_type(b,contextual_type)) { co_return finish(error::unavailable); }
+            if(native_logical && !agrees_with_declared_type(b,logical_rhs_type)) { co_return finish(error::unavailable); }
             if(original_a.rust_character || b.rust_character)
-            { return rust_character_binary(n.op,original_a,b,out,language); }
+            { co_return finish(rust_character_binary(n.op,original_a,b,out,language)); }
             if(native_boolean_language(language) && (boolean_value(original_a) || boolean_value(b)))
-            { return boolean_binary(n.op,original_a,b,out,language); }
-            if(!rust_numeric_operands(n.op,a,b,language)) { return error::unsupported; }
+            { co_return finish(boolean_binary(n.op,original_a,b,out,language)); }
+            if(!rust_numeric_operands(n.op,a,b,language)) { co_return finish(error::unsupported); }
             b = promote(b,language);
-            if(n.op == operation::logical_and || n.op == operation::logical_or) { out = predicate_value(truth(b),language); return error::none; }
+            if(n.op == operation::logical_and || n.op == operation::logical_or) { out = predicate_value(truth(b),language); co_return finish(error::none); }
             if(a.floating || b.floating)
             {
                 auto const width{(a.floating && a.width == 64u) || (b.floating && b.width == 64u) ? 64u : 32u};
@@ -1847,26 +2058,26 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
                     case operation::multiply: number = width == 32u ? static_cast<float>(av)*static_cast<float>(bv) : av*bv; break;
                     case operation::divide: number = width == 32u ? static_cast<float>(av)/static_cast<float>(bv) : av/bv; break;
                     case operation::remainder:
-                        if(language != language_semantics::rust) { return error::unsupported; }
+                        if(language != language_semantics::rust) { co_return finish(error::unsupported); }
                         if(::std::isnan(av) || ::std::isnan(bv) || ::std::isinf(av) || bv==0.0)
                         { number=::std::numeric_limits<double>::quiet_NaN(); }
                         else if(::std::isinf(bv)) { number=av; }
                         else { number=width==32u ? ::std::fmod(static_cast<float>(av),static_cast<float>(bv)) : ::std::fmod(av,bv); }
                         break;
-                    default: return error::unsupported;
+                    default: co_return finish(error::unsupported);
                 }
-                out = comparison ? predicate_value(predicate,language) : real_value(number,width); return error::none;
+                out = comparison ? predicate_value(predicate,language) : real_value(number,width); co_return finish(error::none);
             }
             if(n.op == operation::left || n.op == operation::right)
             {
-                if((!b.unsigned_value && signed_bits(b) < 0) || b.bits >= a.width) { return error::arithmetic; }
+                if((!b.unsigned_value && signed_bits(b) < 0) || b.bits >= a.width) { co_return finish(error::arithmetic); }
                 auto const count{static_cast<unsigned>(b.bits)};
                 if(n.op == operation::left)
                 {
                     // Rust shifts truncate the copied two's-complement bit pattern.
                     // Only the count can overflow; keep the existing C profile.
                     if(language != language_semantics::rust && !a.unsigned_value &&
-                       (signed_bits(a) < 0 || a.bits > (mask(a.width)>>1u)>>count)) { return error::arithmetic; }
+                       (signed_bits(a) < 0 || a.bits > (mask(a.width)>>1u)>>count)) { co_return finish(error::arithmetic); }
                     a.bits = (a.bits << count) & mask(a.width);
                 }
                 else if(language == language_semantics::rust)
@@ -1878,10 +2089,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
                     if(negative && count != 0u) { a.bits |= mask(a.width) ^ mask(a.width-count); }
                 }
                 else { a.bits = a.unsigned_value ? a.bits >> count : static_cast<::std::uint64_t>(signed_bits(a) >> count) & mask(a.width); }
-                out = a; return error::none;
+                out = a; co_return finish(error::none);
             }
             auto const common{common_numeric_type(a,b,language)};
-            if(!valid_numeric(common,guest_bits)) { return error::unavailable; }
+            if(!valid_numeric(common,guest_bits)) { co_return finish(error::unavailable); }
             auto const width{common.width}; bool const uns{common.unsigned_value};
             auto const av{(a.unsigned_value ? a.bits : static_cast<::std::uint64_t>(signed_bits(a))) & mask(width)};
             auto const bv{(b.unsigned_value ? b.bits : static_cast<::std::uint64_t>(signed_bits(b))) & mask(width)};
@@ -1907,43 +2118,48 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
                     {
                         if(language == language_semantics::rust &&
                            (n.op == operation::add ? av > mask(width)-bv :
-                            n.op == operation::subtract ? av < bv : bv != 0u && av > mask(width)/bv)) { return error::arithmetic; }
+                            n.op == operation::subtract ? av < bv : bv != 0u && av > mask(width)/bv)) { co_return finish(error::arithmetic); }
                         result = n.op == operation::add ? av+bv : n.op == operation::subtract ? av-bv : av*bv;
                     }
                     else
                     {
                         auto const minimum{signed_bits({::std::uint64_t{1u}<<(width-1u),width,false})}; auto const maximum{-(minimum+1)};
                         if(n.op == operation::add)
-                        { if((bs > 0 && as > maximum-bs) || (bs < 0 && as < minimum-bs)) { return error::arithmetic; } result = static_cast<::std::uint64_t>(as+bs); }
+                        { if((bs > 0 && as > maximum-bs) || (bs < 0 && as < minimum-bs)) { co_return finish(error::arithmetic); } result = static_cast<::std::uint64_t>(as+bs); }
                         else if(n.op == operation::subtract)
-                        { if((bs < 0 && as > maximum+bs) || (bs > 0 && as < minimum+bs)) { return error::arithmetic; } result = static_cast<::std::uint64_t>(as-bs); }
+                        { if((bs < 0 && as > maximum+bs) || (bs > 0 && as < minimum+bs)) { co_return finish(error::arithmetic); } result = static_cast<::std::uint64_t>(as-bs); }
                         else
                         {
                             if(as > 0 ? (bs > 0 ? as > maximum/bs : bs < minimum/as) :
-                               as < 0 ? (bs > 0 ? as < minimum/bs : bs < 0 && as < maximum/bs) : false) { return error::arithmetic; }
+                               as < 0 ? (bs > 0 ? as < minimum/bs : bs < 0 && as < maximum/bs) : false) { co_return finish(error::arithmetic); }
                             result = static_cast<::std::uint64_t>(as*bs);
                         }
                     }
                     break;
                 }
                 case operation::divide: case operation::remainder:
-                    if(bv == 0u || (!uns && as == signed_bits({::std::uint64_t{1u}<<(width-1u),width,false}) && bs == -1)) { return error::arithmetic; }
+                    if(bv == 0u || (!uns && as == signed_bits({::std::uint64_t{1u}<<(width-1u),width,false}) && bs == -1)) { co_return finish(error::arithmetic); }
                     result = uns ? (n.op == operation::divide ? av/bv : av%bv) : static_cast<::std::uint64_t>(n.op == operation::divide ? as/bs : as%bs); break;
-                default: return error::unsupported;
+                default: co_return finish(error::unsupported);
             }
-            out = comparison ? predicate_value(result != 0u,language) : common; if(!comparison) { out.bits = result & mask(width); } return error::none;
+            out = comparison ? predicate_value(result != 0u,language) : common; if(!comparison) { out.bits = result & mask(width); } co_return finish(error::none);
         }
+        template<typename Resolver, typename TypeResolver>
+        error evaluate(program const& code, ::std::size_t index, ::std::size_t depth, Resolver& resolve, integer& out,
+            unsigned guest_bits, TypeResolver& resolve_type, ::std::size_t& type_budget, language_semantics language, expression_limits const& cap)
+        { return run_continuation(evaluate_task(code,index,depth,resolve,out,guest_bits,resolve_type,type_budget,language),cap); }
+
     }
-    inline error parse(::std::string_view text, program& out, language_semantics language = language_semantics::shared_numeric) noexcept
+    inline error parse(::std::string_view text, program& out, language_semantics language = language_semantics::shared_numeric, expression_limits const& cap = {}) noexcept
     {
         if(!language_enabled(language)) { out = {}; return error::unsupported; }
-        out = {}; if(text.empty()) { return error::malformed; } if(text.size() > 4096u) { return error::limit_exceeded; }
+        out = {}; if(text.empty()) { return error::malformed; } if(text.size() > cap.max_expression_bytes) { return error::limit_exceeded; }
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
         try {
 #endif
-            details::parser p{text}; p.language = language; p.pending.root = p.expression(1u,0u); p.space();
+            details::parser p{text}; p.language = language;p.cap=cap; p.pending.root = p.expression(1u,0u); p.space();
             if(p.status != error::none) { return p.status; } if(p.cursor != text.size()) { return error::unsupported; }
-            p.pending.original = ::fast_io::concat_fast_io(text); p.pending.syntax_language = language;
+            p.pending.original.assign(text.data(),text.size()); p.pending.syntax_language = language;
             out = ::std::move(p.pending); return error::none;
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
         } catch(...) { return error::allocation_failure; }
@@ -1951,23 +2167,26 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
     }
     // Syntax union only. Evaluation reparses with the selected original CU;
     // admitting a Rust escape never selects a frame, language or guest read.
-    inline error parse_admitted(::std::string_view text, program& out) noexcept
+    inline error parse_admitted(::std::string_view text, program& out, expression_limits const& cap = {}) noexcept
     {
-        auto const status{parse(text,out,language_semantics::cpp)};
+        auto const status{parse(text,out,language_semantics::cpp,cap)};
         if(status == error::none || status == error::limit_exceeded || status == error::allocation_failure) { return status; }
-        auto const rust_status{parse(text,out,language_semantics::rust)};
+        auto const rust_status{parse(text,out,language_semantics::rust,cap)};
         if(rust_status == error::none || rust_status == error::limit_exceeded || rust_status == error::allocation_failure) { return rust_status; }
-        return parse(text,out,language_semantics::shared_numeric);
+        return parse(text,out,language_semantics::shared_numeric,cap);
     }
     template<typename Resolver, typename TypeResolver = details::no_type_resolver>
     inline error evaluate(program const& code, Resolver&& resolve, integer& out, unsigned guest_address_bits = 32u,
-        TypeResolver&& resolve_type = {}, language_semantics language = language_semantics::shared_numeric) noexcept
+        TypeResolver&& resolve_type = {}, language_semantics language = language_semantics::shared_numeric, expression_limits const& cap = {}) noexcept
     {
         if(!language_enabled(language)) { out = {}; return error::unsupported; }
-        out = {}; if(code.nodes.empty() || code.nodes.size() > 128u) { return error::limit_exceeded; }
+        out = {}; if(code.nodes.empty() || code.nodes.size() > cap.max_nodes) { return error::limit_exceeded; }
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
         try {
 #endif
+            ::std::vector<::std::size_t> postorder{};
+            auto const graph_status{details::validate_graph(code,cap,postorder)};
+            if(graph_status!=error::none) { return graph_status; }
             if(guest_address_bits != 32u && guest_address_bits != 64u) { return error::unavailable; }
             if(language != language_semantics::shared_numeric && language != language_semantics::c && language != language_semantics::cpp && language != language_semantics::c23 && !details::native_boolean_language(language))
             { return error::unavailable; }
@@ -1975,15 +2194,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
             if(details::native_boolean_language(language) && code.syntax_language != language)
             {
                 if(code.original.empty()) { return error::unavailable; }
-                auto const syntax{parse({code.original.data(),code.original.size()},reparsed,language)};
+                auto const syntax{parse({code.original.data(),code.original.size()},reparsed,language,cap)};
                 if(syntax != error::none) { return syntax; }
                 active = ::std::addressof(reparsed);
+                auto const status{details::validate_graph(*active,cap,postorder)};
+                if(status!=error::none) { return status; }
             }
             if(language != language_semantics::cpp)
             { for(auto const& n : active->nodes) { if(n.utf_character_width) { return error::unsupported; } } }
             if(language != language_semantics::rust)
             { for(auto const& n : active->nodes) { if(n.rust_character || n.rust_numeric_literal) { return error::unsupported; } } }
-            ::std::size_t type_budget{4096u};
+            ::std::size_t type_budget{cap.max_type_work};
             program rust_prepared{};integer rust_result_type{};bool rust_prepared_active{};
             if(language==language_semantics::rust)
             {
@@ -1992,11 +2213,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
                 { for(auto const& n:active->nodes) { if(n.op==operation::reference) { legacy_reference=true;break; } } }
                 if(!legacy_reference)
                 {
-                    auto const status{details::prepare_rust_types(*active,rust_prepared,rust_result_type,guest_address_bits,resolve_type,type_budget)};
+                    auto const status{details::prepare_rust_types(*active,rust_prepared,rust_result_type,guest_address_bits,resolve_type,type_budget,postorder,cap)};
                     if(status!=error::none) { return status; }active=::std::addressof(rust_prepared);rust_prepared_active=true;
                 }
             }
-            integer value{}; auto const status{details::evaluate(*active,active->root,0u,resolve,value,guest_address_bits,resolve_type,type_budget,language)};
+            integer value{}; auto const status{details::evaluate(*active,active->root,0u,resolve,value,guest_address_bits,resolve_type,type_budget,language,cap)};
             if(status==error::none && rust_prepared_active && !details::rust_type_constraints::same(value,rust_result_type)) { return error::unavailable; }
             if(status == error::none)
             {

@@ -64,6 +64,7 @@ extern "C++"
             switch(static_cast<llvm_jit_trap_kind>(kind))
             {
                 case llvm_jit_trap_kind::unreachable:
+                case llvm_jit_trap_kind::memtag_violation:
                 case llvm_jit_trap_kind::invalid_conversion_to_integer:
                 case llvm_jit_trap_kind::integer_divide_by_zero:
                 case llvm_jit_trap_kind::integer_overflow:
@@ -79,6 +80,17 @@ extern "C++"
                 case llvm_jit_trap_kind::gc_allocation_failure:
                 case llvm_jit_trap_kind::cast_failure: specified_guest_trap=true;break;
                 default:break; // Internal/native failures retain their original path.
+            }
+            {
+                namespace crash=::uwvm2::runtime::diagnostic::crash;
+                auto category=specified_guest_trap?crash::category::execution:crash::category::internal;
+                char const* reason=specified_guest_exception?"uncaught Wasm exception":"threaded LLVM trap";
+                if(static_cast<llvm_jit_trap_kind>(kind)==llvm_jit_trap_kind::unreachable)
+                {category=crash::category::unreachable;reason="unreachable";}
+                if(static_cast<llvm_jit_trap_kind>(kind)==llvm_jit_trap_kind::memtag_violation)
+                {category=crash::category::memtag;reason="memory tag mismatch";}
+                crash::report(category,reason,2u,0u,e->function);
+                crash::pause_process();
             }
             if(specified_guest_trap)
             {
@@ -238,6 +250,7 @@ extern "C++"
             return static_cast<::std::int32_t>(memory->get_page_size());
         }
 #include "uwvm_runtime_threaded_llvm_exception.h"
+#include "uwvm_runtime_threaded_llvm_memtag.h"
 #include "uwvm_runtime_threaded_llvm_control.h"
 #include "uwvm_runtime_threaded_llvm_memory.h"
 #include "uwvm_runtime_threaded_llvm_stack.h"
@@ -297,6 +310,7 @@ extern "C++"
                 return run_status::rejected;
             struct reset_flag{::std::atomic_flag& value;~reset_flag(){value.clear();}} reset{running_};
             if(!bound_tables_)return run_status::rejected;
+            if(!::uwvm2::runtime::memtag::prepare_hardware_thread()) { return run_status::rejected; }
             ever_entered_=true;
             if(lease.cancellation().stop_requested())return run_status::group_stopped;
             execution e{this,::std::addressof(lease)};active_=::std::addressof(e);

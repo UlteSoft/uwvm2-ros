@@ -12,7 +12,7 @@ hosts must produce identical bytes. No C++ padding, native pointers, JIT PCs,
 OS handles, allocator headers or native stack/register blobs occur on wire.
 Original Wasm bytes include custom and data sections, not just translated IR.
 The distinct host/extern-wrapper/GC/i31 identities and complete logical state
-representation retain state6's structural validation; the file codec does not
+representation retain state7's structural validation; the file codec does not
 supply the missing actual runtime exporters or type/continuation verification.
 
 ## Current cache dependency: v7 successor
@@ -20,7 +20,7 @@ supply the missing actual runtime exporters or type/continuation verification.
 Required cache-object identities use cache format7 and the actual
 `binding::cache_format_revision` contract. Formats5 and6 fail as
 `unsupported_cache_version`; there is no automatic legacy upgrade. Envelope4,
-identity revision2 and state schema6 retain their independent layouts. The
+identity revision2 and state schema7 retain their independent layouts. The
 dependency equality assertion against the real cache core remains mandatory in
 header and module builds, including the actual CLI debugger include/import path.
 
@@ -42,15 +42,15 @@ The 160-byte outer header is:
 | 8 | u16 envelope 4, u16 header size 160, u32 endian marker 0x04030201 |
 | 16 | u64 flags zero |
 | 24 | u64 identity bytes |
-| 32 | u64 complete canonical state6 document bytes |
+| 32 | u64 complete canonical state7 document bytes |
 | 40 | u64 ordered original module count |
 | 48 | u64 ordered cache object count |
 | 56 | u64 reserved zero |
 | 64 | 32-byte SHA256 of canonical identity bytes |
-| 96 | 32-byte SHA256 of the complete canonical state6 document |
+| 96 | 32-byte SHA256 of the complete canonical state7 document |
 | 128 | 32 reserved zero bytes |
 
-Then come canonical identity bytes, complete state6 document, and a 48-byte
+Then come canonical identity bytes, complete state7 document, and a 48-byte
 footer: u64 `UWCPEND4`, u64 exact prefix length (header + identity + state), and
 SHA256 of that entire prefix. Hashes detect corruption and exact identity;
 they are not a signature, request authentication or a VM resource credential.
@@ -60,7 +60,7 @@ its `UWCPID02` domain: 484 fixed bytes + 124 for each ordered module + 240 for e
 ordered cache object. Six exact build digests, product, compatibility/continuation
 versions, all ten immutable profile fields, target ABI, source closure, saved
 canonical state document digest and recorded event-prefix digest are retained.
-All original module objects in state6, in increasing file-local object ID order,
+All original module objects in state7, in increasing file-local object ID order,
 match this source-role closure one to one by count, complete byte length and
 whole SHA256. No unused/uninvoked dependency is inferred from live frames.
 
@@ -87,13 +87,13 @@ PTRDIFF limit, minimum header/footer, magic/version/endian/reserved fields,
 quotas, counts, exact identity-size formula with subtraction/division before
 multiplication, remaining state length and exact footer prefix. It checks all
 three complete hashes before identity vectors or state graph allocation.
-Canonical identity shape/hash and its state digest are checked, then state6's
+Canonical identity shape/hash and its state digest are checked, then state7's
 own checksum/limits/graph checks. Reencoding the detached state proves exactly
 one canonical state document, and complete embedded-source bytes are compared
 against the identity before comparing the target environment.
 
 Default file budget is 256 MiB, identity budget 32 MiB, with independent module,
-cache-object and state6 object/link/value/thread/frame quotas. These bound codec
+cache-object and state7 object/link/value/thread/frame quotas. These bound codec
 owned DATA, not process RSS, parser scratch, native stack or live VM resources.
 Cold encoding/reencoding may retain several bounded buffers simultaneously.
 Allocation/IO exceptions use the surrounding build's existing policy; until
@@ -126,9 +126,9 @@ comparison internally; it never requires the target's current mutable state to
 equal the old saved body. Two different verified saved bodies under one unchanged
 environment are accepted as DATA. They still do not grant executable restore.
 
-An unbound current state6 file (`UWCPST6\0`) or old state3 file (`UWCPDB3\0`)
+An unbound current state7 file (`UWCPST7\0`) or old state3 file (`UWCPDB3\0`)
 receives `legacy_unbound_state_data` at this entry and never becomes identity-bound.
-The current structural `decode_database` supports explicit state6 DATA inspection
+The current structural `decode_database` supports explicit state7 DATA inspection
 only, after its own bounds/hash/graph checks; state3 is unsupported and is not
 migrated by guessing a missing empty-table value. No mode implicitly treats an
 unbound state file, an unknown schema or an incompatible cache as
@@ -154,7 +154,7 @@ same visible version, ABI/profile workspace, module/replacement closure, all
 three actual signed blobs/partition order/absence/duplicate/format, ON↔OFF and
 OFF reason, unknown envelope/identity/state schema, overflowing count/length,
 checksum/body corruption, malformed graph after attacker recomputes **all**
-checksums, embedded module mismatch after all hashes are repaired, unbound state6 or legacy state3,
+checksums, embedded module mismatch after all hashes are repaired, unbound state7 or legacy state3,
 quota and writer rejection before any output. Both distinct saved bodies use one
 target environment. File/private-copy overwrite is tested only on a disposable
 scratch file. The independent Python model produces complete expected bytes for
@@ -173,7 +173,7 @@ UWCPDB4 is this project's explicit file contract, not a WebAssembly wire standar
 The precise revision2 function/event preimages and pending corruption regressions
 are specified in `test/0036.checkpoint_binding/README.state-identity.md`.
 
-The inner state6 magic/commit are `UWCPST6\0` / `UWCPSTE6`, distinct from
+The inner state7 magic/commit are `UWCPST7\0` / `UWCPSTE7`, distinct from
 the outer envelope4 `UWCPDB4\0` / `UWCPEND4`. The inner header remains128,
 outer160. A zero-length table has only its exact declared reference type in a
 canonical flag-one, zero-carrier descriptor; it is not an initialized null,
@@ -181,16 +181,16 @@ element, frame operand, GC field or retained root. Empty/nonempty descriptor
 rules are checked by the state graph validator before output publication.
 
 
-## Historical schema6 migration notes (v5 cache baseline)
+## Historical schema7 migration notes (v5 cache baseline)
 
-State schema6 additionally binds preserved exception diagnostic origin/name
+State schema7 additionally binds preserved exception diagnostic origin/name
 payloads and the explicit unknown instruction/generation markers. Inner state
-magic and commit are `UWCPST6\0` / `UWCPSTE6`; state5/4/3 are never silently
+magic and commit are `UWCPST7\0` / `UWCPSTE7`; state6/5/4/3 are never silently
 migrated. Envelope4, cache format5 and identity2 remain unchanged. The complete ten-field
-actual compilation profile records schema6 and separately the genuine native ABI;
+actual compilation profile records schema7 and separately the genuine native ABI;
 profile policy versions are independently preserved, not reset by this bump.
 
-Controlled schema6 adds original builtin WASIp1 binding-only flag3 resources.
+Controlled schema7 adds original builtin WASIp1 binding-only flag3 resources.
 Their exact108-byte code-interface descriptor participates in the effective
 function-generation digest. Schema5 does not provide that provenance and is
 never silently upgraded. This changes the inner state ST6/STE6 and actual profile

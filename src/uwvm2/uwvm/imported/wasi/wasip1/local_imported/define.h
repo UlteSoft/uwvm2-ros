@@ -46,6 +46,7 @@
 # include <uwvm2/uwvm/imported/wasi/wasip1/storage/impl.h>
 # include <uwvm2/uwvm/wasm/type/impl.h>
 # include <uwvm2/uwvm/debugger/wasip1_calls.h>
+# include <uwvm2/runtime/lib/uwvm_runtime.h>
 # include "observations.h"
 #endif
 
@@ -249,6 +250,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::local_imported
                         ::std::uint64_t first{UINT64_MAX};
                         if constexpr(::fast_io::tuple_size<decltype(function.params)>::value!=0u)
                             first=static_cast<::std::uint64_t>(::uwvm2::utils::container::get<0>(function.params));
+                        if constexpr(function_name==u8"fd_renumber" || function_name==u8"fd_renumber_wasm64")
+                        {
+                            auto const destination=static_cast<::std::uint64_t>(::uwvm2::utils::container::get<1>(function.params));
+                            // The denied authority may belong to the destination
+                            // stream. Diagnose that operand, not a source preopen.
+                            if(!(first<3u && !env.grants_stdio(static_cast<unsigned>(first))) &&
+                               destination<3u && !env.grants_stdio(static_cast<unsigned>(destination)))
+                                first=destination;
+                        }
                         environment::diagnostic_denied(env,id,false,first);
                     }
             }
@@ -261,6 +271,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::local_imported
                 auto& env=::uwvm2::uwvm::imported::wasi::wasip1::storage::current_wasip1_env();
                 if(observation.value)
                 {
+                    ::uwvm2::runtime::lib::host_observer_caller_identity caller{};
+                    if(::uwvm2::runtime::lib::builtin_observed_caller_identity_host_api(caller))
+                    {
+                        observation.identity(
+                            {reinterpret_cast<char const*>(caller.module_name.data()), caller.module_name.size()},
+                            caller.generation);
+                    }
                     {
                     ::std::lock_guard lock{detail::mutex};
                     auto& row=*observation.value;
@@ -692,7 +709,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::local_imported
 #  endif
     }  // namespace details
 
-    struct wasip1_local_imported_module_t
+    template<bool Wasix=false>
+    struct basic_wasip1_local_imported_module_t
     {
         inline static constexpr ::uwvm2::utils::container::u8string_view module_name{u8"wasi_snapshot_preview1"};
 
@@ -742,7 +760,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::local_imported
             details::sched_yield
 #  if defined(UWVM_IMPORT_WASI_WASIP1_SUPPORT_SOCKET)
             ,
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(__linux__)
+            ::std::conditional_t<Wasix,details::wasip1_local_imported_function<
+                ::std::addressof(::uwvm2::imported::wasi::wasip1::func::socket_capability::accept_wasix),details::name_sock_accept>,details::sock_accept>,
+#else
             details::sock_accept,
+#endif
             details::sock_recv,
             details::sock_send,
             details::sock_shutdown
@@ -804,6 +827,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::local_imported
             >;
     };
 
+    using wasip1_local_imported_module_t=basic_wasip1_local_imported_module_t<false>;
     static_assert(::uwvm2::uwvm::wasm::type::is_local_imported_module<wasip1_local_imported_module_t>);
     static_assert(::uwvm2::uwvm::wasm::type::has_local_function_tuple<wasip1_local_imported_module_t>);
 
@@ -813,6 +837,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::local_imported
     ///       as a "local_imported function"/concept requirement here.
 
     inline constexpr wasip1_local_imported_module_t wasip1_local_imported_module{};
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(__linux__) && defined(UWVM_IMPORT_WASI_WASIP1_SUPPORT_SOCKET)
+    inline constexpr basic_wasip1_local_imported_module_t<true> wasix_socket_local_imported_module{};
+#endif
 
 # endif
 #endif

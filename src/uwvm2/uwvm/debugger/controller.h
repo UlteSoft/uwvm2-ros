@@ -5,6 +5,11 @@
  *************************************************************/
 #pragma once
 #ifndef UWVM_MODULE
+#include <uwvm2/runtime/diagnostic/crash_policy.h>
+#include <uwvm2/runtime/diagnostic/crash_file.h>
+#include <uwvm2/runtime/diagnostic/wasm_coredump.h>
+#include <uwvm2/utils/thread/process_exit.h>
+#include <uwvm2/uwvm/io/impl.h>
 # include <uwvm2/utils/macro/push_macros.h>
 # if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
 # include <algorithm>
@@ -182,6 +187,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
 
     struct controller_reply
     {
+        unsigned dump_status{};
+        bool dump_published{};
         ::uwvm2::utils::control::error status{};
         execution_status execution{execution_status::running};
         stop_reason reason{stop_reason::requested};
@@ -207,6 +214,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         ::std::string callback_output{};
         ::std::uint64_t callback_next{},callback_next_byte{},callback_total{};
         ::std::vector<::std::byte> memory{};
+        ::uwvm2::extension::memtag::debug_tag_view memory_tag_info{};
         ::std::vector<local_value> locals{};
         wasm_state::view wasm_state_values{};
         wasm_mutation::result wasm_mutation_value{};
@@ -316,7 +324,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             using hints=::uwvm2::runtime::checkpoint::observation_probe_hints;
             hints::bitmap wanted{};
             bool all{(!resuming && static_cast<bool>(pause_)) || first_wasm_instruction_pending_ || step_thread_!=0u ||
-                source_step_active_ || wasm_step_active_ || watches_active_locked() || wasm_trace_enabled_ || active_wasm_catchpoints_!=0u || native_owned_};
+                source_step_active_ || wasm_step_active_ || watches_active_locked() || wasm_trace_enabled_ || active_wasm_catchpoints_!=0u || native_owned_ ||
+                ::uwvm2::runtime::diagnostic::crash::process_policy.selected()==::uwvm2::runtime::diagnostic::crash::action::pause};
             for(auto const& point:breakpoints_)
             {
                 if(point.identifier==0u || !point.enabled) { continue; }
@@ -359,7 +368,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             ::fast_io::string display_name{}, display_file{};
             source_map lines{};
             source_map_error status{source_map_error::missing_debug_line};
-            bool line_only{}; // Successful original v3 mapping; no DWARF scope/variable identity.
+            bool line_only{}; // Successful original line-only mapping; no DWARF scope/variable identity.
+            // Mixed-language modules can contain genuine line tables for a
+            // function without any concrete DIE. Computed once from owned
+            // validated metadata; this bitmap never grants runtime access.
+            ::std::vector<bool> concrete_scope_functions{};
             ::std::vector<source_function_span> functions{};
             // Retires the ORIGINAL DWARF/Code mapping after replacement. Wasm
             // opcode bytes have their own actual committed generation below;
@@ -429,8 +442,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         bool source_step_active_{};
         bool wasm_step_active_{};
         wasm_step_policy wasm_step_policy_{wasm_step_policy::into};
-        ::std::size_t source_step_stop_count_{};
-        inline static constexpr ::std::size_t max_source_step_stops_{65'536u};
         ::std::uint64_t next_breakpoint_{1}, next_request_{1}, step_thread_{};
         native_step::session native_session_{};
         native_continuation_linux::event_owner native_continuation_event_{};
@@ -691,11 +702,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
 
         explicit controller(::uwvm2::utils::control::launch_config config, ::std::size_t capacity,
                             trace_ref (*capture)() noexcept, memory_reader reader)
-            : config_{config}, authority_{config}, domain_{::std::make_shared<domain_type>(capacity)}, traces_(capacity),
+            : config_{config}, authority_{config}, domain_{capacity == (::std::numeric_limits<::std::size_t>::max)() ?
+                  ::std::make_shared<domain_type>() : ::std::make_shared<domain_type>(capacity)},
+              traces_(capacity == (::std::numeric_limits<::std::size_t>::max)() ? 0u : capacity),
               capture_trace_{capture}, read_memory_{reader}
         {
-            wasip1_calls::begin_debug_session();
-            ::uwvm2::imported::ros::debug::enabled.store(true,::std::memory_order_relaxed);
+            if(::uwvm2::utils::control::debug_permissions::inspection_allowed())
+            {
+                wasip1_calls::begin_debug_session();
+                ::uwvm2::imported::ros::debug::enabled.store(true,::std::memory_order_relaxed);
+            }
             admission_ = authority_.status();
             if(admission_ == control_error::none) { admission_ = session_.attach_console(authority_.issue_permit()); }
             if(admission_ == control_error::none)
@@ -731,12 +747,27 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
 #endif
             if(self.exited_) { return false; }
             auto event{self.wasm_event_locked(participant, location)};
-            if(event.function_generation == 0u) { return false; }
+            if(event.function_generation == 0u &&
+               ::uwvm2::utils::control::debug_permissions::inspection_allowed()) { return false; }
             event.trapped = category == wasm_events::category::trap;
             event.uncaught = category == wasm_events::category::uncaught;
             if(self.wasm_trace_enabled_ && (self.wasm_trace_filter_ == wasm_events::category::all ||
                self.wasm_trace_filter_ == category))
             { if(!self.wasm_trace_.append(event)) { self.wasm_trace_enabled_ = false; } }
+            namespace crash=::uwvm2::runtime::diagnostic::crash;
+            auto const action{crash::process_policy.selected()};
+            if(action==crash::action::pause)
+            {
+                if(!self.pause_) { self.pause_=self.request_pause_locked(); }
+                if(!self.pause_) { return false; }
+                self.cancel_step_locked();self.step_thread_=0u;
+                self.reason_=category==wasm_events::category::trap ? stop_reason::wasm_trap:stop_reason::wasm_uncaught;
+                self.terminal_wasm_participant_=participant;
+                // This genuine controller ticket owns the terminal park.
+                // Continuing it must not trigger a second process-wide stop.
+                crash::stop_state.store(2u,::std::memory_order_release);
+                self.changed_.notify_all();return true;
+            }
             for(auto const& point : self.wasm_catchpoints_)
             {
                 if(point.identifier == 0u || !point.enabled || point.event != category ||
@@ -923,7 +954,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             if(!pause_ || exited_) { return; }
             // Cold capture runs on the actual guest native thread, before poll
             // parks and before any frame returns. It is never manager backtrace.
-            // traces_ has fixed capacity, so observer stores without allocating.
+            // Cold before-park storage follows the actual participant population.
+            // This is not a signal handler; allocation failure leaves capture
+            // unavailable, never a partial owner or an uncaught host exception.
+            if(::std::none_of(traces_.begin(), traces_.end(), [&](auto const& record)
+                { return record.participant == participant || record.participant == 0u; }))
+            {
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+                try { traces_.emplace_back(); } catch(...) { return; }
+#else
+                traces_.emplace_back();
+#endif
+            }
             for(auto& record : traces_)
             {
                 if(record.participant == participant || record.participant == 0u)
@@ -999,7 +1041,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             { result.wasm_state_values.result = wasm_state::status::requires_current_cooperative_stop; return; }
             if(result.stop_identifier == 0u || result.stop_identifier != stop_identifier_)
             { result.wasm_state_values.result = wasm_state::status::stale_stop_or_generation; return; }
-            ::fast_io::array<::uwvm2::runtime::lib::llvm_jit_checkpoint_thread_capture_owner, 256u> captures{};
+            ::std::vector<::uwvm2::runtime::lib::llvm_jit_checkpoint_thread_capture_owner> captures{};
+            if(!prepare_capture_storage(captures, result.threads.size()))
+            { result.wasm_state_values.result = wasm_state::status::allocation_failed; return; }
             ::std::size_t count{}; bool requested_participant{};
             // inspect() copied the current complete domain population. Old
             // trace slots can outlive a retired participant: NEVER submit those
@@ -1025,7 +1069,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 }
                 if(count == captures.size())
                 { result.wasm_state_values.result = wasm_state::status::resource_limit; return; }
-                captures[count++] = record.typed_capture; // fixed owner array; extent checked BEFORE write.
+                captures[count++] = record.typed_capture; // Actual cohort extent checked before write.
             }
             if(!requested_participant)
             { result.wasm_state_values.result = wasm_state::status::missing_participant; return; }
@@ -1053,7 +1097,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
 #endif
                 {
                     wasm_path::stop_key actual{};actual.stop=result.stop_identifier;
-                    if(result.threads.empty() || result.threads.size()>wasm_path::maximum_cohort)
+                    if(result.threads.empty())
                     { result.wasm_mutation_value.status=wasm_state::status::incomplete_cohort;return; }
                     actual.runtime_epoch=result.threads.front().location.code_generation;
                     actual.cohort.reserve(result.threads.size());
@@ -1099,7 +1143,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 { result.wasm_mutation_value.status=wasm_state::status::allocation_failed;return; }
 #endif
             }
-            ::fast_io::array<::uwvm2::runtime::lib::llvm_jit_checkpoint_thread_capture_owner, 256u> captures{};
+            ::std::vector<::uwvm2::runtime::lib::llvm_jit_checkpoint_thread_capture_owner> captures{};
+            if(!prepare_capture_storage(captures, result.threads.size()))
+            { result.wasm_mutation_value.status = wasm_state::status::allocation_failed; return; }
             ::std::size_t count{}; bool requested_participant{};
             // inspect() copied the current complete domain population. Old
             // trace slots can outlive a retired participant: NEVER submit those
@@ -1125,7 +1171,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 }
                 if(count == captures.size())
                 { result.wasm_mutation_value.status = wasm_state::status::resource_limit; return; }
-                captures[count++] = record.typed_capture; // fixed owner array; extent checked BEFORE write.
+                captures[count++] = record.typed_capture; // Actual cohort extent checked before write.
             }
             if(!requested_participant)
             { result.wasm_mutation_value.status = wasm_state::status::missing_participant; return; }
@@ -1189,7 +1235,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
 #endif
             {
                 wasm_path::stop_key actual{};actual.stop=result.stop_identifier;
-                if(result.threads.empty() || result.threads.size()>wasm_path::maximum_cohort)
+                if(result.threads.empty())
                 { result.wasm_path_values.result=wasm_state::status::incomplete_cohort;return; }
                 actual.runtime_epoch=result.threads.front().location.code_generation;
                 actual.cohort.reserve(result.threads.size());
@@ -1251,7 +1297,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             if(result.stop_identifier == 0u || result.stop_identifier != stop_identifier_ ||
                (expected_stop != 0u && expected_stop != stop_identifier_))
             { result.wasip1_state_values.result = wasip1_state::status::stale_stop_or_generation; return; }
-            ::fast_io::array<::uwvm2::runtime::lib::llvm_jit_checkpoint_thread_capture_owner, 256u> captures{};
+            ::std::vector<::uwvm2::runtime::lib::llvm_jit_checkpoint_thread_capture_owner> captures{};
+            if(!prepare_capture_storage(captures, result.threads.size()))
+            { result.wasip1_state_values.result = wasip1_state::status::allocation_failed; return; }
             ::std::size_t count{};
             // inspect() copied the current complete domain population. Old
             // trace slots can outlive a retired participant: NEVER submit those
@@ -1276,7 +1324,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 }
                 if(count == captures.size())
                 { result.wasip1_state_values.result = wasip1_state::status::resource_limit; return; }
-                captures[count++] = record.typed_capture; // fixed owner array; extent checked BEFORE write.
+                captures[count++] = record.typed_capture; // Actual cohort extent checked before write.
             }
             // Management call only: NEVER enclose in a domain callback. Runtime
             // acquires ONE complete cohort -> actual host closure -> N GC leases
@@ -1343,7 +1391,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 pause_, {captures.data(), count}, query);
         }
         void clear_traces_locked() noexcept
-        { source_frame_cursor_ = {}; wasm_paths_.clear(); for(auto& trace : traces_) { trace.trace = {}; trace.captured_count = trace.total_count = 0u;
+        { source_frame_cursor_ = {}; wasm_paths_.clear(); for(auto& trace : traces_) { trace.participant = 0u; trace.trace = {}; trace.captured_count = trace.total_count = 0u;
                                     trace.locals_available = false; trace.native_site = {};
                                     trace.native_site_location = {}; trace.capture_ticket = {}; trace.activation_capture.reset(); trace.typed_capture.reset();
                                     trace.typed_capture_status = ::uwvm2::runtime::lib::llvm_jit_checkpoint_capture_status::not_selected;
@@ -1418,21 +1466,37 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             (void)record; (void)command; (void)result; return source_caller_route::current;
 #endif
         }
+        // Allocation is cold management work, before any runtime transaction.
+        // Failure publishes no partial cohort and never changes pause authority.
+        [[nodiscard]] static bool prepare_capture_storage(
+            ::std::vector<::uwvm2::runtime::lib::llvm_jit_checkpoint_thread_capture_owner>& captures,
+            ::std::size_t count) noexcept
+        {
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+            try
+            {
+#endif
+                captures.resize(count); return true;
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+            }
+            catch(...) { captures.clear(); return false; }
+#endif
+        }
         // Map EVERY current domain participant to its actual typed capture.
         // A selected thread is UI filtering only, never permission to omit N.
         [[nodiscard]] bool source_capture_cohort_locked(controller_reply const& result, ::std::uint64_t selected,
-            ::fast_io::array<::uwvm2::runtime::lib::llvm_jit_checkpoint_thread_capture_owner, 256u>& captures,
+            ::std::vector<::uwvm2::runtime::lib::llvm_jit_checkpoint_thread_capture_owner>& captures,
             ::std::size_t& count) const noexcept
         {
             count = 0u; bool present{};
-            if(result.threads.empty() || result.threads.size() > captures.size()) { return false; }
+            if(result.threads.empty() || !prepare_capture_storage(captures, result.threads.size())) { return false; }
             for(auto const& participant : result.threads)
             {
                 auto const found{::std::find_if(traces_.begin(), traces_.end(),
                     [&](auto const& trace) noexcept { return trace.participant == participant.identifier; })};
                 if(found == traces_.end() || !found->typed_capture || count == captures.size()) { return false; }
                 present |= found->participant == selected;
-                captures[count++] = found->typed_capture; // [safe] fixed extent BEFORE index/advance.
+                captures[count++] = found->typed_capture; // Checked actual cohort extent before index.
             }
             return present;
         }
@@ -1447,7 +1511,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             result.source_locals_reason = source_inline_unavailable_reason::stale_generation_or_stop;
             if(chosen.source == nullptr || chosen.identity.incarnation == 0u)
             { result.status = control_error::source_location_unmapped; return; }
-            ::fast_io::array<::uwvm2::runtime::lib::llvm_jit_checkpoint_thread_capture_owner, 256u> captures{};
+            ::std::vector<::uwvm2::runtime::lib::llvm_jit_checkpoint_thread_capture_owner> captures{};
             ::std::size_t count{};
             if(!source_capture_cohort_locked(result, record.participant, captures, count))
             { result.status = control_error::source_location_unmapped; return; }
@@ -1467,7 +1531,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                     ::uwvm2::runtime::lib::llvm_jit_debug_source_frame_locals locals{};
                     if(!reader.copy_position(actual) || !actual.source_available || actual.activation.frames.empty() ||
                        !reader.copy_frame_locals(locals) || locals.participant != state.record.participant ||
-                       locals.incarnation != chosen.identity.incarnation || locals.values.size() > 256u ||
+                       locals.incarnation != chosen.identity.incarnation ||
                        locals.values.size() > locals.total_count || locals.total_count > (::std::numeric_limits<::std::size_t>::max)() ||
                        actual.activation.participant != state.record.participant ||
                        actual.activation.frames.back().incarnation != chosen.identity.incarnation ||
@@ -1475,11 +1539,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                        actual.source.runtime_epoch != chosen.identity.runtime_epoch ||
                        actual.source.function_generation != chosen.identity.function_generation)
                     { result.status = control_error::source_location_unmapped; return false; }
-                    ::std::array<source_dwarf::copied_numeric_local, 256u> copied{};
+                    ::std::vector<source_dwarf::copied_numeric_local> copied(locals.values.size());
                     for(::std::size_t i{}; i != locals.values.size(); ++i)
                     {
-                        // [owned actual copied local prefix ... i<size<=256] end
-                        // [safe] equal fixed bounds before native-carrier copy.
+                        // [owned actual copied local prefix ... i<size] end
+                        // [safe] equal actual extents before native-carrier copy.
                         copied[i].wasm_type = locals.values[i].wasm_type; copied[i].available = locals.values[i].available;
                         if(copied[i].available)
                         { ::fast_io::freestanding::my_memcpy(copied[i].bytes.data(), locals.values[i].native_bytes.data(), copied[i].bytes.size()); }
@@ -1562,7 +1626,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             if(caller.module >= source_modules_.size()) { return; }
             auto const& source{source_modules_[static_cast<::std::size_t>(caller.module)]};
             if(!source.binding || !source.dwarf || source.dwarf_status != source_dwarf::error::none) { return; }
-            ::fast_io::array<::uwvm2::runtime::lib::llvm_jit_checkpoint_thread_capture_owner, 256u> captures{};
+            ::std::vector<::uwvm2::runtime::lib::llvm_jit_checkpoint_thread_capture_owner> captures{};
             ::std::size_t count{};
             if(!source_capture_cohort_locked(result, record.participant, captures, count)) { return; }
             auto candidate{view}; // Detached tentative DATA; publish ONLY after actual callback/manager success.
@@ -1971,22 +2035,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             source_dwarf::object_validation_scope const type_validation{source.dwarf ? source.dwarf->object_validation() : nullptr};
             if(source.dwarf_status != source_dwarf::error::none || !source.dwarf || !source.binding)
             { result.status = control_error::source_debug_info_unavailable; return; }
-            ::fast_io::array<::uwvm2::runtime::lib::llvm_jit_checkpoint_thread_capture_owner, 256u> captures{};
-            ::std::size_t capture_count{}; bool selected_present{};
-            if(result.threads.empty() || result.threads.size() > captures.size())
+            ::std::vector<::uwvm2::runtime::lib::llvm_jit_checkpoint_thread_capture_owner> captures{};
+            ::std::size_t capture_count{};
+            if(!source_capture_cohort_locked(result, record.participant, captures, capture_count))
             { result.status = control_error::source_location_unmapped; return; }
-            // Match the current actual domain inspection, rather than every old
-            // trace slot. Never drop a live participant or submit a retired one.
-            for(auto const& participant : result.threads)
-            {
-                auto const found{::std::find_if(traces_.begin(), traces_.end(),
-                    [&](auto const& trace) noexcept { return trace.participant == participant.identifier; })};
-                if(found == traces_.end() || !found->typed_capture || capture_count == captures.size())
-                { result.status = control_error::source_location_unmapped; return; }
-                selected_present |= found->participant == record.participant;
-                captures[capture_count++] = found->typed_capture; // [safe] fixed extent proved BEFORE indexed write/advance.
-            }
-            if(!selected_present) { result.status = control_error::source_location_unmapped; return; }
             struct context
             {
                 controller* self; trace_record const* record; console_command const* command;
@@ -2047,8 +2099,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                        saved_locals.values.size() > saved_locals.total_count || saved_locals.operands.size() > saved_locals.operand_count ||
                        saved_locals.globals.size() > saved_locals.global_count)
                     { result.status = control_error::source_location_unmapped; return false; }
-                    ::std::array<source_dwarf::copied_numeric_local,768u> copied{};
+                    auto const maximum{(::std::numeric_limits<::std::size_t>::max)()};
+                    if(saved_locals.operands.size() > maximum - saved_locals.values.size() ||
+                       saved_locals.globals.size() > maximum - saved_locals.values.size() - saved_locals.operands.size())
+                    { result.status = control_error::source_location_unmapped; return false; }
                     auto const captured_count{saved_locals.values.size()+saved_locals.operands.size()+saved_locals.globals.size()};
+                    ::std::vector<source_dwarf::copied_numeric_local> copied(captured_count);
                     auto const total_count{captured_count}; bool const locals_available{true};
                     ::std::size_t copied_index{};
                     for(auto const* group : {::std::addressof(saved_locals.values),::std::addressof(saved_locals.operands),::std::addressof(saved_locals.globals)})
@@ -2777,7 +2833,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 // Its real source/generation and current PC were checked jointly
                 // above; no independent source query is combined with this chain.
                 out.source_owner = source->binding;
-                if(source->line_only)
+                bool function_line_only{source->line_only};
+                if(!function_line_only && source->dwarf_status == source_dwarf::error::none &&
+                   source->concrete_scope_functions.size() == source->functions.size())
+                {
+                    auto const found{::std::lower_bound(source->functions.begin(), source->functions.end(), frame.function,
+                        [](auto const& entry, auto function) { return entry.function < function; })};
+                    if(found != source->functions.end() && found->function == frame.function)
+                    {
+                        auto const index{static_cast<::std::size_t>(found - source->functions.begin())};
+                        function_line_only = !source->concrete_scope_functions[index];
+                    }
+                }
+                if(function_line_only)
                 {
                     // Reuse ONLY this fresh joint runtime source+activation
                     // query. A map grants no memory access or inline selection.
@@ -2935,7 +3003,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 }
                 if(chosen.source == nullptr || !chosen.source->binding || chosen.identity.incarnation == 0u)
                 { return control_error::source_location_unmapped; }
-                ::fast_io::array<::uwvm2::runtime::lib::llvm_jit_checkpoint_thread_capture_owner, 256u> captures{};
+                ::std::vector<::uwvm2::runtime::lib::llvm_jit_checkpoint_thread_capture_owner> captures{};
                 ::std::size_t count{};
                 if(!source_capture_cohort_locked(reply, record.participant, captures, count))
                 { return control_error::source_location_unmapped; }
@@ -3168,7 +3236,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             first_wasm_instruction_pending_ = false;
             if(source_step_active_ || wasm_step_active_) { source_step_error_ = control_error::invalid_state; }
             step_thread_ = 0u; source_step_active_ = false; wasm_step_active_ = false;
-            source_step_stop_count_ = 0u;
             source_step_origin_ = {}; source_step_origin_activation_ = {};
         }
         [[nodiscard]] bool resume_locked() noexcept
@@ -3222,7 +3289,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 if(interrupt.pending()) { result.error=control_error::none;result.completed=completion::paused;return result; }
                 result.from=native_pc_;
                 step_thread_=selected;source_step_active_=false;wasm_step_active_=true;wasm_step_policy_=policy;
-                source_step_stop_count_=0u;source_step_error_=control_error::none;source_step_origin_activation_=::std::move(origin);
+                source_step_error_=control_error::none;source_step_origin_activation_=::std::move(origin);
                 if(!release_native_locked(deadline)) { cancel_step_locked();result.error=control_error::invalid_state;return result; }
                 // Native execution consumed the previous stop even though the
                 // cooperative pause ticket remains live. Retire its labels
@@ -4545,13 +4612,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 if(condition_error_ != control_error::none)
                 { cancel_step_locked(); source_step_error_ = control_error::none; return true; }
                 if(!source_step_active_ && !wasm_step_active_) { return true; }
-                if(source_step_stop_count_ == max_source_step_stops_)
-                {
-                    source_step_error_ = wasm_step_active_ ? control_error::wasm_step_policy_unavailable : control_error::source_step_policy_unavailable;
-                    source_step_active_ = false; wasm_step_active_ = false; step_thread_ = 0u;
-                    return true; // Retain the actual current stop, never a synthetic source label.
-                }
-                ++source_step_stop_count_;
+                // Every iteration consumes a fresh authenticated stop. The
+                // caller deadline and interrupt remain authoritative; crossing
+                // an arbitrary opcode count cannot cancel a valid source step.
                 auto const found{::std::find_if(traces_.begin(), traces_.end(),
                     [&](auto const& record) { return record.participant == step_thread_; })};
                 source_step::position current{};
@@ -4584,15 +4647,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                                 outcome = source_step::decide(source_step_origin_, current);
                                 source_step_error_ = source_step_error(outcome.reason);
                                 if(source_step_error_ == control_error::none && outcome.result == source_step::action::keep_running &&
-                                   current.activation == source_step::activation_relation::returned &&
-                                   source_step_origin_.requested != source_step::policy::into)
+                                   current.activation == source_step::activation_relation::returned)
                                 {
                                     source_step_error_ = source_step_error(source_step::observe_return(source_step_origin_,current));
                                     if(source_step_error_ == control_error::none)
                                     { source_step_origin_activation_ = ::std::move(activation); }
-                                    // Rebase only on this authenticated returned ancestor. Fresh
-                                    // sibling/recursive/tail identities still require the next
-                                    // complete event-chain comparison; no depth/CFA guess is used.
+                                    // All policies rebase only on this authenticated returned
+                                    // ancestor. A later sibling/recursive/tail identity still
+                                    // requires a NEW complete event-chain comparison; unknown
+                                    // comparisons, depth and CFA never manufacture a return.
                                 }
                             }
                         }
@@ -4745,12 +4808,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         // An external transport will attach its own authenticated session and
         // use this same operation grammar; this factory opens no server/socket.
         [[nodiscard]] static ::std::shared_ptr<controller> create(::uwvm2::utils::control::launch_config config,
-            ::std::size_t capacity = 256u, trace_ref (*capture)() noexcept =
+            ::std::size_t capacity = (::std::numeric_limits<::std::size_t>::max)(), trace_ref (*capture)() noexcept =
                 ::uwvm2::runtime::lib::llvm_jit_capture_debug_stack_host_api, memory_reader reader = nullptr)
         {
-            if(!::uwvm2::utils::control::management::debug_allowed() ||
-               config.profile != ::uwvm2::utils::control::management::execution_profile::dev ||
-               capacity == 0u || capacity > 4096u || config.origin != ::uwvm2::utils::control::launch_origin::console ||
+            if(!::uwvm2::utils::control::debug_permissions::diagnostics_allowed() ||
+               config.profile != ::uwvm2::utils::control::debug_permissions::selected() ||
+               capacity == 0u || config.origin != ::uwvm2::utils::control::launch_origin::console ||
                ::uwvm2::utils::control::qualify(config) != control_error::none || !config.debug_enabled)
             { return {}; }
             // No actual execution has been paused yet; arm_initial_pause is the
@@ -4810,15 +4873,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             auto const& source{source_modules_[static_cast<::std::size_t>(module_id)]};
             if(!source.binding || !source.dwarf || source.dwarf_status != source_dwarf::error::none ||
                source.invalidated.size() != source.functions.size()) { return true; }
-            ::std::size_t work{};
             for(auto const& scope : source.dwarf->scopes())
             {
-                if(++work > 262144u) { return false; }
                 ::fast_io::string_view name{scope.name.data(),scope.name.size()};
                 if(scope.kind != source_dwarf::scope_kind::subprogram || !scope.concrete || name.empty() || !name.starts_with(prefix)) { continue; }
                 for(::std::size_t i{}; i < source.functions.size(); ++i)
                 {
-                    if(++work > 262144u) { return false; }
                     if(source.invalidated[i]) { continue; }
                     auto const& function{source.functions[i]};
                     auto const sites{::uwvm2::runtime::lib::llvm_jit_debug_safe_points_host_api(module_id,function.function)};
@@ -4826,14 +4886,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                     bool found{}; ::std::uint64_t offset{};
                     for(auto const& range : scope.ranges)
                     {
-                        if(++work > 262144u) { return false; }
                         if(range.begin >= range.end || range.end <= function.expression_begin ||
                            (range.begin >= function.expression_begin && range.begin-function.expression_begin >= function.expression_size)) { continue; }
                         auto const first{range.begin > function.expression_begin ? range.begin-function.expression_begin : 0u};
                         auto const last{::std::min(range.end-function.expression_begin,function.expression_size)};
                         for(auto at{first}; at < last; ++at)
                         {
-                            if(++work > 262144u) { return false; }
                             if(sites.contains(at)) { if(!found || at < offset) { offset=at; found=true; } break; }
                         }
                     }
@@ -4854,11 +4912,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             bool invalid_metadata = false, ::fast_io::string_view display_name = {}, ::fast_io::string_view display_file = {})
         {
             ::std::lock_guard lock{mutex_};
-            if(source_installation_closed_ || pause_ || exited_ || id > 65536u) { return false; }
+            if(source_installation_closed_ || pause_ || exited_ || id >= source_modules_.max_size()) { return false; }
             if(id >= source_modules_.size()) { source_modules_.resize(static_cast<::std::size_t>(id + 1u)); }
             auto& target{source_modules_[static_cast<::std::size_t>(id)]};
-            target.display_name = ::fast_io::concat_fast_io(display_name.subview(0u, (::std::min)(display_name.size(), ::std::size_t{4096u})));
-            target.display_file = ::fast_io::concat_fast_io(display_file.subview(0u, (::std::min)(display_file.size(), ::std::size_t{4096u})));
+            target.display_name = ::fast_io::concat_fast_io(display_name);
+            target.display_file = ::fast_io::concat_fast_io(display_file);
             target.functions = ::std::move(functions);
             target.invalidated.assign(target.functions.size(), false);
             target.source_points.assign(target.functions.size(), 2u);
@@ -4875,20 +4933,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 { target.status = source_map_error::malformed; }
                 if(target.status == source_map_error::none)
                 {
-                    ::std::size_t work{};
-                    for(::std::size_t i{}; i < target.functions.size() && work < 262144u; ++i)
+                    for(::std::size_t i{}; i < target.functions.size(); ++i)
                     {
                         auto const& function{target.functions[i]};
                         auto const sites{::uwvm2::runtime::lib::llvm_jit_debug_safe_points_host_api(id, function.function)};
-                        if(!sites || sites.function_generation != 1u || sites.expression_size != function.expression_size) { ++work; continue; }
+                        if(!sites || sites.function_generation != 1u || sites.expression_size != function.expression_size) { continue; }
                         bool found{}; ::std::size_t byte{};
-                        for(; byte < sites.byte_count && work < 262144u && !found; ++byte)
+                        for(; byte < sites.byte_count && !found; ++byte)
                         {
-                            ++work;
-                            for(unsigned bit{}; bit < 8u && work < 262144u; ++bit)
+                            for(unsigned bit{}; bit < 8u; ++bit)
                             {
                                 if((sites.bits[byte] & (1u << bit)) == 0u) { continue; }
-                                ++work;
                                 if(byte > ((::std::numeric_limits<::std::uint64_t>::max)() - bit) / 8u) { break; }
                                 auto const offset{static_cast<::std::uint64_t>(byte) * 8u + bit};
                                 if(offset >= function.expression_size || function.expression_begin > (::std::numeric_limits<::std::uint64_t>::max)() - offset) { break; }
@@ -4898,7 +4953,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                             }
                         }
                         if(found) { target.source_points[i] = 1u; }
-                        else if(byte == sites.byte_count && work < 262144u) { target.source_points[i] = 0u; }
+                        else if(byte == sites.byte_count) { target.source_points[i] = 0u; }
                     }
                 }
             }
@@ -4956,6 +5011,71 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             }
             return text;
         }
+
+        // Transport-only Wasm display. The private copied generation and actual
+        // stopped participant authorize the query; guest/native addresses are
+        // never inputs. Pagination limits each reply, not the function extent.
+        [[nodiscard]] ::std::string wasm_code_page(console_command const& command)
+        {
+            auto const current{inspect()};
+            ::std::lock_guard lock{mutex_};
+            if(!command.disassembly_stop_identifier || command.disassembly_stop_identifier!=stop_identifier_ ||
+               current.stop_identifier!=stop_identifier_ || current.execution!=execution_status::stopped || native_owned_ ||
+               !pause_ || !command.disassembly_count || command.disassembly_count>32u)
+            { return "error: Wasm code requires the current cooperative stop\n"; }
+            auto member{::std::find_if(current.threads.begin(),current.threads.end(),
+                [&](auto const& t){return t.identifier==command.requested_step_thread;})};
+            if(member==current.threads.end() || member->native_pc) { return "error: current Wasm participant unavailable\n"; }
+            auto const location{member->location};
+            if(location.code_unit>=source_modules_.size()) { return "error: Wasm module unavailable\n"; }
+            auto const& module{source_modules_[location.code_unit]};
+            auto found{::std::lower_bound(module.wasm_functions.begin(),module.wasm_functions.end(),location.function,
+                [](auto const& f,auto index){return f.function<index;})};
+            if(module.wasm_runtime_epoch!=location.code_generation || found==module.wasm_functions.end() ||
+               found->function!=location.function || !found->function_generation || !found->instruction_safe_points_complete ||
+               found->expression_bytes.size()!=found->expression_size || found->expression_size>INT64_MAX ||
+               found->instruction_safe_point_bits.size()!=found->expression_size/8u+(found->expression_size%8u!=0u))
+            { return "error: current Wasm instruction boundaries unavailable\n"; }
+            auto const boundary{[&](::std::size_t i){return (found->instruction_safe_point_bits[i/8u]&(1u<<(i%8u)))!=0u;}};
+            if(location.offset>=found->expression_size || !boundary(static_cast<::std::size_t>(location.offset)))
+            { return "error: current Wasm PC is not an instruction boundary\n"; }
+            auto const delta{command.disassembly_byte_offset};
+            auto const anchor{static_cast<::std::int64_t>(location.offset)};
+            if((delta>0 && anchor>INT64_MAX-delta) || (delta<0 && delta < -anchor))
+            { return "error: Wasm byte offset is outside the function\n"; }
+            auto const target{anchor+delta};
+            if(target<0 || static_cast<::std::uint64_t>(target)>=found->expression_size || !boundary(static_cast<::std::size_t>(target)))
+            { return "error: Wasm byte offset is not an instruction boundary\n"; }
+            ::std::int64_t ordinal{};
+            for(::std::size_t i{};i<static_cast<::std::size_t>(target);++i) { if(boundary(i)) { ++ordinal; } }
+            auto const move{command.disassembly_instruction_offset};
+            if(move>0 && ordinal>INT64_MAX-move) { return "error: Wasm instruction offset overflow\n"; }
+            auto const first{ordinal+move};
+            if(first>INT64_MAX-static_cast<::std::int64_t>(command.disassembly_count))
+            { return "error: Wasm instruction window overflow\n"; }
+            ::std::string text{};
+            auto output{::fast_io::ostring_ref_std{::std::addressof(text)}};
+            ::fast_io::io::print(output,"wasm-code thread=",member->identifier," stop=",stop_identifier_,
+                " module=",location.code_unit," function=",location.function," epoch=",location.code_generation,
+                " generation=",found->function_generation," pc=",location.offset," size=",found->expression_size,
+                " first=",first," count=",command.disassembly_count,"\n");
+            ::std::size_t cursor{};::std::int64_t at{};
+            for(::std::uint64_t row{};row<command.disassembly_count;++row)
+            {
+                auto const wanted{first+static_cast<::std::int64_t>(row)};
+                if(wanted<0) { ::fast_io::io::print(output,"wasm-op unavailable\n");continue; }
+                for(;cursor<found->expression_size;++cursor)
+                { if(boundary(cursor)) { if(at==wanted) { break; } ++at; } }
+                if(cursor==found->expression_size) { ::fast_io::io::print(output,"wasm-op unavailable\n");continue; }
+                auto end{cursor+1u};while(end<found->expression_size && !boundary(end)){++end;}
+                auto bytes{::std::span<::std::byte const>{found->expression_bytes.data()+cursor,end-cursor}};
+                auto decoded{wasm_listing::instruction(bytes)};
+                ::fast_io::io::print(output,"wasm-op offset=",cursor," size=",bytes.size()," text=",decoded,"\n");
+                cursor=end;++at;
+            }
+            return text;
+        }
+
         [[nodiscard]] ::fast_io::string wasm_function_label(::std::uint64_t module,::std::uint64_t function)
         {
             ::std::lock_guard lock{mutex_};
@@ -5042,7 +5162,39 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 // offsets grant no source file read or native PC authority.
                 target.status = source_map::parse(id, mapped_sections, target.lines, {.isolate_ambiguous_ranges=true});
             }
+            // A genuine line-table-only producer is distinct from broken or
+            // unsupported DIE metadata. Missing just one DIE section must not
+            // silently downgrade to the line-only contract.
+            bool has_info{}, has_abbrev{};
+            for(auto const& section : image.sections)
+            { has_info |= section.name == ".debug_info"; has_abbrev |= section.name == ".debug_abbrev"; }
+            if(!has_info && !has_abbrev && target.status == source_map_error::none &&
+               status == source_dwarf::error::missing_sections) { target.line_only = true; }
             target.dwarf_status = status; target.dwarf = ::std::move(metadata); target.binding = ::std::move(binding);
+            target.concrete_scope_functions.assign(target.functions.size(), false);
+            if(target.dwarf_status == source_dwarf::error::none && target.dwarf)
+            {
+                for(auto const& scope : target.dwarf->scopes())
+                {
+                    // A CU's range covers its file but supplies no function
+                    // or inline scope identity of its own.
+                    if(!scope.concrete || scope.kind == source_dwarf::scope_kind::compile_unit) { continue; }
+                    for(auto const& range : scope.ranges)
+                    {
+                        if(range.begin >= range.end) { continue; }
+                        auto found{::std::upper_bound(target.functions.begin(), target.functions.end(), range.begin,
+                            [](auto address, auto const& function) { return address < function.expression_begin; })};
+                        if(found != target.functions.begin()) { --found; }
+                        for(; found != target.functions.end() && found->expression_begin < range.end; ++found)
+                        {
+                            if(range.begin >= found->expression_begin &&
+                               range.begin - found->expression_begin >= found->expression_size) { continue; }
+                            auto const index{static_cast<::std::size_t>(found - target.functions.begin())};
+                            target.concrete_scope_functions[index] = true;
+                        }
+                    }
+                }
+            }
             target.wasm_runtime_epoch = image.runtime_epoch;
             target.wasm_functions = ::std::move(image.functions);
             if(target.dwarf_status==source_dwarf::error::none && target.dwarf)
@@ -5233,11 +5385,61 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             auto command{input_command};
             // Authorize the actual typed action before inspect, relocation,
             // script expansion or any status-wrapped extension can run.
-            if(!::uwvm2::utils::control::management::debug_allowed() ||
-               config_.profile != ::uwvm2::utils::control::management::execution_profile::dev)
+            if(!command_permission_allowed(command) ||
+               config_.profile != ::uwvm2::utils::control::debug_permissions::selected())
             { controller_reply denied{}; denied.status = control_error::unavailable_capability; return denied; }
             auto initial{inspect()};
+            if(!::uwvm2::utils::control::debug_permissions::inspection_allowed() && command.operation==operation::resume &&
+               initial.reason!=stop_reason::wasm_trap && initial.reason!=stop_reason::wasm_uncaught)
+            { initial.status=control_error::unavailable_capability; return initial; }
             if(admission_ != control_error::none) { initial.status = admission_; return initial; }
+            if(command.kind==console_command_kind::wasm_dump)
+            {
+                namespace core=::uwvm2::runtime::diagnostic::wasm_coredump;
+                namespace crash=::uwvm2::runtime::diagnostic::crash;
+                initial.status=control_error::invalid_state;
+                initial.dump_status=static_cast<unsigned>(core::error::capture_denied);
+                if(command.operation!=operation::status || command.payload_size || command.wait_for_event ||
+                   command.run_from_entry || command.launch_action!=console_launch_action::none ||
+                   command.dump_path.empty() || command.dump_path.find('\0')!=::std::string::npos)
+                { initial.status=control_error::malformed;return initial; }
+                ::std::lock_guard lock{mutex_};
+                if(initial.execution!=execution_status::stopped || initial.threads.empty() ||
+                   !pause_ || native_owned_ || exited_ || domain_->is_closed() ||
+                   command.dump_stop_identifier!=stop_identifier_ || initial.stop_identifier!=stop_identifier_)
+                { return initial; }
+                // The controller lock retains this exact stop; the collector
+                // acquires the real execution lease and a move-only cohort
+                // transition. No native-PC or caller-supplied memory is read.
+                // Failed output leaves the same terminal pause intact.
+                crash::dump_file output;
+                if(!output.open(command.dump_path))
+                { initial.dump_status=static_cast<unsigned>(core::error::write_failed);return initial; }
+                core::result captured{};
+                if(::uwvm2::utils::control::debug_permissions::inspection_allowed())
+                    captured=::uwvm2::runtime::lib::runtime_dump_stopped_guest_host_api(
+                        pause_,initial.threads.front().location.code_generation,"uwvm2-ros","explicit Host dump",
+                        ::std::addressof(output),crash::dump_file::writer);
+                else
+                {
+                    // No Guest values, paths, source bytes, pointers, tags or
+                    // native addresses enter the limited export. This is an
+                    // intentionally redacted diagnostic, not a restorable image.
+                    auto metadata=::fast_io::concat_std("{\"schema\":1,\"permissions\":\"limited\",\"redacted\":true,\"stop_id\":",
+                        ::fast_io::mnp::dec(stop_identifier_),",\"participants\":",::fast_io::mnp::dec(initial.threads.size()),
+                        ",\"reason\":",::fast_io::mnp::dec(static_cast<unsigned>(initial.reason)),
+                        ",\"exit_status\":",::fast_io::mnp::dec(crash::exit_status()),"}");
+                    core::dump_view view{};view.executable="uwvm2-ros";
+                    view.reason="limited diagnostics: sensitive state omitted";
+                    view.diagnostic_metadata=metadata;
+                    captured=core::encode(view,::std::addressof(output),crash::dump_file::writer);
+                }
+                initial.dump_status=static_cast<unsigned>(captured.status);
+                if(!captured)return initial;
+                if(!output.publish())
+                { initial.dump_status=static_cast<unsigned>(core::error::write_failed);return initial; }
+                initial.dump_published=true;initial.status=control_error::none;return initial;
+            }
             if(command.kind==console_command_kind::breakpoint_commands)
             { ::std::lock_guard lock{mutex_};return breakpoint_commands_locked(command,::std::move(initial)); }
             if(command.kind==console_command_kind::watchpoint)
@@ -5771,6 +5973,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             native_next_policy::reason native_next_reason{native_next_policy::reason::none};
             native_disassembly::instruction native_instruction{};
             ::std::vector<::std::byte> memory_bytes{};
+            ::uwvm2::extension::memtag::debug_tag_view memory_tag_info{};
             auto const deadline{clock_type::now() + timeout};
             using namespace ::uwvm2::utils::control;
             if(wasm_script)
@@ -5938,7 +6141,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 { ::std::lock_guard lock{mutex_}; step_thread_ = step->thread;
                   source_step_active_ = source_step;
                   wasm_step_active_ = wasm_step; wasm_step_policy_ = command.wasm_policy;
-                  source_step_stop_count_ = 0u;
                   source_step_error_ = control_error::none;
                   source_step_origin_ = ::std::move(prepared_source_step);
                   source_step_origin_activation_ = ::std::move(prepared_activation);
@@ -6020,10 +6222,26 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 // session_ has checked the 32-byte payload, overflow and 64 KiB
                 // bound. snapshot() confirmed all admitted guest threads parked.
                 // The runtime performs a fresh memory-size check while copying.
-                memory_bytes.resize(request->length);
-                if(read_memory_ == nullptr || !read_memory_(request->module, request->memory,
-                    request->offset, memory_bytes.data(), memory_bytes.size()))
-                { memory_bytes.clear(); completed = completion::rejected; error = control_error::invalid_memory_range; }
+                if(command.memory_tags)
+                {
+                    auto const count{request->length==0u ? 0u :
+                        (request->offset+request->length-1u)/16u-request->offset/16u+1u};
+                    memory_bytes.resize(static_cast<::std::size_t>(count));
+                    memory_tag_info=::uwvm2::runtime::lib::llvm_jit_debug_read_memory_tags_host_api(
+                        request->module,request->memory,request->offset,request->length,
+                        reinterpret_cast<::std::uint8_t*>(memory_bytes.data()),memory_bytes.size());
+                    using enum ::uwvm2::extension::memtag::debug_tag_status;
+                    if(memory_tag_info.status!=available) { memory_bytes.clear(); }
+                    if(memory_tag_info.status==invalid_range || memory_tag_info.status==unavailable)
+                    { completed=completion::rejected;error=control_error::invalid_memory_range; }
+                }
+                else
+                {
+                    memory_bytes.resize(request->length);
+                    if(read_memory_ == nullptr || !read_memory_(request->module, request->memory,
+                        request->offset, memory_bytes.data(), memory_bytes.size()))
+                    { memory_bytes.clear(); completed = completion::rejected; error = control_error::invalid_memory_range; }
+                }
             }
             else if(auto const* request = ::std::get_if<replace_function_command>(::std::addressof(validated)))
             {
@@ -6181,6 +6399,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             result.native_step_to = native_step_to;
             result.native_instruction = native_instruction; // only compiler-qualified Wasm bytes survived the private projection
             result.memory = ::std::move(memory_bytes);
+            result.memory_tag_info = memory_tag_info;
             if(::std::holds_alternative<breakpoint_list_command>(validated))
             { ::std::lock_guard lock{mutex_}; for(auto const& slot : breakpoints_) { if(slot.identifier != 0u) { result.breakpoints.push_back(slot); } } }
             if(source_frame)

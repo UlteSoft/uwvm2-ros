@@ -419,8 +419,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 
             using char8_t_const_may_alias_ptr UWVM_GNU_MAY_ALIAS = char8_t const*;
 
-            auto const old_path_begin{memory.memory_begin + old_path_ptrsz};
-            auto const new_path_begin{memory.memory_begin + new_path_ptrsz};
+            auto const old_path_begin_span{::uwvm2::imported::wasi::wasip1::memory::checked_span_unlocked(memory,old_path_ptrsz,old_path_len)};
+
+            if(!old_path_begin_span) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
+
+            auto const old_path_begin{old_path_begin_span.data};
+            auto const new_path_begin_span{::uwvm2::imported::wasi::wasip1::memory::checked_span_unlocked(memory,new_path_ptrsz,new_path_len)};
+            if(!new_path_begin_span) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
+            auto const new_path_begin{new_path_begin_span.data};
 
             old_path.assign(::uwvm2::utils::container::u8string_view{reinterpret_cast<char8_t_const_may_alias_ptr>(old_path_begin),
                                                                      static_cast<::std::size_t>(old_path_len)});

@@ -36,6 +36,11 @@ namespace uwvm2::runtime::lib
     extern "C++" void reset_runtime_state_host_api() noexcept {}
 
 #if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
+    extern "C++" ::uwvm2::runtime::diagnostic::wasm_coredump::result runtime_dump_stopped_guest_host_api(
+        ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const&,
+        ::std::uint64_t, ::std::string_view, ::std::string_view, void*,
+        ::uwvm2::runtime::diagnostic::wasm_coredump::write_function) noexcept
+    { return {.status=::uwvm2::runtime::diagnostic::wasm_coredump::error::unsupported_snapshot}; }
     extern "C++" bool replace_full_source_after_drain_host_api(
         bool (*initialize_source)(void*) noexcept, void* context) noexcept
     { (void)initialize_source; (void)context; return false; }
@@ -44,6 +49,8 @@ namespace uwvm2::runtime::lib
 #if defined(UWVM_RUNTIME_LLVM_JIT)
     extern "C++" void llvm_jit_reset_runtime_state_host_api() noexcept { reset_runtime_state_host_api(); }
 #endif
+
+    extern "C++" bool builtin_observed_caller_identity_host_api(host_observer_caller_identity& out) noexcept { out = {}; return false; }
 
     extern "C++" bool ros_execution_backend_supported_host_api() noexcept { return false; }
     extern "C++" bool ros_caller_identity_host_api(ros_caller_identity& out, bool) noexcept { out = {}; return false; }
@@ -58,6 +65,9 @@ namespace uwvm2::runtime::lib
         static_cast<void>(out);
         return false;
     }
+
+    extern "C++" bool preload_memory_normalize_range_host_api(::std::size_t, ::std::uint_least64_t, ::std::size_t, ::std::uint64_t& out) noexcept { out=0u; return false; }
+    extern "C++" bool preload_memory_range_host_api(::std::size_t, ::std::uint_least64_t, ::std::size_t) noexcept { return false; }
 
     extern "C++" bool preload_memory_read_host_api(::std::size_t memory_index,
                                                    ::std::uint_least64_t offset,

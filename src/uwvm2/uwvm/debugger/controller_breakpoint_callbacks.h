@@ -244,7 +244,7 @@
             {
             for(auto command:commands)
             {
-                if(!::uwvm2::utils::control::management::debug_allowed() || !pause_ || exited_ || domain_->is_closed() ||
+                if(!::uwvm2::utils::control::debug_permissions::full_allowed() || !pause_ || exited_ || domain_->is_closed() ||
                    !admitted_callback(command) || domain_->capture(pause_).result!=
                         ::uwvm2::utils::thread::cooperative_pause_result::paused)
                 { success=false;event.status=control_error::invalid_state;break; }

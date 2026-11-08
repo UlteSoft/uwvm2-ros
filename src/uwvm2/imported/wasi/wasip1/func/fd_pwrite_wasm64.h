@@ -300,7 +300,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         {
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             ::uwvm2::imported::wasi::wasip1::environment::budget_reservation reservation{
-                ::uwvm2::imported::wasi::wasip1::environment::fd_io_budget(static_cast<unsigned>(fd)), env.limits, 0u};
+                ::uwvm2::imported::wasi::wasip1::environment::fd_io_budget(*curr_fd.wasi_fd.ptr), env.limits, 0u};
             if(!reservation) { return reservation.template error<::uwvm2::imported::wasi::wasip1::abi::errno_t>(); }
 #endif
 
@@ -398,7 +398,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
 
                 auto& curr_tmp_scatter_base{scatter_base[i]};
-                curr_tmp_scatter_base.base = memory.memory_begin + wasm_base;
+                auto const payload_span{::uwvm2::imported::wasi::wasip1::memory::checked_span_unlocked(memory,wasm_base,wasm_len)};
+                if(!payload_span) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
+                curr_tmp_scatter_base.base = payload_span.data;
 
                 if(wasm_len > ::std::numeric_limits<::uwvm2::imported::wasi::wasip1::abi::wasi_size_wasm64_t>::max() - length_counter) [[unlikely]]
                 {
@@ -441,7 +443,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             ::uwvm2::imported::wasi::wasip1::environment::budget_reservation reservation{
-                ::uwvm2::imported::wasi::wasip1::environment::fd_io_budget(static_cast<unsigned>(fd)), env.limits, static_cast<::std::uint64_t>(length_counter)};
+                ::uwvm2::imported::wasi::wasip1::environment::fd_io_budget(*curr_fd.wasi_fd.ptr), env.limits, static_cast<::std::uint64_t>(length_counter)};
             if(!reservation) { return reservation.template error<::uwvm2::imported::wasi::wasip1::abi::errno_t>(); }
 #endif
             if(env.debug_io_observed!=nullptr) { env.debug_io_observed(static_cast<::std::uint64_t>(length_counter),0u,false); }

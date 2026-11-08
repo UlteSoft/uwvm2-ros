@@ -13,7 +13,8 @@
     struct llvm_jit_debug_source_memory_view::implementation
     {
         void const* issuer{}; // immutable actual TLS identity while the callback is active
-        ::std::byte const* begin{};
+        ::std::byte* begin{};
+        ::uwvm2::extension::memtag::shadow_storage const* tags{};
         ::std::size_t length{}, attempted{}, copied{};
         ::std::uint_least8_t address_bytes{};
         llvm_jit_debug_source_activation_snapshot position{};
@@ -50,8 +51,11 @@
            !state_->active || !state_->exclusively_owned_bytes || state_->attempted >= 32u) { return false; }
         ++state_->attempted; // checked32 bounded scalar count, not a memory pointer.
         if(size > 65536u || state_->copied > 2097152u || size > 2097152u - state_->copied) { return false; }
+        ::std::uint64_t canonical{};
         ::std::size_t host_offset{};
-        if(!validate_preload_copy_range(state_->length, offset, size, host_offset) ||
+        if(state_->tags==nullptr ||
+           !::uwvm2::extension::memtag::debug_canonical_address(*state_->tags,offset,canonical) ||
+           !validate_preload_copy_range(state_->length,canonical,size,host_offset) ||
            (state_->begin == nullptr && (state_->length != 0u || size != 0u))) { return false; }
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
         try
@@ -67,7 +71,8 @@
                 //  ^^ BEFORE begin+host_offset: offset<=length AND
                 //     size<=length-offset. Destination owns exactlysize bytes.
                 // Publication/memory/all-stopped guards cover every chain read.
-                ::fast_io::freestanding::my_memcpy(candidate.bytes.data(), state_->begin + host_offset, size);
+                if(!::uwvm2::extension::memtag::copy_debug_memory(*state_->tags,
+                    {state_->begin,state_->length},host_offset,candidate.bytes.data(),size)) { return false; }
             }
             state_->copied += size; // checked cumulative subtraction above.
             candidate.guest_offset = offset; candidate.address_bytes = state_->address_bytes;
@@ -82,6 +87,29 @@
     // An empty counted host gate cannot revoke a previously escaped mmap alias.
     // Centralize the actual published import-closure policy for both leaf and
     // caller readers; no guest memory/compiler hot path calls this cold helper.
+    // A module with no local functions has no generated engine to authenticate.
+    // Its state still belongs to the sealed full-source registry. Borrow that
+    // same actual owner through another qualified publication; never invent a
+    // code publication or relax executable/mutation admission.
+    [[nodiscard]] static ::uwvm2::uwvm::runtime::full::full_source_instance::owner
+        debug_source_memory_actual_owner_locked(::std::size_t module_id, bool checkpoint = true) noexcept
+    {
+        if(checkpoint_effect_actual_full_owner(module_id,checkpoint))
+            return g_runtime.modules.index_unchecked(module_id).llvm_jit_full_publication->source;
+        if(module_id>=g_runtime.modules.size()) return {};
+        auto const& record{g_runtime.modules.index_unchecked(module_id)};
+        if(record.runtime_module==nullptr || !record.runtime_module->local_defined_function_vec_storage.empty()) return {};
+        for(::std::size_t candidate{};candidate!=g_runtime.modules.size();++candidate)
+        {
+            if(!checkpoint_effect_actual_full_owner(candidate,checkpoint)) continue;
+            auto source{g_runtime.modules.index_unchecked(candidate).llvm_jit_full_publication->source};
+            auto const member{source->registry().find(record.module_name)};
+            if(member!=source->registry().end() && ::std::addressof(member->second)==record.runtime_module)
+                return source;
+        }
+        return {};
+    }
+
     [[nodiscard]] static bool debug_source_memory_exclusive_bytes_locked() noexcept
     {
         if(g_import_call_cache.size() != g_runtime.modules.size()) { return false; }
@@ -92,9 +120,10 @@
             auto const& member{g_runtime.modules.index_unchecked(module_id)};
             auto const* module{member.runtime_module};
             auto const& cache{g_import_call_cache.index_unchecked(module_id)};
-            if(!checkpoint_effect_actual_full_owner(module_id) || module == nullptr ||
+            auto const source{debug_source_memory_actual_owner_locked(module_id)};
+            if(!source || module == nullptr ||
                cache.size() != module->imported_function_vec_storage.size() ||
-               !member.llvm_jit_full_publication->source->actual_debug_memory_provider_census(
+               !source->actual_debug_memory_provider_census(
                    module_id,current_runtime_generation(),module)) { return false; }
             for(::std::size_t i{}; i != cache.size(); ++i)
             {
@@ -127,11 +156,11 @@
                         parameters == target.param_bytes && results == target.result_bytes;
                 }};
                 ::uwvm2::uwvm::runtime::full::builtin_wasip1_function_data wasip1{};
-                if(member.llvm_jit_full_publication->source->actual_builtin_wasip1_function(
+                if(source->actual_builtin_wasip1_function(
                     module_id,current_runtime_generation(),module,i,wasip1))
                 { if(!matches(wasip1)) { return false; } continue; }
                 ::uwvm2::uwvm::runtime::full::builtin_ros_function_data ros{};
-                if(!member.llvm_jit_full_publication->source->actual_builtin_ros_function(
+                if(!source->actual_builtin_ros_function(
                     module_id,current_runtime_generation(),module,i,ros) || ros.interface_revision != 1u || !matches(ros))
                 { return false; }
             }
@@ -146,12 +175,12 @@
         llvm_jit_debug_source_binding_owner const& binding,
         void* context, llvm_jit_debug_source_memory_callback callback) noexcept
     {
-        if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
+        if(!::uwvm2::utils::control::debug_permissions::inspection_allowed()) { return {}; }
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS)
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
         using manager = runtime_checkpoint_coherent_manager;
         using domain = ::uwvm2::utils::thread::cooperative_pause_domain;
-        if(!ticket || supplied.empty() || supplied.size() > 256u || !capture || !binding || callback == nullptr ||
+        if(!ticket || supplied.empty() || !capture || !binding || callback == nullptr ||
            mode::global_runtime_mode != mode::runtime_mode_t::full_compile ||
            mode::global_runtime_compiler != mode::runtime_compiler_t::llvm_jit_only ||
            !details::runtime_execution_entry_reset_allowed(get_runtime_execution_entry_depth()) ||
@@ -164,10 +193,11 @@
             // ANY supplied activation read. This real local pin remains live.
             if(!canonical || !canonical->control_ || !canonical->ticket_ ||
                canonical->snapshot_.participant == 0u || canonical->snapshot_.frames.empty()) { return false; }
-            runtime_checkpoint_thread_capture::owner captures[256u]{};
+            runtime_checkpoint_capture_buffer captures{supplied.size()};
+            if(!captures) { return false; }
             for(::std::size_t n{}; n != supplied.size(); ++n)
             {
-                // [request-owned wrapper span ... n<size<=256] end
+                // [request-owned wrapper span ... n<size] end
                 // [safe] count checked BEFORE index and registry lookup; no
                 // opaque supplied pointee/control-block alias is dereferenced.
                 auto const wrapper{llvm_jit_checkpoint_thread_capture::canonical(supplied[n])};
@@ -250,11 +280,11 @@
                         // copy_guest request separately proves offset+size before
                         // any derivation. ONE manager's host/N/publication and
                         // backend snapshot stay live through the whole chain.
-                        state.begin = begin; state.length = length; state.active = true;
+                        state.begin = begin; state.length = length; state.tags = ::std::addressof(memory.memory.memtag_shadow); state.active = true;
                         llvm_jit_debug_source_memory_view view{::std::addressof(state)};
                         runtime_compilation_metadata_callback_scope no_reentry{};
                         auto const accepted{request.callback(request.context, view)};
-                        state.active = false; state.begin = nullptr; state.length = 0u;
+                        state.active = false; state.begin = nullptr; state.tags = nullptr; state.length = 0u;
                         return accepted; // invalidate BEFORE backend/proof release
                     }};
                     // Type-only metadata does not need to touch a potentially
@@ -265,7 +295,7 @@
                 }
                 catch(...) { return false; } // No partly copied/view/native owner escapes.
             }};
-            auto const observed{manager::with_current_source_memory(ticket, {captures, supplied.size()},
+            auto const observed{manager::with_current_source_memory(ticket, {captures.data(), supplied.size()},
                 canonical->ticket_, ::std::addressof(request), read)};
             return observed.observation == manager::status::coherent_typed_data;
         }

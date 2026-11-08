@@ -85,6 +85,13 @@ class Broker:
         if command == "bt 1": return self.status() + ("  backtrace unavailable for this stop\n" if self.native else "  #0 module=0 function=1 [demo] run\n")
         if command == f"frames 1 {self.stop}":
             return "error: source debug info unavailable\n"  # This formatter fixture has no DWARF.
+        if command.startswith("wasm-code 1 "):
+            _, _, stop, count, byte, first = command.split()
+            count, first = int(count), int(first)
+            assert int(stop) == self.stop and int(byte) == 0
+            header = f"wasm-code thread=1 stop={self.stop} module=0 function=1 epoch=7 generation=1 pc=4 size=5 first={first} count={count}\n"
+            return header + "".join("wasm-op offset=4 size=1 text=end\n" if i == 0 else "wasm-op unavailable\n"
+                                   for i in range(first, first+count))
         if command.startswith("frames wasm 1 "):
             words = command.split(); first = min(int(words[-2]), 1)
             count = 1 - first
@@ -284,6 +291,7 @@ class StateProtocol(unittest.TestCase):
         frame = self.send("stackTrace", threadId=1)["body"]["stackFrames"][0]
         scopes = self.send("scopes", frameId=frame["id"])["body"]["scopes"]
         expected = ["Wasm locals", "Typed Wasm locals", "Wasm operand stack (last safepoint; may differ from native state)", "Wasm saved if parameters", "Wasm control stack", "Wasm handler clauses", "Wasm globals", "Wasm table 0", "WASIp1 arguments", "WASIp1 environment", "WASIp1 descriptors", "WASIp1 preopens"]
+        expected += ["WASIp1 calls (recorded)", "ROS1 calls (recorded)", "ROS2 calls (recorded)"]
         if hasattr(self.adapter, "ros_scope_stops"):
             expected += ["ROS capabilities (process-owned)", "ROS instances (backend sessions)", "ROS event queues (metadata only)"]
             selections = ("capabilities", "instances", "events")

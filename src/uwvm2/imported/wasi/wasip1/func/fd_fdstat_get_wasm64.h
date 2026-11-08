@@ -226,6 +226,35 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         // Therefore, a unified check is implemented.
         if(curr_fd.close_pos != SIZE_MAX) [[unlikely]] { return ::uwvm2::imported::wasi::wasip1::abi::errno_wasm64_t::ebadf; }
 
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        // Renumbering a standard stream cannot reveal metadata denied for the
+        // original resource just because its current number is no longer 0..2.
+        if(curr_fd.wasi_fd.ptr && curr_fd.wasi_fd.ptr->checkpoint_stdio_index >= 0 &&
+           !env.permits(::uwvm2::imported::wasi::wasip1::environment::permission_t::stdio_metadata))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+#endif
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(__linux__)
+        if(curr_fd.wasi_fd.ptr && curr_fd.wasi_fd.ptr->socket_kind!=socket_capability::socket_type::none)
+        {
+            // Encode the complete ABI record before touching Guest bytes.
+            // One short tag lease covers validation and all 24 output bytes.
+            ::std::byte encoded[24u]{};
+            auto const put_word{[&](::std::size_t offset,::std::uint64_t value,::std::size_t width) noexcept
+            {
+                for(::std::size_t i{};i<width;++i)
+                { encoded[offset+i]=static_cast<::std::byte>(value>>(i*8u)); }
+            }};
+            put_word(0u,curr_fd.wasi_fd.ptr->socket_kind==socket_capability::socket_type::datagram?5u:6u,1u);
+            put_word(2u,curr_fd.wasi_fd.ptr->socket_nonblock?4u:0u,2u);
+            put_word(8u,static_cast<::std::uint64_t>(curr_fd.rights_base),8u);
+            put_word(16u,static_cast<::std::uint64_t>(curr_fd.rights_inherit),8u);
+            [[maybe_unused]] auto guard=::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory);
+            if(!::uwvm2::imported::wasi::wasip1::memory::copy_guest_bytes_unlocked<true>(
+                memory,stat_ptrsz,encoded,sizeof(encoded),true))
+            { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
+            return ::uwvm2::imported::wasi::wasip1::abi::errno_t::esuccess;
+        }
+#endif
         // The purpose of `fd_fdstat_get_wasm64` is solely to read the metadata of an FD (type, flags, rights). It does not access the file contents nor alter
         // any state.
 
@@ -240,7 +269,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         ::uwvm2::imported::wasi::wasip1::abi::rights_wasm64_t fs_rights_inheriting{curr_fd.rights_inherit};  // 16
 
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-        bool const filesystem_operation{fd >= 3};
+        bool const filesystem_operation{curr_fd.wasi_fd.ptr->checkpoint_stdio_index < 0};
         ::uwvm2::imported::wasi::wasip1::environment::budget_reservation filesystem_reservation{
             ::uwvm2::imported::wasi::wasip1::environment::budget_kind::filesystem_io, env.limits, 0u, filesystem_operation};
         if(filesystem_operation && !filesystem_reservation) { return filesystem_reservation.template error<::uwvm2::imported::wasi::wasip1::abi::errno_wasm64_t>(); }
@@ -574,40 +603,22 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             }
         }
 
-        if constexpr(is_default_wasi_fdstat_wasm64_data_layout())
+        // Encode every ABI byte explicitly. Aggregate member initialization does
+        // not define C++ struct padding, which must never reach Guest memory.
+        ::std::byte encoded_fdstat[size_of_wasi_fdstat_wasm64_t]{};
+        auto const put_word{[&](::std::size_t offset,::std::uint64_t value,::std::size_t width) constexpr noexcept
         {
-            // If the memory is identical, it is copied directly, which is the most efficient approach.
-            wasi_fdstat_wasm64_t const tmp_wasi_fdstat{fs_filetype, fs_flags, fs_rights_base, fs_rights_inheriting};
-
-            ::uwvm2::imported::wasi::wasip1::memory::write_all_to_memory_wasm64_unchecked(
-                memory,
-                stat_ptrsz,
-                reinterpret_cast<::std::byte const*>(::std::addressof(tmp_wasi_fdstat)),
-                reinterpret_cast<::std::byte const*>(::std::addressof(tmp_wasi_fdstat)) + sizeof(tmp_wasi_fdstat));
-        }
-        else
-        {
-            // Ensure the structure meets the requirements for wasi memory.
-            ::uwvm2::imported::wasi::wasip1::memory::store_basic_wasm_type_to_memory_wasm64_unchecked(
-                memory,
-                stat_ptrsz,
-                static_cast<::std::underlying_type_t<::std::remove_cvref_t<decltype(fs_filetype)>>>(fs_filetype));
-
-            ::uwvm2::imported::wasi::wasip1::memory::store_basic_wasm_type_to_memory_wasm64_unchecked(
-                memory,
-                stat_ptrsz + 2u,
-                static_cast<::std::underlying_type_t<::std::remove_cvref_t<decltype(fs_flags)>>>(fs_flags));
-
-            ::uwvm2::imported::wasi::wasip1::memory::store_basic_wasm_type_to_memory_wasm64_unchecked(
-                memory,
-                stat_ptrsz + 8u,
-                static_cast<::std::underlying_type_t<::std::remove_cvref_t<decltype(fs_rights_base)>>>(fs_rights_base));
-
-            ::uwvm2::imported::wasi::wasip1::memory::store_basic_wasm_type_to_memory_wasm64_unchecked(
-                memory,
-                stat_ptrsz + 16u,
-                static_cast<::std::underlying_type_t<::std::remove_cvref_t<decltype(fs_rights_inheriting)>>>(fs_rights_inheriting));
-        }
+            for(::std::size_t i{};i<width;++i)
+            { encoded_fdstat[offset+i]=static_cast<::std::byte>(value>>(i*8u)); }
+        }};
+        put_word(0u,static_cast<::std::uint64_t>(fs_filetype),1u);
+        put_word(2u,static_cast<::std::uint64_t>(fs_flags),2u);
+        put_word(8u,static_cast<::std::uint64_t>(fs_rights_base),8u);
+        put_word(16u,static_cast<::std::uint64_t>(fs_rights_inheriting),8u);
+        [[maybe_unused]] auto guard=::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory);
+        if(!::uwvm2::imported::wasi::wasip1::memory::copy_guest_bytes_unlocked<true>(
+            memory,stat_ptrsz,encoded_fdstat,sizeof(encoded_fdstat),true))
+        { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
 
         return ::uwvm2::imported::wasi::wasip1::abi::errno_wasm64_t::esuccess;
     }

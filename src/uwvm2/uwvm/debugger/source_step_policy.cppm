@@ -1,4 +1,5 @@
 module;
+#include <limits>
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>

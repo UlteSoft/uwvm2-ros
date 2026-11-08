@@ -15,8 +15,8 @@ Source focus:
 | `--log-output` | `-log` | `[out|err|file <file:path>]` | Once | Core; file target gated on constrained platforms | Route main diagnostics to stdout, stderr, or file. |
 | `--log-color` | `-log-c` | `[enable|disable]` | Repeatable | Core | Force colored diagnostic output on or off. |
 | `--enable-warning` | None | `[all|parser]` | Repeatable | Core | Enable selected warning categories. |
-| `--disable-warning` | None | `[all|vm|untrusted-dl|dl|weak-symbol|depend|nt-path|toctou|runtime|runtime-compile-threads]` | Repeatable | Core; some categories gated | Disable selected warning categories. |
-| `--warning-as-error` | None | `[all|vm|parser|untrusted-dl|dl|weak-symbol|depend|nt-path|toctou|runtime|runtime-compile-threads]` | Repeatable | Core; some categories gated | Convert selected warning categories to fatal termination. |
+| `--disable-warning` | None | `[all|vm|untrusted-dl|dl|depend|nt-path|toctou|runtime|runtime-compile-threads]` | Repeatable | Core; some categories gated | Disable selected warning categories. |
+| `--warning-as-error` | None | `[all|vm|parser|untrusted-dl|dl|depend|nt-path|toctou|runtime|runtime-compile-threads]` | Repeatable | Core; some categories gated | Convert selected warning categories to fatal termination. |
 | `--log-verbose` | `-log-vb` | None | Once | Core | Enable verbose progress diagnostics. |
 | `--log-win32-use-ansi` | `-log-ansi` | None | Once | Legacy Win32 color configurations | Use ANSI escapes for colored logs instead of Win32 console attributes. |
 
@@ -87,7 +87,6 @@ Warning categories referenced by the current command-line source:
 | `parser` | Parser warnings. Enabled separately. |
 | `untrusted-dl` | Warnings about untrusted native dynamic-library loading contexts. |
 | `dl` | Native dynamic-library warnings when preload-DL support is compiled. |
-| `weak-symbol` | Weak-symbol warnings when weak-symbol support is compiled. |
 | `depend` | Dependency traversal/checking warnings. |
 | `nt-path` | Windows NT `::NT::` path resolution warnings. |
 | `toctou` | Windows 9x mount TOCTOU warning. |
@@ -125,7 +124,6 @@ Accepted values:
 - `vm`
 - `untrusted-dl`
 - `dl` when compiled
-- `weak-symbol` when compiled
 - `depend`
 - `nt-path` on Windows NT builds
 - `toctou` on Windows 9x style builds
@@ -155,7 +153,6 @@ Accepted values:
 - `parser`
 - `untrusted-dl`
 - `dl` when compiled
-- `weak-symbol` when compiled
 - `depend`
 - `nt-path` on Windows NT builds
 - `toctou` on Windows 9x style builds

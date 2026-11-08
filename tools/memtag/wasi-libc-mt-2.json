@@ -1,0 +1,12 @@
+{
+  "repository": "https://github.com/trcrsired/wasi-libc",
+  "revision": "dcf3a0e3f4c99a0e7fd69be7064091143256558a",
+  "branch": "mt-2",
+  "patch": "wasi-libc-mt-2-allocator.patch",
+  "configure": {
+    "ENABLE_MEMTAG": "ON",
+    "MALLOC": "dlmalloc",
+    "BUILD_SHARED": "OFF"
+  },
+  "scope": "wasi-libc exported malloc/free/calloc/realloc/aligned allocation; language-owned GC heaps require separate integration"
+}

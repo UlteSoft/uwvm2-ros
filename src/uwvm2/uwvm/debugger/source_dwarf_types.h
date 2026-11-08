@@ -47,20 +47,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
     };
     struct limits
     {
-        ::std::size_t max_sections{64u}, max_section_bytes{1024u * 1024u};
-        ::std::size_t max_total_bytes{8u * 1024u * 1024u};
-        ::std::size_t max_units{256u}, max_unit_bytes{256u * 1024u};
-        // Linked Rust/std metadata can exceed 65536 DIEs within these byte and
-        // unit bounds. This remains an actual parsed-entry cap, not a heap cap.
-        ::std::size_t max_dies{131072u}, max_depth{64u};
-        ::std::size_t max_string_bytes{4096u}, max_total_string_bytes{8u * 1024u * 1024u};
-        // All copied attribute uses count, including repeated declarations in
-        // standard-library CUs; their sum can exceed the raw .debug_str size.
-        ::std::size_t max_reference_hops{16u}, max_attributes{1024u * 1024u};
-        ::std::size_t max_ranges{65536u}, max_locations{65536u}, max_line_rows{65536u};
-        ::std::size_t max_expression_bytes{256u}, max_total_expression_bytes{1024u * 1024u};
-        ::std::size_t max_types{65536u}, max_type_edges{65536u}, max_array_dimensions{64u};
-        ::std::size_t max_location_pieces{64u}, max_composite_bits{524288u};
+        // The owning loader and checked input extents bound metadata storage.
+        // Aggregate capacities are opt-in caller quotas; defaults do not reject
+        // valid compiler output merely because another CU/type/string was added.
+        static constexpr ::std::size_t unlimited{(::std::numeric_limits<::std::size_t>::max)()};
+        ::std::size_t max_sections{unlimited}, max_section_bytes{unlimited}, max_total_bytes{unlimited};
+        ::std::size_t max_units{unlimited}, max_unit_bytes{unlimited}, max_dies{unlimited};
+        ::std::size_t max_string_bytes{unlimited}, max_total_string_bytes{unlimited}, max_attributes{unlimited};
+        ::std::size_t max_ranges{unlimited}, max_locations{unlimited}, max_line_rows{unlimited};
+        ::std::size_t max_expression_bytes{unlimited}, max_total_expression_bytes{unlimited};
+        ::std::size_t max_types{unlimited}, max_type_edges{unlimited}, max_array_dimensions{unlimited};
+        ::std::size_t max_location_pieces{unlimited}, max_composite_bits{unlimited};
+        // These recursive traversal guards still need an iterative traversal;
+        // they are not aggregate storage budgets and must not become unbounded
+        // while recursion can consume the native call stack.
+        ::std::size_t max_depth{64u}, max_reference_hops{16u};
     };
     enum class error : unsigned
     {
@@ -624,7 +625,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
         ::std::size_t original,::std::size_t& result) noexcept
     {
         result=no_record;
-        if(original>=types.size() || types.size()>65536u) { return false; }
+        if(original>=types.size()) { return false; }
         auto const& declaration{types[original]};
         if((declaration.kind!=type_kind::class_type && declaration.kind!=type_kind::structure) ||
            !cxx_language(declaration.language) || declaration.tinygo_producer || declaration.zig_producer ||

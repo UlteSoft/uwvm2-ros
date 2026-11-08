@@ -22,6 +22,7 @@
 module;
 
 export module uwvm2.imported.wasi.wasip1.memory;
+export import :checked_access;
 export import :allocator;
 export import :single_thread_allocator;
 export import :mmap;

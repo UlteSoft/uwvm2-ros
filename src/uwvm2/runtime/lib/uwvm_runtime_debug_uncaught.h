@@ -82,6 +82,7 @@
             // roots and caller identities are still real and remain alive for
             // the entire park. The wrapper's C++ catch is NEVER an ASM endpoint.
             g_debug_observer_active = true;
+            apply_guest_crash_policy(trap_kind::uncatched_int_tag);
             auto const stop{observer.on_uncaught(observer.context.get(), participant->identifier(), point.location)};
             g_debug_observer_active = false;
             if(!stop) { return; }

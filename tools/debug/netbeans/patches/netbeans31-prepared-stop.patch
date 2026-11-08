@@ -1,0 +1,54 @@
+--- a/ide/lsp.client/src/org/netbeans/modules/lsp/client/debugger/DAPDebugger.java
++++ b/ide/lsp.client/src/org/netbeans/modules/lsp/client/debugger/DAPDebugger.java
+@@ -269,7 +269,15 @@
+ 
+     @Override
+     public void stopped(StoppedEventArguments args) {
+-        //TODO: thread id is optional here(?!)
++        // A prepared target can be stopped before any guest thread exists.
++        // Preserve the paused session without inventing a thread/stack frame.
++        if (args.getThreadId() == null) {
++            currentThreadId = -1;
++            suspended.set(true);
++            DebuggerManager.getDebuggerManager().setCurrentSession(session);
++            cs.fireChange();
++            return;
++        }
+         currentThreadId = args.getThreadId();
+         suspended.set(true);
+         DAPThread currentThread = getCurrentThread();
+@@ -318,7 +326,9 @@
+     public void resume() {
+         ContinueArguments args = new ContinueArguments();
+         //some servers (e.g. the GraalVM DAP server) require the threadId to be always set, even if singleThread is set to false
+-        args.setThreadId(currentThreadId);
++        // UWVM uses zero only for a verified empty prepared stop. The adapter
++        // rejects zero once a participant exists; it is not a guest identity.
++        args.setThreadId(currentThreadId < 0 ? 0 : currentThreadId);
+         args.setSingleThread(Boolean.FALSE);
+ 
+         continued();
+@@ -326,6 +336,7 @@
+     }
+ 
+     public void stepInto() {
++        if (currentThreadId < 0) { return; }
+         StepInArguments args = new StepInArguments();
+ 
+         args.setSingleThread(true);
+@@ -337,6 +348,7 @@
+     }
+ 
+     public void stepOver() {
++        if (currentThreadId < 0) { return; }
+         NextArguments args = new NextArguments();
+ 
+         args.setSingleThread(true);
+@@ -348,6 +360,7 @@
+     }
+ 
+     public void stepOut() {
++        if (currentThreadId < 0) { return; }
+         StepOutArguments args = new StepOutArguments();
+ 
+         args.setSingleThread(true);

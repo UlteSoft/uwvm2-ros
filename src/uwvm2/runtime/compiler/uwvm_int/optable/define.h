@@ -403,6 +403,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
     /// @note These callbacks are invoked from interpreter opfuncs, so their function-pointer ABI must stay in lockstep with
     ///       `uwvm_interpreter_opfunc_t`: Windows x86_64 GNU/Clang uses SysV, and all i686 targets use fastcall.
     using atomic_wait_trap_func_t = void(UWVM_INTERPRETER_OPFUNC_TYPE_MACRO*)(unsigned) noexcept;
+    using memtag_trap_func_t = void(UWVM_INTERPRETER_OPFUNC_TYPE_MACRO*)(
+        ::std::size_t, ::std::uint64_t, ::std::uint64_t, ::std::uint32_t, ::std::uint32_t) noexcept;
+    using memtag_operation_trap_func_t = void(UWVM_INTERPRETER_OPFUNC_TYPE_MACRO*)(unsigned, unsigned) noexcept;
     using unreachable_func_t = void(UWVM_INTERPRETER_OPFUNC_TYPE_MACRO*)() noexcept;
 
     using memory_out_of_bounds_func_t = void(UWVM_INTERPRETER_OPFUNC_TYPE_MACRO*)(::uwvm2::object::memory::error::memory_error_t const&) noexcept;
@@ -447,6 +450,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
     {
         // Indicates the module number of the currently compiled WASM, used for external function calls.
         ::std::size_t curr_wasm_id{};
+        // Immutable host-selected emission policy; normal accesses remain untagged
+        // unless their resolved native memory owner has an enabled shadow.
+        bool execute_memtag{true};
     };
 
     template <uwvm_int_stack_top_type... Type>

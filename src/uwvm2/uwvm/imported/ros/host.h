@@ -137,14 +137,8 @@ namespace uwvm2::uwvm::imported::ros
         };
         inline bool memory_range(::std::uint32_t memory, ::std::uint64_t offset, ::std::uint64_t length) noexcept
         {
-            auto const count{runtime::preload_memory_descriptor_count_host_api()};
-            for(::std::size_t i{}; i != count; ++i)
-            {
-                ::uwvm2::uwvm::wasm::type::uwvm_preload_memory_descriptor_t descriptor{};
-                if(runtime::preload_memory_descriptor_at_host_api(i,&descriptor) && descriptor.memory_index == memory)
-                { return offset <= descriptor.byte_length && length <= descriptor.byte_length-offset && length <= SIZE_MAX; }
-            }
-            return false;
+            return length <= SIZE_MAX && runtime::preload_memory_range_host_api(
+                memory,offset,static_cast<::std::size_t>(length));
         }
         inline bool observed_read(::std::uint32_t memory,::std::uint64_t offset,void* bytes,::std::size_t size) noexcept
         {

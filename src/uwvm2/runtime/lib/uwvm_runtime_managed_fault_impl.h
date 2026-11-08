@@ -31,6 +31,7 @@ bool runtime_managed_fault::raise(llvm_jit_trap_kind kind)
         case llvm_jit_trap_kind::null_reference:
         case llvm_jit_trap_kind::array_out_of_bounds:
         case llvm_jit_trap_kind::gc_allocation_failure:
+        case llvm_jit_trap_kind::memtag_violation:
         case llvm_jit_trap_kind::cast_failure: break;
         default: return false;
     }
@@ -81,6 +82,7 @@ bool runtime_managed_fault::raise(llvm_jit_trap_kind kind)
         case llvm_jit_trap_kind::array_out_of_bounds: diagnostic = trap_kind::array_out_of_bounds; break;
         case llvm_jit_trap_kind::gc_allocation_failure: diagnostic = trap_kind::gc_allocation_failure; break;
         case llvm_jit_trap_kind::cast_failure: diagnostic = trap_kind::cast_failure; break;
+        case llvm_jit_trap_kind::memtag_violation: diagnostic = trap_kind::memtag_violation; break;
         default: break;
     }
     // The DEV terminal observer borrows the still-live operand/activation
@@ -88,7 +90,9 @@ bool runtime_managed_fault::raise(llvm_jit_trap_kind kind)
     // before the managed signal unwinds those frames. RELEASE has no terminal
     // observer, and the observer independently authenticates the current leaf.
     // Continuing the terminal stop still follows managed fault termination.
+    apply_guest_crash_policy(diagnostic);
     debug_observe_actual_trap(diagnostic);
+    apply_guest_crash_policy(diagnostic,true);
     // Serialize this already validated Guest fault against the first authorized
     // process exit. An exit that won first must retain its explicit wait owners;
     // a late Guest trap cannot cancel them by closing the execution domain.
@@ -160,15 +164,17 @@ bool runtime_managed_fault::accept_uncaught(::uwvm2::runtime::exception::guest_e
         // This typed catch ran genuine native cleanup. No debug ledger exists
         // in the ordinary profile; GC roots must still all have been retired.
         if(::uwvm2::runtime::gc::current_root_frames() != nullptr) { return false; }
+        apply_guest_crash_policy(trap_kind::uncatched_int_tag,true);
         ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
             u8"uwvm: [error] uncaught Guest exception; execution stopped");
-        ::uwvm2::utils::thread::process_exit::request_process_exit(126u);
+        ::uwvm2::utils::thread::process_exit::request_process_exit(::uwvm2::runtime::diagnostic::crash::exit_status());
     }
 #endif
     if(code->debug_source_runtime_epoch!=current_runtime_generation()) { return false; }
     // Native cleanup must have retired every activation, GC root and shadow
     // frame. This same private stop orders against the FIRST proc_exit claim,
     // so a late uncaught tag cannot cancel an already selected wait owner.
+    apply_guest_crash_policy(trap_kind::uncatched_int_tag,true);
     if(!stop_after_unwind()) { return false; }
     diagnostic_detail::fault(0x10000u); // Typed uncaught Wasm exception; no payload retained.
     ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
@@ -199,6 +205,24 @@ extern "C++" UWVM_NOINLINE void llvm_jit_managed_runtime_trap(llvm_jit_trap_kind
     if(runtime_managed_fault::raise(kind)) { return; }
 #endif
     llvm_jit_runtime_trap(kind, frame, stack);
+}
+extern "C++" UWVM_NOINLINE void llvm_jit_managed_memtag_trap(::std::size_t memory_index,
+    ::std::uint64_t pointer, ::std::uint64_t granule, ::std::uint32_t pointer_tag,
+    ::std::uint32_t allocation_tag) UWVM_THROWS
+{
+    // All memory pins are released by the checked bridge before this entry.
+    // Print the same numeric/color evidence before the terminal debug stop and
+    // native unwind; the ordinary fatal fallback must not erase that evidence.
+    print_memtag_fault(memory_index, pointer, granule, pointer_tag, allocation_tag);
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            namespace crash=::uwvm2::runtime::diagnostic::crash;
+            crash::memory_detail const evidence{memory_index,pointer,granule,pointer_tag,allocation_tag};
+            crash::report(crash::category::memtag,"memory tag mismatch",2u,UINT64_MAX,UINT64_MAX,UINT64_MAX,&evidence);
+#endif
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
+    if(runtime_managed_fault::raise(llvm_jit_trap_kind::memtag_violation)) { return; }
+#endif
+    llvm_jit_runtime_trap(llvm_jit_trap_kind::memtag_violation, 0u, 0u);
 }
 extern "C++" UWVM_NOINLINE void llvm_jit_managed_memory_trap(::std::size_t index,
     ::std::uint_least64_t fixed, ::std::uint_least64_t offset, ::std::uint_least32_t overflow,

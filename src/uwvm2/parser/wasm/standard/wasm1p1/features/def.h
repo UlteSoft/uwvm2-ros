@@ -93,6 +93,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1p1::features
         bool disable_exceptions{true};
         // Threads is an independent extension, not part of the Core 3.0 feature set.
         bool disable_threads{true};
+        // Independent, nonstandard WasmMTE extension; accepted by default.
+        // Core-version presets do not change this explicit extension policy.
+        bool disable_memtag_extension{};
 
         bool explicit_feature_mvp{};
         bool explicit_feature_wasm1p1{};

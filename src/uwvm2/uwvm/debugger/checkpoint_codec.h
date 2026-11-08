@@ -16,12 +16,13 @@
 #endif
 UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::checkpoint
 {
-    inline constexpr ::std::uint16_t database_format_version{6u};
-    inline constexpr ::std::uint64_t database_magic{0x0036545350435755u}; // UWCPST6\0, canonical LE.
+    inline constexpr ::std::uint16_t database_format_version{7u};
+    inline constexpr ::std::uint64_t database_magic{0x0037545350435755u}; // UWCPST7\0, canonical LE.
+    inline constexpr ::std::uint64_t legacy_database_magic6{0x0036545350435755u}; // Missing allocation tags; never upgraded.
     inline constexpr ::std::uint64_t legacy_database_magic5{0x0035545350435755u}; // State5 is never silently upgraded.
     inline constexpr ::std::uint64_t legacy_database_magic4{0x0034545350435755u}; // State4 is never silently upgraded.
     inline constexpr ::std::uint64_t legacy_database_magic3{0x0033424450435755u}; // Never migrated.
-    inline constexpr ::std::uint64_t commit_magic{0x3645545350435755u}; // UWCPSTE6.
+    inline constexpr ::std::uint64_t commit_magic{0x3745545350435755u}; // UWCPSTE7.
     inline constexpr ::std::size_t header_bytes{128u}, footer_bytes{48u}, object_header_bytes{96u}, value_bytes{48u};
     namespace codec_details
     {
@@ -223,7 +224,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::checkpoint
         state candidate{};
         if(!input.get<64>(magic) || !input.get<16>(version) || !input.get<16>(header) || !input.get<32>(endian) || !input.get<64>(reserved))
         { return error::truncated; }
-        if(magic == legacy_database_magic3 || magic == legacy_database_magic4 || magic == legacy_database_magic5) { return error::unsupported_version; }
+        if(magic == legacy_database_magic6 || magic == legacy_database_magic3 || magic == legacy_database_magic4 || magic == legacy_database_magic5) { return error::unsupported_version; }
         if(magic != database_magic || endian != 0x04030201u || reserved != 0u) { return error::malformed; }
         if(version != database_format_version || header != header_bytes) { return error::unsupported_version; }
         if(!input.bytes(candidate.recording_id) || !input.get<64>(candidate.checkpoint_id) || !input.get<64>(candidate.parent_checkpoint_id) ||

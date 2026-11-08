@@ -50,7 +50,7 @@ extern "C++"
         };
     private:
         static_assert(sizeof(::std::size_t) <= sizeof(::std::uint64_t));
-        static constexpr ::std::size_t module_limit{4096u}, segment_limit{1048576u}, thread_limit{256u};
+        static constexpr ::std::size_t module_limit{4096u}, segment_limit{1048576u};
         static constexpr ::std::size_t payload_limit{256u * 1024u * 1024u};
         lifetime_lease const& lease_;
         runtime_state_publication_guard const& publication_;
@@ -85,7 +85,7 @@ extern "C++"
             (void)publication_;
             return lease_ && !lease_.stop_requested() && closed_ && epoch_ != 0u &&
                 current_runtime_generation() == epoch_ && get_runtime_state_publication_depth() == 1u &&
-                !cohort_.empty() && cohort_.size() <= thread_limit &&
+                !cohort_.empty() &&
                 same_owner(profile_, g_runtime.checkpoint_profile) &&
                 g_runtime.compiled_all.load(::std::memory_order_acquire);
         }

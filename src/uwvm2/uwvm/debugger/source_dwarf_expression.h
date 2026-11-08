@@ -9,6 +9,7 @@
 # include <fast_io.h>
 # include <cstddef>
 # include <cstdint>
+# include <limits>
 # include <span>
 # include <string>
 # include <string_view>
@@ -28,7 +29,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
         ::std::span<::std::byte const> expression, ::std::span<::std::uint_least8_t const> boundaries,
         ::std::uint64_t local_index) noexcept
     {
-        if(expression.empty() || expression.size() > 65536u || local_index >= 256u ||
+        // The retained expression and its authenticated boundary bitmap bound
+        // this scan. Wasm local indices use u32; no smaller display-only cap is
+        // needed for a large valid body or a high-index immutable local.
+        if(expression.empty() || local_index > (::std::numeric_limits<::std::uint32_t>::max)() ||
            boundaries.size() != expression.size()/8u + (expression.size()%8u != 0u))
         { return immutable_local_status::unavailable; }
         if(expression.size()%8u != 0u &&
@@ -67,9 +71,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
     };
     struct source_expression_limits
     {
-        // Callers may LOWER these limits. Raising them cannot widen the hard
-        // byte/operation/recursive-nesting ceilings used by this parser.
-        ::std::size_t max_expression_bytes{4096u}, max_steps{32u}, max_nesting{32u};
+        // Optional caller budgets. Owned input and dynamic continuation storage
+        // bound the default parser; nesting never consumes the native call stack.
+        ::std::size_t max_expression_bytes{(::std::numeric_limits<::std::size_t>::max)()},
+            max_steps{(::std::numeric_limits<::std::size_t>::max)()},
+            max_nesting{(::std::numeric_limits<::std::size_t>::max)()};
     };
     namespace expression_details
     {
@@ -109,65 +115,107 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                 if(pending.steps.size() >= max_steps) { return object_selector_error::limit_exceeded; }
                 pending.steps.push_back(::std::move(step)); return object_selector_error::none;
             }
-            [[nodiscard]] object_selector_error primary(::std::size_t depth)
+            enum class continuation_kind { dereference, group, length, capacity };
+            struct continuation
             {
-                space();
-                if(cursor >= text.size()) { return object_selector_error::malformed; }
-                if(text[cursor] == '(')
+                continuation_kind kind{};
+                bool postfix{};
+            };
+            // This grammar has one producer root. An explicit continuation for
+            // each prefix/group replaces recursive primary/unary calls. Every
+            // push consumes an input byte; every unwind removes a continuation.
+            // No guest evaluation or pointer authority is created by parsing.
+            [[nodiscard]] object_selector_error reference(::std::size_t depth, bool primary_only)
+            {
+                ::std::vector<continuation> continuations{};
+                auto const remaining{depth < max_nesting ? max_nesting - depth : 0u};
+                bool unary_operand{!primary_only};
+                for(;;)
                 {
-                    if(depth >= max_nesting) { return object_selector_error::limit_exceeded; }
-                    ++cursor; // [safe] opening parenthesis checked at cursor < size.
-                    auto const result{unary(depth + 1u)}; // [safe] depth < max_nesting <= 32 before increase.
-                    if(result != object_selector_error::none) { return result; }
+                    space();
+                    if(cursor >= text.size()) { return object_selector_error::malformed; }
+                    if(unary_operand && text[cursor] == '*')
+                    {
+                        if(continuations.size() >= remaining) { return object_selector_error::limit_exceeded; }
+                        continuations.push_back({continuation_kind::dereference, false});
+                        ++cursor;
+                        continue;
+                    }
+                    if(text[cursor] == '(')
+                    {
+                        if(continuations.size() >= remaining) { return object_selector_error::limit_exceeded; }
+                        continuations.push_back({continuation_kind::group, unary_operand});
+                        ++cursor;
+                        unary_operand = true;
+                        continue;
+                    }
+                    auto const begin{cursor}; ::std::string_view root{};
+                    if(!identifier(false, root)) { return object_selector_error::unsupported_expression; }
+                    while(cursor < text.size() && text[cursor] == ':')
+                    {
+                        if(text.size() - cursor < 2u || text[cursor + 1u] != ':') { return object_selector_error::malformed; }
+                        cursor += 2u;
+                        ::std::string_view segment{};
+                        if(!identifier(false, segment)) { return object_selector_error::malformed; }
+                    }
+                    if((root == "len" || root == "cap") && cursor - begin == root.size())
+                    {
+                        auto const root_end{cursor};
+                        space();
+                        if(cursor < text.size() && text[cursor] == '(')
+                        {
+                            if(continuations.size() >= remaining) { return object_selector_error::limit_exceeded; }
+                            continuations.push_back({root == "len" ? continuation_kind::length : continuation_kind::capacity, unary_operand});
+                            ++cursor;
+                            unary_operand = true;
+                            continue;
+                        }
+                        cursor = root_end; // Failed builtin lookahead retains the exact variable spelling.
+                    }
+                    pending.root_name = ::fast_io::concat_std(text.substr(begin, cursor - begin));
+                    if(unary_operand)
+                    {
+                        auto const result{postfix_tail()};
+                        if(result != object_selector_error::none) { return result; }
+                    }
+                    break;
+                }
+                while(!continuations.empty())
+                {
+                    auto const next{continuations.back()};
+                    continuations.pop_back();
+                    bool const builtin{!pending.steps.empty() &&
+                        (pending.steps.back().kind == source_expression_step_kind::go_length ||
+                         pending.steps.back().kind == source_expression_step_kind::go_capacity)};
+                    if(next.kind == continuation_kind::dereference)
+                    {
+                        if(builtin) { return object_selector_error::unsupported_expression; }
+                        // *p[1] => index, dereference; (*p)[1] => dereference, index.
+                        auto const result{append({source_expression_step_kind::dereference, {}, {}})};
+                        if(result != object_selector_error::none) { return result; }
+                        continue;
+                    }
+                    if(next.kind != continuation_kind::group && builtin)
+                    { return object_selector_error::unsupported_expression; }
                     space();
                     if(cursor >= text.size() || text[cursor] != ')') { return object_selector_error::malformed; }
-                    ++cursor; // [safe] checked closing parenthesis consumed, may reach end.
-                    return object_selector_error::none;
-                }
-                auto const begin{cursor}; ::std::string_view root{};
-                if(!identifier(false, root)) { return object_selector_error::unsupported_expression; }
-                while(cursor < text.size() && text[cursor] == ':')
-                {
-                    if(text.size() - cursor < 2u || text[cursor + 1u] != ':') { return object_selector_error::malformed; }
-                    cursor += 2u; // [safe] both namespace colons proved in this same input before advance.
-                    ::std::string_view segment{};
-                    if(!identifier(false, segment)) { return object_selector_error::malformed; }
-                }
-                if((root == "len" || root == "cap") && cursor - begin == root.size())
-                {
-                    auto const root_end{cursor};
-                    space();
-                    if(cursor < text.size() && text[cursor] == '(')
+                    ++cursor;
+                    if(next.kind != continuation_kind::group)
                     {
-                        if(depth >= max_nesting) { return object_selector_error::limit_exceeded; }
-                        ++cursor;
-                        auto const result{unary(depth + 1u)};
+                        auto const result{append({next.kind == continuation_kind::length ?
+                            source_expression_step_kind::go_length : source_expression_step_kind::go_capacity, {}, {}})};
                         if(result != object_selector_error::none) { return result; }
-                        // Only a producer reference is an argument. No nested
-                        // builtin, call, assignment or arithmetic is executed.
-                        for(auto const& step : pending.steps)
-                        {
-                            if(step.kind == source_expression_step_kind::go_length || step.kind == source_expression_step_kind::go_capacity)
-                            { return object_selector_error::unsupported_expression; }
-                        }
-                        space();
-                        if(cursor >= text.size() || text[cursor] != ')') { return object_selector_error::malformed; }
-                        ++cursor;
-                        return append({root == "len" ? source_expression_step_kind::go_length : source_expression_step_kind::go_capacity, {}, {}});
                     }
-                    cursor = root_end; // Failed builtin lookahead retains the exact variable spelling.
+                    if(next.postfix)
+                    {
+                        auto const result{postfix_tail()};
+                        if(result != object_selector_error::none) { return result; }
+                    }
                 }
-                // [input ... begin(namespace root) ... cursor ... end]
-                // [safe                                             ] unsafe (one-past)
-                //            ^^ exact spelling, bounded by identifier/namespace scans; no rewrite/fallback.
-                pending.root_name = ::fast_io::concat_std(text.substr(begin, cursor - begin));
                 return object_selector_error::none;
             }
-            [[nodiscard]] object_selector_error postfix(::std::size_t depth)
-            {
-                auto const result{primary(depth)}; if(result != object_selector_error::none) { return result; }
-                return postfix_tail();
-            }
+            [[nodiscard]] object_selector_error primary(::std::size_t depth)
+            { return reference(depth, true); }
             // Continue only a previously parsed producer-reference path. The
             // scalar caller leaves a non-arrow minus for its arithmetic parser.
             [[nodiscard]] object_selector_error postfix_tail(bool scalar_boundary = false)
@@ -231,20 +279,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                 }
             }
             [[nodiscard]] object_selector_error unary(::std::size_t depth)
-            {
-                space(); if(cursor >= text.size()) { return object_selector_error::malformed; }
-                if(text[cursor] != '*') { return postfix(depth); } // [safe] cursor checked before byte classification.
-                if(depth >= max_nesting) { return object_selector_error::limit_exceeded; }
-                ++cursor; // [safe] checked '*' consumed; no source pointer is modified.
-                auto const result{unary(depth + 1u)}; // [safe] depth < max_nesting <= 32 before increase.
-                if(result != object_selector_error::none) { return result; }
-                if(!pending.steps.empty() && (pending.steps.back().kind == source_expression_step_kind::go_length ||
-                    pending.steps.back().kind == source_expression_step_kind::go_capacity))
-                { return object_selector_error::unsupported_expression; }
-                // Postfix binds more tightly: *p[1] => [1], dereference;
-                // (*p)[1] => dereference, [1]. This is intent, NOT a read.
-                return append({source_expression_step_kind::dereference, {}, {}});
-            }
+            { return reference(depth, false); }
         };
     }
     // Cold read-only syntax only. Exact ASCII namespace roots, Rust numeric
@@ -258,14 +293,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
     {
         out = {};
         if(text.empty()) { return object_selector_error::malformed; }
-        if(text.size() > expression_details::bounded(cap.max_expression_bytes, 4096u))
+        if(text.size() > cap.max_expression_bytes)
         { return object_selector_error::limit_exceeded; }
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
         try
         {
 #endif
-            expression_details::parser state{text, {}, 0u, expression_details::bounded(cap.max_steps, 32u),
-                expression_details::bounded(cap.max_nesting, 32u)};
+            expression_details::parser state{text, {}, 0u, cap.max_steps, cap.max_nesting};
             auto const status{state.unary(0u)}; if(status != object_selector_error::none) { return status; }
             state.space();
             if(state.cursor != text.size()) { return object_selector_error::unsupported_expression; }

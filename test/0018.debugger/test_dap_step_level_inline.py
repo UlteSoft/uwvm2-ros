@@ -37,6 +37,7 @@ class Broker:
         return text + ("  native-pc=0x1004\n" if self.native else "  source src/nested.cpp:11:1\n")
 
     def request(self, command):
+        if command == "permissions": return "permissions full\n"
         self.commands.append(command)
         if command == "status":
             return self.status()
@@ -218,6 +219,7 @@ class StepInlineTests(unittest.TestCase):
             self.assertEqual(self.send("scopes", frameId=row["id"])["body"]["scopes"], [])
         scopes = self.send("scopes", frameId=frames[2]["id"])["body"]["scopes"]
         expected = ["Wasm locals", "Source variables", "WASIp1 arguments", "WASIp1 environment", "WASIp1 descriptors", "WASIp1 preopens"]
+        expected += ["WASIp1 calls (recorded)", "ROS1 calls (recorded)", "ROS2 calls (recorded)"]
         if hasattr(self.adapter, "ros_scope_stops"):
             expected += ["ROS capabilities (process-owned)", "ROS instances (backend sessions)", "ROS event queues (metadata only)"]
             selections = ("capabilities", "instances", "events")
@@ -240,7 +242,7 @@ class StepInlineTests(unittest.TestCase):
         self.assertFalse(self.send("disassemble", memoryReference=label, instructionCount=1)["success"])
         # Global DAP support never grants native-code authority to an inline
         # display label; the explicit inline disassemble rejection above remains.
-        self.assertTrue(self.send("initialize")["body"].get("supportsDisassembleRequest", False))
+        self.assertFalse(self.send("initialize")["body"].get("supportsDisassembleRequest", False))
         self.assertNotIn("locals source 1", self.broker.commands)
         self.assertFalse(any(command.startswith("memory ") for command in self.broker.commands))
 

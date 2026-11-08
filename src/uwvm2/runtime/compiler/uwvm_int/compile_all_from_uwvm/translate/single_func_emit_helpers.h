@@ -1,7 +1,29 @@
 ﻿bool const runtime_log_on{uwvm2::uwvm::io::enable_runtime_log};
+// Tag identity belongs to the resolved native owner, including import chains.
+// Keep unchecked legacy memory fusions out of tagged functions until a tagged
+// fusion is emitted explicitly; uninstrumented owners keep every old fast path.
+[[maybe_unused]] bool const module_has_memtag_memory{[&]() noexcept
+{
+    for(auto const& memory:curr_module.local_defined_memory_vec_storage)
+    { if(memory.memory.memtag_shadow.enabled()) { return true; } }
+    using imported_t = ::uwvm2::uwvm::runtime::storage::imported_memory_storage_t;
+    using link_kind = imported_t::imported_memory_link_kind;
+    for(auto const& imported:curr_module.imported_memory_vec_storage)
+    {
+        auto const* memory{::std::addressof(imported)};
+        while(memory!=nullptr)
+        {
+            if(memory->link_kind==link_kind::imported) { memory=memory->target.imported_ptr; continue; }
+            if(memory->link_kind==link_kind::defined && memory->target.defined_ptr!=nullptr &&
+               memory->target.defined_ptr->memory.memtag_shadow.enabled()) { return true; }
+            break;
+        }
+    }
+    return false;
+}()};
 using runtime_uwvm_int_opcode_conbination_level_t = ::uwvm2::uwvm::runtime::runtime_mode::runtime_uwvm_int_opcode_conbination_level_t;
 #if defined(UWVM_ENABLE_UWVM_INT_COMBINE_OPS)
-[[maybe_unused]] auto const runtime_uwvm_int_opcode_conbination_level{::uwvm2::uwvm::runtime::runtime_mode::global_runtime_uwvm_int_opcode_conbination_level};
+[[maybe_unused]] auto const runtime_uwvm_int_opcode_conbination_level{module_has_memtag_memory ? runtime_uwvm_int_opcode_conbination_level_t::disable : ::uwvm2::uwvm::runtime::runtime_mode::global_runtime_uwvm_int_opcode_conbination_level};
 #else
 [[maybe_unused]] constexpr auto runtime_uwvm_int_opcode_conbination_level{runtime_uwvm_int_opcode_conbination_level_t::disable};
 #endif
@@ -19,14 +41,14 @@ bool const runtime_uwvm_int_opcode_conbination_enabled{
                                                                  !::uwvm2::uwvm::runtime::runtime_mode::runtime_uwvm_int_disable_delay_local};
 [[maybe_unused]] bool const runtime_uwvm_int_instruction_reorder_enabled{
 #if defined(UWVM_ENABLE_UWVM_INT_INSTRUCTION_REORDER)
-    ::uwvm2::uwvm::runtime::runtime_mode::runtime_uwvm_int_enable_instruction_reorder
+    !module_has_memtag_memory && ::uwvm2::uwvm::runtime::runtime_mode::runtime_uwvm_int_enable_instruction_reorder
 #else
     false
 #endif
 };
 [[maybe_unused]] bool const runtime_uwvm_int_loop_unwind_enabled{
 #if defined(UWVM_ENABLE_UWVM_INT_LOOP_UNWIND)
-    !::uwvm2::uwvm::runtime::runtime_mode::runtime_uwvm_int_disable_loop_unwind
+    !module_has_memtag_memory && !::uwvm2::uwvm::runtime::runtime_mode::runtime_uwvm_int_disable_loop_unwind
 #else
     false
 #endif

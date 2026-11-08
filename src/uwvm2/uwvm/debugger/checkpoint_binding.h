@@ -33,7 +33,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::checkpoint::binding
         wasm_mismatch, replacement_mismatch, cache_mode_mismatch, cache_mismatch,
         quota_exceeded
     };
-    inline constexpr ::std::uint32_t identity_revision{2u}, envelope_version{4u}, state_version{6u};
+    inline constexpr ::std::uint32_t identity_revision{2u}, envelope_version{4u}, state_version{7u};
     inline constexpr ::std::uint32_t cache_format_revision{7u};
     inline constexpr ::std::uint32_t canonical_byte_order{1u}; // canonical LE on LE AND BE native hosts
     struct build

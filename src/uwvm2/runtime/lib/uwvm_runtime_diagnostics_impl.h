@@ -50,7 +50,7 @@ namespace diagnostic_detail
 }
 extern "C++" bool runtime_diagnostic_initialize_host_api() noexcept
 {
-    if(!::uwvm2::utils::control::management::runtime_policy.release_sealed() || get_runtime_execution_entry_depth() != 0u ||
+    if(!::uwvm2::utils::control::debug_permissions::diagnostics_allowed() || get_runtime_execution_entry_depth() != 0u ||
        diagnostic_detail::enabled.load(::std::memory_order_acquire)) { return false; }
     diagnostic_snapshot next{};
     auto const& main{::uwvm2::uwvm::wasm::storage::active_execute_wasm()};

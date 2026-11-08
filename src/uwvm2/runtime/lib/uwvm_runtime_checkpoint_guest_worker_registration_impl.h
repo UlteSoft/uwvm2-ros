@@ -30,10 +30,10 @@ extern "C++"
     ::std::size_t runtime_checkpoint_guest_worker_bridge::register_actual_worker(mutable_owner const& actual)
     {
         ::std::lock_guard lock{registry_mutex_};
-        ::std::size_t slot{256u};
-        for(::std::size_t index{};index!=256u;++index)
+        auto slot{registry_.size()};
+        for(::std::size_t index{};index!=registry_.size();++index)
         { if(!registry_[index].live) { slot=index;break; } }
-        if(slot==256u) { return slot; }
+        if(slot==registry_.size()) { registry_.emplace_back(); }
         // ALL fallible history allocation precedes live registration and OS
         // creation. No allocation is introduced in physical join/publication.
         bool reused{};
@@ -49,7 +49,7 @@ extern "C++"
         mutable_owner const& actual,::std::size_t slot) noexcept
     {
         ::std::lock_guard lock{registry_mutex_};
-        if(slot>=256u || !same_owner(registry_[slot].live,actual)) { return; }
+        if(slot>=registry_.size() || !same_owner(registry_[slot].live,actual)) { return; }
         // Actual factory still strongly pins this never-started object. Remove
         // only its own canonical entry; concurrent factories keep their owners.
         for(auto& canonical:canonical_registry_)
@@ -95,7 +95,7 @@ extern "C++"
            !g_runtime.checkpoint_host_enabled.load(::std::memory_order_acquire))
         { return {result::invalid_context, {}}; }
         mutable_owner actual{};
-        ::std::size_t slot_index{256u};
+        ::std::size_t slot_index{(::std::numeric_limits<::std::size_t>::max)()};
 #ifdef UWVM_CPP_EXCEPTIONS
         try
 #endif
@@ -107,7 +107,6 @@ extern "C++"
             if(admitted != runtime_checkpoint_host_bridge::status::ok)
             { return {result::admission_closed, {}}; }
             slot_index = register_actual_worker(actual);
-            if(slot_index == 256u) { return {result::quota, {}}; }
             // Allocate/construct the final unique native owner directly. The
             // selected FastIO constructors throw only before a thread is owned;
             // after OS create succeeds their remaining assignments do not throw.
@@ -127,7 +126,7 @@ extern "C++"
                 actual->published_.store(true, ::std::memory_order_release);
                 return {result::started, actual};
             }
-            if(slot_index != 256u)
+            if(slot_index != (::std::numeric_limits<::std::size_t>::max)())
             {
                 unregister_unstarted_worker(actual,slot_index);
             }
@@ -414,7 +413,7 @@ extern "C++"
            !same_owner(host, g_runtime.checkpoint_host_state) ||
            !source_type::has_canonical_owner(source) || !source->initialized_from_actual_state()) { return {}; }
         mutable_owner actual{};
-        ::std::size_t slot_index{256u};
+        ::std::size_t slot_index{(::std::numeric_limits<::std::size_t>::max)()};
         try
         {
             actual = mutable_owner{new worker{control, source, profile, host, epoch, ::std::move(state), body,
@@ -422,7 +421,6 @@ extern "C++"
             // No ordinary try_enter and NO initial startup host operation. The
             // actual resume entry creates its closed-token lease and both ledgers.
             slot_index = register_actual_worker(actual);
-            if(slot_index == 256u) { return {}; }
             actual->native_.reset(new ::fast_io::native_thread{[actual]() noexcept { actual_worker_body(actual); }});
             actual->published_.store(true, ::std::memory_order_release); return actual;
         }
@@ -430,18 +428,21 @@ extern "C++"
         {
             if(actual && actual->native_)
             { actual->published_.store(true, ::std::memory_order_release); return actual; }
-            if(slot_index != 256u)
+            if(slot_index != (::std::numeric_limits<::std::size_t>::max)())
             {
                 unregister_unstarted_worker(actual,slot_index);
             }
             return {};
         }
     }
-    runtime_checkpoint_guest_worker_bridge::pending_join_owner runtime_checkpoint_guest_worker_bridge::prepare_join_storage() noexcept
+    runtime_checkpoint_guest_worker_bridge::pending_join_owner runtime_checkpoint_guest_worker_bridge::prepare_join_storage(::std::size_t count) noexcept
     {
         try
         {
             auto storage{pending_join_owner{new join_cohort{}}};
+            // Both actual-owner vectors are allocated before retirement begins.
+            // The later sealed join path performs no growth or native creation.
+            storage->members_.resize(count); storage->tentative_.resize(count);
             storage->canonical_ = storage; return storage;
         }
         catch(...) { return {}; }
@@ -457,14 +458,20 @@ extern "C++"
         auto const& request{retirement::actual_request_};
         if(!same_owner(request, supplied) || request->phase != retirement::request_phase::prepared ||
            request->epoch != current_runtime_generation() || request->members.empty() ||
-           request->members.size() > 256u ||
+           request->members.size() != storage->members_.size() ||
+           request->members.size() != storage->tentative_.size() ||
            !runtime_checkpoint_host_bridge::current_coherent_state(request->configuration, request->closed))
         { return false; }
         auto source{::uwvm2::uwvm::runtime::full::selected_full_source_owner_pin()};
         if(!source || !source_type::has_canonical_owner(source) ||
            !same_owner(request->control, g_runtime.debug_pause_control) ||
            !same_owner(request->profile, g_runtime.checkpoint_profile)) { return false; }
-        mutable_owner tentative[256u]{};
+        auto& tentative{storage->tentative_};
+        struct clear_tentative
+        {
+            ::std::vector<mutable_owner>& values;
+            ~clear_tentative() { for(auto& value:values) { value.reset(); } }
+        } cleanup{tentative};
         ::std::size_t count{};
         ::std::lock_guard registry_lock{registry_mutex_};
         // Enumerate our OWN actual native registry, never a supplied thread span.
@@ -476,7 +483,7 @@ extern "C++"
             if(!actual || actual->epoch_ != request->epoch) { continue; }
             if(!actual_tuple_current(*actual) || !same_owner(actual->source_, source) ||
                actual->participant_ == nullptr || actual->participant_id_ == 0u ||
-               !actual->published_.load(::std::memory_order_acquire) || !actual->native_ || count == 256u)
+               !actual->published_.load(::std::memory_order_acquire) || !actual->native_ || count == tentative.size())
             { return false; }
             ::std::size_t matches{};
             for(auto const& member : request->members)
@@ -563,7 +570,7 @@ extern "C++" llvm_jit_debug_guest_worker_launch_result runtime_launch_llvm_jit_d
     ::std::shared_ptr<::uwvm2::utils::thread::cooperative_pause_domain> const& control,
     ::std::shared_ptr<void> state, llvm_jit_debug_guest_worker_body body) noexcept
 {
-    if(!::uwvm2::utils::control::management::debug_allowed()) { return {}; }
+    if(!::uwvm2::utils::control::debug_permissions::diagnostics_allowed()) { return {}; }
 #if defined(UWVM_RUNTIME_LLVM_JIT)
     return runtime_checkpoint_guest_worker_bridge::launch(control, ::std::move(state), body);
 #else
@@ -591,7 +598,7 @@ extern "C++" bool runtime_llvm_jit_debug_guest_worker_matches_control_host_api(
 extern "C++" ::std::uint_least32_t runtime_llvm_jit_debug_registered_worker_exit_code_host_api() noexcept
 {
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-    if(runtime_guest_fault_detected_host_api()) { return 126u; }
+    if(runtime_guest_fault_detected_host_api()) { return ::uwvm2::runtime::diagnostic::crash::exit_status(); }
 #endif
 #if defined(UWVM_RUNTIME_LLVM_JIT)
     return runtime_checkpoint_guest_worker_bridge::completion_code();

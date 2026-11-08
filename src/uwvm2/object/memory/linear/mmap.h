@@ -44,6 +44,7 @@
 # include <uwvm2/utils/debug/impl.h>
 # include <uwvm2/utils/mutex/impl.h>
 # include <uwvm2/object/memory/wasm_page/impl.h>
+# include <uwvm2/extension/memtag/storage.h>
 # include <uwvm2/object/memory/platform_page/impl.h>
 # include <uwvm2/object/memory/signal/impl.h>
 # include "threaded_grow_types.h"
@@ -194,6 +195,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
         // identity. This trailing field does not displace hot access metadata.
         ::std::size_t diagnostic_owner_memory_index{};
 
+        // Optional owner-bound shadow; all pre-existing hot-field offsets stay unchanged.
+        ::uwvm2::extension::memtag::shadow_storage memtag_shadow{};
+
 
         /// @brief This macro is used to control the behavior of the non-img compiler.
         inline static constexpr bool can_mmap{true};
@@ -256,6 +260,24 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
 
                 this->require_dynamic_determination_memory_size_cached = custom_page_size < page_size;
             }
+        }
+
+        // Configure only after native initialization and before guest publication.
+        [[nodiscard]] inline ::uwvm2::extension::memtag::storage_error enable_memtag(
+            ::uwvm2::extension::memtag::address_width width, bool shared) noexcept
+        {
+            namespace mt = ::uwvm2::extension::memtag;
+            if(this->memory_begin == nullptr) { return mt::storage_error::invalid_configuration; }
+            if(this->memory_length_p == nullptr ||
+               (width == mt::address_width::i32) != (this->status == mmap_memory_status_t::wasm32))
+            { return mt::storage_error::invalid_configuration; }
+            ::std::uint64_t maximum_bytes;
+            if constexpr(sizeof(::std::size_t) >= 8u)
+            { maximum_bytes = this->status == mmap_memory_status_t::wasm32 ? (::std::uint64_t{1u} << 32u) : (::std::uint64_t{1u} << 40u); }
+            else { maximum_bytes = ::std::uint64_t{1u} << 28u; }
+            if(maximum_bytes > this->reservation_limit_bytes) { maximum_bytes = this->reservation_limit_bytes; }
+            return this->memtag_shadow.enable(width, shared, mt::storage_backend::reserved,
+                this->memory_length_p->load(::std::memory_order_acquire), maximum_bytes);
         }
 
         inline constexpr bool require_dynamic_determination_memory_size() const noexcept
@@ -729,6 +751,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
             // grown region [current_length, grow_final_memory_length)
             auto const grow_final_memory_length{current_length + memory_grow_size};
 
+            if(this->memtag_shadow.enabled() && this->memtag_shadow.prepare_growth(grow_final_memory_length) !=
+               ::uwvm2::extension::memtag::storage_error::none) [[unlikely]] { return false; }
+
             // Set pages according to the initialized size
             // The minimum allocation unit for mmap is a page. Even if you request a size smaller than a page, the kernel will ultimately manage and
             // map the memory in page-sized units.
@@ -779,7 +804,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
                     if(grow_final_memory_length > ::std::numeric_limits<::std::size_t>::max() - page_size_minus_1) [[unlikely]] { ::fast_io::fast_terminate(); }
                     auto const grow_final_memory_length_ceil{(grow_final_memory_length + page_size_minus_1) & ~page_size_minus_1};
 
-                    ::fast_io::details::sys_mprotect(this->memory_begin, grow_final_memory_length_ceil, PROT_READ | PROT_WRITE);
+                    ::fast_io::details::sys_mprotect(this->memory_begin, grow_final_memory_length_ceil, (PROT_READ | PROT_WRITE | ::uwvm2::extension::memtag::hardware_mte::protection_for(this->memtag_shadow.hardware_active())));
                 }
 #  ifdef UWVM_CPP_EXCEPTIONS
                 catch(::fast_io::error)
@@ -909,6 +934,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
 
             auto const grow_final_memory_length{current_length + memory_grow_size};
 
+            if(this->memtag_shadow.enabled() && this->memtag_shadow.prepare_growth(grow_final_memory_length) !=
+               ::uwvm2::extension::memtag::storage_error::none) [[unlikely]] { return false; }
+
 # if defined(_WIN32) || defined(__CYGWIN__)  // windows
             {
                 auto const [page_size, success]{::uwvm2::object::memory::platform_page::get_platform_page_size()};
@@ -990,9 +1018,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
 #  if defined(UWVM_TEST) && defined(UWVM_CPP_EXCEPTIONS)
                         ::uwvm2::object::memory::linear::details::strict_grow_mprotect(reinterpret_cast<void*>(protect_begin),
                                                                                        protect_delta,
-                                                                                       PROT_READ | PROT_WRITE);
+                                                                                       (PROT_READ | PROT_WRITE | ::uwvm2::extension::memtag::hardware_mte::protection_for(this->memtag_shadow.hardware_active())));
 #  else
-                        ::fast_io::details::sys_mprotect(reinterpret_cast<void*>(protect_begin), protect_delta, PROT_READ | PROT_WRITE);
+                        ::fast_io::details::sys_mprotect(reinterpret_cast<void*>(protect_begin), protect_delta, (PROT_READ | PROT_WRITE | ::uwvm2::extension::memtag::hardware_mte::protection_for(this->memtag_shadow.hardware_active())));
 #  endif
                     }
 #  ifdef UWVM_CPP_EXCEPTIONS
@@ -1074,6 +1102,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
             this->require_dynamic_determination_memory_size_cached = other.require_dynamic_determination_memory_size_cached;
             this->reservation_limit_bytes = other.reservation_limit_bytes;
             this->diagnostic_owner_memory_index = other.diagnostic_owner_memory_index;
+            this->memtag_shadow = ::std::move(other.memtag_shadow);
             this->sequentially_consistent_size = other.sequentially_consistent_size;
             this->status = other.status;
             this->growing_mutex_p = other.growing_mutex_p;
@@ -1106,6 +1135,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
             this->require_dynamic_determination_memory_size_cached = other.require_dynamic_determination_memory_size_cached;
             this->reservation_limit_bytes = other.reservation_limit_bytes;
             this->diagnostic_owner_memory_index = other.diagnostic_owner_memory_index;
+            this->memtag_shadow = ::std::move(other.memtag_shadow);
             this->sequentially_consistent_size = other.sequentially_consistent_size;
             this->status = other.status;
             this->growing_mutex_p = other.growing_mutex_p;
@@ -1210,6 +1240,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
         ///             WASM execution.
         inline constexpr void clear() noexcept
         {
+            this->memtag_shadow.reset();
             this->diagnostic_owner_memory_index = 0uz;
             if(this->reserved_begin == nullptr) [[unlikely]]
             {
@@ -1278,6 +1309,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
         ///             WASM execution.
         inline constexpr void clear_destroy() noexcept
         {
+            this->memtag_shadow.reset();
             // clear_destroy can be called at any time, so nullptr is not prohibited.
 
             // Only discuss the recovery of already allocated funds.

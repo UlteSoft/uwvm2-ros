@@ -59,12 +59,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
 
     struct source_map_limits
     {
-        ::std::size_t max_section_bytes{16u * 1024u * 1024u};
-        ::std::size_t max_units{4096u};
-        ::std::size_t max_rows{1u * 1024u * 1024u};
-        ::std::size_t max_files{65536u};
-        ::std::size_t max_path_bytes{4096u};
-        ::std::size_t max_total_path_bytes{8u * 1024u * 1024u};
+        ::std::size_t max_section_bytes{(::std::numeric_limits<::std::size_t>::max)()};
+        ::std::size_t max_units{(::std::numeric_limits<::std::size_t>::max)()};
+        ::std::size_t max_rows{(::std::numeric_limits<::std::size_t>::max)()};
+        ::std::size_t max_files{(::std::numeric_limits<::std::size_t>::max)()};
+        ::std::size_t max_path_bytes{(::std::numeric_limits<::std::size_t>::max)()};
+        ::std::size_t max_total_path_bytes{(::std::numeric_limits<::std::size_t>::max)()};
         // Runtime may keep uniquely mapped intervals of a module containing
         // folded code. Conflicting addresses remain unmapped; no CU wins.
         bool isolate_ambiguous_ranges{};
@@ -399,8 +399,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         bytes.clear();directory.clear();
 #if defined(__linux__) || (defined(__APPLE__) && defined(__MACH__))
         source_map_details::reader input{payload};::std::uint32_t length{};
-        if(!input.leb(length) || length==0u || length>4096u || length!=payload.size()-input.cursor ||
-           module_path.empty() || module_path.size()>4096u) { return false; }
+        if(!input.leb(length) || length==0u || length!=payload.size()-input.cursor ||
+           module_path.empty()) { return false; }
         // reader proved an entire nonempty URL field inside the custom payload.
         auto name{::std::string_view{reinterpret_cast<char const*>(payload.data()+input.cursor),length}};
         if(name.starts_with("./")) { name.remove_prefix(2u); }
@@ -411,12 +411,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         for(unsigned char c:module_path) { if(c<32u || c==127u) { return false; } }
         auto const slash{module_path.find_last_of('/')};
         auto const prefix{slash==module_path.npos?::std::string_view{}:module_path.substr(0u,slash+1u)};
-        if(prefix.size()>4096u-name.size()) { return false; }
+        if(name.size() > (::std::numeric_limits<::std::size_t>::max)() - prefix.size()) { return false; }
         auto const path{::fast_io::concat_fast_io(prefix,name)};
         auto opened{::fast_io::posix_openat_nothrow(::fast_io::posix_at_entry{AT_FDCWD},path.c_str(),O_RDONLY|O_CLOEXEC|O_NOFOLLOW|O_NONBLOCK)};
         if(!opened) { return false; }auto& file{opened.file};
         auto const before{::fast_io::posix_status_nothrow(file)};
-        bool valid{before && before.value.type==::fast_io::file_type::regular && before.value.size!=0u && before.value.size<=16u*1024u*1024u};
+        bool valid{before && before.value.type==::fast_io::file_type::regular && before.value.size!=0u && before.value.size<=static_cast<::std::uintmax_t>((::std::numeric_limits<::std::ptrdiff_t>::max)())};
         if(valid)
         {
             bytes.resize(static_cast<::std::size_t>(before.value.size));::std::size_t consumed{};
@@ -868,9 +868,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
     {
         if(sections.debug_line.empty() && sections.source_map_declared)
         {
-            if(sections.source_map_json.size()>limits.max_section_bytes || limits.max_section_bytes>64u*1024u*1024u ||
-               limits.max_rows>4u*1024u*1024u || limits.max_files>262144u || limits.max_path_bytes>16384u ||
-               limits.max_total_path_bytes>64u*1024u*1024u || limits.max_rows==0u || limits.max_files==0u || limits.max_path_bytes==0u)
+            if(sections.source_map_json.size()>limits.max_section_bytes || limits.max_rows==0u || limits.max_files==0u || limits.max_path_bytes==0u)
             { return source_map_error::limit_exceeded; }
             source_map_v3::image mapped{};
             auto const status{source_map_v3::parse(sections.source_map_json,sections.code_section_file_offset,
@@ -898,10 +896,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         if(sections.debug_line.size() > limits.max_section_bytes ||
            sections.debug_line_str.size() > limits.max_section_bytes ||
            sections.debug_str.size() > limits.max_section_bytes ||
-           limits.max_section_bytes > 64u * 1024u * 1024u ||
-           limits.max_units > 16384u || limits.max_rows > 4u * 1024u * 1024u ||
-           limits.max_files > 262144u || limits.max_path_bytes > 16384u ||
-           limits.max_total_path_bytes > 64u * 1024u * 1024u ||
            limits.max_path_bytes == 0u || limits.max_files == 0u || limits.max_rows == 0u)
         { return source_map_error::limit_exceeded; }
         if(sections.compilation_directories.size() > limits.max_units) { return source_map_error::limit_exceeded; }
@@ -969,7 +963,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             // Count+xor retains the sole active row without an attacker-sized
             // ordered set or a quadratic scan through overlapping CUs.
             struct endpoint { ::std::uint64_t address{};::std::size_t encoded{}; };
-            ::std::vector<endpoint> endpoints{};endpoints.reserve(result.ranges_.size()*2u);
+            ::std::vector<endpoint> endpoints{};
+            // Every accepted range contributes exactly two owned endpoints.
+            // Check actual container representability before doubling; a
+            // default unlimited user quota must never itself be multiplied.
+            if(result.ranges_.size()>endpoints.max_size()/2u) {return source_map_error::limit_exceeded;}
+            auto const endpoint_count{result.ranges_.size()*2u};
+            endpoints.reserve(endpoint_count);
             for(::std::size_t i{};i<result.ranges_.size();++i)
             {
                 endpoints.push_back({result.ranges_[i].begin,i*2u+1u});
@@ -991,7 +991,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 if(i==endpoints.size()) {break;}
                 if(active==1u)
                 {
-                    if(sole>=result.ranges_.size()||unique.size()>=limits.max_rows*2u) {return source_map_error::limit_exceeded;}
+                    if(sole>=result.ranges_.size()) {return source_map_error::malformed;}
+                    if(unique.size()>=endpoint_count) {return source_map_error::limit_exceeded;}
                     auto copy{result.ranges_[sole]};copy.begin=address;copy.end=endpoints[i].address;unique.push_back(copy);
                 }
                 else if(active>1u) {++result.ambiguous_interval_count_;}

@@ -375,6 +375,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
 #endif
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
         env.policy_resources.clear();
+        env.wasix_socket_abi=::uwvm2::uwvm::imported::wasi::wasip1::storage::wasip1_wasix_socket_abi;
         ::std::uint64_t approved_string_bytes{};
         auto text_fits{[&env, &approved_string_bytes](auto const& strings) constexpr noexcept
         {
@@ -439,6 +440,24 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
                 return true;
             }};
 
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(UWVM_IMPORT_WASI_WASIP1_SUPPORT_SOCKET)
+        for(::std::size_t i{};i<env.preopen_sockets.size();++i)
+        {
+            auto const& socket=env.preopen_sockets[i];
+            if(socket.fd<3) { print_init_error(u8"Socket preopen fd must be >= 3; stdio uses separate inherited socket rights"); return false; }
+            for(::std::size_t j{};j<i;++j) if(env.preopen_sockets[j].fd==socket.fd)
+            { print_init_error(u8"Duplicate preopened socket fd"); return false; }
+        }
+        for(auto const& grant:env.socket_rights)
+        {
+            bool found=grant.fd>=0&&grant.fd<3;
+            for(auto const& socket:env.preopen_sockets) if(socket.fd==grant.fd) found=true;
+            if(!found) { print_init_error(u8"Socket rights refer to an undeclared preopen; configure --wasip1-single-socket-tcp-connect/listen or udp-connect/bind first"); return false; }
+            if((grant.base & ~::uwvm2::imported::wasi::wasip1::environment::socket_all_rights)!=decltype(grant.base){} ||
+               (grant.inheriting & ~::uwvm2::imported::wasi::wasip1::environment::socket_data_rights)!=decltype(grant.inheriting){})
+            { print_init_error(u8"Invalid socket rights mask"); return false; }
+        }
+#endif
         auto const init_stdio{[&env
 #  if defined(UWVM_CPP_EXCEPTIONS) &&                                                                                                                          \
       (!defined(__AVR__) && !((defined(_WIN32) && !defined(__WINE__)) && defined(_WIN32_WINDOWS)) && !(defined(__MSDOS__) || defined(__DJGPP__)) &&            \
@@ -502,9 +521,30 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
             {
                 auto const native{index == 0u ? ::fast_io::in() : index == 1u ? ::fast_io::out() : ::fast_io::err()};
                 if(!init_stdio(*stream.fd_p, native, index == 0u)) { return false; }
+#if defined(__linux__)
+                int socket_type{};::socklen_t type_size{sizeof(socket_type)};
+                int const descriptor=stream.fd_p->wasi_fd.ptr->wasi_fd_storage.storage.file_fd.native_handle();
+                if(::getsockopt(descriptor,SOL_SOCKET,SO_TYPE,&socket_type,&type_size)==0)
+                {
+                    using socket_kind=::uwvm2::imported::wasi::wasip1::fd_manager::wasi_fd_rc_t::socket_type;
+                    if(type_size!=sizeof(socket_type) || (socket_type!=SOCK_STREAM&&socket_type!=SOCK_DGRAM))
+                    { print_init_error(u8"Unsupported inherited socket type"); return false; }
+                    auto& resource=*stream.fd_p->wasi_fd.ptr;
+                    resource.socket_kind=socket_type==SOCK_STREAM?socket_kind::stream:socket_kind::datagram;
+                    resource.socket_initial_fd=static_cast<int>(index);
+                    auto flags=::fcntl(descriptor,F_GETFL);
+                    if(flags<0) { print_init_error(u8"Cannot inspect inherited socket flags"); return false; }
+                    resource.socket_nonblock=(flags&O_NONBLOCK)!=0;
+                    auto const rights=env.socket_rights_for(static_cast<int>(index));
+                    stream.fd_p->rights_base=stream.fd_p->rights_base & rights.base;
+                    stream.fd_p->rights_inherit={};
+                }
+                else if(errno!=ENOTSOCK) { print_init_error(u8"Cannot classify inherited stdio resource"); return false; }
+#endif
                 stream.fd_p->wasi_fd.ptr->checkpoint_stdio_index = static_cast<int>(index);
                 env.policy_resources.emplace_back(::uwvm2::imported::wasi::wasip1::environment::policy_resource_binding{
-                    index, index, static_cast<::std::uint64_t>(reinterpret_cast<::std::uintptr_t>(stream.fd_p->wasi_fd.ptr)), {}});
+                    index, index, static_cast<::std::uint64_t>(reinterpret_cast<::std::uintptr_t>(stream.fd_p->wasi_fd.ptr)), {},
+                    static_cast<::std::uint64_t>(stream.fd_p->rights_base),static_cast<::std::uint64_t>(stream.fd_p->rights_inherit)});
             }
             else
             {
@@ -629,8 +669,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
 #endif
 
 #  if defined(UWVM_IMPORT_WASI_WASIP1_SUPPORT_SOCKET)
-#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-        if(!env.preopen_sockets.empty()) { print_init_error(u8"Network preopens require a qualified bounded provider; unsupported in this ROS profile"); return false; }
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && !defined(__linux__)
+        if(!env.preopen_sockets.empty()) { print_init_error(u8"This platform has no cancellable ROS socket provider"); return false; }
 #endif
         // Preopened sockets use explicit fds supplied by command-line options.
         // They are inserted before directory preopens so the directory allocator
@@ -665,8 +705,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
 
             ::uwvm2::imported::wasi::wasip1::fd_manager::wasi_fd_unique_ptr_t new_sock_fd{};
 
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            auto const rights=env.socket_rights_for(ps.fd);
+            if(ps.handle_type!=::uwvm2::imported::wasi::wasip1::environment::handle_type_e::listen && rights.inheriting!=decltype(rights.inheriting){})
+            { print_init_error(u8"Only a listening socket can grant accepted-child rights"); return false; }
+            new_sock_fd.fd_p->rights_base=rights.base;
+            new_sock_fd.fd_p->rights_inherit=rights.inheriting;
+            using socket_kind=::uwvm2::imported::wasi::wasip1::fd_manager::wasi_fd_rc_t::socket_type;
+            auto& resource=*new_sock_fd.fd_p->wasi_fd.ptr;
+            resource.socket_kind=ps.handle_type==::uwvm2::imported::wasi::wasip1::environment::handle_type_e::listen?socket_kind::listener:
+                ps.sock_type==::uwvm2::imported::wasi::wasip1::environment::sock_type_t::dgram?socket_kind::datagram:socket_kind::stream;
+            resource.socket_initial_fd=ps.fd;
+#else
             new_sock_fd.fd_p->rights_base = static_cast<::uwvm2::imported::wasi::wasip1::abi::rights_t>(-1);
             new_sock_fd.fd_p->rights_inherit = static_cast<::uwvm2::imported::wasi::wasip1::abi::rights_t>(-1);
+#endif
 
 #   ifdef UWVM_CPP_EXCEPTIONS
             try
@@ -753,7 +806,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
 
                     if(ps.handle_type != ::uwvm2::imported::wasi::wasip1::environment::handle_type_e::connect && !abstract_namespace)
                     {
-#    if __has_include(<unistd.h>)
+#    if __has_include(<unistd.h>) && !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
                         errno = 0;
                         auto const unlink_ret{posix::unlink(un.sun_path)};
                         if(unlink_ret == -1 && errno != ENOENT) [[unlikely]]
@@ -842,6 +895,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
                     }
                 }
 
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(__linux__)
+                // Only native-owned listener OFDs are forced nonblocking. Guest
+                // blocking mode is independent and implemented by readiness wait.
+                if(resource.socket_kind==socket_kind::listener)
+                {
+                    auto const flags=::fcntl(sock.native_handle(),F_GETFL);
+                    if(flags<0 || ::fcntl(sock.native_handle(),F_SETFL,flags|O_NONBLOCK)<0)
+                    { print_init_error(u8"Cannot prepare cancellable socket listener"); return false; }
+                }
+#endif
 #   if defined(_WIN32) && !defined(__CYGWIN__)
                 new_sock_fd.fd_p->wasi_fd.ptr->wasi_fd_storage.reset_type(::uwvm2::imported::wasi::wasip1::fd_manager::wasi_fd_type_e::socket);
                 new_sock_fd.fd_p->wasi_fd.ptr->wasi_fd_storage.storage.socket_fd = ::std::move(sock);
@@ -858,6 +921,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
             }
 #   endif
 
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            auto label=ps.sock_family==::uwvm2::imported::wasi::wasip1::environment::sock_family_t::local ?
+                ::fast_io::u8concat(u8"unix:",ps.local_unix_path) : ::fast_io::u8concat(ps.ip);
+            label=::fast_io::u8concat(static_cast<unsigned>(ps.sock_family),u8":",static_cast<unsigned>(ps.sock_type),u8":",
+                static_cast<unsigned>(ps.handle_type),u8":",label);
+            env.policy_resources.emplace_back(::uwvm2::imported::wasi::wasip1::environment::policy_resource_binding{
+                5u,static_cast<::std::uint64_t>(ps.fd),static_cast<::std::uint64_t>(reinterpret_cast<::std::uintptr_t>(new_sock_fd.fd_p->wasi_fd.ptr)),
+                ::uwvm2::utils::container::u8string{::uwvm2::utils::container::u8string_view{label.data(),label.size()}},static_cast<::std::uint64_t>(new_sock_fd.fd_p->rights_base),static_cast<::std::uint64_t>(new_sock_fd.fd_p->rights_inherit)});
+#endif
             if(!try_emplace_fd(ps.fd, ::std::move(new_sock_fd))) [[unlikely]] { return false; }
         }
 #  endif
@@ -1093,6 +1165,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
         // sockets. Callback-time validation already rejects duplicate fds inside
         // one target, and the concrete initializer will reject any remaining
         // duplicate after the full effective list is visible.
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        // Target presence replaces one fd's rights, including an explicit none.
+        for(auto const& grant:default_wasip1_env.socket_rights)
+        {
+            bool present{};for(auto const& local:state.env.socket_rights) if(local.fd==grant.fd) present=true;
+            if(!present)state.env.socket_rights.push_back(grant);
+        }
+#endif
         state.env.preopen_sockets = default_wasip1_env.preopen_sockets;
         state.env.preopen_sockets.reserve(state.env.preopen_sockets.size() + state.preopen_sockets.size());
         for(auto const& preopen_socket: state.preopen_sockets) { state.env.preopen_sockets.emplace_back(preopen_socket); }

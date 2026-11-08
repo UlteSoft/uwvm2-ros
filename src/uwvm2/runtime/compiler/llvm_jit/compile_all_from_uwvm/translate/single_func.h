@@ -221,6 +221,10 @@ struct compile_option
     // Enables LLVM verifier checks after function/module finalization.
     bool verify_llvm_jit_ir{default_verify_llvm_jit_ir};
 
+    // Immutable compilation policy; false erases tag-only operations at IR
+    // construction, retaining normal data effects of the *storez instructions.
+    bool execute_memtag{true};
+
     // Forces Wasm calls through the runtime raw ABI instead of direct typed LLVM declarations.
     bool route_wasm_calls_through_runtime_bridge{};
 
@@ -571,7 +575,8 @@ namespace details
                                     ::std::uint64_t debug_compiled_function_generation = 1u,
                                     ::uwvm2::runtime::checkpoint::function_plan* checkpoint_plan = nullptr,
                                     ::std::vector<::uwvm2::validation::standard::wasm3::validated_call_dependency>* lazy_call_dependencies = nullptr,
-                                    bool* lazy_call_dependencies_overflow = nullptr) UWVM_THROWS
+                                    bool* lazy_call_dependencies_overflow = nullptr,
+                                    bool execute_memtag = true) UWVM_THROWS
     {
         auto const retain_lazy_dependency{[&](::uwvm2::validation::standard::wasm3::validated_call_dependency dependency)
         {
@@ -1341,6 +1346,7 @@ namespace details
                                                                                      debug_compiled_function_generation,
                                                                                      debug_local_initialization,
                                                                                      checkpoint_plan)};
+        llvm_jit_emit_state.execute_memtag = execute_memtag;
         if(emit_llvm_jit_active && checkpoint_observer_controls.selected())
         { llvm_jit_emit_state.checkpoint_observer_controls = ::std::addressof(checkpoint_observer_controls); }
 
@@ -2552,7 +2558,8 @@ namespace details
                                     options.debug_compiled_function_generation,
                                     options.checkpoint_profile ? ::std::addressof(checkpoint_work) : nullptr,
                                     lazy_call_dependencies,
-                                    lazy_call_dependencies_overflow);
+                                    lazy_call_dependencies_overflow,
+                                    options.execute_memtag);
         // The physical emitter has completed and destroyed its local state.
         // Returned compilation DATA must never retain an outer registry borrow
         // beyond this exact fused call and joined source-owner lifetime.
@@ -2727,8 +2734,16 @@ namespace details
                 ::llvm::WriteBitcodeToFile(*task_module_storage.llvm_module, bitcode_stream);
             }
 
+            // The workers and pre-link callbacks have joined. The byte stream owns every
+            // input needed by the reparse; keep the diagnostic name independently too.
+            // Release the old fragment before constructing its replacement, so large
+            // debug modules do not retain both IR graphs at this serialization boundary.
+            auto const fragment_name{::uwvm2::utils::container::u8string{
+                get_uwvm_u8string_view(task_module_storage.llvm_module->getName())}};
+            task_module_storage.discard_emission_preserving_first_decline();
+
             auto parsed_task_module_expected{
-                ::llvm::parseBitcodeFile(::llvm::MemoryBufferRef(get_llvm_string_ref(serialized_bitcode), task_module_storage.llvm_module->getName()),
+                ::llvm::parseBitcodeFile(::llvm::MemoryBufferRef(get_llvm_string_ref(serialized_bitcode), get_llvm_string_ref(fragment_name)),
                                          merged_llvm_context)};
             if(!parsed_task_module_expected) [[unlikely]]
             {
@@ -2737,10 +2752,8 @@ namespace details
             }
 
             if(linker.linkInModule(::std::move(*parsed_task_module_expected))) [[unlikely]] { return false; }
-            // Drop the fragment after successful linking so later finalization only sees the merged module.
-            task_module_storage.llvm_module.reset();
-            task_module_storage.llvm_context_holder.reset();
-            task_module_storage.emitted = false;
+            // Failure still triggers the caller's fresh serial emission; no original
+            // fragment pointer or parsed-module borrow survives this iteration.
         }
 
         return true;

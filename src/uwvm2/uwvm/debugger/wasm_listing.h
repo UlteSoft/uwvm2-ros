@@ -2,6 +2,7 @@
 // compiler-owned source image; this formatter never scans for opcode alignment.
 #pragma once
 #ifndef UWVM_MODULE
+#include <uwvm2/extension/memtag/instruction.h>
 #include <fast_io.h>
 #include <fast_io_dsal/string.h>
 #include <fast_io_dsal/string_view.h>
@@ -14,6 +15,14 @@ namespace uwvm2::uwvm::debugger::wasm_listing
 using view=::fast_io::string_view;
 [[nodiscard]] inline view mnemonic(unsigned op, unsigned extension) noexcept
 {
+    if(op==::uwvm2::extension::memtag::opcode_prefix)
+    {
+        if(auto const* descriptor=::uwvm2::extension::memtag::find_instruction(extension))
+        {
+            ::std::size_t size{};while(descriptor->mnemonic[size]!=u8'\0') { ++size; }
+            return view{reinterpret_cast<char const*>(descriptor->mnemonic),size};
+        }
+    }
     switch(op)
     {
         case 0x00u: return "unreachable";
@@ -533,7 +542,16 @@ using view=::fast_io::string_view;
     { auto result{::fast_io::parse_by_scan(first+1u,end,::fast_io::mnp::leb128_get(extended))};
       if(result.code!=::fast_io::parse_code::ok) { return ::fast_io::concat_fast_io("invalid opcode"); } after=result.iter-first; }
     auto text{::fast_io::concat_fast_io(mnemonic(op,extended))};bool complete{bytes.size()==after && mnemonic(op,extended)!="opcode" && mnemonic(op,extended)!="extended-opcode"};
-    if((op>=0x20u && op<=0x26u) || op==0x10u || op==0x12u || op==0x0cu || op==0x0du || op==0xd2u)
+    if(op==::uwvm2::extension::memtag::opcode_prefix && ::uwvm2::extension::memtag::find_instruction(extended)!=nullptr)
+    {
+        // Experimental memtag instructions have one u32 memory index, not a
+        // memarg. Keep every byte inside the actual compiler-proven boundary.
+        complete=false;::std::uint32_t memory{};
+        auto const parsed{::fast_io::parse_by_scan(first+after,end,::fast_io::mnp::leb128_get(memory))};
+        if(parsed.code==::fast_io::parse_code::ok && parsed.iter==end)
+        { text.append(::fast_io::concat_fast_io(" ",memory));complete=true; }
+    }
+    else if((op>=0x20u && op<=0x26u) || op==0x10u || op==0x12u || op==0x0cu || op==0x0du || op==0xd2u)
     { ::std::uint64_t index{}; auto parsed{::fast_io::parse_by_scan(first+after,end,::fast_io::mnp::leb128_get(index))};
       if(parsed.code==::fast_io::parse_code::ok) { text.append(::fast_io::concat_fast_io(" ",index));complete=parsed.iter==end; } }
     else if(op==0x41u || op==0x42u)

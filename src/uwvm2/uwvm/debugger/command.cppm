@@ -4,6 +4,7 @@ module;
 #include <limits>
 #include <memory>
 #include <string_view>
+#include <string>
 #include <utility>
 export module uwvm2.uwvm.debugger:command;
 import fast_io;

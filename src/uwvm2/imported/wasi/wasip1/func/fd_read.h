@@ -215,6 +215,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         // Therefore, a unified check is implemented.
         if(curr_fd.close_pos != SIZE_MAX) [[unlikely]] { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::ebadf; }
 
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(__linux__)
+        if(curr_fd.wasi_fd.ptr && curr_fd.wasi_fd.ptr->socket_kind!=socket_capability::socket_type::none)
+            return socket_capability::io<4>(env,curr_fd,iovs,iovs_len,0u,nread,0u,false,false);
+#endif
+
         // Rights check: read uses read permission
         if((curr_fd.rights_base & ::uwvm2::imported::wasi::wasip1::abi::rights_t::right_fd_read) !=
            ::uwvm2::imported::wasi::wasip1::abi::rights_t::right_fd_read) [[unlikely]]
@@ -256,7 +261,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             // Empty vectors are still authorized host calls and consume their
             // call/concurrency quota before publishing a successful result.
-            auto const budget{::uwvm2::imported::wasi::wasip1::environment::fd_io_budget(static_cast<unsigned>(fd))};
+            auto const budget{::uwvm2::imported::wasi::wasip1::environment::fd_io_budget(*curr_fd.wasi_fd.ptr)};
             ::uwvm2::imported::wasi::wasip1::environment::budget_reservation reservation{budget, env.limits, 0u};
             if(!reservation) { return reservation.template error<::uwvm2::imported::wasi::wasip1::abi::errno_t>(); }
 #endif
@@ -367,7 +372,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                 auto& curr_tmp_scatter_base{scatter_base[i]};
 
                 // Already verified as legitimate
-                curr_tmp_scatter_base.base = memory.memory_begin + wasm_base;
+                auto const payload_span{::uwvm2::imported::wasi::wasip1::memory::checked_span_unlocked(memory,wasm_base,wasm_len)};
+                if(!payload_span) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
+                curr_tmp_scatter_base.base = payload_span.data;
 
                 // check counter
                 if(wasm_len > ::std::numeric_limits<::uwvm2::imported::wasi::wasip1::abi::wasi_size_t>::max() - length_counter) [[unlikely]]
@@ -415,12 +422,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 
             ::std::size_t console_read{};
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-            auto const budget{::uwvm2::imported::wasi::wasip1::environment::fd_io_budget(static_cast<unsigned>(fd))};
+            auto const budget{::uwvm2::imported::wasi::wasip1::environment::fd_io_budget(*curr_fd.wasi_fd.ptr)};
             ::uwvm2::imported::wasi::wasip1::environment::budget_reservation reservation{budget, env.limits, static_cast<::std::uint64_t>(length_counter)};
             if(!reservation) { return reservation.template error<::uwvm2::imported::wasi::wasip1::abi::errno_t>(); }
 #endif
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(__linux__)
-            if(fd < 3)
+            if(curr_fd.wasi_fd.ptr->checkpoint_stdio_index >= 0)
             {
                 ::std::size_t completed{};
                 auto const result{::uwvm2::imported::wasi::wasip1::environment::bounded_stdio(curr_fd, scatter_base, scatter_length,

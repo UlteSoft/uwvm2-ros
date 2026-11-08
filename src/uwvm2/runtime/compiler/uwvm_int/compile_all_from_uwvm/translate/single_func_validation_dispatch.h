@@ -1288,7 +1288,7 @@ resolved_memory_t resolved_memory{};
 // Memory resolution is performed on demand because many functions never touch memory. Once a memory opcode appears,
 // cache the resolved native pointer and effective max limit so every following memory helper can use
 // compact immediates instead of rewalking import chains.
-auto const ensure_memory_resolved{
+auto const resolve_memory_storage{
     [&]() constexpr UWVM_THROWS
     {
         if(resolved_memory.resolved && resolved_memory.memory_index == current_memory_index) { return; }
@@ -1355,7 +1355,10 @@ auto const ensure_memory_resolved{
 
         auto const refine_max_limit_for_memory{[&](native_memory_t const& memory, ::std::size_t max_limit_memory_length) constexpr noexcept -> ::std::size_t
                                                {
-                                                   auto const backend_max_limit_length{backend_max_limit_from_memory(memory)};
+                                                   auto backend_max_limit_length{backend_max_limit_from_memory(memory)};
+                                                   if(memory.memtag_shadow.enabled() &&
+                                                      memory.memtag_shadow.maximum_memory_bytes() < backend_max_limit_length)
+                                                   { backend_max_limit_length=static_cast<::std::size_t>(memory.memtag_shadow.maximum_memory_bytes()); }
                                                    return backend_max_limit_length < max_limit_memory_length ? backend_max_limit_length
                                                                                                              : max_limit_memory_length;
                                                }};
@@ -1458,6 +1461,15 @@ auto const ensure_memory_resolved{
             resolved_memory.resolved = true;
         }
     }};
+
+// Existing handlers are explicitly untagged. A tagged owner must use a
+// dedicated checked emitter, never silently fall through a legacy memory path.
+auto const ensure_memory_resolved{[&]() constexpr UWVM_THROWS
+{
+    resolve_memory_storage();
+    if(resolved_memory.memory_p->memtag_shadow.enabled()) [[unlikely]]
+    { fail_invalid_immediate(code_curr,u8"tagged memory requires a checked MTE instruction path"); }
+}};
 
 enum class resolved_global_access_kind : unsigned
 {
@@ -4838,6 +4850,31 @@ bool finished_current_func{};
 auto const emit_memory64_scalar_if_selected{[&]<typename Value, ::std::size_t Bytes, bool Signed, bool Store>(
     ::std::uint_least64_t offset, curr_operand_stack_value_type value_type) constexpr -> bool
 {
+    if(resolved_memory.memory_p->memtag_shadow.enabled())
+    {
+#ifdef UWVM_ENABLE_UWVM_INT_COMBINE_OPS
+        flush_conbine_pending();
+#endif
+        stacktop_flush_all_to_operand_stack(bytecode);
+        namespace mtopt = ::uwvm2::runtime::compiler::uwvm_int::optable;
+        emit_opfunc_to(bytecode,mtopt::translate::get_uwvmint_memtag_dispatch_from_tuple<CompileOption>(interpreter_tuple));
+        emit_imm_to(bytecode,resolved_memory.memory_p);
+        auto select{[&]<typename Address>() constexpr
+        {
+            if(resolved_memory.memory_p->memtag_shadow.shared())
+            { return static_cast<mtopt::memtag_details::action_t>(
+                mtopt::memtag_details::scalar<Address,true,Value,Bytes,Signed,Store>); }
+            return static_cast<mtopt::memtag_details::action_t>(
+                mtopt::memtag_details::scalar<Address,false,Value,Bytes,Signed,Store>);
+        }};
+        auto const action{current_memory_address64 ? select.template operator()<::std::uint64_t>() :
+                                                    select.template operator()<::std::uint32_t>()};
+        emit_imm_to(bytecode,action);
+        emit_imm_to(bytecode,static_cast<::std::uint64_t>(offset));
+        if constexpr(Store) { stacktop_after_pop_n_if_reachable(bytecode,2uz); }
+        else { stacktop_after_pop_n_push1_memory_typed_if_reachable(bytecode,1uz,value_type); }
+        return true;
+    }
     if(!current_memory_address64) { return false; }
 #ifdef UWVM_ENABLE_UWVM_INT_COMBINE_OPS
     flush_conbine_pending();
