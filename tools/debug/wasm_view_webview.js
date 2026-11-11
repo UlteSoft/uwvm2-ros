@@ -2,7 +2,7 @@
 (() => {
   const api=acquireVsCodeApi(),code=document.getElementById("code"),rail=document.getElementById("rail-rows"),body=document.getElementById("code-rows"),space=document.getElementById("space"),tip=document.getElementById("hover");
   let rows=[],state={valid:false},revision=0,rowHeight=24,charWidth=8,codeInset=0,base=0,segment=1,points=new Map(),drawn=new Map(),selection=0,anchor=0,lastFollow,hoverSerial=0,hoverTimer,pointer;
-  let mnemonicWidth=12,operandWidth=8,maxColumns=1,manualSaved=api.getState(),editorStyle={};
+  let mnemonicWidth=12,operandWidth=8,maxColumns=1,followExtent=0,manualSaved=api.getState(),editorStyle={};
   const post=message=>api.postMessage({...message,revision});
   const element=(name,className,text)=>{const e=document.createElement(name);if(className)e.className=className;if(text!==undefined)e.textContent=text;return e;};
   const canWrite=()=>state.valid&&state.permission==="full";
@@ -18,7 +18,7 @@
     segment=Math.max(1,Math.floor(8_000_000/rowHeight));
     space.style.height=Math.min(segment,Math.max(0,rows.length-base))*rowHeight+"px";
     codeInset=charWidth;
-    space.style.width=Math.max(code.clientWidth,codeInset+(maxColumns+2)*charWidth)+"px";
+    space.style.width=Math.max(code.clientWidth,codeInset+(maxColumns+2)*charWidth,followExtent)+"px";
   }
   function setBase(first) {
     base=Math.max(0,Math.min(first,Math.max(0,rows.length-segment)));drawn.clear();body.replaceChildren();rail.replaceChildren();
@@ -34,7 +34,14 @@
       // Safe zone is measured in the actual instruction viewport, excluding
       // the fixed address rail. Follow both growing and shrinking indentation.
       if(visible<0)code.scrollLeft=Math.max(0,x-width*.25);
-      else if(visible>=width)code.scrollLeft=Math.max(0,x-width*.75);
+      else if(visible>=width) {
+        const target=Math.max(0,x-width*.75);
+        // A short final operand may leave too little trailing content to reach
+        // 75%. Reserve only the space this actual follow needs; never add a
+        // left inset or move a visible instruction during manual scrolling.
+        followExtent=Math.max(followExtent,Math.ceil(target+width));
+        measure();code.scrollLeft=target;
+      }
     }
     selection=anchor=index;draw();save();
   }
@@ -144,7 +151,7 @@
       measure();code.scrollTop=(top-base)*rowHeight;code.scrollLeft=left;draw();return;
     }
     if(message.action==="load") {
-      rows=message.rows;mnemonicWidth=message.mnemonicWidth+2;operandWidth=message.operandWidth;
+      rows=message.rows;followExtent=0;mnemonicWidth=message.mnemonicWidth+2;operandWidth=message.operandWidth;
       document.documentElement.style.setProperty("--mnemonic-width",mnemonicWidth+"ch");document.documentElement.style.setProperty("--operand-width",operandWidth+"ch");
       const addressColumns=rows.reduce((n,row)=>Math.max(n,row.address.length),message.addressBits/4+2);
       document.documentElement.style.setProperty("--address-width",addressColumns+"ch");code.setAttribute("aria-rowcount",String(rows.length));
