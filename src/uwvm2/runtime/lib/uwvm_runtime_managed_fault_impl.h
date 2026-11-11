@@ -1,5 +1,6 @@
 #pragma once
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
+#include "uwvm_runtime_managed_fault_policy.h"
 bool runtime_managed_fault::ordinary_enabled() noexcept
 {
     auto const epoch{current_runtime_generation()};
@@ -108,7 +109,7 @@ bool runtime_managed_fault::raise(llvm_jit_trap_kind kind)
     g_runtime.execution_domain.request_stop();
 #endif
     diagnostic_detail::fault(static_cast<::std::uint32_t>(kind), ledger);
-    ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+    ::fast_io::io::perrln(runtime_fault_output(),
         u8"uwvm: [error] managed Guest trap; execution stopped (kind=", static_cast<unsigned>(kind), u8")");
     // Retain bounded, explicitly selected native stack diagnostics while the
     // genuine frames still exist; this does not expose a debugger capability.
@@ -165,8 +166,9 @@ bool runtime_managed_fault::accept_uncaught(::uwvm2::runtime::exception::guest_e
         // in the ordinary profile; GC roots must still all have been retired.
         if(::uwvm2::runtime::gc::current_root_frames() != nullptr) { return false; }
         apply_guest_crash_policy(trap_kind::uncatched_int_tag,true);
-        ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+        ::fast_io::io::perrln(runtime_fault_output(),
             u8"uwvm: [error] uncaught Guest exception; execution stopped");
+        ::uwvm2::runtime::diagnostic::crash::crash_unless_stable_exit();
         ::uwvm2::utils::thread::process_exit::request_process_exit(::uwvm2::runtime::diagnostic::crash::exit_status());
     }
 #endif
@@ -177,8 +179,9 @@ bool runtime_managed_fault::accept_uncaught(::uwvm2::runtime::exception::guest_e
     apply_guest_crash_policy(trap_kind::uncatched_int_tag,true);
     if(!stop_after_unwind()) { return false; }
     diagnostic_detail::fault(0x10000u); // Typed uncaught Wasm exception; no payload retained.
-    ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+    ::fast_io::io::perrln(runtime_fault_output(),
         u8"uwvm: [error] uncaught Guest exception; execution stopped");
+    runtime_managed_fault_detail::finish_cli_fault_after_unwind();
     return true; // No payload bytes or retained raw addresses enter diagnostics.
 }
 bool runtime_managed_fault::accept(signal const& caught) noexcept
@@ -195,6 +198,7 @@ bool runtime_managed_fault::accept(signal const& caught) noexcept
            !g_checkpoint_shadow_ledger->discard_failed_recording()) { return false; }
         if(g_checkpoint_shadow_ledger->size() != 0u) { return false; }
     }
+    runtime_managed_fault_detail::finish_cli_fault_after_unwind();
     return true;
 }
 #endif
@@ -210,6 +214,10 @@ extern "C++" UWVM_NOINLINE void llvm_jit_managed_memtag_trap(::std::size_t memor
     ::std::uint64_t pointer, ::std::uint64_t granule, ::std::uint32_t pointer_tag,
     ::std::uint32_t allocation_tag) UWVM_THROWS
 {
+#if UWVM_HAS_BUILTIN(__builtin_return_address)
+    store_llvm_jit_trap_context(llvm_jit_trap_kind::memtag_violation,
+        reinterpret_cast<::std::uintptr_t>(__builtin_return_address(0)));
+#endif
     // All memory pins are released by the checked bridge before this entry.
     // Print the same numeric/color evidence before the terminal debug stop and
     // native unwind; the ordinary fatal fallback must not erase that evidence.
@@ -217,7 +225,7 @@ extern "C++" UWVM_NOINLINE void llvm_jit_managed_memtag_trap(::std::size_t memor
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             namespace crash=::uwvm2::runtime::diagnostic::crash;
             crash::memory_detail const evidence{memory_index,pointer,granule,pointer_tag,allocation_tag};
-            crash::report(crash::category::memtag,"memory tag mismatch",2u,UINT64_MAX,UINT64_MAX,UINT64_MAX,&evidence);
+            report_guest_fault(trap_kind::memtag_violation,"memory tag mismatch",2u,&evidence);
 #endif
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
     if(runtime_managed_fault::raise(llvm_jit_trap_kind::memtag_violation)) { return; }

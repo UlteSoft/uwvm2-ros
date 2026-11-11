@@ -1,0 +1,1 @@
+(module (type $s (struct (field (mut i64)))) (func (export "_start") ref.null $s i64.const 0x0123456789abcdef struct.set $s 0))

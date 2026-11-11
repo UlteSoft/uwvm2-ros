@@ -60,6 +60,27 @@ class IDEImport(unittest.TestCase):
         with self.assertRaises(ValueError):
             module.validate({**self.profile,"debugPermissions":"full","runtime":{"executable":"/bin/true", "arguments":["--debug-permissions","limited","--run","a.wasm"]}})
 
+    def test_fault_action_is_explicit_and_legacy_option_is_rejected(self):
+        from fault_action import validate_fault_action
+        for bad in (["--debug", "pause"], ["--debug=pause"], ["--debug-fault-action"],
+                    ["--debug-fault-action", "none"], ["--debug-fault-action", "dump"],
+                    ["--debug-fault-action", "pause", "--debug-fault-action", "pause"]):
+            with self.subTest(arguments=bad), self.assertRaises(ValueError):
+                module.validate({**self.profile, "runtime": {"executable": "/bin/true", "arguments": bad+["--run", "/fixture.wasm"]}})
+        for args in (["--run", "/fixture.wasm"], ["--debug-fault-action", "pause", "--run", "/fixture.wasm"],
+                     ["--run", "/fixture.wasm", "--debug", "pause"]):
+            validate_fault_action(args)
+            profile={**self.profile, "runtime": {"executable": "/bin/true", "arguments": args}}
+            module.validate(profile)
+            command=module.broker_command(profile)
+            self.assertEqual(command[-len(args):], args)
+        # Generated IDE launches preserve the one explicit action; generation
+        # does not silently add pause, dumps, recovery or extra permissions.
+        self.profile["runtime"]={"executable": "/bin/true", "arguments": ["--debug-fault-action", "pause", "--run", "/fixture.wasm"]}
+        result=module.generate(self.profile, self.root / "fault-action")
+        generated=json.loads(Path(result["profile"]).read_text())
+        self.assertEqual(generated["runtime"], self.profile["runtime"])
+
     def test_explicit_startup_deadline_reaches_all_generated_clients(self):
         self.profile["startupTimeoutSeconds"] = 12.5
         self.profile["runtime"] = {"executable": "/bin/true", "arguments": ["--run", "/fixture.wasm"]}

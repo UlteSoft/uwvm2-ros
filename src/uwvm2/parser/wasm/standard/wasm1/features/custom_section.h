@@ -74,7 +74,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         ::std::byte const* const section_end,
         ::uwvm2::parser::wasm::base::error_impl& err,
         [[maybe_unused]] ::uwvm2::parser::wasm::concepts::feature_parameter_t<Fs...> const& fs_para,
-        ::uwvm2::parser::wasm::binfmt::ver1::max_section_id_map_sec_id_t& wasm_order,
+        [[maybe_unused]] ::uwvm2::parser::wasm::binfmt::ver1::max_section_id_map_sec_id_t& wasm_order,
         [[maybe_unused]] ::std::byte const* const sec_id_module_ptr) UWVM_THROWS
     {
 #ifdef UWVM_TIMER
@@ -163,36 +163,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
             }
         }
 
-        // check custom order
-        if constexpr(::uwvm2::parser::wasm::binfmt::ver1::has_custom_section_sequential_mapping_table_define<Fs...>)
-        {
-            constexpr auto& custom_order_sec_id_hash_table{
-                ::uwvm2::parser::wasm::binfmt::ver1::final_section_sequential_packer_t<Fs...>::custom_section_sequential_mapping_table};
-            auto const curr_section_order{
-                ::uwvm2::parser::wasm::binfmt::ver1::details::find_from_custom_section_sequential_mapping_table(custom_order_sec_id_hash_table,
-                                                                                                                cs.custom_name)};
-
-            if(curr_section_order != 0u)
-            {
-                // There is no need to check for duplicate (sec_id <= max_section_id) sections here,
-                // duplicate sections are checked inside the section parsing.
-
-                if(curr_section_order < wasm_order.max_section_id) [[unlikely]]
-                {
-                    err.err_curr = section_curr;
-                    // Enter the original section ID here for easy identification.
-                    err.err_selectable.illegal_custom_section_order.custom_name = cs.custom_name;
-                    err.err_selectable.illegal_custom_section_order.custom_order = curr_section_order;
-                    err.err_selectable.illegal_custom_section_order.wasm_order = wasm_order.max_section_id;
-                    err.err_selectable.illegal_custom_section_order.wasm_sec = wasm_order.max_section_id_map_sec_id;  // Used for output
-                    err.err_code = ::uwvm2::parser::wasm::base::wasm_parse_error_code::illegal_custom_section_order;
-                    ::uwvm2::parser::wasm::base::throw_wasm_parse_code(::fast_io::parse_code::invalid);
-                }
-
-                wasm_order.max_section_id = curr_section_order;
-                wasm_order.max_section_id_map_sec_id = 0u;  // Used for output, custom section id is 0
-            }
-        }
+        // Custom sections may occur anywhere between standard sections. Even
+        // recognized metadata such as "name" cannot advance the standard-section
+        // ordering cursor or invalidate the module because of its placement.
+        // The name's UTF-8 and enclosing section bounds remain checked above.
 
         // [before_section ... | name_len ... name ...] custom_begin ...
         // [               safe                       ] unsafe (could be the section_end)

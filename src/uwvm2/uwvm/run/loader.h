@@ -60,7 +60,6 @@
 #  include <uwvm2/uwvm/imported/ros/host.h>
 # endif
 # include "retval.h"
-# include "weak_symbol.h"
 #endif
 
 #ifndef UWVM_MODULE_EXPORT
@@ -137,12 +136,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
             }
 #  endif
 
-#  if defined(UWVM_SUPPORT_WEAK_SYMBOL)
-            for(auto const& weak_module: ::uwvm2::uwvm::wasm::storage::weak_symbol)
-            {
-                if(!validate_wasip1_group_binding_for_loaded_module(target_kind::weak_symbol, weak_module.module_name)) [[unlikely]] { return false; }
-            }
-#  endif
 
             return true;
         }
@@ -320,7 +313,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
         if(details::loaded_wasm_imports_namespace(::uwvm2::uwvm::imported::ros::portable_robot_local_imported_module.module_name))
         {
 #if UWVM2_HAS_THREADED_PROFILE_HOST_API
-            if(threaded_requested) { return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error); }
+            if(threaded_requested)
+            {
+                if(!::uwvm2::uwvm::runtime::full::threaded_builtin_loader::append(::uwvm2::uwvm::imported::ros::portable_robot_local_imported_module))
+                { return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error); }
+            }
+            else
 #endif
             if(!::uwvm2::uwvm::imported::ros::append_sealed_ros_builtin(::uwvm2::uwvm::imported::ros::portable_robot_local_imported_module))
             { return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error); }
@@ -617,8 +615,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
         return static_cast<int>(::uwvm2::uwvm::run::retval::ok);
     }
 
-    inline constexpr int load_weak_symbol_modules() noexcept
-    { return ::uwvm2::uwvm::run::load_weak_symbol_modules_details(::uwvm2::uwvm::wasm::storage::wasm_parameter); }
 
 }  // namespace uwvm2::uwvm::run
 

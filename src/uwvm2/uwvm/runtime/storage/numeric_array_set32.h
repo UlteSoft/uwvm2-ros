@@ -1,4 +1,4 @@
-// Included only in gc_object_store's public section for exact SET32=1.
+// Scalar-value entry in gc_object_store's public section.
 // This is scalar VALUE marshalling, not a new ownership or collection proof.
 // The original checked_object, foreign lease and mutable object lock remain.
         [[nodiscard]] inline gc_object_status array_set32(
@@ -41,10 +41,6 @@
             // [safe ] only the original pack/store route changes one complete
             // initialized element under the original mutation lock. Integer
             // truncation before byte-copy preserves i8/i16 on big endian.
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
             store_array_value(*obj, index, pack(value, packed), field.storage);
-#else
-            obj->values[index] = pack(value, packed);
-#endif
             return gc_object_status::ok;
         }

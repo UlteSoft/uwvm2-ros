@@ -20,6 +20,7 @@
  ****************************************/
 
 module;
+#include <memory>
 
 // std
 #include <cstddef>

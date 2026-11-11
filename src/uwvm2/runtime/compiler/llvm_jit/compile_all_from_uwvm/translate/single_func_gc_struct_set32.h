@@ -131,6 +131,11 @@
     // [five real C uintptr_t arguments][uintptr_t status-only return]
     // [safe ] no scratch input/output pointer is passed. The original
     // synchronous membership/lease/lock setter is noexcept and does not poll.
+    unsigned const direct_width{field->storage.packed==type::packed_kind::i8?1u:
+        field->storage.packed==type::packed_kind::i16?2u:4u};
+    llvm_jit_gc_direct_access_plan direct{};
+    if(!direct.prepare(state,*module,reference_kind,payload,builder.getInt32(decoded.second),raw,
+        decoded.first,direct_width,false,false,true,false,operand.value)) { return false; }
     auto const status{apply_llvm_jit_host_calling_conv(builder.CreateCall(bridge_type, callee, arguments))};
     status->setDoesNotThrow();
     // [actual register-wide store status][one success guard]
@@ -181,6 +186,7 @@
     // [SSA prefix][two copied input descriptors] end -> [SSA prefix] end
     // [safe ] only status-success can retire inputs. There is no result slot,
     // native byte borrow or descriptor alias across this vector mutation.
+    static_cast<void>(direct.finish(nullptr));
     stack.pop_back();
     stack.pop_back();
     return true;

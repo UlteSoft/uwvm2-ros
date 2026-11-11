@@ -54,27 +54,27 @@ static void available_independent_third_peer()
 static void ack_exact_sequence_and_nonce()
 {srv::control c{};c.owner=response().owner;c.incarnation=41;c.peer=UINT64_C(0xf123456700000002);c.operation=srv::command::commit;c.sequence=43;c.reservation=59;auto r=c;std::array<std::uint8_t,srv::header_bytes>b{};CHECK(srv::encode(r,true,b));srv::control out{};CHECK(srv::associated_ack(b.data(),b.size(),c,out));++c.reservation;CHECK(!srv::associated_ack(b.data(),b.size(),c,out));}
 static void service_bound_keys_are_actual_schema()
-{uwvm2::imported::ros::capability_spec cap;cap.limits={{"max-request-bytes","16"},{"max-response-bytes","8"}};CHECK(cap.limits.at(host::rmw_service_values::send_limit_key(false))=="16");CHECK(cap.limits.at(host::rmw_service_values::send_limit_key(true))=="8");CHECK(!cap.limits.contains("max-message-bytes"));}
+{uwvm2::imported::ros::capability_spec cap;cap.limits={{"max-request-bytes","16"},{"max-response-bytes","8"}};CHECK(cap.limits.at(std::string{host::rmw_service_values::send_limit_key(false)})=="16");CHECK(cap.limits.at(std::string{host::rmw_service_values::send_limit_key(true)})=="8");CHECK(!cap.limits.contains("max-message-bytes"));}
 static void source_deadline_clamps_connection_entry()
-{using namespace std::chrono;host::rmw_service_values::deadline entry{},out=entry+hours(1);CHECK(host::rmw_service_values::entry_deadline(entry,3000,50,out)==0&&out==entry+milliseconds(50));auto saved=out;CHECK(host::rmw_service_values::entry_deadline(entry,3000,0,out)==22&&out==saved);CHECK(host::rmw_service_values::entry_deadline(entry,60001,50,out)==22&&out==saved);}
+{using namespace std::chrono;host::rmw_service_values::deadline entry{},out=entry+hours(1);CHECK(host::rmw_service_values::entry_deadline(entry,3000,50,out)==0&&out==entry+milliseconds(50));auto saved=out;CHECK(host::rmw_service_values::entry_deadline(entry,3000,0,out)==0&&out==entry);out=saved;CHECK(host::rmw_service_values::entry_deadline(entry,std::uint64_t{ipc::max_timeout_ms}+1,50,out)==22&&out==saved);}
 static void responder_deadline_cannot_restart_budget()
 {using namespace std::chrono;host::rmw_service_values::deadline entry{},out=entry+milliseconds(50);CHECK(host::rmw_service_values::clamp_deadline(entry,7,out)==0&&out==entry+milliseconds(7));CHECK(host::rmw_service_values::clamp_deadline(entry,20,out)==0&&out==entry+milliseconds(7));}
 static void query_deadline_is_independent_and_finite()
-{using namespace std::chrono;host::rmw_service_values::deadline entry{},out=entry+milliseconds(50);CHECK(host::rmw_service_values::clamp_deadline(entry,3,out)==0&&out==entry+milliseconds(3));auto old=out;CHECK(host::rmw_service_values::clamp_deadline(entry,0,out)==22&&out==old);}
+{using namespace std::chrono;host::rmw_service_values::deadline entry{},out=entry+milliseconds(50);CHECK(host::rmw_service_values::clamp_deadline(entry,3,out)==0&&out==entry+milliseconds(3));CHECK(host::rmw_service_values::clamp_deadline(entry,0,out)==0&&out==entry);}
 static void rpc_zero_survives_host_copy_error()
 {host::rmw_service_journal j;j.begin_rpc();CHECK(j.rpc_attempted&&!j.rpc_returned&&j.rpc_error==115);j.end_rpc(0);j.api_result(22);CHECK(j.rpc_returned&&j.rpc_error==0&&j.api_error==22&&j.first_primary==22);}
 static void local_preflight_is_not_rpc_attempt()
 {host::rmw_service_journal j;j.begin_api();j.begin_rpc();j.end_rpc(0);j.api_result(0);j.begin_api();j.api_result(90);CHECK(j.api_returned&&j.api_error==90&&!j.api_rpc_attempted&&j.rpc_attempted&&j.rpc_returned&&j.rpc_error==0);j.cancelled(0);j.cleaned(107);CHECK(!j.api_rpc_attempted&&j.api_error==90&&j.cancel==0&&j.cleanup==107&&j.rpc_error==0);}
 static void actual_borrow_helper_compensates_allocation_fault()
 {unsigned compensation=0;auto error=host::rmw_service_values::guarded_borrow([]()->std::uint32_t{throw std::bad_alloc{};},[&](std::uint32_t primary)noexcept{++compensation;return primary;});CHECK(error==12&&compensation==1);}
-static void actual_borrow_helper_compensates_other_fault()
-{unsigned compensation=0;auto error=host::rmw_service_values::guarded_borrow([]()->std::uint32_t{throw 7;},[&](std::uint32_t primary)noexcept{++compensation;return primary;});CHECK(error==5&&compensation==1);}
+static void actual_borrow_helper_compensates_extent_fault()
+{unsigned compensation=0;auto error=host::rmw_service_values::guarded_borrow([]()->std::uint32_t{throw std::length_error{"extent"};},[&](std::uint32_t primary)noexcept{++compensation;return primary;});CHECK(error==90&&compensation==1);}
 static void early_entry_before_invalid_deadline_is_not_old_rpc()
-{host::rmw_service_journal j;j.begin_api();j.begin_rpc();j.end_rpc(0);j.api_result(0);j.begin_api();host::rmw_service_values::deadline entry{},out{};auto error=host::rmw_service_values::entry_deadline(entry,3000,0,out);j.api_result(error);CHECK(error==22&&j.api_returned&&j.api_error==22&&!j.api_rpc_attempted&&j.rpc_attempted&&j.rpc_returned&&j.rpc_error==0);}
+{host::rmw_service_journal j;j.begin_api();j.begin_rpc();j.end_rpc(0);j.api_result(0);j.begin_api();host::rmw_service_values::deadline entry{},out{};auto error=host::rmw_service_values::entry_deadline(entry,std::uint64_t{ipc::max_timeout_ms}+1,0,out);j.api_result(error);CHECK(error==22&&j.api_returned&&j.api_error==22&&!j.api_rpc_attempted&&j.rpc_attempted&&j.rpc_returned&&j.rpc_error==0);}
 int main()
 {
  pending_is_not_success();preserve_first_and_last_primary();cleanup_cannot_overwrite_primary();every_cleanup_pending_slot_separate();clear_borrow_preserves_history();only_peek_idle_without_visible_borrow();prefix_exact64_bits_and_restored();prefix_restored_on_early_scope_return();logical_response_uses_same_identity();no_missing_metadata_becomes_complete();zero_guid_and_zero_time_are_actual_values();request_topic_not_response_projection();error_control_has_no_native_values();closed_control_requires_real_retired_bit();malformed_native_header_keeps_output();empty_request_not_absent_umrc_body();available_independent_third_peer();ack_exact_sequence_and_nonce();
- service_bound_keys_are_actual_schema();source_deadline_clamps_connection_entry();responder_deadline_cannot_restart_budget();query_deadline_is_independent_and_finite();rpc_zero_survives_host_copy_error();local_preflight_is_not_rpc_attempt();actual_borrow_helper_compensates_allocation_fault();actual_borrow_helper_compensates_other_fault();
+ service_bound_keys_are_actual_schema();source_deadline_clamps_connection_entry();responder_deadline_cannot_restart_budget();query_deadline_is_independent_and_finite();rpc_zero_survives_host_copy_error();local_preflight_is_not_rpc_attempt();actual_borrow_helper_compensates_allocation_fault();actual_borrow_helper_compensates_extent_fault();
  early_entry_before_invalid_deadline_is_not_old_rpc();
  std::printf("%s_RMW_SERVICE_HOST_VALUES groups=27 checks=%u failures=%u\n",failures?"FAIL":"PASS",checks,failures);return failures?1:0;
 }

@@ -132,6 +132,27 @@ static bool is_actual_trap(::llvm::CallInst const& call)
         d::get_llvm_runtime_bridge_function_address(::uwvm2::runtime::lib::llvm_jit_runtime_trap);
 #endif
 }
+// Follow the helper's successful edge through the scalar merge. The direct
+// checked path is a separate predecessor; a failed helper must still reach
+// exactly the original cold trap and may never reach a return.
+static bool returns_without_additional_effects(::llvm::BasicBlock const* block)
+{
+    auto const limit = block->getParent()->size();
+    for(::std::size_t n{}; n != limit; ++n)
+    {
+        for(auto const& instruction : *block)
+        {
+            if(::llvm::isa<::llvm::CallBase, ::llvm::LoadInst, ::llvm::StoreInst,
+                ::llvm::AtomicCmpXchgInst, ::llvm::AtomicRMWInst>(instruction)) { return false; }
+        }
+        auto const* terminal = block->getTerminator();
+        if(::llvm::isa<::llvm::ReturnInst>(terminal)) { return true; }
+        auto const* branch = ::llvm::dyn_cast<::llvm::BranchInst>(terminal);
+        if(branch == nullptr || !branch->isUnconditional()) { return false; }
+        block = branch->getSuccessor(0u);
+    }
+    return false;
+}
 static void check_input_status0_diamond(::llvm::Function const& function, ::llvm::CallInst const& actual)
 {
     // [live owned LLVM function][actual native setter instruction]
@@ -145,13 +166,13 @@ static void check_input_status0_diamond(::llvm::Function const& function, ::llvm
     auto const zero{::llvm::dyn_cast<::llvm::ConstantInt>(guard->getOperand(1u))};
     SET32_IR_CHECK(zero != nullptr && zero->isZero());
     auto const ok{branch->getSuccessor(0u)}; auto const error{branch->getSuccessor(1u)};
-    SET32_IR_CHECK(ok != error && ::llvm::isa<::llvm::ReturnInst>(ok->getTerminator()) &&
+    SET32_IR_CHECK(ok != error && returns_without_additional_effects(ok) &&
         ::llvm::isa<::llvm::UnreachableInst>(error->getTerminator()));
     unsigned conditional_branches{}; ::llvm::CallInst const* trap{}; bool memory_clobber{};
     for(auto const& block : function) for(auto const& instruction : block)
     {
         if(auto current{::llvm::dyn_cast<::llvm::BranchInst>(::std::addressof(instruction))})
-        { conditional_branches += current->isConditional(); }
+        { conditional_branches += current->isConditional() && current->getParent() == actual.getParent(); }
         if(auto call{::llvm::dyn_cast<::llvm::CallInst>(::std::addressof(instruction))})
         {
             if(is_actual_trap(*call))
@@ -218,7 +239,6 @@ static void check_input_status0_diamond(::llvm::Function const& function, ::llvm
 }
 static void check_optimized_status0_hot_edge(::llvm::Module const& ir)
 {
-#if defined(UWVM_EXPERIMENTAL_NUMERIC_STRUCT_SET32) && UWVM_EXPERIMENTAL_NUMERIC_STRUCT_SET32 == 1
     auto const intptr{::llvm::Type::getIntNTy(ir.getContext(), sizeof(::std::uintptr_t) * CHAR_BIT)};
     auto const type{::llvm::FunctionType::get(intptr, {intptr, intptr, intptr, intptr, intptr}, false)};
     auto const name{d::get_llvm_runtime_bridge_function_symbol_name<d::uwvm2_llvm_jit_gc_struct_set32_wide_bridge_r1>(
@@ -257,13 +277,10 @@ static void check_optimized_status0_hot_edge(::llvm::Module const& ir)
         auto const ok{branch->getSuccessor(guard->getPredicate() == ::llvm::ICmpInst::ICMP_EQ ? 0u : 1u)};
         // The optimized success edge must reach the original return without
         // another predicate; actual native disassembly is an additional gate.
-        auto const current{ok->getTerminator()}; SET32_IR_CHECK(::llvm::isa<::llvm::ReturnInst>(current));
+        SET32_IR_CHECK(returns_without_additional_effects(ok));
         for(auto const& instruction : *ok)
         { SET32_IR_CHECK(!::llvm::isa<::llvm::CallInst>(instruction)); }
     }
-#else
-    static_cast<void>(ir);
-#endif
 }
 
 static void emit_case(::llvm::Module& ir, gc::wasm_module_storage_t& module, ::std::uint32_t field, wasm_type value_type)
@@ -292,7 +309,6 @@ static void emit_case(::llvm::Module& ir, gc::wasm_module_storage_t& module, ::s
     state.operand_stack.push_back({.type = value_type, .value = function->getArg(2u)});
     ::uwvm2::validation::standard::wasm3::gc_instruction_immediate decoded{};
     decoded.opcode = 5u; decoded.first = 0u; decoded.second = field;
-#if defined(UWVM_EXPERIMENTAL_NUMERIC_STRUCT_SET32) && UWVM_EXPERIMENTAL_NUMERIC_STRUCT_SET32 == 1
     auto invalid{decoded}; invalid.second = UINT32_MAX;
     SET32_IR_CHECK(!d::try_emit_runtime_local_func_llvm_jit_gc_struct_set32(state, invalid, wasm_type::i32));
     SET32_IR_CHECK(entry->empty() && state.operand_stack.size() == 3uz);
@@ -304,23 +320,18 @@ static void emit_case(::llvm::Module& ir, gc::wasm_module_storage_t& module, ::s
             value_type == wasm_type::f32 ? wasm_type::f32 : wasm_type::i32));
         SET32_IR_CHECK(entry->empty() && state.operand_stack.size() == 3uz);
     }
-#endif
     SET32_IR_CHECK(d::try_emit_runtime_local_func_llvm_jit_gc_aggregate(state, decoded));
     SET32_IR_CHECK(state.operand_stack.size() == 1uz && state.operand_stack.front().value == function->getArg(0u));
     state.ir_builder->CreateRet(function->getArg(0u));
     SET32_IR_CHECK(!::llvm::verifyFunction(*function, &::llvm::errs()));
     bool scalar{};
-#if defined(UWVM_EXPERIMENTAL_NUMERIC_STRUCT_SET32) && UWVM_EXPERIMENTAL_NUMERIC_STRUCT_SET32 == 1
     scalar = field < 4u;
-#endif
     auto const bridge_type{scalar ? ::llvm::FunctionType::get(intptr, {intptr, intptr, intptr, intptr, intptr}, false) :
         ::llvm::FunctionType::get(i32, {intptr, i32, i32, intptr, intptr}, false)};
     c::u8string bridge_name{};
-#if defined(UWVM_EXPERIMENTAL_NUMERIC_STRUCT_SET32) && UWVM_EXPERIMENTAL_NUMERIC_STRUCT_SET32 == 1
     if(scalar) { bridge_name = d::get_llvm_runtime_bridge_function_symbol_name<d::uwvm2_llvm_jit_gc_struct_set32_wide_bridge_r1>(
         bridge_type, c::u8string_view{u8"gc_struct_set32_registerwide_v1"}); }
     else
-#endif
     {
         // The real fixed aggregate emitter names its operation and input count
         // explicitly. Verify that exact declaration; a template-value spelling
@@ -337,10 +348,8 @@ static void emit_case(::llvm::Module& ir, gc::wasm_module_storage_t& module, ::s
 #if defined(__riscv) && defined(__riscv_xlen) && (__riscv_xlen == 64)
     SET32_IR_CHECK(declaration == nullptr);
     ::std::uintptr_t expected_address{};
-# if defined(UWVM_EXPERIMENTAL_NUMERIC_STRUCT_SET32) && UWVM_EXPERIMENTAL_NUMERIC_STRUCT_SET32 == 1
     if(scalar) { expected_address = d::get_llvm_runtime_bridge_function_address(d::uwvm2_llvm_jit_gc_struct_set32_wide_bridge_r1); }
     else
-# endif
     { expected_address = d::get_llvm_runtime_bridge_function_address(d::llvm_jit_gc_aggregate_fixed_bridge<5u, 2uz>); }
 #else
     SET32_IR_CHECK(declaration != nullptr && declaration->getFunctionType() == bridge_type);
@@ -381,7 +390,6 @@ static void emit_case(::llvm::Module& ir, gc::wasm_module_storage_t& module, ::s
         }
         if(value_type == wasm_type::f32)
         { SET32_IR_CHECK(::llvm::isa<::llvm::BitCastInst>(narrow_raw)); }
-#if defined(UWVM_EXPERIMENTAL_NUMERIC_STRUCT_SET32) && UWVM_EXPERIMENTAL_NUMERIC_STRUCT_SET32 == 1
 # if !(defined(__riscv) && defined(__riscv_xlen) && (__riscv_xlen == 64))
         SET32_IR_CHECK(reinterpret_cast<::std::uintptr_t>(::llvm::sys::DynamicLibrary::SearchForAddressOfSymbol(
             d::get_llvm_string_ref(bridge_name).str())) ==
@@ -394,7 +402,6 @@ static void emit_case(::llvm::Module& ir, gc::wasm_module_storage_t& module, ::s
             c::u8string_view{u8"gc_struct_set32_registerwide_v1"}));
         SET32_IR_CHECK(bridge_name != d::get_llvm_runtime_bridge_function_symbol_name<d::uwvm2_llvm_jit_gc_struct_set32_wide_bridge_r1>(bridge_type,
             c::u8string_view{u8"gc_struct_set32_registerwide_v2"}));
-#endif
     }
 }
 int main(int argc, char** argv)
@@ -431,11 +438,7 @@ int main(int argc, char** argv)
     SET32_IR_CHECK(!machine->addPassesToEmitFile(codegen, stream, nullptr, ::llvm::CodeGenFileType::ObjectFile, false));
     codegen.run(ir); SET32_IR_CHECK(!bytes.empty());
     write_bytes(argv[1], "struct-set32.o", reinterpret_cast<::std::byte const*>(bytes.data()), bytes.size());
-#if defined(UWVM_EXPERIMENTAL_NUMERIC_STRUCT_SET32) && UWVM_EXPERIMENTAL_NUMERIC_STRUCT_SET32 == 1
     constexpr unsigned protocol_checks{48u};
-#else
-    constexpr unsigned protocol_checks{};
-#endif
     ::fast_io::io::println("PASS struct.set32 status0 compiler cases=9 status_protocol_checks=", protocol_checks,
         " whole_vm=false timing=false object_bytes=", bytes.size());
 }

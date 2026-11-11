@@ -42,7 +42,6 @@ export import :wasm_depend_recursion_limit;
 export import :wasm_set_memory_limit;
 export import :wasm_set_parser_limit;
 export import :wasm_set_initializer_limit;
-export import :wasm_list_weak_symbol_module;
 export import :wasm_feature;
 
 // runtime
@@ -63,7 +62,6 @@ export import :runtime_aot;
 
 // wasi
 export import :wasi_disable_utf8_check;
-export import :wasip1_global_trace;
 export import :wasip1_global_expose_host_api;
 export import :wasip1_global_disable;
 export import :wasip1_global_set_fd_limit;
@@ -89,7 +87,6 @@ export import :wasip1_single_noinherit_system_environment;
 export import :wasip1_single_inherit_system_environment;
 export import :wasip1_single_disable_utf8_check;
 export import :wasip1_single_enable_utf8_check;
-export import :wasip1_single_trace;
 export import :wasip1_single_set_argv0;
 export import :wasip1_single_force_args;
 export import :wasip1_single_set_fd_limit;
@@ -110,7 +107,6 @@ export import :wasip1_group_noinherit_system_environment;
 export import :wasip1_group_inherit_system_environment;
 export import :wasip1_group_disable_utf8_check;
 export import :wasip1_group_enable_utf8_check;
-export import :wasip1_group_trace;
 export import :wasip1_group_set_argv0;
 export import :wasip1_group_force_args;
 export import :wasip1_group_set_fd_limit;

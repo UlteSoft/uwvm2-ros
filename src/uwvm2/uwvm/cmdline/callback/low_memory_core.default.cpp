@@ -18,7 +18,6 @@
 #include "wasm_set_memory_limit.h"
 #include "wasm_set_parser_limit.h"
 #include "wasm_set_initializer_limit.h"
-#include "wasm_list_weak_symbol_module.h"
 #include "wasm_feature.h"
 
 extern "C" void const* uwvm_low_memory_callback_core_anchor() noexcept

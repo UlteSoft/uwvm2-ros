@@ -75,8 +75,8 @@ int main()
         auto const& original=row(before,alias);auto const& current=row(after,alias);
         check(!current.alive&&current.retired&&current.active_handles==0,"retired row carries no live handles");
         check(current.instance==original.instance&&current.generation==original.generation&&
-              current.open_count==original.open_count&&current.revoked==original.revoked,
-              "identity, creation count and revocation history remain unchanged");
+              current.open_count+original.active_handles==original.open_count&&current.revoked==original.revoked,
+              "identity, spent creation tokens and revocation history persist; retirement releases active capacity");
         check(current.operation_tokens==original.operation_tokens&&current.creation_tokens==original.creation_tokens&&
               current.byte_tokens==original.byte_tokens,"retirement and reads do not replenish quotas");
     }

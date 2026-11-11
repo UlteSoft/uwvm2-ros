@@ -10,6 +10,7 @@
 #endif
 
 #include <chrono>
+#include <atomic>
 #include <memory>
 #include <mutex>
 #include <utility>
@@ -49,6 +50,10 @@ namespace uwvm2::imported::ros
             return *this;
         }
         capability_spec const* capability() const noexcept { return lock.owns_lock() ? cap : nullptr; }
+        // Immutable metadata can outlive the admission lease. Keep its owning
+        // registration alive without copying every policy map on every RPC.
+        ::std::shared_ptr<capability_spec const> specification() const noexcept
+        { return lock.owns_lock() ? ::std::shared_ptr<capability_spec const>{lifetime,cap} : nullptr; }
         target_policy const* target() const noexcept { return lock.owns_lock() ? bound_target : nullptr; }
         ::std::uint64_t instance_number() const noexcept { return lock.owns_lock()?identity:0; }
         explicit operator bool() const noexcept { return lock.owns_lock() && cap; }
@@ -57,18 +62,49 @@ namespace uwvm2::imported::ros
 
     class capability_manager
     {
+        struct waiting_operation
+        {
+            synchronous_quota_wait* waiter{};
+            waiting_operation* next{};
+            waiting_operation* quota_next{};
+        };
+        // One native account per (version, scope, binding name, alias). It is
+        // retained independently of instance generations. Locks cover admission
+        // and accounting only, never the native ROS operation/transport lease.
+        struct alias_account
+        {
+            ::std::recursive_mutex mutex{}, audit_mutex{};
+            waiting_operation* waiters{};
+            capability_spec specification{};
+            bounded_audit audit{};
+            ::std::uint64_t open_count{};
+            double rate{};
+            ::std::uint64_t burst{},bandwidth{},tokens{},creation_tokens{},byte_tokens{},byte_fraction{};
+            ::std::uint64_t log_bandwidth{},log_tokens{},log_fraction{};
+            long double token_fraction{},creation_fraction{};
+            bool limited_rate{},limited_bytes{},limited_log{};
+            ::std::chrono::steady_clock::time_point updated{::uwvm2::utils::host_clock::now()};
+        };
         struct alias_state
         {
             capability_spec cap{};
-            bounded_audit audit{};
             bool revoked{};
-            ::std::uint64_t open_count{};
-            double rate{};
-            ::std::uint64_t burst{}, bandwidth{}, tokens{}, creation_tokens{}, byte_tokens{}, byte_fraction{};
-            ::std::uint64_t log_bandwidth{},log_tokens{},log_fraction{};
-            long double token_fraction{}, creation_fraction{};
-            bool limited_rate{},limited_bytes{},limited_log{};
-            ::std::chrono::steady_clock::time_point updated{::uwvm2::utils::host_clock::now()};
+            ::std::shared_ptr<alias_account> accounting{};
+            bounded_audit& audit;
+            ::std::uint64_t& open_count;
+            double& rate;
+            ::std::uint64_t &burst,&bandwidth,&tokens,&creation_tokens,&byte_tokens,&byte_fraction;
+            ::std::uint64_t &log_bandwidth,&log_tokens,&log_fraction;
+            long double &token_fraction,&creation_fraction;
+            bool &limited_rate,&limited_bytes,&limited_log;
+            ::std::chrono::steady_clock::time_point& updated;
+            explicit alias_state(::std::shared_ptr<alias_account> value=::std::make_shared<alias_account>())
+                : accounting{::std::move(value)},audit{accounting->audit},open_count{accounting->open_count},rate{accounting->rate},
+                  burst{accounting->burst},bandwidth{accounting->bandwidth},tokens{accounting->tokens},creation_tokens{accounting->creation_tokens},
+                  byte_tokens{accounting->byte_tokens},byte_fraction{accounting->byte_fraction},log_bandwidth{accounting->log_bandwidth},
+                  log_tokens{accounting->log_tokens},log_fraction{accounting->log_fraction},token_fraction{accounting->token_fraction},
+                  creation_fraction{accounting->creation_fraction},limited_rate{accounting->limited_rate},limited_bytes{accounting->limited_bytes},
+                  limited_log{accounting->limited_log},updated{accounting->updated} {}
         };
         struct handle_entry
         {
@@ -76,16 +112,12 @@ namespace uwvm2::imported::ros
             ::std::string alias{};
             bool active{}, retired{};
         };
-        struct waiting_operation
-        {
-            synchronous_quota_wait* waiter{};
-            waiting_operation* next{};
-        };
         struct backend_state
         {
             waiting_operation* waiters{};
             ::std::recursive_mutex mutex{};
             bool alive{true};
+            bool shared_environment{};
             target_policy policy{};
             ::std::string module{};
             ::std::uint64_t instance_id{};
@@ -95,7 +127,8 @@ namespace uwvm2::imported::ros
         struct instance_state
         {
             ::std::string module{};
-            backend_state ros1{}, ros2{};
+            ::std::atomic<bool> retired{};
+            ::std::shared_ptr<backend_state> ros1{::std::make_shared<backend_state>()}, ros2{::std::make_shared<backend_state>()};
         };
         using identity = ::std::pair<void const*, ::std::uint64_t>;
         struct identity_less
@@ -109,11 +142,23 @@ namespace uwvm2::imported::ros
         };
         ::std::mutex registry_mutex{};
         ::std::map<identity, ::std::shared_ptr<instance_state>, identity_less> instances{};
+        using environment_key=::std::tuple<version,scope,::std::string>;
+        ::std::map<environment_key,::std::shared_ptr<backend_state>> environments{};
+        using accounting_key=::std::tuple<version,scope,::std::string,::std::string>;
+        ::std::map<accounting_key,::std::shared_ptr<alias_account>> accounts{};
+        static bool same_account_policy(capability_spec const& a,capability_spec const& b) noexcept
+        { return a.alias==b.alias && a.operation==b.operation && a.resource==b.resource && a.type==b.type &&
+            a.type_identity==b.type_identity && a.limits==b.limits; }
+        static void notify_account(alias_state& state) noexcept
+        {
+            ::std::lock_guard quota{state.accounting->mutex};
+            for(auto* item=state.accounting->waiters;item;item=item->quota_next) { item->waiter->notify(); }
+        }
         // Slots are never transferred to a different instance/backend after teardown.
         ::std::uint64_t next_slot{1};
         ::std::uint64_t next_instance_id{1};
 
-        static backend_state& backend(instance_state& state, version v) noexcept { return v == version::ros1 ? state.ros1 : state.ros2; }
+        static backend_state& backend(instance_state& state, version v) noexcept { return v == version::ros1 ? *state.ros1 : *state.ros2; }
         ::std::shared_ptr<instance_state> find_instance(void const* object, ::std::uint64_t generation)
         {
             ::std::lock_guard guard{registry_mutex};
@@ -154,7 +199,8 @@ namespace uwvm2::imported::ros
             if(credit>=room) { tokens=capacity;fraction=0; }
             else { tokens+=credit;fraction=partial%1000000000; }
         }
-        static void refresh_quota(alias_state& state)
+        // Caller owns the policy-account mutex for the complete proof/debit.
+        static void refresh_quota_locked(alias_state& state)
         {
             auto now{::uwvm2::utils::host_clock::now()};
             if(!::uwvm2::utils::host_clock::available()) { return; }
@@ -170,31 +216,59 @@ namespace uwvm2::imported::ros
             if(state.limited_log) { refill_bytes(state.log_bandwidth,state.log_tokens,state.log_fraction,elapsed); }
             state.updated=now;
         }
-        static bool available(alias_state& state, ::std::size_t bytes, bool operation)
-        {refresh_quota(state);return ::uwvm2::utils::host_clock::available()&&(!operation||!state.limited_rate||state.tokens>=1)&&(!state.limited_bytes||bytes<=state.byte_tokens)&&(!state.limited_log||bytes<=state.log_tokens);}
-        static result consume(alias_state& state, ::std::size_t bytes, bool creation = false, bool operation = true)
+        static bool available_locked(alias_state& state, ::std::size_t bytes, bool operation)
+        {refresh_quota_locked(state);return ::uwvm2::utils::host_clock::available()&&(!operation||!state.limited_rate||state.tokens>=1)&&(!state.limited_bytes||bytes<=state.byte_tokens)&&(!state.limited_log||bytes<=state.log_tokens);}
+        // Caller holds the account mutex and has just refreshed/proved every
+        // charge. This leaf makes paired admission atomic without a second
+        // fallible clock read between its two debits.
+        static void debit_available_locked(alias_state& state,::std::size_t bytes,bool creation,bool operation) noexcept
         {
-            refresh_quota(state);
-            if(!::uwvm2::utils::host_clock::available()) { return {errc::io_error,"monotonic clock unavailable"}; }
-            auto& tokens{creation ? state.creation_tokens : state.tokens};
-            if((operation && state.limited_rate && !tokens) || (state.limited_bytes && bytes>state.byte_tokens) || (state.limited_log && bytes>state.log_tokens))
-            { return {errc::rate_limited,"explicit per-instance capability quota exhausted"}; }
-            if(operation && state.limited_rate) { --tokens; }
+            auto& tokens{creation?state.creation_tokens:state.tokens};
+            if(operation&&state.limited_rate) { --tokens; }
             if(state.limited_bytes) { state.byte_tokens-=bytes; }
             if(state.limited_log) { state.log_tokens-=bytes; }
-            return {};
         }
         static void notify_waiters(backend_state& state) noexcept
-        { for(auto* entry=state.waiters;entry;entry=entry->next) { entry->waiter->notify(); } }
-        static result wait_quotas(backend_state& bound,alias_state& state,
-            ::std::unique_lock<::std::recursive_mutex>& guard,::std::uint64_t handle,
-            ::std::size_t bytes,bool creation=false,bool operation=true,::std::string_view count_field={},bool debit=true)
         {
+            for(auto* entry=state.waiters;entry;entry=entry->next) { entry->waiter->notify(); }
+            for(auto& [name,alias]:state.aliases) { notify_account(alias); }
+        }
+        static result wait_quotas(instance_state const& member,backend_state& bound,alias_state& state,
+            ::std::unique_lock<::std::recursive_mutex>& guard,::std::uint64_t handle,
+            ::std::size_t bytes,bool creation=false,bool operation=true,::std::string_view count_field={},bool debit=true,
+            ::std::unique_lock<::std::recursive_mutex>* existing_quota=nullptr)
+        {
+            // Limit shape is immutable after this scope account is published.
+            // An unmetered data operation has no shared token mutation, so it
+            // retains the original backend admission checks without adding a
+            // group mutex to every ordinary ROS message.
+            if(count_field.empty()&&!state.limited_rate&&!state.limited_bytes&&!state.limited_log)
+            {
+                if(member.retired.load(::std::memory_order_acquire)||!bound.alive||!bound.policy.enabled||state.revoked)
+                { return {errc::revoked,"capability stopped before admission"}; }
+                if(handle)
+                {
+                    handle_entry* entry{};alias_state* selected{};
+                    if(auto r=lookup(bound,handle,entry,selected);!r) { return r; }
+                    if(selected!=&state) { return {errc::bad_handle,"handle differs from selected capability"}; }
+                }
+                if(synchronous_wait_context::stop_requested()||synchronous_wait_context::process_cancelled())
+                { return {errc::cancelled,"native operation cancelled before admission"}; }
+                (void)::uwvm2::utils::host_clock::now();
+                if(!::uwvm2::utils::host_clock::available()) { return {errc::io_error,"monotonic clock unavailable"}; }
+                if(!(synchronous_wait_context::present()?synchronous_wait_context::select_native_exit(native_wait_on_exit(state.cap)):
+                    !::uwvm2::utils::thread::process_exit::exit_claimed.load(::std::memory_order_acquire)))
+                { return {errc::cancelled,"process exit precedes operation admission"}; }
+                return {};
+            }
+            ::std::unique_lock<::std::recursive_mutex> owned_quota{};
+            if(!existing_quota) { owned_quota=::std::unique_lock{state.accounting->mutex}; }
+            auto& quota{existing_quota?*existing_quota:owned_quota};
             ::std::unique_ptr<synchronous_quota_wait> fallback;
             synchronous_quota_wait* waiter{};
             for(;;)
             {
-                if(!bound.alive || !bound.policy.enabled || state.revoked)
+                if(member.retired.load(::std::memory_order_acquire) || !bound.alive || !bound.policy.enabled || state.revoked)
                 { return {errc::revoked,"capability stopped while waiting"}; }
                 if(handle)
                 {
@@ -204,7 +278,7 @@ namespace uwvm2::imported::ros
                 }
                 if(synchronous_wait_context::stop_requested() || (waiter?waiter->exit_cancelled():synchronous_wait_context::process_cancelled()))
                 { return {errc::cancelled,"native operation cancelled while waiting"}; }
-                refresh_quota(state);
+                refresh_quota_locked(state);
                 if(!::uwvm2::utils::host_clock::available()) { return {errc::io_error,"monotonic clock unavailable"}; }
                 auto const tokens{creation?state.creation_tokens:state.tokens};
                 bool const calls{operation && state.limited_rate && !tokens};
@@ -218,7 +292,10 @@ namespace uwvm2::imported::ros
                         waiter?waiter->select_exit(native_wait_on_exit(state.cap)):
                         !::uwvm2::utils::thread::process_exit::exit_claimed.load(::std::memory_order_acquire)))
                     { return {errc::cancelled,"process exit precedes operation admission"}; }
-                    return debit?consume(state,bytes,creation,operation):result{};
+                    // Credits were proved under this same account lock. No second
+                    // clock read or recursive lock may split proof and debit.
+                    if(debit) { debit_available_locked(state,bytes,creation,operation); }
+                    return {};
                 }
                 bool wait_on_exit{};
                 long double seconds{};
@@ -273,11 +350,16 @@ namespace uwvm2::imported::ros
                 }
                 // Register before unlocking. Close/revoke cannot race between
                 // the exhausted predicate and the eventfd notification.
-                waiting_operation pending{waiter,bound.waiters};bound.waiters=&pending;
-                guard.unlock();
+                waiting_operation pending{waiter,bound.waiters,state.accounting->waiters};
+                bound.waiters=&pending;state.accounting->waiters=&pending;
+                quota.unlock();guard.unlock();
                 ::uwvm2::utils::control::host_diagnostics::flush_limits();
                 auto const outcome{waiter->until(deadline)};
-                guard.lock();
+                guard.lock();quota.lock();
+                bound.module=member.module; // Another member may have audited while this caller waited.
+                auto** account_link{&state.accounting->waiters};
+                while(*account_link!=&pending) { account_link=&(*account_link)->quota_next; }
+                *account_link=pending.quota_next;
                 auto** link{&bound.waiters};
                 while(*link!=&pending) { link=&(*link)->next; }
                 *link=pending.next;
@@ -291,7 +373,7 @@ namespace uwvm2::imported::ros
             auto slot{static_cast<::std::uint32_t>(handle)}; auto generation{static_cast<::std::uint32_t>(handle >> 32)};
             auto found{state.handles.find(slot)};
             if(!slot || !generation || found == state.handles.end() || !found->second.active || found->second.retired || found->second.generation != generation)
-            { return {errc::bad_handle, "forged, stale, cross-instance or cross-version handle"}; }
+            { return {errc::bad_handle, "forged, stale, cross-policy or cross-version handle"}; }
             entry = &found->second;
             auto alias{state.aliases.find(entry->alias)};
             if(alias == state.aliases.end() || alias->second.revoked || !state.policy.enabled) { return {errc::revoked, "capability revoked or target disabled"}; }
@@ -300,11 +382,12 @@ namespace uwvm2::imported::ros
         }
         static void audit_decision(backend_state& state, alias_state& cap, ::std::string_view event, errc error) noexcept
         {
+            if(cap.cap.limits.at("audit")=="deny-only"&&error==errc::success&&(event=="allow"||event=="gateway-result")) { return; }
+            ::std::lock_guard audit_lock{cap.accounting->audit_mutex};
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
             try
             {
 #endif
-            if(cap.cap.limits.at("audit") == "deny-only" && error == errc::success && (event == "allow" || event == "gateway-result")) { return; }
             auto timestamp{::std::chrono::duration_cast<::std::chrono::nanoseconds>(::std::chrono::system_clock::now().time_since_epoch()).count()};
             cap.audit.record(::fast_io::concat_std("{\"time_unix_ns\":",::fast_io::mnp::dec(timestamp),
                 ",\"ros_version\":",json_quoted{to_string(state.policy.ros_version)},",\"module\":",json_quoted{state.module},
@@ -324,16 +407,34 @@ namespace uwvm2::imported::ros
             if(entry.generation == ::std::numeric_limits<::std::uint32_t>::max()) { entry.retired = true; }
             else { ++entry.generation; }
         }
+        static void retire_backend(backend_state& bound) noexcept
+        {
+            ::std::lock_guard guard{bound.mutex};
+            if(!bound.alive) { return; }
+            bound.alive=false;notify_waiters(bound);
+            for(auto& [slot,entry]:bound.handles)
+            {
+                if(entry.active)
+                {
+                    auto cap=bound.aliases.find(entry.alias);
+                    if(cap!=bound.aliases.end())
+                    { ::std::lock_guard quota{cap->second.accounting->mutex};if(cap->second.open_count) { --cap->second.open_count; } }
+                }
+                invalidate(entry);
+            }
+            notify_waiters(bound);
+        }
         static void retire(instance_state& state) noexcept
         {
-            ::std::scoped_lock guard{state.ros1.mutex, state.ros2.mutex};
-            // A management tombstone can be retired again by normal shutdown.
-            // Do not consume another handle generation on repeated retirement.
-            if(!state.ros1.alive&&!state.ros2.alive) { return; }
-            state.ros1.alive = state.ros2.alive = false;
-            notify_waiters(state.ros1);notify_waiters(state.ros2);
-            for(auto& item : state.ros1.handles) { invalidate(item.second); }
-            for(auto& item : state.ros2.handles) { invalidate(item.second); }
+            ::std::scoped_lock guard{state.ros1->mutex,state.ros2->mutex};
+            if(state.retired.exchange(true,::std::memory_order_acq_rel)) { return; }
+            // A member does not own a shared environment. Its replacement or
+            // departure cannot invalidate another member's handles/resources.
+            for(auto* bound:{state.ros1.get(),state.ros2.get()})
+            {
+                notify_waiters(*bound);
+                if(!bound->shared_environment) { retire_backend(*bound); }
+            }
         }
         static void set_lease(authorization& out, ::std::shared_ptr<instance_state> const& lifetime, backend_state& state,
                               alias_state& cap, ::std::unique_lock<::std::recursive_mutex> lock)
@@ -372,12 +473,15 @@ namespace uwvm2::imported::ros
                     {
                         if(++scanned>debug::maximum_scan) {output={};output.selected=query.selected;output.result=debug::status::resource_limit;return;}
                         auto const& state{configured.second};auto const& cap{state.cap};
+                        ::std::unique_lock quota{state.accounting->mutex,::std::try_to_lock};
+                        ::std::unique_lock audit{state.accounting->audit_mutex,::std::try_to_lock};
+                        if(!quota.owns_lock()||!audit.owns_lock()) { output={};output.selected=query.selected;output.result=debug::status::busy;return; }
                         if(!debug::matches(query,static_cast<unsigned>(v),bound.instance_id,cap.alias,cap.operation,instance.module)) {continue;}
                         debug::row value{};value.kind=debug::row_kind::capability;value.backend=static_cast<unsigned>(v);
                         value.instance=bound.instance_id;value.generation=entry.first.second;value.module.assign(instance.module);value.alias.assign(cap.alias);
                         value.operation.assign(cap.operation);value.type.assign(cap.type);
                         if(debug::public_resource(cap.resource)) {value.resource.assign(cap.resource);}else {value.resource_redacted=true;}
-                        value.enabled=bound.policy.enabled;value.alive=bound.alive;value.retired=!bound.alive;value.revoked=state.revoked;value.open_count=state.open_count;
+                        value.enabled=bound.policy.enabled;value.alive=bound.alive&&!instance.retired.load();value.retired=!value.alive;value.revoked=state.revoked;value.open_count=state.open_count;
                         value.operation_tokens=state.tokens;value.creation_tokens=state.creation_tokens;value.byte_tokens=state.byte_tokens;
                         value.audit_records=state.audit.retained_records();value.audit_bytes=state.audit.retained_bytes();value.audit_suppressed=state.audit.dropped_records();
                         for(auto const& handle:bound.handles)
@@ -418,21 +522,85 @@ namespace uwvm2::imported::ros
         {
             if(!object || !valid_module_name(module)) { return {errc::invalid_argument, "runtime identity and validated module name required"}; }
             auto state{::std::make_shared<instance_state>()}; state->module = module;
-            state->ros1.module = state->ros2.module = module;
-            state->ros2.policy.ros_version = version::ros2;
-            if(ros1) { if(ros1->ros_version != version::ros1) { return {errc::invalid_argument, "ROS1 target version mismatch"}; } state->ros1.policy = *ros1; }
-            if(ros2) { if(ros2->ros_version != version::ros2) { return {errc::invalid_argument, "ROS2 target version mismatch"}; } state->ros2.policy = *ros2; }
+            state->ros1->module = state->ros2->module = module;
+            state->ros2->policy.ros_version = version::ros2;
+            if(ros1) { if(ros1->ros_version != version::ros1) { return {errc::invalid_argument, "ROS1 target version mismatch"}; } state->ros1->policy = *ros1; }
+            if(ros2) { if(ros2->ros_version != version::ros2) { return {errc::invalid_argument, "ROS2 target version mismatch"}; } state->ros2->policy = *ros2; }
+            state->ros1->shared_environment=ros1&&ros1->target_scope!=scope::single;
+            state->ros2->shared_environment=ros2&&ros2->target_scope!=scope::single;
+            // Validate every backend before staging an account. A failed second
+            // backend must not reserve a policy name or constrain a later module.
             for(auto v : {version::ros1, version::ros2})
             {
                 auto& bound{backend(*state, v)};
                 if(auto r{validate_target(bound.policy)}; !r) { return r; }
+                if(bound.policy.target_scope==scope::single && bound.policy.name!=module)
+                { return {errc::invalid_argument,"Single policy must name its actual runtime module"}; }
                 if(!bound.policy.enabled) { continue; }
-                for(auto const& [alias, cap] : bound.policy.capabilities)
-                { alias_state item{}; item.cap = cap; initialize_bucket(item); bound.aliases.emplace(alias, ::std::move(item)); }
+                for(auto const& [alias,cap]:bound.policy.capabilities)
+                {
+                    alias_state candidate{};candidate.cap=cap;initialize_bucket(candidate);
+                    candidate.accounting->specification=cap;
+                    bound.aliases.emplace(alias,::std::move(candidate));
+                }
             }
+            // Preallocate publication nodes. No instance/account is published
+            // until both backends, all existing contracts and identity pass.
+            decltype(instances) pending_instance;
+            pending_instance.emplace(identity{object,generation},state);
+            decltype(accounts) pending_accounts;
+            decltype(environments) pending_environments;
             ::std::lock_guard guard{registry_mutex};
-            state->ros1.instance_id = state->ros2.instance_id = next_instance_id++;
-            if(!instances.emplace(identity{object, generation}, state).second) { return {errc::conflict, "runtime instance already registered"}; }
+            if(instances.contains(identity{object,generation}))
+            { return {errc::conflict,"runtime instance already registered"}; }
+            if(next_instance_id==0u) { return {errc::too_large,"runtime instance namespace exhausted"}; }
+            for(auto v : {version::ros1, version::ros2})
+            {
+                auto& selected_backend{v==version::ros1?state->ros1:state->ros2};
+                auto& bound{*selected_backend};
+                auto key=environment_key{v,bound.policy.target_scope,bound.policy.target_scope==scope::global?::std::string{}:bound.policy.name};
+                if(bound.shared_environment)
+                {
+                    auto found=environments.find(key);
+                    if(found!=environments.end())
+                    {
+                        auto const& existing=found->second->policy;
+                        if(existing.enabled!=bound.policy.enabled || existing.connection!=bound.policy.connection ||
+                           existing.interfaces.entries!=bound.policy.interfaces.entries || existing.interfaces.configured!=bound.policy.interfaces.configured ||
+                           existing.capabilities.size()!=bound.policy.capabilities.size())
+                        { return {errc::conflict,"shared ROS environment requires the same complete policy"}; }
+                        for(auto const& [alias,cap]:bound.policy.capabilities)
+                        {
+                            auto present=existing.capabilities.find(alias);
+                            if(present==existing.capabilities.end()||!same_account_policy(present->second,cap))
+                            { return {errc::conflict,"shared ROS environment capability differs"}; }
+                        }
+                        selected_backend=found->second;continue;
+                    }
+                    pending_environments.emplace(::std::move(key),selected_backend);
+                }
+                decltype(bound.aliases) resolved;
+                for(auto const& [alias,candidate]:bound.aliases)
+                {
+                    auto name=bound.policy.target_scope==scope::global?::std::string{}:
+                        bound.policy.target_scope==scope::single?state->module:bound.policy.name;
+                    accounting_key key{v,bound.policy.target_scope,::std::move(name),alias};
+                    auto const found{accounts.find(key)};
+                    auto selected=found==accounts.end()?candidate.accounting:found->second;
+                    if(found!=accounts.end()&&!same_account_policy(selected->specification,candidate.cap))
+                    { return {errc::conflict,"existing policy-scope accounting requires the same capability contract"}; }
+                    if(found==accounts.end()) { pending_accounts.emplace(::std::move(key),selected); }
+                    alias_state item{::std::move(selected)};item.cap=candidate.cap;
+                    resolved.emplace(alias,::std::move(item));
+                }
+                bound.aliases.swap(resolved);
+            }
+            auto const instance_id{next_instance_id++};
+            if(!state->ros1->instance_id) { state->ros1->instance_id=instance_id; }
+            if(!state->ros2->instance_id) { state->ros2->instance_id=instance_id; }
+            environments.merge(pending_environments);
+            accounts.merge(pending_accounts);
+            instances.merge(pending_instance);
             return {};
         }
         /** Permanently retire one existing registration without erasing it.
@@ -466,9 +634,10 @@ namespace uwvm2::imported::ros
         }
         void clear()
         {
-            decltype(instances) retired{};
-            { ::std::lock_guard guard{registry_mutex}; retired.swap(instances); }
+            decltype(instances) retired{};decltype(environments) shared{};
+            { ::std::lock_guard guard{registry_mutex}; retired.swap(instances);shared.swap(environments); }
             for(auto const& item : retired) { retire(*item.second); }
+            for(auto const& item : shared) { retire_backend(*item.second); }
         }
         result open(void const* object, ::std::uint64_t generation, version v, ::std::string_view alias, ::std::uint64_t& handle)
         {
@@ -477,14 +646,17 @@ namespace uwvm2::imported::ros
             auto instance{find_instance(object, generation)};
             if(!instance) { return {errc::permission_denied, "unregistered trusted instance"}; }
             auto& bound{backend(*instance, v)}; ::std::unique_lock guard{bound.mutex};
+            if(instance->retired.load(::std::memory_order_acquire)) { return {errc::permission_denied,"runtime member retired"}; }
+            bound.module=instance->module;
             if(!bound.alive || !bound.policy.enabled) { return {errc::permission_denied, "ROS target disabled or instance torn down"}; }
             auto found{bound.aliases.find(alias)};
             if(found == bound.aliases.end()) { return {errc::permission_denied, "alias absent from effective target"}; }
             auto& cap{found->second};
             if(cap.revoked) { audit_decision(bound, cap, "deny", errc::revoked); return {errc::revoked, "revoked capability cannot be reopened"}; }
             auto count_field{cap.cap.operation == "topic.publish" ? "max-publishers" : (cap.cap.operation == "topic.subscribe" || cap.cap.operation == "param.subscribe-events") ? "max-subscribers" : cap.cap.operation == "service.advertise" ? "max-services" : cap.cap.operation.starts_with("action.") ? "max-actions" : "max-inflight"};
-            if(auto r{wait_quotas(bound,cap,guard,0,0,true,true,count_field)};!r)
-            { audit_decision(bound,cap,"deny",r.code);return r; }
+            ::std::unique_lock quota{cap.accounting->mutex};
+            if(auto r{wait_quotas(*instance,bound,cap,guard,0,0,true,true,count_field,true,&quota)};!r)
+            { quota.unlock();audit_decision(bound,cap,"deny",r.code);return r; }
             ::std::uint32_t slot{}; handle_entry* entry{};
             for(auto& [candidate, value] : bound.handles) { if(!value.active && !value.retired) { slot = candidate; entry = &value; break; } }
             if(!entry)
@@ -493,7 +665,7 @@ namespace uwvm2::imported::ros
                 entry = &bound.handles.emplace(slot, handle_entry{}).first->second;
             }
             entry->alias = alias; entry->active = true; ++cap.open_count; handle = (::std::uint64_t{entry->generation} << 32) | slot;
-            audit_decision(bound, cap, "resource-create", errc::success);
+            quota.unlock();audit_decision(bound, cap, "resource-create", errc::success);
             return {};
         }
         result describe(void const* object, ::std::uint64_t generation, version v, ::std::uint64_t handle, authorization& out)
@@ -503,6 +675,8 @@ namespace uwvm2::imported::ros
             auto instance{find_instance(object, generation)};
             if(!instance) { return {errc::permission_denied, "unregistered trusted instance"}; }
             auto& bound{backend(*instance, v)}; ::std::unique_lock guard{bound.mutex};
+            if(instance->retired.load(::std::memory_order_acquire)) { return {errc::permission_denied,"runtime member retired"}; }
+            bound.module=instance->module;
             handle_entry* entry{}; alias_state* cap{};
             if(auto r{lookup(bound, handle, entry, cap)}; !r) { return r; }
             set_lease(out, instance, bound, *cap, ::std::move(guard));
@@ -517,13 +691,15 @@ namespace uwvm2::imported::ros
             auto instance{find_instance(object, generation)};
             if(!instance) { return {errc::permission_denied, "unregistered trusted instance"}; }
             auto& bound{backend(*instance, v)}; ::std::unique_lock guard{bound.mutex};
+            if(instance->retired.load(::std::memory_order_acquire)) { return {errc::permission_denied,"runtime member retired"}; }
+            bound.module=instance->module;
             handle_entry* entry{}; alias_state* cap{};
             if(auto r{lookup(bound, handle, entry, cap)}; !r) { return r; }
             if(cap->cap.operation != operation) { audit_decision(bound, *cap, "deny", errc::permission_denied); return {errc::permission_denied, "operation differs from explicit capability"}; }
             if(validate_payload) { if(auto r{validate_message(v, cap->cap, payload)}; !r) { audit_decision(bound, *cap, "deny", r.code); return r; } }
             if(!consume_quota && !synchronous_wait_context::select_native_exit(native_wait_on_exit(cap->cap)))
             { return {errc::cancelled,"process exit precedes native operation"}; }
-            if(consume_quota) { if(auto r{wait_quotas(bound,*cap,guard,handle,payload.size())}; !r) { audit_decision(bound, *cap, "deny", r.code); return r; } audit_decision(bound, *cap, "allow", errc::success); }
+            if(consume_quota) { if(auto r{wait_quotas(*instance,bound,*cap,guard,handle,payload.size())}; !r) { audit_decision(bound, *cap, "deny", r.code); return r; } audit_decision(bound, *cap, "allow", errc::success); }
             set_lease(out, instance, bound, *cap, ::std::move(guard));
             return {};
         }
@@ -542,6 +718,8 @@ namespace uwvm2::imported::ros
             auto instance{find_instance(object,generation)};
             if(!instance) return {errc::permission_denied,"unregistered trusted instance"};
             auto& bound{backend(*instance,v)}; ::std::unique_lock guard{bound.mutex};
+            if(instance->retired.load(::std::memory_order_acquire)) { return {errc::permission_denied,"runtime member retired"}; }
+            bound.module=instance->module;
             handle_entry* entry{}; alias_state* cap{};
             if(auto r{lookup(bound,handle,entry,cap)}; !r) return r;
             auto deny=[&](errc error,char const* reason) -> result
@@ -568,7 +746,7 @@ namespace uwvm2::imported::ros
             }
             else if(!ipc::action_control::valid_control_request(cmd,data,payload.size()))
                 return deny(errc::invalid_argument,"invalid Action control request");
-            if(auto r{wait_quotas(bound,*cap,guard,handle,payload.size(),false,!response)}; !r)
+            if(auto r{wait_quotas(*instance,bound,*cap,guard,handle,payload.size(),false,!response)}; !r)
             { audit_decision(bound,*cap,"deny",r.code);return r; }
             audit_decision(bound,*cap,"allow",errc::success);
             set_lease(out,instance,bound,*cap,::std::move(guard));return {};
@@ -592,6 +770,8 @@ namespace uwvm2::imported::ros
             auto instance{find_instance(object, generation)};
             if(!instance) { return {errc::permission_denied, "unregistered trusted instance"}; }
             auto& bound{backend(*instance, v)}; ::std::unique_lock guard{bound.mutex};
+            if(instance->retired.load(::std::memory_order_acquire)) { return {errc::permission_denied,"runtime member retired"}; }
+            bound.module=instance->module;
             handle_entry* entry{}; alias_state* cap{};
             if(auto r{lookup(bound, handle, entry, cap)}; !r) { return r; }
             if((operation != "service.advertise" && operation != "service.respond") || cap->cap.operation != operation)
@@ -602,7 +782,7 @@ namespace uwvm2::imported::ros
             { audit_decision(bound, *cap, "deny", errc::invalid_argument); return {errc::invalid_argument, "RMW service ticket envelope truncated"}; }
             if(auto r{validate_message(v, cap->cap, envelope)}; !r)
             { audit_decision(bound, *cap, "deny", r.code); return r; }
-            if(auto r{wait_quotas(bound,*cap,guard,handle,envelope.size()-8,false,consume_operation)}; !r)
+            if(auto r{wait_quotas(*instance,bound,*cap,guard,handle,envelope.size()-8,false,consume_operation)}; !r)
             { audit_decision(bound, *cap, "deny", r.code); return r; }
             audit_decision(bound, *cap, "allow", errc::success);
             set_lease(out, instance, bound, *cap, ::std::move(guard));
@@ -615,10 +795,12 @@ namespace uwvm2::imported::ros
             if(!object || !valid_version(v)) { return {errc::permission_denied, "invalid trusted instance or version"}; }
             auto instance{find_instance(object, generation)}; if(!instance) { return {errc::permission_denied, "unregistered trusted instance"}; }
             auto& bound{backend(*instance, v)}; ::std::unique_lock guard{bound.mutex};
+            if(instance->retired.load(::std::memory_order_acquire)) { return {errc::permission_denied,"runtime member retired"}; }
+            bound.module=instance->module;
             handle_entry* entry{}; alias_state* cap{};
             if(auto r{lookup(bound, handle, entry, cap)}; !r) { return r; }
             if(auto r{validate_response_payload(v, cap->cap, payload)}; !r) { audit_decision(bound, *cap, "deny", r.code); return r; }
-            if(auto r{wait_quotas(bound,*cap,guard,handle,payload.size(),false,false)}; !r) { audit_decision(bound, *cap, "deny", r.code); return r; }
+            if(auto r{wait_quotas(*instance,bound,*cap,guard,handle,payload.size(),false,false)}; !r) { audit_decision(bound, *cap, "deny", r.code); return r; }
             set_lease(out, instance, bound, *cap, ::std::move(guard)); return {};
         }
         // Source and observer byte/rate admission is atomic. A refused preview
@@ -631,7 +813,9 @@ namespace uwvm2::imported::ros
         {
             observer.release();source.release();if(!object||!valid_version(v)) {return {errc::permission_denied,"invalid event Instance"};}
             auto instance{find_instance(object,generation)};if(!instance) {return {errc::permission_denied,"unregistered event Instance"};}
-            auto& bound{backend(*instance,v)};::std::unique_lock guard{bound.mutex};handle_entry* entry{};alias_state* observing{};
+            auto& bound{backend(*instance,v)};::std::unique_lock guard{bound.mutex};
+            if(instance->retired.load(::std::memory_order_acquire)) { return {errc::permission_denied,"runtime member retired"}; }
+            bound.module=instance->module;handle_entry* entry{};alias_state* observing{};
             if(auto r{lookup(bound,observer_handle,entry,observing)};!r) {return r;}
             if(!ipc::valid_event_header(header)||observing->cap.operation!="event.observe"||header.instance!=bound.instance_id||header.backend!=static_cast<unsigned>(v)||header.source_handle!=source_handle||header.payload_bytes!=body.size()) {return {errc::permission_denied,"event binding differs from explicit observer"};}
             ::std::uint32_t mask{};::std::uint64_t maximum{};
@@ -654,8 +838,8 @@ namespace uwvm2::imported::ros
                 // Neither side is debited until both are ready under the same
                 // lock. Waiting retains the already received native response.
                 if(producing)
-                { if(auto r{wait_quotas(bound,*producing,guard,source_handle,body.size(),false,operation,{},false)};!r) { return r; } }
-                if(auto r{wait_quotas(bound,*observing,guard,observer_handle,wire,false,false,{},false)};!r) { return r; }
+                { if(auto r{wait_quotas(*instance,bound,*producing,guard,source_handle,body.size(),false,operation,{},false)};!r) { return r; } }
+                if(auto r{wait_quotas(*instance,bound,*observing,guard,observer_handle,wire,false,false,{},false)};!r) { return r; }
                 alias_state* checked{};
                 if(auto r{lookup(bound,observer_handle,entry,checked)};!r) { return r; }
                 if(checked!=observing) { return {errc::bad_handle,"observer changed during admission"}; }
@@ -664,10 +848,23 @@ namespace uwvm2::imported::ros
                     if(auto r{lookup(bound,source_handle,entry,checked)};!r) { return r; }
                     if(checked!=producing) { return {errc::bad_handle,"source changed during admission"}; }
                 }
-                if((!producing||available(*producing,body.size(),operation))&&available(*observing,wire,false)) { break; }
+                ::std::unique_lock observer_quota{observing->accounting->mutex,::std::defer_lock};
+                ::std::unique_lock<::std::recursive_mutex> source_quota{};
+                if(producing&&producing->accounting!=observing->accounting)
+                {
+                    source_quota=::std::unique_lock{producing->accounting->mutex,::std::defer_lock};
+                    ::std::lock(observer_quota,source_quota);
+                }
+                else { observer_quota.lock(); }
+                if((!producing||available_locked(*producing,body.size(),operation))&&available_locked(*observing,wire,false))
+                {
+                    if(producing) { debit_available_locked(*producing,body.size(),false,operation); }
+                    debit_available_locked(*observing,wire,false,false);
+                    break;
+                }
             }
-            if(producing) {(void)consume(*producing,body.size(),false,operation);set_lease(source,instance,bound,*producing,::std::unique_lock<::std::recursive_mutex>{bound.mutex});}
-            (void)consume(*observing,wire,false,false);set_lease(observer,instance,bound,*observing,::std::move(guard));return {};
+            if(producing) {set_lease(source,instance,bound,*producing,::std::unique_lock<::std::recursive_mutex>{bound.mutex});}
+            set_lease(observer,instance,bound,*observing,::std::move(guard));return {};
         }
         // Dedicated trusted-envelope byte charge; it cannot grant native source
         // authority or reinterpret the envelope as a topic/service payload.
@@ -676,10 +873,12 @@ namespace uwvm2::imported::ros
         {
             out.release();if(!object||!valid_version(v)) { return {errc::permission_denied,"invalid observer identity"}; }
             auto instance{find_instance(object,generation)};if(!instance) { return {errc::permission_denied,"unregistered observer Instance"}; }
-            auto& bound{backend(*instance,v)};::std::unique_lock guard{bound.mutex};handle_entry* entry{};alias_state* cap{};
+            auto& bound{backend(*instance,v)};::std::unique_lock guard{bound.mutex};
+            if(instance->retired.load(::std::memory_order_acquire)) { return {errc::permission_denied,"runtime member retired"}; }
+            bound.module=instance->module;handle_entry* entry{};alias_state* cap{};
             if(auto r{lookup(bound,handle,entry,cap)};!r) { return r; }
             if(cap->cap.operation!="event.observe") { return {errc::permission_denied,"observer operation required"}; }
-            if(auto r{wait_quotas(bound,*cap,guard,handle,bytes,false,false)};!r) { return r; }
+            if(auto r{wait_quotas(*instance,bound,*cap,guard,handle,bytes,false,false)};!r) { return r; }
             set_lease(out,instance,bound,*cap,::std::move(guard));return {};
         }
         result close(void const* object, ::std::uint64_t generation, version v, ::std::uint64_t handle,
@@ -690,11 +889,21 @@ namespace uwvm2::imported::ros
             auto instance{find_instance(object, generation)};
             if(!instance) { return {errc::permission_denied, "unregistered trusted instance"}; }
             auto& bound{backend(*instance, v)}; ::std::lock_guard guard{bound.mutex};
+            if(instance->retired.load(::std::memory_order_acquire)) { return {errc::permission_denied,"runtime member retired"}; }
+            bound.module=instance->module;
             handle_entry* entry{}; alias_state* cap{};
             if(auto r{lookup(bound, handle, entry, cap)}; !r) { return r; }
-            invalidate(*entry); if(cap->open_count) { --cap->open_count; }
+            invalidate(*entry);
+            { ::std::lock_guard quota{cap->accounting->mutex};if(cap->open_count) { --cap->open_count; } }
             notify_waiters(bound);
-            if(last_open_handle) { *last_open_handle = cap->open_count == 0; }
+            // The shared policy environment owns the native resource. Closing
+            // one member's handle preserves every remaining handle in it.
+            if(last_open_handle)
+            {
+                *last_open_handle=true;
+                for(auto const& [slot,other]:bound.handles)
+                { if(other.active&&other.alias==cap->cap.alias) { *last_open_handle=false;break; } }
+            }
             audit_decision(bound, *cap, "resource-close", errc::success);
             return {};
         }
@@ -704,11 +913,21 @@ namespace uwvm2::imported::ros
             auto instance{find_instance(object, generation)};
             if(!instance) { return {errc::permission_denied, "unregistered trusted instance"}; }
             auto& bound{backend(*instance, v)}; ::std::lock_guard guard{bound.mutex};
+            if(instance->retired.load(::std::memory_order_acquire)) { return {errc::permission_denied,"runtime member retired"}; }
+            bound.module=instance->module;
             if(!bound.alive) { return {errc::permission_denied, "runtime instance torn down"}; }
             auto cap{bound.aliases.find(alias)};
             if(cap == bound.aliases.end()) { return {errc::permission_denied, "unknown effective capability"}; }
-            cap->second.revoked = true; cap->second.open_count = 0; notify_waiters(bound); audit_decision(bound, cap->second, "capability-revoke", errc::success);
-            for(auto& [slot, entry] : bound.handles) { if(entry.active && entry.alias == alias) { invalidate(entry); } }
+            cap->second.revoked = true;
+            {
+                ::std::lock_guard quota{cap->second.accounting->mutex};
+                for(auto& [slot,entry]:bound.handles)
+                {
+                    if(entry.active&&entry.alias==alias)
+                    { if(cap->second.open_count) { --cap->second.open_count; }invalidate(entry); }
+                }
+            }
+            notify_waiters(bound);audit_decision(bound,cap->second,"capability-revoke",errc::success);
             return {};
         }
         result record_result(void const* object, ::std::uint64_t generation, version v, ::std::string_view alias,
@@ -717,6 +936,8 @@ namespace uwvm2::imported::ros
             if(!object || !valid_version(v)) { return {errc::permission_denied, "invalid trusted identity"}; }
             auto instance{find_instance(object, generation)}; if(!instance) { return {errc::permission_denied, "unregistered instance"}; }
             auto& bound{backend(*instance, v)}; ::std::lock_guard guard{bound.mutex};
+            if(instance->retired.load(::std::memory_order_acquire)) { return {errc::permission_denied,"runtime member retired"}; }
+            bound.module=instance->module;
             auto cap{bound.aliases.find(alias)}; if(!bound.alive || cap == bound.aliases.end()) { return {errc::permission_denied, "unknown configured capability"}; }
             if(event != "gateway-result" && event != "gateway-error" && event != "resource-create" && event != "resource-close") { return {errc::invalid_argument, "unknown audit event"}; }
             audit_decision(bound, cap->second, event, error); return {};
@@ -727,7 +948,10 @@ namespace uwvm2::imported::ros
             if(!object || !valid_version(v)) { return {errc::permission_denied, "invalid trusted identity"}; }
             auto instance{find_instance(object, generation)}; if(!instance) { return {errc::permission_denied, "unregistered instance"}; }
             auto& bound{backend(*instance, v)}; ::std::lock_guard guard{bound.mutex};
+            if(instance->retired.load(::std::memory_order_acquire)) { return {errc::permission_denied,"runtime member retired"}; }
+            bound.module=instance->module;
             auto cap{bound.aliases.find(alias)}; if(!bound.alive || cap == bound.aliases.end()) { return {errc::permission_denied, "unknown configured capability"}; }
+            ::std::lock_guard audit{cap->second.accounting->audit_mutex};
             cap->second.audit.drain(records, dropped); return {};
         }
     };

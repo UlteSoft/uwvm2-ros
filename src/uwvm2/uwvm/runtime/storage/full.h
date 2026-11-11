@@ -36,6 +36,7 @@
 # include <uwvm2/utils/macro/push_macros.h>
 // import
 # include <fast_io.h>
+# include <uwvm2/uwvm/io/impl.h>
 # include <uwvm2/utils/container/impl.h>
 # include <uwvm2/utils/control/owned_file_image.h>
 # include <uwvm2/parser/wasm/standard/wasm1/type/impl.h>
@@ -49,6 +50,7 @@
 # include "storage.h"
 # include "builtin_wasip1_loader.h"
 # include "builtin_ros_loader.h"
+# include "threaded_builtin_loader.h"
 #endif
 
 #ifndef UWVM_MODULE_EXPORT
@@ -174,7 +176,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
         builtin_ros_loader_identity::census cache_ros_identities_{};
         ::uwvm2::uwvm::wasm::type::local_imported_t const* cache_native_vector_begin_{};
         ::std::size_t cache_native_vector_extent_{};
-        bool cache_foreign_native_at_seal_{};
+#if defined(UWVM_SUPPORT_PRELOAD_DL)
+        decltype(::uwvm2::uwvm::wasm::storage::preloaded_dl.cbegin()) cache_dl_vector_begin_{};
+        ::std::size_t cache_dl_vector_extent_{};
+#endif
         // Separate read-only debug closure. Never feeds generic mutation,
         // cache, checkpoint initializers/capsules or an external restorer.
         builtin_ros_loader_identity::census debug_ros_identities_{};
@@ -204,7 +209,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
             // [safe] file_ borrows these final object buffers before parsing.
             file_.file_name = owned_file_name();
             file_.module_name = owned_rename();
-            if(preload_inputs_.size() > 4095u) { ::fast_io::fast_terminate(); }
+            if(preload_inputs_.size() > 4095u)
+            {
+                ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                    u8"uwvm: [error] preload graph exceeds the supported 4095-module admission limit");
+                ::uwvm2::uwvm::io::fast_exit(::uwvm2::uwvm::io::diagnostic_exit_status::invalid_option);
+            }
             preload_files_.resize(preload_inputs_.size()); preload_bindings_.resize(preload_inputs_.size());
             // FINAL array extents established BEFORE any filename borrow or parse.
             for(::std::size_t index{}; index != preload_files_.size(); ++index)
@@ -339,10 +349,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
             cache_native_vector_begin_=cache_providers.cbegin();
             cache_native_vector_extent_=cache_providers.size();
 #if defined(UWVM_SUPPORT_PRELOAD_DL)
-            cache_foreign_native_at_seal_=!::uwvm2::uwvm::wasm::storage::preloaded_dl.empty();
-#endif
-#if defined(UWVM_SUPPORT_WEAK_SYMBOL)
-            cache_foreign_native_at_seal_=cache_foreign_native_at_seal_ || !::uwvm2::uwvm::wasm::storage::weak_symbol.empty();
+            cache_dl_vector_begin_=::uwvm2::uwvm::wasm::storage::preloaded_dl.cbegin();
+            cache_dl_vector_extent_=::uwvm2::uwvm::wasm::storage::preloaded_dl.size();
 #endif
             debug_ros_identities_=builtin_ros_loader_identity::snapshot_current();
             auto const& debug_providers{::uwvm2::uwvm::wasm::storage::preload_local_imported};
@@ -350,10 +358,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
 #if defined(UWVM_SUPPORT_PRELOAD_DL)
             debug_foreign_native_present_at_seal_=debug_foreign_native_present_at_seal_ ||
                 !::uwvm2::uwvm::wasm::storage::preloaded_dl.empty();
-#endif
-#if defined(UWVM_SUPPORT_WEAK_SYMBOL)
-            debug_foreign_native_present_at_seal_=debug_foreign_native_present_at_seal_ ||
-                !::uwvm2::uwvm::wasm::storage::weak_symbol.empty();
 #endif
             debug_native_vector_sealed_=true;
             main_module_ = ::std::addressof(found->second);
@@ -444,36 +448,35 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
             return false;
 #endif
         }
-        enum class cache_native_provider_census { unsafe, no_native, builtin_wasip1, builtin_ros };
         // Initializer-sealed provider identity only. Unlike the debugger's method
         // below this does NOT claim a code-validation epoch: the first ordinary
         // materializer may perform its cache query before that publication.
-        [[nodiscard]] cache_native_provider_census actual_cache_native_provider_census() const noexcept
+        [[nodiscard]] bool has_current_cache_provider_bindings() const noexcept
         {
-            if(!has_actual_ordinary_cli_cache_origin()) { return cache_native_provider_census::unsafe; }
+            if(!has_actual_ordinary_cli_cache_origin()) { return false; }
 #if defined(UWVM_SUPPORT_PRELOAD_DL)
-            // Previously delivered C ABI tables/descriptors cannot be revoked
-            // by the current exposure flag or an empty counted host gate.
-            if(!::uwvm2::uwvm::wasm::storage::preloaded_dl.empty()) { return cache_native_provider_census::unsafe; }
-#endif
-#if defined(UWVM_SUPPORT_WEAK_SYMBOL)
-            if(!::uwvm2::uwvm::wasm::storage::weak_symbol.empty()) { return cache_native_provider_census::unsafe; }
+            // Trusted native drivers are runtime bindings, not cached code.
+            // Authenticate the initializer-sealed collection during this cold
+            // compile scope; its implementation bytes and load addresses are
+            // deliberately absent from compatibility identity.
+            auto const& drivers{::uwvm2::uwvm::wasm::storage::preloaded_dl};
+            if(drivers.cbegin()!=cache_dl_vector_begin_ || drivers.size()!=cache_dl_vector_extent_) { return false; }
 #endif
             auto const& providers{::uwvm2::uwvm::wasm::storage::preload_local_imported};
-            if(cache_foreign_native_at_seal_ || providers.size()!=cache_native_vector_extent_ ||
-               providers.cbegin()!=cache_native_vector_begin_) { return cache_native_provider_census::unsafe; }
+            if(providers.size()!=cache_native_vector_extent_ ||
+               providers.cbegin()!=cache_native_vector_begin_) { return false; }
             if(builtin_wasip1_identity_)
             {
-                if(!builtin_wasip1_loader_identity::canonical(builtin_wasip1_identity_)) { return cache_native_provider_census::unsafe; }
+                if(!builtin_wasip1_loader_identity::canonical(builtin_wasip1_identity_)) { return false; }
                 auto const& selected{builtin_wasip1_loader_identity::selected_};
                 if(!selected || selected.get()!=builtin_wasip1_identity_.get() ||
                    selected.owner_before(builtin_wasip1_identity_) || builtin_wasip1_identity_.owner_before(selected) ||
-                   builtin_wasip1_identity_->current_member()!=builtin_wasip1_member_) { return cache_native_provider_census::unsafe; }
+                   builtin_wasip1_identity_->current_member()!=builtin_wasip1_member_) { return false; }
             }
             for(auto const& identity: cache_ros_identities_)
             {
                 if(identity && (!builtin_ros_loader_identity::still_selected(identity) || identity->current_member()==nullptr))
-                { return cache_native_provider_census::unsafe; }
+                { return false; }
             }
             for(auto const& provider: providers)
             {
@@ -481,15 +484,20 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
                 // ROS namespace/signature or arbitrary native callback is not.
                 auto const* member{::std::addressof(provider)};
                 if(builtin_wasip1_identity_ && member==builtin_wasip1_member_) { continue; }
+#ifndef UWVM_MODULE
+                // The real typed thread loader owns this exact current vector
+                // member and unique unified-registry binding. Namespace strings
+                // or a copied export signature cannot pass actual_member().
+                threaded_builtin_kind thread_kind{};
+                if(threaded_builtin_loader::actual_member(member,thread_kind) &&
+                   thread_kind==threaded_builtin_kind::threads) { continue; }
+#endif
                 bool authenticated{};
                 for(auto const& identity: cache_ros_identities_)
                 { if(identity && identity->current_member()==member) { authenticated=true; break; } }
-                if(!authenticated) { return cache_native_provider_census::unsafe; }
+                if(!authenticated) { return false; }
             }
-            // The mixed ROS/WASI case still requires the independent safe-FD
-            // and callback census. No prior process capability enters an object.
-            if(builtin_wasip1_identity_) { return cache_native_provider_census::builtin_wasip1; }
-            return providers.empty() ? cache_native_provider_census::no_native : cache_native_provider_census::builtin_ros;
+            return true;
         }
         // Cold debug-byte exclusivity qualification ONLY. This authenticates
         // the actual finalized native provider census for this current source;
@@ -503,9 +511,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
             // Previously delivered C ABI tables/descriptors cannot be revoked
             // by the current exposure flag or an empty counted host gate.
             if(!::uwvm2::uwvm::wasm::storage::preloaded_dl.empty()) { return false; }
-#endif
-#if defined(UWVM_SUPPORT_WEAK_SYMBOL)
-            if(!::uwvm2::uwvm::wasm::storage::weak_symbol.empty()) { return false; }
 #endif
             auto const& providers{::uwvm2::uwvm::wasm::storage::preload_local_imported};
             if(!builtin_wasip1_identity_) { return providers.empty(); }
@@ -554,21 +559,27 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
                native.target.local_imported.module_ptr != builtin_wasip1_member_) { return false; }
             return builtin_wasip1_identity_->copy_function(builtin_wasip1_member_,native.target.local_imported.index,output);
         }
-        // Read-only source-byte census ONLY. The synchronous DBG caller must
-        // own actual maintenance/closed-host/N/all-stop/publication/source pins.
-        // No checkpoint/mutation/cache code may substitute this for its older
-        // stricter no-unadapted-provider query. Unknown Native means refusal.
+        // Cold debugger byte-access census ONLY. The synchronous DBG caller
+        // must own actual closed-host/N/all-stop/publication/source pins and
+        // separate read/write authority. This grants no checkpoint replay or
+        // cache authority; every unknown Native provider still means refusal.
         [[nodiscard]] bool actual_debug_memory_provider_census(::std::size_t actual_id,
             ::std::uint_least64_t actual_epoch,
             ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const* actual_module) const noexcept
+        { return actual_builtin_provider_census(actual_id,actual_epoch,actual_module,false); }
+    private:
+        // ROS calls may execute through the real threaded builtin loader. Its
+        // immutable member identity is sufficient for call provenance, but is
+        // not a debugger all-stop or exclusive-memory-access certificate.
+        [[nodiscard]] bool actual_builtin_provider_census(::std::size_t actual_id,
+            ::std::uint_least64_t actual_epoch,
+            ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const* actual_module,
+            bool include_thread_provider) const noexcept
         {
             if(!debug_native_vector_sealed_ || debug_foreign_native_present_at_seal_ ||
                actual_validated_file(actual_id,actual_epoch,actual_module)==nullptr) {return false;}
 #if defined(UWVM_SUPPORT_PRELOAD_DL)
             if(!::uwvm2::uwvm::wasm::storage::preloaded_dl.empty()) {return false;}
-#endif
-#if defined(UWVM_SUPPORT_WEAK_SYMBOL)
-            if(!::uwvm2::uwvm::wasm::storage::weak_symbol.empty()) {return false;}
 #endif
             auto const& providers{::uwvm2::uwvm::wasm::storage::preload_local_imported};
             if(providers.size()!=debug_native_vector_extent_ || providers.cbegin()!=debug_native_vector_begin_) {return false;}
@@ -595,16 +606,24 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
             {
                 auto const* member{::std::addressof(providers.index_unchecked(i))};bool known=member==wasi;
                 for(auto actual:ros)if(actual!=nullptr && actual==member) {known=true;}
-                if(!known) {return false;} // Includes foreign, threads, copied or name-only wrappers.
+#if defined(__linux__) && defined(UWVM_USE_THREAD_LOCAL) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS) && !defined(UWVM_TERMINATE_IMME_WHEN_PARSE) && (defined(UWVM_RUNTIME_UWVM_INTERPRETER) || defined(UWVM_RUNTIME_LLVM_JIT))
+                if(!known && include_thread_provider)
+                {
+                    threaded_builtin_kind kind{};
+                    known=threaded_builtin_loader::actual_member(member,kind) && kind==threaded_builtin_kind::threads;
+                }
+#endif
+                if(!known) {return false;} // Foreign, copied and name-only wrappers remain forbidden.
             }
             return true;
         }
+    public:
         [[nodiscard]] bool actual_builtin_ros_function(::std::size_t actual_id,
             ::std::uint_least64_t actual_epoch,
             ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const* actual_module,
             ::std::size_t actual_import_index,builtin_ros_function_data& output) const noexcept
         {
-            if(!actual_debug_memory_provider_census(actual_id,actual_epoch,actual_module)) {return false;}
+            if(!actual_builtin_provider_census(actual_id,actual_epoch,actual_module,true)) {return false;}
             auto const* file{actual_validated_file(actual_id,actual_epoch,actual_module)};
             if(file==nullptr || file->binfmt_ver!=1u) {return false;}
             auto const& imports{actual_module->imported_function_vec_storage};if(actual_import_index>=imports.size()) {return false;}

@@ -1,0 +1,1 @@
+(module (type $s (array (mut f64))) (func (export "_start") ref.null $s i32.const 0 array.get $s drop))

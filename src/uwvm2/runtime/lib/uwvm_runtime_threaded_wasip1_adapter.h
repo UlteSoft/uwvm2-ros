@@ -21,8 +21,8 @@ extern "C++"
         using admission_status=::uwvm2::runtime::wasm_threads::import_admission;
         using native_fd=::uwvm2::imported::wasi::wasip1::fd_manager::wasi_fd_t;
         using fd_ref=::uwvm2::imported::wasi::wasip1::fd_manager::wasi_fd_ref_t;
-        enum class operation {args_sizes,args_get,env_sizes,env_get,clock_time,clock_res,yield,random,read,write,poll,socket_send,socket_recv,socket_accept,socket_accept_wasix,socket_shutdown,renumber,prestat_get,prestat_name,fdstat_get,fdstat_rights,filestat_get,fd_close,fd_tell,fd_seek,path_open};
-        struct binding {operation code{};environment* env{};::std::size_t parameter_bytes{};::std::size_t interface_id{};unsigned wide_parameters{};};
+        enum class operation {args_sizes,args_get,env_sizes,env_get,clock_time,clock_res,yield,random,read,write,poll,socket_send,socket_recv,socket_accept,socket_accept_wasix,socket_shutdown,renumber,prestat_get,prestat_name,fdstat_get,fdstat_rights,filestat_get,fd_close,fd_tell,fd_seek,path_open,pread,pwrite,canonical};
+        struct binding {operation code{};environment* env{};::std::size_t parameter_bytes{};::std::size_t interface_id{};unsigned wide_parameters{};bool memory64{};::std::size_t provider_index{};};
         static constexpr ::std::size_t transfer_bytes{PIPE_BUF}; // Native packet capacity; legal partial I/O, never a request limit.
         template<typename T> [[nodiscard]] static ::std::unique_ptr<T[]> allocate_array(::std::size_t count) noexcept
         {
@@ -34,7 +34,11 @@ extern "C++"
         struct context final
         {
             lease& actual;world const& instance;environment& env;memory& shared;
-            ::std::size_t module{},function{};
+            ::std::size_t module{},function{};bool memory64{};
+            [[nodiscard]] unsigned word_bytes() const noexcept {return memory64?8u:4u;}
+            [[nodiscard]] ::std::uint64_t size_limit() const noexcept {return memory64?UINT64_MAX:UINT32_MAX;}
+            [[nodiscard]] bool store_size(::std::uint64_t address,::std::uint64_t value) noexcept
+            {return memory64?store<8>(address,value):store<4>(address,value);}
             ::uwvm2::runtime::memtag::host_fault memtag_fault{};
             [[nodiscard]] bool stopped() const noexcept {
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
@@ -58,12 +62,13 @@ extern "C++"
                 else {actual.request_trap(trap_memory,module,function,UINT64_MAX);}
                 return false;
             }
-            [[nodiscard]] bool bounds(::std::uint64_t offset,::std::size_t bytes) noexcept
+            [[nodiscard]] bool bounds(::std::uint64_t offset,::std::uint64_t bytes) noexcept
             {
                 if(memtag_fault.pending)return false;
+                if(bytes>SIZE_MAX){actual.request_trap(trap_memory,module,function,UINT64_MAX);return false;}
                 return checked_result(offset,::uwvm2::runtime::memtag::check_host_access(shared,offset,bytes));
             }
-            [[nodiscard]] bool aligned(::std::uint32_t offset,unsigned alignment) noexcept
+            [[nodiscard]] bool aligned(::std::uint64_t offset,unsigned alignment) noexcept
             {if((offset&(alignment-1u))==0u)return true;actual.request_trap(trap_memory,module,function,UINT64_MAX);return false;}
             using byte_type=typename ::uwvm2::runtime::compiler::shared::wasm_threads::atomic_access_traits<1>::type;
             [[nodiscard]] bool copy_in(::std::uint64_t offset,::std::span<::std::byte> out) noexcept
@@ -90,7 +95,7 @@ extern "C++"
                     });
                 return checked_result(offset,checked)&&!stopped();
             }
-            template<unsigned Bytes> [[nodiscard]] bool store(::std::uint32_t offset,::std::uint64_t value) noexcept
+            template<unsigned Bytes> [[nodiscard]] bool store(::std::uint64_t offset,::std::uint64_t value) noexcept
             {
                 ::std::array<::std::byte,Bytes> bytes{};
                 for(unsigned i{};i<Bytes;++i)bytes[i]=static_cast<::std::byte>(value>>(i*8u));
@@ -117,25 +122,32 @@ extern "C++"
         [[nodiscard]] static bool authenticate(world const& instance,::std::size_t module_index,::std::size_t imported,
             provider const& actual_provider,binding& out) noexcept
         {
-            if(module_index!=0u||!instance.admission().owns_actual_generation()||
+            if(module_index>=instance.module_count()||!instance.admission().owns_actual_generation()||
                !source::has_canonical_owner(instance.source_owner()))return false;
             auto validated=instance.validated_code();auto const* child=instance.module(module_index);
-            auto const& original=instance.admission().source_module();
-            if(!validated||!validated->covers(instance)||!child||imported>=child->imported_function_vec_storage.size()||
-               imported>=original.imported_function_vec_storage.size())return false;
-            auto const& a=child->imported_function_vec_storage.index_unchecked(imported);
-            auto const& b=original.imported_function_vec_storage.index_unchecked(imported);
+            if(!validated||!validated->covers(instance)||!child||imported>=child->imported_function_vec_storage.size())return false;
+            auto const* caller_declaration=child->imported_function_vec_storage.index_unchecked(imported).import_type_ptr;
+            ::std::size_t provider_module{},provider_import{};
+            if(!caller_declaration||!instance.resolve_host_import(module_index,imported,provider_module,provider_import))return false;
+            auto const* parent=instance.original_module(provider_module);if(!parent)return false;
+            auto const& original=*parent;
+            if(provider_import>=original.imported_function_vec_storage.size())return false;
+            auto const& a=instance.module(provider_module)->imported_function_vec_storage.index_unchecked(provider_import);
+            auto const& b=original.imported_function_vec_storage.index_unchecked(provider_import);
             using kind=::uwvm2::uwvm::runtime::storage::imported_function_link_kind;
             if(a.link_kind!=kind::local_imported||b.link_kind!=kind::local_imported||a.import_type_ptr==nullptr||
                a.import_type_ptr!=b.import_type_ptr||a.target.local_imported.module_ptr!=&actual_provider||
                b.target.local_imported.module_ptr!=&actual_provider||a.target.local_imported.index!=b.target.local_imported.index)return false;
             ::uwvm2::uwvm::runtime::full::builtin_wasip1_function_data concrete{};
-            if(!instance.source_owner()->actual_builtin_wasip1_function(instance.source_module_id(),instance.admission().source_validation_epoch(),
-                &original,imported,concrete)||concrete.function_index!=a.target.local_imported.index||concrete.exits_guest)return false;
+            if(!instance.source_owner()->actual_builtin_wasip1_function(instance.source_module_id(provider_module),instance.admission().source_validation_epoch(),
+                &original,provider_import,concrete)||concrete.function_index!=a.target.local_imported.index||concrete.exits_guest)return false;
             // No provider dereference occurs before actual canonical provenance.
             auto const information=actual_provider.get_function_information_from_index(a.target.local_imported.index);
             if(!information.successed||concrete.result_count!=1u||concrete.results[0]!=0x7fu)return false;
-            auto const name=information.function_name;operation op{};unsigned count{};unsigned wide_parameters{};
+            auto const exact_name=information.function_name;
+            bool const memory64=exact_name.size()>=7u &&
+                ::uwvm2::utils::container::u8string_view{exact_name.data()+exact_name.size()-7u,7u}==u8"_wasm64";
+            auto const name=::uwvm2::utils::container::u8string_view{exact_name.data(),exact_name.size()-(memory64?7u:0u)};operation op{};unsigned count{};unsigned wide_parameters{};
             if(name==u8"args_sizes_get"){op=operation::args_sizes;count=2;}
             else if(name==u8"args_get"){op=operation::args_get;count=2;}
             else if(name==u8"environ_sizes_get"){op=operation::env_sizes;count=2;}
@@ -160,6 +172,15 @@ extern "C++"
             else if(name==u8"fd_seek"){op=operation::fd_seek;count=4;wide_parameters=1u<<1u;}
             else if(name==u8"path_open"){op=operation::path_open;count=9;wide_parameters=(1u<<5u)|(1u<<6u);}
             else if(name==u8"fd_fdstat_set_rights"){op=operation::fdstat_rights;count=3;wide_parameters=(1u<<1u)|(1u<<2u);}
+            else if(name==u8"fd_pread"){op=operation::pread;count=5;wide_parameters=1u<<3u;}
+            else if(name==u8"fd_pwrite"){op=operation::pwrite;count=5;wide_parameters=1u<<3u;}
+            else if(name==u8"fd_advise" || name==u8"fd_allocate" || name==u8"fd_datasync" ||
+                name==u8"fd_fdstat_set_flags" || name==u8"fd_filestat_set_size" || name==u8"fd_filestat_set_times" ||
+                name==u8"fd_readdir" || name==u8"fd_sync" || name==u8"path_create_directory" ||
+                name==u8"path_filestat_get" || name==u8"path_filestat_set_times" || name==u8"path_link" ||
+                name==u8"path_readlink" || name==u8"path_remove_directory" || name==u8"path_rename" ||
+                name==u8"path_symlink" || name==u8"path_unlink_file" || name==u8"proc_raise")
+            {op=operation::canonical;count=concrete.parameter_count;if(count>9u)return false;}
             else if(name==u8"sock_accept")
             {
                 // The authenticated concrete provider selects the ABI. A guest
@@ -168,9 +189,17 @@ extern "C++"
                 if(count!=3u && count!=4u)return false;
                 op=count==4u?operation::socket_accept_wasix:operation::socket_accept;
             }
-            else return false; // wasm64/other imports are not widened.
+            else return false;
             if(concrete.parameter_count!=count)return false;
-            auto const* signature=a.import_type_ptr->imports.storage.function;if(!signature)return false;
+            // Each width uses the actual sealed canonical provider signature.
+            // A suffix never reinterprets a different provider or guest type.
+            if(memory64 || op==operation::canonical)
+            {
+                wide_parameters=0u;
+                for(unsigned i{};i<count;++i)
+                {if(concrete.parameters[i]==0x7eu)wide_parameters|=1u<<i;else if(concrete.parameters[i]!=0x7fu)return false;}
+            }
+            auto const* signature=caller_declaration->imports.storage.function;if(!signature)return false;
             if((count==0u ? signature->parameter.begin!=signature->parameter.end :
                 (signature->parameter.begin==nullptr||signature->parameter.end==nullptr||signature->parameter.end-signature->parameter.begin!=static_cast<::std::ptrdiff_t>(count)))||
                signature->result.begin==nullptr||signature->result.end==nullptr||signature->result.end-signature->result.begin!=1)return false;
@@ -182,40 +211,44 @@ extern "C++"
                 bytes+=expected==0x7eu?8uz:4uz;
             }
             if(static_cast<unsigned>(signature->result.begin[0])!=0x7fu)return false;
-            auto& env=resolve_wasip1_env_for_runtime_module_id(instance.source_module_id());
+            auto& env=resolve_wasip1_env_for_runtime_module_id(instance.source_module_id(module_index));
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-            if(!env.interfaces.exposed(::uwvm2::utils::control::host_interfaces::find(::uwvm2::utils::control::host_interfaces::family::wasip1, name))) return false;
+            // Direct imports were exposed at validation. Raw aliases may be
+            // visible through another module while the caller still has zero
+            // rights; dispatch below returns ENOTCAPABLE using the caller env.
+            if(provider_module==module_index && provider_import==imported &&
+                !env.interfaces.exposed(::uwvm2::utils::control::host_interfaces::find(::uwvm2::utils::control::host_interfaces::family::wasip1, exact_name))) return false;
 #endif
             // These are actual pre-existing overrides, not readiness/authority.
             // No bypass into a possibly blocking debugger/trace callback.
             if(env.trace_wasip1_call||env.debug_console_read!=nullptr||env.debug_console_write!=nullptr||
                (op==operation::yield&&env.wasip1_sched_yield_func_ptr!=nullptr))return false;
-            out={op,&env,bytes,::uwvm2::utils::control::host_interfaces::find(::uwvm2::utils::control::host_interfaces::family::wasip1,name),wide_parameters};return true;
+            out={op,&env,bytes,::uwvm2::utils::control::host_interfaces::find(::uwvm2::utils::control::host_interfaces::family::wasip1,exact_name),wide_parameters,memory64,a.target.local_imported.index};return true;
         }
         [[nodiscard]] static admission_status admit(world const& instance,::std::size_t module,::std::size_t imported,provider const& actual) noexcept
         {binding found{};return authenticate(instance,module,imported,actual,found)?admission_status::allowed:admission_status::unsupported;}
 
         template<typename Strings>
-        [[nodiscard]] static error strings(context& call,Strings const& strings,::std::uint32_t first,::std::uint32_t second,bool sizes) noexcept
+        [[nodiscard]] static error strings(context& call,Strings const& strings,::std::uint64_t first,::std::uint64_t second,bool sizes) noexcept
         {
-            if(strings.size()>UINT32_MAX||strings.size()>SIZE_MAX/4u)return error::eoverflow;
+            auto const width=call.word_bytes();
+            if(strings.size()>call.size_limit()||strings.size()>SIZE_MAX/width)return error::eoverflow;
             ::std::uint64_t total{};
             for(auto const& string:strings)
-            {if(call.stopped())return error::ecanceled;if(string.size()>=UINT32_MAX-total)return error::eoverflow;total+=string.size()+1u;}
+            {if(call.stopped())return error::ecanceled;if(string.size()>=call.size_limit()-total)return error::eoverflow;total+=string.size()+1u;}
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             if(total > call.env.limits.max_args_env_bytes)
             { ::uwvm2::utils::control::host_diagnostics::limited("args-env-bytes",false); return error::e2big; }
 #endif
-
-            if(!call.aligned(first,4u)||!call.bounds(first,sizes?4uz:strings.size()*4uz)||
-               !call.bounds(second,sizes?4uz:static_cast<::std::size_t>(total))||(sizes&&!call.aligned(second,4u)))return error::efault;
+            if(!call.aligned(first,width)||!call.bounds(first,sizes?width:strings.size()*width)||
+               !call.bounds(second,sizes?width:total)||(sizes&&!call.aligned(second,width)))return error::efault;
             if(sizes)
-            {return call.store<4>(first,strings.size())&&call.store<4>(second,total)?error::esuccess:error::efault;}
-            ::std::uint32_t cursor=second;::std::uint32_t index{};
+            {return call.store_size(first,strings.size())&&call.store_size(second,total)?error::esuccess:error::efault;}
+            ::std::uint64_t cursor=second,index{};
             for(auto const& string:strings)
             {
-                if(!call.store<4>(first+index*4u,cursor)||!call.copy_out(cursor,{reinterpret_cast<::std::byte const*>(string.data()),string.size()}))return error::efault;
-                cursor+=static_cast<::std::uint32_t>(string.size());
+                if(!call.store_size(first+index*width,cursor)||!call.copy_out(cursor,{reinterpret_cast<::std::byte const*>(string.data()),string.size()}))return error::efault;
+                cursor+=string.size();
                 if(!call.store<1>(cursor++,0u))return error::efault;++index;
             }
             // Exactly count pointers, each string independently NUL-terminated.
@@ -230,7 +263,7 @@ extern "C++"
             return call.env.permits(timer ? policy::clock_timer_permission(static_cast<clock>(id)) :
                 resolution ? policy::clock_resolution_permission(static_cast<clock>(id)) : policy::clock_permission(static_cast<clock>(id)));
         }
-        [[nodiscard]] static error get_clock(context& call,::std::uint32_t id,::std::uint32_t pointer,bool resolution) noexcept
+        [[nodiscard]] static error get_clock(context& call,::std::uint32_t id,::std::uint64_t pointer,bool resolution) noexcept
         {
             ::clockid_t native{};if(id>3u)return error::einval;
             if(!clock_native(call,id,native,false,resolution))return error::enotcapable;
@@ -265,7 +298,7 @@ extern "C++"
 #endif
             return call.store<8>(pointer,value)?error::esuccess:error::efault;
         }
-        [[nodiscard]] static error random_bytes(context& call,::std::uint32_t destination,::std::uint32_t bytes) noexcept
+        [[nodiscard]] static error random_bytes(context& call,::std::uint64_t destination,::std::uint64_t bytes) noexcept
         {
             if(!call.env.permits(permission::random))return error::enotcapable;
 
@@ -302,18 +335,18 @@ extern "C++"
         }
         struct fd_pin;
         [[nodiscard]] static error wait_ready(context&,int,short,short&) noexcept;
-        [[nodiscard]] static error fd_io(context&,bool,::std::uint32_t,::std::uint32_t,::std::uint32_t,::std::uint32_t) noexcept;
-        [[nodiscard]] static error socket_io(context&,bool,::std::uint32_t,::std::uint32_t,::std::uint32_t,::std::uint32_t,::std::uint32_t,::std::uint32_t) noexcept;
-        [[nodiscard]] static error socket_accept(context&,::std::uint32_t,::std::uint32_t,::std::uint32_t,bool,::std::uint32_t) noexcept;
+        [[nodiscard]] static error fd_io(context&,bool,::std::uint32_t,::std::uint64_t,::std::uint64_t,::std::uint64_t,bool=false,::std::uint64_t=0u) noexcept;
+        [[nodiscard]] static error socket_io(context&,bool,::std::uint32_t,::std::uint64_t,::std::uint64_t,::std::uint32_t,::std::uint64_t,::std::uint64_t) noexcept;
+        [[nodiscard]] static error socket_accept(context&,::std::uint32_t,::std::uint32_t,::std::uint64_t,bool,::std::uint64_t) noexcept;
         [[nodiscard]] static error socket_shutdown(context&,::std::uint32_t,::std::uint32_t) noexcept;
-        [[nodiscard]] static error fdstat_get(context&,::std::uint32_t,::std::uint32_t) noexcept;
-        [[nodiscard]] static error filestat_get(context&,::std::uint32_t,::std::uint32_t) noexcept;
+        [[nodiscard]] static error fdstat_get(context&,::std::uint32_t,::std::uint64_t) noexcept;
+        [[nodiscard]] static error filestat_get(context&,::std::uint32_t,::std::uint64_t) noexcept;
         [[nodiscard]] static error close_file(context&,::std::uint32_t) noexcept;
-        [[nodiscard]] static error file_position(context&,::std::uint32_t,::std::int64_t,::std::uint32_t,::std::uint32_t,bool) noexcept;
+        [[nodiscard]] static error file_position(context&,::std::uint32_t,::std::int64_t,::std::uint32_t,::std::uint64_t,bool) noexcept;
         [[nodiscard]] static error open_file(context&,::std::array<::std::uint64_t,9> const&) noexcept;
         [[nodiscard]] static error fdstat_rights(context&,::std::uint32_t,::std::uint64_t,::std::uint64_t) noexcept;
-        [[nodiscard]] static error prestat(context&,::std::uint32_t,::std::uint32_t,::std::uint32_t,bool) noexcept;
-        [[nodiscard]] static error poll_oneoff(context&,::std::uint32_t,::std::uint32_t,::std::uint32_t,::std::uint32_t) noexcept;
+        [[nodiscard]] static error prestat(context&,::std::uint32_t,::std::uint64_t,::std::uint64_t,bool) noexcept;
+        [[nodiscard]] static error poll_oneoff(context&,::std::uint64_t,::std::uint64_t,::std::uint64_t,::std::uint64_t) noexcept;
         [[nodiscard]] static dispatch_status dispatch(lease& actual,world const& instance,::std::size_t module,::std::size_t caller,
             ::std::size_t imported,provider const& native,::std::span<::std::byte> results,::std::span<::std::byte const> params) noexcept
         {
@@ -324,7 +357,7 @@ extern "C++"
             namespace wasi_environment=::uwvm2::imported::wasi::wasip1::environment;
             diagnostic::call_scope quota{found.interface_id,wasi_environment::diagnostic_scope(*found.env),wasi_environment::diagnostic_target(*found.env)};
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-            if(!found.env->interfaces.allowed(found.interface_id))
+            if(!found.env->interface_enabled || !found.env->interfaces.allowed(found.interface_id))
             {
                 wasi_environment::diagnostic_denied(*found.env,found.interface_id,true);
                 ::std::uint32_t result{static_cast<::std::uint32_t>(error::enotcapable)};
@@ -334,7 +367,7 @@ extern "C++"
             auto const* unit=instance.module(module);
             if(!unit||caller<unit->imported_function_vec_storage.size()||caller-unit->imported_function_vec_storage.size()>=unit->local_defined_function_vec_storage.size())return dispatch_status::rejected;
             auto const* shared=instance.shared_memory(0u);if(!shared||!::uwvm2::runtime::wasm_threads::is_shared(shared->memory)||shared->memory.custom_page_size_log2!=16u)return dispatch_status::rejected;
-            context call{actual,instance,*found.env,const_cast<memory&>(shared->memory),module,caller};
+            context call{actual,instance,*found.env,const_cast<memory&>(shared->memory),module,caller,found.memory64};
             ::std::array<::std::uint64_t,9> a{};::std::size_t offset{};
             for(::std::size_t i{};offset<params.size();++i)
             {
@@ -386,6 +419,23 @@ extern "C++"
                 }
                 case operation::random:code=random_bytes(call,a[0],a[1]);break;
                 case operation::read:case operation::write:code=fd_io(call,found.code==operation::write,a[0],a[1],a[2],a[3]);break;
+                case operation::pread:case operation::pwrite:
+                    code=fd_io(call,found.code==operation::pwrite,a[0],a[1],a[2],a[4],true,a[3]);break;
+                case operation::canonical:
+                {
+                    // These audited leaves access guest bytes only through
+                    // checked atomic copies; FD/policy state is the same real
+                    // environment. Never expose the shared base to native IO.
+                    namespace storage=::uwvm2::uwvm::imported::wasi::wasip1::storage;
+                    storage::scoped_current_wasip1_env_t selected_env{call.env};
+                    storage::scoped_current_wasip1_memory_t selected_memory{call.env,&call.shared};
+                    native.call_func_index(found.provider_index,
+                        results.data(),params.data());
+                    ::std::uint32_t returned{};::std::memcpy(&returned,results.data(),4u);code=static_cast<error>(returned);
+                    auto& pending=::uwvm2::runtime::memtag::pending_host_fault;
+                    if(pending.pending){call.memtag_fault=pending;pending={};}
+                    break;
+                }
                 case operation::poll:code=poll_oneoff(call,a[0],a[1],a[2],a[3]);break;
                 case operation::socket_send:case operation::socket_recv:
                     code=socket_io(call,found.code==operation::socket_send,a[0],a[1],a[2],a[3],a[4],a[5]);break;
@@ -399,7 +449,7 @@ extern "C++"
                 case operation::fd_seek:code=file_position(call,a[0],::std::bit_cast<::std::int64_t>(a[1]),a[2],a[3],false);break;
                 case operation::path_open:code=open_file(call,a);break;
                 case operation::fdstat_rights:code=fdstat_rights(call,a[0],a[1],a[2]);break;
-                case operation::prestat_get:code=prestat(call,a[0],a[1],8u,true);break;
+                case operation::prestat_get:code=prestat(call,a[0],a[1],call.memory64?16u:8u,true);break;
                 case operation::prestat_name:code=prestat(call,a[0],a[1],a[2],false);break;
                 case operation::renumber:
                     // This canonical leaf has no guest-memory access. Its

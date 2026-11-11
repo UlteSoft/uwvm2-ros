@@ -1,0 +1,1 @@
+(module (type $s (struct (field (mut i64)))) (func (export "_start") (local $x (ref null $s)) i64.const 0xdeadbeef81234567 struct.new $s local.set $x local.get $x struct.get $s 0  i64.const 0xdeadbeef81234567  i64.ne if unreachable end local.get $x i64.const 0x0123456789abcdef struct.set $s 0 local.get $x struct.get $s 0  i64.const 0x0123456789abcdef  i64.ne if unreachable end))

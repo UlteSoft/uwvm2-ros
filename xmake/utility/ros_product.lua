@@ -21,6 +21,9 @@ function uwvm_ros_product_check(get, host, host_arch, reject_configuration)
         reject_configuration("uwvm2-ros configuration rejected: " .. reason ..
             ". Upstream Uwvm2 may support this configuration; the current ROS product does not.")
     end
+    if value("use-cxx-module", false) ~= false then
+        reject("C++ module builds have not yet been adapted for uwvm2-ros; --use-cxx-module must remain disabled (use --use-cxx-module=n)")
+    end
     -- Check user input before dependency resolution appends the paired provider
     -- flags. A later flag can otherwise override a validated named option.
     for _, field in ipairs({"cflags", "cxflags", "cxxflags", "ldflags", "shflags"}) do
@@ -141,7 +144,7 @@ function uwvm_ros_product_check(get, host, host_arch, reject_configuration)
         if value(option, true) ~= true then reject("--" .. option .. "=false is not recommended or supported") end
     end
     for _, option in ipairs({"fno-exceptions", "disable-local-imported-wasip1",
-        "macos-x64-native-step", "macos-4gib-test", "numeric-exception-fused", "use-cxx-module", "enable-lto"}) do
+        "macos-x64-native-step", "macos-4gib-test", "numeric-exception-fused", "enable-lto"}) do
         if value(option, false) ~= false then reject("--" .. option .. " is not supported by this product") end
     end
     -- Every host interface is present in the ROS product. Exposure and grants

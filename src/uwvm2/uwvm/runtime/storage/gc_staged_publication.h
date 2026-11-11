@@ -444,10 +444,8 @@ class checkpoint_gc_staging final
         {
             auto const storage{layout->fields[object->kind==gc_type::composite_kind::struct_?n:0u].storage};
             auto const packed{gc_object_store::pack(values[n],storage.packed)};
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
             if(object->kind==gc_type::composite_kind::array) { gc_object_store::store_array_value(*object,n,packed,storage); }
             else
-#endif
             { object->values[n]=packed; }
         }
         selected.filled=true;

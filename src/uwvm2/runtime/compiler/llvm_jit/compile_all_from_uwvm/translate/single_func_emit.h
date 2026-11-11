@@ -1985,8 +1985,9 @@ template <typename Element>
             // The typed World factory and actual Runtime import admission own
             // provider/principal/generation. Never follow a parent Wasm callee.
             auto const& record=runtime_module.imported_function_vec_storage.index_unchecked(func_index);
-            if(record.link_kind==function_link_kind::defined||record.link_kind==function_link_kind::imported||
-               record.link_kind==function_link_kind::unresolved)return {};
+            if(record.link_kind==function_link_kind::unresolved)return {};
+            // Cross-module Wasm imports use the same authenticated private
+            // dispatcher. Never emit an ordinary parent's direct native call.
             result.function_type_ptr=resolve_runtime_callee_function_type(runtime_module,func_index);
             return result.function_type_ptr==nullptr?runtime_direct_callee_resolution_t{}:result;
         }
@@ -2116,12 +2117,6 @@ template <typename Element>
             }
 #if defined(UWVM_SUPPORT_PRELOAD_DL)
             case function_link_kind::dl:
-            {
-                return result;
-            }
-#endif
-#if defined(UWVM_SUPPORT_WEAK_SYMBOL)
-            case function_link_kind::weak_symbol:
             {
                 return result;
             }
@@ -7248,7 +7243,6 @@ struct llvm_jit_gc_root_frame_emit_state_t
 #include "single_func_checkpoint_resume_state.h"
 #include "single_func_checkpoint_observer_control_map.h"
 
-#if defined(UWVM_EXPERIMENTAL_ARRAY_LENGTH_VALUES) && UWVM_EXPERIMENTAL_ARRAY_LENGTH_VALUES == 1
 struct llvm_jit_array_length_value_fact_t
 {
     ::llvm::WeakTrackingVH reference{};
@@ -7260,10 +7254,62 @@ struct llvm_jit_array_length_value_local_t
     ::llvm::AllocaInst* length{};
     ::llvm::AllocaInst* valid{};
 };
-#endif
 
 struct runtime_local_func_llvm_jit_emit_state_t
 {
+    // Finalized whole-function proof: no incoming or published heap reference,
+    // no callbacks/EH/extern conversion. Unknown instructions revoke the proof.
+    bool gc_private_function_safe{true};
+    // A distinct proof: a leaf may receive shared references and KEEP object
+    // locks, yet have no possible collection/observer point in its whole body.
+    // Never reuse the private-object proof to remove synchronization.
+    bool gc_no_safepoint_leaf{};
+    bool gc_no_safepoint_body_observed{};
+    bool gc_direct_ordinary_full{};
+    bool gc_private_gc_opcode_observed{};
+    ::llvm::AllocaInst* gc_private_access_slot{};
+    ::llvm::StoreInst* gc_private_access_decision{};
+    ::llvm::AllocaInst* gc_loop_roots_slot{};
+    ::llvm::StoreInst* gc_loop_roots_decision{};
+    struct gc_local_access_witness
+    {
+        ::llvm::Value* reference{};
+        ::llvm::Value* index{};
+        ::llvm::Value* header{};
+        ::llvm::Value* element{};
+        ::std::uint32_t type{};
+        unsigned width{};
+        bool array{};
+        // Compiler-owned release, never a live lock handed to Wasm. A later
+        // exact same-element plan may merge two finite locked IR regions.
+        ::llvm::StoreInst* release{};
+    } gc_local_access{};
+    ::std::size_t gc_local_access_sequence{};
+    // Compiler-only SSA identities for one straight-line region. A load keeps
+    // the value that was in its local at that instruction, even if the same
+    // local is overwritten before this older stack value reaches a GC access.
+    // Never use the alloca address itself as reference/index equality evidence.
+    ::llvm::DenseMap<::llvm::Value*, ::llvm::Value*> gc_local_slot_values{};
+    ::llvm::DenseMap<::llvm::Value*, ::llvm::Value*> gc_local_value_keys{};
+    [[nodiscard]] bool gc_local_value_keys_enabled() const noexcept
+    {
+        return gc_direct_ordinary_full && !debug_activation_enabled && !emit_debug_safe_points &&
+            checkpoint_plan==nullptr && pending_numeric_plan==nullptr &&
+            !threaded_host_emission_scope::selected();
+    }
+    [[nodiscard]] ::llvm::Value* gc_local_value_key(::llvm::Value* value) const noexcept
+    {
+        auto const found=gc_local_value_keys.find(value);
+        return found==gc_local_value_keys.end()?value:found->second;
+    }
+    void clear_gc_local_access() noexcept
+    {
+        gc_local_access={};
+        gc_local_slot_values.clear();
+        gc_local_value_keys.clear();
+    }
+    ::llvm::Value* gc_local_index_owner{};
+    ::llvm::Value* gc_local_index_buckets{};
     // True after preparation succeeds and before finalization consumes the control stack.
     bool valid{};
 
@@ -7274,14 +7320,11 @@ struct runtime_local_func_llvm_jit_emit_state_t
     // Forces Wasm calls through the runtime raw bridge instead of direct typed declarations.
     bool route_wasm_calls_through_runtime_bridge{};
 
-#if (defined(UWVM_EXPERIMENTAL_ARRAY_LENGTH_VALUES) && UWVM_EXPERIMENTAL_ARRAY_LENGTH_VALUES == 1) || \
-    (defined(UWVM_EXPERIMENTAL_TYPED_ARRAY_LOAD) && UWVM_EXPERIMENTAL_TYPED_ARRAY_LOAD == 1)
     // Set from the real preparation mode, never inferred from call routing.
     bool gc_array_access_ordinary_full{};
 #if defined(UWVM_EXPERIMENTAL_INLINE_ARRAY_AUTH) && UWVM_EXPERIMENTAL_INLINE_ARRAY_AUTH == 1
     // Native index/store domain only. No authenticated object survives an op.
     ::llvm::Value* gc_numeric_array_index_domain{};
-#endif
 #endif
 
 
@@ -7329,6 +7372,12 @@ struct runtime_local_func_llvm_jit_emit_state_t
     // before any noexcept opcode emitter can set an already-bounded bit.
     ::uwvm2::utils::container::vector<::std::uint_least8_t>* debug_safe_point_bits{};
     ::std::size_t current_wasm_op_offset{SIZE_MAX};
+    // Compile-local, tracking handles only. A successful direct memory emitter
+    // can replace sync/log provenance calls at this exact source instruction
+    // with constants on its cold mismatch edge. Fallback/async calls stay live.
+    ::std::size_t memtag_direct_origin_offset{SIZE_MAX};
+    ::std::vector<::llvm::WeakTrackingVH> memtag_direct_origin_calls{};
+    ::llvm::WeakTrackingVH memtag_pending_flag{};
 #if defined(UWVM_EXPERIMENTAL_NATIVE_EH_LEAF_OBSERVER) && UWVM_EXPERIMENTAL_NATIVE_EH_LEAF_OBSERVER == 1
     // A compile-local observer borrow, not a runtime entry or guest capability.
     native_eh_leaf_observer::function_state* native_eh_leaf_work{};
@@ -7365,7 +7414,6 @@ struct runtime_local_func_llvm_jit_emit_state_t
 
     // Entry-block allocas for every local slot.
     ::uwvm2::utils::container::vector<::llvm::AllocaInst*> local_pointers{};
-#if defined(UWVM_EXPERIMENTAL_ARRAY_LENGTH_VALUES) && UWVM_EXPERIMENTAL_ARRAY_LENGTH_VALUES == 1
     bool array_length_values_enabled{};
 #if defined(UWVM_EXPERIMENTAL_PRIVATE_NUMERIC_ARRAY_LOCK) && UWVM_EXPERIMENTAL_PRIVATE_NUMERIC_ARRAY_LOCK == 1
     bool private_numeric_function_safe{true};
@@ -7375,7 +7423,6 @@ struct runtime_local_func_llvm_jit_emit_state_t
 #endif
     ::uwvm2::utils::container::vector<llvm_jit_array_length_value_fact_t> array_length_value_facts{};
     ::uwvm2::utils::container::vector<llvm_jit_array_length_value_local_t> array_length_value_locals{};
-#endif
     // Debug-only, frame-owned slots. Each captured Wasm local occupies 16 bytes;
     // this alloca and every snapshot store are absent from ordinary LLVM full.
     ::llvm::ArrayType* debug_local_snapshot_type{};
@@ -7446,9 +7493,7 @@ struct runtime_local_func_llvm_jit_emit_state_t
     ::std::size_t unreachable_control_depth{};
 };
 
-#if defined(UWVM_EXPERIMENTAL_ARRAY_LENGTH_VALUES) && UWVM_EXPERIMENTAL_ARRAY_LENGTH_VALUES == 1
 #include "single_func_gc_array_length_values.h"
-#endif
 
 #include "single_func_checkpoint_workspace_owner.h"
 #include "single_func_checkpoint_canonical_numeric_locals.h"
@@ -7561,11 +7606,100 @@ struct runtime_local_func_llvm_jit_emit_state_t
     return true;
 }
 
-// Only metadata is produced here: this compiler query performs no extra
-// bytecode scan and emits no runtime callback/check on ordinary full code.
+// Synchronous ordinary full code only gets debug metadata here. Explicit
+// asynchronous MTE additionally emits provenance/boundary calls at validated
+// source sites, including the typed scalar/SIMD/atomic/bulk emit paths.
 [[nodiscard]] inline constexpr bool emit_runtime_local_func_llvm_jit_native_provenance(
     runtime_local_func_llvm_jit_emit_state_t& state, ::std::size_t wasm_offset) noexcept
 {
+    if(state.execute_memtag && (::uwvm2::extension::memtag::asynchronous_requested() || ::uwvm2::extension::memtag::logging_requested()) && state.ir_builder &&
+       state.ir_builder->GetInsertBlock() && !llvm_jit_basic_block_has_terminator(state.ir_builder->GetInsertBlock()) &&
+       !state.control_stack.empty() && state.control_stack.back().is_reachable)
+    {
+        if(!state.local_func_storage_ptr) { return false; }
+        auto const& local{*state.local_func_storage_ptr};
+        if(!local.code_begin || !local.code_end || local.code_end<=local.code_begin ||
+           wasm_offset>=static_cast<::std::size_t>(local.code_end-local.code_begin)) { return false; }
+        auto const op{::std::to_integer<unsigned>(local.code_begin[wasm_offset])};
+        // Pure control transfer has neither a tag check nor a host buffer.
+        // Sync/log has no pending stream to drain. Actual call, memory and GC
+        // helpers still publish their own source (or a direct cold proof below).
+        bool const sync_log_control{!::uwvm2::extension::memtag::asynchronous_requested() &&
+            ((op>=0x08u && op<=0x0fu) || op==0x1fu || op==0xd5u || op==0xd6u)};
+        if(::uwvm2::runtime::memtag::deferred::tracked_opcode(op) && !sync_log_control)
+        {
+            auto& b{*state.ir_builder};
+            ::llvm::BasicBlock* empty_path{};
+            // Software delivery needs no call, TLS access or lock at an empty
+            // pure-control boundary. The stream owner survives the whole entry.
+            // Physical hardware ASYNC must retain its OS synchronization path.
+            if(::uwvm2::extension::memtag::asynchronous_requested() &&
+               !::uwvm2::extension::memtag::hardware_checked_access_requested() &&
+               ((op>=0x08u && op<=0x0fu) || op==0x1fu || op==0xd5u || op==0xd6u))
+            {
+                auto* fn{b.GetInsertBlock()->getParent()};
+                if(!state.memtag_pending_flag)
+                {
+                    auto& entry{fn->getEntryBlock()};
+                    ::llvm::IRBuilder<> prologue{&entry,entry.getFirstInsertionPt()};
+                    auto* native{prologue.getIntNTy(sizeof(::std::uintptr_t)*CHAR_BIT)};
+                    auto* query_type{::llvm::FunctionType::get(native,{},false)};
+                    auto* query{get_llvm_runtime_bridge_function_symbol_value<
+                        ::uwvm2::runtime::memtag::deferred::pending_flag_address>(prologue,query_type)};
+                    if(!query) { return false; }
+                    auto* address{prologue.CreateCall(query_type,query,{})};
+                    apply_llvm_jit_calling_conv(address,get_llvm_jit_host_calling_conv());
+                    state.memtag_pending_flag=prologue.CreateIntToPtr(address,get_llvm_pointer_type(prologue.getInt8Ty()));
+                }
+                auto* observed{b.CreateLoad(b.getInt8Ty(),state.memtag_pending_flag,"memtag.pending")};
+                observed->setAlignment(::llvm::Align{1u});observed->setAtomic(::llvm::AtomicOrdering::Acquire);
+                auto* pending{::llvm::BasicBlock::Create(b.getContext(),"memtag.deliver",fn)};
+                empty_path=::llvm::BasicBlock::Create(b.getContext(),"memtag.empty",fn);
+                b.CreateCondBr(b.CreateICmpNE(observed,b.getInt8(0u)),pending,empty_path);b.SetInsertPoint(pending);
+            }
+            auto* type{::llvm::FunctionType::get(b.getVoidTy(),{b.getInt64Ty(),b.getInt64Ty(),b.getInt64Ty(),b.getInt32Ty()},false)};
+            auto* bridge{get_llvm_runtime_bridge_function_symbol_value<::uwvm2::runtime::memtag::deferred::boundary>(b,type)};
+            if(!bridge) { return false; }
+            ::llvm::Value* const arguments[]{b.getInt64(local.module_id),b.getInt64(local.function_index),b.getInt64(wasm_offset),
+                b.getInt32(::uwvm2::runtime::memtag::deferred::draining_opcode(op)?1u:0u)};
+            ::llvm::CallInst* call{};
+            // Validation dispatch and a typed/fallback emitter can publish the
+            // same source boundary consecutively. The boundary leaf only drains
+            // this thread's already-submitted faults and updates its origin; it
+            // cannot invoke Guest code. With no intervening instruction there
+            // is no new Guest access, fault submission or changed coordinate.
+            // Reuse that exact call, retaining the first complete drain (and
+            // hardware synchronization). Never reuse across a block, poll edge,
+            // instruction, different argument or debugger operation.
+            auto* const block{b.GetInsertBlock()};
+            if(!empty_path && b.GetInsertPoint()==block->end() && !block->empty())
+            {
+                auto* const previous{::llvm::dyn_cast<::llvm::CallInst>(&block->back())};
+                if(previous && previous->getCalledOperand()==bridge && previous->arg_size()==4u &&
+                   previous->getArgOperand(0u)==arguments[0u] && previous->getArgOperand(1u)==arguments[1u] &&
+                   previous->getArgOperand(2u)==arguments[2u] && previous->getArgOperand(3u)==arguments[3u])
+                { call=previous; }
+            }
+            if(!call)
+            {
+                call=b.CreateCall(type,bridge,arguments);
+                call->setTailCallKind(::llvm::CallInst::TCK_NoTail);
+                // This bookkeeping leaf cannot invoke Guest code or any ROS API.
+                // Use the qualified native ABI without publishing a foreign ROS
+                // call token that a removed sync/log origin call would strand.
+                apply_llvm_jit_calling_conv(call,get_llvm_jit_host_calling_conv());
+            }
+            if(empty_path) { b.CreateBr(empty_path);b.SetInsertPoint(empty_path); }
+            if(!::uwvm2::runtime::memtag::deferred::draining_opcode(op))
+            {
+                if(state.memtag_direct_origin_offset!=wasm_offset)
+                { state.memtag_direct_origin_calls.clear();state.memtag_direct_origin_offset=wasm_offset; }
+                if(state.memtag_direct_origin_calls.empty() ||
+                   static_cast<::llvm::Value*>(state.memtag_direct_origin_calls.back())!=call)
+                { state.memtag_direct_origin_calls.emplace_back(call); }
+            }
+        }
+    }
     if(!state.emit_debug_safe_points) { return true; }
     if(state.ir_builder == nullptr || state.debug_native_provenance == nullptr || state.local_func_storage_ptr == nullptr)
     { return false; }
@@ -8049,11 +8183,9 @@ struct runtime_local_func_llvm_jit_emit_state_t
                 operand.immutable_gc_values_witness_block=nullptr;
                 operand.immutable_gc_values_witness_next_offset=SIZE_MAX;
             }
-#if defined(UWVM_EXPERIMENTAL_ARRAY_LENGTH_VALUES) && UWVM_EXPERIMENTAL_ARRAY_LENGTH_VALUES == 1
             state.array_length_value_facts.clear();
             for(auto const& local:state.array_length_value_locals)
             { if(local.valid!=nullptr) { builder.CreateStore(builder.getFalse(),local.valid); } }
-#endif
         }
     }
     if(observation_resume != nullptr)
@@ -8283,10 +8415,8 @@ namespace sealed_compact_codegen {
                                                                                        ::uwvm2::runtime::checkpoint::function_plan* checkpoint_plan = nullptr) noexcept
 {
     state = {};
-#if (defined(UWVM_EXPERIMENTAL_ARRAY_LENGTH_VALUES) && UWVM_EXPERIMENTAL_ARRAY_LENGTH_VALUES == 1) || \
-    (defined(UWVM_EXPERIMENTAL_TYPED_ARRAY_LOAD) && UWVM_EXPERIMENTAL_TYPED_ARRAY_LOAD == 1)
+    state.gc_direct_ordinary_full = compilation_mode == llvm_jit_compilation_mode::full;
     state.gc_array_access_ordinary_full = compilation_mode == llvm_jit_compilation_mode::full;
-#endif
 
     if(pending_numeric_plan != nullptr &&
        (!pending_numeric_plan->shape_valid_for_compilation() || pending_numeric_plan->module != local_func_storage.runtime_module_ptr ||
@@ -8387,6 +8517,22 @@ namespace sealed_compact_codegen {
     if(func_result_begin == nullptr && func_result_begin != func_result_end) [[unlikely]] { return false; }
 
     auto const func_parameter_count_uz{func_parameter_begin == nullptr ? 0uz : static_cast<::std::size_t>(func_parameter_end - func_parameter_begin)};
+    // Debug mutation/foreign reentry can publish an otherwise local reference.
+    // Keep direct access in these profiles, retaining its original object lock.
+    state.gc_private_function_safe = state.gc_direct_ordinary_full && !state.debug_activation_enabled && !state.emit_debug_safe_points &&
+        state.checkpoint_plan==nullptr && state.pending_numeric_plan==nullptr &&
+        !threaded_host_emission_scope::selected();
+    state.gc_no_safepoint_leaf = state.gc_private_function_safe &&
+        !state.route_wasm_calls_through_runtime_bridge &&
+        state.debug_full_patchable_typed_target_base_address == 0u;
+    for(::std::size_t i{};i<func_parameter_count_uz;++i)
+    {
+        auto const kind=static_cast<runtime_operand_stack_value_type>(func_parameter_begin[i]);
+        if(kind!=runtime_operand_stack_value_type::i32 && kind!=runtime_operand_stack_value_type::i64 &&
+           kind!=runtime_operand_stack_value_type::f32 && kind!=runtime_operand_stack_value_type::f64 &&
+           kind!=runtime_operand_stack_value_type::v128) { state.gc_private_function_safe=false; }
+    }
+
     auto const func_result_count_uz{func_result_begin == nullptr ? 0uz : static_cast<::std::size_t>(func_result_end - func_result_begin)};
     auto const defined_local_count_uz{static_cast<::std::size_t>(wasm_code_ptr->all_local_count)};
     // This total drives vector reservations, alloca creation, and local byte layout; reject wraparound before
@@ -8558,9 +8704,7 @@ namespace sealed_compact_codegen {
         return false;
     }
 
-#if defined(UWVM_EXPERIMENTAL_ARRAY_LENGTH_VALUES) && UWVM_EXPERIMENTAL_ARRAY_LENGTH_VALUES == 1
     if(!llvm_jit_prepare_array_length_value_locals(state, *runtime_module_ptr)) { return false; }
-#endif
 
     state.local_pointers.reserve(state.local_types.size());
     for(::std::size_t local_index{}; local_index != state.local_types.size(); ++local_index)
@@ -8686,6 +8830,22 @@ namespace sealed_compact_codegen {
     }
 
     if(!state.control_stack.empty()) [[unlikely]] { return false; }
+    if(state.gc_loop_roots_decision!=nullptr)
+    {
+        // Only a fully validated closed ordinary function may omit the loop
+        // snapshot. Actual allocation/call/exception snapshots remain intact.
+        // Any later publication or observation revokes the entire decision.
+        state.gc_loop_roots_decision->setOperand(0u,
+            ::llvm::ConstantInt::getBool(*state.llvm_context_holder,!state.gc_private_function_safe));
+    }
+    if(state.gc_private_access_decision!=nullptr)
+    {
+        // This is sealed only after the complete validated body, including
+        // publication on a later instruction/back edge/unreachable branch.
+        state.gc_private_access_decision->setOperand(0u,
+            ::llvm::ConstantInt::getBool(*state.llvm_context_holder,state.gc_private_function_safe));
+    }
+
 #if defined(UWVM_EXPERIMENTAL_PRIVATE_NUMERIC_ARRAY_LOCK) && UWVM_EXPERIMENTAL_PRIVATE_NUMERIC_ARRAY_LOCK == 1
     // Revoke the WHOLE function even for publication after an access or on a back edge.
     if(state.private_numeric_function_decision != nullptr)
@@ -8703,6 +8863,18 @@ namespace sealed_compact_codegen {
     // Finalization runs only after the implicit function context has been closed by `end`, so no more branch incoming
     // edges can be added after this point.
     ir_builder.SetInsertPoint(state.return_block);
+    if(state.gc_no_safepoint_leaf && state.gc_no_safepoint_body_observed)
+    {
+        // The complete authoritative opcode walk has excluded allocation,
+        // calls, loop polls, EH, linear memory helpers and all observer entries.
+        // The real outer entry/caller pins the participant and incoming values.
+        // Only our redundant logical snapshots are retired: token/type/bounds
+        // checks, shared-object locks, native entry identity and unwinding stay.
+        // Finalization below removes the now-empty compiler-owned root record.
+        if(!state.gc_root_frame.pending_root_stores.empty()) { return false; }
+        state.gc_root_frame.snapshots.clear();
+        state.gc_root_frame.max_slots = 0uz;
+    }
     if(!finalize_runtime_llvm_jit_gc_root_frame(state.gc_root_frame)) { return false; }
     if(state.func_result_count_uz == 0uz)
     {
@@ -9237,7 +9409,29 @@ inline constexpr void push_runtime_local_func_llvm_jit_tuple(
     // [operand prefix][this iteration's loop parameter PHIs] end
     // [safe                                                ] publish only after
     // replacing entry descriptors with the actual backedge/OSR PHI values.
+    // Ordinary closed execution has no loop observer or collection handshake:
+    // collection can occur only at the existing allocation snapshots. Stage a
+    // conservative true decision, then seal it after the WHOLE body validates.
+    // Debug/checkpoint/threaded/OSR profiles retain the original publication.
+    ::llvm::BasicBlock* after_gc_loop_roots{};
+    if(state.emit_precise_gc_root_frames && state.gc_private_function_safe)
+    {
+        if(state.gc_loop_roots_slot==nullptr)
+        {
+            auto& entry=state.llvm_function->getEntryBlock();
+            ::llvm::IRBuilder<> eb(&entry,entry.getFirstInsertionPt());
+            state.gc_loop_roots_slot=eb.CreateAlloca(eb.getInt1Ty(),nullptr,"gc.loop.roots.required");
+            state.gc_loop_roots_decision=eb.CreateStore(eb.getTrue(),state.gc_loop_roots_slot);
+        }
+        auto* const snapshot=::llvm::BasicBlock::Create(llvm_context,"gc.loop.snapshot",state.llvm_function);
+        after_gc_loop_roots=::llvm::BasicBlock::Create(llvm_context,"gc.loop.observer",state.llvm_function);
+        ir_builder.CreateCondBr(ir_builder.CreateLoad(ir_builder.getInt1Ty(),state.gc_loop_roots_slot),
+            snapshot,after_gc_loop_roots);
+        ir_builder.SetInsertPoint(snapshot);
+    }
     if(!snapshot_runtime_local_func_llvm_jit_gc_roots(state)) { return false; }
+    if(after_gc_loop_roots!=nullptr)
+    { ir_builder.CreateBr(after_gc_loop_roots);ir_builder.SetInsertPoint(after_gc_loop_roots); }
     // GC roots precede any debug callback that might park or reenter. Disabled
     // root lowering adds no IR; ordinary debug loop code remains identical.
     if(state.emit_debug_safe_points && state.checkpoint_observer_controls == nullptr)
@@ -10360,9 +10554,12 @@ get_llvm_jit_local_imported_global_byte_buffer_alignment(runtime_operand_stack_v
     if(llvm_local_type == nullptr || local_pointer == nullptr) [[unlikely]] { return false; }
 
     auto loaded_value{ir_builder.CreateLoad(llvm_local_type, local_pointer, get_llvm_string_ref(u8"local.get"))};
-#if defined(UWVM_EXPERIMENTAL_ARRAY_LENGTH_VALUES) && UWVM_EXPERIMENTAL_ARRAY_LENGTH_VALUES == 1
+    if(loaded_value != nullptr && state.gc_local_value_keys_enabled())
+    {
+        auto const entry=state.gc_local_slot_values.try_emplace(local_pointer, loaded_value);
+        state.gc_local_value_keys[loaded_value]=entry.first->second;
+    }
     llvm_jit_array_length_value_local_get(state, local_index_uz, loaded_value);
-#endif
     if(loaded_value == nullptr) [[unlikely]] { return false; }
 
     state.operand_stack.push_back({.type = local_type, .value = loaded_value});
@@ -10387,9 +10584,9 @@ get_llvm_jit_local_imported_global_byte_buffer_alignment(runtime_operand_stack_v
     if(value.type != local_type || value.value == nullptr || local_pointer == nullptr) [[unlikely]] { return false; }
 
     state.ir_builder->CreateStore(value.value, local_pointer);
-#if defined(UWVM_EXPERIMENTAL_ARRAY_LENGTH_VALUES) && UWVM_EXPERIMENTAL_ARRAY_LENGTH_VALUES == 1
+    if(state.gc_local_value_keys_enabled())
+    { state.gc_local_slot_values[local_pointer]=state.gc_local_value_key(value.value); }
     llvm_jit_array_length_value_local_set(state, local_index_uz, value.value);
-#endif
     if(state.emit_debug_safe_points && (local_type == runtime_operand_stack_value_type::i32 ||
         local_type == runtime_operand_stack_value_type::i64) && !::llvm::isa<::llvm::Constant>(value.value))
     {
@@ -10418,9 +10615,9 @@ get_llvm_jit_local_imported_global_byte_buffer_alignment(runtime_operand_stack_v
     if(value.type != local_type || value.value == nullptr || local_pointer == nullptr) [[unlikely]] { return false; }
 
     state.ir_builder->CreateStore(value.value, local_pointer);
-#if defined(UWVM_EXPERIMENTAL_ARRAY_LENGTH_VALUES) && UWVM_EXPERIMENTAL_ARRAY_LENGTH_VALUES == 1
+    if(state.gc_local_value_keys_enabled())
+    { state.gc_local_slot_values[local_pointer]=state.gc_local_value_key(value.value); }
     llvm_jit_array_length_value_local_set(state, local_index_uz, value.value);
-#endif
     if(state.emit_debug_safe_points && (local_type == runtime_operand_stack_value_type::i32 ||
         local_type == runtime_operand_stack_value_type::i64) && !::llvm::isa<::llvm::Constant>(value.value))
     {
@@ -10602,10 +10799,8 @@ get_llvm_jit_local_imported_global_byte_buffer_alignment(runtime_operand_stack_v
         if(value == nullptr) { return false; }
         state.ir_builder->CreateStore(value, state.local_pointers[i]);
     }
-#if defined(UWVM_EXPERIMENTAL_ARRAY_LENGTH_VALUES) && UWVM_EXPERIMENTAL_ARRAY_LENGTH_VALUES == 1
     // Self-tail resets bypass ordinary local.set/tee; every parameter fact is unknown.
     llvm_jit_invalidate_array_length_value_tail_locals(state);
-#endif
     if(!emit_runtime_local_func_llvm_jit_checkpoint_reset_initialization_flags(
         state, state.checkpoint_executed_local_flags)) { return false; }
     state.ir_builder->CreateBr(state.self_tail_entry_block);
@@ -10634,6 +10829,11 @@ template <bool DirectImport = false>
     auto const adapter{::llvm::Function::Create(adapter_type, ::llvm::Function::InternalLinkage,
                                                 get_llvm_string_ref(u8"tail.host.adapter"), state.llvm_module)};
     apply_llvm_jit_wasm_calling_conv(*adapter);
+    // Compiler-owned identity, not a guest-selected symbol/name prefix. The
+    // threaded pipeline uses the retiring Wasm caller's index for this finite
+    // host adapter and applies the same entry/stop/frame proof as a Wasm body.
+    adapter->setMetadata("uwvm.wasm.tail.adapter.owner", ::llvm::MDNode::get(
+        context, ::llvm::ValueAsMetadata::get(state.llvm_function)));
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
     adapter->getArg(layout.parameter_count + 2uz)->setName("uwvm.ros.provenance");
 #endif
@@ -10759,8 +10959,15 @@ template <bool DirectImport = false>
     if(module_address == nullptr) { return false; }
     auto const index{::llvm::ConstantInt::get(intptr, func_index)};
     auto const resolver_type{::llvm::FunctionType::get(intptr, {intptr, intptr}, false)};
-    auto const address{emit_runtime_local_func_llvm_jit_runtime_bridge_call<
-        ::uwvm2::runtime::lib::details::llvm_jit_resolve_tail_target_abi_bridge>(state, resolver_type, {module_address, index})};
+    // The threaded World owns its import dispatcher and compiled module set.
+    // It must never consult ordinary parent entries or the process import cache.
+    // The tail adapter's owned raw bridge performs the existing checked dispatch.
+    ::llvm::Value* address{::llvm::ConstantInt::get(intptr, 0u)};
+    if(!threaded_host_emission_scope::selected())
+    {
+        address = emit_runtime_local_func_llvm_jit_runtime_bridge_call<
+            ::uwvm2::runtime::lib::details::llvm_jit_resolve_tail_target_abi_bridge>(state, resolver_type, {module_address, index});
+    }
     if(address == nullptr) { return false; }
 #if defined(UWVM_EXPERIMENTAL_SEALED_COMPACT_CURSOR) && UWVM_EXPERIMENTAL_SEALED_COMPACT_CURSOR == 1
     if(!sealed_compact_codegen::retire(state)) { return false; }
@@ -11180,7 +11387,9 @@ template <bool Tail = false>
         ir_builder.CreateCondBr(ir_builder.CreateICmpEQ(typed_entry_address, ::llvm::ConstantInt::get(llvm_intptr_type, 0u)), slow, ready);
         ir_builder.SetInsertPoint(slow);
         ::llvm::Value* resolved{::llvm::ConstantInt::get(llvm_intptr_type, 0u)};
-        if(!state.emit_debug_safe_points)
+        // Private threaded table views contain eagerly materialized entries.
+        // A missing entry cannot be resolved through an ordinary parent's table.
+        if(!state.emit_debug_safe_points && !threaded_host_emission_scope::selected())
         {
             auto const module_name{get_llvm_runtime_module_object_symbol_name(*runtime_module_ptr)};
             auto const module_address{get_llvm_external_host_object_address(ir_builder,
@@ -14524,7 +14733,8 @@ template<bool NormalizedScalarMemory, bool NormalizedPageMemory = false, bool No
         }
     }
 
-    if(static_cast<::std::uint_least8_t>(curr_opbase) == static_cast<::std::uint_least8_t>(wasm1p1_code::numeric_prefix))
+    if(static_cast<::std::uint_least8_t>(curr_opbase) == static_cast<::std::uint_least8_t>(wasm1p1_code::numeric_prefix) ||
+       static_cast<::std::uint_least8_t>(curr_opbase) == ::uwvm2::extension::memtag::opcode_prefix)
     {
         // FC numeric prefix opcode ... code_end
         // [safe opcode] unsafe (could be code_end)
@@ -14535,7 +14745,16 @@ template<bool NormalizedScalarMemory, bool NormalizedPageMemory = false, bool No
         //               ^^ code_curr: subsequent immediate reads are bounded.
 
         validation_module_traits_t::wasm_u32 subopcode{};
-        if(!parse_wasm_leb128_immediate(code_curr, code_end, subopcode)) [[unlikely]] { return false; }
+        if(static_cast<::std::uint_least8_t>(curr_opbase) == ::uwvm2::extension::memtag::opcode_prefix)
+        {
+            auto const decoded{::uwvm2::extension::memtag::scan_opcode(code_curr, code_end)};
+            if(decoded.error != ::uwvm2::extension::memtag::encoding_error::none) { return false; }
+            subopcode = decoded.subopcode;
+        }
+        else if(!parse_wasm_leb128_immediate(code_curr, code_end, subopcode)) [[unlikely]] { return false; }
+
+        if(static_cast<::std::uint_least8_t>(curr_opbase) != ::uwvm2::extension::memtag::opcode_prefix &&
+           ::uwvm2::extension::memtag::find_instruction(subopcode) != nullptr) { return false; }
 
         if(auto const* descriptor{::uwvm2::extension::memtag::find_instruction(subopcode)}; descriptor != nullptr)
         {
@@ -15022,6 +15241,26 @@ template<bool NormalizedScalarMemory, bool NormalizedPageMemory = false, bool No
     ::uwvm2::validation::standard::wasm3::validated_simd_event const& event) noexcept
 {
     // [owned checked event] no raw source slice is accepted by this entry.
+    // Do not classify the whole 0xfd prefix as memory: numeric vectors cannot
+    // allocate, publish a GC reference, poll, or reenter Wasm. Keep a local
+    // authenticated borrow across those operations only. Unknown/new kinds
+    // default to revocation, and memory access revokes before any MTE helper.
+    using kind = ::uwvm2::validation::standard::wasm3::simd_event_kind;
+    bool pure{};
+    switch(event.descriptor.kind)
+    {
+        case kind::constant: case kind::shuffle: case kind::splat:
+        case kind::extract_lane: case kind::replace_lane: case kind::unary:
+        case kind::binary: case kind::ternary: case kind::test: case kind::shift:
+            pure = !event.has_memory && event.access_bytes == 0u;
+            break;
+        default: break;
+    }
+    if(!pure)
+    {
+        state.clear_gc_local_access();
+        state.gc_no_safepoint_leaf=false;
+    }
     return try_emit_runtime_local_func_llvm_jit_instruction_impl<false, false, true>(state, nullptr, nullptr, nullptr, nullptr, ::std::addressof(event));
 }
 

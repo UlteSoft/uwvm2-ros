@@ -337,12 +337,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::validator
                     break;
                 }
 #endif
-#if defined(UWVM_SUPPORT_WEAK_SYMBOL)
-                case ::uwvm2::uwvm::wasm::type::module_type_t::weak_symbol:
-                {
-                    break;
-                }
-#endif
                 [[unlikely]] default:
                 {
 #if (defined(_DEBUG) || defined(DEBUG)) && defined(UWVM_ENABLE_DETAILED_DEBUG_CHECK)

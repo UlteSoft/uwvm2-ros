@@ -29,7 +29,6 @@
 # include "local_preload.h"
 # include "local_imported.h"
 # include "preloaded_dl.h"
-# include "weak_symbol.h"
 # include "preload_module_attribute.h"
 # include "memory_limit.h"
 # include "import_reset.h"

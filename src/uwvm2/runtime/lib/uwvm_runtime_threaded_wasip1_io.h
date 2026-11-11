@@ -18,7 +18,9 @@ extern "C++"
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
                 // Notify only after the real mutex is released. Poll registers
                 // before trying that lock, so it cannot lose this transition.
-                if(result==0)::uwvm2::imported::wasi::wasip1::environment::process_budget_ledger.notify_waiters();
+                // Wake other FD contenders, but not this thread's own quota
+                // waiter after a rejected attempt: that creates a busy retry loop.
+                if(result==0)::uwvm2::imported::wasi::wasip1::environment::process_budget_ledger.notify_waiters(false);
 #endif
             }
         }
@@ -156,26 +158,30 @@ extern "C++"
     }
 
     inline auto runtime_threaded_wasip1_adapter::fd_io(context& call,bool writing,::std::uint32_t guest,
-        ::std::uint32_t iovs,::std::uint32_t count,::std::uint32_t completed) noexcept -> error
+        ::std::uint64_t iovs,::std::uint64_t count,::std::uint64_t completed,bool positioned,::std::uint64_t position) noexcept -> error
     {
-        if(count != 0u && 8uz > SIZE_MAX / static_cast<::std::size_t>(count)) return error::eoverflow;
-        if(!call.aligned(iovs,4u)||!call.aligned(completed,4u))return error::efault;
+        if(count > SIZE_MAX / (call.word_bytes()*2u)) return error::eoverflow;
+        if(!call.aligned(iovs,call.word_bytes())||!call.aligned(completed,call.word_bytes()))return error::efault;
 
-        if(!call.bounds(iovs,static_cast<::std::size_t>(count)*8uz)||!call.bounds(completed,4uz))return error::efault;
-        struct vector {::std::uint32_t base{},size{};};
+        if(!call.bounds(iovs,static_cast<::std::size_t>(count)*(call.word_bytes()*2u))||!call.bounds(completed,call.word_bytes()))return error::efault;
+        struct vector {::std::uint64_t base{},size{};};
         auto vectors{allocate_array<vector>(count)};
         if(count != 0u && !vectors) return error::enomem;
         ::std::uint64_t total{};
-        for(::std::uint32_t i{};i<count;++i)
+        for(::std::size_t i{};i<count;++i)
         {
-            ::std::array<::std::byte,8> raw{};if(!call.copy_in(static_cast<::std::uint64_t>(iovs)+i*8u,raw))return error::efault;
-            auto& v=vectors[i];v.base=static_cast<::std::uint32_t>(little(raw.data(),4));v.size=static_cast<::std::uint32_t>(little(raw.data()+4,4));
+            ::std::array<::std::byte,16> raw{};if(!call.copy_in(iovs+i*(call.word_bytes()*2u),{raw.data(),call.word_bytes()*2u}))return error::efault;
+            auto& v=vectors[i];v.base=little(raw.data(),call.word_bytes());v.size=little(raw.data()+call.word_bytes(),call.word_bytes());
             if(!call.bounds(v.base,v.size))return error::efault;
-            if(v.size>UINT32_MAX-total)return error::einval;total+=v.size;
+            if(v.size>call.size_limit()-total)return error::einval;total+=v.size;
         }
-        fd_pin pinned{};auto acquired=pinned.acquire(call,guest,writing?right::right_fd_write:right::right_fd_read,true);
+        if(positioned && position>static_cast<::std::uint64_t>(INT64_MAX))return error::eoverflow;
+        auto required=writing?right::right_fd_write:right::right_fd_read;
+        if(positioned)required|=right::right_fd_seek;
+        fd_pin pinned{};auto acquired=pinned.acquire(call,guest,required,true);
         if(acquired.failure!=error::esuccess)return acquired.failure;
         if(acquired.deferred){static_cast<void>(call.native_failure());return error::eio;}
+        if(positioned && pinned.type!=fd_pin::kind::native_descriptor)return error::espipe;
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
         using budgets=::uwvm2::imported::wasi::wasip1::environment::budget_kind;
         bool const socket=pinned.type==fd_pin::kind::stream_socket||pinned.type==fd_pin::kind::datagram_socket;
@@ -184,7 +190,7 @@ extern "C++"
         ::uwvm2::imported::wasi::wasip1::environment::budget_reservation reservation{kind, call.env.limits, total};
         if(!reservation) return reservation.error<error>();
 #endif
-        if(total==0u && (count==0u || pinned.type!=fd_pin::kind::datagram_socket))return call.store<4>(completed,0u)?error::esuccess:error::efault;
+        if(total==0u && (count==0u || pinned.type!=fd_pin::kind::datagram_socket))return call.store_size(completed,0u)?error::esuccess:error::efault;
         // A read end cannot reveal packet-mode buffers from another writer.
         // Keep read(2)'s exact packet/drop semantics instead of consuming bytes
         // through splice. Blocking reads stay synchronous and retain their lease;
@@ -202,7 +208,7 @@ extern "C++"
         if(writing)
         {
             ::std::size_t at{};
-            for(::std::uint32_t i{};i<count&&at<wanted;++i)
+            for(::std::size_t i{};i<count&&at<wanted;++i)
             {auto n=(::std::min)(static_cast<::std::size_t>(vectors[i].size),wanted-at);if(!call.copy_in(vectors[i].base,{bounce.get()+at,n}))return error::efault;at+=n;}
         }
         struct staging final
@@ -258,6 +264,9 @@ extern "C++"
                 constexpr unsigned splice_nonblock{2u};
                 transferred=static_cast<::ssize_t>(::syscall(SYS_splice,pipe.ends[0],nullptr,pinned.descriptor,nullptr,wanted,splice_nonblock));
             }
+            else if(positioned)
+                transferred=writing?::pwrite64(pinned.descriptor,bounce.get(),wanted,static_cast<::off64_t>(position)):
+                    ::pread64(pinned.descriptor,bounce.get(),wanted,static_cast<::off64_t>(position));
             else transferred=writing ? ::write(pinned.descriptor,bounce.get(),wanted) : ::read(pinned.descriptor,bounce.get(),wanted);
             if(transferred>=0)break;
             auto const failure=errno;if(failure==EPIPE)pipe_signals.consume_new_epipe();
@@ -273,9 +282,9 @@ extern "C++"
         if(!writing)
         {
             ::std::size_t at{};
-            for(::std::uint32_t i{};i<count&&at<amount;++i)
+            for(::std::size_t i{};i<count&&at<amount;++i)
             {auto n=(::std::min)(static_cast<::std::size_t>(vectors[i].size),amount-at);if(!call.copy_out(vectors[i].base,{bounce.get()+at,n}))return error::efault;at+=n;}
         }
-        return call.store<4>(completed,amount)?error::esuccess:error::efault;
+        return call.store_size(completed,amount)?error::esuccess:error::efault;
     }
 }

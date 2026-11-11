@@ -214,8 +214,10 @@ namespace
         // in the same preload-then-main order as run_initialized_module_graph.
         // These source-bound fixtures have no Wasm start sections to invoke.
         for(auto const& module:store::active_preloaded_wasm())
-        { ::uwvm2::uwvm::runtime::initializer::apply_runtime_active_segments(module.module_name); }
-        ::uwvm2::uwvm::runtime::initializer::apply_runtime_active_segments(store::active_execute_wasm().module_name);
+        { check(::uwvm2::uwvm::runtime::initializer::apply_runtime_active_segments(module.module_name) ==
+        ::uwvm2::uwvm::runtime::initializer::details::active_segment_result::ok, "active segments initialized successfully"); }
+        check(::uwvm2::uwvm::runtime::initializer::apply_runtime_active_segments(store::active_execute_wasm().module_name) ==
+        ::uwvm2::uwvm::runtime::initializer::details::active_segment_result::ok, "active segments initialized successfully");
         auto& registry=runtime_store::active_runtime_registry();check(registry.size()==3,"exact actual three-module initialized registry");
         result.main=std::addressof(registry.at(u8"management-main"));result.other=std::addressof(registry.at(u8"management-other"));
         result.cold=std::addressof(registry.at(u8"management-cold"));result.epoch=lib::observe_compiler_runtime_generation_host_api();

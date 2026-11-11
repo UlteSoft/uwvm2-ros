@@ -130,10 +130,10 @@
                 auto const& target{cache.index_unchecked(i)};
                 if(target.origin_module_id != module_id) { return false; }
                 if(checkpoint_effect_actual_cached_leaf(target) == checkpoint_resolved_effect::defined_wasm) { continue; }
-                // Read-only source observation only. The actual source census
-                // validates the sealed loader's complete final native binding
-                // vector in this same publication/epoch and closed-host guard.
-                // This does not grant checkpoint replay, mutation or caching.
+                // A cold byte-access census, shared by source observation and
+                // authorized memory edits under the same complete closed-host
+                // and ALL-stop proof. It validates every sealed final native
+                // binding; it grants no execution, replay or mutation authority.
                 if(target.k != cached_import_target::kind::local_imported || target.reference_params || target.reference_results)
                 { return false; }
                 auto const& original{module->imported_function_vec_storage.index_unchecked(i)};

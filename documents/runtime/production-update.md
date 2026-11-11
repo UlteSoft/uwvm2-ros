@@ -3,17 +3,21 @@
 The `update` command category is independent of `debug`. `uwvm2-ros --help`
 lists both; `--help update` lists the launch options. Updates use separately
 authorized private compilation and publication machinery. Debugger permissions
-do not grant or remove update authority. An update coordinator and an interactive
-debugger cannot simultaneously own the same execution domain; selecting `full`
-alone does not install a debugger or prevent an authorized update.
+do not grant or remove update authority. An independently authenticated debugger
+may observe the same runtime through a distinct sealed endpoint. Production code
+publication still requires the signed update coordinator, including when debugger
+permission is `full`; raw debugger replacement is refused in this configuration.
+An IDE can forward an update request only with separately provisioned update
+credentials, regardless of its debugger permission.
 
 ## Supported changes and execution boundary
 
 Linux and the product's bundled LLVM full compiler are supported, with the real
 native owner table, CFI and unwind ownership checks retained. One privately owned
 immutable main Wasm image is admitted. No Wasm start section, preloaded module,
-shared memory, imported memory/global/table, checkpoint profile or unknown native
-provider is admitted. An exported `_start` command executes once after authorized launch; an
+shared memory, imported memory/global/table, resumable checkpoint profile or unknown
+native provider is admitted. A debugger may use the private observation-only profile;
+it has no resumable continuation or checkpoint restore authority. An exported `_start` command executes once after authorized launch; an
 update does not rerun it. Synchronous builtin WASIp1 imports may retain their
 explicit contract for function and policy transactions. Other providers are
 rejected until their actual writer/borrower handoff is implemented.
@@ -125,6 +129,21 @@ The retained management endpoint is sealed against guest descriptor/preopen
 aliases. A separate `--diagnostic-control-fd` may coexist; it has its own sealed
 endpoint and a strictly read-only dispatcher described in
 [Non-sensitive diagnostics](release-diagnostics.md).
+A separate debugger endpoint may also coexist. All three retained endpoint
+identities, including descriptor aliases, are excluded from guest WASI access.
+`tools/debug/secure_server.py serve --update-socket-dir DIR` provisions an
+owner-only update socket and its own capability. With debugger permission `none`,
+only the update endpoint is created. `tools/debug/signed_update.py request`
+forwards one complete host-supplied UUP1 frame; it neither signs nor retries it.
+A disconnect after submission leaves the outcome unknown until independently
+queried. The broker drains the submitted response before accepting another frame.
+
+A real paused old activation still holds its execution lease. PREPARE cannot
+pretend that this is quiescence or resume it automatically; a failed drain returns
+`busy`. A successful publication retires old stop/source identities before
+reopening execution. The Wasm instruction and native JIT views refer to the new
+generation; old DWARF/source bindings are invalidated and reported unavailable
+rather than reused for different code.
 The launch Ed25519 key stays fixed; OpenSSL verifies every permit. No caller
 verification callback or `verified=true` is accepted. An internal cryptographic
 RNG creates a fresh 256-bit nonce independently of guest random permission.
@@ -336,3 +355,32 @@ and refused combinations. They include real signatures, native unwind, actual
 old writer drain, cached WASI bridge revocation, immutable binding continuity,
 module state transitions and invalid candidates. Results do not imply validation
 on robot hardware, unknown providers or untested platforms.
+
+
+## Terminal faults and failure classification
+
+A terminal first-fault record closes update admission immediately, including the
+interval in which an explicitly selected debugger is paused before the managed
+fault unwinds. Session reopening and private replacement preparation/publication
+recheck that record. A faulted epoch cannot cancel its way back into execution,
+replay an old launch receipt to reopen admission, or preserve/migrate contaminated
+state into a resumed old continuation. Status and retained diagnostic facts remain
+readable. This does not reject ordinary independently authorized updates while the
+runtime is healthy.
+
+Private module-transition planning distinguishes invalid input from unsupported
+features and exhausted budgets. Malformed memory limits and active-data ranges
+outside the declared initial memory return `validation_failed`; private reset-image
+and entry-count budgets return `exhausted`. Unsupported memory/segment features
+remain `unsupported`. A failed plan does not publish a partially built reset image.
+Native compile failures, stale generations and scope mismatches retain their
+respective typed status instead of collapsing to `unsupported`.
+
+## MTE execution contract
+
+The signed effective-policy measurement includes whether MTE execution is
+active, its delivery mode and its report action. Explicit silent-log (record-and-continue) is a
+different execution-safety contract from crash enforcement. The same encoding
+is used for the live environment and a prepared policy projection; after a
+signed permission transition, subsequent transactions must still match the live
+contract. Debugger authority is not part of this grant and cannot weaken it.

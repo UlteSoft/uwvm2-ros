@@ -1,4 +1,4 @@
-// Independent binary/signature oracle: trcrsired/llvm-project mt-2
+// Operation/signature oracle (not the obsolete binary encoding): trcrsired/llvm-project mt-2
 // 3b5342c56f38dea910d9ffe1264add1aaa3bcd36,
 // llvm/test/CodeGen/WebAssembly/memtag-addr{32,64}.ll and
 // llvm/lib/Target/WebAssembly/WebAssemblyInstrMemtag.td.
@@ -30,11 +30,12 @@ namespace
     };
     constexpr bool contract_matches_reference()
     {
-        if(m::instruction_count != sizeof(reference) / sizeof(reference[0]) || m::opcode_prefix != 0xfcu) { return false; }
+        if(m::instruction_count != sizeof(reference) / sizeof(reference[0]) || m::opcode_prefix != 0xffu) { return false; }
         for(auto const& expected : reference)
         {
             auto const* actual{m::find_instruction(expected.subopcode)};
             if(actual == nullptr || static_cast<::std::uint_least32_t>(actual->operation) != expected.subopcode ||
+               m::encode_opcode(actual->operation) != (0x01010000u | expected.subopcode) ||
                actual->mnemonic != expected.mnemonic || actual->operand_count != expected.operands || actual->result_count != expected.results)
             { return false; }
             for(auto width : {m::address_width::i32, m::address_width::i64})
@@ -90,8 +91,10 @@ namespace
     static_assert(m::memory64_arm_mte_geometry.pointer_tag_mask == 1080863910568919040ull);
     static_assert((m::memory64_arm_mte_geometry.address_mask ^ m::memory64_arm_mte_geometry.pointer_tag_mask) == 18446744073709551615ull);
     static_assert(m::memory64_arm_mte_geometry.tag_value_mask == 15u);
-    static_assert(m::globals_section_version == 1u && m::globals_memory_index == 0u);
-    static_assert(::std::u8string_view{m::globals_section_name} == u8"memtag.globals");
+    static_assert(m::encoding_version == 1u && m::linear_encoding_domain == 1u);
+    static_assert(m::linear_globals_section_version == 2u);
+    static_assert(::std::u8string_view{m::linear_globals_section_name} == u8"uwvm.memtag.linear.globals");
+    static_assert(::std::u8string_view{m::obsolete_globals_section_name} == u8"memtag.globals");
     static_assert(m::memory_immediate{0xffffffffu}.memory_index == 0xffffffffu);
 }
 int main() { return contract_matches_reference() && effects_match_reference() ? 0 : 1; }

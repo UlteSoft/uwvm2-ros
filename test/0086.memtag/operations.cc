@@ -87,7 +87,14 @@ void exercise()
         ::std::span(data).first(64u),shadow,random)};
     require(result.error==mt::operation_error::memory_access && data==before);
     require(static_cast<bool>(shadow.check(pointer,0u,32u)));
-    ::std::array<Address,1> load_args{pointer};
+    // A one-byte tag load at address 37 is valid in the shortened 64-byte
+    // data span; the preceding 32-byte zeroing operation was not. Keep that
+    // valid load as a positive control and use address 69 for the overrun.
+    ::std::array<Address,1> valid_load_args{pointer};
+    auto const valid_load{mt::execute_operation<true,Address,Shared>(mt::opcode::load,valid_load_args,
+        ::std::span(data).first(64u),shadow,random)};
+    require(static_cast<bool>(valid_load) && valid_load.value==pointer && data==before);
+    ::std::array<Address,1> load_args{view::insert(69u,9u)};
     auto const loaded{mt::execute_operation<true,Address,Shared>(mt::opcode::load,load_args,
         ::std::span(data).first(64u),shadow,random)};
     require(loaded.error==mt::operation_error::memory_access && data==before);

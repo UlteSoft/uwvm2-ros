@@ -20,8 +20,8 @@ static std::string render(data::view const& value)
 {std::string text;fast_io::ostring_ref_std output{&text};ros::print(output,value,19);return text;}
 int main()
 {
-    static_assert(static_cast<unsigned>(dbg::console_command_kind::execution_relocate)==29);
-    static_assert(static_cast<unsigned>(dbg::console_command_kind::ros_state)==30);
+    static_assert(static_cast<unsigned>(dbg::console_command_kind::execution_relocate)==30);
+    static_assert(static_cast<unsigned>(dbg::console_command_kind::ros_state)==31);
     for(auto name:{fast_io::string_view{"capabilities"},fast_io::string_view{"sessions"},fast_io::string_view{"queues"},
         fast_io::string_view{"services"},fast_io::string_view{"actions"},fast_io::string_view{"parameters"},
         fast_io::string_view{"tf"},fast_io::string_view{"graph"},fast_io::string_view{"stats"}})

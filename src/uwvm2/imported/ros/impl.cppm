@@ -60,6 +60,7 @@ import fast_io;
 export {
 #include "capability/manager.h"
 #include "policy/policy.h"
+#include "policy/debug.h"
 #include "ipc/unix.h"
 #include "ipc/event_queue.h"
 #include "common/manifest.h"

@@ -4,9 +4,18 @@
   "revision": "3b5342c56f38dea910d9ffe1264add1aaa3bcd36",
   "patches": [
     "patches/llvm-stack-tag-restore.patch",
-    "patches/llvm-global-phi-materialization.patch"
+    "patches/llvm-global-phi-materialization.patch",
+    "patches/llvm-packed-wire-v1.patch"
   ],
-  "preserved_opcode_family": "0xfc20-0xfc2f,0xfc33,0xfc36-0xfc38",
-  "purpose": "Research baseline: stack-tag restoration, dominance-correct globals, and guarded cross-translation-unit data addresses; successor ISA under design",
-  "status": "compiler integration work; runtime qualification pending"
+  "wire_format": "0xff ULEB32((version << 24) | (domain << 16) | operation) ULEB32(memoryidx)",
+  "version": 1,
+  "linear_domain": 1,
+  "reserved_rejected_gc_domain": 2,
+  "defined_operation_ids": "0x20-0x2f,0x36-0x38",
+  "reserved_rejected_operation_ids": "0x33",
+  "globals_section": "uwvm.memtag.linear.globals",
+  "globals_version": 2,
+  "obsolete_encodings_rejected": ["FC memtag", "FF vendor/domain/version fields", "memtag.globals version 1"],
+  "purpose": "Breaking packed-u32 wire migration, stack-tag restoration, dominance-correct globals, and guarded cross-translation-unit data addresses",
+  "status": "pinned producer source and patch application checked; rebuilt external compiler and its lit suite remain required"
 }

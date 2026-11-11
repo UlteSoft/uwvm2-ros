@@ -112,7 +112,6 @@ static void emit_case(::llvm::Module& ir, gc::wasm_module_storage_t& module, ::s
     state.operand_stack.push_back({.type = value_type, .value = function->getArg(2u)});
     ::uwvm2::validation::standard::wasm3::gc_instruction_immediate decoded{};
     decoded.opcode = 5u; decoded.first = 0u; decoded.second = field;
-#if defined(UWVM_EXPERIMENTAL_NUMERIC_STRUCT_SET32) && UWVM_EXPERIMENTAL_NUMERIC_STRUCT_SET32 == 1
     auto invalid{decoded}; invalid.second = UINT32_MAX;
     SET32_IR_CHECK(!d::try_emit_runtime_local_func_llvm_jit_gc_struct_set32(state, invalid, wasm_type::i32));
     SET32_IR_CHECK(entry->empty() && state.operand_stack.size() == 3uz);
@@ -124,23 +123,18 @@ static void emit_case(::llvm::Module& ir, gc::wasm_module_storage_t& module, ::s
             value_type == wasm_type::f32 ? wasm_type::f32 : wasm_type::i32));
         SET32_IR_CHECK(entry->empty() && state.operand_stack.size() == 3uz);
     }
-#endif
     SET32_IR_CHECK(d::try_emit_runtime_local_func_llvm_jit_gc_aggregate(state, decoded));
     SET32_IR_CHECK(state.operand_stack.size() == 1uz && state.operand_stack.front().value == function->getArg(0u));
     state.ir_builder->CreateRet(function->getArg(0u));
     SET32_IR_CHECK(!::llvm::verifyFunction(*function, &::llvm::errs()));
     bool scalar{};
-#if defined(UWVM_EXPERIMENTAL_NUMERIC_STRUCT_SET32) && UWVM_EXPERIMENTAL_NUMERIC_STRUCT_SET32 == 1
     scalar = field < 4u;
-#endif
     auto const bridge_type{scalar ? ::llvm::FunctionType::get(intptr, {intptr, intptr, intptr, intptr, intptr}, false) :
         ::llvm::FunctionType::get(i32, {intptr, i32, i32, intptr, intptr}, false)};
     c::u8string bridge_name{};
-#if defined(UWVM_EXPERIMENTAL_NUMERIC_STRUCT_SET32) && UWVM_EXPERIMENTAL_NUMERIC_STRUCT_SET32 == 1
     if(scalar) { bridge_name = d::get_llvm_runtime_bridge_function_symbol_name<d::uwvm2_llvm_jit_gc_struct_set32_wide_bridge_r1>(
         bridge_type, c::u8string_view{u8"gc_struct_set32_registerwide_v1"}); }
     else
-#endif
     {
         // The real fixed aggregate emitter names its operation and input count
         // explicitly. Verify that exact declaration; a template-value spelling
@@ -157,10 +151,8 @@ static void emit_case(::llvm::Module& ir, gc::wasm_module_storage_t& module, ::s
 #if defined(__riscv) && defined(__riscv_xlen) && (__riscv_xlen == 64)
     SET32_IR_CHECK(declaration == nullptr);
     ::std::uintptr_t expected_address{};
-# if defined(UWVM_EXPERIMENTAL_NUMERIC_STRUCT_SET32) && UWVM_EXPERIMENTAL_NUMERIC_STRUCT_SET32 == 1
     if(scalar) { expected_address = d::get_llvm_runtime_bridge_function_address(d::uwvm2_llvm_jit_gc_struct_set32_wide_bridge_r1); }
     else
-# endif
     { expected_address = d::get_llvm_runtime_bridge_function_address(d::llvm_jit_gc_aggregate_fixed_bridge<5u, 2uz>); }
 #else
     SET32_IR_CHECK(declaration != nullptr && declaration->getFunctionType() == bridge_type);
@@ -200,7 +192,6 @@ static void emit_case(::llvm::Module& ir, gc::wasm_module_storage_t& module, ::s
         }
         if(value_type == wasm_type::f32)
         { SET32_IR_CHECK(::llvm::isa<::llvm::BitCastInst>(narrow_raw)); }
-#if defined(UWVM_EXPERIMENTAL_NUMERIC_STRUCT_SET32) && UWVM_EXPERIMENTAL_NUMERIC_STRUCT_SET32 == 1
 # if !(defined(__riscv) && defined(__riscv_xlen) && (__riscv_xlen == 64))
         SET32_IR_CHECK(reinterpret_cast<::std::uintptr_t>(::llvm::sys::DynamicLibrary::SearchForAddressOfSymbol(
             d::get_llvm_string_ref(bridge_name).str())) ==
@@ -213,7 +204,6 @@ static void emit_case(::llvm::Module& ir, gc::wasm_module_storage_t& module, ::s
             c::u8string_view{u8"gc_struct_set32_registerwide_v1"}));
         SET32_IR_CHECK(bridge_name != d::get_llvm_runtime_bridge_function_symbol_name<d::uwvm2_llvm_jit_gc_struct_set32_wide_bridge_r1>(bridge_type,
             c::u8string_view{u8"gc_struct_set32_registerwide_v2"}));
-#endif
     }
 }
 int main(int argc, char** argv)

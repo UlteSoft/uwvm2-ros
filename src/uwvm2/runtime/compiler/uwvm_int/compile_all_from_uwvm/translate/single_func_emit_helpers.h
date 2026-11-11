@@ -1742,6 +1742,13 @@ auto const stacktop_spill_one_deepest_to{[&](bytecode_vec_t& dst, ::std::size_t 
                                              if(stacktop_cache_count == 0uz) { return; }
 
                                              stacktop_assert_invariants();
+                                             // A cached suffix contains only register-backed values. Prove
+                                             // its extent before indexing, including in release translators.
+                                             // This is a compiler invariant, never a Guest resource limit.
+                                             auto const physical_size{codegen_operand_stack.size()};
+                                             if(stacktop_memory_count >= physical_size ||
+                                                stacktop_cache_count != physical_size - stacktop_memory_count) [[unlikely]]
+                                             { ::fast_io::fast_terminate(); }
 
                                              // Deepest cached value is at index `stacktop_memory_count`.
                                              // If several *consecutive* deepest cached values share the same type, batch them into one spill opfunc.
@@ -1750,6 +1757,12 @@ auto const stacktop_spill_one_deepest_to{[&](bytecode_vec_t& dst, ::std::size_t 
                                              ::std::size_t const end_pos{stacktop_range_end_pos(vt)};
                                              ::std::size_t const group_cnt{stacktop_cache_count_for_range(begin_pos, end_pos)};
                                              ::std::size_t const currpos{stacktop_currpos_for_range(begin_pos, end_pos)};
+                                             // In particular, group_cnt==0 must not underflow the ring
+                                             // advance below into SIZE_MAX iterations on a broken model.
+                                             if(!stacktop_enabled_for_vt(vt) || begin_pos >= end_pos ||
+                                                group_cnt == 0uz || group_cnt > end_pos - begin_pos ||
+                                                currpos < begin_pos || currpos >= end_pos) [[unlikely]]
+                                             { ::fast_io::fast_terminate(); }
                                              ::std::size_t spill_n{1uz};
                                              {
                                                  auto const cache_end{stacktop_memory_count + stacktop_cache_count};
@@ -2594,7 +2607,7 @@ auto const emit_drop_typed_to{
         auto const emit_real_drop{
             [&]() constexpr UWVM_THROWS
             {
-                switch(vt)
+                switch(static_cast<unsigned>(vt) == 0x69u ? curr_operand_stack_value_type::externref : vt)
                 {
                     case curr_operand_stack_value_type::i32:
                     {
@@ -2619,6 +2632,19 @@ auto const emit_drop_typed_to{
                     case curr_operand_stack_value_type::v128:
                     {
                         emit_opfunc_to(dst, translate::get_uwvmint_drop_v128_fptr_from_tuple<CompileOption>(curr_stacktop, interpreter_tuple));
+                        return;
+                    }
+                    case curr_operand_stack_value_type::funcref:
+                    {
+                        emit_opfunc_to(dst, translate::get_uwvmint_drop_funcref_fptr_from_tuple<CompileOption>(curr_stacktop, interpreter_tuple));
+                        return;
+                    }
+                    case curr_operand_stack_value_type::externref:
+                    {
+                        // GC and exception references use the same ABI-sized carrier.
+                        // Its size is platform-dependent; a numeric or fixed-width drop
+                        // would corrupt retained results on 32-bit interpreters.
+                        emit_opfunc_to(dst, translate::get_uwvmint_drop_externref_fptr_from_tuple<CompileOption>(curr_stacktop, interpreter_tuple));
                         return;
                     }
                     [[unlikely]] default:

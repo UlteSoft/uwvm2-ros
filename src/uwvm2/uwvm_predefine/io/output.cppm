@@ -27,10 +27,20 @@
  ****************************************/
 
 module;
+#include <cstdlib>
+#if defined(__linux__)
+#include <fcntl.h>
+#include <cerrno>
+#include <cstddef>
+#include <type_traits>
+#endif
 
 export module uwvm2.uwvm_predefine.io:output;
 
 import fast_io;
+#if defined(__linux__)
+import uwvm2.runtime.diagnostic.crash_policy;
+#endif
 
 #ifndef UWVM_MODULE
 # define UWVM_MODULE

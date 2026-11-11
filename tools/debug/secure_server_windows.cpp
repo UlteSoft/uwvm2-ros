@@ -22,6 +22,7 @@ namespace
 {
     constexpr ::DWORD command_limit{8448u}, reply_limit{65536u};
     constexpr ::DWORD idle_poll_ms{50u};
+    enum class debug_permission : unsigned char { unspecified, full, read_only, limited, none };
     struct handle_owner
     {
         ::HANDLE value{};
@@ -216,8 +217,91 @@ namespace
     }
     [[nodiscard]] int serve(int argc, wchar_t** argv)
     {
-        if(argc < 4 || !trusted_console())
-        { ::fast_io::io::perrln("serve requires a real host console, uwvm.exe, and explicit LLVM-full run arguments"); return 2; }
+        if(argc < 4)
+        { ::fast_io::io::perrln("serve requires uwvm.exe and explicit run arguments"); return 2; }
+        bool selected_fault_action{};
+        debug_permission permission{debug_permission::unspecified};
+        bool runtime_debug{};
+        for(int i{3};i<argc;++i)
+        {
+            if(::wcscmp(argv[i],L"--run")==0 || ::wcscmp(argv[i],L"-r")==0 || ::wcscmp(argv[i],L"--")==0)break;
+            // Match the VM's counted WASI argv pretreatment before inspecting
+            // host options. Payload strings can include any option/delimiter.
+            bool const global_args{::wcscmp(argv[i],L"--wasip1-global-force-args")==0};
+            bool const targeted_args{::wcscmp(argv[i],L"--wasip1-single-force-args")==0 ||
+                                     ::wcscmp(argv[i],L"--wasip1-group-force-args")==0};
+            if(global_args || targeted_args)
+            {
+                auto const leading{targeted_args ? 1 : 0};
+                if(argc-i<=1+leading)
+                {::fast_io::io::perrln("WASI force-args requires its target, count and counted argument values");return 2;}
+                auto const count_index{i+1+leading};
+                auto const* digit{argv[count_index]};
+                while(*digit==L' ' || *digit==L'\t' || *digit==L'\r' || *digit==L'\n' || *digit==L'\f' || *digit==L'\v')++digit;
+                if(*digit==L'+')++digit;
+                if(*digit==L'\0')
+                {::fast_io::io::perrln("WASI force-args requires an unsigned decimal argument count");return 2;}
+                auto const remaining{static_cast<::std::size_t>(argc-count_index-1)};
+                ::std::size_t count{};
+                for(;*digit!=L'\0';++digit)
+                {
+                    if(*digit<L'0' || *digit>L'9')
+                    {::fast_io::io::perrln("WASI force-args requires an unsigned decimal argument count");return 2;}
+                    auto const value{static_cast<::std::size_t>(*digit-L'0')};
+                    if(count>remaining/10u || (count==remaining/10u && value>remaining%10u))
+                    {::fast_io::io::perrln("WASI force-args has fewer argument values than its count");return 2;}
+                    count=count*10u+value;
+                }
+                i=count_index+static_cast<int>(count);
+                continue;
+            }
+            if(::wcscmp(argv[i],L"--debug")==0 || ::wcsncmp(argv[i],L"--debug=",8u)==0)
+            {::fast_io::io::perrln("--debug was removed; use --debug-fault-action pause");return 2;}
+            if(::wcscmp(argv[i],L"-Rdbg")==0 || ::wcscmp(argv[i],L"--runtime-debug")==0 ||
+               ((::wcscmp(argv[i],L"-m")==0 || ::wcscmp(argv[i],L"--mode")==0) &&
+                i+1<argc && ::wcscmp(argv[i+1],L"debug")==0))
+            { runtime_debug=true; }
+            if(::wcscmp(argv[i],L"--debug-permissions")==0)
+            {
+                if(permission!=debug_permission::unspecified || i+1>=argc)
+                {::fast_io::io::perrln("exactly one valid --debug-permissions value is required");return 2;}
+                auto const* value{argv[++i]};
+                if(::wcscmp(value,L"full")==0)permission=debug_permission::full;
+                else if(::wcscmp(value,L"read-only")==0)permission=debug_permission::read_only;
+                else if(::wcscmp(value,L"limited")==0)permission=debug_permission::limited;
+                else if(::wcscmp(value,L"none")==0)permission=debug_permission::none;
+                else {::fast_io::io::perrln("--debug-permissions requires full, read-only, limited or none");return 2;}
+            }
+            if(::wcscmp(argv[i],L"--debug-fault-action")==0)
+            {
+                if(selected_fault_action || i+1>=argc)
+                {::fast_io::io::perrln("--debug-fault-action accepts exactly one crash, pause or exit value");return 2;}
+                auto const* value{argv[++i]};
+                if(::wcscmp(value,L"crash")!=0 && ::wcscmp(value,L"pause")!=0 && ::wcscmp(value,L"exit")!=0)
+                {::fast_io::io::perrln("--debug-fault-action accepts exactly one crash, pause or exit value");return 2;}
+                selected_fault_action=true;
+            }
+        }
+        if(permission==debug_permission::unspecified)
+        { permission=runtime_debug?debug_permission::full:debug_permission::limited; }
+        bool const control_allowed{permission==debug_permission::full};
+        if(permission==debug_permission::none)
+        {
+            // No control pipe, capability, job, or inherited debugger HANDLE.
+            ::std::wstring command{quoted(argv[2])};
+            for(int i{3};i<argc;++i){command.push_back(L' ');command.append(quoted(argv[i]));}
+            ::STARTUPINFOW startup{};startup.cb=sizeof(startup);
+            ::PROCESS_INFORMATION child{};
+            if(::uwvm2::utils::control::win32_abi::uwvm_CreateProcessW(argv[2],command.data(),nullptr,nullptr,FALSE,
+                0u,nullptr,nullptr,::std::addressof(startup),::std::addressof(child))==0)return 14;
+            handle_owner guest{child.hProcess},thread{child.hThread};
+            if(::fast_io::win32::WaitForSingleObject(guest.value,INFINITE)!=WAIT_OBJECT_0)return 125;
+            ::std::uint_least32_t status{};
+            return ::fast_io::win32::GetExitCodeProcess(guest.value,::std::addressof(status))!=0 && status<256u
+                ? static_cast<int>(status):125;
+        }
+        if(!trusted_console())
+        { ::fast_io::io::perrln("a debugger capability requires a real host console"); return 2; }
         private_acl security{};
         if(!security.initialize()) { return 3; }
         ::std::array<unsigned char, 32u> secret{};
@@ -291,7 +375,8 @@ namespace
         ::fast_io::io::println("debug server: ", generated_ascii(server_name),
                                "\ncapability: ", generated_ascii(hex_wide(secret.data(), secret.size())));
         bool detached{};
-        while(::fast_io::win32::WaitForSingleObject(guest.value, 0u) == WAIT_TIMEOUT && !detached)
+        bool vm_channel_failed{};
+        while(::fast_io::win32::WaitForSingleObject(guest.value, 0u) == WAIT_TIMEOUT && !detached && !vm_channel_failed)
         {
             handle_owner listener{::uwvm2::utils::control::win32_abi::uwvm_CreateNamedPipeW(server_name.c_str(),
                 PIPE_ACCESS_DUPLEX | FILE_FLAG_FIRST_PIPE_INSTANCE | FILE_FLAG_OVERLAPPED,
@@ -349,20 +434,46 @@ namespace
                    ::uwvm2::utils::control::win32_abi::uwvm_GetNamedPipeClientProcessId(listener.value, ::std::addressof(observed_client)) == 0 ||
                    observed_client != client_pid || !same_owner(client.value, security) ||
                    !outside_guest_job(client.value, guest_job.value)) { break; }
-                bool const quit{size == 4u && ::std::memcmp(command_bytes.data(), "quit", 4u) == 0};
-                if(!write_message(vm_server.value, command_bytes.data(), size)) { break; }
+                // Same single-token grammar as the VM: C ASCII whitespace,
+                // q/quit aliases, and no extra argument or embedded NUL.
+                auto space=[](unsigned char c) noexcept { return c==' ' || (c>='\t' && c<='\r'); };
+                ::std::size_t first{},last{size};
+                while(first<last && space(command_bytes[first])) { ++first; }
+                while(last>first && space(command_bytes[last-1u])) { --last; }
+                bool const quit{(last-first==1u && command_bytes[first]=='q') ||
+                    (last-first==4u && ::std::memcmp(command_bytes.data()+first,"quit",4u)==0)};
+                if(size==10u && ::std::memcmp(command_bytes.data(),"disconnect",10u)==0) { break; }
+                if(quit && !control_allowed)
+                {
+                    // The authenticated observer owns only this connection;
+                    // forwarding quit would close the launcher's VM endpoint.
+                    char reply[]{"observer detached; guest state unchanged\n"};::DWORD written{};
+                    static_cast<void>(external_message(listener.value,reply,static_cast<::DWORD>(sizeof(reply)-1u),written,true));
+                    break;
+                }
+                if(!write_message(vm_server.value, command_bytes.data(), size))
+                { vm_channel_failed=true;break; }
                 ::std::array<char, reply_limit> reply{};
                 ::DWORD reply_size{};
                 ::DWORD sent_reply{};
+                // Drain the sole outstanding VM response before attempting a
+                // client write. Even an observer EOF or broken pipe cannot
+                // leave a late reply to be consumed by the next session.
                 if(!message_ready(vm_server.value, guest.value) ||
-                   !exact_message(vm_server.value, reply.data(), reply_limit, reply_size) ||
-                   !external_message(listener.value, reply.data(), reply_size, sent_reply, true) ||
+                   !exact_message(vm_server.value, reply.data(), reply_limit, reply_size))
+                { vm_channel_failed=true;break; }
+                if(!external_message(listener.value, reply.data(), reply_size, sent_reply, true) ||
                    sent_reply != reply_size) { break; }
                 if(quit) { detached = true; break; }
             }
             static_cast<void>(::fast_io::win32::DisconnectNamedPipe(listener.value));
         }
         if(detached) { ::fast_io::io::println("debugger detached; guest continues"); return 0; }
+        // A malformed/closed VM transport is a host failure, not an observer
+        // cancellation. Do not reopen a listener on an uncertain reply stream.
+        // This job has no KILL_ON_JOB_CLOSE policy; ordinary observer EOF never
+        // reaches here and never destroys the actual launcher's ownership.
+        if(vm_channel_failed && ::fast_io::win32::WaitForSingleObject(guest.value,0u)==WAIT_TIMEOUT)return 125;
         ::std::uint_least32_t child_status{};
         return ::fast_io::win32::GetExitCodeProcess(guest.value, ::std::addressof(child_status)) != 0 && child_status < 256u
             ? static_cast<int>(child_status) : 125;

@@ -13,6 +13,7 @@ class llvm_jit_gc_status_dispatch_plan
     ::llvm::IRBuilder<>::InsertPoint original_{};
     bool committed_{};
     bool shared_{};
+    bool segment_bounds_{true};
 
     void emit_trap_body(::llvm::Value* kind, ::llvm::Value* callee) noexcept
     {
@@ -46,10 +47,12 @@ class llvm_jit_gc_status_dispatch_plan
             constant(trap_kind::gc_allocation_failure), constant(trap_kind::runtime_invariant_failure))};
         auto const bounds{builder.CreateSelect(failed(storage::gc_object_status::out_of_bounds),
             constant(trap_kind::array_out_of_bounds), generic)};
-        auto const data_bounds{builder.CreateSelect(failed(storage::gc_object_status::data_segment_out_of_bounds),
-            constant(trap_kind::memory_out_of_bounds), bounds)};
-        auto const element_bounds{builder.CreateSelect(failed(storage::gc_object_status::element_segment_out_of_bounds),
-            constant(trap_kind::table_out_of_bounds), data_bounds)};
+        // Scalar getters/setters cannot return segment statuses. An impossible
+        // status remains an internal failure rather than a catchable Guest trap.
+        auto const data_bounds{segment_bounds_ ? builder.CreateSelect(failed(storage::gc_object_status::data_segment_out_of_bounds),
+            constant(trap_kind::memory_out_of_bounds), bounds) : bounds};
+        auto const element_bounds{segment_bounds_ ? builder.CreateSelect(failed(storage::gc_object_status::element_segment_out_of_bounds),
+            constant(trap_kind::table_out_of_bounds), data_bounds) : data_bounds};
         auto const selected{builder.CreateSelect(failed(storage::gc_object_status::null_reference),
             constant(trap_kind::null_reference), element_bounds, get_llvm_string_ref(u8"gc.status.error.kind"))};
         emit_trap_body(selected, trap_callee_);
@@ -72,7 +75,8 @@ public:
         if(error_ != nullptr) { error_->eraseFromParent(); }
         ok_->eraseFromParent();
     }
-    [[nodiscard]] bool prepare(::llvm::Module& module, ::llvm::IRBuilder<>& builder) noexcept
+    [[nodiscard]] bool prepare(::llvm::Module& module, ::llvm::IRBuilder<>& builder,
+        bool segment_bounds = true) noexcept
     {
         auto const block{builder.GetInsertBlock()};
         auto const function{block == nullptr ? nullptr : block->getParent()};
@@ -81,6 +85,7 @@ public:
         auto const type{get_llvm_runtime_trap_bridge_function_type(builder.getContext())};
         if(type == nullptr) { return false; }
         builder_ = ::std::addressof(builder);
+        segment_bounds_ = segment_bounds;
         trap_type_ = type;
         original_ = builder.saveIP();
         ok_ = ::llvm::BasicBlock::Create(builder.getContext(), get_llvm_string_ref(u8"gc.status.ok"), function);
@@ -136,7 +141,7 @@ public:
         auto const type{::llvm::cast<::llvm::IntegerType>(status.getType())};
         if(shared_)
         {
-            auto const branch{builder.CreateSwitch(::std::addressof(status), errors_[0], 7u)};
+            auto const branch{builder.CreateSwitch(::std::addressof(status), errors_[0], segment_bounds_ ? 7u : 5u)};
             auto const constant{[&](storage::gc_object_status value)
             { return ::llvm::ConstantInt::get(type, static_cast<::std::uint_least64_t>(value)); }};
             branch->addCase(::llvm::ConstantInt::get(type, 0u), ok_);
@@ -144,19 +149,27 @@ public:
             branch->addCase(constant(storage::gc_object_status::size_overflow), errors_[1]);
             branch->addCase(constant(storage::gc_object_status::out_of_bounds), errors_[2]);
             branch->addCase(constant(storage::gc_object_status::null_reference), errors_[3]);
-            branch->addCase(constant(storage::gc_object_status::data_segment_out_of_bounds), errors_[4]);
-            branch->addCase(constant(storage::gc_object_status::element_segment_out_of_bounds), errors_[5]);
-            // Static branch preferences: default, success, OOM, size, array, null, data, element.
-            branch->setMetadata(::llvm::LLVMContext::MD_prof, ::llvm::MDNode::get(context, {
+            if(segment_bounds_)
+            {
+                branch->addCase(constant(storage::gc_object_status::data_segment_out_of_bounds), errors_[4]);
+                branch->addCase(constant(storage::gc_object_status::element_segment_out_of_bounds), errors_[5]);
+            }
+            // Static branch preferences: default, success, OOM, size, array,
+            // null, followed by data/element only for aggregate operations.
+            ::llvm::SmallVector<::llvm::Metadata*, 9u> weights{
                 ::llvm::MDString::get(context, "branch_weights"),
                 ::llvm::ConstantAsMetadata::get(builder.getInt32(1u)),
                 ::llvm::ConstantAsMetadata::get(builder.getInt32(2000u)),
                 ::llvm::ConstantAsMetadata::get(builder.getInt32(1u)),
                 ::llvm::ConstantAsMetadata::get(builder.getInt32(1u)),
                 ::llvm::ConstantAsMetadata::get(builder.getInt32(1u)),
-                ::llvm::ConstantAsMetadata::get(builder.getInt32(1u)),
-                ::llvm::ConstantAsMetadata::get(builder.getInt32(1u)),
-                ::llvm::ConstantAsMetadata::get(builder.getInt32(1u))}));
+                ::llvm::ConstantAsMetadata::get(builder.getInt32(1u))};
+            if(segment_bounds_)
+            {
+                weights.push_back(::llvm::ConstantAsMetadata::get(builder.getInt32(1u)));
+                weights.push_back(::llvm::ConstantAsMetadata::get(builder.getInt32(1u)));
+            }
+            branch->setMetadata(::llvm::LLVMContext::MD_prof, ::llvm::MDNode::get(context, weights));
         }
         else
         {

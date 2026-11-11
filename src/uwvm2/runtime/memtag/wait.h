@@ -34,6 +34,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
         ::std::uint64_t expected, ::std::int64_t timeout_ns) noexcept
     {
         static_assert(Operation<=2u);
+        deferred::poll(true);
         namespace waiting=::uwvm2::runtime::wasm_threads;
         constexpr ::std::size_t bytes{Operation==2u ? 8u : 4u};
         wait_execution_result result{};

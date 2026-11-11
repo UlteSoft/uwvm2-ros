@@ -140,7 +140,7 @@ namespace uwvm2::uwvm::imported::ros::host
         {
             runtime::ros_caller_identity caller{};::std::shared_ptr<instance> state{};
             if(auto error{identify(version, caller, state)}){return audit_denial(version,error);}
-            auto& backend{state->backends[1]};::std::unique_lock lock{backend.mutex,::std::try_to_lock};
+            auto& backend{*state->backends[1]};::std::unique_lock lock{backend.mutex,::std::try_to_lock};
             if(!lock.owns_lock()){return audit_denial(version,11);}
             if(command!=rmw_wire::command::retire&&!memory_range(memory,output,rmw_wire::packet_bytes)){return audit_denial(version,22);}
             if((command==rmw_wire::command::activate&&incarnation)||(command!=rmw_wire::command::activate&&!incarnation)){return audit_denial(version,22);}
@@ -166,7 +166,7 @@ namespace uwvm2::uwvm::imported::ros::host
             {if(auto error{backend.connect(version,until)}){return audit.finish(error);}}
             else if(!backend.connected||!backend.connection.session_id()){return audit.finish(125);}
             rmw_wire::packet request{};request.operation=command;request.kind=kind;
-            request.owner={2,handle,source.instance_number(),caller.generation,backend.connection.session_id()};request.incarnation=incarnation;
+            request.owner={2,handle,source.instance_number(),backend.environment_generation,backend.connection.session_id()};request.incarnation=incarnation;
             core::rmw_endpoint_history::entry const* previous{};
             if(command==rmw_wire::command::activate)
             {
@@ -237,17 +237,18 @@ namespace uwvm2::uwvm::imported::ros::host
         {
             runtime::ros_caller_identity caller{};::std::shared_ptr<instance> state{};
             if(auto error{identify(version, caller, state)}){return audit_denial(version,error);}
-            auto& backend{state->backends[1]};::std::unique_lock lock{backend.mutex,::std::try_to_lock};
+            auto& backend{*state->backends[1]};::std::unique_lock lock{backend.mutex,::std::try_to_lock};
             if(!lock.owns_lock()){return audit_denial(version,11);}
             core::authorization source;auto granted{capabilities.authorize(caller.runtime_instance,caller.generation,version,handle,"topic.publish",{},source,false,false)};
             if(!granted){return audit_denial(version,code(granted));}
             auto const& cap{*source.capability()};audit_result audit{caller.runtime_instance,caller.generation,version,cap.alias};audit.function="rmw.publisher_publish";
             if(!backend.connected||!backend.connection.session_id()){return audit.finish(125);}
-            rmw_wire::binding owner{2,handle,source.instance_number(),caller.generation,backend.connection.session_id()};
+            rmw_wire::binding owner{2,handle,source.instance_number(),backend.environment_generation,backend.connection.session_id()};
             core::rmw_endpoint_history::entry const* row{};auto error{backend.rmw_endpoints.find(owner,incarnation,rmw_wire::role::publisher,row)};
             if(error){return audit.finish(error);}
             ::std::uint64_t maximum{};
-            if(!core::read_quota(cap,"max-message-bytes",maximum)||length>maximum||length>core::ipc::max_payload_bytes-518-core::ipc::rmw_publish::header_bytes){return audit.finish(90);}
+            if(!core::read_quota(cap,"max-message-bytes",maximum)||length>maximum||length>core::ipc::max_payload_bytes-core::ipc::rmw_publish::header_bytes||
+               !core::ipc::request_data_fits("rmw.publish-v1",cap.alias,length+core::ipc::rmw_publish::header_bytes)){return audit.finish(90);}
             if(!memory_range(memory,input,length)){return audit.finish(22);}
             // One owned allocation/read. Admission borrows the active body,
             // then the fixed envelope is filled without another payload copy.

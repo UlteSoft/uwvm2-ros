@@ -24,6 +24,9 @@
 #  include <sys/statfs.h>
 #  include <sys/sysmacros.h>
 #  include <unistd.h>
+#  if defined(UWVM_RUNTIME_LLVM_JIT_CACHE_USE_OPENSSL_ED25519)
+#   include <openssl/evp.h>
+#  endif
 # endif
 # include <fast_io_crypto.h>
 # include "runtime_image_anchor.h"
@@ -152,7 +155,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache::self_executable
             if(!candidate || ::fstat(candidate.value, &captured) != 0 || !S_ISREG(captured.st_mode) || captured.st_size <= 0 ||
                static_cast<::std::uintmax_t>(captured.st_size) > (1ull << 34u) || !anchor_is_main_image(proc.value, captured)) { return; }
 
+# if defined(UWVM_RUNTIME_LLVM_JIT_CACHE_USE_OPENSSL_ED25519)
+            // The signed-cache build already owns OpenSSL. Its SHA-256
+            // implementation selects the supported CPU acceleration at runtime.
+            // Hash the same complete, authenticated executable descriptor; an
+            // EVP failure denies cache admission and never weakens the identity.
+            ::std::unique_ptr<::EVP_MD_CTX, decltype(&::EVP_MD_CTX_free)> hash{
+                ::EVP_MD_CTX_new(), &::EVP_MD_CTX_free};
+            if(!hash || ::EVP_DigestInit_ex(hash.get(), ::EVP_sha256(), nullptr) != 1) { return; }
+# else
+            // Standalone identity readers may be built without the signed cache.
             ::fast_io::sha256_context hash{};
+# endif
             ::std::byte bytes[4096]{};
             ::off_t offset{};
             while(offset != captured.st_size)
@@ -162,15 +176,25 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache::self_executable
                 auto const count{::pread(candidate.value, bytes, amount, offset)};
                 if(count < 0) { if(errno == EINTR) { continue; } return; }
                 if(count == 0) { return; }
+# if defined(UWVM_RUNTIME_LLVM_JIT_CACHE_USE_OPENSSL_ED25519)
+                if(::EVP_DigestUpdate(hash.get(), bytes, static_cast<::std::size_t>(count)) != 1) { return; }
+# else
                 hash.update(bytes, bytes + count);
+# endif
                 offset += count;
             }
             struct ::stat after{};
             ::std::byte extra{};
             if(::pread(candidate.value, &extra, 1uz, captured.st_size) != 0 || ::fstat(candidate.value, &after) != 0 ||
                !same_content_identity(captured, after)) { return; }
+# if defined(UWVM_RUNTIME_LLVM_JIT_CACHE_USE_OPENSSL_ED25519)
+            unsigned int digest_bytes{};
+            if(::EVP_DigestFinal_ex(hash.get(), reinterpret_cast<unsigned char*>(digest.data()),
+                                    &digest_bytes) != 1 || digest_bytes != digest.size()) { return; }
+# else
             hash.do_final();
             hash.digest_to_byte_ptr(digest.data());
+# endif
             image = ::std::move(candidate);
             initialized = true;
         }

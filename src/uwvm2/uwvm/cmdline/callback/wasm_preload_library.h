@@ -135,7 +135,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
             }
             [[unlikely]] default:
             {
-                return ::uwvm2::utils::cmdline::parameter_return_type::return_m1_imme;
+                // The option syntax was accepted. The loader has already
+                // diagnosed a module/file rejection, just as for --run.
+                ::uwvm2::uwvm::io::fast_exit(::uwvm2::uwvm::io::diagnostic_exit_status::invalid_module);
             }
         }
 

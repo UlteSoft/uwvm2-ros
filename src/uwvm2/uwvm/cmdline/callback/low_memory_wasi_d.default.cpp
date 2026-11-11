@@ -15,7 +15,6 @@
 #include "wasip1_group_inherit_system_environment.h"
 #include "wasip1_group_disable_utf8_check.h"
 #include "wasip1_group_enable_utf8_check.h"
-#include "wasip1_group_trace.h"
 
 extern "C" void const* uwvm_low_memory_callback_wasi_d_anchor() noexcept
 {

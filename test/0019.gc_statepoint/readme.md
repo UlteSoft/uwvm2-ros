@@ -83,3 +83,8 @@ The `gc_struct_set_local_ref_auth.cc` and `gc_struct_set_edge_liveness.cc` sourc
 exercise `UWVM_EXPERIMENTAL_STRUCT_SET_LOCAL_REF_AUTH=1`, separately from the
 default configuration. These focused cases do not certify a complete concurrent
 collector or a new cross-platform performance result.
+
+
+## Numeric GC code generation
+
+See [the numeric code-generation contracts](numeric_codegen/README.md) and run [run_numeric_codegen.py](run_numeric_codegen.py) with an existing VM, GC-capable assembler and an explicit output directory under the project .tmp. It exercises both interpreter and LLVM JIT and accepts an existing QEMU runner for the supported Linux ABIs.

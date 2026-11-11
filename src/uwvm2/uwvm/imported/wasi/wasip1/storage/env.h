@@ -90,7 +90,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
         main_wasm = 0u,
         preload_wasm,
         preloaded_dl,
-        weak_symbol
     };
 
     // One configured target state is used for both public target models:
@@ -311,6 +310,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
     // state remain stable while command-line parsing appends more groups.
     inline wasip1_group_state_storage_t configured_wasip1_groups{};  // [global]
 
+    // Global shares one explicit state, not the defaults inherited by other scopes.
+    inline wasip1_group_index_t configured_global_wasip1_group_index{invalid_wasip1_group_index};
+
     // group name -> state index for `--wasip1-group-create <group>`.
     inline wasip1_group_index_map_t configured_named_wasip1_groups{};  // [global]
 
@@ -465,7 +467,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
                                         ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_ORANGE),
                                         u8"(nt-path)\n\n",
                                         ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
-                    ::fast_io::fast_terminate();
+                    ::uwvm2::uwvm::io::fast_exit(::uwvm2::uwvm::io::diagnostic_exit_status::invalid_option);
                 }
             }
 
@@ -652,6 +654,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
         return configured_wasip1_groups.size() - 1uz;
     }
 
+    [[nodiscard]] inline constexpr wasip1_group_index_t ensure_global_wasip1_group_index() noexcept
+    {
+        if(configured_global_wasip1_group_index == invalid_wasip1_group_index)
+        {
+            configured_global_wasip1_group_index = create_wasip1_group();
+            configured_wasip1_groups[configured_global_wasip1_group_index].trace_wasip1_group_kind =
+                ::uwvm2::imported::wasi::wasip1::environment::trace_wasip1_group_kind_t::global;
+        }
+        return configured_global_wasip1_group_index;
+    }
+
     template <typename Map>
     [[nodiscard]] inline constexpr wasip1_group_index_t find_wasip1_group_index_in_map(Map const& map, ::uwvm2::utils::container::u8string_view name) noexcept
     {
@@ -723,7 +736,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
             ::fast_io::fast_terminate();
         }
         if(anonymous_group_index != invalid_wasip1_group_index) [[unlikely]] { return anonymous_group_index; }
-        return named_group_index;
+        if(named_group_index != invalid_wasip1_group_index) { return named_group_index; }
+        // No explicit binding: use Global if configured; absent Global remains
+        // zero authority without allocating state during a runtime lookup.
+        return configured_global_wasip1_group_index;
     }
 
     [[nodiscard]] inline constexpr wasip1_group_state_t* find_wasip1_module_override(wasip1_module_target_kind_t target_kind,

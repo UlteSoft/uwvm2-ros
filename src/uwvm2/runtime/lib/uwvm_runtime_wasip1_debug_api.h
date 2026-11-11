@@ -10,7 +10,7 @@
         namespace ws = ::uwvm2::uwvm::debugger::wasip1_state;
         ws::view out{}; out.module = selected.module; out.operation = selected.operation;
         if((!::uwvm2::utils::control::debug_permissions::inspection_allowed() ||
-           (ws::is_mutation(selected.operation) && !::uwvm2::utils::control::debug_permissions::full_allowed()))) { out.result = ws::status::not_selected; return out; }
+           (ws::requires_write_permission(selected.operation) && !::uwvm2::utils::control::debug_permissions::full_allowed()))) { out.result = ws::status::not_selected; return out; }
         if(!ws::valid(selected)) { out.result = ws::status::invalid_request; return out; }
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS)
         if(!ticket || supplied.empty())

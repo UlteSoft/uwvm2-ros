@@ -6,7 +6,9 @@ if len(sys.argv)<5:raise SystemExit('usage: compile_component.py SOURCE BASELINE
 source=Path(sys.argv[1]).resolve();base=Path(sys.argv[2]).resolve();S=Path(sys.argv[3]).resolve();out=Path(sys.argv[4]).resolve()
 assert out.is_relative_to(R/'.tmp'), 'Artifacts must stay under repository .tmp'
 out.mkdir(parents=True,exist_ok=True)
-original=json.loads((base/'main.default.cpp.argv.json').read_text())
+command_file=base/'main.default.cpp.argv.json'
+if not command_file.exists():command_file=base/'main.default.cpp.o.argv.json'
+original=json.loads(command_file.read_text())
 cmd=[original[0],'-I'+str(S/'src')]
 skip=False
 for x in original[1:]:

@@ -45,7 +45,6 @@ import :para;
 import :file;
 import :local_imported;
 import :dl;
-import :weak_symbol;
 
 #ifndef UWVM_MODULE
 # define UWVM_MODULE

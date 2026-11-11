@@ -10,6 +10,7 @@ namespace threaded_profile
     [[nodiscard]] bool active_host_stop_requested() noexcept;
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
     [[nodiscard]] bool observed_caller(ros_caller_identity&) noexcept;
+    [[nodiscard]] bool caller_source_facts(ros_caller_source_facts&,bool) noexcept;
 #endif
     [[nodiscard]] bool memory_descriptor(::std::size_t, ::uwvm2::uwvm::wasm::type::uwvm_preload_memory_descriptor_t*) noexcept;
     [[nodiscard]] ::std::size_t memory_descriptor_count() noexcept;

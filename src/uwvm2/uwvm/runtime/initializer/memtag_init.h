@@ -42,6 +42,11 @@ template<initialization_purpose Purpose>
     ::std::vector<mt_init::memory_plan> memories{};
     ::std::vector<mt_init::global_plan> globals{};
     bool const execute{!::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag};
+    auto const delivery{mt::selected_fault_delivery.load(::std::memory_order_relaxed)};
+    if(!execute && (mt::is_asynchronous(delivery) || mt::is_hardware(delivery)))
+    { return mt_init::error(u8"<launch>",u8"asynchronous or hardware MTE cannot be combined with --runtime-disable-memtag"); }
+    if(mt::is_hardware(delivery) && !mt::hardware_mte::supported())
+    { return mt_init::error(u8"<launch>",u8"hardware MTE requires OS-enabled checked mappings; no silent software fallback on unsupported platforms"); }
     for(auto const& [name,declaration]:world.declarations())
     {
         using kind=::uwvm2::uwvm::wasm::type::module_type_t;
@@ -65,16 +70,13 @@ template<initialization_purpose Purpose>
         bool seen_globals{};
         for(auto const& section:custom.customs)
         {
-            if(section.custom_name!=u8"memtag.globals") { continue; }
+            if(section.custom_name==mt::obsolete_globals_section_name)
+            { return mt_init::error(name,u8"obsolete memtag.globals section; regenerate with uwvm.memtag.linear.globals version 2"); }
+            if(section.custom_name!=mt::linear_globals_section_name) { continue; }
             if(policy.disable_memtag_extension)
-            { return mt_init::error(name,u8"memtag.globals requires the nonstandard extension; remove --wasm-feature-disable-memtag-extension"); }
-            if(seen_globals || count==0u) { return mt_init::error(name,u8"duplicate globals section or absent memory zero"); }
+            { return mt_init::error(name,u8"memory-tag globals require the nonstandard extension; remove --wasm-feature-disable-memtag-extension"); }
+            if(seen_globals) { return mt_init::error(name,u8"duplicate memory-tag globals sections"); }
             seen_globals=true;
-            auto* memory{mt_init::resolve(world,runtime,0u)};
-            if(memory==nullptr || memory->memory_type_ptr==nullptr)
-            { return mt_init::error(name,u8"memtag.globals requires an owned Wasm memory"); }
-            auto const width{wasm_memory_is_address64(*memory->memory_type_ptr)?mt::address_width::i64:mt::address_width::i32};
-            usage[0].used=true;usage[0].width=width;
             auto const begin{reinterpret_cast<::std::uintptr_t>(section.custom_begin)};
             auto const end{reinterpret_cast<::std::uintptr_t>(section.sec_span.sec_end)};
             auto const module_begin{reinterpret_cast<::std::uintptr_t>(module.module_span.module_begin)};
@@ -82,13 +84,30 @@ template<initialization_purpose Purpose>
             if(begin<module_begin || end<begin || end>module_end || end-begin>SIZE_MAX)
             { return mt_init::error(name,u8"globals section is outside its immutable source"); }
             ::std::span<::std::byte const> payload{reinterpret_cast<::std::byte const*>(begin),static_cast<::std::size_t>(end-begin)};
-            ::std::uint64_t bytes{};
-            bool const snapshot{::uwvm2::object::memory::linear::with_memory_access_snapshot(
-                memory->memory,[&](::std::byte*,::std::size_t length) noexcept {bytes=length;return true;})};
-            if(!snapshot) { return mt_init::error(name,u8"memory snapshot unavailable"); }
-            auto const checked{mt::visit_globals(payload,bytes,[&](mt::global_descriptor descriptor)
-            { if(execute && descriptor.byte_length) {globals.push_back({memory,descriptor.address,descriptor.byte_length,0u});} })};
-            if(!checked) { return mt_init::error(name,u8"invalid version, encoding or memory range in memtag.globals"); }
+            auto memory_bytes{[&](::std::uint32_t index,::std::uint64_t& bytes) noexcept
+            {
+                if(index>=count) { return false; }
+                auto* memory{mt_init::resolve(world,runtime,index)};
+                if(memory==nullptr || memory->memory_type_ptr==nullptr) { return false; }
+                return ::uwvm2::object::memory::linear::with_memory_access_snapshot(
+                    memory->memory,[&](::std::byte*,::std::size_t length) noexcept {bytes=length;return true;});
+            }};
+            auto plan_global{[&](::std::uint32_t index,::std::uint64_t address,::std::uint64_t bytes)
+            {
+                // The complete immutable section was validated against these
+                // same resolved owners before any visitor can reach this point.
+                auto* memory{mt_init::resolve(world,runtime,index)};
+                auto const width{wasm_memory_is_address64(*memory->memory_type_ptr)?mt::address_width::i64:mt::address_width::i32};
+                usage[index].used=true;usage[index].width=width;
+                if(bytes)
+                {
+                    globals.push_back({memory,address,bytes,0u});
+                }
+            }};
+            auto const checked{mt::visit_linear_globals(payload,memory_bytes,[&](mt::linear_global_descriptor descriptor)
+            { plan_global(descriptor.memory_index,descriptor.address,descriptor.byte_length); })};
+            if(!checked) { return mt_init::error(name,u8"invalid version, encoding, memory index or range in uwvm.memtag.linear.globals"); }
+
         }
         for(::std::size_t index{};index!=usage.size();++index)
         {
@@ -114,20 +133,44 @@ template<initialization_purpose Purpose>
             if(!existing) { memories.push_back({memory,width,shared}); }
         }
     }
+    if(!globals.empty())
+    {
+        ::std::vector<mt::global_tag_range> global_ranges{};
+        global_ranges.reserve(globals.size());
+        for(auto const& global:globals)
+        {
+            // Byte bounds were proved above, and only nonempty descriptors
+            // enter the plan. Compare granules after canonical alias routing.
+            global_ranges.push_back({reinterpret_cast<::std::uintptr_t>(global.memory),
+                global.address >> mt::granule_size_log2,
+                (global.address+global.bytes-1u) >> mt::granule_size_log2});
+        }
+        if(!mt::validate_global_tag_ranges(global_ranges))
+        { return mt_init::error({},u8"linear globals descriptors overlap an allocation-tag granule on the same memory owner"); }
+    }
+    // Disabled execution still validates declarations and cross-owner plans,
+    // but never allocates shadow storage, consumes entropy or mutates tags.
+    if(!execute) { return true; }
     // All source declarations and globals descriptors have been checked before
     // the first owner changes. Failure still leaves the registry unpublished.
     for(auto const& plan:memories)
     {
         auto& memory{plan.memory->memory};
+        if(mt::is_hardware(delivery) && !mt::logging_requested() && !::std::remove_reference_t<decltype(memory)>::can_mmap)
+        { return mt_init::error({},u8"hardware MTE requires a reserved mmap owner; allocator-backed memories cannot silently use software delivery"); }
         if(memory.memtag_shadow.enabled())
         {
             if(memory.memtag_shadow.width()!=plan.width || memory.memtag_shadow.shared()!=plan.shared)
             { return mt_init::error({},u8"existing memory tag geometry differs"); }
+            if(mt::is_hardware(delivery) && !mt::logging_requested() && !memory.memtag_shadow.hardware_selected())
+            { return mt_init::error({},u8"hardware MTE requires every used owner to select checked hardware mappings"); }
             continue;
         }
         auto const result{memory.enable_memtag(plan.width,plan.shared)};
         if(result!=mt::storage_error::none)
         { return mt_init::error({},u8"cannot allocate tag storage or represent the memory in the extension address domain"); }
+        if(mt::is_hardware(delivery) && !mt::logging_requested() && !memory.memtag_shadow.hardware_selected())
+        { return mt_init::error({},u8"hardware MTE owner selection failed"); }
     }
     // Stage entropy before mutating any allocation tag; failures never leave a
     // partially tagged global set available to an executing guest.
@@ -173,8 +216,9 @@ template<initialization_purpose Purpose>
             auto& memory{record.memory};
             if(!memory.memtag_shadow.enabled()) { continue; }
             auto const result{::uwvm2::runtime::memtag::activate_owner_hardware(memory)};
-            if(!result && (result.error!=hw::setup_error::unsupported || memory.memtag_shadow.hardware_selected()))
-            { return mt_init::error(name,u8"cannot activate synchronous hardware MTE for an owned memory"); }
+            if(!result && (result.error!=hw::setup_error::unsupported || memory.memtag_shadow.hardware_selected() ||
+                ::uwvm2::extension::memtag::hardware_checked_access_requested()))
+            { return mt_init::error(name,u8"cannot activate the selected hardware MTE mode for an owned memory"); }
         }
     }
     return true;

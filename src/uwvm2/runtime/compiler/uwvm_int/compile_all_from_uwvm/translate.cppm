@@ -41,6 +41,7 @@ module;
 
 export module uwvm2.runtime.compiler.uwvm_int.compile_all_from_uwvm:translate;
 
+import uwvm2.extension.memtag.encoding;
 import uwvm2.validation.standard.wasm3.relaxed_simd;
 import uwvm2.validation.standard.wasm3.threads;
 import uwvm2.validation.standard.wasm3.tail_call;

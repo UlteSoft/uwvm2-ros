@@ -52,7 +52,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
     // shutdown_pending is only a retained HOST embedding result. The original
     // issuer must keep its helper, guest thread, controller and all VM owners
     // alive and retry later; it is never permission to destroy those owners.
-    enum class console_exit { terminate_process, input_failure, managed_exit, shutdown_pending, restart };
+    enum class console_exit { terminate_process, input_failure, managed_exit, shutdown_pending, restart, observation_detached };
     struct console_restart_request
     {
         bool pending{}, resume_new_launch{}, background{}, killed{};
@@ -1221,6 +1221,25 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 if(r.status!=::uwvm2::utils::control::error::none)return "error: limited diagnostic operation refused\n";
                 if(command.kind==console_command_kind::wasm_dump)
                     return r.dump_published ? "wasm-dump saved; limited, sensitive state omitted\n" : "error: dump unavailable\n";
+                if(command.basic_threads)
+                {
+                    ::std::string text{::fast_io::concat_std("limited threads stop-id ",r.stop_identifier,"\n")};
+                    for(auto const& thread:r.threads) { text+=::fast_io::concat_std("participant=",thread.identifier,"\n"); }
+                    return text;
+                }
+                if(command.operation==::uwvm2::utils::control::operation::backtrace)
+                {
+                    ::std::string text{"limited Wasm backtrace (numeric coordinates only)\n"};
+                    ::std::size_t ordinal{};
+                    for(auto const& frame:r.basic_frames)
+                    {
+                        text+=::fast_io::concat_std("  #",ordinal++," participant=",frame.participant,
+                            " module=",frame.module," function=",frame.function," wasm-offset=");
+                        text+=frame.offset==UINT64_MAX ? "unavailable\n" : ::std::to_string(frame.offset)+"\n";
+                    }
+                    if(r.basic_frames_truncated)text+="  backtrace truncated\n";
+                    return text;
+                }
                 return ::fast_io::concat_std("limited status=",::fast_io::mnp::dec(static_cast<unsigned>(r.execution)),
                     " stop-id ",::fast_io::mnp::dec(r.stop_identifier)," participants=",::fast_io::mnp::dec(r.threads.size()),
                     " reason=",::fast_io::mnp::dec(static_cast<unsigned>(r.reason))," exit-status=",::fast_io::mnp::dec(r.guest_exit_code),"\n");
@@ -1976,6 +1995,42 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         if(io.read_byte == nullptr || io.write == nullptr) { return console_exit::input_failure; }
         if(shutdown != nullptr && !shutdown->matches_controller(control))
         { io.write(io.context, ::fast_io::string_view{"error: managed shutdown belongs to a different host controller\n"}); return console_exit::input_failure; }
+        if(!::uwvm2::utils::control::debug_permissions::full_allowed())
+        {
+            // Read-only/limited input never enters standalone launcher, TUI,
+            // restart, kill, EOF-containment or keyboard-pause conveniences.
+            // Closing this observer leaves all Guest execution owners intact.
+            if(!::uwvm2::utils::control::debug_permissions::diagnostics_allowed())
+                return console_exit::observation_detached;
+            auto editor{::std::make_unique<console_editing::editor>()};
+            io.write(io.context,::fast_io::string_view{"UWVM observation console; execution control requires full permission.\n"});
+            for(;;)
+            {
+                auto const line{read_console_line(io,*editor)};
+                if(line.status==line_status::end || line.status==line_status::failure)return console_exit::observation_detached;
+                if(line.status==line_status::interrupted)
+                {io.write(io.context,::fast_io::string_view{"error: debugger permission denies execution control\n"});continue;}
+                if(line.status==line_status::oversized)
+                {io.write(io.context,::fast_io::string_view{"error: oversized observation command\n"});continue;}
+                auto const input{::fast_io::string_view{line.bytes.data(),line.size}};
+                if(input=="permissions")
+                {
+                    auto const reply{::fast_io::concat_std("permissions ",
+                        ::fast_io::mnp::os_c_str(::uwvm2::utils::control::debug_permissions::name()),"\n")};
+                    io.write(io.context,::fast_io::string_view{reply.data(),reply.size()});continue;
+                }
+                auto const command{parse_console_command(input)};
+                if(command.kind==console_command_kind::empty)continue;
+                if(command.kind==console_command_kind::quit)return console_exit::observation_detached;
+                if(command.kind==console_command_kind::help)
+                {
+                    io.write(io.context,::fast_io::string_view{"permissions | status | bt <thread> (basic in limited) | authorized reads | dump wasm <stop-id> <path> | quit; pause, continue and all execution changes require full permission\n"});
+                    continue;
+                }
+                auto const reply{details::execute_control_command(control,command)};
+                io.write(io.context,::fast_io::string_view{reply.data(),reply.size()});
+            }
+        }
         struct paste_terminal_scope
         {
             console_io io;

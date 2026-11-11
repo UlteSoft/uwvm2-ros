@@ -61,9 +61,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
 #  if defined(UWVM_SUPPORT_PRELOAD_DL)
         ::uwvm2::uwvm::wasm::loader::refresh_preloaded_dl_wasip1_host_api();
 #  endif
-#  if defined(UWVM_SUPPORT_WEAK_SYMBOL)
-        ::uwvm2::uwvm::wasm::loader::refresh_loaded_weak_symbol_wasip1_host_api();
-#  endif
 
         return ::uwvm2::utils::cmdline::parameter_return_type::def;
     }

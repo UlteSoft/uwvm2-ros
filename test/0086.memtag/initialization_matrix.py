@@ -3,6 +3,7 @@
 import argparse,json,subprocess,hashlib
 from pathlib import Path
 from vm_matrix import u,c,sec,op,mem,assertion
+from vm_diagnostics import fault_matches
 HEADER=b"\0asm\x01\0\0\0"
 def text(s):
  b=s.encode();return u(len(b))+b
@@ -27,11 +28,11 @@ def large(tagged=False,immediate=False):
  code=(b"\x43\xfc\x20\xff\x7f\x1a" if immediate else op(0x20,0 if tagged else 1)+b"\x1a")
  code+=c(0x10000000)+c(42)+mem(0x36)+assertion(c(0x10000000)+mem(0x28),42)
  return HEADER+sec(1,b"\x01\x60\0\0")+sec(3,b"\x01\0")+sec(5,b"\x02\x01"+u(4097)+u(4097)+b"\x01\x01\x02")+exports([("_start",0,0)])+bodies([code])
-def global_case(payload,duplicate=False,empty_memory=False):
+def global_case(payload,duplicate=False,empty_memory=False,section="uwvm.memtag.linear.globals"):
  result=HEADER+sec(1,b"\x01\x60\0\0")+sec(3,b"\x01\0")
  if not empty_memory:result+=sec(5,b"\x01\x01\x01\x02")
- result+=exports([("_start",0,0)])+bodies([b""])+sec(0,text("memtag.globals")+payload)
- if duplicate:result+=sec(0,text("memtag.globals")+payload)
+ result+=exports([("_start",0,0)])+bodies([b""])+sec(0,text(section)+payload)
+ if duplicate:result+=sec(0,text(section)+payload)
  return result
 def main():
  p=argparse.ArgumentParser();p.add_argument("--vm",type=Path,required=True);p.add_argument("--out",type=Path,required=True);a=p.parse_args();a.out.mkdir(parents=True,exist_ok=True)
@@ -44,11 +45,15 @@ def main():
  cases += [("ordinary-large-memory",large(),0,False,False),("false-positive-immediate",large(immediate=True),0,False,False),
            ("tagged-unrepresentable",large(tagged=True),127,False,False),
            ("disabled-full-domain",large(tagged=True),0,False,True)]
- for name,payload in [("good",b"\x01\x01\x20\x10"),("version",b"\x02\0"),
-                      ("range",b"\x01\x01"+u(65536)+b"\x01"),("truncated",b"\x01\x01\x80"),
-                      ("trailing",b"\x01\0\0"),("count",b"\x01\xff\x7f")]:
+ for name,payload in [("good",b"\x02\x01\0\x20\x10"),("version",b"\x01\0"),
+                      ("range",b"\x02\x01\0"+u(65536)+b"\x01"),("truncated",b"\x02\x01\0\x80"),
+                      ("trailing",b"\x02\0\0"),("count",b"\x02\xff\x7f")]:
   cases.append(("globals-"+name,global_case(payload),0 if name=="good" else 127,False,False))
- cases.extend([("globals-duplicate",global_case(b"\x01\0",True),127,False,False),("globals-no-memory",global_case(b"\x01\0",empty_memory=True),127,False,False)])
+ cases.extend([("globals-duplicate",global_case(b"\x02\0",True),127,False,False),
+               ("globals-no-memory",global_case(b"\x02\x01\0\0\0",empty_memory=True),127,False,False),
+               ("globals-empty-no-memory",global_case(b"\x02\0",empty_memory=True),0,False,False)])
+ for disabled in (False,True):
+  cases.append(("globals-obsolete-v1-disabled"+str(int(disabled)),global_case(b"\x01\x01\x20\x10",section="memtag.globals"),127,False,disabled))
  rows=[]
  for name,data,expected,preload,disabled in cases:
   wasm=a.out/(name+".wasm");wasm.write_bytes(data)
@@ -59,7 +64,9 @@ def main():
    cmd+=["--run",str(wasm)]
    run=subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=120)
    log=a.out/(name+"-"+engine+".log");log.write_bytes(run.stdout)
-   passed=run.returncode==expected and (expected!=122 or b"tag" in run.stdout.lower())
+   output=run.stdout.decode("utf8","replace")
+   passed=fault_matches(run.returncode,output,122,"memory tag mismatch") if expected==122 else run.returncode==expected
+   if "obsolete-v1" in name:passed=passed and "obsolete memtag.globals" in output and "regenerate" in output
    rows.append(dict(name=name,engine=engine,exit=run.returncode,expected=expected,passed=passed,args=cmd,wasm_sha256=hashlib.sha256(data).hexdigest(),log=str(log)))
    print(name,engine,run.returncode,"PASS" if passed else "FAIL",flush=True)
    (a.out/"report.json").write_text(json.dumps(rows,indent=2))

@@ -27,6 +27,7 @@
 #  include "posix_abi.h"
 #  include <uwvm2/utils/control/sealed_input.h>
 #  include <uwvm2/utils/control/owned_file_image.h>
+#  include <uwvm2/runtime/lib/uwvm_runtime_update.h>
 #  include "managed_cli_shutdown.h"
 #  include "console.h"
 # endif
@@ -170,11 +171,26 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 // A detached manager cannot leave a selected guest parked in
                 // the SIGTRAP futex. If the host cannot safely reopen that gate,
                 // fail closed instead of hanging the inferior indefinitely.
-                if(!control.detach_resume()) { posix_abi::_exit_noexcept(1); }
+                if(::uwvm2::runtime::lib::update_debug_coordination::configured.load(::std::memory_order_acquire))
+                {
+                    ::std::unique_lock update_guard{::uwvm2::runtime::lib::update_debug_coordination::management, ::std::try_to_lock};
+                    // An independent deployment owns a pending fence. Losing
+                    // this debugger never resumes it or cancels that decision.
+                    if(update_guard.owns_lock() && !::uwvm2::runtime::lib::update_debug_coordination::fenced.load(::std::memory_order_acquire) &&
+                       !control.detach_resume()) { posix_abi::_exit_noexcept(1); }
+                }
+                else if(!control.detach_resume()) { posix_abi::_exit_noexcept(1); }
                 channel.close_endpoint();
             }
         };
     public:
+        // Trusted host diagnostics only. The caller binds this to an already
+        // authenticated diagnostic endpoint, never a Guest descriptor.
+        [[nodiscard]] bool send_diagnostic_event_host_api(char const* bytes,::std::size_t size) const noexcept
+        {return send_text(bytes,size);}
+        [[nodiscard]] bool bind_signal_diagnostics_host_api() const noexcept
+        {return ::uwvm2::runtime::diagnostic::crash::install_signal_endpoint_host_api(
+            descriptor_.native_handle(),peer_pidfd_.native_handle());}
         linux_control_fd(linux_control_fd const&) = delete;
         linux_control_fd& operator=(linux_control_fd const&) = delete;
         ~linux_control_fd()
@@ -270,7 +286,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         };
         [[nodiscard]] bool notify_rebuild_result(bool success) const noexcept
         { return success ? send_literal("rebuild complete\n") : send_literal("rebuild failed; execution stopped\n"); }
-        void serve(controller& control, managed_cli_shutdown* shutdown = nullptr, rebuild_request* rebuild = nullptr) noexcept
+        void serve(controller& control, managed_cli_shutdown* shutdown = nullptr, [[maybe_unused]] rebuild_request* rebuild = nullptr) noexcept
         {
             close_on_serve_exit close_after_guest_detach{*this, control, shutdown};
             using command_view = ::fast_io::string_view;
@@ -293,79 +309,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 // A known Guest fault has already unwound and closed admission.
                 // Keep the authenticated status/quit channel alive, but never
                 // resume or mutate this stopped world through the DEV transport.
-                if(::uwvm2::runtime::lib::runtime_guest_fault_detected_host_api() &&
-                   raw != "status" && raw != "quit" && raw != "help" && raw != "permissions")
-                { if(!send_literal("error: Guest faulted; execution stopped\n")) { return; } continue; }
                 if(raw == "help rebuild")
                 {
-                    if(!send_literal("rebuild <path>  Full-permission complete guest-world reconstruction; host grants/resources/quotas persist\n"
-                                     "rebuild-module <index> <path>  replace main (0) or a preload (1..N startup order)\n"
-                                     "rebuild         retry the same pending retirement; old world cannot resume\n")) { return; }
+                    if(!send_literal("Module rebuild is unavailable on the debugger channel. Use the independent signed update coordinator; full debugger permission does not authorize deployment updates.\n")) { return; }
                     continue;
                 }
                 if(raw == "rebuild" || raw.starts_with("rebuild ") || raw.starts_with("rebuild-module "))
                 {
-                    if(!rebuild || !rebuild->allowed || !shutdown || !shutdown->matches_controller(control) ||
-                       !::uwvm2::utils::control::debug_permissions::full_allowed())
-                    { if(!send_literal("error: rebuild unsupported for this launch\n")) { return; } continue; }
-                    if(!rebuild->image)
-                    {
-                        ::std::size_t path_begin{8u}, selected{};
-                        bool valid{raw.find('\0') == ::std::string_view::npos};
-                        if(raw.starts_with("rebuild-module "))
-                        {
-                            path_begin = 15u; auto const first{path_begin};
-                            for(; path_begin < raw.size() && raw[path_begin] != ' '; ++path_begin)
-                            {
-                                auto c{raw[path_begin]};
-                                if(c < '0' || c > '9' || selected > rebuild->preload_count / 10u)
-                                { valid = false; break; }
-                                selected = selected * 10u + static_cast<unsigned>(c - '0');
-                            }
-                            valid = valid && path_begin > first && selected <= rebuild->preload_count;
-                            ++path_begin;
-                        }
-                        if(!valid || path_begin >= raw.size())
-                        { if(!send_literal("error: rebuild requires an existing module index and path\n")) { return; } continue; }
-                        rebuild->module_index = selected;
-#ifdef UWVM_CPP_EXCEPTIONS
-                        try
-#endif
-                        {
-                            rebuild->path.assign(reinterpret_cast<char8_t const*>(raw.data() + path_begin), raw.size() - path_begin);
-                            auto input{::uwvm2::utils::control::owned_file_image::read(rebuild->path,
-                                ::uwvm2::utils::control::owned_file_image::maximum_bytes)};
-                            if(input) { rebuild->image = ::std::move(input.image); }
-                        }
-#ifdef UWVM_CPP_EXCEPTIONS
-                        catch(...) {}
-#endif
-                        if(!rebuild->image)
-                        { if(!send_literal("error: rebuild input unavailable\n")) { return; } continue; }
-                    }
-                    else if(raw != "rebuild")
-                    { if(!send_literal("error: rebuild already pending; retry rebuild\n")) { return; } continue; }
-                    auto const retired{shutdown->attempt_until(::std::chrono::steady_clock::now() + ::std::chrono::seconds{2})};
-                    if(retired.phase == managed_cli_shutdown_phase::completed)
-                    {
-                        rebuild->ready = true;
-                        close_after_guest_detach.handoff = true;
-                        return; // Same authenticated descriptor/pidfd retained by the launcher.
-                    }
-                    switch(retired.phase)
-                    {
-                        case managed_cli_shutdown_phase::pending_native:
-                        case managed_cli_shutdown_phase::pending_execution:
-                        case managed_cli_shutdown_phase::pending_producers:
-                        case managed_cli_shutdown_phase::pending_guest_thread:
-                        case managed_cli_shutdown_phase::pending_release:
-                        case managed_cli_shutdown_phase::busy:
-                            if(!send_literal("rebuild pending\n")) { return; }
-                            break;
-                        default:
-                            static_cast<void>(send_literal("rebuild failed; execution stopped\n"));
-                            posix_abi::_exit_noexcept(75); // Retain every incomplete owner until process containment.
-                    }
+                    // Debug authority is never deployment authority. The old
+                    // raw image/reconstruction path bypassed the independent
+                    // signature, scope and transaction protocol, including its
+                    // terminal-fault admission rules.
+                    if(!send_literal("error: module rebuild requires the independent signed update coordinator; debugger permissions do not authorize updates\n")) { return; }
                     continue;
                 }
                 if(shutdown && shutdown->requested())
@@ -377,20 +332,32 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                     continue;
                 }
                 auto const command{parse_console_command(command_view{packet.bytes.data(), packet.size})};
+                using operation = ::uwvm2::utils::control::operation;
+                bool const terminal_observation{command.kind == console_command_kind::help || command.kind == console_command_kind::quit ||
+                    command.kind == console_command_kind::wasm_dump ||
+                    (command.kind == console_command_kind::protocol &&
+                     (command.operation == operation::status || command.operation == operation::backtrace))};
+                if(::uwvm2::runtime::lib::runtime_guest_fault_detected_host_api() && !terminal_observation)
+                { if(!send_literal("error: Guest faulted; execution stopped\n")) { return; } continue; }
+                ::std::unique_lock update_guard{::uwvm2::runtime::lib::update_debug_coordination::management, ::std::try_to_lock};
+                if(!update_guard.owns_lock() ||
+                   (::uwvm2::runtime::lib::update_debug_coordination::fenced.load(::std::memory_order_acquire) && !terminal_observation))
+                { if(!send_literal("error: signed update coordinator is busy\n")) { return; } continue; }
                 switch(command.kind)
                 {
                     case console_command_kind::empty: if(!send_literal("error: empty command\n")) { return; } continue;
                     case console_command_kind::help:
                         {
                             if(!::uwvm2::utils::control::debug_permissions::inspection_allowed())
-                            { if(!send_literal("permissions | status | dump wasm <stop-id> <path> | continue (terminal fault only) | quit; limited diagnostics\n"))return;continue; }
+                            { if(!send_literal("permissions | status | dump wasm <stop-id> <path> | quit; observation only; execution control requires full permission\n"))return;continue; }
 
                             auto const text{console_help::format(command_view{command.help_topic.data(), command.help_topic_size})};
                             if(!send_text(text.data(), text.size())) { return; }
-                             if(rebuild && rebuild->allowed && !send_literal("rebuild <path>  replace the guest world with full debugger permissions; retain host grants and state\n")) { return; }
                         }
                         continue;
                     case console_command_kind::quit:
+                        if(!::uwvm2::utils::control::debug_permissions::full_allowed())
+                        {static_cast<void>(send_literal("debug observation detached; Guest state unchanged\n"));return;}
                         if(::uwvm2::runtime::lib::runtime_guest_fault_detected_host_api())
                         { static_cast<void>(send_literal("debug control detached; Guest remains stopped\n")); }
                         else { static_cast<void>(send_literal("debug control detached; guest continues\n")); }

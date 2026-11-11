@@ -5,7 +5,8 @@ namespace uwvm2::imported::wasi::wasip1::environment
 {
     namespace host_diagnostic=::uwvm2::utils::control::host_diagnostics;
     template<typename Env> inline std::string_view diagnostic_scope(Env const& env) noexcept
-    {return env.trace_wasip1_group_kind==trace_wasip1_group_kind_t::custom_group?"group":"single";}
+    {return env.trace_wasip1_group_kind==trace_wasip1_group_kind_t::global?"global":
+        env.trace_wasip1_group_kind==trace_wasip1_group_kind_t::custom_group?"group":"single";}
     template<typename Env> inline std::string_view diagnostic_target(Env const& env) noexcept
     {return host_diagnostic::view(env.trace_wasip1_group_name_storage);}
     template<typename Env> inline void diagnostic_denied(Env& env,std::size_t id,bool interface,std::uint64_t first=UINT64_MAX) noexcept

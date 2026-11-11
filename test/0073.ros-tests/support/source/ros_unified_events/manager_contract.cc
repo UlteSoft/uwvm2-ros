@@ -32,7 +32,7 @@ int main(){
         if(source_exhausted){assert(manager.charge_observation(&object,7,ros::version::ros1,observer,69,observer_lease));}
         else {assert(manager.authorize_response(&object,7,ros::version::ros1,source,body,source_lease));}
     }
-    auto policy=target();policy.capabilities.at("events").limits["max-bytes-per-second"]="138";int object{},foreign{};ros::capability_manager manager;assert(manager.register_instance(&object,9,"guest",&policy,nullptr));assert(manager.register_instance(&foreign,9,"guest",&policy,nullptr));
+    auto policy=target();policy.capabilities.at("events").limits["max-bytes-per-second"]="138";int object{},foreign{};ros::capability_manager manager;assert(manager.register_instance(&object,9,"guest",&policy,nullptr));auto isolated=policy;isolated.target_scope=ros::scope::group;isolated.name="foreign";assert(manager.register_instance(&foreign,9,"foreign",&isolated,nullptr));
     std::uint64_t source{},observer{};assert(manager.open(&object,9,ros::version::ros1,"client",source));assert(manager.open(&object,9,ros::version::ros1,"events",observer));
     ros::authorization s,o;assert(manager.describe(&object,9,ros::version::ros1,source,s));ros::ipc::event_header h{};h.kind=ros::ipc::event_kind::service_response;h.backend=1;h.source_handle=source;h.instance=s.instance_number();h.session=19;h.correlation=21;h.sequence=1;h.payload_bytes=5;s.release();
     auto wrong=h;wrong.instance++;assert(manager.authorize_event_delivery(&object,9,ros::version::ros1,observer,source,wrong,body,o,s).code==ros::errc::permission_denied);

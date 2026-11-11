@@ -7,35 +7,22 @@ can construct DATA; matching two manifests does not mint a stop, build/provider
 certificate, immutable source owner, cache-entry owner or restore permission.
 A real private producer and the coherent manager must supply these authorities.
 
-## Current cache dependency: v7 successor
+## Current cache dependency: format 8
 
-This source successor targets cache format7. It must be composed with the exact
-reviewed v7 cache core before building; applying it alone to the public v5 core
-intentionally leaves the cache dependency equality assertion unsatisfied.
-`binding::cache_format_revision` is7, and
-`checkpoint_binding_dependency_contract.h` still compares it with the actual
-`llvm_jit_cache::cache_format_version` in both header and module builds.
-The real CLI includes/imports that contract through its debugger implementation.
+The cache format revision is 8 and remains checked against the actual
+llvm_jit_cache::cache_format_version in header and module builds. Required-cache
+rows from older formats are rejected as unsupported_cache_version. Identity
+revision 2, envelope 4 and state schema 7 remain separate wire contracts.
 
-Every required-cache object row must have format7. Formats5 and6 are rejected
-as `unsupported_cache_version`; changing an old row's number does not authenticate
-its object, create its owner or upgrade an old envelope. Identity revision2,
-envelope4 and state schema7 remain separate wire contracts. Their layouts,
-continuation ABI and profile policy are not changed by this cache dependency.
+Cache v8 separates final-IR/compiler compatibility from local process admission.
+A reusable object need not come from an identical host executable, but it must
+pass current origin admission, authenticated context/payload checks and current
+symbol rebinding. This does not relax a checkpoint's exact build/provider,
+source closure, generation or state requirements. Matching public identity DATA
+still cannot create an owner or authorize restoration.
 
-An accepted runtime cache row must come from genuine v7 origin admission and the
-actual engine/cache-entry owner. The real loaded executable identity and all
-applicable Source, generation, target/provider and codegen checks remain required.
-Nominal version/git/build strings, a public context, a deterministic seed or a
-successful detached signature check cannot supply this origin. The binding DATA
-codec does not implement that producer, enable disk cache for an ineligible
-engine or relax the debug-process binding refusal.
-
-This dependency-only successor supplies no new cache builder, signer, Runtime
-ticket or CLI option. Component codecs/oracles, standalone persistence refusal
-and authenticated production cold/warm execution need their own exact source
-successors and Linux receipts. The v5 source observations and migration notes
-below are retained historical evidence, not the current v7 contract or v7 tests.
+See the object-cache dependency contract in documents/runtime/llvm-jit-cache.md.
+The material below is historical evidence rather than the current cache contract.
 
 ## Historical v5 source evidence (before this successor)
 

@@ -66,6 +66,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::control
         // Independent RELEASE observer capability. Both retained objects stay
         // pinned for the process lifetime; neither role can replace the other.
         inline sealed_input_state sealed_diagnostic_control{};
+        // Signed deployment and debugger transport own distinct OS objects.
+        // Retain both identities through Guest drain without sharing grants.
+        inline sealed_input_state sealed_update_control{};
 #endif
 #if defined(_WIN32) && !defined(__CYGWIN__)
         // Separate host-only capability: late debugger commands do not use
@@ -221,7 +224,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::control
             bool const primary{sealed.published.load(::std::memory_order_acquire)};
 # if defined(__linux__)
             bool const diagnostic{sealed_diagnostic_control.published.load(::std::memory_order_acquire)};
-            if(!primary && !diagnostic) { return sealed_input_decision::allow; }
+            bool const update{sealed_update_control.published.load(::std::memory_order_acquire)};
+            if(!primary && !diagnostic && !update) { return sealed_input_decision::allow; }
 # else
             if(!primary) { return sealed_input_decision::allow; }
 # endif
@@ -234,6 +238,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::control
 # if defined(__linux__)
             if(diagnostic && status.dev == sealed_diagnostic_control.device &&
                status.ino == sealed_diagnostic_control.inode && status.type == sealed_diagnostic_control.type)
+            { return sealed_input_decision::denied; }
+            if(update && status.dev == sealed_update_control.device &&
+               status.ino == sealed_update_control.inode && status.type == sealed_update_control.type)
             { return sealed_input_decision::denied; }
             if(!primary) { return sealed_input_decision::allow; }
 # endif
@@ -348,7 +355,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::control
                details::sealed_debug_control.published.load(::std::memory_order_acquire);
 #elif defined(__linux__)
         return details::sealed_console_input.published.load(::std::memory_order_acquire) ||
-               details::sealed_diagnostic_control.published.load(::std::memory_order_acquire);
+               details::sealed_diagnostic_control.published.load(::std::memory_order_acquire) ||
+               details::sealed_update_control.published.load(::std::memory_order_acquire);
 #else
         return details::sealed_console_input.published.load(::std::memory_order_acquire);
 #endif
@@ -381,9 +389,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::control
 #if defined(__linux__)
     // Called only after authenticating the separate read-only observer endpoint,
     // during serialized cold startup. Pin exact identity, including dup aliases.
-    [[nodiscard]] inline sealed_input_status seal_diagnostic_control_host_api(int fd) noexcept
+    [[nodiscard]] inline sealed_input_status seal_independent_socket_host_api(details::sealed_input_state& sealed, int fd) noexcept
     {
-        auto& sealed{details::sealed_diagnostic_control};
         if(sealed.published.load(::std::memory_order_acquire)) { return sealed_input_status::already_sealed; }
         if(fd < 3) { return sealed_input_status::invalid_descriptor; }
         ::fast_io::native_file retained{::uwvm2::utils::control::posix_abi::fcntl_noexcept(fd, F_DUPFD_CLOEXEC, 3)};
@@ -398,6 +405,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::control
         sealed.published.store(true, ::std::memory_order_release);
         return sealed_input_status::ok;
     }
+    [[nodiscard]] inline sealed_input_status seal_diagnostic_control_host_api(int fd) noexcept
+    { return seal_independent_socket_host_api(details::sealed_diagnostic_control, fd); }
+    [[nodiscard]] inline sealed_input_status seal_update_control_host_api(int fd) noexcept
+    { return seal_independent_socket_host_api(details::sealed_update_control, fd); }
 #endif
 
     // HOST STARTUP ONLY: externally serialized before any guest/WASI environment

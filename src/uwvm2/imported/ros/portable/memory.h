@@ -25,7 +25,9 @@ namespace uwvm2::imported::ros::portable
     }
     constexpr error valid_memory(memory_shape const& memory,::std::uint32_t selector) noexcept
     {
-        if(memory.count!=1 || memory.shared) { return error::unsupported; }
+        // Shared instances use Runtime-owned atomic snapshots; this check only
+        // validates shape/ranges and never authorizes direct native pointers.
+        if(memory.count!=1) { return error::unsupported; }
         return selector==0 && memory.index==0 ? error::ok : error::malformed;
     }
     // These checks precede any output write or native operation. Even on a size

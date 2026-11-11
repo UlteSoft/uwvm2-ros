@@ -111,10 +111,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         }
 
         [[nodiscard]] access_result check(Address pointer, ::std::uint64_t offset,
-                                           ::std::uint64_t bytes) const noexcept
+                                           ::std::uint64_t bytes, ::std::uint8_t comparison_mask=0xffu) const noexcept
         {
             auto result{bounds(pointer, offset, bytes)};
-            if(!result || bytes == 0u) { return result; }
+            if(!result || bytes == 0u || comparison_mask==0u) { return result; }
             auto index{static_cast<::std::size_t>(result.address >> 4u)};
             auto const end{static_cast<::std::size_t>(((result.address + bytes - 1u) >> 4u) + 1u)};
             if constexpr(!Shared)
@@ -122,7 +122,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
                 // Keep block-loop setup out of constant-width scalar accesses.
                 // Small/unaligned ranges still take the complete byte-tag loop
                 // below. This threshold changes no checked range or result.
-                if(bytes >= sizeof(::std::uint64_t) * 16u)
+                if(comparison_mask==0xffu && bytes >= sizeof(::std::uint64_t) * 16u)
                 {
                     // Eight granules per comparison; memcpy avoids alignment
                     // and strict-aliasing UB on all five hosts. Resolve a failed
@@ -140,7 +140,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             for(; index != end; ++index)
             {
                 auto const actual{read(index)};
-                if(actual != result.pointer_tag)
+                if((actual&comparison_mask)!=(result.pointer_tag&comparison_mask))
                 {
                     result.error = access_error::tag_mismatch;
                     result.mismatch_granule = static_cast<::std::uint64_t>(index) << 4u;

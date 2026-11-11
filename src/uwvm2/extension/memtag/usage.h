@@ -4,7 +4,7 @@
 # include <cstddef>
 # include <cstdint>
 # include <span>
-# include "instruction.h"
+# include "encoding.h"
 #endif
 #ifndef UWVM_MODULE_EXPORT
 # define UWVM_MODULE_EXPORT
@@ -18,19 +18,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
     {
         for(::std::size_t i{};i<code.size();++i)
         {
+            // A conservative FF match also catches padded and malformed
+            // instruction words. Typed validation alone can admit the owner.
+            if(code[i]==::std::byte{opcode_prefix}) { return true; }
+            // Obsolete FC MTE must also reach authoritative validation, even
+            // in an unused function. This is rejection detection, not support.
             if(code[i]!=::std::byte{0xfc}) { continue; }
-            ::std::uint32_t value{};
-            for(unsigned n{};n!=5u && n+1u<code.size()-i;++n)
-            {
-                auto const next{::std::to_integer<unsigned>(code[i+1u+n])};
-                if(n==4u && next>15u) { break; }
-                value|=static_cast<::std::uint32_t>(next&127u)<<(7u*n);
-                if((next&128u)==0u)
-                {
-                    if(find_instruction(value)!=nullptr) { return true; }
-                    break;
-                }
-            }
+            auto const* cursor{code.data()+i+1u};
+            ::std::uint_least32_t operation{};
+            if(encoding_details::read_u32(cursor,code.data()+code.size(),operation) &&
+               find_instruction(operation)!=nullptr) { return true; }
         }
         return false;
     }

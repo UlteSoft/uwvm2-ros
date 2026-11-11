@@ -9,9 +9,11 @@ neither the listener path nor capability may overlap a guest WASI preopen.
 import argparse
 import array
 import hmac
+import math
 import os
 from pathlib import Path
 import secrets
+import select
 import signal
 import socket
 import stat
@@ -32,6 +34,23 @@ LOCAL_PEERPID = 2
 LOCAL_PEERTOKEN = 6
 XUCRED_BYTES = 76
 _TIMEOUT = object()
+_OBSERVER_DISCONNECTED = object()
+
+
+def is_quit_command(packet):
+    """Match the VM's single-token quit grammar, including ASCII whitespace."""
+    return packet.strip(b" \t\n\r\v\f") in (b"q", b"quit")
+
+
+class VMChannelFailure(RuntimeError):
+    """An outstanding VM request cannot be safely reused by another client."""
+
+
+def startup_timeout_seconds(value):
+    value = float(value)
+    if not math.isfinite(value) or value <= 0:
+        raise ValueError('startup timeout must be positive and finite')
+    return value
 
 
 def identity(channel: socket.socket):
@@ -76,24 +95,28 @@ def reject_guest_preopen_overlap(directory: Path, vm_args: list[str]):
             raise RuntimeError('debugger capability directory overlaps a guest WASI preopen')
 
 
+def recv_piece(channel: socket.socket, size: int):
+    chunk, ancillary, flags, _ = channel.recvmsg(size, socket.CMSG_SPACE(16 * struct.calcsize('i')))
+    unexpected = bool(flags & (socket.MSG_TRUNC | socket.MSG_CTRUNC))
+    for level, kind, payload in ancillary:
+        unexpected = True
+        if level == socket.SOL_SOCKET and kind == socket.SCM_RIGHTS:
+            rights = array.array('i')
+            rights.frombytes(payload[:len(payload) - len(payload) % rights.itemsize])
+            for descriptor in rights:
+                os.close(descriptor)
+    if unexpected:
+        raise RuntimeError('unexpected ancillary rights or truncated control message')
+    return chunk
+
+
 def recv_exact(channel: socket.socket, size: int):
     data = bytearray()
     while len(data) < size:
         try:
-            chunk, ancillary, flags, _ = channel.recvmsg(size - len(data),
-                                                          socket.CMSG_SPACE(16 * struct.calcsize('i')))
+            chunk = recv_piece(channel, size - len(data))
         except socket.timeout:
             return _TIMEOUT if not data else None
-        unexpected = bool(flags & (socket.MSG_TRUNC | socket.MSG_CTRUNC))
-        for level, kind, payload in ancillary:
-            unexpected = True
-            if level == socket.SOL_SOCKET and kind == socket.SCM_RIGHTS:
-                rights = array.array('i')
-                rights.frombytes(payload[:len(payload) - len(payload) % rights.itemsize])
-                for descriptor in rights:
-                    os.close(descriptor)
-        if unexpected:
-            raise RuntimeError('unexpected ancillary rights or truncated control message')
         if not chunk:
             return None
         data.extend(chunk)
@@ -136,7 +159,65 @@ def accept_client(listener: socket.socket, guest_pid: int):
         raise
 
 
-def serve_client(client: socket.socket, peer, vm: socket.socket, capability: bytes, guest):
+def wait_observer_reply(client, vm, guest, packet, timeout=None):
+    """Drain one bounded stream frame even after its observation client leaves.
+
+    Partial header/payload bytes remain owned by this request. Neither a
+    client timeout nor a disconnect creates an unsequenced reply for the next
+    session. A configured launcher deadline and real VM loss remain failures.
+    """
+    deadline = None if timeout is None else time.monotonic() + timeout
+    observing = True
+    header, body = bytearray(), bytearray()
+    length = None
+    previous_timeout = vm.gettimeout()
+    vm.setblocking(False)
+    try:
+        while True:
+            delay = .25
+            if deadline is not None:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise VMChannelFailure('VM debugger startup exceeded the explicit host deadline')
+                delay = min(delay, remaining)
+            readable, _, _ = select.select([vm, client] if observing else [vm], [], [], delay)
+            if observing and client in readable:
+                try:
+                    # Any extra client byte while a reply is outstanding ends
+                    # this observation session. Do not wait for an entire
+                    # attacker-fragmented frame before draining the VM reply.
+                    recv_piece(client, MAX_COMMAND + 4)
+                except (OSError, RuntimeError):
+                    pass
+                observing = False
+                client.close()
+            if vm in readable:
+                destination = header if length is None else body
+                needed = 4 - len(header) if length is None else length - len(body)
+                try:
+                    piece = recv_piece(vm, needed)
+                except BlockingIOError:
+                    continue
+                if not piece:
+                    raise VMChannelFailure('VM debugger control channel closed with an outstanding reply')
+                destination.extend(piece)
+                if length is None and len(header) == 4:
+                    length = struct.unpack('!I', header)[0]
+                    if not 0 < length <= MAX_REPLY:
+                        raise VMChannelFailure('invalid bounded VM reply length')
+                elif length is not None and len(body) == length:
+                    return bytes(body) if observing else _OBSERVER_DISCONNECTED
+            elif guest.poll() is not None:
+                code = guest.poll()
+                if not header and packet in (b'status', b'wait'):
+                    return f'guest exited: {code}\n'.encode('ascii') if observing else _OBSERVER_DISCONNECTED
+                raise VMChannelFailure('original VM exited before its outstanding reply completed')
+    finally:
+        vm.settimeout(previous_timeout)
+
+
+def serve_client(client: socket.socket, peer, vm: socket.socket, capability: bytes, guest,
+                 startup_pending=None, startup_timeout=None, *, control_allowed=True):
     deadline = time.monotonic() + 10
     while guest.poll() is None and time.monotonic() < deadline:
         if identity(client) != peer:
@@ -163,22 +244,41 @@ def serve_client(client: socket.socket, peer, vm: socket.socket, capability: byt
             continue
         if packet is None or packet == b'disconnect':
             return False
+        if is_quit_command(packet) and not control_allowed:
+            send_frame(client, b'observer detached; guest state unchanged\n', MAX_REPLY)
+            return False
         idle = time.monotonic() + 30
-        send_frame(vm, packet, MAX_COMMAND)
-        reply = read_frame(vm, MAX_REPLY)
-        if reply in (None, _TIMEOUT):
-            raise RuntimeError('VM debugger control channel closed or timed out')
+        startup = startup_pending is not None and startup_pending[0]
+        if startup:
+            startup_pending[0] = False
+        try:
+            send_frame(vm, packet, MAX_COMMAND)
+            reply = (read_frame(vm, MAX_REPLY) if control_allowed else
+                     wait_observer_reply(client, vm, guest, packet, startup_timeout if startup else None))
+            if reply is _OBSERVER_DISCONNECTED:
+                return False
+            if reply in (None, _TIMEOUT):
+                raise VMChannelFailure('VM debugger control channel closed or timed out')
+        except (OSError, RuntimeError) as error:
+            # Once sent, this request owns the next reply. A failed/partial
+            # VM frame may never be mistaken for a different client's result.
+            raise VMChannelFailure(str(error)) from error
         send_frame(client, reply, MAX_REPLY)
-        if packet == b'quit':
+        if is_quit_command(packet):
             return True
     return False
 
 
 def serve(arguments):
-    directory, remove_directory = private_directory(arguments.socket_dir)
     vm_args = list(arguments.vm_args)
     if vm_args and vm_args[0] == '--':
         vm_args.pop(0)
+    from fault_action import validate_fault_action, selected_debug_permissions
+    validate_fault_action(vm_args, RuntimeError)
+    selected = selected_debug_permissions(vm_args, RuntimeError)
+    if selected == 'none':
+        return subprocess.run([str(arguments.uwvm), *vm_args], check=False).returncode
+    directory, remove_directory = private_directory(arguments.socket_dir)
     try:
         if not vm_args:
             raise RuntimeError('guest command after -- is required')
@@ -201,6 +301,7 @@ def serve(arguments):
         os.close(descriptor)
     listener = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     guest = None
+    broker = None
     detached = False
     bound = False
     try:
@@ -216,6 +317,7 @@ def serve(arguments):
         finally:
             vm_endpoint.close()
         broker.settimeout(6)
+        startup_pending = [True]
         print(f'debug server: {socket_path}', flush=True)
         print(f'guest pid: {guest.pid}', flush=True)
         print(f'client: {Path(__file__).name} connect --socket-dir {directory}', flush=True)
@@ -230,7 +332,10 @@ def serve(arguments):
             client, peer = accepted
             try:
                 with client:
-                    detached = serve_client(client, peer, broker, capability, guest)
+                    detached = serve_client(client, peer, broker, capability, guest, startup_pending,
+                                            getattr(arguments, 'startup_timeout', None), control_allowed=selected == 'full')
+            except VMChannelFailure:
+                raise
             except (OSError, RuntimeError) as error:
                 print(f'debug client disconnected: {error}', file=sys.stderr, flush=True)
             if detached:
@@ -241,6 +346,8 @@ def serve(arguments):
             return 0
         return guest.wait()
     finally:
+        if broker is not None:
+            broker.close()
         listener.close()
         if bound:
             socket_path.unlink(missing_ok=True)
@@ -314,6 +421,8 @@ def main():
     host.add_argument('--uwvm', required=True, type=Path)
     host.add_argument('--socket-dir', type=Path,
                       help='existing owner-only directory; default is a fresh private directory')
+    host.add_argument('--startup-timeout', type=startup_timeout_seconds,
+                      help='optional host deadline for the first observer reply; cancellation otherwise drains the reply and preserves the guest')
     host.add_argument('vm_args', nargs=argparse.REMAINDER)
     client = subcommands.add_parser('connect', help='send commands through a running host broker')
     client.add_argument('--socket-dir', required=True, type=Path)

@@ -14,6 +14,7 @@
 # include <fast_io_dsal/string_view.h>
 # include <fast_io_dsal/vector.h>
 # include "wasip1_state.h"
+# include <uwvm2/utils/control/debug_permissions.h>
 #endif
 #ifndef UWVM_MODULE_EXPORT
 # define UWVM_MODULE_EXPORT
@@ -171,6 +172,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasip1_calls
     [[nodiscard]] inline view apply(wasip1_state::request const& request, ::std::uint64_t environment_id = 0u)
     {
         if(!wasip1_state::valid(request) || (!is_trace(request.operation) && request.operation!=wasip1_state::action::descriptor_detail)) { return {}; }
+        if(!::uwvm2::utils::control::debug_permissions::inspection_allowed() ||
+           (wasip1_state::requires_write_permission(request.operation) &&
+            !::uwvm2::utils::control::debug_permissions::full_allowed())) { return {}; }
         ::std::lock_guard lock{mutex};
         using enum wasip1_state::action;
         if(request.operation == trace_enable)

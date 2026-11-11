@@ -203,6 +203,57 @@ function read_contract(build)
     return metadata
 end
 
+-- Object compatibility follows the linked native-codegen closure,
+-- not the VM, installed drivers, a source checkout, paths or CMake timestamps.
+-- Resolve transitive dependencies from CMake's real graph. Utility/TableGen
+-- build dependencies are not linked code; their output is already in archives.
+function compiler_identity(build)
+    local reply = path.join(build, ".cmake/api/v1/reply")
+    local indexes = os.files(path.join(reply, "index-*.json"))
+    table.sort(indexes)
+    local index = json.loadfile(assert(indexes[#indexes], "Missing LLVM compiler dependency graph"))
+    local model = json.loadfile(path.join(reply, index.reply["codemodel-v2"].jsonFile))
+    assert(#model.configurations == 1, "Ambiguous LLVM compiler configuration")
+    local targets, names = {}, {}
+    for _, entry in ipairs(model.configurations[1].targets) do
+        targets[entry.id] = entry
+        names[entry.name] = entry
+    end
+    local header = io.readfile(path.join(build, "include/llvm/Config/llvm-config.h"))
+    local native = assert(header:match("#define LLVM_NATIVE_TARGET LLVMInitialize(%w+)Target"),
+        "Missing actual LLVM native code generator")
+    local visited, records = {}, {}
+    local function visit(entry)
+        if visited[entry.id] then return end
+        visited[entry.id] = true
+        local target = json.loadfile(path.join(reply, entry.jsonFile))
+        if target.type ~= "STATIC_LIBRARY" then return end
+        assert(#target.artifacts == 1, "Ambiguous LLVM compiler archive")
+        local archive = path.absolute(target.artifacts[1].path, build)
+        assert(os.isfile(archive), "Missing LLVM compiler archive: " .. archive)
+        records[entry.name] = hash.sha256(archive):lower()
+        for _, dependency in ipairs(target.dependencies or {}) do
+            visit(assert(targets[dependency.id], "Incomplete LLVM compiler dependency graph"))
+        end
+    end
+    for _, name in ipairs({"LLVM" .. native .. "CodeGen",
+                           "LLVM" .. native .. "AsmParser", "LLVMBitWriter"}) do
+        visit(assert(names[name], "Missing LLVM compiler root: " .. name))
+    end
+    local ordered = {}
+    for name in pairs(records) do table.insert(ordered, name) end
+    table.sort(ordered)
+    local lines = {"uwvm2ros-llvm-codegen-closure-v1"}
+    for _, name in ipairs(ordered) do table.insert(lines, name .. ":" .. records[name]) end
+    -- No absolute paths, mtimes, project version, Git IDs or runtime dl hashes.
+    local manifest = path.join(build, "uwvm-codegen-identity.txt")
+    local contents = table.concat(lines, "\n") .. "\n"
+    if not os.isfile(manifest) or io.readfile(manifest) ~= contents then
+        io.writefile(manifest, contents)
+    end
+    return hash.sha256(manifest):lower()
+end
+
 function verify_build_directory(root, build)
     local cache = path.join(build, "CMakeCache.txt")
     if os.isfile(cache) then

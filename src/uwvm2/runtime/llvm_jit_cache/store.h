@@ -123,7 +123,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
             {
                 if(!original.has_signature_seed || !original.has_self_executable_sha256 || !origin_matches(original, actual)) { return; }
                 origin_auth::signing_seed private_seed{};
-                if(!private_seed.derive(actual, original.signature_seed, original.self_executable_sha256)) { return; }
+                if(!private_seed.derive(actual, original.signature_seed)) { return; }
                 ::std::memcpy(value.signature_seed.data(), private_seed.data(), cache_ed25519_seed_size);
                 ready = origin_matches(original, actual);
             }
@@ -538,7 +538,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
                                     ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_ORANGE),
                                     u8"(runtime)\n\n",
                                     ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL));
-                ::fast_io::fast_terminate();
+                ::uwvm2::uwvm::io::fast_exit(::uwvm2::uwvm::io::diagnostic_exit_status::invalid_option);
             }
 #endif
         }
@@ -579,7 +579,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
                                     ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_ORANGE),
                                     u8"(runtime)\n\n",
                                     ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL));
-                ::fast_io::fast_terminate();
+                ::uwvm2::uwvm::io::fast_exit(::uwvm2::uwvm::io::diagnostic_exit_status::invalid_option);
             }
 #endif
         }
@@ -1048,9 +1048,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
 
                     auto const status{write_cache_blob_atomic(request.ctx, request.blob, request.origin)};
                     log_cache_store_completion(request, status);
+                    // A flush must also retire the actual Runtime generation
+                    // lease. Publishing work==0 before this release races a
+                    // cold threaded transition even after every byte is written.
+                    request.origin.reset();
 
                     {
-                        // active_requests lets flush() wait for both queued and currently-writing objects.
+                        // active_requests covers writes AND their origin leases.
                         ::std::lock_guard lock{this->mutex};
                         --this->active_requests;
                     }

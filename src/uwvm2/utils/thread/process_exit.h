@@ -27,6 +27,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread::process_exit
     inline ::std::atomic<bool> exit_claimed{};
     inline ::std::size_t fault_transitions{};
     inline operation* operations{};
+    inline void (*exit_finalizer)() noexcept{};
+    inline ::std::once_flag finalized{};
+    // Host startup only. All exit callers join the same finalization, including
+    // cancellation and fault paths that have no WASI environment callback.
+    inline void register_finalizer(void (*callback)() noexcept) noexcept
+    {
+        ::std::lock_guard lock{mutex};
+        if(!exit_claimed.load(::std::memory_order_relaxed)) { exit_finalizer=callback; }
+    }
     // Each real native call owns its registration until all of its providers,
     // pins and effect guards have returned. There is no Guest-accessible setter.
     class operation
@@ -116,7 +125,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread::process_exit
             return true;
         });
         auto const result{static_cast<int>(first_code & 255u)};
+        auto const finalizer{exit_finalizer};
         lock.unlock();
+        ::std::call_once(finalized, [finalizer]() noexcept { if(finalizer) { finalizer(); } });
         ::std::_Exit(result);
     }
 }

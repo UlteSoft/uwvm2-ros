@@ -288,7 +288,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             if(!hardware_selected_) { return {error::unsupported}; }
             if(hardware_base_ != nullptr)
             { return hardware_base_ == base ? hardware_mte::setup_result{} : hardware_mte::setup_result{error::invalid_configuration}; }
-            auto const mode{hardware_mte::enable_current_thread_sync()};
+            auto const mode{hardware_mte::enable_current_thread_selected()};
             if(!mode) { return mode; }
             auto const mapping{hardware_mte::protect_mapping(base, current_bytes, page_size_)};
             if(!mapping) { return mapping; }
@@ -348,7 +348,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             candidate.backend_ = backend;
             candidate.maximum_memory_bytes_ = maximum_bytes;
 #if defined(__linux__) && defined(__aarch64__)
-            candidate.hardware_selected_ = backend == storage_backend::reserved && hardware_mte::supported();
+            candidate.hardware_selected_ = backend == storage_backend::reserved && hardware_mte::select_for_owner();
 #endif
             if(backend == storage_backend::reserved)
             {

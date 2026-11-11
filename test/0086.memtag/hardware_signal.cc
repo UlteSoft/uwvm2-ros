@@ -49,6 +49,8 @@ template<class Address,bool Shared> void test() {
  }};worker.join();CHECK(synced);
 }
 int main() {
+ mt::select_backend(true);
+
  CHECK(mt::hardware_mte::supported());struct ::sigaction action{};action.sa_flags=SA_SIGINFO;action.sa_sigaction=previous;::sigemptyset(&action.sa_mask);CHECK(::sigaction(SIGSEGV,&action,nullptr)==0);
  test<std::uint32_t,false>();test<std::uint32_t,true>();test<std::uint64_t,false>();test<std::uint64_t,true>();
  // A separate native allocation is never labelled a Wasm failure.

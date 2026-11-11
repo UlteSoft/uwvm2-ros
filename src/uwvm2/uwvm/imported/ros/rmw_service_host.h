@@ -35,7 +35,7 @@ namespace uwvm2::uwvm::imported::ros::host
             ::std::uint64_t activation_peer,::std::string_view function)
         {
             if(auto error{identify(core::version::ros2, caller, state)}){return error;}
-            backend=&state->backends[1];lock=::std::unique_lock<::std::mutex>{backend->mutex,::std::try_to_lock};
+            backend=state->backends[1].get();lock=::std::unique_lock<::std::mutex>{backend->mutex,::std::try_to_lock};
             if(!lock.owns_lock()){return 11;}
             core::authorization description;
             auto result{capabilities.describe(caller.runtime_instance,caller.generation,core::version::ros2,handle,description)};
@@ -70,7 +70,7 @@ namespace uwvm2::uwvm::imported::ros::host
             // accept a wait that would hold the backend across that ACK.
             for(auto key:{"max-inflight","max-request-history","max-response-history","max-services"})
             {if(rmw_service_values::unsupported_wait(*source.capability(),key)){return 95;}}
-            request.kind=kind;request.owner={2,handle,source.instance_number(),caller.generation,backend->connection.session_id()};
+            request.kind=kind;request.owner={2,handle,source.instance_number(),backend->environment_generation,backend->connection.session_id()};
             request.incarnation=incarnation;
             if(activation_peer)
             {
@@ -247,6 +247,7 @@ namespace uwvm2::uwvm::imported::ros::host
                 if(auto error{rmw_service_values::clamp_deadline(call.entered,response_timeout,call.until)}){return call.finish(error);}
             }
             ::std::uint64_t maximum{};auto const& cap{respond?*call.paired.capability():*call.source.capability()};
+            if(!core::ipc::request_data_fits("rmw.service-v1",cap.alias,length+rmw_srv_wire::header_bytes)){return call.finish(90);}
             if(!core::read_quota(cap,rmw_service_values::send_limit_key(respond),maximum)){return call.finish(22);}
             if(length>maximum){return call.finish(90);}
             ::std::vector<::std::uint8_t> raw(rmw_srv_wire::header_bytes+static_cast<::std::size_t>(length));
@@ -456,7 +457,7 @@ namespace uwvm2::uwvm::imported::ros::host
             if(auto error{rmw_service_values::clamp_deadline(call.entered,query_timeout,call.until)}){return call.finish(error);}
             // This query's independent64-byte semantic observation envelope is
             // not UMRC/control overhead and is not charged to service.call.
-            core::ipc::client_availability::context association{2,availability,handle,call.source.instance_number(),call.caller.generation};
+            core::ipc::client_availability::context association{2,availability,handle,call.source.instance_number(),call.backend->environment_generation};
             core::ipc::client_availability::packet observation{core::ipc::client_availability::command::query,
                 core::ipc::client_availability::retirement::none,0,association,wait_ns};
             if(!core::ipc::client_availability::valid_request(observation)){return call.finish(22);}

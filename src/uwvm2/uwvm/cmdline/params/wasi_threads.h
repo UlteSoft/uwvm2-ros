@@ -40,7 +40,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
 # endif
     inline constexpr ::uwvm2::utils::cmdline::parameter wasi_threads{
         .name{u8"--wasi-threads"},
-        .describe{u8"Select finite WASI Threads quotas; the stack value bounds each Guest AND compiler mapping, including guards."},
+        .describe{u8"Select WASI Threads; max-active/max-spawns accept unlimited. Four finite storage capacities bound each Guest/compiler mapping, including guards."},
         .usage{u8"<max-active> <max-spawns> <native-stack-bytes> <per-child-storage> <per-child-code> <shared-memory-bytes>"},
         .handle{::std::addressof(details::wasi_threads_callback)},
         .pretreatment{::std::addressof(details::wasi_threads_pretreatment)},

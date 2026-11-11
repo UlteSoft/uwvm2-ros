@@ -273,7 +273,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::memory
     inline constexpr WasmType get_basic_wasm_type_from_memory_unlocked(::uwvm2::object::memory::linear::mmap_memory_t const& memory,
                                                                        ::std::size_t offset) noexcept
     {
-        if(memory.memtag_shadow.enabled())
+        if(memory.memtag_shadow.enabled() || memory.sequentially_consistent_size)
         { return tagged_read_value_unlocked<WasmType>(memory,offset); }
 
         constexpr auto wasm_bytes{sizeof(WasmType)};
@@ -305,7 +305,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::memory
     inline constexpr WasmType get_basic_wasm_type_from_memory_wasm32_unlocked(::uwvm2::object::memory::linear::mmap_memory_t const& memory,
                                                                               ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_t offset) noexcept
     {
-        if(memory.memtag_shadow.enabled())
+        if(memory.memtag_shadow.enabled() || memory.sequentially_consistent_size)
         { return tagged_read_value_unlocked<WasmType>(memory,offset); }
 
         constexpr auto size_t_max{::std::numeric_limits<::std::size_t>::max()};
@@ -336,7 +336,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::memory
     inline constexpr WasmType get_basic_wasm_type_from_memory_wasm64_unlocked(::uwvm2::object::memory::linear::mmap_memory_t const& memory,
                                                                               ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_wasm64_t offset) noexcept
     {
-        if(memory.memtag_shadow.enabled())
+        if(memory.memtag_shadow.enabled() || memory.sequentially_consistent_size)
         { return tagged_read_value_unlocked<WasmType>(memory,offset); }
 
         constexpr auto size_t_max{::std::numeric_limits<::std::size_t>::max()};
@@ -382,7 +382,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::memory
                                                                    ::std::size_t offset,
                                                                    WasmType value) noexcept
     {
-        if(memory.memtag_shadow.enabled())
+        if(memory.memtag_shadow.enabled() || memory.sequentially_consistent_size)
         { tagged_store_value_unlocked(memory,offset,value); return; }
 
         constexpr auto wasm_bytes{sizeof(WasmType)};
@@ -410,7 +410,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::memory
                                                                           ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_t offset,
                                                                           WasmType value) noexcept
     {
-        if(memory.memtag_shadow.enabled())
+        if(memory.memtag_shadow.enabled() || memory.sequentially_consistent_size)
         { tagged_store_value_unlocked(memory,offset,value); return; }
 
         constexpr auto size_t_max{::std::numeric_limits<::std::size_t>::max()};
@@ -442,7 +442,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::memory
                                                                           ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_wasm64_t offset,
                                                                           WasmType value) noexcept
     {
-        if(memory.memtag_shadow.enabled())
+        if(memory.memtag_shadow.enabled() || memory.sequentially_consistent_size)
         { tagged_store_value_unlocked(memory,offset,value); return; }
 
         constexpr auto size_t_max{::std::numeric_limits<::std::size_t>::max()};
@@ -492,7 +492,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::memory
                                                         ::std::byte* begin,
                                                         ::std::byte* end) noexcept
     {
-        if(memory.memtag_shadow.enabled())
+        if(memory.memtag_shadow.enabled() || memory.sequentially_consistent_size)
         { static_cast<void>(copy_guest_bytes_unlocked<false>(memory,offset,begin,static_cast<::std::size_t>(end-begin))); return; }
 
         if(begin > end) [[unlikely]] { ::fast_io::fast_terminate(); }
@@ -509,7 +509,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::memory
                                                                ::std::byte* begin,
                                                                ::std::byte* end) noexcept
     {
-        if(memory.memtag_shadow.enabled())
+        if(memory.memtag_shadow.enabled() || memory.sequentially_consistent_size)
         { static_cast<void>(copy_guest_bytes_unlocked<false>(memory,offset,begin,static_cast<::std::size_t>(end-begin))); return; }
 
         constexpr auto size_t_max{::std::numeric_limits<::std::size_t>::max()};
@@ -541,7 +541,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::memory
                                                                ::std::byte* begin,
                                                                ::std::byte* end) noexcept
     {
-        if(memory.memtag_shadow.enabled())
+        if(memory.memtag_shadow.enabled() || memory.sequentially_consistent_size)
         { static_cast<void>(copy_guest_bytes_unlocked<false>(memory,offset,begin,static_cast<::std::size_t>(end-begin))); return; }
 
         constexpr auto size_t_max{::std::numeric_limits<::std::size_t>::max()};
@@ -591,7 +591,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::memory
                                                        ::std::byte const* begin,
                                                        ::std::byte const* end) noexcept
     {
-        if(memory.memtag_shadow.enabled())
+        if(memory.memtag_shadow.enabled() || memory.sequentially_consistent_size)
         { static_cast<void>(copy_guest_bytes_unlocked<true>(memory,offset,const_cast<::std::byte*>(begin),static_cast<::std::size_t>(end-begin))); return; }
 
         if(begin > end) [[unlikely]] { ::fast_io::fast_terminate(); }
@@ -608,7 +608,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::memory
                                                               ::std::byte const* begin,
                                                               ::std::byte const* end) noexcept
     {
-        if(memory.memtag_shadow.enabled())
+        if(memory.memtag_shadow.enabled() || memory.sequentially_consistent_size)
         { static_cast<void>(copy_guest_bytes_unlocked<true>(memory,offset,const_cast<::std::byte*>(begin),static_cast<::std::size_t>(end-begin))); return; }
 
         constexpr auto size_t_max{::std::numeric_limits<::std::size_t>::max()};
@@ -640,7 +640,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::memory
                                                               ::std::byte const* begin,
                                                               ::std::byte const* end) noexcept
     {
-        if(memory.memtag_shadow.enabled())
+        if(memory.memtag_shadow.enabled() || memory.sequentially_consistent_size)
         { static_cast<void>(copy_guest_bytes_unlocked<true>(memory,offset,const_cast<::std::byte*>(begin),static_cast<::std::size_t>(end-begin))); return; }
 
         constexpr auto size_t_max{::std::numeric_limits<::std::size_t>::max()};
@@ -687,7 +687,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::memory
 
     inline constexpr void clear_memory_unlocked(::uwvm2::object::memory::linear::mmap_memory_t const& memory, ::std::size_t offset, ::std::size_t size) noexcept
     {
-        if(memory.memtag_shadow.enabled())
+        if(memory.memtag_shadow.enabled() || memory.sequentially_consistent_size)
         { tagged_clear_unlocked(memory,offset,size); return; }
 
         check_memory_bounds_unlocked(memory, offset, size);
@@ -699,7 +699,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::memory
                                                        ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_t offset,
                                                        ::std::size_t size) noexcept
     {
-        if(memory.memtag_shadow.enabled())
+        if(memory.memtag_shadow.enabled() || memory.sequentially_consistent_size)
         { tagged_clear_unlocked(memory,offset,size); return; }
 
         constexpr auto size_t_max{::std::numeric_limits<::std::size_t>::max()};
@@ -730,7 +730,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::memory
                                                        ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_wasm64_t offset,
                                                        ::std::size_t size) noexcept
     {
-        if(memory.memtag_shadow.enabled())
+        if(memory.memtag_shadow.enabled() || memory.sequentially_consistent_size)
         { tagged_clear_unlocked(memory,offset,size); return; }
 
         constexpr auto size_t_max{::std::numeric_limits<::std::size_t>::max()};
@@ -774,7 +774,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::memory
     inline constexpr WasmType get_basic_wasm_type_from_memory_unchecked_unlocked(::uwvm2::object::memory::linear::mmap_memory_t const& memory,
                                                                                  ::std::size_t offset) noexcept
     {
-        if(memory.memtag_shadow.enabled())
+        if(memory.memtag_shadow.enabled() || memory.sequentially_consistent_size)
         { return tagged_read_value_unlocked<WasmType>(memory,offset); }
 
         if constexpr(::std::integral<WasmType>)
@@ -802,7 +802,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::memory
     inline constexpr WasmType get_basic_wasm_type_from_memory_wasm32_unchecked_unlocked(::uwvm2::object::memory::linear::mmap_memory_t const& memory,
                                                                                         ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_t offset) noexcept
     {
-        if(memory.memtag_shadow.enabled())
+        if(memory.memtag_shadow.enabled() || memory.sequentially_consistent_size)
         { return tagged_read_value_unlocked<WasmType>(memory,offset); }
 
         constexpr auto size_t_max{::std::numeric_limits<::std::size_t>::max()};
@@ -834,7 +834,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::memory
         ::uwvm2::object::memory::linear::mmap_memory_t const& memory,
         ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_wasm64_t offset) noexcept
     {
-        if(memory.memtag_shadow.enabled())
+        if(memory.memtag_shadow.enabled() || memory.sequentially_consistent_size)
         { return tagged_read_value_unlocked<WasmType>(memory,offset); }
 
         constexpr auto size_t_max{::std::numeric_limits<::std::size_t>::max()};
@@ -881,7 +881,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::memory
                                                                              ::std::size_t offset,
                                                                              WasmType value) noexcept
     {
-        if(memory.memtag_shadow.enabled())
+        if(memory.memtag_shadow.enabled() || memory.sequentially_consistent_size)
         { tagged_store_value_unlocked(memory,offset,value); return; }
 
         if constexpr(::std::integral<WasmType>)
@@ -905,7 +905,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::memory
                                                                                     ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_t offset,
                                                                                     WasmType value) noexcept
     {
-        if(memory.memtag_shadow.enabled())
+        if(memory.memtag_shadow.enabled() || memory.sequentially_consistent_size)
         { tagged_store_value_unlocked(memory,offset,value); return; }
 
         constexpr auto size_t_max{::std::numeric_limits<::std::size_t>::max()};
@@ -937,7 +937,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::memory
                                                                                     ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_wasm64_t offset,
                                                                                     WasmType value) noexcept
     {
-        if(memory.memtag_shadow.enabled())
+        if(memory.memtag_shadow.enabled() || memory.sequentially_consistent_size)
         { tagged_store_value_unlocked(memory,offset,value); return; }
 
         constexpr auto size_t_max{::std::numeric_limits<::std::size_t>::max()};
@@ -987,7 +987,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::memory
                                                                   ::std::byte* begin,
                                                                   ::std::byte* end) noexcept
     {
-        if(memory.memtag_shadow.enabled())
+        if(memory.memtag_shadow.enabled() || memory.sequentially_consistent_size)
         { static_cast<void>(copy_guest_bytes_unlocked<false>(memory,offset,begin,static_cast<::std::size_t>(end-begin))); return; }
 
         if(begin > end) [[unlikely]] { ::fast_io::fast_terminate(); }
@@ -1002,7 +1002,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::memory
                                                                          ::std::byte* begin,
                                                                          ::std::byte* end) noexcept
     {
-        if(memory.memtag_shadow.enabled())
+        if(memory.memtag_shadow.enabled() || memory.sequentially_consistent_size)
         { static_cast<void>(copy_guest_bytes_unlocked<false>(memory,offset,begin,static_cast<::std::size_t>(end-begin))); return; }
 
         constexpr auto size_t_max{::std::numeric_limits<::std::size_t>::max()};
@@ -1034,7 +1034,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::memory
                                                                          ::std::byte* begin,
                                                                          ::std::byte* end) noexcept
     {
-        if(memory.memtag_shadow.enabled())
+        if(memory.memtag_shadow.enabled() || memory.sequentially_consistent_size)
         { static_cast<void>(copy_guest_bytes_unlocked<false>(memory,offset,begin,static_cast<::std::size_t>(end-begin))); return; }
 
         constexpr auto size_t_max{::std::numeric_limits<::std::size_t>::max()};
@@ -1084,7 +1084,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::memory
                                                                  ::std::byte const* begin,
                                                                  ::std::byte const* end) noexcept
     {
-        if(memory.memtag_shadow.enabled())
+        if(memory.memtag_shadow.enabled() || memory.sequentially_consistent_size)
         { static_cast<void>(copy_guest_bytes_unlocked<true>(memory,offset,const_cast<::std::byte*>(begin),static_cast<::std::size_t>(end-begin))); return; }
 
         if(begin > end) [[unlikely]] { ::fast_io::fast_terminate(); }
@@ -1099,7 +1099,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::memory
                                                                         ::std::byte const* begin,
                                                                         ::std::byte const* end) noexcept
     {
-        if(memory.memtag_shadow.enabled())
+        if(memory.memtag_shadow.enabled() || memory.sequentially_consistent_size)
         { static_cast<void>(copy_guest_bytes_unlocked<true>(memory,offset,const_cast<::std::byte*>(begin),static_cast<::std::size_t>(end-begin))); return; }
 
         constexpr auto size_t_max{::std::numeric_limits<::std::size_t>::max()};
@@ -1131,7 +1131,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::memory
                                                                         ::std::byte const* begin,
                                                                         ::std::byte const* end) noexcept
     {
-        if(memory.memtag_shadow.enabled())
+        if(memory.memtag_shadow.enabled() || memory.sequentially_consistent_size)
         { static_cast<void>(copy_guest_bytes_unlocked<true>(memory,offset,const_cast<::std::byte*>(begin),static_cast<::std::size_t>(end-begin))); return; }
 
         constexpr auto size_t_max{::std::numeric_limits<::std::size_t>::max()};
@@ -1180,7 +1180,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::memory
                                                           ::std::size_t offset,
                                                           ::std::size_t size) noexcept
     {
-        if(memory.memtag_shadow.enabled())
+        if(memory.memtag_shadow.enabled() || memory.sequentially_consistent_size)
         { tagged_clear_unlocked(memory,offset,size); return; }
  ::fast_io::freestanding::bytes_clear_n(memory.memory_begin + offset, size); }
 
@@ -1188,7 +1188,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::memory
                                                                  ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_t offset,
                                                                  ::std::size_t size) noexcept
     {
-        if(memory.memtag_shadow.enabled())
+        if(memory.memtag_shadow.enabled() || memory.sequentially_consistent_size)
         { tagged_clear_unlocked(memory,offset,size); return; }
 
         constexpr auto size_t_max{::std::numeric_limits<::std::size_t>::max()};
@@ -1219,7 +1219,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::memory
                                                                  ::uwvm2::imported::wasi::wasip1::abi::wasi_void_ptr_wasm64_t offset,
                                                                  ::std::size_t size) noexcept
     {
-        if(memory.memtag_shadow.enabled())
+        if(memory.memtag_shadow.enabled() || memory.sequentially_consistent_size)
         { tagged_clear_unlocked(memory,offset,size); return; }
 
         constexpr auto size_t_max{::std::numeric_limits<::std::size_t>::max()};

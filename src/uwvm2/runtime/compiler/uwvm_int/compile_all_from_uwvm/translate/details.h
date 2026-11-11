@@ -180,12 +180,6 @@ namespace details
                     return result;
                 }
 #endif
-#if defined(UWVM_SUPPORT_WEAK_SYMBOL)
-                case function_link_kind::weak_symbol:
-                {
-                    return result;
-                }
-#endif
                 [[unlikely]] default:
                 {
                     return {};

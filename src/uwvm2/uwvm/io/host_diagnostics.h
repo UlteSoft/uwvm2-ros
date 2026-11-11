@@ -37,7 +37,12 @@ namespace uwvm2::uwvm::io
     inline bool const host_diagnostic_binding=[]{
         ::uwvm2::utils::control::host_diagnostics::sink=host_diagnostic_write;
         ::uwvm2::utils::control::host_diagnostics::fatal=[]() noexcept
-        {::uwvm2::utils::thread::process_exit::request_process_exit(1u);};
+        {
+            // A host policy diagnostic promoted to error is a controlled
+            // configuration rejection, independent of the Wasm fault action.
+            ::uwvm2::utils::thread::process_exit::request_process_exit(
+                static_cast<unsigned>(::uwvm2::uwvm::io::diagnostic_exit_status::invalid_option));
+        };
         return true;
     }();
 }

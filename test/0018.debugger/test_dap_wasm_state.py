@@ -290,10 +290,10 @@ class StateProtocol(unittest.TestCase):
     def test_wasm_level_standard_scopes_use_typed_packets(self):
         frame = self.send("stackTrace", threadId=1)["body"]["stackFrames"][0]
         scopes = self.send("scopes", frameId=frame["id"])["body"]["scopes"]
-        expected = ["Wasm locals", "Typed Wasm locals", "Wasm operand stack (last safepoint; may differ from native state)", "Wasm saved if parameters", "Wasm control stack", "Wasm handler clauses", "Wasm globals", "Wasm table 0", "WASIp1 arguments", "WASIp1 environment", "WASIp1 descriptors", "WASIp1 preopens"]
+        expected = ["Wasm locals", "Typed Wasm locals", "Wasm operand stack (last safepoint; may differ from native state)", "Wasm saved if parameters", "Wasm control stack", "Wasm handler clauses", "Wasm globals", "Wasm table 0", "WASIp1 arguments", "WASIp1 environment", "WASIp1 descriptors", "WASIp1 preopens", "WASIp1 policy groups and accounting"]
         expected += ["WASIp1 calls (recorded)", "ROS1 calls (recorded)", "ROS2 calls (recorded)"]
         if hasattr(self.adapter, "ros_scope_stops"):
-            expected += ["ROS capabilities (process-owned)", "ROS instances (backend sessions)", "ROS event queues (metadata only)"]
+            expected += ["ROS configured policy groups", "ROS capabilities (process-owned)", "ROS instances (backend sessions)", "ROS event queues (metadata only)"]
             selections = ("capabilities", "instances", "events")
             for row, selection in zip(scopes[-3:], selections):
                 self.assertTrue(row["expensive"] and row["variablesReference"] > 0)

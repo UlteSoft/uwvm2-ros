@@ -4,12 +4,18 @@
 #pragma once
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
 #include "host.h"
+#include <uwvm2/imported/ros/policy/debug.h>
+#include <uwvm2/utils/control/debug_permissions.h>
 namespace uwvm2::uwvm::imported::ros::host
 {
     inline void debug_snapshot(core::debug::request const& query,core::debug::view& output) noexcept
     {
         using namespace core::debug;
+        if(!::uwvm2::utils::control::debug_permissions::inspection_allowed() ||
+           (query.trace_control && !::uwvm2::utils::control::debug_permissions::full_allowed()))
+        { output={};output.selected=query.selected;output.result=status::not_selected;return; }
         if(query.trace_control) {enabled.store(query.trace_control==1,std::memory_order_relaxed);}
+        if(query.selected==selection::policy) {core::debug_policy_snapshot(runtime_policy,query,output);return;}
         if(query.selected==selection::trace) {debug_trace.read(query,output);return;}
         if(query.selected==selection::calls) {debug_trace.read_calls(query,output);return;}
         bool const sessions{query.selected==selection::sessions||query.selected==selection::statistics};
@@ -26,7 +32,7 @@ namespace uwvm2::uwvm::imported::ros::host
             {
                 auto version{static_cast<core::version>(index+1)};
                 if(query.backend&&query.backend!=index+1) {continue;}
-                auto& backend{entry.second->backends[index]};
+                auto& backend{*entry.second->backends[index]};
                 std::unique_lock lease{backend.mutex,std::try_to_lock};if(!lease.owns_lock()) {fail(status::busy);return;}
                 trace_record label{};
                 if(!capabilities.debug_identity(entry.first,entry.second->generation,version,{},label)) {fail(status::busy);return;}

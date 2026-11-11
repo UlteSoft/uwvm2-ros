@@ -46,7 +46,7 @@ static cache::cache_context context(char const* root, bool signed_blob)
 
 int main(int argc, char** argv)
 {
-    static_assert(cache::cache_format_version == 7u);
+    static_assert(cache::cache_format_version == 8u);
     std::cout << "codec_data_only=1\nnative_cache_replay=0\n";
     if(argc == 1)
     {

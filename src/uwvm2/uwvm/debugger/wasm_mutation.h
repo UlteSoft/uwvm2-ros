@@ -26,6 +26,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasm_mutation
     {
         destination target{destination::global};
         ::std::uint64_t participant{}, module{}, index{}, element{};
+        ::std::uint64_t expected_stop{}; // Optional copied IDE stop identity; zero means current host request.
         source_kind source{source_kind::null};
         wasm_state::value_kind numeric_kind{wasm_state::value_kind::i32};
         ::std::array<::std::byte, 16u> bits{}; // LE numeric/vector bits; NEVER reference payload.
@@ -185,8 +186,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasm_mutation
         if(tokens[2]=="memory")
         {
             next.target=destination::memory;next.source=source_kind::bytes;
-            if(count!=9u || !details::number<false>(tokens[3],next.module) || !details::number<false>(tokens[4],next.index) ||
+            if((count!=9u && count!=11u) || !details::number<false>(tokens[3],next.module) || !details::number<false>(tokens[4],next.index) ||
                !details::number<false>(tokens[5],next.participant) || !details::number<false>(tokens[6],next.element) || tokens[7]!="bytes") { return false; }
+            if(count==11u && (tokens[9]!="if-stop" ||
+               !details::number<false>(tokens[10],next.expected_stop) || next.expected_stop==0u)) { return false; }
             auto const hex{tokens[8]};
             if(hex.empty() || hex.size()%2u!=0u || hex.size()/2u>next.memory_bytes.size()) { return false; }
             auto const size{hex.size()/2u};next.memory_size=static_cast<::std::uint16_t>(size);

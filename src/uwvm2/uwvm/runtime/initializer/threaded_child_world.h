@@ -48,8 +48,54 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         ok, invalid_admission, invalid_source, count_limit, table_limit,
         memory_limit, segment_limit, unsupported_start, unsupported_import,
         unsupported_shared_write, unsupported_local_shared_memory,
-        invalid_thread_entry, declaration_mismatch, invalid_store, allocation_failure, unsupported_initialization_shape
+        invalid_thread_entry, declaration_mismatch, invalid_store, allocation_failure, unsupported_initialization_shape,
+        missing_shared_memory
     };
+
+    [[nodiscard]] inline constexpr bool threaded_child_error_is_profile_rejection(threaded_child_error error) noexcept
+    {
+        switch(error)
+        {
+            case threaded_child_error::count_limit:
+            case threaded_child_error::table_limit:
+            case threaded_child_error::memory_limit:
+            case threaded_child_error::segment_limit:
+            case threaded_child_error::unsupported_start:
+            case threaded_child_error::unsupported_import:
+            case threaded_child_error::unsupported_shared_write:
+            case threaded_child_error::unsupported_local_shared_memory:
+            case threaded_child_error::invalid_thread_entry:
+            case threaded_child_error::allocation_failure:
+            case threaded_child_error::unsupported_initialization_shape:
+            case threaded_child_error::missing_shared_memory: return true;
+            default: return false; // Broken source/admission/store invariants remain internal failures.
+        }
+    }
+
+    [[nodiscard]] inline constexpr char const* threaded_child_error_description(threaded_child_error error) noexcept
+    {
+        switch(error)
+        {
+            case threaded_child_error::ok: return "no error";
+            case threaded_child_error::invalid_admission: return "invalid thread admission";
+            case threaded_child_error::invalid_source: return "invalid canonical source";
+            case threaded_child_error::count_limit: return "profile object-count limit exceeded";
+            case threaded_child_error::table_limit: return "profile table storage limit exceeded";
+            case threaded_child_error::memory_limit: return "profile memory storage limit exceeded";
+            case threaded_child_error::segment_limit: return "profile segment storage limit exceeded";
+            case threaded_child_error::unsupported_start: return "module start does not satisfy the threaded initialization contract";
+            case threaded_child_error::unsupported_import: return "import or memory backend is unsupported by the threaded profile";
+            case threaded_child_error::unsupported_shared_write: return "child active data segment would overwrite shared memory";
+            case threaded_child_error::unsupported_local_shared_memory: return "child shared memory must be imported from its authenticated provider";
+            case threaded_child_error::invalid_thread_entry: return "requires a locally defined wasi_thread_start(i32, i32) with no results";
+            case threaded_child_error::declaration_mismatch: return "runtime declaration mismatch";
+            case threaded_child_error::invalid_store: return "invalid private GC store";
+            case threaded_child_error::allocation_failure: return "unable to reserve the selected profile storage";
+            case threaded_child_error::unsupported_initialization_shape: return "module shape is unsupported by the threaded initialization contract";
+            case threaded_child_error::missing_shared_memory: return "requires shared linear memory; remove --wasi-threads to run a non-threaded module";
+        }
+        return "unknown thread instance failure";
+    }
 
     class ThreadedChildWorld final
     {
@@ -83,6 +129,22 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         source_type::owner source_;
         file_type const* file_{};
         module_type const* parent_{};
+        ::std::size_t source_id_{};
+        ThreadedChildWorld* graph_{};
+        ::std::vector<::std::shared_ptr<ThreadedChildWorld>, threaded_std_allocator<::std::shared_ptr<ThreadedChildWorld>>> peers_;
+        [[nodiscard]] ThreadedChildWorld const* node(::std::size_t index) const noexcept
+        { return index==0u ? this : index<=peers_.size() ? peers_[index-1u].get() : nullptr; }
+        [[nodiscard]] threaded_child_error build_graph();
+        struct function_location { module_type const* parent{}; ::std::size_t index{}; bool imported{}; };
+        [[nodiscard]] function_location locate_source_function(
+            ::uwvm2::uwvm::runtime::storage::imported_function_storage_t const&) const noexcept;
+        [[nodiscard]] ThreadedChildWorld const* node_for_parent(module_type const* parent) const noexcept
+        {
+            auto const* root=graph_;
+            if(root->parent_==parent)return root;
+            for(auto const& peer:root->peers_)if(peer->parent_==parent)return peer.get();
+            return nullptr;
+        }
         initializer_limit_t limits_{};
         ::uwvm2::uwvm::wasm::type::all_module_t declaration_{};
         threaded_single_entry_view<::uwvm2::uwvm::wasm::type::all_module_t> declarations_{};
@@ -110,7 +172,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
 
         explicit ThreadedChildWorld(::std::shared_ptr<admission_type const> admission, threaded_allocation_pin allocation)
             : allocation_{::std::move(allocation)}, admission_{::std::move(admission)}, source_{admission_->source_owner()},
-              parent_{::std::addressof(admission_->source_module())},
+              parent_{::std::addressof(admission_->source_module())}, source_id_{admission_->source_module_id()}, graph_{this},
+              peers_{threaded_std_allocator<::std::shared_ptr<ThreadedChildWorld>>{allocation_}},
               limits_{admission_->initializer_limits()},
               shared_memories_{threaded_std_allocator<memory_type const*>{allocation_}},
               imported_memory_targets_{threaded_std_allocator<memory_type*>{allocation_}},
@@ -190,11 +253,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         {
             auto self{binding.lock()};
             if(!self || !self->parent_->gc_store) { throw ::std::bad_alloc{}; }
-            // No canonical-registry insertion: function-only immutable layouts
-            // are copied with checked nothrow arrays into a NEW object arena.
+            // Copy immutable canonical schemas, including aggregate fields, with
+            // checked allocations into a NEW private arena. Never copy objects.
             auto store{::std::allocate_shared<store_type>(threaded_std_allocator<store_type>{self->allocation_},
                 *self->parent_->gc_store, leases, function_type_matches,
-                store_type::threaded_function_schema_tag{}, self->allocation_.get())};
+                store_type::threaded_schema_tag{}, self->allocation_)};
             if(!store->valid()) { throw ::std::bad_alloc{}; }
             store->threaded_world_binding_ = binding;
             return store;
@@ -236,6 +299,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             if(error != threaded_child_error::ok) { return {error, {}}; }
             auto const initialized{child->build()};
             if(initialized != threaded_child_error::ok) { return {initialized, {}}; }
+            auto const linked{child->build_graph()};
+            if(linked != threaded_child_error::ok) { return {linked, {}}; }
             if(!child->issue_validated_code()) { return {threaded_child_error::declaration_mismatch, {}}; }
             return {threaded_child_error::ok, ::std::move(child)};
             }
@@ -263,6 +328,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             parent->module_view_ = parent->parent_;
             parent->public_modules_.bind(parent->file_->module_name, *parent->parent_);
             if(!parent->verify_thread_entry()) { return {threaded_child_error::invalid_thread_entry, {}}; }
+            auto const linked{parent->build_graph()};
+            if(linked != threaded_child_error::ok) { return {linked, {}}; }
             if(!parent->issue_validated_code()) { return {threaded_child_error::declaration_mismatch, {}}; }
             return {threaded_child_error::ok, ::std::move(parent)};
             }
@@ -270,13 +337,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         }
         [[nodiscard]] registry_type const& registry() const noexcept
         { return public_modules_; }
-        [[nodiscard]] ::std::size_t module_count() const noexcept { return module_view_ == nullptr ? 0uz : 1uz; }
+        [[nodiscard]] ::std::size_t module_count() const noexcept { return module_view_ == nullptr ? 0uz : 1uz + peers_.size(); }
         [[nodiscard]] module_type const* module(::std::size_t index) const noexcept
-        { return index == 0uz ? module_view_ : nullptr; }
+        { auto const* n=node(index); return n ? n->module_view_ : nullptr; }
         [[nodiscard]] file_type const* file(::std::size_t index) const noexcept
-        { return index == 0uz ? file_ : nullptr; }
+        { auto const* n=node(index); return n ? n->file_ : nullptr; }
         [[nodiscard]] feature_parameter_type const* feature_parameter(::std::size_t index) const noexcept
-        { return index == 0uz && file_ != nullptr ? ::std::addressof(file_->wasm_parameter.binfmt1_para) : nullptr; }
+        { auto const* f=file(index); return f ? ::std::addressof(f->wasm_parameter.binfmt1_para) : nullptr; }
         [[nodiscard]] constexpr ::std::size_t entry_module_index() const noexcept { return 0uz; }
         [[nodiscard]] ::std::size_t thread_start_function_index() const noexcept { return thread_start_; }
         // The engine must execute this ACTUAL function in its real native slot
@@ -296,11 +363,105 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         // during preparation; safe conservative Group budget charge, not RSS.
         [[nodiscard]] ::std::size_t owned_storage_bytes() const noexcept
         { return allocation_.get().requested_bytes(); }
+        // Reserve the backend and remaining GC arena before the Group publishes
+        // this child. Dynamic allocations use only this already charged space.
+        [[nodiscard]] bool reserve_execution_storage(::std::size_t non_world_bytes) const noexcept
+        {
+            auto* store=module_view_ ? module_view_->gc_store.get() : nullptr;
+            if(!store || (store->threaded_account_ &&
+                &store->threaded_account_.get()!=&allocation_.get())) { return false; }
+            if(!allocation_.get().reserve_other_storage(non_world_bytes)) { return false; }
+            // The main instance is borrowed only while ordinary admission is
+            // closed. Its store also retains the account after this world dies.
+            store->threaded_account_=allocation_;
+            for(auto const& peer:peers_)
+            {
+                auto* other=peer->module_view_ ? peer->module_view_->gc_store.get() : nullptr;
+                if(!other || (other->threaded_account_ && &other->threaded_account_.get()!=&allocation_.get()))return false;
+                other->threaded_account_=allocation_;
+            }
+            return true;
+        }
         [[nodiscard]] ::std::uint_least64_t source_generation() const noexcept { return admission_->source_generation(); }
-        [[nodiscard]] ::std::size_t source_module_id() const noexcept { return admission_->source_module_id(); }
+        [[nodiscard]] ::std::size_t source_module_id(::std::size_t index=0u) const noexcept
+        { auto const* n=node(index); return n ? n->source_id_ : SIZE_MAX; }
+        [[nodiscard]] module_type const* original_module(::std::size_t index) const noexcept
+        { auto const* n=node(index); return n ? n->parent_ : nullptr; }
+        // The immutable child graph is the only cross-module code authority.
+        [[nodiscard]] bool resolve_wasm_import(::std::size_t module_index, ::std::size_t function,
+            ::std::size_t& target_module, ::std::size_t& target_function) const noexcept
+        {
+            using kind=::uwvm2::uwvm::runtime::storage::imported_function_link_kind;
+            auto const* current=module(module_index);
+            if(!current || function>=current->imported_function_vec_storage.size())return false;
+            auto const* record=&current->imported_function_vec_storage.index_unchecked(function);
+            ::std::size_t maximum{};
+            for(::std::size_t m{};m<module_count();++m)
+            {
+                auto n=module(m)->imported_function_vec_storage.size();
+                if(n>SIZE_MAX-maximum)return false; maximum+=n;
+            }
+            for(::std::size_t step{};step<=maximum;++step)
+            {
+                bool found{};
+                for(::std::size_t m{};m<module_count();++m)
+                {
+                    auto const* candidate=module(m);
+                    if(record->link_kind==kind::defined)
+                    {
+                        for(::std::size_t f{};f<candidate->local_defined_function_vec_storage.size();++f)
+                            if(record->target.defined_ptr==&candidate->local_defined_function_vec_storage.index_unchecked(f))
+                            {target_module=m;target_function=candidate->imported_function_vec_storage.size()+f;return true;}
+                    }
+                    else if(record->link_kind==kind::imported)
+                    {
+                        for(auto const& imported:candidate->imported_function_vec_storage)
+                            if(record->target.imported_ptr==&imported){record=&imported;found=true;break;}
+                    }
+                    if(found)break;
+                }
+                if(!found)return false;
+            }
+            return false;
+        }
+        // Raw re-exports retain the actual calling module's environment. Only
+        // provider provenance follows this immutable, source-validated graph.
+        // Match each pointer to a real graph member BEFORE dereferencing it.
+        [[nodiscard]] bool resolve_host_import(::std::size_t module_index, ::std::size_t imported,
+            ::std::size_t& provider_module, ::std::size_t& provider_imported) const noexcept
+        {
+            using kind=::uwvm2::uwvm::runtime::storage::imported_function_link_kind;
+            auto const* current=module(module_index);
+            if(!current || imported>=current->imported_function_vec_storage.size())return false;
+            ::std::size_t maximum{};
+            for(::std::size_t m{};m<module_count();++m)
+            {
+                auto n=module(m)->imported_function_vec_storage.size();
+                if(n>SIZE_MAX-maximum)return false; maximum+=n;
+            }
+            for(::std::size_t step{};step<maximum;++step)
+            {
+                auto const& record=current->imported_function_vec_storage.index_unchecked(imported);
+                if(record.link_kind==kind::local_imported)
+                {provider_module=module_index;provider_imported=imported;return true;}
+                if(record.link_kind!=kind::imported)return false;
+                bool found{};
+                for(::std::size_t m{};m<module_count()&&!found;++m)
+                {
+                    auto const* candidate=module(m);
+                    for(::std::size_t f{};f<candidate->imported_function_vec_storage.size();++f)
+                        if(record.target.imported_ptr==&candidate->imported_function_vec_storage.index_unchecked(f))
+                        {current=candidate;module_index=m;imported=f;found=true;break;}
+                }
+                if(!found)return false;
+            }
+            return false; // An import cycle cannot manufacture a host provider.
+        }
         [[nodiscard]] memory_type const* shared_memory(::std::size_t index) const noexcept
         { return index < shared_memories_.size() ? shared_memories_[index] : nullptr; }
     };
+
+#include "threaded_child_graph.inc"
 
     inline bool ThreadedValidatedCode::covers(ThreadedChildWorld const& world) const noexcept
     {
@@ -309,13 +470,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             epoch_ == 0u || epoch_ != world.admission_->source_validation_epoch()) { return false; }
         return ::uwvm2::uwvm::runtime::full::full_source_instance::has_canonical_owner(source_) &&
             source_->actual_validated_file(world.admission_->source_module_id(), epoch_, world.parent_) == file_ &&
-            world.declarations_match_source();
+            world.declarations_match_source() && [&]() noexcept
+            { for(auto const& peer:world.peers_)if(!peer->declarations_match_source())return false; return true; }();
     }
 
     inline bool ThreadedChildWorld::declarations_match_source() const noexcept
     {
         if(module_view_ == nullptr || file_ == nullptr || !source_type::has_canonical_owner(source_) ||
-            source_->actual_validated_file(admission_->source_module_id(), admission_->source_validation_epoch(), parent_) != file_)
+            source_->actual_validated_file(source_id_, admission_->source_validation_epoch(), parent_) != file_)
         { return false; }
         if(kind_ == storage_kind::actual_parent) { return module_view_ == parent_; }
         auto const& a{*module_view_}; auto const& p{*parent_};
@@ -388,10 +550,20 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         {
             auto const& x{a.imported_function_vec_storage.index_unchecked(i)};
             auto const& y{p.imported_function_vec_storage.index_unchecked(i)};
-            if(x.link_kind != imported_function_link_kind::local_imported || x.link_kind != y.link_kind ||
-                x.import_type_ptr != y.import_type_ptr ||
-                x.target.local_imported.module_ptr != y.target.local_imported.module_ptr ||
-                x.target.local_imported.index != y.target.local_imported.index) { return false; }
+            if(x.link_kind != y.link_kind || x.import_type_ptr != y.import_type_ptr)return false;
+            if(y.link_kind==imported_function_link_kind::local_imported)
+            {
+                if(x.target.local_imported.module_ptr!=y.target.local_imported.module_ptr ||
+                    x.target.local_imported.index!=y.target.local_imported.index)return false;
+            }
+            else
+            {
+                auto const location=locate_source_function(y);auto const* peer=node_for_parent(location.parent);
+                if(!peer || !peer->module_view_)return false;
+                if(location.imported)
+                {if(x.target.imported_ptr!=&peer->module_view_->imported_function_vec_storage.index_unchecked(location.index))return false;}
+                else if(x.target.defined_ptr!=&peer->module_view_->local_defined_function_vec_storage.index_unchecked(location.index))return false;
+            }
         }
         for(::std::size_t i{}; i != imported_memory_targets_.size(); ++i)
         {
@@ -526,18 +698,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         using namespace ::uwvm2::uwvm::runtime::storage;
         if(!source_type::has_canonical_owner(source_) || admission_->source_generation() == 0u)
         { return threaded_child_error::invalid_source; }
-        file_ = source_->actual_validated_file(admission_->source_module_id(),
+        file_ = source_->actual_validated_file(source_id_,
             admission_->source_validation_epoch(), parent_);
         // Single selected executable instance. Preloaded providers may own its
         // actual imported memory/global objects, but never supply child code.
-        if(file_ == nullptr || file_ != ::std::addressof(source_->file()) ||
+        if(file_ == nullptr ||
             file_->binfmt_ver != 1u || !file_->has_owned_source_image())
         { return threaded_child_error::invalid_source; }
         if constexpr(!::uwvm2::object::memory::linear::native_memory_t::support_multi_thread)
         { return threaded_child_error::unsupported_import; }
         if constexpr(::std::endian::native != ::std::endian::little)
         { return threaded_child_error::unsupported_initialization_shape; }
-        if(::uwvm2::uwvm::io::show_verbose) { return threaded_child_error::unsupported_initialization_shape; }
+        // Logging is synchronized independently of each private child world.
+        // A diagnostic option must not change executable Wasm admission.
         // Zero local-memory bytes is valid for an imported-shared-only shape.
         // Actual local declarations retain their count/child-shape checks and
         // per-memory byte accounting below; the shared budget is independent.
@@ -546,16 +719,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         { return threaded_child_error::count_limit; }
         auto const& p{*parent_};
         if(!p.gc_store || !p.gc_store->valid()) { return threaded_child_error::invalid_store; }
-        // A truly closed first allocation profile. All copied type schemas are
-        // function-only; no aggregate fields/index or canonical interning can
-        // be allocated by the child constructor. Feature flags remain intact.
-        for(::std::size_t i{}; i != p.gc_store->layout_count_; ++i)
-        {
-            auto const& layout{p.gc_store->layouts_[i]};
-            if(layout.kind != ::uwvm2::uwvm::runtime::storage::gc_type::composite_kind::function ||
-                layout.field_count != 0uz || layout.fields)
-            { return threaded_child_error::unsupported_initialization_shape; }
-        }
         if(kind_ == storage_kind::fresh_child && !p.local_defined_memory_vec_storage.empty())
         { return threaded_child_error::unsupported_initialization_shape; }
         if(p.constant_expressions_require_extended_const)
@@ -589,9 +752,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         if(!p.imported_table_vec_storage.empty()) { return threaded_child_error::unsupported_import; }
         for(auto const& f : p.imported_function_vec_storage)
         {
-            if(f.link_kind != imported_function_link_kind::local_imported ||
-                f.target.local_imported.module_ptr == nullptr || f.import_type_ptr == nullptr)
-            { return threaded_child_error::unsupported_import; }
+            if(f.import_type_ptr == nullptr) { return threaded_child_error::unsupported_import; }
+            if(f.link_kind==imported_function_link_kind::local_imported)
+            { if(f.target.local_imported.module_ptr==nullptr)return threaded_child_error::unsupported_import; }
+            else if(locate_source_function(f).parent==nullptr) { return threaded_child_error::unsupported_import; }
         }
 
         // Resolve only authenticated canonical-source members; flattening this
@@ -706,7 +870,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             { return threaded_child_error::segment_limit; }
             segment_bytes += size;
         }
-        if(shared_memories_.empty()) { return threaded_child_error::unsupported_import; }
+        if(shared_memories_.empty()) { return threaded_child_error::missing_shared_memory; }
         // The evaluator may materialize one reference slot per declared element
         // even when the corresponding live parent segment has been dropped.
         for(auto const& segment : p.local_defined_element_vec_storage)
@@ -841,11 +1005,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         if(!module_->gc_store || !module_->gc_store->valid()) { return threaded_child_error::invalid_store; }
         // Preflight forbids any active write to a shared/imported object. This
         // installs only child-local tables/memory and sets the CHILD drop flags.
-        details::apply_wasm1_active_element_and_data_segments_for_module_in_context(world, file_->module_name, *module_);
+        if(details::apply_wasm1_active_element_and_data_segments_for_module_in_context(world, file_->module_name, *module_) !=
+           details::active_segment_result::ok)
+        { return threaded_child_error::unsupported_initialization_shape; }
         // Independent LLVM engines cold-bind their OWN compact table views;
         // neither child nor actual-parent ordinary view arrays are allocated or mutated here.
         current_ = {};
-        if(!verify_thread_entry()) { return threaded_child_error::invalid_thread_entry; }
+        if(graph_==this && !verify_thread_entry()) { return threaded_child_error::invalid_thread_entry; }
         // Deliberately no global initializer serial/publication and no start
         // call. Child publication is the Root group's real engine+TID handoff.
         return threaded_child_error::ok;

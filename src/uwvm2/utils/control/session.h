@@ -228,9 +228,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::control
             auto const command_kind{header.command};
             if(!debug_permissions::diagnostics_allowed() || owner->config.profile!=debug_permissions::selected())
             { return error::unavailable_capability; }
-            if(!debug_permissions::full_allowed() && command_kind!=operation::status && command_kind!=operation::detach &&
-               command_kind!=operation::resume && !(debug_permissions::inspection_allowed() &&
-               (command_kind==operation::pause || command_kind==operation::backtrace ||
+            if(!debug_permissions::full_allowed() && command_kind!=operation::status &&
+               !(debug_permissions::inspection_allowed() &&
+               (command_kind==operation::backtrace ||
                 command_kind==operation::read_memory || command_kind==operation::locals || command_kind==operation::breakpoint_list)))
             { return error::unavailable_capability; }
             if(command_kind == operation::replace_function)

@@ -1,5 +1,5 @@
-// Included inside the translator namespace only for the exact numeric-array
-// experiment. The native integer ABI carries an opaque token, not a pointer to
+// Checked scalar array results use the native integer ABI to carry an opaque
+// token, not a pointer to
 // a GC object or a guest byte buffer. Generic aggregate operations are intact.
 template<bool SignExtend>
 [[nodiscard]] inline ::std::uint64_t llvm_jit_gc_array_get32_bridge(
@@ -116,6 +116,13 @@ template<bool SignExtend>
         reinterpret_cast<::std::uintptr_t>(module),
         ::uwvm2::utils::container::u8string_view{module_name.data(), module_name.size()})};
     if(module_address == nullptr) { return false; }
+    unsigned const direct_width{field->storage.packed==type::packed_kind::i8?1u:
+        field->storage.packed==type::packed_kind::i16?2u:4u};
+    llvm_jit_gc_status_dispatch_plan status_dispatch{};
+    if(!status_dispatch.prepare(*state.llvm_module, builder, false)) { return false; }
+    llvm_jit_gc_direct_access_plan direct{};
+    if(!direct.prepare(state,*module,kind,payload,index.value,nullptr,decoded.first,direct_width,
+        true,false,field->mutable_,decoded.opcode==12u,operand.value)) { return false; }
     auto const bridge_type{::llvm::FunctionType::get(i64, {intptr, i32, intptr, i32}, false)};
     ::llvm::Value* arguments[]{module_address, kind, payload, index.value};
     auto const call{[&]<bool Signed>() noexcept -> ::llvm::CallInst*
@@ -137,21 +144,8 @@ template<bool SignExtend>
     if(packed == nullptr) { return false; }
     auto const status{builder.CreateTrunc(builder.CreateLShr(packed, 32u), i32,
         get_llvm_string_ref(u8"gc.array.get32.status"))};
-    auto const failed{[&](storage::gc_object_status value)
-    { return builder.CreateICmpEQ(status,
-        ::llvm::ConstantInt::get(i32, static_cast<::std::uint32_t>(value))); }};
-    emit_llvm_conditional_trap(*state.llvm_module, builder, failed(storage::gc_object_status::null_reference),
-        ::uwvm2::runtime::lib::llvm_jit_trap_kind::null_reference);
-    emit_llvm_conditional_trap(*state.llvm_module, builder, failed(storage::gc_object_status::out_of_bounds),
-        ::uwvm2::runtime::lib::llvm_jit_trap_kind::array_out_of_bounds);
-    emit_llvm_conditional_trap(*state.llvm_module, builder,
-        builder.CreateOr(failed(storage::gc_object_status::out_of_memory),
-            failed(storage::gc_object_status::size_overflow)),
-        ::uwvm2::runtime::lib::llvm_jit_trap_kind::gc_allocation_failure);
-    emit_llvm_conditional_trap(*state.llvm_module, builder,
-        builder.CreateICmpNE(status, ::llvm::ConstantInt::get(i32, 0u)),
-        ::uwvm2::runtime::lib::llvm_jit_trap_kind::runtime_invariant_failure);
-    auto const raw{builder.CreateTrunc(packed, i32, get_llvm_string_ref(u8"gc.array.get32.bits"))};
+    status_dispatch.commit(*status);
+    auto const raw{direct.finish(builder.CreateTrunc(packed, i32, get_llvm_string_ref(u8"gc.array.get32.bits")))};
     auto const value{result_type == wasm_type::f32 ?
         builder.CreateBitCast(raw, builder.getFloatTy(), get_llvm_string_ref(u8"gc.array.get32.f32")) : raw};
     // [SSA prefix][two input descriptors] end -> [SSA prefix][one scalar]

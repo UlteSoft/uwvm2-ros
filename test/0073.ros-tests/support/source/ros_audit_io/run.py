@@ -2,7 +2,7 @@
 """Actual bounded audit sink regression tests; no ROS/A15 or rootfs mounts."""
 import argparse,hashlib,json,os,pathlib,shlex,signal,socket,subprocess,time,traceback,fcntl,pty,tty,errno,shutil
 parser=argparse.ArgumentParser(description=__doc__)
-parser.add_argument('--source',type=pathlib.Path,default=Path(__file__).resolve().parents[5])
+parser.add_argument('--source',type=pathlib.Path,default=pathlib.Path(__file__).resolve().parents[5])
 parser.add_argument('--work',type=pathlib.Path,required=True,help='Fresh output directory; existing paths are refused')
 parser.add_argument('--compiler',default='clang++')
 parser.add_argument('--compiler-library-path',help='Optional LD_LIBRARY_PATH for the selected compiler/runtime')

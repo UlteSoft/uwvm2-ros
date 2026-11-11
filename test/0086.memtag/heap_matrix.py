@@ -8,6 +8,7 @@ import hashlib
 import json
 import subprocess
 from pathlib import Path
+from vm_diagnostics import fault_matches
 
 def imported_functions(data):
     position=8
@@ -83,9 +84,10 @@ def main():
                 for enabled in ([True,False] if case==0 else [True]):
                     for engine in args.engines.split(','):
                         if engine not in ('int','aot'):parser.error('engines must be int or aot')
-                        run=[str(vm),'--runtime-'+engine,'--runtime-llvm-jit-cache-path','disable','--wasm-feature-enable-memory64',
+                        run=[str(vm),'--runtime-'+engine,'--wasm-feature-enable-memory64',
                             '--wasm-feature-enable-table64','--wasip1-single-create',binary.name,
                             '--wasip1-single-enable',binary.name,'--wasip1-single-grant',binary.name,'stderr.write']
+                        if engine=='aot':run+=['--runtime-llvm-jit-cache-path','disable']
                         for api in apis:
                             run+=['--wasip1-single-interface',binary.name,api,
                                 'allow' if api in ('fd_write','fd_write_wasm64') else 'deny']
@@ -95,8 +97,8 @@ def main():
                         label=f'{name}-{engine}-{int(enabled)}'
                         (output/(label+'.log')).write_bytes(process.stdout)
                         text=process.stdout.decode('utf8','replace')
-                        passed=(process.returncode==0 and '[warning]' not in text) if case==0 else (
-                            process.returncode==122 and ('tag mismatch' in text or 'color mismatch' in text))
+                        passed=(process.returncode==0 and '[warning]' not in text) if case==0 else fault_matches(
+                            process.returncode,text,122,'memory tag mismatch')
                         rows.append(dict(name=label,bits=bits,language=language,case=case,engine=engine,
                             enabled=enabled,passed=passed,exit=process.returncode,command=run))
                         (output/'report.json').write_text(json.dumps(rows,indent=2)+'\n')

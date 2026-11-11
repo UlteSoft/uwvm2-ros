@@ -366,11 +366,9 @@ namespace uwvm2::imported::ros
             auto it{bindings.find(::std::pair{v, module})};
             if(it == bindings.end())
             {
-#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-                return nullptr;
-#else
+// Unassigned modules share the zero-authority Global environment.
+                // An explicit Single/Group binding above replaces it entirely.
                 return find_target(v, scope::global, "");
-#endif
             }
             return find_target(v, it->second.first, it->second.second);
         }
@@ -380,6 +378,19 @@ namespace uwvm2::imported::ros
             out.reserve(targets.size());
             for(auto const& item : targets) { out.push_back(&item.second); }
             return out;
+        }
+        // Cold, allocation-free configured-state enumeration. The policy is
+        // frozen before Guest execution; no effective authority is synthesized.
+        template<typename Visitor> bool visit_configured_targets(Visitor&& visitor) const
+        {
+            for(auto const& item : targets) { if(!visitor(item.second)) { return false; } }
+            return true;
+        }
+        template<typename Visitor> bool visit_configured_bindings(Visitor&& visitor) const
+        {
+            for(auto const& [module,target] : bindings)
+            { if(!visitor(module.first,::std::string_view{module.second},target.first,::std::string_view{target.second})) { return false; } }
+            return true;
         }
         result validate(::std::span<::std::string const> loaded_modules, bool verify_bindings = true) const
         {

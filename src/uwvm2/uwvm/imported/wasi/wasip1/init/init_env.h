@@ -23,6 +23,10 @@
 #pragma once
 
 #ifndef UWVM_MODULE
+# if defined(__linux__)
+#  include <sys/stat.h>
+#  include <sys/sysmacros.h>
+# endif
 // std
 # include <cstddef>
 # include <cstdint>
@@ -131,7 +135,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
                                     ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_ORANGE),
                                     u8"(wasip1)\n\n",
                                     ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
-                ::fast_io::fast_terminate();
+                ::uwvm2::uwvm::io::fast_exit(::uwvm2::uwvm::io::diagnostic_exit_status::invalid_option);
             }
         }
 
@@ -160,6 +164,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
     inline constexpr bool init_wasip1_environment(::uwvm2::imported::wasi::wasip1::environment::wasip1_environment<memory_type> & env) noexcept
     {
         env.wasip1_proc_exit_func_ptr = ::uwvm2::uwvm::imported::wasi::wasip1::storage::uwvm_wasip1_proc_exit_func_ptr_overload;
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+        ::uwvm2::utils::thread::process_exit::register_finalizer(
+            ::uwvm2::runtime::lib::runtime_stop_before_proc_exit_host_api);
+#endif
 
         [[maybe_unused]] auto const print_init_error{
             [](::uwvm2::utils::container::u8string_view msg) constexpr noexcept
@@ -199,7 +207,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
             }};
 
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-        if(env.trace_wasip1_call) { print_init_error(u8"Unbounded legacy WASI tracing is unsupported; use bounded runtime diagnostics"); return false; }
+        if(env.trace_wasip1_call) { print_init_error(u8"Legacy WASI tracing is unsupported; use runtime diagnostics"); return false; }
 #endif
         // ====== Arguments ======
         {
@@ -540,6 +548,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
                     stream.fd_p->rights_inherit={};
                 }
                 else if(errno!=ENOTSOCK) { print_init_error(u8"Cannot classify inherited stdio resource"); return false; }
+                else
+                {
+                    struct stat native_status{};
+                    if(::fstat(descriptor,&native_status)<0) { print_init_error(u8"Cannot inspect inherited stdio resource"); return false; }
+                    stream.fd_p->wasi_fd.ptr->stdio_direct_io_safe=S_ISREG(native_status.st_mode)||
+                        (S_ISCHR(native_status.st_mode)&&major(native_status.st_rdev)==1u&&
+                         (minor(native_status.st_rdev)==3u||minor(native_status.st_rdev)==5u));
+                }
 #endif
                 stream.fd_p->wasi_fd.ptr->checkpoint_stdio_index = static_cast<int>(index);
                 env.policy_resources.emplace_back(::uwvm2::imported::wasi::wasip1::environment::policy_resource_binding{

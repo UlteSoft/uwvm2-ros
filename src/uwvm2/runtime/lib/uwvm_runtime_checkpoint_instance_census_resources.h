@@ -153,7 +153,7 @@ template<unsigned Resource>
         auto const imports{census_records<Resource, true>(module).size()};
         auto const locals{census_records<Resource, false>(module).size()};
         if(imports > UINT32_MAX || locals > UINT32_MAX - imports || imports > SIZE_MAX - locals ||
-            imports + locals > record_limit || imports + locals > maps[owner].max_size() ||
+            imports + locals > maps[owner].max_size() ||
             imports + locals > static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)()) / sizeof(census_object_id))
         { return state.fail(census_error::limit_exceeded); }
         maps[owner].resize(imports + locals);
@@ -417,7 +417,7 @@ template<::uwvm2::parser::wasm::concepts::wasm_feature... Features>
             if(!plan || !same_owner(plan->get().profile, profile_) || !census_type_index(pin, actual.function_type_ptr, type))
             { return state.fail(census_error::stale_generation); }
             if(state.function_plan_pins.size() >= state.function_plan_pins.max_size() ||
-                state.function_plan_pins.size() >= record_limit || state.function_plan_pins.size() >=
+                state.function_plan_pins.size() >=
                 static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)()) / sizeof(census_function_plan_pin))
             { return state.fail(census_error::limit_exceeded); }
             state.function_plan_pins.push_back({owner, local, plan}); // Actual sealed lifetime owner, no entry address.

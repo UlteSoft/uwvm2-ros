@@ -99,7 +99,7 @@
         {
             auto* memory=actual_memory(owner);
             if(memory==nullptr||stopped()||!memtag_u32(destination)||!memtag_u32(value)||!memtag_u32(bytes))return;
-            auto const checked=::uwvm2::runtime::memtag::with_checked_access<::std::uint32_t,true>(
+            auto const checked=::uwvm2::runtime::memtag::with_guest_access<::std::uint32_t,true>(
                 *memory,static_cast<::std::uint32_t>(destination),0u,bytes,[&](::std::span<::std::byte> data) noexcept
                 {
                     ::std::size_t at{};
@@ -117,7 +117,7 @@
         {
             auto* dst=actual_memory(destination_owner);auto* src=actual_memory(source_owner);
             if(dst==nullptr||src==nullptr||stopped()||!memtag_u32(destination)||!memtag_u32(source)||!memtag_u32(bytes))return;
-            auto const checked=::uwvm2::runtime::memtag::with_checked_copy(*dst,*src,
+            auto const checked=::uwvm2::runtime::memtag::with_guest_copy(*dst,*src,
                 static_cast<::std::uint32_t>(destination),static_cast<::std::uint32_t>(source),bytes,
                 [&](::std::span<::std::byte> d,::std::span<::std::byte> s) noexcept
                 {
@@ -158,7 +158,7 @@
             auto const size=payload.byte_begin==nullptr?0u:static_cast<::std::size_t>(payload.byte_end-payload.byte_begin);
             if(bytes>size||source>size-bytes)
             {fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::memory_out_of_bounds));return;}
-            auto const checked=::uwvm2::runtime::memtag::with_checked_access<::std::uint32_t,true>(
+            auto const checked=::uwvm2::runtime::memtag::with_guest_access<::std::uint32_t,true>(
                 *memory,static_cast<::std::uint32_t>(destination),0u,bytes,[&](::std::span<::std::byte> data) noexcept
                 {
                     ::std::size_t at{};
@@ -229,7 +229,7 @@
                 else value=emit::llvm_jit_simd_details::eval_memory_load<Op>(detached.data(),value,static_cast<emit::llvm_jit_simd_details::u8>(lane));
             };
             ::uwvm2::extension::memtag::access_result checked{};
-            if constexpr(Tagged)checked=::uwvm2::runtime::memtag::with_checked_access<::std::uint32_t,true>(
+            if constexpr(Tagged)checked=::uwvm2::runtime::memtag::with_guest_access<::std::uint32_t,true>(
                 *memory,static_cast<::std::uint32_t>(pointer),offset,width,access);
             else
             {

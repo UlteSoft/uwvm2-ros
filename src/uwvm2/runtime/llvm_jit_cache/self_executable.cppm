@@ -23,6 +23,9 @@ module;
 # include <sys/statfs.h>
 # include <sys/sysmacros.h>
 # include <unistd.h>
+# if defined(UWVM_RUNTIME_LLVM_JIT_CACHE_USE_OPENSSL_ED25519)
+#  include <openssl/evp.h>
+# endif
 #endif
 #include "runtime_image_anchor.h"
 #include "runtime_origin.h"

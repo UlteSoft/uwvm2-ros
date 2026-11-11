@@ -1,6 +1,6 @@
 # IntelliJ IDEA and CLion
 
-Debugger permission levels are `full`, `read-only`, `limited` and `none`, selected only at launch. `-Rdbg` defaults to `full`; other launches default to `limited`. See [Debugger permissions](../../documents/command-line/debug-permissions.md) for dump redaction, independent update authority and IDE negotiation.
+Debugger permission levels are `full`, `read-only`, `limited` and `none`, selected only at launch. `-Rdbg` and `-m debug` (including their long spellings) default to `full`; other launches default to `limited`. See [Debugger permissions](../../documents/command-line/debug-permissions.md) for dump redaction, independent update authority and IDE negotiation.
 
 The UWVM LSP4IJ bridge launches the Python stdio adapter and sends DAP
 `attach` to the existing authenticated broker. It never uses native PID

@@ -55,6 +55,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::type
         Each invocation checks the current preload target's exposure policy. Retaining a table pointer does not retain
         another registration's permission. A shared native cache can remain populated for an enabled alias while calls
         from a disabled alias are rejected with ENOTCAPABLE (proc_exit simply returns).
+
+        In the zero-default ROS product, --wasip1-single-expose-host-api only makes this stable table discoverable.
+        Every call additionally requires that driver's namespace and exact --wasip1-single-interface permission to
+        be enabled/allow; the independent operation and descriptor/resource grants remain checked by the provider.
     */
 
     extern "C"

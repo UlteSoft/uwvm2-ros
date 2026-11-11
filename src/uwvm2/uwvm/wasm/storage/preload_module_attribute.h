@@ -33,7 +33,6 @@
 # include <uwvm2/utils/container/impl.h>
 # include <uwvm2/uwvm/wasm/type/impl.h>
 # include "preloaded_dl.h"
-# include "weak_symbol.h"
 #endif
 
 #ifndef UWVM_MODULE_EXPORT
@@ -88,7 +87,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::storage
     enum class preload_capi_function_owner_kind_t : unsigned
     {
         preloaded_dl = 0u,
-        weak_symbol
     };
 
     struct preload_capi_function_owner_t
@@ -134,27 +132,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::storage
     }
 #endif
 
-#if defined(UWVM_SUPPORT_WEAK_SYMBOL)
-    inline constexpr void register_weak_symbol_capi_functions(::std::size_t module_index) noexcept
-    {
-        if(module_index >= weak_symbol.size()) [[unlikely]] { return; }
-
-        auto& module{weak_symbol.index_unchecked(module_index)};
-        module.wasm_wws_storage.retain_function_records();
-        auto const begin{module.wasm_wws_storage.capi_function_vec.function_begin};
-        auto const size{module.wasm_wws_storage.capi_function_vec.function_size};
-        if(begin == nullptr || size == 0uz) [[unlikely]] { return; }
-
-        preload_capi_function_owner.reserve(preload_capi_function_owner.size() + size);
-
-        for(::std::size_t i{}; i != size; ++i)
-        {
-            preload_capi_function_owner.insert_or_assign(
-                begin + i,
-                preload_capi_function_owner_t{.kind = preload_capi_function_owner_kind_t::weak_symbol, .module_index = module_index});
-        }
-    }
-#endif
 
     [[nodiscard]] inline constexpr ::uwvm2::uwvm::wasm::type::preload_module_memory_attribute_t const* find_loaded_preload_module_memory_attribute(
         ::uwvm2::uwvm::wasm::type::capi_function_t const* function) noexcept
@@ -171,13 +148,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::storage
             {
                 if(it->second.module_index >= preloaded_dl.size()) [[unlikely]] { return nullptr; }
                 return ::std::addressof(preloaded_dl.index_unchecked(it->second.module_index).preload_module_memory_attribute);
-            }
-#endif
-#if defined(UWVM_SUPPORT_WEAK_SYMBOL)
-            case preload_capi_function_owner_kind_t::weak_symbol:
-            {
-                if(it->second.module_index >= weak_symbol.size()) [[unlikely]] { return nullptr; }
-                return ::std::addressof(weak_symbol.index_unchecked(it->second.module_index).preload_module_memory_attribute);
             }
 #endif
             default:
@@ -198,12 +168,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::storage
         }
 #endif
 
-#if defined(UWVM_SUPPORT_WEAK_SYMBOL)
-        for(auto& curr_module: weak_symbol)
-        {
-            if(curr_module.module_name == module_name) { curr_module.preload_module_memory_attribute = attribute; }
-        }
-#endif
     }
 }
 

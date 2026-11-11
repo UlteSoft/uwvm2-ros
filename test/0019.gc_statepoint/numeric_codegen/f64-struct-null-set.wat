@@ -1,0 +1,1 @@
+(module (type $s (struct (field (mut f64)))) (func (export "_start") ref.null $s i64.const 0x8000000000000000 f64.reinterpret_i64 struct.set $s 0))

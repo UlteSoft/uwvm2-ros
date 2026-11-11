@@ -1,0 +1,1 @@
+(module (type $s (array (mut f64))) (func (export "_start") i32.const 2 array.new_default $s i32.const 2 i64.const 0x8000000000000000 f64.reinterpret_i64 array.set $s))

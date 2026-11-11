@@ -23,6 +23,7 @@
 #pragma once
 
 #ifndef UWVM_MODULE
+# include <uwvm2/extension/memtag/encoding.h>
 // std
 # include <atomic>
 # include <bit>
@@ -64,6 +65,7 @@
 #  include <llvm/IR/Constants.h>
 #  include <llvm/IR/Function.h>
 #  include <llvm/IR/IRBuilder.h>
+#  include <llvm/IR/MDBuilder.h>
 #  include "translate/memtag_disabled_ir.h"
 #  include "translate/memtag_enabled_ir.h"
 #  include <uwvm2/runtime/memtag/bridge.h>

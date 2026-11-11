@@ -75,6 +75,47 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_wasm_step_boundary
         if(!decoded || decoded.semantics().size != out.decoded.size ||
            out.decoded.size == 0u || out.decoded.size > owned.size() - offset)
         { out.unavailable_reason = native_next_policy::reason::decoder_disagreement; return out; }
+        // A trap between load-exclusive and store-exclusive destroys the
+        // monitor on Linux/ARM and can make a correct GC lock loop livelock.
+        // Execute the checked straight-line atomic attempt as one debugger
+        // step, placing traps ONLY after its store or its compare-failure exit.
+        // All instruction bytes and both exits remain in this same sealed Wasm
+        // owner. Unknown effects, nested exclusive loads, calls, indirect or
+        // backward branches, and more than one early exit leave the stop intact.
+        if constexpr(requires { decoded.exclusive_memory(); decoded.safe_inside_exclusive_sequence(); })
+        {
+            auto const exclusive{decoded.exclusive_memory()};
+            if(exclusive && exclusive.load)
+            {
+                if(pending_npc!=0u || pending_delay_slot || out.decoded.size!=4u)
+                { out.unavailable_reason=native_next_policy::reason::other_control_flow;return out; }
+                ::std::uintptr_t early_exit{};
+                for(auto position{pc+4u};position<owner_end && owner_end-position>=4u;position+=4u)
+                {
+                    if(!exact_boundary(display,owned,owner_begin,position,instruction_code,&semantics)) { break; }
+                    auto const item{semantics.decode(position,owned.subspan(static_cast<::std::size_t>(position-owner_begin)))};
+                    if(!item || item.semantics().size!=4u) { break; }
+                    auto const operation{item.exclusive_memory()};
+                    if(operation)
+                    {
+                        if(operation.load || operation.width!=exclusive.width || operation.base!=exclusive.base) { break; }
+                        auto const after{position+4u};
+                        if(after>=owner_end || !exact_boundary(display,owned,owner_begin,after,instruction_code,&semantics) ||
+                           (early_exit!=0u && (early_exit<after || early_exit>=owner_end ||
+                            !exact_boundary(display,owned,owner_begin,early_exit,instruction_code,&semantics)))) { break; }
+                        out.first_successor=after;
+                        if(early_exit!=after) { out.second_successor=early_exit; }
+                        out.executable=true;out.unavailable_reason=native_next_policy::reason::none;return out;
+                    }
+                    if(item.safe_for_same_owner_direct_branch() && item.destination().conditional &&
+                       !item.delayed_direct_branch() && !item.delayed_branch_pair() &&
+                       item.destination().display_pc>position && early_exit==0u)
+                    { early_exit=item.destination().display_pc;continue; }
+                    if(!item.safe_inside_exclusive_sequence()) { break; }
+                }
+                out.unavailable_reason=native_next_policy::reason::other_control_flow;return out;
+            }
+        }
         auto const next{native_next_policy::choose(decoded, owned.size() - offset)};
         using flow = native_instruction_semantics::flow;
         auto const kind{decoded.semantics().kind};

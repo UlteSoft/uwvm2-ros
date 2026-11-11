@@ -1,5 +1,6 @@
 module;
 #include <uwvm2/utils/macro/push_macros.h>
+#include <uwvm2/runtime/lib/uwvm_runtime_update.h>
 #if defined(__linux__) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
 # include <array>
 # include <cerrno>
@@ -21,6 +22,7 @@ module;
 export module uwvm2.uwvm.debugger:linux_control_fd;
 import fast_io;
 import uwvm2.utils.control;
+import uwvm2.runtime.diagnostic.crash_policy;
 import :command;
 import :controller;
 import :console;

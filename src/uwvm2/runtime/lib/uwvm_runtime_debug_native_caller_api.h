@@ -478,14 +478,16 @@
                         capture->code_owners_[index], capture->code_owners_[index - 1u]};
 #if (defined(__riscv) && __riscv_xlen == 64) || (defined(__aarch64__) && defined(__AARCH64EL__) && __SIZEOF_POINTER__ == 8) || (defined(__loongarch64) && __SIZEOF_POINTER__ == 8) || (defined(__i386__) && __SIZEOF_POINTER__ == 4) || (defined(__arm__) && defined(__ARMEL__) && defined(__ARM_EABI__) && __SIZEOF_POINTER__ == 4) || (defined(__mips__) && defined(__mips64) && __SIZEOF_POINTER__ == 8 && defined(__mips_isa_rev) && __mips_isa_rev == 2 && !defined(__mips16) && !defined(__mips_micromips))
                     // Same-PC recursive returns can occur at another SP. The
-                    // sealed ordinary instruction and its successor permit one
-                    // REAL instruction to pass, then re-arm the exact return PC.
+                    // sealed instruction must have only its adjacent successor:
+                    // ordinary, or a direct non-delayed branch to that boundary.
+                    // Execute the REAL instruction, then re-arm the exact PC.
                     ::uwvm2::uwvm::debugger::native_owned_instruction_semantics::cached_decoder decoder{target};
                     auto const next{decoder.decode(recovered.return_pc,{parent_code+(recovered.return_pc-parent_begin),parent_end-recovered.return_pc})};
                     constexpr auto width{step::details::breakpoint_width()};
-                    if(!next || !next.safe_for_single_instruction() || next.semantics().size < width ||
+                    if(!next || next.semantics().size < width ||
                        next.semantics().size > parent_end-recovered.return_pc ||
-                       width > parent_end-recovered.return_pc-next.semantics().size) { *proof={}; return; }
+                       width > parent_end-recovered.return_pc-next.semantics().size ||
+                       !next.safe_for_fallthrough_skip(recovered.return_pc)) { *proof={}; return; }
                     proof->software_skip=recovered.return_pc+next.semantics().size;
                     for(unsigned b{}; b!=width; ++b)
                     {

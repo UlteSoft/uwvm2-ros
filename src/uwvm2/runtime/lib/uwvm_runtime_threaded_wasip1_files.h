@@ -19,7 +19,7 @@ extern "C++"
     }
 
     inline auto runtime_threaded_wasip1_adapter::file_position(context& call,::std::uint32_t guest,
-        ::std::int64_t offset,::std::uint32_t whence,::std::uint32_t destination,bool tell) noexcept -> error
+        ::std::int64_t offset,::std::uint32_t whence,::std::uint64_t destination,bool tell) noexcept -> error
     {
         if(!call.bounds(destination,8u))return error::efault;
         if((destination&7u)!=0u)return error::einval;
@@ -75,9 +75,9 @@ extern "C++"
     {
         namespace wasi=::uwvm2::imported::wasi::wasip1;
         auto const guest=static_cast<::std::uint32_t>(arguments[0]);
-        auto const path_pointer=static_cast<::std::uint32_t>(arguments[2]);
-        auto const path_length=static_cast<::std::uint32_t>(arguments[3]);
-        auto const destination=static_cast<::std::uint32_t>(arguments[8]);
+        auto const path_pointer=arguments[2];
+        auto const path_length=arguments[3];
+        auto const destination=arguments[8];
         if(!call.bounds(path_pointer,path_length)||!call.bounds(destination,4u))return error::efault;
         if((destination&3u)!=0u)return error::einval;
         if((arguments[1]&~1ull)!=0u || (arguments[4]&~15ull)!=0u || (arguments[7]&~31ull)!=0u)return error::einval;
@@ -95,7 +95,8 @@ extern "C++"
         auto const inheriting=static_cast<right>(arguments[6]);
         if((base&~parent.rights_inherit)!=right{} || (inheriting&~parent.rights_inherit)!=right{})return error::enotcapable;
         ::uwvm2::utils::container::u8string path{};
-        path.resize(path_length);
+        if(path_length>SIZE_MAX)return error::eoverflow;
+        path.resize(static_cast<::std::size_t>(path_length));
         // The short checked copy releases every relocation/tag lease before
         // quota waiting, path traversal, native open, or any descriptor mutation.
         if(!call.copy_in(path_pointer,{reinterpret_cast<::std::byte*>(path.data()),path.size()}))

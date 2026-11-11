@@ -187,8 +187,23 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_disassembly
             // [safe                           ] available <= both bounded extents;
             //  ^^ LLVM receives only this local copy, never pc-as-pointer.
             ::fast_io::freestanding::my_memcpy(result.bytes.data(), bytes.data(), available);
-            auto const decoded{::uwvm2::uwvm::debugger::native_disassembly_abi::uwvm_LLVMDisasmInstruction(context_,
+            auto decoded{::uwvm2::uwvm::debugger::native_disassembly_abi::uwvm_LLVMDisasmInstruction(context_,
                 result.bytes.data(), available, static_cast<::std::uint64_t>(pc), result.text.data(), result.text.size())};
+            // X86 MC prints LOCK as a one-byte row. Architectural stepping
+            // must consume the prefix together with its instruction; semantic
+            // admission separately checks the exact locked memory operation.
+            if(maximum_==15u && decoded==1u && result.bytes[0u]==0xf0u)
+            {
+                if(available<2u) { return {}; }
+                result.text={};
+                auto const tail{::uwvm2::uwvm::debugger::native_disassembly_abi::uwvm_LLVMDisasmInstruction(context_,
+                    result.bytes.data()+1u,available-1u,static_cast<::std::uint64_t>(pc+1u),
+                    result.text.data()+5u,result.text.size()-5u)};
+                if(tail==0u || tail>=available || tail>=15u) { return {}; }
+                constexpr char prefix[]{'l','o','c','k',' '};
+                for(::std::size_t i{};i!=5u;++i) { result.text[i]=prefix[i]; }
+                decoded=tail+1u;
+            }
             if(decoded == 0u || decoded > available ||
                ::std::memchr(result.text.data(), '\0', result.text.size()) == nullptr) { return {}; }
             ::std::size_t leading{};
@@ -243,29 +258,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_disassembly
         decoder context{description};
         return context.decode(pc, bytes);
     }
-#if (defined(__linux__) && defined(__x86_64__)) || \
-    (defined(_WIN32) && (defined(_M_X64) || defined(__x86_64__)) && \
-     defined(UWVM2_ENABLE_DEBUG_NATIVE_STEP_WINDOWS_PRODUCT) && UWVM2_ENABLE_DEBUG_NATIVE_STEP_WINDOWS_PRODUCT == 1) || \
-    (defined(__APPLE__) && (defined(__aarch64__) || (defined(__x86_64__) && defined(UWVM2_ENABLE_DEBUG_NATIVE_STEP_MACOS_X64_PRODUCT) && UWVM2_ENABLE_DEBUG_NATIVE_STEP_MACOS_X64_PRODUCT == 1)) && defined(TARGET_OS_OSX) && TARGET_OS_OSX)
-    // Existing native-step caller owns a live exact JIT function range and
-    // every guest is stopped. Keep that bounded live-copy contract separate
-    // from the DAP decoder: only decode_copied accepts display addresses.
-    [[nodiscard]] inline instruction decode_owned(::std::uintptr_t pc,
-        ::std::uintptr_t owner_begin, ::std::uintptr_t owner_end) noexcept
-    {
-        if(owner_begin == 0u || owner_end <= owner_begin || pc < owner_begin || pc >= owner_end) { return {}; }
-        auto const count{::std::min<::std::size_t>(15u, owner_end - pc)};
-        ::std::array<::std::uint8_t, 15u> bytes{};
-        // [authenticated live JIT owner_begin ... owner_end)
-        // [safe bytes pc ... pc + count] count <= owner_end - pc;
-        //             ^^ bounded live borrow ends after this owned copy.
-        ::fast_io::freestanding::my_memcpy(bytes.data(), reinterpret_cast<void const*>(pc), count);
-        return decode_copied(pc, {bytes.data(), count});
-    }
-#else
-    [[nodiscard]] inline constexpr instruction decode_owned(::std::uintptr_t,
-        ::std::uintptr_t, ::std::uintptr_t) noexcept { return {}; }
-#endif
+    // Raw-address decoding is intentionally unavailable. Only the private
+    // runtime ownership/capture API may copy live LLVM code. Decoders accept
+    // owned bytes and a display coordinate, never a readable host address.
+
 #else
     class decoder final
     {
@@ -281,8 +277,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_disassembly
     template<typename Description>
     [[nodiscard]] inline constexpr instruction decode_copied(Description const&, ::std::uintptr_t,
         ::std::span<::std::uint8_t const>) noexcept { return {}; }
-    [[nodiscard]] inline constexpr instruction decode_owned(::std::uintptr_t,
-        ::std::uintptr_t, ::std::uintptr_t) noexcept { return {}; }
 #endif
     template<typename Description>
     using cached_decoder = native_decoder_cache::lease<decoder, Description>;

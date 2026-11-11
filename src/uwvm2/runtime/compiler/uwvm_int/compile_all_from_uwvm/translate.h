@@ -22,6 +22,7 @@
 #pragma once
 
 #ifndef UWVM_MODULE
+# include <uwvm2/extension/memtag/encoding.h>
 // std
 # include <algorithm>
 # include <atomic>

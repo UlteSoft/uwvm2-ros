@@ -35,6 +35,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             if(maximum < sizeof(threaded_allocation_account)) { return nullptr; }
             return new(::std::nothrow) threaded_allocation_account{maximum};
         }
+        // Called only by the dedicated compiler before publication. The account
+        // is never widened after a guest begins; subsequent charges are atomic.
+        [[nodiscard]] bool reserve_other_storage(::std::size_t bytes) noexcept
+        {
+            auto const used{requested_.load(::std::memory_order_relaxed)};
+            if(used > maximum_ || bytes > maximum_ - used) { return false; }
+            maximum_ -= bytes;
+            return true;
+        }
         void retain() noexcept { references_.fetch_add(1uz, ::std::memory_order_relaxed); }
         void release() noexcept
         { if(references_.fetch_sub(1uz, ::std::memory_order_acq_rel) == 1uz) { delete this; } }

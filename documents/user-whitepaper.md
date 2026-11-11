@@ -1,6 +1,6 @@
 # uwvm2-ros operator and integrator whitepaper
 
-Debugger permission levels are `full`, `read-only`, `limited` and `none`, selected only at launch. `-Rdbg` defaults to `full`; other launches default to `limited`. See [Debugger permissions](command-line/debug-permissions.md) for dump redaction, independent update authority and IDE negotiation.
+Debugger permission levels are `full`, `read-only`, `limited` and `none`, selected only at launch. `-Rdbg` and `-m debug` (including their long spellings) default to `full`; other launches default to `limited`. See [Debugger permissions](command-line/debug-permissions.md) for dump redaction, independent update authority and IDE negotiation.
 
 ## Purpose and qualification
 
@@ -126,8 +126,9 @@ their own grants. SDK test launchers enumerate the compiled module's imports;
 they do not establish a production deployment policy.
 
 Single policies bind exact module names. Group policies share only the resources
-explicitly assigned to their members. ROS Global contracts require explicit
-module bindings; there is no authority fallback for an unknown module.
+explicitly assigned to their members. Unassigned modules select the one Global
+policy, initially disabled with hidden interfaces. An explicit Single/Group
+binding replaces Global even when its selected policy is disabled or empty.
 Preloaded modules and imported memory aliases do not inherit another module's
 permissions merely because they share a process or memory. Consult
 [host permissions](command-line/host-permissions.md), [WASI](command-line/wasi.md),
@@ -142,10 +143,10 @@ in the module graph.
 ## Limits, waiting and process exit
 
 Granted WASI/ROS operations have no additional traffic quota unless the host
-sets one. The independent finite WASI-thread resource contract is explicit:
-`--wasi-threads` specifies active/spawn counts, guest/compiler stack storage,
-per-child storage/code and shared-memory capacity. Granting a thread import
-does not silently create those resources.
+sets one. `--wasi-threads` accepts a positive count or `unlimited` for each
+of max-active and max-spawns. Its four storage arguments remain explicit finite
+capacities: guest/compiler native stack, per-child storage/code and shared
+memory. Granting a thread import does not silently create those resources.
 
 For operation quotas, `reject` returns the documented error before the
 refused host effect. `wait` synchronously waits for replenishable window or
@@ -245,11 +246,14 @@ See [native host MTE](toolchain/native-host-mte.md).
 
 ## Debugger authority, observation and IDE setup
 
-RELEASE is the default management profile and permanently seals interactive
-inspection and mutation. `--debug-permissions full` must be selected at launch
-for guest debugging. Guest imports, reset, reconnect and replacement cannot
-turn RELEASE into DEV. Debugger control is carried by an authenticated,
-host-owned inherited endpoint, not a guest socket.
+Debugger permissions are sealed at launch: `full`, `read-only`, `limited` or
+`none`. `-Rdbg` and `-m debug` default to `full`; other modes default to
+`limited`. An explicit `--debug-permissions` selection always wins.
+Read-only permits complete inspection and dumps but no execution/state changes;
+limited permits only non-sensitive crash localization and redacted dumps; none
+provides no debugger or dump endpoint. Reconnect, replacement and guest imports
+cannot change this authority. Debugger control uses an authenticated, host-owned
+inherited endpoint, not a guest socket.
 
 The built-in debugger owns only current Wasm-generated code and authenticated
 guest state. It must not step into VM, libc, ROS middleware, native plugins or
@@ -296,8 +300,8 @@ performance evidence are in the linked observation and performance records.
 
 ## Crash policy and explicit dumps
 
-Omit `--debug` for normal fault reporting and termination. The only crash
-selection is `--debug pause`: report the failure and pause for the host
+Omit `--debug-fault-action` for normal fault reporting and termination. The only crash
+selection is `--debug-fault-action pause`: report the failure and pause for the host
 supervisor. No automatic dump, debugger attachment, instruction retry,
 checkpoint recovery or hot update occurs.
 
@@ -307,10 +311,12 @@ process `SIGSTOP`; the parent observes the stopped wait status. `SIGCONT`
 finishes terminal handling. A process-wide stop does not itself grant an
 in-process debugger or unblock a stopped management thread.
 
-The host receives a `uwvm.crash.v1` JSON record on stderr with category,
-reason, status, available numeric Wasm coordinates and MTE evidence. Unknown
-locations remain unavailable. The stdout/stderr trust boundary and complete
-pause behavior are specified in [crash policy](command-line/crash-policy.md).
+The human stderr report contains the category, reason, status and available
+Wasm coordinates and MTE evidence as labelled lines. The trusted host receives
+an independent immutable structured record through the embedding API or its
+launch-authenticated diagnostic endpoint; machine records never require parsing
+stderr. Unknown locations remain explicitly unavailable. The complete delivery
+and pause behavior is specified in [crash policy](command-line/crash-policy.md).
 Dump collection retains the existing ownership and coherent-stop checks.
 
 ## Hot updates and RELEASE diagnostics
@@ -352,16 +358,21 @@ It cannot mutate or pause the guest and cannot reopen DEV. See
 On the Linux ROS executable:
 
 - **0** is successful completion, including immediate successful help/version.
-- **120** reports an executed `unreachable`.
-- **121** reports other managed Wasm execution faults or uncaught exceptions.
-- **122** reports a rejected memory-tag access.
-- **123** reports a detected internal runtime failure.
-- **126** is used for invalid launch parameters.
+- With `--debug-fault-action exit`, **120** reports an executed `unreachable`.
+- With that explicit exit policy, **121** reports other unhandled Wasm execution faults or exceptions.
+- With that explicit exit policy, **122** reports a rejected memory-tag access.
+- **123** is an internal-failure record category; internal VM failures always retain native crash termination.
+- **126** is used for invalid launch parameters and explicitly promoted warnings.
 - **127** is used for module loading and validation/check failures.
 - **75** reports a missing required authenticated production-update launch
   handshake in that startup path.
 - An authorized WASI `proc_exit` preserves the low eight bits of the first
   accepted guest exit code. Guest-selected codes can overlap the values above.
+
+Unhandled Wasm faults crash by default, preserving OS-configured native core dumps.
+`--debug-fault-action pause` retains the explicit host-stop policy; `exit` selects
+stable process termination without a crash. Neither changes debugger permissions
+or permits recovery from a rejected operation.
 
 A supervisor must inspect the OS wait result to distinguish normal exit from
 signal termination. A shell's conventional `128 + signal` representation does
@@ -421,3 +432,23 @@ covers project configuration and the mandatory product gate.
 The runtime, compiler, SDK and simulator qualification records must accompany
 a release. Updating this document or enabling an option does not replace the
 outstanding execution, lifecycle and performance evidence.
+
+
+### WasmMTE launch policy
+
+Use `--wasm-feature-disable-memtag-extension` to reject the extension in parsing,
+or `--runtime-disable-memtag` to disable execution while retaining required
+zeroing. Backend and timing are independent: `--runtime-memtag-backend
+software|hardware` and `--runtime-memtag-mode sync|async`. Defaults are software,
+sync and crash; an unsupported hardware request is a launch error.
+
+The action is `--runtime-memtag-action crash`, or explicitly
+`--runtime-memtag-action silent-log out`, `silent-log err`, or
+`silent-log path <PATH>`. Silent-log records every violation and continues
+within ordinary sandbox/permission bounds. Its destination is mandatory and
+independent of `--log-output`: standard descriptors are separately duplicated,
+while report paths append JSON records to a dedicated file. Ordinary diagnostics
+never follow that MTE path. Report-opening failures exit126; report-write
+failures exit123. Old MTE action/output/worker aliases are not accepted.
+See the [extension contract](runtime/memtag-extension.md) for hardware and async
+delivery limits.

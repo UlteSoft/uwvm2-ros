@@ -155,11 +155,11 @@ class ReplacementLifetimeTests(unittest.TestCase):
             self.assertTrue(self.adapter.inline_frames)
             self.assertTrue(self.adapter.source_frames)
             self.assertTrue(self.adapter.source_scope_stops)
-            expected_ros = {"ROS capabilities (process-owned)": "capabilities",
+            expected_ros = {"ROS configured policy groups": "policy", "ROS capabilities (process-owned)": "capabilities",
                             "ROS instances (backend sessions)": "instances",
                             "ROS event queues (metadata only)": "events"} if hasattr(self.adapter, "ros_scope_stops") else {}
             self.assertEqual({row["name"] for row in ros_scopes}, set(expected_ros))
-            self.assertEqual(len(scopes), 9 + len(expected_ros))
+            self.assertEqual(len(scopes), 10 + len(expected_ros))
             for row in ros_scopes:
                 self.assertEqual(self.adapter.ros_scope_stops[row["variablesReference"]],
                                  (self.adapter.stop_key, expected_ros[row["name"]]))

@@ -2,6 +2,7 @@
 #ifndef UWVM_MODULE
 #include <uwvm2/runtime/diagnostic/crash_policy.h>
 #include "program.h"
+#include <uwvm2/runtime/compiler/shared/gc_aggregate.h>
 #include <array>
 #include <atomic>
 #include <new>
@@ -38,7 +39,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         };
         struct activation
         {
-            ::std::size_t module{}, function{}, pc{}, locals{}, base{}, previous_values{}, controls{};
+            ::std::size_t module{}, function{}, pc{}, locals{}, base{}, previous_values{}, controls{}; bool cross_module{};
         };
         struct control
         {
@@ -56,6 +57,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         // These fixed-size arrays are allocated before a native child is minted.
         // Guest recursion consumes explicit slots, not recursive C++ frames.
         ::std::vector<stack_value> values_{};
+        ::std::vector<storage::gc_object_value> gc_scratch_{};
         ::std::vector<activation> calls_{};
         ::std::vector<control> controls_{};
         ::std::vector<::std::byte> host_parameters_{},host_results_{};
@@ -213,10 +215,40 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
             { return fail(status::resource_limit); }
             auto const mark{value_top_-arguments};
             auto const controls{control_top_};
-            calls_[call_top_++]={target.module,target.function,0,mark,mark+f.locals,mark,controls};
+            auto const crossing=call_top_!=0u && (calls_[call_top_-1u].cross_module || calls_[call_top_-1u].module!=target.module);
+            calls_[call_top_++]={target.module,target.function,0,mark,mark+f.locals,mark,controls,crossing};
             ::std::fill(values_.begin()+value_top_,values_.begin()+mark+f.locals,0u);value_top_=mark+f.locals;
             controls_[control_top_++]={value_top_,0,f.instructions.size()-1uz,0,
                 static_cast<::std::size_t>(f.type->result.end-f.type->result.begin),false};
+            return true;
+        }
+        [[nodiscard]] bool tail_enter(threads::ThreadedGroup::ChildLease& lease, target const& target) noexcept
+        {
+            if(!call_top_ || !target.type) { return fail(status::invariant_failure); }
+            auto const frame{calls_[call_top_-1uz]};
+            auto const* caller_type{function_type(frame.module,frame.function)};
+            auto const results{static_cast<::std::size_t>(target.type->result.end-target.type->result.begin)};
+            if(!caller_type || results!=static_cast<::std::size_t>(caller_type->result.end-caller_type->result.begin) ||
+               !::std::equal(target.type->result.begin,target.type->result.end,caller_type->result.begin))
+            { return fail(status::trap_signature); }
+            if(target.host)
+            {
+                // Import authority belongs to the actual Wasm caller even when
+                // it tail-calls. A host failure has no guest EH delivery path.
+                return host_call(lease,target) && leave();
+            }
+            auto const arguments{static_cast<::std::size_t>(target.type->parameter.end-target.type->parameter.begin)};
+            if(value_top_<frame.base || arguments>value_top_-frame.base)
+            { return fail(status::invariant_failure); }
+            // Replace the activation rather than adding a call. This retires
+            // the tail caller's lexical catch scopes and reuses its value and
+            // control storage, so arbitrarily deep tail recursion is bounded.
+            if(!compact(frame.previous_values,arguments)) { return false; }
+            control_top_=frame.controls;--call_top_;
+            if(!enter(target)) { return false; }
+            // A cross-module tail hop must not erase the provenance that the
+            // import dispatcher uses to reject authority laundering.
+            calls_[call_top_-1uz].cross_module |= frame.cross_module || frame.module!=target.module;
             return true;
         }
         [[nodiscard]] bool leave() noexcept
@@ -255,7 +287,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
             ::uwvm2::runtime::lib::details::scoped_llvm_wasm_host_fp_environment_restore host_fp{true};
             if(!host_fp.ready()) { return fail(status::host_failure); }
             auto const result{threads::dispatch_import(lease,*world_,caller.module,caller.function,target.function,
-                {host_results_.data(),out},{host_parameters_.data(),in})};
+                {host_results_.data(),out},{host_parameters_.data(),in},caller.cross_module)};
             if(result==threads::host_dispatch_status::group_stopped) { return fail(status::cancelled); }
             if(result!=threads::host_dispatch_status::returned) { return fail(status::host_denied); }
             if(lease.cancellation().stop_requested()) { return fail(status::cancelled); }
@@ -287,7 +319,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
             // entry. Do not trap or retain a native pointer inside the callback.
             if(memory.memtag_shadow.enabled())
             {
-                auto const proof{::uwvm2::runtime::memtag::with_checked_access<::std::uint32_t,true>(
+                auto const proof{::uwvm2::runtime::memtag::with_guest_access<::std::uint32_t,true>(
                     memory,pointer,offset,bytes,::std::forward<Function>(function))};
                 return proof || access_failure(proof,pointer);
             }
@@ -422,6 +454,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
             ::std::size_t Lanes,unsigned Align>
         [[nodiscard]] static bool simd_execute(engine&,instruction const&) noexcept;
         [[nodiscard]] bool arithmetic(unsigned op) noexcept;
+        [[nodiscard]] bool gc_operation(instruction const&) noexcept;
         [[nodiscard]] bool floating(unsigned op) noexcept;
         [[nodiscard]] bool raise(threads::ThreadedGroup::ChildLease&,::std::uint64_t) noexcept;
         [[nodiscard]] bool throw_tag(threads::ThreadedGroup::ChildLease&,::std::size_t) noexcept;
@@ -469,6 +502,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
             auto add{[&](::std::size_t n,::std::size_t width) noexcept
             { if(n>(SIZE_MAX-total)/width) { total=SIZE_MAX; } else { total+=n*width; } }};
             if(debug_){add(sizeof(threads::code_debug_image),1u);add(debug_->allocated_bytes(),1u);}
+            add(gc_scratch_.capacity(),sizeof(storage::gc_object_value));
             add(values_.capacity(),sizeof(stack_value));add(calls_.capacity(),sizeof(activation));add(controls_.capacity(),sizeof(control));
             add(host_parameters_.capacity(),1);add(host_results_.capacity(),1);add(modules_.capacity(),sizeof(bound_module));
             add(exceptions_.capacity(),sizeof(exception_record));add(exception_values_.capacity(),sizeof(stack_value));
@@ -512,6 +546,8 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
             if(params.size()!=input_bytes || results.size()!=output_bytes) { return {status::trap_signature}; }
             if(entered_.test_and_set(::std::memory_order_acq_rel)) { return {status::already_entered}; }
             entry_scope retire{*this};
+            ::uwvm2::runtime::memtag::deferred::entry_scope memtag_delivery{};
+            if(!memtag_delivery.enter()) { return {status::resource_limit}; }
             clear_activation();result_={};last_grow_={};
             if(lease.cancellation().stop_requested()) { result_.code=status::cancelled;return result_; }
             ::std::size_t offset{};
@@ -530,10 +566,14 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                 while(call_top_ && result_.normal())
                 {
                     auto& frame{calls_[call_top_-1uz]};auto const* instance{world_->module(frame.module)};
-                    auto const& code{modules_[frame.module].program.functions[frame.function-instance->imported_function_vec_storage.size()].instructions};
+                    auto const& source_function{modules_[frame.module].program.functions[frame.function-instance->imported_function_vec_storage.size()]};
+                    auto const& code{source_function.instructions};
                     result_.module=frame.module;result_.function=frame.function;
                     if(frame.pc>=code.size()) { static_cast<void>(fail(status::invariant_failure));break; }
                     auto const& ins{code[frame.pc++]};result_.wasm_offset=ins.offset;
+                    if((::uwvm2::extension::memtag::asynchronous_requested() || ::uwvm2::extension::memtag::logging_requested()))
+                    { ::uwvm2::runtime::memtag::deferred::boundary(frame.module,frame.function,source_function.expression_offset(ins.offset),
+                        ::uwvm2::runtime::memtag::deferred::draining_opcode(ins.primary_opcode())?1u:0u); }
                     if(lease.cancellation().stop_requested()) { static_cast<void>(fail(status::cancelled));break; }
                     if(!lease.debug_safepoint(threads::debug_stop_site::before_instruction,
                         frame.module,frame.function,ins.offset,frame.pc-1u))
@@ -560,9 +600,18 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                 }
                 crash::memory_detail const memory{0u,result_.memtag_pointer,result_.memtag_granule,
                     result_.memtag_pointer_tag,result_.memtag_allocation_tag};
-                crash::report(category,reason,1u,result_.module,result_.function,result_.wasm_offset,
+                ::std::uint64_t expression_offset{UINT64_MAX};
+                if(result_.module<modules_.size())
+                {
+                    auto const& source_module{modules_[result_.module].program};
+                    auto const imported{source_module.instance->imported_function_vec_storage.size()};
+                    if(result_.function>=imported && result_.function-imported<source_module.functions.size())
+                    { expression_offset=source_module.functions[result_.function-imported].expression_offset(result_.wasm_offset); }
+                }
+                crash::report(category,reason,1u,result_.module,result_.function,expression_offset,
                     result_.code==status::trap_memtag?&memory:nullptr);
                 crash::pause_process();
+                if(category==crash::category::internal) { ::fast_io::fast_terminate(); }
 #endif
                 lease.request_trap(static_cast<::std::uint32_t>(result_.code),result_.module,result_.function,result_.wasm_offset);
             }
@@ -597,6 +646,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
 #include "execute.h"
 #include "floating.h"
 #include "exception.h"
+#include "gc.h"
 #include "bulk_memory.h"
 #include "simd.h"
 #include "memtag.h"

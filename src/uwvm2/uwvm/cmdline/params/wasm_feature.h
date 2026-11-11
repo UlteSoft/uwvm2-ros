@@ -11,6 +11,7 @@
 #  define UWVM
 # endif
 // std
+# include <cstddef>
 # include <memory>
 # include <type_traits>
 // macro
@@ -33,6 +34,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
         inline bool wasm_feature_disable_memtag_extension_is_exist{};
         inline bool wasm_feature_wasm1p1_is_exist{};
         inline bool wasm_feature_wasm2_is_exist{};
+        inline bool wasm_feature_wasm3_is_exist{};
 
         inline constexpr ::uwvm2::utils::container::array<::uwvm2::utils::container::u8string_view, 5uz> wasm_feature_mvp_alias{
             u8"--wasm-feature-mvp",
@@ -48,6 +50,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
             u8"-WFwasm1p1"};
         inline constexpr ::uwvm2::utils::container::array<::uwvm2::utils::container::u8string_view, 2uz> wasm_feature_wasm2_alias{
             u8"-WF2", u8"-WFwasm2"};
+        inline constexpr ::uwvm2::utils::container::array<::uwvm2::utils::container::u8string_view, 2uz> wasm_feature_wasm3_alias{
+            u8"-WF3", u8"-WFwasm3"};
 
 #if defined(UWVM_MODULE)
 # define UWVM_WASM_FEATURE_CALLBACK_DECL extern "C++"
@@ -62,6 +66,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
             ::uwvm2::utils::cmdline::parameter_parsing_results*, ::uwvm2::utils::cmdline::parameter_parsing_results*,
             ::uwvm2::utils::cmdline::parameter_parsing_results*) noexcept;
         UWVM_WASM_FEATURE_CALLBACK_DECL ::uwvm2::utils::cmdline::parameter_return_type wasm_feature_wasm2_callback(
+            ::uwvm2::utils::cmdline::parameter_parsing_results*, ::uwvm2::utils::cmdline::parameter_parsing_results*,
+            ::uwvm2::utils::cmdline::parameter_parsing_results*) noexcept;
+        UWVM_WASM_FEATURE_CALLBACK_DECL ::uwvm2::utils::cmdline::parameter_return_type wasm_feature_wasm3_callback(
             ::uwvm2::utils::cmdline::parameter_parsing_results*, ::uwvm2::utils::cmdline::parameter_parsing_results*,
             ::uwvm2::utils::cmdline::parameter_parsing_results*) noexcept;
 
@@ -116,7 +123,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
 
     /// @brief Command-line switch that disables the WebAssembly 1.1 feature collection and enforces MVP gates.
     inline constexpr ::uwvm2::utils::cmdline::parameter wasm_feature_mvp{.name{u8"--wasm-feature-wasmmvp"},
-                                                                         .describe{u8"Disable WebAssembly 1.1 features and enforce the WebAssembly MVP feature set."},
+                                                                         .describe{u8"Select the MVP baseline; explicit feature enable/disable switches override it."},
                                                                          .alias{::uwvm2::utils::cmdline::kns_u8_str_scatter_t{
                                                                              details::wasm_feature_mvp_alias.data(), details::wasm_feature_mvp_alias.size()}},
                                                                          .handle{::std::addressof(details::wasm_feature_mvp_callback)},
@@ -126,7 +133,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
     /// @brief Command-line switch that enables the WebAssembly 1.1 feature collection.
     inline constexpr ::uwvm2::utils::cmdline::parameter wasm_feature_wasm1p1{
         .name{u8"--wasm-feature-wasm1p1"},
-        .describe{u8"Enable the WebAssembly 1.1 feature set."},
+        .describe{u8"Select the WebAssembly 1.1 baseline; explicit feature enable/disable switches override it."},
         .alias{::uwvm2::utils::cmdline::kns_u8_str_scatter_t{details::wasm_feature_wasm1p1_alias.data(), details::wasm_feature_wasm1p1_alias.size()}},
         .handle{::std::addressof(details::wasm_feature_wasm1p1_callback)},
         .is_exist{::std::addressof(details::wasm_feature_wasm1p1_is_exist)},
@@ -135,10 +142,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
     /// @brief Select the WebAssembly 2.0 feature set.
     inline constexpr ::uwvm2::utils::cmdline::parameter wasm_feature_wasm2{
         .name{u8"--wasm-feature-wasm2"},
-        .describe{u8"Select the complete WebAssembly 2.0 feature set."},
+        .describe{u8"Select the WebAssembly 2.0 baseline; explicit feature enable/disable switches override it."},
         .alias{::uwvm2::utils::cmdline::kns_u8_str_scatter_t{details::wasm_feature_wasm2_alias.data(), details::wasm_feature_wasm2_alias.size()}},
         .handle{::std::addressof(details::wasm_feature_wasm2_callback)},
         .is_exist{::std::addressof(details::wasm_feature_wasm2_is_exist)},
+        .cate{::uwvm2::utils::cmdline::categorization::wasm}};
+    /// @brief Select the WebAssembly 3.0 feature set.
+    inline constexpr ::uwvm2::utils::cmdline::parameter wasm_feature_wasm3{
+        .name{u8"--wasm-feature-wasm3"},
+        .describe{u8"Select the default WebAssembly 3.0 baseline plus threads; WasmMTE remains enabled unless explicitly disabled. Explicit feature enable/disable switches override the baseline."},
+        .alias{::uwvm2::utils::cmdline::kns_u8_str_scatter_t{details::wasm_feature_wasm3_alias.data(), details::wasm_feature_wasm3_alias.size()}},
+        .handle{::std::addressof(details::wasm_feature_wasm3_callback)},
+        .is_exist{::std::addressof(details::wasm_feature_wasm3_is_exist)},
         .cate{::uwvm2::utils::cmdline::categorization::wasm}};
 
 #define UWVM_DEFINE_WASM_FEATURE_SWITCH(direction, member_name, direction_text, alias_letter, cli_suffix, description_verb)                          \
@@ -182,6 +197,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
 
 #undef UWVM_DEFINE_WASM_FEATURE_PAIR
 #undef UWVM_DEFINE_WASM_FEATURE_SWITCH
+
+    // The parser completes all feature callbacks before loading any module.
+    // Inspect only the canonical name of a registered option, never guest argv.
+    [[nodiscard]] inline constexpr bool is_wasm_feature_parameter(::uwvm2::utils::cmdline::parameter const* parameter) noexcept
+    {
+        if(parameter == nullptr) { return false; }
+        constexpr ::uwvm2::utils::container::u8string_view prefix{u8"--wasm-feature-"};
+        if(parameter->name.size() < prefix.size()) { return false; }
+        for(::std::size_t i{}; i != prefix.size(); ++i)
+        { if(parameter->name[i] != prefix[i]) { return false; } }
+        return true;
+    }
 #if defined(__clang__)
 # pragma clang diagnostic pop
 #endif

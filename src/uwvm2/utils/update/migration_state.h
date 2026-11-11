@@ -166,7 +166,7 @@ namespace uwvm2::utils::update
                 if(memory.bytes.size() != memory.byte_size || memory.byte_size > maximum_image_bytes - total) { return false; }
                 total += memory.byte_size;
             }
-            constexpr char domain[]{"uwvm.module-migration.state.v1"};
+            constexpr char domain[]{"uwvm.module-migration.state.v2"};
             ::std::vector<unsigned char> bytes; bytes.reserve(total + 2048u);
             for(char c : domain) { bytes.push_back(static_cast<unsigned char>(c)); }
             append_u64(bytes, module.memories.size());
@@ -174,6 +174,10 @@ namespace uwvm2::utils::update
             {
                 append_u64(bytes, memory.index); append_u64(bytes, memory.byte_size);
                 bytes.insert(bytes.end(), memory.bytes.begin(), memory.bytes.end());
+                if((!memory.tagged && !memory.allocation_tags.empty()) ||
+                   (memory.tagged && memory.allocation_tags.size()!=memory.byte_size/16u)) { return false; }
+                append_u64(bytes, memory.tagged); append_u64(bytes, memory.allocation_tags.size());
+                for(auto tag:memory.allocation_tags) { if(tag>15u) { return false; } bytes.push_back(tag); }
             }
             append_u64(bytes, scalars.size());
             for(auto const& scalar : scalars)

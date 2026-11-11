@@ -13,7 +13,8 @@
   ],
   "main": "./extension.js",
   "activationEvents": [
-    "onDebug"
+    "onDebug",
+    "onView:uwvm.tools"
   ],
   "capabilities": {
     "untrustedWorkspaces": {
@@ -69,6 +70,9 @@
       },
       {
         "language": "assemblyscript"
+      },
+      {
+        "language": "uwvm-wasm-disassembly"
       }
     ],
     "debuggers": [
@@ -91,7 +95,8 @@
           "swift",
           "zig",
           "typescript",
-          "assemblyscript"
+          "assemblyscript",
+          "uwvm-wasm-disassembly"
         ],
         "configurationAttributes": {
           "attach": {
@@ -154,6 +159,15 @@
                   "none"
                 ],
                 "description": "Expected immutable VM launch permissions. Verified against the authenticated VM, never an upgrade. none disables debugger attachment."
+              },
+              "updateSocketDir": {
+                "type": "string",
+                "description": "Independent signed-update socket directory on the VM host. Separate from debugger display permissions; forwards existing authorized UUP1 frames only."
+              },
+              "stopOnEntry": {
+                "type": "boolean",
+                "default": true,
+                "description": "Keep the authenticated initial entry stop after attach. Generated runtime launch profiles default to false and continue once, after breakpoints are configured. Existing breakpoint, pause and fault stops are never auto-resumed. Restart reconnects; it does not reset this host-owned VM."
               }
             }
           }
@@ -251,9 +265,44 @@
         "extensions": [
           ".wat"
         ]
+      },
+      {
+        "id": "uwvm-wasm-disassembly",
+        "aliases": [
+          "UWVM Wasm Disassembly"
+        ]
       }
     ],
     "commands": [
+      {
+        "command": "uwvm.openMemory",
+        "title": "UWVM: Open Memory Window",
+        "icon": "$(table)"
+      },
+      {
+        "command": "uwvm.openRegisters",
+        "title": "UWVM: Open Registers Window",
+        "icon": "$(symbol-numeric)"
+      },
+      {
+        "command": "uwvm.openWasip1",
+        "title": "UWVM: Open WASI Window",
+        "icon": "$(folder-opened)"
+      },
+      {
+        "command": "uwvm.openRos",
+        "title": "UWVM: Open ROS Window",
+        "icon": "$(radio-tower)"
+      },
+      {
+        "command": "uwvm.writeMemory",
+        "title": "UWVM: Write Bytes in Current Memory Window"
+      },
+      {
+        "command": "uwvm.submitSignedUpdate",
+        "title": "UWVM: Submit Authorized Hot Update Request",
+        "icon": "$(cloud-upload)"
+      },
       {
         "command": "uwvm.showMemoryTags",
         "title": "UWVM: Show Memory Tags"
@@ -265,6 +314,171 @@
       {
         "command": "uwvm.dump",
         "title": "UWVM: Save Wasm Dump (Current Permissions)"
+      },
+      {
+        "command": "uwvm.levelSource",
+        "title": "UWVM: Source Level",
+        "icon": "$(file-code)"
+      },
+      {
+        "command": "uwvm.levelWasm",
+        "title": "UWVM: Wasm Level",
+        "icon": "$(symbol-method)"
+      },
+      {
+        "command": "uwvm.levelAsm",
+        "title": "UWVM: JIT Assembly Level",
+        "icon": "$(code)"
+      },
+      {
+        "command": "uwvm.openWasiCalls",
+        "title": "UWVM: Recorded WASIp1 Calls",
+        "icon": "$(list-tree)"
+      },
+      {
+        "command": "uwvm.openRosCalls",
+        "title": "UWVM: Recorded ROS Calls",
+        "icon": "$(list-tree)"
+      },
+      {
+        "command": "uwvm.openBreakpoints",
+        "title": "UWVM: All Breakpoints",
+        "icon": "$(debug-breakpoint)"
+      },
+      {
+        "command": "uwvm.openWasmInstructions",
+        "title": "UWVM: Open Wasm Instruction View",
+        "icon": "$(symbol-method)"
+      },
+      {
+        "command": "uwvm.switchFromSource",
+        "title": "UWVM: S · Source — Click to change instruction level",
+        "icon": {
+          "light": "icons/level-S-light.svg",
+          "dark": "icons/level-S-dark.svg"
+        }
+      },
+      {
+        "command": "uwvm.switchFromWasm",
+        "title": "UWVM: W · Wasm — Click to change instruction level",
+        "icon": {
+          "light": "icons/level-W-light.svg",
+          "dark": "icons/level-W-dark.svg"
+        }
+      },
+      {
+        "command": "uwvm.switchFromAsm",
+        "title": "UWVM: A · Assembly — Click to change instruction level",
+        "icon": {
+          "light": "icons/level-A-light.svg",
+          "dark": "icons/level-A-dark.svg"
+        }
+      }
+    ],
+    "menus": {
+      "debug/toolBar": [
+        {
+          "command": "uwvm.openMemory",
+          "when": "debugType == uwvm-llvm-full",
+          "group": "navigation@100"
+        },
+        {
+          "command": "uwvm.switchFromSource",
+          "when": "debugType == uwvm-llvm-full && uwvm.stepLevel == source",
+          "group": "navigation@101"
+        },
+        {
+          "command": "uwvm.switchFromWasm",
+          "when": "debugType == uwvm-llvm-full && uwvm.stepLevel == wasm",
+          "group": "navigation@101"
+        },
+        {
+          "command": "uwvm.switchFromAsm",
+          "when": "debugType == uwvm-llvm-full && uwvm.stepLevel == native",
+          "group": "navigation@101"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "uwvm.showDiagnostics",
+          "when": "view == uwvm.tools",
+          "group": "navigation"
+        },
+        {
+          "command": "uwvm.openMemory",
+          "when": "view == uwvm.tools",
+          "group": "navigation"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "uwvm.levelSource",
+          "when": "debugType == uwvm-llvm-full",
+          "group": "uwvm@0"
+        },
+        {
+          "command": "uwvm.levelWasm",
+          "when": "debugType == uwvm-llvm-full",
+          "group": "uwvm@1"
+        },
+        {
+          "command": "uwvm.levelAsm",
+          "when": "debugType == uwvm-llvm-full",
+          "group": "uwvm@2"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "UWVM independent signed updates",
+      "properties": {
+        "uwvm.update.pythonPath": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute local Python executable for independent update forwarding. Empty uses an absolute interpreter from the active debug configuration or /usr/bin/python3 on Unix; on Windows select an installed Python executable. No debugger session is required."
+        },
+        "uwvm.update.socketDir": {
+          "type": "string",
+          "default": "",
+          "description": "Independent update relay directory on the local Linux VM host."
+        },
+        "uwvm.update.transportProfile": {
+          "type": "string",
+          "default": "",
+          "description": "Host-owned imported local or verified SSH profile containing updateSocketDir. Works when debugger permission is none."
+        }
+      }
+    },
+    "grammars": [
+      {
+        "language": "uwvm-wasm-disassembly",
+        "scopeName": "source.uwvm-wasm-disassembly",
+        "path": "./syntaxes/uwvm-wasm.tmLanguage.json"
+      }
+    ],
+    "configurationDefaults": {
+      "[uwvm-wasm-disassembly]": {
+        "editor.hover.delay": 350
+      }
+    },
+    "views": {
+      "debug": [
+        {
+          "id": "uwvm.tools",
+          "name": "UWVM Debugger",
+          "visibility": "visible"
+        }
+      ]
+    },
+    "customEditors": [
+      {
+        "viewType": "uwvm.wasmInstructions",
+        "displayName": "UWVM Wasm Instructions",
+        "selector": [
+          {
+            "filenamePattern": "**/*.uwvm-wat"
+          }
+        ],
+        "priority": "default"
       }
     ]
   }

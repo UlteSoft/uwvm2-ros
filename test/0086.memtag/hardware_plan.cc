@@ -5,6 +5,8 @@
 namespace mt=uwvm2::extension::memtag;
 #define CHECK(...) do {if(!(__VA_ARGS__)){std::fprintf(stderr,"hardware plan failure %u\n",__LINE__);std::abort();}}while(false)
 int main(){
+ mt::select_backend(true);
+
  mt::shadow_storage disabled;
  CHECK(!disabled.enabled()&&!disabled.hardware_selected()&&!disabled.hardware_active());
  mt::shadow_storage moving;

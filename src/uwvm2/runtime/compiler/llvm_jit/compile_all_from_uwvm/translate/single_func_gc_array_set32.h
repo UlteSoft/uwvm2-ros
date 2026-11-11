@@ -1,4 +1,4 @@
-// Exact SET32=1 only. Five integer C arguments and one uint32 status;
+// Checked scalar transport: five integer C arguments and one uint32 status;
 // opaque reference/carrier authority is unchanged. No scratch/output buffer.
 extern "C" [[nodiscard]] inline ::std::uint32_t uwvm2_llvm_jit_gc_array_set32_bridge_r1(
     ::std::uintptr_t module_address, ::std::uint32_t reference_kind,
@@ -114,6 +114,13 @@ extern "C" [[nodiscard]] inline ::std::uint32_t uwvm2_llvm_jit_gc_array_set32_br
         reinterpret_cast<::std::uintptr_t>(module),
         ::uwvm2::utils::container::u8string_view{module_name.data(), module_name.size()})};
     if(module_address == nullptr) { return false; }
+    unsigned const direct_width{field->storage.packed==type::packed_kind::i8?1u:
+        field->storage.packed==type::packed_kind::i16?2u:4u};
+    llvm_jit_gc_status_dispatch_plan status_dispatch{};
+    if(!status_dispatch.prepare(*state.llvm_module, builder, false)) { return false; }
+    llvm_jit_gc_direct_access_plan direct{};
+    if(!direct.prepare(state,*module,reference_kind,payload,index.value,raw,decoded.first,direct_width,
+        true,false,true,false,operand.value)) { return false; }
     auto const bridge_type{::llvm::FunctionType::get(i32, {intptr, i32, intptr, i32, i32}, false)};
     auto const callee{get_llvm_runtime_bridge_function_symbol_value<uwvm2_llvm_jit_gc_array_set32_bridge_r1>(
         builder, bridge_type, ::uwvm2::utils::container::u8string_view{u8"gc_array_set32_raw_v1"})};
@@ -124,22 +131,11 @@ extern "C" [[nodiscard]] inline ::std::uint32_t uwvm2_llvm_jit_gc_array_set32_br
     // synchronous membership/lease/lock setter is noexcept and does not poll.
     auto const status{apply_llvm_jit_host_calling_conv(builder.CreateCall(bridge_type, callee, arguments))};
     status->setDoesNotThrow();
-    auto const failed{[&](storage::gc_object_status value)
-    { return builder.CreateICmpEQ(status, ::llvm::ConstantInt::get(i32, static_cast<::std::uint32_t>(value))); }};
-    emit_llvm_conditional_trap(*state.llvm_module, builder, failed(storage::gc_object_status::null_reference),
-        ::uwvm2::runtime::lib::llvm_jit_trap_kind::null_reference);
-    emit_llvm_conditional_trap(*state.llvm_module, builder, failed(storage::gc_object_status::out_of_bounds),
-        ::uwvm2::runtime::lib::llvm_jit_trap_kind::array_out_of_bounds);
-    emit_llvm_conditional_trap(*state.llvm_module, builder,
-        builder.CreateOr(failed(storage::gc_object_status::out_of_memory),
-            failed(storage::gc_object_status::size_overflow)),
-        ::uwvm2::runtime::lib::llvm_jit_trap_kind::gc_allocation_failure);
-    emit_llvm_conditional_trap(*state.llvm_module, builder,
-        builder.CreateICmpNE(status, ::llvm::ConstantInt::get(i32, 0u)),
-        ::uwvm2::runtime::lib::llvm_jit_trap_kind::runtime_invariant_failure);
+    status_dispatch.commit(*status);
     // [SSA prefix][three copied input descriptors] end -> [SSA prefix] end
     // [safe ] only status-success can retire inputs. There is no result slot,
     // native byte borrow or descriptor alias across this vector mutation.
+    static_cast<void>(direct.finish(nullptr));
     stack.pop_back();
     stack.pop_back();
     stack.pop_back();

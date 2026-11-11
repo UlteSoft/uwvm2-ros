@@ -55,7 +55,7 @@ namespace uwvm2::imported::ros::ipc
     }
     inline bool decode_parameter_event(std::vector<std::uint8_t> const& bytes,parameter_event& result)
     {
-        if(bytes.size()<24||bytes.size()>max_payload_bytes-518) { return false; }
+        if(bytes.size()<24||bytes.size()>max_payload_bytes) { return false; }
         parameter_event event;
         event.seconds=static_cast<std::uint32_t>(get(bytes.data(),4)); event.nanoseconds=static_cast<std::uint32_t>(get(bytes.data()+4,4)); event.kind=bytes[8];
         if(event.seconds>2147483647U||event.nanoseconds>=1000000000U||event.kind<1||event.kind>3) { return false; }
@@ -65,7 +65,7 @@ namespace uwvm2::imported::ros::ipc
             if(n>maximum||n>bytes.size()-p) { return false; }
             output.assign(reinterpret_cast<char const*>(bytes.data()+p),static_cast<std::size_t>(n));p+=static_cast<std::size_t>(n);return true;
         };
-        if(!string(event.node,1024)||!string(event.name,255)||!string(event.value,max_payload_bytes-518)||p!=bytes.size()||!parameter_node(event.node)||!parameter_name(event.name)||!parameter_utf8(event.value)||(event.kind==3&&!event.value.empty())) { return false; }
+        if(!string(event.node,1024)||!string(event.name,255)||!string(event.value,max_payload_bytes)||p!=bytes.size()||!parameter_node(event.node)||!parameter_name(event.name)||!parameter_utf8(event.value)||(event.kind==3&&!event.value.empty())) { return false; }
         result=std::move(event);return true;
     }
     inline std::vector<std::uint8_t> encode_parameter_event_view(std::uint32_t seconds,std::uint32_t nanoseconds,std::uint8_t kind,
@@ -108,7 +108,7 @@ namespace uwvm2::imported::ros::ipc
     { return encode_typed_parameter_event_view(event.seconds,event.nanoseconds,event.kind,event.node,event.name,event.value,output); }
     inline std::uint32_t decode_typed_parameter_event(std::vector<std::uint8_t> const& bytes,typed_parameter_event& output,std::size_t max_elements=parameter_max_elements)
     {
-        if(bytes.size()>max_payload_bytes-518) { return 90; }
+        if(bytes.size()>max_payload_bytes) { return 90; }
         if(bytes.size()<23) { return 22; }
         typed_parameter_event event;
         event.seconds=static_cast<std::uint32_t>(get(bytes.data(),4));event.nanoseconds=static_cast<std::uint32_t>(get(bytes.data()+4,4));event.kind=bytes[8];

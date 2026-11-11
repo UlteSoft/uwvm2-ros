@@ -2,7 +2,7 @@
 extern "C++"
 {
     inline auto runtime_threaded_wasip1_adapter::prestat(context& call,::std::uint32_t guest,
-        ::std::uint32_t destination,::std::uint32_t capacity,bool sizes) noexcept -> error
+        ::std::uint64_t destination,::std::uint64_t capacity,bool sizes) noexcept -> error
     {
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
         // Interface denial is handled before this leaf. Preserve the ordinary
@@ -12,7 +12,7 @@ extern "C++"
         if(!call.bounds(destination,capacity))return error::efault;
         // Preview1 prestat is eight bytes, aligned to four, independently of
         // the more strictly aligned host staging structure.
-        if(sizes&&(destination&3u)!=0u)return error::einval;
+        if(sizes&&(destination&(call.word_bytes()-1u))!=0u)return error::einval;
         fd_pin pinned{};
         auto const acquired=pinned.acquire(call,guest,right{},true,false,false,true);
         if(acquired.failure!=error::esuccess)return acquired.failure;
@@ -28,15 +28,15 @@ extern "C++"
         auto const* directory=directories.dir_stack.front_unchecked().ptr;
         if(directory==nullptr){static_cast<void>(call.native_failure());return error::eio;}
         auto const& name=directory->dir_stack.name;
-        if(name.size()>UINT32_MAX)return error::eoverflow;
+        if(name.size()>call.size_limit())return error::eoverflow;
         if(call.stopped())return error::ecanceled;
         bool copied{};
         if(sizes)
         {
-            ::std::array<::std::byte,8> output{};
+            ::std::array<::std::byte,16> output{};
             // Tag zero denotes a directory; every ABI padding byte is zero.
-            little_put(output.data()+4u,name.size(),4u);
-            copied=call.copy_out(destination,output);
+            little_put(output.data()+call.word_bytes(),name.size(),call.word_bytes());
+            copied=call.copy_out(destination,{output.data(),call.word_bytes()*2u});
         }
         else
         {

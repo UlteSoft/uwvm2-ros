@@ -157,7 +157,11 @@
         };
         [[nodiscard]] bool account_retained_storage() noexcept
         {
-            if(!world_||!native_arena_)return false;
+            if(!world_)return false;
+            // Only import-only side modules have no executable allocation.
+            // Every module with a local body must retain its genuine arena.
+            if(!native_arena_ && (module_index_==0u||!entries_.empty()||native_bytes_!=0u||
+               module_==nullptr||!module_->local_defined_function_vec_storage.empty()))return false;
             auto const source_cap=world_->admission().limits().max_child_storage_bytes;
             auto const world_bytes=world_->owned_storage_bytes();
             if(world_bytes>source_cap||storage_limit_>source_cap-world_bytes)return false;
@@ -167,12 +171,13 @@
             {if(total>cap||bytes>cap-total)return false;total+=bytes;return true;};
             auto array=[&](::std::size_t count,::std::size_t bytes)
             {if(count>SIZE_MAX/bytes)return false;return add(count*bytes);};
-            if(!array(entries_.capacity(),sizeof(entries))||!array(local_type_ids_.capacity(),sizeof(::std::uint_least32_t))||
+            if(!array(gc_scratch_.capacity(),sizeof(::uwvm2::uwvm::runtime::storage::gc_object_value))||
+               !array(entries_.capacity(),sizeof(entries))||!array(local_type_ids_.capacity(),sizeof(::std::uint_least32_t))||
                !array(memories_.capacity(),sizeof(memory_type*))||
                !array(table_targets_.capacity(),sizeof(decltype(table_targets_)::value_type))||
                !array(table_views_.capacity(),sizeof(decltype(table_views_)::value_type))||
                !array(externals_.capacity(),sizeof(external))||!array(emitted_bridges_.capacity(),sizeof(native_bridge))||
-               !array(locals_.capacity(),sizeof(local_type))||!add(native_arena_->retained_storage_bytes()))return false;
+               !array(locals_.capacity(),sizeof(local_type))||(native_arena_&&!add(native_arena_->retained_storage_bytes())))return false;
             if(!array(eh_schemas_.capacity(),sizeof(eh_schema))||!array(eh_fields_.capacity(),sizeof(eh_field))||
                !array(eh_records_.capacity(),sizeof(eh_record))||!array(eh_payload_.capacity(),1u))return false;
             if(!array(native_frames_.capacity(),sizeof(native_frame_record)))return false;

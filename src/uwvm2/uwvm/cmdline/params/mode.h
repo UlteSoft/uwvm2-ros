@@ -46,9 +46,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
     {
         inline bool debug_permissions_is_exist{};
         inline unsigned debug_permission_selection{}; // limited=0, full=1, read-only=2, none=3
-        inline bool runtime_debug_default_full{};
         inline bool mode_is_exist{};  // [global]
-        inline unsigned debug_crash_action{}; // default termination or explicitly requested pause
+        inline unsigned debug_crash_action{}; // 0: crash (default), 1: pause, 2: stable Guest-fault exit
         inline bool debug_crash_action_exists{};
 #if defined(UWVM_MODULE)
         extern "C++"
@@ -158,15 +157,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
         .usage{u8"<hex>"}, .handle{::std::addressof(details::update_option_callback)},
         .is_exist{::std::addressof(details::update_scope_exists)}, .cate{::uwvm2::utils::cmdline::categorization::update}};
     inline constexpr ::uwvm2::utils::cmdline::parameter debug_crash{
-        .name{u8"--debug"},
-        .describe{u8"Report a terminal fault to the host and pause. The deployer may explicitly inspect/dump with an authorized debugger or manage an update; no automatic dump, retry, recovery or new authority. Omit this option for normal fault termination."},
-        .usage{u8"<pause>"},
+        .name{u8"--debug-fault-action"},
+        .describe{u8"Unhandled Wasm fault: crash (default; OS-configured core dumps), pause for authorized inspection, or exit with stable status 120/121/122. Internal VM failures always crash; no automatic dump, restart or recovery."},
+        .usage{u8"<crash|pause|exit>"},
         .handle{::std::addressof(details::debug_crash_callback)},
         .is_exist{::std::addressof(details::debug_crash_action_exists)},
         .cate{::uwvm2::utils::cmdline::categorization::debug}};
     inline constexpr ::uwvm2::utils::cmdline::parameter debug_permissions{
         .name{u8"--debug-permissions"},
-        .describe{u8"Debugger launch permissions only: full (inspect/modify), read-only (inspect/full dump), limited (non-sensitive diagnostics/dump; default), none (no debugger or dump). -Rdbg defaults to full; explicit selection wins. Does not grant imports, drivers or updates."},
+        .describe{u8"Debugger launch permissions only: full (inspect/modify/control execution), read-only (inspect/full dump; no execution control), limited (non-sensitive diagnostics/dump only; default), none (no debugger or dump). -Rdbg and -m debug default to full; other modes default to limited; explicit selection wins. Does not grant imports, drivers or updates."},
         .usage{u8"<full|read-only|limited|none>"},
         .handle{::std::addressof(details::debug_permissions_callback)},
         .is_exist{::std::addressof(details::debug_permissions_is_exist)},

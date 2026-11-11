@@ -53,6 +53,8 @@ template<typename Address,bool Shared> void exercise() {
  for(unsigned n{};n!=16;++n)CHECK(tags[n]==(sizeof(Address)==4?n:n+0xa0u));
 }
 int main() {
+ mt::select_backend(true);
+
  exercise<std::uint32_t,false>();exercise<std::uint32_t,true>();exercise<std::uint64_t,false>();exercise<std::uint64_t,true>();
  mt::shadow_storage disabled;std::array<std::byte,4> memory{std::byte{7}},out{};
  CHECK(mt::copy_debug_memory(disabled,memory,0,out.data(),out.size()) && out[0]==std::byte{7});

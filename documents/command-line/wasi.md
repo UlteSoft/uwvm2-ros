@@ -23,22 +23,26 @@ local-socket implementation.
 ## ROS product: zero initial authority
 
 The `uwvm2-ros` target defines `UWVM_ROS_ZERO_HOST_DEFAULTS`; this policy does
-not depend on whether the guest imports ROS, on DEV/RELEASE, or on JIT/AOT.
+not depend on whether the guest imports ROS, on debugger authority, or on the interpreter/JIT selection.
 The retained ordinary uwvm shared headers, built without that product definition,
 keep their previous defaults.
 
-Every ROS guest starts without a WASI namespace or host import, without host
-stdio objects, argv/environment, clocks, random, files, sockets or process
-operations. A pure Wasm computation needs no host grant. Missing interfaces fail
-linking before start. A Single/Group must be created and explicitly enabled,
-and each imported API needs an explicit --wasip1-{single,group}-interface TARGET API hidden|deny|allow state. The default state is hidden.
-Namespace enablement grants no operation or resource authority. Validation mode
-also checks namespace admission and import signatures without initializing
+Every ROS guest starts with a disabled Global policy: no WASI namespace or host
+imports, stdio objects, argv/environment, clocks, random, files, sockets or
+process authority. A pure Wasm computation needs no host grant. A module without
+a Single/Group binding selects Global; an explicit binding replaces Global
+without inheriting its permissions or environment. Each selected target must
+be enabled and each imported API must have an explicit `hidden|deny|allow`
+state. The default is `hidden`. Namespace enablement grants no operation or
+resource authority. Missing interfaces fail linking before start. Validation
+checks namespace admission and import signatures without initializing
 stdio/providers or running start. Explicit preopen configuration can open its
-approved directory during command-line parsing. Unknown/new modules receive no fallback policy.
-The ROS product accepts only explicit Single/Group WASI bindings; the former
-Global options, per-function expose commands and preload expose/hide switches
-are removed from its command table. Ordinary uwvm retains its separate defaults.
+approved directory during command-line parsing.
+
+Single and Group options take a target name. The corresponding `--wasip1-global-`
+options omit that argument and configure the one shared default environment.
+The obsolete trace and preload expose/hide controls are removed; ordinary uwvm
+retains its separate defaults.
 
 ```bash
 uwvm2-ros --wasm-set-main-module-name main \
@@ -275,13 +279,15 @@ Create a Single target before setting its properties. Its module name must match
 the loaded main/preload identity exactly. A Group must also be created before
 members are added or properties configured. Adding a member does not expose its
 imports; the group's namespace and exact interface states still apply.
-Unknown modules receive no global-default WASI environment.
+Unassigned modules select Global, which is disabled until explicitly enabled.
+`--wasip1-global-add-module` is optional; explicit Single/Group assignments take
+precedence. Group members and Global members share their own environment,
+arguments, descriptors, socket preopens and counters. Different policies share
+none of these resources. A second explicit assignment or duplicate member is
+rejected before Guest start.
 
-The ROS command table has no former global-enable, global-mount, global-argv,
-global-environment or preload host-API expose/hide commands. The remaining
-`--wasip1-global-socket-rights` command is specifically a per-descriptor socket
-rights record; it is not a replacement global WASI permission model.
-Use the exact commands below rather than historical upstream aliases.
+Global has matching grant, environment, descriptor and limit controls; omit the
+target argument used by Single/Group. Socket rights are still per descriptor.
 
 ## Arguments and environment
 
@@ -396,7 +402,7 @@ Explicit Linux CLI SIGINT/SIGTERM delivery to the Source-owned WASI pipe; separa
 ### `--wasi-threads`
 
 ```text
-[--wasi-threads] <max-active> <max-spawns> <native-stack-bytes> <per-child-storage> <per-child-code> <shared-memory-bytes>
+[--wasi-threads] <max-active:count|unlimited> <max-spawns:count|unlimited> <native-stack-bytes> <per-child-storage> <per-child-code> <shared-memory-bytes>
 ```
 
 Select finite WASI Threads quotas; the stack value bounds each Guest AND compiler mapping, including guards.
@@ -633,14 +639,6 @@ Bind a WASI Preview 1 UDP socket for one named group.
 
 Connect a WASI Preview 1 UDP socket for one named group.
 
-### `--wasip1-group-trace`
-
-```text
-[--wasip1-group-trace] <group:str> <none|out|err|file <file:path>>
-```
-
-Route one named group's WASI Preview 1 trace output.
-
 ### `--wasip1-single-add-or-replace-environment`
 
 ```text
@@ -841,14 +839,6 @@ Bind a WASI Preview 1 UDP socket for one single module.
 
 Connect a WASI Preview 1 UDP socket for one single module.
 
-### `--wasip1-single-trace`
-
-```text
-[--wasip1-single-trace] <module:str> <none|out|err|file <file:path>>
-```
-
-Route one single module's WASI Preview 1 trace output.
-
 ### `--wasip1-socket-abi`
 
 ```text
@@ -870,3 +860,17 @@ environment/resources and process ledger; lowering a limit does not erase
 already consumed work. Policy expiration is not an implemented WASI grant
 field: signature/activation-ticket expiry must not be described as automatic
 expiration of an installed guest permission.
+
+
+### Policy-scope resource accounting
+
+The default global policy, each module-specific `single`, and each named
+`group` have independent accounting. Members of one named group share that
+group's environment and quota; different named groups do not spend each other's
+budgets. Identical limit values do not merge independent policies. Group
+membership never grants another module's native handle or memory. ROS1 and
+ROS2 also retain distinct accounting. Omitted ceilings remain unlimited;
+selecting an interface or granting a resource does not install a rate limit.
+Code generation replacement and checkpoint-world cloning preserve an existing
+policy's consumed budget. Closing/retiring resources releases active capacity,
+but does not replenish spent operation/creation credits.

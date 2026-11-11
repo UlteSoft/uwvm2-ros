@@ -40,10 +40,10 @@ byte_vec make(bool wide) {
  for(auto const c:cases) {
   func_body body{};
   auto number=[&](std::int64_t n){append_u8(body.code,wide?0x42:0x41);if(wide)append_i64_leb(body.code,n);else append_i32_leb(body.code,static_cast<std::int32_t>(n));};
-  auto tagged=[&](unsigned p){number(p);number(3);append_u8(body.code,0xfc);append_u8(body.code,static_cast<unsigned>(mt::opcode::insert));append_u8(body.code,0);};
+  auto tagged=[&](unsigned p){number(p);number(3);append_u8(body.code,mt::opcode_prefix);append_u32_leb(body.code,mt::encode_opcode(mt::opcode::insert));append_u8(body.code,0);};
   auto simd=[&](unsigned op){append_u8(body.code,0xfd);append_u32_leb(body.code,op);};
   // The allocation and memory operand deliberately cross a tag granule.
-  tagged(0);number(256);append_u8(body.code,0xfc);append_u8(body.code,static_cast<unsigned>(mt::opcode::store));append_u8(body.code,0);
+  tagged(0);number(256);append_u8(body.code,mt::opcode_prefix);append_u32_leb(body.code,mt::encode_opcode(mt::opcode::store));append_u8(body.code,0);
   if(!c.store)tagged(128);
   tagged(c.store?128:15);
   if(c.consumes_vector) {simd(12);for(unsigned i{};i!=16;++i)append_u8(body.code,0x40+i);}

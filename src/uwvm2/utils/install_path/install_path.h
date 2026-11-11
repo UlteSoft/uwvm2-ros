@@ -81,7 +81,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::install_path
                                         ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_ORANGE),
                                         u8"(vm)\n\n",
                                         ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL));
-                    ::fast_io::fast_terminate();
+                    ::uwvm2::uwvm::io::fast_exit(::uwvm2::uwvm::io::diagnostic_exit_status::invalid_option);
                 }
             }
 #  endif

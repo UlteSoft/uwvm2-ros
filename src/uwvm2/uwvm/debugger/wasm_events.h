@@ -5,7 +5,7 @@
  *************************************************************/
 #pragma once
 #ifndef UWVM_MODULE
-# include <uwvm2/extension/memtag/instruction.h>
+# include <uwvm2/extension/memtag/encoding.h>
 # include <fast_io.h>
 # include <fast_io_dsal/array.h>
 # include <fast_io_dsal/string_view.h>
@@ -110,6 +110,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasm_events
         result.available = true;
         auto add = [&](category value) { result.categories |= static_cast<::std::uint32_t>(value); };
         auto const op{result.primary};
+        if(op == ::uwvm2::extension::memtag::opcode_prefix)
+        {
+            // index < size proved the prefix; the cursor may be one-past and
+            // the shared bounded decoder rejects every truncated/foreign header.
+            auto const* current{expression.data() + index + 1u};
+            auto const decoded{::uwvm2::extension::memtag::scan_opcode(
+                current, expression.data() + expression.size())};
+            if(decoded.error != ::uwvm2::extension::memtag::encoding_error::none) { return {}; }
+            result.extended = decoded.subopcode;
+            result.prefixed = true;
+            add(category::memory_instruction);
+            return result;
+        }
         if(op == 0xfbu || op == 0xfcu || op == 0xfdu || op == 0xfeu)
         {
             if(expression.size() - index <= 1u) { return {}; }
@@ -136,7 +149,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasm_events
                 if(result.extended <= 11u || (result.extended >= 84u && result.extended <= 93u)) { add(category::memory_instruction); }
             }
             else if(op == 0xfeu) { add(category::atomic_instruction); if(result.extended != 3u) { add(category::memory_instruction); } }
-            else if(::uwvm2::extension::memtag::find_instruction(result.extended)!=nullptr) { add(category::memory_instruction); }
+            else if(::uwvm2::extension::memtag::find_instruction(result.extended)!=nullptr) { return {}; }
             else if(result.extended >= 8u && result.extended <= 11u) { add(category::memory_instruction); }
             else if(result.extended >= 12u && result.extended <= 17u) { add(category::table_instruction); }
             return result;

@@ -11,8 +11,8 @@ byte_vec make(bool wide) {
   auto d=atom::describe_atomic_instruction(op);if(d.kind==atom::atomic_instruction_kind::invalid)continue;
   func_body body{};
   auto number=[&](std::int64_t n,bool value_wide){append_u8(body.code,value_wide?0x42:0x41);if(value_wide)append_i64_leb(body.code,n);else append_i32_leb(body.code,static_cast<std::int32_t>(n));};
-  auto tagged=[&](unsigned pointer){number(pointer,wide);number(3,wide);append_u8(body.code,0xfc);append_u8(body.code,static_cast<unsigned>(mt::opcode::insert));append_u8(body.code,0);};
-  tagged(0);number(256,wide);append_u8(body.code,0xfc);append_u8(body.code,static_cast<unsigned>(mt::opcode::store));append_u8(body.code,0);
+  auto tagged=[&](unsigned pointer){number(pointer,wide);number(3,wide);append_u8(body.code,mt::opcode_prefix);append_u32_leb(body.code,mt::encode_opcode(mt::opcode::insert));append_u8(body.code,0);};
+  tagged(0);number(256,wide);append_u8(body.code,mt::opcode_prefix);append_u32_leb(body.code,mt::encode_opcode(mt::opcode::store));append_u8(body.code,0);
   if(op!=3) {
    tagged(1);
    if(op<=2) {

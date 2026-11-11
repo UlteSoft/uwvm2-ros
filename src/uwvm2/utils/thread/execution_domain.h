@@ -54,10 +54,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
         { for(auto* item{host_waiters}; item; item=item->next) { item->wake(item->context); } }
 
 
-        [[nodiscard]] ::std::shared_ptr<execution_lifetime> close_admission()
+        [[nodiscard]] ::std::shared_ptr<execution_lifetime> close_admission_for_stop()
         {
             ::std::lock_guard lock{admission_mutex};
             accepting = false;
+            // Publish the actual cancellation predicate BEFORE notifying a
+            // waiter. A waiter may consume its event immediately and check its
+            // live lease without taking admission_mutex; waking first can make
+            // it park again forever after the sole notification was consumed.
+            // Only true stop/reset paths use this helper. An update fence closes
+            // admission separately and leaves already admitted work running.
+            current->mark_stopping_without_callbacks();
             wake_host_waiters_locked();
             // Copy ownership before dropping the lock: a concurrent reset may
             // retire this generation while a stop callback is still returning.
@@ -298,14 +305,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
         [[nodiscard]] bool request_stop_without_callbacks_owned_transition(maintenance_transition const& transition)
         {
             if(transition.owner_ != this || !transition.lock_.owns_lock()) { return false; }
-            auto generation{close_admission()};
-            generation->mark_stopping_without_callbacks();
+            (void)close_admission_for_stop();
             return true;
         }
 
         void request_stop()
         {
-            auto generation{close_admission()};
+            auto generation{close_admission_for_stop()};
             generation->request_stop();
         }
 
@@ -318,7 +324,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
         void stop_and_drain(StopResources&& stop_resources)
         {
             ::std::unique_lock maintenance{maintenance_mutex};
-            auto generation{close_admission()};
+            auto generation{close_admission_for_stop()};
             generation->request_stop();
             generation->drain();
             ::std::forward<StopResources>(stop_resources)();
@@ -334,7 +340,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
         [[nodiscard]] bool reset_owned_transition(maintenance_transition& transition, ResetResources&& reset_resources)
         {
             if(transition.owner_ != this || !transition.lock_.owns_lock()) { return false; }
-            auto generation{close_admission()};
+            auto generation{close_admission_for_stop()};
             generation->request_stop(); generation->drain();
             ::std::forward<ResetResources>(reset_resources)();
             auto next{::std::make_shared<execution_lifetime>(capacity)};
@@ -429,6 +435,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
                 ::std::lock_guard admission{admission_mutex};
                 if(current.get()!=generation.get() || current.owner_before(generation) || generation.owner_before(current)) { return {}; }
                 accepting=false;generation->mark_stopping_without_callbacks();
+                wake_host_waiters_locked();
             }
             if(!generation->drain_until(deadline)) { return {prepared_drain_status::pending_execution,{}}; }
             {
@@ -528,7 +535,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
         void reset(ResetResources&& reset_resources)
         {
             ::std::unique_lock maintenance{maintenance_mutex};
-            auto generation{close_admission()};
+            auto generation{close_admission_for_stop()};
             // Do not hold the admission lock across cancellation, draining or
             // user cleanup: callbacks may try_enter and must promptly fail closed.
             generation->request_stop();

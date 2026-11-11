@@ -44,7 +44,6 @@
 # include "file.h"
 # include "local_imported.h"
 # include "dl.h"
-# include "weak_symbol.h"
 #endif
 
 #ifndef UWVM_MODULE_EXPORT
@@ -67,11 +66,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::type
         preloaded_dl,  // wasm_dl
 #endif
 
-#if defined(UWVM_SUPPORT_WEAK_SYMBOL)
-                       // Static WASM modules implemented with weak symbols, available across all platforms, specified during linking, primarily for embedded
-                       // environments. Currently, only the module import function is available.
-        weak_symbol,  // wasm_weak_symbol
-#endif
 
         // Local import, uwvm2 is a custom-built module that supports full WASM module functionality through conceptual implementation.
         // Enables custom functionality for complete WASM modules through the parser concept.
@@ -96,10 +90,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::type
         ::uwvm2::uwvm::wasm::type::wasm_dl_t const* wd;
 #endif
 
-#if defined(UWVM_SUPPORT_WEAK_SYMBOL)
-        // weak_symbol
-        ::uwvm2::uwvm::wasm::type::wasm_weak_symbol_t const* wws;
-#endif
 
         // local_import
         // note: This does not use a const pointer because partial member function calls can be made directly from it.
@@ -143,14 +133,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::type
     };
 #endif
 
-#if defined(UWVM_SUPPORT_WEAK_SYMBOL)
-    // weak_symbol
-    struct wasm_weak_symbol_export_t
-    {
-        using wasm_weak_symbol_export_storage_t = ::uwvm2::uwvm::wasm::type::capi_function_t;
-        wasm_weak_symbol_export_storage_t const* storage{};
-    };
-#endif
 
     enum class local_imported_export_type_t : unsigned
     {
@@ -178,10 +160,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::type
         using wasm_dl_export_storage_t = wasm_dl_export_t;
 #endif
 
-#if defined(UWVM_SUPPORT_WEAK_SYMBOL)
-        // weak_symbol
-        using wasm_weak_symbol_export_storage_t = wasm_weak_symbol_export_t;
-#endif
 
         // local_import
         using local_imported_export_storage_t = local_imported_export_t;
@@ -199,12 +177,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::type
             static_assert(::std::is_trivially_copyable_v<wasm_dl_export_storage_t> && ::std::is_trivially_destructible_v<wasm_dl_export_storage_t>);
 #endif
 
-#if defined(UWVM_SUPPORT_WEAK_SYMBOL)
-            // weak_symbol
-            wasm_weak_symbol_export_storage_t wasm_weak_symbol_export_storage_ptr;
-            static_assert(::std::is_trivially_copyable_v<wasm_weak_symbol_export_storage_t> &&
-                          ::std::is_trivially_destructible_v<wasm_weak_symbol_export_storage_t>);
-#endif
 
             // local_import
             local_imported_export_storage_t local_imported_export_storage_ptr;

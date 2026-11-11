@@ -198,7 +198,7 @@ class RealSupervisorCancellation(unittest.TestCase):
             child.chmod(0o700)
             with (root / "broker.log").open("w") as log:
                 broker = subprocess.Popen([sys.executable, str(ROOT/"tools/debug/secure_server.py"),
-                    "serve", "--uwvm", str(child), "--socket-dir", str(root), "--", "--run", "transport-fixture"],
+                    "serve", "--uwvm", str(child), "--socket-dir", str(root), "--", "--debug-permissions", "full", "--run", "transport-fixture"],
                     stdout=log, stderr=subprocess.STDOUT)
                 guest = None
                 try:

@@ -213,6 +213,102 @@ extern "C++"
             }
         }
 #include "uwvm_runtime_wasip1_managed_files.h"
+        // Detached debugger policy data. The caller owns the complete current
+        // cohort; neither host handles nor resource incarnation pointers escape.
+        [[nodiscard]] static view policy_operation(request const& selected, wasip1_env_type& environment)
+        {
+            namespace ws=::uwvm2::uwvm::debugger::wasip1_state;
+            view out{};out.module=selected.module;out.operation=selected.operation;
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            namespace ep=::uwvm2::imported::wasi::wasip1::environment;
+            namespace hi=::uwvm2::utils::control::host_interfaces;
+            ::std::size_t copied_bytes{};bool page_full{};
+            auto entry=[&](::std::string const& key,::std::string const& value)
+            {
+                auto index{out.total_entries++};
+                if(index<selected.first || page_full) { return; }
+                auto bytes{key+"="+value};
+                if(out.strings.size()>=selected.count || bytes.size()>ws::maximum_page_text_bytes-copied_bytes)
+                { page_full=true;out.more=true;return; }
+                ws::text_entry entry{};entry.index=index;
+                for(unsigned char c:bytes) { entry.bytes.push_back(static_cast<char8_t>(c)); }
+                copied_bytes+=bytes.size();out.strings.push_back(::std::move(entry));out.next=index+1u;
+            };
+            // The page byte budget is a transport boundary, not a limit on
+            // configured group identities. Long values remain reachable as
+            // explicit byte fragments instead of a zero-progress "more" page.
+            auto row=[&](::std::string const& key,::std::string const& value)
+            {
+                if(key.size()+1u+value.size()<=ws::maximum_page_text_bytes) { entry(key,value);return; }
+                entry(key+".bytes-total",::std::to_string(value.size()));
+                for(::std::size_t offset{};offset<value.size();)
+                {
+                    auto const count{(::std::min)(::std::size_t{2048u},value.size()-offset)};
+                    entry(key+".fragment."+::std::to_string(offset),value.substr(offset,count));offset+=count;
+                }
+            };
+            out.next=selected.first;
+            auto number=[&](::std::string const& key,::std::uint64_t value) { row(key,::std::to_string(value)); };
+            auto limit=[&](::std::string const& key,::std::uint64_t value) { row(key,value==ep::unlimited?"unlimited" : ::std::to_string(value)); };
+            number("environment.identity",environment.debug_trace_identity);
+            row("group.kind",environment.trace_wasip1_group_kind==ep::trace_wasip1_group_kind_t::global?"global":
+                environment.trace_wasip1_group_kind==ep::trace_wasip1_group_kind_t::single?"single":"group");
+            row("group.name",{reinterpret_cast<char const*>(environment.trace_wasip1_group_name_storage.data()),environment.trace_wasip1_group_name_storage.size()});
+            for(::std::size_t i{};i<g_runtime.modules.size();++i)
+            { if(is_wasip1_import_visible_for_runtime_module_id_slow(i) &&
+                 ::std::addressof(resolve_wasip1_env_for_runtime_module_id(i))==::std::addressof(environment))
+                { number("group.member."+::std::to_string(i),i); } }
+            row("interface.enabled",environment.interface_enabled?"true":"false");
+            row("socket.abi",environment.wasix_socket_abi?"wasix":"wasip1");
+            row("utf8.validation",environment.disable_utf8_check?"disabled":"enabled");
+            for(::std::size_t i{};i<hi::catalogue.size();++i)
+            { if(hi::catalogue[i].group==hi::family::wasip1)
+                { row("interface."+::std::string(hi::catalogue[i].function),::std::string(hi::name(environment.interfaces.entries[i]))); } }
+            constexpr char const* grants[]{"clock-realtime","clock-monotonic","clock-process","clock-thread","random","proc-raise","sched-yield","stdio-full-rights","stdin-read","stdout-write","stderr-write","stdio-metadata","stdio-readiness","args","environ","proc-exit","thread-spawn","realtime-resolution","monotonic-resolution","process-resolution","thread-resolution","realtime-timer","monotonic-timer","process-timer","thread-timer"};
+            for(unsigned i{};i<::std::size(grants);++i)
+            { row("grant."+::std::string(grants[i]),environment.permits(static_cast<ep::permission_t>(::std::uint32_t{1u}<<i))?"allow":"deny"); }
+            limit("fd.limit",environment.fd_storage.fd_limit);
+            limit("poll.max-subscriptions",environment.limits.max_poll_subscriptions);
+            limit("poll.max-wait-ns",environment.limits.max_poll_wait_ns);
+            limit("args-env.max-bytes",environment.limits.max_args_env_bytes);
+            number("filesystem.base-rights",environment.limits.filesystem_base_rights);
+            number("filesystem.inheriting-rights",environment.limits.filesystem_inheriting_rights);
+            constexpr char const* clocks[]{"realtime","monotonic","process","thread"};
+            for(unsigned i{};i<4u;++i) { number("clock."+::std::string(clocks[i])+".granularity-ns",environment.limits.clock_granularity_ns[i]); }
+            auto const& ledger{environment.limits.accounting};
+            if(!ledger) { out={};out.module=selected.module;out.operation=selected.operation;out.result=status::unavailable_environment;return out; }
+            ::std::unique_lock accounting_lock{ledger->mutex,::std::try_to_lock};
+            if(!accounting_lock.owns_lock()) { out={};out.module=selected.module;out.operation=selected.operation;out.result=status::unavailable_foreign_host_state;return out; }
+            constexpr char const* budgets[]{"random","stdin","stdout","stderr","realtime","monotonic","process","thread","poll","signal","yield","filesystem","socket-read","socket-write","socket-accept","socket-shutdown"};
+            constexpr char const* fields[]{"request-bytes","window-bytes","window-calls","total-bytes","total-calls","concurrent"};
+            for(unsigned i{};i<::std::size(budgets);++i)
+            {
+                auto const prefix{"quota."+::std::string(budgets[i])+"."};auto const& policy{environment.limits.operations[i]};
+                ::std::uint64_t const values[]{policy.request_bytes,policy.window_bytes,policy.window_calls,policy.total_bytes,policy.total_calls,policy.concurrent};
+                for(unsigned j{};j<6u;++j)
+                {
+                    auto const key{prefix+fields[j]};limit(key,values[j]);
+                    row(key+".on-limit",policy.actions[j]==ep::limit_action::wait?"wait":"reject");
+                    row(key+".on-exit",policy.exit_actions[j]==ep::exit_wait_action::wait?"wait":"cancel");
+                }
+                row(prefix+"native-wait.on-exit",policy.native_wait_exit_action==ep::exit_wait_action::wait?"wait":"cancel");
+                auto const& counter{ledger->counters[i]};
+                number(prefix+"used.window-bytes",counter.window_bytes);number(prefix+"used.window-calls",counter.window_calls);
+                number(prefix+"used.total-bytes",counter.total_bytes);number(prefix+"used.total-calls",counter.total_calls);number(prefix+"used.active",counter.active);
+            }
+            // Live FD rights and paths are separately paged by fds/preopens;
+            // this list describes the immutable approved socket capabilities.
+            for(auto const& socket:environment.socket_rights)
+            {
+                auto const prefix{"socket."+::std::to_string(socket.fd)+"."};
+                number(prefix+"base-rights",static_cast<::std::uint64_t>(socket.base));
+                number(prefix+"inheriting-rights",static_cast<::std::uint64_t>(socket.inheriting));
+            }
+            out.result=status::ok;return out;
+#else
+            out.result=status::not_selected;return out;
+#endif
+        }
         [[nodiscard]] static view descriptor_operation(request const& selected, wasip1_env_type& environment) noexcept
         {
             namespace ws = ::uwvm2::uwvm::debugger::wasip1_state;
@@ -313,9 +409,16 @@ extern "C++"
             // an empty counted gate/current exposure=false cannot revoke them.
             // This cold current source census is required BEFORE env/FD/text
             // reads or mutation, in addition to genuine outer ALL/host/N/pub.
-            if(!::uwvm2::uwvm::runtime::full::full_source_instance::has_canonical_owner(publication->source) ||
-               !publication->source->actual_no_unadapted_native_memory_provider(id,current_runtime_generation(),record.runtime_module))
+            if(!::uwvm2::uwvm::runtime::full::full_source_instance::has_canonical_owner(publication->source))
             { out.result=status::unavailable_foreign_host_state;return out; }
+            // Pure live inspection accepts the exact finalized builtin WASI/ROS
+            // census under the outer closed-host/ALL-stop/publication proof.
+            // Native plugins still fail that census. State changes retain the
+            // stricter WASI-only adapter contract; this grants no restore right.
+            bool const qualified{ws::is_mutation(selected.operation) ?
+                publication->source->actual_no_unadapted_native_memory_provider(id,current_runtime_generation(),record.runtime_module) :
+                publication->source->actual_debug_memory_provider_census(id,current_runtime_generation(),record.runtime_module)};
+            if(!qualified) { out.result=status::unavailable_foreign_host_state;return out; }
             auto& environment{resolve_wasip1_env_for_runtime_module_id(id)};
             auto* arguments{::std::addressof(storage::wasip1_argument_storage)};
             auto* variables{::std::addressof(storage::wasip1_environment_storage)};
@@ -336,6 +439,7 @@ extern "C++"
             }
             switch(selected.operation)
             {
+                case action::policy: out=policy_operation(selected,environment);break;
                 case action::arguments: case action::replace_argument: case action::insert_argument: case action::remove_argument:
                     out = text_operation(selected, *arguments, environment.argv); break;
                 case action::environment: case action::set_environment: case action::remove_environment:
@@ -353,6 +457,7 @@ extern "C++"
                 case action::descriptors: case action::preopens: case action::reduce_rights:
                     out = descriptor_operation(selected, environment); break;
             }
+            out.environment_identity=environment.debug_trace_identity;
             out.shared_environment = aliases > 1u; out.observed_runtime_epoch = current_runtime_generation();
             return out;
 #else

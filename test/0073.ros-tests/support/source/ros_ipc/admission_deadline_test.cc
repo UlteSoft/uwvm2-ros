@@ -1,4 +1,4 @@
-#include "../../../../../src/ros/gateway/common/server.h"
+#include <gateway/common/server.h>
 #include <cstdlib>
 #include <new>
 #include <iostream>

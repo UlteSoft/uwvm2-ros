@@ -1,0 +1,1 @@
+(module (type $s (struct (field f64))) (func (export "_start") (local $x (ref null $s)) i64.const 0x7ff0000000000001 f64.reinterpret_i64 struct.new $s local.set $x local.get $x struct.get $s 0 i64.reinterpret_f64 i64.const 0x7ff0000000000001 f64.reinterpret_i64 i64.reinterpret_f64 i64.ne if unreachable end))

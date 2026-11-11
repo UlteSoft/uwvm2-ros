@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src __CSP__; script-src 'nonce-__NONCE__';">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="stylesheet" href="__CSS__"><title>Wasm instructions</title></head>
+<body>
+<header><div id="identity">Wasm instructions</div>
+<form id="jump"><label for="address">Offset</label><input id="address" placeholder="0x…" aria-label="Wasm byte offset"><button type="submit">Go</button></form></header>
+<div id="status" role="status">Waiting for the current stopped frame…</div>
+<div id="listing" role="region" aria-label="Wasm disassembly">
+<div id="rail" aria-label="Fixed instruction addresses"><div id="rail-rows"></div></div>
+<div id="code" tabindex="0" role="grid" aria-label="Wasm instruction list" aria-readonly="true"><div id="space"><div id="code-rows"></div></div></div>
+</div>
+<div id="notice" role="status"></div><div id="hover" role="tooltip" hidden></div>
+<script nonce="__NONCE__" src="__SCRIPT__"></script></body></html>

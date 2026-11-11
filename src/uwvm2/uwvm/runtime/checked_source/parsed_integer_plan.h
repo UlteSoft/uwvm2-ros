@@ -161,9 +161,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::checked_source
 #if defined(UWVM_SUPPORT_PRELOAD_DL)
             if(!wasm::storage::preloaded_dl.empty()) { return {}; }
 #endif
-#if defined(UWVM_SUPPORT_WEAK_SYMBOL)
-            if(!wasm::storage::weak_symbol.empty()) { return {}; }
-#endif
             // Native file/read/quota/allocation failure is compiler resource
             // unavailability. It never writes a Wasm validation error, mints a
             // validity seal or falls back to a mutable mapped source.

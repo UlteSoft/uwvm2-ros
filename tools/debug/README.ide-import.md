@@ -1,6 +1,6 @@
 # Import a host-owned IDE debug project
 
-Debugger permission levels are `full`, `read-only`, `limited` and `none`, selected only at launch. `-Rdbg` defaults to `full`; other launches default to `limited`. See [Debugger permissions](../../documents/command-line/debug-permissions.md) for dump redaction, independent update authority and IDE negotiation.
+Debugger permission levels are `full`, `read-only`, `limited` and `none`, selected only at launch. `-Rdbg` and `-m debug` (including their long spellings) default to `full`; other launches default to `limited`. See [Debugger permissions](../../documents/command-line/debug-permissions.md) for dump redaction, independent update authority and IDE negotiation.
 
 `import_ide.py` creates isolated debug configurations for VS Code, Cursor,
 Neovim, the UWVM JetBrains bridge and the UWVM NetBeans bridge. Automatic editor
@@ -9,9 +9,15 @@ selects either a local adapter or an adapter carried
 over authenticated SSH standard input/output. It never adds WASI or ROS grants,
 starts a public DAP listener, or copies a broker capability into a project.
 
-The importer currently targets Unix hosts. The existing Windows named-pipe
-adapter remains available through [manual configuration](README.dap.md).
-For remote profiles, the target broker runs on Linux.
+Local profiles reuse the Python interpreter running the importer unless
+`transport.python` selects another installed interpreter. Remote profiles keep
+the target-host Python path separate. SSH uses the installed OpenSSH executable
+(or an explicit `transport.ssh`), including on Windows and macOS.
+
+The current `socketDir` profile describes a Unix broker; it is not a Windows
+named-pipe profile. The existing Windows named-pipe adapter remains available
+through [manual configuration](README.windows.md). For remote profiles, the
+target broker runs on Linux.
 
 ## Prepare a profile
 
@@ -53,6 +59,12 @@ file extension or selected IDE. Use `import_ide.py broker --profile ...` to
 launch this profile. Generated Code/Cursor configurations also offer that broker
 command as their background pre-launch task.
 
+For an explicit terminal-fault pause, place `--debug-fault-action pause` before
+`--run` in the exact runtime argument array. Omitting it preserves the default
+`crash` policy; `--debug-fault-action exit` selects stable statuses for classified
+Wasm faults. The importer and host brokers reject the removed `--debug` spelling;
+they do not rewrite old profiles or add a pause, dump, recovery or permission.
+
 A `sourceMap` maps real compiler path prefixes to local source roots. Only add
 mappings required by that compiler. It does not authorize arbitrary host reads.
 For native compiler limitations, see
@@ -79,10 +91,19 @@ a generic `dap.json`, and a normalized profile. It leaves the project's
 changing generated files requires `--replace`. Do not place this directory
 inside a guest-mounted host tree.
 
+Replacing a full/read-only/limited profile with `none` also removes the six
+known generated JetBrains and NetBeans attach files. Unknown project files are
+retained; symlinks and non-owned outputs are rejected before cleanup.
+
 Code/Cursor start with this repository's debug extension loaded. Choose one of
 the source, Wasm or native configurations. In Neovim, use `:UwvmAttach source`,
 `:UwvmAttach wasm` or `:UwvmAttach native`; see
 [Neovim commands](README.neovim.md).
+
+Code/Cursor also offer separate [inspection windows](README.gui.md) for memory
+read/edit, colored allocation tags, native registers, WASI policy/environment,
+and ROS policy/internal state. Every window shows the authenticated permission
+or a concrete disabled/unavailable reason.
 
 ## Remote transport
 
@@ -154,3 +175,64 @@ the first reply, not a permission quota. IDE Cancel, Disconnect, stdin closure,
 or peer exit interrupts a pending attach. Once a command has been forwarded,
 cancellation retires that original launch and its private endpoint, so a late
 unsequenced reply cannot satisfy a later client's command.
+
+
+Module deployment is separate from IDE debugging. The old `rebuild` and
+`rebuild-module` console commands are rejected by both the DAP adapter and VM,
+even at full debug permission. Provision the independent signed update
+coordinator for an approved deployment transaction; importing an IDE profile
+never creates that authority or automatically repairs a faulted instance.
+
+## Independent update transport, including none
+
+An optional top-level `updateSocketDir` names a separate private update relay on
+the Linux VM host. The existing deployment public key, contract, scope and other
+signed-update arguments still belong in the exact `runtime.arguments` array.
+The importer never invents or grants those values.
+
+With `debugPermissions: "none"`, this option launches only the independent update
+relay. No debug socket/capability is created and no attach configurations are
+emitted. The background task waits for `update server:`. Without this option,
+none continues to run the authorized VM directly.
+
+Forward an existing VM-host frame through either a local or verified SSH profile:
+
+```sh
+python3 /absolute/uwvm2-ros/tools/debug/import_ide.py update \
+  --profile /home/operator/private/robot-debug.json \
+  --frame /absolute/path/on/vm-host/request.uup1
+```
+
+`signed-update` is an alias of `update`. The same profile can be selected in the
+[separate hot-update window](README.gui.md#independent-authorized-hot-updates).
+It works with none and opens no network DAP/update listener. Remote frame paths
+are quoted individual arguments to the remote `signed_update.py`; host-key and
+authentication policy remain unchanged. Active debug profiles retain
+`updateSocketDir` in generated attach configurations for DAP forwarding.
+No route signs, retries, automatically commits or resumes.
+
+### Entry and reconnect behavior
+
+An imported profile with `runtime` starts a host-owned broker and defaults to
+`stopOnEntry: false`. It runs after breakpoint configuration unless the initial
+instruction has a breakpoint. Set `stopOnEntry: true` to inspect before the first
+instruction. A profile attaching to an existing broker defaults to true.
+Existing breakpoint, fault and user-pause stops are preserved in either case.
+Explicit read-only/limited permission prevents automatic continue. The IDE's
+Restart reconnects this attach session; starting a fresh VM is a separate host
+launch action.
+
+### Host interpreter and SSH executables
+
+A local profile without `transport.python` reuses the Python interpreter running
+the importer. An SSH profile's Python path belongs to the remote host and still
+defaults to `/usr/bin/python3`. The local OpenSSH executable is resolved from the
+existing host installation or explicitly selected with `transport.ssh`; a Windows
+client is not given a Linux `/usr/bin/ssh` path. Host-key verification, batch
+authentication and disabled forwarding remain mandatory.
+
+The independent update window reuses an absolute Python path from an active debug
+configuration when available. Otherwise Windows asks for an installed executable;
+it does not fabricate a Unix path or install Python. Native Windows named-pipe
+attachment remains distinct from Unix/SSH socket-directory profiles; see
+[Windows host broker](README.windows.md).

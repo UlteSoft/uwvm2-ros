@@ -68,6 +68,7 @@ module;
 #  include <llvm/IR/Constants.h>
 #  include <llvm/IR/Function.h>
 #  include <llvm/IR/IRBuilder.h>
+#  include <llvm/IR/MDBuilder.h>
 #  include <llvm/IR/InlineAsm.h>
 #  include <llvm/IR/Intrinsics.h>
 #  include <llvm/IR/LLVMContext.h>
@@ -108,6 +109,7 @@ import uwvm2.runtime.compiler.llvm_jit.compile_all_from_uwvm.translate.memtag_en
 import uwvm2.runtime.memtag.bridge;
 import uwvm2.runtime.memtag.wait;
 import uwvm2.extension.memtag.instruction;
+import uwvm2.extension.memtag.encoding;
 import uwvm2.runtime.compiler.llvm_jit.compile_all_from_uwvm.translate.memtag_check_ir;
 
 import uwvm2.validation.standard.wasm3.relaxed_simd;

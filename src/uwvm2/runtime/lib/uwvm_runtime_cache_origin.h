@@ -32,8 +32,8 @@ extern "C++"
             {
                 // No Root publication lock or mutable provider/FD re-read here:
                 // parallel workers run while their parent holds that very lock.
-                // Only this real ticket's live lease + immutable closed-capability
-                // census survive the short cold constructor below.
+                // Only this real ticket's live lease + initializer-sealed provider
+                // bindings survive the short cold constructor below.
                 return generation && !generation.stop_requested() && epoch == current_runtime_generation() &&
                     ::uwvm2::runtime::llvm_jit_cache::kernel_origin::dumping_disabled() &&
                     source::has_canonical_owner(original) && original->initialized_from_actual_state();
@@ -41,86 +41,6 @@ extern "C++"
         };
         inline static thread_local batch* current_{};
 
-#if !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1) && defined(UWVM_IMPORT_WASI_WASIP1)
-        /// @brief Report the rejected authority class without logging paths or secrets.
-        [[nodiscard]] static bool refuse_wasi(::std::u8string_view reason, ::std::size_t index = SIZE_MAX, int error = 0) noexcept
-        {
-            if(index == SIZE_MAX)
-            {
-                ::uwvm2::runtime::llvm_jit_cache::details::runtime_cache_log_line(
-                    u8"origin-admission-refused stage=wasi-environment reason=", reason, u8" errno=", error);
-            }
-            else
-            {
-                ::uwvm2::runtime::llvm_jit_cache::details::runtime_cache_log_line(
-                    u8"origin-admission-refused stage=wasi-environment reason=", reason,
-                    u8" standard-descriptor=", index, u8" errno=", error);
-            }
-            return false;
-        }
-        [[nodiscard]] static bool safe_environment(wasip1_env_type& environment) noexcept
-        {
-            namespace storage = ::uwvm2::uwvm::imported::wasi::wasip1::storage;
-            namespace fd = ::uwvm2::imported::wasi::wasip1::fd_manager;
-            if(!environment.mount_dir_roots.empty()) { return refuse_wasi(u8"preopened-filesystem-namespace"); }
-            if(environment.trace_wasip1_call || !environment.trace_wasip1_output_file_path_storage.empty())
-            { return refuse_wasi(u8"wasi-tracing"); }
-            if(environment.debug_console_read || environment.debug_console_write || environment.debug_fd_created || environment.debug_io_observed)
-            { return refuse_wasi(u8"debugger-callback"); }
-            if(environment.wasip1_proc_exit_func_ptr != storage::uwvm_wasip1_proc_exit_func_ptr_overload ||
-               environment.wasip1_proc_raise_func_ptr || environment.wasip1_sched_yield_func_ptr ||
-               environment.wasip1_memory_resolver != storage::resolve_current_wasip1_memory)
-            { return refuse_wasi(u8"noncanonical-native-callback"); }
-#if defined(UWVM_IMPORT_WASI_WASIP1_SUPPORT_SOCKET)
-            if(!environment.preopen_sockets.empty()) { return refuse_wasi(u8"preopened-socket"); }
-#endif
-            auto& map{environment.fd_storage};
-            ::uwvm2::utils::mutex::rw_shared_guard_t maps{map.fds_rwlock};
-            // First cold full publication has not executed Guest code. Reject
-            // unknown/renumbered/extra FD graphs, not only CLI mount strings.
-            if(map.opens.size() != 3u || !map.renumber_map.empty() || !map.closes.empty())
-            { return refuse_wasi(u8"noncanonical-descriptor-graph"); }
-            for(::std::size_t index{}; index != 3u; ++index)
-            {
-                auto* cell{map.opens.index_unchecked(index).fd_p};
-                if(cell == nullptr || cell->wasi_fd.ptr == nullptr || cell->close_pos != SIZE_MAX)
-                { return refuse_wasi(u8"noncanonical-descriptor-cell", index); }
-                ::uwvm2::utils::mutex::mutex_guard_t locked{cell->fd_mutex};
-                auto const& storage{cell->wasi_fd.ptr->wasi_fd_storage};
-                if(storage.type != fd::wasi_fd_type_e::file) { return refuse_wasi(u8"borrowed-or-directory-descriptor", index); }
-                int const handle{storage.storage.file_fd.native_handle()};
-                auto const classification{::uwvm2::runtime::llvm_jit_cache::stdio_admission::inspect(handle)};
-                if(!classification.admitted) { return refuse_wasi(classification.reason, index, classification.system_error); }
-            }
-            return true;
-        }
-        [[nodiscard]] static bool safe_wasi_environments() noexcept
-        {
-            namespace storage = ::uwvm2::uwvm::imported::wasi::wasip1::storage;
-            if(::uwvm2::uwvm::wasm::storage::preload_expose_wasip1_host_api) { return refuse_wasi(u8"exposed-native-host-api"); }
-            if(!safe_environment(storage::default_wasip1_env)) { return false; }
-            for(auto& configured : storage::configured_wasip1_groups)
-            {
-                if(configured.expose_host_api) { return refuse_wasi(u8"exposed-group-native-host-api"); }
-                if(!configured.mount_dir_roots.empty()) { return refuse_wasi(u8"group-filesystem-namespace"); }
-                if(configured.trace_wasip1_call || !configured.trace_wasip1_output_file_path_storage.empty())
-                { return refuse_wasi(u8"group-wasi-tracing"); }
-#if defined(UWVM_IMPORT_WASI_WASIP1_SUPPORT_SOCKET)
-                if(!configured.preopen_sockets.empty()) { return refuse_wasi(u8"group-preopened-socket"); }
-#endif
-                if(!safe_environment(configured.env)) { return false; }
-            }
-            // Check the actual per-module env binding too: it may differ from
-            // the default/Single/Group configuration that initialized it.
-            if(g_wasip1_runtime_module_context_cache.size() != g_runtime.modules.size()) { return refuse_wasi(u8"module-environment-count"); }
-            for(auto const& actual : g_wasip1_runtime_module_context_cache)
-            {
-                if(actual.env == nullptr) { return refuse_wasi(u8"missing-module-environment"); }
-                if(!safe_environment(*actual.env)) { return false; }
-            }
-            return true;
-        }
-#endif
         [[nodiscard]] static ::std::shared_ptr<state> mint(compiled_module_record const& record) noexcept
         {
             namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
@@ -132,8 +52,7 @@ extern "C++"
                g_runtime.bridges_initialized.load(::std::memory_order_acquire) ||
                mode::global_runtime_mode != mode::runtime_mode_t::full_compile ||
                mode::global_runtime_compiler != mode::runtime_compiler_t::llvm_jit_only ||
-               g_runtime.debug_pause_control || g_runtime.checkpoint_profile || g_runtime.modules.size() != 1u ||
-               &g_runtime.modules.index_unchecked(0u) != &record || !record.llvm_jit_full_publication ||
+               g_runtime.debug_pause_control || g_runtime.checkpoint_profile || !record.llvm_jit_full_publication ||
                record.llvm_jit_full_publication->checkpoint_profile || record.llvm_jit_full_publication->plan)
             {
                 ::uwvm2::runtime::llvm_jit_cache::details::runtime_cache_log_line(
@@ -147,19 +66,20 @@ extern "C++"
                     u8" checkpoint=", static_cast<bool>(g_runtime.checkpoint_profile), u8" modules=", g_runtime.modules.size());
                 return {};
             }
-#if defined(UWVM2_HAS_THREADED_PROFILE_HOST_API) && UWVM2_HAS_THREADED_PROFILE_HOST_API
-            if(runtime_threaded_profile_builtin_requested_host_api())
-            {
-                ::uwvm2::runtime::llvm_jit_cache::details::runtime_cache_log_line(u8"origin-admission-refused stage=threaded-profile");
-                return {};
-            } // real atomic, never Root-lock recursion
-#endif
+            // Merely configuring WASI threads does not start a guest. The
+            // caller's actual cold preparation exclusion prevents Group launch
+            // throughout this batch, in addition to the generation/publication
+            // checks above. Keep child-world compilation out of this issuer:
+            // it cannot satisfy ordinary entry/publication and uncompiled state.
+
             auto original{::uwvm2::uwvm::runtime::full::selected_full_source_owner_pin()};
             auto const* module{record.runtime_module};
+            auto const id{original ? original->bound_initialized_module_id(module) : SIZE_MAX};
             if(!source::has_canonical_owner(original) || !original->initialized_from_actual_state() ||
-               module == nullptr || original->initialized_main_module() != module || original->preloaded_file_count() != 0u ||
+               module == nullptr || id >= g_runtime.modules.size() ||
+               &g_runtime.modules.index_unchecked(id) != &record ||
+               original->bound_initialized_file(id, module) == nullptr ||
                &original->registry() != &::uwvm2::uwvm::runtime::storage::active_runtime_registry() ||
-               original->registry().size() != 1u ||
                record.llvm_jit_full_publication->source.get() != original.get() ||
                record.llvm_jit_full_publication->source.owner_before(original) ||
                original.owner_before(record.llvm_jit_full_publication->source))
@@ -170,24 +90,17 @@ extern "C++"
                     u8" preloads=", original ? original->preloaded_file_count() : 0u);
                 return {};
             }
-            auto const census{original->actual_cache_native_provider_census()};
-            if(census == source::cache_native_provider_census::unsafe)
+            if(!original->has_current_cache_provider_bindings())
             {
-                ::uwvm2::runtime::llvm_jit_cache::details::runtime_cache_log_line(u8"origin-admission-refused stage=native-provider-census");
+                ::uwvm2::runtime::llvm_jit_cache::details::runtime_cache_log_line(u8"origin-admission-refused stage=native-provider-bindings");
                 return {};
             }
-#if !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1) && defined(UWVM_IMPORT_WASI_WASIP1)
-            if(census == source::cache_native_provider_census::builtin_wasip1 && !safe_wasi_environments())
-            {
-                return {};
-            }
-#else
-            if(census != source::cache_native_provider_census::no_native && census != source::cache_native_provider_census::builtin_ros)
-            {
-                ::uwvm2::runtime::llvm_jit_cache::details::runtime_cache_log_line(u8"origin-admission-refused stage=unsupported-provider");
-                return {};
-            }
-#endif
+            // FDs, preopens, quotas, arguments, environment and driver behavior
+            // are current runtime state. Generated imports resolve through the
+            // current module and canonical bridges; no prior capability enters
+            // an object. Their contents neither grant cache-origin authority nor
+            // disqualify this genuine cold compilation. Generation-bound plans
+            // and debugger pointers are excluded before this scope is created.
             // Admission is acquired while the actual outer entry is still
             // admitted. It may now fail during stop: that is a cache miss,
             // never a fabricated private generation or a compile fallback.

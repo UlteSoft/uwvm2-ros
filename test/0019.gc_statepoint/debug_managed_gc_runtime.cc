@@ -75,6 +75,14 @@ int main(int argc, char** argv)
 
     REQUIRE(selection == "debug" || selection == "normal");
     bool const debug{selection == "debug"};
+    // This fixture requests full inspection before Source/launch sealing,
+    // exactly as an explicitly authorized -Rdbg launch does.
+    if(debug)
+    {
+        REQUIRE(::uwvm2::utils::control::debug_permissions::configure_trusted_launch(
+            ::uwvm2::utils::control::debug_permissions::permission_level::full));
+    }
+
     gc::scoped_cli_gc_execution actual_cli{};
     mode::global_runtime_mode = mode::runtime_mode_t::full_compile;
     mode::global_runtime_compiler = mode::runtime_compiler_t::llvm_jit_only;

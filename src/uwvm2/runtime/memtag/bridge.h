@@ -9,6 +9,7 @@
 # include <concepts>
 # include <cstddef>
 # include <cstdint>
+# include <cstring>
 # include <memory>
 # include <span>
 # include <type_traits>
@@ -18,6 +19,7 @@
 # include <uwvm2/extension/memtag/operations.h>
 # include "random.h"
 # include "native_pointer.h"
+# include "deferred.h"
 #endif
 #ifndef UWVM_MODULE_EXPORT
 # define UWVM_MODULE_EXPORT
@@ -36,6 +38,85 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
 
     namespace details
     {
+        // Keep logging and host I/O out of the private integer checker's
+        // inline budget. This cold path still proves the whole span first.
+        template<bool Guest,typename View,typename Address>
+        [[nodiscard,gnu::noinline,gnu::cold]] inline auto check_view_logged(
+            View const& view,Address pointer,::std::uint64_t offset,
+            ::std::uint64_t bytes,::std::uint64_t memory_index) noexcept
+        {
+            auto result{view.bounds(pointer,offset,bytes)};
+            if(!result) { return result; }
+            ::std::uint64_t done{};
+            while(done!=bytes)
+            {
+                auto const remaining{16u-((result.address+done)&15u)};
+                auto const chunk{bytes-done<remaining ? bytes-done:remaining};
+                auto checked{view.check(pointer,offset+done,chunk)};
+                checked=deferred::defer_if_requested(checked,pointer,memory_index,Guest);
+                if(!checked) { return checked; }
+                done+=chunk;
+            }
+            return result;
+        }
+        // The private interpreter emitter owns this three-u64 native bytecode
+        // prefix. Decode it only on failure, while the complete owner span is
+        // still pinned. No Guest address can supply or change this provenance.
+        template<bool Guest,typename View,typename Address>
+        [[nodiscard,gnu::noinline,gnu::cold]] inline ::uwvm2::extension::memtag::access_error check_view_with_origin(
+            View const& view,Address pointer,::std::uint64_t offset,::std::uint64_t bytes,
+            ::std::uint64_t memory_index,::uwvm2::extension::memtag::access_result const& initial,
+            ::std::byte const* encoded) noexcept
+        {
+            namespace mt=::uwvm2::extension::memtag;
+            if(!encoded) { return mt::access_error::memory_not_representable; }
+            auto result{initial};
+            ::std::uint64_t location[3]{};
+            ::std::memcpy(location,encoded,sizeof(location));
+            if(!mt::logging_requested())
+            {
+                if constexpr(Guest)
+                {
+                    deferred::record_llvm_at(memory_index,pointer,result.mismatch_granule,
+                        result.pointer_tag,result.allocation_tag,location[0],location[1],location[2]);
+                    result.error=mt::access_error::none;
+                }
+                return result.error;
+            }
+            result=view.bounds(pointer,offset,bytes);
+            if(!result) { return result.error; }
+            ::std::uint64_t done{};
+            while(done!=bytes)
+            {
+                auto const remaining{16u-((result.address+done)&15u)};
+                auto const chunk{bytes-done<remaining ? bytes-done:remaining};
+                auto checked{view.check(pointer,offset+done,chunk)};
+                if(checked.error==mt::access_error::tag_mismatch)
+                {
+                    deferred::record_llvm_at(memory_index,pointer,checked.mismatch_granule,
+                        checked.pointer_tag,checked.allocation_tag,location[0],location[1],location[2]);
+                }
+                else if(!checked) { return checked.error; }
+                done+=chunk;
+            }
+            return result.error;
+        }
+        template<bool Guest,typename View,typename Address>
+        [[nodiscard,gnu::always_inline]] inline auto check_view(View const& view,Address pointer,
+            ::std::uint64_t offset,::std::uint64_t bytes,::std::uint64_t memory_index,
+            ::std::uint8_t comparison_mask=0xffu) noexcept
+        {
+            namespace mt=::uwvm2::extension::memtag;
+            auto result{view.check(pointer,offset,bytes,comparison_mask)};
+            // The complete normal proof is also the no-violation log fast path.
+            // Only a mismatch needs the cold per-granule reporting walk; bounds
+            // failures still return unchanged before any pointer is formed.
+            if(result.error==mt::access_error::tag_mismatch && mt::logging_requested()) [[unlikely]]
+            { return check_view_logged<Guest>(view,pointer,offset,bytes,memory_index); }
+            if constexpr(Guest)
+            { result=deferred::defer_if_requested(result,pointer,memory_index); }
+            return result;
+        }
         // The enclosing execution lease owns Memory. Imports resolve to this
         // same native owner before entry; a module index is never an identity.
         // A callback may neither retain a span/pointer nor invoke guest code or
@@ -70,16 +151,55 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
         }
     }
 
+    namespace details
+    {
+        // Equivalent to with_snapshot + a private tag lease, flattened for the
+        // interpreter register-ring handler. mmap pins its stable reservation;
+        // the live acquired length and complete bounds/tag proof still precede
+        // pointer formation. A private tag lease does not acquire a lock.
+        template<::std::unsigned_integral Address,bool Guest,typename Memory,typename Function>
+        [[nodiscard,gnu::always_inline]] inline auto with_private_origin_access(
+            Memory const& memory,Address pointer,::std::uint64_t offset,::std::uint64_t bytes,
+            Function&& function,::std::byte const* encoded_origin) noexcept
+        {
+            namespace mt=::uwvm2::extension::memtag;
+            static_assert(Memory::can_mmap);
+            static_assert(::std::is_nothrow_invocable_r_v<void,Function,::std::span<::std::byte>>);
+            if constexpr(Guest) { deferred::poll(); }
+            if(!configured<Address,false>(memory))
+            { return mt::access_result{.error=mt::access_error::memory_not_representable}; }
+            auto const length{memory.memory_length_p?memory.memory_length_p->load(::std::memory_order_acquire):0u};
+            auto const view{memory.memtag_shadow.template view<Address,false>(length)};
+            auto result{view.check(pointer,offset,bytes)};
+            if(result.error==mt::access_error::tag_mismatch) [[unlikely]]
+            {
+                // Returning only the error keeps the original proved address
+                // in SSA; the cold reporter never chooses an access address.
+                result.error=check_view_with_origin<Guest>(view,pointer,offset,bytes,
+                    memory.diagnostic_owner_memory_index,result,encoded_origin);
+            }
+            if(result)
+            { ::std::forward<Function>(function)(::std::span<::std::byte>{native_pointer_unlocked(memory,result),static_cast<::std::size_t>(bytes)}); }
+            return result;
+        }
+    }
     // Full-width offsets/lengths are preserved even on 32-bit hosts. The callback
     // receives only the proven byte range, and only while the memory is pinned.
     // It must perform host work synchronously and must not retain the span.
-    template<::std::unsigned_integral Address, bool Shared, typename Memory, typename Function>
-    [[nodiscard]] inline ::uwvm2::extension::memtag::access_result with_checked_access(
+    template<::std::unsigned_integral Address, bool Shared, bool Guest, bool Enforcing = false, bool ExplicitOrigin = false, typename Memory, typename Function>
+    [[nodiscard]] inline ::uwvm2::extension::memtag::access_result with_access_policy(
         Memory const& memory, Address pointer, ::std::uint64_t offset, ::std::uint64_t bytes,
-        Function&& function) noexcept
+        Function&& function,::std::byte const* encoded_origin=nullptr) noexcept
     {
         namespace mt = ::uwvm2::extension::memtag;
+        static_assert(!ExplicitOrigin || (!Shared && !Enforcing));
         static_assert(::std::is_nothrow_invocable_r_v<void,Function,::std::span<::std::byte>>);
+        if constexpr(ExplicitOrigin && Memory::can_mmap)
+        {
+            return details::with_private_origin_access<Address,Guest>(memory,pointer,offset,bytes,
+                ::std::forward<Function>(function),encoded_origin);
+        }
+        if constexpr(Guest) { deferred::poll(); }
         if(!details::configured<Address,Shared>(memory))
         { return {.error=mt::access_error::memory_not_representable}; }
         return details::with_snapshot(memory,[&](::std::span<::std::byte> data) noexcept
@@ -87,7 +207,33 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
             return memory.memtag_shadow.template with_shared_tag_lease<Shared>([&]() noexcept
             {
                 auto const view{memory.memtag_shadow.template view<Address,Shared>(data.size())};
-                auto result{view.check(pointer,offset,bytes)};
+                ::std::uint8_t comparison_mask{0xffu};
+                if constexpr(Guest)
+                {
+                    if(memory.memtag_shadow.hardware_active() &&
+                       mt::hardware_checked_access_requested())
+                    { comparison_mask=sizeof(Address)==4u?0u:0xf0u; }
+                }
+                // Hardware sync/async checks the low nibble at the physical access.
+                // memory64 still checks its upper four software tag bits here.
+                mt::access_result result{};
+                if constexpr(Enforcing)
+                {
+                    static_assert(!Guest);
+                    // The trusted translator chooses this only for immutable
+                    // sync/crash launch policy. Keep the exact complete proof;
+                    // no report/delivery flag is read on each scalar access.
+                    result=view.check(pointer,offset,bytes,comparison_mask);
+                }
+                else if constexpr(ExplicitOrigin)
+                {
+                    result=view.check(pointer,offset,bytes,comparison_mask);
+                    if(result.error==mt::access_error::tag_mismatch) [[unlikely]]
+                    { result.error=details::check_view_with_origin<Guest>(view,pointer,offset,bytes,
+                        memory.diagnostic_owner_memory_index,result,encoded_origin); }
+                }
+                else { result=details::check_view<Guest>(view,pointer,offset,bytes,
+                    memory.diagnostic_owner_memory_index,comparison_mask); }
                 if(result)
                 {
                     // [owner bytes ... proven range ...] end
@@ -99,6 +245,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
                 return result;
             });
         });
+    }
+    template<::std::unsigned_integral Address, bool Shared, typename Memory, typename Function>
+    [[nodiscard]] inline auto with_checked_access(Memory const& memory,Address pointer,
+        ::std::uint64_t offset,::std::uint64_t bytes,Function&& function) noexcept
+    { return with_access_policy<Address,Shared,false>(memory,pointer,offset,bytes,::std::forward<Function>(function)); }
+    template<::std::unsigned_integral Address, bool Shared, typename Memory, typename Function>
+    [[nodiscard]] inline auto with_guest_access(Memory const& memory,Address pointer,
+        ::std::uint64_t offset,::std::uint64_t bytes,Function&& function) noexcept
+    {
+        // Delivery policy is fixed before owners/code are published. Under
+        // synchronous delivery the strict path retains the identical complete
+        // owner/bounds/shadow proof without entering deferred-fault machinery.
+        if(!::uwvm2::extension::memtag::asynchronous_requested() && !::uwvm2::extension::memtag::hardware_checked_access_requested()) [[likely]]
+        { return with_access_policy<Address,Shared,false>(memory,pointer,offset,bytes,::std::forward<Function>(function)); }
+        return with_access_policy<Address,Shared,true>(memory,pointer,offset,bytes,::std::forward<Function>(function));
     }
     template<::std::unsigned_integral Address, bool Shared, typename Memory>
     [[nodiscard]] inline ::uwvm2::extension::memtag::access_result check_access(
@@ -149,7 +310,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
             { return one(source,[&]() noexcept { return one(destination,::std::forward<Function>(function)); }); }
             return one(destination,[&]() noexcept { return one(source,::std::forward<Function>(function)); });
         }
-        template<::std::unsigned_integral Address,typename Memory>
+        template<bool Guest,::std::unsigned_integral Address,typename Memory>
         [[nodiscard]] inline ::uwvm2::extension::memtag::access_result check_snapshot(
             Memory const& memory,::std::span<::std::byte> data,Address pointer,::std::uint64_t bytes) noexcept
         {
@@ -167,26 +328,27 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
             if(memory.memtag_shadow.shared())
             {
                 if(!configured<Address,true>(memory)) { return {.error=mt::access_error::memory_not_representable}; }
-                return memory.memtag_shadow.template view<Address,true>(data.size()).check(pointer,0u,bytes);
+                return check_view<Guest>(memory.memtag_shadow.template view<Address,true>(data.size()),pointer,0u,bytes,memory.diagnostic_owner_memory_index);
             }
             if(!configured<Address,false>(memory)) { return {.error=mt::access_error::memory_not_representable}; }
-            return memory.memtag_shadow.template view<Address,false>(data.size()).check(pointer,0u,bytes);
+            return check_view<Guest>(memory.memtag_shadow.template view<Address,false>(data.size()),pointer,0u,bytes,memory.diagnostic_owner_memory_index);
         }
     }
-    template<::std::unsigned_integral Destination,::std::unsigned_integral Source,typename Memory,typename Function>
-    [[nodiscard]] inline copy_access_result with_checked_copy(
+    template<bool Guest,::std::unsigned_integral Destination,::std::unsigned_integral Source,typename Memory,typename Function>
+    [[nodiscard]] inline copy_access_result with_copy_policy(
         Memory const& destination_memory,Memory const& source_memory,Destination destination,Source source,
         ::std::uint64_t bytes,Function&& function) noexcept
     {
         static_assert(::std::is_nothrow_invocable_r_v<void,Function,::std::span<::std::byte>,::std::span<::std::byte>>);
+        if constexpr(Guest) { deferred::poll(); }
         return details::with_two_snapshots(destination_memory,source_memory,
             [&](::std::span<::std::byte> destination_data,::std::span<::std::byte> source_data) noexcept
             {
                 return details::with_two_tag_leases(destination_memory,source_memory,[&]() noexcept
                 {
-                    auto const destination_result{details::check_snapshot(destination_memory,destination_data,destination,bytes)};
+                    auto destination_result{details::check_snapshot<Guest>(destination_memory,destination_data,destination,bytes)};
                     if(!destination_result) { return copy_access_result{destination_result,false}; }
-                    auto const source_result{details::check_snapshot(source_memory,source_data,source,bytes)};
+                    auto source_result{details::check_snapshot<Guest>(source_memory,source_data,source,bytes)};
                     if(!source_result) { return copy_access_result{source_result,true}; }
                     // Both complete ranges, including every intermediate granule,
                     // are proven before the first mutation. No pointer escapes.
@@ -195,6 +357,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
                     return copy_access_result{};
                 });
             });
+    }
+    template<::std::unsigned_integral Destination,::std::unsigned_integral Source,typename Memory,typename Function>
+    [[nodiscard]] inline copy_access_result with_checked_copy(Memory const& destination_memory,
+        Memory const& source_memory,Destination destination,Source source,::std::uint64_t bytes,Function&& function) noexcept
+    { return with_copy_policy<false>(destination_memory,source_memory,destination,source,bytes,::std::forward<Function>(function)); }
+    template<::std::unsigned_integral Destination,::std::unsigned_integral Source,typename Memory,typename Function>
+    [[nodiscard]] inline copy_access_result with_guest_copy(Memory const& destination_memory,
+        Memory const& source_memory,Destination destination,Source source,::std::uint64_t bytes,Function&& function) noexcept
+    {
+        if(!::uwvm2::extension::memtag::asynchronous_requested()) [[likely]]
+        { return with_copy_policy<false>(destination_memory,source_memory,destination,source,bytes,::std::forward<Function>(function)); }
+        return with_copy_policy<true>(destination_memory,source_memory,destination,source,bytes,::std::forward<Function>(function));
     }
 
     template<bool Enabled, ::std::unsigned_integral Address, bool Shared, typename Memory>

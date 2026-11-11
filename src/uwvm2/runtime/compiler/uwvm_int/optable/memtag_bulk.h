@@ -40,7 +40,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
             auto const bytes{pop<Address>(stack)};
             auto const value{static_cast<::std::byte>(pop<::std::uint32_t>(stack))};
             auto const destination{pop<Address>(stack)};
-            auto const checked{::uwvm2::runtime::memtag::with_checked_access<Address,Shared>(
+            auto const checked{::uwvm2::runtime::memtag::with_guest_access<Address,Shared>(
                 memory,destination,0u,bytes,[&](::std::span<::std::byte> data) noexcept
                 {
                     if constexpr(Shared)
@@ -57,7 +57,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
             auto const bytes{pop<length_type>(stack)};
             auto const source{pop<Source>(stack)};
             auto const destination{pop<Destination>(stack)};
-            auto const checked{::uwvm2::runtime::memtag::with_checked_copy(
+            auto const checked{::uwvm2::runtime::memtag::with_guest_copy(
                 destination_memory,source_memory,destination,source,bytes,
                 [&](::std::span<::std::byte> destination_data,::std::span<::std::byte> source_data) noexcept
                 {
@@ -98,7 +98,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
             auto const source_size{payload.byte_begin==nullptr ? 0u : static_cast<::std::size_t>(payload.byte_end-payload.byte_begin)};
             if(bytes>source_size || source>source_size-bytes)
             { details::memory_oob_terminate(memory,0u,{.offset=source,.offset_65_bit=false},source_size,bytes); }
-            auto const checked{::uwvm2::runtime::memtag::with_checked_access<Address,Shared>(
+            auto const checked{::uwvm2::runtime::memtag::with_guest_access<Address,Shared>(
                 memory,destination,0u,bytes,[&](::std::span<::std::byte> destination_data) noexcept
                 {
                     if(destination_data.empty()) { return; }

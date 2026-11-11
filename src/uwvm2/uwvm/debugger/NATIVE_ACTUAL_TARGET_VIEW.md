@@ -1,36 +1,55 @@
-# Actual-engine native assembly view
+# LLVM-JIT-only assembly inspection
 
-This PRIVATE source candidate separates cold MC viewing from native OS stepping. It does not qualify any OS or architecture by changing an enum/gate. All native execution is still pending the sole Linux cgroup keeper; macOS native execution remains disabled.
+The built-in debugger may inspect or step only code belonging to an authenticated LLVM-JIT-generated Wasm function. This restriction applies at every debugger permission level. There is no launch option or session command that permits inspection of VM, libc, a preloaded driver, or other shared-library machine code. Use a separate host debugger for those components.
 
-The two owned code replies now retain target format version 1, complete bounded triple/CPU/features, actual pointer width and byte order, and actual MCAsmInfo maximum instruction size/minimum alignment. Their producer finds the exact current full or committed replacement engine by the authenticated code-owner comparison token and function generation under the existing execution lease, ONE stopped-domain transaction and publication guard. No target triple is synthesized from host preprocessor macros in the production controller. The macros select only the LLVM registry family linked for this executable, matching the production target initializer.
+## Live-code ownership
 
-Bounds are triple 255 bytes plus NUL, CPU 255 plus NUL, features 16383 plus NUL, one decoded instruction at most 32 bytes. Overlong metadata, absent actual MC provider, inconsistent native pointer width/endian or unsupported extent return unavailable. These limits are explicit cold reply limits, not normative ISA maxima. The ordinary compiler/cache key/guest memory path has no new calls or IR.
+The controller never reads a client-provided native address. It selects a private runtime activation capture and asks the runtime for an owned copy of its current generated function. Before copying live bytes, the runtime:
 
-A noinline debug safepoint bridge on GNU/Clang obtains only its own level-zero extracted return address. It does not read a supplied SP/PC, scan another frame, invent native-thread identity, or authorize SI/NI. It must match the actual current generated function code range and private event/publication identity. Unsupported compiler return-address support leaves the site unavailable. Pure MSVC and architecture-specific return-address correctness remain unqualified.
+1. Canonicalizes the capture against its private registry, including shared ownership.
+2. Acquires GC/execution admission and pins the actual stopped participant.
+3. Revalidates the pause ticket, publication, module, function, generation and runtime epoch.
+4. Resolves the exact current LLVM engine and its compiler-identified loaded text endpoints.
+5. Accepts only the typed Wasm body or checkpoint resume body; raw-entry adapters and unknown roles are excluded.
+6. For an instruction stop, also verifies the real active platform session, worker, PC, stack cursor and owner interval.
 
-Cooperative assembly VIEW uses one <=64KiB owned function image and its same-operation target description. Outside live locks, actual-target MC decodes forward from the exact function entry, bounded by 8192 rows, and accepts the cooperative reference PC only at an exact decoded boundary. No backward resynchronization or independently queried target metadata is combined. The formatter prints origin=safepoint-code-view. Failed/truncated/SoftFail decoding is explicitly unavailable. This view cannot display native registers or become an instruction stop.
+A missing owner-table implementation or failed check makes the operation unavailable. Numeric containment, a symbol name, decoded bytes, or a previously returned address does not substitute for this proof.
 
-Actual native traps keep the existing <=480 owned current-PC path and genuine trap/session/OS adapter checks. The formatter prints origin=native-instruction-stop. SI/NI and call/return/branch refusal are unchanged except that both actual MC decoders now consume the actual engine description. The i386 TF candidate is separate; this candidate does not implement A64/RV64/BSD hardware stepping.
+The production read boundary is in `uwvm_runtime_debug_native_code_api.h`; current-engine resolution and loader publication are in `uwvm_runtime_native_owner_publication_impl.h` and `uwvm_runtime_native_owner_loaded_endpoints.h`.
 
-The historical parameter-free DATA test decoders remain for existing fixtures. The runtime controller never uses them. Only constructors receiving the same private query's exact target are used by production SI preflight, display and semantic annotations. Supplied descriptions and decoded classifications remain DATA; they cannot mint read/control/source/local/restore rights.
+## Decoding and bounds
 
-All changed runtime and reply layouts require fresh runtime/LLVM interface/main and fresh BMIs. Header-only AST inspection is not module or native qualification. Existing Windows/ELF/MachO qualifications do not transfer to this change.
+MC decoders receive a byte span and a display PC. They never convert the display PC into a readable host pointer. The old raw-address `decode_owned` helper has been removed; component fixtures use `decode_copied`.
 
-Meaningful pending tests:
-- native_target_metadata_data.cc: format/NUL/extent/alignment negative DATA corpus.
-- native_actual_target_decoder.cc: an actual finalized LLVM engine owns the TM; explicit target CPU/features/endianness/extent feed real C API and semantic MC decoders. First byte corpus covers x86/A64/RV. Other ISAs remain explicit corpus gaps.
-- debug_native_actual_target_view_runtime.cc plus its Core3 GC-declaration/non-null-local/return_call WAT: real source initialization, fused full compilation, real controller/callback pause, private code image, exact boundary, actual formatter, refusal of regs/NI, stale/reset/drain; instruction and unwind separately.
-- native_actual_target_metadata_module.cppm plus its consumer: genuine two-primary imports, no global FastIO header masking.
+Whole-function inspection copies the actual authenticated function extent, subject to representable allocation size. There is no 64 KiB function limit or 8192-instruction table limit. Forward decoding retains scalar indices and one requested page. Negative instruction offsets use proved boundaries from forward decoding; they do not scan live memory backwards or guess a new instruction boundary. ARM literal-pool bytes are excluded by the loaded instruction/data map.
 
-Primary references:
-- https://gcc.gnu.org/onlinedocs/gcc/Return-Address.html
-- https://llvm.org/docs/LangRef.html#llvm-returnaddress-intrinsic
-- LLVM23 source: llvm/lib/MC/MCDisassembler/Disassembler.cpp, include/llvm/Target/TargetMachine.h, include/llvm/MC/MCAsmInfo.h, lib/ExecutionEngine/MCJIT/MCJIT.h.
+Per-request paging and fixed-size target metadata are transport/decoder bounds, not total function-size or total instruction-count limits. Failed, truncated or unsupported decoding remains unavailable. An unavailable row never authorizes a read beyond its owner.
 
+The exact leased engine supplies the target triple, CPU, features, pointer width, byte order and MC instruction metadata for the same code image. Host preprocessor macros select the linked LLVM registry family; they do not fabricate production target metadata. LLVM 21 pointer getters and LLVM 23 reference getters are normalized from that same leased TargetMachine.
 
-Current R2 rebase preserves all current R1 strict SI successor proof, CALL64 continuation classification/default-OFF product gate, dynamically retained physical activation ledger, actual event retirement/released ACK, host observation latch and current FP14 command/formatter changes. Both actual production SI proof sites now construct their two MC decoders from the SAME immutable function image target. No old preflight code or controller body is overlaid. Original four memory-copy choices (three runtime native copy calls and one controller name copy) remain byte-for-byte current calls; this change introduces no unrelated FastIO rewrite.
+## Inspection versus execution
 
-Both cooperative-origin resolver and actual cold copies additionally reject raw_entry/wrapper_entry roles before read. An authentic current plain Wasm code origin is separately recorded from OS single-step permission; Linux SIGTRAP preflight/native-thread identity remain in the original qualified-step wrapper. Closed/unknown owner ranges remain unavailable. This candidate does not resolve checkpoint typedclone endpoint/PPC descriptor qualification HOLD, nor implement cross-function SI/finish or additional OS trap adapters. Native compilation/execution and same-cut real instruction/unwind/strict six bridges/DAP/FP qualification remain pending; nothing here is a new native PASS.
+| Stop origin | Available authority |
+|---|---|
+| `safepoint-code-view` | Inspect the current authenticated generated function. It is not a native register snapshot or an instruction stop. |
+| `native-instruction-stop` | Inspect the authenticated function and the qualified native trap state, subject to permission and platform capabilities. |
 
+The current-PC copy has a bounded reply size; whole-function navigation uses the separately authenticated function image. A cooperative view cannot be promoted into a native trap by supplying a PC, stop label or decoded instruction.
 
-R3 handles the verified SDK shape difference: LLVM21 nullable pointer getters versus vendored23 reference getters are normalized from the SAME actual leased TargetMachine, then both SDK providers are nonnull-checked before dereference. The genuine engine decoder component uses the same shape-adaptive acquisition but an independent code path. This is SOURCE SDK compatibility only; neither LLVM21 nor23 fresh build/runtime qualification is inferred from it.
+Assembly breakpoints require a genuine native stop, an exact decoded boundary and guest-code provenance. They retain a private capture and bind to the participant, module, function, generation, epoch and owner interval. Displaying an instruction is insufficient to authorize its breakpoint or execution.
+
+Same-owner stepping proves the successor before resuming. A cross-function Wasm transition requires a separate runtime-issued continuation proof. A host/import/DL call can execute normally as an opaque step-over with tracing disabled, then return to its proved Wasm continuation; the call grants no callee assembly, register or memory inspection.
+
+## DAP lifetime and permissions
+
+DAP assembly references are issued for the current stop. Each page checks the stop and owner identity again. Absolute breakpoint addresses must already have been issued by current owned disassembly and are translated to a function-relative request; the runtime independently checks that request. Resume, retirement and replacement invalidate the relevant references and bindings. A retained executable allocation does not retain debugger authority by itself.
+
+`full` permits inspection and authorized control. `read-only` permits inspection of an available stop, without mutation or stepping. `limited` and `none` do not grant assembly inspection. These permissions do not change the LLVM-only boundary.
+
+## Platform qualification
+
+The ownership contract is shared across platforms. The source includes Linux backends for the ROS ABIs, Mach ARM64, opt-in Mach x86-64, and a gated Windows x64 backend. Build switches, SDK support and actual platform qualification determine availability. The presence of a backend, an enum value, a successful parser test, or a build does not establish native stepping correctness.
+
+Keep qualification evidence tied to the exact source, binary, target and adapter version. In particular, copied-byte decoder tests establish decoding bounds; they do not establish live JIT ownership. Runtime tests must separately cover authentic positive controls, forged or stale references, owner edges, host/import calls, replacement and all four permission levels.
+
+These queries run only on debugger inspection/control paths. They do not add calls, metadata queries or generated IR to ordinary GC or Wasm execution.

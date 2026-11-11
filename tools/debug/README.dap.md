@@ -1,6 +1,6 @@
 # LLVM-full IDE attachment
 
-Debugger permission levels are `full`, `read-only`, `limited` and `none`, selected only at launch. `-Rdbg` defaults to `full`; other launches default to `limited`. See [Debugger permissions](../../documents/command-line/debug-permissions.md) for dump redaction, independent update authority and IDE negotiation.
+Debugger permission levels are `full`, `read-only`, `limited` and `none`, selected only at launch. `-Rdbg` and `-m debug` (including their long spellings) default to `full`; other launches default to `limited`. See [Debugger permissions](../../documents/command-line/debug-permissions.md) for dump redaction, independent update authority and IDE negotiation.
 
 `dap_adapter.py` exposes the host-owned debugger broker through the standard
 Debug Adapter Protocol (DAP) over stdin/stdout. The VM must have been launched
@@ -173,23 +173,31 @@ old-frame or optimistic `if-stop` write capability. Native/code/stack/host
 references and ASM traps are refused.
 See [R46 bounded memory writes and Linux acceptance](../../test/0018.debugger/README.wasm-memory-writes.md). The console
 accepts `replace MODULE FUNCTION GENERATION BODY_FILE` for same-ABI function
-hot replacement while fully stopped. At Wasm level, the adapter exposes a virtual instruction document containing
-only the selected function's validated decoded instructions. Its source reference
-and gutter breakpoints belong to the current identified stop and retire on
-resume. The VS Code/Cursor extension uses its own `uwvm-wasm:` read-only
-document scheme and forwards content requests to the genuine DAP `source`
-operation. It registers no provider for `debug:`, `file:` or another
-debugger's scheme. The adapter accepts only a registered URI belonging to the
-current IDE session/frame/stop; opening a URI grants no host file access.
-Other DAP clients retain ordinary `sourceReference` documents. Native
-instruction text is also available in the IDE disassembly view.
+hot replacement while fully stopped. At Wasm level, the adapter exposes the
+complete selected function as a stable, read-only instruction document. Its URI
+contains module, function, runtime epoch and code generation. A new stop updates
+the real execution line without opening a new file or shifting existing lines.
+Code replacement creates a new document identity. The VS Code/Cursor extension
+registers only `uwvm-wasm:` and never reads an arbitrary host path. A source
+reference authorizes only already-copied code text; hover, breakpoints and values
+must separately match the current authenticated generation and stop.
+Other DAP clients retain ordinary sourceReference documents. The standard IDE
+Disassembly view contains authenticated native machine instructions only; Wasm
+text is presented as the Wasm source document/custom instruction view. A Wasm
+document reference is never accepted as a native disassembly reference.
 At a native trap, `stackTrace` returns one selectable instruction position from
 the authenticated controller's stopped PC. It compares a fresh complete
 `status` with the selected `bt THREAD` reply, then gives the label a
 session-unique `uwvm-native-stop:ID` display reference. It exposes no old Wasm
 offset, source location, caller frames or local-variable scope. Resume,
 transport/protocol failure, a changed stop, detach and exit retire those IDs.
-The display reference grants no native memory read/write or breakpoint access.
+The display reference grants no native memory read/write authority. An instruction
+breakpoint request may name an issued display reference and signed byte offset,
+but must independently resolve to a previously decoded instruction boundary in
+the same current stop and owner. The runtime revalidates the owned function image,
+current activation and generation before installing it. Repeated IDE breakpoint
+inventories retain existing manager IDs; arbitrary addresses, unissued references,
+retired generations and addresses outside that exact JIT owner are refused.
 A current identified native stop supports the r2 zero-offset <=32-row subset.
 The range query also accepts signed 64-bit byte/instruction offsets,
 instructionCount 1..512 and resolveSymbols=true. A 400-row initial IDE window
@@ -417,7 +425,7 @@ stop changes reject the whole response. Custom `uwvm/wasmMembers` retains its
 ## Standard typed Wasm scope pages
 
 Typed locals, operands, saved if parameters, controls, handlers, globals and
-Table 0 honor standard `variables` pagination. Omitted/zero count reads all
+actual module tables honor standard `variables` pagination. Omitted/zero count reads all
 remaining entries within a 1024-entry response budget; each actual borrow stays
 at most 64. Original module/frame/selector/table and indices survive paging.
 A changed stop, epoch, cardinality, snapshot notice or short page rejects the
@@ -603,3 +611,62 @@ the first reply, not a permission quota. IDE Cancel, Disconnect, stdin closure,
 or peer exit interrupts a pending attach. Once a command has been forwarded,
 cancellation retires that original launch and its private endpoint, so a late
 unsequenced reply cannot satisfy a later client's command.
+
+## IDE resource and state presentation
+
+The Run and Debug sidebar includes **UWVM Debugger** navigation for source,
+Wasm, JIT assembly, memory/tags, registers, WASIp1, ROS, recorded calls,
+breakpoints, diagnostics, dumps and independently authorized signed updates.
+The authenticated launch permission determines which inspection and mutation
+controls are available. Selecting a view never changes that permission.
+
+`wasm-meta THREAD STOP MODULE KIND FIRST COUNT` copies immutable module
+metadata at an authenticated stop. `KIND` is `summary`, `functions`, `globals`,
+`tables` or `memories`; resource pages request at most 32 rows. A large name can
+shorten a transport page, so continue from `first + count` in the reply. The
+inventory itself has no row-count quota. Summary requests use `FIRST=0 COUNT=1`.
+Names are hex-encoded UTF-8 data, never executable expressions. Memory rows
+include their declared address width. Imported resources retain their original
+module indices. This command uses the existing inspection permission gate on
+Linux, Windows and macOS, and does not run on the normal Wasm execution path.
+
+The adapter exposes this data through `uwvm/wasmInventory`. It creates table
+scopes only when actual tables exist. Frame, control and handler metadata use
+expandable fields. Locals and operand stack are core peer scopes. Policies,
+recorded host calls and payloads belong to the dedicated inspection windows;
+they do not crowd the VARIABLES tree. Structured replies are rendered as
+fields or tables. JSON remains the explicit export/interchange format.
+
+A memory edit has one selected range and one submission. Full permission,
+current stop and guest bounds are checked before the atomic write. A successful
+acknowledgement returns its committed stop ID; the window reads back the exact
+bytes before reporting verified success. An acknowledged commit whose readback
+fails is reported as unconfirmed, and is never automatically repeated. Viewing
+large ranges loads additional bounded pages without imposing a 256-byte total
+view limit. The 256-byte single-commit protocol limit remains explicit.
+
+## Initial execution and reconnect
+
+`stopOnEntry` defaults to true for a direct attach. Imported profiles that start
+a runtime default to false: after configuration, full permission may continue
+once from the same initial entry stop. A configured breakpoint at that entry
+keeps the process stopped. Existing breakpoint, fault and explicit pause stops
+are never auto-resumed. Read-only and limited permission never resume execution.
+The initial prepared state has a synthetic DAP thread and an Initial Wasm entry
+frame, with no invented PC, source or variable scopes. Its stopped event is
+published only after configurationDone. F5 enters the guest; F10/F11 require a
+real stopped participant and then use the selected source/Wasm/native level.
+Pause on an already stopped runtime republishes its true stopped state to repair
+a stale IDE running indicator without executing the guest. Repeated ordinary
+reads of the same stopped identity do not publish duplicate stopped events.
+
+This is an attach adapter: the IDE Restart action reconnects the session; it
+does not reset guest memory or relaunch a host-owned process. A fresh runtime
+requires its host launch task. Multiple attachments must not silently terminate
+or replace each other's process.
+
+Operand-stack trap annotations are separate named children, outside indexed
+operand pages. Clients that negotiate the standard DAP `supportsANSIStyling`
+capability receive the annotation in red; other clients receive plain text.
+Styling is emitted only for adapter-owned notices. Escape bytes from guest or
+host values remain visible text, so data cannot inject IDE styling.

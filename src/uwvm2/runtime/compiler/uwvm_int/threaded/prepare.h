@@ -5,11 +5,11 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
     {
         // This r2 is a real finite backend slice, NOT a complete pthread/ROS
         // publication. Its actual source-shape restrictions are explicit.
-        if(world_->module_count()!=1uz || limits_.values<2uz) { return status::unsupported_profile; }
+        if(world_->module_count()==0uz || limits_.values<2uz) { return status::unsupported_profile; }
         static_cast<void>(error);
         validated_code_=world_->validated_code();
         if(!validated_code_ || !validated_code_->covers(*world_)) { return status::invalid_world; }
-        ::std::size_t source_bytes{},code_bytes{},functions{},storage_bytes{sizeof(engine)};
+        ::std::size_t source_bytes{},code_bytes{},functions{},gc_inputs{},storage_bytes{sizeof(engine)};
         auto charge{[](::std::size_t count,::std::size_t width,::std::size_t& used,::std::size_t limit) noexcept
         { if(used>limit || count>(limit-used)/width) { return false; }used+=count*width;return true; }};
         if(!charge(limits_.values,sizeof(stack_value),storage_bytes,limits_.storage_bytes) ||
@@ -70,6 +70,8 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                     !detail::abi_fits(type->result.begin,type->result.end,limits_.host_bytes))
                 { return status::resource_limit; }
             }
+            // Refuse unsupported function subtyping while accepting aggregate
+            // schemas already validated and privately copied by the world.
             // Refuse recursive/nominal/subtyped definitions that the finite
             // finite signature matcher below does not implement. Defaults do
             // not participate: only actual retained type declarations do.
@@ -77,7 +79,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
             if(recursive)
             {
                 for(::std::size_t i{};i<module->type_section_storage.type_section_count;++i)
-                { if(!::uwvm2::validation::standard::wasm3::core3_is_plain_function_definition(recursive,i)) { return status::unsupported_profile; } }
+                { if(module->gc_store && [&]{storage::gc_type::composite_kind k{};return module->gc_store->type_kind(i,k) && k==storage::gc_type::composite_kind::function;}() && !::uwvm2::validation::standard::wasm3::core3_is_plain_function_definition(recursive,i)) { return status::unsupported_profile; } }
             }
             auto const& types{module->type_section_storage};
             bool const rich{types.owned_signature_begin && types.owned_signature_end &&
@@ -148,6 +150,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                 if(result!=status::ok) { return result; }
                 for(auto& ins: bound.program.functions[f].instructions)
                 {
+                    if(ins.opcode>=0x800u && ins.opcode<0x10000u) { gc_inputs=(::std::max)(gc_inputs,ins.parameters); }
                     if(ins.opcode>=0x10000u)
                     {
                         namespace sh=::uwvm2::runtime::compiler::shared;
@@ -247,6 +250,8 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         // capacity before execution-array allocations/Group launch.
         if(debug_->allocated_bytes()>limits_.storage_bytes-debug_base_storage-sizeof(threads::code_debug_image))return status::resource_limit;
         }
+        if(!charge(gc_inputs,sizeof(storage::gc_object_value),storage_bytes,limits_.storage_bytes)) { return status::resource_limit; }
+        gc_scratch_.resize(gc_inputs);
         values_.resize(limits_.values);calls_.resize(limits_.calls);controls_.resize(limits_.controls);
         host_parameters_.resize(limits_.host_bytes);host_results_.resize(limits_.host_bytes);
         exceptions_.resize(limits_.exception_objects);exception_values_.resize(limits_.exception_values);

@@ -52,25 +52,25 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1p1::features
     struct wasm1p1_code_version
     {};
 
-    /// @brief Records which mutually-exclusive family of Wasm feature switches owns the command line.
-    /// @details Each of the three complete feature-set switches (MVP, WebAssembly 1.1, and WebAssembly 2.0) conflicts with
-    ///          either of the other two complete switches and with every scoped feature switch.
+    /// @brief Selected Core baseline. Explicit per-feature overrides compose with it.
+    /// @details Keep existing numeric identities stable in serialized module policies.
     enum class wasm_feature_cli_mode : ::std::uint_least8_t
     {
         unspecified,
         direct_mvp,
         direct_wasm1p1,
         direct_wasm2,
-        scoped
+        scoped,
+        direct_wasm3
     };
 
-    /// @brief Runtime feature-policy storage shared by the WebAssembly 1.1 and WebAssembly 2.0 parser paths.
-    /// @details The disable_* fields are false by default; the selected complete mode and scoped switches determine the effective policy.
-    /// @details The explicit_* fields record CLI ownership so shared feature collection can report conflicts deterministically and emit version-correct ECO output.
-    /// @warning Extension point: every new shared WebAssembly 1.1/2.0 subfeature flag needs CLI ownership, feature conflict handling, parser gating, and version-correct ECO output.
+    /// @brief Effective parser policy, defaulting to Core 3.0 plus threads and WasmMTE.
+    /// @details Explicit baseline ownership is separate from per-feature overrides;
+    ///          duplicate/conflicting explicit selections remain errors. Resource
+    ///          budgets and host interface permissions are independent of this policy.
     struct wasm_binfmt1p1_feature_parameter
     {
-        wasm_feature_cli_mode cli_mode{};
+        wasm_feature_cli_mode cli_mode{wasm_feature_cli_mode::direct_wasm3};
 
         bool disable_multi_value{};
         bool disable_reference_types{};
@@ -80,19 +80,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1p1::features
         bool disable_sign_extension{};
         bool disable_nontrapping_float_to_int{};
         bool disable_simd{};
-        // Wasm 3.0 additions are opt-in; legacy Wasm 2.0 defaults stay unchanged.
-        bool disable_extended_const{true};
-        bool disable_table_initializer{true};
-        bool disable_relaxed_simd{true};
-        bool disable_multi_memory{true};
-        bool disable_tail_call{true};
-        bool disable_memory64{true};
-        bool disable_table64{true};
-        bool disable_function_references{true};
-        bool disable_gc{true};
-        bool disable_exceptions{true};
-        // Threads is an independent extension, not part of the Core 3.0 feature set.
-        bool disable_threads{true};
+        // Core 3.0 is the product baseline, including the following additions.
+        bool disable_extended_const{};
+        bool disable_table_initializer{};
+        bool disable_relaxed_simd{};
+        bool disable_multi_memory{};
+        bool disable_tail_call{};
+        bool disable_memory64{};
+        bool disable_table64{};
+        bool disable_function_references{};
+        bool disable_gc{};
+        bool disable_exceptions{};
+        // Threads is enabled by default as an independent extension to Core 3.0.
+        bool disable_threads{};
         // Independent, nonstandard WasmMTE extension; accepted by default.
         // Core-version presets do not change this explicit extension policy.
         bool disable_memtag_extension{};
@@ -100,6 +100,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1p1::features
         bool explicit_feature_mvp{};
         bool explicit_feature_wasm1p1{};
         bool explicit_feature_wasm2{};
+        bool explicit_feature_wasm3{};
         bool explicit_enable_multi_value{};
         bool explicit_enable_reference_types{};
         bool explicit_enable_table_instructions{};
@@ -146,6 +147,41 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1p1::features
         bool controllable_allow_multi_table{};
     };
 
+    /// @brief A baseline supplies defaults; explicit per-feature choices win in either CLI order.
+    inline constexpr void apply_feature_baseline(wasm_binfmt1p1_feature_parameter& para, wasm_feature_cli_mode baseline) noexcept
+    {
+        para.cli_mode = baseline;
+        bool const mvp{baseline == wasm_feature_cli_mode::direct_mvp};
+        bool const before_core3{baseline != wasm_feature_cli_mode::direct_wasm3};
+#define UWVM_BASELINE_FEATURE(member, disabled_by_baseline) \
+        para.disable_##member = para.explicit_disable_##member || (!para.explicit_enable_##member && (disabled_by_baseline))
+        UWVM_BASELINE_FEATURE(multi_value, mvp);
+        UWVM_BASELINE_FEATURE(reference_types, mvp);
+        UWVM_BASELINE_FEATURE(table_instructions, mvp);
+        UWVM_BASELINE_FEATURE(multiple_tables, mvp);
+        UWVM_BASELINE_FEATURE(bulk_memory, mvp);
+        UWVM_BASELINE_FEATURE(sign_extension, mvp);
+        UWVM_BASELINE_FEATURE(nontrapping_float_to_int, mvp);
+        UWVM_BASELINE_FEATURE(simd, mvp);
+        UWVM_BASELINE_FEATURE(extended_const, before_core3);
+        UWVM_BASELINE_FEATURE(table_initializer, before_core3);
+        UWVM_BASELINE_FEATURE(relaxed_simd, before_core3);
+        UWVM_BASELINE_FEATURE(multi_memory, before_core3);
+        UWVM_BASELINE_FEATURE(tail_call, before_core3);
+        UWVM_BASELINE_FEATURE(memory64, before_core3);
+        UWVM_BASELINE_FEATURE(table64, before_core3);
+        UWVM_BASELINE_FEATURE(function_references, before_core3);
+        UWVM_BASELINE_FEATURE(gc, before_core3);
+        UWVM_BASELINE_FEATURE(exceptions, before_core3);
+        // Retain the older presets' thread policy. Explicit Core 3.0 and
+        // the implicit product default both enable the threads extension.
+        UWVM_BASELINE_FEATURE(threads, before_core3);
+#undef UWVM_BASELINE_FEATURE
+        // A preset cannot re-enable an explicitly disabled MTE extension.
+        para.controllable_allow_multi_result_vector = para.disable_multi_value;
+        para.controllable_allow_multi_table = para.disable_multiple_tables;
+    }
+
     /// @brief Select the legacy MVP encoding of `call_indirect`'s trailing immediate.
     /// @details WebAssembly Core 1.0 section 5.4.1 encodes `call_indirect` as
     ///          `0x11 typeidx 0x00`; that final token is a literal byte, not a
@@ -162,17 +198,25 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1p1::features
     [[nodiscard]] inline constexpr bool uses_mvp_call_indirect_reserved_byte(
         wasm_binfmt1p1_feature_parameter const& parameter) noexcept
     {
-        return parameter.cli_mode == wasm_feature_cli_mode::direct_mvp;
+        // Explicit proposal overrides also replace the binary grammar they
+        // introduce, even when their base policy is MVP.
+        return parameter.cli_mode == wasm_feature_cli_mode::direct_mvp &&
+            parameter.disable_reference_types && parameter.disable_multiple_tables;
     }
 
     /// Core 1 and Core 2 differ even for some primary opcodes: Core 1 br_table
     /// requires identical label types, whereas Core 2 can unify them through
     /// bottom operands. Disabling individual proposals does not select Core 1;
-    /// only the explicit MVP policy does. Keep this decision shared by validators.
+    /// the MVP baseline retains them unless an enabled control/type proposal
+    /// replaces them. Keep this decision shared by validators.
     [[nodiscard]] inline constexpr bool uses_mvp_validation_rules(
         wasm_binfmt1p1_feature_parameter const& parameter) noexcept
     {
-        return parameter.cli_mode == wasm_feature_cli_mode::direct_mvp;
+        // Multi-value and reference subtyping introduce the newer control
+        // typing rules. A baseline cannot veto those explicit overrides.
+        return parameter.cli_mode == wasm_feature_cli_mode::direct_mvp &&
+            parameter.disable_multi_value && parameter.disable_reference_types &&
+            parameter.disable_function_references && parameter.disable_gc && parameter.disable_exceptions;
     }
 
     /// @brief Get the const wasm1.1 feature parameter from a parser feature-parameter tuple.

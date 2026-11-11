@@ -223,7 +223,8 @@ end)
 option("use-cxx-module", function()
     set_description
     (
-        "Use CXX Module to compile.",
+        "C++ module builds have not yet been adapted for uwvm2-ros and are rejected.",
+        "Must remain disabled; use --use-cxx-module=n.",
         "default = false"
     )
     set_default(false)

@@ -15,15 +15,15 @@ Regenerate with `tools/documentation/generate_cli_reference.py --vm
 An existing exact help capture can instead be supplied with `--help-file`.
 The generator does not run a Guest or confer any permissions.
 
-Advertised primary commands: **285**.
+Advertised primary commands: **312**.
 
-## `--debug`
+## `--debug-fault-action`
 
 ```text
-[--debug] <pause>
+[--debug-fault-action] <crash|pause|exit>
 ```
 
-Report a terminal fault to the host and pause. The deployer may explicitly inspect/dump with an authorized debugger or manage an update; no automatic dump, retry, recovery or new authority. Omit this option for normal fault termination.
+Unhandled Wasm fault: crash (default; OS-configured core dumps), pause for authorized inspection, or exit with stable status 120/121/122. Internal VM failures always crash; no automatic dump, restart or recovery.
 
 ## `--debug-jit-control-fd`
 
@@ -41,13 +41,21 @@ Opt in to late LLVM-full debugger commands from a trusted inherited Linux packet
 
 Windows only: opt in to LLVM-full late debugger commands from a direct-parent inherited private pipe HANDLE.
 
+## `--debug-permissions`
+
+```text
+[--debug-permissions] <full|read-only|limited|none>
+```
+
+Debugger launch permissions only: full (inspect/modify/control execution), read-only (inspect/full dump; no execution control), limited (non-sensitive diagnostics/dump only; default), none (no debugger or dump). -Rdbg and -m debug default to full; other modes default to limited; explicit selection wins. Does not grant imports, drivers or updates.
+
 ## `--diagnostic-control-fd`
 
 ```text
 [--diagnostic-control-fd] <fd>
 ```
 
-RELEASE-only bounded read-only diagnostics on a separate authenticated Unix seqpacket socket.
+Non-sensitive read-only diagnostics on a separate authenticated Unix seqpacket socket.
 
 ## `--disable-warning`
 
@@ -96,14 +104,6 @@ Set the uwvm log output target. Default: err.
 ```
 
 Enable verbose logging.
-
-## `--management-profile`
-
-```text
-[--management-profile] <release|dev>
-```
-
-Trusted launch profile: release (default, diagnostics only) or explicit dev Guest debugging. Does not grant Guest imports.
 
 ## `--mode`
 
@@ -1215,7 +1215,7 @@ Write runtime compiler logs to stdout, stderr, or a dedicated file.
 [--runtime-debug|-Rdbg]
 ```
 
-Shortcut for -m debug; enter the built-in LLVM JIT full debugger.
+Start the LLVM JIT debugger; default to full debug permissions unless --debug-permissions is explicit.
 
 ## `--runtime-disable-memtag`
 
@@ -1272,6 +1272,30 @@ Select the full-module LLVM AOT strategy policy.
 ```
 
 Select the high-level full-module LLVM AOT strategy policy.
+
+## `--runtime-memtag-action`
+
+```text
+[--runtime-memtag-action] <crash|silent-log <out|err|path <PATH>>>
+```
+
+MTE action: crash (default), or silent-log with an explicit independent out, err, or path destination. Record every violation and continue; path appends JSON records. --log-output never redirects MTE reports. Bounds and host permissions remain enforced; report I/O failure terminates.
+
+## `--runtime-memtag-backend`
+
+```text
+[--runtime-memtag-backend] <software|hardware>
+```
+
+MTE backend: software (default), or hardware. Unsupported hardware/OS combinations are launch errors. Silent-log diagnostics use precise software detection to preserve every violation.
+
+## `--runtime-memtag-mode`
+
+```text
+[--runtime-memtag-mode] <sync|async>
+```
+
+MTE timing: sync (default), or async. Independent of backend and fault action; ordinary sandbox bounds remain immediate.
 
 ## `--runtime-scheduling-policy`
 
@@ -1407,7 +1431,7 @@ Explicit Linux CLI SIGINT/SIGTERM delivery to the Source-owned WASI pipe; separa
 [--wasi-threads] <max-active> <max-spawns> <native-stack-bytes> <per-child-storage> <per-child-code> <shared-memory-bytes>
 ```
 
-Select finite WASI Threads quotas; the stack value bounds each Guest AND compiler mapping, including guards.
+Select WASI Threads; max-active/max-spawns accept unlimited. Four finite storage capacities bound each Guest/compiler mapping, including guards.
 
 ## `--wasip1-allow-overlapping-mount-paths`
 
@@ -1425,6 +1449,166 @@ Allow duplicate or overlapping WASI Preview 1 mount guest paths.
 
 Store raw WASI Preview 1 mount guest paths instead of normalized paths.
 
+## `--wasip1-global-add-module`
+
+```text
+[--wasip1-global-add-module] <module:str>
+```
+
+Bind a module to the shared Global WASIp1 environment. Conflicts with Single/Group membership; grants no authority.
+
+## `--wasip1-global-add-or-replace-environment`
+
+```text
+[--wasip1-global-add-or-replace-environment] <env:str> <value:str>
+```
+
+Add or replace one environment variable for the Global group.
+
+## `--wasip1-global-delete-system-environment`
+
+```text
+[--wasip1-global-delete-system-environment] <env:str>
+```
+
+Delete one inherited host environment variable for the Global group.
+
+## `--wasip1-global-deny`
+
+```text
+[--wasip1-global-deny] <permission:str>
+```
+
+Explicitly deny one finite WASI permission for the Global group.
+
+## `--wasip1-global-disable`
+
+```text
+[--wasip1-global-disable]
+```
+
+Disable WASI Preview 1 for the Global group.
+
+## `--wasip1-global-disable-utf8-check`
+
+```text
+[--wasip1-global-disable-utf8-check]
+```
+
+Disable WASI Preview 1 UTF-8 checks for the Global group.
+
+## `--wasip1-global-enable`
+
+```text
+[--wasip1-global-enable]
+```
+
+Enable WASI Preview 1 for the Global group.
+
+## `--wasip1-global-enable-utf8-check`
+
+```text
+[--wasip1-global-enable-utf8-check]
+```
+
+Enable WASI Preview 1 UTF-8 checks for the Global group.
+
+## `--wasip1-global-force-args`
+
+```text
+[--wasip1-global-force-args] <num:size_t> [arg:str]...
+```
+
+Replace the Global group's WASI Preview 1 argv vector with an explicit argument list.
+
+## `--wasip1-global-grant`
+
+```text
+[--wasip1-global-grant] <permission:str>
+```
+
+Explicitly grant one finite WASI permission for the Global group.
+
+## `--wasip1-global-inherit-system-environment`
+
+```text
+[--wasip1-global-inherit-system-environment]
+```
+
+Inherit host environment variables into the Global group.
+
+## `--wasip1-global-interface`
+
+```text
+[--wasip1-global-interface] <api:str> <hidden|deny|allow>
+```
+
+Configure one exact WASIp1 API: hidden fails linking; deny exposes but rejects; allow retains resource checks. Default hidden.
+
+## `--wasip1-global-limit`
+
+```text
+[--wasip1-global-limit] <limit:str> <value:u64|unlimited>
+```
+
+Set one explicit WASI resource limit (decimal or unlimited; no implicit grant).
+
+## `--wasip1-global-limit-action`
+
+```text
+[--wasip1-global-limit-action] <limit:str> <reject|wait>
+```
+
+Choose reject or synchronous wait for an explicit operation limit; wait supports windows and concurrency.
+
+## `--wasip1-global-limit-exit-action`
+
+```text
+[--wasip1-global-limit-exit-action] <limit:str> <cancel|wait>
+```
+
+Choose cancel or wait on guest exit for one window/concurrency quota or native-wait; default cancel.
+
+## `--wasip1-global-mount-dir`
+
+```text
+[--wasip1-global-mount-dir] <wasi dir:str> <system dir:path>
+```
+
+Mount a host directory into the Global group's WASI Preview 1 sandbox.
+
+## `--wasip1-global-mount-dir-rights`
+
+```text
+[--wasip1-global-mount-dir-rights] <guest-dir:str> <base:u64> <inheriting:u64>
+```
+
+Set explicit base/inheriting rights for one previously declared preopen; other roots are unchanged.
+
+## `--wasip1-global-noinherit-system-environment`
+
+```text
+[--wasip1-global-noinherit-system-environment]
+```
+
+Do not inherit host environment variables into the Global group.
+
+## `--wasip1-global-set-argv0`
+
+```text
+[--wasip1-global-set-argv0] <argv0:str>
+```
+
+Override WASI Preview 1 argv[0] for the Global group.
+
+## `--wasip1-global-set-fd-limit`
+
+```text
+[--wasip1-global-set-fd-limit] <limit:size_t>
+```
+
+Set the WASI Preview 1 fd limit for the Global group.
+
 ## `--wasip1-global-socket-rights`
 
 ```text
@@ -1432,6 +1616,38 @@ Store raw WASI Preview 1 mount guest paths instead of normalized paths.
 ```
 
 Grant only this preopened socket or inherited stdio socket: read,write,accept,shutdown,readiness,flags,metadata. Default none; grants no interfaces.
+
+## `--wasip1-global-socket-tcp-connect`
+
+```text
+[--wasip1-global-socket-tcp-connect] <fd:i32> [<ipv4|ipv6|dns>:<port>|unix <path>]
+```
+
+Connect a WASI Preview 1 TCP client socket for the Global group.
+
+## `--wasip1-global-socket-tcp-listen`
+
+```text
+[--wasip1-global-socket-tcp-listen] <fd:i32> [<ipv4|ipv6>:<port>|unix <path>]
+```
+
+Listen on a WASI Preview 1 TCP server socket for the Global group.
+
+## `--wasip1-global-socket-udp-bind`
+
+```text
+[--wasip1-global-socket-udp-bind] <fd:i32> [<ipv4|ipv6>:<port>|unix <path>]
+```
+
+Bind a WASI Preview 1 UDP socket for the Global group.
+
+## `--wasip1-global-socket-udp-connect`
+
+```text
+[--wasip1-global-socket-udp-connect] <fd:i32> [<ipv4|ipv6|dns>:<port>|unix <path>]
+```
+
+Connect a WASI Preview 1 UDP socket for the Global group.
 
 ## `--wasip1-group-add-module`
 
@@ -1641,14 +1857,6 @@ Bind a WASI Preview 1 UDP socket for one named group.
 
 Connect a WASI Preview 1 UDP socket for one named group.
 
-## `--wasip1-group-trace`
-
-```text
-[--wasip1-group-trace] <group:str> <none|out|err|file <file:path>>
-```
-
-Route one named group's WASI Preview 1 trace output.
-
 ## `--wasip1-single-add-or-replace-environment`
 
 ```text
@@ -1713,6 +1921,14 @@ Enable WASI Preview 1 for one single module.
 
 Enable WASI Preview 1 UTF-8 checks for one single module.
 
+## `--wasip1-single-expose-host-api`
+
+```text
+[--wasip1-single-expose-host-api] <module:str>
+```
+
+Expose the Preview 1 preload host API to one single module.
+
 ## `--wasip1-single-force-args`
 
 ```text
@@ -1728,6 +1944,14 @@ Replace one single module's WASI Preview 1 argv vector with an explicit argument
 ```
 
 Explicitly grant one finite WASI permission for the single module.
+
+## `--wasip1-single-hide-host-api`
+
+```text
+[--wasip1-single-hide-host-api] <module:str>
+```
+
+Hide the Preview 1 preload host API from one single module.
 
 ## `--wasip1-single-inherit-system-environment`
 
@@ -1848,14 +2072,6 @@ Bind a WASI Preview 1 UDP socket for one single module.
 ```
 
 Connect a WASI Preview 1 UDP socket for one single module.
-
-## `--wasip1-single-trace`
-
-```text
-[--wasip1-single-trace] <module:str> <none|out|err|file <file:path>>
-```
-
-Route one single module's WASI Preview 1 trace output.
 
 ## `--wasip1-socket-abi`
 
@@ -2199,7 +2415,7 @@ Enable the WebAssembly threads feature.
 [--wasm-feature-wasm1p1|--wasm-feature-wasm1.1|-WF1.1|-WF1p1|-WFwasm1.1|-WFwasm1p1]
 ```
 
-Enable the WebAssembly 1.1 feature set.
+Select the WebAssembly 1.1 baseline; explicit feature enable/disable switches override it.
 
 ## `--wasm-feature-wasm2`
 
@@ -2207,7 +2423,15 @@ Enable the WebAssembly 1.1 feature set.
 [--wasm-feature-wasm2|-WF2|-WFwasm2]
 ```
 
-Select the complete WebAssembly 2.0 feature set.
+Select the WebAssembly 2.0 baseline; explicit feature enable/disable switches override it.
+
+## `--wasm-feature-wasm3`
+
+```text
+[--wasm-feature-wasm3|-WF3|-WFwasm3]
+```
+
+Select the default WebAssembly 3.0 baseline plus threads; WasmMTE remains enabled unless explicitly disabled. Explicit feature enable/disable switches override the baseline.
 
 ## `--wasm-feature-wasmmvp`
 
@@ -2215,7 +2439,7 @@ Select the complete WebAssembly 2.0 feature set.
 [--wasm-feature-wasmmvp|--wasm-feature-mvp|-WFmvp|-WFwasmmvp|-WFwasm1|-WF1]
 ```
 
-Disable WebAssembly 1.1 features and enforce the WebAssembly MVP feature set.
+Select the MVP baseline; explicit feature enable/disable switches override it.
 
 ## `--wasm-memory-grow-strict`
 
@@ -2223,7 +2447,7 @@ Disable WebAssembly 1.1 features and enforce the WebAssembly MVP feature set.
 [--wasm-memory-grow-strict|-Wmemstrict]
 ```
 
-Enable strict `memory.grow` semantics.
+Report recoverable host allocation/commit failures from `memory.grow` as -1; Wasm limit failures return -1 in either mode.
 
 ## `--wasm-preload-library`
 

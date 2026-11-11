@@ -1,0 +1,1 @@
+(module (type $s (array i64)) (func (export "_start") (local $x (ref null $s)) i64.const 0xdeadbeef81234567 i32.const 3 array.new $s local.set $x local.get $x i32.const 2 array.get $s  i64.const 0xdeadbeef81234567  i64.ne if unreachable end))

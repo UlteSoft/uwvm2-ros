@@ -7,6 +7,16 @@ static unsigned count{};
 static void check(bool v){++count;if(!v)std::abort();}
 int main()
 {
+    // The single primary byte must reach typed validation for every header,
+    // including malformed/unknown versions. It is never a memory-enable grant.
+    for(unsigned byte{};byte!=256u;++byte)
+    {
+        std::array<std::byte,3> probe{std::byte{0x41},std::byte{0xff},static_cast<std::byte>(byte)};
+        check(mt::may_contain_memtag(probe));
+        check(mt::may_contain_memtag(std::span{probe}.subspan(1,1)));
+    }
+    // Detection of obsolete FC operations exists only to force rejection in
+    // uncalled bodies; no validator or compiler admits them as MTE.
     for(auto const& instruction:mt::instructions)
     for(unsigned length=1;length<=5;++length)
     {

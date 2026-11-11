@@ -3,6 +3,7 @@
 
 import array
 import base64
+import errno
 import importlib.util
 import io
 import os
@@ -194,14 +195,32 @@ class DapAdapterTests(unittest.TestCase):
         try:
             read_fd, write_fd = os.pipe()
             try:
+                # Observe the actual kernel-issued receiving descriptor.  A
+                # /dev/fd or procfs mount is not required to check its lifetime.
+                received = []
+
+                class ReceivingSocket:
+                    def recvmsg(self, *args):
+                        result = receiver.recvmsg(*args)
+                        for level, kind, payload in result[1]:
+                            if level == socket.SOL_SOCKET and kind == socket.SCM_RIGHTS:
+                                descriptors = array.array("i")
+                                descriptors.frombytes(payload[:len(payload) - len(payload) % descriptors.itemsize])
+                                received.extend(descriptors)
+                        return result
+
                 broker = object.__new__(dap.UnixBroker)
-                broker.channel = receiver
-                open_before = len(os.listdir("/dev/fd"))
+                broker.channel = ReceivingSocket()
                 rights = array.array("i", [read_fd])
                 sender.sendmsg([b"ready\n"], [(socket.SOL_SOCKET, socket.SCM_RIGHTS, rights)])
                 with self.assertRaises(ConnectionError):
                     broker._recv_checked(64)
-                self.assertEqual(len(os.listdir("/dev/fd")), open_before)
+                self.assertEqual(len(received), 1)
+                self.assertNotEqual(received[0], read_fd)
+                with self.assertRaises(OSError) as closed:
+                    os.fstat(received[0])
+                self.assertEqual(closed.exception.errno, errno.EBADF)
+                os.fstat(read_fd)
             finally:
                 os.close(read_fd)
                 os.close(write_fd)
@@ -209,8 +228,21 @@ class DapAdapterTests(unittest.TestCase):
             sender.close()
             receiver.close()
 
+    def test_debug_authority_cannot_rebuild_modules(self):
+        fake = FakeBroker()
+        self.adapter.broker = fake
+        for level in ("full", "read-only", "limited"):
+            self.adapter.debug_permissions = level
+            for expression in ("rebuild /private/image.wasm", "rebuild", "rebuild-module 0 /private/image.wasm"):
+                with self.subTest(level=level, expression=expression):
+                    before = list(fake.commands)
+                    reply = self.send("evaluate", expression=expression, context="repl")[0]
+                    self.assertFalse(reply["success"])
+                    self.assertIn("independent signed update coordinator", reply["message"])
+                    self.assertEqual(fake.commands, before)
+
     def test_four_permission_capabilities_and_mutations(self):
-        mutation = ("next", "stepIn", "stepOut", "setVariable", "writeMemory", "setBreakpoints", "setInstructionBreakpoints", "uwvm/wasip1Edit")
+        mutation = ("pause", "continue", "next", "stepIn", "stepOut", "setVariable", "writeMemory", "setBreakpoints", "setInstructionBreakpoints", "uwvm/wasip1Edit")
         for level in dap.DEBUG_PERMISSIONS:
             caps = dap.debug_capabilities(level)
             self.assertEqual(caps["supportsWriteMemoryRequest"], level == "full")
@@ -226,6 +258,26 @@ class DapAdapterTests(unittest.TestCase):
                 self.assertFalse(response["success"])
                 self.assertIn("permission", response["message"])
         self.assertFalse(self.send("attach", debugPermissions="none")[0]["success"])
+
+    def test_observers_cannot_control_execution_through_repl_or_disconnect(self):
+        fake = FakeBroker()
+        self.adapter.broker = fake
+        for level in ("read-only", "limited"):
+            self.adapter.debug_permissions = level
+            for expression in ("pause", "continue", "c", "step 1", "run", "startw", "kill",
+                               "wasm-script status", "trace host on", "trace host off", "trace host clear"):
+                with self.subTest(level=level, expression=expression):
+                    before = list(fake.commands)
+                    reply = self.send("evaluate", expression=expression, context="repl")[0]
+                    self.assertFalse(reply["success"])
+                    self.assertIn("permission", reply["message"])
+                    self.assertEqual(fake.commands, before)
+            for key in ("terminateDebuggee", "suspendDebuggee", "restart"):
+                before = list(fake.commands)
+                reply = self.send("disconnect", **{key: True})[0]
+                self.assertFalse(reply["success"])
+                self.assertEqual(fake.commands, before)
+                self.assertFalse(fake.closed)
 
     def test_attach_and_three_step_levels(self):
         fake = FakeBroker()

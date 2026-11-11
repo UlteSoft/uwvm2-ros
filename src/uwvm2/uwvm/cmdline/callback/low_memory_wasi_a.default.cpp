@@ -5,7 +5,6 @@
 #endif
 #include <uwvm2/uwvm/cmdline/impl.h>
 #include "wasi_disable_utf8_check.h"
-#include "wasip1_global_trace.h"
 #include "wasip1_global_expose_host_api.h"
 #include "wasip1_global_disable.h"
 #include "wasip1_global_set_fd_limit.h"

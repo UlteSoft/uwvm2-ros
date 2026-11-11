@@ -1,4 +1,4 @@
-// Included only in gc_object_store under the exact numeric-array experiment.
+// Natural-width numeric array storage, shared by every execution engine.
 // Original token membership, cohort ownership, mutation locks and publication
 // stay authoritative. These private helpers accept an already-checked native
 // object and layout; they do not admit a Wasm address or an unowned byte span.

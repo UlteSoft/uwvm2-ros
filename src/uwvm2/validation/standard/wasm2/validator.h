@@ -66,6 +66,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm2
         ::uwvm2::validation::error::code_validation_error_impl& err) UWVM_THROWS
     {
         ::uwvm2::parser::wasm::concepts::feature_parameter_t<Fs...> fs_para{};
+        ::uwvm2::parser::wasm::standard::wasm1p1::features::apply_feature_baseline(
+            ::uwvm2::parser::wasm::standard::wasm1p1::features::get_wasm1p1_parameter(fs_para),
+            ::uwvm2::parser::wasm::standard::wasm1p1::features::wasm_feature_cli_mode::direct_wasm2);
         ::uwvm2::validation::standard::wasm2::validate_code(
             code_version, module_storage, function_index, code_begin, code_end, err, fs_para);
     }

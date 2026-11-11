@@ -39,6 +39,7 @@ module;
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <functional>
 #include <limits>
 #include <memory>
 #if defined(UWVM_EXPERIMENTAL_EXCEPTION_SOURCE_RETENTION) && UWVM_EXPERIMENTAL_EXCEPTION_SOURCE_RETENTION == 1
@@ -61,6 +62,7 @@ module;
 #include "uwvm_runtime_activation_cleanup.h"
 #include "uwvm_runtime_execution_entry.h"
 #include "uwvm_runtime_native_stack_guard.h"
+#include "uwvm_runtime_memory_guard_landing.h"
 #include "uwvm_runtime_debug_native_stack.h"
 #include "uwvm_runtime_generated_wasm_bridge.h"
 #include "uwvm_runtime_debug_activation.h"

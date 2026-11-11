@@ -81,6 +81,8 @@
         inline bool active_host_stop_requested() noexcept { return runtime_threaded_profile_bridge::active_host_stop_requested(); }
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
         inline bool observed_caller(ros_caller_identity& out) noexcept { return runtime_threaded_profile_bridge::observed_caller(out); }
+        inline bool caller_source_facts(ros_caller_source_facts& out,bool allow_exports) noexcept
+        {return runtime_threaded_profile_bridge::caller_source_facts(out,allow_exports);}
 #endif
         inline bool memory_descriptor(::std::size_t index, preload_memory_descriptor_t* out) noexcept
         { return runtime_threaded_profile_bridge::memory_descriptor(index, out); }

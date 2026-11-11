@@ -564,13 +564,21 @@ extern "C++"
                            !same_owner(actual.profile_, configuration->profile_))
                         { out.observation = status::wrong_control_or_profile; return; }
                         if(!current_ticket(actual.ticket_)) { out.observation = status::stale_episode; return; }
-                        // In-flight waits retain queue/deadline state that a
-                        // before-opcode packet cannot restore. Live Wasm
-                        // reads/writes are safe; neither world census
-                        // or native retirement may treat it as replayable code.
+                        // Terminal traps and in-flight waits have no resumable
+                        // native landing. Plain WASI inspection still uses this
+                        // same complete cohort, closed host gate, GC and current
+                        // publication proof below. It neither resumes a helper
+                        // nor restores its queue/deadline or external resources.
+                        namespace wasi_view = ::uwvm2::uwvm::debugger::wasip1_state;
+                        bool const reading_wasip1{wasip1_requested != nullptr &&
+                            (wasip1_requested->operation == wasi_view::action::arguments ||
+                             wasip1_requested->operation == wasi_view::action::environment ||
+                             wasip1_requested->operation == wasi_view::action::descriptors ||
+                             wasip1_requested->operation == wasi_view::action::preopens ||
+                             wasip1_requested->operation == wasi_view::action::policy)};
                         if(actual.suspended_wait_ && (retiring != nullptr || complete_requested != nullptr ||
-                           wasip1_requested != nullptr || capsule_requested != nullptr ||
-                           (requested == nullptr && source_read == nullptr && mutating == nullptr)))
+                           (wasip1_requested != nullptr && !reading_wasip1) || capsule_requested != nullptr ||
+                           (requested == nullptr && source_read == nullptr && mutating == nullptr && !reading_wasip1)))
                         { out.observation = status::invalid_typed_data; return; }
                         bool found{};
                         for(auto const& slot : actual_slots)

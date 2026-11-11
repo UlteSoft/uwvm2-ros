@@ -443,6 +443,8 @@ function get_llvm_jit_options()
     local result = {llvm_version = dependency.version, static_mode = get_static_link_mode(),
         llvm_stdlib = dependency.stdlib}
     local seen = {}
+    _append_unique(result, seen, "defines",
+        'UWVM_RUNTIME_LLVM_JIT_COMPILER_ID=u8"' .. bundled.compiler_identity(dependency.build) .. '"')
     -- This belongs to the shared SDK option: target on_load callbacks may be
     -- replaced by later platform callbacks and leave CLI/runtime inconsistent.
     local sdk_version = result.llvm_full_version or result.llvm_version or ""

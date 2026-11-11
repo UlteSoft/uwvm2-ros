@@ -1,3 +1,4 @@
+#include <uwvm2/runtime/compiler/shared/mmap_fault_landing_feature.h>
 // Shared scalar/SIMD address lowering. A raw pointer is formed only after its reservation or bounds proof.
 // Only an immutable declared minimum is a lifetime-safe bound: a grown size may
 // shrink on checkpoint restore. Imported/provider memories keep minimum zero.
@@ -360,10 +361,9 @@ template <typename LoadLength>
         // Instrumented Wasm failures must reach the cold runtime observer,
         // outside an OS signal handler. Ordinary JIT keeps its guard strategy.
         if(
-#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-           // Product CLI traps must reach the exit coordinator outside signal
-           // context, including configured pending-message waits. Keep explicit
-           // bounds without enabling the debugger merely to obtain them.
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && !UWVM2_RUNTIME_HAS_LINUX_MMAP_FAULT_LANDING
+           // These targets lack ordinary-context guard delivery. Preserve their
+           // explicit bounds until the target's fault ABI is supported.
            false &&
 #endif
            !state.emit_debug_safe_points && !threaded_host_emission_scope::selected() && !info.mmap_requires_dynamic_bounds)
@@ -413,38 +413,60 @@ template <typename LoadLength>
         auto const tags{get_llvm_external_host_byte_span_pointer(b,reinterpret_cast<::std::uintptr_t>(shadow.tag_data()),
             static_cast<::std::size_t>(tag_extent),::uwvm2::utils::container::u8string_view{tag_name.data(),tag_name.size()})};
         auto const effective{b.CreateAdd(b.CreateZExtOrTrunc(address,b.getInt64Ty()),b.getInt64(static_offset))};
+        bool const deferred_fault{::uwvm2::extension::memtag::asynchronous_requested() || ::uwvm2::extension::memtag::logging_requested()};
+        ::std::uint8_t comparison_mask{0xffu};
+#if defined(__linux__) && defined(__aarch64__)
+        if(shadow.hardware_selected() && ::uwvm2::extension::memtag::hardware_checked_access_requested())
+        { comparison_mask=raw_address->getType()->isIntegerTy(32u)?0u:0xf0u; }
+#endif
         bool emitted{true};
         if(!emit_memtag_scalar_check(b,tags,raw_address,effective,access_size,shadow.shared(),
             [&](::llvm::Value* raw, ::llvm::Value* granule, ::llvm::Value* pointer_tag, ::llvm::Value* stored_tag) noexcept
             {
                 auto const native{b.getIntNTy(sizeof(::std::uintptr_t)*CHAR_BIT)};
-                auto const type{::llvm::FunctionType::get(b.getVoidTy(),
-                    {native,b.getInt64Ty(),b.getInt64Ty(),b.getInt32Ty(),b.getInt32Ty()},false)};
-                auto const bridge{get_llvm_runtime_bridge_function_symbol_value<
+                auto const type{deferred_fault ? ::llvm::FunctionType::get(b.getVoidTy(),
+                    {native,b.getInt64Ty(),b.getInt64Ty(),b.getInt32Ty(),b.getInt32Ty(),b.getInt64Ty(),b.getInt64Ty(),b.getInt64Ty()},false) :
+                    ::llvm::FunctionType::get(b.getVoidTy(),{native,b.getInt64Ty(),b.getInt64Ty(),b.getInt32Ty(),b.getInt32Ty()},false)};
+                auto const bridge{deferred_fault ? get_llvm_runtime_bridge_function_symbol_value<
+                    ::uwvm2::runtime::memtag::deferred::record_llvm_at>(b,type) : get_llvm_runtime_bridge_function_symbol_value<
                     ::uwvm2::runtime::lib::llvm_jit_memtag_trap>(b,type)};
                 if(bridge == nullptr) { emitted = false; b.CreateUnreachable(); return; }
-                auto const call{b.CreateCall(type,bridge,{::llvm::ConstantInt::get(native,
-                    info.memory_p->diagnostic_owner_memory_index),raw,granule,pointer_tag,stored_tag})};
+                auto const memory_id{::llvm::ConstantInt::get(native,info.memory_p->diagnostic_owner_memory_index)};
+                auto const& local{*state.local_func_storage_ptr};
+                auto const call{deferred_fault ? b.CreateCall(type,bridge,{memory_id,raw,granule,pointer_tag,stored_tag,
+                    b.getInt64(local.module_id),b.getInt64(local.function_index),b.getInt64(state.current_wasm_op_offset)}) :
+                    b.CreateCall(type,bridge,{memory_id,raw,granule,pointer_tag,stored_tag})};
                 call->setTailCallKind(::llvm::CallInst::TCK_NoTail);
                 // This five-argument Guest trap uses the same final managed
                 // Invoke/cleanup qualification as integer and bounds traps.
-                call->setMetadata("uwvm.managed.trap.candidate", ::llvm::MDNode::get(b.getContext(), {}));
+                if(!deferred_fault)
+                { call->setMetadata("uwvm.managed.trap.candidate", ::llvm::MDNode::get(b.getContext(), {})); }
                 apply_llvm_jit_host_calling_conv(call);
                 emit_llvm_jit_memory_clobber(b);
-                b.CreateUnreachable();
-            }) || !emitted) { return nullptr; }
+                if(!deferred_fault) { b.CreateUnreachable(); }
+            }, base, !state.emit_debug_safe_points && !threaded_host_emission_scope::selected()
+                ? info.declared_minimum_byte_length : 0u,deferred_fault,comparison_mask) || !emitted) { return nullptr; }
+        if(deferred_fault && state.memtag_direct_origin_offset==state.current_wasm_op_offset)
+        {
+            // This direct private access never acquires an owner lock or calls
+            // host code. It keeps every bounds/tag proof and records precise
+            // source constants on failure. Control/host/atomic/GC boundaries
+            // still drain queued evidence; fallback helpers keep their origin.
+            for(auto& handle:state.memtag_direct_origin_calls)
+            { if(auto* call=::llvm::dyn_cast_or_null<::llvm::CallInst>(handle)) { call->eraseFromParent(); } }
+            state.memtag_direct_origin_calls.clear();
+        }
 #if defined(__linux__) && defined(__aarch64__)
         if(shadow.hardware_selected())
         {
-            // Software64 retains its full eight-bit proof; hardware mirrors the
-            // low four bits. This baseline does not remove software comparisons.
-            auto const logical_tag{b.CreateAnd(b.CreateLShr(
-                b.CreateZExtOrTrunc(raw_address,b.getInt64Ty()),
-                b.getInt64(raw_address->getType()->isIntegerTy(32u) ? 28u : 56u)),b.getInt64(15u))};
-            auto const native_address{b.CreateAnd(b.CreatePtrToInt(pointer,b.getInt64Ty()),
-                b.getInt64(0x00ffffffffffffffull))};
-            pointer = b.CreateIntToPtr(b.CreateOr(native_address,b.CreateShl(logical_tag,b.getInt64(56u))),
-                pointer->getType(),"memory.hardware.tagged");
+            // This witness comes from the real native mmap reservation. MTE
+            // activation/restore/growth recheck the canonical-span contract;
+            // a cache load in another process cannot weaken that admission.
+            bool const canonical{::uwvm2::extension::memtag::hardware_mte::canonical_native_span(
+                reinterpret_cast<::std::uintptr_t>(info.stable_memory_begin),
+                info.stable_memory_reserved_span_bytes)};
+            pointer=emit_memtag_hardware_pointer(b,base,raw_address,pointer,static_offset,canonical);
+            if(pointer==nullptr) { return nullptr; }
         }
 #endif
     }

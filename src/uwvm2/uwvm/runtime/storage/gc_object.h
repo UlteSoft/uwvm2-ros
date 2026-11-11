@@ -311,7 +311,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
         // this view never separately deletes the initialized tail array.
         struct object_values_view
         {
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
             // Native allocation view only. The immutable enclosing header says
             // whether the tail contains real carriers or original byte-array
             // elements. A byte tail is never exposed as a carrier array.
@@ -320,11 +319,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             { return static_cast<gc_object_value*>(pointer); }
             [[nodiscard]] constexpr ::std::byte* byte_data() const noexcept
             { return static_cast<::std::byte*>(pointer); }
-#else
-            gc_object_value* pointer{};
-            [[nodiscard]] constexpr gc_object_value* get() const noexcept
-            { return pointer; }
-#endif
             [[nodiscard]] constexpr explicit operator bool() const noexcept
             { return pointer != nullptr; }
             [[nodiscard]] constexpr gc_object_value& operator[](::std::size_t index) const noexcept
@@ -332,11 +326,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 // [pointer, pointer + object.length) is an initialized array.
                 // Callers prove index < length before forming this element.
                 // ^^ pointer + index stays within that checked owned range.
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
                 return get()[index];
-#else
-                return pointer[index];
-#endif
             }
             constexpr void reset(gc_object_value* initialized_array) noexcept
             {
@@ -344,7 +334,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 // ^^ bind once before publication; this view owns no other block.
                 pointer = initialized_array;
             }
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
             constexpr void reset_bytes(::std::byte* original_array_tail) noexcept
             {
                 // [unpublished numeric array][complete original byte tail]
@@ -352,7 +341,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 // gc_object_value lifetime is fabricated in this allocation.
                 pointer = original_array_tail;
             }
-#endif
         };
         static_assert(sizeof(object_values_view) == sizeof(::std::unique_ptr<gc_object_value[]>));
         static_assert(alignof(object_values_view) == alignof(::std::unique_ptr<gc_object_value[]>));
@@ -404,11 +392,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             // Written only while every reader/mutator is stopped. This byte
             // occupies existing alignment padding; it adds no hot-path access.
             bool marked{};
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
             // Immutable after publication; lives in existing header padding.
             // Only the checked native array allocator may select a byte tail.
             bool numeric_array_{};
-#endif
             object_values_view values{};
             ::std::size_t length{};
             ::std::uint_least32_t type_index{};
@@ -426,13 +412,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 // placement-array failure leaves values null; no element is read.
                 // End all carrier lifetimes before a pooled body is poisoned or
                 // reused, even though their destructors generate no instructions.
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
                 // Numeric tails are live original std::byte[] elements, not
                 // placement-created carriers. Their array owner ends them.
                 if(!numeric_array_ && values) { ::std::destroy_n(values.get(), length); }
-#else
-                if(values) { ::std::destroy_n(values.get(), length); }
-#endif
             }
 
             // This deallocation function is called directly by destroy_object,
@@ -956,6 +938,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
         ::std::weak_ptr<::uwvm2::uwvm::runtime::full::full_source_instance const> checkpoint_source_binding_{};
         // Child-only callback lineage; ordinary guest accesses never inspect it.
         ::std::weak_ptr<::uwvm2::uwvm::runtime::initializer::ThreadedChildWorld const> threaded_world_binding_{};
+        // The world pins this construction/runtime account until all objects die.
+#ifndef UWVM_MODULE
+        ::uwvm2::uwvm::runtime::initializer::threaded_allocation_pin threaded_account_{};
+#endif
 
         struct slab_guard
         {
@@ -1166,7 +1152,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 // This expression starts a real byte ARRAY lifetime. Its
                 // original result, including any implementation array cookie,
                 // is retained. Fundamental alignment is [expr.new]/17.
-                auto* backing{new(::std::nothrow) ::std::byte[bytes]};
+                auto* backing{allocate_object_bytes(bytes)};
                 if(backing == nullptr) { return gc_object_status::out_of_memory; }
                 chunk = ::new(static_cast<void*>(backing)) slab_chunk{};
                 chunk->backing = backing;
@@ -2250,7 +2236,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             object* fresh{};
             auto const status{allocate(type_index, gc_type::composite_kind::array, length, fresh)};
             if(status != gc_object_status::ok) { return status; }
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
             if(fresh->numeric_array_)
             {
                 // The allocator checked the complete length*width byte tail.
@@ -2260,7 +2245,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 { ::std::memset(fresh->values.byte_data(), 0, length * numeric_array_storage_width(storage)); }
             }
             else
-#endif
             if(field_is_reference(storage))
             {
                 // A carrier's value-initialized bytes are not a portable null
@@ -2442,9 +2426,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             return width <= 4uz ? gc_object_value::i32(static_cast<::std::uint32_t>(bits)) :
                                   gc_object_value::i64(bits);
         }
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
 # include "numeric_array_payload.h"
-#endif
 #if defined(UWVM_EXPERIMENTAL_GENERAL_GC_SLAB) && UWVM_EXPERIMENTAL_GENERAL_GC_SLAB == 1
 # include "general_gc_slab.h"
 #endif
@@ -2467,6 +2449,25 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             { return static_cast<gc_object_value*>(::std::memcpy(tail, complete_source, length * sizeof(gc_object_value))); }
             return ::new(static_cast<void*>(tail)) gc_object_value[length]{};
         }
+        [[nodiscard]] bool has_threaded_allocation_budget() const noexcept
+        {
+#ifndef UWVM_MODULE
+            return static_cast<bool>(threaded_account_);
+#else
+            return false;
+#endif
+        }
+        [[nodiscard]] ::std::byte* allocate_object_bytes(::std::size_t bytes) noexcept
+        {
+#ifndef UWVM_MODULE
+            if(threaded_account_)
+            {
+                using request=::uwvm2::uwvm::runtime::initializer::threaded_nothrow_array;
+                return new(request{::std::addressof(threaded_account_.get())}) ::std::byte[bytes];
+            }
+#endif
+            return new(::std::nothrow) ::std::byte[bytes];
+        }
         [[nodiscard]] inline gc_object_status allocate(::std::uint_least32_t type_index,
                                                         gc_type::composite_kind kind,
                                                         ::std::size_t length,
@@ -2476,27 +2477,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             static_assert(::std::is_nothrow_default_constructible_v<object>);
             auto constexpr maximum_bytes{static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)())};
             static_assert(object_value_offset <= maximum_bytes);
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
             auto const raw_width{kind == gc_type::composite_kind::array ?
                 numeric_array_width(checked_type(type_index, kind)) : 0uz};
             auto const element_bytes{raw_width != 0uz ? raw_width : sizeof(gc_object_value)};
             if(length > (maximum_bytes - object_value_offset) / element_bytes)
             { return gc_object_status::size_overflow; }
             auto const bytes{object_value_offset + length * element_bytes};
-#else
-            if(length > (maximum_bytes - object_value_offset) / sizeof(gc_object_value))
-            { return gc_object_status::size_overflow; }
-            auto const bytes{object_value_offset + length * sizeof(gc_object_value)};
-#endif
 #if defined(UWVM_EXPERIMENTAL_GENERAL_GC_SLAB) && UWVM_EXPERIMENTAL_GENERAL_GC_SLAB == 1 && !defined(UWVM2TEST_GC_NUMERIC_SLAB_RESERVED_PROBE)
             auto const payload_bytes{bytes - object_value_offset};
             if(general_slab_eligible(type_index,kind,length,payload_bytes))
             { return allocate_general_slab(type_index,kind,length,payload_bytes,
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
                 raw_width != 0uz,
-#else
-                false,
-#endif
                 result, complete_source); }
 #endif
 #if defined(UWVM_EXPERIMENTAL_SINGLE_LOCK_NUMERIC_SLAB) && UWVM_EXPERIMENTAL_SINGLE_LOCK_NUMERIC_SLAB == 1 || \
@@ -2519,7 +2510,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             }
             else
             {
-                auto* backing{new(::std::nothrow) ::std::byte[bytes]};
+                auto* backing{allocate_object_bytes(bytes)};
                 if(backing == nullptr) { return gc_object_status::out_of_memory; }
                 // [live original byte-array storage][envelope][aligned tail]
                 // ^^ placement creates the union/envelope but no object member;
@@ -2532,16 +2523,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             // ^^ placement activates exactly its named object member. Header
             // pointer conversions later use the real containing objects.
             auto* fresh{::new(static_cast<void*>(::std::addressof(reservation.envelope->payload.instance))) object{}};
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
             fresh->numeric_array_ = raw_width != 0uz;
-#endif
             if(length != 0uz)
             {
                 // [original byte array][live envelope][aligned whole tail] end
                 // ^^ tail is derived from the retained array element pointer,
                 // never by arithmetic on the object or envelope representation.
                 auto* tail{reservation.original_array_slot + object_value_offset};
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
                 if(fresh->numeric_array_)
                 {
                     // [original byte-array storage][length*raw_width tail]
@@ -2552,14 +2540,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 }
                 else
                 {
-#endif
-                auto* initialized_values{initialize_carrier_tail(tail, length, complete_source)};
-                if(initialized_values == nullptr)
-                { destroy_object(fresh); return gc_object_status::size_overflow; }
-                fresh->values.reset(initialized_values);
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
+                    auto* initialized_values{initialize_carrier_tail(tail, length, complete_source)};
+                    if(initialized_values == nullptr)
+                    { destroy_object(fresh); return gc_object_status::size_overflow; }
+                    fresh->values.reset(initialized_values);
                 }
-#endif
             }
             fresh->owner = this;
             fresh->kind = kind;
@@ -2998,50 +2983,61 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
 #endif
         }
 #ifndef UWVM_MODULE
-        // A new arena/lease/callback with a bounded, privately copied immutable
-        // FUNCTION-ONLY schema. No aggregate bucket, canonical-registry insertion
-        // or nested field allocation can happen on this construction path.
-        struct threaded_function_schema_tag {};
+        // New private arena; immutable canonical schemas can be shared by value,
+        // but object membership, references and mutable fields never cross worlds.
+        struct threaded_schema_tag {};
         explicit gc_object_store(gc_object_store const& source,
             ::std::shared_ptr<gc_lease_owner> const& leases,
-            gc_function_type_match_callback callback,
-            threaded_function_schema_tag,
-            ::uwvm2::uwvm::runtime::initializer::threaded_allocation_account& account) noexcept
-            : lease_owner_{leases}, function_type_match_{callback}
+            gc_function_type_match_callback callback, threaded_schema_tag,
+            ::uwvm2::uwvm::runtime::initializer::threaded_allocation_pin account_pin) noexcept
+            : lease_owner_{leases}, function_type_match_{callback}, threaded_account_{::std::move(account_pin)}
         {
-            if(!source.valid_) { return; }
+            if(!source.valid_ || !threaded_account_) { return; }
+            auto& account=threaded_account_.get();
             auto const count{source.layout_count_};
             if(count != 0uz && (!source.layouts_ || !source.canonical_ids_)) { return; }
-            if(count > ((::std::numeric_limits<::std::size_t>::max)() - 64uz) / sizeof(type_layout) ||
-                count > ((::std::numeric_limits<::std::size_t>::max)() - 64uz) / sizeof(::std::size_t)) { return; }
-            for(::std::size_t i{}; i != count; ++i)
+            if(count > (PTRDIFF_MAX - 64uz) / sizeof(type_layout) ||
+               count > (PTRDIFF_MAX - 64uz) / sizeof(::std::size_t)) { return; }
+            using request = ::uwvm2::uwvm::runtime::initializer::threaded_nothrow_array;
+            if(source.membership_buckets_)
             {
-                auto const& layout{source.layouts_[i]};
-                if(layout.kind != gc_type::composite_kind::function || layout.field_count != 0uz ||
-                    layout.fields || layout.has_reference_fields || layout.has_packed_fields ||
-                    layout.has_nonnullable_reference_fields) { return; }
+                membership_buckets_.reset(new(request{&account}) ::std::atomic<object*>[bucket_count]{});
+                if(!membership_buckets_) { return; }
             }
             if(count != 0uz)
             {
-                using request = ::uwvm2::uwvm::runtime::initializer::threaded_nothrow_array;
-                layouts_.reset(new(request{::std::addressof(account)}) type_layout[count]{});
+                layouts_.reset(new(request{&account}) type_layout[count]{});
                 if(!layouts_) { return; }
-                canonical_ids_.reset(new(request{::std::addressof(account)}) ::std::size_t[count]{});
+                canonical_ids_.reset(new(request{&account}) ::std::size_t[count]{});
                 if(!canonical_ids_) { return; }
                 for(::std::size_t i{}; i != count; ++i)
                 {
-                    layouts_[i].kind = gc_type::composite_kind::function;
-                    layouts_[i].parent = source.layouts_[i].parent;
-                    canonical_ids_[i] = source.canonical_ids_[i];
+                    auto const& from{source.layouts_[i]}; auto& to{layouts_[i]};
+                    to.kind=from.kind; to.parent=from.parent; to.field_count=from.field_count;
+                    to.has_reference_fields=from.has_reference_fields;
+                    to.has_packed_fields=from.has_packed_fields;
+                    to.has_nonnullable_reference_fields=from.has_nonnullable_reference_fields;
+                    if(from.field_count != 0uz)
+                    {
+                        if(!from.fields || from.field_count > (PTRDIFF_MAX - 64uz) / sizeof(gc_type::field_type)) { return; }
+                        to.fields.reset(new(request{&account}) gc_type::field_type[from.field_count]{});
+                        if(!to.fields) { return; }
+                        for(::std::size_t f{};f != from.field_count;++f) { to.fields[f]=from.fields[f]; }
+                    }
+                    canonical_ids_[i]=source.canonical_ids_[i];
 #if defined(UWVM_EXPERIMENTAL_PRECISE_GC_TRACE_METADATA) && UWVM_EXPERIMENTAL_PRECISE_GC_TRACE_METADATA == 1
-                    // Function schema has zero fields, so build performs no allocation.
-                    if(layouts_[i].trace.build(gc_type::composite_kind::function, nullptr, 0uz) != gc_trace_metadata_status::ok) { return; }
+                    // Charge the identical copied schema's full reference-index array.
+                    if(!account.charge(from.trace.allocated_index_bytes()) ||
+                       to.trace.build(to.kind,to.fields.get(),to.field_count)!=gc_trace_metadata_status::ok) { return; }
 #endif
                 }
             }
-            layout_count_ = count;
-            valid_ = true;
-            register_cohort_member(); // intrusive links only; no allocation.
+            layout_count_=count;
+#if defined(UWVM_EXPERIMENTAL_ARRAY_SET_LOCAL_REF_AUTH) && UWVM_EXPERIMENTAL_ARRAY_SET_LOCAL_REF_AUTH == 1
+            if(!account.charge(count * sizeof(::std::size_t) * 4uz) || !build_local_subtype_intervals()) { return; }
+#endif
+            valid_=true;
+            register_cohort_member();
         }
 #endif
     public:
@@ -3440,7 +3436,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 // EXACTLY layout.fields, not guest/reference membership proof.
                 if(!layout->trace.matches_shape(current.kind, layout->field_count)) { return false; }
 #endif
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
                 if(current.numeric_array_)
                 {
                     auto const width{numeric_array_width(layout)};
@@ -3451,7 +3446,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                         (static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)()) -
                          object_value_offset) / width;
                 }
-#endif
 #if defined(UWVM_EXPERIMENTAL_PRECISE_GC_TRACE_METADATA) && UWVM_EXPERIMENTAL_PRECISE_GC_TRACE_METADATA == 1
                 return visit_precise_reference_fields(current, *layout, visitor);
 #else
@@ -3939,7 +3933,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 // the original visitor; shape is never reference authority.
                 if(!layout->trace.matches_shape(current.kind, layout->field_count)) { return false; }
 #endif
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
                 if(current.numeric_array_)
                 {
                     auto const width{numeric_array_width(layout)};
@@ -3950,7 +3943,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                         (static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)()) -
                          object_value_offset) / width;
                 }
-#endif
 #if defined(UWVM_EXPERIMENTAL_PRECISE_GC_TRACE_METADATA) && UWVM_EXPERIMENTAL_PRECISE_GC_TRACE_METADATA == 1
                 return visit_precise_reference_fields(current, *layout, visitor);
 #else
@@ -5037,7 +5029,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             // Wide numeric arrays retain their existing scheduling policy.
             // The separately selected extension also charges large packed
             // narrow and reference arrays; its small-array count path is intact.
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
             if(length < 256uz) { return 0uz; }
             auto const* layout{checked_type(type_index, gc_type::composite_kind::array)};
             auto const width{numeric_array_width(layout)};
@@ -5064,9 +5055,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
 # else
             return 0uz;
 # endif
-#else
-            return 0uz;
-#endif
         }
 #endif
 
@@ -5214,7 +5202,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                     if(!value_matches(inputs[i], layout->fields[i].storage)) { return gc_object_status::invalid_value; }
                 }
             }
-            if(compact_layout(layout) && compact_numeric_payload::has_raw_four_byte_layout && !weak_from_this().expired())
+            // Private threaded worlds use the charged arena. Compact range
+            // backing has a different allocator and cannot bypass that budget.
+            if(!has_threaded_allocation_budget() && compact_layout(layout) &&
+               compact_numeric_payload::has_raw_four_byte_layout && !weak_from_this().expired())
             {
                 // [inputs,inputs+1) the complete carrier extent was checked.
                 // Copy its low raw32 bits without allocating a legacy header.
@@ -5300,7 +5291,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 if(!valid_references) { return gc_object_status::invalid_value; }
             }
 #if defined(UWVM_EXPERIMENTAL_COMPACT_NUMERIC) && UWVM_EXPERIMENTAL_COMPACT_NUMERIC == 1
-            if(compact_layout(layout) && compact_numeric_payload::has_raw_four_byte_layout && !weak_from_this().expired())
+            // Private threaded worlds use the charged arena. Compact range
+            // backing has a different allocator and cannot bypass that budget.
+            if(!has_threaded_allocation_budget() && compact_layout(layout) &&
+               compact_numeric_payload::has_raw_four_byte_layout && !weak_from_this().expired())
             { return allocate_compact_numeric(type_index, inputs[0uz].as<::std::uint32_t>(), result); }
 #endif
             object* fresh{};
@@ -5330,7 +5324,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 expected += width;
             }
             if(expected != stack_bytes) { return gc_object_status::invalid_value; }
-            if(compact_layout(layout) && compact_numeric_payload::has_raw_four_byte_layout && !weak_from_this().expired())
+            // Private threaded worlds use the charged arena. Compact range
+            // backing has a different allocator and cannot bypass that budget.
+            if(!has_threaded_allocation_budget() && compact_layout(layout) &&
+               compact_numeric_payload::has_raw_four_byte_layout && !weak_from_this().expired())
             {
                 // [stack_begin,stack_begin+4) expected==stack_bytes above and
                 // the single unpacked numeric field prove the complete extent.
@@ -5409,7 +5406,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             auto const* layout{checked_type(type_index, gc_type::composite_kind::struct_)};
             if(layout == nullptr) { return gc_object_status::invalid_type; }
             if(layout->has_nonnullable_reference_fields) { return gc_object_status::invalid_value; }
-            if(compact_layout(layout) && compact_numeric_payload::has_raw_four_byte_layout && !weak_from_this().expired())
+            // Private threaded worlds use the charged arena. Compact range
+            // backing has a different allocator and cannot bypass that budget.
+            if(!has_threaded_allocation_budget() && compact_layout(layout) &&
+               compact_numeric_payload::has_raw_four_byte_layout && !weak_from_this().expired())
             { return allocate_compact_numeric(type_index, 0u, result); }
             object* fresh{};
             auto const status{allocate(type_index, gc_type::composite_kind::struct_, layout->field_count, fresh)};
@@ -5459,11 +5459,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 if(lease != gc_object_status::ok) { destroy_object(fresh); return lease; }
             }
             auto const packed{pack(value, layout->fields[0].storage.packed)};
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
             fill_array_values(*fresh,0uz,length,packed,layout->fields[0uz].storage);
-#else
-            for(::std::size_t i{};i != length;++i) { fresh->values[i]=packed; }
-#endif
             return publish(fresh, result);
         }
         [[nodiscard]] inline gc_object_status array_new_default(::std::uint_least32_t type_index,
@@ -5475,13 +5471,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             if(storage.packed == gc_type::packed_kind::none &&
                storage.value.kind == gc_type::value_kind::reference && !storage.value.nullable)
             { return gc_object_status::invalid_value; }
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
             // Keep the established byte-array path at the small checked entry.
             // It already uses one libc memset; an outlined general constructor
             // added stalls without reducing its payload or publication work.
             if(storage.packed == gc_type::packed_kind::i8)
             { return array_new(type_index, default_value(storage), length, result); }
-#endif
             return initialize_default_array_payload(type_index, length, storage, result);
         }
         [[nodiscard]] inline gc_object_status array_new_fixed(::std::uint_least32_t type_index,
@@ -5503,12 +5497,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 // [0, length) fresh owns length live slots.
                 auto const lease{retain_embedded_reference(*fresh, inputs[i], layout->fields[0].storage)};
                 if(lease != gc_object_status::ok) { destroy_object(fresh); return lease; }
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
                 store_array_value(*fresh, i, pack(inputs[i], layout->fields[0uz].storage.packed),
                     layout->fields[0uz].storage);
-#else
-                fresh->values[i] = pack(inputs[i], layout->fields[0].storage.packed);
-#endif
             }
             return publish(fresh, result);
         }
@@ -5535,11 +5525,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 if(!value_matches(value, storage)) { destroy_object(fresh); return gc_object_status::invalid_value; }
                 auto const lease{retain_embedded_reference(*fresh, value, storage)};
                 if(lease != gc_object_status::ok) { destroy_object(fresh); return lease; }
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
                 store_array_value(*fresh, i, pack(value, storage.packed), storage);
-#else
-                fresh->values[i] = pack(value, storage.packed);
-#endif
             }
             return publish(fresh, result);
         }
@@ -5569,11 +5555,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 // [source + source_offset, + bytes) is complete: i*width < bytes.
                 // ^^ the element pointer advances by one proven in-range width.
                 auto const value{data_element_value(source + source_offset + i * width, storage)};
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
                 store_array_value(*fresh, i, pack(value, storage.packed), storage);
-#else
-                fresh->values[i] = pack(value, storage.packed);
-#endif
             }
             return publish(fresh, result);
         }
@@ -5606,11 +5588,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 // Both destination element and source byte ranges were checked by subtraction.
                 // ^^ source + source_offset + i*width stays inside the immutable segment.
                 auto const value{data_element_value(source + source_offset + i * width, storage)};
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
                 store_array_value(*obj, destination_offset + i, pack(value, storage.packed), storage);
-#else
-                obj->values[destination_offset + i] = pack(value, storage.packed);
-#endif
             }
             return gc_object_status::ok;
         }
@@ -5811,14 +5789,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             if(header == nullptr) { return false; }
             auto width{sizeof(gc_object_value)};
             bool raw{};
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
             if(header->numeric_array_)
             {
                 width = numeric_array_width(checked_type(header->type_index, header->kind));
                 if(width == 0uz) { return false; }
                 raw = true;
             }
-#endif
             if(header->length > (static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)()) -
                 object_value_offset) / width) { return false; }
             element_bytes = width;
@@ -5827,11 +5803,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             return true;
         }
 #endif
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
+# include "jit_gc_local_access.h"
 # include "numeric_array_get32.h"
 #if defined(UWVM_EXPERIMENTAL_TYPED_ARRAY_LOAD) && UWVM_EXPERIMENTAL_TYPED_ARRAY_LOAD == 1 && defined(__x86_64__) && defined(__linux__) && defined(__clang__) && defined(__SIZEOF_INT128__)
 # include "jit_numeric_array_borrow.h"
-#endif
 #endif
         [[nodiscard]] inline gc_object_status array_get(gc_reference reference, ::std::size_t index,
             bool sign_extend, gc_object_value& result) const noexcept
@@ -5845,24 +5820,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             {
                 object_lock lock{*obj};
                 // [0, length) index was checked and is stable for the object's lifetime.
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
                 result = unpack(load_array_value(*obj, index, layout->fields[0uz].storage),
                     layout->fields[0uz].storage.packed, sign_extend);
-#else
-                result = unpack(obj->values[index], layout->fields[0].storage.packed, sign_extend);
-#endif
             }
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
             else { result = unpack(load_array_value(*obj, index, layout->fields[0uz].storage),
                 layout->fields[0uz].storage.packed, sign_extend); }
-#else
-            else { result = unpack(obj->values[index], layout->fields[0].storage.packed, sign_extend); }
-#endif
             return gc_object_status::ok;
         }
-#if defined(UWVM_EXPERIMENTAL_NUMERIC_ARRAY_SET32) && UWVM_EXPERIMENTAL_NUMERIC_ARRAY_SET32 == 1
 # include "numeric_array_set32.h"
-#endif
         [[nodiscard]] inline gc_object_status array_set(gc_reference reference, ::std::size_t index,
             gc_object_value value) noexcept
         {
@@ -5957,7 +5922,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
 #endif
             object_lock lock{*obj};
             // [0, length) index was checked and the array never changes length.
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
             // Keep the payload write in this checked callsite when the generated
             // raw-carrier bridge is inlined; preserve packing and native memcpy.
 #if defined(UWVM_EXPERIMENTAL_GC_ARRAY_SET_RAW_CARRIER_ABI) && UWVM_EXPERIMENTAL_GC_ARRAY_SET_RAW_CARRIER_ABI == 1 && !defined(UWVM_EXPERIMENTAL_MANAGED_NUMERIC_PAGE)
@@ -5966,9 +5930,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
 #endif
 #endif
             store_array_value(*obj, index, pack(value, field.storage.packed), field.storage);
-#else
-            obj->values[index] = pack(value, field.storage.packed);
-#endif
             return gc_object_status::ok;
         }
         [[nodiscard]] inline gc_object_status array_fill(gc_reference reference, ::std::size_t offset,
@@ -5989,15 +5950,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             }
             auto const packed{pack(value, field.storage.packed)};
             object_lock lock{*obj};
-            for(::std::size_t i{}; i != count; ++i)
-            {
-                // [offset, offset + count) checked by subtraction, so addition cannot overflow.
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
-                store_array_value(*obj, offset + i, packed, field.storage);
-#else
-                obj->values[offset + i] = packed;
-#endif
-            }
+            // Complete destination bounds and the reference lease were
+            // checked before taking this lock. Copy a native-width pattern;
+            // invalid ranges never perform even a partial payload write.
+            fill_array_values(*obj, offset, count, packed, field.storage);
             return gc_object_status::ok;
         }
         [[nodiscard]] inline gc_object_status array_copy(gc_reference destination, ::std::size_t dst_offset,
@@ -6043,12 +5999,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                     }
                 }
                 // Both ranges are bounded. memmove preserves overlapping self-copy semantics.
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
                 copy_array_values(*dst, dst_offset, *src, src_offset, count, dst_storage);
-#else
-                ::std::memmove(dst->values.get() + dst_offset, src->values.get() + src_offset,
-                               count * sizeof(gc_object_value));
-#endif
                 return gc_object_status::ok;
             };
             if(dst == src) { object_lock lock{*dst}; return copy(); }

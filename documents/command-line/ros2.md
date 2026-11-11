@@ -10,8 +10,9 @@ Interface visibility starts empty. `--ros2-single-enable <module>` exposes
 this ROS version's complete registered namespace family to that explicitly
 created module target. The Group and Global enable options do the same for
 their explicitly bound modules. There is no per-function exposure setting.
-A new or renamed module remains unbound; Global enable does not select it.
-Use `--ros2-global-add-module <module>` for an explicit Global binding.
+A module without an explicit Single/Group binding selects Global. Global
+starts disabled with hidden interfaces. `--ros2-global-add-module <module>`
+is an optional membership declaration; it is not required for default selection.
 
 Enable alone grants no resource, opens no Gateway connection, and needs no
 unused network identity. Static validation resolves the enabled namespace and
@@ -142,7 +143,14 @@ These parameters use uwvm2's existing parameter registry, hash lookup and argume
 
 `single-create` binds that exact loaded Wasm module name to its Target. `group-create` creates policy storage and `group-add-module` binds an existing loaded module by name. A module may have one explicit Target per ROS version. Duplicate membership and Single/Group conflicts fail. Names are matched against the actual loaded main and preload Wasm artifacts; `--wasm-set-main-module-name` and `--wasm-preload-library` control those names.
 
-An explicitly bound Target receives no Global capabilities, connection fields or enabled state. It remains the selected Target even when disabled or empty, with no fallback to Global. An unbound module has no Target and cannot resolve a ROS host import. Global enable/grant configuration applies only to exact modules listed by `--ros2-global-add-module`. Group members copy policy into independent Instance capability tables and open independent Gateway sessions. ROS1, ROS2 and WASI group namespaces are independent.
+An explicit Single/Group Target receives no Global capabilities, connection
+fields or enabled state, even when the selected Target is disabled or empty.
+All other modules select the default Global Target. Each Group and Global owns
+a shared connection/session, capability table and quota ledger; a permitted
+member may use another member's handle. Different Single/Group/Global policies
+have independent environments. ROS1, ROS2 and WASI policy namespaces remain
+independent. Duplicate Single declarations or Group members, and assignment to
+more than one explicit Single/Group, are rejected before Guest execution.
 
 `check-policy` and `dump-effective-policy` complete after all configuration options, regardless of where the diagnostic switch appeared. With `--run file.wasm`, the file is parsed for actual module-name binding but Guest code does not execute. Without `--run`, only already loaded preload artifacts can satisfy module bindings. Dump produces one sorted JSON record per requested ROS version on stdout.
 
@@ -179,8 +187,22 @@ explicit io/algorithm/ros_comm Preload configuration and current acceptance.
 
 ## Worker isolation
 
-Enabled ROS execution requires a supported interpreter or qualified LLVM backend and rejects additional native DL/weak-symbol plugins and socket standard streams. The ROS product starts with no WASIp1 environment, descriptors, preopens, or host functions. Explicit WASIp1 directory preopens retain the owning module's roots, base/inheriting rights and budgets when ROS is enabled. A ROS namespace or resource grant supplies no filesystem authority, and modules cannot borrow each other's preopens. Proc/sys filesystems remain inaccessible, including through an approved ancestor directory. This ROS backend profile still rejects host environment inheritance and socket preopens, including modules with no ROS grants. The [SDK deployment guide](https://github.com/UlteSoft/uwvm2-ros-sdk/blob/main/document/native-run.en_US.md) describes process and network trust boundaries.
+Enabled ROS execution requires a supported interpreter or qualified LLVM backend and retains the independent admission rules of explicit native drivers and WASIp1 socket resources. The ROS product starts with no WASIp1 environment, descriptors, preopens, or host functions. Explicit WASIp1 directory preopens retain the owning module's roots, base/inheriting rights and budgets when ROS is enabled. A ROS namespace or resource grant supplies no filesystem authority, and modules cannot borrow each other's preopens. Proc/sys filesystems remain inaccessible, including through an approved ancestor directory. Host environment inheritance remains rejected when ROS is enabled. Explicit directory/socket preopens and inherited socket streams remain available under their WASIp1 interface, operation, per-descriptor rights and manually selected quota rules; a ROS grant supplies none of these authorities. The [SDK deployment guide](https://github.com/UlteSoft/uwvm2-ros-sdk/blob/main/document/native-run.en_US.md) describes process and network trust boundaries.
 
 `audit-deny-max-rate-hz`, `audit-deny-burst`, `audit-deny-max-records` and `audit-deny-max-bytes` explicitly bound the worker audit sink for unknown aliases, forged handles and refused proxy calls. Every enabled Target requires all four fields. They are worker-local and do not affect ROS network identity. The rate must be finite and positive (at most 1000000), burst/records are positive integers (at most 1048576), and bytes are at most 67108864. No unauthenticated request can choose its own audit budget.
 
 The ROS2 family includes `uwvm_portable_robot_v1`; enabling that interface does not configure or authorize a portable deployment. Its independently authenticated adapter, policy, resource and actual-owner checks still apply.
+
+
+### Policy-scope resource accounting
+
+The default global policy, each module-specific `single`, and each named
+`group` have independent accounting. Members of one named group share that
+group's environment and quota; different named groups do not spend each other's
+budgets. Identical limit values do not merge independent policies. Group
+membership never grants another module's native handle or memory. ROS1 and
+ROS2 also retain distinct accounting. Omitted ceilings remain unlimited;
+selecting an interface or granting a resource does not install a rate limit.
+Code generation replacement and checkpoint-world cloning preserve an existing
+policy's consumed budget. Closing/retiring resources releases active capacity,
+but does not replenish spent operation/creation credits.

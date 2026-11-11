@@ -86,7 +86,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
     /// @details   __wasi_errno_t sched_yield(void);
 
     inline constexpr ::uwvm2::imported::wasi::wasip1::abi::errno_t sched_yield_impl(
-        ::uwvm2::imported::wasi::wasip1::environment::wasip1_environment<::uwvm2::object::memory::linear::native_memory_t> & env) noexcept
+        ::uwvm2::imported::wasi::wasip1::environment::wasip1_environment<::uwvm2::object::memory::linear::native_memory_t> & env, [[maybe_unused]] bool const memory64 = false) noexcept
     {
         // Check inside the shared implementation so both pointer-width wrappers
         // and direct native host callers enforce the same authority before callbacks.
@@ -96,7 +96,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         }
 
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-        if(!env.allows_interface(u8"sched_yield")) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
+        if(!(memory64 ? env.allows_interface(u8"sched_yield_wasm64") : env.allows_interface(u8"sched_yield"))) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enotcapable; }
         ::uwvm2::imported::wasi::wasip1::environment::budget_reservation reservation{
             ::uwvm2::imported::wasi::wasip1::environment::budget_kind::yield, env.limits, 0u};
         if(!reservation) { return reservation.template error<::uwvm2::imported::wasi::wasip1::abi::errno_t>(); }

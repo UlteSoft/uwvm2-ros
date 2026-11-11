@@ -47,6 +47,7 @@ module;
 # include <llvm/ADT/StringMap.h>
 # include <llvm/ADT/StringRef.h>
 # include <llvm/Target/TargetMachine.h>
+# include <llvm/Support/MemoryBuffer.h>
 # include <llvm/TargetParser/Host.h>
 #endif
 

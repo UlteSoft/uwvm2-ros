@@ -350,7 +350,12 @@ namespace uwvm2::utils::update
         env.policy_owned_argv.swap(plan.proposed_.argv);env.argv.swap(plan.argv_views_);
         env.policy_owned_envs.swap(plan.proposed_.envs);env.envs.swap(plan.env_views_);
         env.interface_enabled=plan.proposed_.interface_enabled;env.interfaces=plan.proposed_.interfaces;
-        env.non_fd_permissions=plan.proposed_.non_fd_permissions;env.limits=plan.proposed_.limits;
+        env.non_fd_permissions=plan.proposed_.non_fd_permissions;
+        // The signed value changes ceilings/actions, never the host-owned
+        // consumption identity. Keep both shared owners alive through COMMIT;
+        // the parsed plan retains its unused ledger until safe plan retirement.
+        auto const accounting{env.limits.accounting};
+        env.limits=plan.proposed_.limits;env.limits.accounting=accounting;
         env.fd_storage.fd_limit=static_cast<::std::size_t>(plan.proposed_.fd_limit);
         for(unsigned i{};i<3u&&i<env.fd_storage.opens.size();++i)
         {

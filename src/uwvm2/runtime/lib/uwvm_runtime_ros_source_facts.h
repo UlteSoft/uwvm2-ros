@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 // Included inside uwvm2::runtime::lib after the ordinary caller APIs.
 // Internal data query only: no permission registration or native effect.
-    extern "C++" bool ros_caller_source_facts_host_api(ros_caller_source_facts& out) noexcept
+    extern "C++" bool ros_caller_source_facts_host_api(ros_caller_source_facts& out, bool allow_module_exports) noexcept
     {
         out={};
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
 # if UWVM2_HAS_THREADED_PROFILE_HOST_API
-        if(threaded_profile::has_active_host_call()) { return false; }
+        if(threaded_profile::has_active_host_call()) { return threaded_profile::caller_source_facts(out,allow_module_exports); }
 # endif
         ros_caller_identity caller{};
-        if(!ros_caller_identity_host_api(caller)) { return false; }
+        if(!ros_caller_identity_host_api(caller, allow_module_exports)) { return false; }
         auto const& context{get_preload_call_context()};
         if(context.ros_provider==nullptr || context.module_id>=g_runtime.modules.size()) { return false; }
         auto const& entry{g_runtime.modules.index_unchecked(context.module_id)};

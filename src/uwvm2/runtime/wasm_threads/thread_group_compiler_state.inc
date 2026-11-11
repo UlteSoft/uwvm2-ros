@@ -13,7 +13,7 @@
             compiler_result result{};
             launch_result actual_launch{};
         };
-        ::std::unique_ptr<compiler_slot[]> compiler_jobs_;
+        stable_slots<compiler_slot> compiler_jobs_;
         ::std::size_t compiler_head_{SIZE_MAX}, compiler_tail_{SIZE_MAX};
         ::std::uint64_t next_compiler_sequence_{1u};
         ::std::size_t active_compiler_tickets_{};

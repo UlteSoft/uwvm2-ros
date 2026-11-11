@@ -37,6 +37,9 @@
 // import
 # include <fast_io.h>
 # include <fast_io_device.h>
+# if defined(__linux__)
+#  include "output.h"
+# endif
 #endif
 
 #ifndef UWVM_MODULE_EXPORT
@@ -103,6 +106,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::io
     // win9x cannot dup stderr
     inline ::fast_io::basic_io_lockable_nonmovable<::fast_io::u8native_io_observer> u8runtime_log_output{
         ::fast_io::u8err()};  // [global] No global variable dependencies from other translation units
+# elif defined(__linux__)
+    inline ::fast_io::basic_io_lockable_nonmovable<diagnostic_file> u8runtime_log_output{};
 # else
     // Hosted targets reopen this file object after command-line parsing chooses the concrete sink.
     inline ::fast_io::basic_io_lockable_nonmovable<::fast_io::u8native_file>

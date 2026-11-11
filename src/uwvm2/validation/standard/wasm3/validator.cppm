@@ -35,6 +35,7 @@ export module uwvm2.validation.standard.wasm3:validator;
 import uwvm2.validation.standard.wasm3.relaxed_simd;
 import fast_io;
 import uwvm2.extension.memtag.instruction;
+import uwvm2.extension.memtag.encoding;
 import uwvm2.validation.standard.wasm3.retained_plan;
 import uwvm2.validation.standard.wasm3.memory_validation;
 import uwvm2.validation.standard.wasm3.scalar_memory_semantics;

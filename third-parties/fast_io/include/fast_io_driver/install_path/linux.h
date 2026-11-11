@@ -48,16 +48,12 @@ inline ::fast_io::install_path get_module_install_path()
 #endif
 	auto const begin{strlike_begin(::fast_io::io_strlike_type<char8_t, ::fast_io::u8string>, ret.module_name)};
 	auto curr{strlike_curr(::fast_io::io_strlike_type<char8_t, ::fast_io::u8string>, ret.module_name)};
-	for (; curr != begin; --curr)
-	{
-		if (auto const c{*curr}; c == u8'/')
-		{
-			++curr;
-			break;
-		}
-	}
-
-	ret.path_name = ::fast_io::u8string{begin, curr - 1};
+	// Search within the actual character range, including the leading slash.
+	// For /vm the directory is /; subtracting one from begin is never valid.
+	for (; curr != begin && curr[-1] != u8'/'; --curr) {}
+	if (curr == begin) { throw_posix_error(EINVAL); }
+	auto const directory_end{curr == begin + 1 ? curr : curr - 1};
+	ret.path_name = ::fast_io::u8string{begin, directory_end};
 	ret.module_name.erase(begin, curr);
 	return ret;
 }

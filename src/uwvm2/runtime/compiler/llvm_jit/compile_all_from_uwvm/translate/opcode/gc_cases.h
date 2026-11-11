@@ -35,6 +35,47 @@ case static_cast<wasm1_code>(0xfbu):
     // ^^ op_begin is the checked prefix borrowed for diagnostics; no cursor moves.
     v3::require_gc_cast_exception_policy(!wasm1p1_para.disable_exceptions,
         decoded.opcode, decoded.from, decoded.to, op_begin, err);
+    if(emit_llvm_jit_active)
+    {
+        llvm_jit_emit_state.gc_private_gc_opcode_observed=true;
+        // Only numeric field/element accesses, array.len and i31 have a leaf
+        // lowering without allocation/GC/reentry. Reference field operations
+        // and all constructors/casts/extern/bulk paths retain root publication.
+        bool leaf=decoded.opcode==15u || (decoded.opcode>=28u && decoded.opcode<=30u);
+        if((decoded.opcode>=2u && decoded.opcode<=5u) ||
+           (decoded.opcode>=11u && decoded.opcode<=14u))
+        {
+            auto const* storage=llvm_jit_emit_state.local_func_storage_ptr;
+            auto const* module=storage==nullptr?nullptr:storage->runtime_module_ptr;
+            auto const* field=module==nullptr || !module->gc_store?nullptr:
+                module->gc_store->field_at(decoded.first,decoded.opcode<=5u?decoded.second:0u);
+            if(field!=nullptr)
+            {
+                auto const value=field->storage.value.kind;
+                leaf=value==t3::value_kind::i32 || value==t3::value_kind::i64 ||
+                     value==t3::value_kind::f32 || value==t3::value_kind::f64 ||
+                     value==t3::value_kind::v128;
+            }
+        }
+        if(!leaf) { llvm_jit_emit_state.gc_no_safepoint_leaf=false; }
+        if(!((decoded.opcode>=2u && decoded.opcode<=5u) ||
+             (decoded.opcode>=11u && decoded.opcode<=15u)))
+        { llvm_jit_emit_state.clear_gc_local_access(); }
+
+        // Element segments and extern bridges can import pre-existing objects.
+        // All other admitted aggregate/i31/cast operations preserve provenance.
+        if(decoded.opcode==10u || decoded.opcode==19u || decoded.opcode==26u || decoded.opcode==27u || decoded.opcode>30u)
+            llvm_jit_emit_state.gc_private_function_safe=false;
+    }
+    struct local_witness_instruction
+    {
+        runtime_local_func_llvm_jit_emit_state_t& state;
+        ::std::size_t sequence;
+        ~local_witness_instruction()
+        {
+            if(state.gc_local_access_sequence==sequence) { state.gc_local_access={}; }
+        }
+    } local_witness_scope{llvm_jit_emit_state,llvm_jit_emit_state.gc_local_access_sequence};
     using core_type = t3::core_value_type;
     switch(decoded.opcode)
     {

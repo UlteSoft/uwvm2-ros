@@ -134,7 +134,8 @@ int main(int argc, char** argv)
               lib::llvm_jit_debug_safe_point_granularity::instruction) == lib::llvm_jit_debug_configure_result::ok,
           "actual runtime observer owns controller until execution drain");
     check(lib::llvm_jit_prepare_debug_host_api(), "actual full fused validation/native publication");
-    ::uwvm2::uwvm::runtime::initializer::apply_runtime_active_segments(u8"wasm-events-test");
+    check(::uwvm2::uwvm::runtime::initializer::apply_runtime_active_segments(u8"wasm-events-test") ==
+        ::uwvm2::uwvm::runtime::initializer::details::active_segment_result::ok, "active segments initialized successfully");
     check(::uwvm2::uwvm::run::install_debug_source_maps(*owner), "install the actual published Wasm function spans before launch");
     check(owner->arm_initial_pause(), "empty-domain launch pause");
     auto const invalid{command(*owner, ::fast_io::concat_std("wasm-script trace wasm on all; continue"))};

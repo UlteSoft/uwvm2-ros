@@ -150,27 +150,36 @@
                     budget.values = limits.max_value_stack_bytes / sizeof(integer::stack_value);
                     budget.controls = limits.max_control_frames;
                     budget.calls = limits.max_call_frames;
-                    budget.functions = world_->module(0u)->imported_function_vec_storage.size() +
-                        world_->module(0u)->local_defined_function_vec_storage.size();
+                    budget.functions=0u;
+                    for(::std::size_t m{};m<world_->module_count();++m)
+                    {
+                        auto const* module=world_->module(m);
+                        auto const n=module->imported_function_vec_storage.size()+module->local_defined_function_vec_storage.size();
+                        if(n>SIZE_MAX-budget.functions)return false;budget.functions+=n;
+                    }
                     budget.host_bytes = limits.max_value_stack_bytes;
                     budget.exception_objects = limits.max_call_frames;
                     budget.exception_values = budget.values;
                     ::uwvm2::validation::error::code_validation_error_impl error{};
                     auto built{integer::engine::compile(world_, budget, error,!::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag)};
-                    if(!built.code || !built.outcome.normal()) { return false; }
+                    if(!built.code || !built.outcome.normal()) { ::fast_io::perrln("uwvm: [error] WASI Threads interpreter preparation rejected: ",static_cast<unsigned>(built.outcome.code)); return false; }
                     integer_ = ::std::move(built.code);
                 }
 #if defined(UWVM_RUNTIME_LLVM_JIT)
                 else
                 {
                     auto built{ThreadedLlvmChild::prepare(world_, compiler, limits.max_child_storage_bytes - before)};
-                    if(!built.child || built.status != ThreadedLlvmChild::preparation_status::ok) { return false; }
+                    if(!built.child || built.status != ThreadedLlvmChild::preparation_status::ok) { ::fast_io::perrln("uwvm: [error] WASI Threads LLVM preparation rejected: ",static_cast<unsigned>(built.status)); return false; }
                     llvm_ = ::std::move(built.child);
                 }
 #else
                 else { return false; }
 #endif
-                return owned_storage_bytes() <= limits.max_child_storage_bytes && owned_code_bytes() <= limits.max_child_code_bytes;
+                auto const storage{owned_storage_bytes()};
+                auto const world_storage{world_->owned_storage_bytes()};
+                return storage <= limits.max_child_storage_bytes && storage >= world_storage &&
+                    owned_code_bytes() <= limits.max_child_code_bytes &&
+                    world_->reserve_execution_storage(storage - world_storage);
             }
             [[nodiscard]] bool refresh_after_actual_parent_active() noexcept
             {
@@ -230,15 +239,25 @@
         { actual.group_->request_stop({::uwvm2::runtime::wasm_threads::termination_kind::main_return, 0u, 0u, 0u, 0u}); }
 
         [[nodiscard]] static ::std::unique_ptr<concrete_work> prepare_work(profile_state const& state,
-            group::CompilerLease const& compiler, bool main, ::std::size_t entry, ::std::span<::std::byte const> parameters) noexcept
+            group::CompilerLease const& compiler, bool main, ::std::size_t entry, ::std::span<::std::byte const> parameters,
+            ::uwvm2::runtime::wasm_threads::termination_kind& failure) noexcept
         {
             if(!compiler.owns_current_native_thread() || compiler.retained_admission() != state.admitted ||
                compiler.cancellation().stop_requested()) { return {}; }
             try
             {
-                if(!actual_source_providers(*state.admitted)) { return {}; }
+                if(!actual_source_providers(*state.admitted)) { ::fast_io::perrln("uwvm: [error] WASI Threads source provider authentication failed."); return {}; }
                 auto created{main ? world::borrow_actual_parent(*state.admitted) : world::create(*state.admitted)};
-                if(!created.world) { return {}; }
+                if(!created.world)
+                {
+                    namespace initializer = ::uwvm2::uwvm::runtime::initializer;
+                    if(initializer::threaded_child_error_is_profile_rejection(created.error))
+                    { failure = ::uwvm2::runtime::wasm_threads::termination_kind::preparation_rejected; }
+                    ::fast_io::perrln("uwvm: [error] WASI Threads instance preparation rejected: ",
+                        ::fast_io::mnp::os_c_str(initializer::threaded_child_error_description(created.error)),
+                        " (reason=", static_cast<unsigned>(created.error), ").");
+                    return {};
+                }
                 auto work{::std::make_unique<concrete_work>(::std::move(created.world),
                     main ? state.result : nullptr, entry, parameters)};
                 if(!work->prepare(state.selected, compiler) || compiler.cancellation().stop_requested()) { return {}; }
@@ -273,24 +292,26 @@
             [[nodiscard]] group::compiler_result run(group::CompilerLease& actual) noexcept override
             {
                 using completion = group::compiler_completion;
-                auto fail{[&](completion why, int error) noexcept -> group::compiler_result
+                using termination = ::uwvm2::runtime::wasm_threads::termination_kind;
+                auto fail{[&](completion why, int error, termination reason = termination::native_failure) noexcept -> group::compiler_result
                 {
                     if(main_)
-                    { state_->native->request_stop({::uwvm2::runtime::wasm_threads::termination_kind::native_failure,
-                        static_cast<::std::uint32_t>(error), 0u, entry_, 0u}); }
+                    { state_->native->request_stop({reason, static_cast<::std::uint32_t>(error), 0u, entry_, 0u}); }
                     return {why, {}, error};
                 }};
                 if(!actual.owns_current_native_thread() || actual.retained_admission() != state_->admitted)
                 { return fail(completion::rejected, EINVAL); }
                 if(actual.cancellation().stop_requested()) { return {completion::cancelled, {}, 0}; }
-                auto work{prepare_work(*state_, actual, main_, entry_, parameters_)};
-                if(!work) { return fail(actual.cancellation().stop_requested() ? completion::cancelled : completion::rejected, EINVAL); }
+                termination failure{termination::native_failure};
+                auto work{prepare_work(*state_, actual, main_, entry_, parameters_, failure)};
+                if(!work) { return fail(actual.cancellation().stop_requested() ? completion::cancelled : completion::rejected, EINVAL, failure); }
                 if(main_)
                 {
                     auto const initialized{::uwvm2::uwvm::runtime::initializer::ThreadedMainActiveSegments::apply(
                         *state_->admitted, work->retained_world(), *state_->native, actual.actual_reservation())};
                     if(initialized != ::uwvm2::uwvm::runtime::initializer::threaded_main_active_status::applied ||
-                       !work->refresh_after_actual_parent_active()) { return fail(completion::rejected, EINVAL); }
+                       !work->refresh_after_actual_parent_active())
+                    { ::fast_io::perrln("uwvm: [error] WASI Threads active initialization rejected: ",static_cast<unsigned>(initialized)); return fail(completion::rejected, EINVAL); }
                 }
                 if(actual.cancellation().stop_requested()) { return {completion::cancelled, {}, 0}; }
                 auto const launched{actual.launch(::std::move(work), argument_)};
@@ -403,6 +424,7 @@
             ::uwvm2::runtime::wasm_threads::threaded_profile_limits& limits) noexcept
         {
             if(!group::limits_admitted(limits)) { return false; }
+            if(limits.max_active_children==SIZE_MAX) { limits.max_live_storage_bytes=SIZE_MAX;return true; }
             auto const slots{limits.max_active_children+1u};
             ::std::size_t total{};
             auto add=[&](::std::size_t n) noexcept { if(n>=SIZE_MAX-total) { return false; } total+=n;return true; };
@@ -412,7 +434,7 @@
             // entry owns one concrete submission; only initial-main has ABI
             // parameters, bounded by the real value-stack cap.
             if(!repeated(slots,limits.max_child_storage_bytes) ||
-               !repeated(slots,sizeof(group::slot)) || !repeated(slots,sizeof(group::compiler_slot)) ||
+               !repeated(slots,sizeof(group::slot)+2u*sizeof(void*)) || !repeated(slots,sizeof(group::compiler_slot)+2u*sizeof(void*)) ||
                !repeated(slots,sizeof(concrete_compile_work)) || !add(sizeof(group)) ||
                !add(sizeof(profile_state)+sizeof(main_result)+sizeof(admission)) ||
                !add(limits.max_value_stack_bytes) || !add(limits.max_value_stack_bytes)) { return false; }
@@ -443,6 +465,16 @@
                 if(control_owner().profile || control_owner().blocked_generation == current_runtime_generation() || current_host_ != nullptr ||
                    parameters.size() > control_owner().configured.max_value_stack_bytes || result_bytes > control_owner().configured.max_value_stack_bytes)
                 { return threaded_main_status::rejected; }
+#if defined(UWVM_RUNTIME_LLVM_JIT)
+                // Ordinary cold compilation can enqueue authenticated writes.
+                // Registry ownership excludes its next producer. Retire those
+                // real generation leases before requesting exclusive admission;
+                // the writer needs no registry/publication lock to finish.
+                // Never synchronously drain from an executing native callback.
+                if(get_runtime_execution_entry_depth()!=0u || get_runtime_state_publication_depth()!=0u)
+                { return threaded_main_status::rejected; }
+                ::uwvm2::runtime::llvm_jit_cache::flush_async_store_objects();
+#endif
                 auto maintenance{g_runtime.execution_domain.try_maintenance_transition()};
                 if(!maintenance) { return threaded_main_status::rejected; }
                 if(control_owner().cli_storage_derived)
@@ -450,7 +482,8 @@
                     auto completed{control_owner().configured};
                     if(!complete_cli_storage_limits(completed)) { return threaded_main_status::rejected; }
                     auto add=[&](::std::size_t bytes) noexcept
-                    { if(bytes>=SIZE_MAX-completed.max_live_storage_bytes) { return false; }
+                    { if(completed.max_live_storage_bytes==SIZE_MAX)return true;
+                      if(bytes>=SIZE_MAX-completed.max_live_storage_bytes) { return false; }
                       completed.max_live_storage_bytes+=bytes;return true; };
                     // CLI options may be parsed in either order. Bind optional
                     // owners only now, under the real cold registry/maintenance

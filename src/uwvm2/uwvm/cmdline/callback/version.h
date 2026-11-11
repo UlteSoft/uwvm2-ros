@@ -1074,6 +1074,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
         // wasm feature
         version_u8print_wasm_feature_from_tuple(u8log_output_ul, ::uwvm2::uwvm::wasm::feature::all_features);
         // all_features registers binary-format parser/storage hooks, not every supported specification.
+        ::fast_io::io::perr(u8log_output_ul,
+            u8"      Default baseline: WebAssembly Core 3.0 + Threads + WasmMTE; explicit baseline and feature switches may override it.\n");
         // These extensions share its binfmt-v1 hooks. Dates follow the covers of the repository-linked manuals.
         ::fast_io::io::perr(u8log_output_ul,
                             u8"      - WebAssembly Release 2.0 (Draft 2025-01-30)\n"
@@ -1086,10 +1088,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
 #ifdef UWVM_SUPPORT_PRELOAD_DL
                             // Support Preload Dynamic Linking Module (--wasm-register-dl)
                             u8"  * Support Preload Dynamic Linking Module\n"
-#endif
-#ifdef UWVM_SUPPORT_WEAK_SYMBOL
-                            // Support Weak Symbol Module (via link)
-                            u8"  * Support Weak Symbol Module\n"
 #endif
 
         // Local Imported

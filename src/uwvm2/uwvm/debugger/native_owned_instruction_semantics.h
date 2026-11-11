@@ -46,6 +46,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_owned_instruction_sem
         bool rip_relative{},valid{};
         // MC operand DATA only. No address/value, read capability or public row.
     };
+    struct exclusive_memory_operation
+    {
+        unsigned width{}, base{};
+        bool load{};
+        [[nodiscard]] explicit constexpr operator bool() const noexcept { return width!=0u; }
+    }; // MC register identity and width only, never an address or a held monitor.
     class decoder;
     class decoded_instruction final
     {
@@ -61,6 +67,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_owned_instruction_sem
         ::std::size_t call_register_index_{SIZE_MAX};
         call_memory_operand call_memory_{};
         ::std::size_t near_return_pop_{SIZE_MAX};
+        exclusive_memory_operation exclusive_{};
+        bool register_only_{};
         explicit constexpr decoded_instruction(classification semantics, native_branch_destination::result destination,
             bool direct_branch_step_safe, bool call_continuation_safe,
             ::std::size_t call_register_index, bool public_display_safe, bool delayed_branch = false, bool annulled_branch = false, call_memory_operand memory = {}, bool delayed_branch_pair = false) noexcept
@@ -94,6 +102,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_owned_instruction_sem
         [[nodiscard]] constexpr bool safe_for_call_continuation() const noexcept
         { return call_continuation_safe_ && semantics_.kind == native_instruction_semantics::flow::call; }
         [[nodiscard]] constexpr unsigned call_delay_bytes() const noexcept { return call_delay_bytes_; }
+        [[nodiscard]] constexpr exclusive_memory_operation exclusive_memory() const noexcept { return exclusive_; }
+        [[nodiscard]] constexpr bool safe_inside_exclusive_sequence() const noexcept
+        { return register_only_ && safe_for_single_instruction(); }
         // Exact CALL64r operand index in native_registers::snapshot's fixed
         // RAX,RBX,RCX,RDX,RSI,RDI,RBP,RSP,R8..R15 order. Only a runtime-owned
         // SAME kernel snapshot can supply its value. A caller-populated snapshot,
@@ -113,6 +124,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_owned_instruction_sem
         {
             return direct_branch_step_safe_ && semantics_.kind == native_instruction_semantics::flow::branch &&
                    !semantics_.indirect_branch && static_cast<bool>(destination_);
+        }
+
+        // A software return continuation may have to pass one instruction in a
+        // recursive descendant before re-arming the same return PC. Besides an
+        // ordinary instruction, a non-delayed direct branch to its own next
+        // boundary has exactly that successor (even when conditional). Do not
+        // reclassify it as ordinary or admit any other branch destination.
+        // This is decoded DATA only: the runtime still proves the exact owned
+        // parent, both patch boundaries, CFI/activation and current stop.
+        [[nodiscard]] constexpr bool safe_for_fallthrough_skip(::std::uintptr_t pc) const noexcept
+        {
+            if(semantics_.size == 0u || semantics_.size > UINTPTR_MAX - pc) { return false; }
+            return safe_for_single_instruction() ||
+                (safe_for_same_owner_direct_branch() && !delayed_branch_ && !annulled_branch_ && !delayed_branch_pair_ &&
+                 destination_.display_pc == pc + semantics_.size);
         }
     };
 
@@ -442,6 +468,108 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_owned_instruction_sem
             // successor outside the immutable owner or a public register read.
             return true;
         }
+        // Exact locked read/modify/write MC forms. LOCK is part of the same
+        // architectural instruction even when LLVM prints it as a prefix row.
+        // No repeat, segment, address override, system or register-only form
+        // receives this qualification; the runtime still proves the real owner.
+        [[nodiscard]] inline bool x86_locked_memory(::llvm::StringRef opcode,
+            ::llvm::MCInst const& instruction, ::llvm::MCInstrDesc const& descriptor) noexcept
+        {
+            if((instruction.getFlags() & ~1u)!=0u || !descriptor.mayLoad() || !descriptor.mayStore() ||
+               descriptor.isPseudo() || descriptor.isMetaInstruction() || descriptor.isVariadic() ||
+               descriptor.isCall() || descriptor.isReturn() || descriptor.isBranch() || descriptor.isTrap() ||
+               descriptor.isTerminator() || descriptor.isBarrier() || descriptor.hasDelaySlot() ||
+               instruction.getNumOperands()!=descriptor.getNumOperands()) { return false; }
+            return opcode=="CMPXCHG8rm" || opcode=="CMPXCHG16rm" || opcode=="CMPXCHG32rm" || opcode=="CMPXCHG64rm" ||
+                   opcode=="XADD8rm" || opcode=="XADD16rm" || opcode=="XADD32rm" || opcode=="XADD64rm" ||
+                   opcode=="XCHG8rm" || opcode=="XCHG16rm" || opcode=="XCHG32rm" || opcode=="XCHG64rm" ||
+                   opcode=="INC8m" || opcode=="INC16m" || opcode=="INC32m" || opcode=="INC64m" ||
+                   opcode=="DEC8m" || opcode=="DEC16m" || opcode=="DEC32m" || opcode=="DEC64m" ||
+                   opcode=="ADD32mi8" || opcode=="ADD64mi8" || opcode=="SUB32mi8" || opcode=="SUB64mi8";
+        }
+        [[nodiscard]] inline bool aarch64_compare_exchange(::llvm::Triple const& triple,
+            ::llvm::StringRef opcode, ::llvm::MCInst const& instruction,
+            ::llvm::MCInstrDesc const& descriptor, ::llvm::MCRegisterInfo const& registers) noexcept
+        {
+            if(!triple.isAArch64() || instruction.getFlags()!=0u ||
+               instruction.getNumOperands()!=4u || descriptor.getNumOperands()!=4u || descriptor.getNumDefs()!=1u ||
+               !descriptor.mayLoad() || !descriptor.mayStore() || descriptor.isVariadic() ||
+               descriptor.isCall() || descriptor.isReturn() || descriptor.isBranch() || descriptor.isTrap() ||
+               descriptor.isTerminator() || descriptor.isBarrier() || descriptor.hasDelaySlot() ||
+               !descriptor.implicit_defs().empty() || !descriptor.implicit_uses().empty() ||
+               descriptor.getOperandConstraint(1u,::llvm::MCOI::TIED_TO)!=0) { return false; }
+            if(opcode!="CASB" && opcode!="CASH" && opcode!="CASW" && opcode!="CASX" &&
+               opcode!="CASAB" && opcode!="CASAH" && opcode!="CASAW" && opcode!="CASAX" &&
+               opcode!="CASLB" && opcode!="CASLH" && opcode!="CASLW" && opcode!="CASLX" &&
+               opcode!="CASALB" && opcode!="CASALH" && opcode!="CASALW" && opcode!="CASALX") { return false; }
+            for(unsigned i{};i!=4u;++i)
+            {
+                auto const& operand{instruction.getOperand(i)};
+                auto const& info{*(descriptor.operands().begin()+i)};
+                if(!operand.isReg() || operand.getReg()==0u || operand.getReg()>=registers.getNumRegs() ||
+                   info.RegClass<0 || info.isLookupRegClassByHwMode() ||
+                   static_cast<unsigned>(info.RegClass)>=registers.getNumRegClasses() ||
+                   !registers.getRegClass(static_cast<unsigned>(info.RegClass)).contains(operand.getReg())) { return false; }
+            }
+            return instruction.getOperand(0u).getReg()==instruction.getOperand(1u).getReg();
+        }
+        [[nodiscard]] inline exclusive_memory_operation bounded_exclusive_memory(::llvm::Triple const& triple,
+            ::llvm::StringRef opcode, ::llvm::MCInst const& instruction,
+            ::llvm::MCInstrDesc const& descriptor, ::llvm::MCRegisterInfo const& registers) noexcept
+        {
+            if(instruction.getFlags()!=0u || descriptor.isPseudo() || descriptor.isMetaInstruction() ||
+               descriptor.isVariadic() || descriptor.isCall() || descriptor.isReturn() || descriptor.isBranch() ||
+               descriptor.isTrap() || descriptor.isTerminator() || descriptor.isBarrier() || descriptor.hasDelaySlot() ||
+               !descriptor.implicit_defs().empty() || !descriptor.implicit_uses().empty() ||
+               instruction.getNumOperands()!=descriptor.getNumOperands() || descriptor.getNumDefs()!=1u) { return {}; }
+            exclusive_memory_operation out{};
+            unsigned base{}, operands{};
+            if(triple.getArch()==::llvm::Triple::arm)
+            {
+                if(opcode=="LDREXB" || opcode=="LDAEXB") { out={1u,0u,true}; }
+                else if(opcode=="LDREXH" || opcode=="LDAEXH") { out={2u,0u,true}; }
+                else if(opcode=="LDREX" || opcode=="LDAEX") { out={4u,0u,true}; }
+                else if(opcode=="STREXB" || opcode=="STLEXB") { out={1u,0u,false}; }
+                else if(opcode=="STREXH" || opcode=="STLEXH") { out={2u,0u,false}; }
+                else if(opcode=="STREX" || opcode=="STLEX") { out={4u,0u,false}; }
+                else { return {}; }
+                base=out.load?1u:2u;operands=base+3u;
+                if(instruction.getNumOperands()!=operands ||
+                   !instruction.getOperand(base+1u).isImm() || instruction.getOperand(base+1u).getImm()!=14 ||
+                   !instruction.getOperand(base+2u).isReg() || instruction.getOperand(base+2u).getReg()!=0u) { return {}; }
+            }
+            else if(triple.isAArch64())
+            {
+                if(opcode=="LDXRB" || opcode=="LDAXRB") { out={1u,0u,true}; }
+                else if(opcode=="LDXRH" || opcode=="LDAXRH") { out={2u,0u,true}; }
+                else if(opcode=="LDXRW" || opcode=="LDAXRW") { out={4u,0u,true}; }
+                else if(opcode=="LDXRX" || opcode=="LDAXRX") { out={8u,0u,true}; }
+                else if(opcode=="STXRB" || opcode=="STLXRB") { out={1u,0u,false}; }
+                else if(opcode=="STXRH" || opcode=="STLXRH") { out={2u,0u,false}; }
+                else if(opcode=="STXRW" || opcode=="STLXRW") { out={4u,0u,false}; }
+                else if(opcode=="STXRX" || opcode=="STLXRX") { out={8u,0u,false}; }
+                else { return {}; }
+                base=out.load?1u:2u;operands=base+1u;
+                if(instruction.getNumOperands()!=operands) { return {}; }
+            }
+            else { return {}; }
+            // ARM's empty-pattern descriptors conservatively report BOTH
+            // read and write effects even for LDREXB. The exact opcode and
+            // operand proof above determines the exclusive phase; retain its
+            // required memory effect without treating the extra flag as PC flow.
+            if(out.load ? !descriptor.mayLoad() : !descriptor.mayStore()) { return {}; }
+            for(unsigned i{};i<=base;++i)
+            {
+                auto const& operand{instruction.getOperand(i)};
+                auto const& info{*(descriptor.operands().begin()+i)};
+                if(!operand.isReg() || operand.getReg()==0u || operand.getReg()>=registers.getNumRegs() ||
+                   info.RegClass<0 || info.isLookupRegClassByHwMode() ||
+                   static_cast<unsigned>(info.RegClass)>=registers.getNumRegClasses() ||
+                   !registers.getRegClass(static_cast<unsigned>(info.RegClass)).contains(operand.getReg()) ||
+                   ::llvm::StringRef{registers.getName(operand.getReg())}=="PC") { return {}; }
+            }
+            out.base=instruction.getOperand(base).getReg();return out;
+        }
         // These real MC forms order memory without changing the PC, trap
         // protocol or exclusive monitor. LLVM's empty-pattern descriptors may
         // conservatively mark them unmodelled. Admit only their exact table
@@ -677,7 +805,22 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_owned_instruction_sem
             ::std::array<::std::uint8_t, native_target_metadata::max_instruction_bytes> bytes{};
             for(::std::size_t i{}; i != available; ++i) { bytes[i] = owned[i]; }
             ::llvm::MCInst instruction{}; ::std::uint64_t size{};
-            auto const status{disassembler_->getInstruction(instruction, size, {bytes.data(), available}, pc, ::llvm::nulls())};
+            auto status{disassembler_->getInstruction(instruction, size, {bytes.data(), available}, pc, ::llvm::nulls())};
+            // Boundary scanning and the text decoder must agree on the whole
+            // architectural instruction. LLVM's standalone LOCK row cannot
+            // become a boundary inside its memory instruction. This is only
+            // size DATA; decode() still independently qualifies every step.
+            if(triple_.isX86() && status == ::llvm::MCDisassembler::Success && size == 1u && bytes[0u] == 0xf0u)
+            {
+                if(available < 2u || instruction.getOpcode() >= instructions_->getNumOpcodes() ||
+                   instructions_->getName(instruction.getOpcode()) != "LOCK_PREFIX") { return 0u; }
+                instruction.clear(); size = 0u;
+                status = disassembler_->getInstruction(instruction, size,
+                    {bytes.data() + 1u, available - 1u}, pc + 1u, ::llvm::nulls());
+                if(status != ::llvm::MCDisassembler::Success || size == 0u || size >= available || size >= 15u)
+                { return 0u; }
+                ++size;
+            }
             return status == ::llvm::MCDisassembler::Success && size != 0u && size <= available ?
                 static_cast<::std::size_t>(size) : 0u;
         }
@@ -759,9 +902,33 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_owned_instruction_sem
             // [local OWNED bytes ... available] end
             // [safe                          ] available <= actual bounded target maximum;
             //  ^^ LLVM receives only this bounded synchronous local borrow.
-            auto const status{disassembler_->getInstruction(instruction, size,
+            auto status{disassembler_->getInstruction(instruction, size,
                 ::llvm::ArrayRef<::std::uint8_t>{bytes.data(), available},
                 static_cast<::std::uint64_t>(display_pc), ::llvm::nulls())};
+            bool locked_memory{};
+            if(triple_.isX86() && status==::llvm::MCDisassembler::Success && size==1u && bytes[0u]==0xf0u)
+            {
+                // LLVM deliberately reports a leading LOCK separately. Decode
+                // its complete suffix without ever creating a trap in-between.
+                if(available<2u || instruction.getOpcode()>=instructions_->getNumOpcodes() ||
+                   instructions_->getName(instruction.getOpcode())!="LOCK_PREFIX" || display_pc==UINTPTR_MAX) { return {}; }
+                ::std::size_t prefix{1u};
+                if(prefix<available && bytes[prefix]==0x66u) { ++prefix; }
+                if(prefix<available && triple_.getArch()==::llvm::Triple::x86_64 &&
+                   bytes[prefix]>=0x40u && bytes[prefix]<=0x4fu) { ++prefix; }
+                if(prefix==available || bytes[prefix]==0x26u || bytes[prefix]==0x2eu || bytes[prefix]==0x36u ||
+                   bytes[prefix]==0x3eu || bytes[prefix]==0x64u || bytes[prefix]==0x65u || bytes[prefix]==0x66u ||
+                   bytes[prefix]==0x67u || bytes[prefix]==0xf0u || bytes[prefix]==0xf2u || bytes[prefix]==0xf3u) { return {}; }
+                instruction.clear();size=0u;
+                status=disassembler_->getInstruction(instruction,size,
+                    ::llvm::ArrayRef<::std::uint8_t>{bytes.data()+1u,available-1u},
+                    static_cast<::std::uint64_t>(display_pc+1u),::llvm::nulls());
+                if(status!=::llvm::MCDisassembler::Success || size==0u || size>=15u || size>=available ||
+                   instruction.getOpcode()>=instructions_->getNumOpcodes() ||
+                   !details::x86_locked_memory(instructions_->getName(instruction.getOpcode()),instruction,
+                        instructions_->get(instruction.getOpcode()))) { return {}; }
+                ++size;locked_memory=true;
+            }
             // LLVM's standard N64 LDL/LDR decoder omits the fourth operand:
             // the incoming value tied to the actual output register. Restore
             // only that descriptor-proved identity, never a guessed register
@@ -897,6 +1064,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_owned_instruction_sem
             trap_state_change = triple_.isX86() && details::changes_native_debug_trap_state(instructions_->getName(instruction.getOpcode()));
             auto const ordered_memory{details::bounded_memory_order_instruction(triple_,
                 instructions_->getName(instruction.getOpcode()), instruction, descriptor)};
+            auto const atomic_compare_exchange{size==4u && details::aarch64_compare_exchange(triple_,
+                early_name,instruction,descriptor,*registers_)};
+            auto const exclusive{size==4u ? details::bounded_exclusive_memory(triple_,early_name,
+                instruction,descriptor,*registers_) : exclusive_memory_operation{}};
             auto const bounded_numeric{details::bounded_mips_high_shift(triple_,
                 instructions_->getName(instruction.getOpcode()), instruction, descriptor, *registers_)};
             auto const vector_configuration{size==4u && details::bounded_riscv_vector_configuration(triple_,
@@ -969,11 +1140,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_owned_instruction_sem
             if(result.kind == native_instruction_semantics::flow::ordinary &&
                ((instruction.getFlags() != 0u && !benign_width_prefix) || descriptor.isTerminator() ||
                 (triple_.isARM() && instructions_->getName(instruction.getOpcode())=="HINT" && !arm_nop) ||
-                (descriptor.hasUnmodeledSideEffects() && !ordered_memory && !harmless_nop && !bounded_numeric && !vector_configuration && !avx_upper_clear) || trap_state_change))
+                (descriptor.hasUnmodeledSideEffects() && !ordered_memory && !locked_memory && !atomic_compare_exchange && !(exclusive && !exclusive.load) && !harmless_nop && !bounded_numeric && !vector_configuration && !avx_upper_clear) || trap_state_change))
             {
                 result.kind = native_instruction_semantics::flow::other_control;
                 result.may_change_pc = true; // conservative uncertainty, not a resolved branch target
             }
+            if(exclusive && exclusive.load)
+            { result.kind=native_instruction_semantics::flow::other_control;result.may_change_pc=true; }
             auto const destination{native_branch_destination::evaluate(triple_, instruction, *instructions_,
                 analysis_.get(), result, display_pc)};
             auto const branch_name{instructions_->getName(instruction.getOpcode())};
@@ -1176,7 +1349,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_owned_instruction_sem
                     break; // actual CALL opcode, never scan its operand bytes
                 }
             }
-            bool public_display_safe{!avx_upper_clear && (result.kind == native_instruction_semantics::flow::ordinary || direct_branch_step_safe) &&
+            bool public_display_safe{!avx_upper_clear && !locked_memory && !atomic_compare_exchange && (result.kind == native_instruction_semantics::flow::ordinary || direct_branch_step_safe) &&
                 !(triple_.getArch()==::llvm::Triple::loongarch64 && ordered_memory) &&
                 (!triple_.isARM() || instructions_->getName(instruction.getOpcode())!="HINT" || arm_nop) &&
                 (instruction.getFlags() == 0u || benign_width_prefix) &&
@@ -1234,6 +1407,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_owned_instruction_sem
             }
             auto decoded{decoded_instruction{result, destination, direct_branch_step_safe, call_continuation_safe,
                 call_register_index, public_display_safe, delayed_branch, annulled_branch, call_memory, delayed_branch_pair}};
+            decoded.exclusive_=exclusive;
+            decoded.register_only_=!descriptor.mayLoad() && !descriptor.mayStore() &&
+                !descriptor.hasUnmodeledSideEffects() && !descriptor.hasDelaySlot() && !trap_state_change;
             if(call_continuation_safe && descriptor.hasDelaySlot()) { decoded.call_delay_bytes_=4u; }
             if((triple_.getArch() == ::llvm::Triple::x86_64 || triple_.getArch() == ::llvm::Triple::x86) &&
                instruction.getFlags() == 0u && result.kind == native_instruction_semantics::flow::return_instruction)

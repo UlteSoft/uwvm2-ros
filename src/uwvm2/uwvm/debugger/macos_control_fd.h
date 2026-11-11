@@ -308,13 +308,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                     case console_command_kind::help:
                         {
                             if(!::uwvm2::utils::control::debug_permissions::inspection_allowed())
-                            { if(!send_literal("permissions | status | dump wasm <stop-id> <path> | continue (terminal fault only) | quit; limited diagnostics\n"))return;continue; }
+                            { if(!send_literal("permissions | status | dump wasm <stop-id> <path> | quit; observation only; execution control requires full permission\n"))return;continue; }
 
                             auto const text{console_help::format(command_view{command.help_topic.data(), command.help_topic_size})};
                             if(!send_text(text.data(), text.size())) { return; }
                         }
                         continue;
                     case console_command_kind::quit:
+                        if(!::uwvm2::utils::control::debug_permissions::full_allowed())
+                        {static_cast<void>(send_literal("debug observation detached; Guest state unchanged\n"));return;}
                         static_cast<void>(send_literal("debug control detached; guest continues\n"));
                         return;
                     case console_command_kind::unsupported:

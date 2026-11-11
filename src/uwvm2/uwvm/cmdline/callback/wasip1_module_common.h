@@ -66,7 +66,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
     {
         using override_state_t = ::uwvm2::uwvm::imported::wasi::wasip1::storage::wasip1_module_override_t;
         using mount_dir_root_t = ::uwvm2::imported::wasi::wasip1::environment::mount_dir_root_t;
-        using trace_output_target_t = ::uwvm2::imported::wasi::wasip1::environment::trace_wasip1_output_target_t;
 #  if defined(UWVM_IMPORT_WASI_WASIP1_SUPPORT_SOCKET)
         using preopen_socket_t = ::uwvm2::imported::wasi::wasip1::environment::preopen_socket_t;
 #  endif
@@ -100,7 +99,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
             deny_permission,
             disable_utf8_check,
             enable_utf8_check,
-            trace,
             set_argv0,
             force_args,
             set_fd_limit,
@@ -136,7 +134,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
             else if(text == u8"deny") { action = target_action_t::deny_permission; }
             else if(text == u8"disable-utf8-check") { action = target_action_t::disable_utf8_check; }
             else if(text == u8"enable-utf8-check") { action = target_action_t::enable_utf8_check; }
-            else if(text == u8"trace") { action = target_action_t::trace; }
             else if(text == u8"set-argv0") { action = target_action_t::set_argv0; }
             else if(text == u8"force-args") { action = target_action_t::force_args; }
             else if(text == u8"set-fd-limit") { action = target_action_t::set_fd_limit; }
@@ -483,20 +480,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
             return ::uwvm2::utils::cmdline::parameter_return_type::def;
         }
 
-        [[nodiscard]] inline constexpr bool trace_configuration_matches(override_state_t const& target,
-                                                                        trace_output_target_t trace_target,
-                                                                        ::uwvm2::utils::container::u8string_view file_path) noexcept
-        {
-            // The public parameter is "once", but this predicate lets the
-            // sequence parser diagnose identical repeats separately from repeats
-            // that would silently redirect traces to another sink.
-            if(!target.trace_wasip1_call_is_set) [[unlikely]] { return true; }
-            if(target.trace_wasip1_call != (trace_target != trace_output_target_t::none)) [[unlikely]] { return false; }
-            if(target.trace_wasip1_output_target != trace_target) [[unlikely]] { return false; }
-            if(trace_target == trace_output_target_t::file) [[unlikely]] { return target.trace_wasip1_output_file_path_storage == file_path; }
-            return true;
-        }
-
         [[nodiscard]] inline constexpr bool has_deleted_environment(override_state_t const& target, ::uwvm2::utils::container::u8string_view env_name) noexcept
         { return target.delete_system_environment.find(env_name) != target.delete_system_environment.cend(); }
 
@@ -661,100 +644,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
                     }
                     mark_consumed(mark_action_end);
                     return parameter_return_type::def;
-                }
-                case target_action_t::trace:
-                {
-                    if(extra1 == para_end || extra1->type != parameter_type::arg) [[unlikely]]
-                    {
-                        return print_usage_error(parameter, u8"Missing trace output target.");
-                    }
-
-                    auto const trace_target_text{::uwvm2::utils::container::u8string_view{extra1->str}};
-                    auto set_trace_target{
-                        [&](trace_output_target_t trace_target,
-                            ::uwvm2::utils::cmdline::parameter_parsing_results* last) constexpr noexcept -> parameter_return_type
-                        {
-                            if(!trace_configuration_matches(target, trace_target, {})) [[unlikely]]
-                            {
-                                return print_usage_error(parameter,
-                                                         u8"Conflicting module action. Cannot set different trace outputs for the same WASI Preview 1 target.");
-                            }
-                            if(target.trace_wasip1_call_is_set) [[unlikely]]
-                            {
-                                return print_usage_error(
-                                    parameter,
-                                    u8"Duplicate or conflicting module action. Cannot set trace output more than once for the same WASI Preview 1 target.");
-                            }
-                            target.trace_wasip1_call = trace_target != trace_output_target_t::none;
-                            target.trace_wasip1_call_is_set = true;
-                            target.trace_wasip1_output_target = trace_target;
-                            if(trace_target != trace_output_target_t::file) { target.trace_wasip1_output_file_path_storage.clear(); }
-                            mark_consumed(last);
-                            return parameter_return_type::def;
-                        }};
-
-                    if(trace_target_text == u8"none") { return set_trace_target(trace_output_target_t::none, extra1); }
-                    if(trace_target_text == u8"out") { return set_trace_target(trace_output_target_t::out, extra1); }
-                    if(trace_target_text == u8"err") { return set_trace_target(trace_output_target_t::err, extra1); }
-
-#  if !defined(__AVR__) && !((defined(_WIN32) && !defined(__WINE__)) && defined(_WIN32_WINDOWS)) && !(defined(__MSDOS__) || defined(__DJGPP__)) &&             \
-      !(defined(__NEWLIB__) && !defined(__CYGWIN__)) && !defined(_PICOLIBC__) && !defined(__wasm__)
-                    auto set_trace_file{
-                        [&](::uwvm2::utils::container::u8string_view file_path,
-                            ::uwvm2::utils::cmdline::parameter_parsing_results* last) constexpr noexcept -> parameter_return_type
-                        {
-                            if(file_path.empty()) [[unlikely]] { return print_usage_error(parameter, u8"Missing trace output file path."); }
-                            if(!trace_configuration_matches(target, trace_output_target_t::file, file_path)) [[unlikely]]
-                            {
-                                return print_usage_error(parameter,
-                                                         u8"Conflicting module action. Cannot set different trace outputs for the same WASI Preview 1 target.");
-                            }
-                            if(target.trace_wasip1_call_is_set) [[unlikely]]
-                            {
-                                return print_usage_error(
-                                    parameter,
-                                    u8"Duplicate or conflicting module action. Cannot set trace output more than once for the same WASI Preview 1 target.");
-                            }
-
-                            ::fast_io::u8native_file test_output{};
-                            if(!::uwvm2::uwvm::imported::wasi::wasip1::storage::reopen_wasip1_trace_output_file(test_output, file_path)) [[unlikely]]
-                            {
-                                ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                                                    ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
-                                                    u8"uwvm: ",
-                                                    ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RED),
-                                                    u8"[error] ",
-                                                    ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
-                                                    u8"Unable to open WASI trace output file \"",
-                                                    ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_CYAN),
-                                                    file_path,
-                                                    ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
-                                                    u8"\".\n\n",
-                                                    ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
-                                return parameter_return_type::return_m1_imme;
-                            }
-
-                            target.trace_wasip1_call = true;
-                            target.trace_wasip1_call_is_set = true;
-                            target.trace_wasip1_output_target = trace_output_target_t::file;
-                            target.trace_wasip1_output_file_path_storage = ::uwvm2::utils::container::u8string{file_path};
-                            mark_consumed(last);
-                            return parameter_return_type::def;
-                        }};
-
-                    if(trace_target_text == u8"file")
-                    {
-                        auto extra2{extra1 + 1u};
-                        if(extra2 == para_end || extra2->type != parameter_type::arg) [[unlikely]]
-                        {
-                            return print_usage_error(parameter, u8"Missing trace output file path.");
-                        }
-                        return set_trace_file(::uwvm2::utils::container::u8string_view{extra2->str}, extra2);
-                    }
-                    return set_trace_file(trace_target_text, extra1);
-#  else
-                    return print_usage_error(parameter, u8"Invalid trace output target.");
-#  endif
                 }
                 case target_action_t::set_argv0:
                 {

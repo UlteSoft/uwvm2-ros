@@ -8,7 +8,7 @@
            compiler_starting_||compiler_closing_||!compiler_created_||compiler_body_returned_||
            compiler_current_||compiler_head_!=SIZE_MAX||compiler_payload_reserved_!=0u||debug_control_->spawn_inflight!=0u)
             return false;
-        for(::std::size_t i{};i!=debug_control_->capacity;++i)
+        for(::std::size_t i{};i!=slot_count_.load(::std::memory_order_acquire);++i)
         {
             auto const& job{compiler_jobs_[i]};
             if(job.phase==compiler_job_phase::queued||job.phase==compiler_job_phase::running||job.work||job.charged_bytes!=0u)
@@ -43,7 +43,7 @@
            !::pthread_equal(actual.thread,::pthread_self()))return false;
         actual.debug_participant=&participant;actual.debug_participant_id=id;actual.debug_wait_policy=&policy;
         actual.debug_cell={id,actual.debug_incarnation,actual.debug_native_tid,admission_->source_generation(),
-            admission_->source_validation_epoch(),static_cast<::std::size_t>(&actual-slots_.get()),
+            admission_->source_validation_epoch(),actual.position,
             SIZE_MAX,SIZE_MAX,SIZE_MAX,UINT64_MAX,actual.work->debug_image()->backend(),debug_stop_site::native_boundary};
         return true;
     }

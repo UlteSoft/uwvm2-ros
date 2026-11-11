@@ -133,7 +133,8 @@ int main(int argc,char** argv)
     auto profile{::uwvm2::runtime::checkpoint::compilation_profile::create_for_trusted_manager()};
     require(profile && lib::llvm_jit_configure_checkpoint_recording_host_api(profile)==lib::llvm_jit_debug_configure_result::ok,"actual resumable profile and host gate");
     require(lib::llvm_jit_prepare_debug_host_api(),"actual native full JIT publication");
-    ::uwvm2::uwvm::runtime::initializer::apply_runtime_active_segments(u8"wasi-debug");
+    require(::uwvm2::uwvm::runtime::initializer::apply_runtime_active_segments(u8"wasi-debug") ==
+        ::uwvm2::uwvm::runtime::initializer::details::active_segment_result::ok, "active segments initialized successfully");
     auto windows{::std::make_shared<exit_windows>()};auto launch{::std::make_shared<owned_launch>()};launch->state=state;launch->windows=windows;
     auto worker{lib::runtime_launch_llvm_jit_debug_guest_worker_host_api(state->control,launch,owned_launch::body)};
     require(worker.status==lib::llvm_jit_debug_guest_worker_launch_status::started && worker.worker,"genuine registered native guest");

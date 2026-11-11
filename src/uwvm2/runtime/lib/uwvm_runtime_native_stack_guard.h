@@ -10,6 +10,7 @@
 #include <limits>
 #include <atomic>
 #include <new>
+#include <cerrno>
 #include "uwvm_runtime_posix_abi.h"
 
 // This header is shared by the header and named-module runtime entry points.
@@ -51,6 +52,38 @@ namespace uwvm2::runtime::lib::native_stack
     }
 
 #if (defined(__linux__) || defined(__APPLE__)) && !defined(_WIN32)
+    inline void write_fixed_diagnostic(char const* message,::std::size_t size) noexcept
+    {
+# if defined(__linux__)
+        // Keep this low-level header independent of the runtime crash module:
+        // named-module consumers also include it in their global fragment.
+        // One fixed write, no callback, allocation, lock or process-wide signal
+        // disposition change. Failed output cannot replace stack/setup status.
+        int const saved_errno=errno;
+        ::sigset_t blocked{},previous{},pending{};
+        if(::sigemptyset(&blocked)==0 && ::sigaddset(&blocked,SIGPIPE)==0 &&
+           ::sigprocmask(SIG_BLOCK,&blocked,&previous)==0)
+        {
+            if(::sigpending(&pending)==0)
+            {
+                bool const already_pending=::sigismember(&pending,SIGPIPE)==1;
+                auto const written=::fast_io::posix_write_nothrow(
+                    ::fast_io::posix_io_observer{::fast_io::posix_stderr_number},message,size);
+                if(written.error==EPIPE && !already_pending)
+                {
+                    ::timespec immediate{};
+                    for(unsigned attempt{};attempt!=16u;++attempt)
+                    {if(::sigtimedwait(&blocked,nullptr,&immediate)>=0 || errno!=EINTR)break;}
+                }
+            }
+            static_cast<void>(::sigprocmask(SIG_SETMASK,&previous,nullptr));
+        }
+        errno=saved_errno;
+# else
+        static_cast<void>(::fast_io::posix_write_nothrow(
+            ::fast_io::posix_io_observer{::fast_io::posix_stderr_number},message,size));
+# endif
+    }
     struct bounds
     {
         ::std::uintptr_t low{};
@@ -292,8 +325,7 @@ namespace uwvm2::runtime::lib::native_stack
             // ^^ borrowed message; the trailing NUL is excluded from the count.
             // One bounded, allocation-free/lock-free native write only. Partial
             // output or EINTR cannot delay fatal exit on an exhausted stack.
-            [[maybe_unused]] auto const written{::fast_io::posix_write_nothrow(
-                ::fast_io::posix_io_observer{::fast_io::posix_stderr_number}, message, sizeof(message) - 1u)};
+            write_fixed_diagnostic(message,sizeof(message)-1u);
             ::uwvm2::runtime::lib::posix_abi::_exit_noexcept(127);
         }
         // Installing a process-wide disposition exposes it to threads which
@@ -446,8 +478,7 @@ namespace uwvm2::runtime::lib::native_stack
         // [safe message bytes] unsafe (one-past array)
         // ^^ borrowed message; count remains within this complete static array.
         // Retain the same single-attempt fatal-output policy as the handler.
-        [[maybe_unused]] auto const written{::fast_io::posix_write_nothrow(
-            ::fast_io::posix_io_observer{::fast_io::posix_stderr_number}, message, sizeof(message) - 1u)};
+        write_fixed_diagnostic(message,sizeof(message)-1u);
         ::uwvm2::runtime::lib::posix_abi::_exit_noexcept(126);
     }
 #else

@@ -13,8 +13,7 @@
 
 UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache::origin_auth
 {
-    // HMAC-SHA256(random kernel-only key, fixed domain || public context seed ||
-    // self-image digest). No derived Ed25519 private seed survives this object.
+    // HMAC-SHA256(random kernel-only key, fixed domain || public compiler context seed). No derived Ed25519 private seed survives this object.
     class signing_seed final
     {
         kernel_origin::secret_bytes<32u> bytes_{};
@@ -23,11 +22,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache::origin_auth
         signing_seed() noexcept = default;
         signing_seed(signing_seed const&) = delete;
         signing_seed& operator=(signing_seed const&) = delete;
-        template<typename PublicSeed, typename ImageDigest>
-        [[nodiscard]] bool derive(runtime_origin::use const& actual, PublicSeed const& public_seed,
-            ImageDigest const& image) noexcept
+        template<typename PublicSeed>
+        [[nodiscard]] bool derive(runtime_origin::use const& actual, PublicSeed const& public_seed) noexcept
         {
-            if(ready_ || public_seed.size() != 32u || image.size() != 32u || !kernel_origin::dumping_disabled() ||
+            if(ready_ || public_seed.size() != 32u || !kernel_origin::dumping_disabled() ||
                !runtime_origin::secret_reads_allowed(actual)) { return false; }
             kernel_origin::secret_bytes<32u> secret{};
             if(!kernel_origin::read(actual, secret)) { return false; }
@@ -40,11 +38,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache::origin_auth
             }
             ::fast_io::sha256_context inner{};
             inner.update(inner_pad.value.data(), inner_pad.value.data() + inner_pad.value.size());
-            constexpr char domain[]{"uwvm-llvm-jit-origin-ed25519-v7\0"};
+            constexpr char domain[]{"uwvm-llvm-jit-origin-ed25519-v8\0"};
             auto const* domain_begin{reinterpret_cast<::std::byte const*>(domain)};
             inner.update(domain_begin, domain_begin + sizeof(domain) - 1u);
             inner.update(public_seed.data(), public_seed.data() + public_seed.size());
-            inner.update(image.data(), image.data() + image.size());
             inner.do_final();
             kernel_origin::secret_bytes<32u> intermediate{};
             inner.digest_to_byte_ptr(intermediate.value.data());

@@ -86,11 +86,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
     // record is not a parser budget, compilation owner or restore credential.
     struct module_feature_policy
     {
-        inline static constexpr ::std::uint64_t revision{2u};
+        inline static constexpr ::std::uint64_t revision{3u};
         inline static constexpr ::std::uint64_t disable_mask{(::std::uint64_t{1u} << 20u) - 1u};
         ::std::uint64_t cli_mode{}, disabled{}, controlled{};
         [[nodiscard]] constexpr bool valid() const noexcept
-        { return cli_mode <= 4u && (disabled & ~disable_mask) == 0u && controlled <= 3u; }
+        { return cli_mode <= 5u && (disabled & ~disable_mask) == 0u && controlled <= 3u; }
         template<typename Parameter>
         [[nodiscard]] static constexpr module_feature_policy from_actual_parameter(Parameter const& p) noexcept
         {

@@ -133,7 +133,8 @@ int main(int argc, char** argv)
         lib::llvm_jit_debug_configure_result::ok, "real debug session configured");
     require(lib::llvm_jit_configure_debug_value_observation_host_api({}) == lib::llvm_jit_debug_configure_result::ok, "genuine host gate and observation profile installed");
     require(lib::llvm_jit_prepare_debug_host_api(), "real fused validator/compiler publication");
-    ::uwvm2::uwvm::runtime::initializer::apply_runtime_active_segments(u8"wasi-debug");
+    require(::uwvm2::uwvm::runtime::initializer::apply_runtime_active_segments(u8"wasi-debug") ==
+        ::uwvm2::uwvm::runtime::initializer::details::active_segment_result::ok, "active segments initialized successfully");
     ::std::uint32_t result{};
     ::std::thread guest{[&]
     {

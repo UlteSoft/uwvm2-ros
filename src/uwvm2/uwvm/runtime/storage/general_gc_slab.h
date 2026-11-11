@@ -27,13 +27,9 @@
                 // only after this guard returns, using the unchanged validation/root protocol.
                 fresh=::new(static_cast<void*>(::std::addressof(reservation.envelope->payload.instance))) object{};
                 auto* tail{reservation.original_array_slot+object_value_offset};
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
                 fresh->numeric_array_=raw;
                 if(raw) { fresh->values.reset_bytes(tail); }
                 else
-#else
-                static_cast<void>(raw);
-#endif
                 {
                     auto* values{initialize_carrier_tail(tail, length, complete_source)};
                     if(values==nullptr) { status=gc_object_status::size_overflow; }

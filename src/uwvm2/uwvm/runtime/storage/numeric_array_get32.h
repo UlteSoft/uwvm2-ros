@@ -1,5 +1,4 @@
-// Included in the public gc_object_store section only for the exact numeric
-// array experiment. Token lookup, owner leases, array extent and mutation
+// Scalar result transport for the existing checked array storage. Token lookup, owner leases, array extent and mutation
 // exclusion remain the same as the complete-carrier array_get operation.
 // https://webassembly.github.io/spec/core/exec/instructions.html#exec-array-get
         template<bool SignExtend>
@@ -19,7 +18,18 @@
             if(layout == nullptr || layout->field_count != 1uz || !layout->fields)
             { return failure(gc_object_status::invalid_type); }
             auto const& field{layout->fields[0uz]};
-            auto const width{numeric_array_storage_width(field.storage)};
+            auto const packed{field.storage.packed};
+            ::std::size_t width{};
+            if(packed == gc_type::packed_kind::none)
+            {
+                if(field.storage.value.kind == gc_type::value_kind::i32 ||
+                   field.storage.value.kind == gc_type::value_kind::f32) { width = 4uz; }
+            }
+            else if(field.storage.value.kind == gc_type::value_kind::i32)
+            {
+                if(packed == gc_type::packed_kind::i8) { width = 1uz; }
+                else if(packed == gc_type::packed_kind::i16) { width = 2uz; }
+            }
             // Only the validator-selected i8/i16/i32/f32 result shapes use
             // this scalar ABI. Other genuine array layouts remain supported
             // by array_get; a native misuse cannot read their first four bytes.

@@ -77,7 +77,7 @@ inline void llvm_jit_memtag_fill_bridge(::std::uintptr_t owner,::std::uint64_t d
     auto const* memory{reinterpret_cast<runtime_native_memory_t const*>(owner)};
     if(memory==nullptr) { ::fast_io::fast_terminate(); }
     auto const byte{static_cast<::std::byte>(value)};
-    auto const checked{::uwvm2::runtime::memtag::with_checked_access<Address,Shared>(*memory,static_cast<Address>(destination),0u,bytes,
+    auto const checked{::uwvm2::runtime::memtag::with_guest_access<Address,Shared>(*memory,static_cast<Address>(destination),0u,bytes,
         [&](::std::span<::std::byte> data) noexcept
         {
             if constexpr(Shared)
@@ -94,7 +94,7 @@ inline void llvm_jit_memtag_copy_bridge(::std::uintptr_t destination_owner,::std
     auto const* destination_memory{reinterpret_cast<runtime_native_memory_t const*>(destination_owner)};
     auto const* source_memory{reinterpret_cast<runtime_native_memory_t const*>(source_owner)};
     if(destination_memory==nullptr || source_memory==nullptr) { ::fast_io::fast_terminate(); }
-    auto const checked{::uwvm2::runtime::memtag::with_checked_copy(*destination_memory,*source_memory,
+    auto const checked{::uwvm2::runtime::memtag::with_guest_copy(*destination_memory,*source_memory,
         static_cast<Destination>(destination),static_cast<Source>(source),bytes,
         [&](::std::span<::std::byte> destination_data,::std::span<::std::byte> source_data) noexcept
         {
@@ -141,7 +141,7 @@ inline void llvm_jit_memtag_init_bridge(::std::uintptr_t owner,::std::uintptr_t 
         { ::uwvm2::runtime::lib::llvm_jit_memory_out_of_bounds_trap(memory->diagnostic_owner_memory_index,0u,source,0u,source_size,size,0u,0u); }
         ::fast_io::fast_terminate();
     }
-    auto const checked{::uwvm2::runtime::memtag::with_checked_access<Address,Shared>(*memory,static_cast<Address>(destination),0u,bytes,
+    auto const checked{::uwvm2::runtime::memtag::with_guest_access<Address,Shared>(*memory,static_cast<Address>(destination),0u,bytes,
         [&](::std::span<::std::byte> destination_data) noexcept
         {
             if(destination_data.empty()) { return; }
@@ -221,7 +221,7 @@ template<typename Address,bool Shared,unsigned ResultBits,::std::size_t Bytes,bo
     static_assert(ResultBits==32u || ResultBits==64u);
     static_assert(Bytes==1u || Bytes==2u || Bytes==4u || Bytes==8u);
     ::std::uint64_t result{};
-    auto const checked{::uwvm2::runtime::memtag::with_checked_access<Address,Shared>(memory,static_cast<Address>(pointer),offset,Bytes,
+    auto const checked{::uwvm2::runtime::memtag::with_guest_access<Address,Shared>(memory,static_cast<Address>(pointer),offset,Bytes,
         [&](::std::span<::std::byte> data) noexcept
         {
             ::std::array<::std::byte,Bytes> temporary{};
@@ -282,7 +282,7 @@ inline void llvm_jit_memtag_simd_bridge(::std::uintptr_t owner,::std::uint64_t o
     if(memory==nullptr) { ::fast_io::fast_terminate(); }
     runtime_wasm_v128 value{};
     if constexpr(store || lane_load) { value=llvm_jit_simd_read_bridge_value<runtime_wasm_v128>(vector_address); }
-    auto const checked{::uwvm2::runtime::memtag::with_checked_access<Address,Shared>(*memory,static_cast<Address>(pointer),offset,width,
+    auto const checked{::uwvm2::runtime::memtag::with_guest_access<Address,Shared>(*memory,static_cast<Address>(pointer),offset,width,
         [&](::std::span<::std::byte> data) noexcept
         {
             ::std::array<::std::byte,width> temporary{};
@@ -317,7 +317,7 @@ template<typename Address,bool Shared>
     auto const descriptor{atomic::describe_atomic_instruction(static_cast<::std::uint32_t>(opcode))};
     auto const bytes{::std::size_t{1u}<<descriptor.natural_alignment};
     bool unaligned{};::std::uint64_t result{};
-    auto const checked{::uwvm2::runtime::memtag::with_checked_access<Address,Shared>(memory,static_cast<Address>(pointer),offset,bytes,
+    auto const checked{::uwvm2::runtime::memtag::with_guest_access<Address,Shared>(memory,static_cast<Address>(pointer),offset,bytes,
         [&](::std::span<::std::byte> data) noexcept
         {
             unaligned=((pointer+offset)&(bytes-1u))!=0u;

@@ -43,7 +43,7 @@
 # include "retained_plan.h"
 // import
 # include <fast_io.h>
-# include <uwvm2/extension/memtag/instruction.h>
+# include <uwvm2/extension/memtag/encoding.h>
 # include <uwvm2/utils/container/impl.h>
 # include <uwvm2/utils/debug/impl.h>
 # include <uwvm2/utils/intrinsics/impl.h>
@@ -6889,6 +6889,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
                     break;
                 }
                 case static_cast<wasm_byte>(wasm1p1_code::numeric_prefix):
+                case static_cast<wasm_byte>(::uwvm2::extension::memtag::opcode_prefix):
                 {
                     // numeric_prefix subopcode ...
                     // [safe] unsafe (could be the section_end)
@@ -6901,9 +6902,22 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
                     // [safe] unsafe (could be the section_end)
                     //        ^^ code_curr
 
-                    auto const subopcode{
-                        details::read_leb128<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32>(code_curr, code_end, op_begin, err, u8"numeric_prefix")};
+                    auto const subopcode{[&]() constexpr
+                    {
+                        if(*op_begin == ::std::byte{::uwvm2::extension::memtag::opcode_prefix})
+                        {
+                            auto const decoded{::uwvm2::extension::memtag::scan_opcode(code_curr, code_end)};
+                            if(decoded.error != ::uwvm2::extension::memtag::encoding_error::none)
+                            { details::fail_invalid_immediate(op_begin, err, u8"uwvm.memtag namespace"); }
+                            return decoded.subopcode;
+                        }
+                        return details::read_leb128<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32>(
+                            code_curr, code_end, op_begin, err, u8"numeric_prefix");
+                    }()};
 
+                    if(*op_begin != ::std::byte{::uwvm2::extension::memtag::opcode_prefix} &&
+                       ::uwvm2::extension::memtag::find_instruction(subopcode) != nullptr)
+                    { details::fail_invalid_immediate(op_begin, err, u8"obsolete FC memtag encoding; regenerate with FF packed-u32"); }
                     if(auto const* memtag{::uwvm2::extension::memtag::find_instruction(subopcode)}; memtag != nullptr)
                     {
                         if(wasm1p1_para.disable_memtag_extension) [[unlikely]]
@@ -8182,24 +8196,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
         if constexpr((::std::same_as<::uwvm2::parser::wasm::standard::wasm1p1::features::wasm1p1, Fs> || ...))
         {
             auto& para{::uwvm2::parser::wasm::standard::wasm1p1::features::get_wasm1p1_parameter(fs_para)};
-            para.disable_multi_value = false;
-            para.disable_reference_types = false;
-            para.disable_table_instructions = false;
-            para.disable_multiple_tables = false;
-            para.disable_bulk_memory = false;
-            para.disable_sign_extension = false;
-            para.disable_nontrapping_float_to_int = false;
-            para.disable_simd = false;
-            para.disable_extended_const = false;
-            para.disable_table_initializer = false;
-            para.disable_relaxed_simd = false;
-            para.disable_multi_memory = false;
-            para.disable_tail_call = false;
-            para.disable_memory64 = false;
-            para.disable_table64 = false;
-            para.disable_function_references = false;
-            para.disable_gc = false;
-            para.disable_exceptions = false;
+            ::uwvm2::parser::wasm::standard::wasm1p1::features::apply_feature_baseline(
+                para, ::uwvm2::parser::wasm::standard::wasm1p1::features::wasm_feature_cli_mode::direct_wasm3);
+            // The standalone Core-only overload does not opt into threads.
+            // The ROS product passes its explicit Core 3.0 + threads policy.
+            para.disable_threads = true;
         }
 
         ::uwvm2::validation::standard::wasm3::validate_code(code_version, module_storage, function_index, code_begin, code_end, err, fs_para);

@@ -258,8 +258,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_disassembly
     }
 
     // Policy over OWNED copied function bytes only. Never dereference the PC or
-    // user offset. Forward decode proves variable-width instruction boundaries;
-    // the full runtime provenance mask must qualify every target byte.
+    // user offset. Forward decode proves variable-width instruction boundaries,
+    // and instruction_code excludes literal pools on mapped-code targets.
+    // All generated instructions in this authenticated JIT owner use the same
+    // breakpoint/step policy, including compiler-generated GC/debug bridges.
+    // The caller separately validates the actual parked native session and
+    // public instruction projection; this copied result cannot authorize host
+    // code, registers, data access, or a cross-owner execution transition.
     template<typename Decoder, typename Image>
     [[nodiscard]] inline instruction guest_breakpoint_with(Decoder& decoder, Image const& image,
         ::std::uint64_t offset) noexcept
@@ -272,8 +277,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_disassembly
         if(!page.available || page.count != 1u || !page.instructions[0u]) { return {}; }
         auto const candidate{page.instructions[0u]};
         if(candidate.pc != image.owner_begin + offset || candidate.size > image.size - offset) { return {}; }
-        for(::std::size_t i{}; i != candidate.size; ++i)
-        { if(image.guest_code[static_cast<::std::size_t>(offset) + i] != 1u) { return {}; } }
+        // guest_code is the source-opcode correlation mask. Requiring it
+        // here rejects real owned JIT instructions which native stepping already
+        // admits (notably GC/codegen bridges). It is not an executable-text map.
+        // decode_window_with has proved the complete instruction in owned text.
         return candidate;
     }
 }

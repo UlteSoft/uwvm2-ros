@@ -142,13 +142,8 @@ namespace packed_test
         { remember(store->array_new(type, observe(store, reference, 0uz), 0uz, empty), empty); }
         else { remember(store->array_new_default(type, 0uz, empty), empty); }
         ARRAY_CHECK(store->native_test_array_requested_extent(empty, empty_element, empty_backing, empty_raw));
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
         auto const expected{numeric ? width(type) : sizeof(value)};
         ARRAY_CHECK(raw == numeric && empty_raw == numeric);
-#else
-        auto const expected{sizeof(value)};
-        ARRAY_CHECK(!raw && !empty_raw);
-#endif
         ARRAY_CHECK(element == expected && empty_element == expected);
         ARRAY_CHECK(backing >= empty_backing && backing - empty_backing == length * expected);
         // Requested new[] bytes ONLY. This is neither malloc charge nor RSS.
@@ -278,9 +273,7 @@ namespace packed_test
         ARRAY_CHECK(observe(store, bytes, 0uz, true).as<::std::uint32_t>() == 0xffffff80u);
         ARRAY_CHECK(observe(store, halves, 0uz, false).as<::std::uint32_t>() == 0x80f1u);
         ARRAY_CHECK(observe(store, halves, 0uz, true).as<::std::uint32_t>() == 0xffff80f1u);
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
-# include "packed_numeric_arrays_scalar32.inc"
-#endif
+# include "packed_numeric_arrays_scalar32.h"
     }
     void overlap_and_immutable(store_ptr const& store)
     {
@@ -426,9 +419,7 @@ int main()
         source.reset(); source_leases.reset();
         ARRAY_CHECK(!source_weak.expired());
         equals(target, foreign_numeric, 2uz, value::i32(0xabcdef01u));
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
         ARRAY_CHECK(target->template array_get32<false>(foreign_numeric, 2uz) == 0xabcdef01u);
-#endif
         ARRAY_CHECK(target->array_set(foreign_numeric, 1uz, value::i32(0x12345678u)) == status::ok);
         ARRAY_CHECK(target->array_copy(discarded, 0uz, foreign_numeric, 0uz, 3uz) == status::ok);
         equals(target, discarded, 1uz, value::i32(0x12345678u));
@@ -447,16 +438,12 @@ int main()
     {
         auto admission{::uwvm2::runtime::gc::runtime_gc_entry_admission.enter()};
         equals(target, foreign_numeric, 1uz, value::i32(0x12345678u));
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
         ARRAY_CHECK(target->template array_get32<false>(foreign_numeric, 1uz) == 0x12345678u);
-#endif
         ARRAY_CHECK(same(observe(target, graph_root, 0uz).as<ref>(), graph_root));
         auto unchanged{value::i64(0xabcdef1234567890ULL)};
         ARRAY_CHECK(target->array_get(discarded, 0uz, false, unchanged) == status::invalid_reference);
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
         ARRAY_CHECK(target->template array_get32<false>(discarded, 0uz) ==
             (static_cast<::std::uint64_t>(status::invalid_reference) << 32u));
-#endif
         ARRAY_CHECK(unchanged.bits == value::i64(0xabcdef1234567890ULL).bits);
         ::std::size_t width_before{71uz}, bytes_before{73uz}; bool raw_before{true};
         ARRAY_CHECK(!target->native_test_array_requested_extent(discarded, width_before, bytes_before, raw_before));
@@ -471,10 +458,8 @@ int main()
         value unchanged{};
         ARRAY_CHECK(target->array_get(graph_root, 0uz, false, unchanged) == status::invalid_reference);
         ARRAY_CHECK(target->array_get(foreign_numeric, 0uz, false, unchanged) == status::invalid_reference);
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
         ARRAY_CHECK(target->template array_get32<false>(foreign_numeric, 0uz) ==
             (static_cast<::std::uint64_t>(status::invalid_reference) << 32u));
-#endif
         ARRAY_CHECK(target->struct_get(foreign_node, 0uz, false, unchanged) == status::invalid_reference);
         // [canonical cohort pins] release them only after final readers leave.
     }
@@ -488,9 +473,5 @@ int main()
     ::fast_io::io::println("PASS packed numeric arrays checks=", checks,
         " collections=", collections, " reclaimed=", reclaimed_total,
         " oom_injected=", oom_injected.load(::std::memory_order_relaxed),
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
         " packed_numeric=1 requested_extent_only=1 full_VM=0 RSS_measured=0");
-#else
-        " packed_numeric=0 requested_extent_only=1 full_VM=0 RSS_measured=0");
-#endif
 }

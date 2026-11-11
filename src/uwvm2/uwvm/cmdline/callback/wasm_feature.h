@@ -72,143 +72,37 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
             return parameter_return_type::return_m1_imme;
         }
 
-        /// @brief Return a canonical spelling for whichever feature switch already owns the CLI.
+        /// @brief Diagnose the one explicitly selected baseline, independently of overrides.
         inline constexpr ::uwvm2::utils::container::u8string_view selected_feature_name(auto const& para) noexcept
         {
-            switch(para.cli_mode)
-            {
-                case cli_mode::direct_mvp: return u8"--wasm-feature-wasmmvp";
-                case cli_mode::direct_wasm1p1: return u8"--wasm-feature-wasm1p1";
-                case cli_mode::direct_wasm2: return u8"--wasm-feature-wasm2";
-                case cli_mode::scoped:
-                {
-                    if(para.explicit_enable_multi_value) { return u8"--wasm-feature-enable-multi-value"; }
-                    if(para.explicit_enable_reference_types) { return u8"--wasm-feature-enable-reference-types"; }
-                    if(para.explicit_enable_table_instructions) { return u8"--wasm-feature-enable-table-instructions"; }
-                    if(para.explicit_enable_multiple_tables) { return u8"--wasm-feature-enable-multiple-tables"; }
-                    if(para.explicit_enable_bulk_memory) { return u8"--wasm-feature-enable-bulk-memory"; }
-                    if(para.explicit_enable_sign_extension) { return u8"--wasm-feature-enable-sign-extension"; }
-                    if(para.explicit_enable_nontrapping_float_to_int) { return u8"--wasm-feature-enable-nontrapping-float-to-int"; }
-                    if(para.explicit_enable_extended_const) { return u8"--wasm-feature-enable-extended-const"; }
-                    if(para.explicit_enable_table_initializer) { return u8"--wasm-feature-enable-table-initializer"; }
-                    if(para.explicit_enable_relaxed_simd) { return u8"--wasm-feature-enable-relaxed-simd"; }
-                    if(para.explicit_enable_multi_memory) { return u8"--wasm-feature-enable-multi-memory"; }
-                    if(para.explicit_enable_tail_call) { return u8"--wasm-feature-enable-tail-call"; }
-                    if(para.explicit_enable_memory64) { return u8"--wasm-feature-enable-memory64"; }
-                    if(para.explicit_enable_function_references) { return u8"--wasm-feature-enable-function-references"; }
-                    if(para.explicit_enable_gc) { return u8"--wasm-feature-enable-gc"; }
-                    if(para.explicit_enable_exceptions) { return u8"--wasm-feature-enable-exceptions"; }
-                    if(para.explicit_enable_table64) { return u8"--wasm-feature-enable-table64"; }
-                    if(para.explicit_enable_threads) { return u8"--wasm-feature-enable-threads"; }
-                    if(para.explicit_disable_extended_const) { return u8"--wasm-feature-disable-extended-const"; }
-                    if(para.explicit_disable_table_initializer) { return u8"--wasm-feature-disable-table-initializer"; }
-                    if(para.explicit_disable_relaxed_simd) { return u8"--wasm-feature-disable-relaxed-simd"; }
-                    if(para.explicit_disable_multi_memory) { return u8"--wasm-feature-disable-multi-memory"; }
-                    if(para.explicit_disable_tail_call) { return u8"--wasm-feature-disable-tail-call"; }
-                    if(para.explicit_disable_memory64) { return u8"--wasm-feature-disable-memory64"; }
-                    if(para.explicit_disable_function_references) { return u8"--wasm-feature-disable-function-references"; }
-                    if(para.explicit_disable_gc) { return u8"--wasm-feature-disable-gc"; }
-                    if(para.explicit_disable_exceptions) { return u8"--wasm-feature-disable-exceptions"; }
-                    if(para.explicit_disable_table64) { return u8"--wasm-feature-disable-table64"; }
-                    if(para.explicit_disable_threads) { return u8"--wasm-feature-disable-threads"; }
-                    if(para.explicit_enable_simd) { return u8"--wasm-feature-enable-simd"; }
-                    if(para.explicit_disable_multi_value) { return u8"--wasm-feature-disable-multi-value"; }
-                    if(para.explicit_disable_reference_types) { return u8"--wasm-feature-disable-reference-types"; }
-                    if(para.explicit_disable_table_instructions) { return u8"--wasm-feature-disable-table-instructions"; }
-                    if(para.explicit_disable_multiple_tables) { return u8"--wasm-feature-disable-multiple-tables"; }
-                    if(para.explicit_disable_bulk_memory) { return u8"--wasm-feature-disable-bulk-memory"; }
-                    if(para.explicit_disable_sign_extension) { return u8"--wasm-feature-disable-sign-extension"; }
-                    if(para.explicit_disable_nontrapping_float_to_int) { return u8"--wasm-feature-disable-nontrapping-float-to-int"; }
-                    if(para.explicit_disable_simd) { return u8"--wasm-feature-disable-simd"; }
-                    return u8"--wasm-feature-enable/disable-*";
-                }
-                case cli_mode::unspecified: [[fallthrough]];
-                default: return u8"--wasm-feature-*";
-            }
+            if(para.explicit_feature_mvp) { return u8"--wasm-feature-wasmmvp"; }
+            if(para.explicit_feature_wasm1p1) { return u8"--wasm-feature-wasm1p1"; }
+            if(para.explicit_feature_wasm2) { return u8"--wasm-feature-wasm2"; }
+            return u8"--wasm-feature-wasm3";
         }
 
-        /// @brief Claim the CLI for one complete feature-set selector.
         inline constexpr parameter_return_type begin_direct_feature(::uwvm2::utils::cmdline::parameter_parsing_results* para_curr,
                                                                     cli_mode requested,
                                                                     bool& explicit_flag) noexcept
         {
             auto& para{wasm1p1_parameter()};
-            if(para.cli_mode != cli_mode::unspecified) [[unlikely]]
-            {
-                return print_conflict(para_curr->str, selected_feature_name(para));
-            }
+            if(para.explicit_feature_mvp || para.explicit_feature_wasm1p1 ||
+               para.explicit_feature_wasm2 || para.explicit_feature_wasm3) [[unlikely]]
+            { return print_conflict(para_curr->str, selected_feature_name(para)); }
             para.cli_mode = requested;
             explicit_flag = true;
             return parameter_return_type::def;
         }
 
-        /// @brief Claim the CLI for scoped feature disables, rejecting either complete feature-set selector.
-        inline constexpr parameter_return_type begin_scoped_feature(::uwvm2::utils::cmdline::parameter_parsing_results* para_curr) noexcept
-        {
-            auto& para{wasm1p1_parameter()};
-            if(para.cli_mode != cli_mode::unspecified && para.cli_mode != cli_mode::scoped) [[unlikely]]
-            {
-                return print_conflict(para_curr->str, selected_feature_name(para));
-            }
-            para.cli_mode = cli_mode::scoped;
-            return parameter_return_type::def;
-        }
+        inline constexpr void apply_feature_baseline(auto& para, cli_mode baseline) noexcept
+        { ::uwvm2::parser::wasm::standard::wasm1p1::features::apply_feature_baseline(para, baseline); }
 
-        /// @brief Disable the complete wasm1.1 feature collection and restore MVP runtime guards.
-        inline constexpr void apply_mvp_feature_set(auto& para) noexcept
-        {
-            para.disable_multi_value = true;
-            para.disable_reference_types = true;
-            para.disable_table_instructions = true;
-            para.disable_multiple_tables = true;
-            para.disable_bulk_memory = true;
-            para.disable_sign_extension = true;
-            para.disable_nontrapping_float_to_int = true;
-            para.disable_simd = true;
-            para.disable_extended_const = true;
-            para.disable_table_initializer = true;
-            para.disable_relaxed_simd = true;
-            para.disable_multi_memory = true;
-            para.disable_threads = true;
-            para.disable_tail_call = true;
-            para.disable_memory64 = true;
-            para.disable_table64 = true;
-            para.disable_function_references = true;
-            para.disable_gc = true;
-            para.disable_exceptions = true;
-            para.controllable_allow_multi_result_vector = true;
-            para.controllable_allow_multi_table = true;
-        }
+        inline constexpr void apply_mvp_feature_set(auto& para) noexcept { apply_feature_baseline(para, cli_mode::direct_mvp); }
+        inline constexpr void apply_wasm1p1_feature_set(auto& para) noexcept { apply_feature_baseline(para, cli_mode::direct_wasm1p1); }
+        inline constexpr void apply_wasm2_feature_set(auto& para) noexcept { apply_feature_baseline(para, cli_mode::direct_wasm2); }
+        inline constexpr void apply_wasm3_feature_set(auto& para) noexcept { apply_feature_baseline(para, cli_mode::direct_wasm3); }
 
-        /// @brief Enable the complete wasm1.1 feature collection and relax MVP runtime guards.
-        inline constexpr void apply_wasm1p1_feature_set(auto& para) noexcept
-        {
-            para.disable_multi_value = false;
-            para.disable_reference_types = false;
-            para.disable_table_instructions = false;
-            para.disable_multiple_tables = false;
-            para.disable_bulk_memory = false;
-            para.disable_sign_extension = false;
-            para.disable_nontrapping_float_to_int = false;
-            para.disable_simd = false;
-            para.disable_extended_const = true;
-            para.disable_table_initializer = true;
-            para.disable_relaxed_simd = true;
-            para.disable_multi_memory = true;
-            para.disable_threads = true;
-            para.disable_tail_call = true;
-            para.disable_memory64 = true;
-            para.disable_table64 = true;
-            para.disable_function_references = true;
-            para.disable_gc = true;
-            para.disable_exceptions = true;
-            para.controllable_allow_multi_result_vector = false;
-            para.controllable_allow_multi_table = false;
-        }
-
-        inline constexpr void apply_wasm2_feature_set(auto& para) noexcept { apply_wasm1p1_feature_set(para); }
-
-        /// @brief Configure one independent WebAssembly 2.0 feature group.
+        /// @brief Override one independent feature without changing the selected baseline.
         inline constexpr parameter_return_type configure_single_feature(::uwvm2::utils::cmdline::parameter_parsing_results* para_curr,
                                                                         ::uwvm2::utils::container::u8string_view same_name,
                                                                         ::uwvm2::utils::container::u8string_view opposite_name,
@@ -219,7 +113,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
                                                                         bool controls_multi_result,
                                                                         bool controls_multiple_tables) noexcept
         {
-            if(auto const ret{begin_scoped_feature(para_curr)}; ret != parameter_return_type::def) [[unlikely]] { return ret; }
             if(explicit_flag) [[unlikely]] { return print_conflict(para_curr->str, same_name); }
             if(opposite_explicit_flag) [[unlikely]] { return print_conflict(para_curr->str, opposite_name); }
 
@@ -295,6 +188,28 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
             return ret;
         }
         wasm_feature_details::apply_wasm2_feature_set(para);
+        return wasm_feature_details::parameter_return_type::def;
+    }
+
+#if defined(UWVM_MODULE)
+    extern "C++" UWVM_GNU_COLD
+#else
+    UWVM_GNU_COLD inline constexpr
+#endif
+        /// @brief Handle --wasm-feature-wasm3.
+        ::uwvm2::utils::cmdline::parameter_return_type wasm_feature_wasm3_callback(
+            [[maybe_unused]] ::uwvm2::utils::cmdline::parameter_parsing_results* para_begin,
+            ::uwvm2::utils::cmdline::parameter_parsing_results* para_curr,
+            [[maybe_unused]] ::uwvm2::utils::cmdline::parameter_parsing_results* para_end) noexcept
+    {
+        auto& para{wasm_feature_details::wasm1p1_parameter()};
+        if(auto const ret{wasm_feature_details::begin_direct_feature(
+               para_curr, wasm_feature_details::cli_mode::direct_wasm3, para.explicit_feature_wasm3)};
+           ret != wasm_feature_details::parameter_return_type::def) [[unlikely]]
+        {
+            return ret;
+        }
+        wasm_feature_details::apply_wasm3_feature_set(para);
         return wasm_feature_details::parameter_return_type::def;
     }
 

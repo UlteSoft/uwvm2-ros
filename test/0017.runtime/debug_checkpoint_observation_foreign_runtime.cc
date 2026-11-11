@@ -159,7 +159,8 @@ int main(int argc, char** argv)
     auto const module{source->initialized_main_module()}; require(module != nullptr, "actual initialized main registry member");
     // Owned CLI preparation defers active segments to the start dispatcher.
     // This embedding fixture owns that cold startup before any guest enters.
-    ::uwvm2::uwvm::runtime::initializer::apply_runtime_active_segments(u8"checkpoint-host-effects");
+    require(::uwvm2::uwvm::runtime::initializer::apply_runtime_active_segments(u8"checkpoint-host-effects") ==
+        ::uwvm2::uwvm::runtime::initializer::details::active_segment_result::ok, "active segments initialized successfully");
     actual_reentry_module.store(module, ::std::memory_order_release);
     auto state{::std::make_shared<observer>()};
     require(lib::llvm_jit_configure_debug_session_host_api(state->control, {state, observer::point, observer::before_park},

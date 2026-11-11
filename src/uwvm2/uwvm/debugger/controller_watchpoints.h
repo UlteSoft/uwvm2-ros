@@ -1,4 +1,4 @@
-// Included inside controller. Only the authenticated DEV manager reaches here.
+// Included inside controller. Only the authenticated full-permission manager reaches here.
 // Software value watchpoints observe real complete stops, never stale snapshots.
 #pragma once
         [[nodiscard]] bool sample_watchpoint_locked(data_watchpoint& point, controller_reply const& stopped,
@@ -82,7 +82,22 @@
                    values.rows.size()!=(::std::min)(query.wasm_state_request.count,
                        values.total_values-query.wasm_state_request.first))
                 { error="typed watched value unavailable";return false; }
-                for(auto const& row:values.rows)
+                auto const* rows{::std::addressof(values.rows)};
+                if(query.wasm_state_request.member_page())
+                {
+                    auto const object{values.selected_object};
+                    if(object==0u || object>values.objects.size())
+                    { error="watched GC object unavailable";return false; }
+                    auto const& selected{values.objects[static_cast<::std::size_t>(object)-1u]};
+                    auto const first{query.wasm_state_request.member_first};
+                    auto const count{query.wasm_state_request.member_count};
+                    if((selected.kind!=wasm_state::object_kind::structure && selected.kind!=wasm_state::object_kind::array) ||
+                       selected.first_member!=first || first>selected.total_members ||
+                       count>selected.total_members-first || selected.members.size()!=count)
+                    { error="complete watched GC member range unavailable";return false; }
+                    rows=::std::addressof(selected.members);
+                }
+                for(auto const& row:*rows)
                 {
                     if(!row.data.available || row.data.type.kind==wasm_state::value_kind::reference)
                     { error="watch requires complete numeric/vector values or a linear-memory range";return false; }
@@ -179,10 +194,26 @@
                         auto const text{::fast_io::concat_fast_io("print ",::fast_io::string_view{command.script_text.data(),command.script_size})};
                         query=parse_console_command(::fast_io::string_view{text.data(),text.size()});
                     }
+                    if(query.kind==console_command_kind::wasm_path)
+                    {
+                        if(query.wasm_path_request.action!=wasm_path::operation::members)
+                        { result.status=control_error::unsupported_command;return result; }
+                        // Resolve the original root/path at this exact real stop.
+                        // The watch keeps copied indices, not a live GC pointer or
+                        // a reusable ledger capability. Every future sample again
+                        // obtains a fresh complete cohort and canonical root borrow.
+                        controller_reply copied{};copied.execution=result.execution;
+                        copied.stop_identifier=result.stop_identifier;copied.threads=result.threads;
+                        query_wasm_path_locked(query.wasm_path_request,copied);
+                        if(copied.wasm_path_values.result!=wasm_state::status::available)
+                        { result.status=control_error::invalid_state;result.watchpoint_error="current GC member path required";return result; }
+                        query.kind=console_command_kind::wasm_state;
+                        query.wasm_state_request=::std::move(copied.wasm_state_values.requested);
+                    }
                     if(query.kind!=console_command_kind::wasm_state && query.kind!=console_command_kind::source_value)
                     { result.status=control_error::unsupported_command;return result; }
                     if(query.kind==console_command_kind::wasm_state &&
-                       (!wasm_state::value_selection(query.wasm_state_request.selected) || query.wasm_state_request.member_page()))
+                       !wasm_state::value_selection(query.wasm_state_request.selected))
                     { result.status=control_error::unsupported_command;return result; }
                     if(query.kind==console_command_kind::source_value && !query.requested_step_thread && result.threads.size()==1u)
                     { query.requested_step_thread=result.threads.front().identifier; }

@@ -185,9 +185,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
 #if defined(UWVM_SUPPORT_PRELOAD_DL)
         dl,
 #endif
-#if defined(UWVM_SUPPORT_WEAK_SYMBOL)
-        weak_symbol,
-#endif
         local_imported
     };
 
@@ -206,9 +203,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             local_defined_function_storage_t const* defined_ptr;
 #if defined(UWVM_SUPPORT_PRELOAD_DL)
             ::uwvm2::uwvm::wasm::type::capi_function_t const* dl_ptr;
-#endif
-#if defined(UWVM_SUPPORT_WEAK_SYMBOL)
-            ::uwvm2::uwvm::wasm::type::capi_function_t const* weak_symbol_ptr;
 #endif
             local_imported_target_t local_imported;
         };

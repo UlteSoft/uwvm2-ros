@@ -66,15 +66,16 @@ namespace uwvm2::imported::ros::ipc
             if(now>=until) { errno=ETIMEDOUT;return false; }
             if(waiter)
             {
-                auto result{waiter->until(until,cancellation_fd,fd,events)};
+                short native_revents{};
+                auto result{waiter->until(until,cancellation_fd,fd,events,&native_revents)};
                 if(result==quota_wait_result::cancelled) { errno=ECANCELED;return false; }
                 if(result!=quota_wait_result::ready) { errno=EIO;return false; }
                 if(cancellation_requested(cancellation_fd)) { return false; }
-                pollfd ready{fd,events,0};
-                auto const count{::poll(&ready,1,0)};
-                if(count<0 && errno==EINTR) { continue; }
-                if(count<0) { return false; }
-                if(ready.revents) { return true; }
+                // until() already sampled this descriptor together with the
+                // timer and cancellation sources. A fresh readiness syscall
+                // adds no ownership proof; the caller's nonblocking transfer
+                // handles readiness consumed by another reader.
+                if(native_revents) { return true; }
             }
             else
             {
@@ -155,9 +156,85 @@ namespace uwvm2::imported::ros::ipc
         if(!transfer(fd,b,sizeof b,false,until,cancellation_fd)) { return false; }
         if(!decode_header(b,sizeof b,f,length)) { errno=EPROTO; return false; }
         if(cancellation_requested(cancellation_fd)) { return false; }
-        f.payload.resize(length);
-        return transfer(fd,f.payload.data(),length,false,until,cancellation_fd);
+        // A claimed length alone cannot reserve the complete body. Grow only
+        // as the authenticated stream supplies it, under the same deadline.
+        f.payload.clear();
+        while(f.payload.size()<length)
+        {
+            auto const offset=f.payload.size();
+            auto const chunk=(std::min)(static_cast<std::size_t>(length)-offset,std::size_t{65536});
+            f.payload.resize(offset+chunk);
+            if(!transfer(fd,f.payload.data()+offset,chunk,false,until,cancellation_fd))return false;
+        }
+        return !cancellation_requested(cancellation_fd);
     }
+    // A connection-local read buffer avoids a second recv for small replies.
+    // This is a chunk size, not a protocol length limit. Larger frames are
+    // streamed; surplus bytes remain attached to this exact authenticated
+    // connection and are discarded on disconnect. Headers are validated before
+    // their payload length can allocate memory.
+    class buffered_frame_reader
+    {
+        ::std::array<::std::uint8_t,1024> bytes_{};
+        ::std::size_t begin_{},end_{};
+        bool fill(int fd,deadline until,int stop)
+        {
+            for(;;)
+            {
+                if(cancellation_requested(stop)) { return false; }
+                if(poll_timeout(until)==0) {errno=ETIMEDOUT;return false;}
+                auto n=::recv(fd,bytes_.data(),bytes_.size(),MSG_DONTWAIT);
+                if(n>0)
+                {
+                    begin_=0;end_=static_cast<::std::size_t>(n);
+                    return !cancellation_requested(stop);
+                }
+                if(!n) {errno=ECONNRESET;return false;}
+                if(errno==EINTR) {continue;}
+                if(errno!=EAGAIN&&errno!=EWOULDBLOCK) {return false;}
+                if(!wait_ready(fd,POLLIN,until,stop)) {return false;}
+            }
+        }
+        bool take(int fd,::std::uint8_t* out,::std::size_t n,deadline until,int stop)
+        {
+            if(cancellation_requested(stop)) {return false;}
+            while(n)
+            {
+                if(poll_timeout(until)==0) {errno=ETIMEDOUT;return false;}
+                if(begin_==end_&&n>=bytes_.size()) {return transfer(fd,out,n,false,until,stop);}
+                if(begin_==end_&&!fill(fd,until,stop)) {return false;}
+                auto count=(::std::min)(n,end_-begin_);
+                ::std::memcpy(out,bytes_.data()+begin_,count);
+                begin_+=count;out+=count;n-=count;
+                if(cancellation_requested(stop)) {return false;}
+            }
+            return !cancellation_requested(stop);
+        }
+    public:
+        void reset() noexcept {begin_=end_=0;}
+        bool read(int fd,frame& result,deadline until,int stop=-1)
+        {
+            ::std::array<::std::uint8_t,header_bytes> header;
+            ::std::uint32_t size{};
+            if(!take(fd,header.data(),header.size(),until,stop)) {return false;}
+            if(!decode_header(header.data(),header.size(),result,size)) {errno=EPROTO;return false;}
+            if(cancellation_requested(stop)) {return false;}
+            if(size<=bytes_.size())
+            {
+                result.payload.resize(size);
+                return take(fd,result.payload.data(),size,until,stop);
+            }
+            result.payload.clear();
+            while(result.payload.size()<size)
+            {
+                auto const offset=result.payload.size();
+                auto const chunk=(::std::min)(static_cast<::std::size_t>(size)-offset,::std::size_t{65536});
+                result.payload.resize(offset+chunk);
+                if(!take(fd,result.payload.data()+offset,chunk,until,stop))return false;
+            }
+            return !cancellation_requested(stop);
+        }
+    };
     inline bool wait_connected(int fd,deadline until,int cancellation_fd)
     {
         for(;;)
@@ -188,6 +265,9 @@ namespace uwvm2::imported::ros::ipc
     class client
     {
         int fd_{-1};
+#if defined(__linux__)
+        buffered_frame_reader reader_{};
+#endif
         [[maybe_unused]] std::uint8_t backend_{};
         [[maybe_unused]] std::uint64_t session_{}, next_{1}, retired_session_{};
         std::uint32_t peer_pid_{},peer_uid_{};
@@ -208,6 +288,7 @@ namespace uwvm2::imported::ros::ipc
         {
 #if defined(__linux__)
             if(fd_>=0) { ::close(fd_); }
+            reader_.reset();
 #endif
             if(session_) { retired_session_=session_; }
             fd_=-1; session_=0;peer_pid_=0;peer_uid_=0;
@@ -268,7 +349,7 @@ namespace uwvm2::imported::ros::ipc
             if(cancellation_requested(stop)) { return cancelled(stop,cancellation_phase::hello,false,old_session); }
             // From this point a false write can have sent a prefix or the whole
             // hello. It is never used as a zero-peer-effect cancellation proof.
-            if(!write_frame(fd_,hello,until,stop)||!read_frame(fd_,reply,until,stop))
+            if(!write_frame(fd_,hello,until,stop)||!reader_.read(fd_,reply,until,stop))
             {
                 auto error{errno};
                 if(error==ECANCELED) { return cancelled(stop,cancellation_phase::hello,true,old_session); }
@@ -317,7 +398,7 @@ namespace uwvm2::imported::ros::ipc
                 auto e{errno};if(e==ECANCELED) { return {cancelled(stop,cancellation_phase::request_transfer,true,session_),{},checked}; }
                 disconnect();return {e==ETIMEDOUT?110u:107u,{},checked};
             }
-            if(!read_frame(fd_,reply,until,stop))
+            if(!reader_.read(fd_,reply,until,stop))
             {
                 auto e{errno};if(e==ECANCELED) { return {cancelled(stop,cancellation_phase::response_transfer,true,session_),{},checked}; }
                 disconnect();return {e==ETIMEDOUT?110u:107u,{},checked};

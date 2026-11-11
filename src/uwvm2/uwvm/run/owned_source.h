@@ -60,9 +60,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
 # if defined(UWVM_SUPPORT_PRELOAD_DL)
         if(!::uwvm2::uwvm::wasm::storage::preloaded_dl.empty()) { return false; }
 # endif
-# if defined(UWVM_SUPPORT_WEAK_SYMBOL)
-        if(!::uwvm2::uwvm::wasm::storage::weak_symbol.empty()) { return false; }
-# endif
         for(auto const& provider : ::uwvm2::uwvm::wasm::storage::preload_local_imported)
         { if(provider.ptr == nullptr || provider.get_module_name() != u8"wasi_snapshot_preview1") { return false; } }
         for(auto const& preload : ::uwvm2::uwvm::wasm::storage::active_preloaded_wasm())
@@ -110,9 +107,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
 #  endif
         }
 # endif
-# if defined(UWVM_SUPPORT_WEAK_SYMBOL)
-        if(!::uwvm2::uwvm::wasm::storage::weak_symbol.empty()) { return static_cast<int>(retval::parameter_error); }
-# endif
         if(rebuild && (!retain_immutable_image || !restart_after_retirement || !rebuild->image || !dev_rebuild_supported() ||
             rebuild->module_index > ::uwvm2::uwvm::wasm::storage::active_preloaded_wasm().size()))
         { return static_cast<int>(retval::parameter_error); }
@@ -132,11 +126,22 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
         state.restart = restart_after_retirement;
         state.preserve_host_state = rebuild != nullptr;
 # if defined(UWVM_RUNTIME_LLVM_JIT) && !defined(UWVM_MODULE)
-        state.ordinary_cache_input = !retain_immutable_image && !restart_after_retirement &&
+        // Immutable source retention is required by real child worlds too; it
+        // is not itself a debugger request. Only the actual cold threaded CLI
+        // may retain an image here while requesting ordinary cache origin.
+        // Runtime admission still checks the genuine debugger/publication and
+        // generation state under its cold management exclusion before use.
+        bool cold_thread_source{};
+#  if UWVM2_HAS_THREADED_PROFILE_HOST_API
+        cold_thread_source = ::uwvm2::runtime::lib::runtime_threaded_profile_builtin_requested_host_api();
+#  endif
+        state.ordinary_cache_input = (!retain_immutable_image || cold_thread_source) && !restart_after_retirement &&
             ::uwvm2::uwvm::wasm::storage::execute_wasm_mode == ::uwvm2::uwvm::wasm::base::mode::run &&
             mode::global_runtime_mode == mode::runtime_mode_t::full_compile &&
-            mode::global_runtime_compiler == mode::runtime_compiler_t::llvm_jit_only &&
-            ::uwvm2::uwvm::wasm::storage::preloaded_wasm.empty();
+            mode::global_runtime_compiler == mode::runtime_compiler_t::llvm_jit_only && !state.preserve_host_state;
+        // Owned, initializer-sealed Wasm preloads are ordinary cold inputs too.
+        // Each record is authenticated against its actual source binding by
+        // the cache-origin bridge; a singleton registry is not an authority.
 # endif
         try
         {
@@ -271,8 +276,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
                     // No guest may execute inside this maintenance callback.
                     if(auto const code{load_local_modules(ctx.preserve_host_state)}; code != static_cast<int>(retval::ok))
                     { ctx.result = code; return false; }
-                    if(auto const code{load_weak_symbol_modules()}; code != static_cast<int>(retval::ok))
-                    { ctx.result = code; return false; }
+
                     if(::uwvm2::uwvm::wasm::loader::construct_all_module_and_check_duplicate_module() !=
                        ::uwvm2::uwvm::wasm::loader::load_and_check_modules_rtl::ok ||
                        ::uwvm2::uwvm::wasm::loader::check_import_exist_and_detect_cycles() !=

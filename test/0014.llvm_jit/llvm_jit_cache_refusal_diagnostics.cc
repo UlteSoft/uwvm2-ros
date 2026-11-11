@@ -46,6 +46,7 @@ int main(int argc, char** argv)
     };
 
     constexpr refusal_case causes[]{
+        {cache::cache_disable_reason::compiler_identity_unavailable, cache::cache_status::compiler_identity_unavailable},
         {cache::cache_disable_reason::process_not_sealed,              cache::cache_status::process_not_sealed             },
         {cache::cache_disable_reason::executable_identity_unavailable, cache::cache_status::executable_identity_unavailable},
         {cache::cache_disable_reason::signature_unavailable,           cache::cache_status::unsupported_signature          },

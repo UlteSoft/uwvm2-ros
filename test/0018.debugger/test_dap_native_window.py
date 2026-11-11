@@ -31,7 +31,7 @@ class Broker:
         if command == "bt 3":
             return self.status + ("" if "native-pc" in self.status else "  #0 module=0 function=2\n")
         if command == "frames 3 17":
-            return "error: source debug info unavailable\n"  # Guest safepoint without DWARF.
+            return "error: current source frames unavailable: valid embedded -g DWARF and a current private source/activation capture are required\n"  # Guest safepoint without DWARF.
         if command.startswith("disassemble-range "):
             if self.fail_query: return "error: native disassembly unavailable\n"
             _, thread, stop, count, byte_offset, offset, symbols = command.split()
@@ -76,6 +76,28 @@ class Tests(unittest.TestCase):
         old = list(self.broker.commands)
         self.assertFalse(self.send("readMemory", memoryReference=frame["instructionPointerReference"], count=1)["success"])
         self.assertEqual(self.broker.commands, old)
+    def test_repeated_stack_reads_preserve_all_references_at_same_stop(self):
+        first = self.frame()
+        second = self.frame()  # Both reads lack optional source metadata.
+        self.assertNotEqual(first["id"], second["id"])
+        for frame in (second, first):
+            response = self.send("disassemble", memoryReference=frame["instructionPointerReference"], instructionCount=2)
+            self.assertTrue(response["success"], response)
+        self.assertIn(first["id"], self.adapter.frames)
+        self.assertIn(second["id"], self.adapter.frames)
+
+    def test_missing_metadata_during_external_repark_retires_old_references(self):
+        first = self.frame()
+        original = self.broker.request
+        def changed(command):
+            reply = original(command)
+            if command.startswith("frames "):
+                self.broker.status = COOP.replace("stop-id 17", "stop-id 18")
+            return reply
+        self.broker.request = changed
+        self.assertFalse(self.send("stackTrace", threadId=3)["success"])
+        self.assertFalse(self.send("disassemble", memoryReference=first["instructionPointerReference"], instructionCount=1)["success"])
+
     def test_hidden_current_retains_bounded_display_reference(self):
         self.broker.hide_current = True
         frame = self.frame()
@@ -150,6 +172,36 @@ class Tests(unittest.TestCase):
         self.assertIn("native debug support", diagnostics[0]["output"])
         self.broker.fail_query = False
         self.assertTrue(self.frame()["instructionPointerReference"].startswith("uwvm-native-code:"))
+    def test_current_unavailable_native_landing_preserves_wasm_backtrace(self):
+        original = self.broker.request
+        def unavailable(command):
+            if command.startswith("disassemble-range "):
+                self.broker.commands.append(command)
+                return "error: native disassembly range is unavailable\n"
+            return original(command)
+        self.broker.request = unavailable
+        response = self.send("stackTrace", threadId=3)
+        self.assertTrue(response["success"], response)
+        frame = response["body"]["stackFrames"][0]
+        self.assertEqual(frame["instructionPointerReference"], "wasm:0:2:4")
+        self.assertIn(frame["id"], self.adapter.frames)
+        self.assertFalse(self.adapter.native_code_refs)
+        self.assertFalse(self.adapter.native_frames)
+
+    def test_malformed_native_owner_still_refuses_entire_stack(self):
+        original = self.broker.request
+        def malformed(command):
+            reply = original(command)
+            if command.startswith("disassemble-range "):
+                return reply.replace("module=0 function=2", "module=0 function=99")
+            return reply
+        self.broker.request = malformed
+        response = self.send("stackTrace", threadId=3)
+        self.assertFalse(response["success"])
+        self.assertNotIn("body", response)
+        self.assertFalse(self.adapter.native_code_refs)
+        self.assertFalse(self.adapter.frames)
+
     def test_external_same_site_repark_and_resume_retire_independent_code_ids(self):
         frame = self.frame(); reference = frame["instructionPointerReference"]
         self.broker.status = COOP.replace("stop-id 17", "stop-id 18")

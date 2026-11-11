@@ -42,15 +42,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
     {
         using limits=::uwvm2::runtime::wasm_threads::threaded_profile_limits;
         constexpr auto maximum{(::std::numeric_limits<::std::size_t>::max)()};
-        for(auto n:numbers)if(n==0u||n==maximum)return false;
+        for(::std::size_t i{};i<numbers.size();++i)if(numbers[i]==0u||(i>=2u&&numbers[i]==maximum))return false;
         auto const active=numbers[0],spawns=numbers[1],stack=numbers[2],storage=numbers[3],code=numbers[4],shared=numbers[5];
-        if(active>=(1u<<29u)||spawns>=(1u<<29u)||stack<65536u||stack<static_cast<::std::size_t>(PTHREAD_STACK_MIN)||
+        bool const unlimited_active=active==maximum,unlimited_spawns=spawns==maximum;
+        if((!unlimited_active&&active>=(1u<<29u))||(!unlimited_spawns&&spawns>=(1u<<29u))||stack<65536u||stack<static_cast<::std::size_t>(PTHREAD_STACK_MIN)||
            stack%65536u!=0u||shared%65536u!=0u||static_cast<::std::uint64_t>(shared)>(1ull<<32u))return false;
-        auto const slots=active+1u; // actual separately owned initial-main0 slot
+        auto const slots=unlimited_active?0u:active+1u; // actual separately owned initial-main0 slot
         auto multiply=[&](::std::size_t each,::std::size_t& product) noexcept
-        {if(slots>maximum/each)return false;product=slots*each;return product!=maximum;};
+        {if(unlimited_active){product=maximum;return true;}if(slots>maximum/each)return false;product=slots*each;return product!=maximum;};
         limits value{};
-        value.max_active_children=active;value.max_spawn_attempts=static_cast<::std::uint32_t>(spawns);
+        value.max_active_children=active;value.max_spawn_attempts=unlimited_spawns?UINT32_MAX:static_cast<::std::uint32_t>(spawns);
         value.native_stack_bytes=stack;value.compiler_stack_bytes=stack;
         value.max_child_storage_bytes=storage;value.max_child_code_bytes=code;
         // N children + initial-main0 + ONE genuine compiler worker. Each
@@ -58,8 +59,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
         // The actual Group/worker also check native page size and usable stack.
         auto const native_slots=slots+1u;
         if(native_slots>maximum/stack)return false;
-        value.max_live_native_stack_bytes=native_slots*stack;
-        if(value.max_live_native_stack_bytes==maximum||!multiply(storage,value.max_live_storage_bytes)||
+        value.max_live_native_stack_bytes=unlimited_active?maximum:native_slots*stack;
+        if((!unlimited_active&&value.max_live_native_stack_bytes==maximum)||!multiply(storage,value.max_live_storage_bytes)||
            !multiply(code,value.max_live_code_bytes))return false;
         value.max_value_stack_bytes=(::std::min)(storage/16u,static_cast<::std::size_t>(1048576u))&~static_cast<::std::size_t>(7u);
         value.max_control_frames=(::std::min)(storage/4096u,static_cast<::std::size_t>(4096u));
@@ -68,7 +69,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
         value.max_local_memory_bytes=0u;value.max_shared_memory_bytes=shared;
         value.max_total_segment_bytes=(::std::min)(storage/8u,static_cast<::std::size_t>(64u*1024u*1024u));
         auto& init=value.initializer;
-        init.max_runtime_modules=2u;
+        init.max_runtime_modules=(::std::max)(static_cast<::std::size_t>(2u),storage/4096u);
         init.max_imported_functions=(::std::min)(code/4u,static_cast<::std::size_t>(4096u));
         init.max_imported_tables=0u;init.max_imported_memories=1u;init.max_imported_globals=0u;init.max_imported_tags=0u;
         init.max_local_defined_functions=(::std::min)(code/32u,static_cast<::std::size_t>(65536u));
@@ -120,13 +121,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
     {
         using kind=::uwvm2::utils::cmdline::parameter_parsing_results_type;
         auto usage=[]() noexcept
-        {::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,u8"uwvm: [error] --wasi-threads requires six positive decimal finite quotas. Usage: ",
+        {::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,u8"uwvm: [error] --wasi-threads requires max-active/max-spawns (positive decimal or unlimited), followed by four positive finite storage capacities. Usage: ",
             ::uwvm2::utils::cmdline::print_usage(::uwvm2::uwvm::cmdline::params::wasi_threads),u8"\n\n");};
         ::std::array<::std::size_t,6> numbers{};auto next=current+1u;
-        for(auto& number:numbers)
+        for(::std::size_t i{};i<numbers.size();++i)
         {
-            if(next==end||(next->type!=kind::arg&&next->type!=kind::occupied_arg)||
-               !wasi_threads_parse_positive(next->str,number))
+            if(next==end||(next->type!=kind::arg&&next->type!=kind::occupied_arg))
+            {usage();return ::uwvm2::utils::cmdline::parameter_return_type::return_m1_imme;}
+            if(i<2u&&next->str==u8"unlimited") { numbers[i]=(::std::numeric_limits<::std::size_t>::max)(); }
+            else if(!wasi_threads_parse_positive(next->str,numbers[i]))
             {usage();return ::uwvm2::utils::cmdline::parameter_return_type::return_m1_imme;}
             ++next;
         }
@@ -139,7 +142,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
         if(!::uwvm2::runtime::lib::runtime_threaded_profile_configure_cli_host_api(limits))
         {
             ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                u8"uwvm: [error] Cannot configure finite WASI Threads quotas for the actual quiescent Runtime.\n\n");
+                u8"uwvm: [error] Cannot configure WASI Threads limits for the actual quiescent Runtime.\n\n");
             return ::uwvm2::utils::cmdline::parameter_return_type::return_m1_imme;
         }
         for(auto p=current+1u;p!=next;++p)p->type=kind::occupied_arg;

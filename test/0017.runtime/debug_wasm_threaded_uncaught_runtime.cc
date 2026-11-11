@@ -133,7 +133,8 @@ int main(int argc, char** argv)
     require(lib::llvm_jit_configure_debug_value_observation_host_api({}) == lib::llvm_jit_debug_configure_result::ok,
         "actual observation profile, without executable restoration");
     require(lib::llvm_jit_prepare_debug_host_api(), "actual full LLVM engine publication");
-    ::uwvm2::uwvm::runtime::initializer::apply_runtime_active_segments(u8"wasm-threaded-uncaught");
+    require(::uwvm2::uwvm::runtime::initializer::apply_runtime_active_segments(u8"wasm-threaded-uncaught") ==
+        ::uwvm2::uwvm::runtime::initializer::details::active_segment_result::ok, "active segments initialized successfully");
     ::std::uint32_t companion_result{0xa5a5a5a5u}, throw_result{0xa5a5a5a5u};
     auto run{[](unsigned function, ::std::uint32_t parameter, ::std::uint32_t& result)
     {

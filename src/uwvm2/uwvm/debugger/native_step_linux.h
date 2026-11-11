@@ -225,6 +225,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_step
             return number == SIGILL && (code == ILL_ILLOPC || code == ILL_ILLOPN);
 #elif defined(__i386__)
             return number == SIGTRAP && (code == TRAP_BRKPT || code == SI_KERNEL);
+#elif defined(__arm__)
+            // Linux ARM reports the ARM-state BKPT debug exception as
+            // TRAP_HWBKPT. Some emulators report TRAP_BRKPT instead. Both
+            // still require the selected worker and an owned patched PC.
+            return number == SIGTRAP && (code == TRAP_BRKPT || code == TRAP_HWBKPT);
 #else
             return number == SIGTRAP && code == TRAP_BRKPT;
 #endif
@@ -370,7 +375,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_step
                 {
                     if(!write_return_patch(*step,true,true) || !write_return_patch(*step,false,false)) { ::fast_io::fast_terminate(); }
                     return_skip_hits.fetch_add(1u,::std::memory_order_relaxed);
-                    return; // Real ordinary instruction passed; re-arm exact PC.
+                    return; // Real instruction reached its sealed adjacent successor; re-arm exact PC.
                 }
                 if(raw.sp()!=step->continuation_origin_sp)
                 {

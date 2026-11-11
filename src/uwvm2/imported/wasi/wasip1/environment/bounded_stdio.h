@@ -7,6 +7,7 @@
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(__linux__)
 #ifndef UWVM_MODULE
 #include <array>
+#include <algorithm>
 #include <climits>
 #include <cstring>
 #include <limits>
@@ -14,6 +15,7 @@
 #include <poll.h>
 #include <signal.h>
 #include <sys/socket.h>
+#include <sys/uio.h>
 #include <sys/syscall.h>
 #include <unistd.h>
 #include <pthread.h>
@@ -41,6 +43,39 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::environment
         else if(storage.type==kind::file_observer) descriptor=storage.storage.file_observer.native_handle();
         else return error::enotsup;
         if(host_wait_cancelled()) return error::ecanceled;
+        if(object.wasi_fd.ptr->stdio_direct_io_safe)
+        {
+            // These owned native resources cannot generate SIGPIPE. Authority,
+            // tags, ranges and the requested-byte quota were checked by the
+            // caller; preserve native partial I/O without staging or flag probes.
+            ::std::array<::iovec,64> batch{};
+            auto const n=(::std::min)(count,batch.size());
+            for(::std::size_t i{};i<n;++i) { batch[i]={const_cast<void*>(vectors[i].base),vectors[i].len}; }
+            for(;;)
+            {
+                if(host_wait_cancelled()) return error::ecanceled;
+                auto const transferred=writing ? ::writev(descriptor,batch.data(),static_cast<int>(n)) :
+                    ::readv(descriptor,batch.data(),static_cast<int>(n));
+                if(transferred>=0) { completed=static_cast<::std::size_t>(transferred);return error::esuccess; }
+                switch(errno)
+                {
+                    case EINTR:continue;
+                    case EAGAIN:return error::eagain;
+                    case EBADF:return error::ebadf;
+                    case EACCES:return error::eacces;
+                    case EPERM:return error::eperm;
+                    case EINVAL:return error::einval;
+                    case ENOSPC:return error::enospc;
+                    case EDQUOT:return error::edquot;
+                    case EFBIG:return error::efbig;
+                    case EROFS:return error::erofs;
+                    case ENOMEM:return error::enomem;
+                    case ENOSYS:return error::enosys;
+                    case ENOTSUP:return error::enotsup;
+                    default:return error::eio;
+                }
+            }
+        }
         auto const flags{::fcntl(descriptor,F_GETFL)};
         if(flags<0) return error::ebadf;
         int socket_type{};::socklen_t extent{sizeof(socket_type)};

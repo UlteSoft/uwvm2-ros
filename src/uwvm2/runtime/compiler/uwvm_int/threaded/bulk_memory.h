@@ -54,7 +54,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         // zero-length end-of-memory cases. No native pointer outlives the pin.
         if(sub==10u)
         {
-            auto const checked{::uwvm2::runtime::memtag::with_checked_copy<::std::uint32_t,::std::uint32_t>(
+            auto const checked{::uwvm2::runtime::memtag::with_guest_copy<::std::uint32_t,::std::uint32_t>(
                 *bound.memory,*bound.memory,dst,src,n,copy)};
             if(!checked) { return access_failure(checked.access,checked.source_failed?src:dst); }
         }

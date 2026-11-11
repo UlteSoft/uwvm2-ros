@@ -6,11 +6,23 @@ namespace production_update_detail
     namespace update = ::uwvm2::utils::update;
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS) && !defined(UWVM_TERMINATE_IMME_WHEN_PARSE)
     namespace immutable_globals = ::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details::immutable_globals;
+    inline void append_execution_safety_policy(::std::vector<unsigned char>& material)
+    {
+    // The issuer authorizes this execution-safety contract, separately
+    // from debugger permissions. Diagnostic continuation must never
+    // masquerade as an enforcing crash policy in a signed update.
+    namespace mt=::uwvm2::extension::memtag;
+    update::append_u64(material,2u); // Explicit software/hardware and sync/async policy contract.
+    update::append_u64(material,::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag);
+    update::append_u64(material,static_cast<unsigned>(mt::selected_fault_delivery.load(::std::memory_order_relaxed)));
+    update::append_u64(material,static_cast<unsigned>(mt::selected_report_action.load(::std::memory_order_relaxed)));
+    }
     [[nodiscard]] inline bool effective_policy_fingerprint(update::digest& fingerprint) noexcept
     {
         try
         {
             ::std::vector<unsigned char> material;
+            append_execution_safety_policy(material);
             auto const& file{::uwvm2::uwvm::wasm::storage::active_execute_wasm()};
             update::append_u64(material, file.module_name.size());
             for(auto c : file.module_name) { material.push_back(static_cast<unsigned char>(c)); }
@@ -136,7 +148,8 @@ namespace production_update_detail
         [[nodiscard]] bool same_thread() const noexcept { return management_thread == ::std::this_thread::get_id(); }
         [[nodiscard]] bool reopen(bool private_cancel = false) noexcept
         {
-            if(runtime_managed_fault::faulted(runtime_generation) ||
+            if(::uwvm2::runtime::diagnostic::crash::first_fault.load(::std::memory_order_acquire) ||
+               runtime_managed_fault::faulted(runtime_generation) ||
                ::uwvm2::utils::thread::process_exit::requested.load(::std::memory_order_acquire)) { return false; }
             if(!same_thread() || !maintenance || !fence ||
                !(private_cancel ? g_runtime.execution_domain.cancel_private_update_fence(maintenance, fence) :
@@ -151,10 +164,12 @@ namespace production_update_detail
     struct diagnostic_update_scope
     {
         session& owner;
+        ::std::unique_lock<::std::mutex> debugger_exclusion{update_debug_coordination::management};
         explicit diagnostic_update_scope(session& value) noexcept : owner{value}
         { diagnostic_detail::update_in_progress.store(true, ::std::memory_order_release); }
         ~diagnostic_update_scope()
         {
+            update_debug_coordination::fenced.store(static_cast<bool>(owner.fence), ::std::memory_order_release);
             diagnostic_detail::update(owner.protocol.observe());
             diagnostic_detail::update_in_progress.store(false, ::std::memory_order_release);
         }
@@ -165,7 +180,11 @@ namespace production_update_detail
     [[nodiscard]] inline bool available() noexcept
     {
         if(!current || !current->same_thread() || current->runtime_generation != current_runtime_generation()) { return false; }
-        if(runtime_managed_fault::faulted(current->runtime_generation)) { current->protocol.guest_faulted(); }
+        // report() owns the first terminal fault before any debugger pause or
+        // managed native unwind. The stopped old epoch must never reopen via
+        // a private cancel, preserve/migrate transaction or debugger authority.
+        if(::uwvm2::runtime::diagnostic::crash::first_fault.load(::std::memory_order_acquire) ||
+           runtime_managed_fault::faulted(current->runtime_generation)) { current->protocol.guest_faulted(); }
         else if(::uwvm2::utils::thread::process_exit::requested.load(::std::memory_order_acquire))
         { current->protocol.process_exit_requested(); }
         return true;
@@ -175,7 +194,9 @@ namespace production_update_detail
         if(g_runtime.modules.size() != 1 || !g_runtime.compiled_all.load(::std::memory_order_acquire)) { return false; }
         auto const& rec{g_runtime.modules.front_unchecked()}; auto const* module{rec.runtime_module};
         if(!module || !rec.llvm_jit_ready || rec.llvm_jit_debug_full_typed_entry_targets.empty() ||
-           (rec.llvm_jit_full_publication && (rec.llvm_jit_full_publication->plan || rec.llvm_jit_full_publication->checkpoint_profile)) ||
+           (rec.llvm_jit_full_publication && (rec.llvm_jit_full_publication->plan ||
+            (rec.llvm_jit_full_publication->checkpoint_profile &&
+             rec.llvm_jit_full_publication->checkpoint_profile->purpose() != ::uwvm2::runtime::checkpoint::compilation_purpose::observe_values))) ||
            !module->imported_memory_vec_storage.empty() || !module->imported_table_vec_storage.empty() ||
            !module->imported_global_vec_storage.empty()) { return false; }
         for(auto const& memory : module->local_defined_memory_vec_storage)
@@ -192,6 +213,26 @@ namespace production_update_detail
             if(!source->actual_builtin_wasip1_function(0u, current_runtime_generation(), module, i, function)) { return false; }
         }
         return true;
+    }
+    // Observation metadata is code-generation state, not resumable execution
+    // authority. Keep the same owner/version checks as debugger replacement.
+    [[nodiscard]] inline bool observation_preflight(compiled_module_record const& rec,
+        llvm_jit_debug_replace_transaction const& f) noexcept
+    {
+        auto const publication{rec.llvm_jit_full_publication.get()};
+        if(!publication || !publication->checkpoint_profile) { return !f.checkpoint_plan; }
+        auto const& profile{publication->checkpoint_profile}; auto const& plan{f.checkpoint_plan};
+        auto const count{rec.runtime_module->local_defined_function_vec_storage.size()};
+        return profile->purpose() == ::uwvm2::runtime::checkpoint::compilation_purpose::observe_values &&
+            profile.get() == g_runtime.checkpoint_profile.get() &&
+            !profile.owner_before(g_runtime.checkpoint_profile) && !g_runtime.checkpoint_profile.owner_before(profile) &&
+            plan && plan->get().resume_abi_revision == 0u &&
+            plan->get().module == f.module_id && plan->get().function == f.function_index &&
+            plan->get().function_generation == f.expected_generation + 1u &&
+            plan->get().profile.get() == profile.get() && !plan->get().profile.owner_before(profile) &&
+            !profile.owner_before(plan->get().profile) &&
+            rec.llvm_jit_checkpoint_generation_owners.size() == count &&
+            publication->checkpoint_resume_entries.size() == count && rec.llvm_jit_compiled.local_funcs.size() == count;
     }
     [[nodiscard]] inline bool prepare_global_binding(session& s)
     {
@@ -282,11 +323,22 @@ extern "C++" ::uwvm2::utils::update::status runtime_update_configure_host_api(
         state->fence = g_runtime.execution_domain.configure_and_suspend_public_admission(state->maintenance, [&]() noexcept
         {
             runtime_state_publication_guard publication{};
-            if(g_runtime.compiled_all.load(::std::memory_order_acquire) || g_runtime.debug_pause_control || g_runtime.bridges_initialized.load(::std::memory_order_acquire)) { return; }
+            if(g_runtime.compiled_all.load(::std::memory_order_acquire) || g_runtime.bridges_initialized.load(::std::memory_order_acquire)) { return; }
             // The same code-generation machinery is private to this production
             // profile; no observer/controller/DeveloperGrant is installed.
-            g_runtime.debug_pause_control = ::std::move(domain);
-            g_runtime.debug_granularity = llvm_jit_debug_safe_point_granularity::entry_loop;
+            if(g_runtime.debug_pause_control)
+            {
+                // A separate authenticated debugger was configured while cold.
+                // Keep its exact observer/domain and emitted value policy.
+                if(g_runtime.debug_pause_control->is_closed() || !g_runtime.debug_observer.context ||
+                   !g_runtime.checkpoint_profile || g_runtime.checkpoint_profile->purpose() !=
+                       ::uwvm2::runtime::checkpoint::compilation_purpose::observe_values) { return; }
+            }
+            else
+            {
+                g_runtime.debug_pause_control = ::std::move(domain);
+                g_runtime.debug_granularity = llvm_jit_debug_safe_point_granularity::entry_loop;
+            }
             state->runtime_generation = current_runtime_generation(); configured = true;
         });
         if(!state->fence || !configured) { return u::status::invalid_state; }
@@ -301,6 +353,8 @@ extern "C++" ::uwvm2::utils::update::status runtime_update_configure_host_api(
         if(!production_update_detail::supported_world() || !state->policy_matches()) { return u::status::unsupported; }
         runtime_managed_fault::enable(state->runtime_generation);
         production_update_detail::current = ::std::move(state);
+        update_debug_coordination::configured.store(true, ::std::memory_order_release);
+        update_debug_coordination::fenced.store(true, ::std::memory_order_release);
         diagnostic_detail::update(production_update_detail::current->protocol.observe());
         return u::status::ok;
     }
@@ -414,7 +468,8 @@ static ::uwvm2::utils::update::status prepare_update_internal(
             return fail(u::status::unsupported);
 #endif
         }
-        if(!production_update_detail::module_preflight(s) || !production_update_detail::policy_change_preflight(s)) { return fail(u::status::scope_mismatch); }
+        if(!production_update_detail::prepare_memory_tags(s) || !production_update_detail::module_preflight(s) ||
+           !production_update_detail::policy_change_preflight(s)) { return fail(u::status::scope_mismatch); }
         if(!production_update_detail::scalar_preflight(s.scalar_resets, s.current_global_binding, s.module_plan && s.module_plan->reset_state)) { return fail(u::status::scope_mismatch); }
         if(transition && transition->module_migrate)
         {
@@ -434,8 +489,22 @@ static ::uwvm2::utils::update::status prepare_update_internal(
             if(index >= rec.llvm_jit_debug_full_entry_generations.size() || bodies[index].size > 65536) { return fail(u::status::unsupported); }
             auto result{prepare_function_replacement_internal(0u, index + rec.runtime_module->imported_function_vec_storage.size(),
                 rec.llvm_jit_debug_full_entry_generations[index], reinterpret_cast<::std::byte const*>(s.target.data() + bodies[index].offset), bodies[index].size, true, s.pending_global_binding)};
-            if(result.status != llvm_jit_debug_replace_status::replaced || !result.transaction) { return fail(u::status::compile_failed); }
+            if(result.status != llvm_jit_debug_replace_status::replaced || !result.transaction)
+            {
+                using preparation=llvm_jit_debug_replace_status;
+                switch(result.status)
+                {
+                    case preparation::exhausted:return fail(u::status::exhausted);
+                    case preparation::invalid_body:return fail(u::status::validation_failed);
+                    case preparation::unsupported_mode:return fail(u::status::unsupported);
+                    case preparation::invalid_target:case preparation::abi_mismatch:return fail(u::status::scope_mismatch);
+                    case preparation::stale_generation:return fail(u::status::stale_base);
+                    case preparation::compile_failure:return fail(u::status::compile_failed);
+                    default:return fail(u::status::invalid_state);
+                }
+            }
             s.functions.emplace_back(result.transaction);
+            if(!production_update_detail::observation_preflight(rec, *s.functions.back())) { return fail(u::status::compile_failed); }
         }
         rec.llvm_jit_debug_full_retained_generations.reserve(rec.llvm_jit_debug_full_retained_generations.size() + s.functions.size());
         if(!s.functions.empty()) { production_update_detail::merge_metadata(s); }
@@ -520,8 +589,9 @@ extern "C++" ::uwvm2::utils::update::status runtime_update_decide_host_api(::uwv
         if(!f || f->committed || f->expected_runtime_epoch != current_runtime_generation() ||
            f->local_index >= rec.llvm_jit_debug_full_entry_generations.size() ||
            rec.llvm_jit_debug_full_entry_generations[f->local_index] != f->expected_generation || !f->metadata_ready ||
-           f->checkpoint_plan || f->typed_entry == 0 || f->raw_entry == 0) { return failed(); }
+           !production_update_detail::observation_preflight(rec, *f) || f->typed_entry == 0 || f->raw_entry == 0) { return failed(); }
     }
+    auto const first_new_generation{rec.llvm_jit_debug_full_retained_generations.size()};
     {
         runtime_state_publication_guard publication{};
 #if defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
@@ -538,12 +608,18 @@ extern "C++" ::uwvm2::utils::update::status runtime_update_decide_host_api(::uwv
             ::std::swap(g_runtime.llvm_jit_code_ranges, merged.prepared_code_ranges);
             ::std::swap(g_runtime.llvm_jit_native_function_ranges, merged.prepared_native_function_ranges);
         }
-        production_update_detail::publish_module_reset(s);
+        if(!production_update_detail::publish_module_reset(s)) { return failed(); }
         production_update_detail::publish_scalars(s.scalar_resets);
         for(auto& owner : s.functions)
         {
             auto* f{owner.get()}; auto const index{f->local_index};
             rec.llvm_jit_debug_full_retained_generations.emplace_back(::std::move(owner)); f->committed = true;
+            if(f->checkpoint_plan)
+            {
+                rec.llvm_jit_compiled.local_funcs.index_unchecked(index).checkpoint_plan = f->checkpoint_plan;
+                rec.llvm_jit_full_publication->checkpoint_resume_entries[index] = {f->checkpoint_plan, 0u};
+                rec.llvm_jit_checkpoint_generation_owners[index] = f;
+            }
 #if defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
             rec.actual_native_generation_positions[index] = rec.llvm_jit_debug_full_retained_generations.size() - 1u;
 #endif
@@ -557,6 +633,22 @@ extern "C++" ::uwvm2::utils::update::status runtime_update_decide_host_api(::uwv
         }
         s.current_global_binding = s.pending_global_binding;
         s.installed.swap(s.target); s.protocol.installed();
+    }
+    // No live execution lease remains. Invalidate old IDE source locations
+    // before reopening actual admission, outside the publication mutex.
+    if(update_debug_coordination::code_published && g_runtime.debug_observer.context)
+    {
+        for(auto i{first_new_generation}; i != rec.llvm_jit_debug_full_retained_generations.size(); ++i)
+        {
+            auto const& f{rec.llvm_jit_debug_full_retained_generations[i]};
+            if(f && f->committed && f->expected_generation + 1u == rec.llvm_jit_debug_full_entry_generations[f->local_index])
+            {
+                auto const* begin{reinterpret_cast<::std::byte const*>(f->code.body.expr_begin)};
+                auto const* end{reinterpret_cast<::std::byte const*>(f->code.body.code_end)};
+                update_debug_coordination::code_published(g_runtime.debug_observer.context.get(),
+                    f->module_id, f->function_index, {begin, static_cast<::std::size_t>(end-begin)}, f->expected_generation+1u);
+            }
+        }
     }
     s.discard_candidate();
     if(!s.reopen()) { return failed(); }

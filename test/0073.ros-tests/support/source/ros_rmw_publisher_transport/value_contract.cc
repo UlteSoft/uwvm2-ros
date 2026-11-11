@@ -158,16 +158,17 @@ static void native_incarnations_do_not_reset_on_retirement()
     reserve(h);activate(h);h.abandon(owner().source,125);require(h.reserve_native_incarnation()==2);
     h.retire_session(owner().session);require(h.reserve_native_incarnation()==3);
 }
-static void hard_history_bound_counts_tombstones()
+static void retired_history_has_no_implicit_capacity()
 {
     history h;history::entry const* row{};
-    for(std::size_t i{};i<history::maximum_entries;++i)
+    constexpr std::size_t retained{8193}; // finite test workload, no runtime history ceiling
+    for(std::size_t i{};i<retained;++i)
     {
         auto p{request()};p.owner.source+=i;
         require(h.reserve(p,"publisher",1,row)==0);h.abandon(p.owner.source,95);
     }
-    auto p{request()};p.owner.source+=history::maximum_entries;
-    require(h.reserve(p,"publisher",1,row)==11&&h.rows().size()==history::maximum_entries&&h.active_count("publisher")==0);
+    auto p{request()};p.owner.source+=retained;
+    require(h.reserve(p,"publisher",1,row)==0&&h.rows().size()==retained+1&&h.active_count("publisher")==1);
 }
 struct group{char const*name;void(*run)();};
 static group const groups[]={
@@ -180,7 +181,7 @@ static group const groups[]={
     {"zero-full-gid",genuine_zero_gid_and_extent_are_values},{"qos-drift",actual_qos_drift_preserves_snapshot},
     {"retire-once",retire_before_cleanup_and_once_only_claim},{"session-loss",abandoned_session_never_revives_old_source},
     {"sealed",sealed_history_keeps_diagnostics_and_no_authority},{"nonreuse",native_incarnations_do_not_reset_on_retirement},
-    {"bounded-tombstones",hard_history_bound_counts_tombstones}};
+    {"unbounded-tombstones",retired_history_has_no_implicit_capacity}};
 int main(int argc,char**argv)
 {
     if(argc!=2){return 2;}

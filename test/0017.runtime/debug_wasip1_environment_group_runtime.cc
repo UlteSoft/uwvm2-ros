@@ -119,9 +119,12 @@ int main(int argc, char** argv)
     state->worker_chain=worker_chain;
     // Complete the actual instantiation of unused preload members before
     // asking for a complete-world census; active data is consumed only here.
-    ::uwvm2::uwvm::runtime::initializer::apply_runtime_active_segments(u8"wasi-group-provider");
-    ::uwvm2::uwvm::runtime::initializer::apply_runtime_active_segments(u8"wasi-group-shared");
-    ::uwvm2::uwvm::runtime::initializer::apply_runtime_active_segments(u8"wasi-group-main");
+    require(::uwvm2::uwvm::runtime::initializer::apply_runtime_active_segments(u8"wasi-group-provider") ==
+        ::uwvm2::uwvm::runtime::initializer::details::active_segment_result::ok, "active segments initialized successfully");
+    require(::uwvm2::uwvm::runtime::initializer::apply_runtime_active_segments(u8"wasi-group-shared") ==
+        ::uwvm2::uwvm::runtime::initializer::details::active_segment_result::ok, "active segments initialized successfully");
+    require(::uwvm2::uwvm::runtime::initializer::apply_runtime_active_segments(u8"wasi-group-main") ==
+        ::uwvm2::uwvm::runtime::initializer::details::active_segment_result::ok, "active segments initialized successfully");
     ::std::uint32_t result{};
     ::fast_io::native_thread guest{[&]() noexcept
     {

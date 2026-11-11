@@ -110,13 +110,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
                 u8"uwvm: [error] ", current->str, u8" requires a value");
             return status::return_m1_imme;
         }
-        if(next->str != u8"pause")
+        if(next->str != u8"crash" && next->str != u8"pause" && next->str != u8"exit")
         {
             ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
-                u8"uwvm: [error] --debug accepts only pause; omit --debug for normal crash termination");
+                u8"uwvm: [error] --debug-fault-action accepts crash (default), pause or exit; exit never suppresses internal VM failures");
             return status::return_m1_imme;
         }
-        debug_crash_action = 1u;
+        debug_crash_action = next->str == u8"crash" ? 0u : next->str == u8"pause" ? 1u : 2u;
         next->type = ::uwvm2::utils::cmdline::parameter_parsing_results_type::occupied_arg;
         return status::def;
     }
@@ -158,7 +158,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
         // No operand is consumed and no input pointer is read or advanced.
         // Preserve explicitly selected runtime settings: prepare_debug_jit_mode
         // supplies defaults or reports the same unsupported-mode fatal as -m.
-        runtime_debug_default_full = true;
         ::uwvm2::uwvm::wasm::storage::execute_wasm_mode = ::uwvm2::uwvm::wasm::base::mode::debug_jit;
         return ::uwvm2::utils::cmdline::parameter_return_type::def;
     }

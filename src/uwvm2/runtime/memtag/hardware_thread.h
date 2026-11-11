@@ -24,7 +24,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
     {
 #if defined(__linux__) && defined(__aarch64__)
         if(hardware_owner_published.load(::std::memory_order_acquire))
-        { return ::uwvm2::extension::memtag::hardware_mte::enable_current_thread_sync(); }
+        { return ::uwvm2::extension::memtag::hardware_mte::enable_current_thread_selected(); }
 #endif
         return {};
     }

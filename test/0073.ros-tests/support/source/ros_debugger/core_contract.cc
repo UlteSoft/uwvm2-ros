@@ -86,17 +86,17 @@ int main()
     check(first.rows[0].revoked&&first.rows[0].active_handles==0,"revocation is observed without reopening");
 
     ipc::event_header binding{};binding.backend=2;binding.instance=41;binding.session=93;binding.source_handle=17;
-    ipc::event_stream queue{{3,196,68,1,68,ipc::event_overflow::backpressure},binding,ipc::event_bit(ipc::event_kind::topic_message)};
+    ipc::event_stream queue{{2,2*(ipc::event_header_bytes+4),68,0,0,ipc::event_overflow::reject},binding,ipc::event_bit(ipc::event_kind::topic_message)};
     check(queue.enqueue({ipc::event_kind::topic_message,0,0,0,{1,0,0,0}})==0&&
-          queue.enqueue({ipc::event_kind::topic_message,0,0,0,{2,0,0,0}})==0,"actual queued and pending records admitted");
-    ipc::event_queue_statistics stats{};check(queue.try_statistics(stats)&&stats.depth==1&&stats.pending_depth==1&&stats.dequeued==0,
-          "read-only statistics do not promote pending or dequeue");
+          queue.enqueue({ipc::event_kind::topic_message,0,0,0,{2,0,0,0}})==0,"two actual queued records admitted within explicit capacity");
+    ipc::event_queue_statistics stats{};check(queue.try_statistics(stats)&&stats.depth==2&&stats.pending_depth==0&&stats.dequeued==0,
+          "read-only statistics neither enqueue nor dequeue");
     std::promise<void> queue_locked,queue_release;auto queue_released=queue_release.get_future();ipc::call_result retained{};
     std::thread consumer([&]{retained=queue.peek_if(68,[&](ipc::event_header const&){queue_locked.set_value();queue_released.wait();return std::uint32_t{};});});
     queue_locked.get_future().wait();stats.depth=987;stats.bytes=321;auto available=queue.try_statistics(stats);queue_release.set_value();consumer.join();
     check(!available&&stats.depth==987&&stats.bytes==321,"try-statistics busy leaves caller output unchanged");
     check(retained.error==0&&queue.peek(68).payload==retained.payload,"diagnostic read never consumes pinned record");
-    check(queue.try_statistics(stats)&&stats.dequeued==0&&stats.pending_depth==1,"queue accounting remains unchanged after reads");
+    check(queue.try_statistics(stats)&&stats.dequeued==0&&stats.pending_depth==0,"queue accounting remains unchanged after reads");
 
     debug::trace_store trace;debug::trace_record call{};call.backend=2;call.instance=identity;call.generation=7;
     call.module.assign("real_module");call.alias.assign("sub");call.operation.assign("event.poll");call.function.assign("event_poll_v1");call.error=11;

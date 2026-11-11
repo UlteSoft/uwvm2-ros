@@ -31,7 +31,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasip1_state
     using text = ::fast_io::u8string;
     using text_view = ::fast_io::u8string_view;
     enum class action : unsigned char
-    { arguments, environment, descriptors, preopens, replace_argument, set_environment, remove_environment, reduce_rights, insert_argument, remove_argument, trace_enable, trace_disable, trace_clear, trace_read, create_file, duplicate_descriptor, close_descriptor, checkpoint_save, checkpoint_restore, checkpoint_drop, portable_export, portable_import, portable_export_group, portable_import_group, descriptor_detail };
+    { arguments, environment, descriptors, preopens, replace_argument, set_environment, remove_environment, reduce_rights, insert_argument, remove_argument, trace_enable, trace_disable, trace_clear, trace_read, create_file, duplicate_descriptor, close_descriptor, checkpoint_save, checkpoint_restore, checkpoint_drop, portable_export, portable_import, portable_export_group, portable_import_group, descriptor_detail, policy };
     enum class status : unsigned char
     {
         ok, invalid_request, requires_llvm_jit_full, requires_current_cooperative_stop,
@@ -149,6 +149,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasip1_state
             selected == action::create_file || selected == action::duplicate_descriptor || selected == action::close_descriptor ||
             selected == action::checkpoint_save || selected == action::checkpoint_restore || selected == action::checkpoint_drop || selected == action::portable_export || selected == action::portable_import || selected == action::portable_export_group || selected == action::portable_import_group;
     }
+    // Trace collection changes diagnostic state, but never launch grants.
+    // Keep this separate from is_mutation(), whose operations are prohibited
+    // even in full ROS debugging because they rewrite the launch environment.
+    [[nodiscard]] inline constexpr bool requires_write_permission(action selected) noexcept
+    {
+        return is_mutation(selected) || selected==action::trace_enable ||
+            selected==action::trace_disable || selected==action::trace_clear;
+    }
     [[nodiscard]] inline constexpr bool valid_text(text_view bytes, bool key) noexcept
     {
         if(bytes.size() > maximum_text_bytes || (key && bytes.empty())) { return false; }
@@ -236,7 +244,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasip1_state
                 return requested.name.empty() && requested.value.empty();
             case action::descriptor_detail:
                 return requested.descriptor<maximum_fd_scan && requested.name.empty() && requested.value.empty();
-            case action::arguments: case action::environment: case action::descriptors: case action::preopens:
+            case action::arguments: case action::environment: case action::descriptors: case action::preopens: case action::policy:
                 return requested.name.empty() && requested.value.empty();
             case action::replace_argument: case action::insert_argument:
                 return requested.index < maximum_entries && requested.name.empty() && valid_text(text_view{requested.value.data(), requested.value.size()}, false);
@@ -374,6 +382,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasip1_state
             else if(words[2] == "env") { candidate.operation = action::environment; }
             else if(words[2] == "fds") { candidate.operation = action::descriptors; }
             else if(words[2] == "preopens") { candidate.operation = action::preopens; }
+            else if(words[2] == "policy") { candidate.operation = action::policy; }
             else { return false; }
             if(!details::decimal(words[3], candidate.module) || (count >= 5u && !details::decimal(words[4], candidate.first)) ||
                 (count == 6u && !details::decimal(words[5], candidate.count))) { return false; }

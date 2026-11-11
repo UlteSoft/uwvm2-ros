@@ -21,10 +21,12 @@ namespace uwvm2::imported::ros::debug
     // Even fully escaped bounded text plus every u64 counter fits the existing
     // 65536-byte authenticated console reply cap at these page sizes.
     inline std::atomic<bool> enabled{};
-    inline constexpr std::size_t maximum_rows{8}, maximum_trace_rows{16}, trace_capacity{256},maximum_scan{4096};
-    enum class selection:std::uint8_t {capabilities,sessions,queues,services,actions,parameters,tf,graph,statistics,calls,trace};
+    inline constexpr std::size_t maximum_rows{8}, maximum_trace_rows{16}, trace_capacity{256},maximum_scan{4096},maximum_policy_rows{4};
+    enum class selection:std::uint8_t {capabilities,sessions,queues,services,actions,parameters,tf,graph,statistics,calls,trace,policy};
     enum class status:std::uint8_t {ok,invalid_request,not_selected,busy,requires_cooperative_stop,stale_stop,resource_limit};
     enum class row_kind:std::uint8_t {capability,session,queue};
+    enum class policy_scope:std::uint8_t {all,global,single,group};
+    enum class policy_kind:std::uint8_t {target,binding,interface,capability,limit,connection};
     template<std::size_t Capacity> struct text
     {
         std::array<char,Capacity> bytes{};std::size_t size{};bool truncated{};
@@ -39,18 +41,21 @@ namespace uwvm2::imported::ros::debug
     {
         selection selected{selection::capabilities};std::uint8_t backend{};
         std::uint64_t instance{},first{},count{maximum_rows},after{},stop{};
-        std::uint32_t error{};bool error_filter{};unsigned trace_control{};text<255> alias{},module{};
+        std::uint32_t error{};bool error_filter{};unsigned trace_control{};text<255> alias{};text<1024> module{},target{};
+        policy_scope scope{};
         text<64> function{},operation{};
     };
     inline bool valid(request const& query) noexcept
     {
-        return query.trace_control<=2&&(!query.trace_control||query.selected==selection::trace)&&query.selected<=selection::trace&&query.backend<=2&&query.alias.size<=query.alias.bytes.size()&&
+        return query.trace_control<=2&&(!query.trace_control||query.selected==selection::trace)&&query.selected<=selection::policy&&query.backend<=2&&query.scope<=policy_scope::group&&query.alias.size<=query.alias.bytes.size()&&
             !query.alias.truncated&&query.module.size<=query.module.bytes.size()&&!query.module.truncated&&
+            (query.selected==selection::policy||query.module.size<=255)&&query.target.size<=query.target.bytes.size()&&!query.target.truncated&&
+            (query.selected==selection::policy?query.instance==0:query.scope==policy_scope::all&&query.target.size==0)&&
             query.function.size<=query.function.bytes.size()&&!query.function.truncated&&
             query.operation.size<=query.operation.bytes.size()&&!query.operation.truncated&&
             (query.selected==selection::trace||query.selected==selection::calls||(!query.function.size&&!query.operation.size))&&
-            query.count&&query.count<=(query.selected==selection::trace?maximum_trace_rows:maximum_rows)&&
-            query.first<=maximum_scan&&(!query.error_filter||query.selected==selection::trace)&&
+            query.count&&query.count<=(query.selected==selection::trace?maximum_trace_rows:query.selected==selection::policy?maximum_policy_rows:maximum_rows)&&
+            (query.selected==selection::policy||query.first<=maximum_scan)&&(!query.error_filter||query.selected==selection::trace)&&
             (!query.after||query.selected==selection::trace)&&
             (query.selected!=selection::trace||query.first==0);
     }
@@ -110,10 +115,20 @@ namespace uwvm2::imported::ros::debug
     // Five escaped label columns, a public-name-only resource column, fixed
     // labels and counters fit the authenticated broker's existing reply cap.
     static_assert((4*(3*255+2*64)+64+224+10+160)*maximum_trace_rows+512<=65536);
+    // Detached configured policy fields. Names retain their full validated
+    // length; long field values use explicit byte offsets across page rows.
+    struct policy_record
+    {
+        policy_kind kind{};policy_scope scope{};std::uint8_t backend{};
+        text<1024> target{},module{};text<255> alias{};text<192> key{};text<1024> value{};
+        std::uint64_t value_offset{},value_total{};bool configured{},enabled{},redacted{};
+    };
+    static_assert((4*(1024+1024+255+192+1024)+512)*maximum_policy_rows+512<=65536);
     struct view
     {
         status result{status::not_selected};selection selected{};
         std::array<row,maximum_rows> rows{};std::size_t size{};
+        std::array<policy_record,maximum_policy_rows> policy{};std::size_t policy_size{};
         std::array<trace_record,maximum_trace_rows> trace{};std::size_t trace_size{};
         std::uint64_t total{},next{},oldest{},newest{},overwritten{},dropped_busy{};
         bool more{},gap{};

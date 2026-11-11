@@ -10,11 +10,18 @@
 #include <llvm/ExecutionEngine/MCJIT.h>
 #include <llvm/ExecutionEngine/ObjectCache.h>
 #include <llvm/Support/TargetSelect.h>
+#include <llvm/TargetParser/Host.h>
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Support/DynamicLibrary.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/TargetParser/Triple.h>
 #include <cstring>
+
+#if defined(__arm__) && defined(__ARM_EABI__)
+#include <unwind.h>
+extern "C" _Unwind_Reason_Code __aeabi_unwind_cpp_pr0(
+    _Unwind_State, _Unwind_Control_Block*, _Unwind_Context*);
+#endif
 
 namespace fixture
 {
@@ -103,14 +110,22 @@ int main(int argc, char** argv)
     auto const current_bridge{actual & 1u ? fixture::bridge : fixture::other_bridge};
     // Match production's named-symbol resolver. The next process deliberately
     // binds the same external name to a different bridge body and fresh data.
+#if defined(__arm__) && defined(__ARM_EABI__)
+    // ARM objects carry an EHABI R_ARM_NONE personality dependency even when
+    // this numeric test never unwinds. The product's native resolver supplies
+    // it; this standalone resolver must bind the same actual linked provider.
+    llvm::sys::DynamicLibrary::AddSymbol("__aeabi_unwind_cpp_pr0",
+        reinterpret_cast<void*>(&__aeabi_unwind_cpp_pr0));
+#endif
     llvm::sys::DynamicLibrary::AddSymbol("uwvm_fixture_storage", &actual);
     llvm::sys::DynamicLibrary::AddSymbol("uwvm_fixture_bridge", reinterpret_cast<void*>(current_bridge));
     std::unique_ptr<llvm::ExecutionEngine> engine{llvm::EngineBuilder{std::move(module)}
-        .setEngineKind(llvm::EngineKind::JIT).create()};
+        .setEngineKind(llvm::EngineKind::JIT).setMCPU(llvm::sys::getHostCPUName()).create()};
     if(!engine) { return 5; }
     fixture::cache cache{argv[2], read};
     engine->setObjectCache(&cache);
     engine->finalizeObject();
+    if(engine->hasError()) { fast_io::io::perrln("MCJIT: ", fast_io::mnp::os_c_str(engine->getErrorMessage().c_str())); return 9; }
     auto const address{engine->getFunctionAddress("run_binding")};
     if(address == 0) { return 6; }
     auto const result{reinterpret_cast<std::uint64_t(*)()>(static_cast<std::uintptr_t>(address))()};

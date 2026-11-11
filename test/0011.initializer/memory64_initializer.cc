@@ -99,7 +99,7 @@ void initialize_case(bytes const& segment,std::uint64_t offset,bool apply=true,s
  if(apply)
  {
   auto payload_size=init::safe_ptr_range_size(d.byte_begin,d.byte_end);
-  init::apply_wasm1_active_element_and_data_segments_for_module(u8"memory64-initializer",rt);
+  CHECK(init::apply_wasm1_active_element_and_data_segments_for_module(u8"memory64-initializer",rt)==init::active_segment_result::ok);
   CHECK(storage::wasm_data_segment_is_dropped(d));
   if(payload_size){CHECK(memory.memory_begin[offset]==std::byte{0xab});CHECK(memory.memory_begin[offset-1]==std::byte{});CHECK(memory.memory_begin[offset+payload_size]==std::byte{});}
  }
@@ -147,15 +147,16 @@ int main(int argc,char**)
                    to_bytes({2,1,0x42,0x80,0x80,0x80,0x80,0x10,11,0}),
                    to_bytes({2,1,0x42,0x7f,11,0})})
  {
-  CHECK(strict::run_in_child_expect_trap_message("data segment initialization would write past memory bounds",[&]
-  {
-   uwvm2::uwvm::io::u8log_output.reopen(fast_io::io_dup,fast_io::u8err());
-   auto raw=context_bytes();auto options=parameters();auto m=parse_context(raw,options);set_widths(m,3);
-   data_t data{};CHECK(parse_segment(m,options,segment.data(),segment.data()+segment.size(),data));datas(m).datas.index_unchecked(0)=std::move(data);
-   storage::wasm_module_storage_t rt{};init::initialize_from_binfmt_ver1_module_storage(m,options,rt);link_aliases(rt);
-   init::apply_wasm1_active_element_and_data_segments_for_module(u8"out-of-bounds",rt);
-  })==0);++checks;
+  auto raw=context_bytes();auto options=parameters();auto m=parse_context(raw,options);set_widths(m,3);
+  data_t data{};CHECK(parse_segment(m,options,segment.data(),segment.data()+segment.size(),data));datas(m).datas.index_unchecked(0)=std::move(data);
+  storage::wasm_module_storage_t rt{};init::initialize_from_binfmt_ver1_module_storage(m,options,rt);link_aliases(rt);
+  CHECK(init::apply_wasm1_active_element_and_data_segments_for_module(u8"out-of-bounds",rt)==init::active_segment_result::data_out_of_bounds);
+  CHECK(!storage::wasm_data_segment_is_dropped(rt.local_defined_data_vec_storage.index_unchecked(0).data));
+  auto const& memory=rt.local_defined_memory_vec_storage.index_unchecked(0).memory;
+  for(std::size_t i{};i!=65536;++i)CHECK(memory.memory_begin[i]==std::byte{});
+  ++checks;
  }
+
  // Independent initializer limit validation must not confuse wide declarations with native capacity.
  for(unsigned mask:{0u,3u})
  {

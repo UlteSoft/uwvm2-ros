@@ -1,6 +1,7 @@
 #pragma once
 #ifndef UWVM_MODULE
 # include "instruction.h"
+# include "encoding.h"
 # include "color.h"
 # include "shadow.h"
 # include "globals.h"

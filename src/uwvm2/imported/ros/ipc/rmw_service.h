@@ -17,7 +17,7 @@ namespace uwvm2::imported::ros::ipc::rmw_service
     inline constexpr std::size_t header_bytes{160};
     inline constexpr std::size_t minimum_delivery_bytes{header_bytes+metadata::header_bytes};
     inline constexpr std::size_t endpoint_response_bytes{header_bytes+endpoint::packet_bytes};
-    inline constexpr std::size_t maximum_input_bytes{max_payload_bytes-518-header_bytes};
+    inline constexpr std::size_t maximum_input_bytes{max_payload_bytes-header_bytes};
     // The wire stores the full u64 duration; only an explicit grant limits it.
     inline constexpr std::uint64_t maximum_wait_ns{UINT64_MAX};
     enum class command:std::uint8_t
@@ -107,7 +107,7 @@ namespace uwvm2::imported::ros::ipc::rmw_service
     }
     inline bool request(std::uint8_t const* p,std::size_t n,control& output) noexcept
     {
-        control h{};if(!p||n<header_bytes||n>max_payload_bytes-518||!decode(p,header_bytes,false,h)||h.body_bytes!=n-header_bytes){return false;}
+        control h{};if(!p||n<header_bytes||n>max_payload_bytes||!decode(p,header_bytes,false,h)||h.body_bytes!=n-header_bytes){return false;}
         output=h;return true;
     }
     inline bool same_call(control const& request,control const& response) noexcept

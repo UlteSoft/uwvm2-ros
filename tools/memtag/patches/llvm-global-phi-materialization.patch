@@ -200,6 +200,7 @@ diff --git a/llvm/lib/Target/WebAssembly/WebAssemblyGlobalsTagging.cpp b/llvm/li
  
  INITIALIZE_PASS_BEGIN(WebAssemblyGlobalsTagging, "WebAssembly-globals-tagging",
 diff --git a/llvm/test/CodeGen/WebAssembly/memtag-global-phi.ll b/llvm/test/CodeGen/WebAssembly/memtag-global-phi.ll
+new file mode 100644
 --- /dev/null
 +++ b/llvm/test/CodeGen/WebAssembly/memtag-global-phi.ll
 @@ -0,0 +1,57 @@
@@ -261,6 +262,7 @@ diff --git a/llvm/test/CodeGen/WebAssembly/memtag-global-phi.ll b/llvm/test/Code
 +  ret i32 ptrtoint (ptr getelementptr ([16 x i8], ptr @arr, i32 0, i32 5) to i32)
 +}
 diff --git a/llvm/test/CodeGen/WebAssembly/memtag-global-external.ll b/llvm/test/CodeGen/WebAssembly/memtag-global-external.ll
+new file mode 100644
 --- /dev/null
 +++ b/llvm/test/CodeGen/WebAssembly/memtag-global-external.ll
 @@ -0,0 +1,70 @@

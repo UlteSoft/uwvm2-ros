@@ -164,12 +164,12 @@ Switches to Clang-based toolchains (Clang-CL on Windows, Clang elsewhere) and ma
 
 ### `--use-cxx-module=[y|n]`
 
-Enables C++ Modules support in Xmake and defines `UWVM_MODULE`.
+C++ module builds have **not yet been adapted for uwvm2-ros** and must remain disabled.
 
 - **Default:** `n`
-- **Impact:** Switches the build to a module-aware compilation model. Requires compiler support and may change build graph and incremental build behavior.
+- **Impact:** Enabling this option is rejected during configuration, before compiler dependencies are acquired. Compiler support does not make this build mode available in the current ROS product.
 - **Example:**
-  - `xmake f --use-cxx-module=y`
+  - `xmake f --use-cxx-module=n`
 
 ### `--use-thread-local=[y|n]`
 

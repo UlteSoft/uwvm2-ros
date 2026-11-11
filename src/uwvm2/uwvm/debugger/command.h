@@ -60,6 +60,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         ::std::size_t source_path_size{};
         ::std::string dump_path{}; // Owned HOST output path; never a Guest FD or memory address.
         ::std::uint64_t dump_stop_identifier{};
+        bool basic_threads{}; // Numeric participant census; no source names or native state.
         bool memory_tags{}; // Read-only tag projection of the same authenticated guest memory range.
         bool wait_for_event{}; // Host observation using an authenticated status request.
         bool run_from_entry{}; // Standalone launcher request; never a wire resume/restart capability.
@@ -86,6 +87,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         ::std::uint64_t disassembly_stop_identifier{}, disassembly_count{};
         ::std::int64_t disassembly_byte_offset{}, disassembly_instruction_offset{};
         bool disassembly_resolve_symbols{};
+        unsigned char wasm_metadata{}; // 1=summary, 2=functions, 3=globals, 4=tables, 5=memories; cold display only.
         wasm_events::request wasm_request{};
         wasm_state::request wasm_state_request{};
         wasm_mutation::request wasm_mutation_request{};
@@ -127,16 +129,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         using op=::uwvm2::utils::control::operation;
         if(!p::diagnostics_allowed())return false;
         if(p::full_allowed())return true;
-        if(c.kind!=console_command_kind::protocol && c.operation!=op::status)return false;
-        if(c.operation==op::step || c.operation==op::replace_function || c.operation==op::breakpoint_set ||
+        if(c.operation==op::pause || c.operation==op::resume || c.operation==op::detach ||
+           c.operation==op::step || c.operation==op::replace_function || c.operation==op::breakpoint_set ||
            c.operation==op::breakpoint_clear)return false;
         if(c.run_from_entry || c.launch_action!=console_launch_action::none)return false;
-        if(c.kind==console_command_kind::help || c.kind==console_command_kind::quit ||
-           c.kind==console_command_kind::wasm_dump)return true;
+        // Parsed help/quit do not carry a status protocol operation. Admit
+        // these non-sensitive local commands before the status-wrapper check.
+        if(c.kind==console_command_kind::help || c.kind==console_command_kind::quit)return true;
+        if(c.kind==console_command_kind::wasm_dump)return true;
         if(c.kind==console_command_kind::protocol)
         {
-            if(c.operation==op::status || c.operation==op::detach || c.operation==op::resume)return true;
-            return p::inspection_allowed() && (c.operation==op::pause || c.operation==op::backtrace ||
+            if(c.operation==op::status || c.operation==op::backtrace)return true;
+            return p::inspection_allowed() && (c.operation==op::backtrace ||
                    c.operation==op::read_memory || c.operation==op::locals || c.operation==op::breakpoint_list);
         }
         if(!p::inspection_allowed())return false;
@@ -147,16 +151,41 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             case console_command_kind::source_value: case console_command_kind::source_frame:
             case console_command_kind::wasm_state: case console_command_kind::wasm_path:
             case console_command_kind::assembly_disassemble: case console_command_kind::assembly_disassemble_range:
-            case console_command_kind::assembly_registers: case console_command_kind::ros_state:
-            case console_command_kind::source_print_options: case console_command_kind::source_printer_config:return true;
-            case console_command_kind::wasip1_state:return !wasip1_state::is_mutation(c.wasip1_state_request.operation);
-            case console_command_kind::host_trace:return c.host_trace_request.operation!=host_trace::action::clear;
+            case console_command_kind::assembly_registers:return true;
+            case console_command_kind::ros_state:return c.ros_state_request.trace_control==0u;
+            case console_command_kind::source_print_options:return c.source_print_policy==source_print_action::show_pretty ||
+                c.source_print_policy==source_print_action::show_elements || c.source_print_policy==source_print_action::list_printers;
+            case console_command_kind::source_printer_config:return c.source_printer_request.operation==source_pretty_registry::action::list;
+            case console_command_kind::wasip1_state:return !wasip1_state::requires_write_permission(c.wasip1_state_request.operation);
+            case console_command_kind::host_trace:return c.host_trace_request.operation==host_trace::action::read ||
+                c.host_trace_request.operation==host_trace::action::bytes;
             case console_command_kind::wasm_event:return c.wasm_request.command==wasm_events::command_kind::trace_read ||
                 c.wasm_request.command==wasm_events::command_kind::catch_list;
             case console_command_kind::watchpoint:return c.watchpoint_policy==watchpoint_action::list ||
                 c.watchpoint_policy==watchpoint_action::read_old || c.watchpoint_policy==watchpoint_action::read_new;
+            case console_command_kind::breakpoint_commands:
+                // History and installed-action pages copy DATA only. This
+                // common gate is also used by Windows and macOS transports;
+                // read-only inspection must never admit replace/append/clear.
+                if(c.operation!=op::status || c.script_size>c.script_text.size())return false;
+                if(!c.breakpoint_id)return true;
+                {
+                    auto const text{::fast_io::string_view{c.script_text.data(),c.script_size}};
+                    return text=="list" || text.starts_with("list ");
+                }
             default:return false;
         }
+    }
+    [[nodiscard]] inline bool command_mutates_terminal_execution(console_command const& c) noexcept
+    {
+        using op=::uwvm2::utils::control::operation;
+        return c.run_from_entry || c.launch_action!=console_launch_action::none ||
+            c.operation==op::step || c.operation==op::replace_function ||
+            c.kind==console_command_kind::source_step || c.kind==console_command_kind::wasm_step ||
+            c.kind==console_command_kind::assembly_step || c.kind==console_command_kind::assembly_next ||
+            c.kind==console_command_kind::assembly_finish || c.kind==console_command_kind::replacement_file ||
+            c.kind==console_command_kind::wasm_mutation || c.kind==console_command_kind::wasm_script ||
+            c.kind==console_command_kind::execution_relocate || c.source_run_to!=source_run_to_policy::none;
     }
     // Console-owned preferences survive a CLI run/restart. Explicit /r and /p
     // apply to one query; changing a preference never captures a source value.
@@ -1027,6 +1056,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             }
             return help;
         }
+        if(name == "threads" && count == 1u)
+        { result.operation=status;result.basic_threads=true;return result; }
         if((name == "quit" || name == "q") && count == 1u) { return {console_command_kind::quit}; }
         if(name == "server") { return {console_command_kind::unsupported}; }
         if(name == "replace" && count == 5u)
@@ -1133,6 +1164,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 result.payload_size = 8u;
                 ::fast_io::io::print(output,::fast_io::mnp::le_put<64>(result.requested_step_thread));
             }
+        }
+        else if(name == "wasm-meta" && count == 7u)
+        {
+            if(!details::parse_decimal(words[1],result.requested_step_thread) || !result.requested_step_thread ||
+               !details::parse_decimal(words[2],result.disassembly_stop_identifier) || !result.disassembly_stop_identifier ||
+               !details::parse_decimal(words[3],result.source_module) ||
+               !details::parse_decimal(words[5],result.frame_page_first) ||
+               !details::parse_decimal(words[6],result.frame_page_count) || !result.frame_page_count || result.frame_page_count>32u) { return {}; }
+            if(words[4]=="summary") { result.wasm_metadata=1u;if(result.frame_page_first || result.frame_page_count!=1u) { return {}; } }
+            else if(words[4]=="functions") { result.wasm_metadata=2u; }
+            else if(words[4]=="globals") { result.wasm_metadata=3u; }
+            else if(words[4]=="tables") { result.wasm_metadata=4u; }
+            else if(words[4]=="memories") { result.wasm_metadata=5u; }
+            else { return {}; }
+            result.kind=console_command_kind::wasm_disassemble;
         }
         else if(name == "wasm-code" && count == 6u)
         {

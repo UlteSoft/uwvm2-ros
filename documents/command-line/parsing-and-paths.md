@@ -130,7 +130,6 @@ Some callbacks stop normal execution:
 - `--help` prints help and returns success immediately.
 - `--version` prints the build report and returns success immediately.
 - `--debug-test` is debug-only and exits through the debug hook path.
-- `--wasm-list-weak-symbol-module` loads weak-symbol modules, prints names, and exits.
 
 When an immediate command appears with other options before it, callbacks are still processed left-to-right until that command returns an immediate result. Do not rely on later host options being applied after an immediate command.
 
@@ -144,7 +143,6 @@ The command line has several host-side path categories:
 | Native dynamic library | `--wasm-register-dl` | `native_dll_file`, lazy dynamic loading; follows loader behavior |
 | Log file | `--log-output file` | output file, follows symlinks |
 | Runtime compiler log file | `--runtime-compiler-log file` | output file, follows symlinks |
-| WASI trace file | `--wasip1-*-trace file` | output file, follows symlinks |
 | WASI mounted system directory | `--wasip1-*-mount-dir` | directory handle, follows symlinks |
 | Unix-domain socket path | WASI socket options with `unix <path>` | socket path passed to socket callback |
 

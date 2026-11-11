@@ -52,6 +52,7 @@ import uwvm2.runtime.memtag.hardware_thread;
 import uwvm2.runtime.memtag.bridge;
 import uwvm2.runtime.memtag.wait;
 import uwvm2.extension.memtag.instruction;
+import uwvm2.extension.memtag.encoding;
 import uwvm2.runtime.compiler.shared.wasm1p1_simd;
 import uwvm2.validation.error;
 import uwvm2.validation.standard.wasm3.reference_policy;

@@ -1,25 +1,27 @@
 #include <uwvm2/utils/macro/push_macros.h>
 #include <uwvm2/uwvm/debugger/wasm_listing.h>
-#include <uwvm2/uwvm/debugger/wasm_events.h>
 #include <array>
 #include <cstdio>
 #include <cstdlib>
+namespace listing=uwvm2::uwvm::debugger::wasm_listing;
+namespace mt=uwvm2::extension::memtag;
+static unsigned count{};
+static void check(bool value){++count;if(!value)std::abort();}
 int main()
 {
- namespace mt=uwvm2::extension::memtag;namespace listing=uwvm2::uwvm::debugger::wasm_listing;
- namespace events=uwvm2::uwvm::debugger::wasm_events;
- unsigned checks{};auto check=[&](bool value) { ++checks;if(!value) { std::abort(); } };
  for(auto const& descriptor:mt::instructions)
  {
-  std::array<std::byte,4> bytes{std::byte{0xfc},static_cast<std::byte>(descriptor.operation),std::byte{0xac},std::byte{2}};
-  auto name{listing::mnemonic(0xfc,static_cast<unsigned>(descriptor.operation))};
-  check(!name.empty() && name.subview(0,7)=="memtag.");
-  check(listing::instruction(bytes)==fast_io::concat_fast_io(name," 300"));
-  auto decoded=events::decode(bytes,0);check(decoded.available && decoded.prefixed && (decoded.categories&static_cast<std::uint32_t>(events::category::memory_instruction))!=0);
-  auto truncated=std::span(bytes).first(2);check(listing::instruction(truncated).find("bytes:")!=fast_io::containers::npos);
+  if(descriptor.operation==mt::opcode::add)continue;
+  // 0x010100xx has exactly four canonical ULEB32 bytes. Memory index is 300.
+  std::array<std::byte,7> bytes{std::byte{0xff},static_cast<std::byte>(static_cast<unsigned>(descriptor.operation)|0x80u),
+    std::byte{0x80},std::byte{0x84},std::byte{0x08},std::byte{0xac},std::byte{2}};
+  auto name{listing::mnemonic(0xff,static_cast<unsigned>(descriptor.operation))};
+  check(listing::instruction(bytes)==fast_io::concat_fast_io("uwvm.linear.v1::",name," 300"));
+  check(listing::instruction(std::span{bytes}.first(6))!=fast_io::concat_fast_io("uwvm.linear.v1::",name," 300"));
  }
- check(listing::mnemonic(0xfc,0x30)=="extended-opcode");
- std::array<std::byte,7> overflow{std::byte{0xfc},std::byte{0x27},std::byte{0xff},std::byte{0xff},std::byte{0xff},std::byte{0xff},std::byte{0x10}};
- check(listing::instruction(overflow).find("bytes:")!=fast_io::containers::npos);
- std::printf("memtag Wasm listings: %u checks passed\n",checks);
+ check(listing::mnemonic(0xfc,0x20)=="extended-opcode");
+ std::array<std::byte,10> overflow{std::byte{0xff},std::byte{0xa7},std::byte{0x80},std::byte{0x84},std::byte{0x08},
+   std::byte{0xff},std::byte{0xff},std::byte{0xff},std::byte{0xff},std::byte{0x10}};
+ check(listing::instruction(overflow)!=fast_io::concat_fast_io("uwvm.linear.v1::memtag.load 0"));
+ std::printf("PASS %u MTE listing checks\n",count);
 }

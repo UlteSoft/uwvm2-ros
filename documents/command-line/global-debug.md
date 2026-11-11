@@ -1,6 +1,6 @@
 # Global And Debug Commands
 
-Debugger permission levels are `full`, `read-only`, `limited` and `none`, selected only at launch. `-Rdbg` defaults to `full`; other launches default to `limited`. See [Debugger permissions](debug-permissions.md) for dump redaction, independent update authority and IDE negotiation.
+Debugger permission levels are `full`, `read-only`, `limited` and `none`, selected only at launch. `-Rdbg` and `-m debug` (including their long spellings) default to `full`; other launches default to `limited`. See [Debugger permissions](debug-permissions.md) for dump redaction, independent update authority and IDE negotiation.
 
 Source focus:
 
@@ -20,7 +20,7 @@ Source focus:
 
 ## Debugger permissions
 
-Use `--debug-permissions full|read-only|limited|none`. `-Rdbg` defaults to `full`; other launches default to `limited`. Explicit selections win, and the permission cannot be changed during a session. The host broker preserves the exact launch selection and does not silently grant full permissions.
+Use `--debug-permissions full|read-only|limited|none`. `-Rdbg` and `-m debug` (including their long spellings) default to `full`; other launches default to `limited`. Explicit selections win, and the permission cannot be changed during a session. The host broker preserves the exact launch selection and does not silently grant full permissions.
 
 `full` permits inspection and qualified mutation. `read-only` permits complete inspection and dumps while refusing state/code mutation and stepping. `limited` permits non-sensitive status and redacted dumps. `none` starts no debugger endpoint and denies dump. A separate authenticated FD/HANDLE is required for an actual session; Guest stdin is never repurposed.
 
@@ -40,7 +40,7 @@ Accepted extra help names:
 - `ros1` / `ros2`: exact ROS binding and operation commands, when compiled.
 - `wasm`: WebAssembly commands only.
 - `runtime`: runtime commands only.
-- `log`: logging commands only.
+- `silent`: logging commands only.
 - `wasi`: WASI commands only; WASI implementations are mandatory in this ROS product.
 
 The extra help name is a normal argument and is marked occupied by the callback. Unknown names fail with an "Invalid Extra Help Name" error and show usage. Because the command returns immediately, do not place options after it expecting normal execution to continue.
@@ -156,3 +156,7 @@ In the ROS product, full and read-only debugging can inspect the configured Gues
 environment, descriptors and preopens. It cannot modify their launch contract,
 create or duplicate native descriptors, or restore a prior host resource table.
 These requests are rejected at the runtime boundary as well as the command parser.
+
+## Terminal Wasm faults
+
+`--debug-fault-action pause|exit` is an immutable launch policy, independent of debugger permissions. Omission crashes on an unhandled Wasm fault; `exit` returns stable status 120/121/122, and `pause` stops for authorized host inspection before terminal handling. Internal VM failures always retain crash termination. See [fault policy and supervision](crash-policy.md).

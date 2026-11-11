@@ -5,6 +5,10 @@
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
 extern "C++"
 {
+    // Defined by the cold source-memory transaction helper. This only proves
+    // canonical final providers; callers still own the real ALL-stop, closed
+    // host, N GC exclusions and publication guard through their byte access.
+    [[nodiscard]] static bool debug_source_memory_exclusive_bytes_locked() noexcept;
     class runtime_checkpoint_debug_state_reader;
     class runtime_checkpoint_gc_state_borrow final
     {
@@ -32,7 +36,6 @@ extern "C++"
         using copied_value = ::uwvm2::uwvm::debugger::wasm_state::value;
         using copied_object = ::uwvm2::uwvm::debugger::wasm_state::object;
         using copy_status = ::uwvm2::uwvm::debugger::wasm_state::status;
-        static constexpr ::std::size_t module_limit{4096u}, record_limit{1048576u};
 
         execution_lease const& execution_;
         closed_admission const& closed_;
@@ -105,16 +108,22 @@ extern "C++"
                 g_runtime.compiled_all.load(::std::memory_order_acquire);
         }
         [[nodiscard]] static bool charge(::std::size_t amount, ::std::size_t& total) noexcept
-        { if(amount > record_limit - total) { return false; } total += amount; return true; }
+        { if(amount > SIZE_MAX - total) { return false; } total += amount; return true; }
         [[nodiscard]] static bool complete_modules(work& state, profile_owner const& profile,
             ::std::uint_least64_t epoch)
         {
             auto const count{g_runtime.modules.size()};
-            if(count == 0u || count > module_limit) { state.copy_error = copy_status::resource_limit; return false; }
-            state.modules.reserve(count); // count bounded BEFORE allocation.
+            if(count == 0u || count > state.modules.max_size())
+            { state.copy_error = copy_status::resource_limit; return false; }
+            // Whole-cohort admission has no policy quota. Keep representability
+            // checks and let the caller report a real allocation failure.
+            state.modules.reserve(count);
+            ::std::vector<module_type const*> module_addresses{};
+            ::std::vector<store_type const*> store_addresses{};
+            module_addresses.reserve(count); store_addresses.reserve(count);
             for(::std::size_t id{}; id != count; ++id)
             {
-                // [actual dense module array ... id<count<=4096] end
+                // [actual dense module array ... id<count] end
                 // [safe] actual lease + ONE cohort + hostclose + N + publication.
                 auto const& actual{g_runtime.modules.index_unchecked(id)};
                 auto const* publication{actual.llvm_jit_full_publication.get()};
@@ -143,8 +152,8 @@ extern "C++"
                 auto const& module{member->second};
                 auto const store{module.gc_store};
                 if(!store || !store->valid_) { return false; }
-                for(auto const& earlier : state.modules)
-                { if(earlier.module == ::std::addressof(module) || earlier.store.get() == store.get()) { return false; } }
+                module_addresses.push_back(::std::addressof(module));
+                store_addresses.push_back(store.get());
                 if(!charge(module.local_defined_function_vec_storage.size(), state.records) ||
                    !charge(module.imported_function_vec_storage.size(), state.records) ||
                    !charge(module.local_defined_table_vec_storage.size(), state.records) ||
@@ -156,6 +165,13 @@ extern "C++"
                 { state.copy_error = copy_status::resource_limit; return false; }
                 state.modules.push_back({static_cast<::std::uint64_t>(id), ::std::addressof(module), source, store});
             }
+            // Cold inspection index only. Sorting gives O(N log N) complete
+            // ownership validation instead of two quadratic pointer scans.
+            // Pointer order is std::less's total order, never address authority.
+            ::std::sort(module_addresses.begin(),module_addresses.end(),::std::less<module_type const*>{});
+            ::std::sort(store_addresses.begin(),store_addresses.end(),::std::less<store_type const*>{});
+            if(::std::adjacent_find(module_addresses.begin(),module_addresses.end())!=module_addresses.end() ||
+               ::std::adjacent_find(store_addresses.begin(),store_addresses.end())!=store_addresses.end()) { return false; }
             // ALL stores, including empty stores/modules absent from frames.
             // This list lock proves membership/lifetime only. Actual N admission
             // and current root/cohort proofs above exclude mutation/reclaim.
@@ -163,10 +179,9 @@ extern "C++"
             for(auto* actual{store_type::cohort_head_}; actual != nullptr; actual = actual->cohort_next_)
             {
                 if(stores == state.modules.size()) { return false; }
-                bool found{};
-                for(auto const& pin : state.modules)
-                { if(pin.store.get() == actual) { found = true; break; } }
-                if(!found || !actual->cohort_registered_) { return false; }
+                if(!::std::binary_search(store_addresses.begin(),store_addresses.end(),
+                    static_cast<store_type const*>(actual),::std::less<store_type const*>{}) ||
+                   !actual->cohort_registered_) { return false; }
                 ++stores;
             }
             return stores == state.modules.size();
@@ -943,7 +958,7 @@ extern "C++"
                 {
                     auto const& module{*state.modules[owner].module};
                     auto const imports{module.imported_global_vec_storage.size()}, locals{module.local_defined_global_vec_storage.size()};
-                    if(locals > record_limit - imports) { failure.result = copy_status::resource_limit; return failure; }
+                    if(locals > SIZE_MAX - imports) { failure.result = copy_status::resource_limit; return failure; }
                     state.output.total_values = imports + locals;
                     if(requested.first > state.output.total_values) { failure.result = copy_status::out_of_range; return failure; }
                     auto const remaining{state.output.total_values - requested.first};
@@ -960,7 +975,7 @@ extern "C++"
                 {
                     auto const& module{*state.modules[owner].module};
                     auto const imports{module.imported_table_vec_storage.size()}, locals{module.local_defined_table_vec_storage.size()};
-                    if(locals > record_limit - imports || requested.index >= imports + locals)
+                    if(locals > SIZE_MAX - imports || requested.index >= imports + locals)
                     { failure.result = copy_status::out_of_range; return failure; }
                     if(!copy_table(state, owner, static_cast<::std::size_t>(requested.index), requested.first, requested.count))
                     { failure.result = state.copy_error; return failure; }

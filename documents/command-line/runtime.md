@@ -145,3 +145,44 @@ uwvm \
   --runtime-scheduling-policy func_count 16 \
   --run app.wasm
 ```
+
+## MTE execution and independent violation reports
+
+WasmMTE exposes five controls: parser disable, runtime disable, backend, timing
+and violation action. Backend and timing remain independent:
+`--runtime-memtag-backend software|hardware` and
+`--runtime-memtag-mode sync|async`. Defaults are **software + sync + crash**.
+
+The action grammar is:
+
+```text
+--runtime-memtag-action crash
+--runtime-memtag-action silent-log out
+--runtime-memtag-action silent-log err
+--runtime-memtag-action silent-log path <PATH>
+```
+
+`silent-log` records every detected tag violation and continues the access.
+A destination is mandatory. `out` and `err` own separate duplicates of stdout
+and stderr; `path` opens a dedicated host file and appends complete JSON records.
+This report stream has its own handle and serialization mutex. `--log-output`
+controls ordinary UWVM diagnostics and never rebinds the MTE stream, regardless
+of option order. Explicitly selecting the same stdout/stderr endpoint for both
+streams naturally puts both kinds of output on that endpoint.
+
+Ordinary sandbox bounds, owner identity and host permissions remain enforced.
+Opening a report destination can fail at configuration time (exit126); a report
+write failure is a controlled runtime error (exit123), never silent record loss.
+The report descriptor is not inserted into a guest FD table or granted as a
+WASI/ROS capability. Crash mode opens no report stream.
+
+Use `--wasm-feature-disable-memtag-extension` to reject the extension at parse
+validation, or `--runtime-disable-memtag` to disable execution while retaining
+required zeroing. Unsupported explicit hardware selection is a launch error.
+Hardware + silent-log requires a supported host but uses precise software
+checking to enumerate all violations and safely continue, rather than claiming
+physical fault replay or hardware diagnostic acceleration.
+
+Old `silent`/`log` values, misspellings, mixed backend/timing values, worker
+controls and dedicated report-output switches are rejected. There are no
+compatibility aliases. See the [extension contract](../runtime/memtag-extension.md).

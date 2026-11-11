@@ -12,6 +12,7 @@ import uwvm2.runtime.memtag.host_fault;
 import uwvm2.runtime.memtag.native_pointer;
 import uwvm2.extension.memtag.instruction;
 import uwvm2.extension.memtag.shadow;
+import uwvm2.runtime.memtag.bridge;
 #define UWVM_MODULE
 #define UWVM_MODULE_EXPORT export
 #include "checked_access.h"

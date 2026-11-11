@@ -12,12 +12,18 @@
 # define UWVM_MODULE_EXPORT
 #endif
 
-// This is an experimental extension, not a member of any standard Wasm opcode
-// enumeration. Encoding/signatures follow trcrsired/llvm-project mt-2 commit
-// 3b5342c56f38dea910d9ffe1264add1aaa3bcd36, WebAssemblyInstrMemtag.td.
+// This is an experimental extension, not a standard Wasm opcode enumeration.
+// The sole primary byte is FF; its ULEB32 instruction word is
+// (version << 24) | (domain << 16) | operation. There is no vendor field and
+// neither the historical FC wire nor the former multi-field FF wire is valid.
+// Operation identities/signatures retain the mt-2 instruction semantics.
 UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
 {
-    inline constexpr ::std::uint_least8_t opcode_prefix{0xfcu};
+    inline constexpr ::std::uint_least8_t opcode_prefix{0xffu};
+    inline constexpr ::std::uint_least32_t encoding_version{1u};
+    inline constexpr ::std::uint_least32_t linear_encoding_domain{1u};
+    inline constexpr ::std::uint_least32_t linear_encoding_base{
+        (encoding_version << 24u) | (linear_encoding_domain << 16u)};
     inline constexpr ::std::size_t instruction_count{20u};
     inline constexpr ::std::uint_least8_t granule_size_log2{4u};
     inline constexpr ::std::uint_least64_t granule_size{16u};
@@ -33,6 +39,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         add = 0x33u, hint = 0x36u, hintstore = 0x37u,
         hintstorez = 0x38u
     };
+
+    [[nodiscard]] inline constexpr ::std::uint_least32_t encode_opcode(opcode operation) noexcept
+    {
+        return linear_encoding_base | static_cast<::std::uint_least32_t>(operation);
+    }
 
     // All instructions have exactly one unsigned LEB32 memory-index immediate.
     // This remains u32 for memory64 and is not an alignment/offset memarg.
@@ -130,14 +141,22 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
     // permission to omit interior granules in this implementation.
     enum class runtime_status : ::std::uint_least8_t { disabled = 0u, software = 1u, software_full = 2u, arm_mte = 3u, arm_mte_irg = 4u };
 
-    inline constexpr char8_t globals_section_name[]{u8"memtag.globals"};
-    inline constexpr ::std::uint_least64_t globals_section_version{1u};
-    inline constexpr ::std::uint_least32_t globals_memory_index{0u};
-    struct global_descriptor
+    // Retained only to diagnose and reject obsolete producer output. No v1
+    // descriptor parser or compatibility execution path is provided.
+    inline constexpr char8_t obsolete_globals_section_name[]{u8"memtag.globals"};
+    // This sole globals format addresses explicit module-local linear memories;
+    // it does not assign allocation tags to GC references, tables or segments.
+    inline constexpr char8_t linear_globals_section_name[]{u8"uwvm.memtag.linear.globals"};
+    inline constexpr ::std::uint_least64_t linear_globals_section_version{2u};
+    struct linear_global_descriptor
     {
+        ::std::uint_least32_t memory_index{};
         ::std::uint_least64_t address{};
         ::std::uint_least64_t byte_length{};
     };
-    // Payload: ULEB64 version, ULEB64 count, then count repetitions of
-    // (ULEB64 address, ULEB64 byte_length). No memory index occurs in the payload.
+    // Payload: ULEB64 version (=2), ULEB64 count, then count repetitions of
+    // (ULEB32 memory_index, ULEB64 address, ULEB64 byte_length). The memory index
+    // is module-local and must resolve to a canonical Wasm owner before use.
+    // At most one such section is permitted. The old memtag.globals name is
+    // rejected even when execution of memory tagging is disabled.
 }

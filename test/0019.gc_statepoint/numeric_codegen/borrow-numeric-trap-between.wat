@@ -1,0 +1,1 @@
+(module (type $s (struct (field (mut i32)) (field (mut i32))))  (func (export "_start") (local $p (ref null $s)) (local $q (ref null $s)) (local $n i32) i32.const 11 i32.const 12 struct.new $s local.set $p local.get $p struct.get $s 0 i32.const 0 i32.div_s drop local.get $p i32.const 15 struct.set $s 0))

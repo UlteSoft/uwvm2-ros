@@ -135,6 +135,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::signal
         ::std::uintptr_t raw_address{}, instruction_address{};
         ::std::uint8_t allocation_tag{}, hardware_allocation_tag{};
         bool pointer_tag_available{};
+        bool asynchronous{};
     };
 # endif
 
@@ -166,11 +167,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::signal
         using mmap_memory_out_of_bounds_with_context_func_t =
             void (*)(::uwvm2::object::memory::error::mmap_memory_error_t const&, void const*) noexcept;
         inline mmap_memory_out_of_bounds_with_context_func_t mmap_memory_out_of_bounds_with_context_func{};  // [global]
+        // A true result means the context now enters a cold, terminal landing
+        // after kernel sigreturn. No ordinary runtime work runs in this handler.
+        using mmap_fault_redirect_func_t = bool (*)(::uwvm2::object::memory::error::mmap_memory_error_t const&, void*) noexcept;
+        inline mmap_fault_redirect_func_t mmap_fault_redirect_func{};
 
         /// @brief  Install the runtime-only native-context hook. The most recently installed hook owns fault delivery.
         inline constexpr void set_mmap_memory_out_of_bounds_with_context_handler(mmap_memory_out_of_bounds_with_context_func_t func) noexcept
         {
             mmap_memory_out_of_bounds_func = nullptr;
+            mmap_fault_redirect_func = nullptr;
             mmap_memory_out_of_bounds_with_context_func = func;
         }
 
@@ -271,6 +277,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::signal
                         ::fast_io::fast_terminate();
                         ::std::unreachable();
                     }
+                    if(platform_context != nullptr && mmap_fault_redirect_func != nullptr &&
+                       mmap_fault_redirect_func(mmapmemerr, const_cast<void*>(platform_context))) { return true; }
                     if(auto const handler{mmap_memory_out_of_bounds_with_context_func}; handler != nullptr) [[likely]]
                     {
                         handler(mmapmemerr, platform_context);
@@ -624,7 +632,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::signal
         {
             static_assert(::std::atomic_ref<::std::uint8_t>::is_always_lock_free);
             static_assert(::std::atomic_size_t::is_always_lock_free);
-            if(info==nullptr || info->si_code!=9 /* SEGV_MTESERR: synchronous */) { return false; }
+            if(info==nullptr) { return false; }
+            if(info->si_code==8 /* SEGV_MTEAERR */)
+            {
+                if(!::uwvm2::extension::memtag::hardware_mte::asynchronous_execution_armed) { return false; }
+                // Linux provides neither a fault address nor the faulting PC.
+                // Only an actually admitted MTE entry owns this notification;
+                // do not search address zero or attribute the notification PC.
+                hardware_memtag_fault const report{SIZE_MAX,UINT64_MAX,0u,0u,0u,0u,0u,false,true};
+                if(hardware_memtag_fault_func) { hardware_memtag_fault_func(report); }
+                ::_Exit(122);
+            }
+            if(info->si_code!=9 /* SEGV_MTESERR: synchronous */) { return false; }
             auto const raw{reinterpret_cast<::std::uintptr_t>(info->si_addr)};
             auto const address{raw&UINT64_C(0x00ffffffffffffff)};
             for(auto const& segment:segments)
@@ -643,10 +662,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::signal
                 if(hardware_memtag_fault_func) { hardware_memtag_fault_func(report); }
                 // No general runtime callback is safe here. Default standalone
                 // owner use still distinguishes MTE from a bounds fault.
-                constexpr char message[]{"uwvm: [fatal] Synchronous hardware MTE violation in Wasm-owned memory.\n"};
-                static_cast<void>(::fast_io::posix_write_nothrow(
-                    ::fast_io::posix_io_observer{::fast_io::posix_stderr_number},message,sizeof(message)-1u));
-                ::_Exit(126);
+                ::_Exit(122);
             }
             return false;
         }
@@ -661,12 +677,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::signal
             if(signal==SIGSEGV && siginfo!=nullptr && (siginfo->si_code==9 || siginfo->si_code==8))
             {
                 if(dispatch_hardware_memtag_fault(siginfo,instruction_address)) { return; }
-                // Unowned or asynchronous tag faults are host faults, never
+                // Unowned tag faults are host faults, never
                 // reclassified as Wasm out-of-bounds merely by address.
             }
             else
 # endif
-            if(handle_fault_address_with_context(fault_addr, instruction_address, 0u, 0u, nullptr)) { return; }
+            // User-generated SIGSEGV/SIGBUS does not carry a kernel memory
+            // fault and must retain the previous handler's semantics.
+            if(siginfo != nullptr && siginfo->si_code > 0 &&
+               handle_fault_address_with_context(fault_addr, instruction_address, 0u, 0u, context)) { return; }
 
             if(signal == SIGSEGV && signal_handlers.has_previous_sigsegv)
             {
@@ -764,6 +783,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::signal
     inline constexpr void set_mmap_memory_out_of_bounds_handler(mmap_memory_out_of_bounds_func_t func) noexcept
     {
         detail::mmap_memory_out_of_bounds_with_context_func = nullptr;
+        detail::mmap_fault_redirect_func = nullptr;
         detail::mmap_memory_out_of_bounds_func = func;
     }
 

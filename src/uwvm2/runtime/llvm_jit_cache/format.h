@@ -69,6 +69,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
         origin_authentication_required,
         origin_admission_unavailable,
         kernel_origin_unavailable,
+        compiler_identity_unavailable,    // No verified compiler dependency identity was embedded at build time.
         executable_identity_unavailable,  // The actual running executable could not be hashed.
         executable_identity_mismatch,     // The context names a different executable identity.
         generation_bound_plan,
@@ -100,6 +101,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
             case cache_status::origin_authentication_required: return u8"origin-authentication-required";
             case cache_status::origin_admission_unavailable: return u8"origin-admission-unavailable";
             case cache_status::kernel_origin_unavailable: return u8"kernel-origin-unavailable";
+            case cache_status::compiler_identity_unavailable: return u8"compiler-identity-unavailable";
             case cache_status::executable_identity_unavailable: return u8"executable-identity-unavailable";
             case cache_status::executable_identity_mismatch: return u8"executable-identity-mismatch";
             case cache_status::generation_bound_plan: return u8"generation-bound-plan";
@@ -135,6 +137,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
         authentication_required,
         admission_unavailable,
         executable_identity_unavailable,
+        compiler_identity_unavailable,
         signature_unavailable,
         generation_bound_plan,
         debugger_active,
@@ -159,6 +162,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
             case cache_disable_reason::process_not_sealed: return cache_status::process_not_sealed;
             case cache_disable_reason::authentication_required: return cache_status::origin_authentication_required;
             case cache_disable_reason::admission_unavailable: return cache_status::origin_admission_unavailable;
+            case cache_disable_reason::compiler_identity_unavailable: return cache_status::compiler_identity_unavailable;
             case cache_disable_reason::executable_identity_unavailable: return cache_status::executable_identity_unavailable;
             case cache_disable_reason::signature_unavailable: return cache_status::unsupported_signature;
             case cache_disable_reason::generation_bound_plan: return cache_status::generation_bound_plan;
@@ -178,6 +182,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
         ::uwvm2::utils::container::u8string data_layout{};     // Actual LLVM DataLayout is independent of triple/CPU selection.
         ::uwvm2::utils::container::u8string cpu_features{};    // Feature bits prevent AVX/SIMD or similar code from crossing host boundaries.
         ::uwvm2::utils::container::u8string llvm_version{};    // LLVM upgrades can change object emission even for identical IR.
+        ::uwvm2::utils::container::u8string compiler_build_id{}; // Content identity of the actual LLVM native code generator closure.
+        ::uwvm2::utils::container::u8string target_options{};    // Effective TargetMachine options, never the original CLI spelling.
         ::uwvm2::utils::container::u8string uwvm_abi{};        // Runtime ABI changes invalidate calls, relocations, and imported symbols.
         ::uwvm2::utils::container::u8string codegen_policy{};  // Optimization policy participates because it affects emitted native code.
         ::uwvm2::utils::container::array<::std::byte, cache_ed25519_seed_size>
@@ -238,7 +244,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
     // v6 requires the real executing binary SHA256 and actual DataLayout.
     // v5 objects are not migrated: matching manual build/version strings cannot
     // establish native runtime compatibility across different executables.
-    inline constexpr ::std::uint_least32_t cache_format_version{7u};
+    inline constexpr ::std::uint_least32_t cache_format_version{8u};
     inline constexpr ::std::size_t cache_fixed_header_size{64uz};
     inline constexpr ::std::size_t cache_sha256_digest_size{32uz};
     inline constexpr ::std::size_t cache_ed25519_signature_size{64uz};
@@ -446,16 +452,20 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
     [[nodiscard]] inline constexpr ::uwvm2::utils::container::vector<::std::byte> make_context_metadata(cache_context const& ctx) noexcept
     {
         ::uwvm2::utils::container::vector<::std::byte> out{};
-        out.reserve(details::key_value_size(u8"origin-auth", sizeof(u8"kernel-user-keyring-hmac-sha256-ed25519-v1") - 1u) +
+        out.reserve(details::key_value_size(u8"origin-auth", sizeof(u8"kernel-user-keyring-hmac-sha256-ed25519-v2") - 1u) +
                     details::key_value_size(u8"product", cache_product_name.size()) + details::key_value_size(u8"key", ctx.cache_key.size()) +
                     details::key_value_size(u8"llvm", ctx.llvm_version.size()) + details::key_value_size(u8"uwvm_abi", ctx.uwvm_abi.size()) +
                     details::key_value_size(u8"codegen", ctx.codegen_policy.size()) +
-                    details::key_value_size(u8"self-executable-sha256", ctx.self_executable_sha256.size()));
+                    details::key_value_size(u8"compiler-build", ctx.compiler_build_id.size()) +
+                    details::key_value_size(u8"target-options", ctx.target_options.size()));
         // This fixed product field is authenticated and included in the path
         // digest; changing only a filename or the public magic cannot bypass it.
         details::append_key_value(out, u8"product", cache_product_name);
-        details::append_key_value(out, u8"origin-auth", u8"kernel-user-keyring-hmac-sha256-ed25519-v1");
-        details::append_key_value_bytes(out, u8"self-executable-sha256", ctx.self_executable_sha256.data(), ctx.self_executable_sha256.size());
+        details::append_key_value(out, u8"origin-auth", u8"kernel-user-keyring-hmac-sha256-ed25519-v2");
+        // Current-image proof remains a local admission check. Unrelated host
+        // relinks, build paths and diagnostic changes are not compiler inputs.
+        details::append_key_value(out, u8"compiler-build", ctx.compiler_build_id);
+        details::append_key_value(out, u8"target-options", ctx.target_options);
         // Context metadata captures the non-ISA inputs that can silently change symbol layout or object contents.
         details::append_key_value(out, u8"key", ctx.cache_key);
         details::append_key_value(out, u8"llvm", ctx.llvm_version);

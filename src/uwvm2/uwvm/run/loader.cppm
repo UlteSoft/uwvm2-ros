@@ -67,7 +67,6 @@ import uwvm2.uwvm.runtime.threaded_builtin_loader;
 import uwvm2.uwvm.imported.ros;
 #endif
 import :retval;
-import :weak_symbol;
 
 #ifndef UWVM_MODULE
 # define UWVM_MODULE

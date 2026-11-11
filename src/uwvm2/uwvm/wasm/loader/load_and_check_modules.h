@@ -140,32 +140,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
         }
 #endif
 
-#if defined(UWVM_SUPPORT_WEAK_SYMBOL)
-        // weak symbol
-        for(auto const& lwws: ::uwvm2::uwvm::wasm::storage::weak_symbol)
-        {
-            if(!::uwvm2::uwvm::wasm::storage::all_module
-                    .try_emplace(lwws.module_name,
-                                 ::uwvm2::uwvm::wasm::type::all_module_t{.module_storage_ptr = {.wws = ::std::addressof(lwws)},
-                                                                         .type = ::uwvm2::uwvm::wasm::type::module_type_t::weak_symbol})
-                    .second) [[unlikely]]
-            {
-                ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                                    ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
-                                    u8"uwvm: ",
-                                    ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RED),
-                                    u8"[error] ",
-                                    ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
-                                    u8"Duplicate WASM module names: \"",
-                                    ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_CYAN),
-                                    lwws.module_name,
-                                    ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
-                                    u8"\".\n\n",
-                                    ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
-                return load_and_check_modules_rtl::duplicate_module_name;
-            }
-        }
-#endif
 
         // local modules
         {
@@ -510,7 +484,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                                     auto state=storage::find_wasip1_module_override_const(
                                         curr_module.second.type==::uwvm2::uwvm::wasm::type::module_type_t::exec_wasm?
                                         storage::wasip1_module_target_kind_t::main_wasm:storage::wasip1_module_target_kind_t::preload_wasm,curr_module_name);
-                                    auto scope=state && state->trace_wasip1_group_kind==::uwvm2::imported::wasi::wasip1::environment::trace_wasip1_group_kind_t::custom_group?"group":"single";
+                                    auto scope=state && state->trace_wasip1_group_kind==::uwvm2::imported::wasi::wasip1::environment::trace_wasip1_group_kind_t::global?"global":
+                                        state && state->trace_wasip1_group_kind==::uwvm2::imported::wasi::wasip1::environment::trace_wasip1_group_kind_t::custom_group?"group":"single";
                                     auto target=state?diagnostic::view(state->trace_wasip1_group_name_storage):diagnostic::view(curr_module_name);
                                     diagnostic::missing(api::find(import_module_name,import_extern_name),api::family::wasip1,scope,target,
                                         state!=nullptr,state && state->enabled,diagnostic::view(import_module_name),diagnostic::view(import_extern_name));
@@ -680,41 +655,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                                     }
 #endif
 
-#if defined(UWVM_SUPPORT_WEAK_SYMBOL)
-                                    case ::uwvm2::uwvm::wasm::type::module_type_t::weak_symbol:
-                                    {
-                                        auto const weak_symbol_ptr{imported_module.second.module_storage_ptr.wws};
-
-                                        // Check if there is an exported map. If not, build one.
-                                        auto [curr_exported_module, inserted]{world.exports().try_emplace(import_module_name)};
-                                        if(inserted) [[unlikely]]
-                                        {
-                                            auto const wws_func{weak_symbol_ptr->wasm_wws_storage.capi_function_vec};
-                                            auto const wws_func_ptr{wws_func.function_begin};
-                                            auto const wws_func_sz{wws_func.function_size};
-                                            curr_exported_module->second.reserve(wws_func_sz);  // Reserve space for dl functions
-                                            for(auto wws_func_curr{wws_func_ptr}; wws_func_curr != wws_func_ptr + wws_func_sz; ++wws_func_curr)
-                                            {
-                                                using char8_t_const_may_alias_ptr UWVM_GNU_MAY_ALIAS = char8_t const*;
-                                                auto const wws_func_curr_name{
-                                                    ::uwvm2::utils::container::u8string_view{
-                                                                                             reinterpret_cast<char8_t_const_may_alias_ptr>(wws_func_curr->func_name_ptr),
-                                                                                             wws_func_curr->func_name_length}
-                                                };
-                                                ::uwvm2::uwvm::wasm::type::all_module_export_t export_record{};
-                                                export_record.type = ::uwvm2::uwvm::wasm::type::module_type_t::weak_symbol;
-                                                export_record.storage.wasm_weak_symbol_export_storage_ptr.storage = wws_func_curr;
-                                                static_assert(::std::is_trivially_copy_constructible_v<decltype(export_record)>);
-                                                // No duplication, because a check was performed during loading.
-                                                curr_exported_module->second.emplace(wws_func_curr_name, export_record);
-                                            }
-                                        }
-
-                                        curr_exported = curr_exported_module;
-
-                                        break;
-                                    }
-#endif
 
                                     case ::uwvm2::uwvm::wasm::type::module_type_t::local_import:
                                     {
@@ -910,43 +850,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                         }
                     }
                     // Since dl only allows importing functions, there is no possibility of cyclic dependencies or similar issues, so no check is needed
-                    break;
-                }
-#endif
-#if defined(UWVM_SUPPORT_WEAK_SYMBOL)
-                case ::uwvm2::uwvm::wasm::type::module_type_t::weak_symbol:
-                {
-                    // Build export map for weak symbol modules.
-                    {
-                        auto const weak_symbol_ptr{curr_module.second.module_storage_ptr.wws};
-                        if(weak_symbol_ptr != nullptr)
-                        {
-                            auto [curr_exported_module, inserted]{world.exports().try_emplace(curr_module_name)};
-                            if(inserted) [[unlikely]]
-                            {
-                                auto const wws_func{weak_symbol_ptr->wasm_wws_storage.capi_function_vec};
-                                auto const wws_func_ptr{wws_func.function_begin};
-                                auto const wws_func_sz{wws_func.function_size};
-                                curr_exported_module->second.reserve(wws_func_sz);
-                                for(auto wws_func_curr{wws_func_ptr}; wws_func_curr != wws_func_ptr + wws_func_sz; ++wws_func_curr)
-                                {
-                                    using char8_t_const_may_alias_ptr UWVM_GNU_MAY_ALIAS = char8_t const*;
-                                    auto const wws_func_curr_name{
-                                        ::uwvm2::utils::container::u8string_view{reinterpret_cast<char8_t_const_may_alias_ptr>(wws_func_curr->func_name_ptr),
-                                                                                 wws_func_curr->func_name_length}
-                                    };
-
-                                    ::uwvm2::uwvm::wasm::type::all_module_export_t export_record{};
-                                    export_record.type = ::uwvm2::uwvm::wasm::type::module_type_t::weak_symbol;
-                                    export_record.storage.wasm_weak_symbol_export_storage_ptr.storage = wws_func_curr;
-                                    static_assert(::std::is_trivially_copy_constructible_v<decltype(export_record)>);
-                                    curr_exported_module->second.emplace(wws_func_curr_name, export_record);
-                                }
-                            }
-                        }
-                    }
-                    // Since weak_symbol only allows importing functions, there is no possibility of cyclic dependencies or similar issues, so no check is
-                    // needed
                     break;
                 }
 #endif
@@ -1220,7 +1123,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                                         ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_ORANGE),
                                         u8"(depend)\n\n",
                                         ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
-                    ::fast_io::fast_terminate();
+                    ::uwvm2::uwvm::io::fast_exit(::uwvm2::uwvm::io::diagnostic_exit_status::invalid_option);
                 }
             }
         }

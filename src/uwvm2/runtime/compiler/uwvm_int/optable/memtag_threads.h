@@ -64,7 +64,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
                 if constexpr(descriptor.kind==kind::compare_exchange) { expected=pop<value_type>(stack); }
                 auto const pointer{pop<Address>(stack)};
                 bool unaligned{};
-                auto const checked{::uwvm2::runtime::memtag::with_checked_access<Address,Shared>(
+                auto const checked{::uwvm2::runtime::memtag::with_guest_access<Address,Shared>(
                     memory,pointer,offset,bytes,[&](::std::span<::std::byte> data) noexcept
                     {
                         // Granule tags occupy high bits, so the address's low

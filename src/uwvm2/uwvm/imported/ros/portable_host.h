@@ -7,6 +7,7 @@
 #include <uwvm2/runtime/lib/uwvm_runtime.h>
 #include <uwvm2/uwvm/runtime/storage/builtin_ros_loader.h>
 #include <mutex>
+#include "storage.h"
 #include <uwvm2/utils/debug/host_calls.h>
 
 namespace uwvm2::uwvm::imported::ros::portable_host
@@ -29,6 +30,7 @@ namespace uwvm2::uwvm::imported::ros::portable_host
     struct owner_state
     {
         model::owner_key owner{};
+        ::uwvm2::imported::ros::target_policy const* policy{};
         model::deployment_selection::owner deployment{};
         model::operation_binding binding{};
         model::joint_native_client native{};
@@ -48,13 +50,34 @@ namespace uwvm2::uwvm::imported::ros::portable_host
     inline error caller(unsigned index,api::ros_caller_source_facts& facts,model::owner_key& owner,
                         model::deployment_selection::owner& deployment,model::runtime_audit::call_context* audit=nullptr) noexcept
     {
-        if(!api::ros_caller_source_facts_host_api(facts)||facts.builtin_function_index!=index||
-           facts.builtin_kind!=static_cast<unsigned>(::uwvm2::uwvm::runtime::full::builtin_ros_kind::portable_robot)) { return error::denied; }
+        api::ros_caller_identity observed{};
+        if(!api::ros_observed_caller_identity_host_api(observed)) { return error::denied; }
+        ::std::string_view observed_module{reinterpret_cast<char const*>(observed.module_name.data()),observed.module_name.size()};
+        auto const* policy=runtime_policy.effective(::uwvm2::imported::ros::version::ros2,observed_module);
+        bool allow_exports=policy&&policy->enabled;
+        if(allow_exports&&policy->target_scope==::uwvm2::imported::ros::scope::single)
+        {
+            auto const boundary=policy->connection.find("call-boundary");
+            if(boundary!=policy->connection.end()) { allow_exports=boundary->second=="module-exports"; }
+        }
+        if(!api::ros_caller_source_facts_host_api(facts,allow_exports)||facts.builtin_function_index!=index||
+           facts.builtin_kind!=static_cast<unsigned>(::uwvm2::uwvm::runtime::full::builtin_ros_kind::portable_robot)||
+           facts.caller.runtime_instance!=observed.runtime_instance||facts.caller.generation!=observed.generation||
+           facts.caller.module_name!=observed.module_name) { return error::denied; }
         owner.instance=facts.caller.runtime_instance;owner.generation=facts.caller.generation;
         for(::std::size_t i{};i!=owner.wasm_sha256.size();++i) { owner.wasm_sha256[i]=::std::to_integer<::std::uint8_t>(facts.whole_wasm_sha256[i]); }
         ::std::string_view module{reinterpret_cast<char const*>(facts.caller.module_name.data()),facts.caller.module_name.size()};
         deployment=model::deployment_selection::current();
-        bool const permitted{deployment&&owner.wasm_sha256==deployment->wasm_sha256&&module==deployment->module};
+        bool permitted{policy&&policy->enabled&&deployment&&owner.wasm_sha256==deployment->wasm_sha256&&module==deployment->module};
+        if(!permitted&&index!=1u&&deployment&&policy&&policy->enabled&&
+           policy->target_scope!=::uwvm2::imported::ros::scope::single)
+        {
+            // A peer borrows only an already authenticated deployment owner.
+            // Group membership alone can never create or replace that owner.
+            ::std::lock_guard lock{registry_mutex};
+            permitted=selected_owner&&selected_owner->opened&&!selected_owner->retired&&
+                selected_owner->policy==policy&&selected_owner->deployment==deployment;
+        }
         if(model::runtime_audit::runtime.enabled())
         {
             // Identity comes from the sealed active import and actual source
@@ -68,7 +91,7 @@ namespace uwvm2::uwvm::imported::ros::portable_host
         return error::ok;
     }
     inline model::memory_shape memory(api::ros_caller_source_facts const& facts) noexcept
-    { return {facts.memory_bytes,1,0,false}; }
+    { return {facts.memory_bytes,1,0,facts.shared_memory}; }
     inline bool write_word(::std::uint64_t offset,::std::uint64_t value) noexcept
     { ::std::array<::std::uint8_t,8> bytes{};model::wire_detail::put(bytes,0,value,8);return observed_write(0,offset,bytes.data(),bytes.size()); }
     // Canonical offsets are only for range/alias preflight. The eventual copy
@@ -105,10 +128,19 @@ namespace uwvm2::uwvm::imported::ros::portable_host
         if(!observed_write(0,offset,nullptr,0)||!write_word(length,required)) { return error::malformed; }
         return e;
     }
-    inline error admitted(::std::uint64_t handle,model::owner_key const& owner,model::deployment_selection::owner const& deployment) noexcept
+    inline bool shared_owner(model::owner_key const& owner,api::ros_caller_source_facts const& facts) noexcept
+    {
+        if(!selected_owner) { return false; }
+        ::std::string_view name{reinterpret_cast<char const*>(facts.caller.module_name.data()),facts.caller.module_name.size()};
+        auto const* policy=runtime_policy.effective(::uwvm2::imported::ros::version::ros2,name);
+        return policy&&policy->enabled&&policy==selected_owner->policy&&
+            (selected_owner->owner==owner||policy->target_scope!=::uwvm2::imported::ros::scope::single);
+    }
+    inline error admitted(::std::uint64_t handle,model::owner_key const& owner,model::deployment_selection::owner const& deployment,
+                          api::ros_caller_source_facts const& facts) noexcept
     {
         if(!selected_owner||!selected_owner->opened||selected_owner->closed||selected_owner->retired||
-           selected_owner->handle!=handle||selected_owner->owner!=owner) { return error::bad_handle; }
+           selected_owner->handle!=handle||!shared_owner(owner,facts)) { return error::bad_handle; }
         if(selected_owner->deployment!=deployment||!selected_owner->native.connected()) { return error::stale; }
         return error::ok;
     }
@@ -145,6 +177,7 @@ namespace uwvm2::uwvm::imported::ros::portable_host
             if(selected_owner||next_handle==UINT64_MAX) { return error::bad_handle; }
             selected_owner=::std::make_unique<owner_state>();auto& state{*selected_owner};
             state.owner=owner;state.deployment=deployment;state.handle=next_handle++;
+            state.policy=runtime_policy.effective(::uwvm2::imported::ros::version::ros2,deployment->module);
             state.binding={owner,deployment->mapping.epoch,deployment->policy_epoch,deployment->native_generation,
                            deployment->adapter_sha256,deployment->adapter_sha256,deployment->native_provenance};
             auto now{model::monotonic_ns()};if(!now||now>UINT64_MAX-model::command_state::maximum_wait_ns) { state.closed=true;return error::deadline; }
@@ -160,7 +193,7 @@ namespace uwvm2::uwvm::imported::ros::portable_host
         return guarded([&]() -> error {
             api::ros_caller_source_facts facts{};model::owner_key owner{};model::deployment_selection::owner deployment{};
             if(auto e{caller(2,facts,owner,deployment)};e!=error::ok) { return e; }
-            ::std::lock_guard lock{registry_mutex};if(auto e{admitted(handle,owner,deployment)};e!=error::ok) { return e; }
+            ::std::lock_guard lock{registry_mutex};if(auto e{admitted(handle,owner,deployment,facts)};e!=error::ok) { return e; }
             auto required{64u+40u*deployment->mapping.count};
             if(auto e{output_preflight(facts,selector,output,capacity,length,required)};e!=error::ok) { return e; }
             ::std::array<::std::uint8_t,704> bytes{};auto encoded{model::encode(deployment->mapping,bytes)};
@@ -173,7 +206,7 @@ namespace uwvm2::uwvm::imported::ros::portable_host
             api::ros_caller_source_facts facts{};model::owner_key owner{};model::deployment_selection::owner deployment{};
             model::runtime_audit::call_context audit_call{};
             if(auto e{caller(3,facts,owner,deployment,&audit_call)};e!=error::ok) { return e; }
-            ::std::lock_guard lock{registry_mutex};if(auto e{admitted(handle,owner,deployment)};e!=error::ok) { return e; }
+            ::std::lock_guard lock{registry_mutex};if(auto e{admitted(handle,owner,deployment,facts)};e!=error::ok) { return e; }
             auto required{64u+16u*deployment->mapping.count};
             if(auto e{output_preflight(facts,selector,output,capacity,length,required)};e!=error::ok) { return e; }
             auto& state{*selected_owner};auto now{model::monotonic_ns()};if(!now||now>UINT64_MAX-500000000u) { return error::deadline; }
@@ -208,7 +241,7 @@ namespace uwvm2::uwvm::imported::ros::portable_host
             api::ros_caller_source_facts facts{};model::owner_key owner{};model::deployment_selection::owner deployment{};
             model::runtime_audit::call_context audit_call{};
             if(auto e{caller(4,facts,owner,deployment,&audit_call)};e!=error::ok) { return e; }
-            ::std::lock_guard lock{registry_mutex};if(auto e{admitted(handle,owner,deployment)};e!=error::ok) { return e; }
+            ::std::lock_guard lock{registry_mutex};if(auto e{admitted(handle,owner,deployment,facts)};e!=error::ok) { return e; }
             if(input_bytes!=80u+16u*deployment->mapping.count) { return error::malformed; }
             if(auto e{output_preflight(facts,selector,output,capacity,length,96,{input,input_bytes})};e!=error::ok) { return e; }
             ::std::array<::std::uint8_t,336> bytes{};auto size{static_cast<::std::size_t>(input_bytes)};
@@ -247,7 +280,7 @@ namespace uwvm2::uwvm::imported::ros::portable_host
         return guarded([&]() -> error {
             api::ros_caller_source_facts facts{};model::owner_key owner{};model::deployment_selection::owner deployment{};
             if(auto e{caller(5,facts,owner,deployment)};e!=error::ok) { return e; }
-            ::std::lock_guard lock{registry_mutex};if(auto e{admitted(handle,owner,deployment)};e!=error::ok) { return e; }
+            ::std::lock_guard lock{registry_mutex};if(auto e{admitted(handle,owner,deployment,facts)};e!=error::ok) { return e; }
             auto& state{*selected_owner};if(!command_id||command_id!=state.command_id||state.command.current_phase()!=model::command_state::phase::accepted) { return error::bad_handle; }
             if(auto e{output_preflight(facts,selector,output,capacity,length,96)};e!=error::ok) { return e; }
             ::std::array<::std::uint8_t,24> request{};::std::copy(state.native_goal_uuid.begin(),state.native_goal_uuid.end(),request.begin());model::wire_detail::put(request,16,command_id,8);
@@ -287,15 +320,20 @@ namespace uwvm2::uwvm::imported::ros::portable_host
             api::ros_caller_source_facts facts{};model::owner_key owner{};model::deployment_selection::owner deployment{};
             if(auto e{caller(6,facts,owner,deployment)};e!=error::ok) { return e; }
             ::std::lock_guard lock{registry_mutex};
-            if(!selected_owner||selected_owner->owner!=owner||selected_owner->handle!=handle||selected_owner->closed) { return error::bad_handle; }
+            if(!selected_owner||!shared_owner(owner,facts)||selected_owner->handle!=handle||selected_owner->retired||
+               selected_owner->deployment!=deployment) { return error::bad_handle; }
+            if(selected_owner->closed) { return error::ok; } // Idempotent within this policy's tombstone.
             selected_owner->closed=true;selected_owner->native.close();
-            if(selected_owner->command.consumed()) { (void)selected_owner->command.close(owner); }return error::ok;
+            if(selected_owner->command.consumed()) { (void)selected_owner->command.close(selected_owner->owner); }return error::ok;
         });
     }
     inline void retire(void const* object,::std::uint64_t generation,bool all) noexcept
     {
         ::std::lock_guard lock{registry_mutex};
         if(!selected_owner||(!all&&(selected_owner->owner.instance!=object||selected_owner->owner.generation!=generation))) { return; }
+        // Replacement revokes the member, not its peers' shared environment.
+        // The runtime's retired-module guard still rejects the replaced caller.
+        if(!all&&selected_owner->policy&&selected_owner->policy->target_scope!=::uwvm2::imported::ros::scope::single) { return; }
         selected_owner->retired=true;selected_owner->native.close();
         if(selected_owner->command.consumed()) { (void)selected_owner->command.revoke(selected_owner->owner); }
     }

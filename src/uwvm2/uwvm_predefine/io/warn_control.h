@@ -87,17 +87,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::io
     inline bool show_dl_warning{true};  // [global]
 # endif
 
-# ifdef UWVM_SUPPORT_WEAK_SYMBOL
-    /// @brief Controls emission of weak-symbol module warnings.
-    /// @details Category: `weak-symbol`.  Covers weak-symbol table diagnostics such as malformed entries, invalid UTF-8
-    ///          function names, duplicate weak function names, and null weak function pointers.  These issues are
-    ///          generally skipped as recoverable weak-symbol entries rather than treated as hard module-load failures.
-    ///          Enabled by default when weak-symbol support is compiled in.
-    /// @see weak_symbol_warning_fatal
-    /// @see ::uwvm2::uwvm::cmdline::params::details::log_disable_warning_callback
-    /// @see ::uwvm2::uwvm::wasm::loader::load_weak_symbol
-    inline bool show_weak_symbol_warning{true};  // [global]
-# endif
 
     /// @brief Controls emission of module dependency-analysis warnings.
     /// @details Category: `depend`.  Covers dependency graph size/recursion-limit warnings and detected module
@@ -187,14 +176,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::io
     inline bool dl_warning_fatal{};  // [global]
 # endif
 
-# ifdef UWVM_SUPPORT_WEAK_SYMBOL
-    /// @brief Converts emitted `weak-symbol` warnings into fatal errors.
-    /// @details Fatal control paired with `show_weak_symbol_warning` for weak-symbol parsing/loading diagnostics.
-    /// @see show_weak_symbol_warning
-    /// @see ::uwvm2::uwvm::cmdline::params::details::log_convert_warn_to_fatal_callback
-    /// @see ::uwvm2::uwvm::wasm::loader::load_weak_symbol
-    inline bool weak_symbol_warning_fatal{};  // [global]
-# endif
 
     /// @brief Converts emitted `depend` warnings into fatal errors.
     /// @details Fatal control paired with `show_depend_warning` for dependency-analysis warnings, including skipped

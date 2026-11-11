@@ -218,10 +218,10 @@ class StepInlineTests(unittest.TestCase):
             self.assertNotIn("source", row); self.assertNotIn("instructionPointerReference", row)
             self.assertEqual(self.send("scopes", frameId=row["id"])["body"]["scopes"], [])
         scopes = self.send("scopes", frameId=frames[2]["id"])["body"]["scopes"]
-        expected = ["Wasm locals", "Source variables", "WASIp1 arguments", "WASIp1 environment", "WASIp1 descriptors", "WASIp1 preopens"]
+        expected = ["Wasm locals", "Source variables", "WASIp1 arguments", "WASIp1 environment", "WASIp1 descriptors", "WASIp1 preopens", "WASIp1 policy groups and accounting"]
         expected += ["WASIp1 calls (recorded)", "ROS1 calls (recorded)", "ROS2 calls (recorded)"]
         if hasattr(self.adapter, "ros_scope_stops"):
-            expected += ["ROS capabilities (process-owned)", "ROS instances (backend sessions)", "ROS event queues (metadata only)"]
+            expected += ["ROS configured policy groups", "ROS capabilities (process-owned)", "ROS instances (backend sessions)", "ROS event queues (metadata only)"]
             selections = ("capabilities", "instances", "events")
             for row, selection in zip(scopes[-3:], selections):
                 self.assertTrue(row["expensive"] and row["variablesReference"] > 0)

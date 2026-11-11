@@ -44,6 +44,7 @@
 # include <uwvm2/uwvm/io/impl.h>
 # include <uwvm2/uwvm/utils/ansies/impl.h>
 # include <uwvm2/uwvm/cmdline/params/impl.h>
+# include <uwvm2/uwvm/wasm/loader/dl.h>
 # include "params.h"
 #endif
 
@@ -353,6 +354,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
             // Here, guard will perform destructors.
         }
 
+        // Resolve the complete feature policy before ANY Wasm preload parses
+        // declarations. Baselines and explicit overrides compose in either order;
+        // a late disable must not leave an earlier preload admitted more broadly.
+        for(auto current{pr.begin() + 1u}; current != end_pos; ++current)
+        {
+            if(!::uwvm2::uwvm::cmdline::params::is_wasm_feature_parameter(current->para)) { continue; }
+            if(current->para->handle(pr.begin(), current, pr.end()) != ::uwvm2::utils::cmdline::parameter_return_type::def)
+            { return parsing_return_val::returnm1; }
+        }
+
         // Select driver verification before ANY preload constructor, regardless
         // of CLI option order. This never authorizes a Guest-controlled dlopen.
         for(auto current{pr.begin()+1u};current!=end_pos;++current)
@@ -471,7 +482,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
             {
                 auto const cp{curr_pr->para};
 
-                if(cp == nullptr)
+                if(cp == nullptr || ::uwvm2::uwvm::cmdline::params::is_wasm_feature_parameter(cp))
                 {
                     // nonparametric
                     continue;
@@ -504,10 +515,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
                         }
                         case ::uwvm2::utils::cmdline::parameter_return_type::err_imme:
                         {
-                            ::fast_io::fast_terminate();
+                            ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                                u8"uwvm: [error] command-line callback rejected ", curr_pr->str);
+                            ::uwvm2::uwvm::io::fast_exit(::uwvm2::uwvm::io::diagnostic_exit_status::invalid_option);
                         }
                         case ::uwvm2::utils::cmdline::parameter_return_type::err_soon:
                         {
+                            ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                                u8"uwvm: [error] command-line callback rejected ", curr_pr->str);
                             needterminal = true;
                             break;
                         }
@@ -522,7 +537,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
                 }
             }
 
-            if(needterminal) [[unlikely]] { ::fast_io::fast_terminate(); }
+            if(needterminal) [[unlikely]] { ::uwvm2::uwvm::io::fast_exit(::uwvm2::uwvm::io::diagnostic_exit_status::invalid_option); }
 
             if(needexit) [[unlikely]] { return parsing_return_val::returnm1; }
         }
@@ -602,6 +617,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
                 return ::uwvm2::uwvm::imported::ros::dump_effective_policy() ? parsing_return_val::return0 : parsing_return_val::returnm1;
             }
         }
+#endif
+#if defined(UWVM_SUPPORT_PRELOAD_DL)
+        // Single driver exposure may be configured after registration. Apply
+        // the final explicit policy before execution, including shared native
+        // setters used by differently authorized aliases. Calls still recheck
+        // the immediate driver's policy; this grants no API or resource right.
+        ::uwvm2::uwvm::wasm::loader::refresh_preloaded_dl_wasip1_host_api();
 #endif
         return parsing_return_val::def;
     }

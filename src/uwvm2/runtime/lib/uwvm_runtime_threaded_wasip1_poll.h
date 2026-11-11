@@ -2,19 +2,19 @@
 // loop, fake-ready event, borrowed-global O_NONBLOCK change or ordinary helper.
 extern "C++"
 {
-    inline auto runtime_threaded_wasip1_adapter::poll_oneoff(context& call,::std::uint32_t input,
-        ::std::uint32_t output,::std::uint32_t count,::std::uint32_t completed) noexcept -> error
+    inline auto runtime_threaded_wasip1_adapter::poll_oneoff(context& call,::std::uint64_t input,
+        ::std::uint64_t output,::std::uint64_t count,::std::uint64_t completed) noexcept -> error
     {
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
         if(count > call.env.limits.max_poll_subscriptions)
         { ::uwvm2::utils::control::host_diagnostics::limited("poll-subscriptions",false); return error::e2big; }
 #endif
         if(count==0u)return error::einval;
-        if((count != 0u && 48uz > SIZE_MAX / static_cast<::std::size_t>(count)) || static_cast<::std::uint64_t>(count) + 1u > SIZE_MAX) return error::eoverflow;
-        if(!call.aligned(input,8u)||!call.aligned(output,8u)||!call.aligned(completed,4u))return error::efault;
+        if((count > SIZE_MAX / 48uz) || count>=SIZE_MAX) return error::eoverflow;
+        if(!call.aligned(input,8u)||!call.aligned(output,8u)||!call.aligned(completed,call.word_bytes()))return error::efault;
 
         if(!call.bounds(input,static_cast<::std::size_t>(count)*48uz)||
-           !call.bounds(output,static_cast<::std::size_t>(count)*32uz)||!call.bounds(completed,4uz))return error::efault;
+           !call.bounds(output,static_cast<::std::size_t>(count)*32uz)||!call.bounds(completed,call.word_bytes()))return error::efault;
         struct subscription
         {
             ::std::uint64_t userdata{},timeout{};::std::uint32_t id{},fd{};unsigned kind{};bool absolute{},immediate{},deferred{};
@@ -32,11 +32,11 @@ extern "C++"
         {
             ::std::unique_ptr<int[]> descriptors; ::std::size_t count{};
             ~timers() noexcept{for(::std::size_t i{};i<count;++i)if(descriptors[i]>=0)static_cast<void>(::close(descriptors[i]));}
-        } owned{::std::move(descriptors),count};
+        } owned{::std::move(descriptors),static_cast<::std::size_t>(count)};
         // Snapshot every subscription before any output can overlap it. Each
         // byte is atomic; torn Guest writes cannot create an unchecked pointer.
         // Check all clock authority before native clocks/FD readiness are read.
-        for(::std::uint32_t i{};i<count;++i)
+        for(::std::size_t i{};i<count;++i)
         {
             ::std::array<::std::byte,48> raw{};
             if(!call.copy_in(static_cast<::std::uint64_t>(input)+i*48u,raw))return error::efault;
@@ -53,7 +53,7 @@ extern "C++"
             else return error::einval;
         }
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-        for(::std::uint32_t i{}; i<count; ++i)
+        for(::std::size_t i{}; i<count; ++i)
         {
             auto& sub{subscriptions[i]};
             if(sub.kind == 0u)
@@ -75,7 +75,7 @@ extern "C++"
         // observation may precede a later subscription's authority check.
         try
         {
-            for(::std::uint32_t i{}; i<count; ++i)
+            for(::std::size_t i{}; i<count; ++i)
             {
                 auto& sub{subscriptions[i]};
                 if(sub.kind != 0u) continue;
@@ -151,7 +151,7 @@ extern "C++"
         if(readiness.descriptor<0)return native_error(errno);
 #endif
         bool immediate{};
-        for(::std::uint32_t i{};i<count;++i)
+        for(::std::size_t i{};i<count;++i)
         {
             if(call.stopped())return error::ecanceled;
             auto& sub=subscriptions[i];auto& watch=watched[i+1u];
@@ -188,7 +188,7 @@ extern "C++"
 #if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             bool pending{};
 #endif
-            for(::std::uint32_t i{};i<count;++i)
+            for(::std::size_t i{};i<count;++i)
             {
                 auto& sub=subscriptions[i];if(!sub.deferred)continue;
                 auto const required=right::right_poll_fd_readwrite|(sub.kind==1u?right::right_fd_read:right::right_fd_write);
@@ -237,8 +237,8 @@ extern "C++"
 #endif
             if(call.stopped())return error::ecanceled;
             if(watched[0].revents!=0){static_cast<void>(call.native_failure());return error::eio;}
-            ::std::uint32_t written{};
-            for(::std::uint32_t i{};i<count;++i)
+            ::std::uint64_t written{};
+            for(::std::size_t i{};i<count;++i)
             {
                 auto const& sub=subscriptions[i];auto const revents=watched[i+1u].revents;
                 if(!sub.immediate&&sub.failure==error::esuccess&&revents==0)continue;
@@ -270,7 +270,7 @@ extern "C++"
                 }
                 if(!call.copy_out(static_cast<::std::uint64_t>(output)+written*32u,event))return error::efault;++written;
             }
-            if(written)return call.store<4>(completed,written)?error::esuccess:error::efault;
+            if(written)return call.store_size(completed,written)?error::esuccess:error::efault;
             // Native spurious wakeup: retry only through the actual stop fd.
             immediate=false;
         }

@@ -51,7 +51,6 @@
         auto const member{[&](::std::size_t offset)
         { return builder.CreateGEP(builder.getInt8Ty(), header, builder.getInt64(offset)); }};
         ::llvm::Value* length{builder.CreateLoad(intptr, member(storage::gc_object_store::jit_array_length_offset))};
-#if defined(UWVM_EXPERIMENTAL_ARRAY_LENGTH_VALUES) && UWVM_EXPERIMENTAL_ARRAY_LENGTH_VALUES == 1
         // Use a logical length associated with THIS complete reference SSA.
         // Authentication/status success still dominates the native load and
         // bounds check. This is not a cached object address or a new lease.
@@ -66,7 +65,6 @@
             length = builder.CreateSelect(fact.valid, builder.CreateZExt(fact.length, intptr),
                 length, "gc.array.bounds.length");
         }
-#endif
         auto const wide_index{builder.CreateZExt(index.value, intptr)};
         // All failure paths precede lock acquisition; trap/unwind never leaks it.
         emit_llvm_conditional_trap(*state.llvm_module, builder, builder.CreateICmpUGE(wide_index, length),

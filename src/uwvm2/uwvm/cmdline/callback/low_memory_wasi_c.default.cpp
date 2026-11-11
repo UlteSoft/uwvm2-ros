@@ -6,7 +6,6 @@
 #include <uwvm2/uwvm/cmdline/impl.h>
 #include "wasip1_single_disable_utf8_check.h"
 #include "wasip1_single_enable_utf8_check.h"
-#include "wasip1_single_trace.h"
 #include "wasip1_single_set_argv0.h"
 #include "wasip1_single_force_args.h"
 #include "wasip1_single_set_fd_limit.h"

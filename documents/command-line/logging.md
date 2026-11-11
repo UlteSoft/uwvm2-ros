@@ -231,6 +231,6 @@ Output routing:
 
 - `--log-output` affects where later main diagnostics are written.
 - `--runtime-compiler-log` has its own output object and is documented in [Runtime Commands](runtime.md).
-- `--wasip1-*-trace` has its own output handling and is documented in [WASI Commands](wasi.md).
+- Legacy `--wasip1-*-trace` switches are removed. Use the runtime diagnostic and debugger host-call facilities; unknown switches fail before execution.
 
 Host call selectors and default severities are specified in [exact host permissions](host-permissions.md).

@@ -19,7 +19,8 @@ def s(n,bits):
   if done:return bytes(b)
 def c(n,bits=32):return bytes([0x41 if bits==32 else 0x42])+s(n,bits)
 def sec(i,b):return bytes([i])+u(len(b))+b
-def op(n,m=0):return b'\xfc'+u(n)+u(m)
+def op(n,m=0):return b'\xff'+u(0x01010000|n)+u(m)
+def fc(n,m=0):return b'\xfc'+u(n)+u(m)
 def mem(n,offset=0,index=0):
  return bytes([n])+u(64 if index else 0)+(u(index) if index else b'')+u(offset)
 def simd(n,offset=0,lane=None):
@@ -119,11 +120,11 @@ def simds(wide):
  return module(p.code,wide)
 def bulks(wide):
  p=Program(wide);p.add(p.tags());p.bytes(0,range(128))
- p.add(p.tagged(256)+p.tagged(0)+p.n(128)+op(10)+u(0));p.check_bytes(256,range(128))
- p.add(p.tagged(17)+p.tagged(0)+p.n(128)+op(10)+u(0));p.check_bytes(17,range(128))
- p.add(p.tagged(300)+c(0x55)+p.n(64)+op(11));p.check_bytes(300,bytes([0x55])*64)
- p.add(p.tagged(15)+c(0)+c(32)+op(8)+u(0));p.check_bytes(15,range(32))
- p.add(op(9));p.add(p.tagged(0)+c(0)+c(0)+op(8)+u(0))
+ p.add(p.tagged(256)+p.tagged(0)+p.n(128)+fc(10)+u(0));p.check_bytes(256,range(128))
+ p.add(p.tagged(17)+p.tagged(0)+p.n(128)+fc(10)+u(0));p.check_bytes(17,range(128))
+ p.add(p.tagged(300)+c(0x55)+p.n(64)+fc(11));p.check_bytes(300,bytes([0x55])*64)
+ p.add(p.tagged(15)+c(0)+c(32)+fc(8)+u(0));p.check_bytes(15,range(32))
+ p.add(fc(9));p.add(p.tagged(0)+c(0)+c(0)+fc(8)+u(0))
  return module(p.code,wide,bytes(range(32)))
 def atomics(wide):
  p=Program(wide);p.add(p.tags())
@@ -146,12 +147,13 @@ def denial(wide,kind):
  p.add(p.tags(bad,16,4))
  if kind=='scalar':p.add(p.tagged(0)+c(17,64)+mem(0x37,15))
  elif kind=='simd':p.add(p.tagged(0)+b'\xfd\x0c'+bytes(16)+simd(11,15))
- elif kind=='fill':p.add(p.tagged(0)+c(55)+p.n(128)+op(11))
- elif kind=='copy':p.add(p.tagged(128)+p.tagged(0)+p.n(128)+op(10)+u(0))
+ elif kind=='fill':p.add(p.tagged(0)+c(55)+p.n(128)+fc(11))
+ elif kind=='copy':p.add(p.tagged(128)+p.tagged(0)+p.n(128)+fc(10)+u(0))
  elif kind=='atomic':p.add(p.tagged(64)+c(55)+b'\xfe\x17\x02\0')
  elif kind=='bounds':p.add(p.tagged(65535)+mem(0x28)+b'\x1a')
  return module(p.code,wide)
 def main():
+ from vm_diagnostics import fault_matches
  a=argparse.ArgumentParser();a.add_argument('--vm',type=Path);a.add_argument('--out',type=Path,required=True)
  a.add_argument('--engines',default='int,aot');a.add_argument('--generate-only',action='store_true');args=a.parse_args()
  args.out.mkdir(parents=True,exist_ok=True);cases=[]
@@ -172,15 +174,29 @@ def main():
  rows=[]
  for case in manifest:
   for engine in args.engines.split(','):
-   command=[str(args.vm),f'--runtime-{engine}','--runtime-llvm-jit-cache-path','disable','--wasm-feature-enable-memory64','--wasm-feature-enable-table64','--wasm-feature-enable-threads','--wasm-set-main-module-name','main','--wasip1-single-create','main','--wasip1-single-enable','main','--wasm-set-start-func','0']
+   command=[str(args.vm),f'--runtime-{engine}','--wasm-feature-enable-memory64','--wasm-feature-enable-table64','--wasm-feature-enable-threads','--wasm-set-main-module-name','main','--wasip1-single-create','main','--wasip1-single-enable','main','--wasm-set-start-func','0']
+   if engine=='aot':command+=['--runtime-llvm-jit-cache-path','disable','--runtime-compile-threads','0']
    if not case['enabled']:command+=['--runtime-disable-memtag']
    command+=['--',case['file']]
    completed=subprocess.run(command,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=90)
    output=completed.stdout.decode('utf8','replace');(args.out/(case['name']+'-'+engine+'.log')).write_text(output)
-   passed=completed.returncode==0 if case['expected']=='success' else completed.returncode==({'memtag':122,'bounds':121}[case['expected']]) and (
-    'memory tag mismatch' in output.lower() if case['expected']=='memtag' else 'out of bounds' in output.lower())
+   passed=completed.returncode==0 if case['expected']=='success' else fault_matches(completed.returncode,output,{'memtag':122,'bounds':121}[case['expected']],
+    'memory tag mismatch' if case['expected']=='memtag' else 'out of bounds')
    row=dict(name=case['name'],engine=engine,exit=completed.returncode,expected=case['expected'],passed=passed,command=command)
    rows.append(row);(args.out/'report.json').write_text(json.dumps(rows,indent=2))
    print(case['name'],engine,completed.returncode,'PASS' if passed else 'FAIL',flush=True)
  raise SystemExit(any(not row['passed'] for row in rows))
 if __name__=='__main__':main()
+
+
+def mode_flags(mode):
+    """Test profile labels; the product accepts only independent CLI axes."""
+    profiles = {"sync": ("software", "sync"), "software-async": ("software", "async"),
+                "hardware-sync": ("hardware", "sync"), "hardware-async": ("hardware", "async")}
+    backend, delivery = profiles[mode]
+    return ["--runtime-memtag-backend", backend, "--runtime-memtag-mode", delivery]
+
+
+def report_flags(destination):
+    """Independent MTE stream; never redirects general UWVM diagnostics."""
+    return ["--runtime-memtag-action", "silent-log", destination] if destination in ("out", "err") else ["--runtime-memtag-action", "silent-log", "path", str(destination)]

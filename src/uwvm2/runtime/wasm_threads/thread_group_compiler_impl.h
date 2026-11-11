@@ -104,7 +104,7 @@
         ::std::lock_guard lock{mutex_};
         if(!accepting_ || compiler_closing_ || !compiler_created_ || compiler_starting_ ||
            stop_requested_.load(::std::memory_order_acquire)) { return {{}, ECANCELED}; }
-        auto const count{admission_->limits().max_active_children + 1u};
+        auto const count{slot_count_.load(::std::memory_order_acquire)};
         if(reservation.position_ >= count) { return {{}, EINVAL}; }
         auto const& guest{slots_[reservation.position_]};
         if(guest.phase != slot_phase::preparing || guest.tid != reservation.tid_ || guest.stack.mapping ||
@@ -137,7 +137,7 @@
         auto const* job{compiler_current_};
         if(!compiler_created_ || !job || !::pthread_equal(compiler_thread_, ::pthread_self()) ||
            job->phase != compiler_job_phase::running || &job->reservation != &reservation ||
-           reservation.group_ != this || reservation.position_ >= admission_->limits().max_active_children + 1u) { return false; }
+           reservation.group_ != this || reservation.position_ >= slot_count_.load(::std::memory_order_acquire)) { return false; }
         auto const& selected{slots_[reservation.position_]};
         return selected.phase == slot_phase::preparing && selected.tid == reservation.tid_;
     }
@@ -182,7 +182,7 @@
                 if(selected->phase != compiler_job_phase::queued || !selected->work || !selected->reservation)
                 { ::std::terminate(); }
                 auto const& reserved{selected->reservation};
-                if(reserved.position_ >= group.admission_->limits().max_active_children + 1u) { ::std::terminate(); }
+                if(reserved.position_ >= group.slot_count_.load(::std::memory_order_acquire)) { ::std::terminate(); }
                 auto const& guest{group.slots_[reserved.position_]};
                 if(guest.phase != slot_phase::preparing || guest.tid != reserved.tid_) { ::std::terminate(); }
                 initial_main = reserved.position_ == 0u && reserved.tid_ == 0u && guest.initial_main;
@@ -254,7 +254,7 @@
         ::std::chrono::steady_clock::time_point deadline) noexcept -> compiler_observation
     {
         ::std::unique_lock lock{mutex_};
-        if(position >= admission_->limits().max_active_children + 1u) { return {}; }
+        if(position >= slot_count_.load(::std::memory_order_acquire)) { return {}; }
         if(compiler_created_ && ::pthread_equal(compiler_thread_, ::pthread_self()))
         { return {compiler_wait_status::invalid, {compiler_completion::native_failure, {}, EDEADLK}}; }
         for(;;)
@@ -274,7 +274,7 @@
         bool stop{};
         {
             ::std::lock_guard lock{mutex_};
-            if(position >= admission_->limits().max_active_children + 1u) { return; }
+            if(position >= slot_count_.load(::std::memory_order_acquire)) { return; }
             auto& selected{compiler_jobs_[position]};
             if(selected.sequence != sequence || !selected.ticket_live) { return; }
             selected.ticket_live = false; --active_compiler_tickets_;
@@ -366,7 +366,7 @@
         if(!owns_current_native_thread()) { return 0u; }
         ::std::lock_guard lock{group_->mutex_};
         auto const& reservation{job_->reservation};
-        if(reservation.group_ != group_ || reservation.position_ >= group_->admission_->limits().max_active_children + 1u) { return 0u; }
+        if(reservation.group_ != group_ || reservation.position_ >= group_->slot_count_.load(::std::memory_order_acquire)) { return 0u; }
         auto const& selected{group_->slots_[reservation.position_]};
         return selected.phase == slot_phase::preparing && selected.tid == reservation.tid_ &&
             selected.stack.preparation_error == 0 ? selected.stack.usable_bytes() : 0u;

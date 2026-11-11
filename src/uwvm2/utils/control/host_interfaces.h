@@ -260,17 +260,17 @@ namespace uwvm2::utils::control::host_interfaces
         { return hash_text(function, (hash_text(ns) ^ 0xffu) * 16777619u); }
 
         // Derived from the catalogue, not an independent registry capacity.
-        inline constexpr ::std::size_t table_size = []() consteval
+        inline constexpr ::std::size_t table_size = []() constexpr
         {
             ::std::size_t size{1u};
             while(size <= catalogue.size()) { size *= 2u; }
             return size * 2u;
         }();
         using table_type = ::std::array<::std::size_t, table_size>;
-        consteval table_type make_table(bool imports)
+        constexpr table_type make_table(bool imports)
         {
             table_type result{};
-            result.fill(invalid);
+            for(auto& slot:result) { slot=invalid; }
             for(::std::size_t i{}; i != catalogue.size(); ++i)
             {
                 auto const& item{catalogue[i]};
@@ -283,7 +283,7 @@ namespace uwvm2::utils::control::host_interfaces
         }
         inline constexpr auto keys{make_table(false)};
         inline constexpr auto imports{make_table(true)};
-        inline constexpr auto longest = []() consteval
+        inline constexpr auto longest = []() constexpr
         {
             ::std::array<::std::size_t,3u> result{};
             for(auto const& item:catalogue)

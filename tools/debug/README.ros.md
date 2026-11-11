@@ -7,7 +7,7 @@ It creates no ROS context, session, capability, queue, publisher or subscriber.
 It cannot open, revoke, grant, refresh or consume a capability or event.
 
 
-The robot product uses immutable `--debug-permissions full|read-only|limited|none`. Full and read-only permissions allow these sensitive ROS views. Limited permits only non-sensitive diagnostics; none denies the endpoint. The authenticated host broker preserves the VM command line, and `-Rdbg` defaults to full. Permissions never grant ROS interfaces or resources. See [Debugger permissions](../../documents/command-line/debug-permissions.md).
+The robot product uses immutable `--debug-permissions full|read-only|limited|none`. Full and read-only permissions allow these sensitive ROS views. Limited permits only non-sensitive diagnostics; none denies the endpoint. The authenticated host broker preserves the VM command line, and both `-Rdbg` and `-m debug` default to full. Permissions never grant ROS interfaces or resources. See [Debugger permissions](../../documents/command-line/debug-permissions.md).
 
 At a cooperative frame-zero stop the Variables view offers:
 
@@ -122,7 +122,7 @@ code changed. The retirement cleanup hook acts only on an already retired actual
 module incarnation; no command clears that retirement flag. Existing native ROS
 effects remain real effects. Full-world debugger reconstruction currently refuses
 ROS providers because their resource handoff is not implemented; see
-[Debugger world rebuild](../../documents/runtime/dev-world-rebuild.md).
+[Module reconstruction and independent update authority](../../documents/runtime/dev-world-rebuild.md).
 
 DAP references are invalidated **before** sending `replace` or `wasm-script`,
 even for malformed/rejected requests and transport errors. Successful

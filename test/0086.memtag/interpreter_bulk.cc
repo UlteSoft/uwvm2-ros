@@ -11,9 +11,9 @@ byte_vec make(bool destination64,bool source64,bool shared,bool mixed) {
  b.passive_datas.push_back(std::move(segment));
  func_body body{};
  auto number=[&](std::int64_t n,bool wide){append_u8(body.code,wide?0x42:0x41);if(wide)append_i64_leb(body.code,n);else append_i32_leb(body.code,static_cast<std::int32_t>(n));};
- auto tag=[&](unsigned memory,unsigned pointer){bool wide=memory?source64:destination64;number(pointer,wide);if(!mixed || !memory){number(memory?4:3,wide);append_u8(body.code,0xfc);append_u8(body.code,static_cast<unsigned>(mt::opcode::insert));append_u8(body.code,memory);}};
+ auto tag=[&](unsigned memory,unsigned pointer){bool wide=memory?source64:destination64;number(pointer,wide);if(!mixed || !memory){number(memory?4:3,wide);append_u8(body.code,mt::opcode_prefix);append_u32_leb(body.code,mt::encode_opcode(mt::opcode::insert));append_u8(body.code,memory);}};
  auto numeric=[&](unsigned op){append_u8(body.code,0xfc);append_u32_leb(body.code,op);};
- for(unsigned m{};m!=2;++m)if(!mixed || !m){tag(m,0);number(256,m?source64:destination64);numeric(static_cast<unsigned>(mt::opcode::store));append_u8(body.code,m);}
+ for(unsigned m{};m!=2;++m)if(!mixed || !m){tag(m,0);number(256,m?source64:destination64);append_u8(body.code,mt::opcode_prefix);append_u32_leb(body.code,mt::encode_opcode(mt::opcode::store));append_u8(body.code,m);}
  tag(0,0);number(0x55,false);number(64,destination64);numeric(11);append_u8(body.code,0);
  tag(0,24);tag(0,8);number(48,destination64);numeric(10);append_u8(body.code,0);append_u8(body.code,0);
  tag(0,129);number(1,false);number(31,false);numeric(8);append_u8(body.code,0);append_u8(body.code,0);

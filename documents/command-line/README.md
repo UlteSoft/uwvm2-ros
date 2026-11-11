@@ -1,6 +1,6 @@
 # UWVM Command-Line Reference
 
-Debugger permission levels are `full`, `read-only`, `limited` and `none`, selected only at launch. `-Rdbg` defaults to `full`; other launches default to `limited`. See [Debugger permissions](debug-permissions.md) for dump redaction, independent update authority and IDE negotiation.
+Debugger permission levels are `full`, `read-only`, `limited` and `none`, selected only at launch. `-Rdbg` and `-m debug` (including their long spellings) default to `full`; other launches default to `limited`. See [Debugger permissions](debug-permissions.md) for dump redaction, independent update authority and IDE negotiation.
 
 This directory is the source-driven command-line reference for the `uwvm2-ros` executable. It expands the compact `uwvm2-ros --help` output into behavior notes, parameter interaction rules, platform gates, path handling details, and practical combinations.
 
@@ -22,7 +22,7 @@ Build-time `xmake f ...` switches are documented separately in [`../xmake-option
 - [Crash Policy](crash-policy.md): immutable crash handling and dump boundaries.
 - [Global And Debug Commands](global-debug.md): `--help`, `--mode`, `--run`, `--version`, and `--debug-test`.
 - [Language Debugger Build Options](language-debug-build.md): independent language switches, macros, explicit selection and build validation.
-- [WebAssembly Commands](wasm.md): module loading, explicit start-function invocation, preload modules, native dynamic libraries, import binding rewrites, weak symbols, parser limits, initializer limits, memory limits, preload memory attributes, and strict memory growth.
+- [WebAssembly Commands](wasm.md): module loading, explicit start-function invocation, preload modules, native dynamic libraries, import binding rewrites, parser limits, initializer limits, memory limits, preload memory attributes, and strict memory growth.
 - [Secure Module Verification](../security/wsea.md): opt-in `--secure module`, `--secure help/status`, `--help secure`, protected offline policy, signatures and revocation evidence.
 - [Runtime Commands](runtime.md): runtime mode/compiler selection, shortcut conflicts, LLVM IR verifier control, compile-thread resolution, scheduling, and compiler logs.
 - [Logging Commands](logging.md): diagnostic output routing, color policy, warning enable/disable/fatal conversion, verbose mode, and Windows ANSI mode.

@@ -100,7 +100,7 @@ namespace uwvm2::imported::ros::ipc
     }
     // The array count is a u32 wire field, not an implicit resource quota.
     inline constexpr std::size_t parameter_max_elements{UINT32_MAX};
-    inline constexpr std::size_t parameter_wire_limit{max_payload_bytes-518};
+    inline constexpr std::size_t parameter_wire_limit{max_payload_bytes};
     inline constexpr parameter_kind parameter_event_type(version backend,std::string_view type) noexcept
     {
         if(backend!=version::ros2) { return parameter_kind::unsupported; }

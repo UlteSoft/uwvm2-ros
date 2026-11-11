@@ -180,9 +180,6 @@
 #if defined(UWVM_SUPPORT_PRELOAD_DL)
             case kind::dl: return false;
 #endif
-#if defined(UWVM_SUPPORT_WEAK_SYMBOL)
-            case kind::weak_symbol: return false;
-#endif
             default: return false;
         }
     }

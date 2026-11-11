@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <uwvm2/runtime/diagnostic/crash_policy.h>
 #include <uwvm2/runtime/lib/uwvm_runtime_diagnostics.h>
 namespace uwvm2::uwvm::run::release_diagnostics
 {
@@ -26,7 +27,13 @@ namespace uwvm2::uwvm::run::release_diagnostics
             number("runtime_generation",v.runtime_generation); number("sequence",v.sequence);
             number("roots_started",v.roots_started); number("roots_completed",v.roots_completed); number("roots_active",v.roots_active);
             boolean("counters_sampled_independently",true); boolean("collection_lost",v.collection_lost);
-            boolean("faulted",v.faulted); number("fault_kind",v.fault_kind); boolean("stack_truncated",v.stack_truncated);
+            namespace crash=::uwvm2::runtime::diagnostic::crash;
+            crash::event terminal{};
+            bool const has_terminal=crash::snapshot_host_api(terminal);
+            boolean("faulted",v.faulted || has_terminal); number("fault_kind",v.fault_kind); boolean("stack_truncated",v.stack_truncated);
+            s += ",\"crash\":";
+            if(has_terminal){auto event=crash::format_event_json(terminal);s.append(event.bytes,event.size-1u);}
+            else s += "null";
             boolean("frame_offsets_available",false); s += ",\"frames\":[";
             for(::std::size_t i{}; i < v.frame_count; ++i)
             {

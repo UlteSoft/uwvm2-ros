@@ -8,9 +8,9 @@ struct image
 {
     std::array<std::uint8_t, 8> bytes{3, 0, 0, 1, 2, 0, 1, 1};
     std::array<std::uint8_t, 8> guest_code{0, 0, 0, 1, 1, 1, 1, 1};
-    std::array<std::uint8_t, 0> instruction_code{};
+    std::array<std::uint8_t, 8> instruction_code{1,1,1,1,1,1,1,1};
     std::size_t size{8}; std::uintptr_t owner_begin{4096}, owner_end{4104};
-    bool complete_storage() const { return size == bytes.size() && size == guest_code.size(); }
+    bool complete_storage() const { return size == bytes.size() && size == guest_code.size() && size == instruction_code.size(); }
 };
 struct decoder
 {
@@ -29,13 +29,18 @@ int main()
     image data{}; decoder d{};
     check(bool(nd::guest_breakpoint_with(d,data,3)),"qualified boundary");
     check(bool(nd::guest_breakpoint_with(d,data,4)),"qualified multibyte instruction");
-    check(!nd::guest_breakpoint_with(d,data,0),"JIT adapter prefix is not guest code");
+    check(bool(nd::guest_breakpoint_with(d,data,0)),"generated JIT bridge is an owned instruction");
     check(!nd::guest_breakpoint_with(d,data,1),"middle of instruction");
     check(!nd::guest_breakpoint_with(d,data,5),"middle of guest instruction");
     for(auto offset : fast_io::array<std::uint64_t,4>{8u,65537u,4096u,UINT64_MAX})
     { check(!nd::guest_breakpoint_with(d,data,offset),"out of owner, absolute address or overflow"); }
     data.guest_code[5]=0;
-    check(!nd::guest_breakpoint_with(d,data,4),"every byte needs guest provenance");
+    check(bool(nd::guest_breakpoint_with(d,data,4)),"source correlation does not restrict owned JIT instructions");
+    data.instruction_code[5]=0;
+    check(!nd::guest_breakpoint_with(d,data,4),"instruction cannot overlap literal pool");
+    data.instruction_code[5]=1;data.instruction_code[6]=0;
+    check(!nd::guest_breakpoint_with(d,data,6),"literal pool is not an instruction target");
+    data.instruction_code[6]=1;
     data.size=7;
     check(!nd::guest_breakpoint_with(d,data,3),"truncated mask/image");
     data.size=8; data.owner_end=4103;

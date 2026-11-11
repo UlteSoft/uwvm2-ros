@@ -12,6 +12,49 @@ Source focus:
 - `src/uwvm2/uwvm/runtime/initializer/init.h`
 - `src/uwvm2/uwvm/runtime/initializer/init_limit.h`
 
+## Feature baseline and overrides
+
+The default is **WebAssembly Core 3.0 plus the threads and WasmMTE extensions**.
+Selecting `--wasm-feature-wasm3` explicitly has the same effective policy as
+omitting a baseline. Core 3.0 additions include GC, typed function references,
+tail calls, exceptions, extended constant expressions, table initializers,
+multiple memories, memory64/table64 and relaxed SIMD. Threads and WasmMTE are
+separate extensions, not claims that they belong to Core 3.0; see the
+[official Core change history](https://webassembly.github.io/spec/core/appendix/changes.html).
+
+| Baseline | Short forms | Defaults before explicit overrides |
+| --- | --- | --- |
+| `--wasm-feature-wasmmvp` | `-WFmvp`, `-WF1` | MVP; later Core features and threads disabled |
+| `--wasm-feature-wasm1p1` | `-WF1.1`, `-WF1p1` | Existing 1.1 feature collection; 3.0 additions and threads disabled |
+| `--wasm-feature-wasm2` | `-WF2`, `-WFwasm2` | Core 2.0; 3.0 additions and threads disabled |
+| `--wasm-feature-wasm3` | `-WF3`, `-WFwasm3` | Core 3.0 plus threads; the product default |
+
+Use `--wasm-feature-enable-<feature>` / `-WFE-<feature>` and
+`--wasm-feature-disable-<feature>` / `-WFD-<feature>` to override individual
+features. One baseline may be combined with these switches in either order.
+The full policy is resolved before any preloaded module is parsed. Duplicate
+baselines, duplicate feature switches and enabling and disabling the same
+feature are command-line errors (exit 126). Feature dependencies are still
+validated; enabling one feature does not silently grant unrelated features or
+any WASI/ROS host interfaces.
+
+```bash
+uwvm2-ros --run app.wasm                       # Core 3.0 + threads + WasmMTE
+uwvm2-ros -WF3 --run app.wasm                  # Same effective policy
+uwvm2-ros -WF2 -WFE-gc --run gc.wasm           # Core 2.0 with GC enabled
+uwvm2-ros -WFE-gc -WF2 --run gc.wasm           # Same policy, reversed order
+uwvm2-ros -WFD-gc --run app.wasm               # Default baseline without GC
+uwvm2-ros -WF3 -WFD-gc --run app.wasm          # Same policy, explicit baseline
+uwvm2-ros -WFD-threads --run app.wasm          # Disable the threads extension
+```
+
+WasmMTE parsing remains enabled for every baseline unless
+`--wasm-feature-disable-memtag-extension` is supplied; that switch also disables
+MTE execution. `--runtime-disable-memtag` disables execution only and leaves
+parsing enabled. Neither setting grants host permissions. Turning on the
+threads instruction extension does not grant `wasi.thread-spawn` or its
+separate runtime resources.
+
 ## Command Table
 
 | Command | Aliases | Arguments | Repeatability | Availability | Behavior |
@@ -26,7 +69,6 @@ Source focus:
 | `--wasm-set-memory-limit` | `-Wmemlim` | `<module:str> [<index:size_t>|all] <min:size_t> (<max:size_t>)` | Repeatable | Core Wasm | Override runtime page limits for selected local-defined memories. |
 | `--wasm-set-parser-limit` | `-Wplim` | `<type:str> <limit:size_t>` | Repeatable | Core Wasm | Override one parser or custom-name parser limit. |
 | `--wasm-set-initializer-limit` | `-Wilim` | `<type:str> <limit:size_t>` | Repeatable | Core Wasm | Override one runtime initializer reserve/check limit. |
-| `--wasm-list-weak-symbol-module` | `-Wlsweak` | None | Once | `UWVM_SUPPORT_WEAK_SYMBOL` | Load and print registered weak-symbol modules, then exit. |
 | `--wasm-memory-grow-strict` | `-Wmemstrict` | None | Once | Core Wasm | Enable strict runtime memory-growth behavior. |
 
 ## Module Names
@@ -176,7 +218,7 @@ Security and verification:
 - Verification snapshots and seals the signed input, then verifies and loads an immutable payload inode. The inode remains retained until after `dlclose`; a path replacement cannot substitute the verified bytes.
 - Full PKI, revocation, provenance, anti-rollback, dependency closure and dynamic-loader environment policy belong to external deployment. An embedded certificate is never a new trust anchor.
 - Verification loads the sealed payload through `/proc/self/fd`. Dependencies must already be resolvable through the approved host loader environment; `$ORIGIN` is not the original source directory in this mode.
-- ROS has no weak-symbol provider fallback or weak-provider build option. Legacy ELF weak registrations belonged to upstream emergency/platform integration and cannot silently add native providers to the ROS product.
+- ROS removes the native weak-symbol provider ABI, its loader, registry, command and build option. Legacy ELF weak registrations belonged to upstream emergency/platform integration and cannot silently add native providers to the ROS product.
 - Native-driver warning classes remain independently configurable.
 
 See [trusted driver verification](../security/trusted-drivers.md).

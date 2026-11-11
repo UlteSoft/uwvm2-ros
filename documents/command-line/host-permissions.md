@@ -19,7 +19,7 @@ does not create its execution profile or grant thread creation.
 
 ## Commands
 
-WASIp1 uses explicit Single or Group policies:
+WASIp1 uses Single, Group and an implicit default Global policy:
 
 ~~~text
 --wasip1-single-create MODULE
@@ -30,13 +30,39 @@ WASIp1 uses explicit Single or Group policies:
 --wasip1-group-enable GROUP
 --wasip1-group-add-module GROUP MODULE
 --wasip1-group-interface GROUP API hidden|deny|allow
+
+--wasip1-global-enable
+--wasip1-global-interface API hidden|deny|allow
 ~~~
 
 `API` is an exact registered function, for example `fd_write`, `random_get`,
 `fd_write_wasm64`, or `thread-spawn`. The memory32 and memory64 names are
-independent. WASIp1 Global bindings are unavailable in the ROS product.
+independent. Every module without a Single or Group binding selects the same
+Global environment. Global starts disabled, with every interface hidden.
+`global-enable` enables its namespace; each interface and operation still needs
+its own grant. `global-add-module` is an optional explicit membership declaration.
+Single and Group targets never inherit Global grants, descriptors or limits.
 
-ROS1 and ROS2 use the same `single`, `group` and existing explicit `global`
+Every target supports the same resource and environment options. For Global,
+use `--wasip1-global-` followed by `grant`, `deny`, `limit`, `limit-action`,
+`limit-exit-action`, `set-fd-limit`, `set-argv0`, `force-args`,
+`add-or-replace-environment`, `delete-system-environment`,
+`inherit-system-environment`, `noinherit-system-environment`, `mount-dir`,
+`mount-dir-rights`, `socket-rights`, `socket-tcp-connect`, `socket-tcp-listen`,
+`socket-udp-bind`, `socket-udp-connect`, `enable-utf8-check` or
+`disable-utf8-check`. Arguments match the corresponding Group option with its
+leading group name omitted. `global-disable` explicitly hides the namespace.
+No legacy ambient defaults or short aliases are enabled by these options.
+
+Members share their policy's argv, environment, fd table, socket preopens and
+quota counters, while their Wasm linear memories remain independent. A named
+Group literally called `global` is distinct from Global. A module cannot belong
+to two explicit Single/Group targets. Creating a Single or assigning a Group
+removes the module from Global even when its new policy is disabled. Duplicate
+Single declarations and duplicate Group members are startup errors. Limits
+remain unlimited until configured explicitly.
+
+ROS1 and ROS2 use the same `single`, `group` and default `global`
 policy scopes. Replace `FAMILY` with `ros1` or `ros2`:
 
 ~~~text
@@ -56,6 +82,24 @@ Every module is checked against its own effective policy. A preload cannot
 borrow its caller's Single permission. Only modules explicitly assigned to a
 Group share that Group. Policies, checkpoints and host update digests include
 the exact interface states.
+
+A ROS Group or the default Global target owns one shared environment:
+connection/session, capability handles, event state, RMW resource associations,
+and operation and audit budgets. Any member may use or close a handle created
+by another member, subject to the same interface and operation checks. Different
+Single targets and differently named Groups have independent environments and
+budgets. Identical ROS1 and ROS2 names never merge their environments. Replacing
+one member retires that member's authority without closing its peers' shared
+resources or refunding consumed credits. Closing a handle invalidates it for
+all members of its environment.
+
+A defined Wasm export executes with its defining module's policy, as WASIp1
+exports do. A raw re-exported host function uses the actual executing caller's
+policy and transfers no authority. A Single target may explicitly select
+`--FAMILY-single-call-boundary MODULE same-module` to refuse cross-module
+ancestry; `module-exports` is the default. These checks never let Wasm choose a
+native caller identity or address another process's ROS session.
+
 
 For a guest importing only `random_get`, this grants unlimited random access:
 
@@ -120,3 +164,13 @@ selected error promotion still applies when a diagnostic cannot be written.
 
 There are no aliases for the removed logging option spellings or compatibility
 defaults that expose a whole family. Existing deployment files must be migrated.
+
+Portable Robot handles follow the same policy identity. The first opener must
+match the selected deployment's exact module and Wasm hash. Other members of
+that same Group/Global may use its handle with their own granted interfaces;
+they cannot replace the deployment binding. Another policy cannot use it.
+The interpreter and LLVM threaded profile retain the actual calling module
+identity and use checked shared-memory copies.
+
+The removed `--wasip1-*-trace` controls have no compatibility aliases. Use the
+current explicitly configured debugger/API audit facilities for observations.

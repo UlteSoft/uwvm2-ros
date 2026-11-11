@@ -27,8 +27,8 @@ namespace uwvm2::runtime::wasm_threads
     // building a child world/code object or creating an OS thread.
     struct threaded_profile_limits
     {
-        ::std::size_t max_active_children{};
-        ::std::uint32_t max_spawn_attempts{};
+        ::std::size_t max_active_children{}; // SIZE_MAX: dynamically allocated, no usage ceiling.
+        ::std::uint32_t max_spawn_attempts{}; // UINT32_MAX: no usage ceiling; retired TIDs may be reused.
         ::std::size_t native_stack_bytes{};
         // Total controlled mmap reservation, including two guard pages. This is
         // not an assertion that arbitrary LLVM recursion fits its usable part.

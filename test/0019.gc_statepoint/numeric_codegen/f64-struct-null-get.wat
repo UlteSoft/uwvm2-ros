@@ -1,0 +1,1 @@
+(module (type $s (struct (field (mut f64)))) (func (export "_start") ref.null $s struct.get $s 0 drop))

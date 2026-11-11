@@ -1,4 +1,4 @@
-// Exact SET32=1 only. Five uintptr_t C arguments and one uintptr_t status;
+// Checked scalar transport: five uintptr_t C arguments and one uintptr_t status;
 // opaque reference/carrier authority is unchanged. No scratch/output buffer.
 extern "C" [[nodiscard]] inline ::std::uintptr_t uwvm2_llvm_jit_gc_struct_set32_wide_bridge_r1(
     ::std::uintptr_t module_address, ::std::uintptr_t reference_kind,

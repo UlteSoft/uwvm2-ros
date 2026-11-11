@@ -2,27 +2,7 @@
 #pragma push_macro("STT_TLS")
 #undef STT_TLS
 // ThreadedLlvmChild private cold factory member fragment.
-        class bounded_object_stream final:public ::llvm::raw_pwrite_stream
-        {
-            ::std::vector<char> bytes_;::std::uint64_t position_{};::std::size_t used_{};bool overflow_{};
-            void write_impl(char const* data,::std::size_t size) override
-            {
-                if(position_>bytes_.size()||size>bytes_.size()-static_cast<::std::size_t>(position_))overflow_=true;
-                else{::std::memcpy(bytes_.data()+position_,data,size);used_=(::std::max)(used_,static_cast<::std::size_t>(position_)+size);}
-                if(size>UINT64_MAX-position_){position_=UINT64_MAX;overflow_=true;}else position_+=size;
-            }
-            void pwrite_impl(char const* data,::std::size_t size,::std::uint64_t offset) override
-            {
-                if(offset>used_||size>used_-static_cast<::std::size_t>(offset)){overflow_=true;return;}
-                ::std::memcpy(bytes_.data()+offset,data,size);
-            }
-            [[nodiscard]] ::std::uint64_t current_pos() const override{return position_;}
-        public:
-            explicit bounded_object_stream(::std::size_t maximum):bytes_(maximum){SetUnbuffered();}
-            ~bounded_object_stream() override=default;
-            [[nodiscard]] bool valid() const noexcept{return !overflow_&&used_!=0u;}
-            [[nodiscard]] ::llvm::StringRef bytes() const noexcept{return {bytes_.data(),used_};}
-        };
+#include "uwvm_runtime_threaded_llvm_object_stream.h"
         [[nodiscard]] bool build_local_type_ids()
         {
             // Expensive immutable type canonicalization is cold/pre-effect only.
@@ -156,7 +136,7 @@
         }
         [[nodiscard]] static preparation_result build(world_type::owner world,
             ::uwvm2::runtime::wasm_threads::ThreadedGroup::CompilerLease const& compiler,
-            [[maybe_unused]] ::std::size_t backend_storage_budget) noexcept
+            [[maybe_unused]] ::std::size_t backend_storage_budget, ::std::size_t module_index) noexcept
         {
             namespace compile=::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm;
             namespace emit=::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details;
@@ -165,29 +145,33 @@
                ::std::addressof(compiler.admission())!=::std::addressof(world->admission())||
                compiler.cancellation().stop_requested())return {};
             auto actual_code=world->validated_code();
-            if(!actual_code||!actual_code->covers(*world)||actual_code->file()!=world->file(0u))return {};
-            if(!world->admission().owns_actual_generation()||world->module_count()!=1u||world->entry_module_index()!=0u||
-               world->module(0u)==nullptr||world->file(0u)==nullptr||world->feature_parameter(0u)==nullptr)return {};
+            if(!actual_code||!actual_code->covers(*world)||actual_code->file()!=world->file(world->entry_module_index()))return {};
+            if(!world->admission().owns_actual_generation()||module_index>=world->module_count()||world->entry_module_index()!=0u||
+               world->module(module_index)==nullptr||world->file(module_index)==nullptr||world->feature_parameter(module_index)==nullptr)return {};
 #if !(((defined(__x86_64__) || defined(__aarch64__)) && __SIZEOF_POINTER__ == 8) || ((defined(__i386__) || defined(__arm__)) && __SIZEOF_POINTER__ == 4))
             return {{},status::unsupported_shape};
 #else
             try
             {
                 auto data=::std::unique_ptr<ThreadedLlvmChild>{new ThreadedLlvmChild{::std::move(world)}};
-                data->module_=data->world_->module(0u);auto const& module=*data->module_;
+                data->module_index_=module_index;data->module_=data->world_->module(module_index);auto const& module=*data->module_;
                 auto const& limits=data->world_->admission().limits();
                 data->call_limit_=limits.max_call_frames;data->code_limit_=limits.max_child_code_bytes;
                 data->guest_native_stack_usable_bytes_=compiler.guest_native_stack_usable_bytes();
                 data->compiler_native_stack_usable_bytes_=compiler.native_stack_usable_bytes();
                 if(data->guest_native_stack_usable_bytes_==0u||data->compiler_native_stack_usable_bytes_==0u)
                     return {{},status::invalid_world};
-                if(data->call_limit_==0u||data->call_limit_>65536u||data->code_limit_<262144u||data->code_limit_>(64u<<20u)||
+                if(data->call_limit_==0u||data->call_limit_>65536u||data->code_limit_==0u||
                    limits.max_child_storage_bytes==0u)return {{},status::budget};
                 data->imports_=module.imported_function_vec_storage.size();
                 auto const count=module.local_defined_function_vec_storage.size();
-                data->start_=data->world_->thread_start_function_index();
-                if(count==0u||count>65536u||data->imports_>65536u||count>SIZE_MAX-data->imports_||
-                   data->start_<data->imports_||data->start_-data->imports_>=count)return {{},status::unsupported_shape};
+                data->start_=module_index==0u?data->world_->thread_start_function_index():data->imports_;
+                // An import-only side module has no Wasm entry to execute. It
+                // still contributes authenticated aliases and owns its private
+                // instance state; only the root requires a thread-start body.
+                if(count>65536u||data->imports_>65536u||count>SIZE_MAX-data->imports_||
+                   (module_index==0u && (count==0u||data->start_<data->imports_||
+                    data->start_-data->imports_>=count)))return {{},status::unsupported_shape};
                 if(module.table_declarations_require_gc||
                    module.global_declarations_require_gc||module.element_declarations_require_gc||
                    module.table_declarations_require_exceptions||module.global_declarations_require_exceptions||
@@ -230,10 +214,10 @@
                     }
                 }
                 for(::std::size_t i{};i<data->imports_;++i)
-                    if(::uwvm2::runtime::wasm_threads::admit_import(*data->world_,0u,i)!=
+                    if(::uwvm2::runtime::wasm_threads::admit_import(*data->world_,module_index,i)!=
                        ::uwvm2::runtime::wasm_threads::import_admission::allowed)return {{},status::unsupported_shape};
                 ::std::size_t bodies{};
-                auto const* file=data->world_->file(0u);
+                auto const* file=data->world_->file(module_index);
                 auto const base=reinterpret_cast<::std::uintptr_t>(file->source_cbegin());auto const bytes=file->source_size();
                 if(base==0u||bytes==0u)return {{},status::invalid_world};
                 for(auto const& local:module.local_defined_function_vec_storage)
@@ -295,13 +279,26 @@
                 }
                 if(elements>(SIZE_MAX-table_shape_charge)/sizeof(target_type)||
                    !data->prepare_exception_schemas(table_shape_charge+elements*sizeof(target_type)))return {{},status::budget};
-                auto validation=emit::build_runtime_validation_module(module);
                 ::uwvm2::validation::error::code_validation_error_impl error{};
-                emit::require_runtime_module_declaration_policy(module,*data->world_->feature_parameter(0u),error);
-                compile::compile_option options{};options.curr_wasm_id=0u;options.compiler_registry=nullptr; // private cold scope authenticates the exact single module
+                emit::require_runtime_module_declaration_policy(module,*data->world_->feature_parameter(module_index),error);
+                if(count==0u)
+                {
+                    // A side module can re-export an authenticated host import
+                    // without defining code. Retain its private instance and
+                    // validate its tables, but do not manufacture a native entry
+                    // or send an empty object through the executable loader.
+                    if(!data->build_local_type_ids()||!data->refresh_table_targets_noalloc())return {{},status::unsupported_shape};
+                    ::std::vector<native_bridge>{}.swap(data->emitted_bridges_);
+                    ::std::vector<external>{}.swap(data->externals_);
+                    ::std::vector<native_frame_record>{}.swap(data->native_frames_);
+                    if(!data->account_retained_storage())return {{},status::budget};
+                    return {::std::move(data),status::ok};
+                }
+                auto validation=emit::build_runtime_validation_module(module);
+                compile::compile_option options{};options.curr_wasm_id=module_index;options.compiler_registry=nullptr; // private cold scope authenticates the exact single module
                 options.compilation_mode=compile::llvm_jit_compilation_mode::full;
                 options.execute_memtag=!::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag;
-                options.validator_feature_parameter=data->world_->feature_parameter(0u);options.verify_llvm_jit_ir=true;
+                options.validator_feature_parameter=data->world_->feature_parameter(module_index);options.verify_llvm_jit_ir=true;
                 options.emit_call_stack_frames=false;options.emit_unwind_call_stack_frames=false;
                 options.emit_precise_gc_root_frames=false;options.emit_debug_safe_points=false;
                 compile::llvm_jit_module_storage_t ir{};
@@ -346,6 +343,20 @@
                        !data->check_static_stack_ir(llvm_module))return {{},status::budget};
                     if(!owner.valid())return {{},status::unsupported_bridge};
                 }
+                ::std::size_t gc_inputs{};
+                for(auto const& bridge:data->emitted_bridges_)
+                {
+                    if(bridge.original!=address(&emit::llvm_jit_gc_aggregate_bridge<>))continue;
+                    for(auto const* use:bridge.declaration->users())
+                    {
+                        auto const* call=::llvm::dyn_cast<::llvm::CallBase>(use);
+                        auto const* count_value=call && call->arg_size()==7u ? ::llvm::dyn_cast<::llvm::ConstantInt>(call->getArgOperand(5u)) : nullptr;
+                        if(!count_value || count_value->getZExtValue()>limits.max_value_stack_bytes/sizeof(::uwvm2::uwvm::runtime::storage::gc_object_value))return {{},status::budget};
+                        gc_inputs=(::std::max)(gc_inputs,static_cast<::std::size_t>(count_value->getZExtValue()));
+                    }
+                }
+                if(gc_inputs>data->storage_limit_/sizeof(::uwvm2::uwvm::runtime::storage::gc_object_value))return {{},status::budget};
+                data->gc_scratch_.resize(gc_inputs);
                 if(!data->bind_emitted_bridges())return {{},status::unsupported_bridge};
                 if(!ensure_llvm_jit_native_target_initialized())return {{},status::native_failure};
                 auto const cpu=get_llvm_jit_host_cpu_name_storage();auto const attrs=get_llvm_jit_host_target_attribute_storage();
@@ -412,7 +423,13 @@
                 if(!empty)return {{},status::native_failure};
                 set_llvm_module_target_triple_from_machine(*empty,*target);empty->setDataLayout(target->createDataLayout());
                 ir.llvm_module.reset();
-                data->native_arena_=::std::make_unique<native_arena>(data->code_limit_,data->externals_,data->native_frames_.size());
+                // check_object charged every section, alignment and relocation
+                // allowance. Reserve that conservative object bound, rather
+                // than the whole graph budget once per compiled module.
+                if(data->native_bytes_>SIZE_MAX-65535u)return {{},status::budget};
+                auto const reservation=(data->native_bytes_+65535u)&~::std::size_t{65535u};
+                if(reservation>data->code_limit_)return {{},status::budget};
+                data->native_arena_=::std::make_unique<native_arena>(reservation,data->externals_,data->native_frames_.size());
                 if(!data->native_arena_||!data->native_arena_->valid())return {{},status::native_failure};
                 auto* memory_observer=data->native_arena_.get();
                 data->native_bytes_=memory_observer->owned_bytes();
@@ -456,7 +473,7 @@
                         auto const extent=data->ranges_->threaded_debug_loaded_extent(address);
                         if(!extent)return {{},status::native_failure};
                         auto& row=data->debug_->functions_[i*2u+adapter];
-                        row={0u,data->imports_+i,begin,end,address,extent,0u,0u,0u,adapter!=0u,false};
+                        row={module_index,data->imports_+i,begin,end,address,extent,0u,0u,0u,adapter!=0u,false};
                         auto const& name=adapter?entry.raw_name:entry.typed_name;
                         for(auto const& frame:data->native_frames_)if(frame.name==name)
                         {row.fixed_native_frame_bytes=frame.object_bytes;row.fixed_native_frame_available=true;break;}

@@ -9,6 +9,7 @@
 #include <thread>
 #include <vector>
 #include <uwvm2/runtime/lib/uwvm_runtime_update.h>
+#include <uwvm2/utils/thread/cooperative_pause_domain.h>
 #if defined(__linux__)
 #include <fcntl.h>
 #include <sys/socket.h>
@@ -26,6 +27,7 @@ namespace uwvm2::uwvm::run::production_update_cli
     {
         bool enabled{};
         ::std::uint32_t function_index{}, input_bytes{}, output_bytes{};
+        ::std::shared_ptr<::uwvm2::utils::thread::cooperative_pause_domain> debug_control{};
     };
     class channel
     {
@@ -153,7 +155,7 @@ namespace uwvm2::uwvm::run::production_update_cli
             ::timeval timeout{10, 0}; int enable{1};
             if(!result->peer_live() || ::setsockopt(owned, SOL_SOCKET, SO_PASSCRED, &enable, sizeof(enable)) != 0 ||
                ::setsockopt(owned, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)) != 0 ||
-               ::uwvm2::utils::control::seal_console_input_host_api(owned, true) != ::uwvm2::utils::control::sealed_input_status::ok)
+               ::uwvm2::utils::control::seal_update_control_host_api(owned) != ::uwvm2::utils::control::sealed_input_status::ok)
             { return {}; }
             // A stream can split a frame arbitrarily. Every recvmsg fragment
             // authenticates the real sender; passing the peer FD does not pass
@@ -256,10 +258,49 @@ namespace uwvm2::uwvm::run::production_update_cli
                     else if(input == allowed_call.input_bytes && output == allowed_call.output_bytes && payload.size() == 12u+input)
                     {
                         result.resize(output);
-                        guest_exit::clear();
-                        llvm_jit_call_raw_host_api(runtime_module, index, result.data(), result.size(), payload.data()+12, input);
+                        bool exited{}, call_failed{};
+                        if(allowed_call.debug_control)
+                        {
+                            // The coordinator keeps its original native thread.
+                            // Guest execution runs on a registered worker so an
+                            // IDE pause leaves both authenticated channels alive.
+                            struct call_state
+                            {
+                                void const* module{}; ::std::uint32_t index{};
+                                ::std::vector<unsigned char> input{}, output{}; bool exited{};
+                            };
+                            auto state{::std::make_shared<call_state>()};
+                            state->module = runtime_module; state->index = index;
+                            state->input.assign(payload.begin()+12, payload.end()); state->output.resize(output);
+                            auto launched{runtime_launch_llvm_jit_debug_guest_worker_host_api(allowed_call.debug_control, state,
+                                +[](void* raw) noexcept
+                                {
+                                    auto& call{*static_cast<call_state*>(raw)}; guest_exit::clear();
+                                    llvm_jit_call_raw_host_api(call.module, call.index, call.output.data(), call.output.size(),
+                                        call.input.data(), call.input.size()); call.exited = guest_exit::last.requested;
+                                })};
+                            if(!launched.worker) { call_failed = true; result.clear(); }
+                            else
+                            {
+                                for(;;)
+                                {
+                                    auto const joined{runtime_join_llvm_jit_debug_guest_worker_until_host_api(launched.worker,
+                                        ::std::chrono::steady_clock::now()+::std::chrono::milliseconds{100})};
+                                    if(joined.actual.status == ::fast_io::thread_join_status::joined) { break; }
+                                    if(joined.actual.status != ::fast_io::thread_join_status::pending) { ::std::_Exit(75); }
+                                }
+                                result = ::std::move(state->output); exited = state->exited;
+                            }
+                        }
+                        else
+                        {
+                            guest_exit::clear();
+                            llvm_jit_call_raw_host_api(runtime_module, index, result.data(), result.size(), payload.data()+12, input);
+                            exited = guest_exit::last.requested;
+                        }
                         update::facts after{}; (void)runtime_update_observe_host_api(after);
-                        status = guest_exit::last.requested || !after.active ? update::status::validation_failed : update::status::ok;
+                        status = call_failed ? update::status::busy :
+                            result.size() != output || exited || !after.active ? update::status::validation_failed : update::status::ok;
                         if(status != update::status::ok) { result.clear(); }
                     }
                 }

@@ -14,6 +14,10 @@ namespace uwvm2::utils::update
         // Private complete initial memory, built before READY. Preserve plans
         // retain only byte_size and never allocate or publish reset bytes.
         ::std::vector<unsigned char> bytes{};
+        // Prepared alongside reset bytes, before READY. Never an implicit copy
+        // of the previous epoch's allocation tags. PRESERVE has no tag image.
+        bool tagged{};
+        ::std::vector<unsigned char> allocation_tags{};
     };
     struct active_data_record
     {
@@ -31,55 +35,62 @@ namespace uwvm2::utils::update
     };
     namespace module_transition_detail
     {
-        inline bool memories(::std::span<unsigned char const> bytes, bool reset,
-                             ::std::vector<memory_reset_record>& records)
+        inline status memories(::std::span<unsigned char const> bytes, bool reset,
+                               ::std::vector<memory_reset_record>& records)
         {
             ::std::size_t pos{}, total{}; ::std::uint32_t count{};
-            if(!u32(bytes, pos, count) || count > 16u) { return false; }
-            for(::std::uint32_t i{}; i < count; ++i)
+            if(!u32(bytes,pos,count))return status::validation_failed;
+            if(count>16u)return status::exhausted;
+            for(::std::uint32_t i{};i<count;++i)
             {
-                ::std::uint32_t flags{}, minimum{}, maximum{};
-                // Memory32, unshared, standard 64KiB pages; no Memory64 or
-                // custom page-size encoding enters this bounded reset plan.
-                if(!u32(bytes, pos, flags) || flags > 1u || !u32(bytes, pos, minimum) || minimum > 65536u ||
-                   ((flags & 1u) && (!u32(bytes, pos, maximum) || maximum < minimum || maximum > 65536u))) { return false; }
-                auto const size{static_cast<::std::uint64_t>(minimum) * 65536u};
-                if(size > maximum_image_bytes - total) { return false; }
-                total += static_cast<::std::size_t>(size);
-                memory_reset_record record{i, static_cast<::std::size_t>(size), {}};
-                if(reset) { record.bytes.resize(record.byte_size); }
+                ::std::uint32_t flags{},minimum{},maximum{};
+                if(!u32(bytes,pos,flags))return status::validation_failed;
+                // Memory64/shared/custom pages have a different transition ABI.
+                if(flags>1u)return status::unsupported;
+                if(!u32(bytes,pos,minimum) || minimum>65536u ||
+                   ((flags&1u) && (!u32(bytes,pos,maximum) || maximum<minimum || maximum>65536u)))
+                    return status::validation_failed;
+                auto const size=static_cast<::std::uint64_t>(minimum)*65536u;
+                // A valid module can exceed the private reset-image budget.
+                // It is not an unsupported Wasm feature or a compiler failure.
+                if(size>maximum_image_bytes-total)return status::exhausted;
+                total+=static_cast<::std::size_t>(size);
+                memory_reset_record record{i,static_cast<::std::size_t>(size),{}};
+                if(reset)record.bytes.resize(record.byte_size);
                 records.push_back(::std::move(record));
             }
-            return pos == bytes.size();
+            return pos==bytes.size()?status::ok:status::validation_failed;
         }
-        inline bool active_data(::std::span<unsigned char const> bytes, bool apply,
-            ::std::vector<memory_reset_record>& memories, ::std::vector<active_data_record>& records)
+        inline status active_data(::std::span<unsigned char const> bytes,bool apply,
+            ::std::vector<memory_reset_record>& memories,::std::vector<active_data_record>& records)
         {
-            ::std::size_t pos{}; ::std::uint32_t count{};
-            if(!u32(bytes, pos, count) || count > 4096u) { return false; }
+            ::std::size_t pos{};::std::uint32_t count{};
+            if(!u32(bytes,pos,count))return status::validation_failed;
+            if(count>4096u)return status::exhausted;
             records.reserve(count);
-            for(::std::uint32_t i{}; i < count; ++i)
+            for(::std::uint32_t i{};i<count;++i)
             {
-                active_data_record record{}; ::std::uint64_t raw{}; ::std::uint32_t length{};
-                if(!u32(bytes, pos, record.flags) || (record.flags != 0u && record.flags != 2u) ||
-                   (record.flags == 2u && !u32(bytes, pos, record.memory_index)) ||
-                   record.memory_index >= memories.size() || pos == bytes.size() || bytes[pos++] != 0x41u ||
-                   !scalar_detail::signed_integer(bytes, pos, 32u, raw) || pos == bytes.size() || bytes[pos++] != 0x0bu ||
-                   !u32(bytes, pos, length) || length > bytes.size() - pos) { return false; }
-                record.offset = raw;
-                auto& memory{memories[record.memory_index]};
-                if(raw > memory.byte_size || length > memory.byte_size - static_cast<::std::size_t>(raw)) { return false; }
+                active_data_record record{};::std::uint64_t raw{};::std::uint32_t length{};
+                if(!u32(bytes,pos,record.flags))return status::validation_failed;
+                if(record.flags!=0u && record.flags!=2u)return status::unsupported;
+                if((record.flags==2u && !u32(bytes,pos,record.memory_index)) ||
+                   record.memory_index>=memories.size() || pos==bytes.size())return status::validation_failed;
+                if(bytes[pos++]!=0x41u)return status::unsupported;
+                if(!scalar_detail::signed_integer(bytes,pos,32u,raw) || pos==bytes.size() || bytes[pos++]!=0x0bu ||
+                   !u32(bytes,pos,length) || length>bytes.size()-pos)return status::validation_failed;
+                record.offset=raw;auto& memory=memories[record.memory_index];
+                if(raw>memory.byte_size || length>memory.byte_size-static_cast<::std::size_t>(raw))return status::validation_failed;
                 if(apply && length)
                 {
-                    if(memory.bytes.size() != memory.byte_size) { return false; }
-                    // The parser checked both owned extents. Sequential copies
-                    // preserve Wasm's later-active-segment-wins overlap rule.
-                    ::std::memcpy(memory.bytes.data() + static_cast<::std::size_t>(raw), bytes.data() + pos, length);
+                    if(memory.bytes.size()!=memory.byte_size)return status::invalid_state;
+                    // Actual owned extents checked above; later active segments
+                    // overwrite earlier overlaps exactly as Wasm initialization.
+                    ::std::memcpy(memory.bytes.data()+static_cast<::std::size_t>(raw),bytes.data()+pos,length);
                 }
-                record.payload_offset = pos; record.payload_size = length;
-                pos += length; records.push_back(record);
+                record.payload_offset=pos;record.payload_size=length;
+                pos+=length;records.push_back(record);
             }
-            return pos == bytes.size();
+            return pos==bytes.size()?status::ok:status::validation_failed;
         }
     }
 
@@ -122,7 +133,8 @@ namespace uwvm2::utils::update
             }
             if(old.id == 5u)
             {
-                if(seen_memory || !module_transition_detail::memories(b, reset_state, plan.memories)) { return status::unsupported; }
+                if(seen_memory)return status::validation_failed;
+                if(auto result=module_transition_detail::memories(b,reset_state,plan.memories);result!=status::ok)return result;
                 seen_memory = true;
             }
             if(old.id == 11u)
@@ -151,8 +163,8 @@ namespace uwvm2::utils::update
         if(seen_data)
         {
             ::std::vector<active_data_record> old_records;
-            if(!module_transition_detail::active_data(old_data, false, plan.memories, old_records) ||
-               !module_transition_detail::active_data(new_data, reset_state, plan.memories, plan.data_segments)) { return status::unsupported; }
+            if(auto result=module_transition_detail::active_data(old_data,false,plan.memories,old_records);result!=status::ok)return result;
+            if(auto result=module_transition_detail::active_data(new_data,reset_state,plan.memories,plan.data_segments);result!=status::ok)return result;
             if(old_records.size() != plan.data_segments.size()) { return status::scope_mismatch; }
             for(::std::size_t i{}; i < old_records.size(); ++i)
             {

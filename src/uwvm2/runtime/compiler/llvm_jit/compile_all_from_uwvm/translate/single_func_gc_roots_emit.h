@@ -78,8 +78,11 @@ inline void retain_runtime_llvm_jit_gc_root_instruction(
     auto const slots_address{builder.CreatePtrToInt(roots.slots, intptr)};
     retain_runtime_llvm_jit_gc_root_instruction(roots, frame_address);
     retain_runtime_llvm_jit_gc_root_instruction(roots, slots_address);
-    roots.enter = apply_llvm_jit_host_calling_conv(builder.CreateCall(type, bridge,
-        {frame_address, slots_address, ::llvm::ConstantInt::get(intptr, 0u)}));
+    // This exact internal leaf cannot enter an import or host callback. It
+    // does not consume ROS provenance; publishing it here would leave extra
+    // native calls even when finalization removes the whole empty root frame.
+    roots.enter = apply_llvm_jit_calling_conv(builder.CreateCall(type, bridge,
+        {frame_address, slots_address, ::llvm::ConstantInt::get(intptr, 0u)}), get_llvm_jit_host_calling_conv());
     retain_runtime_llvm_jit_gc_root_instruction(roots, roots.enter);
     roots.enter->setDoesNotThrow();
     return true;
@@ -184,7 +187,9 @@ inline void retain_runtime_llvm_jit_gc_root_instruction(
     // [one live native activation record] leave precedes its storage retirement,
     // including cold exceptional exits and genuine musttail call instructions.
     auto const frame_address{builder.CreatePtrToInt(roots.frame, intptr)};
-    auto const call{apply_llvm_jit_host_calling_conv(builder.CreateCall(type, bridge, {frame_address}))};
+    // Matching non-callback leaf, not a ROS/WASI/provider boundary.
+    auto const call{apply_llvm_jit_calling_conv(builder.CreateCall(type, bridge, {frame_address}),
+        get_llvm_jit_host_calling_conv())};
     call->setDoesNotThrow();
     retain_runtime_llvm_jit_gc_root_instruction(roots, frame_address);
     retain_runtime_llvm_jit_gc_root_instruction(roots, call);

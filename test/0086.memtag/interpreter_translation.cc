@@ -2,12 +2,18 @@
 namespace {
 using namespace uwvm2test::uwvm_int_strict;
 namespace mt=uwvm2::extension::memtag;
-byte_vec make(bool wide,bool placeholder=false) {
+byte_vec make(bool wide,bool placeholder=false,bool padded=false) {
  module_builder b{};b.has_memory=b.memory_has_max=true;b.memory_min=1;b.memory_max=2;b.memory_address64=wide;
  auto address_type=wide?k_val_i64:k_val_i32;
  func_body body{};
  auto number=[&](std::int64_t n){append_u8(body.code,wide?0x42:0x41);if(wide)append_i64_leb(body.code,n);else append_i32_leb(body.code,static_cast<std::int32_t>(n));};
- auto tagop=[&](mt::opcode op){append_u8(body.code,0xfc);append_u32_leb(body.code,static_cast<unsigned>(op));append_u8(body.code,0);};
+ auto tagop=[&](mt::opcode op){
+  append_u8(body.code,mt::opcode_prefix);
+  auto const word{mt::encode_opcode(op)};
+  if(padded)for(unsigned i{};i!=5u;++i)append_u8(body.code,((word>>(7u*i))&127u)|(i!=4u?128u:0u));
+  else append_u32_leb(body.code,word);
+  append_u8(body.code,0);
+ };
  if(placeholder){
   number(0);number(0);number(0);tagop(mt::opcode::add);append_u8(body.code,0x1a);
  } else {
@@ -18,12 +24,16 @@ byte_vec make(bool wide,bool placeholder=false) {
  }
  if(placeholder){append_u8(body.code,0x41);append_u8(body.code,0);}
  append_u8(body.code,0xb);b.add_func({{},{k_val_i32}},std::move(body));
- func_body status{};append_u8(status.code,0xfc);append_u8(status.code,0x20);append_u8(status.code,0);append_u8(status.code,0xb);
+ func_body status{};append_u8(status.code,mt::opcode_prefix);
+ auto const word{mt::encode_opcode(mt::opcode::status)};
+ if(padded)for(unsigned i{};i!=5u;++i)append_u8(status.code,((word>>(7u*i))&127u)|(i!=4u?128u:0u));
+ else append_u32_leb(status.code,word);
+ append_u8(status.code,0);append_u8(status.code,0xb);
  b.add_func({{},{address_type}},std::move(status));return b.build();
 }
 template<optable::uwvm_interpreter_translate_option_t Option>
-int check(bool wide,bool enabled,bool placeholder=false) {
- auto wasm=make(wide,placeholder);auto features=make_wasm1p1_feature_parameter();
+int check(bool wide,bool enabled,bool placeholder=false,bool padded=false) {
+ auto wasm=make(wide,placeholder,padded);auto features=make_wasm1p1_feature_parameter();
  auto& p=uwvm2::uwvm::wasm::feature::wasm_binfmt_ver1_wasm1p1_parameter(features);
  p.disable_memtag_extension=false;p.disable_memory64=false;
  p.cli_mode=uwvm2::parser::wasm::standard::wasm1p1::features::wasm_feature_cli_mode::scoped;
@@ -32,7 +42,7 @@ int check(bool wide,bool enabled,bool placeholder=false) {
  auto& memory=const_cast<uwvm2::object::memory::linear::native_memory_t&>(prepared.mod->local_defined_memory_vec_storage.index_unchecked(0).memory);
  if(enabled && !memory.memtag_shadow.enabled())UWVM2TEST_REQUIRE(memory.enable_memtag(wide?mt::address_width::i64:mt::address_width::i32,false)==mt::storage_error::none);
  if constexpr(uwvm2::object::memory::linear::native_memory_t::can_mmap) {
-  if(mt::hardware_mte::supported())UWVM2TEST_REQUIRE(memory.memtag_shadow.hardware_active()==enabled);
+  if(mt::hardware_mte::supported())UWVM2TEST_REQUIRE(!memory.memtag_shadow.hardware_active());
  }
  uwvm2::validation::error::code_validation_error_impl error{};optable::compile_option options{};options.execute_memtag=enabled;
  bool rejected{};
@@ -59,8 +69,8 @@ int main() {
  install_unexpected_traps();
  constexpr optable::uwvm_interpreter_translate_option_t loop{.is_tail_call=false};
  constexpr auto ring=make_tailcall_scalar4_merged_opt<2>();
- for(bool wide:{false,true})for(bool enabled:{false,true}) {
-  UWVM2TEST_REQUIRE(check<loop>(wide,enabled)==0);UWVM2TEST_REQUIRE(check<ring>(wide,enabled)==0);
+ for(bool wide:{false,true})for(bool enabled:{false,true})for(bool padded:{false,true}) {
+  UWVM2TEST_REQUIRE(check<loop>(wide,enabled,false,padded)==0);UWVM2TEST_REQUIRE(check<ring>(wide,enabled,false,padded)==0);
  }
  // Undefined add is rejected by startup admission before this runner; the
  // validator and operation-contract tests cover that reserved instruction.

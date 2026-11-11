@@ -24,6 +24,7 @@ namespace uwvm2::uwvm::imported::ros
     struct ros2_rmw_local_imported_module_t;
     struct ros2_rmw_subscription_local_imported_module_t;
     struct ros2_rmw_service_local_imported_module_t;
+    struct portable_robot_local_imported_module_t;
 }
 
 #else
@@ -35,7 +36,7 @@ struct ros1_local_imported_module_t; struct ros1_client_local_imported_module_t;
 #endif
 #ifndef UWVM_IMPORT_ROS2
 struct ros2_local_imported_module_t; struct ros2_client_local_imported_module_t;
-struct ros2_rmw_local_imported_module_t;struct ros2_rmw_subscription_local_imported_module_t;struct ros2_rmw_service_local_imported_module_t;
+struct ros2_rmw_local_imported_module_t;struct ros2_rmw_subscription_local_imported_module_t;struct ros2_rmw_service_local_imported_module_t;struct portable_robot_local_imported_module_t;
 #endif
 }
 #endif
@@ -66,7 +67,8 @@ namespace uwvm2::uwvm::runtime::full
             ::std::same_as<::std::remove_cvref_t<T>, ::uwvm2::uwvm::imported::ros::ros2_client_local_imported_module_t> ||
             ::std::same_as<::std::remove_cvref_t<T>, ::uwvm2::uwvm::imported::ros::ros2_rmw_local_imported_module_t> ||
             ::std::same_as<::std::remove_cvref_t<T>, ::uwvm2::uwvm::imported::ros::ros2_rmw_subscription_local_imported_module_t> ||
-            ::std::same_as<::std::remove_cvref_t<T>, ::uwvm2::uwvm::imported::ros::ros2_rmw_service_local_imported_module_t>;
+            ::std::same_as<::std::remove_cvref_t<T>, ::uwvm2::uwvm::imported::ros::ros2_rmw_service_local_imported_module_t> ||
+            ::std::same_as<::std::remove_cvref_t<T>, ::uwvm2::uwvm::imported::ros::portable_robot_local_imported_module_t>;
     public:
         // This factory, rather than an API accepting an existing opaque module
         // pointer, performs the real constrained C++ construction itself.

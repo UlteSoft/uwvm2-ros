@@ -21,6 +21,44 @@ namespace uwvm2::uwvm::runtime::initializer
         using source = ::uwvm2::uwvm::runtime::full::full_source_instance;
         ThreadedMainActiveSegments() = delete;
 
+        // Extra cold preloads may contribute cached code without participating
+        // in the child world. Authenticate their actual source and require that
+        // instantiation has no effects or authority. This does not permit a
+        // unknown native or unvalidated Wasm code into the child graph.
+        [[nodiscard]] static bool dormant_function_preload(source::owner const& owner,
+            ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const& module) noexcept
+        {
+            auto const id{owner->bound_initialized_module_id(&module)};
+            auto const* file{owner->bound_initialized_file(id,&module)};
+            if(file==nullptr || file==&owner->file() || file->binfmt_ver!=1u || !file->has_owned_source_image()) { return false; }
+            if(!module.imported_function_vec_storage.empty() || !module.imported_memory_vec_storage.empty() ||
+               !module.imported_table_vec_storage.empty() || !module.imported_global_vec_storage.empty() ||
+               !module.imported_tag_vec_storage.empty() || !module.local_defined_memory_vec_storage.empty() ||
+               !module.local_defined_table_vec_storage.empty() || !module.local_defined_global_vec_storage.empty() ||
+               !module.local_defined_tag_vec_storage.empty() || !module.local_defined_element_vec_storage.empty() ||
+               !module.local_defined_data_vec_storage.empty() ||
+               module.local_defined_function_vec_storage.size()!=module.local_defined_code_vec_storage.size()) { return false; }
+            return [&]<::uwvm2::parser::wasm::concepts::wasm_feature... Fs>(
+                ::uwvm2::utils::container::tuple<Fs...>) noexcept
+            {
+                namespace w1=::uwvm2::parser::wasm::standard::wasm1::features;
+                namespace w11=::uwvm2::parser::wasm::standard::wasm1p1::features;
+                auto const& sections{file->wasm_module_storage.wasm_binfmt_ver1_storage.sections};
+                auto absent{[&]<typename Section>() noexcept
+                { return ::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<Section>(sections).sec_span.sec_begin==nullptr; }};
+                // Only type/function/code/export/custom declarations can remain.
+                return absent.template operator()<w1::import_section_storage_t<Fs...>>() &&
+                    absent.template operator()<w1::memory_section_storage_t<Fs...>>() &&
+                    absent.template operator()<w1::table_section_storage_t<Fs...>>() &&
+                    absent.template operator()<w1::global_section_storage_t<Fs...>>() &&
+                    absent.template operator()<w1::start_section_storage_t>() &&
+                    absent.template operator()<w1::element_section_storage_t<Fs...>>() &&
+                    absent.template operator()<w1::data_section_storage_t<Fs...>>() &&
+                    absent.template operator()<w11::tag_section_storage_t<Fs...>>() &&
+                    absent.template operator()<w11::data_count_section_storage_t<Fs...>>();
+            }(::uwvm2::uwvm::wasm::feature::wasm_binfmt1_features);
+        }
+
         // Only the actual Runtime bridge, retaining its admitted startup state,
         // calls this after all backend construction and before native launch.
         // The real Group reservation is checked under its own native mutex.
@@ -44,7 +82,7 @@ namespace uwvm2::uwvm::runtime::initializer
             ::std::unique_lock lock{native.mutex_};
             if(reservation.group_!=&native || reservation.retained_group_.get()!=&native || reservation.position_!=0uz ||
                reservation.tid_!=0u || native.initialization_error_!=0 || native.stop_fd_<0 || !native.accepting_ ||
-               !native.slots_ || native.slots_[0].group!=&native || native.occupied_!=1uz || native.occupied_children_!=0uz ||
+               native.slot_count_.load(::std::memory_order_acquire)==0uz || native.slots_[0].group!=&native || native.occupied_!=1uz || native.occupied_children_!=0uz ||
                !native.initial_main_reserved_ || native.slots_[0].phase!=group::slot_phase::preparing ||
                native.slots_[0].tid!=0u || !native.slots_[0].initial_main || native.slots_[0].work ||
                native.slots_[0].launch_published) { return threaded_main_active_status::invalid_reservation; }
@@ -66,13 +104,19 @@ namespace uwvm2::uwvm::runtime::initializer
             if(::std::atomic_ref<bool>{main.gc_collection_phase.active_segments_ready}.load(::std::memory_order_acquire))
             { return threaded_main_active_status::already_effectful; }
 
-            // All preloaded Wasm instances must be real, source-bound pure
-            // memory providers. The first profile has exactly one shared leaf.
+            // Exactly one source-bound shared-memory leaf participates in this
+            // profile. Unused function-only preloads have no effects to replay.
             ::std::optional<ThreadedMemoryProvider> provider;
-            for(auto const& [name,module] : owner->registry())
+            for(auto& [name,module] : registry)
             {
                 static_cast<void>(name);
                 if(&module==&main) { continue; }
+                if(::std::atomic_ref<bool>{module.gc_collection_phase.active_segments_ready}.load(::std::memory_order_acquire))
+                { return threaded_main_active_status::already_effectful; }
+                bool linked_code{};
+                for(::std::size_t m{1u};m<parent_world->module_count();++m)
+                    if(parent_world->module(m)==&module && parent_world->original_module(m)==&module) { linked_code=true;break; }
+                if(linked_code || dormant_function_preload(owner,module)) { continue; }
                 if(provider) { return threaded_main_active_status::unsupported_shape; }
                 threaded_provider_error error{};
                 provider=ThreadedMemoryProvider::inspect(owner,&module,actual.max_shared_memory_bytes(),error);
@@ -90,24 +134,30 @@ namespace uwvm2::uwvm::runtime::initializer
             { return threaded_main_active_status::already_effectful; }
             // No expression-payload materialization, aggregate roots or active
             // shared-data replay is admitted. All rejection happens pre-effect.
-            for(auto const& data:main.local_defined_data_vec_storage)
+            for(::std::size_t m{};m<parent_world->module_count();++m)
+            {
+                auto it=registry.find(parent_world->file(m)->module_name);
+                if(it==registry.end() || &it->second!=parent_world->module(m) ||
+                    &it->second!=parent_world->original_module(m))return threaded_main_active_status::invalid_identity;
+                auto& member=it->second;
+            for(auto const& data:member.local_defined_data_vec_storage)
             {
                 if(data.data_type_ptr==nullptr || data.data_type_ptr->storage.segment.active ||
                    data.data.kind!=wasm_data_segment_kind::passive) { return threaded_main_active_status::unsupported_shape; }
             }
-            for(auto const& table:main.local_defined_table_vec_storage)
+            for(auto const& table:member.local_defined_table_vec_storage)
             {
-                if(table.table_type_ptr==nullptr || table.owner_module_rt_ptr!=&main ||
+                if(table.table_type_ptr==nullptr || table.owner_module_rt_ptr!=&member ||
                    table.elems.size()>actual.max_table_elements() ||
                    runtime_table_family(table)!=runtime_table_reference_family::function ||
                    static_cast<unsigned>(table.table_type_ptr->reftype)!=0x70u)
                 { return threaded_main_active_status::unsupported_shape; }
             }
             ::std::size_t visited{};
-            for(auto const& segment:main.local_defined_element_vec_storage)
+            for(auto const& segment:member.local_defined_element_vec_storage)
             {
                 if(stopped()) { return threaded_main_active_status::stopped; }
-                if(segment.element_type_ptr==nullptr || runtime_element_family(segment,main)!=runtime_table_reference_family::function)
+                if(segment.element_type_ptr==nullptr || runtime_element_family(segment,member)!=runtime_table_reference_family::function)
                 { return threaded_main_active_status::unsupported_shape; }
                 auto const& declaration{segment.element_type_ptr->storage.segment};
                 auto const& element{segment.element};
@@ -122,8 +172,8 @@ namespace uwvm2::uwvm::runtime::initializer
                 for(auto function:declaration.vec_funcidx)
                 {
                     if((visited++&1023uz)==0uz && stopped()) { return threaded_main_active_status::stopped; }
-                    auto const imports{main.imported_function_vec_storage.size()};
-                    if(function<imports || function-imports>=main.local_defined_function_vec_storage.size())
+                    auto const imports{member.imported_function_vec_storage.size()};
+                    if(function<imports || function-imports>=member.local_defined_function_vec_storage.size())
                     { return threaded_main_active_status::unsupported_shape; }
                 }
                 if(!declaration.active)
@@ -134,40 +184,50 @@ namespace uwvm2::uwvm::runtime::initializer
                 if(element.kind!=wasm_element_segment_kind::active || wasm_element_segment_is_dropped(element) ||
                    declaration.expr.opcodes.size()!=1uz ||
                    declaration.expr.opcodes.front_unchecked().opcode!=::uwvm2::parser::wasm::standard::wasm1::opcode::op_basic::i32_const ||
-                   declaration.table_idx!=element.table_idx || element.table_idx>=main.local_defined_table_vec_storage.size())
+                   declaration.table_idx!=element.table_idx || element.table_idx>=member.local_defined_table_vec_storage.size())
                 { return threaded_main_active_status::unsupported_shape; }
                 auto const offset{static_cast<::std::uint_least32_t>(declaration.expr.opcodes.front_unchecked().storage.i32)};
-                auto const& table{main.local_defined_table_vec_storage.index_unchecked(element.table_idx)};
+                auto const& table{member.local_defined_table_vec_storage.index_unchecked(element.table_idx)};
                 if(element.offset!=offset || offset>table.elems.size() || count>table.elems.size()-offset)
                 { return threaded_main_active_status::bounds; }
+            }
             }
             if(stopped()) { return threaded_main_active_status::stopped; }
             // Sticky BEFORE the first actual source-instance write. It is never
             // cleared here, even on cancellation/failure or before native launch.
             native.shared_effects_started_.store(true,::std::memory_order_release);
-            visited=0uz;
-            for(auto& segment:main.local_defined_element_vec_storage)
+            for(::std::size_t m{};m<parent_world->module_count();++m)
+            {
+                // All registry identities and active extents were checked in
+                // the first pass, before marking or publishing any effects.
+                auto& member=registry.find(parent_world->file(m)->module_name)->second;
+            ::std::size_t visited{};
+            for(auto& segment:member.local_defined_element_vec_storage)
             {
                 auto& element{segment.element};
                 if(element.kind!=wasm_element_segment_kind::active) { continue; }
-                auto& table{main.local_defined_table_vec_storage.index_unchecked(element.table_idx)};
+                auto& table{member.local_defined_table_vec_storage.index_unchecked(element.table_idx)};
                 auto const& functions{segment.element_type_ptr->storage.segment.vec_funcidx};
                 for(::std::size_t i{};i!=functions.size();++i)
                 {
                     if((visited++&1023uz)==0uz && stopped()) { return threaded_main_active_status::stopped; }
-                    auto const local{functions.index_unchecked(i)-main.imported_function_vec_storage.size()};
+                    auto const local{functions.index_unchecked(i)-member.imported_function_vec_storage.size()};
                     auto& slot{table.elems.index_unchecked(static_cast<::std::size_t>(element.offset)+i)};
-                    slot.storage.defined_ptr=&main.local_defined_function_vec_storage.index_unchecked(local);
+                    slot.storage.defined_ptr=&member.local_defined_function_vec_storage.index_unchecked(local);
                     slot.type=local_defined_table_elem_storage_type_t::func_ref_defined;
                 }
                 drop_wasm_element_segment_payload(element);
+            }
             }
             // Pure preload has no data/table/start effects to execute. Publish
             // actual instance phases only after all main writes/drop complete.
             // The same source registry remained exclusive under Root's retained
             // admission; these pointers were authenticated before the effect.
-            provider_member->second.gc_collection_phase.publish_active_segments(true);
-            main.gc_collection_phase.publish_active_segments(true);
+            for(auto& [name,module] : registry)
+            {
+                static_cast<void>(name);
+                module.gc_collection_phase.publish_active_segments(true);
+            }
             return stopped()?threaded_main_active_status::stopped:threaded_main_active_status::applied;
         }
     };

@@ -316,23 +316,24 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             // Full locking is required during reading.
             [[maybe_unused]] auto const memory_locker_guard{::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory)};
 
-            using char8_t_const_may_alias_ptr UWVM_GNU_MAY_ALIAS = char8_t const*;
 
             if(!::uwvm2::imported::wasi::wasip1::func::check_wasip1_memory_bounds_wasm64_unlocked(memory, new_path_ptrsz, new_path_len))
             { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
             auto const new_path_begin_span{::uwvm2::imported::wasi::wasip1::memory::checked_span_unlocked(memory,new_path_ptrsz,new_path_len)};
             if(!new_path_begin_span) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
-            auto const new_path_begin{new_path_begin_span.data};
-            new_path.assign(::uwvm2::utils::container::u8string_view{reinterpret_cast<char8_t_const_may_alias_ptr>(new_path_begin),
-                                                                     static_cast<::std::size_t>(new_path_len)});
+            new_path.resize(static_cast<::std::size_t>(new_path_len));
+            if(!::uwvm2::imported::wasi::wasip1::memory::copy_guest_bytes_unlocked<false>(
+                memory,new_path_ptrsz,new_path.data(),new_path.size()))
+            { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
 
             if(!::uwvm2::imported::wasi::wasip1::func::check_wasip1_memory_bounds_wasm64_unlocked(memory, old_path_ptrsz, old_path_len))
             { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
             auto const old_path_begin_span{::uwvm2::imported::wasi::wasip1::memory::checked_span_unlocked(memory,old_path_ptrsz,old_path_len)};
             if(!old_path_begin_span) { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
-            auto const old_path_begin{old_path_begin_span.data};
-            old_path.assign(::uwvm2::utils::container::u8string_view{reinterpret_cast<char8_t_const_may_alias_ptr>(old_path_begin),
-                                                                     static_cast<::std::size_t>(old_path_len)});
+            old_path.resize(static_cast<::std::size_t>(old_path_len));
+            if(!::uwvm2::imported::wasi::wasip1::memory::copy_guest_bytes_unlocked<false>(
+                memory,old_path_ptrsz,old_path.data(),old_path.size()))
+            { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
         }
 
         // symlink allow empty old_path, no necessary to check

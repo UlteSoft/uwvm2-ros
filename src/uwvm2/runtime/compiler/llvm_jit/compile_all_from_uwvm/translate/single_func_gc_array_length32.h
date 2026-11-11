@@ -63,7 +63,6 @@
     if(state.llvm_module->getDataLayoutStr().empty() ||
        layout.getPointerSize() != sizeof(::std::uintptr_t) ||
        layout.isLittleEndian() != (::std::endian::native == ::std::endian::little)) { return false; }
-#if defined(UWVM_EXPERIMENTAL_ARRAY_LENGTH_VALUES) && UWVM_EXPERIMENTAL_ARRAY_LENGTH_VALUES == 1
     if(use_logical_length)
     {
         auto const fact{llvm_jit_find_array_length_value(state, operand.value)};
@@ -95,9 +94,6 @@
             return true;
         }
     }
-#else
-    static_cast<void>(use_logical_length);
-#endif
     llvm_jit_gc_status_dispatch_plan status_dispatch{};
     if(!status_dispatch.prepare(*state.llvm_module, builder)) { return false; }
     auto const intptr{builder.getIntNTy(static_cast<unsigned>(sizeof(::std::uintptr_t) * CHAR_BIT))};
@@ -117,6 +113,8 @@
         reinterpret_cast<::std::uintptr_t>(module),
         ::uwvm2::utils::container::u8string_view{module_name.data(), module_name.size()})};
     if(module_address == nullptr) { return false; }
+    llvm_jit_gc_direct_access_plan direct{};
+    if(!direct.prepare(state,*module,kind,payload,nullptr,nullptr,0u,4u,true,true,false,false,operand.value)) { return false; }
     auto const bridge_type{::llvm::FunctionType::get(i64, {intptr, i32, intptr}, false)};
     auto const callee{get_llvm_runtime_bridge_function_symbol_value<llvm_jit_gc_array_length32_bridge>(
         builder, bridge_type, ::uwvm2::utils::container::u8string_view{u8"gc_array_length32_v1"})};
@@ -129,7 +127,7 @@
     auto const status{builder.CreateTrunc(builder.CreateLShr(packed, 32u), i32,
         get_llvm_string_ref(u8"gc.array.len.status"))};
     status_dispatch.commit(*status);
-    auto const length{builder.CreateTrunc(packed, i32, get_llvm_string_ref(u8"gc.array.len.i32"))};
+    auto const length{direct.finish(builder.CreateTrunc(packed, i32, get_llvm_string_ref(u8"gc.array.len.i32")))};
     stack.pop_back();
     stack.push_back({.type = wasm_type::i32, .value = length});
     return true;

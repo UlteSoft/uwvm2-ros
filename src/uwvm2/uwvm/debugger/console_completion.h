@@ -63,7 +63,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::console_completion
                 while(begin>p&&!::fast_io::char_category::c_space::char_is(line[begin-1])) {--begin;}
                 while(end<line.size()&&!::fast_io::char_category::c_space::char_is(line[end])) {++end;}
                 auto preceding{console_aliases::trim(line.subview(p,begin-p))};
-                auto root{command=="info"&&preceding.empty()?view{"selection"}:command=="trace"?view{"trace"}:view{"options"}};
+                auto const policy{preceding.size()>=6&&preceding.subview(0,6)=="policy"&&
+                    (preceding.size()==6||::fast_io::char_category::c_space::char_is(preceding[6]))};
+                auto root{command=="info"&&preceding.empty()?view{"selection"}:command=="trace"?view{"trace"}:policy?view{"policy"}:view{"options"}};
                 return {kind::ros,begin,end,cursor,line.subview(begin,cursor-begin),root};
             }
             p=saved;
@@ -279,13 +281,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::console_completion
     {
         if(query.root=="selection")
         {
-            for(auto word:{view{"capabilities"},view{"sessions"},view{"queues"},view{"services"},view{"actions"},view{"parameters"},view{"tf"},view{"graph"},view{"stats"},view{"calls"}})
+            for(auto word:{view{"capabilities"},view{"sessions"},view{"queues"},view{"services"},view{"actions"},view{"parameters"},view{"tf"},view{"graph"},view{"stats"},view{"calls"},view{"policy"}})
             {static_cast<void>(output.add(word,query.prefix));}
         }
         else
         {
-            for(auto word:{view{"backend=all"},view{"backend=ros1"},view{"backend=ros2"},view{"instance="},view{"module="},view{"alias="},view{"count="},view{"if-stop="}})
+            for(auto word:{view{"backend=all"},view{"backend=ros1"},view{"backend=ros2"},view{"module="},view{"alias="},view{"count="},view{"if-stop="}})
             {static_cast<void>(output.add(word,query.prefix));}
+            if(query.root=="policy")
+            {
+                for(auto word:{view{"scope=all"},view{"scope=global"},view{"scope=single"},view{"scope=group"},view{"target="},view{"target-hex="},view{"module-hex="}})
+                {static_cast<void>(output.add(word,query.prefix));}
+            }
+            else {static_cast<void>(output.add("instance=",query.prefix));}
             if(query.root=="trace")
             {static_cast<void>(output.add("after=",query.prefix));static_cast<void>(output.add("error=",query.prefix));
              static_cast<void>(output.add("function=",query.prefix));static_cast<void>(output.add("op=",query.prefix));}

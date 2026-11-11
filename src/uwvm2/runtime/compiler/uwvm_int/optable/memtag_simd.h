@@ -36,7 +36,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
             simd::wasm_v128 value{};
             if constexpr(consumes_vector) { value=pop<simd::wasm_v128>(stack); }
             auto const pointer{pop<Address>(stack)};
-            auto const result{::uwvm2::runtime::memtag::with_checked_access<Address,Shared>(
+            auto const result{::uwvm2::runtime::memtag::with_guest_access<Address,Shared>(
                 memory,pointer,offset,width,[&](::std::span<::std::byte> data) noexcept
                 {
                     ::std::array<::std::byte,width> temporary{};

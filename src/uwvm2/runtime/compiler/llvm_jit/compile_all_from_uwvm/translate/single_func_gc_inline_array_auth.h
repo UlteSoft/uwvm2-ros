@@ -18,9 +18,6 @@
 // Keep the original merged lowering for i8/i16: native measurements found that
 // duplicating their access blocks lengthened live ranges and spilled loop state.
 // The 32-bit access specialization is qualified independently of those paths.
-#if !defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) || UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS != 1
-#error "inline numeric array access requires the packed allocator in every translation unit"
-#endif
 template<::std::size_t Width, bool Mutable, bool Float, typename EmitAccess>
 [[nodiscard]] inline ::llvm::Value* emit_llvm_jit_gc_inline_array_access(
     runtime_local_func_llvm_jit_emit_state_t& state, ::llvm::FunctionType* abi,

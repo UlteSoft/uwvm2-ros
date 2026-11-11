@@ -57,6 +57,21 @@ for(;;)
     wasm1_code curr_opbase;  // no initialization necessary
     ::std::memcpy(::std::addressof(curr_opbase), code_curr, sizeof(wasm1_code));
     bool llvm_jit_instruction_emitted_inline{};
+    // A compiler-private borrow survives only straight-line, callback-free
+    // numeric/local instructions. Local writes record the new SSA value without
+    // changing the identity of older stack values. Every control-flow join/back
+    // edge, call, memory/proposal operation and safepoint revokes the borrow.
+    // No witness can turn into a loop-carried or cross-generation GC pointer.
+    {
+        auto const op=static_cast<::std::uint_least8_t>(curr_opbase);
+        // SIMD effects are decided from the authoritative typed event before
+        // emission. Pure vector arithmetic preserves the same borrow; SIMD
+        // memory operations revoke it before MTE/host/linear-memory handling.
+        bool const preserves=op==0xfbu || op==0xfdu || (op>=0x20u && op<=0x22u) || op==0x1au ||
+            (op>=0x41u && op<=0xc4u);
+        if(!preserves) { llvm_jit_emit_state.clear_gc_local_access(); }
+    }
+
 #if defined(UWVM_EXPERIMENTAL_NATIVE_EH_LEAF_OBSERVER) && UWVM_EXPERIMENTAL_NATIVE_EH_LEAF_OBSERVER == 1
     if(native_eh_work)
     {
@@ -232,6 +247,38 @@ for(;;)
         if(!try_emit_runtime_local_func_llvm_jit_instruction(llvm_jit_emit_state, instruction_begin, code_curr)) [[unlikely]]
         {
             disable_inline_llvm_jit_emission();
+        }
+    }
+    if(emit_llvm_jit_active)
+    {
+        auto const op=static_cast<::std::uint_least8_t>(curr_opbase);
+        llvm_jit_emit_state.gc_no_safepoint_body_observed=true;
+        if(op==0xfbu)
+        {
+            if(!llvm_jit_emit_state.gc_private_gc_opcode_observed)
+            {
+                llvm_jit_emit_state.gc_private_function_safe=false;
+                llvm_jit_emit_state.gc_no_safepoint_leaf=false;
+            }
+            llvm_jit_emit_state.gc_private_gc_opcode_observed=false;
+        }
+        else
+        {
+            // Numeric/local/control/linear-memory operations cannot obtain or
+            // publish a GC object. Global/table access, calls, EH and unlisted
+            // proposal families keep locking, including cold/unreachable code.
+            bool const local=op<=0x05u || op==0x0bu || op==0x0cu || op==0x0du || op==0x0eu || op==0x0fu ||
+                op==0x1au || op==0x1bu || op==0x1cu || (op>=0x20u&&op<=0x22u) ||
+                (op>=0x28u&&op<=0xc4u) || (op>=0xd0u&&op<=0xd6u) || op==0xfdu;
+            if(!local) { llvm_jit_emit_state.gc_private_function_safe=false; }
+            // Deliberately narrower than "cannot publish": no loops, calls,
+            // globals/tables, linear memory, EH, atomics or unknown proposals.
+            // Pure SIMD is admitted only by its authoritative typed event.
+            bool const leaf=op==0x00u || op==0x01u || op==0x02u || op==0x04u || op==0x05u ||
+                op==0x0bu || op==0x0cu || op==0x0du || op==0x0eu || op==0x0fu ||
+                op==0x1au || op==0x1bu || op==0x1cu || (op>=0x20u&&op<=0x22u) ||
+                (op>=0x41u&&op<=0xc4u) || op==0xd0u || op==0xd1u || op==0xd3u || op==0xfdu;
+            if(!leaf) { llvm_jit_emit_state.gc_no_safepoint_leaf=false; }
         }
     }
 #if defined(UWVM_EXPERIMENTAL_PRIVATE_NUMERIC_ARRAY_LOCK) && UWVM_EXPERIMENTAL_PRIVATE_NUMERIC_ARRAY_LOCK == 1

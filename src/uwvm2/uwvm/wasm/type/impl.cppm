@@ -32,7 +32,6 @@ export import :preload_module_attribute;
 export import :preload_api;
 export import :wasip1_api;
 export import :dl;
-export import :weak_symbol;
 export import :all_module;
 
 #ifndef UWVM_MODULE

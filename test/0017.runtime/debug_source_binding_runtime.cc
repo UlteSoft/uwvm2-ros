@@ -74,7 +74,8 @@ static auto prepare(uwvm2::utils::cmdline::parameter_parsing_results& path)
     check(lib::llvm_jit_configure_debug_session_host_api(state->control, {state, observer::stop, observer::before_park},
         lib::llvm_jit_debug_safe_point_granularity::instruction) == lib::llvm_jit_debug_configure_result::ok, "real host observer configuration");
     check(lib::llvm_jit_prepare_debug_host_api(), "actual fused full validation and complete native publication");
-    ::uwvm2::uwvm::runtime::initializer::apply_runtime_active_segments(u8"binding-test");
+    check(::uwvm2::uwvm::runtime::initializer::apply_runtime_active_segments(u8"binding-test") ==
+        ::uwvm2::uwvm::runtime::initializer::details::active_segment_result::ok, "active segments initialized successfully");
     auto owner{source::selected_full_source_owner_pin()};
     check(source::full_source_instance::has_canonical_owner(owner), "actual canonical source");
     auto const module{owner->bound_initialized_main_module_id()};

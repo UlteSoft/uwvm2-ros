@@ -44,6 +44,7 @@ export module uwvm2.uwvm.debugger:controller;
 import fast_io;
 import uwvm2.extension.memtag.debug_types;
 import uwvm2.extension.memtag.instruction;
+import uwvm2.extension.memtag.encoding;
 import uwvm2.utils.control;
 import uwvm2.utils.thread;
 import uwvm2.runtime;

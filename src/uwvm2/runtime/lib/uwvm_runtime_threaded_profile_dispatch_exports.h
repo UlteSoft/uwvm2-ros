@@ -21,8 +21,8 @@ namespace uwvm2::runtime::wasm_threads
 ThreadedGroup::ChildLease& lease,
         ::uwvm2::uwvm::runtime::initializer::ThreadedChildWorld const& world,
         ::std::size_t module, ::std::size_t caller, ::std::size_t imported,
-        ::std::span<::std::byte> results, ::std::span<::std::byte const> parameters) noexcept
-    { return ::uwvm2::runtime::lib::runtime_threaded_profile_bridge::dispatch_import_checked(lease, world, module, caller, imported, results, parameters); }
+        ::std::span<::std::byte> results, ::std::span<::std::byte const> parameters, bool cross_module) noexcept
+    { return ::uwvm2::runtime::lib::runtime_threaded_profile_bridge::dispatch_import_checked(lease, world, module, caller, imported, results, parameters, cross_module); }
 }
 #ifdef UWVM_MODULE
 }

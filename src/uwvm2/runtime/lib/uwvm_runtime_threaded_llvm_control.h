@@ -7,6 +7,62 @@
             for(auto const& old:externals_)if(old.name==f.getName())return old.address==pointer;
             externals_.push_back({f.getName().str(),pointer});return true;
         }
+        [[nodiscard]] static bool owns_gc_module(::std::uintptr_t module) noexcept
+        {
+            auto* const e=active_;
+            return e!=nullptr&&e->child!=nullptr&&e->lease!=nullptr&&
+                e->lease->owns_current_native_thread()&&
+                ::std::addressof(e->lease->world())==e->child->world_.get()&&
+                ::std::addressof(e->lease->admission())==::std::addressof(e->child->world_->admission())&&
+                module==reinterpret_cast<::std::uintptr_t>(e->child->module_);
+        }
+        static void gc_local_index(::std::uintptr_t module,::std::uintptr_t output) noexcept
+        {
+            namespace emit=::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details;
+            if(owns_gc_module(module)) { emit::llvm_jit_gc_local_index_bridge(module,output);return; }
+            ::std::uintptr_t const empty[2]{};
+            if(output!=0u) { ::std::memcpy(reinterpret_cast<void*>(output),empty,sizeof(empty)); }
+        }
+        template<auto Bridge, bool PackedStatus, typename... Arguments>
+        [[nodiscard]] static auto gc_scalar(::std::uintptr_t module, Arguments... arguments) noexcept
+        {
+            using result_type=decltype(Bridge(module,arguments...));
+            namespace st=::uwvm2::uwvm::runtime::storage;
+            if(!owns_gc_module(module))
+            {
+                if constexpr(PackedStatus)
+                {
+                    static_assert(sizeof(result_type)==sizeof(::std::uint64_t));
+                    return static_cast<result_type>(st::gc_object_status::invalid_store)<<32u;
+                }
+                else { return static_cast<result_type>(st::gc_object_status::invalid_store); }
+            }
+            // Original checked scalar operations retain membership/type checks,
+            // foreign-owner leases and mutable locks. No raw GC address escapes;
+            // add_control still polls after the call before guest effects resume.
+            return Bridge(module,arguments...);
+        }
+        static ::std::uint_least32_t gc_aggregate(::std::uintptr_t module,::std::uint_least32_t op,
+            ::std::uint_least32_t first,::std::uint_least32_t second,::std::uintptr_t inputs,
+            ::std::size_t count,::std::uintptr_t output) noexcept
+        {
+            namespace st=::uwvm2::uwvm::runtime::storage;
+            auto* e=active_;
+            if(!e || !e->lease || !e->lease->owns_current_native_thread() ||
+               module!=reinterpret_cast<::std::uintptr_t>(e->child->module_) ||
+               count>e->child->world_->admission().limits().max_value_stack_bytes/sizeof(st::gc_object_value))
+            { return static_cast<::std::uint_least32_t>(st::gc_object_status::invalid_store); }
+            if(!output || (count && !inputs) || count>e->child->gc_scratch_.size())
+            { return static_cast<::std::uint_least32_t>(st::gc_object_status::invalid_value); }
+            auto* scratch=e->child->gc_scratch_.data();
+            for(::std::size_t i{};i<count;++i)
+            { ::std::memcpy(scratch+i,reinterpret_cast<void const*>(inputs+i*sizeof(st::gc_object_value)),sizeof(st::gc_object_value)); }
+            st::gc_object_value result{};
+            auto const outcome=::uwvm2::runtime::compiler::shared::gc_aggregate(*e->child->module_,op,first,second,scratch,count,result);
+            for(::std::size_t i{};i<count;++i) { scratch[i]={}; }
+            if(outcome==st::gc_object_status::ok) { ::std::memcpy(reinterpret_cast<void*>(output),&result,sizeof(result)); }
+            return static_cast<::std::uint_least32_t>(outcome);
+        }
         [[nodiscard]] bool bind_emitted_bridges()
         {
             namespace emit=::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details;
@@ -14,7 +70,29 @@
             {
                 if(bridge.declaration==nullptr)return false;
                 ::std::uintptr_t replacement{memtag_bridge_replacement(*bridge.declaration,bridge.original)};
-                if(bridge.original==address(&llvm_jit_runtime_trap))replacement=address(&trap);
+                if(bridge.original==address(&emit::llvm_jit_gc_aggregate_bridge<>))replacement=address(&gc_aggregate);
+                else if(bridge.original==address(&emit::llvm_jit_gc_struct_get32_bridge<false>))
+                    replacement=address(&gc_scalar<&emit::llvm_jit_gc_struct_get32_bridge<false>,true,::std::uint32_t,::std::uintptr_t,::std::uint32_t>);
+                else if(bridge.original==address(&emit::llvm_jit_gc_struct_get32_bridge<true>))
+                    replacement=address(&gc_scalar<&emit::llvm_jit_gc_struct_get32_bridge<true>,true,::std::uint32_t,::std::uintptr_t,::std::uint32_t>);
+                else if(bridge.original==address(&emit::llvm_jit_gc_array_get32_bridge<false>))
+                    replacement=address(&gc_scalar<&emit::llvm_jit_gc_array_get32_bridge<false>,true,::std::uint32_t,::std::uintptr_t,::std::uint32_t>);
+                else if(bridge.original==address(&emit::llvm_jit_gc_array_get32_bridge<true>))
+                    replacement=address(&gc_scalar<&emit::llvm_jit_gc_array_get32_bridge<true>,true,::std::uint32_t,::std::uintptr_t,::std::uint32_t>);
+                else if(bridge.original==address(&emit::llvm_jit_gc_array_length32_bridge))
+                    replacement=address(&gc_scalar<&emit::llvm_jit_gc_array_length32_bridge,true,::std::uint32_t,::std::uintptr_t>);
+                else if(bridge.original==address(&emit::uwvm2_llvm_jit_gc_struct_set32_wide_bridge_r1))
+                    replacement=address(&gc_scalar<&emit::uwvm2_llvm_jit_gc_struct_set32_wide_bridge_r1,false,::std::uintptr_t,::std::uintptr_t,::std::uintptr_t,::std::uintptr_t>);
+                else if(bridge.original==address(&emit::uwvm2_llvm_jit_gc_array_set32_bridge_r1))
+                    replacement=address(&gc_scalar<&emit::uwvm2_llvm_jit_gc_array_set32_bridge_r1,false,::std::uint32_t,::std::uintptr_t,::std::uint32_t,::std::uint32_t>);
+                else if(bridge.original==address(&emit::llvm_jit_gc_local_index_bridge))replacement=address(&gc_local_index);
+                else if(bridge.original==address(&llvm_jit_runtime_trap))replacement=address(&trap);
+                else if(bridge.original==address(&::uwvm2::runtime::memtag::deferred::boundary))replacement=bridge.original;
+                else if(bridge.original==address(&::uwvm2::runtime::memtag::deferred::record_llvm))replacement=bridge.original;
+                // Compiler-private numeric evidence and entry-pinned pending
+                // flag only. Neither bridge imports Guest authority or memory.
+                else if(bridge.original==address(&::uwvm2::runtime::memtag::deferred::record_llvm_at))replacement=bridge.original;
+                else if(bridge.original==address(&::uwvm2::runtime::memtag::deferred::pending_flag_address))replacement=bridge.original;
                 else if(bridge.original==address(&llvm_jit_memory_out_of_bounds_trap))replacement=address(&memory_trap);
                 else if(bridge.original==address(&details::llvm_jit_call_raw_from_generated_wasm_abi_bridge))replacement=address(&import_call);
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
@@ -49,6 +127,23 @@
         {
             for(::std::size_t i{};i<entries.size();++i)
                 if(f.getName()==entries[i].typed_name||f.getName()==entries[i].raw_name)return imports+i;
+            // Host tail adapters are compiler-created bodies whose buffers must
+            // survive the outgoing Wasm frame. Never exempt them from polling
+            // or native stack accounting, or admit arbitrary helper names.
+            auto const* identity=f.getMetadata("uwvm.wasm.tail.adapter.owner");
+            if(identity==nullptr||identity->getNumOperands()!=1u||
+               !f.hasInternalLinkage()||f.getCallingConv()!=::llvm::CallingConv::Tail)return SIZE_MAX;
+            auto const* value=::llvm::dyn_cast<::llvm::ValueAsMetadata>(identity->getOperand(0u).get());
+            auto const* owner=value==nullptr ? nullptr : ::llvm::dyn_cast<::llvm::Function>(value->getValue());
+            if(owner==nullptr||owner==::std::addressof(f)||owner->getParent()!=f.getParent()||f.use_empty())return SIZE_MAX;
+            for(auto const* use:f.users())
+            {
+                auto const* call=::llvm::dyn_cast<::llvm::CallInst>(use);
+                if(call==nullptr||!call->isMustTailCall()||call->getCalledFunction()!=::std::addressof(f)||
+                   call->getFunction()!=owner)return SIZE_MAX;
+            }
+            for(::std::size_t i{};i<entries.size();++i)
+                if(owner->getName()==entries[i].typed_name)return imports+i;
             return SIZE_MAX;
         }
         static void return_carrier(::llvm::IRBuilder<>& b,::llvm::Function& f)
@@ -165,6 +260,19 @@
                 };
                 for(auto* block:blocks)
                 {
+                    if(block->getTerminator()->getMetadata("uwvm.gc.scalar.local.region")!=nullptr)
+                    {
+                        // One finite checked numeric instruction. No raw GC
+                        // header or held mutation lock may cross a debug poll.
+                        // Refuse calls/allocas/returns in this private region;
+                        // the post-optimization cycle proof still requires a
+                        // real stop check on every cycle of the whole function.
+                        if(block==::std::addressof(f.getEntryBlock())||
+                           !::llvm::isa<::llvm::BranchInst>(block->getTerminator()))return false;
+                        for(auto const& instruction:*block)
+                            if(::llvm::isa<::llvm::CallBase,::llvm::AllocaInst>(instruction))return false;
+                        continue;
+                    }
                     auto first=block->getFirstInsertionPt();
                     bool const entry_block=block==::std::addressof(f.getEntryBlock());
                     if(entry_block)while(first!=block->end()&&::llvm::isa<::llvm::AllocaInst>(*first))++first;

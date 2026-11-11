@@ -1,0 +1,1 @@
+(module (type $s (struct (field v128))) (func (export "_start") (local $x (ref null $s)) v128.const i64x2 0xdeadbeef81234567 0x7ff0000000000001 struct.new $s local.set $x local.get $x struct.get $s 0  v128.const i64x2 0xdeadbeef81234567 0x7ff0000000000001  v128.xor v128.any_true if unreachable end))

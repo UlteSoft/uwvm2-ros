@@ -1,0 +1,1 @@
+(module (type $s (array (mut v128))) (func (export "_start") i32.const 2 array.new_default $s i32.const 2 array.get $s drop))

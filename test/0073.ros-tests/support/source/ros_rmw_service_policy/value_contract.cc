@@ -6,7 +6,7 @@
  * build so a release configuration cannot turn checks into unconditional PASS.
  */
 #include <uwvm2/imported/ros/capability/manager.h>
-#include "../../../../../src/ros/gateway/common/config.h"
+#include <gateway/common/config.h>
 #include <array>
 #include <cstdlib>
 #include <span>
@@ -147,7 +147,7 @@ int main()
             ros::capability_manager legacy;int legacy_object{};
             expect(legacy.register_instance(&legacy_object,1,"legacy_accounting",nullptr,&policy));
             expect(legacy.open(&legacy_object,1,ros::version::ros2,cap.alias,handle));
-            expect(legacy.authorize(&legacy_object,1,ros::version::ros2,handle,op,envelope,lease),ros::errc::rate_limited);
+            expect(legacy.authorize(&legacy_object,1,ros::version::ros2,handle,op,envelope,lease),ros::errc::too_large);
             need(!lease);
         }
     });
@@ -166,7 +166,8 @@ int main()
         auto cap=grant("service.respond","example_interfaces/srv/AddTwoInts");auto policy=target(cap);
         int object{},foreign{};ros::capability_manager manager;
         expect(manager.register_instance(&object,1,"owner",nullptr,&policy));
-        expect(manager.register_instance(&foreign,1,"foreign",nullptr,&policy));
+        auto foreign_policy=policy;foreign_policy.target_scope=ros::scope::group;foreign_policy.name="foreign";
+        expect(manager.register_instance(&foreign,1,"foreign",nullptr,&foreign_policy));
         std::uint64_t handle{};expect(manager.open(&object,1,ros::version::ros2,cap.alias,handle));
         auto bytes=ticketed(8);ros::authorization lease;
         expect(manager.authorize_rmw_service_envelope(&object,1,ros::version::ros2,handle,"service.call",bytes,lease),ros::errc::permission_denied);

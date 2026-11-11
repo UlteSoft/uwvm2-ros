@@ -56,6 +56,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         auto& frame{calls_[call_top_-1uz]};auto& bound{modules_[frame.module]};auto const* instance{bound.program.instance};
         auto const op{ins.opcode};::std::uint64_t a{},c{};
         if(op>=0x10000u) { return ins.simd_handler?ins.simd_handler(*this,ins):fail(status::invariant_failure); }
+        if(op>=0x800u) { return gc_operation(ins); }
         if(op>=0x400u) { return memtag_operation(ins); }
         if(op>=0x300u) { return bulk_memory(lease,ins); }
         if(op>=0x200u) { return floating(op); }
@@ -90,12 +91,14 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                 if(!pop(a)||ins.labels.empty()) { return fail(status::invariant_failure); }
                 return branch(ins.labels[::std::min(static_cast<::std::size_t>(static_cast<::std::uint32_t>(a)),ins.labels.size()-1uz)]);
             case 0x0f:return leave();
-            case 0x10:
+            case 0x10:case 0x12:
             {
                 if(ins.immediate>=bound.targets.size()) { return fail(status::invariant_failure); }
-                auto const& target{bound.targets[ins.immediate]};return target.host?host_call(lease,target):enter(target);
+                auto const& target{bound.targets[ins.immediate]};
+                if(op==0x12u) { return tail_enter(lease,target); }
+                return target.host?host_call(lease,target):enter(target);
             }
-            case 0x11:
+            case 0x11:case 0x13:
             {
                 if(!pop(a)) { return false; }
                 if(ins.target>=instance->local_defined_table_vec_storage.size() || ins.immediate>=instance->type_section_storage.type_section_count)
@@ -111,7 +114,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                 target target{};if(!defined_target(slot.storage.defined_ptr,target)) { return fail(status::trap_signature); }
                 auto const* expected{instance->type_section_storage.type_section_begin+ins.immediate};
                 if(!detail::equal_signature(expected,target.type)) { return fail(status::trap_signature); }
-                return enter(target);
+                return op==0x13u?tail_enter(lease,target):enter(target);
             }
             case 0x1a:return pop(a);
             case 0x1b:case 0x1c:
@@ -153,10 +156,19 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
             case 0x42:case 0x44:return push(ins.immediate);
             case 0x43:return push(static_cast<::std::uint32_t>(ins.immediate));
             case 0xd0:return push(0u);
-            case 0xd1:if(!pop(a)) { return false; }return push(a==0u);
-            case 0xd4:if(!pop(a)) { return false; }return a?push(a):fail(status::trap_null);
-            case 0xd5:if(!pop(a)) { return false; }return a?push(a):branch(static_cast<::std::size_t>(ins.immediate));
-            case 0xd6:if(!pop(a)) { return false; }return a?(push(a)&&branch(static_cast<::std::size_t>(ins.immediate))):true;
+            case 0xd1:case 0xd4:case 0xd5:case 0xd6:
+            {
+                stack_value reference{};if(!pop(reference)) { return false; }
+                // GC references carry an out-of-band kind as well as their
+                // payload. In particular i31(0) is non-null. Preserve both
+                // halves through assertions and reference branches; exception
+                // IDs still use their canonical zero-extended scalar carrier.
+                bool const nonnull{(reference.low|reference.high)!=0u};
+                if(ins.opcode==0xd1u) { return push(!nonnull); }
+                if(ins.opcode==0xd4u) { return nonnull?push(reference):fail(status::trap_null); }
+                if(ins.opcode==0xd5u) { return nonnull?push(reference):branch(static_cast<::std::size_t>(ins.immediate)); }
+                return nonnull?(push(reference)&&branch(static_cast<::std::size_t>(ins.immediate))):true;
+            }
             case 0xa7:if(!pop(a)) { return false; }return push(static_cast<::std::uint32_t>(a));
             case 0xac:if(!pop(a)) { return false; }return push(static_cast<::std::uint64_t>(static_cast<::std::int64_t>(::std::bit_cast<::std::int32_t>(static_cast<::std::uint32_t>(a)))));
             case 0xad:if(!pop(a)) { return false; }return push(static_cast<::std::uint32_t>(a));

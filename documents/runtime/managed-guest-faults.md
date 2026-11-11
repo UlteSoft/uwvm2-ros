@@ -5,7 +5,10 @@ Linux ROS production-update sessions retain the authenticated management channel
 The ROS product's ordinary LLVM-full CLI uses the same real source-owned
 activation and native-cleanup protection internally. It opens no debugger
 transport or DeveloperGrant. A qualified Guest fault finishes the actual unwind
-and returns process status 126. Pure Wasm preloads belong to the same owned source
+and preserves crash termination by default (`--debug-fault-action crash`).
+An explicit `--debug-fault-action exit` finishes with the classified status
+120 (unreachable), 121 (execution) or 122 (MTE). Internal failures still crash.
+Pure Wasm preloads belong to the same owned source
 graph; a provider graph without the required source ownership is refused before
 Guest compilation/execution. Internal recording grows with actual activations,
 without imposing the DEV recorder's default storage budget on ordinary programs.
@@ -13,7 +16,9 @@ without imposing the DEV recorder's default storage budget on ordinary programs.
 DEV LLVM-full preparation enables protection for its actual runtime epoch.
 After a qualified fault, the Linux authenticated control FD retains `status`,
 `help` and `quit`; execution and mutation requests are refused for that faulted
-world. Detaching then returns 126. This does not authorize resuming a damaged
+world. An explicit controller quit follows the authenticated session terminal
+contract; it is not implicit recovery under the ordinary crash policy. This does
+not authorize resuming a damaged
 activation or treating an internal/TCB failure as a Guest trap.
 
 The compiler emits native unwind cleanup for marked trap sites and selected internal memory/table helpers. Helpers finish their native memory/table guards before raising the private fault signal. The actual outer entry accepts it only after current code/source/function generations are authenticated and generated activation/GC/shadow cleanup has completed. Guest exception handlers cannot catch this private signal. Runtime invariant failures keep their fatal behavior.

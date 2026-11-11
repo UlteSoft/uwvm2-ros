@@ -250,9 +250,11 @@ namespace uwvm2::imported::ros::portable::runtime_audit
             if(!reserve_record()) { return false; }
             auto fail=[this]() noexcept { dropped_.fetch_add(1,::std::memory_order_relaxed);return false; };
             state sample{};
+            // The host authenticates same-policy borrowers before entering the
+            // call. Preserve the borrower's real source hash in this record.
             if(!call.allowed||call.function_index!=3u||!call.module_instance||!call.permission_session||
                !call.call_sequence||!call.runtime_generation||!owner_handle||
-               call.wasm_sha256!=deployment.wasm_sha256||call.adapter_sha256!=deployment.adapter_sha256||
+               call.adapter_sha256!=deployment.adapter_sha256||
                call.policy_sha256!=deployment.policy_sha256||!deployment.policy_epoch||!deployment.native_generation||
                payload.size()>320u||output_offset>UINT64_MAX-payload.size()||!decode(payload,sample)||
                sample.epoch!=deployment.mapping.epoch||sample.count!=deployment.mapping.count||

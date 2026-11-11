@@ -26,6 +26,16 @@ by themselves establish full standard conformance or full-platform acceptance.
 - [Threads proposal](https://github.com/WebAssembly/threads/blob/main/proposals/threads/Overview.md)
 - [LLVM exception handling](https://llvm.org/docs/ExceptionHandling.html)
 
+## Current launch baseline
+
+The ROS product defaults to Core 3.0 plus threads and WasmMTE. Explicit
+`--wasm-feature-wasm3` / `-WF3` is equivalent. One version baseline may be
+combined with per-feature enable/disable switches in either order, including
+`-WF2 -WFE-gc` and `-WF3 -WFD-gc`. Explicit conflicting or repeated switches
+remain errors. See [feature baseline and overrides](command-line/wasm.md#feature-baseline-and-overrides).
+The historical slices below describe earlier implementation stages, not the
+current default. Selecting parser features never authorizes host imports.
+
 ## Initial feature slices in both repositories (historical)
 
 The limits in this table describe the first implementation of each switch.

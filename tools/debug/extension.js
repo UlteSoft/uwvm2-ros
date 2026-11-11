@@ -7,13 +7,25 @@ const {Buffer} = require("buffer");
 
 function activate(context) {
   const sessions = new Map();
+  // Webview-capable editor hosts get separate human-facing inspection windows.
+  // The text fallback keeps the original command usable in non-UI hosts.
+  const inspection = vscode.window && typeof vscode.window.createWebviewPanel === "function"
+    ? require(path.join(context.extensionPath, "inspection_ui.js")).createController(vscode, context, sessions)
+    : undefined;
+  if (inspection) require(path.join(context.extensionPath, "update_ui.js")).createController(vscode, context, sessions);
+  if (vscode.languages && typeof vscode.languages.registerHoverProvider === "function" &&
+      typeof vscode.workspace.onDidOpenTextDocument === "function")
+    require(path.join(context.extensionPath, "wasm_language.js")).register(vscode, context, sessions);
+  const wasmView=require(path.join(context.extensionPath,"wasm_view.js")).register(vscode,context,sessions);
+  require(path.join(context.extensionPath,"debug_tools.js")).register(vscode,context,sessions,inspection,wasmView);
+  const completeBreakpointState = require(path.join(context.extensionPath,"breakpoint_sync.js")).register(vscode,context,sessions) === true;
   const sessionPattern = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
   // A separate scheme avoids replacing any IDE/other debugger source provider.
   // This provider never reads host files and retains no guest source contents.
   context.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider(
     "uwvm-wasm", {async provideTextDocumentContent(uri, cancellation) {
       if (uri.scheme !== "uwvm-wasm" || uri.authority || uri.fragment ||
-          !/^\/module-[0-9]+\/function-[0-9]+\/stop-[0-9]+\.wat$/.test(uri.path)) {
+          !/^\/module-[0-9]+\/function-[0-9]+\/code-[0-9]+-[0-9]+\.uwvm-wat$/.test(uri.path)) {
         throw new Error("Invalid UWVM Wasm document URI");
       }
       const query = new URLSearchParams(uri.query);
@@ -41,6 +53,9 @@ function activate(context) {
   const tagDecorations = new Set();
   context.subscriptions.push({dispose() { for (const item of tagDecorations) item.dispose(); tagDecorations.clear(); }});
   context.subscriptions.push(vscode.commands.registerCommand("uwvm.showMemoryTags", async selection => {
+    if (inspection) return inspection.open("memory", {
+      ...require(path.join(context.extensionPath,"inspection_model.js")).memorySelection(selection),showTags:true
+    });
     const session = vscode.debug.activeDebugSession;
     if (!session || session.type !== "uwvm-llvm-full" || sessions.get(session.id) !== session) {
       throw new Error("Select a live UWVM debug session to inspect memory tags");
@@ -91,6 +106,7 @@ function activate(context) {
   }));
   for (const command of ["uwvm.showDiagnostics", "uwvm.dump"]) {
     context.subscriptions.push(vscode.commands.registerCommand(command, async () => {
+      if(inspection)return inspection.open("diagnostics",{focusDump:command==="uwvm.dump"});
       const session = vscode.debug.activeDebugSession;
       if (!session || session.type !== "uwvm-llvm-full" || sessions.get(session.id) !== session)
         throw new Error("Select a live UWVM debug session");
@@ -103,7 +119,11 @@ function activate(context) {
         reply = await session.customRequest("uwvm/dump", {stopId:match[1],path:match[2]});
       } else reply = await session.customRequest("uwvm/diagnostics", {});
       if (sessions.get(session.id) !== session) throw new Error("UWVM session retired during diagnostics");
-      const document = await vscode.workspace.openTextDocument({content:JSON.stringify(reply,null,2)+"\n",language:"json"});
+      const lines=[];const pending=[{label:"Diagnostics",value:reply,depth:0}];
+      while(pending.length){const row=pending.pop(),complex=row.value!==null&&typeof row.value==="object";
+        lines.push("  ".repeat(row.depth)+row.label+": "+(complex?"":String(row.value)));
+        if(complex)for(const [label,value] of Object.entries(row.value).reverse())pending.push({label,value,depth:row.depth+1});}
+      const document = await vscode.workspace.openTextDocument({content:lines.join("\n")+"\n",language:"plaintext"});
       await vscode.window.showTextDocument(document,{preview:true});
     }));
   }
@@ -116,7 +136,10 @@ function activate(context) {
         if (permissions !== undefined && !["full", "read-only", "limited", "none"].includes(permissions)) {
           throw new Error("UWVM debugPermissions must be full, read-only, limited or none");
         }
-        if (permissions === "none") throw new Error("Debugger disabled: run the generated runtime task without attaching");
+        if (permissions === "none") {
+          if (inspection) inspection.noteDisabled("none");
+          throw new Error("Debugger disabled: run the generated runtime task without attaching");
+        }
         const level = session.configuration.stepLevel === undefined ? "source" : session.configuration.stepLevel;
         if (!["source", "wasm", "native"].includes(level)) {
           throw new Error("UWVM stepLevel must be source, wasm or native");
@@ -139,7 +162,7 @@ function activate(context) {
           : [path.join(context.extensionPath, "import_ide.py"), "adapter", "--profile", profile];
         return new vscode.DebugAdapterExecutable(
           python, adapterArguments,
-          {env: {UWVM_DAP_SOURCE_SESSION: session.id}});
+          {env: {UWVM_DAP_SOURCE_SESSION: session.id, UWVM_DAP_EDITOR_BREAKPOINTS: completeBreakpointState ? "1" : "0"}});
       }
     }));
 }

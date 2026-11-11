@@ -1,0 +1,363 @@
+[
+  {
+    "name": "i64-struct-immutable",
+    "source": "i64-struct-immutable.wat",
+    "entry": 0,
+    "trap": false
+  },
+  {
+    "name": "i64-struct-mutable",
+    "source": "i64-struct-mutable.wat",
+    "entry": 0,
+    "trap": false
+  },
+  {
+    "name": "i64-struct-null-get",
+    "source": "i64-struct-null-get.wat",
+    "entry": 0,
+    "trap": true
+  },
+  {
+    "name": "i64-struct-null-set",
+    "source": "i64-struct-null-set.wat",
+    "entry": 0,
+    "trap": true
+  },
+  {
+    "name": "i64-array-immutable",
+    "source": "i64-array-immutable.wat",
+    "entry": 0,
+    "trap": false
+  },
+  {
+    "name": "i64-array-mutable",
+    "source": "i64-array-mutable.wat",
+    "entry": 0,
+    "trap": false
+  },
+  {
+    "name": "i64-array-null-get",
+    "source": "i64-array-null-get.wat",
+    "entry": 0,
+    "trap": true
+  },
+  {
+    "name": "i64-array-null-set",
+    "source": "i64-array-null-set.wat",
+    "entry": 0,
+    "trap": true
+  },
+  {
+    "name": "i64-array-negative-get",
+    "source": "i64-array-negative-get.wat",
+    "entry": 0,
+    "trap": true
+  },
+  {
+    "name": "i64-array-negative-set",
+    "source": "i64-array-negative-set.wat",
+    "entry": 0,
+    "trap": true
+  },
+  {
+    "name": "i64-array-end-get",
+    "source": "i64-array-end-get.wat",
+    "entry": 0,
+    "trap": true
+  },
+  {
+    "name": "i64-array-end-set",
+    "source": "i64-array-end-set.wat",
+    "entry": 0,
+    "trap": true
+  },
+  {
+    "name": "f64-struct-immutable",
+    "source": "f64-struct-immutable.wat",
+    "entry": 0,
+    "trap": false
+  },
+  {
+    "name": "f64-struct-mutable",
+    "source": "f64-struct-mutable.wat",
+    "entry": 0,
+    "trap": false
+  },
+  {
+    "name": "f64-struct-null-get",
+    "source": "f64-struct-null-get.wat",
+    "entry": 0,
+    "trap": true
+  },
+  {
+    "name": "f64-struct-null-set",
+    "source": "f64-struct-null-set.wat",
+    "entry": 0,
+    "trap": true
+  },
+  {
+    "name": "f64-array-immutable",
+    "source": "f64-array-immutable.wat",
+    "entry": 0,
+    "trap": false
+  },
+  {
+    "name": "f64-array-mutable",
+    "source": "f64-array-mutable.wat",
+    "entry": 0,
+    "trap": false
+  },
+  {
+    "name": "f64-array-null-get",
+    "source": "f64-array-null-get.wat",
+    "entry": 0,
+    "trap": true
+  },
+  {
+    "name": "f64-array-null-set",
+    "source": "f64-array-null-set.wat",
+    "entry": 0,
+    "trap": true
+  },
+  {
+    "name": "f64-array-negative-get",
+    "source": "f64-array-negative-get.wat",
+    "entry": 0,
+    "trap": true
+  },
+  {
+    "name": "f64-array-negative-set",
+    "source": "f64-array-negative-set.wat",
+    "entry": 0,
+    "trap": true
+  },
+  {
+    "name": "f64-array-end-get",
+    "source": "f64-array-end-get.wat",
+    "entry": 0,
+    "trap": true
+  },
+  {
+    "name": "f64-array-end-set",
+    "source": "f64-array-end-set.wat",
+    "entry": 0,
+    "trap": true
+  },
+  {
+    "name": "v128-struct-immutable",
+    "source": "v128-struct-immutable.wat",
+    "entry": 0,
+    "trap": false
+  },
+  {
+    "name": "v128-struct-mutable",
+    "source": "v128-struct-mutable.wat",
+    "entry": 0,
+    "trap": false
+  },
+  {
+    "name": "v128-struct-null-get",
+    "source": "v128-struct-null-get.wat",
+    "entry": 0,
+    "trap": true
+  },
+  {
+    "name": "v128-struct-null-set",
+    "source": "v128-struct-null-set.wat",
+    "entry": 0,
+    "trap": true
+  },
+  {
+    "name": "v128-array-immutable",
+    "source": "v128-array-immutable.wat",
+    "entry": 0,
+    "trap": false
+  },
+  {
+    "name": "v128-array-mutable",
+    "source": "v128-array-mutable.wat",
+    "entry": 0,
+    "trap": false
+  },
+  {
+    "name": "v128-array-null-get",
+    "source": "v128-array-null-get.wat",
+    "entry": 0,
+    "trap": true
+  },
+  {
+    "name": "v128-array-null-set",
+    "source": "v128-array-null-set.wat",
+    "entry": 0,
+    "trap": true
+  },
+  {
+    "name": "v128-array-negative-get",
+    "source": "v128-array-negative-get.wat",
+    "entry": 0,
+    "trap": true
+  },
+  {
+    "name": "v128-array-negative-set",
+    "source": "v128-array-negative-set.wat",
+    "entry": 0,
+    "trap": true
+  },
+  {
+    "name": "v128-array-end-get",
+    "source": "v128-array-end-get.wat",
+    "entry": 0,
+    "trap": true
+  },
+  {
+    "name": "v128-array-end-set",
+    "source": "v128-array-end-set.wat",
+    "entry": 0,
+    "trap": true
+  },
+  {
+    "name": "parameter-and-late-publication",
+    "source": "parameter-and-late-publication.wat",
+    "entry": 0,
+    "trap": false
+  },
+  {
+    "name": "subtype-and-alias",
+    "source": "subtype-and-alias.wat",
+    "entry": 0,
+    "trap": false
+  },
+  {
+    "name": "bucket-collisions-and-collection",
+    "source": "bucket-collisions-and-collection.wat",
+    "entry": 0,
+    "trap": false
+  },
+  {
+    "name": "foreign-canonical-owner",
+    "source": "foreign-canonical-owner.wat",
+    "entry": 0,
+    "trap": false,
+    "preload": "foreign-provider.wat"
+  },
+  {
+    "name": "borrow-adjacent-read-write",
+    "source": "borrow-adjacent-read-write.wat",
+    "entry": 0,
+    "trap": false
+  },
+  {
+    "name": "borrow-different-fields",
+    "source": "borrow-different-fields.wat",
+    "entry": 0,
+    "trap": false
+  },
+  {
+    "name": "borrow-rebind-reference-local",
+    "source": "borrow-rebind-reference-local.wat",
+    "entry": 0,
+    "trap": false
+  },
+  {
+    "name": "borrow-rebind-null-local",
+    "source": "borrow-rebind-null-local.wat",
+    "entry": 0,
+    "trap": true
+  },
+  {
+    "name": "borrow-branch-reference-local",
+    "source": "borrow-branch-reference-local.wat",
+    "entry": 0,
+    "trap": false
+  },
+  {
+    "name": "borrow-loop-changing-reference",
+    "source": "borrow-loop-changing-reference.wat",
+    "entry": 0,
+    "trap": false
+  },
+  {
+    "name": "borrow-call-collect-between",
+    "source": "borrow-call-collect-between.wat",
+    "entry": 1,
+    "trap": false
+  },
+  {
+    "name": "borrow-call-shared-mutation",
+    "source": "borrow-call-shared-mutation.wat",
+    "entry": 1,
+    "trap": false
+  },
+  {
+    "name": "borrow-allocation-between",
+    "source": "borrow-allocation-between.wat",
+    "entry": 0,
+    "trap": false
+  },
+  {
+    "name": "borrow-reference-helper-between",
+    "source": "borrow-reference-helper-between.wat",
+    "entry": 0,
+    "trap": false
+  },
+  {
+    "name": "borrow-late-global-publish",
+    "source": "borrow-late-global-publish.wat",
+    "entry": 0,
+    "trap": false
+  },
+  {
+    "name": "borrow-numeric-trap-between",
+    "source": "borrow-numeric-trap-between.wat",
+    "entry": 0,
+    "trap": true
+  },
+  {
+    "name": "borrow-array-adjacent-index",
+    "source": "borrow-array-adjacent-index.wat",
+    "entry": 0,
+    "trap": false
+  },
+  {
+    "name": "borrow-array-changed-index",
+    "source": "borrow-array-changed-index.wat",
+    "entry": 0,
+    "trap": false
+  },
+  {
+    "name": "borrow-array-changed-index-oob",
+    "source": "borrow-array-changed-index-oob.wat",
+    "entry": 0,
+    "trap": true
+  },
+  {
+    "name": "borrow-array-changed-index-negative",
+    "source": "borrow-array-changed-index-negative.wat",
+    "entry": 0,
+    "trap": true
+  },
+  {
+    "name": "borrow-array-different-constant-index-oob",
+    "source": "borrow-array-different-constant-index-oob.wat",
+    "entry": 0,
+    "trap": true
+  },
+  {
+    "name": "borrow-array-rebind-null-array",
+    "source": "borrow-array-rebind-null-array.wat",
+    "entry": 0,
+    "trap": true
+  },
+  {
+    "name": "borrow-array-length-between",
+    "source": "borrow-array-length-between.wat",
+    "entry": 0,
+    "trap": false
+  },
+  {
+    "name": "borrow-array-same-index-multiple-write",
+    "source": "borrow-array-same-index-multiple-write.wat",
+    "entry": 0,
+    "trap": false
+  }
+]

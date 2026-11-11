@@ -1,0 +1,103 @@
+:root { color-scheme:light dark; }
+body { margin:0 auto; padding:22px 26px 32px; max-width:1600px; color:var(--vscode-editor-foreground); background:var(--vscode-editor-background); font-family:var(--vscode-font-family); font-size:var(--vscode-font-size); }
+header,.section-heading,.session-bar { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+h1 { margin:2px 0 16px; font-size:28px; font-weight:600; } h2 { margin:0 0 12px; font-size:17px; font-weight:600; }
+.eyebrow { margin:0; font-size:10px; font-weight:600; letter-spacing:1.7px; color:var(--vscode-descriptionForeground); }
+nav,.tabs,.toolbar,.pager,.tag-legend { display:flex; flex-wrap:wrap; align-items:end; gap:8px; }
+nav { padding-bottom:16px; border-bottom:1px solid var(--vscode-panel-border); } .session-bar { margin:12px 0; color:var(--vscode-descriptionForeground); font-size:12px; }
+.session-bar span { flex:1; overflow-wrap:anywhere; } .toolbar { margin:18px 0; } label { display:flex; flex-direction:column; gap:6px; font-size:12px; color:var(--vscode-descriptionForeground); }
+input,textarea,select { padding:7px 9px; box-sizing:border-box; background:var(--vscode-input-background); color:var(--vscode-input-foreground); border:1px solid var(--vscode-input-border,var(--vscode-panel-border)); border-radius:3px; font:inherit; }
+input { width:145px; } input[name=offset],input[name=writeOffset] { width:220px; } textarea { width:100%; font-family:var(--vscode-editor-font-family,monospace); }
+button { padding:7px 12px; border:1px solid transparent; border-radius:3px; background:var(--vscode-button-secondaryBackground); color:var(--vscode-button-secondaryForeground); cursor:pointer; font:inherit; }
+button:hover { background:var(--vscode-button-secondaryHoverBackground); } button[type=submit] { background:var(--vscode-button-background); color:var(--vscode-button-foreground); } button:disabled { opacity:.45; cursor:not-allowed; }
+button[aria-pressed=true] { outline:1px solid var(--vscode-focusBorder); outline-offset:-1px; } button:focus-visible,input:focus,textarea:focus { outline:1px solid var(--vscode-focusBorder); outline-offset:1px; }
+.badge { padding:5px 9px; border-radius:12px; background:var(--vscode-badge-background); color:var(--vscode-badge-foreground); font-size:11px; white-space:nowrap; }
+.permission { margin-bottom:14px; } .card { margin:16px 0; padding:18px; border:1px solid var(--vscode-panel-border); border-radius:6px; }
+.notice,.error,.success { padding:11px 13px; border-left:3px solid var(--vscode-editorInfo-foreground); background:var(--vscode-textBlockQuote-background); overflow-wrap:anywhere; }
+.error { border-left-color:var(--vscode-editorError-foreground); } .success { border-left-color:var(--vscode-testing-iconPassed); } .muted,.empty,footer { color:var(--vscode-descriptionForeground); font-size:12px; }
+.split { display:grid; grid-template-columns:minmax(250px,1fr) minmax(320px,1.5fr); gap:18px; } .tabs { align-items:center; }.tabs button { font-size:11px; padding:6px 8px; }
+table { width:100%; border-collapse:collapse; text-align:left; font-size:12px; } th { color:var(--vscode-descriptionForeground); font-weight:500; } th,td { padding:8px 10px; border-bottom:1px solid var(--vscode-panel-border); vertical-align:top; }
+td { overflow-wrap:anywhere; white-space:pre-wrap; } .table-scroll,.memory-scroll { overflow-x:auto; } .table-scroll { max-height:540px; overflow-y:auto; }
+thead { position:sticky; top:0; background:var(--vscode-editor-background); } .memory { width:auto; min-width:650px; font-family:var(--vscode-editor-font-family,monospace); } .memory th { white-space:nowrap; }
+.memory td.bytes { white-space:nowrap; padding:4px 7px; } .byte { min-width:25px; padding:5px 3px; border-radius:0; border-bottom:2px solid transparent; background:transparent; color:var(--vscode-editor-foreground); font-family:inherit; font-size:12px; }
+.byte:hover { outline:1px solid var(--vscode-focusBorder); } .ascii { font-family:var(--vscode-editor-font-family,monospace); white-space:pre; letter-spacing:1px; } .tag-legend { margin:16px 0 8px; }
+.tag-chip { font-size:11px; font-family:var(--vscode-editor-font-family,monospace); padding:5px 7px; border-bottom:2px solid transparent; border-radius:3px; } .pager { margin-top:14px; }
+#write-form { display:flex; flex-wrap:wrap; align-items:end; gap:12px; } .hex-input { flex:1; min-width:220px; } footer { margin-top:24px; padding-top:16px; border-top:1px solid var(--vscode-panel-border); line-height:1.8; }
+pre { white-space:pre-wrap; overflow-wrap:anywhere; } .policy-list { max-height:560px; overflow:auto; } .policy-item { padding:10px 0; border-bottom:1px solid var(--vscode-panel-border); }
+#update-form > .toolbar { display:grid; grid-template-columns:repeat(auto-fit,minmax(270px,1fr)); align-items:start; gap:16px; }
+#update-form input,#update-form select { width:100%; } #update-form label { line-height:1.5; }
+#update-result { max-height:65vh; overflow:auto; font-family:var(--vscode-editor-font-family,monospace); font-size:12px; }
+#export-form label { flex:1; min-width:240px; } #export-form input { width:100%; }
+.policy-item p { margin:4px 0 8px; } .policy-item dl { margin:0; } .policy-item dt { font-family:var(--vscode-editor-font-family,monospace); font-weight:600; overflow-wrap:anywhere; }
+.policy-item dd { margin:6px 0; white-space:pre-wrap; overflow-wrap:anywhere; } details { font-size:11px; } summary { cursor:pointer; color:var(--vscode-descriptionForeground); }
+@media(max-width:850px) { body { padding:16px; } .split { grid-template-columns:1fr; gap:0; } .session-bar { flex-wrap:wrap; } }
+
+/* Each editor tab owns one function and its own selectors. */
+body { padding:16px 20px 24px; }
+header h1 { margin:0; font-size:20px; }
+.window-actions { display:flex; align-items:center; gap:10px; }
+.window-actions .permission { margin:0; }
+.session-bar { margin:10px 0; }
+.session-bar details { text-align:right; }
+.session-bar .toolbar { margin:8px 0; }
+.card { margin:12px 0; padding:14px; }
+.memory-card { padding:8px 12px; }
+.toggle { flex-direction:row; align-items:center; gap:6px; padding:7px 0; color:var(--vscode-editor-foreground); }
+.toggle input { width:auto; margin:0; accent-color:var(--vscode-focusBorder); }
+.edit-memory summary { font-size:12px; }
+#write-form { margin-top:12px; }
+.group-select { margin-top:12px; }
+.group-select select { width:100%; }
+.tag-details { margin-top:10px; }
+
+[hidden] { display:none !important; }
+
+.memory { min-width:0; }
+.byte { user-select:none; touch-action:pan-y; }
+.byte.selected { box-shadow:inset 0 0 0 1px var(--vscode-focusBorder); }
+.byte-editor { width:28px; min-width:28px; padding:4px 2px; border-radius:0; font-family:var(--vscode-editor-font-family,monospace); text-align:center; }
+#memory-values { display:grid; grid-template-columns:max-content minmax(0,1fr); gap:6px 16px; margin:12px 0 0; font-family:var(--vscode-editor-font-family,monospace); font-size:12px; }
+#memory-values dt { color:var(--vscode-descriptionForeground); }
+#memory-values dd { margin:0; white-space:pre-wrap; overflow-wrap:anywhere; }
+#selection-title { font-size:13px; }
+
+#memory-selection .section-heading { flex-wrap:wrap; align-items:end; }
+#memory-selection .section-heading h2 { flex:1; min-width:160px; }
+#memory-precision { width:70px; }
+
+.path-field { display:flex; align-items:center; gap:6px; }
+.path-field input { flex:1; min-width:0; }
+.path-field button { flex:none; white-space:nowrap; }
+
+/* Keep vertical scrolling with the page; wide rows scroll horizontally. */
+.memory-scroll { overflow-x:auto; overflow-y:visible; overscroll-behavior-x:contain; }
+.inline-byte-edit { display:inline-flex; align-items:center; vertical-align:middle; }
+.inline-byte-edit button { padding:4px 3px; min-width:20px; }
+.row-tags { white-space:nowrap; }
+.row-tags .tag-chip { display:block; margin:1px 0; }
+.structured { text-align:left; min-width:100px; }
+.structured dl { display:grid; grid-template-columns:minmax(8ch,35%) minmax(0,1fr); gap:5px 12px; margin:8px 0 8px 12px; }
+.structured dd { margin:0; }
+.value-number,.value-bigint { color:var(--vscode-debugTokenExpression-number); }
+.value-string { color:var(--vscode-debugTokenExpression-string); white-space:pre-wrap; }
+.value-boolean { color:var(--vscode-debugTokenExpression-boolean); }
+.value-null,.value-missing { color:var(--vscode-descriptionForeground); font-style:italic; }
+.error { color:var(--vscode-errorForeground); }
+
+/* Stable webview DOM replacements restore the viewport explicitly. Browser
+   scroll anchoring must not subsequently move it to a different row. */
+html, body { overflow-anchor: none; }
+
+.structured dt, .structured dd, .structured summary, .value-string { overflow-wrap:anywhere; }
+
+/* Code and memory use the exact editor font preferences. UI labels remain
+   ordinary workbench labels; there is no competing debugger font setting. */
+.memory,.byte,.byte-editor,.ascii,.tag-chip,#memory-values,#update-result,pre,code {
+  font-family:var(--vscode-editor-font-family,monospace);
+  font-size:var(--vscode-editor-font-size,14px);
+  font-weight:var(--vscode-editor-font-weight,normal);
+  line-height:var(--uwvm-code-line-height,1.5);
+  letter-spacing:var(--uwvm-code-letter-spacing,0px);
+}
+.byte { min-width:2.5ch; padding:2px .25ch; }
+.byte-editor { width:3ch; min-width:3ch; }

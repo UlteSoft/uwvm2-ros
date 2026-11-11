@@ -22,19 +22,20 @@ inline void llvm_jit_remember_array_length_value(runtime_local_func_llvm_jit_emi
     state.array_length_value_facts.push_back({reference, length, valid});
 }
 [[nodiscard]] inline bool llvm_jit_prepare_array_length_value_locals(
-    runtime_local_func_llvm_jit_emit_state_t& state, runtime_module_storage_t const& module) noexcept
+    runtime_local_func_llvm_jit_emit_state_t& state, runtime_module_storage_t const&) noexcept
 {
-    // Closed, precise-rooted ordinary full code only. Every external binding,
-    // debugger mutation, checkpoint, OSR/lazy/tiered entry keeps checked helpers.
+    // Precise-rooted ordinary full code only. Imports cannot mutate an array's
+    // immutable length or this activation's locals. Known facts originate in
+    // a successful local constructor; unknown returned references and writes
+    // still clear them. Calls retain the ordinary precise root publication.
+    // Debug mutation, checkpoint, threaded and OSR/lazy/tiered entries stay out.
     state.array_length_values_enabled = state.gc_array_access_ordinary_full &&
         state.emit_precise_gc_root_frames && !state.route_wasm_calls_through_runtime_bridge &&
         !state.emit_debug_safe_points && !state.debug_activation_enabled &&
         state.debug_full_patchable_typed_target_base_address == 0u &&
         state.pending_numeric_plan == nullptr &&
         state.checkpoint_plan == nullptr && state.local_types.size() <= 1024uz &&
-        module.imported_function_vec_storage.empty() && module.imported_table_vec_storage.empty() &&
-        module.imported_memory_vec_storage.empty() && module.imported_global_vec_storage.empty() &&
-        module.imported_tag_vec_storage.empty();
+        !threaded_host_emission_scope::selected();
     if(!state.array_length_values_enabled) { return true; }
     auto& builder{*state.ir_builder};
 #if defined(UWVM_EXPERIMENTAL_PRIVATE_NUMERIC_ARRAY_LOCK) && UWVM_EXPERIMENTAL_PRIVATE_NUMERIC_ARRAY_LOCK == 1

@@ -173,7 +173,8 @@ int main(int argc, char** argv)
     // Owned CLI preparation deliberately defers active segments until full
     // validation succeeds. This host fixture must perform the same real
     // instantiation step as CLI startup BEFORE admitting either guest.
-    ::uwvm2::uwvm::runtime::initializer::apply_runtime_active_segments(u8"blocked-cohort");
+    require(::uwvm2::uwvm::runtime::initializer::apply_runtime_active_segments(u8"blocked-cohort") ==
+        ::uwvm2::uwvm::runtime::initializer::details::active_segment_result::ok, "active segments initialized successfully");
     ::std::barrier start{static_cast<::std::ptrdiff_t>(cohort_size + 1u)};
     ::std::array<::std::uint64_t, cohort_size> tags{};
     ::std::array<::std::uint32_t, cohort_size> results{};

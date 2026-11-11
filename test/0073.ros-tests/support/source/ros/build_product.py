@@ -66,6 +66,7 @@ def main():
     p.add_argument('--opt', choices=['0', '1', '2'], default='1')
     p.add_argument('--stdlib', choices=['libc++', 'libstdc++'], default='libc++')
     p.add_argument('--compile-timeout', type=int, default=300)
+    p.add_argument('--runner', default='', help='Explicit emulator command prefix for the real product version check')
     a = p.parse_args()
     if not 1 <= a.compile_timeout <= 600:
         p.error('compile timeout must be 1..600 seconds')
@@ -91,6 +92,7 @@ def main():
     (out/'source-manifest.json').write_text(json.dumps(copied, sort_keys=True, indent=2)+'\n')
     compiler = shlex.split(os.environ.get('CXX', 'clang++'))
     extra = shlex.split(os.environ.get('ROS_PRODUCT_CXXFLAGS', ''))
+    link_extra = shlex.split(os.environ.get('ROS_PRODUCT_LDFLAGS', ''))
     base = ['-std=c++26', '-stdlib='+a.stdlib, '-O'+a.opt, '-g0', '-pthread',
             '-Wno-undefined-inline', '-fconstexpr-steps=8388608', '-DUWVM=2',
             '-DUWVM_USE_UWVM_INT', '-DUWVM_DISABLE_JIT', '-DUWVM_USE_THREAD_LOCAL',
@@ -137,13 +139,13 @@ def main():
                 binary = dest/'uwvm2-ros'
                 command = [*compiler, '-stdlib='+a.stdlib, '-pthread',
                            *[str(dest/(n+'.o')) for n in ['main', 'runtime', 'host_api']],
-                           '-ldl', '-o', str(binary)]
+                           *link_extra, '-ldl', '-o', str(binary)]
                 commands.append(command)
                 with (dest/'link.log').open('wb') as log:
                     result = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, timeout=60)
                 row['link_returncode'] = result.returncode
                 if result.returncode == 0:
-                    result = subprocess.run([str(binary), '--version'], stdout=subprocess.PIPE,
+                    result = subprocess.run([*shlex.split(a.runner), str(binary), '--version'], stdout=subprocess.PIPE,
                                             stderr=subprocess.STDOUT, timeout=15)
                     (dest/'version.log').write_bytes(result.stdout)
                     row.update(status='PASS' if result.returncode == 0 else 'FAIL',

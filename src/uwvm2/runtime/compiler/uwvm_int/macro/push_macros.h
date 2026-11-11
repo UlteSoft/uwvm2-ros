@@ -65,6 +65,12 @@
 // See the cold counterpart: visibility is part of MIPS tail-call eligibility,
 // including at -O0, and must not be applied globally to exported runtime APIs.
 # define UWVM_INTERPRETER_OPFUNC_HOT_MACRO [[__gnu__::__visibility__("hidden")]] UWVM_GNU_HOT
+#elif defined(__x86_64__)
+// Native PMU/paired execution identified opcode placement sensitivity after
+// adding cold MTE diagnostics. Align hot dispatch entries to 32 bytes without
+// adding instructions or changing the opfunc ABI. Other targets retain their
+// existing layout until native measurements justify a target-specific choice.
+# define UWVM_INTERPRETER_OPFUNC_HOT_MACRO UWVM_GNU_HOT [[__gnu__::__aligned__(32)]]
 #else
 # define UWVM_INTERPRETER_OPFUNC_HOT_MACRO UWVM_GNU_HOT
 #endif

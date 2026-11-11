@@ -65,6 +65,10 @@ inline constexpr bool llvm_jit_same_debug_bridge{[]() constexpr noexcept
 }()};
 template<auto Function>
 inline constexpr bool llvm_jit_debug_control_bridge{
+    llvm_jit_same_debug_bridge<Function, ::uwvm2::runtime::memtag::deferred::boundary> ||
+    llvm_jit_same_debug_bridge<Function, ::uwvm2::runtime::memtag::deferred::record_llvm> ||
+    llvm_jit_same_debug_bridge<Function, ::uwvm2::runtime::memtag::deferred::record_llvm_at> ||
+    llvm_jit_same_debug_bridge<Function, ::uwvm2::runtime::memtag::deferred::pending_flag_address> ||
     llvm_jit_same_debug_bridge<Function, ::uwvm2::runtime::lib::details::llvm_jit_debug_activation_enter_abi_bridge> ||
     llvm_jit_same_debug_bridge<Function, ::uwvm2::runtime::lib::details::llvm_jit_debug_activation_leave_abi_bridge> ||
     llvm_jit_same_debug_bridge<Function, ::uwvm2::runtime::lib::details::llvm_jit_debug_safe_point_abi_bridge> ||

@@ -165,26 +165,48 @@
                 using export_section_t = ::uwvm2::parser::wasm::standard::wasm1::features::export_section_storage_t<Fs...>;
                 auto const& importsec{::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<import_section_t>(module.sections)};
                 auto const& exportsec{::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<export_section_t>(module.sections)};
-                auto add_symbol{[&](bool global, ::std::uint64_t index, auto name)
+                using memory_section_t = ::uwvm2::parser::wasm::standard::wasm1::features::memory_section_storage_t<Fs...>;
+                auto const& memories{::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<memory_section_t>(module.sections).memories};
+                // Cold debugger setup only. These are immutable module declarations,
+                // including imports; they do not grant a borrow of any live value.
+                auto& inventory{candidate->image_};
+                inventory.imported_functions=imports;
+                inventory.imported_globals=rec.runtime_module->imported_global_vec_storage.size();
+                inventory.imported_tables=rec.runtime_module->imported_table_vec_storage.size();
+                inventory.imported_memories=rec.runtime_module->imported_memory_vec_storage.size();
+                inventory.function_count=imports+functions.size();
+                inventory.global_count=inventory.imported_globals+rec.runtime_module->local_defined_global_vec_storage.size();
+                inventory.table_count=inventory.imported_tables+rec.runtime_module->local_defined_table_vec_storage.size();
+                for(auto const& item : importsec.imports)
+                { if(static_cast<unsigned>(item.imports.type)==2u) { inventory.memory_address_bits.push_back(item.imports.storage.memory.address64 ? 64u : 32u); } }
+                if(inventory.memory_address_bits.size()!=inventory.imported_memories ||
+                   memories.size()!=rec.runtime_module->local_defined_memory_vec_storage.size()) { valid=false;return; }
+                for(auto const& item : memories) { inventory.memory_address_bits.push_back(item.address64 ? 64u : 32u); }
+                inventory.inventory_available=true;
+                auto add_symbol{[&](unsigned char kind, ::std::uint64_t index, auto name)
                 {
                     auto const address{reinterpret_cast<::std::uintptr_t>(name.data())};
                     if(name.empty() || address<begin || address>end || name.size()>end-address ||
                        copied>source_bytes || name.size()>source_bytes-copied) { return; }
-                    candidate->image_.symbols.push_back({index,global,{reinterpret_cast<char const*>(name.data()),name.size()}});
+                    candidate->image_.symbols.push_back({index,kind==3u,{reinterpret_cast<char const*>(name.data()),name.size()},kind});
                     copied+=name.size();
                 }};
-                ::std::uint64_t imported_function{}, imported_global{};
+                ::std::uint64_t imported_function{}, imported_global{}, imported_table{}, imported_memory{};
                 for(auto const& entry : importsec.imports)
                 {
                     auto kind{static_cast<unsigned>(entry.imports.type)};
-                    if(kind==0u) { add_symbol(false,imported_function++,entry.extern_name); }
-                    else if(kind==3u) { add_symbol(true,imported_global++,entry.extern_name); }
+                    if(kind==0u) { add_symbol(0u,imported_function++,entry.extern_name); }
+                    else if(kind==1u) { add_symbol(1u,imported_table++,entry.extern_name); }
+                    else if(kind==2u) { add_symbol(2u,imported_memory++,entry.extern_name); }
+                    else if(kind==3u) { add_symbol(3u,imported_global++,entry.extern_name); }
                 }
                 for(auto const& entry : exportsec.exports)
                 {
                     auto kind{static_cast<unsigned>(entry.exports.type)};
-                    if(kind==0u) { add_symbol(false,entry.exports.storage.func_idx,entry.export_name); }
-                    else if(kind==3u) { add_symbol(true,entry.exports.storage.global_idx,entry.export_name); }
+                    if(kind==0u) { add_symbol(0u,entry.exports.storage.func_idx,entry.export_name); }
+                    else if(kind==1u) { add_symbol(1u,entry.exports.storage.table_idx,entry.export_name); }
+                    else if(kind==2u) { add_symbol(2u,entry.exports.storage.memory_idx,entry.export_name); }
+                    else if(kind==3u) { add_symbol(3u,entry.exports.storage.global_idx,entry.export_name); }
                 }
                 candidate->image_.functions.reserve(functions.size());
                 ::std::size_t expression_bytes_copied{}, instruction_bitmap_bytes_copied{};

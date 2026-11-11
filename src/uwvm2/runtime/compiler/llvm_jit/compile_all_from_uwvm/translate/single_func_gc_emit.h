@@ -861,6 +861,8 @@ inline void llvm_jit_gc_input_free_bridge(::std::uintptr_t address) noexcept
     return true;
 }
 
+#include "single_func_gc_direct_access.h"
+
 // The validator/type registry has proved that this field's unpacked
 // result is i32 or f32. Integer status/payload transport is independent of the
 // Wasm reference carrier's native byte order, including 32-bit native targets.
@@ -1060,6 +1062,14 @@ template<bool Signed>
         reinterpret_cast<::std::uintptr_t>(module),
         ::uwvm2::utils::container::u8string_view{module_name.data(), module_name.size()})};
     if(module_address == nullptr) { return false; }
+    auto const* direct_field{module->gc_store->field_at(decoded.first,decoded.second)};
+    if(direct_field==nullptr) { return false; }
+    namespace direct_type=::uwvm2::parser::wasm::standard::wasm3::type;
+    unsigned const direct_width{direct_field->storage.packed==direct_type::packed_kind::i8?1u:
+        direct_field->storage.packed==direct_type::packed_kind::i16?2u:4u};
+    llvm_jit_gc_direct_access_plan direct{};
+    if(!direct.prepare(state,*module,kind,payload,builder.getInt32(decoded.second),nullptr,
+        decoded.first,direct_width,false,false,direct_field->mutable_,decoded.opcode==3u,operand.value)) { return false; }
     auto const bridge_type{::llvm::FunctionType::get(i64, {intptr, i32, intptr, i32}, false)};
     ::llvm::Value* arguments[]{module_address, kind, payload,
         ::llvm::ConstantInt::get(i32, decoded.second)};
@@ -1098,7 +1108,7 @@ template<bool Signed>
     auto const bridge_status{builder.CreateTrunc(builder.CreateLShr(packed, 32u), i32,
         get_llvm_string_ref(u8"gc.get32.status"))};
     status_dispatch.commit(*bridge_status);
-    auto const raw{builder.CreateTrunc(packed, i32, get_llvm_string_ref(u8"gc.get32.bits"))};
+    auto const raw{direct.finish(builder.CreateTrunc(packed, i32, get_llvm_string_ref(u8"gc.get32.bits")))};
     auto const result{result_type == wasm_type::f32 ?
         builder.CreateBitCast(raw, builder.getFloatTy(), get_llvm_string_ref(u8"gc.get32.f32")) : raw};
     // [SSA prefix][one complete reference] end -> [SSA prefix][scalar] end
@@ -1109,11 +1119,8 @@ template<bool Signed>
     return true;
 }
 
-#if defined(UWVM_EXPERIMENTAL_SCALAR_ARRAY_LENGTH) && UWVM_EXPERIMENTAL_SCALAR_ARRAY_LENGTH == 1
 #include "single_func_gc_array_length32.h"
-#endif
 
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
 #if defined(UWVM_EXPERIMENTAL_TYPED_ARRAY_LOAD) && UWVM_EXPERIMENTAL_TYPED_ARRAY_LOAD == 1 && defined(__x86_64__) && defined(__linux__) && defined(__clang__) && defined(__SIZEOF_INT128__)
 #include "single_func_gc_typed_array_load.h"
 #if defined(UWVM_EXPERIMENTAL_TYPED_ARRAY_STORE) && UWVM_EXPERIMENTAL_TYPED_ARRAY_STORE == 1
@@ -1121,15 +1128,10 @@ template<bool Signed>
 #endif
 #endif
 #include "single_func_gc_array_get32.h"
-#endif
 
-#if defined(UWVM_EXPERIMENTAL_NUMERIC_ARRAY_SET32) && UWVM_EXPERIMENTAL_NUMERIC_ARRAY_SET32 == 1
 #include "single_func_gc_array_set32.h"
-#endif
 
-#if defined(UWVM_EXPERIMENTAL_NUMERIC_STRUCT_SET32) && UWVM_EXPERIMENTAL_NUMERIC_STRUCT_SET32 == 1
 #include "single_func_gc_struct_set32.h"
-#endif
 
 #if defined(UWVM_EXPERIMENTAL_SEALED_COMPACT_CURSOR) && UWVM_EXPERIMENTAL_SEALED_COMPACT_CURSOR == 1
 [[nodiscard]] inline bool try_emit_runtime_local_func_llvm_jit_gc_aggregate_unsealed(
@@ -1224,7 +1226,6 @@ template<bool Signed>
 #endif
     if(stack.size() < input_count || input_count > (::std::numeric_limits<::std::size_t>::max)() / sizeof(storage::gc_object_value))
     { return false; }
-#if defined(UWVM_EXPERIMENTAL_SCALAR_ARRAY_LENGTH) && UWVM_EXPERIMENTAL_SCALAR_ARRAY_LENGTH == 1
     if(op == 15u)
     {
         auto const& native_layout{state.llvm_module->getDataLayout()};
@@ -1235,7 +1236,6 @@ template<bool Signed>
            native_layout.isLittleEndian() == (::std::endian::native == ::std::endian::little))
         { return try_emit_runtime_local_func_llvm_jit_gc_array_length32(state); }
     }
-#endif
     if(op >= 2u && op <= 4u)
     {
         auto const result_kind{field->storage.packed == gc_type::packed_kind::none ?
@@ -1246,7 +1246,6 @@ template<bool Signed>
                 result_kind == gc_type::value_kind::i32 ? wasm_type::i32 : wasm_type::f32);
         }
     }
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
     if(op >= 11u && op <= 13u)
     {
         auto const result_kind{field->storage.packed == gc_type::packed_kind::none ?
@@ -1263,8 +1262,6 @@ template<bool Signed>
                 result_kind == gc_type::value_kind::i32 ? wasm_type::i32 : wasm_type::f32);
         }
     }
-#endif
-#if defined(UWVM_EXPERIMENTAL_NUMERIC_STRUCT_SET32) && UWVM_EXPERIMENTAL_NUMERIC_STRUCT_SET32 == 1
     if(op == 5u)
     {
         // [retained canonical declaration][checked field pointer]
@@ -1287,9 +1284,6 @@ template<bool Signed>
                 value_kind == gc_type::value_kind::i32 ? wasm_type::i32 : wasm_type::f32);
         }
     }
-#endif
-#if (defined(UWVM_EXPERIMENTAL_NUMERIC_ARRAY_SET32) && UWVM_EXPERIMENTAL_NUMERIC_ARRAY_SET32 == 1) || \
-    (defined(UWVM_EXPERIMENTAL_TYPED_ARRAY_STORE) && UWVM_EXPERIMENTAL_TYPED_ARRAY_STORE == 1)
     if(op == 14u)
     {
         auto const value_kind{field->storage.packed == gc_type::packed_kind::none ?
@@ -1307,22 +1301,69 @@ template<bool Signed>
            native_layout.getPointerSize() == sizeof(::std::uintptr_t) &&
            native_layout.isLittleEndian() == (::std::endian::native == ::std::endian::little))
         {
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1 && defined(UWVM_EXPERIMENTAL_TYPED_ARRAY_LOAD) && UWVM_EXPERIMENTAL_TYPED_ARRAY_LOAD == 1 && defined(UWVM_EXPERIMENTAL_TYPED_ARRAY_STORE) && UWVM_EXPERIMENTAL_TYPED_ARRAY_STORE == 1 && defined(__x86_64__) && defined(__linux__) && defined(__clang__) && defined(__SIZEOF_INT128__)
+#if defined(UWVM_EXPERIMENTAL_TYPED_ARRAY_LOAD) && UWVM_EXPERIMENTAL_TYPED_ARRAY_LOAD == 1 && defined(UWVM_EXPERIMENTAL_TYPED_ARRAY_STORE) && UWVM_EXPERIMENTAL_TYPED_ARRAY_STORE == 1 && defined(__x86_64__) && defined(__linux__) && defined(__clang__) && defined(__SIZEOF_INT128__)
             if(llvm_jit_typed_array_load_eligible(state))
             {
                 return try_emit_runtime_local_func_llvm_jit_gc_typed_array_store(state, decoded,
                     value_kind == gc_type::value_kind::i32 ? wasm_type::i32 : wasm_type::f32);
             }
 #endif
-#if defined(UWVM_EXPERIMENTAL_NUMERIC_ARRAY_SET32) && UWVM_EXPERIMENTAL_NUMERIC_ARRAY_SET32 == 1
             return try_emit_runtime_local_func_llvm_jit_gc_array_set32(state, decoded,
                 value_kind == gc_type::value_kind::i32 ? wasm_type::i32 : wasm_type::f32);
-#endif
         }
     }
-#endif
+    // Wide numeric fields use the same authenticated local header path.
+    // The original aggregate operation below is retained as the complete
+    // semantic fallback (including foreign leases, subtype checks and traps).
+    // Reference-valued fields continue through collector barriers unchanged.
+    llvm_jit_gc_direct_access_plan wide_direct{};
+    bool has_wide_direct{};
+    unsigned wide_bits{};
+    if(field != nullptr && field->storage.packed == gc_type::packed_kind::none &&
+       (op == 2u || op == 5u || op == 11u || op == 14u) &&
+       (field->storage.value.kind == gc_type::value_kind::i64 ||
+        field->storage.value.kind == gc_type::value_kind::f64 ||
+        field->storage.value.kind == gc_type::value_kind::v128) &&
+       !state.llvm_module->getDataLayoutStr().empty() &&
+       state.llvm_module->getDataLayout().getPointerSize() == sizeof(::std::uintptr_t) &&
+       state.llvm_module->getDataLayout().isLittleEndian() &&
+       ::std::endian::native == ::std::endian::little)
+    {
+        using reference = storage::gc_reference;
+        constexpr auto bytes = sizeof(reference);
+        constexpr auto payload_shift = offsetof(reference, storage) * CHAR_BIT;
+        constexpr auto kind_shift = offsetof(reference, kind) * CHAR_BIT;
+        static_assert(offsetof(reference, storage) + sizeof(::std::uintptr_t) <= bytes);
+        static_assert(offsetof(reference, kind) + sizeof(::std::uint32_t) <= bytes);
+        auto const base = stack.size() - input_count;
+        auto const ref = stack[base];
+        bool const array = op >= 11u;
+        bool const setter = op == 5u || op == 14u;
+        wide_bits = field->storage.value.kind == gc_type::value_kind::v128 ? 128u : 64u;
+        if(ref.type != wasm_type::funcref || ref.value == nullptr ||
+           !ref.value->getType()->isIntegerTy(bytes * CHAR_BIT) ||
+           (setter && !field->mutable_)) { return false; }
+        auto* const index = array ? stack[base + 1uz].value : builder.getInt32(decoded.second);
+        if(index == nullptr || !index->getType()->isIntegerTy(32u)) { return false; }
+        ::llvm::Value* raw{};
+        if(setter)
+        {
+            auto const operand = stack.back();
+            auto const expected = field->storage.value.kind == gc_type::value_kind::i64 ? wasm_type::i64 :
+                field->storage.value.kind == gc_type::value_kind::f64 ? wasm_type::f64 : wasm_type::v128;
+            if(operand.type != expected || operand.value == nullptr ||
+               operand.value->getType() != get_llvm_type_from_wasm_value_type(builder.getContext(), expected))
+            { return false; }
+            raw = builder.CreateBitCast(operand.value, builder.getIntNTy(wide_bits));
+        }
+        auto* const token = builder.CreateTrunc(builder.CreateLShr(ref.value, payload_shift),
+            builder.getIntNTy(sizeof(::std::uintptr_t) * CHAR_BIT));
+        auto* const ref_kind = builder.CreateTrunc(builder.CreateLShr(ref.value, kind_shift), builder.getInt32Ty());
+        if(!wide_direct.prepare(state, *module, ref_kind, token, index, raw, decoded.first,
+            wide_bits / CHAR_BIT, array, false, field->mutable_, false, ref.value)) { return false; }
+        has_wide_direct = true;
+    }
     auto const input_base{stack.size() - input_count};
-#if defined(UWVM_EXPERIMENTAL_ARRAY_LENGTH_VALUES) && UWVM_EXPERIMENTAL_ARRAY_LENGTH_VALUES == 1
     ::llvm::Value* constructed_array_length{};
     if(state.array_length_values_enabled)
     {
@@ -1330,7 +1371,6 @@ template<bool Signed>
         else if(op == 7u) { constructed_array_length = stack[input_base].value; }
         else if(op == 8u) { constructed_array_length = builder.getInt32(decoded.second); }
     }
-#endif
     // Resolve the original cold trap before root snapshot/input allocation or
     // the native aggregate call. A declined plan cannot repeat these effects.
     llvm_jit_gc_status_dispatch_plan status_dispatch{};
@@ -1531,6 +1571,11 @@ template<bool Signed>
     }};
     auto const bridge_status{[&]() noexcept -> ::llvm::Value*
     {
+        if(threaded_host_emission_scope::selected())
+        {
+            return emit_runtime_local_func_llvm_jit_runtime_bridge_call<llvm_jit_gc_aggregate_bridge<>>(
+                state, bridge_type, arguments);
+        }
         // No guest pointer or decoding cursor changes here. These operands
         // are live builder-owned SSA handles and the existing buffer extents
         // were proved above; specialization preserves the complete native ABI.
@@ -1647,13 +1692,18 @@ template<bool Signed>
         if(llvm_result_type == nullptr) { return false; }
         auto const loaded{builder.CreateLoad(llvm_result_type, output, get_llvm_string_ref(u8"gc.result"))};
         loaded->setAlignment(::llvm::Align{1u});
-        stack.push_back({.type = result_type, .value = loaded});
-#if defined(UWVM_EXPERIMENTAL_ARRAY_LENGTH_VALUES) && UWVM_EXPERIMENTAL_ARRAY_LENGTH_VALUES == 1
+        ::llvm::Value* result = loaded;
+        if(has_wide_direct)
+        {
+            auto* const bits = builder.CreateBitCast(loaded, builder.getIntNTy(wide_bits));
+            result = builder.CreateBitCast(wide_direct.finish(bits), llvm_result_type);
+        }
+        stack.push_back({.type = result_type, .value = result});
         // Original checked allocation/status success dominates this logical scalar.
         if(constructed_array_length != nullptr)
         { llvm_jit_remember_array_length_value(state, loaded, constructed_array_length, builder.getTrue()); }
-#endif
     }
+    if(has_wide_direct && !has_result) { static_cast<void>(wide_direct.finish(nullptr)); }
     return true;
 }
 

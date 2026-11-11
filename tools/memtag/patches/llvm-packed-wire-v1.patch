@@ -1,0 +1,884 @@
+diff --git a/llvm/lib/Target/WebAssembly/WebAssemblyInstrMemtag.td b/llvm/lib/Target/WebAssembly/WebAssemblyInstrMemtag.td
+--- a/llvm/lib/Target/WebAssembly/WebAssemblyInstrMemtag.td
++++ b/llvm/lib/Target/WebAssembly/WebAssemblyInstrMemtag.td
+@@ -11,6 +11,10 @@
+ /// Instructions that handle memtags
+ //===----------------------------------------------------------------------===//
+ 
++// Compact TableGen selectors only. MC encoding expands 0xffXX to:
++//   0xff ULEB32(0x01010000 | XX) ULEB32(memoryidx).
++// The packed word is version 1 / linear-memory domain 1 / 16-bit operation.
++// Standard 0xfc instructions keep their existing binary encodings.
+ multiclass MemoryTaggingOps<WebAssemblyRegClass rc, string B> {
+ 
+ defm MEMTAG_STATUS_A#B: I<(outs rc:$statuscode), (ins i32imm:$tableidx),
+@@ -19,7 +23,7 @@
+                         (int_wasm_memtag_status (i32 imm:$tableidx)))],
+                     "memtag.status\t$statuscode, $tableidx",
+                     "memtag.status\t$tableidx",
+-                    0xfc20>;
++                    0xff20>;
+ 
+ defm MEMTAG_EXTRACT_A#B: I<(outs rc:$taggedval), (ins i32imm:$tableidx, rc:$ptr),
+                     (outs), (ins i32imm:$tableidx),
+@@ -27,7 +31,7 @@
+                         (int_wasm_memtag_extract (i32 imm:$tableidx), rc:$ptr))],
+                     "memtag.extract\t$taggedval, $tableidx, $ptr",
+                     "memtag.extract\t$tableidx",
+-                    0xfc21>;
++                    0xff21>;
+ 
+ defm MEMTAG_INSERT_A#B: I<(outs rc:$taggedptr), (ins i32imm:$tableidx, rc:$ptr, rc:$insertval),
+                     (outs), (ins i32imm:$tableidx),
+@@ -35,7 +39,7 @@
+                         (int_wasm_memtag_insert (i32 imm:$tableidx), rc:$ptr, rc:$insertval))],
+                     "memtag.insert\t$taggedptr, $tableidx, $ptr, $insertval",
+                     "memtag.insert\t$tableidx",
+-                    0xfc22>;
++                    0xff22>;
+ 
+ defm MEMTAG_TAGBITS_A#B: I<(outs rc:$taggedbits), (ins i32imm:$tableidx),
+                     (outs), (ins i32imm:$tableidx),
+@@ -43,7 +47,7 @@
+                         (int_wasm_memtag_tagbits (i32 imm:$tableidx)))],
+                     "memtag.tagbits\t$taggedbits, $tableidx",
+                     "memtag.tagbits\t$tableidx",
+-                    0xfc23>;
++                    0xff23>;
+ 
+ defm MEMTAG_STARTBIT_A#B: I<(outs rc:$startbit), (ins i32imm:$tableidx),
+                     (outs), (ins i32imm:$tableidx),
+@@ -51,7 +55,7 @@
+                         (int_wasm_memtag_startbit (i32 imm:$tableidx)))],
+                     "memtag.startbit\t$startbit, $tableidx",
+                     "memtag.startbit\t$tableidx",
+-                    0xfc24>;
++                    0xff24>;
+ 
+ defm MEMTAG_COPY_A#B: I<(outs rc:$dstwsrctag), (ins i32imm:$tableidx, rc:$dst, rc:$src),
+                     (outs), (ins i32imm:$tableidx),
+@@ -59,7 +63,7 @@
+                         (int_wasm_memtag_copy (i32 imm:$tableidx), rc:$dst, rc:$src))],
+                     "memtag.copy\t$dstwsrctag, $tableidx, $dst, $src",
+                     "memtag.copy\t$tableidx",
+-                    0xfc25>;
++                    0xff25>;
+ 
+ defm MEMTAG_SUB_A#B: I<(outs rc:$diff), (ins i32imm:$tableidx, rc:$minuendptr, rc:$subtrahendptr),
+                     (outs), (ins i32imm:$tableidx),
+@@ -67,7 +71,7 @@
+                         (int_wasm_memtag_sub (i32 imm:$tableidx), rc:$minuendptr, rc:$subtrahendptr))],
+                     "memtag.sub\t$diff, $tableidx, $minuendptr, $subtrahendptr",
+                     "memtag.sub\t$tableidx",
+-                    0xfc26>;
++                    0xff26>;
+ 
+ let mayLoad = 1 in
+ defm MEMTAG_LOAD_A#B: I<(outs rc:$taggedptr), (ins i32imm:$tableidx, rc:$src),
+@@ -76,7 +80,7 @@
+                         (int_wasm_memtag_load (i32 imm:$tableidx), rc:$src))],
+                     "memtag.load\t$taggedptr, $tableidx, $src",
+                     "memtag.load\t$tableidx",
+-                    0xfc27>;
++                    0xff27>;
+ 
+ defm MEMTAG_UNTAG_A#B: I<(outs rc:$untaggedptr), (ins i32imm:$tableidx, rc:$ptr),
+                     (outs), (ins i32imm:$tableidx),
+@@ -84,7 +88,7 @@
+                         (int_wasm_memtag_untag (i32 imm:$tableidx), rc:$ptr))],
+                     "memtag.untag\t$untaggedptr, $tableidx, $ptr",
+                     "memtag.untag\t$tableidx",
+-                    0xfc28>;
++                    0xff28>;
+ 
+ let mayStore = 1 in
+ defm MEMTAG_UNTAGSTORE_A#B: I<(outs rc:$untaggedptr), (ins i32imm:$tableidx, rc:$src, rc:$b16),
+@@ -93,7 +97,7 @@
+                         (int_wasm_memtag_untagstore (i32 imm:$tableidx), rc:$src, rc:$b16))],
+                     "memtag.untagstore\t$tableidx, $src, $b16",
+                     "memtag.untagstore\t$tableidx",
+-                    0xfc29>;
++                    0xff29>;
+ 
+ let mayStore = 1 in
+ defm MEMTAG_UNTAGSTOREZ_A#B: I<(outs rc:$untaggedptr), (ins i32imm:$tableidx, rc:$src, rc:$b16),
+@@ -102,7 +106,7 @@
+                         (int_wasm_memtag_untagstorez (i32 imm:$tableidx), rc:$src, rc:$b16))],
+                     "memtag.untagstorez\t$tableidx, $src, $b16",
+                     "memtag.untagstorez\t$tableidx",
+-                    0xfc2a>;
++                    0xff2a>;
+ 
+ let mayStore = 1 in
+ defm MEMTAG_STORE_A#B: I<(outs), (ins i32imm:$tableidx, rc:$src, rc:$b16),
+@@ -110,7 +114,7 @@
+                     [(int_wasm_memtag_store (i32 imm:$tableidx), rc:$src, rc:$b16)],
+                     "memtag.store\t$tableidx, $src, $b16",
+                     "memtag.store\t$tableidx",
+-                    0xfc2b>;
++                    0xff2b>;
+ 
+ let mayStore = 1 in
+ defm MEMTAG_STOREZ_A#B: I<(outs), (ins i32imm:$tableidx, rc:$src, rc:$b16),
+@@ -118,7 +122,7 @@
+                     [(int_wasm_memtag_storez (i32 imm:$tableidx), rc:$src, rc:$b16)],
+                     "memtag.storez\t$tableidx, $src, $b16",
+                     "memtag.storez\t$tableidx",
+-                    0xfc2c>;
++                    0xff2c>;
+ 
+ let hasSideEffects = 1 in
+ defm MEMTAG_RANDOM_A#B: I<(outs rc:$dst), (ins i32imm:$tableidx, rc:$src),
+@@ -127,7 +131,7 @@
+                         (int_wasm_memtag_random (i32 imm:$tableidx), rc:$src))],
+                     "memtag.random\t$dst, $tableidx, $src",
+                     "memtag.random\t$tableidx",
+-                    0xfc2d>;
++                    0xff2d>;
+ 
+ let hasSideEffects = 1, mayStore = 1 in
+ defm MEMTAG_RANDOMSTORE_A#B: I<(outs rc:$dst), (ins i32imm:$tableidx, rc:$src, rc:$b16),
+@@ -136,7 +140,7 @@
+                         (int_wasm_memtag_randomstore (i32 imm:$tableidx), rc:$src, rc:$b16))],
+                     "memtag.randomstore\t$dst, $tableidx, $src, $b16",
+                     "memtag.randomstore\t$tableidx",
+-                    0xfc2e>;
++                    0xff2e>;
+ 
+ let hasSideEffects = 1, mayStore = 1 in
+ defm MEMTAG_RANDOMSTOREZ_A#B: I<(outs rc:$dst), (ins i32imm:$tableidx, rc:$src, rc:$b16),
+@@ -145,7 +149,7 @@
+                         (int_wasm_memtag_randomstorez (i32 imm:$tableidx), rc:$src, rc:$b16))],
+                     "memtag.randomstorez\t$dst, $src, $tableidx, $b16",
+                     "memtag.randomstorez\t$tableidx",
+-                    0xfc2f>;
++                    0xff2f>;
+ 
+ defm MEMTAG_ADD_A#B: I<(outs rc:$dst), (ins i32imm:$tableidx, rc:$src, rc:$addroffset, rc:$tagoffset),
+                     (outs), (ins i32imm:$tableidx),
+@@ -153,7 +157,7 @@
+                         (int_wasm_memtag_add (i32 imm:$tableidx), rc:$src, rc:$addroffset, rc:$tagoffset))],
+                     "memtag.add\t$dst, $tableidx, $src, $addroffset, $tagoffset",
+                     "memtag.add\t$tableidx",
+-                    0xfc33>;
++                    0xff33>;
+ 
+ defm MEMTAG_HINT_A#B: I<(outs rc:$dst), (ins i32imm:$tableidx, rc:$src, rc:$hintaddr, rc:$index),
+                     (outs), (ins i32imm:$tableidx),
+@@ -161,7 +165,7 @@
+                         (int_wasm_memtag_hint (i32 imm:$tableidx), rc:$src, rc:$hintaddr, rc:$index))],
+                     "memtag.hint\t$dst, $tableidx, $src, $hintaddr, $index",
+                     "memtag.hint\t$tableidx",
+-                    0xfc36>;
++                    0xff36>;
+ 
+ let mayStore = 1 in
+ defm MEMTAG_HINTSTORE_A#B: I<(outs rc:$dst), (ins i32imm:$tableidx, rc:$src, rc:$b16, rc:$hintaddr, rc:$index),
+@@ -170,7 +174,7 @@
+                         (int_wasm_memtag_hintstore (i32 imm:$tableidx), rc:$src, rc:$b16, rc:$hintaddr, rc:$index))],
+                     "memtag.hintstore\t$dst, $tableidx, $src, $b16, $hintaddr, $index",
+                     "memtag.hintstore\t$tableidx",
+-                    0xfc37>;
++                    0xff37>;
+ 
+ let mayStore = 1 in
+ defm MEMTAG_HINTSTOREZ_A#B: I<(outs rc:$dst), (ins i32imm:$tableidx, rc:$src, rc:$b16, rc:$hintaddr, rc:$index),
+@@ -179,7 +183,7 @@
+                         (int_wasm_memtag_hintstorez (i32 imm:$tableidx), rc:$src, rc:$b16, rc:$hintaddr, rc:$index))],
+                     "memtag.hintstorez\t$dst, $tableidx, $src, $b16, $hintaddr, $index",
+                     "memtag.hintstorez\t$tableidx",
+-                    0xfc38>;
++                    0xff38>;
+ 
+ }
+ 
+diff --git a/llvm/lib/Target/WebAssembly/MCTargetDesc/WebAssemblyMCCodeEmitter.cpp b/llvm/lib/Target/WebAssembly/MCTargetDesc/WebAssemblyMCCodeEmitter.cpp
+--- a/llvm/lib/Target/WebAssembly/MCTargetDesc/WebAssemblyMCCodeEmitter.cpp
++++ b/llvm/lib/Target/WebAssembly/MCTargetDesc/WebAssemblyMCCodeEmitter.cpp
+@@ -115,7 +115,17 @@
+   uint64_t Start = OS.tell();
+ 
+   uint64_t Binary = getBinaryCodeForInstr(MI, Fixups, STI);
+-  if (Binary < (1 << 8)) {
++  // TableGen keeps compact prefix/operation selectors. Only this private
++  // prefix expands to a versioned domain word; no standard FC opcode changes.
++  bool IsMemtag = (Binary >> 8) == 0xff;
++  if (IsMemtag) {
++    if (uint8_t(Binary) == 0x33) {
++      Ctx.reportError(SMLoc(), "memtag.add is reserved; no executable semantics");
++      return;
++    }
++    OS << uint8_t(0xff);
++    encodeULEB128(0x01010000u | uint8_t(Binary), OS);
++  } else if (Binary < (1 << 8)) {
+     OS << uint8_t(Binary);
+   } else if (Binary < (1 << 16)) {
+     OS << uint8_t(Binary >> 8);
+@@ -145,6 +155,16 @@
+       /* nothing to encode */
+ 
+     } else if (MO.isImm()) {
++      // Every memtag immediate is a u32 memory index, even when the
++      // assembler selected a memory64 operand descriptor.
++      if (IsMemtag) {
++        if (MO.getImm() < 0 || uint64_t(MO.getImm()) > UINT32_MAX) {
++          Ctx.reportError(SMLoc(), "memtag memory index must fit u32");
++          return;
++        }
++        encodeULEB128(uint32_t(MO.getImm()), OS);
++        continue;
++      }
+       if (I < Desc.getNumOperands()) {
+         const MCOperandInfo &Info = Desc.operands()[I];
+         LLVM_DEBUG(dbgs() << "Encoding immediate: type="
+@@ -236,6 +256,10 @@
+       uint64_t D = MO.getDFPImm();
+       support::endian::write<uint64_t>(OS, D, llvm::endianness::little);
+     } else if (MO.isExpr()) {
++      if (IsMemtag) {
++        Ctx.reportError(SMLoc(), "memtag memory index must be an integer");
++        return;
++      }
+       llvm::MCFixupKind FixupKind;
+       size_t PaddedSize = 5;
+       if (I < Desc.getNumOperands()) {
+diff --git a/llvm/lib/Target/WebAssembly/Disassembler/WebAssemblyDisassembler.cpp b/llvm/lib/Target/WebAssembly/Disassembler/WebAssemblyDisassembler.cpp
+--- a/llvm/lib/Target/WebAssembly/Disassembler/WebAssemblyDisassembler.cpp
++++ b/llvm/lib/Target/WebAssembly/Disassembler/WebAssemblyDisassembler.cpp
+@@ -181,8 +181,20 @@
+     if (!WasmInst)
+       return MCDisassembler::Fail;
+     int64_t PrefixedOpc;
++    uint64_t WordStart = Size;
+     if (!nextLEB(PrefixedOpc, Bytes, Size, false))
+       return MCDisassembler::Fail;
++    if (Opc == 0xff) {
++      // A single bounded u32 LEB carries version/domain/operation. In
++      // particular, old FF/vendor headers and the reserved GC domain fail.
++      if (Size - WordStart > 5 || PrefixedOpc < 0 ||
++          uint64_t(PrefixedOpc) > UINT32_MAX ||
++          (uint32_t(PrefixedOpc) >> 16) != 0x0101)
++        return MCDisassembler::Fail;
++      PrefixedOpc &= 0xffff;
++      if (PrefixedOpc == 0x33)
++        return MCDisassembler::Fail;
++    }
+     if (PrefixedOpc < 0 || PrefixedOpc >= WebAssemblyInstructionTableSize)
+       return MCDisassembler::Fail;
+     WasmInst += PrefixedOpc;
+@@ -195,6 +207,17 @@
+   // Parse any operands.
+   for (uint8_t OPI = 0; OPI < WasmInst->NumOperands; OPI++) {
+     auto OT = OperandTable[WasmInst->OperandStart + OPI];
++    // The table may classify a stack-form index as a generic immediate.
++    // Enforce the wire type before dispatching on that generated descriptor.
++    if (Opc == 0xff) {
++      int64_t Index;
++      uint64_t IndexStart = Size;
++      if (!nextLEB(Index, Bytes, Size, false) || Size - IndexStart > 5 ||
++          Index < 0 || uint64_t(Index) > UINT32_MAX)
++        return MCDisassembler::Fail;
++      MI.addOperand(MCOperand::createImm(Index));
++      continue;
++    }
+     switch (OT) {
+     // ULEB operands:
+     case WebAssembly::OPERAND_BASIC_BLOCK:
+@@ -242,6 +265,7 @@
+     }
+     // SLEB operands:
+     case WebAssembly::OPERAND_I32IMM:
++      [[fallthrough]];
+     case WebAssembly::OPERAND_I64IMM: {
+       if (!parseLEBImmediate(MI, Size, Bytes, true))
+         return MCDisassembler::Fail;
+diff --git a/lld/wasm/OutputSections.cpp b/lld/wasm/OutputSections.cpp
+--- a/lld/wasm/OutputSections.cpp
++++ b/lld/wasm/OutputSections.cpp
+@@ -298,7 +298,8 @@
+ }
+ 
+ MemtagGlobalsSection::MemtagGlobalsSection()
+-    : OutputSection(llvm::wasm::WASM_SEC_CUSTOM, "memtag.globals") {
++    : OutputSection(llvm::wasm::WASM_SEC_CUSTOM,
++                    "uwvm.memtag.linear.globals") {
+   // A relocatable or PIC output does not have final addresses for the
+   // descriptors; a later link (or the dynamic loader) has to assign them.
+   if (ctx.arg.relocatable || ctx.isPic)
+@@ -325,9 +326,12 @@
+   globals.erase(llvm::unique(globals), globals.end());
+ 
+   raw_string_ostream os(payload);
+-  encodeULEB128(1, os); // version
++  encodeULEB128(2, os); // version: explicit linear-memory index
+   encodeULEB128(globals.size(), os);
+   for (auto [addr, size] : globals) {
++    // This pinned linker places its data symbols in memory zero. Keep the
++    // index explicit; a future multi-memory producer must select each owner.
++    encodeULEB128(0, os);
+     encodeULEB128(addr, os);
+     encodeULEB128(size, os);
+   }
+diff --git a/llvm/test/CodeGen/WebAssembly/memtag-addr32.ll b/llvm/test/CodeGen/WebAssembly/memtag-addr32.ll
+--- a/llvm/test/CodeGen/WebAssembly/memtag-addr32.ll
++++ b/llvm/test/CodeGen/WebAssembly/memtag-addr32.ll
+@@ -2,7 +2,7 @@
+ 
+ target triple = "wasm32-unknown-unknown"
+ 
+-; --- 0xfc20: memtag.status ---
++; --- FF / packed 0x01010020: memtag.status ---
+ ; CHECK-LABEL: test_status:
+ ; CHECK: memtag.status 0
+ define i32 @test_status() {
+@@ -10,7 +10,7 @@
+   ret i32 %1
+ }
+ 
+-; --- 0xfc21: memtag.extract ---
++; --- FF / packed 0x01010021: memtag.extract ---
+ ; CHECK-LABEL: test_extract:
+ ; CHECK: local.get 0
+ ; CHECK: memtag.extract 0
+@@ -19,7 +19,7 @@
+   ret i32 %1
+ }
+ 
+-; --- 0xfc22: memtag.insert ---
++; --- FF / packed 0x01010022: memtag.insert ---
+ ; CHECK-LABEL: test_insert:
+ ; CHECK: local.get 0
+ ; CHECK: local.get 1
+@@ -29,7 +29,7 @@
+   ret ptr %1
+ }
+ 
+-; --- 0xfc23: memtag.tagbits ---
++; --- FF / packed 0x01010023: memtag.tagbits ---
+ ; CHECK-LABEL: test_tagbits:
+ ; CHECK: memtag.tagbits 0
+ define i32 @test_tagbits() {
+@@ -37,7 +37,7 @@
+   ret i32 %1
+ }
+ 
+-; --- 0xfc24: memtag.startbit ---
++; --- FF / packed 0x01010024: memtag.startbit ---
+ ; CHECK-LABEL: test_startbit:
+ ; CHECK: memtag.startbit 0
+ define i32 @test_startbit() {
+@@ -45,7 +45,7 @@
+   ret i32 %1
+ }
+ 
+-; --- 0xfc25: memtag.copy ---
++; --- FF / packed 0x01010025: memtag.copy ---
+ ; CHECK-LABEL: test_copy:
+ ; CHECK: local.get 0
+ ; CHECK: local.get 1
+@@ -55,7 +55,7 @@
+   ret ptr %1
+ }
+ 
+-; --- 0xfc26: memtag.sub ---
++; --- FF / packed 0x01010026: memtag.sub ---
+ ; CHECK-LABEL: test_sub:
+ ; CHECK: local.get 0
+ ; CHECK: local.get 1
+@@ -65,7 +65,7 @@
+   ret i32 %1
+ }
+ 
+-; --- 0xfc27: memtag.load ---
++; --- FF / packed 0x01010027: memtag.load ---
+ ; CHECK-LABEL: test_load:
+ ; CHECK: local.get 0
+ ; CHECK: memtag.load 0
+@@ -74,7 +74,7 @@
+   ret ptr %1
+ }
+ 
+-; --- 0xfc28: memtag.untag ---
++; --- FF / packed 0x01010028: memtag.untag ---
+ ; CHECK-LABEL: test_untag:
+ ; CHECK: local.get 0
+ ; CHECK: memtag.untag 0
+@@ -83,7 +83,7 @@
+   ret ptr %1
+ }
+ 
+-; --- 0xfc29: memtag.untagstore ---
++; --- FF / packed 0x01010029: memtag.untagstore ---
+ ; CHECK-LABEL: test_untagstore:
+ ; CHECK: local.get 0
+ ; CHECK: local.get 1
+@@ -93,7 +93,7 @@
+   ret ptr %1
+ }
+ 
+-; --- 0xfc2a: memtag.untagstorez ---
++; --- FF / packed 0x0101002a: memtag.untagstorez ---
+ ; CHECK-LABEL: test_untagstorez:
+ ; CHECK: local.get 0
+ ; CHECK: local.get 1
+@@ -103,7 +103,7 @@
+   ret ptr %1
+ }
+ 
+-; --- 0xfc2b: memtag.store ---
++; --- FF / packed 0x0101002b: memtag.store ---
+ ; CHECK-LABEL: test_store:
+ ; CHECK: local.get 0
+ ; CHECK: local.get 1
+@@ -113,7 +113,7 @@
+   ret void
+ }
+ 
+-; --- 0xfc2c: memtag.storez ---
++; --- FF / packed 0x0101002c: memtag.storez ---
+ ; CHECK-LABEL: test_storez:
+ ; CHECK: local.get 0
+ ; CHECK: local.get 1
+@@ -123,7 +123,7 @@
+   ret void
+ }
+ 
+-; --- 0xfc2d: memtag.random ---
++; --- FF / packed 0x0101002d: memtag.random ---
+ ; CHECK-LABEL: test_random:
+ ; CHECK: local.get 0
+ ; CHECK: memtag.random 0
+@@ -132,7 +132,7 @@
+   ret ptr %1
+ }
+ 
+-; --- 0xfc2e: memtag.randomstore ---
++; --- FF / packed 0x0101002e: memtag.randomstore ---
+ ; CHECK-LABEL: test_randomstore:
+ ; CHECK: local.get 0
+ ; CHECK: local.get 1
+@@ -142,7 +142,7 @@
+   ret ptr %1
+ }
+ 
+-; --- 0xfc2f: memtag.randomstorez ---
++; --- FF / packed 0x0101002f: memtag.randomstorez ---
+ ; CHECK-LABEL: test_randomstorez:
+ ; CHECK: local.get 0
+ ; CHECK: local.get 1
+@@ -152,7 +152,7 @@
+   ret ptr %1
+ }
+ 
+-; --- 0xfc33: memtag.add ---
++; --- FF / packed 0x01010033: memtag.add ---
+ ; CHECK-LABEL: test_add:
+ ; CHECK: local.get 0
+ ; CHECK: local.get 1
+@@ -163,7 +163,7 @@
+   ret ptr %1
+ }
+ 
+-; --- 0xfc36: memtag.hint ---
++; --- FF / packed 0x01010036: memtag.hint ---
+ ; CHECK-LABEL: test_hint:
+ ; CHECK: local.get 0
+ ; CHECK: local.get 1
+@@ -174,7 +174,7 @@
+   ret ptr %1
+ }
+ 
+-; --- 0xfc37: memtag.hintstore ---
++; --- FF / packed 0x01010037: memtag.hintstore ---
+ ; CHECK-LABEL: test_hintstore:
+ ; CHECK: local.get 0
+ ; CHECK: local.get 1
+@@ -186,7 +186,7 @@
+   ret ptr %1
+ }
+ 
+-; --- 0xfc38: memtag.hintstorez ---
++; --- FF / packed 0x01010038: memtag.hintstorez ---
+ ; CHECK-LABEL: test_hintstorez:
+ ; CHECK: local.get 0
+ ; CHECK: local.get 1
+diff --git a/llvm/test/CodeGen/WebAssembly/memtag-addr64.ll b/llvm/test/CodeGen/WebAssembly/memtag-addr64.ll
+--- a/llvm/test/CodeGen/WebAssembly/memtag-addr64.ll
++++ b/llvm/test/CodeGen/WebAssembly/memtag-addr64.ll
+@@ -2,7 +2,7 @@
+ 
+ target triple = "wasm64-unknown-unknown"
+ 
+-; --- 0xfc20: memtag.status ---
++; --- FF / packed 0x01010020: memtag.status ---
+ ; CHECK-LABEL: test_status:
+ ; CHECK: memtag.status 0
+ define i64 @test_status() {
+@@ -10,7 +10,7 @@
+   ret i64 %1
+ }
+ 
+-; --- 0xfc21: memtag.extract ---
++; --- FF / packed 0x01010021: memtag.extract ---
+ ; CHECK-LABEL: test_extract:
+ ; CHECK: local.get 0
+ ; CHECK: memtag.extract 0
+@@ -19,7 +19,7 @@
+   ret i64 %1
+ }
+ 
+-; --- 0xfc22: memtag.insert ---
++; --- FF / packed 0x01010022: memtag.insert ---
+ ; CHECK-LABEL: test_insert:
+ ; CHECK: local.get 0
+ ; CHECK: local.get 1
+@@ -29,7 +29,7 @@
+   ret ptr %1
+ }
+ 
+-; --- 0xfc23: memtag.tagbits ---
++; --- FF / packed 0x01010023: memtag.tagbits ---
+ ; CHECK-LABEL: test_tagbits:
+ ; CHECK: memtag.tagbits 0
+ define i64 @test_tagbits() {
+@@ -37,7 +37,7 @@
+   ret i64 %1
+ }
+ 
+-; --- 0xfc24: memtag.startbit ---
++; --- FF / packed 0x01010024: memtag.startbit ---
+ ; CHECK-LABEL: test_startbit:
+ ; CHECK: memtag.startbit 0
+ define i64 @test_startbit() {
+@@ -45,7 +45,7 @@
+   ret i64 %1
+ }
+ 
+-; --- 0xfc25: memtag.copy ---
++; --- FF / packed 0x01010025: memtag.copy ---
+ ; CHECK-LABEL: test_copy:
+ ; CHECK: local.get 0
+ ; CHECK: local.get 1
+@@ -55,7 +55,7 @@
+   ret ptr %1
+ }
+ 
+-; --- 0xfc26: memtag.sub ---
++; --- FF / packed 0x01010026: memtag.sub ---
+ ; CHECK-LABEL: test_sub:
+ ; CHECK: local.get 0
+ ; CHECK: local.get 1
+@@ -65,7 +65,7 @@
+   ret i64 %1
+ }
+ 
+-; --- 0xfc27: memtag.load ---
++; --- FF / packed 0x01010027: memtag.load ---
+ ; CHECK-LABEL: test_load:
+ ; CHECK: local.get 0
+ ; CHECK: memtag.load 0
+@@ -74,7 +74,7 @@
+   ret ptr %1
+ }
+ 
+-; --- 0xfc28: memtag.untag ---
++; --- FF / packed 0x01010028: memtag.untag ---
+ ; CHECK-LABEL: test_untag:
+ ; CHECK: local.get 0
+ ; CHECK: memtag.untag 0
+@@ -83,7 +83,7 @@
+   ret ptr %1
+ }
+ 
+-; --- 0xfc29: memtag.untagstore ---
++; --- FF / packed 0x01010029: memtag.untagstore ---
+ ; CHECK-LABEL: test_untagstore:
+ ; CHECK: local.get 0
+ ; CHECK: local.get 1
+@@ -93,7 +93,7 @@
+   ret ptr %1
+ }
+ 
+-; --- 0xfc2a: memtag.untagstorez ---
++; --- FF / packed 0x0101002a: memtag.untagstorez ---
+ ; CHECK-LABEL: test_untagstorez:
+ ; CHECK: local.get 0
+ ; CHECK: local.get 1
+@@ -103,7 +103,7 @@
+   ret ptr %1
+ }
+ 
+-; --- 0xfc2b: memtag.store ---
++; --- FF / packed 0x0101002b: memtag.store ---
+ ; CHECK-LABEL: test_store:
+ ; CHECK: local.get 0
+ ; CHECK: local.get 1
+@@ -113,7 +113,7 @@
+   ret void
+ }
+ 
+-; --- 0xfc2c: memtag.storez ---
++; --- FF / packed 0x0101002c: memtag.storez ---
+ ; CHECK-LABEL: test_storez:
+ ; CHECK: local.get 0
+ ; CHECK: local.get 1
+@@ -123,7 +123,7 @@
+   ret void
+ }
+ 
+-; --- 0xfc2d: memtag.random ---
++; --- FF / packed 0x0101002d: memtag.random ---
+ ; CHECK-LABEL: test_random:
+ ; CHECK: local.get 0
+ ; CHECK: memtag.random 0
+@@ -132,7 +132,7 @@
+   ret ptr %1
+ }
+ 
+-; --- 0xfc2e: memtag.randomstore ---
++; --- FF / packed 0x0101002e: memtag.randomstore ---
+ ; CHECK-LABEL: test_randomstore:
+ ; CHECK: local.get 0
+ ; CHECK: local.get 1
+@@ -142,7 +142,7 @@
+   ret ptr %1
+ }
+ 
+-; --- 0xfc2f: memtag.randomstorez ---
++; --- FF / packed 0x0101002f: memtag.randomstorez ---
+ ; CHECK-LABEL: test_randomstorez:
+ ; CHECK: local.get 0
+ ; CHECK: local.get 1
+@@ -152,7 +152,7 @@
+   ret ptr %1
+ }
+ 
+-; --- 0xfc33: memtag.add ---
++; --- FF / packed 0x01010033: memtag.add ---
+ ; CHECK-LABEL: test_add:
+ ; CHECK: local.get 0
+ ; CHECK: local.get 1
+@@ -163,7 +163,7 @@
+   ret ptr %1
+ }
+ 
+-; --- 0xfc36: memtag.hint ---
++; --- FF / packed 0x01010036: memtag.hint ---
+ ; CHECK-LABEL: test_hint:
+ ; CHECK: local.get 0
+ ; CHECK: local.get 1
+@@ -174,7 +174,7 @@
+   ret ptr %1
+ }
+ 
+-; --- 0xfc37: memtag.hintstore ---
++; --- FF / packed 0x01010037: memtag.hintstore ---
+ ; CHECK-LABEL: test_hintstore:
+ ; CHECK: local.get 0
+ ; CHECK: local.get 1
+@@ -186,7 +186,7 @@
+   ret ptr %1
+ }
+ 
+-; --- 0xfc38: memtag.hintstorez ---
++; --- FF / packed 0x01010038: memtag.hintstorez ---
+ ; CHECK-LABEL: test_hintstorez:
+ ; CHECK: local.get 0
+ ; CHECK: local.get 1
+diff --git a/lld/test/wasm/memtag-globals.s b/lld/test/wasm/memtag-globals.s
+--- a/lld/test/wasm/memtag-globals.s
++++ b/lld/test/wasm/memtag-globals.s
+@@ -9,10 +9,10 @@
+ # RUN: wasm-ld -mwasm64 --no-entry --no-gc-sections --relocatable -o %t64.rel.o %t64.o
+ # RUN: llvm-objdump -s %t64.rel.o | FileCheck %s --check-prefix=RELOC
+ 
+-# The linker synthesizes a "memtag.globals" custom section describing the
++# The linker synthesizes a "uwvm.memtag.linear.globals" custom section describing the
+ # address and size of every live data symbol carrying the memtag flag.
+-# The payload is: ULEB version (1), ULEB count, then (ULEB address,
+-# ULEB size) pairs sorted by address. Untagged symbols are not listed.
++# The payload is: ULEB version (2), ULEB count, then (ULEB memory index,
++# ULEB address, ULEB size) triples sorted by address. The memory index is zero. Untagged symbols are not listed.
+ # The encoding is identical for wasm64 since addresses are ULEB-encoded.
+ 
+         .memtag tagged16b
+@@ -51,9 +51,10 @@
+         .int32  7
+         .size plain, 4
+ 
+-# CHECK:      Contents of section memtag.globals:
+-# CHECK-NEXT: {{^ [0-9a-f]+ }}01038080 04109080 0410a080 0420
++# CHECK:      Contents of section uwvm.memtag.linear.globals:
++# CHECK-NEXT: {{^ [0-9a-f]+ }}02030080 80041000 90800410 00a08004
++# CHECK-NEXT: {{^ [0-9a-f]+ }}20
+ 
+ # Relocatable output has no final addresses, and PIC output has none either,
+ # so the descriptor section is omitted.
+-# RELOC-NOT: Contents of section memtag.globals:
++# RELOC-NOT: Contents of section uwvm.memtag.linear.globals:
+diff --git a/llvm/test/MC/WebAssembly/memtag-packed-v1.s b/llvm/test/MC/WebAssembly/memtag-packed-v1.s
+new file mode 100644
+--- /dev/null
++++ b/llvm/test/MC/WebAssembly/memtag-packed-v1.s
+@@ -0,0 +1,96 @@
++# RUN: llvm-mc -triple=wasm32-unknown-unknown -show-encoding %s | FileCheck %s
++# RUN: llvm-mc -triple=wasm64-unknown-unknown -show-encoding %s | FileCheck %s
++# RUN: llvm-mc -triple=wasm32-unknown-unknown -filetype=obj %s -o %t.o
++# RUN: llvm-objdump -d %t.o | FileCheck %s --check-prefix=DIS
++# RUN: llvm-mc -triple=wasm64-unknown-unknown -filetype=obj %s -o %t64.o
++# RUN: llvm-objdump -d %t64.o | FileCheck %s --check-prefix=DIS
++
++# This is a wire-format fixture, not an executable program. Unreachable makes
++# the stack polymorphic, so every operation's own bytes can be inspected.
++# Canonical word 0x010100XX is XX|0x80, 0x80, 0x84, 0x08; memidx remains u32.
++test:
++  .functype test () -> ()
++  unreachable
++  memtag.status 0
++# CHECK: memtag.status 0{{.*}}encoding: [0xff,0xa0,0x80,0x84,0x08,0x00]
++# DIS: memtag.status 0
++  drop
++  memtag.extract 0
++# CHECK: memtag.extract 0{{.*}}encoding: [0xff,0xa1,0x80,0x84,0x08,0x00]
++# DIS: memtag.extract 0
++  drop
++  memtag.insert 0
++# CHECK: memtag.insert 0{{.*}}encoding: [0xff,0xa2,0x80,0x84,0x08,0x00]
++# DIS: memtag.insert 0
++  drop
++  memtag.tagbits 0
++# CHECK: memtag.tagbits 0{{.*}}encoding: [0xff,0xa3,0x80,0x84,0x08,0x00]
++# DIS: memtag.tagbits 0
++  drop
++  memtag.startbit 0
++# CHECK: memtag.startbit 0{{.*}}encoding: [0xff,0xa4,0x80,0x84,0x08,0x00]
++# DIS: memtag.startbit 0
++  drop
++  memtag.copy 0
++# CHECK: memtag.copy 0{{.*}}encoding: [0xff,0xa5,0x80,0x84,0x08,0x00]
++# DIS: memtag.copy 0
++  drop
++  memtag.sub 0
++# CHECK: memtag.sub 0{{.*}}encoding: [0xff,0xa6,0x80,0x84,0x08,0x00]
++# DIS: memtag.sub 0
++  drop
++  memtag.load 0
++# CHECK: memtag.load 0{{.*}}encoding: [0xff,0xa7,0x80,0x84,0x08,0x00]
++# DIS: memtag.load 0
++  drop
++  memtag.untag 0
++# CHECK: memtag.untag 0{{.*}}encoding: [0xff,0xa8,0x80,0x84,0x08,0x00]
++# DIS: memtag.untag 0
++  drop
++  memtag.untagstore 0
++# CHECK: memtag.untagstore 0{{.*}}encoding: [0xff,0xa9,0x80,0x84,0x08,0x00]
++# DIS: memtag.untagstore 0
++  drop
++  memtag.untagstorez 0
++# CHECK: memtag.untagstorez 0{{.*}}encoding: [0xff,0xaa,0x80,0x84,0x08,0x00]
++# DIS: memtag.untagstorez 0
++  drop
++  memtag.store 0
++# CHECK: memtag.store 0{{.*}}encoding: [0xff,0xab,0x80,0x84,0x08,0x00]
++# DIS: memtag.store 0
++  memtag.storez 0
++# CHECK: memtag.storez 0{{.*}}encoding: [0xff,0xac,0x80,0x84,0x08,0x00]
++# DIS: memtag.storez 0
++  memtag.random 0
++# CHECK: memtag.random 0{{.*}}encoding: [0xff,0xad,0x80,0x84,0x08,0x00]
++# DIS: memtag.random 0
++  drop
++  memtag.randomstore 0
++# CHECK: memtag.randomstore 0{{.*}}encoding: [0xff,0xae,0x80,0x84,0x08,0x00]
++# DIS: memtag.randomstore 0
++  drop
++  memtag.randomstorez 0
++# CHECK: memtag.randomstorez 0{{.*}}encoding: [0xff,0xaf,0x80,0x84,0x08,0x00]
++# DIS: memtag.randomstorez 0
++  drop
++  memtag.hint 0
++# CHECK: memtag.hint 0{{.*}}encoding: [0xff,0xb6,0x80,0x84,0x08,0x00]
++# DIS: memtag.hint 0
++  drop
++  memtag.hintstore 0
++# CHECK: memtag.hintstore 0{{.*}}encoding: [0xff,0xb7,0x80,0x84,0x08,0x00]
++# DIS: memtag.hintstore 0
++  drop
++  memtag.hintstorez 0
++# CHECK: memtag.hintstorez 0{{.*}}encoding: [0xff,0xb8,0x80,0x84,0x08,0x00]
++# DIS: memtag.hintstorez 0
++  drop
++  memtag.status 300
++# CHECK: memtag.status 300{{.*}}encoding: [0xff,0xa0,0x80,0x84,0x08,0xac,0x02]
++# DIS: memtag.status 300
++  drop
++  memtag.status 4294967295
++# CHECK: memtag.status 4294967295{{.*}}encoding: [0xff,0xa0,0x80,0x84,0x08,0xff,0xff,0xff,0xff,0x0f]
++# DIS: memtag.status 4294967295
++  drop
++  end_function
+diff --git a/llvm/test/MC/WebAssembly/memtag-packed-invalid.s b/llvm/test/MC/WebAssembly/memtag-packed-invalid.s
+new file mode 100644
+--- /dev/null
++++ b/llvm/test/MC/WebAssembly/memtag-packed-invalid.s
+@@ -0,0 +1,41 @@
++# RUN: split-file %s %t
++# RUN: not llvm-mc -triple=wasm32-unknown-unknown -show-encoding %t/add.s 2>&1 | FileCheck %s --check-prefix=ADD
++# RUN: not llvm-mc -triple=wasm64-unknown-unknown -show-encoding %t/negative.s 2>&1 | FileCheck %s --check-prefix=INDEX
++# RUN: not llvm-mc -triple=wasm32-unknown-unknown -show-encoding %t/symbol.s 2>&1 | FileCheck %s --check-prefix=SYMBOL
++# RUN: llvm-mc -triple=wasm32-unknown-unknown -disassemble %t/wide-index.txt 2>&1 | FileCheck %s --check-prefix=DECODE
++# RUN: llvm-mc -triple=wasm32-unknown-unknown -disassemble %t/overlong-index.txt 2>&1 | FileCheck %s --check-prefix=DECODE
++# RUN: llvm-mc -triple=wasm64-unknown-unknown -disassemble %t/wide-index.txt 2>&1 | FileCheck %s --check-prefix=DECODE
++# RUN: llvm-mc -triple=wasm64-unknown-unknown -disassemble %t/overlong-index.txt 2>&1 | FileCheck %s --check-prefix=DECODE
++# llvm-mc diagnoses failed disassembly with a warning and a successful CLI exit.
++# Require rejection, not a fabricated status instruction, on both targets.
++# DECODE-NOT: memtag.status
++# DECODE: warning: invalid instruction encoding
++# DECODE-NOT: memtag.status
++# ADD: memtag.add is reserved; no executable semantics
++# INDEX: memtag memory index must fit u32
++# SYMBOL: memtag memory index must be an integer
++#--- add.s
++test:
++  .functype test () -> ()
++  unreachable
++  memtag.add 0
++  drop
++  end_function
++#--- negative.s
++test:
++  .functype test () -> ()
++  unreachable
++  memtag.status -1
++  drop
++  end_function
++#--- symbol.s
++test:
++  .functype test () -> ()
++  unreachable
++  memtag.status unresolved_memory
++  drop
++  end_function
++#--- wide-index.txt
++0xff 0xa0 0x80 0x84 0x08 0x80 0x80 0x80 0x80 0x10
++#--- overlong-index.txt
++0xff 0xa0 0x80 0x84 0x08 0x80 0x80 0x80 0x80 0x80 0x00
+diff --git a/llvm/lib/Target/WebAssembly/AsmParser/WebAssemblyAsmParser.cpp b/llvm/lib/Target/WebAssembly/AsmParser/WebAssemblyAsmParser.cpp
+--- a/llvm/lib/Target/WebAssembly/AsmParser/WebAssemblyAsmParser.cpp
++++ b/llvm/lib/Target/WebAssembly/AsmParser/WebAssemblyAsmParser.cpp
+@@ -530,9 +530,12 @@
+ 
+   bool checkForP2AlignIfLoadStore(OperandVector &Operands, StringRef InstName) {
+     // FIXME: there is probably a cleaner way to do this.
+-    auto IsLoadStore = InstName.contains(".load") ||
+-                       InstName.contains(".store") ||
+-                       InstName.contains("prefetch");
++    // Tag loads/stores have one u32 memory index, not a linear-memory
++    // offset/alignment memarg. Do not synthesize a p2align operand for them.
++    auto IsLoadStore = !InstName.starts_with("memtag.") &&
++                       (InstName.contains(".load") ||
++                        InstName.contains(".store") ||
++                        InstName.contains("prefetch"));
+     auto IsAtomic = InstName.contains("atomic.");
+     if (IsLoadStore || IsAtomic) {
+       // Parse load/store operands of the form: offset:p2align=align

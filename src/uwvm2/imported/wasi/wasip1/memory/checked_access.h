@@ -10,6 +10,7 @@
 # include <limits>
 # include <uwvm2/extension/memtag/instruction.h>
 # include <uwvm2/runtime/memtag/host_fault.h>
+# include <uwvm2/runtime/memtag/bridge.h>
 # include <uwvm2/runtime/memtag/native_pointer.h>
 #endif
 #ifndef UWVM_MODULE_EXPORT
@@ -18,6 +19,14 @@
 
 UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::memory
 {
+    template<typename Memory>
+    [[nodiscard]] inline constexpr bool declared_shared_bytes(Memory const& memory) noexcept
+    {
+        if constexpr(requires {memory.sequentially_consistent_size;})
+        {return memory.sequentially_consistent_size || memory.memtag_shadow.shared();}
+        else {return memory.memtag_shadow.shared();}
+    }
+
     struct checked_guest_span
     {
         ::uwvm2::extension::memtag::access_result access{};
@@ -60,9 +69,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::memory
             {
                 if(raw > (::std::numeric_limits<Address>::max)())
                 { return {.error = mt::access_error::out_of_bounds, .address = raw}; }
-                if(memory.memtag_shadow.shared())
-                { return memory.memtag_shadow.template view<Address,true>(length).check(static_cast<Address>(raw),0u,bytes); }
-                return memory.memtag_shadow.template view<Address,false>(length).check(static_cast<Address>(raw),0u,bytes);
+                auto checked{[&](auto const& view) noexcept
+                {
+                    if constexpr(RecordFault)
+                    {
+                        ::std::uint64_t index{};
+                        if constexpr(requires{memory.diagnostic_owner_memory_index;})
+                        { index=memory.diagnostic_owner_memory_index; }
+                        return ::uwvm2::runtime::memtag::details::check_view<false>(
+                            view,static_cast<Address>(raw),0u,bytes,index);
+                    }
+                    else { return view.check(static_cast<Address>(raw),0u,bytes); }
+                }};
+                if(declared_shared_bytes(memory))
+                { return checked(memory.memtag_shadow.template view<Address,true>(length)); }
+                return checked(memory.memtag_shadow.template view<Address,false>(length));
             }};
             if(memory.memtag_shadow.width() == mt::address_width::i32)
             { span.access = check.template operator()<::std::uint32_t>(); }
@@ -89,7 +110,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::memory
     // again: a nested pin can deadlock against a pending memory.grow. The callback
     // must finish all byte effects before returning and must not retain the
     // pointer, acquire another tag lease, enter Guest/debugger code, block on
-    // Host I/O, or raise a trap/longjmp. Delayed fault recording only updates TLS.
+    // Host I/O, or raise a trap/longjmp. Crash-mode delayed fault recording only updates TLS. Explicit log mode may
+    // write diagnostic metadata while the owner is pinned; that sink never
+    // reenters Guest code or acquires a memory owner/relocation lease.
     template<bool RecordFault = true, typename Memory, typename Function>
     [[nodiscard]] inline ::uwvm2::extension::memtag::access_result
     with_checked_guest_bytes_unlocked(
@@ -123,7 +146,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::memory
             memory,raw,bytes,[&](::std::byte* data, ::std::size_t count) noexcept
             {
                 if(count == 0u) { return; }
-                if(declared_shared || memory.memtag_shadow.shared())
+                if(declared_shared || declared_shared_bytes(memory))
                 {
                     auto* native{static_cast<::std::byte*>(host)};
                     for(::std::size_t i{}; i != count; ++i)
@@ -168,7 +191,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::memory
         static_cast<void>(with_checked_guest_bytes_unlocked(
             memory,raw,bytes,[&](::std::byte* data, ::std::size_t count) noexcept
             {
-                if(memory.memtag_shadow.shared())
+                if(declared_shared_bytes(memory))
                 {
                     for(::std::size_t i{}; i != count; ++i)
                     { ::std::atomic_ref<::std::byte>{data[i]}.store(::std::byte{},::std::memory_order_relaxed); }

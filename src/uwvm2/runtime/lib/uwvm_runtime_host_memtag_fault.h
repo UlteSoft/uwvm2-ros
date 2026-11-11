@@ -17,7 +17,7 @@ inline void deliver_host_memtag_fault(::uwvm2::runtime::memtag::host_fault const
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
     namespace crash=::uwvm2::runtime::diagnostic::crash;
     crash::memory_detail const detail{fault.memory_index,fault.pointer,fault.granule,fault.pointer_tag,fault.allocation_tag};
-    crash::report(crash::category::memtag,"host interface memory tag mismatch",0u,UINT64_MAX,UINT64_MAX,UINT64_MAX,&detail);
+    report_guest_fault(trap_kind::memtag_violation,"host interface memory tag mismatch",0u,&detail);
 #endif
     trap_fatal(trap_kind::memtag_violation);
 }

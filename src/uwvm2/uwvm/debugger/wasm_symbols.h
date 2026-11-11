@@ -15,7 +15,7 @@
 namespace uwvm2::uwvm::debugger::wasm_symbols
 {
     using names=::std::map<::std::uint64_t,::std::string>;
-    struct table { names functions{},globals{}; };
+    struct table { names functions{},globals{},tables{},memories{}; };
     [[nodiscard]] inline ::std::string display(::std::string_view name)
     {
         if(name.empty() || name.size()>4096u) { return {}; }
@@ -65,17 +65,21 @@ namespace uwvm2::uwvm::debugger::wasm_symbols
     }
     inline void load_name_section(::std::span<::std::byte const> payload,table& result)
     {
-        reader input{payload};table parsed{};bool functions{},globals{};
+        reader input{payload};table parsed{};bool functions{},globals{},tables{},memories{};
         while(input.at<input.data.size())
         {
             auto id{::std::to_integer<unsigned>(input.data[input.at++])};::std::uint32_t size{};
             if(!input.number(size) || size>input.data.size()-input.at) { return; }
             auto part{input.data.subspan(input.at,size)};input.at+=size;
             if(id==1u) { if(functions || !name_map(part,parsed.functions)) { return; }functions=true; }
+            else if(id==5u) { if(tables || !name_map(part,parsed.tables)) { return; }tables=true; }
+            else if(id==6u) { if(memories || !name_map(part,parsed.memories)) { return; }memories=true; }
             else if(id==7u) { if(globals || !name_map(part,parsed.globals)) { return; }globals=true; }
         }
         for(auto& [index,name]:parsed.functions) { if(!name.empty()) { result.functions.insert_or_assign(index,::std::move(name)); } }
         for(auto& [index,name]:parsed.globals) { if(!name.empty()) { result.globals.insert_or_assign(index,::std::move(name)); } }
+        for(auto& [index,name]:parsed.tables) { if(!name.empty()) { result.tables.insert_or_assign(index,::std::move(name)); } }
+        for(auto& [index,name]:parsed.memories) { if(!name.empty()) { result.memories.insert_or_assign(index,::std::move(name)); } }
     }
     [[nodiscard]] inline ::std::string_view lookup(table const& symbols,bool global,::std::uint64_t index)
     {

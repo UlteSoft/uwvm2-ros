@@ -42,7 +42,7 @@ template<typename A>void exercise(llvm::ExecutionEngine& engine,unsigned bytes,b
   CHECK(fn(tags.data(),data.data(),pointer)==0u);++cases;
   for(unsigned i{};i!=data.size();++i)CHECK(data[i]==(i>=offset&&i<offset+bytes?0xa5u:0x3cu));
   auto first=offset/16u,last=(offset+bytes-1u)/16u;
-  for(auto bad:{first,last}){tags.fill(tag);tags[bad]=tag^1u;data.fill(0x3c);CHECK(fn(tags.data(),data.data(),pointer)==bad+1u);++cases;for(auto v:data)CHECK(v==0x3cu);}
+  for(auto bad:{first,last}){tags.fill(tag);tags[bad]=tag^1u;data.fill(0x3c);CHECK(fn(tags.data(),data.data(),pointer)==bad*16u+1u);++cases;for(auto v:data)CHECK(v==0x3cu);}
  }
  data.fill(0x3c);CHECK(fn(nullptr,data.data(),V::insert(256u,1u))==0xffffu);++cases;for(auto v:data)CHECK(v==0x3cu);
 }

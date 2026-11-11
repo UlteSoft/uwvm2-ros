@@ -42,13 +42,10 @@ PERMISSIONS = ("full", "read-only", "limited", "none")
 
 def selected_permissions(profile):
     args = profile.get("runtime", {}).get("arguments", [])
-    stop = next((i for i, a in enumerate(args) if a in ("--run", "--")), len(args))
-    options = args[:stop]
-    positions = [i for i, a in enumerate(options) if a == "--debug-permissions"]
-    if len(positions) > 1 or positions and positions[0] + 1 >= len(options):
-        raise ValueError("exactly one valid --debug-permissions value is required")
-    cli = options[positions[0]+1] if positions else None
-    value = profile.get("debugPermissions", cli or ("full" if any(a in ("-Rdbg", "--runtime-debug") for a in options) else "limited"))
+    from fault_action import validate_fault_action, explicit_debug_permissions, default_debug_permissions
+    validate_fault_action(args)
+    cli = explicit_debug_permissions(args)
+    value = profile.get("debugPermissions", cli or default_debug_permissions(args))
     if value not in PERMISSIONS or cli is not None and cli != value:
         raise ValueError("debugPermissions must match the explicit VM launch option")
     return value
@@ -57,8 +54,19 @@ def selected_permissions(profile):
 def permission_arguments(profile):
     args = list(profile["runtime"]["arguments"])
     value = selected_permissions(profile)
-    stop = next((i for i, a in enumerate(args) if a in ("--run", "--")), len(args))
-    return args if "--debug-permissions" in args[:stop] else ["--debug-permissions", value, *args]
+    from fault_action import explicit_debug_permissions
+    # Preserve VM defaults unless the user explicitly selected a profile level.
+    # UI inference must never become a new launch-time permission grant.
+    if "debugPermissions" not in profile or explicit_debug_permissions(args) is not None:
+        return args
+    return ["--debug-permissions", value, *args]
+
+
+def transport_python(transport):
+    # Local imports already run in an installed interpreter. Reuse it on
+    # Windows/macOS instead of assuming the Linux filesystem layout. The SSH
+    # interpreter is deliberately a path on the remote VM host.
+    return transport.get('python', '/usr/bin/python3' if transport['kind'] == 'ssh' else sys.executable)
 
 
 def validate(profile):
@@ -71,7 +79,7 @@ def validate(profile):
     if not isinstance(transport, dict) or transport.get("kind") not in ("local", "ssh"):
         raise ValueError("transport.kind must be local or ssh")
     remote = transport["kind"] == "ssh"
-    python = transport.get("python", "/usr/bin/python3")
+    python = transport_python(transport)
     absolute(python, "transport.python", remote=remote)
     if remote:
         host = transport.get("host")
@@ -93,6 +101,8 @@ def validate(profile):
     if not isinstance(broker, dict) or set(broker) != {"socketDir"}:
         raise ValueError("Select the host-owned Unix broker socketDir; never include capabilities")
     absolute(broker["socketDir"], "broker.socketDir", remote=remote)
+    if "updateSocketDir" in profile:
+        absolute(profile["updateSocketDir"], "updateSocketDir", remote=remote)
     if profile.get("stepLevel", "source") not in LEVELS:
         raise ValueError("stepLevel must be source, wasm or native")
     module = profile.get("moduleId", 0)
@@ -106,6 +116,8 @@ def validate(profile):
     compile_source_map(mapping)
     if "startupTimeoutSeconds" in profile:
         startup_timeout_seconds(profile["startupTimeoutSeconds"])
+    if 'stopOnEntry' in profile and type(profile['stopOnEntry']) is not bool:
+        raise ValueError('stopOnEntry must be boolean')
     if "runtime" in profile:
         runtime = profile["runtime"]
         if not isinstance(runtime, dict) or set(runtime) != {"executable", "arguments"}:
@@ -115,7 +127,7 @@ def validate(profile):
             raise ValueError("runtime.arguments must be an exact string array")
         if not runtime["arguments"]:
             raise ValueError("Provide the complete authorized VM argument vector, including debug mode and --run")
-    allowed = {"format", "name", "workspace", "transport", "broker", "runtime", "moduleId", "stepLevel", "sourceMap", "language", "startupTimeoutSeconds", "debugPermissions"}
+    allowed = {"format", "name", "workspace", "transport", "broker", "runtime", "moduleId", "stepLevel", "sourceMap", "language", "startupTimeoutSeconds", "debugPermissions", "updateSocketDir", "stopOnEntry"}
     if set(profile) - allowed:
         raise ValueError("Unknown profile property")
     if "language" in profile:
@@ -141,7 +153,11 @@ def load_profile(raw):
 
 
 def ssh_prefix(transport):
-    result = [transport.get("ssh", "/usr/bin/ssh"), "-T", "-o", "BatchMode=yes",
+    executable = transport.get("ssh") or shutil.which("ssh")
+    if executable is None:
+        raise ValueError("Select an existing OpenSSH executable with transport.ssh")
+    absolute(executable, 'SSH executable')
+    result = [executable, "-T", "-o", "BatchMode=yes",
               "-o", "StrictHostKeyChecking=yes", "-o", "ForwardAgent=no",
               "-o", "ClearAllForwardings=yes"]
     if "port" in transport:
@@ -153,17 +169,19 @@ def ssh_prefix(transport):
     return result + ["--", transport["host"]]
 
 
-def adapter_command(profile, source_session=None):
+def adapter_command(profile, source_session=None, complete_breakpoints=False):
     profile = validate(profile)
     if source_session is not None and SESSION.fullmatch(source_session) is None:
         raise ValueError("Invalid host IDE source session")
     transport = profile["transport"]
-    python = transport.get("python", "/usr/bin/python3")
+    python = transport_python(transport)
     if transport["kind"] == "local":
         return [python, str(HERE / "dap_adapter.py")]
     remote = [python, transport["debugDirectory"].rstrip("/") + "/dap_adapter.py"]
+    remote_env = ["UWVM_DAP_EDITOR_BREAKPOINTS=" + ("1" if complete_breakpoints else "0")]
     if source_session is not None:
-        remote = ["env", "UWVM_DAP_SOURCE_SESSION=" + source_session, *remote]
+        remote_env.append("UWVM_DAP_SOURCE_SESSION=" + source_session)
+    remote = ["env", *remote_env, *remote]
     # OpenSSH executes its remote command through the login shell. Quote every
     # individual argument; JSON serialization is not shell quoting.
     return [*ssh_prefix(transport), "exec " + shlex.join(remote)]
@@ -175,28 +193,50 @@ def broker_command(profile):
     if runtime is None:
         raise ValueError("This attach-only profile has no runtime launch authority")
     transport = profile["transport"]
-    if selected_permissions(profile) == "none":
+    if selected_permissions(profile) == "none" and not profile.get("updateSocketDir"):
         command = [runtime["executable"], *permission_arguments(profile)]
         return command if transport["kind"] == "local" else [*ssh_prefix(transport), "exec " + shlex.join(command)]
     directory = profile["broker"]["socketDir"]
-    python = transport.get("python", "/usr/bin/python3")
+    python = transport_python(transport)
     if transport["kind"] == "local":
-        Path(directory).mkdir(mode=0o700, parents=False, exist_ok=True)
+        if profile.get("updateSocketDir") and sys.platform != "linux":
+            raise ValueError("Independent update relay currently requires a Linux VM host; use a verified SSH profile")
+        if selected_permissions(profile) != "none":
+            Path(directory).mkdir(mode=0o700, parents=False, exist_ok=True)
+        if profile.get("updateSocketDir"):
+            Path(profile["updateSocketDir"]).mkdir(mode=0o700, parents=False, exist_ok=True)
         # The existing broker performs ownership, symlink, mode and guest-preopen checks.
         server = HERE / ("secure_server_macos.py" if sys.platform == "darwin" else "secure_server.py")
         if profile.get("startupTimeoutSeconds") is not None and sys.platform != "linux":
             raise ValueError("startupTimeoutSeconds currently requires the Linux broker")
         return [python, str(server), "serve", "--uwvm", runtime["executable"],
                 "--socket-dir", directory,
+                *(["--update-socket-dir", profile["updateSocketDir"]] if profile.get("updateSocketDir") else []),
                 *(["--startup-timeout", str(profile["startupTimeoutSeconds"])] if profile.get("startupTimeoutSeconds") is not None else []),
                 "--", *permission_arguments(profile)]
     server = transport["debugDirectory"].rstrip("/") + "/secure_server.py"
     remote = [python, server, "serve", "--uwvm", runtime["executable"],
               "--socket-dir", directory,
+              *(["--update-socket-dir", profile["updateSocketDir"]] if profile.get("updateSocketDir") else []),
                 *(["--startup-timeout", str(profile["startupTimeoutSeconds"])] if profile.get("startupTimeoutSeconds") is not None else []),
                 "--", *permission_arguments(profile)]
-    command = "umask 077; mkdir -p -- " + shlex.quote(directory) + " && exec " + shlex.join(remote)
+    directories = ([directory] if selected_permissions(profile) != "none" else []) + ([profile["updateSocketDir"]] if profile.get("updateSocketDir") else [])
+    command = "umask 077; mkdir -p -- " + " ".join(shlex.quote(value) for value in directories) + " && exec " + shlex.join(remote)
     return [*ssh_prefix(transport), command]
+
+
+def update_command(profile, frame_path):
+    """Forward one existing deployment frame through independent authority."""
+    profile = validate(profile)
+    if not profile.get("updateSocketDir"):
+        raise ValueError("This profile has no independent updateSocketDir")
+    transport = profile["transport"]
+    remote = transport["kind"] == "ssh"
+    absolute(frame_path, "authorized update frame", remote=remote)
+    python = transport_python(transport)
+    script = transport["debugDirectory"].rstrip("/") + "/signed_update.py" if remote else str(HERE / "signed_update.py")
+    command = [python, script, "request", "--socket-dir", profile["updateSocketDir"], "--frame", frame_path]
+    return [*ssh_prefix(transport), "exec " + shlex.join(command)] if remote else command
 
 
 def write_generated(path, content, replace):
@@ -237,17 +277,40 @@ def xml_bytes(element):
     return ET.tostring(element, encoding="utf-8", xml_declaration=True) + b"\n"
 
 
+def remove_generated(paths, replace):
+    """Retire only known generated attach files, under the normal replace rule."""
+    obsolete = []
+    for path in paths:
+        if not path.exists() and not path.is_symlink():
+            continue
+        info = path.lstat()
+        if not stat.S_ISREG(info.st_mode) or (hasattr(os, "geteuid") and info.st_uid != os.geteuid()):
+            raise ValueError(f"Refusing non-owned regular output: {path}")
+        obsolete.append(path)
+    if obsolete and not replace:
+        raise ValueError(f"Obsolete generated attachment: {obsolete[0]}; use --replace for this generated directory")
+    # Check every candidate before removing any file. Unknown project files,
+    # directories and client configuration names are never cleanup targets.
+    for path in obsolete:
+        path.unlink()
+
+
 def generate_java_clients(profile, output, profile_path, replace):
     """Emit actual LSP4IJ run configurations and NetBeans bridge inputs."""
     project = generated_directory(output / "jetbrains")
     idea = generated_directory(project / ".idea")
     configurations = generated_directory(idea / "runConfigurations")
     netbeans = generated_directory(output / "netbeans")
+    if selected_permissions(profile) == "none":
+        remove_generated([*(configurations / (level + ".xml") for level in LEVELS),
+                          *(netbeans / (level + ".json") for level in LEVELS)], replace)
     levels = {}
     for level in (() if selected_permissions(profile) == "none" else LEVELS):
         name = profile["name"] + " (" + level + ")"
         attach = {**profile["broker"], "moduleId": profile.get("moduleId", 0),
                   "stepLevel": level, "debugPermissions": selected_permissions(profile), "sourceMap": profile.get("sourceMap", {})}
+        if profile.get("updateSocketDir"):
+            attach["updateSocketDir"] = profile["updateSocketDir"]
         if profile.get("startupTimeoutSeconds") is not None:
             attach["startupTimeoutSeconds"] = profile["startupTimeoutSeconds"]
         component = ET.Element("component", {"name": "ProjectRunConfigurationManager"})
@@ -302,14 +365,15 @@ def generate(profile, output, nvim_dap=None, replace=False):
         if not (Path(nvim_dap) / "lua/dap.lua").is_file():
             raise ValueError("Select an existing genuine nvim-dap plugin")
     profile_path = output / "profile.json"
-    profile = {**profile, "debugPermissions": selected_permissions(profile)}
     write_generated(profile_path, json_bytes(profile), replace)
     configurations = []
     for level in (() if selected_permissions(profile) == "none" else LEVELS):
         configuration = {"type": "uwvm-llvm-full", "request": "attach", "name": profile["name"] + " (" + level + ")",
                          **profile["broker"], "moduleId": profile.get("moduleId", 0), "stepLevel": level, "debugPermissions": selected_permissions(profile),
                          "sourceMap": profile.get("sourceMap", {}), "pythonPath": sys.executable,
-                         "transportProfile": str(profile_path)}
+                         "transportProfile": str(profile_path), "stopOnEntry": profile.get('stopOnEntry', 'runtime' not in profile)}
+        if profile.get("updateSocketDir"):
+            configuration["updateSocketDir"] = profile["updateSocketDir"]
         if profile.get("startupTimeoutSeconds") is not None:
             configuration["startupTimeoutSeconds"] = profile["startupTimeoutSeconds"]
         if "runtime" in profile:
@@ -328,9 +392,14 @@ def generate(profile, output, nvim_dap=None, replace=False):
             "presentation": {"reveal": "always", "panel": "dedicated"}}]}
     if selected_permissions(profile) == "none" and "tasks" in workspace:
         task = workspace["tasks"]["tasks"][0]
-        task["label"] = "uwvm: run without debugger"
-        task["isBackground"] = False
-        task["problemMatcher"] = []
+        if profile.get("updateSocketDir"):
+            task["label"] = "uwvm: independent update broker (debugger disabled)"
+            task["problemMatcher"][0]["background"] = {"activeOnStart": True,
+                "beginsPattern": "^uwvm: starting independent update broker$", "endsPattern": "^update server:"}
+        else:
+            task["label"] = "uwvm: run without debugger"
+            task["isBackground"] = False
+            task["problemMatcher"] = []
     workspace_path = output / "uwvm.code-workspace"
     write_generated(workspace_path, json_bytes(workspace), replace)
     generic = {"adapter": {"command": sys.executable, "args": [str(HERE / "import_ide.py"), "adapter", "--profile", str(profile_path)]},
@@ -353,7 +422,7 @@ def generate(profile, output, nvim_dap=None, replace=False):
             'local p = vim.json.decode(table.concat(vim.fn.readfile(profile_path), "\\n"))',
             'vim.api.nvim_create_user_command("UwvmAttach", function(args)',
             '  ui.attach(p.broker.socketDir, args.args ~= "" and args.args or p.stepLevel or "source",',
-            '    {moduleId=p.moduleId or 0, sourceMap=p.sourceMap, startupTimeoutSeconds=p.startupTimeoutSeconds, debugPermissions=p.debugPermissions})',
+            '    {moduleId=p.moduleId or 0, sourceMap=p.sourceMap, startupTimeoutSeconds=p.startupTimeoutSeconds, debugPermissions=p.debugPermissions, updateSocketDir=p.updateSocketDir})',
             'end, {nargs="?", force=true})', 'return ui']
     write_generated(nvim_path, ("\n".join(lua) + "\n").encode(), replace)
     jetbrains, netbeans = generate_java_clients(profile, output, profile_path, replace)
@@ -375,6 +444,9 @@ def main(argv=None):
     for name in ("adapter", "broker", "validate"):
         item = commands.add_parser(name)
         item.add_argument("--profile", required=True)
+    item = commands.add_parser("update", aliases=["signed-update"])
+    item.add_argument("--profile", required=True)
+    item.add_argument("--frame", required=True)
     item = commands.add_parser("import")
     item.add_argument("--profile", required=True)
     item.add_argument("--output")
@@ -386,14 +458,20 @@ def main(argv=None):
     if arguments.operation == "validate":
         print(json.dumps({"valid": True, "format": FORMAT, "transport": profile["transport"]["kind"]}))
         return 0
+    if arguments.operation in ("update", "signed-update"):
+        command = update_command(profile, arguments.frame)
+        os.execv(command[0], command)
+        return 127
     if arguments.operation in ("adapter", "broker"):
         if arguments.operation == "adapter":
             if selected_permissions(profile) == "none":
                 raise ValueError("Debugger disabled; run the runtime task without attaching")
             session = os.environ.get("UWVM_DAP_SOURCE_SESSION")
-            command = adapter_command(profile, session)
+            command = adapter_command(profile, session, os.environ.get("UWVM_DAP_EDITOR_BREAKPOINTS") == "1")
         else:
             command = broker_command(profile)
+            if selected_permissions(profile) == "none" and profile.get("updateSocketDir"):
+                print("uwvm: starting independent update broker", flush=True)
         os.execv(command[0], command)
         return 127
     output = arguments.output or str(Path(profile["workspace"]) / ".uwvm-debug")

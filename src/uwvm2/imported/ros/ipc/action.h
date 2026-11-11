@@ -18,7 +18,7 @@ namespace uwvm2::imported::ros::ipc
     inline bool validate_action_sequence(std::uint8_t const* data,std::size_t size,bool has_kind) noexcept
     {
         auto base{std::size_t{12}+(has_kind?1:0)};
-        if(!data||size<base||size>max_payload_bytes-518||!get(data,8)) {return false;}
+        if(!data||size<base||size>max_payload_bytes||!get(data,8)) {return false;}
         if(has_kind&&(data[8]<1||data[8]>4)) {return false;}
         auto count{get(data+(has_kind?9:8),4)};
         if(count>48||(size-base)%4||count!=(size-base)/4) {return false;}

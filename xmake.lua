@@ -359,9 +359,7 @@ function def_build(opt)
 		uwvm_require_build_config(enable_llvm_jit and is_plat("linux") and is_arch("x86_64", "x64", "amd64"),
 			"typed array access requires Linux x86-64 LLVM JIT")
 		-- Keep the store and generated native ABI consistent in every translation unit.
-		add_defines("UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS=1")
 		add_defines("UWVM_EXPERIMENTAL_SCALAR_ARRAY_LENGTH=1")
-		add_defines("UWVM_EXPERIMENTAL_ARRAY_LENGTH_VALUES=1")
 		add_defines("UWVM_EXPERIMENTAL_TYPED_ARRAY_LOAD=1")
 		if gc_jit_access_profile == "typed-array-access" or gc_jit_access_profile == "typed-array-access-inline" or gc_jit_access_profile == "typed-array-access-private" then
 			add_defines("UWVM_EXPERIMENTAL_TYPED_ARRAY_STORE=1")
@@ -384,7 +382,6 @@ function def_build(opt)
 		uwvm_require_build_config(get_config("use-thread-local"), "general-slab requires use-thread-local")
 		-- One storage/publication policy in every runtime and CLI translation unit.
 		add_defines("UWVM_EXPERIMENTAL_GENERAL_GC_SLAB=1")
-		add_defines("UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS=1")
 		add_defines("UWVM_EXPERIMENTAL_COLLECTION_LOCAL_MEMBERSHIP=1")
 		add_defines("UWVM_EXPERIMENTAL_SINGLE_CAS_GC_PUBLICATION=1")
 	elseif gc_allocation_profile ~= "default" then

@@ -34,7 +34,6 @@ import fast_io;
 import uwvm2.utils.container;
 import uwvm2.uwvm.wasm.type;
 import :preloaded_dl;
-import :weak_symbol;
 
 #ifndef UWVM_MODULE
 # define UWVM_MODULE

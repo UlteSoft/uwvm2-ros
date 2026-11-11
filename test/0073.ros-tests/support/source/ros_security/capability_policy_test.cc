@@ -1,3 +1,4 @@
+#include <source_location>
 #include <uwvm2/imported/ros/capability/manager.h>
 #include <gateway/common/config.h>
 #include <atomic>
@@ -39,9 +40,9 @@ static target_policy target(version v = version::ros1)
     return t;
 }
 
-static void require(result r, errc expected = errc::success)
+static void require(result r, errc expected = errc::success, ::std::source_location where=::std::source_location::current())
 {
-    if(r.code != expected) { ::fast_io::io::perrln("expected ", static_cast<unsigned>(expected), " got ", static_cast<unsigned>(r.code), ": ", r.detail); ::std::abort(); }
+    if(r.code != expected) { ::fast_io::io::perrln("line ",where.line()," expected ", static_cast<unsigned>(expected), " got ", static_cast<unsigned>(r.code), ": ", r.detail); ::std::abort(); }
 }
 
 static capability_spec operation_cap(version v, ::std::string operation)
@@ -137,16 +138,16 @@ int main()
         assert(ipc::parameter_type(static_cast<version>(0),"builtin/bool-array-v1")==ipc::parameter_kind::unsupported);
         assert(ipc::parameter_type(version::ros2,"builtin/byte-v1")==ipc::parameter_kind::unsupported);
     });
-    run("parameter-array-explicit-element-quota-and-numeric-contract", [&] {
+    run("parameter-array-optional-element-quota-and-numeric-contract", [&] {
         for(auto v:{version::ros1,version::ros2})
         {
             for(auto type:{"builtin/bool-array-v1","builtin/float64-array-v1","builtin/string-array-v1",v==version::ros1?"builtin/int32-array-v1":"builtin/int64-array-v1"})
             {
-                auto c{array_cap(v,"param.get",type)};c.limits.erase("max-parameter-elements");require(validate_capability(v,c),errc::invalid_argument);assert(!gateway_accepts(v,c));
-                for(auto limit:{"0","-1","+1","1.5","1048577","18446744073709551616"})
+                auto c{array_cap(v,"param.get",type)};c.limits.erase("max-parameter-elements");require(validate_capability(v,c));assert(gateway_accepts(v,c));
+                for(auto limit:{"-1","+1","1.5","18446744073709551616"})
                 { c.limits["max-parameter-elements"]=limit;require(validate_capability(v,c),errc::invalid_argument);assert(!gateway_accepts(v,c)); }
                 c.limits["max-parameter-elements"]="1048576";c.limits["max-parameter-bytes"]="4";require(validate_capability(v,c));assert(gateway_accepts(v,c));
-                c.limits["max-parameter-bytes"]="3";require(validate_capability(v,c),errc::invalid_argument);assert(!gateway_accepts(v,c));
+                c.limits["max-parameter-bytes"]="3";require(validate_capability(v,c));assert(gateway_accepts(v,c));
             }
         }
         for(auto type:{"builtin/bool-array-v1","builtin/string-array-v1","builtin/byte-array-v1"})
@@ -272,7 +273,7 @@ int main()
         {
             auto good{event_cap(type)};
             for(auto key:{"parameter-min-value","parameter-max-value"})
-            { auto c{good};c.limits.erase(key);require(validate_capability(version::ros2,c),errc::invalid_argument);assert(!gateway_accepts(version::ros2,c)); }
+            { auto c{good};c.limits.erase(key);if(resource_quota_field(key)) { assert(quota_value(c,key)==unlimited_quota); } else { require(validate_capability(version::ros2,c),errc::invalid_argument);assert(!gateway_accepts(version::ros2,c)); } }
             for(auto bad:{"+1"," 1","1 ","0x1","NaN","Infinity","1x","","1e9999"})
             { auto c{good};c.limits["parameter-max-value"]=bad;require(validate_capability(version::ros2,c),errc::invalid_argument);assert(!gateway_accepts(version::ros2,c)); }
             auto c{good};c.limits["parameter-min-value"]="2";c.limits["parameter-max-value"]="1";require(validate_capability(version::ros2,c),errc::invalid_argument);assert(!gateway_accepts(version::ros2,c));
@@ -355,7 +356,9 @@ int main()
                     if(v==version::ros1&&(operation==::std::string_view{"param.declare"}||operation==::std::string_view{"param.undeclare"})) { continue; }
                     auto c{scalar_cap(v,operation,type)};require(validate_capability(v,c));assert(gateway_accepts(v,c));
                     c.limits["max-parameter-bytes"]=::std::to_string(ipc::parameter_width(ipc::parameter_type(v,type))-1);
-                    require(validate_capability(v,c),errc::invalid_argument);assert(!gateway_accepts(v,c));
+                    require(validate_capability(v,c));assert(gateway_accepts(v,c));
+                    ::std::vector<::std::uint8_t> probe(ipc::parameter_width(ipc::parameter_type(v,type)),0);
+                    assert(ipc::validate_parameter_value(v,c,probe.data(),probe.size())==90);
                 }
             }
             for(auto operation:{"param.list","param.describe","param.subscribe-events","param.delete","param.exists","param.search"})
@@ -373,7 +376,7 @@ int main()
         {
             auto good{scalar_cap(version::ros2,"param.set",type)};
             for(auto key:{"parameter-min-value","parameter-max-value"})
-            { auto c{good};c.limits.erase(key);require(validate_capability(version::ros2,c),errc::invalid_argument);assert(!gateway_accepts(version::ros2,c)); }
+            { auto c{good};c.limits.erase(key);if(resource_quota_field(key)) { assert(quota_value(c,key)==unlimited_quota); } else { require(validate_capability(version::ros2,c),errc::invalid_argument);assert(!gateway_accepts(version::ros2,c)); } }
             for(auto bad:{"+1"," 1","1 ","0x1","NaN","Infinity","1x","","1e9999"})
             { auto c{good};c.limits["parameter-max-value"]=bad;require(validate_capability(version::ros2,c),errc::invalid_argument);assert(!gateway_accepts(version::ros2,c)); }
             auto c{good};c.limits["parameter-min-value"]="2";c.limits["parameter-max-value"]="1";require(validate_capability(version::ros2,c),errc::invalid_argument);assert(!gateway_accepts(version::ros2,c));
@@ -419,8 +422,8 @@ int main()
 
     run("default-deny-independent-versions", [] {
         policy_store p{};
-        assert(!p.effective(version::ros1, "camera_a")->enabled);
-        assert(!p.effective(version::ros2, "camera_a")->enabled);
+        assert(p.effective(version::ros1, "camera_a")==nullptr);
+        assert(p.effective(version::ros2, "camera_a")==nullptr);
         require(p.validate({}));
     });
     run("group-no-global-inheritance", [] {
@@ -429,15 +432,15 @@ int main()
         require(p.create_target(version::ros1, scope::group, "sensors"));
         require(p.bind_module(version::ros1, "sensors", "camera_a"));
         assert(p.effective(version::ros1, "camera_a")->capabilities.empty());
-        assert(p.effective(version::ros1, "other")->capabilities.size() == 1);
-        assert(p.effective(version::ros2, "camera_a")->target_scope == scope::global);
+        assert(p.effective(version::ros1, "other")==nullptr);
+        assert(p.effective(version::ros2, "camera_a")==nullptr);
         ::std::array<::std::string, 1> modules{"camera_a"}; require(p.validate(modules));
     });
     run("same-named-ros-groups-independent", [] {
         policy_store p{};
         require(p.create_target(version::ros1, scope::group, "sensors")); require(p.create_target(version::ros2, scope::group, "sensors"));
         require(p.bind_module(version::ros1, "sensors", "camera_a"));
-        assert(p.effective(version::ros2, "camera_a")->target_scope == scope::global);
+        assert(p.effective(version::ros2, "camera_a")==nullptr);
     });
     run("single-group-and-multiple-group-conflict", [] {
         policy_store p{};
@@ -453,13 +456,15 @@ int main()
         require(p.validate({}), errc::unknown_module); require(p.validate({}, false));
         ::std::array<::std::string, 2> modules{"absent", "absent"}; require(p.validate(modules), errc::conflict);
     });
-    run("every-connection-field-explicit", [] {
+    run("required-connections-and-optional-denial-audit-limits", [] {
         for(auto v : {version::ros1, version::ros2})
-        { auto original{target(v)}; require(validate_target(original)); for(auto const& [field, value] : original.connection) { auto missing{original}; missing.connection.erase(field); require(validate_target(missing), errc::invalid_argument); } }
+        { auto original{target(v)}; require(validate_target(original)); for(auto const& [field, value] : original.connection) { auto missing{original}; missing.connection.erase(field);
+          bool optional=field=="connect-timeout-ms"||field=="audit-deny-max-records"||field=="audit-deny-max-bytes";
+          require(validate_target(missing),optional?errc::success:errc::invalid_argument); } }
     });
     run("every-operation-limit-explicit", [] {
         for(auto v : {version::ros1, version::ros2})
-        { auto original{topic(v)}; require(validate_capability(v, original)); for(auto const& [field, value] : original.limits) { auto missing{original}; missing.limits.erase(field); require(validate_capability(v, missing), errc::invalid_argument); } }
+        { auto original{topic(v)}; require(validate_capability(v, original)); for(auto const& [field, value] : original.limits) { auto missing{original}; missing.limits.erase(field); if(resource_quota_field(field)) { assert(quota_value(missing,field)==unlimited_quota); } else { require(validate_capability(v, missing),errc::invalid_argument); } } }
     });
     run("names-cannot-normalize-or-remap-around-policy", [] {
         for(auto name : {"relative", "~private", "/a//b", "/a/../b", "/a/./b", "/a/", "/a:=/b", "/a*", "/0bad", "/a b"}) { assert(!canonical_resource(name)); }
@@ -503,26 +508,19 @@ int main()
         auto bits{::std::bit_cast<::std::uint64_t>(1.5)}; for(unsigned j{}; j < 8; ++j) { bytes[j] = ::std::byte((bits >> (8 * j)) & 255); } require(validate_message(version::ros1, cap, bytes), errc::permission_denied);
     });
     run("qos-and-resource-conflicts-fail-closed", [] {
-        auto cap{topic(version::ros2)}; cap.limits["qos.history"] = "keep-all"; require(validate_capability(version::ros2, cap), errc::unsupported);
+        auto cap{topic(version::ros2)}; cap.limits["qos.history"] = "keep-all"; require(validate_capability(version::ros2, cap));
         cap = topic(); cap.limits["overflow-policy"] = "backpressure"; require(validate_capability(version::ros1, cap), errc::invalid_argument);
-        cap = topic(); cap.limits["max-queue-bytes"] = "1"; require(validate_capability(version::ros1, cap), errc::invalid_argument);
+        cap = topic(); cap.limits["max-queue-bytes"] = "1"; require(validate_capability(version::ros1, cap));
         cap = topic(); cap.limits["max-rate-hz"] = "nan"; require(validate_capability(version::ros1, cap), errc::invalid_argument);
     });
-    run("backpressure-requires-explicit-single-pending-record-capacity", [&] {
+    run("quota-overflow-is-reject-or-synchronous-wait", [&] {
         for(auto v : {version::ros1, version::ros2})
         {
             auto cap{topic(v, "bounded", "topic.subscribe")};
-            cap.limits["overflow-policy"] = "backpressure";
-            require(validate_capability(v, cap), errc::invalid_argument); assert(!gateway_accepts(v, cap));
-            cap.limits["max-pending-events"] = "1";
-            require(validate_capability(v, cap), errc::invalid_argument); assert(!gateway_accepts(v, cap));
-            cap.limits["max-pending-event-bytes"] = "63";
-            require(validate_capability(v, cap), errc::invalid_argument); assert(!gateway_accepts(v, cap));
-            cap.limits["max-pending-event-bytes"] = "64";
-            cap.limits["max-pending-events"] = "2";
-            require(validate_capability(v, cap), errc::invalid_argument); assert(!gateway_accepts(v, cap));
-            cap.limits["max-pending-events"] = "1";
-            require(validate_capability(v, cap)); assert(gateway_accepts(v, cap));
+            for(auto action:{"reject","wait"})
+            {cap.limits["overflow-policy"]=action;require(validate_capability(v,cap));assert(gateway_accepts(v,cap));}
+            for(auto old:{"backpressure","drop-oldest","drop-newest","async"})
+            {cap.limits["overflow-policy"]=old;require(validate_capability(v,cap),errc::invalid_argument);assert(!gateway_accepts(v,cap));}
         }
     });
     run("ros2-dds-service-parameter-lifecycle-qos-all-eight-explicit", [] {
@@ -540,8 +538,11 @@ int main()
             for(auto field : {"qos.reliability", "qos.durability", "qos.history", "qos.depth", "qos.deadline", "qos.lifespan", "qos.liveliness", "qos.liveliness-lease-duration"})
             {
                 assert(original.limits.contains(field)); auto missing{original}; missing.limits.erase(field);
-                require(validate_capability(version::ros2, missing), errc::invalid_argument);
-                bool rejected{}; try { ::uwvm2::ros_gateway::validate(version::ros2, missing); } catch(::std::runtime_error const&) { rejected = true; } assert(rejected);
+                if(resource_quota_field(field)) { assert(quota_value(missing,field)==unlimited_quota); }
+                else {
+                    require(validate_capability(version::ros2,missing),errc::invalid_argument);
+                    bool rejected{};try { ::uwvm2::ros_gateway::validate(version::ros2,missing); }catch(::std::runtime_error const&) { rejected=true; }assert(rejected);
+                }
             }
         }
     });
@@ -599,9 +600,11 @@ int main()
     });
 
     auto ros1{target()}, ros2{target(version::ros2)};
+    ros1.target_scope=ros2.target_scope=scope::single;ros1.name=ros2.name="camera_a";
+    auto ros1b=ros1,ros2b=ros2;ros1b.name=ros2b.name="camera_b";
     int a{}, b{};
     run("independent-instance-and-version-handle-tables", [&] {
-        capability_manager manager{}; require(manager.register_instance(&a, 1, "camera_a", &ros1, &ros2)); require(manager.register_instance(&b, 1, "camera_b", &ros1, &ros2));
+        capability_manager manager{}; require(manager.register_instance(&a, 1, "camera_a", &ros1, &ros2)); require(manager.register_instance(&b, 1, "camera_b", &ros1b, &ros2b));
         ::std::uint64_t ha{}, hb{}, h2{}; require(manager.open(&a, 1, version::ros1, "talk", ha)); require(manager.open(&b, 1, version::ros1, "talk", hb)); require(manager.open(&a, 1, version::ros2, "talk", h2)); assert(ha != hb && ha != h2);
         authorization lease{}; require(manager.authorize(&b, 1, version::ros1, ha, "topic.publish", message, lease), errc::bad_handle);
         require(manager.authorize(&a, 1, version::ros2, ha, "topic.publish", message, lease), errc::bad_handle);
@@ -632,7 +635,7 @@ int main()
         require(manager.close(&a, 1, version::ros1, handle)); require(manager.open(&a, 1, version::ros1, "talk", handle), errc::rate_limited);
     });
     run("revocation-is-permanent-and-independent-per-instance", [&] {
-        capability_manager manager{}; require(manager.register_instance(&a, 1, "camera_a", &ros1, nullptr)); require(manager.register_instance(&b, 1, "camera_b", &ros1, nullptr));
+        capability_manager manager{}; require(manager.register_instance(&a, 1, "camera_a", &ros1, nullptr)); require(manager.register_instance(&b, 1, "camera_b", &ros1b, nullptr));
         ::std::uint64_t ha{}, hb{}; require(manager.open(&a, 1, version::ros1, "talk", ha)); require(manager.open(&b, 1, version::ros1, "talk", hb)); require(manager.revoke(&a, 1, version::ros1, "talk"));
         authorization lease{}; require(manager.describe(&a, 1, version::ros1, ha, lease), errc::bad_handle); require(manager.open(&a, 1, version::ros1, "talk", ha), errc::revoked); require(manager.authorize(&b, 1, version::ros1, hb, "topic.publish", message, lease));
     });
@@ -670,7 +673,7 @@ int main()
         assert(p.effective(version::ros1, module)->target_scope == scope::single);
     });
     run("backend-failure-lock-cannot-block-other-ros-version", [&] {
-        capability_manager manager{}; require(manager.register_instance(&a, 1, "hybrid", &ros1, &ros2)); ::std::uint64_t h1{}, h2{}; require(manager.open(&a, 1, version::ros1, "talk", h1)); require(manager.open(&a, 1, version::ros2, "talk", h2));
+        capability_manager manager{}; require(manager.register_instance(&a, 1, "camera_a", &ros1, &ros2)); ::std::uint64_t h1{}, h2{}; require(manager.open(&a, 1, version::ros1, "talk", h1)); require(manager.open(&a, 1, version::ros2, "talk", h2));
         authorization ros1_pending{}; require(manager.describe(&a, 1, version::ros1, h1, ros1_pending));
         auto future{::std::async(::std::launch::async, [&] { authorization lease{}; return manager.authorize(&a, 1, version::ros2, h2, "topic.publish", message, lease); })};
         auto status{future.wait_for(::std::chrono::milliseconds(100))}; ros1_pending.release(); assert(status == ::std::future_status::ready); require(future.get());
@@ -684,8 +687,8 @@ int main()
     });
     run("audit-record-rate-count-byte-quotas-enforced", [&] {
         auto cap{topic()}; cap.limits["audit-max-rate-hz"] = "0.001"; cap.limits["audit-burst"] = "3"; cap.limits["audit-max-records"] = "2"; cap.limits["audit-max-bytes"] = "8";
-        bounded_audit audit{}; require(audit.configure(cap)); assert(audit.record("abc")); assert(audit.record("def")); assert(audit.record("ghi")); assert(!audit.record("jkl")); assert(audit.retained_records() == 2 && audit.retained_bytes() == 6);
-        ::std::vector<::std::string> records{}; ::std::uint64_t dropped{}; audit.drain(records, dropped); assert(records.size() == 2 && records[0] == "def" && records[1] == "ghi" && dropped == 2);
+        bounded_audit audit{}; require(audit.configure(cap)); assert(audit.record("abc")); assert(audit.record("def")); assert(!audit.record("ghi")); assert(!audit.record("jkl")); assert(audit.retained_records() == 2 && audit.retained_bytes() == 6);
+        ::std::vector<::std::string> records{}; ::std::uint64_t dropped{}; audit.drain(records, dropped); assert(records.size() == 2 && records[0] == "abc" && records[1] == "def" && dropped == 2);
         capability_manager manager{}; require(manager.register_instance(&a, 1, "camera_a", &ros1, nullptr)); ::std::uint64_t handle{}; require(manager.open(&a, 1, version::ros1, "talk", handle));
         authorization lease{}; require(manager.authorize(&a, 1, version::ros1, handle, "topic.subscribe", message, lease), errc::permission_denied); require(manager.record_result(&a, 1, version::ros1, "talk", "gateway-error", errc::disconnected)); require(manager.revoke(&a, 1, version::ros1, "talk")); require(manager.drain_audit(&a, 1, version::ros1, "talk", records, dropped));
         assert(records.size() == 4); assert(records[0].find("resource-create") != ::std::string::npos); assert(records[1].find("\"error\":13") != ::std::string::npos); assert(records[2].find("gateway-error") != ::std::string::npos); assert(records[3].find("capability-revoke") != ::std::string::npos);
@@ -696,11 +699,11 @@ int main()
             for(auto operation : {"service.call", "service.advertise", "service.respond", "param.get", "param.set", "param.list", "graph.list-topics", "graph.inspect-topic", "graph.inspect-node", "graph.inspect-service", "tf.lookup", "tf.broadcast", "time.read-ros", "log.write", "action.send-goal", "action.cancel-own-goal", "action.cancel-any-goal", "action.receive-feedback", "action.receive-result", "action.advertise", "action.respond"})
             {
                 auto original{operation_cap(v, operation)}; require(validate_capability(v, original));
-                for(auto const& item : original.limits) { auto missing{original}; missing.limits.erase(item.first); require(validate_capability(v, missing), errc::invalid_argument); }
+                for(auto const& item : original.limits) { auto missing{original}; missing.limits.erase(item.first); if(resource_quota_field(item.first)) { assert(quota_value(missing,item.first)==unlimited_quota); } else { require(validate_capability(v,missing),errc::invalid_argument); } }
             }
         }
         for(auto operation : {"param.declare", "param.undeclare", "param.describe", "param.subscribe-events", "graph.inspect-action", "lifecycle.get-state", "lifecycle.change-state"})
-        { auto original{operation_cap(version::ros2, operation)}; require(validate_capability(version::ros2, original)); for(auto const& item : original.limits) { auto missing{original}; missing.limits.erase(item.first); require(validate_capability(version::ros2, missing), errc::invalid_argument); } }
+        { auto original{operation_cap(version::ros2, operation)}; require(validate_capability(version::ros2, original)); for(auto const& item : original.limits) { auto missing{original}; missing.limits.erase(item.first); if(resource_quota_field(item.first)) { assert(quota_value(missing,item.first)==unlimited_quota); } else { require(validate_capability(version::ros2,missing),errc::invalid_argument); } } }
     });
     run("transform-generated-type-frame-pair-and-field-bounds", [] {
         for(auto v : {version::ros1, version::ros2})

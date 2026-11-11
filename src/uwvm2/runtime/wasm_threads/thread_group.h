@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <exception>
 #include <memory>
+#include <vector>
 #include <mutex>
 #include <new>
 #include <optional>
@@ -38,7 +39,10 @@
 namespace uwvm2::uwvm::runtime::initializer { extern "C++" { class ThreadedChildWorld; class ThreadedMainActiveSegments; } }
 namespace uwvm2::runtime::wasm_threads
 {
-    enum class termination_kind : unsigned { running, cancelled, trap, proc_exit, native_failure, memory_failure, main_return };
+    // A rejected initial profile has executed no Guest instruction. Preserve
+    // that admission outcome separately from a failure of the native runtime.
+    enum class termination_kind : unsigned
+    { running, cancelled, trap, proc_exit, native_failure, memory_failure, main_return, preparation_rejected };
     struct group_outcome
     {
         termination_kind kind{termination_kind::running};
@@ -175,9 +179,33 @@ namespace uwvm2::runtime::wasm_threads
 #include "thread_group_compiler_types.inc"
 
     private:
+        // Stable addresses survive registry growth. The short registry mutex
+        // protects vector metadata only; returned objects remain owned until the
+        // whole group has drained. No guest/provider executes under this mutex.
+        template<typename T> class stable_slots
+        {
+            mutable ::std::mutex registry_;
+            ::std::vector<::std::unique_ptr<T>> entries_;
+        public:
+            bool append() noexcept
+            {
+                try
+                {
+                    auto value=::std::make_unique<T>();
+                    ::std::lock_guard lock{registry_};entries_.push_back(::std::move(value));return true;
+                }
+                catch(...) { return false; }
+            }
+            bool initialize(::std::size_t count) noexcept
+            { for(::std::size_t i{};i<count;++i) { if(!append())return false; }return true; }
+            void pop_back() noexcept { ::std::lock_guard lock{registry_};entries_.pop_back(); }
+            T& operator[](::std::size_t index) const noexcept
+            { ::std::lock_guard lock{registry_};return *entries_[index]; }
+        };
         struct slot
         {
             ThreadedGroup* group{};
+            ::std::size_t position{};
             slot_phase phase{slot_phase::empty};
             ::std::uint32_t tid{}, argument{};
             ::std::uint64_t debug_incarnation{}, debug_native_tid{};
@@ -202,7 +230,8 @@ namespace uwvm2::runtime::wasm_threads
         };
         ::std::shared_ptr<ThreadedSpawnAdmission const> admission_;
         ::std::weak_ptr<ThreadedGroup> canonical_owner_;
-        ::std::unique_ptr<slot[]> slots_;
+        stable_slots<slot> slots_;
+        ::std::atomic<::std::size_t> slot_count_{};
         ::std::mutex mutex_, retirement_mutex_;
         ::std::condition_variable changes_;
         ::std::stop_source cancellation_;
@@ -216,7 +245,8 @@ namespace uwvm2::runtime::wasm_threads
         ::std::atomic<bool> ever_launched_{}, memory_tainted_{}, shared_effects_started_{};
         ::std::size_t occupied_{}, storage_reserved_{}, code_reserved_{};
         ::std::size_t occupied_children_{};
-        ::std::uint32_t next_tid_{1u}, attempts_{};
+        ::std::uint32_t next_tid_{1u};
+        ::std::uint64_t attempts_{};
         bool accepting_{true};
         bool initial_main_reserved_{};
         // Fixed session/registration state is included by sizeof(Group/slot) in
@@ -233,26 +263,27 @@ namespace uwvm2::runtime::wasm_threads
         [[nodiscard]] static bool limits_admitted(threaded_profile_limits const& limits) noexcept
         {
             constexpr auto maximum{static_cast<::std::size_t>(-1)};
-            if(limits.max_active_children == 0u || limits.max_active_children >= (1u << 29u) ||
-               limits.max_spawn_attempts == 0u || limits.max_spawn_attempts >= (1u << 29u) ||
+            if(limits.max_active_children == 0u || (limits.max_active_children != maximum && limits.max_active_children >= (1u << 29u)) ||
+               limits.max_spawn_attempts == 0u || (limits.max_spawn_attempts != UINT32_MAX && limits.max_spawn_attempts >= (1u << 29u)) ||
                limits.native_stack_bytes < static_cast<::std::size_t>(PTHREAD_STACK_MIN) ||
                limits.compiler_stack_bytes < static_cast<::std::size_t>(PTHREAD_STACK_MIN) ||
                limits.compiler_stack_bytes == maximum ||
-               limits.native_stack_bytes == maximum || limits.max_live_native_stack_bytes == maximum ||
+               limits.native_stack_bytes == maximum ||
                limits.max_live_native_stack_bytes < limits.native_stack_bytes ||
                limits.compiler_stack_bytes > limits.max_live_native_stack_bytes - limits.native_stack_bytes ||
                limits.max_child_storage_bytes == 0u || limits.max_child_storage_bytes == maximum ||
-               limits.max_live_storage_bytes == maximum || limits.max_live_storage_bytes < limits.max_child_storage_bytes ||
+               limits.max_live_storage_bytes < limits.max_child_storage_bytes ||
                limits.max_child_code_bytes == 0u || limits.max_child_code_bytes == maximum ||
-               limits.max_live_code_bytes == maximum || limits.max_live_code_bytes < limits.max_child_code_bytes ||
+               limits.max_live_code_bytes < limits.max_child_code_bytes ||
                limits.max_value_stack_bytes == 0u || limits.max_value_stack_bytes == maximum ||
                limits.max_control_frames == 0u || limits.max_control_frames == maximum ||
                limits.max_call_frames == 0u || limits.max_call_frames == maximum ||
                limits.max_table_elements == maximum || limits.max_local_memory_bytes == maximum ||
                limits.max_shared_memory_bytes == 0u || limits.max_shared_memory_bytes == maximum ||
                limits.max_total_segment_bytes == maximum ||
-               limits.max_active_children + 1u > maximum / sizeof(slot) ||
-               limits.max_active_children + 1u > maximum / sizeof(compiler_slot)) { return false; }
+               (limits.max_active_children != maximum &&
+                (limits.max_active_children + 1u > maximum / sizeof(slot) ||
+                 limits.max_active_children + 1u > maximum / sizeof(compiler_slot)))) { return false; }
             return true;
         }
 
@@ -274,8 +305,8 @@ namespace uwvm2::runtime::wasm_threads
                limits.native_stack_bytes - page_bytes_ * 2u < static_cast<::std::size_t>(PTHREAD_STACK_MIN) ||
                limits.compiler_stack_bytes - page_bytes_ * 2u < static_cast<::std::size_t>(PTHREAD_STACK_MIN))
             { accepting_ = false; initialization_error_ = EINVAL; return; }
-            auto const count{limits.max_active_children + 1u};
-            auto const guest_bytes{count * sizeof(slot)}, queue_bytes{count * sizeof(compiler_slot)};
+            auto const count{limits.max_active_children == SIZE_MAX ? 1u : limits.max_active_children + 1u};
+            auto const guest_bytes{count * (sizeof(slot)+2u*sizeof(void*))}, queue_bytes{count * (sizeof(compiler_slot)+2u*sizeof(void*))};
             if(guest_bytes > SIZE_MAX - sizeof(ThreadedGroup) ||
                queue_bytes > SIZE_MAX - sizeof(ThreadedGroup) - guest_bytes)
             { accepting_ = false; initialization_error_ = EOVERFLOW; return; }
@@ -294,17 +325,28 @@ namespace uwvm2::runtime::wasm_threads
                 {accepting_=false;initialization_error_=EINVAL;return;}
                 // Object/array requested payload; allocator metadata and RSS
                 // remain outside this existing profile's requested-byte metric.
-                auto const minimum_pbytes{debug_pause_domain::fixed_native_payload_bytes(count)};
-                auto const minimum_scratch{count*sizeof(debug_pause_domain::stopped_participant)};
+                auto debug_count=count;
+                if(limits.max_active_children==SIZE_MAX)
+                {
+                    auto const fixed=sizeof(debug_control_state)-sizeof(debug_pause_domain)+debug_pause_domain::fixed_native_payload_bytes(0u);
+                    auto const per=debug_pause_domain::fixed_native_payload_bytes(1u)-debug_pause_domain::fixed_native_payload_bytes(0u)+sizeof(debug_pause_domain::stopped_participant);
+                    if(purpose.maximum_control_storage_bytes<=fixed||per==0u)
+                    {accepting_=false;initialization_error_=ENOMEM;return;}
+                    debug_count=(purpose.maximum_control_storage_bytes-fixed)/per;
+                    if(debug_count==0u||debug_count>=(1u<<29u))
+                    {accepting_=false;initialization_error_=ENOMEM;return;}
+                }
+                auto const minimum_pbytes{debug_pause_domain::fixed_native_payload_bytes(debug_count)};
+                auto const minimum_scratch{debug_count*sizeof(debug_pause_domain::stopped_participant)};
                 if(minimum_pbytes==SIZE_MAX||minimum_pbytes>SIZE_MAX-sizeof(debug_control_state)||
                    minimum_scratch>SIZE_MAX-sizeof(debug_control_state)-minimum_pbytes)
                 {accepting_=false;initialization_error_=EOVERFLOW;return;}
                 auto const minimum_extra{sizeof(debug_control_state)-sizeof(debug_pause_domain)+minimum_pbytes+minimum_scratch};
                 if(minimum_extra>purpose.maximum_control_storage_bytes||minimum_extra>=limits.max_live_storage_bytes-fixed_storage_bytes_)
                 {accepting_=false;initialization_error_=ENOMEM;return;}
-                debug_control_.reset(new debug_control_state{count});
+                debug_control_.reset(new debug_control_state{debug_count});
                 auto const pbytes{debug_control_->pause.requested_storage_bytes()};
-                auto const scratch_bytes{count*sizeof(debug_pause_domain::stopped_participant)};
+                auto const scratch_bytes{debug_count*sizeof(debug_pause_domain::stopped_participant)};
                 if(pbytes==SIZE_MAX||pbytes>SIZE_MAX-sizeof(debug_control_state)||
                    scratch_bytes>SIZE_MAX-sizeof(debug_control_state)-pbytes)
                 {accepting_=false;initialization_error_=EOVERFLOW;return;}
@@ -314,14 +356,30 @@ namespace uwvm2::runtime::wasm_threads
                 fixed_storage_bytes_+=extra;
             }
             storage_reserved_ = fixed_storage_bytes_;
-            slots_.reset(new (::std::nothrow) slot[count]);
-            compiler_jobs_.reset(new (::std::nothrow) compiler_slot[count]);
-            if(!slots_ || !compiler_jobs_) { accepting_ = false; initialization_error_ = ENOMEM; return; }
+            if(!slots_.initialize(count)||!compiler_jobs_.initialize(count))
+            { accepting_ = false; initialization_error_ = ENOMEM; return; }
+            slot_count_.store(count,::std::memory_order_release);
             stop_fd_ = ::eventfd(0u, EFD_NONBLOCK | EFD_CLOEXEC);
             if(stop_fd_ == -1) { accepting_ = false; initialization_error_ = errno; return; }
-            for(::std::size_t i{}; i != admission_->limits().max_active_children + 1u; ++i) { slots_[i].group = this; }
+            for(::std::size_t i{};i<count;++i) { slots_[i].group=this;slots_[i].position=i; }
         }
 
+        // Caller holds the group mutex. Publish the new extent only after both
+        // registries and their exact lifetime/accounting state are ready.
+        bool grow_slot_locked() noexcept
+        {
+            auto const count=slot_count_.load(::std::memory_order_relaxed);
+            auto const& limits=admission_->limits();
+            constexpr ::std::size_t charge=sizeof(slot)+sizeof(compiler_slot)+4u*sizeof(void*);
+            if(limits.max_active_children!=SIZE_MAX||count>=(1u<<29u)||
+               (debug_control_&&count>=debug_control_->capacity)||storage_reserved_>limits.max_live_storage_bytes||
+               charge>limits.max_live_storage_bytes-storage_reserved_)return false;
+            if(!slots_.append())return false;
+            if(!compiler_jobs_.append()){slots_.pop_back();return false;}
+            slots_[count].group=this;slots_[count].position=count;
+            storage_reserved_+=charge;fixed_storage_bytes_+=charge;
+            slot_count_.store(count+1u,::std::memory_order_release);return true;
+        }
         void release_reservation(slot& selected) noexcept
         {
             auto const& limits{admission_->limits()};
@@ -381,12 +439,12 @@ namespace uwvm2::runtime::wasm_threads
             ::std::span<threaded_debug_worker_ticket> output,::std::size_t& needed) noexcept
         {
             needed=0u;::std::lock_guard lock{mutex_};if(!debug_live(epoch))return debug_read_status::stale;
-            for(::std::size_t i{};i!=admission_->limits().max_active_children+1u;++i)
+            for(::std::size_t i{};i!=slot_count_.load(::std::memory_order_acquire);++i)
                 if(slots_[i].debug_registered&&slots_[i].native_created&&slots_[i].work)++needed;
             if(output.size()<needed)
                 return debug_live(epoch)?debug_read_status::insufficient_capacity:debug_read_status::stale;
             ::std::size_t n{};
-            for(::std::size_t i{};i!=admission_->limits().max_active_children+1u;++i)
+            for(::std::size_t i{};i!=slot_count_.load(::std::memory_order_acquire);++i)
             {
                 auto const& s{slots_[i]};if(!s.debug_registered||!s.native_created||!s.work)continue;
                 auto& t{output[n++]};t.group_=canonical_owner_;t.world_=s.work->retained_world();
@@ -404,7 +462,7 @@ namespace uwvm2::runtime::wasm_threads
             output={};::std::lock_guard lock{mutex_};
             if(!debug_live(epoch)||ticket.session_epoch_!=epoch||
                ticket.group_.owner_before(canonical_owner_)||canonical_owner_.owner_before(ticket.group_)||
-               ticket.position_>=admission_->limits().max_active_children+1u||
+               ticket.position_>=slot_count_.load(::std::memory_order_acquire)||
                ticket.source_generation_!=admission_->source_generation()||ticket.validation_epoch_!=admission_->source_validation_epoch()||
                ticket.source_.owner_before(admission_->source_owner())||admission_->source_owner().owner_before(ticket.source_))
                 return debug_read_status::stale;
@@ -529,25 +587,38 @@ namespace uwvm2::runtime::wasm_threads
             if(initialization_error_ != 0 || !runtime_control_charged_ || !accepting_ || stop_requested_.load(::std::memory_order_acquire) ||
                (observing_debug() && next_debug_incarnation_ == UINT64_MAX) ||
                (initial_main ? initial_main_reserved_ :
-                   attempts_ >= limits.max_spawn_attempts || next_tid_ >= (1u << 29u) ||
+                   (limits.max_spawn_attempts!=UINT32_MAX&&(attempts_ >= limits.max_spawn_attempts || next_tid_ >= (1u << 29u))) ||
                    occupied_children_ >= limits.max_active_children) ||
                limits.native_stack_bytes > limits.max_live_native_stack_bytes - native_stack_reserved_ ||
                compiler_payload_reserved_ > limits.max_live_storage_bytes - storage_reserved_ ||
                limits.max_child_storage_bytes > limits.max_live_storage_bytes - storage_reserved_ - compiler_payload_reserved_ ||
                limits.max_child_code_bytes > limits.max_live_code_bytes - code_reserved_) { return {}; }
             auto const begin{initial_main ? 0u : 1u};
-            auto const end{initial_main ? 1u : limits.max_active_children + 1u};
+            auto end{initial_main ? 1u : slot_count_.load(::std::memory_order_acquire)};
+            if(!initial_main&&limits.max_active_children==SIZE_MAX)
+            {
+                bool vacant{};
+                for(::std::size_t i{1u};i<end;++i)if(slots_[i].phase==slot_phase::empty){vacant=true;break;}
+                if(!vacant)
+                {
+                    if(!grow_slot_locked())return {};
+                    end=slot_count_.load(::std::memory_order_acquire);
+                    // Registry storage is charged before reserving the child.
+                    if(compiler_payload_reserved_>limits.max_live_storage_bytes-storage_reserved_||
+                       limits.max_child_storage_bytes>limits.max_live_storage_bytes-storage_reserved_-compiler_payload_reserved_)return {};
+                }
+            }
             for(::std::size_t i{begin}; i != end; ++i)
             {
                 auto& selected{slots_[i]};
                 if(selected.phase != slot_phase::empty) { continue; }
                 selected.phase = slot_phase::preparing; selected.initial_main = initial_main;
-                selected.tid = initial_main ? 0u : next_tid_++;
+                selected.tid = initial_main ? 0u : limits.max_spawn_attempts==UINT32_MAX ? static_cast<::std::uint32_t>(i) : next_tid_++;
                 if(observing_debug())selected.debug_incarnation = next_debug_incarnation_++;
                 selected.debug_registered = false; selected.debug_native_tid = 0u;
                 selected.body_returned.store(false, ::std::memory_order_relaxed);
                 if(initial_main) { initial_main_reserved_ = true; }
-                else { ++attempts_; ++occupied_children_; }
+                else { if(attempts_!=UINT64_MAX)++attempts_; ++occupied_children_; }
                 ++occupied_;
                 storage_reserved_ += limits.max_child_storage_bytes;
                 native_stack_reserved_ += limits.native_stack_bytes;
@@ -672,7 +743,7 @@ namespace uwvm2::runtime::wasm_threads
             for(;;)
             {
                 retirement_result result{true, 0u, 0u, 0};
-                for(::std::size_t i{}; i != admission_->limits().max_active_children + 1u; ++i)
+                for(::std::size_t i{}; i != slot_count_.load(::std::memory_order_acquire); ++i)
                 {
                     ::pthread_t actual{};
                     bool has_native{}, cleanup{};
@@ -771,7 +842,7 @@ namespace uwvm2::runtime::wasm_threads
     [[nodiscard]] host_dispatch_status dispatch_import(ThreadedGroup::ChildLease&,
         ::uwvm2::uwvm::runtime::initializer::ThreadedChildWorld const&,
         ::std::size_t caller_module, ::std::size_t caller_function, ::std::size_t imported_function,
-        ::std::span<::std::byte> results, ::std::span<::std::byte const> params) noexcept;
+        ::std::span<::std::byte> results, ::std::span<::std::byte const> params, bool cross_module=false) noexcept;
     [[nodiscard]] import_admission admit_import(
         ::uwvm2::uwvm::runtime::initializer::ThreadedChildWorld const&,
         ::std::size_t caller_module, ::std::size_t imported_function) noexcept;

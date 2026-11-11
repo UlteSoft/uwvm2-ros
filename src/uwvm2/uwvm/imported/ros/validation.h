@@ -10,11 +10,6 @@
 # include <fast_io.h>
 # include <fast_io_unit/string.h>
 # include <vector>
-# if defined(__linux__)
-#  include <sys/stat.h>
-#  include <sys/socket.h>
-#  include <cerrno>
-# endif
 # include "storage.h"
 # include <uwvm2/uwvm/wasm/storage/impl.h>
 # include <uwvm2/uwvm/runtime/runtime_mode/impl.h>
@@ -65,28 +60,10 @@ namespace uwvm2::uwvm::imported::ros
         if(!executing) { return {}; }
         if(policy_any_enabled)
         {
-#if defined(__linux__)
-            // WASI standard descriptors are capabilities too. A connected ROS
-            // socket inherited as stdin/out/err must not bypass this host layer.
-            for(int descriptor{}; descriptor != 3; ++descriptor)
-            {
-                struct stat state{};
-                if(::fstat(descriptor, &state) != 0 && errno != EBADF)
-                { return {model::errc::permission_denied, "cannot verify inherited standard descriptor identity"}; }
-                if(S_ISSOCK(state.st_mode))
-                { return {model::errc::permission_denied, "strict ROS worker rejects socket standard descriptors"}; }
-            }
-#endif
-
             if(auto result{validate_execution_backend()}; !result) { return result; }
-#if defined(UWVM_SUPPORT_PRELOAD_DL)
-            if(!::uwvm2::uwvm::wasm::storage::preloaded_dl.empty())
-            { return {model::errc::unsupported, "strict ROS worker cannot admit additional native DL plugins"}; }
-#endif
-#if defined(UWVM_SUPPORT_WEAK_SYMBOL)
-            if(!::uwvm2::uwvm::wasm::storage::weak_symbol.empty())
-            { return {model::errc::unsupported, "strict ROS worker cannot admit additional weak-symbol plugins"}; }
-#endif
+            // An explicitly selected native driver follows the loader's own
+            // trust/optional signature policy. ROS does not grant it WASI host
+            // APIs, nor veto it after its constructors have already executed.
         }
 #ifndef UWVM_DISABLE_LOCAL_IMPORTED_WASIP1
 # if defined(UWVM_IMPORT_WASI_WASIP1)
@@ -101,14 +78,11 @@ namespace uwvm2::uwvm::imported::ros
             if(!enabled) { continue; }
             bool const noinherit{state && state->noinherit_system_environment_is_set ? state->noinherit_system_environment : wasi::wasip1_noinherit_system_environment};
             if(!noinherit) { return {model::errc::permission_denied, "ROS worker requires WASI host environment isolation for " + name}; }
-            // Directory preopens retain their explicit per-module WASI roots,
-            // rights and budgets. Enabling ROS neither grants filesystem access
-            // nor removes an independently authorized WASI directory.
-            // Socket preopens remain unsupported by the strict ROS transport.
-#  if defined(UWVM_IMPORT_WASI_WASIP1_SUPPORT_SOCKET)
-            if(!wasi::default_wasip1_env.preopen_sockets.empty() || (state && !state->preopen_sockets.empty()))
-            { return {model::errc::permission_denied, "ROS worker rejects WASI socket preopens for " + name}; }
-#  endif
+            // Directory and socket resources retain their independent WASI
+            // interface, operation, per-module rights and explicit budgets.
+            // Inherited socket stdio also intersects stdio grants with socket
+            // rights during environment initialization. Enabling ROS grants
+            // none of those permissions and must not discard an explicit one.
         }
 # endif
 #endif

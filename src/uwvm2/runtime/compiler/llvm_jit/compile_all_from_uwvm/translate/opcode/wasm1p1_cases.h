@@ -1016,6 +1016,7 @@ case static_cast<wasm1_code>(wasm1p1_code::i64_extend32_s):
 }
 
 case static_cast<wasm1_code>(wasm1p1_code::numeric_prefix):
+case static_cast<wasm1_code>(::uwvm2::extension::memtag::opcode_prefix):
 {
     // [numeric prefix] subopcode LEB ... code_end
     // [safe         ] unsafe (could be code_end)
@@ -1026,8 +1027,20 @@ case static_cast<wasm1_code>(wasm1p1_code::numeric_prefix):
     // [safe         ] unsafe (could be code_end)
     //                  ^^ code_curr; bounded LEB decoding checks the subopcode.
 
-    auto const subopcode{
-        read_leb128.template operator()<validation_module_traits_t::wasm_u32>(code_curr, code_end, op_begin, u8"numeric_prefix")};
+    auto const subopcode{[&]() constexpr
+    {
+        if(*op_begin == ::std::byte{::uwvm2::extension::memtag::opcode_prefix})
+        {
+            auto const decoded{::uwvm2::extension::memtag::scan_opcode(code_curr, code_end)};
+            if(decoded.error != ::uwvm2::extension::memtag::encoding_error::none)
+            { fail_invalid_immediate(op_begin, u8"uwvm.memtag namespace"); }
+            return decoded.subopcode;
+        }
+        return read_leb128.template operator()<validation_module_traits_t::wasm_u32>(code_curr, code_end, op_begin, u8"numeric_prefix");
+    }()};
+    if(*op_begin != ::std::byte{::uwvm2::extension::memtag::opcode_prefix} &&
+       ::uwvm2::extension::memtag::find_instruction(subopcode) != nullptr)
+    { fail_invalid_immediate(op_begin, u8"obsolete FC memtag encoding; regenerate with FF packed-u32"); }
     auto const numeric_code{static_cast<wasm1p1_numeric_code>(subopcode)};
 
     auto const validate_nontrapping_float_to_int{

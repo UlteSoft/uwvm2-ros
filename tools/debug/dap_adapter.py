@@ -9,9 +9,11 @@ attach with its private socket directory or Windows pipe and capability.
 
 import array
 import base64
+from bisect import bisect_left
 import ctypes
 from decimal import Decimal
 import json
+import hashlib
 import math
 import os
 from pathlib import Path
@@ -25,6 +27,18 @@ import sys
 import threading
 import time
 from urllib.parse import unquote
+
+
+class LocalRequestRefusal(ValueError):
+    """No value read/mutation was dispatched; current authorities stay intact."""
+
+
+class UnsupportedHoverFrame(LocalRequestRefusal):
+    """A local frame-type refusal before any debugger/VM command is sent."""
+
+
+class UpdateCoordinatorBusy(RuntimeError):
+    """Authenticated pre-dispatch refusal; only observation may poll later."""
 
 
 MAX_DAP_MESSAGE = 1 << 20
@@ -127,7 +141,7 @@ def parse_wasm_memory_page(reply, module, memory, address, count):
     return bytes(copied)
 
 
-ROS_SELECTIONS = ("capabilities", "sessions", "queues", "services", "actions", "parameters", "tf", "graph", "stats", "calls", "trace")
+ROS_SELECTIONS = ("capabilities", "sessions", "queues", "services", "actions", "parameters", "tf", "graph", "stats", "calls", "trace", "policy")
 ROS_SELECTION_ALIASES = {"instances": "sessions", "events": "queues"}
 ROS_ROW_TEXT = {"module": 255, "alias": 255, "op": 64, "resource": 256, "type": 192}
 ROS_ROW_BOOLS = {"enabled", "alive", "revoked", "connected", "retired"}
@@ -148,7 +162,7 @@ def ros_state_options(arguments):
     An events query describes queues; it never reads or consumes an envelope.
     """
     fields = {"selection", "backend", "instance", "module", "alias", "start", "count", "after", "error",
-              "function", "operation", "ifStop"}
+              "function", "operation", "ifStop", "scope", "target"}
     if type(arguments) is not dict or set(arguments) - fields:
         raise ValueError("closed read-only ROS query arguments required")
     requested = arguments.get("selection", "capabilities")
@@ -156,12 +170,16 @@ def ros_state_options(arguments):
     if selected not in ROS_SELECTIONS:
         raise ValueError("unknown bounded ROS metadata selection")
     trace = selected == "trace"
+    policy = selected == "policy"
+    if (not policy and any(k in arguments for k in ("scope", "target")) or
+            policy and "instance" in arguments):
+        raise ValueError("ROS policy selectors cannot be used with live instance queries")
     if (trace and "start" in arguments or not trace and any(k in arguments for k in ("after", "error")) or
             selected not in ("trace", "calls") and any(k in arguments for k in ("function", "operation"))):
         raise ValueError("ROS trace and state page operands cannot be mixed")
     options = {"selection": selected, "requestedSelection": requested, "start": arguments.get("start", 0),
-               "count": arguments.get("count", 16 if trace else 8)}
-    bounds = {"instance": (1, (1 << 64)-1), "start": (0, 4096), "count": (1, 16 if trace else 8),
+               "count": arguments.get("count", 16 if trace else 4 if policy else 8)}
+    bounds = {"instance": (1, (1 << 64)-1), "start": (0, (1 << 64)-1 if policy else 4096), "count": (1, 16 if trace else 4 if policy else 8),
               "after": (0, (1 << 64)-1), "error": (0, (1 << 32)-1), "ifStop": (1, (1 << 64)-1)}
     for key, (minimum, maximum) in bounds.items():
         if key not in arguments and key not in options:
@@ -174,10 +192,20 @@ def ros_state_options(arguments):
     if backend not in ("all", "ros1", "ros2"):
         raise ValueError("ROS backend must be all, ros1 or ros2")
     options["backend"] = backend
-    for key in ("module", "alias", "function", "operation"):
+    if policy:
+        scope = arguments.get("scope", "all")
+        if scope not in ("all", "global", "single", "group"):
+            raise ValueError("ROS policy scope must be all, global, single or group")
+        options["scope"] = scope
+    for key in ("module", "alias", "function", "operation", "target"):
         if key not in arguments:
             continue
         value = arguments[key]
+        if policy and key in ("module", "target"):
+            if type(value) is not str or not 0 < len(value.encode("utf-8")) <= 1024 or "\0" in value:
+                raise ValueError("complete bounded UTF-8 ROS policy identity required: " + key)
+            options[key] = value
+            continue
         if (type(value) is not str or not 0 < len(value) <= (64 if key in ("function", "operation") else 255)
                 or any(not 33 <= ord(c) <= 126 for c in value)):
             raise ValueError("exact bounded ASCII ROS filter required: " + key)
@@ -235,10 +263,44 @@ def parse_ros_state(reply, options, stop_id):
                 "truncated": truncated}
     rows = []; trace = selected == "trace"; calls = selected == "calls"; current_trace = None
     for line in lines[1:-1]:
-        prefix = "call " if trace else "interface " if calls else "row "
+        prefix = "policy " if selected == "policy" else "call " if trace else "interface " if calls else "row "
         if not line.startswith(prefix) or len(rows) >= options["count"]:
             raise ValueError("unexpected or excessive ROS metadata row")
         values = fields(line[len(prefix):])
+        if selected == "policy":
+            texts = {"target": 1024, "module": 1024, "alias": 255, "key": 192, "value": 1024}
+            if set(values) != set(texts) | {"kind", "backend", "scope", "configured", "enabled", "redacted", "value_offset", "value_total"}:
+                raise ValueError("incomplete ROS policy row schema")
+            row = {key: quoted(values[key], capacity) for key, capacity in texts.items()}
+            if any(value["truncated"] for value in row.values()):
+                raise ValueError("ROS policy field was truncated")
+            for key in ("configured", "enabled", "redacted"):
+                row[key] = boolean(values[key])
+            for key in ("value_offset", "value_total"):
+                row[key] = integer(values[key])
+            for key, choices in (("backend", ("ros1", "ros2")), ("scope", ("global", "single", "group")),
+                    ("kind", ("target", "binding", "interface", "capability", "limit", "connection"))):
+                if values[key] not in choices:
+                    raise ValueError("invalid ROS policy row " + key)
+                row[key] = values[key]
+            length = len(base64.b64decode(row["value"]["bytesBase64"], validate=True))
+            if row["redacted"]:
+                if row["value"]["text"] != "<redacted>" or row["value_offset"] or row["value_total"]:
+                    raise ValueError("redacted ROS policy field carries data")
+            elif (row["value_offset"] > row["value_total"] or length != min(1024, row["value_total"]-row["value_offset"])
+                    or row["value_offset"] % 1024):
+                raise ValueError("incomplete ROS policy value fragment")
+            for key in ("backend", "scope"):
+                if options.get(key, "all") != "all" and options[key] != row[key]:
+                    raise ValueError("ROS policy filter was not applied")
+            if "target" in options and row["target"]["text"] != options["target"]:
+                raise ValueError("ROS policy target differs")
+            if row["kind"] == "binding" and "module" in options and row["module"]["text"] != options["module"]:
+                raise ValueError("ROS policy binding differs")
+            if row["kind"] in ("capability", "limit") and "alias" in options and row["alias"]["text"] != options["alias"]:
+                raise ValueError("ROS policy alias differs")
+            rows.append(row)
+            continue
         symbols = set()
         if trace:
             texts = {"module": 255, "alias": 255, "op": 64, "function": 64}
@@ -1764,8 +1826,18 @@ def parse_wasm_layout(text, selected, thread, module, first, stop_id, index=0, c
                 if int(typed[1]) >= 1 << 32 or int(typed[2]) >= 1 << 64:
                     raise ValueError("Wasm declaration exceeds its exact width")
             name, type_name = prefix+match[1], match[2]
+        fields = None
+        if selected == 'controls':
+            fields = {'Kind': kind, 'Instructions': {'Entry offset': hex(numbers[0]), 'End offset': hex(numbers[1])},
+                      'Outer operand height': numbers[2],
+                      'Saved parameters': {'First index': numbers[3], 'Count': numbers[4]},
+                      'Parameter types': {'Count': numbers[5]}, 'Result types': {'Count': numbers[6]}}
+        elif selected == 'handlers':
+            fields = {'Catch kind': kind, 'Tag index': None if kind.startswith('catch-all') else numbers[0],
+                      'Target': {'Control index': numbers[1], 'Instruction offset': hex(numbers[2])},
+                      'Parameter types': {'Count': numbers[3]}}
         rows.append({"name": name, "index": ordinal, "type": type_name,
-                     "value": line[len(name)+1:] if selected in ("controls", "handlers") else "declared type",
+                     "value": kind if fields is not None else "declared type", "fields": fields,
                      "object": None})
     return {"rows": rows, "objects": [], "total": total, "module": actual_module, "epoch": epoch, "truncated": more}
 
@@ -2001,7 +2073,7 @@ _WASIP1_TEXT = re.compile(r'(?:[!#-\[\]-~]|\\x[0-9a-f]{2})*')
 def parse_wasip1_state(text, selected, module, first, count, stop_id):
     """Detached bounded WASIp1 display; no native handle/path or replay authority."""
     if (not isinstance(text, str) or not text.isascii() or not text.endswith("\n") or "\r" in text
-            or len(text) > 33024 or selected not in ("args", "env", "fds", "preopens")):
+            or len(text) > 33024 or selected not in ("args", "env", "fds", "preopens", "policy")):
         raise ValueError("malformed bounded WASIp1 state reply")
     lines = text.splitlines()
     if len(lines) < 2 or lines[0] != f"wasip1-stop {stop_id}":
@@ -2041,7 +2113,7 @@ def parse_wasip1_state(text, selected, module, first, count, stop_id):
             continue
         if len(result["variables"]) == count or len(result["variables"]) == 64:
             raise ValueError("WASIp1 row count exceeds requested page")
-        if selected in ("args", "env"):
+        if selected in ("args", "env", "policy"):
             row = re.fullmatch(r'  \[([0-9]{1,20})\] "(.*)"', line)
             expected = first + len(result["variables"])
             if row is None or int(row[1]) != expected or expected >= result["total"]:
@@ -2768,16 +2840,16 @@ def map_source_path(path, mappings, reverse=False):
 DEBUG_PERMISSIONS = ("full", "read-only", "limited", "none")
 
 
-def debug_capabilities(permission):
+def debug_capabilities(permission, step_level="source"):
     full = permission == "full"
     inspect = permission in ("full", "read-only")
-    return {"supportsConfigurationDoneRequest": True, "supportsEvaluateForHovers": inspect,
+    return {"supportsConfigurationDoneRequest": True, "supportsEvaluateForHovers": inspect and step_level != "wasm",
             "supportsSteppingGranularity": full, "supportsInstructionBreakpoints": full,
             "supportsHitConditionalBreakpoints": full, "supportsConditionalBreakpoints": full,
             "supportsLogPoints": False, "supportsDataBreakpoints": full,
             "supportsSetVariable": full, "supportsReadMemoryRequest": inspect,
             "supportsWriteMemoryRequest": full, "supportsDisassembleRequest": inspect,
-            "supportsTerminateRequest": False, "supportsCancelRequest": True}
+            "supportsTerminateRequest": False, "supportsCancelRequest": True, "supportsANSIStyling": True}
 
 
 def dap_permission_allowed(permission, command):
@@ -2785,26 +2857,38 @@ def dap_permission_allowed(permission, command):
         return True
     if permission == "none":
         return False
+    if command == "uwvm/signedUpdate":
+        return True  # Separate provisioned capability, never a debugger grant.
     if permission == "full":
         return True
     if permission == "limited":
-        return command in ("threads", "evaluate", "uwvm/diagnostics", "uwvm/dump", "uwvm/permissions")
-    return command not in ("next", "stepIn", "stepOut", "stepBack", "reverseContinue", "restart", "terminate",
+        return command in ("threads", "stackTrace", "scopes", "evaluate", "uwvm/diagnostics", "uwvm/dump", "uwvm/permissions")
+    return command not in ("pause", "continue", "next", "stepIn", "stepOut", "stepBack", "reverseContinue", "restart", "terminate",
                            "goto", "gotoTargets", "setVariable", "setExpression", "writeMemory", "setBreakpoints",
                            "setFunctionBreakpoints", "setInstructionBreakpoints", "setDataBreakpoints", "setExceptionBreakpoints",
-                           "uwvm/wasip1Edit")
+                           "uwvm/wasip1Edit", "uwvm/breakpointControl", "uwvm/editorBreakpoints", "uwvm/breakpointCreate")
 
 
 class Adapter:
-    def __init__(self, output, wasm_source_session=None):
+    def __init__(self, output, wasm_source_session=None, complete_editor_breakpoints=False):
         if wasm_source_session is not None and (not isinstance(wasm_source_session, str) or
                 re.fullmatch(r"[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}", wasm_source_session) is None):
             raise ValueError("valid host IDE source session required")
         self.wasm_source_session = wasm_source_session
         self.wasm_source_uris = {}
+        self.wasm_documents = {}  # Immutable code DATA; never a stopped-value authority.
+        self.wasm_document_keys = {}
+        self.wasm_metadata_cache = {}
+        self.structured_views = {}
+        self.wasm_layout_groups = {}
+        self.wasm_table_groups = {}
+        self.frame_details = {}
         self.output = output
         self.sequence = 1
         self.broker = None
+        self.update_socket_dir = None
+        self.pending_update = None
+        self.update_results = queue.Queue()
         self.debug_permissions = "full"  # No transport authority until authenticated attach.
         self.limited_stop_id = 0
         self.startup_lock = threading.Lock()
@@ -2814,8 +2898,24 @@ class Adapter:
         self.threads = []
         self.state = "detached"
         self.stop_key = None
+        # Capabilities retire on an uncertain read; a repeated observation of
+        # the SAME VM stop must not steal focus or reopen a closed editor.
+        self.notified_stop_key = None
+        self.wasm_view_visible = True
+        self.entry_frame = None
+        self.native_reference_origins = {}
         self.breakpoints = {}
         self.instruction_breakpoints = []
+        self.instruction_breakpoint_specs = {}
+        self.breakpoint_inventory = {}
+        self.breakpoint_displays = {}
+        self.breakpoint_locations = {}
+        self.source_breakpoint_specs = {}
+        self.editor_breakpoint_paths = set()
+        self.complete_editor_breakpoints = complete_editor_breakpoints
+        self.client_ansi_styling = False
+        self.published_breakpoints = set()
+        self.native_instruction_addresses = {}
         self.data_breakpoint_handles = {}
         self.data_breakpoints = {}
         self.frames = {}
@@ -2847,6 +2947,10 @@ class Adapter:
         self.step_level = "source"
         self.inline_frames = set()
         self.finished = False
+        self.configuration_complete = False
+        self.resume_on_entry = False
+        self.attach_entry_key = None
+        self.stop_description = None
         self.supports_memory_event = False
         self.supports_invalidated_event = False
         self.supports_variable_type = False
@@ -2908,18 +3012,66 @@ class Adapter:
         self.output.write(b"Content-Length: " + str(len(payload)).encode("ascii") + b"\r\n\r\n" + payload)
         self.output.flush()
 
+    @staticmethod
+    def literal_ansi_text(value):
+        # Only adapter-owned annotations may style an IDE. Guest/host strings
+        # remain visible data rather than escape-sequence display instructions.
+        return re.sub(r'[\x1b\x80-\x9f]', lambda match: '\\x' + format(ord(match[0]), '02x'), value)
+
     def respond(self, request, body=None, error=None):
         result = {"type": "response", "request_seq": request["seq"],
                   "command": request["command"], "success": error is None}
         if error is not None:
             result["message"] = str(error)
         if body is not None:
+            if request['command'] == 'stackTrace' and isinstance(body, dict):
+                frames = []
+                for original in body.get('stackFrames', []):
+                    row = dict(original)
+                    # Standard Disassembly is exclusively native JIT code.
+                    # Wasm has its own generation-bound document/editor.
+                    if str(row.get('instructionPointerReference', '')).startswith('wasm:'):
+                        row.pop('instructionPointerReference', None)
+                    if (not self.wasm_view_visible and
+                            (row.get('source', {}).get('sourceReference') in self.wasm_documents or
+                              row.get('source', {}).get('path', '').startswith('uwvm-wasm:'))):
+                        row.pop('source', None)
+                        row['line'], row['column'] = 0, 0
+                    frames.append(row)
+                body = dict(body, stackFrames=frames)
+            if request['command'] == 'variables' and isinstance(body, dict) and 'variables' in body:
+                rows = []
+                for item in body['variables']:
+                    row = dict(item); warning = row.pop('_uwvmWarning', False)
+                    if self.client_ansi_styling and isinstance(row.get('value'), str):
+                        row['value'] = self.literal_ansi_text(row['value'])
+                        if warning: row['value'] = '\x1b[31m' + row['value'] + '\x1b[0m'
+                    rows.append(row)
+                body = dict(body, variables=rows)
+            if self.client_ansi_styling and request['command'] in ('evaluate', 'setVariable', 'setExpression') and isinstance(body, dict):
+                body = dict(body)
+                for field in ('value', 'result'):
+                    if isinstance(body.get(field), str): body[field] = self.literal_ansi_text(body[field])
             result["body"] = body
         self.emit(result)
 
-    def event(self, name, body=None):
+    def event(self, name, body=None, *, force=False):
+        if name == 'stopped':
+            # VS Code can lose a stop sent before configurationDone. Keep the
+            # actual stopped identity, then publish once the client is ready.
+            if not self.configuration_complete or self.stop_key is None:
+                return
+            if not force and self.notified_stop_key == self.stop_key:
+                return
+            self.notified_stop_key = self.stop_key
+            body = dict(body or {})
+            if not self.threads and self.stop_key[0] == 'entry' and self.debug_permissions != 'limited':
+                body['threadId'] = (1 << 31) - 1
+                body.setdefault('description', 'Initial Wasm entry — Continue starts execution')
         result = {"type": "event", "event": name}
         if body is not None:
+            if name == 'output' and self.client_ansi_styling and isinstance(body.get('output'), str):
+                body = dict(body, output=self.literal_ansi_text(body['output']))
             result["body"] = body
         self.emit(result)
 
@@ -2930,6 +3082,18 @@ class Adapter:
         # Retire stopped references before every console spelling that can
         # advance execution, including aliases sent through DAP evaluate.
         words = text.split()
+        if self.debug_permissions != "full":
+            # The VM repeats this admission independently. Do not send an
+            # execution-changing REPL alias merely because evaluate is readable.
+            if words and words[0] in ("pause", "continue", "c", "resume", "step", "s", "next", "n",
+                    "ni", "nexti", "finish", "fin", "run", "r", "start", "startw", "starti", "restart",
+                    "kill", "jump", "goto", "advance", "return", "replace", "wasm-script"):
+                raise ValueError("debugger permission " + self.debug_permissions + " denies execution control")
+            if (words[:1] in (["set"], ["unset"]) or words[:3] in
+                    (["trace", "host", "on"], ["trace", "host", "off"], ["trace", "host", "clear"],
+                     ["trace", "wasip1", "on"], ["trace", "wasip1", "off"], ["trace", "wasip1", "clear"],
+                     ["trace", "ros", "on"], ["trace", "ros", "off"])):
+                raise ValueError("debugger permission " + self.debug_permissions + " denies state modification")
         # The VM has only the exact "replace" spelling (no replacement alias).
         # Retire before sending even a malformed/failed replacement: its reply
         # may fail after publication or transport loss. Old IDs never resurrect.
@@ -2952,7 +3116,19 @@ class Adapter:
             self.invalidate_stop()
             raise
         if reply.startswith("error: "):
+            # A missing optional source frame table is a read-only refusal.
+            # stackTrace reobserves the complete stop before publishing its
+            # fallback. Repeated reads must not retire already issued native
+            # code/frame references for that same stopped generation.
+            if (words[:1] == ["frames"] and len(words) in (3, 5)
+                    and reply == "error: current source frames unavailable: valid embedded -g DWARF and a current private source/activation capture are required\n"):
+                raise RuntimeError(reply.strip())
+            had_stop = self.stop_key is not None
             self.invalidate_stop()
+            if reply in ("error: signed update coordinator is busy", "error: signed update coordinator is busy\n"):
+                if had_stop and self.supports_invalidated_event:
+                    self.event("invalidated", {"areas": ["stacks", "variables"]})
+                raise UpdateCoordinatorBusy(reply.strip())
             raise RuntimeError(reply.strip())
         if replacing:
             # Replacement text carries only the replaced function generation,
@@ -2985,40 +3161,178 @@ class Adapter:
                                    "all debugger references remain retired: " + str(error)) from error
         return reply
 
-    def wasm_document_source(self, reference, location):
-        name = f"module {location['module']} function {location['function']}.wat"
-        suffix = f"/module-{location['module']}/function-{location['function']}/stop-{location['stop_id']}.wat"
+    def wasm_metadata(self, module, kind="summary", first=0, count=1):
+        families = {"summary": 1, "functions": 2, "globals": 3, "tables": 4, "memories": 5}
+        if (kind not in families or type(module) is not int or not 0 <= module < 1 << 64
+                or type(first) is not int or not 0 <= first < 1 << 64
+                or type(count) is not int or not 1 <= count <= 32
+                or kind == "summary" and (first != 0 or count != 1)):
+            raise ValueError("invalid Wasm metadata selection")
+        self.observe(self.command("status"), notify=False)
+        expected = self.stop_key
+        if self.state != "stopped" or expected is None or not self.threads:
+            raise ValueError("Wasm metadata requires a current stop")
+        location = self.threads[0]
+        key = (expected, module, kind, first, count)
+        if key in self.wasm_metadata_cache:
+            return self.wasm_metadata_cache[key]
+        text = self.command(f"wasm-meta {location['id']} {location['stop_id']} {module} {kind} {first} {count}")
+        lines = text.splitlines()
+        head = re.fullmatch(r"wasm-meta thread=(\d+) stop=(\d+) module=(\d+) epoch=(\d+) kind=(\d+) functions=(\d+) globals=(\d+) tables=(\d+) memories=(\d+) bits=(32|64) first=(\d+) count=(\d+)", lines[0] if lines else "")
+        if head is None or not text.endswith("\n"):
+            raise ValueError("complete Wasm module inventory required")
+        h = list(map(int, head.groups()))
+        if (any(n >= 1 << 64 for n in h) or h[:5] != [location['id'], location['stop_id'], module, location['generation'], families[kind]]
+                or h[10] != first or len(lines) != h[11]+1):
+            raise ValueError("Wasm inventory identity differs from the actual stop")
+        summary = dict(zip(("functions", "globals", "tables", "memories"), h[5:9]))
+        total = 0 if kind == "summary" else summary[kind]
+        if first > total or h[11] > min(count, total-first) or (total > first and h[11] == 0):
+            raise ValueError("Wasm inventory page cardinality differs")
+        rows = []
+        for index, line in enumerate(lines[1:], first):
+            match = re.fullmatch(r"wasm-item index=(\d+) imported=([01]) bits=(0|32|64) name=(-|(?:[0-9a-f]{2})+)", line)
+            if (match is None or int(match[1]) != index or
+                    (int(match[3]) not in (32, 64) if kind == "memories" else int(match[3]) != 0)):
+                raise ValueError("invalid Wasm inventory row")
+            name = "" if match[4] == "-" else bytes.fromhex(match[4]).decode("utf-8", errors="replace")
+            if any(ord(c) < 32 or ord(c) == 127 for c in name):
+                raise ValueError("control character in Wasm display name")
+            rows.append(dict(index=index, name=name, imported=match[2] == "1", addressBits=int(match[3])))
+        self.observe(self.command("status"), notify=False)
+        if self.state != "stopped" or self.stop_key != expected:
+            raise ValueError("Wasm module inventory stop retired during copy")
+        result = dict(module=str(module), epoch=str(h[3]), stopId=str(h[1]), addressBits=h[9],
+                      total=total, first=first, rows=rows, **summary)
+        self.wasm_metadata_cache[key] = result
+        return result
+
+    def wasm_function_name(self, module, function):
+        page = self.wasm_metadata(module, 'functions', (function//32)*32, 32)
+        item = next((row for row in page['rows'] if row['index'] == function), None)
+        # A long-name transport page can be shorter than 32 entries.
+        if item is None:
+            page = self.wasm_metadata(module, 'functions', function, 1)
+            item = page['rows'][0] if page['rows'] else None
+        return item['name'] if item is not None and item['name'] else f'func {function}'
+
+    def ensure_wasm_document(self, location):
+        expected = self.stop_key
+        source = f"wasm:{location['module']}:{location['function']}:{location['offset']}"
+        packet = self.wasm_disassembly(source, 1, with_metadata=True, thread_id=location["id"])
+        identity = packet["identity"]
+        key = (location['module'], location['function'], identity[4], identity[5])
+        reference = self.wasm_document_keys.get(key)
+        if reference is not None:
+            return reference, self.wasm_documents[reference]
+        metadata = self.wasm_metadata(location['module'])
+        rows, instruction, extent = [], 0, identity[7]
+        # Copy the complete function in bounded transport pages. No UI page
+        # quota truncates a function; only the authenticated code extent ends it.
+        while True:
+            page = self.wasm_disassembly(source, 32, -location['offset'], instruction, with_metadata=True, thread_id=location['id'])
+            if page['identity'][:8] != identity[:8]:
+                raise ValueError("Wasm code generation changed while building the document")
+            for row in page['instructions']:
+                if row.get('presentationHint') == 'invalid':
+                    break
+                if int(row['address']) != (int(rows[-1]['address'])+rows[-1]['_size'] if rows else 0):
+                    raise ValueError("incomplete Wasm function instruction document")
+                rows.append(row)
+            if rows and int(rows[-1]['address'])+rows[-1]['_size'] == extent:
+                break
+            if len(rows) != instruction+32:
+                raise ValueError("Wasm instruction document ended before the real function end")
+            instruction += 32
+        if self.stop_key != expected:
+            raise ValueError("Wasm document stop retired during copy")
+        columns = []
+        width = metadata['addressBits']//4
+        for row in rows:
+            code, marker, comment = row['instruction'].partition(';')
+            mnemonic, _, operands = code.strip().partition(' ')
+            columns.append((f"0x{int(row['address']):0{width}x}", mnemonic, operands.strip(),
+                            '; '+comment.strip() if marker else ''))
+        mw = max((len(r[1]) for r in columns), default=0)
+        ow = max((len(r[2]) for r in columns), default=0)
+        content = f";; module {key[0]} func {key[1]}\n" + '\n'.join(
+            (f";; {offset}  {mnemonic:<{mw}}  {operands:<{ow}}  {comment}").rstrip()
+            for offset, mnemonic, operands, comment in columns) + '\n'
+        reference = self.new_reference()
+        document = dict(module=key[0], function=key[1], epoch=key[2], generation=key[3],
+                        content=content, digest=hashlib.sha256(content.encode('utf-8')).hexdigest(),
+                        lines=[None]+[int(r['address']) for r in rows], addressBits=metadata['addressBits'],
+                        safeLines=[i+2 for i, r in enumerate(rows) if r['_safe']])
+        self.wasm_documents[reference] = document
+        self.wasm_document_keys[key] = reference
+        return reference, document
+
+    def wasm_document_source(self, frame_reference, location):
+        reference, document = self.ensure_wasm_document(location)
+        suffix = f"/module-{document['module']}/function-{document['function']}/code-{document['epoch']}-{document['generation']}.uwvm-wat"
+        name = f"module {document['module']} func {document['function']}.wat"
         if self.wasm_source_session is None:
-            return {"name": name, "sourceReference": reference, "path": "/uwvm-wasm" + suffix}
-        # Only this host IDE session uses the extension's own URI scheme.
-        # It is display metadata; every content/breakpoint query still verifies
-        # the current frame and complete stopped generation through the broker.
+            document['source'] = {"name": name, "sourceReference": reference, "path": "/uwvm-wasm"+suffix}
+            return document['source']
         uri = f"uwvm-wasm:{suffix}?session={self.wasm_source_session}&ref={reference}"
         self.wasm_source_uris[uri] = reference
-        return {"name": name, "sourceReference": 0, "path": uri}
+        document['source'] = {"name": name, "sourceReference": 0, "path": uri}
+        return document['source']
 
     def wasm_document_reference(self, path):
         if not isinstance(path, str) or not path.startswith("uwvm-wasm:"):
             return None
-        # VS Code may percent-encode the query separators when translating a
-        # document URI back to DAP Source.path. Only an exact registered URI
-        # after one decode is accepted; no filesystem/network lookup occurs.
         reference = self.wasm_source_uris.get(unquote(path))
-        if reference is None or reference not in self.frames:
-            raise ValueError("unknown or retired Wasm document URI")
+        if reference is None or reference not in self.wasm_documents:
+            raise ValueError("unknown Wasm document URI")
         return reference
+
+    def current_wasm_document(self, reference, if_stop=None, thread_id=None):
+        document = self.wasm_documents.get(reference)
+        if document is None:
+            raise ValueError("unknown Wasm document")
+        self.observe(self.command('status'), notify=False)
+        expected = self.stop_key
+        candidates = [t for t in self.threads if (t['module'], t['function'], t['generation']) ==
+                      (document['module'], document['function'], document['epoch']) and 'native_pc' not in t
+                      and (thread_id is None or t['id'] == thread_id)]
+        if self.state != 'stopped' or expected is None or not candidates:
+            raise ValueError("document has no current cooperative Wasm activation")
+        # Content is session/generation stable; values are always rebound to a
+        # genuine current participant. A stale hover carries its exact stop ID.
+        location = candidates[0]
+        if if_stop is not None and str(location['stop_id']) != if_stop:
+            raise ValueError("Wasm document inspection belongs to an earlier stop")
+        packet = self.wasm_disassembly(f"wasm:{location['module']}:{location['function']}:{location['offset']}", 1, with_metadata=True, thread_id=location['id'])
+        if packet['identity'][5] != document['generation'] or self.stop_key != expected:
+            raise ValueError("Wasm document code generation has retired")
+        return document, location, expected
+
+    @staticmethod
+    def wasm_offset_line(document, offset):
+        lines = document['lines']
+        index = bisect_left(lines, offset, 1)
+        return index+1 if index < len(lines) and lines[index] == offset else None
+
+    def wasm_document_line(self, source, offset):
+        reference = source.get('sourceReference') or self.wasm_document_reference(source.get('path'))
+        line = self.wasm_offset_line(self.wasm_documents[reference], offset)
+        if line is None: raise ValueError('current Wasm PC is absent from the instruction document')
+        return line
 
     def invalidate_stop(self):
         self.stop_key = None
+        self.entry_frame = None
+        self.native_reference_origins.clear()
         self.data_breakpoint_handles.clear()
         self.frames.clear()
-        self.wasm_source_lines.clear()
-        self.wasm_source_uris.clear()
+        self.wasm_metadata_cache.clear(); self.structured_views.clear(); self.wasm_layout_groups.clear(); self.wasm_table_groups.clear(); self.frame_details.clear()
         self.scopes.clear()
         self.wasm_local_scope_stops.clear()
         self.native_frames.clear()
         self.native_register_scopes.clear()
         self.native_code_refs.clear()
+        self.native_instruction_addresses.clear()
         self.source_frames.clear()
         self.source_frame_ordinals.clear()
         self.source_scope_stops.clear()
@@ -3188,12 +3502,12 @@ class Adapter:
         frame = self.frames.get(frame_id)
         expected_key = self.stop_key
         if frame is None or expected_key is None:
-            raise ValueError("stale or unknown stack frame")
+            raise LocalRequestRefusal("stale or unknown stack frame")
         # A different controller can advance the VM before the adapter's idle
         # poll. Never publish a new scope or source from a cached stopped label.
         self.observe(self.command("status"), notify=False)
         if self.state != "stopped" or self.stop_key != expected_key or frame_id not in self.frames:
-            raise ValueError("stack frame belongs to a retired stop")
+            raise LocalRequestRefusal("stack frame belongs to a retired stop")
         return frame
 
     def new_reference(self):
@@ -3218,6 +3532,8 @@ class Adapter:
                 self.event("uwvm/diagnostics", {"permissions": "limited", "stopId": stop,
                            "participants": count, "reason": reason, "redacted": True})
                 return ("running", "running", "stopped", "exited", "closed")[state], "exception", [], code
+            first = reply.splitlines()[0] if reply else ''
+            self.stop_description = first.removeprefix('stopped: ') if first.startswith('stopped: ') else ('Initial Wasm entry' if first.startswith('prepared;') else None)
             return parse_status(reply)
         except ValueError:
             self.invalidate_stop()
@@ -3232,17 +3548,23 @@ class Adapter:
         self.threads = threads
         self.state = state
         if state == "stopped":
-            key = (reason, tuple((t["id"], t["module"], t["function"], t["offset"],
-                                  t["generation"], t.get("native_pc"), t.get("stop_id")) for t in threads))
-            if key != self.stop_key:
+            key = (("limited", self.limited_stop_id) if self.debug_permissions == "limited" else
+                   (reason, tuple((t["id"], t["module"], t["function"], t["offset"],
+                                  t["generation"], t.get("native_pc"), t.get("stop_id")) for t in threads)))
+            changed = key != self.stop_key
+            if changed:
                 self.stop_key = key
+                self.entry_frame = None
+                self.native_reference_origins.clear()
                 self.data_breakpoint_handles.clear()
                 self.frames.clear()
+                self.wasm_metadata_cache.clear(); self.structured_views.clear(); self.wasm_layout_groups.clear(); self.wasm_table_groups.clear(); self.frame_details.clear()
                 self.scopes.clear()
                 self.wasm_local_scope_stops.clear()
                 self.native_frames.clear()
                 self.native_register_scopes.clear()
                 self.native_code_refs.clear()
+                self.native_instruction_addresses.clear()
                 self.source_frames.clear()
                 self.source_frame_ordinals.clear()
                 self.source_scope_stops.clear()
@@ -3258,12 +3580,13 @@ class Adapter:
                 # DAP clients can retain an old frame/scope ID across stops.
                 # Keep IDs session-unique so an old request cannot alias a
                 # different frame after this snapshot is replaced.
-                if notify:
-                    event = {"reason": reason, "allThreadsStopped": True}
-                    if threads:
-                        event["threadId"] = threads[0]["id"]
-                    self.event("stopped", event)
-                return True
+            if notify:
+                event = {"reason": reason, "allThreadsStopped": True}
+                if self.stop_description and self.debug_permissions != 'limited': event['description'] = self.stop_description
+                if threads:
+                    event["threadId"] = threads[0]["id"]
+                self.event("stopped", event)
+            return changed
         elif state == "exited":
             self.invalidate_stop()
             if not self.finished:
@@ -3279,9 +3602,256 @@ class Adapter:
                 self.event("terminated")
         return False
 
+    def sync_breakpoints(self):
+        if self.debug_permissions not in ('full', 'read-only') or self.state != 'stopped': return []
+        text = self.command('info breakpoints')
+        rows = []
+        if text != 'no breakpoints\n':
+            for line in text.splitlines():
+                m = re.fullmatch(r'breakpoint (\d+) module=(\d+) function=(\d+) kind=(asm|wasm) byte-offset=(\d+) temporary=(yes|no) enabled=(yes|no) hits=(\d+) ignore=(\d+)(?: condition=(.*))?', line)
+                if m is None: raise ValueError('invalid breakpoint inventory')
+                identifier, module, function, offset, hits, ignore = (int(m[i]) for i in (1, 2, 3, 5, 8, 9))
+                if not identifier or any(v >= 1 << 64 for v in (identifier, module, function, offset, hits, ignore)):
+                    raise ValueError('breakpoint identity exceeds its exact width')
+                rows.append(dict(id=identifier, module=str(module), function=str(function), kind=m[4],
+                    offset=str(offset), temporary=m[6]=='yes', enabled=m[7]=='yes', hits=str(hits),
+                    ignore=str(ignore), condition=m[10] or ''))
+        if len({r['id'] for r in rows}) != len(rows): raise ValueError('ambiguous breakpoint inventory')
+        inventory = {r['id']: r for r in rows}
+        displays = {}
+        for row in rows:
+            identifier = row['id']
+            display = dict(id=identifier, verified=True, **self.breakpoint_locations.get(identifier, {}))
+            if row['kind'] == 'wasm' and 'source' not in display:
+                for doc in reversed(tuple(self.wasm_documents.values())):
+                    if (doc['module'], doc['function']) == (int(row['module']), int(row['function'])) and 'source' in doc and self.wasm_offset_line(doc, int(row['offset'])) is not None:
+                        display.update(source=doc['source'], line=self.wasm_offset_line(doc, int(row['offset'])))
+                        break
+                display.setdefault('instructionReference', f"wasm:{row['module']}:{row['function']}:{row['offset']}")
+            display['message'] = ('Enabled' if row['enabled'] else 'Disabled') + (' · temporary' if row['temporary'] else '')
+            displays[identifier] = display
+            if self.breakpoint_displays.get(identifier) != display:
+                if identifier in self.published_breakpoints or ('source' in display and not self.complete_editor_breakpoints):
+                    self.event('breakpoint', {'reason': 'changed' if identifier in self.published_breakpoints else 'new', 'breakpoint': display})
+                    self.published_breakpoints.add(identifier)
+            if 'source' in display:
+                self.breakpoint_locations[identifier] = {key: display[key] for key in ('source', 'line') if key in display}
+        for identifier in self.breakpoint_inventory.keys()-inventory.keys():
+            self.event('breakpoint', {'reason': 'removed', 'breakpoint': {'id': identifier}})
+            self.breakpoint_locations.pop(identifier, None)
+            self.source_breakpoint_specs.pop(identifier, None)
+            self.published_breakpoints.discard(identifier)
+        if inventory != self.breakpoint_inventory or displays != self.breakpoint_displays:
+            self.event('uwvm/breakpoints', {'available': True, 'rows': rows, 'locations': {str(k): v for k, v in displays.items()}})
+        self.breakpoint_inventory, self.breakpoint_displays = inventory, displays
+        return rows
+
+    def canonical_breakpoint_source(self, source):
+        if not isinstance(source, dict): raise ValueError('source object required')
+        path = source.get('path')
+        if not isinstance(path, str) or not path or any(ord(c) < 32 for c in path):
+            raise ValueError('source path required')
+        reference = self.wasm_document_reference(path)
+        if reference is not None:
+            if source.get('sourceReference', 0) not in (0, reference):
+                raise ValueError('Wasm document URI/reference mismatch')
+            # VS Code percent-encodes the URI query when it sends DAP requests.
+            # One immutable document must still have exactly one owner key.
+            return dict(self.wasm_documents[reference]['source'])
+        return source
+
+    def describe_source_breakpoints(self, source, points):
+        # A complete-state editor sends both enabled and disabled points through
+        # uwvm/editorBreakpoints. Its standard DAP traffic can be an old echo of
+        # our own SourceBreakpoint API update. Acknowledge it without mutation.
+        if not isinstance(points, list): raise ValueError('invalid source breakpoint inventory')
+        for point in points:
+            if not isinstance(point, dict) or type(point.get('line')) is not int or not 0 < point['line'] < 1 << 64:
+                raise ValueError('valid source lines required')
+            breakpoint_ignore_count(point)
+            breakpoint_condition_suffix(point)
+        self.sync_breakpoints()
+        result = []
+        for point in points:
+            matches = [identifier for identifier, location in self.breakpoint_locations.items()
+                       if identifier in self.breakpoint_inventory and location.get('source', {}).get('path') == source['path']
+                       and location.get('line') == point['line']]
+            if len(matches) == 1:
+                self.published_breakpoints.add(matches[0])
+                result.append(dict(id=matches[0], verified=True, line=point['line']))
+            else:
+                result.append(dict(verified=False, line=point['line'], message=(
+                    'Waiting for the complete editor breakpoint state' if not matches else
+                    'Multiple runtime breakpoints share this line; use the Breakpoints window')))
+        return result
+
+    def reconcile_source_breakpoints(self, source, points, *, preserve_missing=False, publish_response=True):
+        if not isinstance(source, dict) or not isinstance(points, list):
+            raise ValueError('invalid source breakpoint inventory')
+        path = source.get('path')
+        if not isinstance(path, str) or not path or any(ord(c) < 32 for c in path):
+            raise ValueError('source path required')
+        # Validate the complete request before changing an existing point.
+        prepared = []
+        for point in points:
+            if not isinstance(point, dict) or type(point.get('line')) is not int or not 0 < point['line'] < 1 << 64:
+                raise ValueError('valid source lines required')
+            if type(point.get('enabled', True)) is not bool:
+                raise ValueError('enabled must be boolean')
+            prepared.append((point, breakpoint_ignore_count(point) or 0, point.get('condition', '')))
+        self.sync_breakpoints()
+        owned = set(self.breakpoints.get(path, []))
+        # Adopt console points at this actual document coordinate. Reuse keeps
+        # their hit counts, one-shot policy and callbacks intact.
+        owned.update(identifier for identifier, location in self.breakpoint_locations.items()
+                     if location.get('source', {}).get('path') == path)
+        owned &= self.breakpoint_inventory.keys()
+        remaining, keep, registered = set(owned), set(), []
+        for point, ignore, condition in prepared:
+            line = point['line']
+            try:
+                matches = [identifier for identifier in remaining
+                           if self.breakpoint_locations.get(identifier, {}).get('line') == line]
+                if len(matches) > 1:
+                    keep.update(matches); remaining.difference_update(matches)
+                    raise ValueError('multiple runtime breakpoints share this source line; select their IDs in the Breakpoints window')
+                if matches:
+                    identifier = matches[0]; remaining.remove(identifier); keep.add(identifier)
+                    row = self.breakpoint_inventory[identifier]
+                    if row['condition'] != condition:
+                        self.command(f'condition {identifier}' + (' '+condition if condition else ''))
+                    old_spec = self.source_breakpoint_specs.get(identifier)
+                    # ignore is a remaining count. Never reset it just because
+                    # VS Code repeats the same requested hit threshold.
+                    if (old_spec is None and int(row['ignore']) != ignore) or (old_spec is not None and old_spec[1] != ignore):
+                        self.command(f'ignore {identifier} {ignore}')
+                    if row['enabled'] != point.get('enabled', True):
+                        self.command(('enable ' if point.get('enabled', True) else 'disable ')+str(identifier))
+                else:
+                    ref = self.wasm_document_reference(path)
+                    explicit = source.get('sourceReference', 0)
+                    if ref is not None and explicit not in (0, ref): raise ValueError('Wasm document URI/reference mismatch')
+                    suffix = (f' ignore {ignore}' if ignore else '')+breakpoint_condition_suffix(point)
+                    if explicit or ref is not None:
+                        document, _, _ = self.current_wasm_document(unsigned_id(explicit or ref, 'Wasm source reference'))
+                        if line > len(document['lines']) or document['lines'][line-1] is None:
+                            raise ValueError('select an executable Wasm instruction line')
+                        reply = self.command(f"breakwasm {document['module']} {document['function']} {document['lines'][line-1]}{suffix}")
+                    else:
+                        compiler_path = map_source_path(path, self.source_map, reverse=True)
+                        reply = self.command(f'breaksource {self.module_id} {compiler_path}:{line}{suffix}')
+                    match = BREAK_RE.match(reply)
+                    if match is None: raise RuntimeError(reply.strip())
+                    identifier = int(match[1]); keep.add(identifier)
+                    self.breakpoint_locations[identifier] = dict(source=dict(source), line=line)
+                    if not point.get('enabled', True): self.command(f'disable {identifier}')
+                self.source_breakpoint_specs[identifier] = (condition, ignore)
+                if publish_response: self.published_breakpoints.add(identifier)
+                registered.append(dict(id=identifier, verified=True, line=line))
+            except (ValueError, RuntimeError) as error:
+                registered.append(dict(verified=False, line=line, message=str(error)))
+        for identifier in remaining:
+            if preserve_missing:
+                if self.breakpoint_inventory[identifier]['enabled']: self.command(f'disable {identifier}')
+                keep.add(identifier)
+            else:
+                self.command(f'delete {identifier}')
+                self.source_breakpoint_specs.pop(identifier, None)
+        self.breakpoints[path] = list(sorted(keep))
+        return registered
+
+    def native_breakpoint(self, point):
+        reference, displacement = point.get('instructionReference'), point.get('offset', 0)
+        if (not isinstance(reference, str) or type(displacement) is not int or
+                not -(1 << 63) <= displacement < (1 << 63)):
+            raise ValueError('a current displayed Wasm JIT instruction is required')
+        origin = None
+        if re.fullmatch(r'0x[0-9a-fA-F]{1,16}', reference):
+            address = int(reference, 16) + displacement
+        elif re.fullmatch(r'uwvm-native-(?:stop|code):[1-9][0-9]{0,9}', reference):
+            origin = self.native_reference_origins.get(reference)
+            if origin is None or origin[0] != self.stop_key:
+                raise ValueError('native instruction reference belongs to a retired or undisplayed stop')
+            address = origin[1][6] + displacement
+        else:
+            raise ValueError('a current displayed Wasm JIT instruction is required')
+        if not 0 < address < (1 << 64):
+            raise ValueError('native instruction displacement exceeds its address width')
+        saved = self.native_instruction_addresses.get(address)
+        if saved is None: raise ValueError('native breakpoint address was not issued by the current owned disassembly')
+        expected, location, identity = saved
+        if origin is not None and (origin[0] != expected or origin[1] != identity[:9]):
+            raise ValueError('instruction displacement crosses its authenticated JIT owner')
+        self.observe(self.command('status'), notify=False)
+        if self.stop_key != expected or self.native_instruction_addresses.get(address) != saved:
+            raise ValueError('native instruction belongs to a retired stop')
+        if not self.threads or self.threads[0]['id'] != location['id']:
+            raise ValueError('native breakpoint creation requires the controller-selected current participant')
+        fresh, _ = self.native_range_page(location, 1, 0, 0, False)
+        if fresh[:9] != identity[:9]: raise ValueError('native function owner or generation changed')
+        ignore = breakpoint_ignore_count(point)
+        suffix = ('' if ignore is None else f' ignore {ignore}')+breakpoint_condition_suffix(point)
+        reply = self.command(f"breakasm {address-identity[7]}{suffix}")
+        matched = BREAK_RE.match(reply)
+        if not matched: raise ValueError(reply.strip())
+        identifier = int(matched[1]);self.instruction_breakpoints.append(identifier)
+        display = {'instructionReference': reference, 'offset': displacement}
+        self.breakpoint_locations[identifier] = display
+        return dict(id=identifier, verified=True, **display)
+
     def poll(self):
+        self.finish_update_requests()
         if self.broker is not None and not self.finished:
-            self.observe(self.command("status"))
+            try:
+                self.observe(self.command("status"))
+                self.sync_breakpoints()
+            except UpdateCoordinatorBusy:
+                # PREPARE's actual drain/compilation owns the native management
+                # lock. This exact reply proves status was not dispatched. Keep
+                # the authenticated connection and poll observation later; no
+                # execution-changing command or update frame is resubmitted.
+                pass
+
+    def begin_update_request(self, request, frame):
+        if self.pending_update is not None:
+            raise ValueError("an independent update request is already pending; no request was submitted")
+        from signed_update import submit
+        directory = self.update_socket_dir
+        self.invalidate_stop()
+        self.pending_update = request
+
+        def forward_once():
+            try:
+                result = submit(directory, frame)
+            except Exception as error:
+                self.update_results.put((request, None, str(error)))
+            else:
+                self.update_results.put((request, result, None))
+
+        # The update channel has its own authenticated transport. Its worker
+        # never touches the debug broker, adapter state, or DAP output. A call
+        # stopped at a guest breakpoint must still accept IDE continue. EOF
+        # does not cancel/replay the decision: the host relay drains its reply
+        # even if this daemon's original client disappears.
+        try:
+            threading.Thread(target=forward_once, daemon=True).start()
+        except Exception:
+            self.pending_update = None
+            raise
+
+    def finish_update_requests(self):
+        try:
+            request, result, error = self.update_results.get_nowait()
+        except queue.Empty:
+            return
+        if request is not self.pending_update:
+            raise RuntimeError("independent update completion identity differs")
+        self.pending_update = None
+        self.invalidate_stop()
+        if self.supports_invalidated_event:
+            self.event("invalidated", {"areas": ["stacks", "variables"]})
+        self.respond(request, result, error)
+
 
     def native_range_page(self, location, count, byte_offset, instruction_offset, resolve_symbols):
         text = self.command(f"disassemble-range {location['id']} {location['stop_id']} {count} "
@@ -3319,6 +3889,11 @@ class Adapter:
                         f"Details: {str(error)[:256]}\n"
                     ),
                 })
+            # Only the current native protocol's explicit unavailability is
+            # optional. Malformed ownership, transport failures and unknown
+            # error spellings still fail the entire request closed.
+            if not isinstance(error, RuntimeError) or str(error) != "error: native disassembly range is unavailable":
+                raise
             return None
 
     def disassemble_owned_range(self, request, args, reference, count):
@@ -3407,6 +3982,10 @@ class Adapter:
                     raise ValueError("native function display name changed between pages")
         if len(instructions) != count:
             raise ValueError("native paged count differs")
+        for row in instructions:
+            if row.get('presentationHint') != 'invalid':
+                self.native_instruction_addresses[int(row['address'], 16)] = (expected_key, dict(location), identity)
+        self.native_reference_origins[reference] = (expected_key, identity[:9])
         self.respond(request, {"instructions": instructions})
 
 
@@ -3429,9 +4008,12 @@ class Adapter:
         words = ["trace", "ros"] if trace else ["info", "ros", options["selection"]]
         words += ["backend="+options["backend"], "count="+str(options["count"]), "if-stop="+str(stop_id)]
         for name, wire in (("instance", "instance"), ("module", "module"), ("alias", "alias"),
-                           ("function", "function"), ("operation", "op"), ("after", "after"), ("error", "error")):
+                           ("function", "function"), ("operation", "op"), ("after", "after"), ("error", "error"), ("scope", "scope"), ("target", "target")):
             if name in options:
-                words.append(wire+"="+str(options[name]))
+                if options["selection"] == "policy" and name in ("module", "target"):
+                    words.append(wire+"-hex="+options[name].encode("utf-8").hex())
+                else:
+                    words.append(wire+"="+str(options[name]))
         if not trace:
             words.append("first="+str(options["start"]))
         try:
@@ -3445,8 +4027,8 @@ class Adapter:
             raise
 
     def query_wasip1_state(self, selected, module, first, count, *, expected_stop=None):
-        if selected not in ("args", "env", "fds", "preopens"):
-            raise ValueError("WASIp1 selection must be args, env, fds or preopens")
+        if selected not in ("args", "env", "fds", "preopens", "policy"):
+            raise ValueError("WASIp1 selection must be args, env, fds, preopens or policy")
         if (type(module) is not int or not 0 <= module < 1 << 64 or type(first) is not int or not 0 <= first < 1 << 64
                 or type(count) is not int or not 1 <= count <= 64):
             raise ValueError("bounded WASIp1 module and page required")
@@ -3460,17 +4042,85 @@ class Adapter:
         if not stop_id or expected is None:
             raise ValueError("WASIp1 state requires a canonical current stop identifier")
         copied = parse_wasip1_state(self.command(f"info wasip1 {selected} {module} {first} {count}"), selected, module, first, count, stop_id)
+        copied["stopId"] = str(stop_id)
+        if selected == "policy":
+            rows = []
+            for variable in copied["variables"]:
+                raw = variable["value"][1:-1]
+                raw_bytes = re.sub(r"\\x([0-9a-f]{2})", lambda m: chr(int(m[1],16)), raw).encode("latin-1")
+                decoded = raw_bytes.decode("utf-8", "backslashreplace")
+                key, separator, value = decoded.partition("=")
+                if not separator or not re.fullmatch(r"[a-z0-9_.-]+", key):
+                    raise ValueError("invalid detached WASIp1 policy row")
+                rows.append({"key": key, "value": value, "valueBytesBase64": base64.b64encode(raw_bytes.partition(b"=")[2]).decode("ascii")})
+                variable.update(name=key, value=value, type="launch policy / accounting")
+            copied["rows"] = rows
         self.observe(self.command("status"), notify=False)
         if self.state != "stopped" or self.stop_key != expected:
             raise ValueError("WASIp1 state retired while copying its environment")
         return copied
 
+    def limited_threads(self):
+        self.observe(self.command("status"), notify=False)
+        if self.state != "stopped":
+            return []
+        expected = self.stop_key
+        reply = self.command("threads")
+        lines = reply.splitlines()
+        if not lines or lines[0] != f"limited threads stop-id {self.limited_stop_id}":
+            raise ValueError("limited participant census does not match the current stop")
+        result = []
+        for line in lines[1:]:
+            match = re.fullmatch(r"participant=([1-9][0-9]{0,19})", line)
+            if not match or int(match[1]) >= 1 << 64:
+                raise ValueError("invalid limited participant identity")
+            result.append({"id": int(match[1]), "name": "Wasm participant " + match[1] + " (limited)"})
+        if len({item["id"] for item in result}) != len(result):
+            raise ValueError("duplicate limited participant")
+        self.observe(self.command("status"), notify=False)
+        if self.state != "stopped" or self.stop_key != expected:
+            raise ValueError("limited participant census retired")
+        return result
+
+    def limited_stack(self, thread, start, count):
+        if thread not in {item["id"] for item in self.limited_threads()}:
+            raise ValueError("limited thread is not stopped")
+        expected = self.stop_key
+        lines = self.command(f"bt {thread}").splitlines()
+        if not lines or lines[0] != "limited Wasm backtrace (numeric coordinates only)":
+            raise ValueError("invalid limited numeric backtrace")
+        rows = []
+        for line in lines[1:]:
+            if line == "  backtrace truncated":
+                if line != lines[-1]: raise ValueError("truncated backtrace trailer is not final")
+                continue
+            match = re.fullmatch(r"  #([0-9]+) participant=([0-9]+) module=([0-9]+) function=([0-9]+) wasm-offset=([0-9]+|unavailable)", line)
+            if not match or int(match[1]) != len(rows) or int(match[2]) != thread:
+                raise ValueError("limited backtrace contains a different participant or invalid coordinate")
+            if any(int(match[k]) >= 1 << 64 for k in (1,2,3,4)) or (match[5] != "unavailable" and int(match[5]) >= 1 << 64):
+                raise ValueError("limited backtrace coordinate is not representable")
+            rows.append((match[3],match[4],match[5]))
+        self.observe(self.command("status"), notify=False)
+        if self.state != "stopped" or self.stop_key != expected:
+            raise ValueError("limited backtrace stop retired")
+        frames = []
+        for module,function,offset in rows[start:start+count]:
+            reference = self.new_reference()
+            self.frames[reference] = (thread, expected)  # Numeric diagnostics only, never a rich frame capability.
+            frames.append({"id": reference, "name": f"Wasm module {module}, function {function}, offset {offset}",
+                           "line": 0, "column": 0, "presentationHint": "normal"})
+        return {"stackFrames": frames, "totalFrames": len(rows)}
+
     def cooperative_memory_stop(self):
         """Fresh bounded participant cohort; no native address authority."""
         self.observe(self.command("status"), notify=False)
-        if (self.state != "stopped" or self.stop_key is None or not self.threads
-                or len(self.threads) > 256 or len({t["id"] for t in self.threads}) != len(self.threads)
-                or any(not t.get("stop_id") or t.get("native_pc")
+        if self.state != "stopped" or self.stop_key is None or not self.threads or any(t.get("native_pc") for t in self.threads):
+            # Only status was authenticated. Native code/register authorities
+            # remain valid when a linear-memory pane has no cooperative image.
+            # No memory read or capability is published by this refusal.
+            raise LocalRequestRefusal("Wasm memory requires a current identified cooperative stop")
+        if (len(self.threads) > 256 or len({t["id"] for t in self.threads}) != len(self.threads)
+                or any(not t.get("stop_id")
                        or not 0 < t["id"] < 1 << 64 or not 0 < t["generation"] < 1 << 64
                        or any(not 0 <= t[k] < 1 << 64 for k in ("module", "function", "offset"))
                        for t in self.threads)):
@@ -3493,6 +4143,8 @@ class Adapter:
             return value
         try:
             return query(self.command, checkpoint, args, byte_page=byte_page)
+        except LocalRequestRefusal:
+            raise
         except (OSError, ValueError, RuntimeError):
             self.invalidate_stop()
             raise
@@ -3502,6 +4154,9 @@ class Adapter:
         if view is not None:
             ref = self.new_reference()
             self.host_trace_views[ref] = (self.stop_key, self.host_trace_view_epoch, view)
+        if isinstance(value, (dict, list, tuple)) and view is None:
+            ref = self.structured_reference(value, self.stop_key)
+            value = str(len(value))+(' fields' if isinstance(value, dict) else ' items')
         return {"name": title, "value": value, "variablesReference": ref,
                 "presentationHint": {"attributes": ["readOnly"]}}
 
@@ -3526,7 +4181,7 @@ class Adapter:
         values = []
         if kind == "calls":
             page = self.query_host_trace(detail, expected=expected)
-            values.append(leaf("Recording and loss", json.dumps(page["journal"], sort_keys=True)))
+            values.append(leaf("Recording and loss", page["journal"]))
             for call in page["calls"]:
                 values.append(leaf(call["id"] + ": " + str(call["namespace"]) + "." + str(call["function"]),
                     "returned=" + call["returned"] + " result=" + call["result"] +
@@ -3536,7 +4191,7 @@ class Adapter:
                                    ("calls", {**detail, "after": page["next"]})))
         elif kind == "call":
             for name, value in detail.items():
-                values.append(leaf(name, json.dumps(value, ensure_ascii=True) if not isinstance(value, str) else value))
+                values.append(leaf(name, value))
             values.append(leaf("Complete module name", "raw bytes",
                 ("bytes", {"call": detail["id"], "segment": str((1 << 64)-1)})))
             if int(detail["segments"]):
@@ -3553,7 +4208,7 @@ class Adapter:
         elif kind == "bytes":
             page = self.query_host_trace(detail, byte_page=True, expected=expected)
             for name, value in page.items():
-                values.append(leaf(name, json.dumps(value, ensure_ascii=True) if not isinstance(value, str) else value))
+                values.append(leaf(name, value))
             if page["more"]:
                 values.append(leaf("More bytes", "offset " + page["next"],
                     ("bytes", {**detail, "offset": page["next"]})))
@@ -3561,13 +4216,14 @@ class Adapter:
             raise ValueError("invalid retained observation view")
         return values[start: start+count if count else None]
 
-    def wasm_disassembly(self, reference, count, byte_offset=0, instruction_offset=0):
+    def wasm_disassembly(self, reference, count, byte_offset=0, instruction_offset=0, *, with_metadata=False, thread_id=None):
         match = re.fullmatch(r"wasm:([0-9]+):([0-9]+):([0-9]+)", reference or "")
         if match is None:
             raise ValueError("current Wasm instruction reference required")
         module, function, offset = map(int, match.groups())
         expected = self.stop_key
-        candidates = [v for v in self.frames.values() if v[1] == 0 and v[2:] == (module, function)]
+        candidates = [v for v in self.frames.values() if v[1] == 0 and v[2:] == (module, function)
+                      and (thread_id is None or v[0] == thread_id)]
         if expected is None or not candidates:
             raise ValueError("retired Wasm instruction reference")
         self.cooperative_memory_stop()
@@ -3595,19 +4251,21 @@ class Adapter:
                     result.append({"address": "-1", "instruction": "<outside current Wasm function>",
                                    "presentationHint": "invalid"})
                     continue
-                row = re.fullmatch(r"wasm-op offset=(\d+) size=(\d+) text=([ -~]+)", line)
+                row = re.fullmatch(r"wasm-op offset=(\d+) size=(\d+) safe=([01]) text=([ -~]+)", line)
                 if row is None:
                     raise ValueError("invalid Wasm instruction row")
                 at, size = int(row[1]), int(row[2])
                 if size == 0 or at+size > h[7] or previous_end is not None and at != previous_end:
                     raise ValueError("Wasm instruction boundaries differ")
                 previous_end = at+size
-                result.append({"address": str(at), "instruction": row[3],
-                               "symbol": f"wasm:{module}:{function}:{at}"})
+                result.append({"address": str(at), "instruction": row[4],
+                               "symbol": f"wasm:{module}:{function}:{at}", "_size": size, "_safe": row[3] == "1"})
             self.cooperative_memory_stop()
             if self.stop_key != expected:
                 raise ValueError("Wasm instruction page stop retired")
-        return result
+        if with_metadata:
+            return {"identity": identity, "instructions": result}
+        return [{k: v for k, v in row.items() if not k.startswith('_')} for row in result]
 
     def read_wasm_memory(self, module, memory, address, count):
         """Fresh guest selector, never a native address or cached frame capability."""
@@ -3656,15 +4314,24 @@ class Adapter:
                       stopId=str(stop_id),nextMemoryReference=f"wasm-memory:{module}:{memory}:{address+count}" if address+count<int(parsed["memoryBytes"]) else None)
         return parsed
 
-    def write_wasm_memory(self, module, memory, address, data):
+    def write_wasm_memory(self, module, memory, address, data, if_stop=None):
         """One complete native commit; no chunked or replayed partial writes."""
-        if not data:
+        if if_stop is not None and (not isinstance(if_stop, str) or
+                re.fullmatch(r"[1-9][0-9]{0,19}", if_stop) is None or int(if_stop) >= 1 << 64):
+            raise ValueError("ifStop requires a nonzero decimal stop identity")
+        if not data and if_stop is None:
             self.read_wasm_memory(module, memory, address, 0)
             return
         _, participant, previous_stop = self.cooperative_memory_stop()
+        if if_stop is not None and int(if_stop) != previous_stop:
+            raise ValueError("memory window stop retired; refresh before editing")
+        if not data:
+            self.read_wasm_memory(module, memory, address, 0)
+            return
         self.invalidate_stop()  # retire copied values BEFORE the single write
         try:
-            packet = self.command(f"set wasm memory {module} {memory} {participant} {address} bytes {data.hex()}")
+            condition = f" if-stop {if_stop}" if if_stop is not None else ""
+            packet = self.command(f"set wasm memory {module} {memory} {participant} {address} bytes {data.hex()}{condition}")
         except (OSError, ValueError, RuntimeError, ConnectionError) as error:
             raise RuntimeError("Wasm memory write outcome is unconfirmed; inspect memory before retrying: " + str(error)) from error
         match = re.fullmatch(r"wasm-stop ([0-9]{1,20})\nWasm mutation v=3 status=(.{1,120}) applied=([01]) reason=(.{1,120}) "
@@ -3687,6 +4354,7 @@ class Adapter:
         # The acknowledged full commit is durable even if another host resumes
         # afterward. No post-commit status/read failure may erase this success
         # or invite a blind retry. Cached labels stay retired until refreshed.
+        return match[1]  # Identifies the committed stop for an optional UI read-back.
 
     def paged_wasip1_scope(self, expected, module, selected, first, count):
         """DAP start is a dense ordinal; producer FD cursors are guest numbers.
@@ -3986,7 +4654,24 @@ class Adapter:
             raise ValueError("Wasm state stop retired during copy")
         return expected_key, copied
 
-    def paged_wasm_scope(self, expected_key, selection, first, count):
+    def wasm_scope_description(self, expected_key, selection):
+        thread, module, frame, selected, table = selection
+        _, probe = self.query_wasm_state(thread, module, frame, selected, 0, 1, table, expected_stop=expected_key)
+        if 'unavailable' in probe: return probe
+        location = next(entry for entry in self.threads if entry['id'] == thread)
+        if (probe['module'] != module or (module == location['module'] and probe['epoch'] != location['generation'])
+                or len(probe['rows']) != min(1, probe['total'])):
+            raise ValueError('Wasm scope cardinality differs from its original activation')
+        return probe
+
+    def wasm_operand_notice(self, expected_key, selection, probe=None):
+        if selection[3] != 'operands' or expected_key[0] != 'exception': return []
+        if probe is None: probe = self.wasm_scope_description(expected_key, selection)
+        notice = probe.get('snapshotNote') or 'Pre-trap inputs; this instruction produced no result.'
+        return [dict(name='⚠ Snapshot', type='warning', value=notice, variablesReference=0, _uwvmWarning=True,
+                     presentationHint={'kind': 'virtual', 'attributes': ['readOnly']})]
+
+    def paged_wasm_scope(self, expected_key, selection, first, count, include_notice=True):
         # The scope keeps the original participant/module/frame/selector. Probe
         # cardinality under a fresh real borrow, then copy original indices in
         # bounded pages. Never publish a prefix across an epoch or stop change.
@@ -4005,6 +4690,8 @@ class Adapter:
         if wanted > 1024:
             raise ValueError("more than 1024 remaining Wasm scope entries; request an explicit bounded page")
         result = []
+        if first == 0 and include_notice:
+            result.extend(self.wasm_operand_notice(expected_key, selection, probe))
         end = first + wanted
         while first < end:
             copied_count = min(64, end - first)
@@ -4175,6 +4862,69 @@ class Adapter:
             first += copied_count
         return result
 
+    def structured_reference(self, value, expected):
+        if not isinstance(value, (dict, list, tuple)) or not value: return 0
+        ref = self.new_reference()
+        self.structured_views[ref] = (expected, value)
+        return ref
+
+    def structured_variables(self, reference, first, count):
+        expected, value = self.structured_views[reference]
+        self.observe(self.command('status'), notify=False)
+        if expected != self.stop_key or reference not in self.structured_views:
+            raise ValueError('structured view belongs to a retired stop')
+        items = list(value.items()) if isinstance(value, dict) else list(enumerate(value))
+        result = []
+        for name, child in items[first:first+count if count else None]:
+            nested = isinstance(child, (dict, list, tuple))
+            label = (f"{len(child)} fields" if isinstance(child, dict) else f"{len(child)} items") if nested else (
+                'null' if child is None else 'true' if child is True else 'false' if child is False else str(child))
+            type_name = 'object' if isinstance(child, dict) else 'array' if nested else (
+                'null' if child is None else 'bool' if type(child) is bool else 'integer' if type(child) is int else 'text')
+            row = dict(name=str(name), value=label, type=type_name,
+                       variablesReference=self.structured_reference(child, expected),
+                       presentationHint={'attributes': ['readOnly']})
+            if nested and len(child) < 1 << 31:
+                row['namedVariables' if isinstance(child, dict) else 'indexedVariables'] = len(child)
+            layout = self.wasm_layout_groups.get(reference)
+            if layout is not None and name in ('Parameter types', 'Result types'):
+                locus, original_index = layout
+                thread, module, frame, selection, _ = locus
+                selected = ('handler-params' if selection == 'handlers' else
+                            'control-params' if name == 'Parameter types' else 'control-results')
+                amount = child['Count']
+                ref = self.new_reference() if amount else 0
+                if ref: self.wasm_scope_stops[ref] = (expected, (thread, module, frame, selected, original_index))
+                row.update(value=f'{amount} declared types', variablesReference=ref)
+                row.pop('namedVariables', None)
+                if amount < 1 << 31: row.update(indexedVariables=amount, namedVariables=0)
+            result.append(row)
+        return result
+
+    def wasm_table_variables(self, reference, first, count):
+        expected, thread, module = self.wasm_table_groups[reference]
+        inventory = self.wasm_metadata(module)
+        if self.stop_key != expected or reference not in self.wasm_table_groups:
+            raise ValueError('table inventory belongs to a retired stop')
+        total = inventory['tables']; end = total if not count else min(total, first+count)
+        result = []
+        while first < end:
+            page = self.wasm_metadata(module, 'tables', first, min(32, end-first))
+            if self.stop_key != expected: raise ValueError('table inventory stop retired')
+            for item in page['rows']:
+                ref = self.new_reference()
+                selection = (thread, module, 0, 'table', item['index'])
+                self.wasm_scope_stops[ref] = (expected, selection)
+                description = self.wasm_scope_description(expected, selection)
+                title = f"table {item['index']}" + (': '+item['name'] if item['name'] else '')
+                row = dict(name=title, value='imported reference table' if item['imported'] else 'reference table',
+                    type='Wasm table', variablesReference=ref, presentationHint={'attributes': ['readOnly']})
+                if 'unavailable' not in description and description['total'] < 1 << 31:
+                    row.update(indexedVariables=description['total'], namedVariables=0)
+                result.append(row)
+            first += len(page['rows'])
+        return result
+
     def wasm_variables(self, values, graph, expected_key, locus, parent=None):
         # Session IDs retain original root/path display metadata, never dense
         # reply object ID authority. Every expansion reborrows that exact root
@@ -4186,6 +4936,10 @@ class Adapter:
         for value in values:
             ref = 0
             anchor = (*locus, value["index"], ()) if parent is None else (*locus, parent[0], (*parent[1], value["index"]))
+            if value.get('fields') is not None:
+                ref = self.structured_reference(value['fields'], expected_key)
+                if locus[3] in ('controls', 'handlers'):
+                    self.wasm_layout_groups[ref] = (locus, value['index'])
             if value["object"] is not None:
                 obj = object_map[value["object"][0]]
                 if obj["kind"] != "opaque host-reference" and obj["total"] != 0 and len(anchor[-1]) <= 4096:
@@ -4195,10 +4949,13 @@ class Adapter:
                     self.wasm_object_views[ref] = (expected_key, obj, anchor)
             item = {"name": value["name"], "type": value["type"], "value": value["value"],
                     "variablesReference": ref, "presentationHint": {"attributes": ["readOnly"]}}
-            if (parent is None and expected_key is not None and expected_key[0] != "exception" and value["type"] in ("i32", "i64", "f32", "f64", "v128")
-                    and (locus[3] == "globals" or (locus[3] in ("locals", "operands") and locus[2] == 0))):
+            if (self.debug_permissions == "full" and expected_key is not None and expected_key[0] != "exception"
+                    and (value["type"] in ("i32", "i64", "f32", "f64", "v128") or
+                         (parent is not None and value["type"].startswith("(ref ")))
+                    and ((parent is not None and value.get("mutable")) or
+                         (parent is None and (locus[3] == "globals" or (locus[3] in ("locals", "operands") and locus[2] == 0))))):
                 item.pop("presentationHint", None)
-            if ref and obj["total"] < 1 << 31:
+            if ref and value['object'] is not None and obj["total"] < 1 << 31:
                 # DAP counts are int32 display hints, never a root, path or
                 # memory capability. Larger Wasm cardinalities stay unclamped.
                 item.update(indexedVariables=obj["total"], namedVariables=0)
@@ -4240,15 +4997,10 @@ class Adapter:
             raise ValueError("numeric/vector slot required")
         return expected, selection, index, row
 
-    def set_numeric_variable(self, arguments):
-        expected, selection, index, before = self.selected_numeric_slot(arguments.get("variablesReference"), arguments.get("name"))
-        thread, module, frame, selected, table = selection
-        if selected != "globals" and frame != 0:
-            raise ValueError("only the current top Wasm frame can be edited")
-        value = arguments.get("value")
+    @staticmethod
+    def encode_numeric_value(kind, value):
         if not isinstance(value, str) or not 0 < len(value) <= 128:
             raise ValueError("bounded numeric value or bits HEX required")
-        kind = before["type"]
         width = {"i32": 32, "f32": 32, "i64": 64, "f64": 64, "v128": 128}[kind]
         if value.startswith("bits "):
             raw = value[5:].strip()
@@ -4274,9 +5026,17 @@ class Adapter:
                 raise ValueError("floating-point literal is not representable")
         else:
             raise ValueError("v128 requires bits HEX")
+        return f"{bits:x}" if width != 128 else f"{bits & ((1 << 64)-1):x} {bits >> 64:x}"
+
+    def set_numeric_variable(self, arguments):
+        expected, selection, index, before = self.selected_numeric_slot(arguments.get("variablesReference"), arguments.get("name"))
+        thread, module, frame, selected, table = selection
+        if selected != "globals" and frame != 0:
+            raise ValueError("only the current top Wasm frame can be edited")
+        kind = before["type"]
+        encoded = self.encode_numeric_value(kind, arguments.get("value"))
         target = {"locals": "local", "operands": "operand", "globals": "global"}[selected]
         selector = f"{module} {index} {thread}" if selected == "globals" else f"{thread} {index}"
-        encoded = f"{bits:x}" if width != 128 else f"{bits & ((1 << 64)-1):x} {bits >> 64:x}"
         self.invalidate_stop()
         reply = self.command(f"set wasm {target} {selector} bits {kind} {encoded}")
         acknowledgement = re.fullmatch(
@@ -4292,6 +5052,117 @@ class Adapter:
         if len(copied["rows"]) != 1:
             raise ValueError("committed slot could not be read back")
         result = {"value": copied["rows"][0]["value"], "variablesReference": 0}
+        if self.supports_variable_type:
+            result["type"] = kind
+        return result
+
+    def selected_gc_member(self, reference, name, *, require_mutable=False, allow_reference=False):
+        if type(reference) is not int or reference not in self.wasm_object_views or not isinstance(name, str):
+            raise ValueError("current original GC member reference required")
+        expected, displayed, anchor = self.wasm_object_views[reference]
+        if expected is None or expected[0] == "exception":
+            raise ValueError("terminal snapshots are read-only")
+        match = re.fullmatch(r"\[(0|[1-9][0-9]{0,19})\]", name)
+        if match is None or int(match[1]) >= 1 << 64:
+            raise ValueError("original GC member index required")
+        index = int(match[1])
+        thread, module, frame, selected, table, root, path = anchor
+        _, copied = self.query_wasm_members(thread, module, frame, selected, table, root, path, index, 1,
+                                             expected_stop=expected)
+        if "unavailable" in copied:
+            raise ValueError("current GC member unavailable")
+        current = copied["objects"][copied["selected_object"] - 1]
+        if (current["kind"], current["label"], current["total"]) != (displayed["kind"], displayed["label"], displayed["total"]):
+            raise ValueError("GC owner differs from original object display")
+        if len(current["members"]) != 1:
+            raise ValueError("current GC member unavailable")
+        before = current["members"][0]
+        numeric = before["type"] in ("i32", "i64", "f32", "f64", "v128")
+        if (before["index"] != index or (require_mutable and not before.get("mutable"))
+                or not (numeric or (allow_reference and before["type"].startswith("(ref ")))):
+            raise ValueError("current numeric/vector GC member required" if not allow_reference else "current mutable typed GC member required")
+        return expected, anchor, index, copied, current, before
+
+    @staticmethod
+    def encode_reference_value(value):
+        # Closed Wasm-value grammar only. Dense display object numbers and
+        # native addresses are never mutation sources. The VM type-checks and
+        # reborrows any original selector under the target's current stop.
+        if not isinstance(value, str):
+            raise ValueError("Wasm reference value required")
+        if value == "null":
+            return value
+        number = r"(?:0|[1-9][0-9]{0,19})"
+        if match := re.fullmatch(r"i31 (" + number + r")", value):
+            if int(match[1]) >= 1 << 31:
+                raise ValueError("i31 requires an unsigned 31-bit value")
+            return value
+        if match := re.fullmatch(r"function (" + number + r") (" + number + r")", value):
+            if any(int(part) >= 1 << 64 for part in match.groups()):
+                raise ValueError("Wasm function identity exceeds its width")
+            return value
+        match = re.fullmatch(r"from (locals|operands|saved|globals|table|handle)((?: " + number + r"){2,3})"
+                             r"(?: path((?: " + number + r"){1,16}))?", value)
+        if match:
+            indices = match[2].split()
+            if len(indices) != (3 if match[1] == "table" else 2):
+                raise ValueError("original Wasm reference selector has the wrong shape")
+            if any(int(part) >= 1 << 64 for part in indices + (match[3] or "").split()):
+                raise ValueError("Wasm reference selector exceeds its width")
+            if match[1] == "handle" and any(int(part) == 0 for part in indices):
+                raise ValueError("current nonzero Wasm path identity required")
+            return value
+        raise ValueError("Use null, i31 U31, function MODULE FUNCTION, or from an original Wasm root/path")
+
+    def set_gc_member_variable(self, arguments):
+        expected, anchor, index, copied, current, before = self.selected_gc_member(
+            arguments.get("variablesReference"), arguments.get("name"), require_mutable=True, allow_reference=True)
+        thread, module, frame, selected, table, root, path = anchor
+        kind = before["type"]
+        encoded = (self.encode_reference_value(arguments.get("value")) if kind.startswith("(ref ") else
+                   f"bits {kind} {self.encode_numeric_value(kind, arguments.get('value'))}")
+        owner = re.fullmatch(r"(?:struct|array) module=([0-9]+) type=([0-9]+)", current["label"])
+        if owner is None:
+            raise ValueError("current canonical GC owner required")
+        stop = next(entry["stop_id"] for entry in self.threads if entry["id"] == thread)
+        # Always use a VM path handle, including an empty/short path. It binds
+        # the original root to the complete stop/cohort, so an external resume
+        # between read and write cannot redirect the mutation to a later stop.
+        bound = self.query_deep_wasm_members(thread, module, frame, selected, table, root, path,
+                                             index, 1, expected, stop)
+        if "unavailable" in bound:
+            raise ValueError("current GC mutation path unavailable")
+        target = bound["objects"][bound["selected_object"] - 1]
+        if (bound["epoch"] != copied["epoch"] or target["label"] != current["label"]
+                or target["members"] != current["members"]):
+            raise ValueError("GC member changed while binding its original path")
+        token = self.deep_wasm_paths[(expected, *anchor)]
+        spelling = f"set wasm member {thread} handle {token['session']} {token['handle']} at {index} {encoded}"
+        self.invalidate_stop()  # Commit may succeed before a transport failure.
+        reply = self.command(spelling)
+        acknowledgement = re.fullmatch(
+            r"wasm-stop ([1-9][0-9]{0,19})\nWasm mutation v=3 status=available applied=1 reason=none "
+            r"runtime=([1-9][0-9]{0,19}) module=([0-9]{1,20}) target=member "
+            r"index=([0-9]{1,20}) element=([0-9]{1,20}) bytes=0 address-bytes=0\n", reply)
+        previous_stops = {entry[-1] for entry in expected[1]}
+        if (acknowledgement is None or any(int(acknowledgement[k]) >= 1 << 64 for k in range(1, 6))
+                or int(acknowledgement[1]) in previous_stops
+                or tuple(int(acknowledgement[k]) for k in (2, 3, 4, 5)) !=
+                    (copied["epoch"], int(owner[1]), int(owner[2]), index)):
+            raise ValueError("GC edit was refused or its outcome is unconfirmed; inspect before retrying: " + reply.strip())
+        after_key, after = self.query_wasm_members(thread, module, frame, selected, table, root, path, index, 1)
+        if ("unavailable" in after or after_key is None
+                or any(entry[-1] != int(acknowledgement[1]) for entry in after_key[1])):
+            raise ValueError("committed GC member could not be read back")
+        rows = after["objects"][after["selected_object"] - 1]["members"]
+        if len(rows) != 1 or rows[0]["type"] != kind or rows[0]["index"] != index:
+            raise ValueError("committed GC member could not be read back")
+        # Reference writes can create a different expansion tree. Mint its
+        # new DAP references only from the post-commit root/path reborrow.
+        variable = self.wasm_variables(rows, after["objects"], after_key,
+                                       (thread, after["module"], frame, selected, table), (root, path))[0]
+        result = {key: variable[key] for key in ("value", "variablesReference", "indexedVariables", "namedVariables")
+                  if key in variable}
         if self.supports_variable_type:
             result["type"] = kind
         return result
@@ -4312,6 +5183,20 @@ class Adapter:
             self.read_wasm_memory(module, memory, offset+count, 0)
             expected = self.stop_key
             command = f"watch memory {module} {memory} {offset} {count}"
+        elif reference in self.wasm_object_views:
+            expected, anchor, index, copied, current, before = self.selected_gc_member(reference, name)
+            thread, module, frame, selected, table, root, path = anchor
+            stop = next(entry["stop_id"] for entry in self.threads if entry["id"] == thread)
+            bound = self.query_deep_wasm_members(thread, module, frame, selected, table, root, path,
+                                                 index, 1, expected, stop)
+            if "unavailable" in bound:
+                raise ValueError("current GC watch path unavailable")
+            target = bound["objects"][bound["selected_object"] - 1]
+            if (bound["epoch"] != copied["epoch"] or target["label"] != current["label"]
+                    or target["members"] != current["members"]):
+                raise ValueError("GC member changed while binding its original path")
+            token = self.deep_wasm_paths[(expected, *anchor)]
+            command = f"watch path members {token['session']} {token['handle']} {index} 1"
         else:
             expected, selection, index, row = self.selected_numeric_slot(reference, name)
             thread, module, frame, selected, table = selection
@@ -4397,7 +5282,7 @@ class Adapter:
             return
         try:
             if not dap_permission_allowed(self.debug_permissions, command):
-                raise ValueError("debugger permission " + self.debug_permissions + " denies " + command)
+                raise LocalRequestRefusal("debugger permission " + self.debug_permissions + " denies " + command)
             if command == "initialize":
                 if any(type(args.get(key, False)) is not bool for key in ("supportsMemoryEvent", "supportsInvalidatedEvent")):
                     raise ValueError("memory and invalidation event capabilities must be boolean")
@@ -4406,6 +5291,9 @@ class Adapter:
                 self.supports_memory_event = args.get("supportsMemoryEvent", False)
                 self.supports_invalidated_event = args.get("supportsInvalidatedEvent", False)
                 self.supports_variable_type = args.get("supportsVariableType", False)
+                if type(args.get('supportsANSIStyling', False)) is not bool:
+                    raise ValueError('ANSI styling capability must be boolean')
+                self.client_ansi_styling = args.get('supportsANSIStyling', False)
                 # Capabilities are conservative until the actual VM answers.
                 self.respond(request, debug_capabilities("none"))
             elif command == "attach":
@@ -4417,10 +5305,16 @@ class Adapter:
                     raise ValueError("startupTimeoutSeconds currently requires the Linux broker")
                 if self.broker is not None:
                     raise ValueError("already attached")
+                stop_on_entry = args.get('stopOnEntry', True)
+                if type(stop_on_entry) is not bool: raise ValueError('stopOnEntry must be boolean')
                 step_level = args.get("stepLevel", "source")
                 if step_level not in ("source", "wasm", "native"):
                     raise ValueError("stepLevel must be source, wasm or native")
                 source_map = compile_source_map(args.get("sourceMap", {}))
+                update_directory = args.get("updateSocketDir")
+                if update_directory is not None and (sys.platform != "linux" or type(update_directory) is not str or
+                        not Path(update_directory).is_absolute() or any(ord(c) < 32 for c in update_directory)):
+                    raise ValueError("updateSocketDir requires an absolute independent Linux host relay directory")
                 module_id = args.get("moduleId", 0)
                 if type(module_id) is not int or not 0 <= module_id < (1 << 32):
                     raise ValueError("moduleId out of range")
@@ -4454,55 +5348,208 @@ class Adapter:
                         raise RuntimeError(initial.strip())
                     observation = self._decode_status(initial)
                     self.commit_startup_broker(request["seq"], broker)
+                    self.update_socket_dir = update_directory
                 except BaseException:
                     broker.close()
                     raise
+                self.resume_on_entry = not stop_on_entry and self.debug_permissions == 'full'
                 self.module_id = module_id
                 self.source_map = source_map
                 self.step_level = step_level
                 self.respond(request)
-                self.event("capabilities", {"capabilities": debug_capabilities(self.debug_permissions)})
+                self.event("capabilities", {"capabilities": debug_capabilities(self.debug_permissions, self.step_level)})
                 self.event("uwvm/permissions", {"permissions": self.debug_permissions})
+                self.event("uwvm/stepLevel", {"level": self.step_level})
                 self.event("initialized")
-                self._commit_status(observation)
+                self._commit_status(observation, notify=not(self.resume_on_entry and observation[1] == 'entry'))
+                self.attach_entry_key = self.stop_key if observation[1] == 'entry' else None
+                self.event('output', {'category': 'console', 'output':
+                    'Attached to the host-owned VM. Restart reconnects this attach session; it does not reset the VM.\n'})
+            elif command == "uwvm/breakpoints":
+                self.observe(self.command('status'), notify=False)
+                if self.state != 'stopped':
+                    # Unavailable is not an empty inventory. A running guest
+                    # must not make a frontend delete its retained breakpoints.
+                    self.respond(request, {'available': False, 'state': self.state})
+                else:
+                    rows = self.sync_breakpoints()
+                    self.respond(request, {'available': True, 'rows': rows, 'locations': {str(k): v for k, v in self.breakpoint_displays.items()}})
+            elif command == "uwvm/breakpointControl":
+                identifier = unsigned_id(args.get('id'), 'breakpoint ID')
+                action = args.get('action')
+                if action not in ('enable', 'disable', 'delete', 'condition', 'ignore', 'callbacks'): raise ValueError('unknown breakpoint action')
+                self.sync_breakpoints()
+                if identifier not in self.breakpoint_inventory: raise ValueError('breakpoint no longer exists')
+                suffix = ''
+                if action == 'condition':
+                    expression = args.get('value', '')
+                    breakpoint_condition_suffix({'condition': expression})
+                    suffix = ' '+expression if expression else ''
+                if action == 'callbacks':
+                    value, mode = args.get('value', ''), args.get('mode', 'replace')
+                    if mode not in ('replace', 'append', 'clear') or not isinstance(value, str) or any(not 32 <= ord(c) < 127 for c in value):
+                        raise ValueError('printable callback commands and replace/append/clear mode required')
+                    script = 'clear' if mode == 'clear' else ('append ' if mode == 'append' else '')+value
+                    if not script or len(script) > 512: raise ValueError('one callback command packet holds 1..512 ASCII bytes; use append for additional packets')
+                    action, suffix = 'commands', ' '+script
+                if action == 'ignore':
+                    value = args.get('value')
+                    if not isinstance(value, str) or not re.fullmatch(r'[0-9]{1,20}', value) or int(value) >= 1 << 64: raise ValueError('unsigned ignore count required')
+                    suffix = ' '+value
+                reply = self.command(f'{action} {identifier}{suffix}')
+                self.respond(request, {'text': reply})
+                self.sync_breakpoints()
+            elif command == "uwvm/breakpointCreate":
+                def coordinate(name):
+                    value = args.get(name)
+                    if isinstance(value, str) and re.fullmatch(r'(?:0x[0-9a-fA-F]+|[0-9]+)', value):
+                        value = int(value, 16 if value.startswith('0x') else 10)
+                    if type(value) is not int or not 0 <= value < 1 << 64: raise ValueError(name+' must be an unsigned coordinate')
+                    return value
+                temporary = args.get('temporary', False)
+                if type(temporary) is not bool: raise ValueError('temporary must be boolean')
+                module, function, offset = (coordinate(name) for name in ('module', 'function', 'offset'))
+                condition = breakpoint_condition_suffix(args)
+                ignore = breakpoint_ignore_count(args)
+                suffix = (f' ignore {ignore}' if ignore is not None else '')+condition
+                self.observe(self.command('status'), notify=False)
+                if self.state != 'stopped': raise ValueError('breakpoint creation requires a stopped VM')
+                reply = self.command(('tbreak ' if temporary else '')+f'breakwasm {module} {function} {offset}{suffix}')
+                match = BREAK_RE.match(reply)
+                if match is None: raise ValueError(reply.strip())
+                self.respond(request, {'id': int(match[1]), 'text': reply})
+                self.sync_breakpoints()
+            elif command == "uwvm/breakpointCallbacks":
+                identifier = unsigned_id(args.get('id'), 'breakpoint ID')
+                first = args.get('start', 0)
+                if type(first) is not int or not 0 <= first < 1 << 64: raise ValueError('valid callback page required')
+                self.observe(self.command('status'), notify=False)
+                expected = self.stop_key
+                if self.state != 'stopped' or expected is None: raise ValueError('current stop required')
+                self.sync_breakpoints()
+                if identifier not in self.breakpoint_inventory: raise ValueError('breakpoint no longer exists')
+                text = self.command(f'commands {identifier} list {first} 32')
+                lines = text.splitlines()
+                head = re.fullmatch(r'breakpoint ([0-9]+) callback commands=([0-9]+)', lines[0] if lines else '')
+                tail = re.fullmatch(r'callback-command-next=([0-9]+) total=([0-9]+)', lines[-1] if lines else '')
+                if not text.endswith('\n') or head is None or tail is None or int(head[1]) != identifier:
+                    raise ValueError('complete callback command page required')
+                total, next_index = int(head[2]), int(tail[1])
+                if total >= 1 << 64 or first > total or int(tail[2]) != total or next_index != min(total, first+32) or len(lines) != next_index-first+2:
+                    raise ValueError('invalid callback command page extent')
+                rows = []
+                for index, line in enumerate(lines[1:-1], first):
+                    prefix = f'{index}: '
+                    if not line.startswith(prefix): raise ValueError('callback command original index differs')
+                    rows.append({'index': str(index), 'command': line[len(prefix):]})
+                self.observe(self.command('status'), notify=False)
+                if self.stop_key != expected: raise ValueError('callback page stop retired')
+                self.respond(request, {'id': identifier, 'rows': rows, 'start': first, 'next': next_index, 'total': total, 'more': next_index < total})
+            elif command == "uwvm/stepLevel":
+                if 'level' not in args:
+                    self.respond(request, {'level': self.step_level})
+                    return
+                if args['level'] not in ('source', 'wasm', 'native'): raise ValueError('select source, wasm or native')
+                changed = self.step_level != args['level']
+                self.step_level = args['level']
+                if self.step_level == 'wasm': self.wasm_view_visible = True
+                self.respond(request, {'level': self.step_level})
+                self.event('uwvm/stepLevel', {'level': self.step_level})
+                self.event('capabilities', {'capabilities': debug_capabilities(self.debug_permissions, self.step_level)})
+                if changed: self.event('invalidated', {'areas': ['stacks', 'variables']})
+            elif command == "uwvm/wasmView":
+                if type(args.get('visible')) is not bool:
+                    raise ValueError('Wasm document visibility must be boolean')
+                self.wasm_view_visible = args['visible']
+                self.respond(request, {'visible': self.wasm_view_visible})
             elif command == "uwvm/permissions":
                 self.respond(request, {"permissions": self.debug_permissions})
             elif command == "uwvm/diagnostics":
                 reply = self.command("status")
-                self.respond(request, {"permissions": self.debug_permissions, "text": reply,
+                self.observe(reply, notify=False)
+                details = {'State': self.state, 'Permissions': self.debug_permissions}
+                if self.debug_permissions == 'limited':
+                    details['Stop ID'] = str(self.limited_stop_id)
+                    details['Visibility'] = 'Numeric crash diagnostics; sensitive values are withheld'
+                else:
+                    details['Stop reason'] = self.stop_description or (self.stop_key[0] if self.stop_key else None)
+                    details['Participants'] = [{key: value for key, value in row.items() if key != 'native_pc'} for row in self.threads]
+                self.respond(request, {"permissions": self.debug_permissions, "text": reply, "details": details,
                                        "redacted": self.debug_permissions == "limited"})
             elif command == "uwvm/dump":
                 path = args.get("path")
                 stop = args.get("stopId")
                 if isinstance(stop, str) and re.fullmatch(r"[1-9][0-9]{0,19}", stop):
                     stop = int(stop)
-                if not isinstance(path, str) or not path.startswith("/") or any(ord(c) < 32 for c in path):
+                if not isinstance(path, str) or not (path.startswith('/') or re.match(r'^[A-Za-z]:[\\/]', path) or path.startswith('\\\\')) or any(ord(c) < 32 for c in path):
                     raise ValueError("dump path must be an absolute path on the VM host without control characters")
                 if type(stop) is not int or not 0 < stop < (1 << 64):
                     raise ValueError("dump requires the exact current nonzero stopId")
                 reply = self.command("dump wasm " + str(stop) + " " + path)
                 self.respond(request, {"text": reply, "redacted": self.debug_permissions == "limited"})
             elif command == "configurationDone":
+                if self.configuration_complete:
+                    self.respond(request);return
+                self.configuration_complete = True
+                if self.resume_on_entry and self.attach_entry_key is not None:
+                    self.observe(self.command('status'), notify=False)
+                    if self.state == 'stopped' and self.stop_key == self.attach_entry_key:
+                        rows = self.sync_breakpoints()
+                        here = any(point['enabled'] and point['kind'] == 'wasm' and any(
+                            (int(point['module']), int(point['function']), int(point['offset'])) ==
+                            (t['module'], t['function'], t['offset']) for t in self.threads) for point in rows)
+                        if not here:
+                            reply = self.command('continue');observed = self._decode_status(reply)
+                            self.respond(request)
+                            self.event('continued', {'allThreadsContinued': True})
+                            self._commit_status(observed)
+                            return
+                        self.respond(request)
+                        self.event('stopped', {'reason': 'entry', 'description': 'Entry instruction has a configured breakpoint',
+                            'threadId': self.threads[0]['id'], 'allThreadsStopped': True})
+                        return
                 self.respond(request)
+                self.observe(self.command('status'))
             elif command == "threads":
+                if self.debug_permissions == "limited":
+                    self.respond(request, {"threads": self.limited_threads()})
+                    return
                 self.observe(self.command("status"))
-                self.respond(request, {"threads": [{"id": t["id"], "name": f"Wasm thread {t['id']}"}
-                                                    for t in self.threads]})
+                rows = [{"id": t["id"], "name": f"Wasm thread {t['id']}"} for t in self.threads]
+                if not rows and self.state == 'stopped' and self.stop_key and self.stop_key[0] == 'entry':
+                    rows = [{"id": (1 << 31) - 1, "name": "Initial Wasm entry — Continue to start"}]
+                self.respond(request, {"threads": rows})
             elif command == "pause":
+                self.observe(self.command('status'), notify=False)
+                if self.state == 'stopped':
+                    # An explicit Pause may repair a client's stale running
+                    # display. It never resumes an already stopped guest.
+                    self.respond(request)
+                    body = {'reason': 'pause', 'allThreadsStopped': True}
+                    if self.threads: body['threadId'] = self.threads[0]['id']
+                    self.event('stopped', body, force=True)
+                    return
                 reply = self.command("pause")
                 observation = self._decode_status(reply)
                 self.respond(request)
                 self._commit_status(observation)
             elif command == "continue":
+                if 'wasmReference' in args:
+                    if not isinstance(args.get('ifStop'), str): raise ValueError('current Wasm view stop required')
+                    self.current_wasm_document(unsigned_id(args['wasmReference'], 'Wasm document reference'),
+                                               args['ifStop'], unsigned_id(args.get('threadId'), 'Wasm thread'))
                 thread = args.get("threadId")
                 if type(thread) is not int or not 0 <= thread < (1 << 64):
                     raise ValueError("explicit Wasm threadId required")
                 if args.get("singleThread", False) is not False:
                     raise ValueError("single-thread continue is unavailable")
+                self.observe(self.command('status'), notify=False)
                 if self.state != "stopped":
                     raise ValueError("continue requires a stopped execution domain")
+                if thread == (1 << 31) - 1 and not self.threads and self.stop_key and self.stop_key[0] == 'entry':
+                    thread = 0
                 if thread == 0:
-                    if self.threads or args.get("singleThread") is not False or self.stop_key is None:
+                    if self.threads or args.get("singleThread", False) is not False or self.stop_key is None:
                         raise ValueError("global launch resume requires an identified empty stop")
                 elif not any(entry["id"] == thread for entry in self.threads):
                     raise ValueError("selected participant is not in the observed stop")
@@ -4512,26 +5559,33 @@ class Adapter:
                 reply = self.command("continue")
                 observation = self._decode_status(reply)
                 self.respond(request, {"allThreadsContinued": True})
-                if thread:
-                    self.event("continued", {"threadId": thread, "allThreadsContinued": True})
+                self.event("continued", {"threadId": thread or (1 << 31) - 1, "allThreadsContinued": True})
                 self._commit_status(observation)
             elif command in ("stepIn", "next", "stepOut"):
                 thread = unsigned_id(args.get("threadId"), "Wasm threadId")
+                self.observe(self.command('status'), notify=False)
+                if not self.threads and self.state == 'stopped' and self.stop_key and self.stop_key[0] == 'entry':
+                    raise ValueError("Initial Wasm entry: no instruction has executed. Use Continue (F5) to start the prepared VM; stepping requires a real instruction stop.")
                 granularity = args.get("granularity", "statement")
+                effective_level = self.step_level
+                if 'wasmReference' in args:
+                    if not isinstance(args.get('ifStop'), str): raise ValueError('current Wasm view stop required')
+                    self.current_wasm_document(unsigned_id(args['wasmReference'], 'Wasm document reference'), args['ifStop'], thread)
+                    effective_level = 'wasm'
                 # Source is the default IDE level: ordinary next/stepOut must
                 # reach the real source policy instead of failing statement mode.
                 # An unavailable source scope is an explicit controller error;
                 # never call a Wasm step and describe it as source success.
-                if self.step_level == "wasm":
+                if effective_level == "wasm":
                     if granularity not in ("statement", "instruction"):
                         raise ValueError("Wasm stepping requires statement or instruction granularity")
                     policy = "" if command == "stepIn" else " over" if command == "next" else " out"
                     native = f"step wasm {thread}{policy}"
-                elif granularity == "line" or granularity == "statement" and self.step_level == "source":
+                elif granularity == "line" or granularity == "statement" and effective_level == "source":
                     policy = "into" if command == "stepIn" else "over" if command == "next" else "out"
                     native = f"step source {thread} {policy}"
                 elif (granularity == "instruction" or
-                      granularity == "statement" and self.step_level == "native") and command in ("stepIn", "next", "stepOut"):
+                      granularity == "statement" and effective_level == "native") and command in ("stepIn", "next", "stepOut"):
                     # The controller admits NI only at its real top native trap.
                     # It alone proves Wasm owner/call continuation and owns cancel
                     # and ACK; no DAP PC, frame label or Wasm/source fallback does.
@@ -4561,12 +5615,24 @@ class Adapter:
                 if type(start) is not int or not 0 <= start < (1 << 64) or type(levels) is not int or not 0 <= levels < (1 << 64):
                     raise ValueError("valid stack frame page required")
                 page_count = min(levels or 128, 128)
+                if self.debug_permissions == "limited":
+                    self.respond(request, self.limited_stack(thread, start, page_count))
+                    return
                 total_frames = None
                 # A backtrace reply contains only the requested participant.
                 # Refresh the complete stop first so it cannot replace the
                 # multi-thread stop key or bind another participant's PC.
                 changed = self.observe(self.command("status"), notify=False)
                 current = [entry for entry in self.threads if entry["id"] == thread]
+                if (thread == (1 << 31) - 1 and not self.threads and self.state == 'stopped' and
+                        self.stop_key and self.stop_key[0] == 'entry'):
+                    if self.entry_frame is None:
+                        self.entry_frame = self.new_reference()
+                        self.frames[self.entry_frame] = (thread, -4, 0, 0)
+                    frames = [{"id": self.entry_frame, "name": "Initial Wasm entry — Continue to start",
+                               "line": 0, "column": 0, "presentationHint": "label", "canRestart": False}]
+                    self.respond(request, {"stackFrames": frames[start:start+page_count], "totalFrames": 1})
+                    return
                 if self.state != "stopped" or len(current) != 1:
                     raise ValueError("selected thread has no complete stopped location")
                 trace = self.command(f"bt {thread}")
@@ -4577,6 +5643,7 @@ class Adapter:
                 frames = []
                 location = entries[0]
                 language_rows = []
+                native_reference = None
                 if self.step_level == "wasm" and "native_pc" not in location and "stop_id" in location:
                     expected_key = self.stop_key
                     try:
@@ -4600,12 +5667,14 @@ class Adapter:
                                 raise ValueError("current Wasm activation differs from stopped location")
                             frame_id = self.new_reference()
                             self.frames[frame_id] = (thread, row["ordinal"], row["module"], row["function"])
-                            frame = {"id": frame_id, "name": f"Wasm frame {row['ordinal']} module={row['module']} function={row['function']}",
+                            function_name = self.wasm_function_name(row['module'], row['function'])
+                            self.frame_details[frame_id] = (expected_key, dict(row, name=function_name))
+                            frame = {"id": frame_id, "name": function_name,
                                      "line": 0, "column": 0, "moduleId": str(row["module"]), "canRestart": False}
                             if row["ordinal"] == 0:
                                 frame["instructionPointerReference"] = f"wasm:{location['module']}:{location['function']}:{location['offset']}"
                                 frame["source"] = self.wasm_document_source(frame_id, location)
-                                frame["line"], frame["column"] = 2, 1
+                                frame["line"], frame["column"] = self.wasm_document_line(frame['source'], location['offset']), 1
                             frames.append(frame)
                         self.respond(request, {"stackFrames": frames, "totalFrames": page["total"]})
                         if changed:
@@ -4634,6 +5703,16 @@ class Adapter:
                         self.observe(self.command("status"), notify=False)
                         if self.state != "stopped" or self.stop_key != expected_key:
                             raise ValueError("source frame stop changed while metadata was unavailable")
+                    if self.step_level == "native":
+                        # Qualify optional native code BEFORE minting display
+                        # frames. A terminal helper has no owned native landing;
+                        # its refusal must not erase an otherwise authentic Wasm
+                        # backtrace midway through constructing the response.
+                        native_reference = self.qualify_native_code_reference(location)
+                        if native_reference is None:
+                            self.observe(self.command("status"), notify=False)
+                        if self.state != "stopped" or self.stop_key != expected_key:
+                            raise ValueError("stop changed during native code qualification")
                     for row in language_rows:
                         if row["current"] and row["kind"] != "caller" and (row["module"], row["function"], row["runtime_epoch"]) != (location["module"], location["function"], location["generation"]):
                             raise ValueError("current inline/physical frame differs from actual source activation")
@@ -4652,7 +5731,8 @@ class Adapter:
                             frame["line"], frame["column"] = source["line"], source["column"]
                         elif row["kind"] == "caller":
                             availability = "saved caller values" if row["current"] else "caller values unavailable"
-                            frame["name"] += f" module={row['module']} function={row['function']} ({availability})"
+                            frame["name"] += " · caller"
+                            self.frame_details[frame_id] = (expected_key, dict(row, availability=availability))
                             frame["presentationHint"] = "label"
                         if (row["kind"] == "physical" or
                                 self.step_level == "native" and row["kind"] == "inline" and row["current"]):
@@ -4660,10 +5740,8 @@ class Adapter:
                             # its inline scopes; no older caller PC is invented.
                             frame["instructionPointerReference"] = (
                                 f"wasm:{location['module']}:{location['function']}:{location['offset']}")
-                            if self.step_level == "native":
-                                native_reference = self.qualify_native_code_reference(location)
-                                if native_reference is not None:
-                                    frame["instructionPointerReference"] = native_reference
+                            if self.step_level == "native" and native_reference is not None:
+                                frame["instructionPointerReference"] = native_reference
                         frames.append(frame)
                 inline_labels = parse_inline_labels(trace, thread)
                 if "native_pc" in location and inline_labels:
@@ -4683,6 +5761,7 @@ class Adapter:
                 if "native_pc" in location:
                     if any(FRAME_RE.match(line) for line in trace.splitlines()):
                         raise ValueError("native stop cannot reuse a Wasm caller-frame snapshot")
+                    function_name = self.wasm_function_name(location['module'], location['function'])
                     frame_id = self.new_reference()
                     self.frames[frame_id] = (thread, -1, location["module"], location["function"])
                     self.native_frames.add(frame_id)
@@ -4693,9 +5772,7 @@ class Adapter:
                     # complete identified stop may request the bounded runtime
                     # code-copy command; no readMemory/write/breakpoint authority.
                     frames.append({"id": frame_id,
-                                   "name": ("Native JIT instruction (Wasm origin "
-                                            f"module={location['module']} function={location['function']} "
-                                            f"generation={location['generation']})"),
+                                   "name": function_name+" · asm",
                                    "line": 0, "column": 0, "presentationHint": "normal",
                                    "moduleId": str(location["module"]), "canRestart": False,
                                    "instructionPointerReference": f"uwvm-native-stop:{frame_id}"})
@@ -4704,9 +5781,10 @@ class Adapter:
                     if not match:
                         continue
                     index, module, function = map(int, match.groups())
+                    function_name = self.wasm_function_name(module, function)
                     frame_id = self.new_reference()
                     self.frames[frame_id] = (thread, index, module, function)
-                    frame = {"id": frame_id, "name": line.strip(), "line": 1, "column": 1}
+                    frame = {"id": frame_id, "name": function_name, "line": 1, "column": 1}
                     if index == 0:
                         location = next((t for t in entries if t["id"] == thread), None)
                         if location is not None:
@@ -4718,17 +5796,19 @@ class Adapter:
                         frame["source"] = {"name": Path(source["path"]).name, "path": map_source_path(source["path"], self.source_map)}
                         frame["line"], frame["column"] = source["line"], source["column"]
                     else:
-                        frame["source"] = {"name": f"wasm module {module}", "sourceReference": frame_id}
-                    if index == 0 and self.step_level == "native" and location is not None:
-                        native_reference = self.qualify_native_code_reference(location)
-                        if native_reference is not None:
-                            frame["instructionPointerReference"] = native_reference
+                        frame["source"] = self.wasm_document_source(frame_id, location) if index == 0 else {"name": f"wasm module {module}"}
+                        if index == 0:
+                            # The generation-stable document retains the whole
+                            # function; resolve the exact current instruction.
+                            frame["line"], frame["column"] = self.wasm_document_line(frame['source'], location['offset']), 1
+                    if index == 0 and self.step_level == "native" and native_reference is not None:
+                        frame["instructionPointerReference"] = native_reference
                     frames.append(frame)
                 if self.step_level == "wasm" and "native_pc" not in location:
                     for frame in frames:
                         if self.frames[frame["id"]][1] == 0:
                             frame["source"] = self.wasm_document_source(frame["id"], location)
-                            frame["line"], frame["column"] = 2, 1
+                            frame["line"], frame["column"] = self.wasm_document_line(frame['source'], location['offset']), 1
                 # A failed/private query cannot leave labels whose stop retired
                 # while this stack display was being assembled.
                 if self.state != "stopped" or any(frame["id"] not in self.frames for frame in frames):
@@ -4749,13 +5829,11 @@ class Adapter:
                         or type(args.get("resolveSymbols", False)) is not bool):
                     raise ValueError("native disassembly requires a current opaque reference, count 1..512 and signed 64-bit offsets")
                 if reference.startswith("wasm:"):
-                    self.respond(request, {"instructions": self.wasm_disassembly(reference, count,
-                        args.get("offset", 0), args.get("instructionOffset", 0))})
-                    return
+                    raise ValueError("Use the Wasm instruction document; Disassembly accepts only owned native JIT code")
                 # Preserve the original r2 zero-offset <=32 native-stop wire
                 # subset. IDE symbols, offsets, bigger windows and cooperative
                 # code references always use the new exact-owner range query.
-                if (reference.startswith("uwvm-native-code:") or count > 32 or args.get("offset", 0) != 0 or
+                if (reference.startswith(("uwvm-native-code:", "uwvm-native-stop:")) or count > 32 or args.get("offset", 0) != 0 or
                         args.get("instructionOffset", 0) != 0 or args.get("resolveSymbols", False)):
                     self.disassemble_owned_range(request, args, reference, count)
                     return
@@ -4793,8 +5871,19 @@ class Adapter:
                     raise ValueError("native stop changed during disassembly")
                 self.respond(request, {"instructions": instructions})
             elif command == "scopes":
+                if self.debug_permissions == "limited":
+                    self.observe(self.command("status"), notify=False)
+                    frame = self.frames.get(args.get("frameId"))
+                    if self.state != "stopped" or frame is None or len(frame) != 2 or frame[1] != self.stop_key:
+                        raise ValueError("limited diagnostic frame retired")
+                    self.respond(request, {"scopes": []})
+                    self.event("output", {"category": "console", "output": "Limited debugger permission: numeric crash coordinates only; memory, registers, source and policy inspection are denied.\n"})
+                    return
                 frame = self.current_frame(unsigned_id(args.get("frameId"), "frameId"))
                 scopes = []
+                if frame[1] == -4:
+                    self.respond(request, {"scopes": []})
+                    return
                 if args["frameId"] in self.native_frames:
                     if self.state != "stopped" or self.stop_key is None or frame[1] != -1:
                         raise ValueError("native frame belongs to a retired stop")
@@ -4815,54 +5904,45 @@ class Adapter:
                     self.source_scope_frames[reference] = args["frameId"]
                     scopes.append({"name": "Source variables" if row["current"] else "Caller variables unavailable",
                                    "variablesReference": reference, "expensive": False})
+                if (frame[1] >= 0 and self.stop_key is not None and not any(t.get('native_pc') for t in self.threads)):
+                    inventory = self.wasm_metadata(frame[2])
+                    for title, selected in (("Wasm locals", "locals"), ("Wasm operand stack", "operands"),
+                                            ("Wasm globals", "globals"), ("Wasm control stack", "controls"),
+                                            ("Wasm saved parameters", "saved"), ("Wasm exception handlers", "handlers")):
+                        if selected == 'globals' and inventory['globals'] == 0: continue
+                        reference = self.new_reference()
+                        self.scopes[reference] = frame[0]
+                        selection = (frame[0], frame[2], 0 if selected == 'globals' else frame[1], selected, 0)
+                        self.wasm_scope_stops[reference] = (self.stop_key, selection)
+                        description = self.wasm_scope_description(self.stop_key, selection)
+                        scope = dict(name=title, variablesReference=reference, expensive=selected not in ('locals', 'operands'))
+                        if 'unavailable' not in description and description['total'] < 1 << 31:
+                            scope.update(indexedVariables=description['total'], namedVariables=(
+                                1 if selected == 'operands' and self.stop_key[0] == 'exception' else 0))
+                        scopes.append(scope)
+                    if inventory['tables']:
+                        reference = self.new_reference()
+                        self.wasm_table_groups[reference] = (self.stop_key, frame[0], frame[2])
+                        scope = dict(name='Wasm tables', variablesReference=reference, expensive=True)
+                        if inventory['tables'] < 1 << 31: scope.update(indexedVariables=inventory['tables'], namedVariables=0)
+                        scopes.append(scope)
+                details = self.frame_details.get(args['frameId']) or self.source_frame_ordinals.get(args['frameId'])
+                fields = dict(details[1]) if details is not None else dict(thread=frame[0], module=frame[2], function=frame[3])
                 if frame[1] == 0:
-                    reference = self.new_reference()
-                    self.scopes[reference] = frame[0]
-                    self.wasm_local_scope_stops[reference] = self.stop_key
-                    scopes.append({"name": "Wasm locals", "variablesReference": reference, "expensive": False})
-                    if args["frameId"] in self.source_frames and language_frame is None:
-                        reference = self.new_reference()
-                        self.scopes[reference] = frame[0]
-                        self.source_scope_stops[reference] = self.stop_key
-                        scopes.append({"name": "Source variables", "variablesReference": reference, "expensive": False})
-                if self.step_level == "wasm" and frame[1] >= 0:
-                    # A source physical row denotes Wasm frame zero; inline or
-                    # caller source labels never invent an observed native PC.
-                    for title, selected in (("Typed Wasm locals", "locals"), ("Wasm operand stack (last safepoint; may differ from native state)", "operands"), ("Wasm saved if parameters", "saved"),
-                                            ("Wasm control stack", "controls"), ("Wasm handler clauses", "handlers"), ("Wasm globals", "globals"), ("Wasm table 0", "table")):
-                        if selected == "operands" and self.stop_key is not None and self.stop_key[0] == "exception":
-                            if any(t.get("uncaught_exception") for t in self.threads):
-                                if any(t["id"] == frame[0] and t.get("uncaught_exception") for t in self.threads):
-                                    title = "Wasm uncaught snapshot (before unwind)"
-                            else:
-                                title = "Wasm pre-trap inputs (no instruction result)"
-                        reference = self.new_reference()
-                        self.scopes[reference] = frame[0]
-                        self.wasm_scope_stops[reference] = (self.stop_key, (frame[0], frame[2], 0 if selected in ("globals", "table") else frame[1], selected, 0))
-                        scopes.append({"name": title, "variablesReference": reference, "expensive": True})
-                if (frame[1] == 0 and self.state == "stopped" and self.stop_key is not None
-                        and self.threads and all(t.get("stop_id") for t in self.threads)
-                        and not any(t.get("native_pc") for t in self.threads)):
-                    for title, selected in (("WASIp1 arguments", "args"), ("WASIp1 environment", "env"),
-                                            ("WASIp1 descriptors", "fds"), ("WASIp1 preopens", "preopens")):
-                        reference = self.new_reference()
-                        self.wasip1_scope_stops[reference] = (self.stop_key, frame[2], selected)
-                        scopes.append({"name": title, "variablesReference": reference, "expensive": True})
-                    for title, family in (("WASIp1 calls (recorded)", "wasip1"),
-                                          ("ROS1 calls (recorded)", "ros1"), ("ROS2 calls (recorded)", "ros2")):
-                        reference = self.new_reference()
-                        self.host_trace_views[reference] = (self.stop_key, None, ("calls", {"family": family}))
-                        scopes.append({"name": title, "variablesReference": reference, "expensive": True})
-                    # These process-owned ROS identities are deliberately not
-                    # inferred from the frame's numeric Wasm module ordinal.
-                    # The real Host reports ROS-off/BUSY as an explicit error.
-                    for title, selected in (("ROS capabilities (process-owned)", "capabilities"),
-                                            ("ROS instances (backend sessions)", "instances"),
-                                            ("ROS event queues (metadata only)", "events")):
-                        reference = self.new_reference()
-                        self.ros_scope_stops[reference] = (self.stop_key, selected)
-                        scopes.append({"name": title, "variablesReference": reference, "expensive": True})
+                    locations = [t for t in self.threads if t['id'] == frame[0]]
+                    if len(locations) == 1: fields['Current instruction'] = dict(offset=hex(locations[0]['offset']), stopId=locations[0].get('stop_id'))
+                reference = self.structured_reference(fields, self.stop_key)
+                scopes.append(dict(name='Frame details', variablesReference=reference, expensive=False))
                 self.respond(request, {"scopes": scopes})
+            elif command == "uwvm/signedUpdate":
+                if self.update_socket_dir is None:
+                    raise ValueError("no independent update authority was provisioned; debugger permission cannot grant it")
+                if set(args) != {"framePath"} or type(args["framePath"]) is not str or not Path(args["framePath"]).is_absolute():
+                    raise ValueError("one absolute host framePath is required")
+                if self.pending_update is not None:
+                    raise ValueError("an independent update request is already pending; no request was submitted")
+                from signed_update import read_frame
+                self.begin_update_request(request, read_frame(args["framePath"]))
             elif command == "uwvm/memoryTags":
                 self.respond(request,self.read_memory_tags(args))
             elif command == "uwvm/hostTrace":
@@ -4878,6 +5958,9 @@ class Adapter:
                 self.respond(request, edited)
                 if edited["applied"] and self.supports_invalidated_event:
                     self.event("invalidated", {"areas": ["stacks", "variables"]})
+            elif command == "uwvm/wasip1Policy":
+                self.respond(request, self.query_wasip1_state("policy", args.get("moduleId", self.module_id),
+                    args.get("start", 0), args.get("count", 64)))
             elif command == "uwvm/wasip1State":
                 self.respond(request, self.query_wasip1_state(args.get("selection"), args.get("moduleId", self.module_id),
                     args.get("start", 0), args.get("count", 64)))
@@ -4909,7 +5992,10 @@ class Adapter:
                     self.respond(request, {"variables": variables, "total": target["total"], "first": target["first"],
                         "next": target["next"], "more": target["more"], "moduleId": copied["module"], "runtimeEpoch": copied["epoch"]})
             elif command == "setVariable":
-                self.respond(request, self.set_numeric_variable(args))
+                reference = args.get("variablesReference")
+                setter = (self.set_gc_member_variable if type(reference) is int and reference in self.wasm_object_views
+                          else self.set_numeric_variable)
+                self.respond(request, setter(args))
                 if self.supports_invalidated_event:
                     self.event("invalidated", {"areas": ["stacks", "variables"]})
             elif command == "dataBreakpointInfo":
@@ -4918,20 +6004,30 @@ class Adapter:
                 self.respond(request, self.set_data_breakpoints(args))
             elif command == "variables":
                 reference = unsigned_id(args.get("variablesReference"), "variablesReference")
+                start, count = args.get('start', 0), args.get('count', 0)
+                if type(start) is not int or type(count) is not int or not 0 <= start < 1 << 64 or not 0 <= count < 1 << 64:
+                    raise ValueError('valid variable page indices required')
+                if reference in self.structured_views:
+                    self.respond(request, {'variables': self.structured_variables(reference, start, count)})
+                    return
+                if reference in self.wasm_table_groups:
+                    self.respond(request, {'variables': self.wasm_table_variables(reference, start, count)})
+                    return
                 if reference in self.host_trace_views:
                     self.respond(request, {"variables": self.host_trace_variables(reference, args)})
                     return
                 if reference in self.ros_scope_stops:
                     expected_key, selected = self.ros_scope_stops[reference]
                     first, count = args.get("start", 0), args.get("count", 0)
-                    if (type(first) is not int or type(count) is not int or not 0 <= first <= 4096 or not 0 <= count <= 8
-                            or args.get("filter") not in (None, "named", "indexed")):
-                        raise ValueError("ROS scopes require explicit pages of at most eight metadata rows")
-                    copied = self.query_ros_state({"selection": selected, "start": first, "count": count or 8}, expected_stop=expected_key)
+                    maximum = 4 if selected == "policy" else 8
+                    if (type(first) is not int or type(count) is not int or not 0 <= first <= ((1 << 64)-1 if selected == "policy" else 4096)
+                            or not 0 <= count <= maximum or args.get("filter") not in (None, "named", "indexed")):
+                        raise ValueError("ROS scopes require bounded explicit metadata pages")
+                    copied = self.query_ros_state({"selection": selected, "start": first, "count": count or maximum}, expected_stop=expected_key)
                     if self.stop_key != expected_key or reference not in self.ros_scope_stops:
                         raise ValueError("ROS scope retired during the metadata copy")
-                    values = [{"name": str(first+index), "value": json.dumps(row, ensure_ascii=True, separators=(",", ":")),
-                               "type": "ROS metadata (no handle or payload authority)", "variablesReference": 0}
+                    values = [{"name": str(first+index), "value": str(len(row))+" fields",
+                               "type": "ROS metadata", "variablesReference": self.structured_reference(row, expected_key)}
                               for index, row in enumerate(copied["rows"])]
                     # Empty default-deny tables remain visibly empty. Clients
                     # needing the total/next cursor use the structured request;
@@ -4998,8 +6094,9 @@ class Adapter:
                     if self.state != "stopped" or self.stop_key != expected_key or reference not in self.wasm_scope_stops:
                         raise ValueError("Wasm value scope belongs to a retired stop")
                     if args.get("filter") == "named":
-                        self.respond(request, {"variables": []}); return
-                    values = self.paged_wasm_scope(expected_key, selection, start, count)
+                        values = self.wasm_operand_notice(expected_key, selection)
+                        self.respond(request, {"variables": values[start:] if count == 0 else values[start:start+count]}); return
+                    values = self.paged_wasm_scope(expected_key, selection, start, count, include_notice=args.get('filter') != 'indexed')
                     if self.stop_key != expected_key or reference not in self.wasm_scope_stops:
                         raise ValueError("Wasm value scope retired during pagination")
                     self.respond(request, {"variables": values})
@@ -5140,100 +6237,101 @@ class Adapter:
                 if (module >= 1 << 64 or memory >= 1 << 32 or not 0 <= address < 1 << 64
                         or address > (1 << 64) - 1 - len(data)):
                     raise ValueError("Wasm memory write range out of bounds")
-                self.write_wasm_memory(module, memory, address, data)
-                self.respond(request, {"offset": displacement, "bytesWritten": len(data)})
+                if "ifStop" in args and args["ifStop"] is None:
+                    raise ValueError("ifStop requires a nonzero decimal stop identity")
+                committed_stop = self.write_wasm_memory(module, memory, address, data, if_stop=args.get("ifStop"))
+                self.respond(request, {"offset": displacement, "bytesWritten": len(data),
+                                       **({"stopId": committed_stop} if committed_stop is not None else {})})
                 if data and self.supports_memory_event:
                     self.event("memory", {"memoryReference": reference, "offset": displacement, "count": len(data)})
                 if data and self.supports_invalidated_event:
                     self.event("invalidated", {"areas": ["stacks", "variables"]})
             elif command == "source":
                 ref = unsigned_id(args.get("sourceReference"), "sourceReference")
-                supplied_source = args.get("source") or {}
-                if not isinstance(supplied_source, dict):
-                    raise ValueError("invalid Wasm document source")
-                uri_reference = self.wasm_document_reference(supplied_source.get("path"))
+                supplied = args.get("source") or {}
+                if not isinstance(supplied, dict): raise ValueError("invalid Wasm document source")
+                uri_reference = self.wasm_document_reference(supplied.get('path'))
                 if uri_reference is not None and uri_reference != ref:
                     raise ValueError("Wasm document URI/reference mismatch")
-                frame = self.frames.get(ref)
-                if frame is None or ref in self.native_frames or ref in self.inline_frames:
-                    raise ValueError("unknown Wasm frame source")
-                frame = self.current_frame(ref)
-                if frame[1] != 0:
-                    raise ValueError("saved caller instruction PC unavailable")
-                location = next(t for t in self.threads if t["id"] == frame[0])
-                rows = self.wasm_disassembly(f"wasm:{frame[2]}:{frame[3]}:{location['offset']}", 64)
-                self.wasm_source_lines[ref] = (self.stop_key, [None] + [int(r["address"]) for r in rows if r.get("presentationHint") != "invalid"])
-                content = f";; module {frame[2]} function {frame[3]}; current stopped instruction first\n"
-                content += "\n".join(";; " + r["address"] + "  " + r["instruction"]
-                                     for r in rows if r.get("presentationHint") != "invalid") + "\n"
-                self.respond(request, {"content": content, "mimeType": "text/x-wat"})
-            elif command == "setBreakpoints":
-                source = args.get("source") or {}
-                if not isinstance(source, dict) or not isinstance(args.get("breakpoints", []), list):
-                    raise ValueError("invalid source breakpoints")
-                path = source.get("path")
-                if not isinstance(path, str) or not path or any(ord(c) < 32 for c in path):
-                    raise ValueError("source path required")
-                wasm_source = None
-                uri_reference = self.wasm_document_reference(path)
-                source_reference = source.get("sourceReference", 0)
-                if uri_reference is not None and source_reference not in (0, uri_reference):
-                    raise ValueError("Wasm document URI/reference mismatch")
-                if source_reference or uri_reference is not None:
-                    ref = unsigned_id(source_reference or uri_reference, "Wasm source reference")
-                    wasm_source = self.current_frame(ref)
-                    document = self.wasm_source_lines.get(ref)
-                    if wasm_source[1] != 0 or document is None or document[0] != self.stop_key:
-                        raise ValueError("current Wasm instruction document required")
-                    wasm_lines = document[1]
-                for identifier in self.breakpoints.pop(path, []):
-                    try:
-                        self.command(f"delete {identifier}")
-                    except RuntimeError:
-                        pass  # Function replacement may already have invalidated it.
-                registered = []
-                for point in args.get("breakpoints", []):
-                    if not isinstance(point, dict):
-                        registered.append({"verified": False, "message": "invalid source breakpoint"})
-                        continue
-                    line = point.get("line")
-                    if type(line) is not int or not 0 < line < (1 << 64):
-                        registered.append({"verified": False, "message": "invalid source line"})
-                        continue
-                    try:
-                        ignore = breakpoint_ignore_count(point)
-                        suffix = ("" if ignore is None else f" ignore {ignore}") + breakpoint_condition_suffix(point)
-                        if wasm_source is not None:
-                            if line > len(wasm_lines) or wasm_lines[line-1] is None:
-                                raise ValueError("select an executable Wasm instruction line")
-                            reply = self.command(f"breakwasm {wasm_source[2]} {wasm_source[3]} {wasm_lines[line-1]}{suffix}")
-                        else:
-                            compiler_path = map_source_path(path, self.source_map, reverse=True)
-                            reply = self.command(f"breaksource {self.module_id} {compiler_path}:{line}{suffix}")
-                        match = BREAK_RE.match(reply)
-                        if not match:
-                            raise RuntimeError(reply.strip())
-                        identifier = int(match.group(1))
-                        self.breakpoints.setdefault(path, []).append(identifier)
-                        registered.append({"id": identifier, "verified": True, "line": line})
-                    except (RuntimeError, ValueError) as error:
-                        registered.append({"verified": False, "line": line, "message": str(error)})
-                self.respond(request, {"breakpoints": registered})
+                document = self.wasm_documents.get(ref)
+                if document is None: raise ValueError("unknown Wasm instruction document")
+                self.respond(request, {"content": document['content'], "mimeType": "text/x-wat"})
+            elif command == "uwvm/wasmDocument":
+                ref = unsigned_id(args.get('reference'), 'Wasm document reference')
+                thread_id = unsigned_id(args['threadId'], 'Wasm thread') if 'threadId' in args else None
+                document, location, _ = self.current_wasm_document(ref, args.get('ifStop'), thread_id)
+                self.respond(request, dict(reference=ref, module=str(document['module']), function=str(document['function']),
+                    epoch=str(document['epoch']), generation=str(document['generation']), stopId=str(location['stop_id']),
+                    offset=str(location['offset']), line=self.wasm_offset_line(document, location['offset']), digest=document['digest'],
+                    threadId=location['id'], addressBits=document['addressBits'],
+                    **({'safeLines': document['safeLines']} if args.get('includeLayout') is True else {})))
+            elif command == "uwvm/wasmHover":
+                ref = unsigned_id(args.get('reference'), 'Wasm document reference')
+                if not isinstance(args.get('ifStop'), str): raise ValueError('current hover stop ID required')
+                thread_id = unsigned_id(args['threadId'], 'Wasm thread') if 'threadId' in args else None
+                document, location, expected = self.current_wasm_document(ref, args['ifStop'], thread_id)
+                kind, raw = args.get('kind'), args.get('index')
+                if kind not in ('function', 'local', 'global', 'table', 'memory') or not isinstance(raw, str) or not re.fullmatch(r'[0-9]{1,20}', raw) or int(raw) >= 1 << 64:
+                    raise ValueError('a single original Wasm index is required')
+                index, result = int(raw), dict(kind=kind, index=raw, stopId=str(location['stop_id']))
+                if kind != 'local':
+                    metadata = self.wasm_metadata(document['module'], ('memories' if kind == 'memory' else kind+'s'), index, 1)
+                    if len(metadata['rows']) != 1: raise ValueError('Wasm object index out of range')
+                    result.update(metadata['rows'][0]);result['index'] = raw
+                if kind in ('local', 'global'):
+                    _, value = self.query_wasm_state(location['id'], document['module'], 0, kind+'s', index, 1, expected_stop=expected)
+                    if 'unavailable' in value: result['unavailable'] = value['unavailable']
+                    elif len(value['rows']) == 1:
+                        row = value['rows'][0];result.update(type=row['type'], value=row['value'])
+                    else: raise ValueError('Wasm value index out of range')
+                self.observe(self.command('status'), notify=False)
+                if self.stop_key != expected: raise ValueError('hover stop retired during copy')
+                self.respond(request, result)
+            elif command == "uwvm/wasmInventory":
+                self.respond(request, self.wasm_metadata(args.get('moduleId', self.module_id),
+                    args.get('kind', 'summary'), args.get('first', 0), args.get('count', 1)))
+            elif command in ("setBreakpoints", "uwvm/editorBreakpoints"):
+                source = self.canonical_breakpoint_source(args.get('source') or {})
+                if command == 'uwvm/editorBreakpoints':
+                    # Only the host extension supplies the complete enabled +
+                    # disabled editor inventory. DAP omits disabled points.
+                    if not isinstance(source, dict) or not isinstance(source.get('path'), str):
+                        raise ValueError('source path required')
+                    points = args.get('breakpoints', [])
+                    if not isinstance(points, list) or any(not isinstance(p, dict) or type(p.get('enabled')) is not bool for p in points):
+                        raise ValueError('complete editor breakpoint states required')
+                    self.editor_breakpoint_paths.add(source['path'])
+                    registered = self.reconcile_source_breakpoints(source, points, publish_response=False)
+                elif self.complete_editor_breakpoints or source['path'] in self.editor_breakpoint_paths:
+                    registered = self.describe_source_breakpoints(source, args.get('breakpoints', []))
+                else:
+                    registered = self.reconcile_source_breakpoints(source, args.get('breakpoints', []))
+                self.respond(request, {'breakpoints': registered})
+                self.sync_breakpoints()
             elif command == "setInstructionBreakpoints":
                 if not isinstance(args.get("breakpoints", []), list):
                     raise ValueError("invalid instruction breakpoints")
-                for identifier in self.instruction_breakpoints:
-                    try:
-                        self.command(f"delete {identifier}")
-                    except RuntimeError:
-                        pass  # Function replacement may already have invalidated it.
-                self.instruction_breakpoints.clear()
-                registered = []
+                self.sync_breakpoints()
+                previous = set(self.instruction_breakpoints)
+                registered, retained = [], {}
                 for point in args.get("breakpoints", []):
+                    specification = json.dumps(point, sort_keys=True)
+                    if specification in retained:
+                        registered.append(dict(retained[specification]));continue
+                    saved = self.instruction_breakpoint_specs.get(specification)
+                    if saved is not None and saved['id'] in self.breakpoint_inventory:
+                        # Keep the already installed VM policy across stops.
+                        # This is not a new address capability: replacement or
+                        # removal in the manager prevents reusing the receipt.
+                        registered.append(dict(saved));retained[specification] = saved
+                        continue
                     reference = point.get("instructionReference") if isinstance(point, dict) else None
                     match = WASM_LOCATION_RE.fullmatch(reference) if isinstance(reference, str) else None
                     if match is None:
-                        registered.append({"verified": False, "message": "expected wasm:MODULE:FUNCTION:BYTE_OFFSET"})
+                        try:
+                            result = self.native_breakpoint(point if isinstance(point, dict) else {})
+                            registered.append(result);retained[specification] = result
+                        except (RuntimeError, ValueError) as error: registered.append({'verified': False, 'message': str(error)})
                         continue
                     module, function, byte_offset = map(int, match.groups())
                     offset = point.get("offset", 0)
@@ -5253,23 +6351,33 @@ class Adapter:
                             raise RuntimeError(reply.strip())
                         identifier = int(breakpoint.group(1))
                         self.instruction_breakpoints.append(identifier)
-                        registered.append({"id": identifier, "verified": True,
-                                           "instructionReference": f"wasm:{module}:{function}:{byte_offset}"})
+                        result = {"id": identifier, "verified": True,
+                                  "instructionReference": f"wasm:{module}:{function}:{byte_offset}"}
+                        registered.append(result);retained[specification] = result
                     except (RuntimeError, ValueError) as error:
                         registered.append({"verified": False, "message": str(error)})
+                keep = {row['id'] for row in retained.values()}
+                for identifier in previous-keep:
+                    if identifier in self.breakpoint_inventory:
+                        self.command(f"delete {identifier}")
+                self.instruction_breakpoints = list(keep)
+                self.instruction_breakpoint_specs = retained
                 self.respond(request, {"breakpoints": registered})
+                self.sync_breakpoints()
             elif command == "evaluate":
                 expression = args.get("expression")
                 if not isinstance(expression, str):
                     raise ValueError("debug console expression required")
+                if expression.split()[:1] in (["rebuild"], ["rebuild-module"]):
+                    raise ValueError("module rebuild requires the independent signed update coordinator; debugger permissions do not authorize updates")
                 if args.get("context", "repl") == "repl" and expression.split()[:3] == ["trace", "host", "save"]:
                     import shlex
                     words = shlex.split(expression)
                     if len(words) != 4:
                         raise ValueError("usage: trace host save PATH (quote paths containing spaces)")
                     exported = self.export_host_trace({"path": words[3]})
-                    self.respond(request, {"result": json.dumps(exported, ensure_ascii=True, indent=2),
-                                           "variablesReference": 0})
+                    self.respond(request, {"result": "Recorded calls export completed",
+                                           "variablesReference": self.structured_reference(exported, self.stop_key)})
                     return
                 language_frame = self.source_frame_ordinals.get(args.get("frameId")) if type(args.get("frameId")) is int else None
                 source_context = args.get("context") in ("watch", "hover", "variables")
@@ -5286,6 +6394,11 @@ class Adapter:
                     return
                 if source_context:
                     if language_frame is None:
+                        frame_id = args.get("frameId")
+                        wasm_frame = self.frames.get(frame_id) if type(frame_id) is int else None
+                        if (self.stop_key is not None and wasm_frame is not None and wasm_frame[1] == 0
+                                and frame_id in self.wasm_source_uris.values()):
+                            raise UnsupportedHoverFrame("watch/hover requires an actual current opaque source frame; no console command fallback")
                         raise ValueError("watch/hover requires an actual current opaque source frame; no console command fallback")
                     expected_key, row = language_frame
                     if not row["current"]:
@@ -5318,6 +6431,8 @@ class Adapter:
                 if source_context and not self.supports_variable_type:
                     display.pop("type", None)
                 self.respond(request, display)
+                if not source_context and words and words[0] in ('breakwasm', 'bw', 'breaksource', 'breakasm', 'bi', 'break', 'b', 'tbreak', 'tb', 'delete', 'enable', 'disable', 'condition', 'ignore', 'commands'):
+                    self.sync_breakpoints()
                 if observation is not None:
                     # Commit after the response, without reparsing. A terminal
                     # reply still emits exited before the endpoint's idle poll.
@@ -5329,6 +6444,8 @@ class Adapter:
                 self.note_input(request)
                 self.respond(request)
             elif command == "disconnect":
+                if any(args.get(key, False) is not False for key in ("terminateDebuggee", "suspendDebuggee", "restart")):
+                    raise ValueError("disconnect closes observation only; Guest lifecycle changes are unavailable")
                 self.invalidate_stop()
                 if self.broker is not None:
                     self.broker.close()
@@ -5340,7 +6457,13 @@ class Adapter:
             else:
                 raise ValueError(f"DAP request {command!r} is unavailable")
         except (OSError, ValueError, RuntimeError, ConnectionError, KeyError, MemoryError) as error:
-            self.invalidate_stop()
+            # Local unsupported views/stale UI IDs/permission refusals have
+            # dispatched no value read or mutation. Do not retire unrelated
+            # panes. Status already retires references when the real stop
+            # changes. Uncertain VM, transport, ownership and allocation
+            # failures retain their fail-closed retirement.
+            if not isinstance(error, LocalRequestRefusal):
+                self.invalidate_stop()
             if isinstance(error, MemoryError):
                 error = RuntimeError("debug adapter allocation failed")
             failure_body = None
@@ -5359,7 +6482,8 @@ class Adapter:
 
 
 def main():
-    adapter = Adapter(sys.stdout.buffer, os.environ.get("UWVM_DAP_SOURCE_SESSION"))
+    adapter = Adapter(sys.stdout.buffer, os.environ.get("UWVM_DAP_SOURCE_SESSION"),
+                      os.environ.get("UWVM_DAP_EDITOR_BREAKPOINTS") == "1")
     inbox = queue.Queue()
 
     def input_reader():
@@ -5377,6 +6501,7 @@ def main():
 
     threading.Thread(target=input_reader, daemon=True).start()
     while True:
+        adapter.finish_update_requests()
         try:
             request = inbox.get(timeout=0.25)
         except queue.Empty:

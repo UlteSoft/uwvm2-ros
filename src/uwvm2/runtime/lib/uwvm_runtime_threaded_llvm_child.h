@@ -25,8 +25,14 @@ extern "C++"
         world_type::owner world_;
         ::std::unique_ptr<::uwvm2::runtime::wasm_threads::code_debug_image> debug_;
         module_type const* module_{};
+        ::std::size_t module_index_{};
+        ThreadedLlvmChild* graph_{this};
+        ::std::vector<::std::unique_ptr<ThreadedLlvmChild>> peers_{};
+        [[nodiscard]] ThreadedLlvmChild* compiled_module(::std::size_t index) noexcept
+        { return index==0u ? graph_ : index<=graph_->peers_.size() ? graph_->peers_[index-1u].get() : nullptr; }
         ::std::size_t imports_{},start_{},call_limit_{},code_limit_{};
         ::std::vector<local_type> locals_{};
+        ::std::vector<::uwvm2::uwvm::runtime::storage::gc_object_value> gc_scratch_{};
         ::std::vector<entries> entries_{};
         ::std::vector<::std::uint_least32_t> local_type_ids_{};
         ::std::vector<memory_type*> memories_{};
@@ -48,7 +54,7 @@ extern "C++"
         {
             ThreadedLlvmChild* child{};lease_type* lease{};
             ::std::size_t function{SIZE_MAX},depth{};
-            bool rejected{},fp_active{};
+            bool rejected{},fp_active{},cross_module{};
         };
         inline static thread_local execution* active_{};
         explicit ThreadedLlvmChild(world_type::owner world):world_{::std::move(world)}{}
@@ -89,7 +95,9 @@ extern "C++"
                 {category=crash::category::unreachable;reason="unreachable";}
                 if(static_cast<llvm_jit_trap_kind>(kind)==llvm_jit_trap_kind::memtag_violation)
                 {category=crash::category::memtag;reason="memory tag mismatch";}
-                crash::report(category,reason,2u,0u,e->function);
+                if(static_cast<llvm_jit_trap_kind>(kind)==llvm_jit_trap_kind::memory_out_of_bounds)
+                {reason="memory access out of bounds";}
+                crash::report(category,reason,2u,e->child->module_index_,e->function);
                 crash::pause_process();
             }
             if(specified_guest_trap)
@@ -99,14 +107,14 @@ extern "C++"
                 {
                     auto const& current=*static_cast<fault_transition*>(pointer);
                     current.actual->rejected=true;
-                    current.actual->lease->request_trap(current.kind,0u,current.actual->function,UINT64_MAX);
+                    current.actual->lease->request_trap(current.kind,current.actual->child->module_index_,current.actual->function,UINT64_MAX);
                 },::std::addressof(fault)))
                 {::uwvm2::utils::thread::process_exit::request_process_exit(0u);}
                 return;
             }
 #endif
             e->rejected=true;
-            e->lease->request_trap(kind,0u,e->function,UINT64_MAX);
+            e->lease->request_trap(kind,e->child->module_index_,e->function,UINT64_MAX);
         }
         [[nodiscard]] static bool stopped() noexcept
         {return active_==nullptr||active_->rejected||active_->lease->cancellation().stop_requested();}
@@ -116,7 +124,7 @@ extern "C++"
             {
                 active_->function=function;
                 if(!stopped()&&!active_->lease->debug_safepoint(
-                    ::uwvm2::runtime::wasm_threads::debug_stop_site::function_boundary,0u,function)&&!stopped())
+                    ::uwvm2::runtime::wasm_threads::debug_stop_site::function_boundary,active_->child->module_index_,function)&&!stopped())
                     fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::runtime_invariant_failure));
             }
             return stopped()?1u:0u;
@@ -146,15 +154,15 @@ extern "C++"
         {
             auto* const e=active_;
             if(e==nullptr||e->child==nullptr||e->lease==nullptr)return false;
-            if(token!=2u||!e->lease->owns_current_native_thread()||
+            if((token&~::std::uintptr_t{1u})!=(e->child->module_index_+1u)*2u||!e->lease->owns_current_native_thread()||
                ::std::addressof(e->lease->world())!=e->child->world_.get()||
-               e->child->world_->module_count()!=1u||e->child->world_->entry_module_index()!=0u||
+               e->child->module_index_>=e->child->world_->module_count()||
                ::std::addressof(e->lease->admission())!=::std::addressof(e->child->world_->admission()))
             {fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::runtime_invariant_failure));return false;}
             return !stopped();
         }
         [[nodiscard]] static ::std::uintptr_t seed_ros_provenance(::std::uintptr_t own_module) noexcept
-        {return accepts_ros_provenance(own_module)?2u:0u;}
+        {return accepts_ros_provenance(own_module)?((active_->child->module_index_+1u)*2u | static_cast<::std::uintptr_t>(active_->cross_module)):0u;}
         static void publish_ros_provenance(::std::uintptr_t token) noexcept
         {(void)accepts_ros_provenance(token);}
 #endif
@@ -174,10 +182,29 @@ extern "C++"
             if(module!=reinterpret_cast<::std::uintptr_t>(e->child->module_)||function>=e->child->imports_||
                (result_bytes!=0u&&result==0u)||(param_bytes!=0u&&params==0u))
             {fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::runtime_invariant_failure));return;}
+            ::std::size_t target_module{},target_function{};
+            if(e->child->world_->resolve_wasm_import(e->child->module_index_,function,target_module,target_function))
+            {
+                auto* callee=e->child->compiled_module(target_module);
+                if(!callee || target_function<callee->imports_ || target_function-callee->imports_>=callee->entries_.size())
+                {fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::runtime_invariant_failure));return;}
+                auto const* type=callee->module_->local_defined_function_vec_storage.index_unchecked(target_function-callee->imports_).function_type_ptr;
+                auto const layout=::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details::get_runtime_wasm_call_abi_layout(*type);
+                if(!layout.valid || layout.parameter_bytes!=param_bytes || layout.result_bytes!=result_bytes)
+                {fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::runtime_invariant_failure));return;}
+                auto* const caller=e->child;auto const previous_function=e->function;auto const previous_crossing=e->cross_module;
+                e->child=callee;e->cross_module=previous_crossing || caller!=callee;
+                using entry=void(UWVM2_RUNTIME_LLVM_JIT_RAW_ENTRY_PTR_ABI*)(::std::uintptr_t,::std::uintptr_t,::std::size_t,::std::uintptr_t,::std::size_t);
+                auto raw=reinterpret_cast<entry>(callee->entries_[target_function-callee->imports_].raw);
+                if(!raw)fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::runtime_invariant_failure));
+                else raw(0u,result,result_bytes,params,param_bytes);
+                e->child=caller;e->function=previous_function;e->cross_module=previous_crossing;
+                return;
+            }
             details::scoped_llvm_wasm_host_fp_environment_restore host_fp{e->fp_active};
             if(!host_fp.ready()){fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::runtime_invariant_failure));return;}
-            auto const status=::uwvm2::runtime::wasm_threads::dispatch_import(*e->lease,*e->child->world_,0u,e->function,function,
-                {reinterpret_cast<::std::byte*>(result),result_bytes},{reinterpret_cast<::std::byte const*>(params),param_bytes});
+            auto const status=::uwvm2::runtime::wasm_threads::dispatch_import(*e->lease,*e->child->world_,e->child->module_index_,e->function,function,
+                {reinterpret_cast<::std::byte*>(result),result_bytes},{reinterpret_cast<::std::byte const*>(params),param_bytes},e->cross_module);
             using status_type=::uwvm2::runtime::wasm_threads::host_dispatch_status;
             if(status==status_type::rejected)fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::runtime_invariant_failure));
             else if(status==status_type::group_stopped&&!e->lease->cancellation().stop_requested())
@@ -261,7 +288,59 @@ extern "C++"
         [[nodiscard]] static preparation_result prepare(world_type::owner world,
             ::uwvm2::runtime::wasm_threads::ThreadedGroup::CompilerLease const& compiler,
             ::std::size_t backend_storage_budget) noexcept
-        {return build(::std::move(world),compiler,backend_storage_budget);}
+        {
+            auto result=build(world,compiler,backend_storage_budget,0u);
+            if(!result.child)return result;
+            auto& root=*result.child;
+            auto const& limits=world->admission().limits();
+            try
+            {
+                root.peers_.reserve(world->module_count()-1u);
+                ::std::size_t storage=root.storage_bytes_,code=root.native_bytes_;
+                for(::std::size_t m{1u};m<world->module_count();++m)
+                {
+                    if(storage>=backend_storage_budget)return {{},preparation_status::budget};
+                    auto next=build(world,compiler,backend_storage_budget-storage,m);
+                    if(!next.child)return next;
+                    auto& peer=*next.child;
+                    if(peer.native_bytes_>limits.max_child_code_bytes-code || peer.storage_bytes_>backend_storage_budget-storage)
+                        return {{},preparation_status::budget};
+                    storage+=peer.storage_bytes_;code+=peer.native_bytes_;peer.graph_=&root;
+                    root.maximum_fixed_frame_=(::std::max)(root.maximum_fixed_frame_,peer.maximum_fixed_frame_);
+                    root.peers_.push_back(::std::move(next.child));
+                }
+                if(!root.peers_.empty())
+                {
+                    // Cross-module recursion shares ONE call depth and native
+                    // stack. A per-object acyclic graph cannot lower this bound.
+                    auto const frame=root.maximum_fixed_frame_+native_call_push;
+                    if(frame>SIZE_MAX/(root.call_limit_+1u))return {{},preparation_status::budget};
+                    root.guest_fixed_stack_charge_=frame*(root.call_limit_+1u);
+                    if(root.guest_fixed_stack_charge_>root.guest_native_stack_usable_bytes_)return {{},preparation_status::budget};
+                    auto const registry=root.peers_.capacity()*sizeof(::std::unique_ptr<ThreadedLlvmChild>);
+                    if(registry>backend_storage_budget-storage)return {{},preparation_status::budget};
+                    storage+=registry;
+                    if(root.debug_)
+                    {
+                        auto const before=(root.debug_->functions_.capacity()*sizeof(root.debug_->functions_[0]))+
+                            root.debug_->cfi_.capacity()*sizeof(root.debug_->cfi_[0]);
+                        for(auto const& peer:root.peers_)
+                        {
+                            if(!peer->debug_)return {{},preparation_status::invalid_world};
+                            root.debug_->functions_.insert(root.debug_->functions_.end(),peer->debug_->functions_.begin(),peer->debug_->functions_.end());
+                            root.debug_->cfi_.insert(root.debug_->cfi_.end(),peer->debug_->cfi_.begin(),peer->debug_->cfi_.end());
+                        }
+                        auto const after=root.debug_->functions_.capacity()*sizeof(root.debug_->functions_[0])+
+                            root.debug_->cfi_.capacity()*sizeof(root.debug_->cfi_[0]);
+                        if(after<before || after-before>backend_storage_budget-storage)return {{},preparation_status::budget};
+                        storage+=after-before;
+                    }
+                }
+                root.storage_bytes_=storage;root.native_bytes_=code;
+                return result;
+            }
+            catch(::std::bad_alloc const&){return {{},preparation_status::budget};}
+        }
         // Cold actual-active-segment rebind. No compiler/type-walk/allocation,
         // no ordinary compact-view update and no second engine. Root owns the
         // genuine unlaunched reservation, marks shared effects BEFORE active
@@ -278,6 +357,7 @@ extern "C++"
             // when native launch has not happened yet.
             if(!validate_table_targets_noalloc())
             {for(auto& view:table_views_)view={};bound_tables_=false;return false;}
+            for(auto& peer:peers_)if(!peer->refresh_table_targets_noalloc())return false;
             return refresh_table_targets_noalloc();
         }
         [[nodiscard]] auto const& retained_world() const noexcept{return world_;}
@@ -311,6 +391,8 @@ extern "C++"
             struct reset_flag{::std::atomic_flag& value;~reset_flag(){value.clear();}} reset{running_};
             if(!bound_tables_)return run_status::rejected;
             if(!::uwvm2::runtime::memtag::prepare_hardware_thread()) { return run_status::rejected; }
+            ::uwvm2::runtime::memtag::deferred::entry_scope memtag_delivery{};
+            if(!memtag_delivery.enter()) { return run_status::rejected; }
             ever_entered_=true;
             if(lease.cancellation().stop_requested())return run_status::group_stopped;
             execution e{this,::std::addressof(lease)};active_=::std::addressof(e);

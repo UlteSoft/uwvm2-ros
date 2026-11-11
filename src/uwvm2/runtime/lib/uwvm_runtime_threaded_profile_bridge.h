@@ -23,6 +23,7 @@ extern "C++"
             world const* instance{};
             ::std::size_t caller_function{};
             bool ros{};
+            ::std::size_t module{},imported{}; bool cross_module{};
         };
         inline static thread_local host_call* current_host_{};
         struct host_scope
@@ -102,32 +103,43 @@ extern "C++"
         [[nodiscard]] static bool actual_source_providers(admission const& admitted) noexcept
         {
             if(!current_source(admitted)) { return false; }
-            auto const& imports{admitted.source_module().imported_function_vec_storage};
+            for(auto const& [name,module]:admitted.source_owner()->registry())
+            {
+            static_cast<void>(name);
+            auto const id=admitted.source_owner()->bound_initialized_module_id(&module);
+            if(!admitted.source_owner()->actual_validated_file(id,admitted.source_validation_epoch(),&module))return false;
+            auto const& imports{module.imported_function_vec_storage};
             using kind = ::uwvm2::uwvm::runtime::storage::imported_function_link_kind;
             for(::std::size_t index{}; index != imports.size(); ++index)
             {
                 auto const& original{imports.index_unchecked(index)};
+                if(original.link_kind==kind::defined || original.link_kind==kind::imported)continue;
                 if(original.link_kind != kind::local_imported || original.import_type_ptr == nullptr ||
                    original.target.local_imported.module_ptr == nullptr) { return false; }
                 builtin_kind concrete{};
                 if(builtin_loader::actual_member(original.target.local_imported.module_ptr, concrete)) { continue; }
                 ::uwvm2::uwvm::runtime::full::builtin_wasip1_function_data wasi{};
-                if(!admitted.source_owner()->actual_builtin_wasip1_function(admitted.source_module_id(),
-                    admitted.source_validation_epoch(), &admitted.source_module(), index, wasi)) { return false; }
+                if(!admitted.source_owner()->actual_builtin_wasip1_function(id,
+                    admitted.source_validation_epoch(), &module, index, wasi)) { return false; }
+            }
             }
             return true;
         }
         [[nodiscard]] static bool resolve_leaf(world const& instance, ::std::size_t module_index,
             ::std::size_t import_index, imported_leaf& out) noexcept
         {
-            if(module_index != 0u || !current_source(instance.admission())) { return false; }
+            if(module_index >= instance.module_count() || !current_source(instance.admission())) { return false; }
             auto const validated{instance.validated_code()};
             auto const* module{instance.module(module_index)};
             if(!validated || !validated->covers(instance) || !module || import_index >= module->imported_function_vec_storage.size()) { return false; }
-            auto const& native{module->imported_function_vec_storage.index_unchecked(import_index)};
-            auto const& parent{instance.admission().source_module()};
-            if(import_index >= parent.imported_function_vec_storage.size()) { return false; }
-            auto const& original{parent.imported_function_vec_storage.index_unchecked(import_index)};
+            auto const* declared_import=module->imported_function_vec_storage.index_unchecked(import_index).import_type_ptr;
+            ::std::size_t provider_module{},provider_import{};
+            if(!instance.resolve_host_import(module_index,import_index,provider_module,provider_import))return false;
+            auto const& native{instance.module(provider_module)->imported_function_vec_storage.index_unchecked(provider_import)};
+            auto const* original_module=instance.original_module(provider_module); if(!original_module)return false;
+            auto const& parent{*original_module};
+            if(provider_import >= parent.imported_function_vec_storage.size()) { return false; }
+            auto const& original{parent.imported_function_vec_storage.index_unchecked(provider_import)};
             using kind = ::uwvm2::uwvm::runtime::storage::imported_function_link_kind;
             if(native.link_kind != kind::local_imported || original.link_kind != kind::local_imported ||
                native.import_type_ptr == nullptr || native.import_type_ptr != original.import_type_ptr ||
@@ -138,10 +150,10 @@ extern "C++"
             bool const recorded{builtin_loader::actual_member(provider, concrete)};
             ::uwvm2::uwvm::runtime::full::builtin_wasip1_function_data wasi{};
             bool const actual_wasi{instance.source_owner()->actual_builtin_wasip1_function(
-                instance.source_module_id(), instance.admission().source_validation_epoch(), &parent, import_index, wasi)};
+                instance.source_module_id(provider_module), instance.admission().source_validation_epoch(), &parent, provider_import, wasi)};
             if(!recorded && !actual_wasi) { return false; }
             auto const information{provider->get_function_information_from_index(native.target.local_imported.index)};
-            auto const* declared{native.import_type_ptr->imports.storage.function};
+            auto const* declared{declared_import ? declared_import->imports.storage.function : nullptr};
             ::std::size_t params{}, results{};
             if(!information.successed || declared == nullptr ||
                !numeric_abi(*declared, information.function_type, params, results) ||
@@ -174,11 +186,22 @@ extern "C++"
     public:
         [[nodiscard]] static import_status admit_import_checked(world const& instance,
             ::std::size_t module, ::std::size_t imported) noexcept
-        { imported_leaf leaf{}; return resolve_leaf(instance, module, imported, leaf) ? import_status::allowed : import_status::denied; }
+        {
+            imported_leaf leaf{};
+            if(resolve_leaf(instance,module,imported,leaf))return import_status::allowed;
+            ::std::size_t target_module{},target_function{};
+            if(!instance.resolve_wasm_import(module,imported,target_module,target_function))return import_status::denied;
+            auto const* from=instance.module(module);auto const* to=instance.module(target_module);
+            auto const* expected=from->imported_function_vec_storage.index_unchecked(imported).import_type_ptr;
+            auto const* actual=to->local_defined_function_vec_storage.index_unchecked(target_function-to->imported_function_vec_storage.size()).function_type_ptr;
+            ::std::size_t params{},results{};
+            return expected && expected->imports.storage.function && actual &&
+                numeric_abi(*expected->imports.storage.function,*actual,params,results) ? import_status::allowed : import_status::denied;
+        }
 
         [[nodiscard]] static dispatch_status dispatch_import_checked(lease& actual, world const& instance,
             ::std::size_t module, ::std::size_t caller_function, ::std::size_t imported,
-            ::std::span<::std::byte> results, ::std::span<::std::byte const> params) noexcept
+            ::std::span<::std::byte> results, ::std::span<::std::byte const> params, bool cross_module) noexcept
         {
             if(!actual_lease(actual, instance) || current_host_ != nullptr) { return dispatch_status::rejected; }
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
@@ -213,7 +236,7 @@ extern "C++"
                     if(leaf.exits)
                     {
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(UWVM_IMPORT_WASI_WASIP1) && !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1)
-                        auto& env{resolve_wasip1_env_for_runtime_module_id(instance.source_module_id())};
+                        auto& env{resolve_wasip1_env_for_runtime_module_id(instance.source_module_id(module))};
                         auto exit_name=leaf.provider->get_function_information_from_index(leaf.index).function_name;
                         if(!env.allows_interface(exit_name) || !env.permits(::uwvm2::imported::wasi::wasip1::environment::permission_t::proc_exit))
                         {
@@ -243,7 +266,7 @@ extern "C++"
                     if(leaf.spawn)
                     {
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(UWVM_IMPORT_WASI_WASIP1) && !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1)
-                        auto& env{resolve_wasip1_env_for_runtime_module_id(instance.source_module_id())};
+                        auto& env{resolve_wasip1_env_for_runtime_module_id(instance.source_module_id(module))};
                         if(!env.allows_interface(u8"thread-spawn") || !env.permits(::uwvm2::imported::wasi::wasip1::environment::permission_t::thread_spawn))
                         {
                             ::uwvm2::imported::wasi::wasip1::environment::diagnostic_denied(env,
@@ -266,7 +289,7 @@ extern "C++"
                     if(leaf.wasi)
                     {
 #if defined(UWVM_IMPORT_WASI_WASIP1) && !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1)
-                        host_call call{&actual, &instance, caller_function, false}; host_scope selected{call};
+                        host_call call{&actual, &instance, caller_function, false,module,imported,cross_module}; host_scope selected{call};
                         auto const status{runtime_threaded_wasip1_adapter::dispatch(actual, instance, module, caller_function,
                             imported, *leaf.provider, results, params)};
                         return actual.cancellation().stop_requested() ? dispatch_status::group_stopped : status;
@@ -282,10 +305,10 @@ extern "C++"
                     ::uwvm2::imported::ros::ipc::cancellation_scope cancellation{actual.cancellation_fd()};
                     if(!cancellation.valid())
                     { actual.request_trap(1u, module, caller_function, 0u); return dispatch_status::rejected; }
-                    host_call call{&actual, &instance, caller_function, true}; host_scope selected{call};
+                    host_call call{&actual, &instance, caller_function, true,module,imported,cross_module}; host_scope selected{call};
                     preload_module_memory_attribute_t memory_attribute{};
                     memory_attribute.memory_access_mode = ::uwvm2::uwvm::wasm::type::preload_module_memory_access_mode_t::copy;
-                    preload_call_context_guard context{&memory_attribute, nullptr, instance.source_module_id(), true};
+                    preload_call_context_guard context{&memory_attribute, nullptr, instance.source_module_id(module), true};
                     if(actual.cancellation().stop_requested()) { return dispatch_status::group_stopped; }
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
                     ::uwvm2::imported::ros::synchronous_wait_context current_wait{
@@ -325,10 +348,44 @@ extern "C++"
         {
             out = {}; auto const call{checked_host()};
             if(!call || !call->ros) { return false; }
-            auto const& admitted{call->actual->admission()}; auto const id{admitted.source_module_id()};
+            auto const& admitted{call->actual->admission()}; auto const id{call->instance->source_module_id(call->module)};
+            if(id>=g_runtime.modules.size())return false;
             auto const& record{g_runtime.modules.index_unchecked(id)};
-            out = {&admitted.source_module(), admitted.source_generation(), record.module_name, false};
+            if(record.runtime_module!=call->instance->original_module(call->module))return false;
+            out = {record.runtime_module, admitted.source_generation(), record.module_name, call->cross_module};
             return true;
+        }
+#endif
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+        [[nodiscard]] static bool caller_source_facts(ros_caller_source_facts& out,bool allow_exports) noexcept
+        {
+            out={};auto const* call=checked_host();
+            if(!call||!call->ros||call->module>=call->instance->module_count())return false;
+            ros_caller_identity caller{};
+            if(!observed_caller(caller)||(!allow_exports&&caller.cross_module_ancestry))return false;
+            auto const& admitted=call->actual->admission();auto const& owner=admitted.source_owner();
+            auto const id=call->instance->source_module_id(call->module);auto const epoch=admitted.source_validation_epoch();
+            auto const* original=call->instance->original_module(call->module);
+            auto const* file=owner->actual_validated_file(id,epoch,original);
+            ::uwvm2::uwvm::runtime::full::builtin_ros_function_data provider{};
+            ::std::size_t provider_module{},provider_import{};
+            if(!file||!file->has_owned_source_image()||file->binfmt_ver!=1u||
+                !call->instance->resolve_host_import(call->module,call->imported,provider_module,provider_import)||
+                !owner->actual_builtin_ros_function(call->instance->source_module_id(provider_module),epoch,
+                    call->instance->original_module(provider_module),provider_import,provider))return false;
+            imported_leaf leaf{};
+            if(!resolve_leaf(*call->instance,call->module,call->imported,leaf)||!leaf.ros||leaf.index!=provider.function_index)return false;
+            preload_memory_descriptor_t memory{};
+            if(!memory_descriptor(0u,&memory))return false;
+            auto const length=file->source_size();
+            if(length<8u||length>::uwvm2::utils::control::owned_file_image::maximum_bytes||length>PTRDIFF_MAX)return false;
+            auto const* bytes=reinterpret_cast<::std::byte const*>(file->source_cbegin());if(!bytes)return false;
+            ros_caller_source_facts result{};::fast_io::sha256_context hash{};
+            hash.update(bytes,bytes+length);hash.do_final();hash.digest_to_byte_ptr(result.whole_wasm_sha256.data());
+            result.caller=caller;result.whole_wasm_bytes=length;result.memory_bytes=memory.byte_length;
+            result.builtin_interface_sha256=provider.interface_sha256;result.builtin_function_index=provider.function_index;
+            result.builtin_kind=static_cast<unsigned>(provider.kind);result.shared_memory=true;
+            out=result;return true;
         }
 #endif
         [[nodiscard]] static ::std::size_t memory_descriptor_count() noexcept

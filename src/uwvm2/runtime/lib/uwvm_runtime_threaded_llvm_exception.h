@@ -26,15 +26,15 @@
         [[nodiscard]] eh_schema const* exception_schema(::std::size_t tag) const noexcept
         {return tag<eh_schemas_.size()?::std::addressof(eh_schemas_[tag]):nullptr;}
         [[nodiscard]] eh_record const* exception_record(::std::size_t token) const noexcept
-        {return token!=0u&&token<=eh_record_used_?::std::addressof(eh_records_[token-1u]):nullptr;}
+        {return token!=0u&&token<=graph_->eh_record_used_?::std::addressof(graph_->eh_records_[token-1u]):nullptr;}
         [[nodiscard]] ::std::size_t reference_token(eh_reference const& ref) const noexcept
         {
-            if(ref.kind!=eh_kind::wasm_exn||ref.storage.ptr==nullptr||eh_record_used_==0u)return 0u;
-            auto base=reinterpret_cast<::std::uintptr_t>(eh_records_.data());
+            if(ref.kind!=eh_kind::wasm_exn||ref.storage.ptr==nullptr||graph_->eh_record_used_==0u)return 0u;
+            auto base=reinterpret_cast<::std::uintptr_t>(graph_->eh_records_.data());
             auto value=reinterpret_cast<::std::uintptr_t>(ref.storage.ptr);
-            if(value<base||value-base>=eh_record_used_*sizeof(eh_record)||(value-base)%sizeof(eh_record)!=0u)return 0u;
+            if(value<base||value-base>=graph_->eh_record_used_*sizeof(eh_record)||(value-base)%sizeof(eh_record)!=0u)return 0u;
             auto token=(value-base)/sizeof(eh_record)+1u;
-            return ref.storage.ptr==::std::addressof(eh_records_[token-1u])?token:0u;
+            return ref.storage.ptr==::std::addressof(graph_->eh_records_[token-1u])?token:0u;
         }
         [[nodiscard]] bool exception_tuple_valid(eh_schema const& schema,::std::byte const* input) const noexcept
         {
@@ -68,13 +68,10 @@
                 return type.kind<=kind::v128||(type.kind==kind::reference&&
                     (type.heap.code==static_cast<::std::int64_t>(heap::exn)||type.heap.code==static_cast<::std::int64_t>(heap::noexn)));
             };
-            // Rich metadata is the actual retained signature, never inferred
-            // from the shared 0x69 carrier of arbitrary aggregate references.
-            if(rich)for(::std::size_t i{};i<type_count;++i)
-            {
-                for(auto const& type:types.owned_signature_begin[i].parameters)if(!supported(type))return false;
-                for(auto const& type:types.owned_signature_begin[i].results)if(!supported(type))return false;
-            }
+            // Only actual tag payloads use this private EH representation.
+            // shape() below authenticates their retained rich signatures. An
+            // ordinary function may pass a GC reference using the normal full
+            // reference carrier; it is not an exception payload schema.
             auto imported=module_->imported_tag_vec_storage.size();
             auto count=imported+module_->local_defined_tag_vec_storage.size();
             if(count<imported||count>65536u)return false;
@@ -123,15 +120,18 @@
                 largest=(::std::max)(largest,bytes);
             }
             auto records=(::std::min)(world_->admission().limits().max_call_frames,::std::size_t{65536u});
-            auto payload=count==0u?0u:world_->admission().limits().max_value_stack_bytes;
-            if(count!=0u&&records==0u)return false;
+            bool any_tags{};
+            for(::std::size_t m{};m<world_->module_count();++m)
+            {auto const* module=world_->module(m);any_tags=any_tags||!module->imported_tag_vec_storage.empty()||!module->local_defined_tag_vec_storage.empty();}
+            auto payload=!any_tags?0u:world_->admission().limits().max_value_stack_bytes;
+            if(any_tags&&records==0u)return false;
             ::std::size_t charge=already_charged;
             auto add=[&](::std::size_t n,::std::size_t size)
             {if(n>SIZE_MAX/size||charge>storage_limit_||n*size>storage_limit_-charge)return false;charge+=n*size;return true;};
             if(!add(count,sizeof(eh_schema))||!add(fields,sizeof(eh_field))||
-               !add(count==0u?0u:records,sizeof(eh_record))||!add(payload,1u)||largest>payload)return false;
+               !add(!any_tags?0u:records,sizeof(eh_record))||!add(payload,1u)||largest>payload)return false;
             eh_schemas_.resize(count);eh_fields_.resize(fields);
-            eh_records_.resize(count==0u?0u:records);eh_payload_.resize(payload);
+            eh_records_.resize(!any_tags?0u:records);eh_payload_.resize(payload);
             ::std::size_t field_at{};
             for(::std::size_t i{};i<count;++i)
             {
@@ -152,27 +152,27 @@
             return field_at==fields;
         }
         static ::std::uintptr_t exception_pending() noexcept
-        {return active_==nullptr||stopped()?0u:active_->child->eh_pending_;}
+        {return active_==nullptr||stopped()?0u:active_->child->graph_->eh_pending_;}
         static void exception_publish(::std::uintptr_t module,::std::uintptr_t tag,
             ::std::uintptr_t address,::std::size_t bytes) noexcept
         {
             if(active_==nullptr||stopped())return;auto& child=*active_->child;
             auto schema=child.exception_schema(tag);
-            if(module!=0u||schema==nullptr||schema->bytes!=bytes||child.eh_pending_!=0u||
+            if(module!=child.module_index_||schema==nullptr||schema->bytes!=bytes||child.graph_->eh_pending_!=0u||
                !child.exception_tuple_valid(*schema,reinterpret_cast<::std::byte const*>(address)))
             {if(!stopped())exception_failure(eh_failure::invalid);return;}
-            if(child.eh_record_used_==child.eh_records_.size()||bytes>child.eh_payload_.size()-child.eh_payload_used_)
+            if(child.graph_->eh_record_used_==child.graph_->eh_records_.size()||bytes>child.graph_->eh_payload_.size()-child.graph_->eh_payload_used_)
             {exception_failure(eh_failure::resource);return;}
-            auto offset=child.eh_payload_used_;
-            if(bytes!=0u)::std::memcpy(child.eh_payload_.data()+offset,reinterpret_cast<void const*>(address),bytes);
-            child.eh_records_[child.eh_record_used_]={schema->tag,offset,bytes};
-            child.eh_payload_used_+=bytes;child.eh_pending_=++child.eh_record_used_;
+            auto offset=child.graph_->eh_payload_used_;
+            if(bytes!=0u)::std::memcpy(child.graph_->eh_payload_.data()+offset,reinterpret_cast<void const*>(address),bytes);
+            child.graph_->eh_records_[child.graph_->eh_record_used_]={schema->tag,offset,bytes};
+            child.graph_->eh_payload_used_+=bytes;child.graph_->eh_pending_=++child.graph_->eh_record_used_;
         }
         static ::std::uintptr_t exception_matches(::std::uintptr_t token,::std::uintptr_t tag) noexcept
         {
             if(active_==nullptr||stopped())return 0u;auto& child=*active_->child;
             auto record=child.exception_record(token);auto schema=child.exception_schema(tag);
-            if(token!=child.eh_pending_||record==nullptr||schema==nullptr)
+            if(token!=child.graph_->eh_pending_||record==nullptr||schema==nullptr)
             {exception_failure(eh_failure::invalid);return 0u;}
             return record->tag->exception_identity.get()==schema->tag->exception_identity.get()?1u:0u;
         }
@@ -184,11 +184,11 @@
             if(bytes!=0u&&destination!=0u)::std::memset(reinterpret_cast<void*>(destination),0,bytes);
             if(active_==nullptr||stopped())return;auto& child=*active_->child;
             auto record=child.exception_record(token);auto schema=child.exception_schema(tag);
-            if(token!=child.eh_pending_||record==nullptr||schema==nullptr||bytes!=schema->bytes||bytes!=record->bytes||
+            if(token!=child.graph_->eh_pending_||record==nullptr||schema==nullptr||bytes!=schema->bytes||bytes!=record->bytes||
                (bytes!=0u&&destination==0u)||record->tag->exception_identity.get()!=schema->tag->exception_identity.get()||
-               record->offset>child.eh_payload_used_||bytes>child.eh_payload_used_-record->offset)
+               record->offset>child.graph_->eh_payload_used_||bytes>child.graph_->eh_payload_used_-record->offset)
             {exception_failure(eh_failure::invalid);return;}
-            if(bytes!=0u)::std::memcpy(reinterpret_cast<void*>(destination),child.eh_payload_.data()+record->offset,bytes);
+            if(bytes!=0u)::std::memcpy(reinterpret_cast<void*>(destination),child.graph_->eh_payload_.data()+record->offset,bytes);
         }
         static void exception_make_reference(::std::uintptr_t token,::std::uintptr_t destination) noexcept
         {
@@ -197,7 +197,7 @@
             auto& child=*active_->child;auto record=child.exception_record(token);
             if(!stopped())
             {
-                if(token!=child.eh_pending_||record==nullptr)exception_failure(eh_failure::invalid);
+                if(token!=child.graph_->eh_pending_||record==nullptr)exception_failure(eh_failure::invalid);
                 else{ref.storage.ptr=const_cast<eh_record*>(record);ref.kind=eh_kind::wasm_exn;}
             }
             ::std::memcpy(reinterpret_cast<void*>(destination),&ref,sizeof(ref));
@@ -205,9 +205,9 @@
         static void exception_consume(::std::uintptr_t token) noexcept
         {
             if(active_==nullptr||stopped())return;auto& child=*active_->child;
-            if(token==0u||token!=child.eh_pending_||child.exception_record(token)==nullptr)
+            if(token==0u||token!=child.graph_->eh_pending_||child.exception_record(token)==nullptr)
             {exception_failure(eh_failure::invalid);return;}
-            child.eh_pending_=0u; // immutable arena owners remain for catch_ref.
+            child.graph_->eh_pending_=0u; // immutable arena owners remain for catch_ref.
         }
         static void exception_throw_reference(::std::uintptr_t module,::std::uintptr_t source) noexcept
         {
@@ -216,7 +216,7 @@
             if(ref.kind==eh_kind::wasm_null||(ref.kind==eh_kind::wasm_exn&&ref.storage.ptr==nullptr))
             {fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::null_reference));return;}
             auto token=child.reference_token(ref);
-            if(module!=0u||source==0u||child.eh_pending_!=0u||token==0u)
+            if(module!=child.module_index_||source==0u||child.graph_->eh_pending_!=0u||token==0u)
             {exception_failure(eh_failure::invalid);return;}
-            child.eh_pending_=token;
+            child.graph_->eh_pending_=token;
         }

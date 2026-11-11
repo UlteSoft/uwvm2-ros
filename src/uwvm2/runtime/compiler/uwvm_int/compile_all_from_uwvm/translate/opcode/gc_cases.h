@@ -497,7 +497,9 @@ case static_cast<wasm_byte>(0xfbu):
                 { report_operand_stack_underflow(op_begin, u8"reference conversion", 1uz); }
                 if(failure != v3::core3_reference_error::ok) [[unlikely]]
                 { fail_invalid_immediate(op_begin, u8"reference conversion type"); }
-                if(!is_polymorphic && codegen_reachable)
+                // Keep the concrete dead-code model's reference carrier in
+                // sync too, just like the other memory-result GC operations.
+                if(!is_polymorphic)
                 {
                     stacktop_flush_all_to_operand_stack(bytecode);
                     if(decoded.opcode == 26u)
@@ -549,7 +551,11 @@ case static_cast<wasm_byte>(0xfbu):
             operand_stack.back_unchecked().has_core_type = true;
             if constexpr(stacktop_enabled_for_vt(curr_operand_stack_value_type::i32))
             {
-                if(!is_polymorphic && codegen_reachable)
+                // Nested control frames reify a concrete validation stack even
+                // when no execution edge reaches them. Match the post-op model's
+                // !is_polymorphic condition: its memory result still requires
+                // every deeper cached operand to be materialized first.
+                if(!is_polymorphic)
                 {
                     // ref.i31 reads the top i32 from its ring slot and writes
                     // the 16-byte reference to memory. The memory layout must

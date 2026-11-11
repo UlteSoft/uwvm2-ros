@@ -1,8 +1,9 @@
-// Copied Wasm instruction display only. Boundaries must come from the same
-// compiler-owned source image; this formatter never scans for opcode alignment.
+// Cold display decoder for a copied, validated compiler-owned source image.
+// Bytecode boundaries are distinct from surviving executable safe points. This
+// decoder never authorizes stepping, breakpoints or access to native code.
 #pragma once
 #ifndef UWVM_MODULE
-#include <uwvm2/extension/memtag/instruction.h>
+#include <uwvm2/extension/memtag/encoding.h>
 #include <fast_io.h>
 #include <fast_io_dsal/string.h>
 #include <fast_io_dsal/string_view.h>
@@ -497,6 +498,75 @@ using view=::fast_io::string_view;
             case 0x112u: return "i16x8.relaxed_dot_i8x16_i7x16_s";
             case 0x113u: return "i32x4.relaxed_dot_i8x16_i7x16_add_s";
             default: return "extended-opcode"; }
+        case 0xfeu: switch(extension) {
+            case 0x0u: return "memory.atomic.notify";
+            case 0x1u: return "memory.atomic.wait32";
+            case 0x2u: return "memory.atomic.wait64";
+            case 0x3u: return "atomic.fence";
+            case 0x10u: return "i32.atomic.load";
+            case 0x11u: return "i64.atomic.load";
+            case 0x12u: return "i32.atomic.load8_u";
+            case 0x13u: return "i32.atomic.load16_u";
+            case 0x14u: return "i64.atomic.load8_u";
+            case 0x15u: return "i64.atomic.load16_u";
+            case 0x16u: return "i64.atomic.load32_u";
+            case 0x17u: return "i32.atomic.store";
+            case 0x18u: return "i64.atomic.store";
+            case 0x19u: return "i32.atomic.store8";
+            case 0x1au: return "i32.atomic.store16";
+            case 0x1bu: return "i64.atomic.store8";
+            case 0x1cu: return "i64.atomic.store16";
+            case 0x1du: return "i64.atomic.store32";
+            case 0x1eu: return "i32.atomic.rmw.add";
+            case 0x1fu: return "i64.atomic.rmw.add";
+            case 0x20u: return "i32.atomic.rmw8.add_u";
+            case 0x21u: return "i32.atomic.rmw16.add_u";
+            case 0x22u: return "i64.atomic.rmw8.add_u";
+            case 0x23u: return "i64.atomic.rmw16.add_u";
+            case 0x24u: return "i64.atomic.rmw32.add_u";
+            case 0x25u: return "i32.atomic.rmw.sub";
+            case 0x26u: return "i64.atomic.rmw.sub";
+            case 0x27u: return "i32.atomic.rmw8.sub_u";
+            case 0x28u: return "i32.atomic.rmw16.sub_u";
+            case 0x29u: return "i64.atomic.rmw8.sub_u";
+            case 0x2au: return "i64.atomic.rmw16.sub_u";
+            case 0x2bu: return "i64.atomic.rmw32.sub_u";
+            case 0x2cu: return "i32.atomic.rmw.and";
+            case 0x2du: return "i64.atomic.rmw.and";
+            case 0x2eu: return "i32.atomic.rmw8.and_u";
+            case 0x2fu: return "i32.atomic.rmw16.and_u";
+            case 0x30u: return "i64.atomic.rmw8.and_u";
+            case 0x31u: return "i64.atomic.rmw16.and_u";
+            case 0x32u: return "i64.atomic.rmw32.and_u";
+            case 0x33u: return "i32.atomic.rmw.or";
+            case 0x34u: return "i64.atomic.rmw.or";
+            case 0x35u: return "i32.atomic.rmw8.or_u";
+            case 0x36u: return "i32.atomic.rmw16.or_u";
+            case 0x37u: return "i64.atomic.rmw8.or_u";
+            case 0x38u: return "i64.atomic.rmw16.or_u";
+            case 0x39u: return "i64.atomic.rmw32.or_u";
+            case 0x3au: return "i32.atomic.rmw.xor";
+            case 0x3bu: return "i64.atomic.rmw.xor";
+            case 0x3cu: return "i32.atomic.rmw8.xor_u";
+            case 0x3du: return "i32.atomic.rmw16.xor_u";
+            case 0x3eu: return "i64.atomic.rmw8.xor_u";
+            case 0x3fu: return "i64.atomic.rmw16.xor_u";
+            case 0x40u: return "i64.atomic.rmw32.xor_u";
+            case 0x41u: return "i32.atomic.rmw.xchg";
+            case 0x42u: return "i64.atomic.rmw.xchg";
+            case 0x43u: return "i32.atomic.rmw8.xchg_u";
+            case 0x44u: return "i32.atomic.rmw16.xchg_u";
+            case 0x45u: return "i64.atomic.rmw8.xchg_u";
+            case 0x46u: return "i64.atomic.rmw16.xchg_u";
+            case 0x47u: return "i64.atomic.rmw32.xchg_u";
+            case 0x48u: return "i32.atomic.rmw.cmpxchg";
+            case 0x49u: return "i64.atomic.rmw.cmpxchg";
+            case 0x4au: return "i32.atomic.rmw8.cmpxchg_u";
+            case 0x4bu: return "i32.atomic.rmw16.cmpxchg_u";
+            case 0x4cu: return "i64.atomic.rmw8.cmpxchg_u";
+            case 0x4du: return "i64.atomic.rmw16.cmpxchg_u";
+            case 0x4eu: return "i64.atomic.rmw32.cmpxchg_u";
+            default: return "extended-opcode"; }
         case 0xfbu: switch(extension) {
             case 0x0u: return "struct.new";
             case 0x1u: return "struct.new_default";
@@ -533,16 +603,156 @@ using view=::fast_io::string_view;
         default: return "opcode";
     }
 }
+// This cursor is deliberately independent of the optimizer's safe-point bitmap:
+// unreachable instructions and closing control delimiters still belong in WAT.
+// All reads are bounded even if a copied image is unexpectedly incomplete.
+struct display_cursor
+{
+    ::std::span<::std::byte const> bytes;
+    ::std::size_t at{};
+    bool skip(::std::size_t n) noexcept
+    { if(n>bytes.size()-at) { return false; } at+=n;return true; }
+    bool byte(unsigned& value) noexcept
+    { if(at==bytes.size()) { return false; } value=::std::to_integer<unsigned>(bytes[at++]);return true; }
+    bool leb(unsigned bits,bool sign,::std::uint64_t* value=nullptr) noexcept
+    {
+        ::std::uint64_t result{};
+        for(unsigned shift{};shift<bits;shift+=7u)
+        {
+            unsigned b{};if(!byte(b)) { return false; }
+            auto const remaining{bits-shift};
+            if(remaining<7u)
+            {
+                auto const mask{(1u<<remaining)-1u};
+                auto const upper{b&127u&~mask};
+                auto const negative{sign && (b&(1u<<(remaining-1u)))};
+                if(upper!=(negative?(127u&~mask):0u)) { return false; }
+            }
+            result|=static_cast<::std::uint64_t>(b&127u)<<shift;
+            if(!(b&128u))
+            {
+                if(sign && (b&64u) && shift+7u<64u) { result|=(~::std::uint64_t{})<<(shift+7u); }
+                if(value) { *value=result; } return true;
+            }
+        }
+        return false;
+    }
+    bool u32(::std::uint64_t* value=nullptr) noexcept { return leb(32u,false,value); }
+    bool value_type() noexcept
+    {
+        unsigned b{};if(!byte(b)) { return false; }
+        if(b==0x63u || b==0x64u) { return leb(33u,true); }
+        return (b>=0x69u && b<=0x74u) || (b>=0x7bu && b<=0x7fu);
+    }
+    bool block_type() noexcept
+    {
+        if(at==bytes.size()) { return false; }
+        auto const b{::std::to_integer<unsigned>(bytes[at])};
+        if(b==0x63u || b==0x64u) { ++at; }
+        return leb(33u,true);
+    }
+    bool memarg() noexcept
+    {
+        ::std::uint64_t flags{};
+        return u32(&flags) && flags<128u && (!(flags&64u) || u32()) && leb(64u,false);
+    }
+};
+
+// Zero means unavailable, never "try the next byte". Decoding is sequential
+// from offset zero of the authenticated body, never from a guessed address.
+[[nodiscard]] inline ::std::size_t instruction_size(::std::span<::std::byte const> bytes) noexcept
+{
+    display_cursor c{bytes};unsigned op{};
+    if(!c.byte(op)) { return 0u; }
+    ::std::uint64_t ext{};
+    if(op==::uwvm2::extension::memtag::opcode_prefix)
+    {
+        auto const* current{bytes.data()+1u};
+        auto const result{::uwvm2::extension::memtag::scan_opcode(current,bytes.data()+bytes.size())};
+        if(result.error!=::uwvm2::extension::memtag::encoding_error::none ||
+           !::uwvm2::extension::memtag::find_instruction(result.subopcode)) { return 0u; }
+        c.at=static_cast<::std::size_t>(current-bytes.data());
+        return c.u32()?c.at:0u;
+    }
+    if(op>=0xfbu && !c.u32(&ext)) { return 0u; }
+    auto const name{mnemonic(op,static_cast<unsigned>(ext))};
+    if(name=="opcode" || name=="extended-opcode") { return 0u; }
+    bool ok{true};
+    if(op==0x02u || op==0x03u || op==0x04u) { ok=c.block_type(); }
+    else if(op==0x1fu)
+    {
+        ::std::uint64_t count{};ok=c.block_type() && c.u32(&count);
+        // Every catch uses at least two bytes; a malicious count cannot cause
+        // an unbounded loop after the copied expression has ended.
+        for(::std::uint64_t i{};ok && i<count;++i)
+        { unsigned kind{};ok=c.byte(kind) && kind<=3u && (kind>=2u || c.u32()) && c.u32(); }
+    }
+    else if(op==0x0eu)
+    {
+        ::std::uint64_t count{};ok=c.u32(&count);
+        for(::std::uint64_t i{};ok && i<=count;++i) { ok=c.u32(); }
+    }
+    else if(op==0x1cu)
+    {
+        ::std::uint64_t count{};ok=c.u32(&count);
+        for(::std::uint64_t i{};ok && i<count;++i) { ok=c.value_type(); }
+    }
+    else if(op==0x11u || op==0x13u) { ok=c.u32() && c.u32(); }
+    else if(op==0x08u || op==0x0cu || op==0x0du || op==0x10u || op==0x12u || op==0x14u || op==0x15u ||
+            (op>=0x20u && op<=0x26u) || op==0x3fu || op==0x40u || op==0xd2u || op==0xd5u || op==0xd6u)
+    { ok=c.u32(); }
+    else if(op>=0x28u && op<=0x3eu) { ok=c.memarg(); }
+    else if(op==0x41u || op==0x42u || op==0xd0u) { ok=c.leb(op==0x41u?32u:op==0x42u?64u:33u,true); }
+    else if(op==0x43u || op==0x44u) { ok=c.skip(op==0x43u?4u:8u); }
+    else if(op==0xfbu)
+    {
+        if(ext<=14u || (ext>=16u && ext<=19u))
+        { ok=c.u32();if((ext>=2u && ext<=5u) || (ext>=8u && ext<=10u) || (ext>=17u && ext<=19u)) { ok=ok && c.u32(); } }
+        else if(ext>=20u && ext<=23u) { ok=c.leb(33u,true); }
+        else if(ext==24u || ext==25u)
+        { unsigned flags{};ok=c.byte(flags) && flags<=3u && c.u32() && c.leb(33u,true) && c.leb(33u,true); }
+    }
+    else if(op==0xfcu)
+    {
+        if(ext>=8u && ext<=17u)
+        { ok=c.u32();if(ext==8u || ext==10u || ext==12u || ext==14u) { ok=ok && c.u32(); } }
+    }
+    else if(op==0xfdu)
+    {
+        if(ext<=0x0bu || (ext>=0x54u && ext<=0x5du))
+        { ok=c.memarg();if(ext>=0x54u && ext<=0x5bu) { ok=ok && c.skip(1u); } }
+        else if(ext==0x0cu || ext==0x0du) { ok=c.skip(16u); }
+        else if(ext>=0x15u && ext<=0x22u) { ok=c.skip(1u); }
+    }
+    else if(op==0xfeu)
+    {
+        if(ext==3u) { unsigned reserved{};ok=c.byte(reserved) && !reserved; }
+        else { ok=c.memarg(); }
+    }
+    return ok?c.at:0u;
+}
+
 [[nodiscard]] inline ::fast_io::string instruction(::std::span<::std::byte const> bytes)
 {
     if(bytes.empty()) { return {}; }
     auto const op{::std::to_integer<unsigned>(bytes[0])}; unsigned extended{}; ::std::size_t after{1u};
     auto const* first{reinterpret_cast<unsigned char const*>(bytes.data())}; auto const* end{first+bytes.size()};
-    if(op>=0xfbu)
+    if(op==::uwvm2::extension::memtag::opcode_prefix)
+    {
+        auto const* current{bytes.data()+1u}; // bytes is nonempty, so one-past is valid.
+        auto const decoded{::uwvm2::extension::memtag::scan_opcode(current,bytes.data()+bytes.size())};
+        if(decoded.error!=::uwvm2::extension::memtag::encoding_error::none)
+        { return ::fast_io::concat_fast_io("invalid memtag namespace"); }
+        extended=decoded.subopcode;after=static_cast<::std::size_t>(current-bytes.data());
+    }
+    else if(op>=0xfbu)
     { auto result{::fast_io::parse_by_scan(first+1u,end,::fast_io::mnp::leb128_get(extended))};
       if(result.code!=::fast_io::parse_code::ok) { return ::fast_io::concat_fast_io("invalid opcode"); } after=result.iter-first; }
-    auto text{::fast_io::concat_fast_io(mnemonic(op,extended))};bool complete{bytes.size()==after && mnemonic(op,extended)!="opcode" && mnemonic(op,extended)!="extended-opcode"};
-    if(op==::uwvm2::extension::memtag::opcode_prefix && ::uwvm2::extension::memtag::find_instruction(extended)!=nullptr)
+    auto const namespace_text{op==::uwvm2::extension::memtag::opcode_prefix ? view{"uwvm.linear.v1::"} : view{}};
+    auto text{::fast_io::concat_fast_io(namespace_text,mnemonic(op,extended))};
+    bool complete{bytes.size()==after && mnemonic(op,extended)!="opcode" && mnemonic(op,extended)!="extended-opcode"};
+    if((op==::uwvm2::extension::memtag::opcode_prefix) &&
+       ::uwvm2::extension::memtag::find_instruction(extended)!=nullptr)
     {
         // Experimental memtag instructions have one u32 memory index, not a
         // memarg. Keep every byte inside the actual compiler-proven boundary.
@@ -551,23 +761,81 @@ using view=::fast_io::string_view;
         if(parsed.code==::fast_io::parse_code::ok && parsed.iter==end)
         { text.append(::fast_io::concat_fast_io(" ",memory));complete=true; }
     }
-    else if((op>=0x20u && op<=0x26u) || op==0x10u || op==0x12u || op==0x0cu || op==0x0du || op==0xd2u)
-    { ::std::uint64_t index{}; auto parsed{::fast_io::parse_by_scan(first+after,end,::fast_io::mnp::leb128_get(index))};
+    else if((op>=0x20u && op<=0x26u) || op==0x08u || op==0x10u || op==0x12u || op==0x14u || op==0x15u ||
+            op==0x0cu || op==0x0du || op==0x3fu || op==0x40u || op==0xd2u || op==0xd5u || op==0xd6u)
+    { complete=false;::std::uint64_t index{}; auto parsed{::fast_io::parse_by_scan(first+after,end,::fast_io::mnp::leb128_get(index))};
       if(parsed.code==::fast_io::parse_code::ok) { text.append(::fast_io::concat_fast_io(" ",index));complete=parsed.iter==end; } }
-    else if(op==0x41u || op==0x42u)
-    { ::std::int64_t value{}; auto parsed{::fast_io::parse_by_scan(first+after,end,::fast_io::mnp::leb128_get(value))};
-      if(parsed.code==::fast_io::parse_code::ok) { text.append(::fast_io::concat_fast_io(" ",value));complete=parsed.iter==end; } }
-    else if(op>=0x28u && op<=0x3eu)
+    else if(op==0x11u || op==0x13u ||
+            (op==0xfbu && (extended<=14u || (extended>=16u && extended<=19u))) ||
+            (op==0xfcu && extended>=8u && extended<=17u))
     {
-        ::std::uint32_t flags{};::std::uint64_t offset{};
-        auto alignment{::fast_io::parse_by_scan(first+after,end,::fast_io::mnp::leb128_get(flags))};
-        if(alignment.code==::fast_io::parse_code::ok && flags<64u)
+        display_cursor c{bytes,after};::std::uint64_t value{};complete=c.u32(&value);
+        if(complete) { text.append(::fast_io::concat_fast_io(" ",value)); }
+        auto const two{op==0x11u || op==0x13u ||
+            (op==0xfbu && ((extended>=2u && extended<=5u) || (extended>=8u && extended<=10u) || (extended>=17u && extended<=19u))) ||
+            (op==0xfcu && (extended==8u || extended==10u || extended==12u || extended==14u))};
+        if(complete && two)
+        { complete=c.u32(&value);if(complete) { text.append(::fast_io::concat_fast_io(" ",value)); } }
+        complete=complete && c.at==bytes.size();
+    }
+    else if(op==0x02u || op==0x03u || op==0x04u)
+    {
+        // A nonempty block signature is useful in the instruction view. Keep
+        // typed-reference signatures as exact bytes until they are rendered.
+        display_cursor c{bytes,after};::std::uint64_t value{};
+        complete=c.leb(33u,true,&value) && c.at==bytes.size();
+        if(complete)
         {
-            auto parsed{::fast_io::parse_by_scan(alignment.iter,end,::fast_io::mnp::leb128_get(offset))};
-            if(parsed.code==::fast_io::parse_code::ok && parsed.iter==end)
-            { text.append(::fast_io::concat_fast_io(" offset=",offset," align=",::std::uint64_t{1u}<<flags));complete=true; }
+            auto const signed_value{static_cast<::std::int64_t>(value)};
+            if(signed_value>=0) { text.append(::fast_io::concat_fast_io(" type=",value)); }
+            else if(signed_value!=-64)
+            {
+                view type{};
+                switch(signed_value)
+                { case -1:type="i32";break;case -2:type="i64";break;case -3:type="f32";break;
+                  case -4:type="f64";break;case -5:type="v128";break;case -16:type="funcref";break;
+                  case -17:type="externref";break;default:complete=false;break; }
+                if(complete) { text.append(::fast_io::concat_fast_io(" result=",type)); }
+            }
         }
     }
+    else if(op==0x41u || op==0x42u)
+    { complete=false;::std::int64_t value{}; auto parsed{::fast_io::parse_by_scan(first+after,end,::fast_io::mnp::leb128_get(value))};
+      if(parsed.code==::fast_io::parse_code::ok) { text.append(::fast_io::concat_fast_io(" ",value));complete=parsed.iter==end; } }
+    else if((op>=0x28u && op<=0x3eu) ||
+            (op==0xfeu && (extended<=2u || (extended>=0x10u && extended<=0x4eu))) ||
+            (op==0xfdu && (extended<=0x0bu || (extended>=0x54u && extended<=0x5du))))
+    {
+        complete=false;
+        ::std::uint32_t flags{},memory{};::std::uint64_t offset{};
+        auto alignment{::fast_io::parse_by_scan(first+after,end,::fast_io::mnp::leb128_get(flags))};
+        if(alignment.code==::fast_io::parse_code::ok && flags<128u)
+        {
+            auto const indexed{(flags&64u)!=0u};
+            auto current{alignment.iter};
+            bool valid{true};
+            if(indexed)
+            {
+                auto const parsed{::fast_io::parse_by_scan(current,end,::fast_io::mnp::leb128_get(memory))};
+                valid=parsed.code==::fast_io::parse_code::ok;current=parsed.iter;
+            }
+            if(valid)
+            {
+                auto const parsed{::fast_io::parse_by_scan(current,end,::fast_io::mnp::leb128_get(offset))};
+                current=parsed.iter;valid=parsed.code==::fast_io::parse_code::ok;
+                bool const has_lane{op==0xfdu && extended>=0x54u && extended<=0x5bu};
+                if(valid && ((!has_lane && current==end) || (has_lane && end-current==1)))
+                {
+                    if(indexed) { text.append(::fast_io::concat_fast_io(" memory=",memory)); }
+                    text.append(::fast_io::concat_fast_io(" offset=",offset," align=",::std::uint64_t{1u}<<(flags&63u)));
+                    if(has_lane) { text.append(::fast_io::concat_fast_io(" lane=",static_cast<unsigned>(*current))); }
+                    complete=true;
+                }
+            }
+        }
+    }
+    else if(op==0xfeu && extended==3u)
+    { complete=end-(first+after)==1 && first[after]==0u; } // atomic.fence has a required reserved zero byte.
     if(complete) { return text; }
     text.append("  ; bytes:");
     for(::std::size_t i{}; i<::std::min(bytes.size(),::std::size_t{20u}); ++i)

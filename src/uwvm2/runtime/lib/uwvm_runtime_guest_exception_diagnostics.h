@@ -175,9 +175,10 @@
                 // This is the trusted terminal catch of a Guest exception.
                 // Interpreter callbacks cannot transport the LLVM-only managed
                 // fault signal. Stop through the same process exit coordinator.
-                ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                ::fast_io::io::perrln(runtime_fault_output(),
                     u8"uwvm: [error] uncaught Guest exception; execution stopped");
                 apply_guest_crash_policy(trap_kind::uncatched_int_tag,true);
+                ::uwvm2::runtime::diagnostic::crash::crash_unless_stable_exit();
                 ::uwvm2::utils::thread::process_exit::request_process_exit(::uwvm2::runtime::diagnostic::crash::exit_status());
             }
 #endif
@@ -185,10 +186,14 @@
             // the original throwing stack from the already-unwound TLS stack or reclassify it as a trap.
             // Serialize the entire report; simultaneous failing host threads cannot interleave its lines.
             {
+#if defined(__linux__)
+                auto output{runtime_fault_output()};
+#else
                 auto output_ref{::fast_io::operations::output_stream_ref(::uwvm2::uwvm::io::u8log_output)};
                 ::fast_io::operations::decay::stream_ref_decay_lock_guard lock{
                     ::fast_io::operations::decay::output_stream_mutex_ref_decay(output_ref)};
                 auto output{::fast_io::operations::decay::output_stream_unlocked_ref_decay(output_ref)};
+#endif
                 auto const& instance{*caught.instance()};
                 print_guest_exception_prefix(output, true);
                 ::fast_io::io::print(output, u8"Uncaught WebAssembly exception (module=",
@@ -283,6 +288,7 @@
             }
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             apply_guest_crash_policy(trap_kind::uncatched_int_tag,true);
+            ::uwvm2::runtime::diagnostic::crash::crash_unless_stable_exit();
             ::uwvm2::utils::thread::process_exit::request_process_exit(
                 ::uwvm2::runtime::diagnostic::crash::exit_status());
 #endif

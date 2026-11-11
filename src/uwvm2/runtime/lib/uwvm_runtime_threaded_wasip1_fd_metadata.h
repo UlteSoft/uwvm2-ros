@@ -23,7 +23,7 @@ extern "C++"
     }
 
     inline auto runtime_threaded_wasip1_adapter::fdstat_get(context& call,::std::uint32_t guest,
-        ::std::uint32_t destination) noexcept -> error
+        ::std::uint64_t destination) noexcept -> error
     {
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
         if(guest<3u&&(!call.env.grants_stdio(guest)||!call.env.permits(permission::stdio_metadata)))

@@ -32,6 +32,12 @@ CAPABILITY_BYTES = 32
 SOCKET_NAME = "control.sock"
 CAPABILITY_NAME = "capability"
 _TIMEOUT = object()
+_OBSERVER_DISCONNECTED = object()
+
+
+def is_quit_command(packet):
+    """Match the VM's single-token quit grammar, including ASCII whitespace."""
+    return packet.strip(b" \t\n\r\v\f") in (b"q", b"quit")
 
 
 class VMChannelFailure(RuntimeError):
@@ -157,11 +163,14 @@ def startup_timeout_seconds(value):
     return value
 
 
-def wait_startup_reply(client, identity, pidfd, vm_channel, guest, packet, timeout=None):
+def wait_startup_reply(client, identity, pidfd, vm_channel, guest, packet, timeout=None, *, control_allowed=True):
     """One authenticated command: actual VM reply, exit, or client cancellation.
 
-    Compilation has no default wall-clock deadline. A canceled unsequenced
-    command retires this launch; its eventual reply can never be reused.
+    Compilation has no default wall-clock deadline. A full-control client may
+    cancel the launch. An observer only cancels its own connection: retain the
+    original VM owner and drain this single outstanding reply before another
+    client can use the unsequenced endpoint. An explicit host deadline and an
+    actual VM/transport failure retain their independent launcher semantics.
     """
     deadline = None if timeout is None else time.monotonic() + timeout
     if guest.poll() is not None:
@@ -170,6 +179,7 @@ def wait_startup_reply(client, identity, pidfd, vm_channel, guest, packet, timeo
             return reply
         raise VMChannelFailure("original VM exited before startup command completed")
     guest_fd = os.pidfd_open(guest.pid, 0)
+    observing = True
     try:
         watched = select.poll()
         events = select.POLLIN | select.POLLERR | select.POLLHUP | select.POLLNVAL
@@ -185,30 +195,43 @@ def wait_startup_reply(client, identity, pidfd, vm_channel, guest, packet, timeo
                 if deadline is not None and time.monotonic() >= deadline:
                     raise VMChannelFailure("VM debugger startup exceeded the explicit host deadline")
                 continue
-            if pidfd in ready or client.fileno() in ready:
+            if observing and (pidfd in ready or client.fileno() in ready):
+                if control_allowed:
+                    if client.fileno() in ready:
+                        pending = checked_packet(client, MAX_COMMAND, identity, pidfd)
+                        if pending not in (None, b"disconnect"):
+                            raise VMChannelFailure("another debugger packet arrived before startup completed")
+                    raise VMChannelFailure("debugger client canceled VM startup")
+                # A bad/disconnected observer has no authority to terminate
+                # the Guest. Consume bounded client ancillary data if present,
+                # then stop watching it while the already-sent VM reply drains.
                 if client.fileno() in ready:
-                    pending = checked_packet(client, MAX_COMMAND, identity, pidfd)
-                    if pending not in (None, b"disconnect"):
-                        raise VMChannelFailure("another debugger packet arrived before startup completed")
-                raise VMChannelFailure("debugger client canceled VM startup")
+                    try:
+                        checked_packet(client, MAX_COMMAND, identity, pidfd)
+                    except (OSError, RuntimeError):
+                        pass
+                watched.unregister(client.fileno())
+                watched.unregister(pidfd)
+                observing = False
+                client.close()
             if vm_channel.fileno() in ready:
                 reply = checked_packet(vm_channel, MAX_REPLY)
                 if reply is not None and reply is not _TIMEOUT:
-                    return reply
+                    return reply if observing else _OBSERVER_DISCONNECTED
                 reply = finished_guest_reply(guest, packet, wait=True)
                 if reply is not None:
-                    return reply
+                    return reply if observing else _OBSERVER_DISCONNECTED
                 raise VMChannelFailure("VM debugger control channel closed before original guest exit")
             if guest_fd in ready:
                 reply = finished_guest_reply(guest, packet)
                 if reply is not None:
-                    return reply
+                    return reply if observing else _OBSERVER_DISCONNECTED
                 raise VMChannelFailure("original VM exited before startup command completed")
     finally:
         os.close(guest_fd)
 
 
-def serve_client(client, identity, pidfd, vm_channel, capability, guest, startup_pending=None, startup_timeout=None):
+def serve_client(client, identity, pidfd, vm_channel, capability, guest, startup_pending=None, startup_timeout=None, *, control_allowed=True):
     deadline = time.monotonic() + 10
     while guest.poll() is None and time.monotonic() < deadline:
         packet = checked_packet(client, CAPABILITY_BYTES, identity, pidfd)
@@ -231,6 +254,12 @@ def serve_client(client, identity, pidfd, vm_channel, capability, guest, startup
             continue
         if packet is None or packet == b"disconnect":
             return False
+        if is_quit_command(packet) and not control_allowed:
+            # This endpoint belongs to the launcher, not to an observation
+            # client. In the VM grammar quit closes that endpoint; forwarding
+            # it would let an observer disable later authenticated sessions.
+            send_packet(client, b"observer detached; guest state unchanged\n")
+            return False
         if guest.poll() is not None:
             if terminal_deadline is None:
                 terminal_deadline = time.monotonic() + 2
@@ -244,16 +273,20 @@ def serve_client(client, identity, pidfd, vm_channel, capability, guest, startup
         idle = time.monotonic() + 30
         # The VM independently parses the bounded grammar and checks state.
         # Full JIT compilation precedes control-channel adoption. Only the
-        # first authenticated command may wait for actual startup. Cancellation
-        # or failure retires this launch, never renewing/replaying the request.
+        # first authenticated command may wait for actual startup. Its request
+        # is never renewed/replayed; a canceled observer's reply is drained.
         startup = startup_pending is not None and startup_pending[0]
         if startup:
             startup_pending[0] = False
         vm_channel.settimeout(6)
         try:
             send_packet(vm_channel, packet)
-            reply = (wait_startup_reply(client, identity, pidfd, vm_channel, guest, packet, startup_timeout)
-                     if startup else checked_packet(vm_channel, MAX_REPLY))
+            reply = (wait_startup_reply(client, identity, pidfd, vm_channel, guest, packet,
+                                        startup_timeout if startup else None,
+                                        control_allowed=control_allowed)
+                     if startup or not control_allowed else checked_packet(vm_channel, MAX_REPLY))
+            if reply is _OBSERVER_DISCONNECTED:
+                return False
             if reply is None:
                 reply = finished_guest_reply(guest, packet, wait=True)
                 if reply is None:
@@ -271,7 +304,7 @@ def serve_client(client, identity, pidfd, vm_channel, capability, guest, startup
         finally:
             vm_channel.settimeout(6)
         send_packet(client, reply)
-        if packet == b"quit":
+        if is_quit_command(packet):
             return True  # The authenticated host intentionally detached.
     return False
 
@@ -280,17 +313,32 @@ def serve(arguments):
     vm_args = list(arguments.vm_args)
     if vm_args and vm_args[0] == "--":
         vm_args.pop(0)
-    boundary = next((i for i, value in enumerate(vm_args) if value in ("--run", "--")), len(vm_args))
-    options = vm_args[:boundary]
-    selectors = [i for i, value in enumerate(options) if value == "--debug-permissions"]
-    if len(selectors) > 1 or selectors and selectors[0] + 1 >= len(options):
-        raise RuntimeError("exactly one valid --debug-permissions value is required")
-    selected = options[selectors[0] + 1] if selectors else ("full" if any(x in options for x in ("-Rdbg", "--runtime-debug")) else "limited")
-    if selected not in ("full", "read-only", "limited", "none"):
-        raise RuntimeError("--debug-permissions requires full, read-only, limited or none")
+    from fault_action import validate_fault_action, host_options, selected_debug_permissions
+    validate_fault_action(vm_args, RuntimeError)
+    options = host_options(vm_args, RuntimeError)
+    selected = selected_debug_permissions(vm_args, RuntimeError)
+    update_directory = getattr(arguments, "update_socket_dir", None)
+    if update_directory is not None and "--update-control-fd" in options:
+        raise RuntimeError("the host update relay owns its private control descriptor")
     if selected == "none":
-        # No socket, capability file, adapter or inherited control descriptor.
-        return subprocess.run([str(arguments.uwvm), *vm_args], check=False).returncode
+        # No debugger socket, capability file, adapter or control descriptor.
+        # Independent deployment authority may still be explicitly provisioned.
+        if update_directory is None:
+            return subprocess.run([str(arguments.uwvm), *vm_args], check=False).returncode
+        from signed_update import Relay
+        relay = Relay(update_directory, vm_args)
+        guest = None
+        try:
+            guest = subprocess.Popen([str(arguments.uwvm), *relay.launch_arguments(), *vm_args],
+                                     pass_fds=(relay.child_endpoint.fileno(),))
+            relay.start(guest)
+            return guest.wait()
+        finally:
+            relay.close()
+            if guest is not None and guest.poll() is None:
+                guest.terminate()
+                try: guest.wait(timeout=5)
+                except subprocess.TimeoutExpired: guest.kill(); guest.wait()
     directory, remove_directory = private_directory(arguments.socket_dir)
     try:
         if not vm_args:
@@ -317,7 +365,11 @@ def serve(arguments):
     supervisor = None
     detached = False
     socket_bound = False
+    relay = None
     try:
+        if update_directory is not None:
+            from signed_update import Relay
+            relay = Relay(update_directory, vm_args)
         # Accepted sockets inherit this before a fast peer can queue its token.
         # Enabling it after accept loses credentials on already queued packets.
         listener.setsockopt(socket.SOL_SOCKET, socket.SO_PASSCRED, 1)
@@ -332,8 +384,11 @@ def serve(arguments):
             # its inherited endpoint. Linux attaches sender credentials when
             # the packet is sent; enabling PASSCRED later loses that identity.
             vm_endpoint.setsockopt(socket.SOL_SOCKET, socket.SO_PASSCRED, 1)
-            command = [str(arguments.uwvm), "--debug-jit-control-fd", str(vm_endpoint.fileno()), *vm_args]
-            guest = subprocess.Popen(command, pass_fds=(vm_endpoint.fileno(),))
+            update_args = [] if relay is None else relay.launch_arguments()
+            command = [str(arguments.uwvm), "--debug-jit-control-fd", str(vm_endpoint.fileno()), *update_args, *vm_args]
+            inherited = (vm_endpoint.fileno(),) if relay is None else (vm_endpoint.fileno(), relay.child_endpoint.fileno())
+            guest = subprocess.Popen(command, pass_fds=inherited)
+            if relay is not None: relay.start(guest)
         finally:
             vm_endpoint.close()
         supervisor.settimeout(6)
@@ -351,7 +406,8 @@ def serve(arguments):
             client, identity, pidfd = accepted
             try:
                 with client:
-                    detached = serve_client(client, identity, pidfd, supervisor, capability, guest, startup_pending, getattr(arguments, "startup_timeout", None))
+                    detached = serve_client(client, identity, pidfd, supervisor, capability, guest, startup_pending,
+                                            getattr(arguments, "startup_timeout", None), control_allowed=selected == "full")
             except VMChannelFailure:
                 raise  # retire this original launch through serve()'s finally
             except (OSError, RuntimeError) as error:
@@ -363,9 +419,10 @@ def serve(arguments):
         supervisor.close()
         if detached:
             print("debugger detached; guest continues without a control endpoint", flush=True)
-            return 0
+            return 0 if relay is None else guest.wait()
         return guest.wait()
     finally:
+        if relay is not None: relay.close()
         if supervisor is not None:
             supervisor.close()
         listener.close()
@@ -451,7 +508,8 @@ def main():
     host = subcommands.add_parser("serve", help="launch a VM with an authenticated control server")
     host.add_argument("--uwvm", required=True, type=Path)
     host.add_argument("--socket-dir", type=Path, help="existing owner-only directory; default is a fresh private directory")
-    host.add_argument("--startup-timeout", type=startup_timeout_seconds, help="optional host deadline in seconds for the first authenticated VM reply; default waits for readiness, VM exit or client cancellation")
+    host.add_argument("--update-socket-dir", type=Path, help="independent owner-only signed-update relay; requires VM key/contract/scope; available with every debugger permission, including none")
+    host.add_argument("--startup-timeout", type=startup_timeout_seconds, help="optional host deadline for the first VM reply; by default an observer cancellation drains that reply and preserves the guest")
     host.add_argument("vm_args", nargs=argparse.REMAINDER)
     client = subcommands.add_parser("connect", help="send commands through a running host server")
     client.add_argument("--socket-dir", required=True, type=Path)

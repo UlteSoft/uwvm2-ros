@@ -1,0 +1,68 @@
+
+:root { color-scheme:light dark; --row-height:24px; --address-width:10ch; --rail-width:calc(3ch + 2ch + var(--address-width) + 1.3ch + 1px); --mnemonic-width:12ch; --operand-width:8ch; }
+* { box-sizing:border-box; }
+body { margin:0; height:100vh; display:flex; flex-direction:column; overflow:hidden; color:var(--vscode-editor-foreground); background:var(--vscode-editor-background); font-family:var(--vscode-font-family); font-size:var(--vscode-font-size); }
+header { display:flex; align-items:center; gap:12px; padding:4px 8px; border-bottom:1px solid var(--vscode-panel-border); flex:none; }
+#identity { color:var(--vscode-descriptionForeground); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+.toolbar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+button,input { font:inherit; color:inherit; }
+button { border:1px solid transparent; background:transparent; padding:3px 6px; border-radius:3px; cursor:pointer; }
+button:hover:not(:disabled) { background:var(--vscode-toolbar-hoverBackground); }
+button:focus-visible,input:focus-visible,#code:focus-visible { outline:1px solid var(--vscode-focusBorder); outline-offset:-1px; }
+button:disabled { cursor:default; opacity:.5; }
+input { background:var(--vscode-input-background); border:1px solid var(--vscode-input-border,transparent); padding:3px 5px; width:18ch; }
+#jump { display:flex; gap:5px; align-items:center; margin-left:auto; }
+#status,#notice { flex:none; padding:4px 12px; color:var(--vscode-descriptionForeground); white-space:pre-wrap; }
+#notice:empty { display:none; }
+.error { color:var(--vscode-errorForeground)!important; }
+#listing { font-family:var(--vscode-editor-font-family,monospace); font-size:var(--vscode-editor-font-size,14px); font-weight:var(--vscode-editor-font-weight,normal); }
+#listing { display:flex; flex:1; min-height:0; line-height:var(--row-height); }
+#rail { width:var(--rail-width); flex:none; position:relative; overflow:hidden; border-right:1px solid var(--vscode-panel-border); background:var(--vscode-editorGutter-background,var(--vscode-editor-background)); }
+#rail-rows,#code-rows { position:absolute; inset:0; }
+#code { flex:1; min-width:0; overflow:auto; position:relative; overscroll-behavior:contain; scrollbar-gutter:stable; }
+#space { position:relative; min-width:100%; }
+.row,.rail-row { position:absolute; height:var(--row-height); white-space:pre; display:flex; align-items:center; }
+.row { left:0; min-width:100%; padding-left:1ch; padding-right:2ch; }
+.rail-row { left:0; right:0; display:grid; grid-template-columns:3ch 2ch max-content; }
+.current { background:var(--vscode-editor-stackFrameHighlightBackground,rgba(255,255,0,.2)); }
+.selected:not(.current) { background:var(--vscode-editor-selectionBackground); }
+.address { color:var(--vscode-descriptionForeground); padding:0 1ch 0 .3ch; }
+/* Use the same glyph geometry and current-frame colour as VS Code's
+   editor gutter, not the green Start/Continue command icon. */
+.pc { width:100%; min-width:0; display:flex; justify-content:center; color:var(--vscode-debugIcon-breakpointCurrentStackframeForeground,#ffcc00); }
+.pc svg { width:16px; height:16px; flex:none; fill:currentColor; visibility:hidden; }
+.current .pc svg { visibility:visible; }
+.breakpoint { width:100%; min-width:0; font-size:16px; padding:0; opacity:1!important; }
+.breakpoint.empty { color:transparent; }
+.breakpoint.empty:hover:not(:disabled) { color:var(--vscode-debugIcon-breakpointForeground,#e51400); opacity:.55!important; }
+.breakpoint.enabled { color:var(--vscode-debugIcon-breakpointForeground,#e51400); }
+.breakpoint.disabled { color:var(--vscode-debugIcon-breakpointDisabledForeground,#848484); }
+.breakpoint.pending { color:var(--vscode-debugIcon-breakpointUnverifiedForeground,#d7ba7d); }
+.guides { height:100%; flex:none; background:repeating-linear-gradient(to right,var(--vscode-editorIndentGuide-background1,rgba(128,128,128,.3)) 0,var(--vscode-editorIndentGuide-background1,rgba(128,128,128,.3)) 1px,transparent 1px,transparent 4ch); }
+.mnemonic { width:var(--mnemonic-width); flex:none; color:var(--wat-function); }
+.mnemonic.control,.mnemonic.atomic { color:var(--wat-control); }
+.mnemonic.variable { color:var(--wat-variable-instruction); }
+.mnemonic.gc,.mnemonic.reference { color:var(--wat-type); }
+.mnemonic.numeric,.mnemonic.memory,.mnemonic.table,.mnemonic.vector,.mnemonic.memtag { color:var(--wat-function); }
+.operands { min-width:var(--operand-width); flex:none; color:var(--wat-number); }
+.comment { color:var(--vscode-descriptionForeground); margin-left:2ch; }
+/* Hover information must not replace the pointer with the platform help cursor. */
+#listing,.token { cursor:default; }
+#hover { position:fixed; z-index:10; max-width:min(560px,90vw); max-height:65vh; overflow:auto; padding:9px 12px; background:var(--vscode-editorHoverWidget-background); color:var(--vscode-editorHoverWidget-foreground); border:1px solid var(--vscode-editorHoverWidget-border); border-radius:3px; box-shadow:0 2px 8px var(--vscode-widget-shadow); white-space:pre-wrap; line-height:1.5; pointer-events:none; }
+#hover strong { display:block; color:var(--vscode-debugTokenExpression-name,#9cdcfe); }
+#hover .type { color:var(--vscode-debugTokenExpression-type,#4ec9b0); }
+#hover .value { color:var(--vscode-debugTokenExpression-value,#ce9178); }
+@media (forced-colors:active) { .guides { border-inline-start:1px solid GrayText; } .current { outline:1px solid Highlight; } }
+
+.token.type { color:var(--wat-type); }
+.token.function { color:var(--wat-function); }
+.token.label { color:var(--wat-control); }
+.token.index { color:var(--wat-variable); }
+.token.number { color:var(--wat-number); }
+body.vscode-high-contrast .current,body.vscode-high-contrast-light .current { outline:1px solid var(--vscode-contrastActiveBorder); }
+
+/* TextMate scope colours from the original editor presentation:
+   keyword.control, support.function.*, variable.language, entity.name.type,
+   variable.other and constant.numeric remain distinct in the custom view. */
+:root { --wat-control:#c586c0; --wat-function:#dcdcaa; --wat-variable-instruction:#569cd6; --wat-type:#4ec9b0; --wat-variable:#9cdcfe; --wat-number:#b5cea8; }
+body.vscode-light,body.vscode-high-contrast-light { --wat-control:#af00db; --wat-function:#795e26; --wat-variable-instruction:#0000ff; --wat-type:#267f99; --wat-variable:#001080; --wat-number:#098658; }

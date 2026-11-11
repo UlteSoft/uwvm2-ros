@@ -3,6 +3,7 @@ module;
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <memory>
 #include <span>
 #include <type_traits>
@@ -16,6 +17,7 @@ import uwvm2.extension.memtag.shadow;
 import uwvm2.extension.memtag.storage;
 import uwvm2.runtime.memtag.random;
 import uwvm2.runtime.memtag.native_pointer;
+import uwvm2.runtime.memtag.deferred;
 #define UWVM_MODULE
 #define UWVM_MODULE_EXPORT export
 #include "bridge.h"

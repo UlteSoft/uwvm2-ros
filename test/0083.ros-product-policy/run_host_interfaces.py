@@ -67,7 +67,7 @@ def main():
         group=family(row)
         if row["ns"] not in namespaces:
             run("namespace-absent-"+group+"-"+str(index),"interpreter",[],file,False,
-                ("namespace permission is disabled","--"+group+"-single-enable"))
+                ("namespace permission is disabled","--"+group+("-global-enable" if group in ("ros1","ros2") else "-single-enable")))
             if row["ns"] != "wasi":
                 run("validate-disabled-"+str(index),"interpreter",["--mode","validation"],file,False,
                     ("namespace permission is disabled",))
@@ -148,8 +148,8 @@ def main():
             run(group+"-worker-group",engine,own+preload+group_policy,caller,True,("denied for group 'operators'",))
             if group in ("ros1","ros2"):
                 global_policy=["--"+group+"-global-enable","--"+group+"-global-interface",key(sample),"deny"]
-                run(group+"-global-unbound",engine,own+preload+global_policy,caller,False,
-                    ("namespace permission is disabled",))
+                run(group+"-global-default-member",engine,own+preload+global_policy,caller,True,
+                    ("denied for global",))
                 run(group+"-global-bound",engine,own+preload+global_policy+
                     ["--"+group+"-global-add-module","worker"],caller,True,("denied for global",))
             if group=="wasip1":

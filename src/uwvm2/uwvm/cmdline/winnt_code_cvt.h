@@ -120,7 +120,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
                                 u8"\n",
                                 ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL),
                                 u8"Terminate.\n\n");
-            ::fast_io::fast_terminate();
+            ::uwvm2::uwvm::io::fast_exit(::uwvm2::uwvm::io::diagnostic_exit_status::invalid_option);
         }
 
         u16_cmdline_argv_guard guard{u16_cmdline_argv};  // use raii to release

@@ -62,14 +62,18 @@ namespace uwvm2::imported::ros
             for(auto* scope=current;scope;scope=scope->previous)
             {
                 if(scope->external_cancellation_fd< -1 || (scope->check&&scope->check(scope->context))) { return true; }
-#if defined(__linux__)
-                if(scope->external_cancellation_fd>=0)
-                {
-                    ::pollfd watched{scope->external_cancellation_fd,POLLIN,0};
-                    if(::poll(&watched,1,0)<0 || watched.revents) { return true; }
-                }
-#endif
             }
+#if defined(__linux__)
+            // Construction inherits the parent's descriptor or rejects a
+            // conflict. The current descriptor therefore represents the whole
+            // lexical chain. Observe it once AFTER every ancestor predicate;
+            // never cache readiness across calls or consume the level event.
+            if(current && current->external_cancellation_fd>=0)
+            {
+                ::pollfd watched{current->external_cancellation_fd,POLLIN,0};
+                if(::poll(&watched,1,0)<0 || watched.revents) { return true; }
+            }
+#endif
             return false;
         }
         static int cancellation_fd() noexcept { return current?current->external_cancellation_fd:-1; }
@@ -193,8 +197,9 @@ namespace uwvm2::imported::ros
             return -1;
 #endif
         }
-        [[nodiscard]] quota_wait_result until(::std::chrono::steady_clock::time_point deadline, int cancellation_fd=-1, int native_fd=-1, short events=0) noexcept
+        [[nodiscard]] quota_wait_result until(::std::chrono::steady_clock::time_point deadline, int cancellation_fd=-1, int native_fd=-1, short events=0, short* native_revents=nullptr) noexcept
         {
+            if(native_revents) { *native_revents=0; }
 #if defined(__linux__)
             if(handles.event<0 || handles.timer<0) { return quota_wait_result::unavailable; }
             if(cancelled()) { return quota_wait_result::cancelled; }
@@ -211,6 +216,9 @@ namespace uwvm2::imported::ros
                 if(watched[i].revents&POLLIN)
                 { ::std::uint64_t count{}; while(::read(watched[i].fd,&count,sizeof(count))<0 && errno==EINTR) {} }
             }
+            // Preserve the observed native readiness from this same poll.
+            // Callers still retry nonblocking I/O and recheck cancellation.
+            if(native_revents) { *native_revents=watched[3].revents; }
             return quota_wait_result::ready;
 #else
             (void)deadline;(void)cancellation_fd;(void)native_fd;(void)events;return quota_wait_result::unavailable;

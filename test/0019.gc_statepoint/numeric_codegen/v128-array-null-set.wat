@@ -1,0 +1,1 @@
+(module (type $s (array (mut v128))) (func (export "_start") ref.null $s i32.const 0 v128.const i64x2 0x123456789abcdef 0x8000000000000000 array.set $s))

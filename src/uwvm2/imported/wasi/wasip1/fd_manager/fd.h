@@ -831,6 +831,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::fd_manager
         // Logical provenance only; survives guest aliases and renumbering.
         ::uwvm2::utils::container::u8string checkpoint_mount{},checkpoint_path{};
         int checkpoint_stdio_index{-1};
+        // Classified once on the owned duplicated descriptor before publication.
+        // Renumbering retains this resource identity; flags cannot turn a regular
+        // file or the Linux null/zero device into a pipe/socket.
+        bool stdio_direct_io_safe{};
         bool checkpoint_reopenable{},checkpoint_follow{};
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
         // Set only by native resource construction. Guest renumber/close/rights

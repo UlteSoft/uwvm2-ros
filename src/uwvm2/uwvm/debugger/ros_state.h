@@ -50,15 +50,35 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::ros_state
             case selection::queues:return "queues";case selection::services:return "services";case selection::actions:return "actions";
             case selection::parameters:return "parameters";case selection::tf:return "tf";case selection::graph:return "graph";
             case selection::statistics:return "stats";case selection::calls:return "calls";case selection::trace:return "trace";
+            case selection::policy:return "policy";
         }
         return "invalid";
     }
     inline bool parse_selection(::fast_io::string_view text,selection& value) noexcept
     {
         for(auto item:{selection::capabilities,selection::sessions,selection::queues,selection::services,selection::actions,
-            selection::parameters,selection::tf,selection::graph,selection::statistics,selection::calls})
+            selection::parameters,selection::tf,selection::graph,selection::statistics,selection::calls,selection::policy})
         {if(selection_text(item)==text) {value=item;return true;}}
         return false;
+    }
+    inline ::fast_io::string_view policy_scope_text(data::policy_scope value) noexcept
+    {
+        switch(value)
+        {
+            case data::policy_scope::all:return "all";case data::policy_scope::global:return "global";
+            case data::policy_scope::single:return "single";case data::policy_scope::group:return "group";
+        }
+        return "invalid";
+    }
+    inline ::fast_io::string_view policy_kind_text(data::policy_kind value) noexcept
+    {
+        switch(value)
+        {
+            case data::policy_kind::target:return "target";case data::policy_kind::binding:return "binding";
+            case data::policy_kind::interface:return "interface";case data::policy_kind::capability:return "capability";
+            case data::policy_kind::limit:return "limit";case data::policy_kind::connection:return "connection";
+        }
+        return "invalid";
     }
     // This bounded HOST grammar accepts DATA filters only. No command can open,
     // revoke, refresh, resume or call a native ROS operation. Diagnostic trace
@@ -78,6 +98,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::ros_state
         request query{};::std::size_t first{2};
         if(words[0]=="trace") {query.selected=selection::trace;}
         else {if(count<3||!parse_selection(words[2],query.selected)) {return false;}first=3;}
+        if(query.selected==selection::policy) {query.count=data::maximum_policy_rows;}
         if(query.selected==selection::trace&&count>2&&(words[2]=="on"||words[2]=="off"))
         {query.trace_control=words[2]=="on"?1u:2u;first=3;}
         unsigned seen{};
@@ -87,8 +108,32 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::ros_state
             if(equals==::fast_io::containers::npos||equals==0||equals+1==token.size()) {return false;}
             auto key{token.subview(0,equals)},value{token.subview(equals+1)};unsigned bit{};
             if(key=="backend") {bit=1;if(value=="all") {query.backend=0;}else if(value=="ros1") {query.backend=1;}else if(value=="ros2") {query.backend=2;}else {return false;}}
-            else if(key=="alias"||key=="module")
-            {bit=key=="alias"?2:4;auto& text{key=="alias"?query.alias:query.module};text.assign({value.data(),value.size()});}
+            else if(key=="alias") {bit=2;query.alias.assign({value.data(),value.size()});}
+            else if(key=="module") {bit=4;query.module.assign({value.data(),value.size()});}
+            else if(key=="scope")
+            {
+                bit=2048;if(query.selected!=selection::policy) {return false;}
+                if(value=="all") {query.scope=data::policy_scope::all;}
+                else if(value=="global") {query.scope=data::policy_scope::global;}
+                else if(value=="single") {query.scope=data::policy_scope::single;}
+                else if(value=="group") {query.scope=data::policy_scope::group;}
+                else {return false;}
+            }
+            else if(key=="target")
+            {bit=4096;if(query.selected!=selection::policy) {return false;}query.target.assign({value.data(),value.size()});}
+            else if(key=="target-hex"||key=="module-hex")
+            {
+                bit=key=="target-hex"?4096:4;if(query.selected!=selection::policy) {return false;}
+                auto& text{key=="target-hex"?query.target:query.module};
+                if(value.size()%2||value.size()/2>text.bytes.size()) {return false;}
+                auto digit=[](char c) noexcept -> int
+                {return c>='0'&&c<='9'?c-'0':c>='a'&&c<='f'?c-'a'+10:c>='A'&&c<='F'?c-'A'+10:-1;};
+                for(::std::size_t j{};j<value.size();j+=2)
+                {
+                    int const high{digit(value[j])},low{digit(value[j+1])};if(high<0||low<0) {return false;}
+                    text.bytes[text.size++]=static_cast<char>(high*16+low);
+                }
+            }
             else if(key=="function"||key=="op")
             {
                 if(query.selected!=selection::trace&&query.selected!=selection::calls) {return false;}
@@ -128,11 +173,31 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::ros_state
     {
         ::fast_io::io::print(output,"ros scope=process-owned stop=",::fast_io::mnp::dec(stop)," selection=",selection_text(value.selected)," status=",status_text(value.result),"\n");
         if(value.result!=status::ok) {return;}
-        if(value.interface_size>value.interfaces.size()||
+        if(value.policy_size>value.policy.size()||
+           (value.selected==selection::policy?(value.size!=0||value.interface_size!=0||value.trace_size!=0):value.policy_size!=0)||
+           value.interface_size>value.interfaces.size()||
            (value.selected==selection::calls?(value.size!=0||value.trace_size!=0):value.interface_size!=0)||
            value.size>value.rows.size()||value.trace_size>value.trace.size()||
            (value.selected==selection::trace?value.size!=0:value.trace_size!=0))
         {::fast_io::io::print(output,"invalid bounded snapshot\n");return;}
+        for(::std::size_t i{};i<value.policy_size;++i)
+        {
+            auto const& row{value.policy[i]};
+            auto complete=[](auto const& text) noexcept {return text.size<=text.bytes.size()&&!text.truncated;};
+            if(row.kind>data::policy_kind::connection||row.scope<data::policy_scope::global||row.scope>data::policy_scope::group||
+               row.backend<1||row.backend>2||row.value_offset>row.value_total||row.value.size>row.value_total-row.value_offset||!complete(row.target)||!complete(row.module)||!complete(row.alias)||!complete(row.key)||!complete(row.value))
+            {::fast_io::io::print(output,"invalid bounded policy snapshot\n");return;}
+        }
+        for(::std::size_t i{};i<value.policy_size;++i)
+        {
+            auto const& row{value.policy[i]};
+            ::fast_io::io::print(output,"policy kind=",policy_kind_text(row.kind)," backend=ros",::fast_io::mnp::dec(row.backend),
+                " scope=",policy_scope_text(row.scope)," target=");quoted(output,row.target);
+            ::fast_io::io::print(output," module=");quoted(output,row.module);::fast_io::io::print(output," alias=");quoted(output,row.alias);
+            ::fast_io::io::print(output," key=");quoted(output,row.key);::fast_io::io::print(output," value=");
+            if(row.redacted) {::fast_io::io::print(output,"\"<redacted>\"");}else {quoted(output,row.value);}
+            ::fast_io::io::print(output," value_offset=",::fast_io::mnp::dec(row.value_offset)," value_total=",::fast_io::mnp::dec(row.value_total)," configured=",row.configured," enabled=",row.enabled," redacted=",row.redacted,"\n");
+        }
         for(::std::size_t i{};i<value.size;++i)
         {
             auto const& row{value.rows[i]};

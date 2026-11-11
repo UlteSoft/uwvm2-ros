@@ -184,7 +184,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
                                     ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_ORANGE),
                                     u8"(runtime)\n\n",
                                     ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL));
-                ::fast_io::fast_terminate();
+                ::uwvm2::uwvm::io::fast_exit(::uwvm2::uwvm::io::diagnostic_exit_status::invalid_option);
             }
 # endif
         }
@@ -192,14 +192,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
     public:
         // Borrow THIS stack-owned adapter's configured context after its real
         // constructor consumed the materializer's local context. Full callers
-        // set cache_key_is_complete before construction, so no derived lookup
-        // context replaces it. This is compiler-input DATA, not cache adoption.
+        // obtain their exact final-IR identity during lookup. This is
+        // compiler-input DATA, not cache adoption.
         // The actual materializer keeps this owner alive through finalizeObject,
         // symbol resolution, and synchronous receipt copy; the borrow never
         // escapes into the publication. This metadata copy explicitly strips the weak origin.
         [[nodiscard]] inline cache_context actual_materializer_base_context() const noexcept
         {
-            auto data{base_context};
+            auto data{has_derived_context ? derived_context : base_context};
             data.origin.reset();
             return data;
         }
@@ -319,7 +319,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
                         return details::sha256_hex_for_path(bytes);
                     }};
                     details::runtime_log_line(u8"lookup-context key=", details::cache_key_hash(ctx),
-                        u8" source=", fingerprint(ctx.cache_key), u8" executable=", fingerprint(ctx.self_executable_sha256),
+                        u8" ir=", fingerprint(ctx.cache_key), u8" compiler=", ctx.compiler_build_id,
                         u8" isa=", details::sha256_hex_for_path(isa),
                         u8" context=", details::sha256_hex_for_path(context),
                         u8" llvm=", ctx.llvm_version, u8" abi=", fingerprint(ctx.uwvm_abi),

@@ -2920,12 +2920,6 @@ inline constexpr bool validate_all_wasm_code() noexcept
                 break;
             }
 #endif
-#if defined(UWVM_SUPPORT_WEAK_SYMBOL)
-            case ::uwvm2::uwvm::wasm::type::module_type_t::weak_symbol:
-            {
-                break;
-            }
-#endif
             [[unlikely]] default:
             {
 #if (defined(_DEBUG) || defined(DEBUG)) && defined(UWVM_ENABLE_DETAILED_DEBUG_CHECK)

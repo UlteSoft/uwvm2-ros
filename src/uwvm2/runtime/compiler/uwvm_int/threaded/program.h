@@ -9,11 +9,12 @@
 #include <array>
 #include <type_traits>
 #include <uwvm2/runtime/compiler/shared/wasm1p1_simd.h>
-#include <uwvm2/extension/memtag/instruction.h>
+#include <uwvm2/extension/memtag/encoding.h>
 #include <uwvm2/uwvm/runtime/storage/impl.h>
 #include <uwvm2/validation/error/impl.h>
 #include <uwvm2/validation/standard/wasm3/reference_policy.h>
 #include <uwvm2/validation/standard/wasm3/exception_immediate.h>
+#include <uwvm2/validation/standard/wasm3/gc_immediate.h>
 
 #endif
 #include "value.h"
@@ -35,12 +36,26 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         ::std::vector<catch_clause> catches{};
         ::std::array<::std::uint8_t,16u> literal{};
         bool (*simd_handler)(engine&,instruction const&) noexcept{};
+
+        // Lowering groups prefixed instructions for dispatch. Delivery policy
+        // still uses the original primary opcode (not that private dispatch id).
+        [[nodiscard]] constexpr unsigned primary_opcode() const noexcept
+        {
+            return opcode>=0x10000u ? 0xfdu : opcode>=0x800u ? 0xfbu : opcode>=0x400u ? 0xffu :
+                opcode>=0x200u ? 0xfcu : opcode>=0x100u ? 0xfeu : opcode;
+        }
     };
     struct function_program
     {
         signature const* type{};
         ::std::size_t locals{};
+        // Instruction/debug maps retain immutable file coordinates. Public
+        // Wasm fault events use an offset from this function's first opcode.
+        ::std::size_t expression_file_offset{};
         ::std::vector<instruction> instructions{};
+
+        [[nodiscard]] ::std::uint64_t expression_offset(::std::size_t file_offset) const noexcept
+        { return file_offset>=expression_file_offset ? file_offset-expression_file_offset : UINT64_MAX; }
     };
     struct module_program
     {
@@ -53,14 +68,12 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         { return t==value_type::i32 || t==value_type::i64 || t==value_type::f32 || t==value_type::f64 || t==value_type::v128; }
         [[nodiscard]] inline bool value_type_supported(core::core_value_type t) noexcept
         {
-            return t.kind<=core::value_kind::f64 || t.kind==core::value_kind::v128 || (t.kind==core::value_kind::reference &&
-                (t.heap.code==static_cast<::std::int64_t>(core::abstract_heap_type::exn) ||
-                 t.heap.code==static_cast<::std::int64_t>(core::abstract_heap_type::noexn)));
+            return t.kind<=core::value_kind::v128 || t.kind==core::value_kind::reference;
         }
         [[nodiscard]] inline bool carrier_type(value_type t) noexcept
-        { return numeric_type(t) || t==value_type::externref; }
+        { return numeric_type(t) || t==value_type::externref || t==value_type::funcref; }
         [[nodiscard]] inline ::std::size_t abi_bytes(value_type t) noexcept
-        { return t==value_type::i32 || t==value_type::f32 ? 4uz : t==value_type::v128 ? 16uz : 8uz; }
+        { return t==value_type::i32 || t==value_type::f32 ? 4uz : t==value_type::v128 ? 16uz : t==value_type::funcref ? sizeof(storage::gc_reference) : 8uz; }
         [[nodiscard]] inline bool abi_fits(value_type const* begin,value_type const* end,::std::size_t limit) noexcept
         {
             for(auto at{begin};at!=end;++at)
@@ -121,7 +134,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         };
         [[nodiscard]] inline bool supported_plain(unsigned op) noexcept
         {
-            return op<=0x05u || op==0x08u || op==0x0au || (op>=0x0bu&&op<=0x11u) || (op>=0x1au && op<=0x1cu) || op==0x1fu || (op>=0x20u && op<=0x24u) ||
+            return op<=0x05u || op==0x08u || op==0x0au || (op>=0x0bu&&op<=0x13u) || (op>=0x1au && op<=0x1cu) || op==0x1fu || (op>=0x20u && op<=0x24u) ||
                    (op>=0x28u && op<=0x40u) || (op>=0x41u && op<=0xc4u) ||
                    op==0xd0u || op==0xd1u || (op>=0xd4u && op<=0xd6u);
         }
@@ -142,6 +155,8 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                 out.locals+=run.count;
             }
             auto const& body{source.wasm_code_ptr->body};
+            out.expression_file_offset=static_cast<::std::size_t>(
+                reinterpret_cast<::std::uintptr_t>(body.expr_begin)-source_begin);
             source_cursor input{reinterpret_cast<::std::byte const*>(body.expr_begin),
                 reinterpret_cast<::std::byte const*>(body.expr_begin),reinterpret_cast<::std::byte const*>(body.code_end)};
             auto const bytes{static_cast<::std::size_t>(input.end-input.begin)};
@@ -216,9 +231,9 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                     charged_bytes+=(n+1u)*sizeof(::std::uint32_t);ins.labels.reserve(n+1u);
                     for(::std::uint64_t i{};i<=n;++i) { ins.labels.push_back(static_cast<::std::uint32_t>(input.leb(32u))); }
                 }
-                else if(op==0x0cu || op==0x0du || op==0x10u || op==0x08u || (op>=0x20u&&op<=0x24u) || (op==0x3fu||op==0x40u) || op==0xd5u || op==0xd6u)
+                else if(op==0x0cu || op==0x0du || op==0x10u || op==0x12u || op==0x08u || (op>=0x20u&&op<=0x24u) || (op==0x3fu||op==0x40u) || op==0xd5u || op==0xd6u)
                 { ins.immediate=input.leb(32u); }
-                else if(op==0x11u) { ins.immediate=input.leb(32u);ins.target=input.leb(32u); }
+                else if(op==0x11u || op==0x13u) { ins.immediate=input.leb(32u);ins.target=input.leb(32u); }
                 else if(op==0x41u || op==0x42u) { ins.immediate=input.leb(op==0x41u?32u:64u,true); }
                 else if(op==0x43u || op==0x44u)
                 { for(unsigned n{};n!=(op==0x43u?4u:8u);++n) { ins.immediate|=static_cast<::std::uint64_t>(input.byte())<<(8u*n); } }
@@ -231,10 +246,67 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                     else if((t<-5||t>-1)&&t!=-23&&t!=-12) { return status::unsupported_profile; }
                 }
                 else if(op==0xd0u)
-                { ins.immediate=input.leb(33u,true);if(static_cast<::std::int64_t>(ins.immediate)!=-23 && static_cast<::std::int64_t>(ins.immediate)!=-12) { return status::unsupported_profile; } }
-                else if(op==0xfcu)
                 {
-                    auto const sub{input.leb(32u)};
+                    namespace v3=::uwvm2::validation::standard::wasm3;
+                    v3::recursive_type_context const empty_context{};
+                    auto const* context{module.type_section_storage.core3_context_ptr};
+                    // The retained source certificate already checked feature
+                    // admission. Decode the complete heap again; every valid
+                    // null heap uses the same all-zero runtime carrier.
+                    auto const decoded{v3::scan_core3_ref_null_heap(input.current,input.end,
+                        context==nullptr ? empty_context : *context,true,true,true)};
+                    if(decoded.error!=v3::core3_ref_null_error::ok)
+                    {
+                        // Legacy function-only sections do not populate the
+                        // recursive context. Failed decoders leave the cursor
+                        // unchanged; only this actual type-count witness may
+                        // admit their concrete function indices.
+                        if(context!=nullptr || decoded.error!=v3::core3_ref_null_error::unknown_type)
+                        { return status::validation_failed; }
+                        auto const legacy{v3::scan_function_ref_null_heap(input.current,input.end,true,
+                            module.type_section_storage.type_section_count,true,true)};
+                        if(legacy.error!=v3::function_heap_immediate_error::ok)
+                        { return status::validation_failed; }
+                    }
+                }
+                else if(op==0xfbu)
+                {
+                    namespace v3=::uwvm2::validation::standard::wasm3;
+                    auto const decoded{v3::scan_gc_instruction(input.current,input.end)};
+                    if(decoded.error!=v3::gc_immediate_error::ok) { return status::validation_failed; }
+                    // Aggregate and i31 operations use owned, full-width native
+                    // reference carriers; unsupported casts remain explicit.
+                    if(decoded.opcode>19u && decoded.opcode<28u) { return status::unsupported_profile; }
+                    ins.opcode=0x800u+decoded.opcode;ins.immediate=decoded.first;ins.target=decoded.second;
+                    auto const sub=decoded.opcode;
+                    if(sub==0u)
+                    { if(!module.gc_store || !module.gc_store->field_count(decoded.first,ins.parameters)) { return status::validation_failed; } }
+                    else if(sub==1u) { ins.parameters=0u; }
+                    else if(sub==8u) { ins.parameters=decoded.second; }
+                    else if(sub==5u || sub==6u || sub==9u || sub==10u || (sub>=11u&&sub<=13u)) { ins.parameters=2u; }
+                    else if(sub==14u) { ins.parameters=3u; }
+                    else if(sub==16u || sub==18u || sub==19u) { ins.parameters=4u; }
+                    else if(sub==17u) { ins.parameters=5u; }
+                    else { ins.parameters=1u; }
+                    if(ins.parameters>budget.values) { return status::resource_limit; }
+                    ins.results=(sub==5u || sub==14u || (sub>=16u&&sub<=19u)) ? 0u : 1u;
+                }
+                else if(op==0xfcu || op==::uwvm2::extension::memtag::opcode_prefix)
+                {
+                    ::std::uint64_t sub{};
+                    if(op==::uwvm2::extension::memtag::opcode_prefix)
+                    {
+                        auto const decoded{::uwvm2::extension::memtag::scan_opcode(input.current,input.end)};
+                        if(decoded.error!=::uwvm2::extension::memtag::encoding_error::none)
+                        { return status::validation_failed; }
+                        sub=decoded.subopcode;
+                    }
+                    else
+                    {
+                        sub=input.leb(32u);
+                        if(::uwvm2::extension::memtag::find_instruction(static_cast<::std::uint32_t>(sub)) != nullptr)
+                        { return status::validation_failed; }
+                    }
                     if(sub<=7u) { ins.opcode=0x200u+static_cast<unsigned>(sub); }
                     else if(sub<=11u)
                     {

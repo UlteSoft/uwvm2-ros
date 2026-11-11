@@ -83,6 +83,7 @@ import uwvm2.extension.memtag.usage;
 import uwvm2.extension.memtag.shadow;
 import uwvm2.extension.memtag.storage;
 import uwvm2.runtime.memtag.bridge;
+import uwvm2.runtime.diagnostic.crash_policy;
 import uwvm2.runtime.memtag.random;
 import :init_limit;
 import :threaded_registry_view;

@@ -13,6 +13,7 @@
 #include <chrono>
 #include <cstdint>
 #include <mutex>
+#include <memory>
 #include <atomic>
 #include <condition_variable>
 #include <uwvm2/utils/thread/process_exit.h>
@@ -80,18 +81,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::environment
         ::std::array<exit_wait_action, 6u> exit_actions{};
         exit_wait_action native_wait_exit_action{};
     };
-    struct resource_limits
-    {
-        ::std::array<operation_limit, static_cast<unsigned>(budget_kind::count)> operations{};
-        ::std::array<::std::uint64_t, 4u> clock_granularity_ns{1u, 1u, 1u, 1u};
-        ::std::uint64_t max_poll_subscriptions{unlimited};
-        ::std::uint64_t max_poll_wait_ns{unlimited};
-        ::std::uint64_t max_args_env_bytes{unlimited};
-        ::std::uint64_t filesystem_base_rights{};
-        ::std::uint64_t filesystem_inheriting_rights{};
-    };
-    // One stable process ledger is shared by modules, new environments and code
-    // epochs. It is deliberately outside checkpoints and candidate state.
+    // Accounting belongs to one policy environment. Copies of that environment
+    // retain the same native ledger across checkpoints and code generations.
+    // The separate process object below coordinates stop/wakeup only.
+    // A descriptor owner releasing its own pin cannot make its own failed
+    // quota attempt admissible. Keep its retry notification separate from
+    // notifications by other threads, cancellation and actual budget release.
+    inline thread_local unsigned char quota_wait_thread_identity{};
+    inline void notify_process_budget_waiters() noexcept;
     struct budget_ledger
     {
         struct counter { ::std::uint64_t window_bytes{}, window_calls{}, total_bytes{}, total_calls{}, active{}; };
@@ -102,24 +99,35 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::environment
         ::std::atomic<bool> cancelled{};
         ::std::condition_variable changed{};
 #if defined(__linux__)
-        struct waiter { int event{-1}; waiter* next{}; };
+        struct waiter { int event{-1}; waiter* next{}; void const* owner{&quota_wait_thread_identity}; };
+#else
+        struct waiter { bool notified{}; waiter* next{}; void const* owner{&quota_wait_thread_identity}; };
+#endif
         waiter* waiters{};
-        void notify_waiters_locked() noexcept
+        // Published under the wait-list mutex before retrying admission. An
+        // empty list needs no wakeup lock on each successful host operation.
+        ::std::atomic<bool> has_waiters{};
+        void notify_waiters_locked(bool include_calling_thread=true) noexcept
         {
+#if defined(__linux__)
             ::std::uint64_t const one{1u};
             for(auto* current{waiters}; current; current=current->next)
             {
+                if(!include_calling_thread && current->owner==&quota_wait_thread_identity) { continue; }
                 // Nonblocking eventfd. EAGAIN means a notification is already
                 // pending; no resource/Guest callback executes under this lock.
                 while(::write(current->event, &one, sizeof(one)) < 0 && errno == EINTR) {}
             }
+#else
+            // Condition variables do not retain a notification. Give every
+            // admitted waiter its own sticky predicate under the wait mutex.
+            for(auto* current{waiters}; current; current=current->next)
+            { if(include_calling_thread || current->owner!=&quota_wait_thread_identity) { current->notified=true; } }
+#endif
         }
-#endif
-        void notify_waiters() noexcept
+        void notify_waiters(bool include_calling_thread=true) noexcept
         {
-#if defined(__linux__)
-            { ::std::lock_guard lock{mutex}; notify_waiters_locked(); }
-#endif
+            { ::std::lock_guard lock{mutex}; notify_waiters_locked(include_calling_thread); }
             changed.notify_all();
         }
         [[nodiscard]] budget_failure reserve_checked(budget_kind kind, operation_limit const& limit, ::std::uint64_t bytes, unsigned* blocked_fields=nullptr) noexcept
@@ -175,10 +183,33 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::environment
         void release(budget_kind kind) noexcept
         {
             { ::std::lock_guard lock{mutex}; --counters[static_cast<unsigned>(kind)].active; }
-            notify_waiters();
+            // Native descriptor and quota waiters use one cancellation/wakeup
+            // hub. A spurious wake never grants another policy's allowance.
+            notify_process_budget_waiters();
         }
     };
     inline budget_ledger process_budget_ledger{};
+    inline void notify_process_budget_waiters() noexcept
+    {
+        if(process_budget_ledger.has_waiters.load(::std::memory_order_acquire))
+        { process_budget_ledger.notify_waiters(); }
+    }
+    struct resource_limits
+    {
+        // Fresh Single/Group/Global environments start independent. An actual
+        // group shares its environment; native world clones copy this handle.
+        // It is deliberately excluded from policy wire encoding and snapshots
+        // of consumed state: no Guest or restore can reset this ledger.
+        ::std::shared_ptr<budget_ledger> accounting{::std::make_shared<budget_ledger>()};
+        ::std::array<operation_limit, static_cast<unsigned>(budget_kind::count)> operations{};
+        ::std::array<::std::uint64_t, 4u> clock_granularity_ns{1u, 1u, 1u, 1u};
+        ::std::uint64_t max_poll_subscriptions{unlimited};
+        ::std::uint64_t max_poll_wait_ns{unlimited};
+        ::std::uint64_t max_args_env_bytes{unlimited};
+        ::std::uint64_t filesystem_base_rights{};
+        ::std::uint64_t filesystem_inheriting_rights{};
+    };
+
     // Private native lexical scope. A Guest cannot install a callback or alter
     // the real execution lease. The callback observes actual stop/update fences.
     struct host_wait_scope
@@ -226,6 +257,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::environment
                 auto** item{&process_budget_ledger.waiters};
                 while(*item && *item != &entry) { item=&(*item)->next; }
                 if(*item) { *item=entry.next; }
+                process_budget_ledger.has_waiters.store(process_budget_ledger.waiters!=nullptr,::std::memory_order_release);
             }
             if(timer >= 0) { ::close(timer); }
             if(entry.event >= 0) { ::close(entry.event); }
@@ -238,7 +270,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::environment
             timer=::timerfd_create(CLOCK_MONOTONIC, TFD_CLOEXEC|TFD_NONBLOCK);
             if(timer < 0) { return false; }
             ::std::lock_guard lock{process_budget_ledger.mutex};
-            entry.next=process_budget_ledger.waiters; process_budget_ledger.waiters=&entry; registered=true;
+            entry.next=process_budget_ledger.waiters; process_budget_ledger.waiters=&entry;
+            process_budget_ledger.has_waiters.store(true,::std::memory_order_release);registered=true;
             return true;
         }
         [[nodiscard]] bool wait(::std::chrono::steady_clock::time_point deadline, int cancellation_fd, int native_fd=-1, short native_events=0) noexcept
@@ -258,6 +291,49 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::environment
             return true;
         }
     };
+#else
+    // Register before retrying admission, just like the Linux eventfd path.
+    // A stack-owned predicate cannot wrap and one waiter cannot consume another
+    // waiter's wake. No provider or external cancellation callback runs while
+    // holding the ledger mutex: stop takes domain admission -> ledger in order.
+    class quota_condition_wait
+    {
+        budget_ledger::waiter entry{};
+        bool registered{};
+    public:
+        quota_condition_wait() = default;
+        quota_condition_wait(quota_condition_wait const&) = delete;
+        ~quota_condition_wait()
+        {
+            if(!registered) { return; }
+            ::std::lock_guard lock{process_budget_ledger.mutex};
+            auto** item{&process_budget_ledger.waiters};
+            while(*item && *item != &entry) { item=&(*item)->next; }
+            if(*item) { *item=entry.next; }
+                process_budget_ledger.has_waiters.store(process_budget_ledger.waiters!=nullptr,::std::memory_order_release);
+        }
+        [[nodiscard]] bool ready() const noexcept { return registered; }
+        [[nodiscard]] bool prepare() noexcept
+        {
+            ::std::lock_guard lock{process_budget_ledger.mutex};
+            entry.next=process_budget_ledger.waiters; process_budget_ledger.waiters=&entry;
+            process_budget_ledger.has_waiters.store(true,::std::memory_order_release);registered=true;
+            return true;
+        }
+        void begin_attempt() noexcept
+        {
+            if(!registered) { return; }
+            ::std::lock_guard lock{process_budget_ledger.mutex};
+            // Clear BEFORE cancellation and provider checks. A prior change
+            // is observed by those checks; any later notification stays set.
+            entry.notified=false;
+        }
+        void wait(::std::chrono::steady_clock::time_point deadline) noexcept
+        {
+            ::std::unique_lock lock{process_budget_ledger.mutex};
+            process_budget_ledger.changed.wait_until(lock, deadline, [&]() noexcept { return entry.notified; });
+        }
+    };
 #endif
     // Invoke only at the outer native provider boundary. Each unsuccessful
     // attempt has returned before waiting, so fd/memory/backend locks are gone.
@@ -270,16 +346,20 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::environment
         host_wait_scope scope{cancelled, context};
 #if defined(__linux__)
         quota_native_wait native{};
+#else
+        quota_condition_wait native{};
 #endif
         for(;;)
         {
+#if !defined(__linux__)
+            native.begin_attempt();
+#endif
             if(scope.cancelled()) { return quota_call_result::cancelled; }
             scope.pending = false;
             scope.wake_at = ::std::chrono::steady_clock::time_point::max();
             invoke();
             ::uwvm2::utils::control::host_diagnostics::flush_limits();
             if(!scope.pending) { return quota_call_result::completed; }
-#if defined(__linux__)
             if(!native.ready())
             {
                 if(!native.prepare()) { return quota_call_result::wait_unavailable; }
@@ -287,13 +367,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::environment
                 // between the failed reservation and entering the kernel wait.
                 continue;
             }
-#endif
             if(scope.cancelled()) { return quota_call_result::cancelled; }
 #if defined(__linux__)
             if(!native.wait(scope.wake_at, cancellation_fd)) { return quota_call_result::wait_unavailable; }
 #else
-            ::std::unique_lock lock{process_budget_ledger.mutex};
-            process_budget_ledger.changed.wait_until(lock, scope.wake_at);
+            native.wait(scope.wake_at);
 #endif
         }
     }
@@ -315,17 +393,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::environment
     struct budget_reservation
     {
         budget_ledger* ledger{};
+        ::std::shared_ptr<budget_ledger> accounting_lifetime{};
         budget_kind kind{};
         budget_failure failure{budget_failure::exhausted};
         explicit budget_reservation(budget_kind requested, resource_limits const& limits, ::std::uint64_t bytes, bool applicable = true) noexcept : kind{requested}
         {
             if(!applicable) { return; }
+            accounting_lifetime=limits.accounting;
+            if(!accounting_lifetime) { return; } // Invalid native/moved-from policy fails closed.
+            auto& account{*accounting_lifetime};
             unsigned blocked_fields{};
             failure = host_wait_cancelled() ? budget_failure::cancelled :
-                process_budget_ledger.reserve_checked(kind, limits.operations[static_cast<unsigned>(kind)], bytes, &blocked_fields);
+                account.reserve_checked(kind, limits.operations[static_cast<unsigned>(kind)], bytes, &blocked_fields);
             if(failure == budget_failure::none)
             {
-                ledger = &process_budget_ledger;
+                ledger = &account;
                 if(host_wait_scope::current && !host_wait_scope::current->exit_owner.select(
                     limits.operations[static_cast<unsigned>(kind)].native_wait_exit_action))
                 { ledger->release(kind); ledger=nullptr; failure=budget_failure::cancelled; }
@@ -343,8 +425,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::environment
                 auto const& limit{limits.operations[static_cast<unsigned>(kind)]};
                 if(limit.window_bytes != unlimited || limit.window_calls != unlimited)
                 {
-                    ::std::lock_guard lock{process_budget_ledger.mutex};
-                    scope.wake_at=process_budget_ledger.window_start + ::std::chrono::seconds{1};
+                    ::std::lock_guard lock{account.mutex};
+                    scope.wake_at=account.window_start + ::std::chrono::seconds{1};
                 }
             }
         }

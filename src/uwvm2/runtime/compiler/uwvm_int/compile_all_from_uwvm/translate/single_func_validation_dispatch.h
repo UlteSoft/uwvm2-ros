@@ -4844,6 +4844,21 @@ auto const runtime_log_wasm_op_state{[&]([[maybe_unused]] ::uwvm2::utils::contai
                                      }};
 
 bool finished_current_func{};
+::std::size_t memtag_source_offset{SIZE_MAX};
+// Hardware + log executes the same precise software detector: no physical
+// ASYNC fault is armed, so retain the same pending-flag/cold-origin fast path.
+bool const memtag_software_async{::uwvm2::extension::memtag::asynchronous_requested() &&
+    !::uwvm2::extension::memtag::hardware_checked_access_requested()};
+bool const memtag_sync_log{!::uwvm2::extension::memtag::asynchronous_requested() && ::uwvm2::extension::memtag::logging_requested()};
+auto const emit_memtag_origin_boundary{[&](unsigned flags) constexpr
+{
+    emit_opfunc_to(bytecode,::uwvm2::runtime::compiler::uwvm_int::optable::translate::
+        get_uwvmint_memtag_boundary_from_tuple<CompileOption>(interpreter_tuple));
+    emit_imm_to(bytecode,static_cast<::std::uint64_t>(options.curr_wasm_id));
+    emit_imm_to(bytecode,static_cast<::std::uint64_t>(function_index));
+    emit_imm_to(bytecode,static_cast<::std::uint64_t>(memtag_source_offset));
+    emit_imm_to(bytecode,flags);
+}};
 
 // Scalar memory64 handlers consume an i64 address and an eight-byte offset
 // slot. The memory32 path below retains its four-byte encoding and fusions.
@@ -4855,7 +4870,51 @@ auto const emit_memory64_scalar_if_selected{[&]<typename Value, ::std::size_t By
 #ifdef UWVM_ENABLE_UWVM_INT_COMBINE_OPS
         flush_conbine_pending();
 #endif
+#if defined(__x86_64__) || defined(_M_X64) || \
+    (defined(__linux__) && defined(__aarch64__) && defined(UWVM_STUDY_AARCH64_MEMTAG_SCALAR))
+        if constexpr(::std::same_as<Value,::uwvm2::parser::wasm::standard::wasm1::type::wasm_i32> ||
+                     ::std::same_as<Value,::uwvm2::parser::wasm::standard::wasm1::type::wasm_i64>)
+        {
+            if(!resolved_memory.memory_p->memtag_shadow.shared())
+            {
+                auto const address_type{current_memory_address64 ? curr_operand_stack_value_type::i64 : curr_operand_stack_value_type::i32};
+                if constexpr(!Store)
+                {
+                    // Preserve a live output ring before replacing its result
+                    // slot; the consumed address ring already supplies space.
+                    if(stacktop_enabled_for_vt(value_type) && !stacktop_ranges_merged_for(address_type,value_type))
+                    { stacktop_prepare_push1_if_reachable(bytecode,value_type); }
+                }
+                namespace mtopt=::uwvm2::runtime::compiler::uwvm_int::optable;
+                auto const select{[&]<typename Address>() constexpr
+                {
+                    using policy=mtopt::memtag_details::scalar_policy;
+                    if(memtag_sync_log)
+                    { return mtopt::translate::get_uwvmint_memtag_scalar_cached_from_tuple<Address,Value,Bytes,Signed,Store,policy::synchronous_log,CompileOption>(curr_stacktop,*resolved_memory.memory_p,interpreter_tuple); }
+                    if(memtag_software_async)
+                    { return mtopt::translate::get_uwvmint_memtag_scalar_cached_from_tuple<Address,Value,Bytes,Signed,Store,policy::software_async,CompileOption>(curr_stacktop,*resolved_memory.memory_p,interpreter_tuple); }
+                    if(!::uwvm2::extension::memtag::asynchronous_requested() && !::uwvm2::extension::memtag::hardware_checked_access_requested())
+                    { return mtopt::translate::get_uwvmint_memtag_scalar_cached_from_tuple<Address,Value,Bytes,Signed,Store,policy::enforcing,CompileOption>(curr_stacktop,*resolved_memory.memory_p,interpreter_tuple); }
+                    return mtopt::translate::get_uwvmint_memtag_scalar_cached_from_tuple<Address,Value,Bytes,Signed,Store,policy::generic,CompileOption>(curr_stacktop,*resolved_memory.memory_p,interpreter_tuple);
+                }};
+                emit_opfunc_to(bytecode,current_memory_address64 ? select.template operator()<::std::uint64_t>() :
+                                                                  select.template operator()<::std::uint32_t>());
+                emit_imm_to(bytecode,resolved_memory.memory_p);
+                emit_imm_to(bytecode,static_cast<::std::uint64_t>(offset));
+                if(memtag_sync_log || memtag_software_async)
+                {
+                    emit_imm_to(bytecode,static_cast<::std::uint64_t>(options.curr_wasm_id));
+                    emit_imm_to(bytecode,static_cast<::std::uint64_t>(function_index));
+                    emit_imm_to(bytecode,static_cast<::std::uint64_t>(memtag_source_offset));
+                }
+                if constexpr(Store) { stacktop_after_pop_n_if_reachable(bytecode,2uz); }
+                else { stacktop_after_pop_n_push1_typed_if_reachable(bytecode,1uz,value_type); }
+                return true;
+            }
+        }
+#endif
         stacktop_flush_all_to_operand_stack(bytecode);
+        if(memtag_sync_log || memtag_software_async) { emit_memtag_origin_boundary(0u); }
         namespace mtopt = ::uwvm2::runtime::compiler::uwvm_int::optable;
         emit_opfunc_to(bytecode,mtopt::translate::get_uwvmint_memtag_dispatch_from_tuple<CompileOption>(interpreter_tuple));
         emit_imm_to(bytecode,resolved_memory.memory_p);
@@ -5042,6 +5101,7 @@ auto const translate_one_opcode{
         // ^^ code_curr
 
         auto const op_begin{code_curr};
+        memtag_source_offset=static_cast<::std::size_t>(op_begin-code_begin);
 
         wasm1_code curr_opbase;  // no initialize necessary
         ::std::memcpy(::std::addressof(curr_opbase), code_curr, sizeof(wasm1_code));
@@ -5095,6 +5155,29 @@ auto const translate_one_opcode{
             if(conbine_pending.kind != conbine_pending_kind::none && !conbine_can_continue(curr_opbase)) [[unlikely]] { flush_conbine_pending(); }
         }
 #endif
+
+        auto const memtag_primary{static_cast<unsigned>(curr_opbase)};
+        bool const memtag_pure_control{(memtag_primary>=0x08u && memtag_primary<=0x0fu) ||
+            memtag_primary==0x1fu || memtag_primary==0xd5u || memtag_primary==0xd6u};
+        bool const memtag_scalar_site{memtag_primary>=0x28u && memtag_primary<=0x3eu};
+        if(!::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag &&
+           (::uwvm2::extension::memtag::asynchronous_requested() || ::uwvm2::extension::memtag::logging_requested()) && !is_polymorphic &&
+           ::uwvm2::runtime::memtag::deferred::tracked_opcode(memtag_primary) &&
+           !((memtag_sync_log || memtag_software_async) && memtag_scalar_site) &&
+           !(memtag_sync_log && memtag_pure_control))
+        {
+#ifdef UWVM_ENABLE_UWVM_INT_COMBINE_OPS
+            if(conbine_pending.kind != conbine_pending_kind::none) { flush_conbine_pending(); }
+            br_if_fuse.kind=br_if_fuse_kind::none;
+            br_if_fuse.site=SIZE_MAX;br_if_fuse.end=SIZE_MAX;br_if_fuse.stacktop_currpos_at_site={};
+#endif
+            if(memtag_software_async && memtag_pure_control)
+            {
+                emit_opfunc_to(bytecode,::uwvm2::runtime::compiler::uwvm_int::optable::translate::
+                    get_uwvmint_memtag_poll_from_tuple<CompileOption>(interpreter_tuple));
+            }
+            else { emit_memtag_origin_boundary(::uwvm2::runtime::memtag::deferred::draining_opcode(memtag_primary)?1u:0u); }
+        }
 
         ::std::size_t bytecode_before{};
         ::std::size_t thunks_before{};

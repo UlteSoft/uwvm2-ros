@@ -167,6 +167,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
         ::std::uint64_t index{};
         bool global{};
         ::std::string name{}; // Detached display label, never runtime authority.
+        unsigned char kind{}; // 0=function, 1=table, 2=memory, 3=global (Wasm external kind).
+
     };
     struct llvm_jit_debug_source_image
     {
@@ -174,6 +176,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
         ::std::vector<llvm_jit_debug_source_section> sections{};
         ::std::vector<llvm_jit_debug_source_function> functions{};
         ::std::vector<llvm_jit_debug_source_symbol> symbols{};
+        ::std::uint64_t function_count{}, global_count{}, table_count{};
+        ::std::uint64_t imported_functions{}, imported_globals{}, imported_tables{}, imported_memories{};
+        ::std::vector<unsigned char> memory_address_bits{};
+        bool inventory_available{};
     };
     struct llvm_jit_debug_source_position
     {
@@ -1349,6 +1355,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
     /// @note Returns false outside an execution entry or on builds without native threads.
     extern "C++" bool runtime_execution_stop_requested_host_api() noexcept;
 
+    /// Internal synchronous boundary for one stable native WASI table operation.
+    /// The runtime retries only this provider after a quota wait, never the
+    /// enclosing driver callback. Its actual execution lease owns cancellation.
+    enum class runtime_host_quota_wait_result : ::std::uint_least8_t { completed, cancelled, unavailable };
+    extern "C++" runtime_host_quota_wait_result runtime_invoke_wasip1_host_api_with_quota_wait(
+        void (*provider)(void*) noexcept, void* context) noexcept;
+
     /// @brief Clear backend-neutral and selected-backend runtime state before loading a fresh module set in the same process.
     /// @note  Embedders must call this before destroying or replacing runtime storage referenced by compiled or lazy caches.
     /// @note  On native-thread builds reset closes execution admission, requests cancellation and waits for all outermost
@@ -1406,8 +1419,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
     // Host-only admission of actual execution/compiler mode. It grants no module capability.
     extern "C++" bool ros_execution_backend_supported_host_api() noexcept;
     /// @brief Admit the actual builtin caller, including permanent retirement checks.
-    /// @param allow_module_exports True only after the host selects the current
-    ///        module's explicit Single call-boundary=module-exports policy.
+    /// @param allow_module_exports True after the host selects the actual
+    ///        executing module's enabled policy; an explicit Single
+    ///        call-boundary=same-module keeps strict ancestry checking.
     /// @details The default rejects cross-module ancestry. Opting in delegates
     ///          only operations performed inside that module's reviewed exports;
     ///          it transfers neither handles nor permissions to calling modules.
@@ -1416,16 +1430,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
     // Never use this query to authorize a Guest operation or to register a capability owner.
     extern "C++" bool ros_observed_caller_identity_host_api(ros_caller_identity & out) noexcept;
     // Detached facts for the actual sealed builtin call. These never grant a
-    // portable capability. The current bounded profile requires one defined,
-    // nonshared memory; imported memories and threaded children fail closed.
+    // portable capability. Ordinary callers retain their own defined memory;
+    // a threaded caller must prove its actual shared-memory ChildLease.
     struct ros_caller_source_facts
     {
         ros_caller_identity caller{};
         ::std::array<::std::byte,32u> whole_wasm_sha256{}, builtin_interface_sha256{};
         ::std::uint_least64_t whole_wasm_bytes{}, memory_bytes{}, builtin_function_index{};
         unsigned builtin_kind{};
+        bool shared_memory{};
     };
-    extern "C++" bool ros_caller_source_facts_host_api(ros_caller_source_facts& out) noexcept;
+    extern "C++" bool ros_caller_source_facts_host_api(ros_caller_source_facts& out, bool allow_module_exports = false) noexcept;
     /// @brief Drain the replaced module's local ROS owners after a genuine
     ///        committed update, outside pause/publication locks while still
     ///        stopped. This native management API is never a Wasm import.

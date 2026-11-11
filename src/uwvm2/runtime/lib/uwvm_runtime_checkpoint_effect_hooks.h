@@ -62,7 +62,6 @@ namespace
         {
             case cached_import_target::kind::local_imported:
             case cached_import_target::kind::dl:
-            case cached_import_target::kind::weak_symbol:
                 return checkpoint_resolved_effect::unadapted_host;
             case cached_import_target::kind::defined:
             {

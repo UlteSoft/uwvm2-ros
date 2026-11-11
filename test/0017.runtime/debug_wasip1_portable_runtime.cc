@@ -158,7 +158,8 @@ int main(int argc,char** argv)
     require(lib::llvm_jit_prepare_debug_host_api(), "real fused validator/compiler publication");
     // The original owned-source initializer defers active segments until the
     // full fused compiler has published. Apply its real remaining stage.
-    ::uwvm2::uwvm::runtime::initializer::apply_runtime_active_segments(u8"wasi-debug");
+    require(::uwvm2::uwvm::runtime::initializer::apply_runtime_active_segments(u8"wasi-debug") ==
+        ::uwvm2::uwvm::runtime::initializer::details::active_segment_result::ok, "active segments initialized successfully");
     ws::request trace{};trace.operation=ws::action::trace_enable;
     (void)::uwvm2::uwvm::debugger::wasip1_calls::apply(trace);
     ::std::uint32_t result{};

@@ -1714,13 +1714,21 @@ inline void posix_truncate_impl(int fd, ::fast_io::uintfpos_t size)
 
 		if constexpr (::std::endian::native == ::std::endian::big)
 		{
-			/* 3 args: fd, size (high, low) */
+#if defined(__arm__) && defined(__ARM_EABI__)
+			// EABI requires the 64-bit length in the even r2/r3 pair.
+			result_syscall = ::fast_io::system_call<__NR_ftruncate64, int>(fd, 0u, size_u32_high, size_u32_low);
+#else
 			result_syscall = ::fast_io::system_call<__NR_ftruncate64, int>(fd, size_u32_high, size_u32_low);
+#endif
 		}
 		else
 		{
-			/* 3 args: fd, size (low, high) */
+#if defined(__arm__) && defined(__ARM_EABI__)
+			// EABI requires the 64-bit length in the even r2/r3 pair.
+			result_syscall = ::fast_io::system_call<__NR_ftruncate64, int>(fd, 0u, size_u32_low, size_u32_high);
+#else
 			result_syscall = ::fast_io::system_call<__NR_ftruncate64, int>(fd, size_u32_low, size_u32_high);
+#endif
 		}
 
 		system_call_throw_error(result_syscall);

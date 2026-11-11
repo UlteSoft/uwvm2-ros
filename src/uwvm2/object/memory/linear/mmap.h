@@ -326,6 +326,26 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
             }
         }
 
+        // Query the exact backend ceiling without reserving, committing or
+        // shifting a user-supplied page count. Startup configuration validates
+        // against this same bound before entering the low-level invariant guard.
+        [[nodiscard]] inline constexpr ::std::size_t maximum_initial_page_count() const noexcept
+        {
+            if(this->custom_page_size_log2 >= ::std::numeric_limits<::std::size_t>::digits) { return 0uz; }
+            ::std::uint_least64_t bytes{max_partial_protection_wasm32_length};
+            if constexpr(sizeof(::std::size_t) >= sizeof(::std::uint_least64_t))
+            {
+                switch(this->status)
+                {
+                    case mmap_memory_status_t::wasm32: bytes = wasm32_full_protection_usable_u64; break;
+                    case mmap_memory_status_t::wasm64: bytes = max_partial_protection_wasm64_length; break;
+                    default: ::fast_io::fast_terminate(); // Internal owner-state corruption.
+                }
+            }
+            auto const pages{static_cast<::std::size_t>(bytes >> this->custom_page_size_log2)};
+            return ::std::min(pages, this->reservation_limit_bytes >> this->custom_page_size_log2);
+        }
+
         /// @brief      Initialize the memory.
         /// @note       Maximum value checks are not provided; maximum value checks should be performed outside of memory management.
         /// @note       You can use it after clear().
@@ -363,50 +383,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
             }
             // Memory32 on 64-bit hosts retains its full unsigned guard domain.
 
-            ::std::size_t max_init_page_count;  // No initlization is required
-
-            if constexpr(sizeof(::std::size_t) >= sizeof(::std::uint_least64_t))
-            {
-                // 64bit platform
-                switch(this->status)
-                {
-                    case mmap_memory_status_t::wasm32:
-                    {
-                        // In full protection mode, the maximum memory allocation permitted is half of the full protection size.
-                        // max_full_protection_wasm32_length_half == (u64)u32max + 1ui64
-                        constexpr auto max_full_protection_wasm32_length_half{max_full_protection_wasm32_length / 2u};
-
-                        max_init_page_count = static_cast<::std::size_t>(max_full_protection_wasm32_length_half >> this->custom_page_size_log2);
-                        break;
-                    }
-                    case mmap_memory_status_t::wasm64:
-                    {
-                        // partial protection. No need to provide double protection, as static checks are in place.
-                        max_init_page_count = static_cast<::std::size_t>(max_partial_protection_wasm64_length >> this->custom_page_size_log2);
-                        break;
-                    }
-                    [[unlikely]] default:
-                    {
-# if (defined(_DEBUG) || defined(DEBUG)) && defined(UWVM_ENABLE_DETAILED_DEBUG_CHECK)
-                        ::uwvm2::utils::debug::trap_and_inform_bug_pos();
-# endif
-                        ::std::unreachable();
-                    }
-                }
-            }
-            else if constexpr(sizeof(::std::size_t) >= sizeof(::std::uint_least32_t))
-            {
-                // 32bit platform
-                // On 32-bit platforms, both wasm64 and wasm32 use 32-bit versions.
-                // partial protection. No need to provide double protection, as static checks are in place.
-                max_init_page_count = static_cast<::std::size_t>(max_partial_protection_wasm32_length >> this->custom_page_size_log2);
-            }
-            else
-            {
-                static_assert(sizeof(::std::size_t) >= sizeof(::std::uint_least32_t), "mmap unsupported platform");
-            }
-
-            max_init_page_count = ::std::min(max_init_page_count, this->reservation_limit_bytes >> this->custom_page_size_log2);
+            auto const max_init_page_count{this->maximum_initial_page_count()};
 
             // Page Protection
             if(init_page_count > max_init_page_count) [[unlikely]] { ::fast_io::fast_terminate(); }

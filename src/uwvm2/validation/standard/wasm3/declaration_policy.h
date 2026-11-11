@@ -58,7 +58,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
     template<typename Policy>
     [[nodiscard]] inline constexpr bool uses_core3_validation_policy(Policy const& policy) noexcept
     {
-        return policy.cli_mode == decltype(policy.cli_mode)::scoped || !policy.disable_extended_const ||
+        return policy.cli_mode == decltype(policy.cli_mode)::direct_wasm3 ||
+            policy.cli_mode == decltype(policy.cli_mode)::scoped || !policy.disable_extended_const ||
             !policy.disable_table_initializer || !policy.disable_relaxed_simd || !policy.disable_multi_memory ||
             !policy.disable_threads || !policy.disable_tail_call || !policy.disable_memory64 || !policy.disable_table64 ||
             !policy.disable_function_references || !policy.disable_gc || !policy.disable_exceptions;

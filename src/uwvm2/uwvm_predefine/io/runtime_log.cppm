@@ -31,6 +31,9 @@ module;
 export module uwvm2.uwvm_predefine.io:runtime_log;
 
 import fast_io;
+#if defined(__linux__)
+import :output;
+#endif
 
 #ifndef UWVM_MODULE
 # define UWVM_MODULE

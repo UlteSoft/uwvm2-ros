@@ -333,12 +333,8 @@
                 // [safe] extent/narrowing/layout authenticated ABOVE, before
                 // this single indexed write. No ordinary foreign GC setter,
                 // generic reference matcher or shared admission is invoked.
-#if defined(UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS) && UWVM_EXPERIMENTAL_PACKED_NUMERIC_ARRAYS == 1
                 if(kind==composite_kind::array) { store_type::store_array_value(*object,element,packed,field.storage); }
                 else { object->values[element]=packed; }
-#else
-                object->values[element]=packed;
-#endif
             }
             // Existing collector scans the real typed object slot, while its
             // independent value_leases preserves any embedded foreign arena.
@@ -444,27 +440,21 @@
         [[nodiscard]] static bool mutation_memory_closure(work& state,::std::size_t& memory_records) noexcept
         {
             memory_records=0u;
-            if(g_import_call_cache.size()!=state.modules.size()) { return false; }
+            if(g_import_call_cache.size()!=state.modules.size() || !debug_source_memory_exclusive_bytes_locked()) { return false; }
             for(::std::size_t owner{};owner!=state.modules.size();++owner)
             {
                 auto const& pin{state.modules[owner]};auto const& module{*pin.module};
                 auto const imports{module.imported_memory_vec_storage.size()},locals{module.local_defined_memory_vec_storage.size()};
-                if(memory_records>record_limit || imports>record_limit-memory_records) { return false; }
-                memory_records+=imports; // preflight bounded sum BEFORE advance.
-                if(locals>record_limit-memory_records) { return false; }memory_records+=locals;
+                if(!charge(imports,memory_records) || !charge(locals,memory_records)) { return false; }
                 auto const* file{pin.source->actual_validated_file(static_cast<::std::size_t>(pin.id),current_runtime_generation(),pin.module)};
                 if(file==nullptr || !file->has_owned_source_image() || file->binfmt_ver!=1u || !declaration_origin(pin) ||
-                   !pin.source->actual_no_unadapted_native_memory_provider(static_cast<::std::size_t>(pin.id),current_runtime_generation(),pin.module) ||
                    !mutation_memory_declarations(pin,file->wasm_module_storage.wasm_binfmt_ver1_storage)) { return false; }
-                // Closing counted host entry cannot revoke a writable mmap
-                // descriptor already handed to an unknown native provider.
-                // This genuine whole resolved execution closure admits ONLY
-                // actual source-owned defined-Wasm leaves; names/flag3 binding
-                // DATA are never treated as an escaped-writer adapter.
-                auto const& cache{g_import_call_cache.index_unchecked(owner)};
-                if(!checkpoint_effect_actual_full_owner(owner) || cache.size()!=module.imported_function_vec_storage.size()) { return false; }
-                for(auto const& target:cache)
-                { if(target.origin_module_id!=owner || checkpoint_effect_actual_cached_leaf(target)!=checkpoint_resolved_effect::defined_wasm) { return false; } }
+                // The common final-provider census rejects every escaped or
+                // unknown native writer, including preload-DL. Builtin WASI
+                // and ROS copy byte payloads within counted host calls; the
+                // genuine closed-host/ALL-stop borrow excludes those calls.
+                // Their presence alone must not disable an authorized memory
+                // edit. This does not authorize replay or restore host effects.
                 for(::std::size_t index{};index!=module.imported_global_vec_storage.size();++index)
                 { auto actual_owner{owner},actual_index{index};if(!resolve_resource<false>(state,actual_owner,actual_index)) { return false; } }
                 for(::std::size_t index{};index!=module.imported_table_vec_storage.size();++index)

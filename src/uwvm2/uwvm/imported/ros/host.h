@@ -177,6 +177,8 @@ namespace uwvm2::uwvm::imported::ros
         {
             ::std::mutex mutex{};
             core::target_policy const* target{};
+            // Wire resources belong to the environment, not to one member epoch.
+            ::std::uint64_t environment_generation{};
             core::ipc::client connection{};
             bool connected{};
             ::std::uint32_t timeout{};
@@ -276,11 +278,14 @@ namespace uwvm2::uwvm::imported::ros
         {
             ::std::uint64_t generation{};
             bool retired{}; // Protected by the Host registry mutex; never reset.
-            ::std::array<session,2> backends{};
+            ::std::array<::std::shared_ptr<session>,2> backends{::std::make_shared<session>(),::std::make_shared<session>()};
         };
         inline ::std::mutex mutex{};
         inline core::capability_manager capabilities{};
         inline ::std::map<void const*, ::std::shared_ptr<instance>, ::std::less<>> instances{};
+        // Policy-owned ROS state, like the WASI environment/FD vector. A
+        // replacement retires its module membership, not its peers' resources.
+        inline ::std::map<core::target_policy const*,::std::shared_ptr<session>,::std::less<>> shared_sessions{};
         inline core::debug::trace_store debug_trace{};
 
         inline void write_audit_record(::std::string_view record) noexcept
@@ -332,19 +337,9 @@ namespace uwvm2::uwvm::imported::ros
             ::std::uint64_t instance_id{};
         };
         inline ::std::mutex denial_mutex{};
-        using denial_identity = ::std::tuple<void const*,::std::uint64_t,core::version>;
-        struct denial_less
-        {
-            bool operator()(denial_identity const& left, denial_identity const& right) const noexcept
-            {
-                auto less{::std::less<void const*>{}};
-                if(less(::std::get<0>(left),::std::get<0>(right))) { return true; }
-                if(less(::std::get<0>(right),::std::get<0>(left))) { return false; }
-                if(::std::get<1>(left) != ::std::get<1>(right)) { return ::std::get<1>(left) < ::std::get<1>(right); }
-                return ::std::get<2>(left) < ::std::get<2>(right);
-            }
-        };
-        inline ::std::map<denial_identity,::std::shared_ptr<denial_sink>,denial_less> denials{};
+        // Denial-audit quotas follow the effective policy, including epochs.
+        using denial_identity = ::std::tuple<core::version,core::scope,::std::string>;
+        inline ::std::map<denial_identity,::std::shared_ptr<denial_sink>> denials{};
         inline ::std::uint64_t next_denial_instance{1};
         inline ::std::uint32_t audit_denial(core::version version, ::std::uint32_t error) noexcept
 
@@ -373,7 +368,8 @@ namespace uwvm2::uwvm::imported::ros
             ::std::shared_ptr<denial_sink> sink{};
             {
                 ::std::lock_guard<::std::mutex> registry_lock{denial_mutex};
-                auto key{::std::tuple{observed.runtime_instance,observed.generation,version}};
+                auto key=denial_identity{version,target->target_scope,target->target_scope==core::scope::global?::std::string{}:
+                    target->target_scope==core::scope::single?::std::string{name}:target->name};
                 auto found{denials.find(key)};
                 if(found == denials.end())
                 {
@@ -452,7 +448,7 @@ namespace uwvm2::uwvm::imported::ros
             {
                 ::std::lock_guard<::std::mutex> lock{mutex};
                 for(auto const& item:instances) { trace_retirement(item.first,*item.second,core::management::transition::runtime_retirement); }
-                retired.swap(instances);
+                retired.swap(instances);shared_sessions.clear();
             }
             capabilities.clear();
             { ::std::lock_guard<::std::mutex> denial_lock{denial_mutex}; denials.clear(); }
@@ -479,9 +475,12 @@ namespace uwvm2::uwvm::imported::ros
             // Runtime's permanent module flag rejects its future first open.
             if(found==instances.end()||found->second->generation!=generation||found->second->retired) { return; }
             auto& state{*found->second};state.retired=true;
-            ::std::scoped_lock backends{state.backends[0].mutex,state.backends[1].mutex};
+            ::std::scoped_lock backends{state.backends[0]->mutex,state.backends[1]->mutex};
             (void)capabilities.retire_registered(object,generation);
-            state.backends[0].retire_authority();state.backends[1].retire_authority();
+            for(auto& backend:state.backends)
+            {
+                if(!backend->target||backend->target->target_scope==core::scope::single) { backend->retire_authority(); }
+            }
             trace_retirement(object,state,reason);
         }
 
@@ -497,11 +496,11 @@ namespace uwvm2::uwvm::imported::ros
             }
             ::std::string_view module_name{reinterpret_cast<char const*>(observed.module_name.data()), observed.module_name.size()};
             auto const selected{runtime_policy.effective(version, module_name)};
-            bool allow_exports{};
+            bool allow_exports{selected&&selected->enabled};
             if(selected && selected->enabled && selected->target_scope == core::scope::single)
             {
                 auto const boundary{selected->connection.find("call-boundary")};
-                allow_exports = boundary != selected->connection.end() && boundary->second == "module-exports";
+                if(boundary!=selected->connection.end()) { allow_exports=boundary->second=="module-exports"; }
             }
             if(!runtime::ros_caller_identity_host_api(caller, allow_exports))
             {
@@ -524,16 +523,26 @@ namespace uwvm2::uwvm::imported::ros
                 auto next{::std::make_shared<instance>()};
                 next->generation = caller.generation;
                 ::std::string_view name{reinterpret_cast<char const*>(caller.module_name.data()), caller.module_name.size()};
+                decltype(shared_sessions) pending_sessions;
                 for(unsigned i{}; i != 2; ++i)
                 {
-                    next->backends[i].target = runtime_policy.effective(static_cast<core::version>(i + 1), name);
+                    auto target=runtime_policy.effective(static_cast<core::version>(i+1),name);
+                    next->backends[i]->target=target;
+                    next->backends[i]->environment_generation=caller.generation;
+                    if(target&&target->target_scope!=core::scope::single)
+                    {
+                        auto found=shared_sessions.find(target);
+                        if(found!=shared_sessions.end()) { next->backends[i]=found->second; }
+                        else { pending_sessions.emplace(target,next->backends[i]); }
+                    }
                 }
-                auto r{capabilities.register_instance(caller.runtime_instance, caller.generation, name, next->backends[0].target, next->backends[1].target)};
+                auto r{capabilities.register_instance(caller.runtime_instance, caller.generation, name, next->backends[0]->target, next->backends[1]->target)};
                 if(!r)
                 {
                     return code(r);
                 }
                 it = instances.emplace(caller.runtime_instance, ::std::move(next)).first;
+                shared_sessions.merge(pending_sessions);
             }
             state = it->second;
             return 0;
@@ -658,7 +667,7 @@ namespace uwvm2::uwvm::imported::ros
         {
             runtime::ros_caller_identity caller{}; ::std::shared_ptr<instance> state{};
             if(auto error{identify(Version,caller,state)}) { return audit_denial(Version,error); }
-            auto& backend{state->backends[static_cast<unsigned>(Version)-1]};
+            auto& backend{*state->backends[static_cast<unsigned>(Version)-1]};
             ::std::lock_guard<::std::mutex> backend_lock{backend.mutex};
             core::capability_spec spec{};
             core::authorization description{};
@@ -671,7 +680,7 @@ namespace uwvm2::uwvm::imported::ros
             r=capabilities.close(caller.runtime_instance,caller.generation,Version,handle,::std::addressof(last_open_handle));
             if(!r) { return audit.finish(code(r)); }
             auto retirement_error{retire_availability(backend,handle,spec,false)};
-            auto rmw_retirement_error{retire_rmw_endpoints(backend,handle,spec.alias,false,description.instance_number(),caller.generation)};
+            auto rmw_retirement_error{retire_rmw_endpoints(backend,handle,spec.alias,false,description.instance_number(),backend.environment_generation)};
             if(!retirement_error){retirement_error=rmw_retirement_error;}
             retire_watches(backend,handle,spec.alias,false,0);
             if(!last_open_handle || !backend.connected) { return audit.finish(retirement_error); }
@@ -693,7 +702,7 @@ namespace uwvm2::uwvm::imported::ros
         {
             runtime::ros_caller_identity caller{}; ::std::shared_ptr<instance> state{};
             if(auto error{identify(Version,caller,state)}) { return audit_denial(Version,error); }
-            auto& backend{state->backends[static_cast<unsigned>(Version)-1]};
+            auto& backend{*state->backends[static_cast<unsigned>(Version)-1]};
             ::std::lock_guard<::std::mutex> backend_lock{backend.mutex};
             core::capability_spec spec{};
             core::authorization description{};
@@ -705,7 +714,7 @@ namespace uwvm2::uwvm::imported::ros
             r=capabilities.revoke(caller.runtime_instance,caller.generation,Version,spec.alias);
             if(!r) { return audit.finish(code(r)); }
             auto retirement_error{retire_availability(backend,handle,spec,true)};
-            auto rmw_retirement_error{retire_rmw_endpoints(backend,handle,spec.alias,true,description.instance_number(),caller.generation)};
+            auto rmw_retirement_error{retire_rmw_endpoints(backend,handle,spec.alias,true,description.instance_number(),backend.environment_generation)};
             if(!retirement_error){retirement_error=rmw_retirement_error;}
             retire_watches(backend,handle,spec.alias,true,125);
             if(!backend.connected) { return audit.finish(retirement_error); }
@@ -746,14 +755,15 @@ namespace uwvm2::uwvm::imported::ros
         {
             runtime::ros_caller_identity caller{}; ::std::shared_ptr<instance> state{};
             if(auto error{identify(Version,caller,state)}) { return audit_denial(Version,error); }
-            auto& backend{state->backends[static_cast<unsigned>(Version)-1]};
+            auto& backend{*state->backends[static_cast<unsigned>(Version)-1]};
             ::std::lock_guard<::std::mutex> backend_lock{backend.mutex};
             core::authorization description{};
             auto r{capabilities.describe(caller.runtime_instance,caller.generation,Version,handle,description)};
             if(!r) { return audit_denial(Version,code(r)); }
             // Copy immutable metadata before releasing its descriptive lease.
             // Quota waits must permit close/revoke on another thread.
-            auto const spec{*description.capability()};
+            auto const pinned_spec{description.specification()};
+            auto const& spec{*pinned_spec};
             auto const described_instance{description.instance_number()};
             description.release();
             audit_result audit{caller.runtime_instance,caller.generation,Version,spec.alias};
@@ -767,7 +777,7 @@ namespace uwvm2::uwvm::imported::ros
             if(observing)
             {
                 runtime::ros_caller_source_facts facts{};
-                observed.source_known=runtime::ros_caller_source_facts_host_api(facts)&&
+                observed.source_known=runtime::ros_caller_source_facts_host_api(facts,true)&&
                     facts.caller.runtime_instance==caller.runtime_instance&&facts.caller.generation==caller.generation;
                 for(::std::size_t i{};i!=32;++i) {observed.wasm[i]=::std::to_integer<::std::uint8_t>(facts.whole_wasm_sha256[i]);}
                 observed.wasm_bytes=facts.whole_wasm_bytes;observed.function_index=facts.builtin_function_index;
@@ -795,7 +805,7 @@ namespace uwvm2::uwvm::imported::ros
             auto const actual_op{action_control?core::ipc::action_control::capability(control):op == "event.poll" ? ::std::string_view{spec.operation} : op};
             if(op == "event.poll" && actual_op != "topic.subscribe" && actual_op != "service.advertise" && actual_op != "param.subscribe-events" && actual_op != "action.advertise") { return finish(13); }
             if(spec.operation != actual_op) { return finish(13); }
-            if(length > core::ipc::max_payload_bytes || capacity > core::ipc::max_payload_bytes) { return finish(90); }
+            if(!core::ipc::request_data_fits(op,spec.alias,length)) { return finish(90); }
             if(output && (!memory_range(memory,out_offset,capacity) || !memory_range(memory,length_offset,8))) { return finish(22); }
             if(action_control&&output&&core::ipc::event_output_overlaps_length(out_offset,capacity,length_offset)) { return finish(22); }
             ::std::vector<::std::uint8_t> payload{};
@@ -902,7 +912,7 @@ namespace uwvm2::uwvm::imported::ros
         {
             runtime::ros_caller_identity caller{};::std::shared_ptr<instance> state{};
             if(auto error=identify(Version,caller,state)) { return audit_denial(Version,error); }
-            auto& backend{state->backends[static_cast<unsigned>(Version)-1]};::std::lock_guard guard{backend.mutex};
+            auto& backend{*state->backends[static_cast<unsigned>(Version)-1]};::std::lock_guard guard{backend.mutex};
             core::authorization observer,source;auto granted{capabilities.authorize(caller.runtime_instance,caller.generation,Version,observer_handle,"event.observe",{},observer,false,true)};
             if(!granted) { return audit_denial(Version,code(granted)); }
             auto const& cap{*observer.capability()};audit_result audit{caller.runtime_instance,caller.generation,Version,cap.alias};
@@ -960,7 +970,7 @@ namespace uwvm2::uwvm::imported::ros
         {
             runtime::ros_caller_identity caller{};::std::shared_ptr<instance> state{};
             if(auto error=identify(Version,caller,state)) { return audit_denial(Version,error); }
-            auto& backend{state->backends[static_cast<unsigned>(Version)-1]};::std::lock_guard guard{backend.mutex};
+            auto& backend{*state->backends[static_cast<unsigned>(Version)-1]};::std::lock_guard guard{backend.mutex};
             core::authorization observer,source;auto granted{capabilities.authorize(caller.runtime_instance,caller.generation,Version,observer_handle,"event.observe",{},observer,false,true)};
             if(!granted) { return audit_denial(Version,code(granted)); }
             audit_result audit{caller.runtime_instance,caller.generation,Version,observer.capability()->alias};
@@ -1029,7 +1039,7 @@ namespace uwvm2::uwvm::imported::ros
         {
             runtime::ros_caller_identity caller{};::std::shared_ptr<instance> state{};
             if(auto error=identify(Version,caller,state)) { return audit_denial(Version,error); }
-            auto& backend{state->backends[static_cast<unsigned>(Version)-1]};::std::lock_guard guard{backend.mutex};
+            auto& backend{*state->backends[static_cast<unsigned>(Version)-1]};::std::lock_guard guard{backend.mutex};
             core::authorization observer,source;auto granted{capabilities.authorize(caller.runtime_instance,caller.generation,Version,observer_handle,"event.observe",{},observer,false,true)};
             if(!granted) { return audit_denial(Version,code(granted)); }
             audit_result audit{caller.runtime_instance,caller.generation,Version,observer.capability()->alias};
@@ -1068,7 +1078,7 @@ namespace uwvm2::uwvm::imported::ros
         {
             runtime::ros_caller_identity caller{};::std::shared_ptr<instance> state{};
             if(auto error=identify(Version,caller,state)) { return audit_denial(Version,error); }
-            auto& backend{state->backends[static_cast<unsigned>(Version)-1]};::std::lock_guard guard{backend.mutex};
+            auto& backend{*state->backends[static_cast<unsigned>(Version)-1]};::std::lock_guard guard{backend.mutex};
             core::authorization observer,source;auto granted{capabilities.authorize(caller.runtime_instance,caller.generation,Version,observer_handle,"event.observe",{},observer,false,true)};
             if(!granted) { return audit_denial(Version,code(granted)); }
             audit_result audit{caller.runtime_instance,caller.generation,Version,observer.capability()->alias};
@@ -1079,7 +1089,8 @@ namespace uwvm2::uwvm::imported::ros
             auto required{core::ipc::event_bit(core::ipc::event_kind::service_response)|core::ipc::event_bit(core::ipc::event_kind::resource_error)};
             if((watched.local->allowed_kinds()&required)!=required) { return audit.finish(13); }
             ::std::uint64_t request_limit{};if(!core::read_quota(watched.source,"max-request-bytes",request_limit)) {return audit.finish(22);}
-            if(length>request_limit||length>core::ipc::max_payload_bytes-526) { return audit.finish(90); }
+            if(length>request_limit||length>core::ipc::max_payload_bytes-8u||
+               !core::ipc::request_data_fits("service.submit",watched.observer.alias,length+8u)) { return audit.finish(90); }
             if(!memory_range(memory,input,length)||!memory_range(memory,request_out,8)) { return audit.finish(22); }
             ::std::vector<::std::uint8_t> bytes;if(!read_bytes(memory,input,length,bytes)) { return audit.finish(22); }
             granted=capabilities.authorize(caller.runtime_instance,caller.generation,Version,source_handle,"service.call",::std::as_bytes(::std::span{bytes}),source,true,true);
@@ -1116,7 +1127,7 @@ namespace uwvm2::uwvm::imported::ros
             {
                 runtime::ros_caller_identity caller{};::std::shared_ptr<instance> state{};
                 if(auto error{identify(Version,caller,state)}) { return audit_denial(Version,error); }
-                auto& backend{state->backends[static_cast<unsigned>(Version)-1]};
+                auto& backend{*state->backends[static_cast<unsigned>(Version)-1]};
                 // This NEW query never queues behind a long admitted business
                 // call. Busy11 is a truthful failure, not false readiness. The
                 // existing close/revoke/old v1 locking semantics are unchanged.
@@ -1140,7 +1151,7 @@ namespace uwvm2::uwvm::imported::ros
                 if(!core::read_quota(cap,"max-wait-ns",maximum)||!core::read_quota(cap,"timeout-ms",timeout)||
                    !core::read_quota(cap,"max-binding-history",history)||wait_ns>maximum) { return audit.finish(22); }
                 wire::packet request{features?wire::command::features:wire::command::query,wire::retirement::none,0,
-                    {static_cast<::std::uint8_t>(Version),availability_handle,source_handle,observation.instance_number(),caller.generation},wait_ns};
+                    {static_cast<::std::uint8_t>(Version),availability_handle,source_handle,observation.instance_number(),backend.environment_generation},wait_ns};
                 if(!wire::valid_request(request)) { return audit.finish(22); }
                 auto raw{wire::encode(request)};
                 // One NEW authority debit; source.call supplies live independent

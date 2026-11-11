@@ -18,7 +18,7 @@ def build(code,wide,*,owner=False,alias=False,globals_tag=False):
   payload=b"deferred active data spans tags!"
   assert len(payload)==32
   result+=m.sec(11,b"\x01\0"+m.c(80,64 if wide else 32)+b"\x0b"+m.u(len(payload))+payload)
- if globals_tag:result+=m.sec(0,m.u(len(b"memtag.globals"))+b"memtag.globals"+m.u(1)+m.u(1)+m.u(80)+m.u(32))
+ if globals_tag:result+=m.sec(0,m.u(len(b"uwvm.memtag.linear.globals"))+b"uwvm.memtag.linear.globals"+m.u(2)+m.u(1)+m.u(0)+m.u(80)+m.u(32))
  return result
 
 def main():
@@ -40,8 +40,9 @@ def main():
     raw=build(code.code,wide,alias=alias,globals_tag=not alias)
     name=('alias' if alias else 'independent')+'-'+str(code.bits)+'-'+str(int(enabled));file=args.out/(name+'.wasm');file.write_bytes(raw)
     for engine in args.engines.split(','):
-     command=[str(args.vm),'-R'+engine,'--runtime-compile-threads','0','--runtime-llvm-jit-cache-path','disable',
+     command=[str(args.vm),'-R'+engine,'--runtime-compile-threads','0',
       *(['--wasm-feature-enable-memory64'] if wide else []),'--wasm-preload-library',str(owner),'owner']
+     if engine=='aot':command+=['--runtime-llvm-jit-cache-path','disable']
      if not enabled:command+=['--runtime-disable-memtag']
      command+=['--run',str(file)]
      done=subprocess.run(command,capture_output=True,timeout=90);log=(done.stdout+done.stderr).decode('utf8','replace')

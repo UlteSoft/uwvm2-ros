@@ -102,7 +102,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                 u8")");
         }
 
-        return ::uwvm2::imported::wasi::wasip1::func::proc_raise_impl(env, code);
+        return ::uwvm2::imported::wasi::wasip1::func::proc_raise_impl(env, code, true);
     }
 }  // namespace uwvm2::imported::wasi::wasip1::func
 

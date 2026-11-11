@@ -3,24 +3,24 @@
 extern "C++"
 {
     inline auto runtime_threaded_wasip1_adapter::socket_io(context& call,bool writing,::std::uint32_t guest,
-        ::std::uint32_t iovs,::std::uint32_t count,::std::uint32_t flags,::std::uint32_t completed,::std::uint32_t returned_flags) noexcept -> error
+        ::std::uint64_t iovs,::std::uint64_t count,::std::uint32_t flags,::std::uint64_t completed,::std::uint64_t returned_flags) noexcept -> error
     {
         if(writing ? flags!=0u : (flags&~3u)!=0u)return error::einval;
-        if(count!=0u && 8uz>SIZE_MAX/static_cast<::std::size_t>(count))return error::eoverflow;
-        if(!call.aligned(iovs,4u)||!call.aligned(completed,4u)||(!writing&&!call.aligned(returned_flags,2u)))return error::efault;
+        if(count>SIZE_MAX/(call.word_bytes()*2u))return error::eoverflow;
+        if(!call.aligned(iovs,call.word_bytes())||!call.aligned(completed,call.word_bytes())||(!writing&&!call.aligned(returned_flags,2u)))return error::efault;
         
-        if(!call.bounds(iovs,static_cast<::std::size_t>(count)*8uz)||!call.bounds(completed,4u)||
+        if(!call.bounds(iovs,static_cast<::std::size_t>(count)*(call.word_bytes()*2u))||!call.bounds(completed,call.word_bytes())||
             (!writing&&!call.bounds(returned_flags,2u)))return error::efault;
-        struct vector {::std::uint32_t base{},size{};};
+        struct vector {::std::uint64_t base{},size{};};
         auto vectors=allocate_array<vector>(count);if(count&&!vectors)return error::enomem;
         ::std::uint64_t total{};
-        for(::std::uint32_t i{};i<count;++i)
+        for(::std::size_t i{};i<count;++i)
         {
-            ::std::array<::std::byte,8> raw{};
-            if(!call.copy_in(static_cast<::std::uint64_t>(iovs)+static_cast<::std::uint64_t>(i)*8u,raw))return error::efault;
-            auto& v=vectors[i];v.base=static_cast<::std::uint32_t>(little(raw.data(),4));v.size=static_cast<::std::uint32_t>(little(raw.data()+4,4));
+            ::std::array<::std::byte,16> raw{};
+            if(!call.copy_in(iovs+i*(call.word_bytes()*2u),{raw.data(),call.word_bytes()*2u}))return error::efault;
+            auto& v=vectors[i];v.base=little(raw.data(),call.word_bytes());v.size=little(raw.data()+call.word_bytes(),call.word_bytes());
             if(!call.bounds(v.base,v.size))return error::efault;
-            if(v.size>UINT32_MAX-total||v.size>static_cast<::std::uint64_t>(SSIZE_MAX)-total)return error::eoverflow;
+            if(v.size>call.size_limit()-total||v.size>static_cast<::std::uint64_t>(SSIZE_MAX)-total)return error::eoverflow;
             total+=v.size;
         }
         fd_pin pinned{};auto acquired=pinned.acquire(call,guest,writing?right::right_fd_write:right::right_fd_read,true);
@@ -44,7 +44,7 @@ extern "C++"
         if(writing)
         {
             ::std::size_t at{};
-            for(::std::uint32_t i{};i<count&&at<wanted;++i)
+            for(::std::size_t i{};i<count&&at<wanted;++i)
             {auto n=(::std::min)(static_cast<::std::size_t>(vectors[i].size),wanted-at);
              if(!call.copy_in(vectors[i].base,{bounce.get()+at,n}))return error::efault;at+=n;}
         }
@@ -53,12 +53,12 @@ extern "C++"
             if(!writing)
             {
                 ::std::size_t at{};
-                for(::std::uint32_t i{};i<count&&at<amount;++i)
+                for(::std::size_t i{};i<count&&at<amount;++i)
                 {auto n=(::std::min)(static_cast<::std::size_t>(vectors[i].size),amount-at);
                  if(!call.copy_out(vectors[i].base,{bounce.get()+at,n}))return error::efault;at+=n;}
                 if(!call.store<2>(returned_flags,truncated))return error::efault;
             }
-            return call.store<4>(completed,amount)?error::esuccess:error::efault;
+            return call.store_size(completed,amount)?error::esuccess:error::efault;
         };
         if(count==0u)return publish(0u,0u);
         struct edge_watch {int fd{-1};~edge_watch(){if(fd>=0)static_cast<void>(::close(fd));}} edge;
@@ -124,7 +124,7 @@ extern "C++"
     }
 
     inline auto runtime_threaded_wasip1_adapter::socket_accept(context& call,::std::uint32_t guest,::std::uint32_t flags,
-        ::std::uint32_t completed,bool with_address,::std::uint32_t address) noexcept -> error
+        ::std::uint64_t completed,bool with_address,::std::uint64_t address) noexcept -> error
     {
         if((flags&~4u)!=0u)return error::einval;
         if(!call.aligned(completed,4u))return error::efault;

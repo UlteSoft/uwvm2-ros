@@ -1,5 +1,6 @@
 export module uwvm2.extension.memtag;
 export import uwvm2.extension.memtag.instruction;
+export import uwvm2.extension.memtag.encoding;
 export import uwvm2.extension.memtag.shadow;
 export import uwvm2.extension.memtag.globals;
 export import uwvm2.extension.memtag.operations;

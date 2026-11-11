@@ -17,7 +17,8 @@ namespace uwvm2::imported::ros::ipc
     inline constexpr std::uint32_t magic{0x32524f55}; // "UOR2" on the wire
     inline constexpr std::uint16_t abi_version{1};
     inline constexpr std::size_t header_bytes{48};
-    inline constexpr std::uint32_t max_payload_bytes{4u * 1024u * 1024u};
+    // Wire length is u32. This is a representation bound, not a usage quota.
+    inline constexpr std::uint32_t max_payload_bytes{UINT32_MAX};
     inline constexpr std::uint32_t max_timeout_ms{UINT32_MAX};
     enum class kind : std::uint16_t { hello=1, request=2, response=3, cancel=4, close=5 };
     struct frame
@@ -82,10 +83,19 @@ namespace uwvm2::imported::ros::ipc
         return true;
     }
     inline bool valid_token(std::string const& s) noexcept { return valid_token_view(s); }
+    // Actual token lengths determine the envelope overhead. The u32 frame
+    // length is a wire representation bound, not an implicit usage quota.
+    inline bool request_data_fits(std::string_view operation,std::string_view alias,std::uint64_t bytes) noexcept
+    {
+        if(!valid_token_view(operation)||!valid_token_view(alias)) { return false; }
+        return bytes<=max_payload_bytes-(8u+operation.size()+alias.size());
+    }
     inline bool encode_request_view(request_view const& r, std::vector<std::uint8_t>& b)
     {
-        if(!valid_token_view(r.operation)||!valid_token_view(r.alias)||r.data.size()>max_payload_bytes-518) { return false; }
-        b.clear(); b.reserve(8+r.operation.size()+r.alias.size()+r.data.size()); put(b,r.operation.size(),2); put(b,r.alias.size(),2); put(b,r.data.size(),4);
+        if(!request_data_fits(r.operation,r.alias,r.data.size())) { return false; }
+        auto const overhead=8u+r.operation.size()+r.alias.size();
+        if(r.data.size()>max_payload_bytes-overhead||overhead>b.max_size()||r.data.size()>b.max_size()-overhead) { return false; }
+        b.clear(); b.reserve(overhead+r.data.size()); put(b,r.operation.size(),2); put(b,r.alias.size(),2); put(b,r.data.size(),4);
         b.insert(b.end(),r.operation.begin(),r.operation.end()); b.insert(b.end(),r.alias.begin(),r.alias.end()); b.insert(b.end(),r.data.begin(),r.data.end());
         return true;
     }

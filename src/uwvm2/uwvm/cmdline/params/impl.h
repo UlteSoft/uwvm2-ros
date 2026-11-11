@@ -44,7 +44,6 @@
 # include "wasm_set_memory_limit.h"
 # include "wasm_set_parser_limit.h"
 # include "wasm_set_initializer_limit.h"
-# include "wasm_list_weak_symbol_module.h"
 # include "wasm_memory_grow_strict.h"
 # include "wasm_feature.h"
 
@@ -60,6 +59,7 @@
 # include "runtime_llvm_jit_cache_path.h"
 # include "runtime_llvm_jit_cache_seal_process.h"
 # include "runtime_disable_memtag.h"
+# include "runtime_memtag_mode.h"
 # include "runtime_int.h"
 # include "runtime_aot.h"
 # include "runtime_uwvm_int_disable_loop_unwind.h"
@@ -70,7 +70,6 @@
 
 // wasi
 # include "wasi_disable_utf8_check.h"
-# include "wasip1_global_trace.h"
 # include "wasip1_global_expose_host_api.h"
 # include "wasip1_global_disable.h"
 # include "wasip1_global_set_fd_limit.h"
@@ -96,7 +95,6 @@
 # include "wasip1_single_inherit_system_environment.h"
 # include "wasip1_single_disable_utf8_check.h"
 # include "wasip1_single_enable_utf8_check.h"
-# include "wasip1_single_trace.h"
 # include "wasip1_single_set_argv0.h"
 # include "wasip1_single_force_args.h"
 # include "wasip1_single_set_fd_limit.h"
@@ -117,7 +115,6 @@
 # include "wasip1_group_inherit_system_environment.h"
 # include "wasip1_group_disable_utf8_check.h"
 # include "wasip1_group_enable_utf8_check.h"
-# include "wasip1_group_trace.h"
 # include "wasip1_group_set_argv0.h"
 # include "wasip1_group_force_args.h"
 # include "wasip1_group_set_fd_limit.h"
