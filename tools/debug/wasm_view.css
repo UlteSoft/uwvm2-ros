@@ -56,7 +56,8 @@ input { background:var(--vscode-input-background); border:1px solid var(--vscode
 
 .token.type { color:var(--wat-type); }
 .token.function { color:var(--wat-function); }
-.token.label { color:var(--wat-control); }
+/* Label depths are navigation operands, not control-flow mnemonics. */
+.token.label { color:var(--wat-function); }
 .token.index { color:var(--wat-variable); }
 .token.number { color:var(--wat-number); }
 body.vscode-high-contrast .current,body.vscode-high-contrast-light .current { outline:1px solid var(--vscode-contrastActiveBorder); }

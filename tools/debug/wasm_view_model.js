@@ -34,7 +34,14 @@ function layout(document) {
     if(!stack.length && line<document.lineCount-2)throw new Error("Instructions follow the final function end.");
   }
   if(stack.length || !rows.length)throw new Error("The complete function end is unavailable.");
-  return {rows,scopes,mnemonicWidth,operandWidth,maxDepth};
+  const model={rows,scopes,mnemonicWidth,operandWidth,maxDepth};
+  // Resolve labels only after the complete, validated control nesting is known.
+  // These are document locations, never runtime addresses or execution requests.
+  for(const row of rows)for(const token of row.tokens) {
+    const target=branchTarget(model,row,token);
+    if(target)token.navigation={line:target.line};
+  }
+  return model;
 }
 function branchTarget(model,row,token) {
   if(!["br","br_if","br_on_null","br_on_non_null","br_table"].includes(row.name) || !/^[0-9]+$/.test(token.text))return;
@@ -46,7 +53,8 @@ function branchTarget(model,row,token) {
   if(!target)return;
   return {title:scope.name==="loop"?"Loop back-edge":"Exit "+scope.name,
     description:"Depth "+token.text+" targets "+target.address+" ("+target.name+")."+
-      (row.name==="br_if"?" Taken when the popped i32 condition is nonzero.":""),line:target.line};
+      (row.name==="br_if"?" Taken when the popped i32 condition is nonzero.":"")+
+      "\nCtrl+click (Cmd+click on macOS) to view the label destination.",line:target.line};
 }
 function literal(token,row) {
   if(!/^(i32|i64)\.const$/.test(row.name) || !/^-?[0-9]+$/.test(token.text))return;

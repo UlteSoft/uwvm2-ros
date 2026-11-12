@@ -80,9 +80,11 @@
     name.classList.add(category);
     const operands=element("span","operands");
     row.tokens.forEach((token,n)=>{if(n)operands.append(document.createTextNode(" "));const key=token.meaning?.kind==="object"?token.meaning.key:undefined;
-      const category=key==="function"?"function":key==="memory"||key==="table"?"type":key==="label"?"label":key?"index":
+      const category=token.navigation?"label":key==="function"?"function":key==="memory"||key==="table"?"type":key==="label"?"label":key?"index":
         /^(?:i32|i64|f32|f64|v128|ref|func|extern|struct|array|any|eq|i31|externref|funcref)$/.test(token.text)?"type":"number";
-      const span=element("span","token "+category,token.text);span.dataset.token=String(n);span.dataset.line=String(row.line);operands.append(span);});
+      const span=element("span","token "+category,token.text);span.dataset.token=String(n);span.dataset.line=String(row.line);
+      if(token.navigation)span.dataset.targetLine=String(token.navigation.line);
+      operands.append(span);});
     text.append(guides,name,operands);if(row.comment)text.append(element("span","comment","; "+row.comment));
     return {text,gutter,breakpoint:bp,pc};
   }
@@ -110,6 +112,15 @@
     if(action) {if(action==="follow")go((state.line||2)-2,true);else post({action});return;}
     const point=event.target.closest("[data-breakpoint]");
     if(point&&!point.disabled){post({action:"breakpoint",operation:event.shiftKey?"enabled":"toggle",line:Number(point.dataset.breakpoint)});return;}
+    const destination=event.target.closest(".token[data-target-line]");
+    if(destination&&(event.ctrlKey||event.metaKey)) {
+      const index=Number(destination.dataset.targetLine)-2;
+      if(Number.isSafeInteger(index)&&index>=0&&index<rows.length) {
+        event.preventDefault();hideHover();go(index,true);code.focus({preventScroll:true});
+        notice("Branch destination: "+rows[index].address+" · "+rows[index].name);
+      }
+      return;
+    }
     const row=event.target.closest("[data-index]");if(row){selection=Number(row.dataset.index);if(!event.shiftKey)anchor=selection;draw();code.focus({preventScroll:true});save();}
   });
   document.addEventListener("contextmenu",event=>{const point=event.target.closest("[data-breakpoint]");if(point&&!point.disabled){event.preventDefault();post({action:"breakpoint",operation:"menu",line:Number(point.dataset.breakpoint)});}});

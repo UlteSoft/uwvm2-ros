@@ -276,6 +276,12 @@ Click the breakpoint gutter to add/remove; Shift-click toggles enabled state;
 right-click provides conditions and hit conditions. The supported SourceBreakpoint
 API and existing complete-inventory bridge synchronize the native BREAKPOINTS
 sidebar and console, with runtime confirmation distinguished from pending requests.
+Branch-depth operands are yellow, distinct from purple control-flow opcodes.
+Ctrl-click (Cmd-click on macOS) navigates within the copied function document:
+loop labels lead to the loop header; block, if and function exits lead to their
+matching end boundary. The execution pointer is unchanged. Ordinary clicks
+select text/rows; they do not invoke execution controls.
+
 Hover supplies instruction meaning, actual named functions and current typed
 locals/globals, declared memory identity, constant bit representations or resolved
 branch destinations. Live values are queried against the exact stop and generation;
