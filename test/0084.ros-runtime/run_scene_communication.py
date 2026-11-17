@@ -211,7 +211,11 @@ def main():
         path=pair.parent/f'peer-{i}.json';document=json.loads(path.read_text());documents.append(document);inputs[str(path)]=sha(path)
         encoded,_=worker_definition.compile_definition(document);assert encoded==Path(next(x['path']for x in pack['files']if x['destination']=='/worker/profile')).read_bytes()
     for path in [Path(__file__),Path(definition.__file__),Path(worker_definition.__file__),*[Path(__file__).with_name(x)for x in ['run_scene_vm.py','run_scene_recording.py','run_scene_buffers.py','run_scene_fp.py']]]:inputs[str(path.resolve())]=sha(path)
-    out=a.output.resolve();assert out.is_relative_to((ROOT.parent/'uwvm2-ros-sdk/.tmp').resolve());out.mkdir(parents=True,exist_ok=True)
+    out=a.output.resolve()
+    scratch_roots=(ROOT/'.tmp', ROOT.parent/'uwvm2-ros-sdk/.tmp', ROOT.parent/'uwvm2-ros-sdk-v2/.tmp')
+    if not any(out.is_relative_to(path.resolve()) for path in scratch_roots):
+        p.error('write communication evidence under a VM or SDK .tmp directory')
+    out.mkdir(parents=True,exist_ok=True)
     if a.mode=='execute':
         report=json.loads((out/'results.json').read_text());assert report['prepared']and report['inputs']==inputs
     else:
