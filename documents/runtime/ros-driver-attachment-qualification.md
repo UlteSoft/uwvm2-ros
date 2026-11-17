@@ -1,5 +1,16 @@
 # External driver attachment qualification
 
+For the newer encrypted carrier cohort and successful hardware
+microarchitecture/source/assembly collection, see
+[driver performance](ros-driver-performance.md). The measurements below remain
+specific to their historical executable.
+
+This is a historical qualification record for the exact `25165df0...` VM named
+below. It does not qualify later external-model, external-DDS, platform-policy or
+floating-point guard changes. Newer runs must identify their own VM hash and
+frozen source manifest; results from different binaries must not be added
+together as if they described one release.
+
 This record qualifies the attachment-only boundary described in
 [the protocol contract](ros-driver-attachment.md). It does not qualify a
 deployment service, arbitrary vendor adapters, all ROS packages, or industrial

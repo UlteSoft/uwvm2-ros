@@ -1,5 +1,8 @@
 # ROSv2 externally provisioned driver attachment
 
+The matched encrypted carrier benchmark and hardware profiling procedure are
+documented in [driver performance](ros-driver-performance.md).
+
 This is the current VM contract. The deployment program is not implemented by
 this change. Historical component-launcher receipts do not qualify this path.
 Imports belong to `uwvm_ros_v2`: `driver.connect`, `driver.submit`,
